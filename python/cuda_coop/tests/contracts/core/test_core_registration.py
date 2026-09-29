@@ -9,11 +9,15 @@ from cuda.coop import _registration
 
 
 @pytest.mark.parametrize("backend", ["", "numba", "cutlass", None])
-def test_register_rejects_unsupported_backends_without_importing(monkeypatch, backend):
+def test_register_rejects_unsupported_backends_without_importing(
+    monkeypatch, backend
+):
     def unexpected_import(name):
         pytest.fail(f"unsupported backend attempted to import {name}")
 
-    monkeypatch.setattr(_registration.importlib, "import_module", unexpected_import)
+    monkeypatch.setattr(
+        _registration.importlib, "import_module", unexpected_import
+    )
 
     with pytest.raises(ValueError, match="Unsupported cuda.coop backend"):
         coop.register(backend)
@@ -24,7 +28,9 @@ def test_register_reports_an_unavailable_adapter(monkeypatch, backend):
     def missing_adapter(name):
         raise ModuleNotFoundError("missing adapter", name=name)
 
-    monkeypatch.setattr(_registration.importlib, "import_module", missing_adapter)
+    monkeypatch.setattr(
+        _registration.importlib, "import_module", missing_adapter
+    )
 
     with pytest.raises(
         ImportError, match="does not include the Numba-CUDA-MLIR adapter"
@@ -44,7 +50,9 @@ def test_register_preserves_backend_initialization_errors(monkeypatch, error):
     def broken_adapter(name):
         raise error
 
-    monkeypatch.setattr(_registration.importlib, "import_module", broken_adapter)
+    monkeypatch.setattr(
+        _registration.importlib, "import_module", broken_adapter
+    )
 
     with pytest.raises(type(error)) as exc_info:
         coop.register("numba-cuda-mlir")

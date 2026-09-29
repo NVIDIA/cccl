@@ -109,6 +109,10 @@ follow_imports = "skip"
 
 [tool.ruff]
 extend = "../../pyproject.toml"
+line-length = 80
+
+[tool.ruff.lint]
+extend-select = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = [

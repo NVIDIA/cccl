@@ -45,8 +45,12 @@ from tests.support.group_planning import _load_store, _plan
 
 
 def test_group_load_and_store_select_complete_block_contracts():
-    load = _plan(this_block(), _load_store("load", items_per_thread=3), (8, 4, 1))
-    store = _plan(this_block(), _load_store("store", items_per_thread=3), (8, 4, 1))
+    load = _plan(
+        this_block(), _load_store("load", items_per_thread=3), (8, 4, 1)
+    )
+    store = _plan(
+        this_block(), _load_store("store", items_per_thread=3), (8, 4, 1)
+    )
 
     assert load.target is GroupLoweringTarget.CUB_BLOCK
     assert load.provenance.cpp_class == "cub::BlockLoad"
@@ -66,7 +70,9 @@ def test_group_load_and_store_select_complete_block_contracts():
     assert load.temp_storage.requested_size_in_bytes is None
     assert load.temp_storage.requested_alignment is None
     assert not load.temp_storage.auto_sync
-    assert load.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+    assert (
+        load.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+    )
     assert load.topology.group_kind == "block"
     assert load.topology.logical_width == 32
     assert load.topology.instances == 1
@@ -102,7 +108,9 @@ def test_physical_warp_load_store_select_complete_cub_contracts():
     assert load.topology.thread_rank == "linear_thread_rank % 32"
     assert load.topology.execution_scope is SynchronizationScope.WARP
     assert load.temp_storage.ownership is StorageOwnership.NONE
-    assert load.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+    assert (
+        load.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+    )
 
 
 @pytest.mark.parametrize("logical_width", [1, 2, 4, 8, 16, 32])
@@ -124,11 +132,15 @@ def test_logical_warp_load_selects_width_specific_cub_contract(logical_width):
     assert plan.topology.group_kind == "threads_within_warp"
     assert plan.topology.logical_width == logical_width
     assert plan.topology.instances == 64 // logical_width
-    assert plan.topology.instance_index == (f"linear_thread_rank / {logical_width}")
+    assert plan.topology.instance_index == (
+        f"linear_thread_rank / {logical_width}"
+    )
     assert plan.topology.thread_rank == f"linear_thread_rank % {logical_width}"
     assert plan.topology.execution_scope is SynchronizationScope.WARP
     assert plan.temp_storage.ownership is StorageOwnership.NONE
-    assert plan.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+    assert (
+        plan.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+    )
 
 
 @pytest.mark.parametrize("kind", ("load", "store"))
@@ -169,7 +181,9 @@ def test_warp_algorithm_storage_contract_matches_cub(
     storage_free = algorithm is not GroupLoadStoreAlgorithm.TRANSPOSE
 
     assert plan.temp_storage.ownership is (
-        StorageOwnership.NONE if storage_free else StorageOwnership.IMPLEMENTATION
+        StorageOwnership.NONE
+        if storage_free
+        else StorageOwnership.IMPLEMENTATION
     )
     assert plan.temp_storage.instances == (None if storage_free else instances)
     assert plan.temp_storage.instance_index == (
@@ -180,13 +194,15 @@ def test_warp_algorithm_storage_contract_matches_cub(
     )
 
 
-def test_physical_warp_plan_preserves_user_offset_and_requires_effective_offset():
+def test_physical_warp_plan_preserves_user_offset_and_requires_effective_offset():  # noqa: E501 - Preserve descriptive test name.
     operation = _load_store(offset=ArgumentBinding.static(7))
     plan = _plan(this_warp(), operation, 64)
 
     assert plan.call.operation.offset == ArgumentBinding.static(7)
     assert plan.implementation.metadata["requires_runtime_effective_offset"]
-    assert plan.implementation.metadata["effective_offset_origin"] == ("group_instance")
+    assert plan.implementation.metadata["effective_offset_origin"] == (
+        "group_instance"
+    )
     assert plan.implementation.metadata["effective_offset_stride"] == 64
     provider_offset = plan.implementation.parameters[0][-1]
     assert provider_offset == PointerOffset(
@@ -218,7 +234,9 @@ def test_logical_warp_plan_accounts_for_every_group_in_effective_offset():
     assert plan.call.operation.offset == ArgumentBinding.static(7)
     assert plan.topology.instances == 8
     assert plan.implementation.metadata["requires_runtime_effective_offset"]
-    assert plan.implementation.metadata["effective_offset_origin"] == ("group_instance")
+    assert plan.implementation.metadata["effective_offset_origin"] == (
+        "group_instance"
+    )
     assert plan.implementation.metadata["effective_offset_stride"] == 16
     provider_offset = plan.implementation.parameters[0][-1]
     assert provider_offset == PointerOffset(
@@ -252,7 +270,9 @@ def test_physical_warp_valid_items_is_per_warp_tile():
         )
         condition = plan.participation.argument_preconditions[0]
         assert (condition.minimum, condition.maximum) == (0, 64)
-        assert condition.enforcement is PreconditionEnforcement.PLANNER_VALIDATED
+        assert (
+            condition.enforcement is PreconditionEnforcement.PLANNER_VALIDATED
+        )
 
     with pytest.raises(ValueError, match=r"group tile size \(64\)"):
         _plan(
@@ -281,7 +301,9 @@ def test_logical_warp_valid_items_is_per_logical_group_tile():
         )
         condition = plan.participation.argument_preconditions[0]
         assert (condition.minimum, condition.maximum) == (0, 16)
-        assert condition.enforcement is PreconditionEnforcement.PLANNER_VALIDATED
+        assert (
+            condition.enforcement is PreconditionEnforcement.PLANNER_VALIDATED
+        )
 
     for value in (-1, 17):
         with pytest.raises(ValueError, match=r"group tile size \(16\)"):
@@ -319,7 +341,9 @@ def test_physical_warp_transpose_carries_per_instance_caller_storage_contract():
     assert plan.temp_storage.instances == 2
     assert plan.temp_storage.instance_index == "linear_thread_rank / 32"
     assert plan.temp_storage.exact_layout_required
-    assert plan.synchronization.storage_reuse_barrier is SynchronizationScope.WARP
+    assert (
+        plan.synchronization.storage_reuse_barrier is SynchronizationScope.WARP
+    )
 
 
 @pytest.mark.parametrize(
@@ -359,7 +383,8 @@ def test_load_store_rejects_invalid_logical_width_and_incomplete_warps():
     for incomplete in (incomplete_physical, incomplete_logical):
         assert incomplete.target is GroupLoweringTarget.UNSUPPORTED
         assert (
-            incomplete.unsupported.code is UnsupportedReasonCode.PARTIAL_PHYSICAL_WARP
+            incomplete.unsupported.code
+            is UnsupportedReasonCode.PARTIAL_PHYSICAL_WARP
         )
 
 
@@ -383,7 +408,8 @@ def test_warp_width_is_part_of_plan_and_artifact_identity():
     assert len({plan.semantic_key for plan in plans}) == len(plans)
     assert len({plan.artifact_key for plan in plans}) == len(plans)
     assert [
-        plan.implementation.template_arguments["LOGICAL_WARP_THREADS"] for plan in plans
+        plan.implementation.template_arguments["LOGICAL_WARP_THREADS"]
+        for plan in plans
     ] == [8, 16, 32]
 
 
@@ -478,8 +504,18 @@ def test_group_topology_preserves_the_original_positional_contract():
     ("ownership", "auto_sync", "expected_auto_sync", "expected_barrier"),
     [
         (StorageOwnership.NONE, None, False, SynchronizationScope.NONE),
-        (StorageOwnership.IMPLEMENTATION, None, True, SynchronizationScope.BLOCK),
-        (StorageOwnership.IMPLEMENTATION, False, False, SynchronizationScope.NONE),
+        (
+            StorageOwnership.IMPLEMENTATION,
+            None,
+            True,
+            SynchronizationScope.BLOCK,
+        ),
+        (
+            StorageOwnership.IMPLEMENTATION,
+            False,
+            False,
+            SynchronizationScope.NONE,
+        ),
     ],
 )
 def test_group_contracts_derive_auto_sync_from_storage_ownership(
@@ -520,7 +556,9 @@ def test_grid_family_requires_verified_cooperative_launch(monkeypatch):
 
     dispatch = import_module("cuda.coop._core.group._dispatch")
     monkeypatch.setattr(
-        dispatch, "_GROUP_OPERATION_FAMILIES", dispatch._GROUP_OPERATION_FAMILIES.copy()
+        dispatch,
+        "_GROUP_OPERATION_FAMILIES",
+        dispatch._GROUP_OPERATION_FAMILIES.copy(),
     )
 
     @dataclass(frozen=True)
@@ -557,7 +595,9 @@ def test_grid_family_requires_verified_cooperative_launch(monkeypatch):
     unsupported = plan_group_primitive(call, asserted)
 
     assert unsupported.target is GroupLoweringTarget.UNSUPPORTED
-    assert unsupported.unsupported.code is UnsupportedReasonCode.LAUNCH_CAPABILITY
+    assert (
+        unsupported.unsupported.code is UnsupportedReasonCode.LAUNCH_CAPABILITY
+    )
     assert "verified cooperative launch" in unsupported.unsupported.message
 
     verified = LaunchFacts(
@@ -592,7 +632,8 @@ def test_group_load_models_tile_controls_without_storage():
         "offset",
     )
     assert [
-        (item.name, item.kind, item.role) for item in call.argument_classifications
+        (item.name, item.kind, item.role)
+        for item in call.argument_classifications
     ] == [
         ("source", ArgumentKind.RUNTIME, ParameterRole.INPUT),
         ("output", ArgumentKind.RUNTIME, ParameterRole.OUTPUT),
@@ -604,18 +645,28 @@ def test_group_load_models_tile_controls_without_storage():
     valid_items_precondition, offset_precondition = (
         plan.participation.argument_preconditions
     )
-    assert (valid_items_precondition.minimum, valid_items_precondition.maximum) == (
+    assert (
+        valid_items_precondition.minimum,
+        valid_items_precondition.maximum,
+    ) == (
         0,
         128,
     )
-    assert valid_items_precondition.enforcement is PreconditionEnforcement.CALLER
+    assert (
+        valid_items_precondition.enforcement is PreconditionEnforcement.CALLER
+    )
     assert (offset_precondition.minimum, offset_precondition.maximum) == (
         0,
         (1 << 63) - 1,
     )
-    assert offset_precondition.enforcement is PreconditionEnforcement.PLANNER_VALIDATED
+    assert (
+        offset_precondition.enforcement
+        is PreconditionEnforcement.PLANNER_VALIDATED
+    )
     assert plan.temp_storage.ownership is StorageOwnership.NONE
-    assert plan.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+    assert (
+        plan.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+    )
 
 
 @pytest.mark.parametrize("kind", ("load", "store"))
@@ -699,7 +750,9 @@ def test_direct_semantics_can_be_replaced_with_a_storage_bearing_algorithm(
 
     assert transpose.storage_ownership is expected_ownership
     assert plan.temp_storage.ownership is expected_ownership
-    assert plan.synchronization.storage_reuse_barrier is SynchronizationScope.BLOCK
+    assert (
+        plan.synchronization.storage_reuse_barrier is SynchronizationScope.BLOCK
+    )
 
 
 @pytest.mark.parametrize("kind", ("load", "store"))
@@ -713,19 +766,27 @@ def test_algorithm_storage_contract_matches_cub(kind, algorithm):
         GroupLoadStoreAlgorithm.VECTORIZE,
     }
     assert plan.temp_storage.ownership is (
-        StorageOwnership.NONE if storage_free else StorageOwnership.IMPLEMENTATION
+        StorageOwnership.NONE
+        if storage_free
+        else StorageOwnership.IMPLEMENTATION
     )
     assert plan.synchronization.storage_reuse_barrier is (
-        SynchronizationScope.NONE if storage_free else SynchronizationScope.BLOCK
+        SynchronizationScope.NONE
+        if storage_free
+        else SynchronizationScope.BLOCK
     )
 
 
 @pytest.mark.parametrize(
     ("instances", "instance_index", "message"),
     [
-        pytest.param(None, "cta", "positive instance count", id="missing-count"),
+        pytest.param(
+            None, "cta", "positive instance count", id="missing-count"
+        ),
         pytest.param(0, "cta", "positive instance count", id="zero-count"),
-        pytest.param(True, "cta", "positive instance count", id="boolean-count"),
+        pytest.param(
+            True, "cta", "positive instance count", id="boolean-count"
+        ),
         pytest.param(1, None, "non-empty instance index", id="missing-index"),
         pytest.param(1, "", "non-empty instance index", id="empty-index"),
     ],
@@ -754,13 +815,17 @@ def test_storage_bearing_contract_requires_instance_layout(
 @pytest.mark.parametrize(
     ("contract", "message"),
     [
-        pytest.param("topology-kind", "resolved group kind", id="topology-kind"),
+        pytest.param(
+            "topology-kind", "resolved group kind", id="topology-kind"
+        ),
         pytest.param(
             "participation-kind",
             "resolved group kind",
             id="participation-kind",
         ),
-        pytest.param("topology-width", "resolved group size", id="topology-width"),
+        pytest.param(
+            "topology-width", "resolved group size", id="topology-width"
+        ),
         pytest.param(
             "participation-width",
             "resolved group size",
@@ -769,11 +834,15 @@ def test_storage_bearing_contract_requires_instance_layout(
         pytest.param("block-dim", "resolved group", id="block-dim"),
         pytest.param("scope", "topology must match", id="scope"),
         pytest.param("instances", "topology must match", id="instances"),
-        pytest.param("instance-index", "topology must match", id="instance-index"),
+        pytest.param(
+            "instance-index", "topology must match", id="instance-index"
+        ),
         pytest.param("thread-rank", "topology must match", id="thread-rank"),
         pytest.param("membership", "participation must match", id="membership"),
         pytest.param("partition", "participation must match", id="partition"),
-        pytest.param("convergence", "must agree on converged entry", id="convergence"),
+        pytest.param(
+            "convergence", "must agree on converged entry", id="convergence"
+        ),
         pytest.param(
             "synchronization-convergence",
             "must agree on converged entry",
@@ -811,11 +880,15 @@ def test_supported_plan_contracts_must_describe_resolved_group(
         },
         "instances": {"topology": replace(plan.topology, instances=2)},
         "instance-index": {
-            "topology": replace(plan.topology, instance_index="linear_thread_rank"),
+            "topology": replace(
+                plan.topology, instance_index="linear_thread_rank"
+            ),
         },
         "thread-rank": {"topology": replace(plan.topology, thread_rank="0")},
         "membership": {
-            "participation": replace(plan.participation, complete_membership=False),
+            "participation": replace(
+                plan.participation, complete_membership=False
+            ),
         },
         "partition": {
             "participation": replace(
@@ -826,7 +899,9 @@ def test_supported_plan_contracts_must_describe_resolved_group(
             "participation": replace(plan.participation, converged_entry=False),
         },
         "synchronization-convergence": {
-            "synchronization": replace(plan.synchronization, converged_entry=False),
+            "synchronization": replace(
+                plan.synchronization, converged_entry=False
+            ),
         },
     }[contract]
 
@@ -854,7 +929,9 @@ def test_supported_plan_preserves_resolved_membership_and_family_preconditions(
     resolved = resolve_thread_group(group, launch).require_supported()
     plan = _plan(this_block(), _load_store(), launch=launch)
     preconditions = (
-        ArgumentPrecondition("valid_items", 0, 96, PreconditionEnforcement.CALLER),
+        ArgumentPrecondition(
+            "valid_items", 0, 96, PreconditionEnforcement.CALLER
+        ),
     )
     topology, participation, synchronization, storage = _contracts(
         resolved,
@@ -879,12 +956,17 @@ def test_supported_plan_preserves_resolved_membership_and_family_preconditions(
             aligned=False,
             converged_entry=converged_entry,
         ),
-        synchronization=replace(synchronization, converged_entry=converged_entry),
+        synchronization=replace(
+            synchronization, converged_entry=converged_entry
+        ),
         temp_storage=storage,
     )
 
     assert result.participation.complete_membership is complete_membership
-    assert result.participation.complete_parent_partition is complete_parent_partition
+    assert (
+        result.participation.complete_parent_partition
+        is complete_parent_partition
+    )
     assert result.participation.contiguous is False
     assert result.participation.aligned is False
     assert result.participation.converged_entry is converged_entry
@@ -924,7 +1006,8 @@ def test_storage_bearing_contract_is_part_of_plan_identity(algorithm):
     assert shared_plan.artifact_key != exclusive_plan.artifact_key
     assert shared_plan.temp_storage.exact_layout_required
     assert (
-        shared_plan.synchronization.storage_reuse_barrier is SynchronizationScope.BLOCK
+        shared_plan.synchronization.storage_reuse_barrier
+        is SynchronizationScope.BLOCK
     )
     assert (
         exclusive_plan.synchronization.storage_reuse_barrier
@@ -941,7 +1024,9 @@ def test_valid_items_counts_the_entire_block_tile_and_accepts_zero():
         )
         condition = plan.participation.argument_preconditions[0]
         assert condition.maximum == 128
-        assert condition.enforcement is PreconditionEnforcement.PLANNER_VALIDATED
+        assert (
+            condition.enforcement is PreconditionEnforcement.PLANNER_VALIDATED
+        )
 
     for value in (-1, 129):
         with pytest.raises(ValueError, match="group tile size"):
@@ -982,7 +1067,7 @@ def test_group_load_store_rejects_negative_static_offsets():
     assert offset_precondition.enforcement is PreconditionEnforcement.CALLER
 
 
-def test_complete_algorithm_enum_is_preserved_but_non_block_targets_are_unsupported():
+def test_complete_algorithm_enum_is_preserved_but_non_block_targets_are_unsupported():  # noqa: E501 - Preserve descriptive test name.
     assert {algorithm.value for algorithm in GroupLoadStoreAlgorithm} == {
         "direct",
         "striped",

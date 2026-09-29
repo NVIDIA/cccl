@@ -26,10 +26,13 @@ _PACKAGE_ROOT = Path(__file__).parents[2]
 
 def _require_packaging_tools() -> None:
     required_tools = ("cmake", "git")
-    missing_tools = [tool for tool in required_tools if shutil.which(tool) is None]
+    missing_tools = [
+        tool for tool in required_tools if shutil.which(tool) is None
+    ]
     if missing_tools:
         pytest.skip(
-            f"required packaging tools are unavailable: {', '.join(missing_tools)}"
+            "required packaging tools are unavailable: "
+            f"{', '.join(missing_tools)}"
         )
 
 
@@ -57,7 +60,9 @@ def _prepare_minimal_cccl_source(source_root: Path) -> Path:
     install_rules = source_root / "cmake" / "CCCLInstallRules.cmake"
     package_root.mkdir(parents=True)
     install_rules.parent.mkdir(parents=True)
-    shutil.copyfile(_PACKAGE_ROOT / "CMakeLists.txt", package_root / "CMakeLists.txt")
+    shutil.copyfile(
+        _PACKAGE_ROOT / "CMakeLists.txt", package_root / "CMakeLists.txt"
+    )
     install_rules.touch()
     return package_root
 
@@ -178,7 +183,9 @@ def test_source_resolution_uses_one_coherent_cccl_header_set() -> None:
     )
 
     assert paths.origin.startswith("CCCL source checkout ")
-    assert tuple(path.relative_to(_PACKAGE_ROOT.parents[1]) for path in paths.cccl) == (
+    assert tuple(
+        path.relative_to(_PACKAGE_ROOT.parents[1]) for path in paths.cccl
+    ) == (
         Path("thrust"),
         Path("cub"),
         Path("cudax/include"),
@@ -229,11 +236,15 @@ def test_cuda_headers_are_required_only_when_compiling() -> None:
         cuda=(),
         origin="test",
     )
-    with pytest.raises(HeaderResolutionError, match="cuda_runtime.h") as exc_info:
+    with pytest.raises(
+        HeaderResolutionError, match="cuda_runtime.h"
+    ) as exc_info:
         paths.as_tuple()
 
     diagnostic = str(exc_info.value)
-    assert all(name in diagnostic for name in ("CUDA_PATH", "CUDA_HOME", "CUDA_ROOT"))
+    assert all(
+        name in diagnostic for name in ("CUDA_PATH", "CUDA_HOME", "CUDA_ROOT")
+    )
 
 
 def test_package_metadata_includes_cudax_header_bundle() -> None:
@@ -297,7 +308,9 @@ def test_gitless_archive_does_not_inherit_enclosing_repository_revision(
     assert _bundle_provenance(build_root) == {"cccl_source_commit": "unknown"}
 
 
-@pytest.mark.parametrize("change", ("modified", "untracked", "deleted", "ignored"))
+@pytest.mark.parametrize(
+    "change", ("modified", "untracked", "deleted", "ignored")
+)
 @pytest.mark.parametrize(
     "relative_path",
     (
@@ -380,7 +393,9 @@ def test_changed_cuda_coop_cmake_input_fails_closed(tmp_path: Path) -> None:
     package_root = _prepare_minimal_cccl_source(source_root)
     git_env = _isolated_git_env()
     _initialize_git_repository(source_root, git_env)
-    with (package_root / "CMakeLists.txt").open("a", encoding="utf-8") as stream:
+    with (package_root / "CMakeLists.txt").open(
+        "a", encoding="utf-8"
+    ) as stream:
         stream.write("\n# Local packaging experiment.\n")
 
     result = _configure_cuda_coop(package_root, tmp_path / "build", git_env)
@@ -391,7 +406,9 @@ def test_changed_cuda_coop_cmake_input_fails_closed(tmp_path: Path) -> None:
     )
 
 
-def test_allow_dirty_header_bundle_forces_unknown_provenance(tmp_path: Path) -> None:
+def test_allow_dirty_header_bundle_forces_unknown_provenance(
+    tmp_path: Path,
+) -> None:
     _require_packaging_tools()
 
     source_root = tmp_path / "cccl"
@@ -442,7 +459,9 @@ def test_source_revision_override_cannot_bypass_dirty_header_gate(
     )
 
     assert result.returncode != 0
-    assert "CUDA_COOP_ALLOW_DIRTY_HEADER_BUNDLE=ON" in (result.stdout + result.stderr)
+    assert "CUDA_COOP_ALLOW_DIRTY_HEADER_BUNDLE=ON" in (
+        result.stdout + result.stderr
+    )
 
 
 def test_unrelated_dirty_file_preserves_head_revision(tmp_path: Path) -> None:
@@ -463,7 +482,9 @@ def test_unrelated_dirty_file_preserves_head_revision(tmp_path: Path) -> None:
     assert _bundle_provenance(build_root) == {"cccl_source_commit": revision}
 
 
-def test_gitless_archive_accepts_explicit_source_revision(tmp_path: Path) -> None:
+def test_gitless_archive_accepts_explicit_source_revision(
+    tmp_path: Path,
+) -> None:
     _require_packaging_tools()
 
     source_root = tmp_path / "cccl-archive"

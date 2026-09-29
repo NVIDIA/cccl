@@ -352,7 +352,8 @@ def test_preload_rejects_split_wheel_components_from_later_nvidia_anchor(
     with pytest.raises(
         RuntimeError,
         match=(
-            "require NVRTC, nvrtc-builtins, and nvJitLink from one CUDA Toolkit root"
+            "require NVRTC, nvrtc-builtins, and nvJitLink "
+            "from one CUDA Toolkit root"
         ),
     ) as exc_info:
         _toolkit.preload_toolkit_compiler_libraries(
@@ -381,7 +382,9 @@ def test_preload_rejects_split_wheel_nvrtc_version_mismatch(
 
     with pytest.raises(
         RuntimeError,
-        match=r"headers report Toolkit 12\.9, but loaded NVRTC .* reports 12\.8",
+        match=(
+            r"headers report Toolkit 12\.9, but loaded NVRTC .* reports 12\.8"
+        ),
     ):
         _toolkit.preload_toolkit_compiler_libraries((paths["include"],))
 
@@ -418,10 +421,13 @@ def test_preload_rejects_nvjitlink_from_different_toolkit_root(
     with pytest.raises(
         RuntimeError,
         match=(
-            "require NVRTC, nvrtc-builtins, and nvJitLink from one CUDA Toolkit root"
+            "require NVRTC, nvrtc-builtins, and nvJitLink "
+            "from one CUDA Toolkit root"
         ),
     ) as exc_info:
-        _toolkit.preload_toolkit_compiler_libraries((first_include, second_include))
+        _toolkit.preload_toolkit_compiler_libraries(
+            (first_include, second_include)
+        )
 
     assert str(first_root) in str(exc_info.value)
     assert str(second_root) in str(exc_info.value)
@@ -557,7 +563,9 @@ def test_preload_rejects_nvrtc_version_mismatched_with_headers(
 
     with pytest.raises(
         RuntimeError,
-        match=r"headers report Toolkit 13\.2, but loaded NVRTC .* reports 13\.1",
+        match=(
+            r"headers report Toolkit 13\.2, but loaded NVRTC .* reports 13\.1"
+        ),
     ):
         _toolkit.preload_toolkit_compiler_libraries((paths["include"],))
 
@@ -604,7 +612,9 @@ def test_process_global_toolkit_selection_rejects_a_later_root(
         _toolkit.preload_toolkit_compiler_libraries((second["include"],))
 
 
-def test_toolkit_version_rejects_disagreeing_header_roots(tmp_path: Path) -> None:
+def test_toolkit_version_rejects_disagreeing_header_roots(
+    tmp_path: Path,
+) -> None:
     first = tmp_path / "first" / "include"
     second = tmp_path / "second" / "include"
     _write_cuda_header(first, 13020)
@@ -614,7 +624,9 @@ def test_toolkit_version_rejects_disagreeing_header_roots(tmp_path: Path) -> Non
         _toolkit.preload_toolkit_compiler_libraries((first, second))
 
 
-def test_toolkit_version_rejects_unparseable_selected_header(tmp_path: Path) -> None:
+def test_toolkit_version_rejects_unparseable_selected_header(
+    tmp_path: Path,
+) -> None:
     include_dir = tmp_path / "toolkit" / "include"
     include_dir.mkdir(parents=True)
     (include_dir / "cuda_runtime_api.h").write_text(

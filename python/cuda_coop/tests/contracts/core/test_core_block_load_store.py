@@ -142,7 +142,9 @@ def test_block_load_preserves_static_tile_controls_in_the_implementation_abi():
         "oob_default",
         "offset",
     ]
-    assert all(parameter.argument_kind is ArgumentKind.STATIC for parameter in controls)
+    assert all(
+        parameter.argument_kind is ArgumentKind.STATIC for parameter in controls
+    )
     assert controls[-1].static_value == 4
 
 
@@ -222,7 +224,9 @@ def test_block_pointer_offset_identity_normalizes_numpy_integer():
 
 
 def test_block_provider_spec_rejects_negative_static_pointer_offset():
-    with pytest.raises(ValueError, match="static pointer offset must be nonnegative"):
+    with pytest.raises(
+        ValueError, match="static pointer offset must be nonnegative"
+    ):
         make_block_store_spec(
             dtype=INT32,
             block_dim=(32, 1, 1),
@@ -278,7 +282,9 @@ def test_block_load_store_normalizes_numpy_item_count():
     )
 
     assert numpy.specialization.template_arguments["ITEMS_PER_THREAD"] == 2
-    assert type(numpy.specialization.template_arguments["ITEMS_PER_THREAD"]) is int
+    assert (
+        type(numpy.specialization.template_arguments["ITEMS_PER_THREAD"]) is int
+    )
     assert plain.semantic_key == numpy.semantic_key
 
 
@@ -296,7 +302,8 @@ def test_block_load_store_semantic_identity_tracks_kind_algorithm_and_shape():
     assert make().semantic_key == make().semantic_key
     assert make().semantic_key != make(kind="store").semantic_key
     algorithm_keys = {
-        make(algorithm=algorithm).semantic_key for algorithm in BlockLoadStoreAlgorithm
+        make(algorithm=algorithm).semantic_key
+        for algorithm in BlockLoadStoreAlgorithm
     }
     assert len(algorithm_keys) == len(BlockLoadStoreAlgorithm)
     assert make().semantic_key != make(items=3).semantic_key
@@ -305,7 +312,9 @@ def test_block_load_store_semantic_identity_tracks_kind_algorithm_and_shape():
 
 @pytest.mark.parametrize("items_per_thread", [0, -1, True, "two"])
 def test_block_load_store_rejects_invalid_item_count(items_per_thread):
-    with pytest.raises(ValueError, match="items_per_thread must be a positive integer"):
+    with pytest.raises(
+        ValueError, match="items_per_thread must be a positive integer"
+    ):
         make_block_load_store_semantics(
             kind="load",
             dtype="i32",
@@ -367,7 +376,9 @@ def test_block_load_store_rejects_invalid_options():
         )
 
 
-@pytest.mark.parametrize("make_spec", [make_block_load_spec, make_block_store_spec])
+@pytest.mark.parametrize(
+    "make_spec", [make_block_load_spec, make_block_store_spec]
+)
 @pytest.mark.parametrize("valid_items", [-1, 65])
 def test_block_load_store_rejects_static_valid_items_outside_tile(
     make_spec,
@@ -383,7 +394,9 @@ def test_block_load_store_rejects_static_valid_items_outside_tile(
         )
 
 
-@pytest.mark.parametrize("make_spec", [make_block_load_spec, make_block_store_spec])
+@pytest.mark.parametrize(
+    "make_spec", [make_block_load_spec, make_block_store_spec]
+)
 @pytest.mark.parametrize("valid_items", [0, 64])
 def test_block_load_store_accepts_static_valid_items_at_tile_bounds(
     make_spec,
@@ -400,7 +413,9 @@ def test_block_load_store_accepts_static_valid_items_at_tile_bounds(
     assert spec.has_valid_items
 
 
-@pytest.mark.parametrize("make_spec", [make_block_load_spec, make_block_store_spec])
+@pytest.mark.parametrize(
+    "make_spec", [make_block_load_spec, make_block_store_spec]
+)
 def test_block_load_store_canonicalizes_static_valid_items_identity(make_spec):
     def build(valid_items):
         return make_spec(
@@ -431,7 +446,9 @@ def test_block_load_store_rejects_non_integer_static_valid_items(valid_items):
         )
 
 
-@pytest.mark.parametrize("make_spec", [make_block_load_spec, make_block_store_spec])
+@pytest.mark.parametrize(
+    "make_spec", [make_block_load_spec, make_block_store_spec]
+)
 @pytest.mark.parametrize(
     "algorithm",
     ["warp_transpose", "warp_transpose_timesliced"],

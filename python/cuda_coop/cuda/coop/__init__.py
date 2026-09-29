@@ -15,7 +15,9 @@ __path__ = extend_path(__path__, __name__)
 _PORTABLE_API_MODULE = f"{__name__}._core.api"
 _portable_api = importlib.import_module(_PORTABLE_API_MODULE)
 _portable_exports: tuple[str, ...] = _portable_api.__all__
-globals().update({name: getattr(_portable_api, name) for name in _portable_exports})
+globals().update(
+    {name: getattr(_portable_api, name) for name in _portable_exports}
+)
 
 
 def _package_version() -> str:

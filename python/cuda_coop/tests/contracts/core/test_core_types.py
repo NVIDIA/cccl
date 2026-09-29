@@ -96,7 +96,7 @@ def test_core_import_does_not_load_backend_runtimes():
             name == "cutlass" or name.startswith("cutlass.") for name in loaded
         ), loaded
         assert not any(name.startswith("numba_cuda_mlir") for name in loaded), loaded
-        """
+        """  # noqa: E501 - Preserve embedded source bytes.
     )
     env = os.environ.copy()
     env["PYTHONPATH"] = str(SOURCE_ROOT)
@@ -125,7 +125,9 @@ def test_algorithm_specialization_records_semantics_and_symbol_inputs():
                 CxxFunction("4", INT32, name="count"),
             ),
         ),
-        type_definitions=(TypeDefinition("BlockExample", "struct BlockExample {};"),),
+        type_definitions=(
+            TypeDefinition("BlockExample", "struct BlockExample {};"),
+        ),
     )
     specialization = algorithm.specialize(
         {"T": "int", "N": 4},
@@ -172,8 +174,12 @@ def test_algorithm_symbol_inputs_cover_complete_specialization_identity():
         parameters=((Value(Dependency("T"), name="alternate"),),),
     ).specialize({"T": "int"}, metadata={"mode": "base"})
 
-    assert base.symbol_mangling_inputs != changed_metadata.symbol_mangling_inputs
-    assert base.symbol_mangling_inputs != changed_parameters.symbol_mangling_inputs
+    assert (
+        base.symbol_mangling_inputs != changed_metadata.symbol_mangling_inputs
+    )
+    assert (
+        base.symbol_mangling_inputs != changed_parameters.symbol_mangling_inputs
+    )
 
 
 def test_algorithm_specialization_freezes_nested_semantic_containers():
@@ -478,8 +484,14 @@ def test_semantic_token_normalizes_nan_values():
 
 
 def test_semantic_token_preserves_nan_sign_and_payload():
-    representations = ("7ff8000000000001", "7ff8000000000002", "fff8000000000001")
-    values = [struct.unpack(">d", bytes.fromhex(bits))[0] for bits in representations]
+    representations = (
+        "7ff8000000000001",
+        "7ff8000000000002",
+        "fff8000000000001",
+    )
+    values = [
+        struct.unpack(">d", bytes.fromhex(bits))[0] for bits in representations
+    ]
     assert all(math.isnan(value) for value in values)
     assert len({semantic_token(value) for value in values}) == len(values)
     for bits, value in zip(representations, values):

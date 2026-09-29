@@ -64,7 +64,9 @@ def test_block_load_store_requires_exact_not_maximum_dimensions():
     )
 
     assert plan.target is GroupLoweringTarget.UNSUPPORTED
-    assert plan.unsupported.code is UnsupportedReasonCode.MISSING_EXACT_BLOCK_DIM
+    assert (
+        plan.unsupported.code is UnsupportedReasonCode.MISSING_EXACT_BLOCK_DIM
+    )
 
 
 @pytest.mark.parametrize(

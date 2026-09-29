@@ -75,7 +75,13 @@ def test_source_package_path_resolves_only_its_checkout(tmp_path: Path) -> None:
     checkout = tmp_path / "cccl"
     _write_source_checkout(checkout)
     source_module = (
-        checkout / "python" / "cuda_coop" / "cuda" / "coop" / "_headers" / "__init__.py"
+        checkout
+        / "python"
+        / "cuda_coop"
+        / "cuda"
+        / "coop"
+        / "_headers"
+        / "__init__.py"
     )
     source_module.parent.mkdir(parents=True)
     source_module.touch()
@@ -93,7 +99,9 @@ def test_source_package_path_resolves_only_its_checkout(tmp_path: Path) -> None:
     )
 
 
-def test_incomplete_source_checkout_reports_missing_headers(tmp_path: Path) -> None:
+def test_incomplete_source_checkout_reports_missing_headers(
+    tmp_path: Path,
+) -> None:
     checkout = tmp_path / "cccl"
     probe = checkout / "cub" / "cub" / "version.cuh"
     probe.parent.mkdir(parents=True)
@@ -140,7 +148,9 @@ def test_cuda_header_fallback_respects_platform(
     import cuda.pathfinder
 
     monkeypatch.setattr(headers, "sys", SimpleNamespace(platform=platform))
-    monkeypatch.setattr(cuda.pathfinder, "find_nvidia_header_directory", lambda _: None)
+    monkeypatch.setattr(
+        cuda.pathfinder, "find_nvidia_header_directory", lambda _: None
+    )
     for name in ("CUDA_PATH", "CUDA_HOME", "CUDA_ROOT"):
         monkeypatch.delenv(name, raising=False)
     include = tmp_path / "CUDA Toolkit" / "include"

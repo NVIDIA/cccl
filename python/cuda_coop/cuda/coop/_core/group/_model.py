@@ -79,13 +79,21 @@ class GroupTopologyContract:
             raise ValueError("group topology kind must not be empty")
         for name in ("logical_width", "instances"):
             value = getattr(self, name)
-            if not isinstance(value, int) or isinstance(value, bool) or value < 1:
-                raise ValueError(f"group topology {name} must be a positive integer")
+            if (
+                not isinstance(value, int)
+                or isinstance(value, bool)
+                or value < 1
+            ):
+                raise ValueError(
+                    f"group topology {name} must be a positive integer"
+                )
         for name in ("instance_index", "thread_rank"):
             value = getattr(self, name)
             if not isinstance(value, str) or not value:
                 label = name.replace("_", " ")
-                raise ValueError(f"group topology {label} must be a non-empty string")
+                raise ValueError(
+                    f"group topology {label} must be a non-empty string"
+                )
         object.__setattr__(
             self,
             "execution_scope",
@@ -160,7 +168,9 @@ def _group_key(group: ThreadGroup) -> tuple[Any, ...]:
 class GroupPrimitiveCall:
     group: ThreadGroup
     operation: GroupOperationSemantics
-    argument_classifications: tuple[ParameterClassification, ...] = field(init=False)
+    argument_classifications: tuple[ParameterClassification, ...] = field(
+        init=False
+    )
 
     def __post_init__(self) -> None:
         if not isinstance(self.group, ThreadGroup):
@@ -203,15 +213,21 @@ class CudaxCallDescription:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "parameters", tuple(self.parameters))
-        object.__setattr__(self, "return_kind", CudaxReturnKind(self.return_kind))
+        object.__setattr__(
+            self, "return_kind", CudaxReturnKind(self.return_kind)
+        )
         if any(
             not isinstance(parameter, ParameterClassification)
             for parameter in self.parameters
         ):
-            raise TypeError("CUDAX parameters must be ParameterClassification records")
+            raise TypeError(
+                "CUDAX parameters must be ParameterClassification records"
+            )
         forbidden = {"group", "launch", "launch_facts"}
         if any(parameter.name in forbidden for parameter in self.parameters):
-            raise ValueError("CUDAX runtime ABI cannot contain group or launch markers")
+            raise ValueError(
+                "CUDAX runtime ABI cannot contain group or launch markers"
+            )
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
@@ -281,7 +297,9 @@ class ParticipationContract:
     argument_preconditions: tuple[ArgumentPrecondition, ...] = ()
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "uniform_arguments", tuple(self.uniform_arguments))
+        object.__setattr__(
+            self, "uniform_arguments", tuple(self.uniform_arguments)
+        )
         object.__setattr__(
             self,
             "argument_preconditions",
@@ -292,9 +310,12 @@ class ParticipationContract:
             for precondition in self.argument_preconditions
         ):
             raise TypeError(
-                "argument_preconditions must contain ArgumentPrecondition records"
+                "argument_preconditions must contain "
+                "ArgumentPrecondition records"
             )
-        names = [precondition.name for precondition in self.argument_preconditions]
+        names = [
+            precondition.name for precondition in self.argument_preconditions
+        ]
         if len(names) != len(set(names)):
             raise ValueError("argument precondition names must be unique")
 
@@ -312,16 +333,23 @@ class LogicalResultContract:
     def __post_init__(self) -> None:
         if not self.name:
             raise ValueError("logical result name must not be empty")
-        object.__setattr__(self, "visibility", ResultVisibility(self.visibility))
+        object.__setattr__(
+            self, "visibility", ResultVisibility(self.visibility)
+        )
         object.__setattr__(self, "ownership", ResultOwnership(self.ownership))
-        object.__setattr__(self, "operand_kind", GroupOperandKind(self.operand_kind))
+        object.__setattr__(
+            self, "operand_kind", GroupOperandKind(self.operand_kind)
+        )
         if (
             not isinstance(self.items_per_member, int)
             or isinstance(self.items_per_member, bool)
             or self.items_per_member < 1
         ):
             raise ValueError("items_per_member must be a positive integer")
-        if self.operand_kind is GroupOperandKind.SCALAR and self.items_per_member != 1:
+        if (
+            self.operand_kind is GroupOperandKind.SCALAR
+            and self.items_per_member != 1
+        ):
             raise ValueError("scalar logical results contain exactly one item")
         is_root_result = self.ownership is ResultOwnership.GROUP_ROOT
         if is_root_result != (self.visibility is ResultVisibility.GROUP_ROOT):
@@ -364,8 +392,13 @@ class ResultContract:
     def __post_init__(self) -> None:
         object.__setattr__(self, "values", tuple(self.values))
         if not self.values:
-            raise ValueError("result contract requires at least one logical result")
-        if any(not isinstance(value, LogicalResultContract) for value in self.values):
+            raise ValueError(
+                "result contract requires at least one logical result"
+            )
+        if any(
+            not isinstance(value, LogicalResultContract)
+            for value in self.values
+        ):
             raise TypeError("values must contain LogicalResultContract records")
         names = [value.name for value in self.values]
         if len(names) != len(set(names)):
@@ -414,7 +447,9 @@ class TempStorageContract:
     def __post_init__(self) -> None:
         object.__setattr__(self, "ownership", StorageOwnership(self.ownership))
         if self.sharing not in {None, "shared", "exclusive"}:
-            raise ValueError("temporary storage sharing must be shared or exclusive")
+            raise ValueError(
+                "temporary storage sharing must be shared or exclusive"
+            )
         if not isinstance(self.auto_sync, bool):
             raise TypeError("auto_sync must be a bool")
         if self.ownership is StorageOwnership.NONE:
@@ -430,13 +465,17 @@ class TempStorageContract:
                     self.requested_alignment,
                 )
             ):
-                raise ValueError("storage-free contracts cannot carry storage layout")
+                raise ValueError(
+                    "storage-free contracts cannot carry storage layout"
+                )
             if self.exact_layout_required:
                 raise ValueError(
                     "storage-free contracts cannot require an exact layout"
                 )
             if self.auto_sync:
-                raise ValueError("storage-free contracts cannot request automatic sync")
+                raise ValueError(
+                    "storage-free contracts cannot request automatic sync"
+                )
         else:
             if (
                 not isinstance(self.instances, int)
@@ -444,17 +483,26 @@ class TempStorageContract:
                 or self.instances < 1
             ):
                 raise ValueError(
-                    "storage-bearing contracts require a positive instance count"
+                    "storage-bearing contracts require "
+                    "a positive instance count"
                 )
-            if not isinstance(self.instance_index, str) or not self.instance_index:
+            if (
+                not isinstance(self.instance_index, str)
+                or not self.instance_index
+            ):
                 raise ValueError(
-                    "storage-bearing contracts require a non-empty instance index"
+                    "storage-bearing contracts require "
+                    "a non-empty instance index"
                 )
         if self.ownership is StorageOwnership.IMPLEMENTATION:
             if self.sharing is not None:
-                raise ValueError("implementation-owned storage has no sharing mode")
+                raise ValueError(
+                    "implementation-owned storage has no sharing mode"
+                )
             if self.requested_size_in_bytes is not None:
-                raise ValueError("implementation-owned storage has no requested size")
+                raise ValueError(
+                    "implementation-owned storage has no requested size"
+                )
             if self.requested_alignment is not None:
                 raise ValueError(
                     "implementation-owned storage has no requested alignment"
@@ -464,7 +512,9 @@ class TempStorageContract:
         for name in ("requested_size_in_bytes", "requested_alignment"):
             value = getattr(self, name)
             if value is not None and (
-                not isinstance(value, int) or isinstance(value, bool) or value <= 0
+                not isinstance(value, int)
+                or isinstance(value, bool)
+                or value <= 0
             ):
                 raise ValueError(f"{name} must be a positive integer or None")
 
@@ -540,7 +590,9 @@ class GroupLoweringPlan:
             or self.provenance is None
             or (result_required and self.result is None)
         ):
-            raise ValueError("supported plans require complete lowering contracts")
+            raise ValueError(
+                "supported plans require complete lowering contracts"
+            )
         if not is_unsupported:
             assert self.topology is not None
             assert self.participation is not None
@@ -550,7 +602,8 @@ class GroupLoweringPlan:
                 or self.participation.group_kind != resolved_kind
             ):
                 raise ValueError(
-                    "supported plan group contracts must match the resolved group kind"
+                    "supported plan group contracts must match "
+                    "the resolved group kind"
                 )
             resolved_size = self.resolved_group.static_size
             if resolved_size is None or (
@@ -558,7 +611,8 @@ class GroupLoweringPlan:
                 or self.participation.exact_group_size != resolved_size
             ):
                 raise ValueError(
-                    "supported plan group widths must match the resolved group size"
+                    "supported plan group widths must match "
+                    "the resolved group size"
                 )
             resolved_block_dim = self.resolved_group.block_dim
             if (
@@ -566,7 +620,8 @@ class GroupLoweringPlan:
                 and self.participation.exact_block_dim != resolved_block_dim
             ):
                 raise ValueError(
-                    "supported plan block dimensions must match the resolved group"
+                    "supported plan block dimensions must match "
+                    "the resolved group"
                 )
             from ._contracts import _group_topology
 
@@ -578,13 +633,16 @@ class GroupLoweringPlan:
                 raise ValueError(
                     "supported plan topology must match the resolved group"
                 )
-            complete_membership = self.resolved_group.complete_membership is not False
+            complete_membership = (
+                self.resolved_group.complete_membership is not False
+            )
             complete_parent_partition = (
                 resolved_kind == "warp"
                 or self.resolved_group.complete_membership is True
             )
             if (
-                self.participation.complete_membership is not complete_membership
+                self.participation.complete_membership
+                is not complete_membership
                 or self.participation.complete_parent_partition
                 is not complete_parent_partition
             ):
@@ -597,7 +655,8 @@ class GroupLoweringPlan:
                 is not self.synchronization.converged_entry
             ):
                 raise ValueError(
-                    "supported plan participation and synchronization must agree "
+                    "supported plan participation and synchronization "
+                    "must agree "
                     "on converged entry"
                 )
 
@@ -617,7 +676,9 @@ class GroupLoweringPlan:
         if self.unsupported is not None:
             return None
         implementation_key = (
-            None if self.implementation is None else self.implementation.semantic_key
+            None
+            if self.implementation is None
+            else self.implementation.semantic_key
         )
         return (
             self.target.value,

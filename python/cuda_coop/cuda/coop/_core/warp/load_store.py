@@ -78,7 +78,9 @@ def _algorithm_cpp_map(
     kind: WarpLoadStoreKind,
 ) -> dict[WarpLoadStoreAlgorithm, str]:
     return (
-        _LOAD_ALGORITHM_CPP if kind is WarpLoadStoreKind.LOAD else _STORE_ALGORITHM_CPP
+        _LOAD_ALGORITHM_CPP
+        if kind is WarpLoadStoreKind.LOAD
+        else _STORE_ALGORITHM_CPP
     )
 
 
@@ -93,7 +95,9 @@ def _normalize_algorithm(
         for candidate, cpp in mapping.items():
             if algorithm in {candidate.value, cpp}:
                 return candidate
-    raise ValueError(f"unsupported Warp{kind.value.title()} algorithm {algorithm!r}")
+    raise ValueError(
+        f"unsupported Warp{kind.value.title()} algorithm {algorithm!r}"
+    )
 
 
 def _normalize_items_per_thread(items_per_thread: Any) -> int:
@@ -321,8 +325,13 @@ def make_warp_load_store_semantics(
         include_pointer_offset,
         name="include_pointer_offset",
     )
-    pointer_offset = _normalize_i64_binding(pointer_offset, name="pointer offset")
-    if pointer_offset.kind is BindingKind.STATIC and int(pointer_offset.value) < 0:
+    pointer_offset = _normalize_i64_binding(
+        pointer_offset, name="pointer offset"
+    )
+    if (
+        pointer_offset.kind is BindingKind.STATIC
+        and int(pointer_offset.value) < 0
+    ):
         raise ValueError("static pointer offset must be nonnegative")
     if kind is WarpLoadStoreKind.STORE and (
         oob_default.kind is not BindingKind.OMITTED
@@ -340,7 +349,8 @@ def make_warp_load_store_semantics(
     has_full_tile = valid_items.kind is BindingKind.OMITTED or include_full_tile
     methods: list[tuple[Any, ...]] = []
     if has_full_tile and (
-        pointer_offset.kind is BindingKind.OMITTED or pointer_offset_overload_cohort
+        pointer_offset.kind is BindingKind.OMITTED
+        or pointer_offset_overload_cohort
     ):
         methods.append(tuple(base))
     if valid_items.kind is not BindingKind.OMITTED:
@@ -357,7 +367,10 @@ def make_warp_load_store_semantics(
                     name="oob_default",
                 )
             )
-        if pointer_offset.kind is BindingKind.OMITTED or pointer_offset_overload_cohort:
+        if (
+            pointer_offset.kind is BindingKind.OMITTED
+            or pointer_offset_overload_cohort
+        ):
             methods.append(tuple(partial))
         if pointer_offset.kind is not BindingKind.OMITTED:
             methods.append(_with_pointer_offset(partial, pointer_offset))
@@ -430,7 +443,9 @@ def make_warp_load_store_spec(
                 call.requires_runtime_effective_offset
             ),
             "effective_offset_origin": "group_instance",
-            "effective_offset_stride": (call.threads_in_warp * call.items_per_thread),
+            "effective_offset_stride": (
+                call.threads_in_warp * call.items_per_thread
+            ),
         },
     )
     return WarpLoadStoreSpec(specialization=specialization, call=call)
