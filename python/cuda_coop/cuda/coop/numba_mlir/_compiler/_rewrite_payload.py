@@ -70,14 +70,6 @@ class PayloadInference:
         if not isinstance(value, ir.Var):
             return (None, None)
         specification = self.context.thread_data(value)
-        if self.context.is_typed_group_payload(value) and (
-            specification is None or specification.items_per_thread is None
-        ):
-            raise CoopSinglePhaseRewriteError(
-                f"cooperative group operation {self.op_name!r} could not "
-                "infer the static "
-                "extent of a typed group payload"
-            )
         return (value, specification)
 
     def array_candidate(
@@ -89,14 +81,6 @@ class PayloadInference:
         if not isinstance(value, ir.Var):
             return (None, None)
         specification = self.context.array(value)
-        if self.context.is_typed_group_payload(value) and (
-            specification is None or specification.items_per_thread is None
-        ):
-            raise CoopSinglePhaseRewriteError(
-                f"cooperative group operation {self.op_name!r} could not "
-                "infer the static "
-                "extent of a typed group payload"
-            )
         return (value, specification)
 
     def inferred_array_dtype(

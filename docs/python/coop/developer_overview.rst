@@ -485,9 +485,6 @@ The plan records more than the selected CUB class:
    * - Topology and participation
      - Which threads form a group, how many group instances exist in a
        block, and which participants must reach the call.
-   * - Result
-     - Whether the result aliases an input, needs new storage, or is a
-       scalar; which threads have a defined result.
    * - Temporary storage
      - Who owns scratch, how many instances are needed, and which layout
        requirements must be obtained from the compiled provider.
@@ -544,16 +541,9 @@ striped memory transactions internally and fills the payload in blocked order;
 ``striped`` exposes the striped payload to the caller. The caller must
 choose Load and Store algorithms that agree on that arrangement.
 
-The result contracts preserve the following public behavior:
-
-* Load and Store return ``None``. Load fills the supplied output in place.
-  Store follows CUB: transpose algorithms may rearrange the input payload
-  in place. Invalid Load slots are unspecified unless a default is supplied.
-
-Output ownership is part of lowering. A CUB method that overwrites an
-array does not, by itself, implement a Python operation that promises to
-preserve that array. The backend may need a copy or a separate result
-payload around the provider call.
+Load and Store return ``None``. Load fills the supplied output in place.
+Store follows CUB: transpose algorithms may rearrange the input payload
+in place. Invalid Load slots are unspecified unless a default is supplied.
 
 The qualified namespace accepts additional compiler-specific values, such
 as local-array payloads where supported. Type support is still checked by

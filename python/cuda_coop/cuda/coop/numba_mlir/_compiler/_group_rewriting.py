@@ -22,11 +22,6 @@ class GroupRewriteContext:
 
         return self.__rewrite._resolve_thread_data_specification(value)
 
-    def is_typed_group_payload(self, value: ir.Var) -> bool:
-        """Whether *value* originates from a typed group result."""
-
-        return self.__rewrite._is_typed_group_payload_var(value)
-
     def array(self, value: ir.Var) -> _ThreadDataSpecification | None:
         """Return statically known local/shared array dtype and extent facts."""
 
