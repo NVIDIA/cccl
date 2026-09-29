@@ -404,32 +404,15 @@ public:
   template <typename Fun>
   void operator->*(Fun&& f)
   {
-    auto& dot        = *ctx.get_dot();
-    auto& statistics = reserved::task_statistics::instance();
-
-    const bool record_time = schedule_task() || statistics.is_calibrating_to_file();
+    // Graph tasks are not timed: the body is captured into a graph, so there is no wall-clock
+    // interval to measure here. schedule_task() still runs for its placement decision.
+    schedule_task();
 
     start();
 
     SCOPE(exit)
     {
       end_uncleared();
-      if (record_time)
-      {
-        // Graph tasks are not timed (the event-based measurement is disabled), so the recorded
-        // duration is 0.
-        const float milliseconds = 0;
-
-        if (dot.is_tracing())
-        {
-          dot.template add_vertex_timing<task>(*this, milliseconds);
-        }
-
-        if (statistics.is_calibrating())
-        {
-          statistics.log_task_time(*this, milliseconds);
-        }
-      }
       clear();
     };
 
@@ -747,32 +730,15 @@ public:
   template <typename Fun>
   void operator->*(Fun&& f)
   {
-    auto& dot        = *ctx.get_dot();
-    auto& statistics = reserved::task_statistics::instance();
-
-    const bool record_time = schedule_task() || statistics.is_calibrating_to_file();
+    // Graph tasks are not timed: the body is captured into a graph, so there is no wall-clock
+    // interval to measure here. schedule_task() still runs for its placement decision.
+    schedule_task();
 
     start();
 
     SCOPE(exit)
     {
       end_uncleared();
-      if (record_time)
-      {
-        // Graph tasks are not timed (the event-based measurement is disabled), so the recorded
-        // duration is 0.
-        const float milliseconds = 0;
-
-        if (dot.is_tracing())
-        {
-          dot.template add_vertex_timing<task>(*this, milliseconds);
-        }
-
-        if (statistics.is_calibrating())
-        {
-          statistics.log_task_time(*this, milliseconds);
-        }
-      }
       clear();
     };
 
