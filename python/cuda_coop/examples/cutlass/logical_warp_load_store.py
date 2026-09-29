@@ -45,7 +45,7 @@ def run_example(api="common"):
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         group_index = thread // _WIDTH
         group = module.this_warp().group_by(_WIDTH)
-        payload = module.ThreadData(_ITEMS)
+        payload = module.ThreadData(items_per_thread=_ITEMS)
         # The compiler assigns each eight-lane group its own consecutive tile.
         # valid_items counts elements in that group's tile.
         module.load(
