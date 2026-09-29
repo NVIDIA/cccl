@@ -103,7 +103,6 @@ def _plan_reduce_batched(
     contracts = _contracts(
         resolved,
         launch,
-        result=result,
         storage_ownership=StorageOwnership.IMPLEMENTATION,
         cpp_type=None,
     )
