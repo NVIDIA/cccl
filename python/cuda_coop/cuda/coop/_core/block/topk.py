@@ -151,7 +151,9 @@ def make_block_topk_spec(
     num_valid: ArgumentBinding | None = None,
     value_dtype: Any | None = None,
 ) -> BlockTopKSpec:
-    """Select an unsorted blocked prefix while preserving key/value association."""
+    """Select an unsorted blocked prefix while preserving key/value
+    association.
+    """
     block_dim = normalize_block_dim(block_dim)
     if block_dim[1:] != (1, 1):
         raise ValueError("TopK supports only one-dimensional blocks")
