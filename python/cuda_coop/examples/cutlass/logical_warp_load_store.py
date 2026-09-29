@@ -30,7 +30,9 @@ def _check(result):
 
 
 def run_example(api="common"):
-    """Run eight independent logical tiles and verify their prefixes and defaults."""
+    """Run eight independent logical tiles and verify their prefixes and
+    defaults.
+    """
 
     if api not in {"common", "qualified"}:
         raise ValueError("api must be 'common' or 'qualified'")
