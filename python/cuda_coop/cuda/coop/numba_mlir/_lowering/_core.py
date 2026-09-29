@@ -30,7 +30,6 @@ from cuda.coop._core import (
     Constant,
     CoreBackendAdapter,
     CxxFunction,
-    CxxOperator,
     Dependency,
     Pointer,
     PointerOffset,
@@ -241,9 +240,8 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
             if isinstance(dtype, Dependency):
                 dependency = dtype
                 dtype = dependency.resolve(specialization.template_arguments)
-                # CxxFunction dependencies use the same bracketed placeholder
-                # convention as DependentCxxOperator; bare tokens are not
-                # replaced.
+                # Substitute bracketed type placeholders, leaving bare tokens
+                # unchanged.
                 cpp = cpp.replace(
                     f"<{dependency.name}>",
                     f"<{self.cpp_type(dtype)}>",
@@ -254,49 +252,6 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
             )
         raise TypeError(
             f"unsupported Numba-CUDA-MLIR core parameter {parameter!r}"
-        )
-
-    def lower_cxx_operator(
-        self,
-        operator: Any,
-        *,
-        specialization: AlgorithmSpec,
-    ) -> Any:
-        del specialization
-        if not isinstance(operator, CxxOperator):
-            raise TypeError(f"expected CxxOperator, got {operator!r}")
-        if not isinstance(operator.dtype, Dependency):
-            return backend.CxxFunction(
-                f"{operator.cpp}{{}}",
-                self.normalize_dtype(operator.dtype),
-            )
-        return backend.DependentCxxOperator(
-            backend.Dependency(operator.dtype.name),
-            operator.cpp,
-        )
-
-    def lower_python_operator(
-        self,
-        operator: Any,
-        *,
-        specialization: AlgorithmSpec,
-    ) -> Any:
-        del operator, specialization
-        raise NotImplementedError(
-            "Python operator compilation is not supported by the "
-            "cuda.coop Numba-CUDA-MLIR backend"
-        )
-
-    def lower_stateful_operator(
-        self,
-        operator: Any,
-        *,
-        specialization: AlgorithmSpec,
-    ) -> Any:
-        del operator, specialization
-        raise NotImplementedError(
-            "stateful callbacks are not supported by the cuda.coop "
-            "Numba-CUDA-MLIR backend"
         )
 
     def lower_temp_storage(
