@@ -59,7 +59,8 @@ def _validate_aggregate(
         or specification.items_per_thread != 1
     ):
         raise CoopSinglePhaseRewriteError(
-            "coop scan aggregate_output must be a one-item ThreadData or local array"
+            "coop scan aggregate_output must be "
+            "a one-item ThreadData or local array"
         )
     aggregate_dtype = _payload_dtype(context, aggregate, specification)
     if aggregate_dtype is not None and not _dtype_values_match(
@@ -67,7 +68,8 @@ def _validate_aggregate(
         dtype,
     ):
         raise CoopSinglePhaseRewriteError(
-            "coop scan aggregate_output dtype must exactly match the value dtype"
+            "coop scan aggregate_output dtype "
+            "must exactly match the value dtype"
         )
     context.record_thread_data_dtype(aggregate, dtype)
 
@@ -155,7 +157,8 @@ def infer_scan_payload(
         output_value, output_specification = inference.array_candidate(1)
         if input_specification is None or output_specification is None:
             raise CoopSinglePhaseRewriteError(
-                "coop block scan array providers require input and output arrays"
+                "coop block scan array providers "
+                "require input and output arrays"
             )
         if (
             input_specification.items_per_thread is None
