@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typed CUB calls using the shared block neighbor specializations."""
-
 import hashlib
 from dataclasses import dataclass, replace
 from enum import Enum
