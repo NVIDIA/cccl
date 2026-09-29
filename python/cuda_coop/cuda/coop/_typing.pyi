@@ -115,7 +115,9 @@ class ThreadDataLike(Protocol[_ItemT]):
         """Replace one thread-local item."""
 
 class PortableThreadDataLike(Protocol[_ReadableItemT_co]):
-    """Thread payload whose readable items use the common API's numeric types."""
+    """Thread payload whose readable items use the common API's numeric
+    types.
+    """
 
     items_per_thread: int
     dtype: object | None
