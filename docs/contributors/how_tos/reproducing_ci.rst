@@ -26,8 +26,10 @@ When a job exits non-zero, the runner emits an
    .devcontainer/launch.sh -d -c <cuda> -H <host> -- <command>
 
 Copy both lines verbatim. The ``-c`` and ``-H`` values are the CTK version and
-host compiler for this job. ``<command>`` is the ``ci/*.sh`` invocation the
-runner used, with all flags.
+host compiler for this job. ``<command>`` is the
+``/home/coder/cccl-ci/ci/*.sh`` invocation the runner used, with all flags. The
+source checkout is mounted at ``/home/coder/cccl`` and the matching CI
+checkout is mounted at ``/home/coder/cccl-ci``.
 
 .. note::
 
@@ -47,7 +49,7 @@ configuration, printed before the container launches:
    * - Field
      - Meaning
    * - ``Job command``
-     - The ``ci/*.sh`` script and flags the runner will execute
+     - The ``/home/coder/cccl-ci/ci/*.sh`` script and flags the runner will execute
    * - ``JOB_ID``
      - Unique job identifier; pass it to ``create_mock_job_env.sh`` to reproduce the job's
        environment locally
@@ -75,9 +77,11 @@ launches, contains a YAML snippet:
 
     - {jobs: [...], project: '...', ctk: '...', cxx: '...', ...}
 
-Paste this into the ``workflows.override`` list in ``ci/matrix.yaml`` and push
-to re-run only that specific job in CI without waiting for the full matrix.
-See :ref:`infra-ci-override-matrix` for the override workflow.
+For an isolated rerun, place this entry in ``workflows.nightly`` in a candidate
+``ci/matrix.yaml`` branch, then dispatch the source branch's ``custom`` workflow
+with that branch as ``matrix_branch``. Do not add a source-PR-specific override
+to the shared ``@ci`` branch. See :ref:`infra-ci-override-matrix` for both
+mechanisms.
 
 Mock the job environment
 ------------------------
@@ -93,7 +97,7 @@ job's environment with ``create_mock_job_env.sh``:
 
 .. code-block:: bash
 
-   ci/util/create_mock_job_env.sh <run_id> <job_id>
+   /home/coder/cccl-ci/ci/util/create_mock_job_env.sh <run_id> <job_id>
 
 Run it inside a devcontainer. It takes the ``<run_id>`` and ``<job_id>`` from the job
 log (``GITHUB_RUN_ID`` and ``JOB_ID``), sets the ``GITHUB_*`` variables CI exports,
@@ -104,18 +108,18 @@ exact command under ``Mock with:``.
 Tighten the loop
 ----------------
 
-The full ``ci/build_*.sh`` and ``ci/test_*.sh`` scripts build and run an
+The full ``@ci:ci/build_*.sh`` and ``@ci:ci/test_*.sh`` scripts build and run an
 entire project's test suite. Once the container reproduces the failure, use
-``ci/util/build_and_test_targets.sh`` to build and run only the failing target:
+``build_and_test_targets.sh`` to build and run only the failing target:
 
 .. code-block:: bash
 
    .devcontainer/launch.sh --docker --cuda 13.0 --host gcc14 --gpus all -- \
-     ci/util/build_and_test_targets.sh \
+     /home/coder/cccl-ci/ci/util/build_and_test_targets.sh \
        --preset cub-cpp20 \
        --build-targets "cub.test.iterator" \
        --ctest-targets "cub.test.iterator"
 
 This rebuilds one target instead of the full project. For preset, target, and
-lit-test flags, and for ``ci/util/git_bisect.sh`` to find the introducing commit,
-see :doc:`/cccl/development/build_and_bisect_tools`.
+lit-test flags, and for ``../cccl-ci/ci/util/git_bisect.sh`` to find the
+introducing commit, see :doc:`/cccl/development/build_and_bisect_tools`.

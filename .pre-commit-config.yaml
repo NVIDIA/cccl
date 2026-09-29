@@ -115,30 +115,25 @@ repos:
       - id: forbid-bidi-controls
       - id: fix-ligatures
 
-  - repo: local
+  - repo: https://github.com/NVIDIA/cccl
+    rev: ci-v26.10.07.00
     hooks:
       - id: check-shebang
-        name: check-shebang
-        entry: ci/util/pre-commit/check_shebang.py
-        language: python
-        types: [shell]
         exclude: |
           (?x)^(
             ^.*libcudacxx/cmake/config\.guess$
           )
 
+      - id: unprintable-unicode
+
+  - repo: local
+    hooks:
       - id: check-cub-test-macros
         name: require CUB test memory classification
         entry: ci/util/pre-commit/check_cub_test_macros.py
         language: python
         files: ^(cub/test/.*\.(cu|cuh|h)|ci/util/pre-commit/check_cub_test_macros\.py)$
         types: [file]
-
-      - id: unprintable-unicode
-        name: unprintable-unicode
-        entry: ci/util/pre-commit/strip_unprintable.py
-        language: python
-        types: [text]
 
 default_language_version:
   python: python3

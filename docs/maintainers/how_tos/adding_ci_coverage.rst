@@ -3,9 +3,11 @@
 Adding CI coverage
 ==================
 
-CCCL's CI matrix is defined in ``ci/matrix.yaml``. You add coverage by writing new entries: each
-entry expands into one or more jobs through the cross-product of its array-valued fields. Place the
-entries under the right workflow sections, then validate them with the override matrix before merge.
+CCCL's rolling CI matrix is defined in ``ci/matrix.yaml`` on the ``ci``
+branch. Matrix changes are submitted as pull requests targeting that
+branch. Each entry expands into one or more jobs through the cross-product of
+its array-valued fields. Place entries under the right workflow sections, then
+validate them through the source branch's ``custom`` workflow before merge.
 
 The field reference for every entry — ``jobs``, ``project``, ``ctk``, ``cxx``, ``std``, ``gpu``,
 ``sm``, ``cmake_options``, ``args`` — lives in the ``tags:`` and ``jobs:`` maps in
@@ -75,8 +77,9 @@ Rare, but if this is important coverage that is cheap, it may be worth adding a 
 Jobs from this matrix are added to the PR run when an upstream internal dependency is modified.
 The goal is to keep this matrix as light as possible, extensions should be rare and well justified.
 
-Note that these jobs will **NOT** run as part of the PR that adds them, so they **MUST** be tested with
-the override matrix before merge.
+These jobs do not run merely because a candidate branch contains them. Test
+them by temporarily copying them into that candidate matrix's ``nightly``
+section and dispatching the ``custom`` workflow as described below.
 
 See :ref:`infra-ci-change-detection` for how CCCL's CI encodes these dependencies.
 
@@ -86,8 +89,8 @@ Add the corresponding nightly / weekly entries
 The ``nightly`` and ``weekly`` entries run on a schedule, and carry the exhaustive, broad coverage that would
 be wasteful and excessive for PRs.
 It does not include the pull request matrix, so the PR jobs must be replicated, and possibly extended, here.
-Note that these jobs will **NOT** run as part of the PR that adds them, so they **MUST** be tested with
-the override matrix before merge.
+These jobs do not run merely because a candidate branch contains them. Test
+them through the ``custom`` workflow before merge.
 
 Group the new entries under the existing comment headers in each section. Keep CTK and project
 groupings together so the matrix stays readable.
@@ -97,10 +100,12 @@ Update project_files_and_dependencies.yaml
 
 The full details of this system are documented in :ref:`infra-ci-change-detection`.
 
-``ci/inspect_changes.py`` reads ``ci/project_files_and_dependencies.yaml`` to decide which projects
-a PR touched. Update this file when the new coverage involves a project or a source path the file
-does not already track. Skip this step when adding configurations to an existing project's existing
-paths.
+``ci/inspect_changes.py`` and ``ci/project_files_and_dependencies.yaml`` remain
+source-owned because they are built and tested with the source tree. If new
+coverage involves a project or source path the map does not already track,
+update it in a separate source-branch pull request; do not add it to the
+``ci`` branch. Skip this step when adding configurations to an existing
+project's existing paths.
 
 Add or extend a project entry so changed files map to the right matrix project:
 
@@ -117,7 +122,7 @@ Add or extend a project entry so changed files map to the right matrix project:
      matrix_project: "my_project" # Maps to the matrix.yaml project that will be triggered when project files change
      lite_dependencies: []
      full_dependencies: [my_project_public] # trigger the full PR coverage when public headers change.
-                                            # changes to transitive deps (eg. libcudacxx_public) will onlytrigger lite PR coverage.
+                                            # changes to transitive deps (eg. libcudacxx_public) will only trigger lite PR coverage.
      include_regexes: ["my_project/"] # path to project root
      exclude_project_files: [my_project_public] # ignore files matched by the public entry.
 
@@ -131,33 +136,41 @@ Add or extend a project entry so changed files map to the right matrix project:
 If you're adding files that should not ever trigger CI, add them to the top-level ``ignore_regexes`` list to exclude them from
 change detection.
 
-Test the entry with the override matrix
----------------------------------------
+Test the entry with a custom matrix
+-----------------------------------
 
-Validate new entries with ``workflows.override`` before merge. A non-empty ``override`` replaces the
-entire ``pull_request`` matrix for the PR, so CI runs only the entries you are testing. The override
-blocks merge until removed, which guarantees the full suite runs before the change lands.
+The source branch's ``custom`` workflow reads ``ci/matrix.yaml`` from a
+candidate branch in the caller repository and runs its ``workflows.nightly``
+entries against the selected source SHA. It uses the current implementation on
+``@ci``; it never loads workflow or action code from the candidate branch.
 
-#. **Copy the candidate entries into override.** Place the new ``pull_request`` and ``nightly``
-   entries under ``workflows.override`` in ``ci/matrix.yaml``:
+#. **Prepare the candidate's nightly section.** Temporarily copy the entries
+   being tested into ``workflows.nightly`` in the candidate matrix. Entries
+   already intended for ``nightly`` need no duplicate:
 
    .. code-block:: yaml
 
       workflows:
-        override:
+        nightly:
           - {jobs: ['test'], project: 'thrust', ctk: '<ctk-name>', std: 'max', cxx: ['<cxx-name-1>', '<cxx-name-2>'], gpu: '<gpu-name>'}
 
-#. **Trim unrelated jobs.** Add ``[skip-tpt][skip-docs]`` to the **last commit message** to drop
-   third-party tests (eg RAPIDS, MatX) and doc builds while iterating.
+#. **Push and dispatch.** Open **Actions → custom → Run workflow** on the
+   source branch whose SHA should be tested. Pass the candidate branch as
+   ``matrix_branch``.
 
-#. **Push and inspect.** The PR runs only the override entries. Confirm the jobs appear with the
-   expected compiler, CTK, and GPU, and that they pass.
+#. **Inspect the requested jobs.** Confirm the compiler, CTK, GPU, and arguments
+   in the generated jobs and iterate on the candidate matrix as needed.
 
-#. **Reset before merge.** Empty ``workflows.override`` and remove the ``[skip-*]`` tags from the
-   last commit message (or push a new commit). The merge gate fails until both are clean.
+#. **Remove temporary entries.** Before merging the ``ci`` branch pull request,
+   restore ``workflows.nightly`` to the intended final matrix.
+
+Do not use the shared ``@ci`` branch's ``workflows.override`` for routine
+candidate validation. Once non-empty on ``@ci``, it replaces the matrix for
+every public source PR and deliberately blocks their merge gate. It is reserved
+for coordinated rolling-CI operations; see :ref:`infra-ci-override-matrix`.
 
 For a tighter loop on a single test target, use ``project: 'target'`` with ``args`` forwarded to
 ``ci/util/build_and_test_targets.sh``. The commented examples at the top of ``ci/matrix.yaml`` show
 the ``run_cpu`` and ``run_gpu`` invocation patterns. Reproduce any failing job locally with
-``.devcontainer/launch.sh`` and the matching ``ci/`` build or test script (see
-:ref:`infra-ci-reproducing-locally`).
+``.devcontainer/launch.sh`` and the matching script under
+``/home/coder/cccl-ci/ci/`` (see :ref:`infra-ci-reproducing-locally`).

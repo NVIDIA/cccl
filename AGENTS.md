@@ -54,6 +54,29 @@ Codex cloud instances cannot:
 
 All CCCL subprojects are computationally expensive to build and test. Use the provided helper scripts to minimize work and target only what you need.
 
+CCCL's executable CI implementation lives on the `ci` branch. Keep a
+source checkout and CI worktree as fixed siblings:
+
+```text
+workspace/
+├── cccl/       # source branch
+└── cccl-ci/    # CI branch
+```
+
+From `cccl/`, create the CI worktree with:
+
+```bash
+git fetch origin ci:ci
+git worktree add ../cccl-ci ci
+```
+
+The scripts derive both roots from this layout, so invoke rolling CI tools as
+`../cccl-ci/ci/...` while remaining in the `cccl/` source root. Source branches
+retain source-coupled inputs and validation: `ci/inspect_changes.py`,
+`ci/project_files_and_dependencies.yaml`, `ci/test/**`, `ci/bench.yaml`,
+`ci/bench.template.yaml`, `ci/compute-sanitizer-suppressions.xml`, and
+`ci/util/pre-commit/check_cub_test_macros.py`.
+
 ### CMake Presets
 
 Presets are defined in `CMakePresets.json`. Names follow a `project` or `<project>-cpp<std>` format, such as `cub-cpp20`, `thrust-cpp17`, or `libcudacxx`. Use `cmake --list-presets` to view available options. Build trees are placed under `build/${CCCL_BUILD_INFIX}/${PRESET}`.
@@ -78,7 +101,7 @@ Example:
 .devcontainer/launch.sh -d --cuda 13.3 --host gcc14 -- <script> [args...]
 ```
 
-### `ci/util/build_and_test_targets.sh`
+### `../cccl-ci/ci/util/build_and_test_targets.sh`
 
 Configures, builds, and tests selected Ninja, CTest, or lit targets. Many tests require GPUs. Options that generally work without GPUs include `--preset`, `--cmake-options`, `--configure-override`, `--build-targets`, `--lit-precompile-tests`, and `--custom-test-cmd`.
 
@@ -93,7 +116,7 @@ Key options:
 * `--lit-tests "<paths>"` — Run specified libcudacxx lit tests (also relative to `libcudacxx/test/libcudacxx/`)
 * `--custom-test-cmd "<cmd>"` — Run arbitrary command after tests
 
-### `ci/util/git_bisect.sh`
+### `../cccl-ci/ci/util/git_bisect.sh`
 
 Wraps `git bisect` with the build/test helper. Useful for identifying regression commits. Can take a very long time—minimize scope by restricting build/test targets.
 
@@ -115,7 +138,7 @@ Always prefer targeted builds and tests, as full builds are time-consuming. If r
 * **CUB** (`cub/`):
 
 ```bash
-ci/util/build_and_test_targets.sh \
+../cccl-ci/ci/util/build_and_test_targets.sh \
   --preset cub-cpp20 \
   --build-targets "cub.cpp20.test.iterator" \
   --ctest-targets "cub.cpp20.test.iterator"
@@ -124,7 +147,7 @@ ci/util/build_and_test_targets.sh \
 * **Thrust** (`thrust/`):
 
 ```bash
-ci/util/build_and_test_targets.sh \
+../cccl-ci/ci/util/build_and_test_targets.sh \
   --preset thrust-cpp20 \
   --build-targets "thrust.cpp20.test.reduce" \
   --ctest-targets "thrust.cpp20.test.reduce"
@@ -134,7 +157,7 @@ ci/util/build_and_test_targets.sh \
   Avoid the expensive `libcudacxx.cpp20.precompile.lit`. Instead, precompile and run a small set of lit tests:
 
 ```bash
-ci/util/build_and_test_targets.sh \
+../cccl-ci/ci/util/build_and_test_targets.sh \
   --preset libcudacxx \
   --lit-precompile-tests "std/algorithms/alg.nonmodifying/alg.any_of/any_of.pass.cpp" \
   --lit-tests "std/algorithms/alg.nonmodifying/alg.any_of/any_of.pass.cpp"
@@ -143,7 +166,7 @@ ci/util/build_and_test_targets.sh \
 * **CUDA Experimental** (`cudax/`):
 
 ```bash
-ci/util/build_and_test_targets.sh \
+../cccl-ci/ci/util/build_and_test_targets.sh \
   --preset cudax \
   --build-targets "cudax.cpp20.test.async_buffer" \
   --ctest-targets "cudax.cpp20.test.async_buffer"
@@ -152,7 +175,7 @@ ci/util/build_and_test_targets.sh \
 * **C Parallel API** (`c/parallel/`):
 
 ```bash
-ci/util/build_and_test_targets.sh \
+../cccl-ci/ci/util/build_and_test_targets.sh \
   --preset cccl-c-parallel \
   --build-targets "cccl.c.test.reduce" \
   --ctest-targets "cccl.c.test.reduce"
@@ -165,12 +188,12 @@ ci/util/build_and_test_targets.sh \
 Use scripts like:
 
 ```bash
-./ci/build_cub.sh [-cxx g++] [-std 17] [-arch "75;80;90;120"]
-./ci/build_thrust.sh [-cxx clang++] [-std 17] [-arch "75;80;90;120"]
-./ci/build_libcudacxx.sh [-cxx g++] [-std 17] [-arch "75;80;90;120"]
-./ci/build_cudax.sh [-cxx g++] [-std 20] [-arch "75;80;90;120"]
-./ci/build_cccl_c_parallel.sh [-cxx g++] [-std 17] [-arch "75;80;90;120"]
-./ci/build_cuda_cccl_python.sh -py-version 3.10
+../cccl-ci/ci/build_cub.sh [-cxx g++] [-std 17] [-arch "75;80;90;120"]
+../cccl-ci/ci/build_thrust.sh [-cxx clang++] [-std 17] [-arch "75;80;90;120"]
+../cccl-ci/ci/build_libcudacxx.sh [-cxx g++] [-std 17] [-arch "75;80;90;120"]
+../cccl-ci/ci/build_cudax.sh [-cxx g++] [-std 20] [-arch "75;80;90;120"]
+../cccl-ci/ci/build_cccl_c_parallel.sh [-cxx g++] [-std 17] [-arch "75;80;90;120"]
+../cccl-ci/ci/build_cuda_cccl_python.sh -py-version 3.10
 ```
 
 ### Architectures
@@ -188,10 +211,10 @@ Use scripts like:
 Examples:
 
 ```bash
-./ci/test_cub.sh -cxx g++ -std 17 -arch "75;80;90;120"
-./ci/test_thrust.sh -cxx g++ -std 17 -arch "75;80;90;120"
-./ci/test_libcudacxx.sh -cxx g++ -std 17 -arch "75;80;90;120"
-./ci/test_cudax.sh -cxx g++ -std 20 -arch "75;80;90;120"
+../cccl-ci/ci/test_cub.sh -cxx g++ -std 17 -arch "75;80;90;120"
+../cccl-ci/ci/test_thrust.sh -cxx g++ -std 17 -arch "75;80;90;120"
+../cccl-ci/ci/test_libcudacxx.sh -cxx g++ -std 17 -arch "75;80;90;120"
+../cccl-ci/ci/test_cudax.sh -cxx g++ -std 20 -arch "75;80;90;120"
 ctest --preset=cub-cpp17
 ```
 
@@ -256,11 +279,11 @@ include_paths = headers.get_include_paths()
 ### Build and Test
 
 ```bash
-./ci/build_cuda_cccl_python.sh -py-version 3.10
-./ci/test_cuda_compute_python.sh -py-version 3.10
-./ci/test_cuda_cccl_headers_python.sh -py-version 3.10
-./ci/test_cuda_cccl_examples_python.sh -py-version 3.10
-./ci/test_cuda_stf_python.sh -py-version 3.10  # Linux only
+../cccl-ci/ci/build_cuda_cccl_python.sh -py-version 3.10
+../cccl-ci/ci/test_cuda_compute_python.sh -py-version 3.10
+../cccl-ci/ci/test_cuda_cccl_headers_python.sh -py-version 3.10
+../cccl-ci/ci/test_cuda_cccl_examples_python.sh -py-version 3.10
+../cccl-ci/ci/test_cuda_stf_python.sh -py-version 3.10  # Linux only
 ```
 
 Test organization:
@@ -280,36 +303,35 @@ CCCL's CI is built on GitHub Actions and relies on a dynamically generated job m
 
 ### Key Components
 
-* **`ci/matrix.yaml`**
+* **`../cccl-ci/ci/matrix.yaml`**
 
   * Declares build and test jobs for `pull_request`, `nightly`, and `weekly` workflows.
   * Pull request (PR) runs typically spawn ~250 jobs.
-  * To reduce overhead, you can add an override matrix in `workflows.override`. This limits the PR CI run to a targeted subset of jobs. Overrides are recommended when:
-    * Changes touch high-dependency areas (e.g. top-level CI/devcontainers, libcudacxx, thrust, CUB). See `ci/inspect_changes.py` for dependency information.
-    * A smaller subset of jobs is enough to validate the change (e.g. infra changes, targeted fixes).
+  * To test a matrix change, create a candidate branch containing `ci/matrix.yaml`, put the focused jobs in its `workflows.nightly` definition, and dispatch the source branch's `custom` workflow with that branch as `matrix_branch`.
+  * `workflows.override` is the rolling PR override consumed directly from `@ci`; it is not used by the custom-matrix workflow. It is reserved for coordinated CI-wide investigations because it affects every source PR.
   * Important rules:
-    * PR merges are blocked while an override matrix is active.
-    * The override must be reset to empty (not removed) before merging.
-    * Only add overrides when starting a new draft that qualifies; never remove one without being asked.
+    * Automatic source PR runs always use the public matrix on `@ci`; a custom matrix run is additional validation.
+    * Use the custom workflow, not the shared override, to validate an individual source or CI PR with a focused matrix.
+    * The override must remain empty in ordinary rolling CI changes and be reset to empty after any coordinated use.
 
-* **`.github/actions/workflow-build/`**
+* **`@ci:.github/actions/workflow-build/`**
 
   * Runs `build-workflow.py`.
-  * Reads `ci/matrix.yaml` and prunes jobs using `ci/inspect_changes.py`.
+  * Reads the rolling `ci/matrix.yaml` and prunes PR jobs using the source checkout's `ci/inspect_changes.py`.
   * Calls `prepare-workflow-dispatch.py` to produce a formatted job matrix for dispatch.
 
-* **`.github/actions/workflow-run-job-{linux,windows}/`**
+* **`@ci:.github/actions/workflow-run-job-{linux,windows}/`**
 
   * Runs a single matrix job inside a devcontainer.
 
-* **`.github/actions/workflow-results/`**
+* **`@ci:.github/actions/workflow-results/`**
 
   * Aggregates artifacts and results.
   * Marks workflow as failed if any job fails or an override matrix is present.
 
 * **`.github/workflows/ci-workflow-{pull-request,nightly,weekly}.yml`**
 
-  * Top-level GitHub Actions workflows invoking CI.
+  * Source-owned event shims that call reusable implementations on `@ci` and pass the public source revision.
 
 * **`ci/inspect_changes.py`**
 
@@ -388,10 +410,13 @@ cccl/
 ├── cudax/              # Experimental features
 ├── c/                  # C Parallel library
 ├── python/cuda_cccl/   # Python bindings
-├── ci/                 # Build/test scripts
+├── ci/                 # Source-coupled CI inputs and validation
 ├── examples/           # Usage examples
 └── CMakePresets.json   # Preset configurations
 ```
+
+The rolling workflows, actions, matrix, and executable CI scripts live in the
+sibling `cccl-ci/` worktree described above.
 
 Python package layout:
 

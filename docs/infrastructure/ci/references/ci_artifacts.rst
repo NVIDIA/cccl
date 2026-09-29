@@ -7,6 +7,10 @@ The artifact system carries data between CI jobs. A producer job uploads its bui
 consumer jobs download them to run tests. It wraps GitHub Actions' native ``upload-artifact``
 and ``download-artifact`` and is GitHub Actions-specific.
 
+The artifact implementation lives on the ``ci`` branch. Logical
+``ci/...`` paths below are relative to that checkout; running jobs expose its
+root as ``CCCL_CI_ROOT``.
+
 Artifacts are not mandatory. Projects that lean on the shared AWS sccache can let the cache
 serve build products to test jobs instead. They still pay off for larger projects: downloading
 one compressed archive of the test binaries is much faster than recompiling or fetching each
@@ -56,16 +60,17 @@ not:
 
 .. code-block:: bash
 
-    ci/util/workflow/has_consumers.sh "$JOB_ID" || exit 0
+    "${CCCL_CI_ROOT}/ci/util/workflow/has_consumers.sh" "$JOB_ID" || exit 0
 
-    ci/util/artifacts/stage.sh   "<artifact_name>" '<regex>' ['<regex>' ...]
-    ci/util/artifacts/unstage.sh "<artifact_name>" '<regex>'
-    ci/util/artifacts/upload_stage_packed.sh "<artifact_name>"
+    "${CCCL_CI_ROOT}/ci/util/artifacts/stage.sh" "<artifact_name>" '<regex>' ['<regex>' ...]
+    "${CCCL_CI_ROOT}/ci/util/artifacts/unstage.sh" "<artifact_name>" '<regex>'
+    "${CCCL_CI_ROOT}/ci/util/artifacts/upload_stage_packed.sh" "<artifact_name>"
 
 ``stage.sh`` and ``unstage.sh`` build up the file set by inclusion and exclusion — regexes match
 against ``find`` within the stage path. ``upload_stage_packed.sh`` compresses the result and
 registers it for upload. CUB stages one packed artifact per launch-id variant (``no_lid``,
-``lid_0``–``lid_2``); ``ci/upload_cub_test_artifacts.sh`` is the authoritative example.
+``lid_0``–``lid_2``); ``@ci:ci/upload_cub_test_artifacts.sh`` is the
+authoritative example.
 
 Consumer: resolve and download
 ------------------------------
@@ -79,21 +84,22 @@ embeds the producer ID; the consuming CI script constructs it, so there are no h
 
 .. code-block:: bash
 
-    producer_id=$(ci/util/workflow/get_producer_id.sh)
+    producer_id="$("${CCCL_CI_ROOT}/ci/util/workflow/get_producer_id.sh")"
     for tag in "${ARTIFACT_TAGS[@]}"; do
-      ci/util/artifacts/download_packed.sh \
+      "${CCCL_CI_ROOT}/ci/util/artifacts/download_packed.sh" \
         "z_cub-test-artifacts-${DEVCONTAINER_NAME:?}-${producer_id}-${tag}" /home/coder/cccl
     done
 
-See ``ci/test_cub.sh`` for the authoritative CUB form.
+See ``@ci:ci/test_cub.sh`` for the authoritative CUB form.
 
 Result record
 -------------
 
 Apart from build artifacts, every job records its own outcome. At exit it calls
-``ci/upload_job_result_artifacts.sh "$JOB_ID" $exit_code``, which uploads a ``zz_jobs-<job_id>``
-artifact containing a ``success`` file only when the exit code was zero. The ``ci:`` gate reads
-these records to compute the single pass/fail for the run — see :ref:`infra-ci-overview`.
+``"${CCCL_CI_ROOT}/ci/upload_job_result_artifacts.sh" "$JOB_ID" $exit_code``,
+which uploads a ``zz_jobs-<job_id>`` artifact containing a ``success`` file only
+when the exit code was zero. The ``ci:`` gate reads these records to compute the
+single pass/fail for the run — see :ref:`infra-ci-overview`.
 
 Python wheels
 -------------

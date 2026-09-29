@@ -7,7 +7,7 @@
 Run Python cuda.compute and C++ CUB benchmarks.
 
 Prerequisites: C++ benchmarks must be built first via:
-  cd /path/to/cccl && ./ci/build_cub.sh -arch 89
+  cd /path/to/cccl && ../cccl-ci/ci/build_cub.sh -arch 89
 
 Usage:
   python run_benchmarks.py [options]
@@ -311,7 +311,10 @@ def run_benchmark(
             print()
             print("Please build C++ benchmarks first:")
             print(f"  cd {CCCL_ROOT}")
-            print("  ./ci/build_cub.sh -arch <your_gpu_arch>  # e.g., 89 for RTX 4090")
+            print(
+                "  ../cccl-ci/ci/build_cub.sh -arch <your_gpu_arch>"
+                "  # e.g., 89 for RTX 4090"
+            )
             print()
             print("Available benchmarks in build directory:")
             if CUB_BENCH_DIR.exists():
@@ -460,7 +463,10 @@ Supported benchmarks:
         print()
         print("Please build C++ benchmarks first:")
         print(f"  cd {CCCL_ROOT}")
-        print("  ./ci/build_cub.sh -arch <your_gpu_arch>  # e.g., 89 for RTX 4090")
+        print(
+            "  ../cccl-ci/ci/build_cub.sh -arch <your_gpu_arch>"
+            "  # e.g., 89 for RTX 4090"
+        )
         sys.exit(1)
 
     # Run benchmarks

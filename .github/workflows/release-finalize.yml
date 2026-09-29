@@ -101,6 +101,9 @@ jobs:
             exit 1
           fi
 
+      - name: Set up CI paths
+        uses: NVIDIA/cccl/.github/actions/setup-ci@ci
+
       - name: Generate archives
         id: archive
         run: |
@@ -124,7 +127,7 @@ jobs:
           rsync -av ${source_exclude[*]/#/--exclude=} . ${source_base}
           echo "::endgroup::"
 
-          ci/install_cccl.sh "${package_base}"
+          "${CCCL_CI_ROOT}/ci/install_cccl.sh" "${package_base}"
 
           mkdir archives
 
@@ -237,7 +240,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Create patch version PR
-        uses: ./.github/actions/version-update
+        uses: NVIDIA/cccl/.github/actions/version-update@ci
         with:
           new_version: ${{ needs.create-release.outputs.next_full_version }}
           target_branch: ${{ needs.create-release.outputs.working_branch }}

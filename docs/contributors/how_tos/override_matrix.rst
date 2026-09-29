@@ -1,50 +1,40 @@
 .. _infra-ci-override-matrix:
 
-Override matrix
-===============
+Custom matrices and the PR override
+===================================
 
-The override matrix scopes a pull request's CI to a chosen subset of jobs.
-When the ``workflows.override`` key in ``ci/matrix.yaml`` is non-empty, it
-replaces the entire ``pull_request`` matrix. The PR runs only the override
-jobs, and branch protection blocks the merge until the override is empty
-again.
+The authoritative matrix is ``ci/matrix.yaml`` on CCCL's ``ci`` branch.
+There are two ways to run a focused subset, with deliberately different scopes:
 
-Use the override matrix to:
+* The source branch's ``custom`` workflow reads a candidate matrix from
+  ``ci/matrix.yaml`` on a ref in the caller repository. It runs that matrix's
+  ``nightly`` definition as additional, on-demand validation.
+* The shared ``workflows.override`` definition on ``@ci`` replaces the normal
+  ``pull_request`` matrix for every public source PR. It is reserved for
+  coordinated changes to rolling CI state.
 
-- Test a new compiler's nightly / weekly jobs from the PR before merging.
-- Validate a compiler-specific or GPU-specific fix against one combo.
-- Test CI infrastructure changes that need only a few jobs to validate.
-- Debug a nightly failure by running only the combos that failed.
+For ordinary iteration, use a custom matrix. Do not put a source-PR-specific
+override on the shared ``ci`` branch.
 
-The override matrix is a temporary scoping tool, not a permanent matrix
-edit. Every override entry must be removed before the PR lands.
+Run a candidate matrix
+----------------------
 
-Add an override entry
----------------------
+Create a branch in the repository that will dispatch the workflow. The branch
+must contain the candidate file at exactly ``ci/matrix.yaml``; callers select a
+ref, not an arbitrary path. The branch may live in public ``NVIDIA/cccl`` or in
+the internal CI companion.
 
-The override lives at the top of ``ci/matrix.yaml`` under
-``workflows.override``. The default value is empty. Override entries use the
-same syntax as ``pull_request`` entries.
-
-**Step 1. Pick the combo to test.** Identify the exact job, project,
-compiler, CTK version, and GPU you need. For a compiler-specific fix, this is
-one ``cxx`` value. For a nightly failure, copy the failing entry from the
-``nightly`` workflow.
-
-**Step 2. Add the entry under** ``override``. Edit ``ci/matrix.yaml`` and
-add one mapping under the ``override:`` key:
+**Step 1. Focus the candidate's nightly definition.** Copy the combinations you
+want to test into ``workflows.nightly`` in the candidate ``ci/matrix.yaml``.
+Entries use the same syntax as the rolling matrix:
 
 .. code-block:: yaml
 
    workflows:
-     override:
+     nightly:
        - {jobs: ['test'], project: 'thrust', std: 'max', ctk: '<ctk>', cxx: '<compiler>', gpu: '<gpu>'}
 
-     pull_request:
-       - <...>
-
-Choose ``ctk``, ``cxx``, and ``gpu`` values from the existing
-``pull_request`` entries in ``ci/matrix.yaml``. Each field scopes the run:
+Useful fields include:
 
 .. list-table::
    :header-rows: 1
@@ -53,57 +43,54 @@ Choose ``ctk``, ``cxx``, and ``gpu`` values from the existing
    * - Field
      - Meaning
    * - ``jobs``
-     - Job types to run. A ``test`` entry auto-generates any build jobs it
-       depends on.
+     - Job types to run. A ``test`` entry generates any build jobs it depends on.
    * - ``project``
-     - Which project to build or test (``thrust``, ``cub``, ``libcudacxx``, ``cudax``, ...).
+     - Project to build or test (``thrust``, ``cub``, ``libcudacxx``, ``cudax``, ...).
    * - ``std``
-     - C++ standard. ``max`` selects the highest standard the combo supports.
+     - C++ standard. ``max`` selects the highest standard the combination supports.
    * - ``ctk``
      - CUDA Toolkit version. A ``<major>.X`` suffix selects the newest image for that major version.
    * - ``cxx``
-     - Host compiler. A single value runs one compiler; an array expands to several jobs.
+     - Host compiler. An array expands to several jobs.
    * - ``gpu``
-     - GPU runner model. Required for ``test`` jobs.
+     - GPU runner model. Required for GPU test jobs.
 
-Field defaults and the full tag list live in the ``tags`` section of
-``ci/matrix.yaml``.
+Field defaults and the complete vocabulary live in the matrix's ``tags`` and
+``jobs`` sections.
 
-**Step 3. Trim turnaround with targeted builds.** A full project build is
-slow. To build and run a single test target instead, use ``project:
-'target'`` and pass ``args`` to ``ci/util/build_and_test_targets.sh``:
+For a tight single-target run, use ``project: 'target'`` and forward ``args``
+to ``../cccl-ci/ci/util/build_and_test_targets.sh``:
 
 .. code-block:: yaml
 
    workflows:
-     override:
+     nightly:
        - {jobs: ['run_gpu'], project: 'target', ctk: '<ctk>', cxx: '<compiler>', gpu: '<gpu>',
           args: '--preset <preset> --build-targets "<target>" --ctest-targets "<target>"'}
 
 The ``run_cpu`` and ``run_gpu`` jobs map directly to
-``build_and_test_targets.sh``. See that script for the available ``args``,
-covered in :doc:`/cccl/development/build_and_bisect_tools`.
+``build_and_test_targets.sh``. Its options are covered in
+:doc:`/cccl/development/build_and_bisect_tools`.
 
-**Step 4. Reduce overhead further with skip tags.** Combine the override
-with :ref:`[skip-*] tags <infra-ci-skip-tags>` in the last commit message to drop
-devcontainer, docs, and third-party canary jobs:
+**Step 2. Push and dispatch.** Open **Actions → custom → Run workflow** on the
+source branch whose SHA should be tested, and pass the candidate branch as
+``matrix_branch``. The wrapper calls the reusable implementation on ``@ci`` and
+passes the candidate branch as ``matrix_ref``. The implementation always reads
+``ci/matrix.yaml`` from that ref.
 
-.. code-block:: bash
+**Step 3. Inspect the requested jobs.** Confirm the compiler, CTK, GPU, and
+arguments in the generated jobs and iterate on the candidate matrix as needed.
+This validates matrix data against the current ``@ci`` implementation; it does
+not dynamically load workflows or actions from the candidate branch.
 
-   git commit -m "Debug <compiler> <project> failure [skip-vdc][skip-docs][skip-tpt]"
-
-Run scoped CI and merge
+The rolling PR override
 -----------------------
 
-The override is temporary: scoped jobs first, full matrix before merge.
+The ``workflows.override`` list in ``@ci:ci/matrix.yaml`` is still understood by
+the public pull-request workflow. When non-empty, it replaces
+``workflows.pull_request`` for all public source PRs, and the aggregate ``CI``
+job remains non-mergeable until the override is empty again.
 
-1. **Add the override entry and push.** Only the override jobs run; the
-   ``pull_request`` matrix is skipped while ``workflows.override`` is non-empty.
-
-2. **Iterate until the override jobs pass.** Each push reruns only those
-   jobs, keeping turnaround short.
-
-3. **Empty the override and push again.** With ``workflows.override`` reset
-   to empty, the full ``pull_request`` matrix runs — the suite that gates merge.
-
-4. **Merge once the full matrix is green.**
+Because ``@ci`` is shared across every source and release branch, use this only
+as a coordinated rolling-CI operation. Keep ``override: []`` in ordinary CI
+changes, and restore it immediately after any intentional use.

@@ -151,12 +151,6 @@ cmake . -DCMAKE_INSTALL_PREFIX=/usr/local
 make install
 ```
 
-A convenience script is also provided:
-
-```bash
-ci/install_cccl.sh /usr/local
-```
-
 ###### Advanced installation using presets
 
 CMake presets are also available with options for including experimental
@@ -314,7 +308,8 @@ For instance, if the latest version of the CUDA Toolkit is 12.6, tests are condu
 For each CUDA version, builds are completed against all supported host compilers with all supported C++ dialects.
 
 The testing strategy and matrix are constantly evolving.
-The matrix defined in the [`ci/matrix.yaml`](ci/matrix.yaml) file is the definitive source of truth.
+The matrix defined on the rolling CI branch in
+[`ci/matrix.yaml`](https://github.com/NVIDIA/cccl/blob/ci/ci/matrix.yaml) is the definitive source of truth.
 For more information about our CI pipeline, see [here](docs/infrastructure/ci/references/ci_overview.rst).
 
 ## Versioning
@@ -476,6 +471,14 @@ CTKs before 12.4 shipped Thrust, CUB and libcudacxx as individual libraries.
 
 
 ## CI Pipeline Overview
+
+CCCL keeps its reusable workflows, actions, job matrix, and build/test scripts
+on the rolling [`ci`](https://github.com/NVIDIA/cccl/tree/ci) branch so CI can
+evolve independently of source and release branches. Source branches retain
+their event-triggered workflow shims and source-coupled inputs such as change
+detection, tests, benchmark requests, sanitizer suppressions, and validation
+hooks. CI always checks out and tests the requested public source revision as a
+separate tree.
 
 For a detailed overview of the CI pipeline, see [CI overview](docs/infrastructure/ci/references/ci_overview.rst).
 

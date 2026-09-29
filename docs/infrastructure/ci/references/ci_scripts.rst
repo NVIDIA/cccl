@@ -3,9 +3,12 @@
 CI scripts
 ==========
 
-The ``ci/`` directory holds the build, test, benchmark, and utility scripts that CI jobs
-invoke. The same scripts reproduce a CI environment locally — a failing job's log prints the
-exact script and arguments it ran. Scripts are organized by role:
+The ``ci/`` directory on the ``ci`` branch holds the build, test,
+benchmark, and utility scripts that CI jobs invoke. A local checkout uses
+sibling directories named ``cccl`` for source and ``cccl-ci`` for CI; logical
+``ci/...`` paths below are relative to ``cccl-ci``. The same scripts reproduce
+a CI environment locally — a failing job's log prints the exact script and
+arguments it ran. Scripts are organized by role:
 
 - ``ci/`` root — per-project build and test entry points.
 - ``ci/util/`` — shared utilities, plus the artifact and workflow plumbing jobs use to pass data.
@@ -31,11 +34,11 @@ the C++ standard (``-std``), target architectures (``-arch``), forwarded CMake o
 flag list and current defaults.
 
 When run locally, the test scripts will invoke the build script to ensure that the targets are
-available. In CI, they may download GHA artifacts instead.
+available. In CI, they may download GHA artifacts instead. From the ``cccl`` source root:
 
 ::
 
-    ./ci/test_cub.sh  -cxx g++ -std 17 -arch "70;80;90"
+    ../cccl-ci/ci/test_cub.sh -cxx g++ -std 17 -arch "70;80;90"
 
 For fast local iteration on a single target rather than a whole project, see
 :doc:`/cccl/development/build_and_bisect_tools`.
@@ -105,13 +108,18 @@ Two subdirectories carry the producer/consumer plumbing for two-stage jobs:
 ``ci/util/workflow/`` resolves producer/consumer relationships for the current run. Both are
 covered at :ref:`infra-ci-artifacts`.
 
-``ci/inspect_changes.py`` reports which projects are dirty between two refs and drives full
-versus lite matrix selection; see :ref:`infra-ci-change-detection`.
+Source-owned ``ci/inspect_changes.py`` and
+``ci/project_files_and_dependencies.yaml`` are exceptions to this split. They
+remain with the source tree because the change detector is exercised as a CTest
+test; it reports which projects are dirty between two refs and drives
+full versus lite matrix selection. See :ref:`infra-ci-change-detection`.
 
 Benchmark scripts: ci/bench/
 ----------------------------
 
 ``ci/bench/`` holds the benchmark drivers: ``bench.sh`` builds and runs the suite for a
 configuration, and the ``compare_*`` scripts build two refs or two paths and diff the results.
-The comparison workflow is ``.github/workflows/bench.yml``. PR request syntax lives in
-``ci/bench.yaml``; ``ci/bench/README.md`` documents local usage and artifact layout.
+The source ``.github/workflows/bench.yml`` entry calls the reusable
+``@ci:.github/workflows/bench.yml`` implementation. PR request syntax remains
+source-owned in ``ci/bench.yaml``; ``@ci:ci/bench/README.md`` documents local
+usage and artifact layout.

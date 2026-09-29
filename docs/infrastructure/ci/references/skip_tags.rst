@@ -4,8 +4,9 @@ Skip tags
 =========
 
 Skip tags scope a pull-request CI run. Place a tag in the last commit message before pushing.
-The next PR run reads the last commit message and filters job groups accordingly. Combine tags
-with the override matrix in ``ci/matrix.yaml`` for finer control.
+The next PR run reads the last commit message and filters job groups accordingly. To run a
+focused matrix for an individual source or CI pull request, use the source ``custom`` workflow;
+the override matrix on the shared ``@ci`` branch affects every source pull request.
 
 All ``[skip-*]`` and ``[bench-only]`` tags block merge while present. Remove them from the last
 commit before merging.
@@ -21,7 +22,7 @@ Tag reference
      - Skips
      - Blocks merge
    * - ``[skip-matrix]``
-     - All build and test jobs from ``ci/matrix.yaml``.
+     - All build and test jobs from ``@ci:ci/matrix.yaml``.
      - Yes
    * - ``[skip-vdc]``
      - All "Validate Devcontainer" jobs.

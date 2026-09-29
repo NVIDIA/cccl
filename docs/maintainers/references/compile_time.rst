@@ -9,11 +9,13 @@ include-check targets.
 Entry point
 -----------
 
-The top-level entry point is:
+The examples in this reference assume sibling checkouts named ``cccl`` for the
+source and ``cccl-ci`` for the ``@ci`` branch, and are run from the ``cccl``
+source root. The top-level entry point is:
 
 .. code-block:: bash
 
-  ci/build_compile_time_bench.sh
+  ../cccl-ci/ci/build_compile_time_bench.sh
 
 The wrapper configures a caller-selected CMake preset with compile-time
 instrumentation, builds selected targets, prepares Perfetto-friendly trace
@@ -46,7 +48,7 @@ The wrapper accepts build-shape parameters so it behaves like other
 
 .. code-block:: bash
 
-  PARALLEL_LEVEL=16 ci/build_compile_time_bench.sh \
+  PARALLEL_LEVEL=16 ../cccl-ci/ci/build_compile_time_bench.sh \
     -preset all-dev \
     -target libcudacxx.test.public_headers \
     -cmake-options "-DCMAKE_CUDA_ARCHITECTURES=native"
@@ -87,7 +89,7 @@ For CI-style multi-slice reports, pass a JSON slice file:
 
 .. code-block:: bash
 
-  ci/build_compile_time_bench.sh -baseline-ref origin/main -- \
+  ../cccl-ci/ci/build_compile_time_bench.sh -baseline-ref origin/main -- \
     --slices /path/to/slices.json
 
 The slice file contains a ``slices`` array. Each slice has a stable ``id``,
@@ -112,10 +114,10 @@ Single-slice examples:
 
 .. code-block:: bash
 
-  ci/build_compile_time_bench.sh -skip-build -- -f scanning-function-body -i -n 20
-  ci/build_compile_time_bench.sh -skip-build -- -f template-instantiation -e -n 15 --tag templates
-  ci/build_compile_time_bench.sh -skip-build -- -f 'Scanning|Instantiating' -i -n 25
-  ci/build_compile_time_bench.sh -skip-build -- -f code-generation -i --scope-filter ""
+  ../cccl-ci/ci/build_compile_time_bench.sh -skip-build -- -f scanning-function-body -i -n 20
+  ../cccl-ci/ci/build_compile_time_bench.sh -skip-build -- -f template-instantiation -e -n 15 --tag templates
+  ../cccl-ci/ci/build_compile_time_bench.sh -skip-build -- -f 'Scanning|Instantiating' -i -n 25
+  ../cccl-ci/ci/build_compile_time_bench.sh -skip-build -- -f code-generation -i --scope-filter ""
 
 Baseline comparisons
 --------------------
@@ -128,7 +130,7 @@ baseline/current comparison:
 
 .. code-block:: bash
 
-  ci/build_compile_time_bench.sh \
+  ../cccl-ci/ci/build_compile_time_bench.sh \
     -baseline-ref origin/main \
     -- -f file-processing -e --sort total -n 25 --threshold 0.2
 
@@ -160,12 +162,12 @@ in only one trace.
 When ``-baseline-ref`` is used, the wrapper treats the invocation as an event
 comparison and skips the generated-TU CSV unless ``-tu-csv`` is provided
 explicitly. To compare arbitrary trace directories outside the wrapper layout,
-run ``ci/compile_time/summarize_events.py`` directly.
+run ``../cccl-ci/ci/compile_time/summarize_events.py`` directly.
 
 Pull-request reporting
 ----------------------
 
-Compile-time PR reporting is configured in ``ci/matrix.yaml`` under
+Compile-time PR reporting is configured in ``ci/matrix.yaml`` on the ``@ci`` branch under
 ``compile_time.pull_request``. Each config selects the GPU runner, devcontainer
 launch arguments, baseline ref, preset, targets, wrapper arguments, and report
 slices. ``ci/compile_time/parse_matrix.py`` validates that section and emits the
@@ -232,7 +234,7 @@ symbol-scope filtering:
 
 .. code-block:: bash
 
-  ci/build_compile_time_bench.sh -skip-build -- \
+  ../cccl-ci/ci/build_compile_time_bench.sh -skip-build -- \
     -f template-instantiation -i --scope-filter ""
 
 ``host-compiler`` matches the host compiler preprocessing / compiling events
@@ -264,7 +266,7 @@ existing trace directory manually:
 
 .. code-block:: bash
 
-  ci/compile_time/prepare_traces.py \
+  ../cccl-ci/ci/compile_time/prepare_traces.py \
     --input build/<infix>/<preset>/compile_time/raw_traces \
     --output /tmp/compile_time_perfetto
 
@@ -303,4 +305,5 @@ Comparison CSVs additionally include total-impact columns
 Notebook workflow
 -----------------
 
-For exploratory analysis, use ``ci/compile_time/analytics.ipynb``.
+For exploratory analysis, use ``ci/compile_time/analytics.ipynb`` from the
+``@ci`` checkout.

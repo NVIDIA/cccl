@@ -3,14 +3,18 @@
 Build and run targeted tests
 ============================
 
-The ``ci/build_*.sh`` and ``ci/test_*.sh`` scripts build and run all headers,
-tests, examples, etc for a single project. It is the right tool for reproducing
-a CI job, but it is slow when you are iterating on a single test.
+The ``ci/build_*.sh`` and ``ci/test_*.sh`` scripts in the ``@ci`` checkout
+build and run all headers, tests, examples, etc for a single project. It is the
+right tool for reproducing a CI job, but it is slow when you are iterating on a
+single test.
 
 ``ci/util/build_and_test_targets.sh`` builds and runs a named subset of CMake
 targets against one preset. Use it to compile one test, run one CTest pattern,
 or execute one libcudacxx lit test without rebuilding the rest of the project.
 The full flag reference is in :doc:`/cccl/development/build_and_bisect_tools`.
+
+The host examples below assume sibling checkouts named ``cccl`` for the source
+and ``cccl-ci`` for the ``@ci`` branch, and are run from the ``cccl`` root.
 
 Build a single CUB test
 -----------------------
@@ -21,7 +25,7 @@ It uniquely encodes the project, path, and test case, eg: ``cub.test.iterator``.
 #. **Configure and build the target.** Pass the preset and the metatarget to
    ``--build-targets``::
 
-     ci/util/build_and_test_targets.sh \
+     ../cccl-ci/ci/util/build_and_test_targets.sh \
        --preset cub-cpp20 \
        --build-targets "cub.test.iterator"
 
@@ -31,7 +35,7 @@ It uniquely encodes the project, path, and test case, eg: ``cub.test.iterator``.
 #. **Run the target.** Add ``--ctest-targets`` with a CTest ``-R`` regex. The
    metatarget name works directly as the pattern::
 
-     ci/util/build_and_test_targets.sh \
+     ../cccl-ci/ci/util/build_and_test_targets.sh \
        --preset cub-cpp20 \
        --build-targets "cub.test.iterator" \
        --ctest-targets "cub.test.iterator"
@@ -47,7 +51,7 @@ Some libcudacxx tests run under lit, not CTest. Pass lit test paths relative to
 
 #. **Execute one lit test.** Use ``--lit-tests`` with the test path::
 
-     ci/util/build_and_test_targets.sh \
+     ../cccl-ci/ci/util/build_and_test_targets.sh \
        --preset libcudacxx \
        --lit-tests \
          "std/algorithms/alg.nonmodifying/alg.any_of/any_of.pass.cpp"
@@ -55,7 +59,7 @@ Some libcudacxx tests run under lit, not CTest. Pass lit test paths relative to
 #. **Precompile without running.** Use ``--lit-precompile-tests`` to compile the
    test with a no-op executor. This catches compile errors without a GPU::
 
-     ci/util/build_and_test_targets.sh \
+     ../cccl-ci/ci/util/build_and_test_targets.sh \
        --preset libcudacxx \
        --lit-precompile-tests \
          "std/algorithms/alg.nonmodifying/alg.any_of/any_of.pass.cpp"
@@ -69,7 +73,7 @@ listed in the ``.devcontainer`` directory. Pass ``--gpus all`` when the run
 needs a device::
 
   .devcontainer/launch.sh -d --cuda <CTK> --host <compiler> --gpus all -- \
-    ci/util/build_and_test_targets.sh \
+    /home/coder/cccl-ci/ci/util/build_and_test_targets.sh \
       --preset cub-cpp20 \
       --build-targets "cub.test.iterator" \
       --ctest-targets "cub.test.iterator"

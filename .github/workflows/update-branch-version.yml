@@ -56,7 +56,7 @@ jobs:
           ref: ${{ inputs.target_branch }}
 
       - name: Update version
-        uses: ./.github/actions/version-update
+        uses: NVIDIA/cccl/.github/actions/version-update@ci
         with:
           new_version: ${{ inputs.new_version }}
           target_branch: ${{ inputs.target_branch }}

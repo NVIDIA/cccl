@@ -97,7 +97,7 @@ jobs:
           echo "is_latest=${is_latest}" >> "${GITHUB_OUTPUT}"
 
       - name: Build docs
-        uses: ./.github/actions/docs-build
+        uses: NVIDIA/cccl/.github/actions/docs-build@ci
         with:
           upload_workflow_artifact: "false"
         env:

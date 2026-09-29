@@ -7,6 +7,14 @@ CCCL runs its build and test matrix on NVIDIA's self-hosted GitHub Actions runne
 The pipeline turns one push into hundreds of jobs across CUDA Toolkit versions,
 host compilers, GPU architectures, C++ standards, and operating systems.
 
+Source branches own the event-triggered entry workflows, tests, and
+source-coupled change detection. Their thin entry workflows pass the source
+commit SHA to reusable workflows on the ``ci`` branch. That rolling
+branch owns the CI implementation, matrix, actions, and scripts. Locally and on
+runners the two checkouts remain separate: source is ``cccl`` and CI is
+``cccl-ci``; jobs mount them at ``/home/coder/cccl`` and
+``/home/coder/cccl-ci``, respectively.
+
 Triggering and the copy-pr-bot security model
 ---------------------------------------------
 
@@ -65,21 +73,21 @@ The same key may be used for both.
 Building the job matrix
 -----------------------
 
-``ci/matrix.yaml`` is the authoritative matrix definition, described in detail at
-:ref:`infra-ci-matrix-yaml`. The ``build-workflow`` action
-(``.github/actions/workflow-build/``) reads it and produces the concrete job list for
-the run. The action selects a workflow key by trigger: ``pull_request`` for PRs,
-``nightly`` and ``weekly`` for scheduled runs.
+``@ci:ci/matrix.yaml`` is the authoritative public matrix definition, described
+in detail at :ref:`infra-ci-matrix-yaml`. The ``build-workflow`` action at
+``@ci:.github/actions/workflow-build/`` reads it and produces the concrete job
+list for the run. The action selects a workflow key by trigger:
+``pull_request`` for PRs, ``nightly`` and ``weekly`` for scheduled runs.
 
-Before expansion, ``ci/inspect_changes.py`` compares the PR against its merge base and
-reports which projects changed, the mechanism covered at
+Before expansion, source-owned ``ci/inspect_changes.py`` compares the PR against
+its merge base and reports which projects changed, the mechanism covered at
 :ref:`infra-ci-change-detection`. The action filters the ``pull_request`` matrix to the
 changed projects and pulls reduced ``pull_request_lite`` entries for projects only
-affected through a dependency. A change anywhere in CCCL infrastructure marks every
-project dirty and runs the full matrix. The expansion mechanics — dependency
+affected through a dependency. A source change classified as core infrastructure
+marks every project dirty and runs the full matrix. The expansion mechanics — dependency
 propagation, tag defaults, list explosion, ``job_map`` — are in
-``ci/matrix.yaml``'s ``tags``, ``jobs``, and ``projects`` sections and the
-``build-workflow.py`` action.
+``@ci:ci/matrix.yaml``'s ``tags``, ``jobs``, and ``projects`` sections and the
+``@ci`` ``build-workflow.py`` action.
 
 Expansion produces ``workflow.json``: named groups (for example, "CUB GCC"), each
 carrying a ``standalone`` array and a ``two_stage`` array. A second step splits these
@@ -90,8 +98,9 @@ into four buckets along two axes — operating system and structure:
     linux_standalone     linux_two_stage
     windows_standalone   windows_two_stage
 
-``ci-workflow-pull-request.yml`` consumes the four buckets as four parallel matrix
-dispatches, one per ``workflow-dispatch-<structure>-group-<os>.yml``. The split exists
+The reusable ``@ci`` pull-request workflow consumes the four buckets as four
+parallel matrix dispatches, one per
+``workflow-dispatch-<structure>-group-<os>.yml``. The split exists
 because Linux and Windows need different runner images and shell tooling, and because
 standalone and two-stage jobs have different dependency shapes. The workflow file
 mechanics are covered in full at :ref:`infra-ci-gha-workflows`.
@@ -103,7 +112,7 @@ A standalone job builds and tests in one runner, sharing nothing with other jobs
 
 A two-stage job splits build from test into a generic single-producer multiple-consumer model.
 A single producer job creates artifacts (usually on a cheap non-GPU runner), which are then
-consumed in one or more test jobs, which may uses GPUs if needed.
+consumed in one or more test jobs, which may use GPUs if needed.
 
 Accelerating build times with sccache
 -------------------------------------
@@ -120,7 +129,9 @@ guide to enable this feature.
 PR Branch Protections
 ---------------------
 
-The pull request workflow produces a single job that gates PR mergability, named "CI."
+The reusable pull request workflow produces a single sentinel job named "CI"
+that gates PR mergeability. In the source entry workflow, GitHub displays it as
+``Run pull request CI / CI``.
 This sentinel job depends on and checks for success of every required top-level job in the
 workflow.
 
@@ -130,11 +141,13 @@ and will block merging until the tree is restored to a mergeable state.
 Override and skip enforcement
 -----------------------------
 
-A non-empty ``workflows.override`` in ``ci/matrix.yaml`` replaces the ``pull_request``
-matrix entirely, detailed at :ref:`infra-ci-override-matrix`. Use it to run a subset of jobs
-when a full run would be unnecessary / wasteful during iteration.
-The override deliberately blocks merge: the full suite must run before any PR lands,
-so the override must be emptied and re-pushed before acceptance testing.
+A non-empty ``workflows.override`` in the shared ``@ci:ci/matrix.yaml`` replaces
+the ``pull_request`` matrix globally, detailed at
+:ref:`infra-ci-override-matrix`. It is reserved for coordinated rolling-CI
+operations. To validate candidate matrix entries without changing every source
+PR, use the source ``custom`` workflow described at
+:ref:`infra-ci-adding-coverage`. The shared override deliberately blocks merge
+until it is emptied.
 
 Skip tags in the last commit message on the branch, documented at :ref:`infra-ci-skip-tags`, drop job
 groups for the next run. They also block merge while present, forcing a clean final run:
@@ -150,11 +163,13 @@ The recognized tags and their semantics are catalogued in :ref:`infra-ci-skip-ta
 Reproducing a failure locally
 -----------------------------
 
-CI jobs run the build and test scripts in ``ci/`` inside the devcontainers described in
-``.devcontainer/README.md``. A failing job's log names the exact container and script
-invocation. Pull the same container and run the same ``ci/build_<project>.sh`` or
-``ci/test_<project>.sh`` line to reproduce the CI environment, as walked through at
-:ref:`infra-ci-reproducing-locally`. For targeted single-test iteration,
-``ci/util/build_and_test_targets.sh`` builds and runs a named subset, covered at
-:ref:`infra-ci-targeted-builds`; for a regression hunt, see
-:doc:`/cccl/development/build_and_bisect_tools`.
+CI jobs run build and test scripts from ``@ci:ci/`` inside the devcontainers
+described in the source checkout's ``.devcontainer/README.md``. A failing job's
+log names the exact container and script invocation. Pull the same container
+and run the same ``/home/coder/cccl-ci/ci/build_<project>.sh`` or
+``/home/coder/cccl-ci/ci/test_<project>.sh`` line to reproduce the CI
+environment, as walked through at :ref:`infra-ci-reproducing-locally`. For
+targeted single-test iteration,
+``/home/coder/cccl-ci/ci/util/build_and_test_targets.sh`` builds and runs a
+named subset, covered at :ref:`infra-ci-targeted-builds`; for a regression
+hunt, see :doc:`/cccl/development/build_and_bisect_tools`.

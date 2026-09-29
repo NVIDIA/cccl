@@ -49,13 +49,15 @@ Making Changes
 #. **Build and Test**:
 
    Ensure changes don't break existing functionality by building and running tests.
+   These commands assume the ``@ci`` branch is checked out alongside the source
+   tree in a directory named ``cccl-ci``.
 
    .. code-block:: bash
 
-      ./ci/build_[thrust|cub|libcudacxx].sh -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
+      ../cccl-ci/ci/build_[thrust|cub|libcudacxx].sh -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
 
       # test implies build
-      ./ci/test_[thrust|cub|libcudacxx].sh  -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
+      ../cccl-ci/ci/test_[thrust|cub|libcudacxx].sh -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
 
    For more details on building and testing, refer to the `Building and Testing`_ section below.
 
@@ -95,14 +97,15 @@ depends on your goal (fixing a single test vs. reproducing a full CI job) and wh
 Manual build scripts
 ~~~~~~~~~~~~~~~~~~~~~~
 
-``ci/build_<project>.sh`` and ``ci/test_<project>.sh`` build or test a whole project (``thrust``,
-``cub``, or ``libcudacxx``) for a given host compiler, C++ standard, and GPU architecture set. These are
-the scripts our CI runs, so they reproduce a CI job exactly:
+``ci/build_<project>.sh`` and ``ci/test_<project>.sh`` in the ``@ci`` checkout build or test a whole
+project (``thrust``, ``cub``, or ``libcudacxx``) for a given host compiler, C++ standard, and GPU
+architecture set. These are the scripts our CI runs, so they reproduce a CI job exactly. From the
+``cccl`` source root with a sibling ``cccl-ci`` checkout:
 
 .. code-block:: bash
 
-   ./ci/build_cub.sh -cxx g++ -std 17 -arch "70;75;80-virtual"
-   ./ci/test_cub.sh  -cxx g++ -std 17 -arch "70;75;80-virtual"
+   ../cccl-ci/ci/build_cub.sh -cxx g++ -std 17 -arch "70;75;80-virtual"
+   ../cccl-ci/ci/test_cub.sh -cxx g++ -std 17 -arch "70;75;80-virtual"
 
 Building tests does not require a GPU; running them does. See :ref:`infra-install-build-test` for the
 full script reference, including the faster, target-scoped ``ci/util/build_and_test_targets.sh`` for

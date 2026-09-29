@@ -12,15 +12,16 @@ For the full option, CSV, filter, and CI contract reference, see
 Run the common comparison
 -------------------------
 
-From the repository root, run:
+With the ``@ci`` branch checked out alongside the source tree as ``cccl-ci``,
+run from the ``cccl`` source root:
 
 .. code-block:: bash
 
-  ci/build_compile_time_bench.sh \
+  ../cccl-ci/ci/build_compile_time_bench.sh \
     -baseline-ref origin/main \
     -- --slices /path/to/slices.json
 
-The CI slices live in ``ci/matrix.yaml`` under
+The CI slices live in ``ci/matrix.yaml`` on the ``@ci`` branch under
 ``compile_time.pull_request[].slices``. To reproduce the PR shape locally, copy
 those slice definitions to a JSON file shaped as:
 
@@ -57,7 +58,7 @@ event report:
 
 .. code-block:: bash
 
-  ci/build_compile_time_bench.sh -skip-build -- \
+  ../cccl-ci/ci/build_compile_time_bench.sh -skip-build -- \
     -f file-processing -e --sort total -n 25
 
 Other useful built-in filters include:
@@ -85,7 +86,8 @@ Important columns:
 - ``Baseline`` / ``Current``: selected metric values on each side.
 - ``Matched traces``: number of generated TUs where the event key was comparable.
 
-Small movements are filtered by per-slice thresholds from ``ci/matrix.yaml``.
+Small movements are filtered by per-slice thresholds from ``ci/matrix.yaml``
+on the ``@ci`` branch.
 Those thresholds are intentionally non-zero to hide ordinary run-to-run noise.
 
 Inspect traces in Perfetto

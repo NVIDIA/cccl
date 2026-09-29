@@ -13,11 +13,12 @@ Two environments are available:
 
 ### Build C++ Benchmarks
 
-Build CUB benchmarks using the CI script (one-time, ~13 minutes):
+Build CUB benchmarks using the CI script (one-time, ~13 minutes). This assumes
+the `@ci` branch is checked out alongside the source tree as `cccl-ci`:
 
 ```bash
 cd /path/to/cccl
-./ci/build_cub.sh -arch 89  # Use your GPU arch (89=RTX 4090, 80=A100, 90=H100)
+../cccl-ci/ci/build_cub.sh -arch 89  # Use your GPU arch (89=RTX 4090, 80=A100, 90=H100)
 ```
 
 Binaries are built to: `build/cub/bin/`

@@ -3,9 +3,11 @@
 matrix.yaml reference
 =====================
 
-``ci/matrix.yaml`` is the authoritative definition of CCCL's CI job matrix. It declares
-the workflows, the toolchain and hardware vocabulary jobs draw from, and the per-workflow
-job entries that expand into individual GitHub Actions jobs.
+``ci/matrix.yaml`` on the ``ci`` branch is the authoritative definition
+of CCCL's public CI job matrix. It declares the workflows, the toolchain and
+hardware vocabulary jobs draw from, and the per-workflow job entries that
+expand into individual GitHub Actions jobs. Logical ``ci/...`` paths on this
+page are relative to that checkout.
 
 Top-level keys
 --------------
@@ -54,7 +56,7 @@ Workflow types
    * - Workflow
      - Purpose
    * - ``override``
-     - Overrides the CI jobs run for the active PR when defined. Blocks merge while set.
+     - Globally overrides source-PR jobs while set on the shared ``@ci`` branch. Blocks merge while set.
    * - ``pull_request``
      - Default per-PR matrix.
    * - ``pull_request_lite``

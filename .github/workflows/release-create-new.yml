@@ -107,7 +107,7 @@ jobs:
           git show --oneline --no-patch HEAD | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Update version numbers in main
-        uses: ./.github/actions/version-update
+        uses: NVIDIA/cccl/.github/actions/version-update@ci
         with:
           new_version: ${{ inputs.main_version }}
           target_branch: "main"

@@ -67,7 +67,7 @@ bad_expression(); // expected-error {{message fragment}}
 Use targeted libcudacxx lit runs. Paths passed to `--lit-precompile-tests` and `--lit-tests` are relative to `libcudacxx/test/libcudacxx/`.
 
 ```bash
-ci/util/build_and_test_targets.sh \
+../cccl-ci/ci/util/build_and_test_targets.sh \
   --preset libcudacxx \
   --lit-precompile-tests "std/algorithms/alg.nonmodifying/alg.any_of/any_of.pass.cpp" \
   --lit-tests "std/algorithms/alg.nonmodifying/alg.any_of/any_of.pass.cpp"
