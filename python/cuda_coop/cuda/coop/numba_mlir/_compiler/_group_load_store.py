@@ -236,7 +236,8 @@ class _LoadStorePlanning:
         if not is_array:
             if operation == "load":
                 raise TypeError(
-                    "cuda.coop.numba_mlir.load output must be a fixed-size local array"
+                    "cuda.coop.numba_mlir.load output "
+                    "must be a fixed-size local array"
                 )
             return 1
         extent = self._context.array_extent(payload)

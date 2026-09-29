@@ -640,7 +640,8 @@ def test_storage_provider_without_plan_requires_block_scope(
         pytest.param(
             "caller-none",
             True,
-            "caller-owned TempStorage is supported only for single-instance block",
+            "caller-owned TempStorage is supported only for "
+            "single-instance block",
             id="caller-none",
         ),
         pytest.param(

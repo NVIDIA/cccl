@@ -75,7 +75,9 @@ class _NumbaMlirCompilerCompat:
             planners = tuple(self.planner_registry._planners)
         rewrites = {
             kind: tuple(rewrite_classes)
-            for kind, rewrite_classes in self.rewrite_registry.rewrites.copy().items()
+            for kind, rewrite_classes in (
+                self.rewrite_registry.rewrites.copy().items()
+            )
         }
         return _RegistrationSnapshot(
             planner_registry=self.planner_registry,
@@ -101,9 +103,9 @@ class _NumbaMlirCompilerCompat:
             }
         rewrite_name, rewrite_type = rewrite
         counts[rewrite_name] = (
-            snapshot.rewrite_registry.rewrites.get("before-inference", []).count(
-                rewrite_type
-            )
+            snapshot.rewrite_registry.rewrites.get(
+                "before-inference", []
+            ).count(rewrite_type)
             if rewrite_type is not None
             else 0
         )
@@ -198,7 +200,9 @@ def _load_numba_mlir_compat(runtime: Any) -> _NumbaMlirCompilerCompat:
 
     version = _detected_version(runtime)
     if not _is_supported_runtime_version(version):
-        detected = "an unknown version" if version is None else f"version {version}"
+        detected = (
+            "an unknown version" if version is None else f"version {version}"
+        )
         raise _NumbaMlirBackendImportError(
             "unsupported-runtime-version",
             "cuda.coop.numba_mlir supports numba-cuda-mlir "
@@ -209,11 +213,17 @@ def _load_numba_mlir_compat(runtime: Any) -> _NumbaMlirCompilerCompat:
         )
 
     extending = _import_compat_module("numba_cuda_mlir.extending")
-    planner_module = _import_compat_module("numba_cuda_mlir._whole_function_planners")
+    planner_module = _import_compat_module(
+        "numba_cuda_mlir._whole_function_planners"
+    )
     rewrites = _import_compat_module("numba_cuda_mlir.numba_cuda.core.rewrites")
     errors = _import_compat_module("numba_cuda_mlir.numba_cuda.core.errors")
-    typeof_module = _import_compat_module("numba_cuda_mlir.numba_cuda.typing.typeof")
-    templates = _import_compat_module("numba_cuda_mlir.numba_cuda.typing.templates")
+    typeof_module = _import_compat_module(
+        "numba_cuda_mlir.numba_cuda.typing.typeof"
+    )
+    templates = _import_compat_module(
+        "numba_cuda_mlir.numba_cuda.typing.templates"
+    )
     transforms = _import_compat_module("numba_cuda_mlir.numbair_transforms")
 
     try:
@@ -257,7 +267,9 @@ def _get_numba_mlir_datamodel_compat() -> _NumbaMlirDatamodelCompat:
     global _datamodel_compat
     if _datamodel_compat is None:
         mlir_module = _import_compat_module("numba_cuda_mlir._mlir")
-        datamodel = _import_compat_module("numba_cuda_mlir.numba_cuda.datamodel")
+        datamodel = _import_compat_module(
+            "numba_cuda_mlir.numba_cuda.datamodel"
+        )
         datamodel_models = _import_compat_module(
             "numba_cuda_mlir.numba_cuda.datamodel.models"
         )

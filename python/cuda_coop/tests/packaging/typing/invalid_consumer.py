@@ -129,7 +129,8 @@ coop.store(  # expected-error: [call-overload]
     values,
     offset="1",
 )
-coop.BlockLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
-coop.BlockStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
-coop.WarpLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
-coop.WarpStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
+# Test rejected attributes.
+coop.BlockLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018
+coop.BlockStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018
+coop.WarpLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018
+coop.WarpStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018

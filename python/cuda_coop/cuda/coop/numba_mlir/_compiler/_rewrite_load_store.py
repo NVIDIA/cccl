@@ -52,7 +52,8 @@ class _ExactStoreScalar:
                 if actual_dtype != dtype:
                     raise compat.numba_errors.TypingError(
                         "cuda.coop.numba_mlir.store value dtype "
-                        f"{actual_dtype} does not match destination dtype {dtype}"
+                        f"{actual_dtype} does not "
+                        f"match destination dtype {dtype}"
                     )
 
                 def impl(value):
@@ -205,7 +206,8 @@ class _LoadStoreRewrite:
                 )
             if normalized_offset > (1 << 63) - 1:
                 raise CoopSinglePhaseRewriteError(
-                    "coop load/store static offset must fit a signed 64-bit integer"
+                    "coop load/store static offset "
+                    "must fit a signed 64-bit integer"
                 )
 
         checks: list[tuple[str, int]] = []
@@ -350,11 +352,13 @@ class _LoadStoreRewrite:
             if inference.op_name != "store" or payload_is_array:
                 raise CoopSinglePhaseRewriteError(
                     f"cuda.coop.numba_mlir.{inference.op_name} memory dtype "
-                    f"{memory_dtype} does not match payload dtype {payload_dtype}"
+                    f"{memory_dtype} does not match "
+                    f"payload dtype {payload_dtype}"
                 )
             raise CoopSinglePhaseRewriteError(
                 "cuda.coop.numba_mlir.store value dtype "
-                f"{payload_dtype} does not match destination dtype {memory_dtype}"
+                f"{payload_dtype} does not match "
+                f"destination dtype {memory_dtype}"
             )
 
 
@@ -396,7 +400,8 @@ def analyze_load_store_match(
     if common_root_operation is not None:
         if common_root_operation != op_name:
             raise CoopSinglePhaseRewriteError(
-                "_common_root_operation does not match the rewritten group operation"
+                "_common_root_operation does not "
+                "match the rewritten group operation"
             )
         from ._parameters import _validate_common_numeric_dtype
 
