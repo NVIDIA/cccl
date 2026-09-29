@@ -62,7 +62,9 @@ class StatefulFunction:
             raise TypeError("StatefulFunction op must be callable")
         if self.dtype is None:
             raise TypeError("StatefulFunction dtype must be provided")
-        if self.name is not None and (not isinstance(self.name, str) or not self.name):
+        if self.name is not None and (
+            not isinstance(self.name, str) or not self.name
+        ):
             raise ValueError("StatefulFunction name must be a non-empty string")
         object.__setattr__(self, "op", normalized)
 
