@@ -159,8 +159,11 @@ barriers automatically. See :ref:`exclusive scratch slices
 <coop-faq-exclusive-storage>` for the tradeoff between memory and reuse
 synchronization.
 
-The current backend accepts explicit descriptors for block transpose-family Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, TopK, Adjacent Difference and Discontinuity, Histogram, both Run Length Decode forms.
-Warp operations use compiler-owned scratch. See
+The current backend accepts explicit descriptors for block transpose-family
+Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, TopK, Adjacent
+Difference, Discontinuity, Histogram, and both Run Length Decode forms.
+Warp Load/Store, Warp Scan, Warp Merge Sort, and Batched Warp Reduction use
+compiler-owned storage. See
 :ref:`temporary storage <coop-temp-storage>` for the complete contract and
 shared-memory restrictions.
 
@@ -297,3 +300,19 @@ that total and relative run offsets to auxiliary payloads; invalid
 relative offsets contain the maximum value of the selected unsigned
 offset dtype. Bulk decoding writes only valid items, leaving the rest
 of the destination unchanged.
+
+.. _coop-faq-batched-reduce:
+
+How does Batched Warp Reduction differ from ordinary Reduce?
+------------------------------------------------------------
+
+Ordinary ``reduce(group, values)`` combines the group's payload items
+into one aggregate. ``reduce_batched(warp, values)`` reduces each local
+slot independently across the warp. Three slots per lane mean three
+independent results, one for each slot.
+
+The results are distributed among lanes in blocked or striped order;
+they are not broadcast to every lane. Each returned payload has
+``ceil(batches / warp_width)`` slots, and slots without a corresponding
+batch are unspecified. The :doc:`feature-sum example
+<visualizations/reduce-batched>` guards its stores by batch index.
