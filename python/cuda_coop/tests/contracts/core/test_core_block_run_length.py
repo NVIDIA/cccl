@@ -11,13 +11,13 @@ from cuda.coop._core.block.run_length import make_block_run_length_decode_spec
 
 
 def _spec(**kwargs):
-    params = dict(
-        item_dtype=INT32,
-        run_length_dtype=INT32,
-        block_dim=(32, 1, 1),
-        runs_per_thread=2,
-        decoded_items_per_thread=4,
-    )
+    params = {
+        "item_dtype": INT32,
+        "run_length_dtype": INT32,
+        "block_dim": (32, 1, 1),
+        "runs_per_thread": 2,
+        "decoded_items_per_thread": 4,
+    }
     params.update(kwargs)
     return make_block_run_length_decode_spec(**params)
 
