@@ -56,7 +56,9 @@ def cutlass_dtype(dtype):
 
 @contextmanager
 def device_array(values):
-    """Yield a typed pointer; copy the result back before freeing the allocation."""
+    """Yield a typed pointer; copy the result back before freeing the
+    allocation.
+    """
 
     values = np.asarray(values)
     if not values.flags.c_contiguous:
