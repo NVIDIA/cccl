@@ -313,23 +313,13 @@ public:
           // ipt_17.tpb_128.rle_0.ws_1.mem_1.ld_0.laid_2.vec_0 1.001  0.982  1.158  1.228
           return HistogramPolicy{128, 17, 1, BLOCK_LOAD_STRIPED, LOAD_DEFAULT, false, SMEM, true, 2048};
         }
-        if (sample_size == 4)
+        if (sample_size == 4 && sample_type != type_t::float32)
         {
-          if (sample_type == type_t::float32)
-          {
-            // ipt_15.tpb_1024.rle_1.ws_0.mem_1.ld_1.laid_2.vec_1 0.974  0.966  1.039  1.175
-            return HistogramPolicy{1024, 15, 1 << 1, BLOCK_LOAD_STRIPED, LOAD_LDG, true, SMEM, false, 2048};
-          }
           // ipt_12.tpb_448.rle_1.ws_0.mem_1.ld_1.laid_1.vec_0 1.006  1.053  1.074  1.016
           return HistogramPolicy{448, 12, 1, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_LDG, true, SMEM, false, 2048};
         }
-        if (sample_size == 8)
+        if (sample_size == 8 && sample_type != type_t::float64)
         {
-          if (sample_type == type_t::float64)
-          {
-            // ipt_16.tpb_512.rle_1.ws_0.mem_1.ld_0.laid_2.vec_0 0.974  0.995  1.138  1.181
-            return HistogramPolicy{512, 16, 1, BLOCK_LOAD_STRIPED, LOAD_DEFAULT, true, SMEM, false, 2048};
-          }
           // ipt_11.tpb_512.rle_1.ws_0.mem_1.ld_2.laid_2.vec_0 0.943  1.014  1.135  1.199
           return HistogramPolicy{512, 11, 1, BLOCK_LOAD_STRIPED, LOAD_CA, true, SMEM, false, 2048};
         }
