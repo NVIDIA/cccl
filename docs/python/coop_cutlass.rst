@@ -237,7 +237,8 @@ floating-point sum can differ from a sequential CPU sum because the order
 of additions differs.
 
 Load initializes the destination payload in place and returns ``None``.
-Store leaves its input unchanged and also returns ``None``. For payload
+Store also returns ``None``. Transpose Store algorithms may rearrange the
+input payload; copy values before Store if they are needed later. For payload
 inputs, Scan, Exchange, sorting, selection, and array Shuffle return fresh
 payloads. Supported scalar forms return CuTe scalars. Reduce returns one
 scalar even when each thread contributes multiple items. Read results
@@ -380,9 +381,10 @@ Do not add the within-block warp origin yourself. An offset for a different
 block or a later loop iteration remains the caller's responsibility.
 
 ``valid_items`` counts the valid prefix of each warp's tile, from zero through
-``32 * I``. As with Block Load, a partial load preserves initialized payload
-items outside that prefix unless ``oob_default`` is supplied. Store writes
-only the valid prefix and preserves its input payload.
+``32 * I``. As with Block Load, payload items outside that prefix are
+unspecified unless ``oob_default`` is supplied, even if initialized before
+Load. Store writes only the valid prefix and may rearrange its input payload
+when using a transpose algorithm.
 
 This example uses two physical warps in an ``(8, 4, 2)`` block and checks the
 independent partial tiles against a CPU reference.
@@ -408,8 +410,8 @@ implicit scratch. With group width ``W``, linear block rank ``t``, and ``I``
 items per thread, the compiler adds ``(t // W) * W * I`` to ``offset``.
 Blocked layout uses tile index ``(t % W) * I + i``; striped layout uses
 ``(t % W) + i * W``. ``valid_items`` describes a prefix of at most ``W * I``
-items. Default filling and preservation of initialized invalid items follow
-the same rules as physical Warp Load.
+items. Default filling and unspecified invalid items follow the same rules
+as physical Warp Load.
 
 Every member of a participating logical group must call the primitive with
 uniform controls. Complete sibling groups may take different control-flow
