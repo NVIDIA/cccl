@@ -10,8 +10,9 @@ store, then check which group kinds the operation supports.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, TypeVar
+from typing import TypeVar
 
 from ..thread_group import ThreadGroup
 
