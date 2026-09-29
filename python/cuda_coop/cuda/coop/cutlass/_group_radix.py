@@ -103,10 +103,10 @@ def radix_sort_keys(
     keys : scalar, ThreadData, or CuTe register payload
         Keys in blocked order, with element type ``Int32``, ``Uint32``,
         ``Int64``, ``Uint64``, ``Float32``, or ``Float64``. A scalar contributes
-        one key per thread. Register-memory tensors and ``TensorSSA`` values
-        are converted through
-        :meth:`ThreadData.from_payload <cuda.coop.cutlass.ThreadData.from_payload>`;
-        read-only payloads are also accepted.
+        one key per thread. Register-memory tensors and ``TensorSSA`` values are
+        converted through :meth:`ThreadData.from_payload
+        <cuda.coop.cutlass.ThreadData.from_payload>`; read-only payloads are
+        also accepted.
     begin_bit, end_bit : integer, optional
         Block-uniform half-open interval in CUB's transformed key bits, with
         ``0 <= begin_bit < end_bit <= key_width``. Begin defaults to zero;
@@ -184,12 +184,12 @@ def radix_sort_pairs(
         controls; the block tile contains at most 65,535 items.
     keys, values : scalar, ThreadData, or CuTe register payload
         Matching scalar or fixed-size payload shapes. Payloads have equal
-        per-thread extents and use blocked input order. Key types are
-        ``Int32``, ``Uint32``, ``Int64``, ``Uint64``, ``Float32``, and ``Float64``.
-        Values may independently use signed and unsigned 8-, 16-, 32-, and
-        64-bit integers, ``Float32``, or ``Float64``. Read-only and CuTe register
-        payloads are accepted; one operand may be ``ThreadData`` while the
-        other is a register payload of the same extent.
+        per-thread extents and use blocked input order. Key types are ``Int32``,
+        ``Uint32``, ``Int64``, ``Uint64``, ``Float32``, and ``Float64``. Values
+        may independently use signed and unsigned 8-, 16-, 32-, and 64-bit
+        integers, ``Float32``, or ``Float64``. Read-only and CuTe register
+        payloads are accepted; one operand may be ``ThreadData`` while the other
+        is a register payload of the same extent.
     begin_bit, end_bit : integer, optional
         Block-uniform half-open interval in transformed key bits. Begin
         defaults to zero and end to the key width. Runtime integer bounds

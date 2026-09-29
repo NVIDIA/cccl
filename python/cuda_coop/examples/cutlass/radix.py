@@ -28,7 +28,9 @@ def _check(result):
 
 
 def run_example(api="common"):
-    """Check stable digit order, inverse ranks, prefixes, and input preservation."""
+    """Check stable digit order, inverse ranks, prefixes, and input
+    preservation.
+    """
     if api not in {"common", "qualified"}:
         raise ValueError("api must be 'common' or 'qualified'")
     module = coop if api == "common" else cutlass_coop
