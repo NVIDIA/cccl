@@ -30,7 +30,6 @@
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/__utility/call_once.h>
 #  include <cuda/__utility/no_init.h>
-#  include <cuda/__utility/raw_storage.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/span>
