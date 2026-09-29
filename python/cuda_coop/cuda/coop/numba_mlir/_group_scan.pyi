@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Scan signatures for block and warp groups."""
-
 from collections.abc import Callable
 from typing import Literal, Protocol, TypeAlias, overload
 
