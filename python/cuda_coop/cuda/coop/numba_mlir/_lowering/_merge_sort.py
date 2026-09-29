@@ -70,14 +70,14 @@ def _make_provider(namespace, pairs, partial):
         elif value_dtype is not None:
             raise ValueError("keys-only Merge Sort does not accept value_dtype")
         adapter = NumbaMlirCoreAdapter()
-        kwargs = dict(
-            key_dtype=adapter.core_dtype(key_dtype),
-            value_dtype=adapter.core_dtype(value_dtype) if pairs else None,
-            items_per_thread=items_per_thread,
-            compare_operator=comparison_operator(descending, compare_op),
-            valid_items=0 if partial else None,
-            oob_default=0 if partial else None,
-        )
+        kwargs = {
+            "key_dtype": adapter.core_dtype(key_dtype),
+            "value_dtype": adapter.core_dtype(value_dtype) if pairs else None,
+            "items_per_thread": items_per_thread,
+            "compare_operator": comparison_operator(descending, compare_op),
+            "valid_items": 0 if partial else None,
+            "oob_default": 0 if partial else None,
+        }
         if namespace == "block":
             spec = make_block_merge_sort_spec(block_dim=tuple(block_dim), **kwargs)
         else:

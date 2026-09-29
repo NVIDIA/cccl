@@ -59,7 +59,7 @@ def _payload(context, operation, name, value, is_common_root):
 
 
 def _cast(context, statements, inst, value, dtype, name):
-    kwargs = dict(scope=inst.target.scope, loc=inst.loc)
+    kwargs = {"scope": inst.target.scope, "loc": inst.loc}
     cast = context.value_var(
         statements, stem=f"merge_sort_{name}_type", value=dtype, **kwargs
     )
@@ -187,13 +187,13 @@ def _lower_merge_sort(context, inst, *, operation, group, bound, is_common_root)
     factory = getattr(
         _merge_sort, f"{namespace}_{operation}" + ("_partial" if partial else "")
     )
-    kwargs = dict(
-        key_dtype=key_dtype,
-        items_per_thread=extent,
-        threads_per_block=plan.participation.exact_block_dim,
-        descending=descending,
-        compare_op=compare_raw,
-    )
+    kwargs = {
+        "key_dtype": key_dtype,
+        "items_per_thread": extent,
+        "threads_per_block": plan.participation.exact_block_dim,
+        "descending": descending,
+        "compare_op": compare_raw,
+    }
     if pairs:
         kwargs["value_dtype"] = value_dtype
     if namespace == "warp":
