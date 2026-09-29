@@ -41,7 +41,9 @@ def _radix_bounds(operation, key_width, begin_bit, end_bit, radix_bits=None):
         )
     if radix_bits is not None and end_bit - begin_bit != radix_bits:
         raise ValueError("radix_bits must match end_bit - begin_bit")
-    make_radix_bit_range(begin_bit=begin_bit, end_bit=end_bit, bit_width=key_width)
+    make_radix_bit_range(
+        begin_bit=begin_bit, end_bit=end_bit, bit_width=key_width
+    )
     if operation == "radix_rank" and end_bit - begin_bit > 8:
         raise ValueError("radix_rank bit width must be <= 8")
     return int(begin_bit), int(end_bit)
