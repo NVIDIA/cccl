@@ -30,6 +30,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
+
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // logical_data_untyped_impl has a backend_ctx_untyped
 #include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/internal/data_interface.cuh>
@@ -366,7 +368,7 @@ public:
       // Do not enable write-back on a logical data that was initialized from a shape, for example
       if (reference_instance_id == instance_id_t::invalid)
       {
-        throw ::std::logic_error("cannot enable write-back on a logical data with no reference instance");
+        _CCCL_THROW(::std::logic_error, "cannot enable write-back on a logical data with no reference instance");
       }
     }
 
@@ -2297,8 +2299,8 @@ inline instance_id_t task::find_data_instance_id(const logical_data_untyped& d) 
   }
 
   // This task does not have d among its dependencies
-  throw ::std::invalid_argument(
-    ::std::string("logical data '").append(d.get_symbol()).append("' is not a dependency of this task"));
+  _CCCL_THROW(::std::invalid_argument,
+              ::std::string("logical data '").append(d.get_symbol()).append("' is not a dependency of this task"));
 }
 
 namespace reserved
@@ -2316,7 +2318,8 @@ inline void ensure_task_deps_initialized(const task_dep_vector_untyped& deps)
   {
     if (!dep.has_data() || !dep.get_data().is_initialized())
     {
-      throw ::std::invalid_argument(
+      _CCCL_THROW(
+        ::std::invalid_argument,
         ::std::string("dependency number ").append(::std::to_string(index)).append(" is an uninitialized logical data"));
     }
     ++index;

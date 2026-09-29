@@ -27,6 +27,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
+
 #include <cuda/experimental/__stf/internal/task_dep.cuh> // reorderer_payload uses task_dep_vector_untyped
 #include <cuda/experimental/__stf/internal/task_statistics.cuh> // heft_scheduler uses statistics_t
 
@@ -375,7 +377,7 @@ inline ::std::unique_ptr<reorderer> reorderer::make(const char* reorderer_type)
     return ::std::make_unique<post_mortem_reorderer>(order_file);
   }
 
-  throw ::std::invalid_argument(
-    ::std::string("invalid CUDASTF_TASK_ORDER value '").append(reorderer_type_s).append("'"));
+  _CCCL_THROW(::std::invalid_argument,
+              ::std::string("invalid CUDASTF_TASK_ORDER value '").append(reorderer_type_s).append("'"));
 }
 } // namespace cuda::experimental::stf::reserved

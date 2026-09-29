@@ -32,6 +32,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
+
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
@@ -131,12 +133,12 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     {
       if (int(l1_size) > kernel_limits.block_size_limit)
       {
-        throw ::std::invalid_argument(
-          ::std::string("unsatisfiable spec: maximum block size ")
-            .append(::std::to_string(kernel_limits.block_size_limit))
-            .append(" threads, requested ")
-            .append(::std::to_string(l1_size))
-            .append(" (level 1)"));
+        _CCCL_THROW(::std::invalid_argument,
+                    ::std::string("unsatisfiable spec: maximum block size ")
+                      .append(::std::to_string(kernel_limits.block_size_limit))
+                      .append(" threads, requested ")
+                      .append(::std::to_string(l1_size))
+                      .append(" (level 1)"));
       }
     }
 
@@ -181,12 +183,12 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     {
       if (int(l2_size) > kernel_limits.block_size_limit)
       {
-        throw ::std::invalid_argument(
-          ::std::string("unsatisfiable spec: maximum block size ")
-            .append(::std::to_string(kernel_limits.block_size_limit))
-            .append(" threads, requested ")
-            .append(::std::to_string(l2_size))
-            .append(" (level 2)"));
+        _CCCL_THROW(::std::invalid_argument,
+                    ::std::string("unsatisfiable spec: maximum block size ")
+                      .append(::std::to_string(kernel_limits.block_size_limit))
+                      .append(" threads, requested ")
+                      .append(::std::to_string(l2_size))
+                      .append(" (level 2)"));
       }
     }
 
