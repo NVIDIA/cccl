@@ -60,7 +60,9 @@ def normalize_operator(value, *, primitive="reduce"):
     if value is None:
         return "sum"
     if isinstance(value, Enum):
-        raise TypeError(f"cuda.coop.cutlass.{primitive} operator must be a built-in")
+        raise TypeError(
+            f"cuda.coop.cutlass.{primitive} operator must be a built-in"
+        )
     if isinstance(value, str):
         token = value.strip().lower().replace("-", "_")
         try:
@@ -83,7 +85,9 @@ def validate_operator_dtype(op, value_type, *, primitive="reduce"):
     if op not in OPERATOR_CPP:
         raise ValueError(f"unsupported built-in operator {op!r}")
     if op.startswith("bit_") and value_type not in INTEGER_VALUE_TYPES:
-        raise TypeError(f"cuda.coop.cutlass.{primitive} {op} requires an integer dtype")
+        raise TypeError(
+            f"cuda.coop.cutlass.{primitive} {op} requires an integer dtype"
+        )
 
 
 def operator_expression(op):

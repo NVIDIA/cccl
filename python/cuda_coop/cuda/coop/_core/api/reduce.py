@@ -21,7 +21,9 @@ from ._payload import (
     _validate_common_numeric_value,
 )
 
-_PARTIAL_REDUCTION_GROUP_KINDS = frozenset({"block", "warp", "threads_within_warp"})
+_PARTIAL_REDUCTION_GROUP_KINDS = frozenset(
+    {"block", "warp", "threads_within_warp"}
+)
 _COMMON_REDUCTION_GROUP_KINDS = (
     "thread",
     "warp",
@@ -118,7 +120,8 @@ def _validate_common_reduce_options(
         )
         if group.kind not in _PARTIAL_REDUCTION_GROUP_KINDS:
             raise ValueError(
-                f"cuda.coop.{operation} valid_items requires a block or warp group"
+                f"cuda.coop.{operation} valid_items requires "
+                "a block or warp group"
             )
         if broadcast is not False:
             raise ValueError(
@@ -133,7 +136,10 @@ def _validate_common_reduce_options(
                 raise ValueError(
                     f"cuda.coop.{operation} valid_items must be at least 1"
                 )
-            if group.static_size is not None and static_valid_items > group.static_size:
+            if (
+                group.static_size is not None
+                and static_valid_items > group.static_size
+            ):
                 raise ValueError(
                     f"cuda.coop.{operation} valid_items {static_valid_items} "
                     f"exceeds group size {group.static_size}"
@@ -141,11 +147,13 @@ def _validate_common_reduce_options(
     if algorithm is not None:
         if group.kind != "block":
             raise ValueError(
-                f"cuda.coop.{operation} algorithm selection requires a block group"
+                f"cuda.coop.{operation} algorithm selection requires "
+                "a block group"
             )
         if broadcast is not False:
             raise ValueError(
-                f"cuda.coop.{operation} algorithm selection requires broadcast=False"
+                f"cuda.coop.{operation} algorithm selection requires "
+                "broadcast=False"
             )
 
 

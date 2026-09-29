@@ -115,7 +115,9 @@ def test_grid_requires_divisibility(monkeypatch):
 
 
 def test_query_defaults():
-    assert lowering._result_type(this_thread(), "thread", None) is cutlass.Uint32
+    assert (
+        lowering._result_type(this_thread(), "thread", None) is cutlass.Uint32
+    )
     assert lowering._result_type(this_block(), "thread", None) is cutlass.Uint32
     assert lowering._result_type(this_block(), "grid", None) is cutlass.Uint64
     assert lowering._result_type(this_grid(), "thread", None) is cutlass.Uint64
@@ -133,7 +135,9 @@ def test_query_registration_rolls_back(monkeypatch):
         assert snapshot is sentinel
         events.clear()
 
-    monkeypatch.setattr(lowering._state, "restore_active_session_state", restore)
+    monkeypatch.setattr(
+        lowering._state, "restore_active_session_state", restore
+    )
 
     def failure(**kwargs):
         raise ValueError("bad ffi")

@@ -43,13 +43,21 @@ class _CudaxGroupRequest:
         if self.op in _QUERY_OPS:
             validate_thread_group_query_dtype(self.result_type, scope=_SCOPE)
             if self.result_type not in _types.INTEGER_VALUE_TYPES:
-                raise TypeError("group query requires a supported integral dtype")
+                raise TypeError(
+                    "group query requires a supported integral dtype"
+                )
 
     @property
     def symbol_name(self):
-        parts = ["cuda_coop_cutlass_cudax_group", self.group.symbol_suffix, self.op]
+        parts = [
+            "cuda_coop_cutlass_cudax_group",
+            self.group.symbol_suffix,
+            self.op,
+        ]
         if self.op in _QUERY_OPS:
-            parts.extend((self.level, _types.TYPE_SPECS[self.result_type].token))
+            parts.extend(
+                (self.level, _types.TYPE_SPECS[self.result_type].token)
+            )
         return "_".join(parts)
 
 
@@ -72,7 +80,9 @@ def _resolve_method_group(group, op, level="thread"):
                 "barrier lifetime"
             )
         if group.kind == "grid":
-            raise NotImplementedError(f"{_SCOPE} grid synchronization is unsupported")
+            raise NotImplementedError(
+                f"{_SCOPE} grid synchronization is unsupported"
+            )
     return resolve_thread_group(
         group,
         current_kernel_launch_facts(),
@@ -83,19 +93,26 @@ def _resolve_method_group(group, op, level="thread"):
 def _result_type(group, level, dtype):
     if dtype is None:
         return (
-            _types.Uint64 if group.kind == "grid" or level == "grid" else _types.Uint32
+            _types.Uint64
+            if group.kind == "grid" or level == "grid"
+            else _types.Uint32
         )
     dtype = _types.canonical_dsl_type(dtype)
     validate_thread_group_query_dtype(dtype, scope=_SCOPE)
     if dtype not in _types.INTEGER_VALUE_TYPES:
-        raise TypeError(f"{_SCOPE} group query requires a supported integral dtype")
+        raise TypeError(
+            f"{_SCOPE} group query requires a supported integral dtype"
+        )
     return dtype
 
 
 def _group_prelude(group):
     if group.kind == "warps_within_block":
         return _mapped_warp_query_prelude(group)
-    return [*render_hierarchy_decl(group.hierarchy), *render_group_decl_lines(group)]
+    return [
+        *render_hierarchy_decl(group.hierarchy),
+        *render_group_decl_lines(group),
+    ]
 
 
 def _mapped_warp_query_prelude(group: ThreadGroup) -> list[str]:
@@ -123,7 +140,10 @@ def _mapped_warp_query_prelude(group: ThreadGroup) -> list[str]:
                 f"  constexpr ::cuda::std::uint32_t group_warp_count = "
                 f"{group.mapping.count};"
             ),
-            f"  constexpr ::cuda::std::uint32_t grouped_warp_count = {grouped_warps};",
+            (
+                "  constexpr ::cuda::std::uint32_t grouped_warp_count = "
+                f"{grouped_warps};"
+            ),
         )
     )
     return lines
@@ -182,7 +202,10 @@ def _render_cudax_group(request):
         return [
             f"{cpp_type} {request.symbol_name}() {{",
             *_group_prelude(group),
-            f"  return static_cast<{cpp_type}>({_query_expr(group, op, request.level)});",
+            (
+                f"  return static_cast<{cpp_type}>"
+                f"({_query_expr(group, op, request.level)});"
+            ),
             "}",
         ]
     if op == "is_member":
@@ -221,7 +244,9 @@ def _emit(request, result_type):
 def provider_group_query(*, group, op, level="thread", result_type=None):
     if op not in _QUERY_OPS:
         raise ValueError(f"unsupported group query {op!r}")
-    level = normalize_thread_level(level, scope=_SCOPE, feature=f"ThreadGroup.{op}")
+    level = normalize_thread_level(
+        level, scope=_SCOPE, feature=f"ThreadGroup.{op}"
+    )
     group = _resolve_method_group(group, op, level)
     dtype = _result_type(group, level, result_type)
     return _emit(_CudaxGroupRequest(group, op, level, dtype), dtype)
@@ -251,5 +276,7 @@ _rendering.register_bundle_renderer(
         "#include <cuda/std/type_traits>",
         "#include <cuda/experimental/coop/group>",
     ),
-    cccl_headers=(("cuda/experimental/coop/group", "cuda/experimental/coop/group"),),
+    cccl_headers=(
+        ("cuda/experimental/coop/group", "cuda/experimental/coop/group"),
+    ),
 )

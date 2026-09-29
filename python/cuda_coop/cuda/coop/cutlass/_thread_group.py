@@ -97,7 +97,8 @@ def _require_complete_warp_partition(
         block_threads = x * y * z
     if block_threads is None:
         raise NotImplementedError(
-            f"cuda.coop.cutlass.{feature} requires exact enclosing block dimensions "
+            f"cuda.coop.cutlass.{feature} requires exact enclosing "
+            "block dimensions "
             "to prove complete 32-thread physical-warp participation"
         )
     if block_threads % 32:
@@ -110,12 +111,16 @@ def _require_complete_warp_partition(
 def this_block() -> ThreadGroup:
     """Describe the current CUDA thread block for a CUTLASS primitive."""
 
-    return make_thread_group("block", group_type=ThreadGroup, scope="cuda.coop.cutlass")
+    return make_thread_group(
+        "block", group_type=ThreadGroup, scope="cuda.coop.cutlass"
+    )
 
 
 def this_warp() -> ThreadGroup:
     """Describe the calling complete 32-thread physical warp."""
-    return make_thread_group("warp", group_type=ThreadGroup, scope="cuda.coop.cutlass")
+    return make_thread_group(
+        "warp", group_type=ThreadGroup, scope="cuda.coop.cutlass"
+    )
 
 
 def this_thread() -> ThreadGroup:
@@ -134,7 +139,9 @@ def this_cluster() -> ThreadGroup:
 
 def this_grid() -> ThreadGroup:
     """Describe the current grid using exact launch facts."""
-    return make_thread_group("grid", group_type=ThreadGroup, scope="cuda.coop.cutlass")
+    return make_thread_group(
+        "grid", group_type=ThreadGroup, scope="cuda.coop.cutlass"
+    )
 
 
 __all__ = [

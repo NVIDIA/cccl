@@ -26,9 +26,15 @@ from cuda.coop._core import (
     this_warp,
 )
 from cuda.coop.cutlass._compiler import _rendering, _state
-from cuda.coop.cutlass._compiler._types import ALL_PROVIDER_TYPES, INTEGER_VALUE_TYPES
+from cuda.coop.cutlass._compiler._types import (
+    ALL_PROVIDER_TYPES,
+    INTEGER_VALUE_TYPES,
+)
 from cuda.coop.cutlass._lowering import _reduce
-from cuda.coop.cutlass._operators import normalize_operator, validate_operator_dtype
+from cuda.coop.cutlass._operators import (
+    normalize_operator,
+    validate_operator_dtype,
+)
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
@@ -40,7 +46,9 @@ def _plan(group=None, **options):
             exact_block_dim=(8, 4, 2),
             exact_cluster_dim=(1, 1, 1),
             cluster_launch=False,
-            provenance=LaunchFactOrigin("cluster_launch", "test", verified=True),
+            provenance=LaunchFactOrigin(
+                "cluster_launch", "test", verified=True
+            ),
         ),
         "dtype": cutlass.Int32,
         "value_kind": "scalar",
@@ -70,14 +78,22 @@ def _plan(group=None, **options):
 @pytest.mark.parametrize("broadcast", (True, False))
 def test_cudax_route_and_visibility(group, op, broadcast):
     plan = _plan(
-        group, op=op, broadcast=broadcast, value_kind="array", items_per_thread=3
+        group,
+        op=op,
+        broadcast=broadcast,
+        value_kind="array",
+        items_per_thread=3,
     )
     request = _reduce._CudaxReduceRequest(plan, op, cutlass.Int32)
     assert plan.target is GroupLoweringTarget.CUDAX_GROUP
     assert plan.temp_storage.ownership is StorageOwnership.NONE
-    assert plan.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+    assert (
+        plan.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+    )
     expected = (
-        ResultVisibility.ALL_MEMBERS if broadcast else ResultVisibility.GROUP_ROOT
+        ResultVisibility.ALL_MEMBERS
+        if broadcast
+        else ResultVisibility.GROUP_ROOT
     )
     assert plan.result.visibility is expected
     assert request.items_per_thread == 3
@@ -88,12 +104,17 @@ def test_cudax_route_and_visibility(group, op, broadcast):
 )
 def test_block_algorithm_selects_cub(algorithm):
     plan = _plan(
-        algorithm=algorithm, broadcast=False, value_kind="array", items_per_thread=2
+        algorithm=algorithm,
+        broadcast=False,
+        value_kind="array",
+        items_per_thread=2,
     )
     request = _reduce._CubReduceRequest(plan, "sum", cutlass.Int32)
     assert plan.target is GroupLoweringTarget.CUB_BLOCK
     assert plan.result.visibility is ResultVisibility.GROUP_ROOT
-    assert plan.synchronization.storage_reuse_barrier is SynchronizationScope.BLOCK
+    assert (
+        plan.synchronization.storage_reuse_barrier is SynchronizationScope.BLOCK
+    )
     assert request.items_per_thread == 2
 
 
@@ -168,7 +189,10 @@ def test_request_rejects_mismatched_plan():
     with pytest.raises(ValueError, match="result mode"):
         _reduce._CudaxReduceRequest(
             replace(
-                plan, implementation=replace(plan.implementation, overload="root_only")
+                plan,
+                implementation=replace(
+                    plan.implementation, overload="root_only"
+                ),
             ),
             "sum",
             cutlass.Int32,
@@ -201,7 +225,9 @@ def test_runtime_count_guard():
 def test_failed_ffi_restores_session(monkeypatch):
     snapshot = object()
     registered, restored = [], []
-    monkeypatch.setattr(_state, "snapshot_active_session_state", lambda: snapshot)
+    monkeypatch.setattr(
+        _state, "snapshot_active_session_state", lambda: snapshot
+    )
     monkeypatch.setattr(_state, "register_request", registered.append)
     monkeypatch.setattr(_state, "restore_active_session_state", restored.append)
 
@@ -211,7 +237,9 @@ def test_failed_ffi_restores_session(monkeypatch):
     monkeypatch.setattr(_reduce, "ffi", fail_ffi)
     with pytest.raises(RuntimeError, match="reduction FFI failed"):
         _reduce.provider_reduce(
-            group=this_block(), launch=LaunchFacts(exact_block_dim=(64, 1, 1)), value=3
+            group=this_block(),
+            launch=LaunchFacts(exact_block_dim=(64, 1, 1)),
+            value=3,
         )
     assert len(registered) == 1
     assert restored == [snapshot]

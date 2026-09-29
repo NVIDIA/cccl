@@ -65,8 +65,14 @@ cutlass_coop.store(  # expected-error: [call-overload]
 cutlass_coop.store(  # expected-error: [call-overload]
     block, object(), values.to_register_tensor()
 )
-cutlass_coop.reduce(block, scalar, binary_op=callback)  # expected-error: [arg-type]
-cutlass_coop.sum(block, scalar, valid_items=7)  # expected-error: [call-overload]
+cutlass_coop.reduce(
+    block,
+    scalar,
+    binary_op=callback,  # expected-error: [arg-type]
+)
+cutlass_coop.sum(  # expected-error: [call-overload]
+    block, scalar, valid_items=7
+)
 cutlass_coop.sum(  # expected-error: [call-overload]
     block, values, broadcast=False, valid_items=7
 )

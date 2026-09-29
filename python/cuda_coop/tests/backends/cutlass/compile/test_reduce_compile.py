@@ -22,7 +22,9 @@ def _pointer(dtype=cutlass.Int32):
     return make_ptr(dtype, 0, cute.AddressSpace.gmem, assumed_align=16)
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize(
     "algorithm", (None, "raking_commutative_only", "raking", "warp_reductions")
 )
@@ -81,7 +83,9 @@ def test_typed_result_consumption(dtype):
     def launch(memory: cute.Pointer):
         kernel(memory).launch(grid=1, block=32)
 
-    assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer(dtype)) is not None
+    assert (
+        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(dtype)) is not None
+    )
 
 
 @pytest.mark.parametrize(
@@ -104,7 +108,10 @@ def test_dynamic_prefix_compile(dtype, warp):
     def launch(memory: cute.Pointer, count: dtype):
         kernel(memory, count).launch(grid=1, block=(8, 4, 2))
 
-    assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), dtype(5)) is not None
+    assert (
+        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), dtype(5))
+        is not None
+    )
 
 
 @pytest.mark.parametrize(
@@ -141,7 +148,10 @@ def test_invalid_controls(case, expected):
             cutlass_coop.sum(group, value, valid_items=1)
         elif cutlass.const_expr(case == "warp_algorithm"):
             cutlass_coop.sum(
-                cutlass_coop.this_warp(), value, broadcast=False, algorithm="raking"
+                cutlass_coop.this_warp(),
+                value,
+                broadcast=False,
+                algorithm="raking",
             )
         elif cutlass.const_expr(case == "bitwise_float"):
             cutlass_coop.reduce(group, cutlass.Float32(1), binary_op="bit_and")
@@ -179,7 +189,9 @@ def test_missing_exact_block():
 
 
 @pytest.mark.parametrize("ssa", (False, True))
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 def test_register_payload_boundary(ssa, api):
     @cute.kernel
     def kernel(memory: cute.Pointer):
