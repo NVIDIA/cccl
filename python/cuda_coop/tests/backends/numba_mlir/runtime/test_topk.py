@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """Block TopK membership, pairing, and input-preservation checks."""
 
@@ -200,6 +199,7 @@ else:
     result = subprocess.run(
         [sys.executable, "-c", script],
         env=os.environ.copy(),
+        check=False,
         capture_output=True,
         text=True,
         timeout=90,
