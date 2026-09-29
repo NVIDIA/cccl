@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block-wide radix rank and sort planning contracts."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
