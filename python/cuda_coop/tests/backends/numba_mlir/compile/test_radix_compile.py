@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""GPU-free production compiler coverage for radix operations."""
-
 import os
 from types import SimpleNamespace
 
