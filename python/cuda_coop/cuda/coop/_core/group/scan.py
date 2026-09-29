@@ -93,7 +93,8 @@ class GroupScanSemantics:
                 algorithm = normalize_block_scan_algorithm(self.cub_algorithm)
             except ValueError as exc:
                 raise ValueError(
-                    f"unsupported CUB BlockScan algorithm {self.cub_algorithm!r}"
+                    "unsupported CUB BlockScan algorithm "
+                    f"{self.cub_algorithm!r}"
                 ) from exc
             object.__setattr__(self, "cub_algorithm", algorithm)
 
@@ -294,7 +295,8 @@ def _plan_scan(
             resolved,
             UnsupportedReasonCode.OPERATION_VARIANT,
             "group exclusive scans with a custom operator require an initial "
-            "value because the no-initial overload leaves group rank zero undefined",
+            "value because the no-initial overload leaves "
+            "group rank zero undefined",
         )
 
     assert launch.exact_block_dim is not None
@@ -310,7 +312,8 @@ def _plan_scan(
                 call,
                 resolved,
                 UnsupportedReasonCode.OPERATION_VARIANT,
-                "BLOCK_SCAN_WARP_SCANS requires a block size that is a multiple "
+                "BLOCK_SCAN_WARP_SCANS requires a block size "
+                "that is a multiple "
                 "of the 32-thread architectural warp",
             )
         if operation.cub_algorithm is None:
@@ -358,7 +361,8 @@ def _plan_scan(
             valid_items = int(valid_items)
             if not 1 <= valid_items <= warp_width:
                 raise ValueError(
-                    "static valid_items must be between 1 and the logical warp size"
+                    "static valid_items must be between 1 "
+                    "and the logical warp size"
                 )
         warp_specialization = make_warp_scan_specialization(
             dtype=operation.dtype,

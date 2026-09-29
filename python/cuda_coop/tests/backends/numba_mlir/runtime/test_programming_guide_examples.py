@@ -46,7 +46,9 @@ def test_first_kernel():
             oob_default=0,
         )
         prefixes = coop.exclusive_sum(block, items)
-        coop.store(block, destination, prefixes, offset=offset, valid_items=valid)
+        coop.store(
+            block, destination, prefixes, offset=offset, valid_items=valid
+        )
 
     source = (np.arange(785) % 7).astype(np.int32)
     d_source = cuda.to_device(source)
@@ -83,7 +85,9 @@ def test_qualified_scan():
         offset = cuda.blockIdx.x * cuda.blockDim.x * 2
 
         numba_coop.load(block, source, items, offset=offset)
-        prefixes = numba_coop.exclusive_sum(block, items, aggregate_output=aggregate)
+        prefixes = numba_coop.exclusive_sum(
+            block, items, aggregate_output=aggregate
+        )
         numba_coop.store(block, destination, prefixes, offset=offset)
         if block.rank() == 0:
             totals[cuda.blockIdx.x] = aggregate[0]
@@ -184,7 +188,9 @@ def test_shared_scratch():
         scratch = coop.TempStorage(auto_sync=True)
         items = coop.ThreadData(2, dtype=np.int32)
 
-        coop.load(block, source, items, algorithm="transpose", temp_storage=scratch)
+        coop.load(
+            block, source, items, algorithm="transpose", temp_storage=scratch
+        )
         prefixes = coop.exclusive_sum(block, items, temp_storage=scratch)
         coop.store(
             block,
