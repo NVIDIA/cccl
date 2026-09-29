@@ -182,6 +182,7 @@ protected:
     return context_devid;
   }
 
+private:
   int devid_                = -1;
   CUcontext driver_context_ = {};
   mutable stream_pool pool_;

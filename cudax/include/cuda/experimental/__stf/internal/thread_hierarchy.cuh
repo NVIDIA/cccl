@@ -108,7 +108,7 @@ public:
     launch_config = p.get_config();
 
     // If we may synchronize across multiple devices.
-    cg_system = p.cg_system;
+    cg_system = p.get_cg_system();
 
     size_t i = 0;
     for (auto& l : p.get_levels())
