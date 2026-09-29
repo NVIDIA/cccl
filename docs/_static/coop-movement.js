@@ -62,7 +62,7 @@
     const option = stores.find((entry) => entry.id === state.algorithm);
     const items = Number(state.items);
     const count = threads * items;
-    const rows = [thread_row("input", `Working copy · ${option.input} input`, items)];
+    const rows = [thread_row("input", `Payload · ${option.input} input`, items)];
     if (option.exchange) rows.push({id: "scratch", label: option.timesliced ? "Shared scratch · one warp at a time" : "Shared scratch · logical positions, padding omitted", count: option.timesliced ? warp_threads * items : count});
     rows.push(thread_row("writers", `${option.access} writer registers`, items));
     rows.push({id: "memory", label: "Global memory · logical item index", count});
@@ -98,7 +98,7 @@
     );
     return {
       detail: option.detail, rows, phases,
-      notes: [option.note, "Store preserves the caller's payload. These stages follow its internal working copy.", items === 1 ? "With one item per thread, blocked and striped ownership coincide; there is no multi-item vector bundle." : "The values and ownership are illustrative; access patterns do not specify a transaction count."],
+      notes: [option.note, "Transpose Store algorithms may rearrange the input payload in place. Copy values before Store if they are needed later.", items === 1 ? "With one item per thread, blocked and striped ownership coincide; there is no multi-item vector bundle." : "The values and ownership are illustrative; access patterns do not specify a transaction count."],
       summary: `Memory receives values 0–${count - 1} in order. ${option.exchange ? "The exchange changes which thread writes each value." : "Each thread writes directly from the illustrated input ownership."}`,
       caption: "Eight illustrative threads; warp variants use two four-lane teaching warps. CUDA physical warps have 32 lanes. Timeslicing serializes exchange scratch use, not the subsequent global-memory store instruction stream.",
     };
