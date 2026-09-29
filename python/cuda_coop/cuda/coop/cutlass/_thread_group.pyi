@@ -11,7 +11,8 @@ do not accept. Lowering checks group width and membership against the
 enclosing kernel launch.
 """
 
-from typing import Callable, Generic, Literal, TypeAlias, overload
+from collections.abc import Callable
+from typing import Generic, Literal, TypeAlias, overload
 
 from cutlass import Uint8, Uint32, Uint64
 from typing_extensions import TypeVar
