@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Exact C++ layout probes and reuse of their matching provider artifact."""
-
 import json
 from pathlib import Path
 from types import SimpleNamespace

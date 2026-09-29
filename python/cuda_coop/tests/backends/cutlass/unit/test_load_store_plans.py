@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Load/Store providers retain the shared planner's storage contracts."""
-
 import pytest
 
 pytest.importorskip("cutlass")

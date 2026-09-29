@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Describe explicit scratch for compiler-supported block operations.
+"""Describe explicit scratch storage for compiler-supported block operations.
 
-This frontend delegates caller-selected size, alignment, synchronization, and
-sharing controls to the active backend. Compilers collect descriptor uses to
-choose allocation layout and any requested reuse barriers. Construction must
-occur inside a supported kernel.
+The constructor marks a request inside a GPU kernel. A compiler that supports
+explicit scratch collects the descriptor's uses to choose shared-memory space
+and any requested reuse barriers. The Python body raises an error outside a
+supported kernel; it never allocates storage.
 """
 
 from __future__ import annotations
