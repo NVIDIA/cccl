@@ -42,7 +42,7 @@ def run_example(api="common"):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         warp = thread // 32
-        payload = module.ThreadData(_ITEMS)
+        payload = module.ThreadData(items_per_thread=_ITEMS)
         # Each warp gets its own consecutive tile automatically. The user
         # offset selects the beginning of the block's collection of tiles.
         module.load(
