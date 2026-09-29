@@ -26,7 +26,7 @@ def test_mixed_primitives(api):
         thread = group.rank()
         outputs = cute.make_tensor(observed, cute.make_layout(65))
         payload = api.ThreadData(2)
-        storage = api.TempStorage(sharing="shared")
+        storage = api.TempStorage(sharing="shared", auto_sync=True)
         api.load(group, source, payload, algorithm="transpose", temp_storage=storage)
         outputs[thread] = api.sum(group, payload)
         prefix = api.sum(group, payload[0], broadcast=False, valid_items=45)

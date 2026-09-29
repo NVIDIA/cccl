@@ -233,7 +233,7 @@ def reduce(
     Notes
     -----
     Floating-point results can differ from a sequential fold because reduction
-    regroups operations. See :ref:`temporary storage <coop-temp-storage>` for
+    regroups operations. See :ref:`temporary storage <coop-common-storage>` for
     scratch lifetime and synchronization.
 
     See Also
@@ -249,6 +249,8 @@ def reduce(
         :start-after: # reduce-example-begin
         :end-before: # reduce-example-end
         :dedent: 4
+
+    See :ref:`CUTLASS Reduce and Sum <coop-cutlass-reduce>` for CuTe examples.
     """
 
     algorithm = _common_reduce_algorithm("reduce", algorithm)
@@ -318,6 +320,8 @@ def sum(
     --------
     cuda.coop.reduce
         Reduction contracts and available algorithms.
+
+    See :ref:`CUTLASS Reduce and Sum <coop-cutlass-reduce>` for CuTe examples.
     """
 
     algorithm = _common_reduce_algorithm("sum", algorithm)
