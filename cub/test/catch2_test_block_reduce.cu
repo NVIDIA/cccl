@@ -81,6 +81,15 @@ struct sum_full_tile_op_t
   }
 };
 
+struct reduce_sum_partial_tile_op_t
+{
+  template <int ItemsPerThread, class BlockReduceT, class T>
+  __device__ T operator()(BlockReduceT& reduce, T (&thread_data)[ItemsPerThread], int valid_items) const
+  {
+    return reduce.Reduce(thread_data[0], cuda::std::plus<T>{}, valid_items);
+  }
+};
+
 struct max_partial_tile_op_t
 {
   template <int ItemsPerThread, class BlockReduceT, class T>
@@ -264,7 +273,19 @@ CUB_TEST("Block reduce works with custom op in partial tiles",
   REQUIRE_APPROX_EQ(h_reference, d_out);
 }
 
-CUB_TEST("Block reduce works with custom types", "[reduce][block]", CUB_SMALL, block_dim_xs, block_dim_yzs, algorithm)
+using custom_type_algorithms =
+  c2h::enum_type_list<cub::BlockReduceAlgorithm,
+                      cub::BLOCK_REDUCE_RAKING,
+                      cub::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
+                      cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+                      cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC>;
+
+CUB_TEST("Block reduce works with custom types",
+         "[reduce][block]",
+         CUB_SMALL,
+         block_dim_xs,
+         block_dim_yzs,
+         custom_type_algorithms)
 {
   using type = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
 
@@ -277,7 +298,7 @@ CUB_TEST("Block reduce works with custom types", "[reduce][block]", CUB_SMALL, b
   constexpr int tile_size = block_dim_x * block_dim_y * block_dim_z * items_per_thread;
 
   c2h::device_vector<type> d_out(1);
-  c2h::device_vector<type> d_in(GENERATE_COPY(take(2, random(1, tile_size))));
+  c2h::device_vector<type> d_in(GENERATE_COPY(1, tile_size, take(2, random(1, tile_size))));
   c2h::gen(C2H_SEED(10), d_in, cuda::std::numeric_limits<type>::min());
 
   c2h::host_vector<type> h_in = d_in;
@@ -286,14 +307,27 @@ CUB_TEST("Block reduce works with custom types", "[reduce][block]", CUB_SMALL, b
       return static_cast<type>(lhs + rhs);
     }));
 
-  block_reduce<algorithm, items_per_thread, block_dim_x, block_dim_y, block_dim_z, type>(
-    d_in, d_out, sum_partial_tile_op_t{});
+  if (GENERATE(false, true))
+  {
+    block_reduce<algorithm, items_per_thread, block_dim_x, block_dim_y, block_dim_z, type>(
+      d_in, d_out, sum_partial_tile_op_t{});
+  }
+  else
+  {
+    block_reduce<algorithm, items_per_thread, block_dim_x, block_dim_y, block_dim_z, type>(
+      d_in, d_out, reduce_sum_partial_tile_op_t{});
+  }
 
   REQUIRE(h_reference == d_out);
 }
 
-CUB_TEST(
-  "Block reduce works with vec types", "[reduce][block]", CUB_SMALL, vec_types, block_dim_xs, block_dim_yzs, algorithm)
+CUB_TEST("Block reduce works with vec types",
+         "[reduce][block]",
+         CUB_SMALL,
+         vec_types,
+         block_dim_xs,
+         block_dim_yzs,
+         custom_type_algorithms)
 {
   using type = c2h::get<0, TestType>;
 

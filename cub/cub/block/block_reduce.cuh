@@ -30,6 +30,7 @@
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -139,6 +140,9 @@ enum BlockReduceAlgorithm
   //!      operations to accumulate their warp aggregates into a shared location, making the final
   //!      order non-deterministic.
   //!   #. The final block-wide result is available to all threads.
+  //!
+  //! For non-arithmetic types, warp aggregates are combined in order as with
+  //! ``BLOCK_REDUCE_WARP_REDUCTIONS``, and the result is only valid in thread 0.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -297,10 +301,12 @@ private:
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
-  using WarpReductions                 = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ>;
-  using WarpReductionsNondeterministic = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ, false>;
-  using RakingCommutativeOnly          = detail::BlockReduceRakingCommutativeOnly<T, BlockDimX, BlockDimY, BlockDimZ>;
-  using Raking                         = detail::BlockReduceRaking<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using WarpReductions = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ>;
+  // Atomic addition is unavailable for user-defined and vector types.
+  using WarpReductionsNondeterministic =
+    detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ, !::cuda::std::is_arithmetic_v<T>>;
+  using RakingCommutativeOnly = detail::BlockReduceRakingCommutativeOnly<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using Raking                = detail::BlockReduceRaking<T, BlockDimX, BlockDimY, BlockDimZ>;
 
   /// Internal specialization type
   using InternalBlockReduce =
