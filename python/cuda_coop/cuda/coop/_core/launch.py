@@ -91,7 +91,9 @@ class LaunchFacts:
         for field_name in ("cooperative_launch", "cluster_launch"):
             value = getattr(self, field_name)
             if value is not None and not isinstance(value, bool):
-                raise TypeError(f"LaunchFacts {field_name} must be bool or None")
+                raise TypeError(
+                    f"LaunchFacts {field_name} must be bool or None"
+                )
 
         provenance = self.provenance
         if isinstance(provenance, LaunchFactOrigin):
@@ -100,7 +102,8 @@ class LaunchFacts:
             provenance = tuple(provenance)
         if any(not isinstance(item, LaunchFactOrigin) for item in provenance):
             raise TypeError(
-                "LaunchFacts provenance entries must be LaunchFactOrigin records"
+                "LaunchFacts provenance entries must be "
+                "LaunchFactOrigin records"
             )
         object.__setattr__(self, "provenance", provenance)
         verified_facts = set()
@@ -131,7 +134,9 @@ class LaunchFacts:
             and maximum is not None
             and any(required > limit for required, limit in zip(exact, maximum))
         ):
-            raise ValueError("LaunchFacts exact_block_dim exceeds max_block_dim")
+            raise ValueError(
+                "LaunchFacts exact_block_dim exceeds max_block_dim"
+            )
 
     @property
     def exact_block_threads(self) -> int | None:
@@ -178,7 +183,9 @@ def _merge_exact_dimension(
     field_name: str,
 ) -> Dim3 | None:
     values = {
-        value for fact in facts if (value := getattr(fact, field_name)) is not None
+        value
+        for fact in facts
+        if (value := getattr(fact, field_name)) is not None
     }
     if len(values) > 1:
         raise LaunchFactConflict(
@@ -201,7 +208,9 @@ def _merge_capability(
     field_name: str,
 ) -> bool | None:
     values = {
-        value for fact in facts if (value := getattr(fact, field_name)) is not None
+        value
+        for fact in facts
+        if (value := getattr(fact, field_name)) is not None
     }
     if len(values) > 1:
         raise LaunchFactConflict(f"conflicting {field_name} launch facts")
@@ -219,8 +228,12 @@ def merge_launch_facts(*facts: LaunchFacts) -> LaunchFacts:
             "exact_block_dim": _merge_exact_dimension(facts, "exact_block_dim"),
             "max_block_dim": _merge_max_block_dimension(facts),
             "exact_grid_dim": _merge_exact_dimension(facts, "exact_grid_dim"),
-            "exact_cluster_dim": _merge_exact_dimension(facts, "exact_cluster_dim"),
-            "cooperative_launch": _merge_capability(facts, "cooperative_launch"),
+            "exact_cluster_dim": _merge_exact_dimension(
+                facts, "exact_cluster_dim"
+            ),
+            "cooperative_launch": _merge_capability(
+                facts, "cooperative_launch"
+            ),
             "cluster_launch": _merge_capability(facts, "cluster_launch"),
         }
         provenance = tuple(

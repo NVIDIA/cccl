@@ -67,7 +67,9 @@ def test_warp_load_full_tile_semantics_are_physical_warp_scoped():
 
 
 @pytest.mark.parametrize("threads_in_warp", [1, 2, 4, 8, 16, 32])
-@pytest.mark.parametrize("make_spec", [make_warp_load_spec, make_warp_store_spec])
+@pytest.mark.parametrize(
+    "make_spec", [make_warp_load_spec, make_warp_store_spec]
+)
 def test_warp_load_store_supports_cub_logical_warp_widths(
     make_spec,
     threads_in_warp,
@@ -118,7 +120,9 @@ def test_warp_store_partial_runtime_effective_offset_abi():
         ),
     )
     assert spec.specialization.metadata["requires_runtime_effective_offset"]
-    assert spec.specialization.metadata["effective_offset_origin"] == ("group_instance")
+    assert spec.specialization.metadata["effective_offset_origin"] == (
+        "group_instance"
+    )
     assert spec.specialization.metadata["effective_offset_stride"] == 64
 
 
@@ -170,7 +174,9 @@ def test_warp_load_store_rejects_unsupported_widths(threads_in_warp):
         )
 
 
-@pytest.mark.parametrize("make_spec", [make_warp_load_spec, make_warp_store_spec])
+@pytest.mark.parametrize(
+    "make_spec", [make_warp_load_spec, make_warp_store_spec]
+)
 @pytest.mark.parametrize("valid_items", [-1, 17])
 def test_warp_load_store_rejects_static_valid_items_outside_tile(
     make_spec,

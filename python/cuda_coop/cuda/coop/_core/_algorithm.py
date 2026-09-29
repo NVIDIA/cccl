@@ -12,10 +12,16 @@ from types import MappingProxyType
 from typing import Any
 
 from ._symbols import semantic_token
-from ._types import ParameterClassification, TemplateParameter, classify_parameter
+from ._types import (
+    ParameterClassification,
+    TemplateParameter,
+    classify_parameter,
+)
 
 
-def _freeze_methods(methods: Iterable[Iterable[Any]]) -> tuple[tuple[Any, ...], ...]:
+def _freeze_methods(
+    methods: Iterable[Iterable[Any]],
+) -> tuple[tuple[Any, ...], ...]:
     return tuple(tuple(method) for method in methods)
 
 
@@ -25,7 +31,9 @@ def _freeze_semantic_value(value: Any, active: set[int]) -> Any:
 
     identity = id(value)
     if identity in active:
-        raise ValueError("specialization values must not contain container cycles")
+        raise ValueError(
+            "specialization values must not contain container cycles"
+        )
     active.add(identity)
     try:
         if isinstance(value, Mapping):
@@ -40,7 +48,9 @@ def _freeze_semantic_value(value: Any, active: set[int]) -> Any:
         if isinstance(value, (tuple, list)):
             return tuple(_freeze_semantic_value(item, active) for item in value)
         if isinstance(value, (set, frozenset)):
-            return frozenset(_freeze_semantic_value(item, active) for item in value)
+            return frozenset(
+                _freeze_semantic_value(item, active) for item in value
+            )
         return bytes(value)
     finally:
         active.remove(identity)
@@ -48,7 +58,10 @@ def _freeze_semantic_value(value: Any, active: set[int]) -> Any:
 
 def _freeze_mapping(mapping: Mapping[str, Any]) -> Mapping[str, Any]:
     return MappingProxyType(
-        {key: _freeze_semantic_value(value, set()) for key, value in mapping.items()}
+        {
+            key: _freeze_semantic_value(value, set())
+            for key, value in mapping.items()
+        }
     )
 
 
@@ -80,9 +93,13 @@ class Algorithm:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "includes", tuple(self.includes))
-        object.__setattr__(self, "template_parameters", tuple(self.template_parameters))
+        object.__setattr__(
+            self, "template_parameters", tuple(self.template_parameters)
+        )
         object.__setattr__(self, "parameters", _freeze_methods(self.parameters))
-        object.__setattr__(self, "type_definitions", tuple(self.type_definitions))
+        object.__setattr__(
+            self, "type_definitions", tuple(self.type_definitions)
+        )
 
         names = self.template_parameter_names
         if len(set(names)) != len(names):
@@ -246,5 +263,6 @@ class AlgorithmSpec:
         method_index: int = 0,
     ) -> tuple[ParameterClassification, ...]:
         return tuple(
-            classify_parameter(parameter) for parameter in self.parameters[method_index]
+            classify_parameter(parameter)
+            for parameter in self.parameters[method_index]
         )

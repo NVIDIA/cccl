@@ -39,7 +39,9 @@ def _package_stub_source() -> Path:
         return _PACKAGE_ROOT / "cuda" / "coop"
 
     installed = Path(distribution.locate_file("cuda/coop"))
-    assert installed.is_dir(), f"installed cuda-coop package is missing: {installed}"
+    assert installed.is_dir(), (
+        f"installed cuda-coop package is missing: {installed}"
+    )
     return installed
 
 
@@ -103,7 +105,9 @@ def test_thread_group_stubs_are_descriptor_only(relative_path: str) -> None:
         if isinstance(node, ast.ClassDef) and node.name == "ThreadGroup"
     )
     methods = {
-        node.name for node in thread_group.body if isinstance(node, ast.FunctionDef)
+        node.name
+        for node in thread_group.body
+        if isinstance(node, ast.FunctionDef)
     }
 
     assert _UNSUPPORTED_THREAD_GROUP_METHODS.isdisjoint(methods)
@@ -155,4 +159,6 @@ def test_public_stubs_pass_strict_consumer_type_checks(tmp_path: Path) -> None:
             flags=re.MULTILINE,
         )
     }
-    assert diagnostics == _expected_diagnostics(invalid_consumer), invalid_output
+    assert diagnostics == _expected_diagnostics(invalid_consumer), (
+        invalid_output
+    )

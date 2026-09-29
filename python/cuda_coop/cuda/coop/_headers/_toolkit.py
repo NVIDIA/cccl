@@ -21,7 +21,9 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
-_CUDART_VERSION = re.compile(r"^\s*#\s*define\s+CUDART_VERSION\s+(\d+)", re.MULTILINE)
+_CUDART_VERSION = re.compile(
+    r"^\s*#\s*define\s+CUDART_VERSION\s+(\d+)", re.MULTILINE
+)
 _PRELOAD_LOCK = threading.RLock()
 _EXACT_LIBRARY_HANDLES: dict[str, object] = {}
 _PROCESS_TOOLKIT_SELECTION: tuple[str, tuple[int, int]] | None = None
@@ -84,15 +86,19 @@ def _toolkit_version(
         match = _CUDART_VERSION.search(contents)
         if match is None:
             raise RuntimeError(
-                "failed parsing CUDART_VERSION from CUDA Toolkit version header: "
+                "failed parsing CUDART_VERSION "
+                "from CUDA Toolkit version header: "
                 f"{header}"
             )
         encoded = int(match.group(1))
         versions.add((encoded // 1000, (encoded % 1000) // 10))
     if len(versions) > 1:
-        rendered = ", ".join(f"{major}.{minor}" for major, minor in sorted(versions))
+        rendered = ", ".join(
+            f"{major}.{minor}" for major, minor in sorted(versions)
+        )
         raise RuntimeError(
-            f"resolved CUDA include directories disagree on Toolkit version: {rendered}"
+            "resolved CUDA include directories disagree on Toolkit version: "
+            f"{rendered}"
         )
     return next(iter(versions), None)
 
@@ -201,7 +207,8 @@ def _toolkit_root_candidates(
         else:
             expected_nvrtc = ", ".join(_library_names("nvrtc", major))
             missing.append(
-                f"NVRTC and adjacent builtins ({expected_nvrtc}; {expected_builtins})"
+                "NVRTC and adjacent builtins "
+                f"({expected_nvrtc}; {expected_builtins})"
             )
     if not nvjitlink:
         expected_nvjitlink = ", ".join(_library_names("nvJitLink", major))
@@ -232,7 +239,8 @@ def _claim_process_toolkit(root: Path, version: tuple[int, int]) -> None:
     selected_root, selected_version = _PROCESS_TOOLKIT_SELECTION
     raise RuntimeError(
         "CUDA compiler libraries are already process-global from Toolkit "
-        f"{selected_root} ({selected_version[0]}.{selected_version[1]}); refusing "
+        f"{selected_root} ({selected_version[0]}.{selected_version[1]}); "
+        "refusing "
         f"to mix Toolkit {selection[0]} ({version[0]}.{version[1]})"
     )
 
@@ -328,7 +336,8 @@ def _exact_library_handle(path: str, *, kind: str) -> object:
         return _EXACT_LIBRARY_HANDLES[exact_path]
     except KeyError as exc:
         raise RuntimeError(
-            f"the exact {kind} handle was not retained for validation: {exact_path}"
+            f"the exact {kind} handle was not retained for validation: "
+            f"{exact_path}"
         ) from exc
 
 
@@ -374,7 +383,9 @@ def _nvjitlink_version(path: str) -> tuple[int, int]:
     minor = ctypes.c_uint()
     result = version(ctypes.byref(major), ctypes.byref(minor))
     if result != 0:
-        raise RuntimeError(f"nvJitLinkVersion failed with result {result}: {path}")
+        raise RuntimeError(
+            f"nvJitLinkVersion failed with result {result}: {path}"
+        )
     return major.value, minor.value
 
 
@@ -421,7 +432,8 @@ def preload_toolkit_compiler_libraries(
             else ""
         )
         raise RuntimeError(
-            "resolved CUDA headers require NVRTC, nvrtc-builtins, and nvJitLink "
+            "resolved CUDA headers require NVRTC, nvrtc-builtins, "
+            "and nvJitLink "
             f"from one CUDA Toolkit root: {diagnostic}{ignored}"
         )
     candidates = [candidate]
@@ -444,12 +456,15 @@ def preload_toolkit_compiler_libraries(
             if not candidates:
                 raise RuntimeError(
                     "CUDA compiler libraries are already process-global from "
-                    f"Toolkit {selected_root}; resolved headers select different "
+                    f"Toolkit {selected_root}; "
+                    "resolved headers select different "
                     "Toolkit roots"
                 )
 
         builtins_failures: list[tuple[Path, OSError]] = []
-        selected: tuple[_ToolkitRootCandidates, tuple[str, str, str]] | None = None
+        selected: tuple[_ToolkitRootCandidates, tuple[str, str, str]] | None = (
+            None
+        )
         for candidate in candidates:
             paths = _preload_toolkit_root(
                 candidate,
@@ -461,7 +476,8 @@ def preload_toolkit_compiler_libraries(
                 break
         if selected is None:
             rendered = "; ".join(
-                f"{candidate}: {error}" for candidate, error in builtins_failures
+                f"{candidate}: {error}"
+                for candidate, error in builtins_failures
             )
             raise RuntimeError(
                 "failed loading all same-root CUDA Toolkit NVRTC builtins "
@@ -474,15 +490,18 @@ def preload_toolkit_compiler_libraries(
             "nvJitLink": nvjitlink_path,
         }
         loaded = {
-            kind: load_nvidia_dynamic_lib(kind) for kind in ("nvrtc", "nvJitLink")
+            kind: load_nvidia_dynamic_lib(kind)
+            for kind in ("nvrtc", "nvJitLink")
         }
         actual_paths = {
-            kind: os.path.realpath(result.abs_path) for kind, result in loaded.items()
+            kind: os.path.realpath(result.abs_path)
+            for kind, result in loaded.items()
         }
         for kind, exact_path in exact_paths.items():
             if actual_paths[kind] != exact_path:
                 raise RuntimeError(
-                    f"resolved CUDA headers expect {exact_path}, but the process uses "
+                    f"resolved CUDA headers expect {exact_path}, "
+                    "but the process uses "
                     f"{actual_paths[kind]} for {kind}"
                 )
 
@@ -514,7 +533,8 @@ def validate_nvrtc_version(
     raise RuntimeError(
         "resolved CUDA headers report Toolkit "
         f"{expected[0]}.{expected[1]}, but loaded NVRTC "
-        f"{libraries.nvrtc_path} reports {actual_version[0]}.{actual_version[1]}"
+        f"{libraries.nvrtc_path} reports "
+        f"{actual_version[0]}.{actual_version[1]}"
     )
 
 
@@ -530,8 +550,10 @@ def validate_nvjitlink_version(
     raise RuntimeError(
         "resolved CUDA headers report Toolkit "
         f"{expected[0]}.{expected[1]}, but loaded nvJitLink "
-        f"{libraries.nvjitlink_path} reports {actual_version[0]}.{actual_version[1]}; "
-        "nvJitLink must use the same major release and be no older than the headers"
+        f"{libraries.nvjitlink_path} reports "
+        f"{actual_version[0]}.{actual_version[1]}; "
+        "nvJitLink must use the same major release "
+        "and be no older than the headers"
     )
 
 

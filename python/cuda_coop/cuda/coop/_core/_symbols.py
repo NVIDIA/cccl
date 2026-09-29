@@ -92,9 +92,9 @@ def _is_verified_standard_library_module(module_name: Any) -> bool:
 
     source_path = os.path.realpath(source_path)
     stdlib_paths, package_paths = _python_library_paths()
-    return any(_path_is_within(source_path, path) for path in stdlib_paths) and not any(
-        _path_is_within(source_path, path) for path in package_paths
-    )
+    return any(
+        _path_is_within(source_path, path) for path in stdlib_paths
+    ) and not any(_path_is_within(source_path, path) for path in package_paths)
 
 
 def _is_verified_standard_library_definition(value: Any) -> bool:
@@ -186,7 +186,11 @@ def _object_state_token(
                 slot_value = getattr(value, storage_name)
             except AttributeError:
                 continue
-            token = ("self",) if slot_value is value else tokenize(slot_value, state)
+            token = (
+                ("self",)
+                if slot_value is value
+                else tokenize(slot_value, state)
+            )
             object_state.append((storage_name, token))
 
     return tuple(object_state) if object_state else None
@@ -286,7 +290,11 @@ def _type_reference_token(value: type, state: _TokenState) -> Any:
     if _is_verified_standard_library_definition(value) or (
         is_static_type and _is_verified_standard_library_module(module_name)
     ):
-        return "type", module_name, getattr(value, "__qualname__", value.__name__)
+        return (
+            "type",
+            module_name,
+            getattr(value, "__qualname__", value.__name__),
+        )
     return _type_dependency_token(value, state)
 
 
@@ -335,7 +343,9 @@ def _type_dependency_token(value: type, state: _TokenState) -> Any:
             for name, member in sorted(vars(value).items())
             if name not in _TYPE_METADATA_NAMES
         )
-        bases = tuple(_type_reference_token(base, state) for base in value.__bases__)
+        bases = tuple(
+            _type_reference_token(base, state) for base in value.__bases__
+        )
         metaclass = type(value)
         metaclass_token = _type_reference_token(metaclass, state)
         token = (
@@ -424,7 +434,10 @@ def _dependency_token(value: Any, state: _TokenState) -> Any:
                 type(value).__module__,
                 type(value).__qualname__,
                 tuple(
-                    (field.name, _dependency_token(getattr(value, field.name), state))
+                    (
+                        field.name,
+                        _dependency_token(getattr(value, field.name), state),
+                    )
                     for field in dataclasses.fields(value)
                 ),
             )
@@ -448,7 +461,9 @@ def _callable_token(value: Any, state: _TokenState) -> tuple[Any, ...]:
     function_like = inspect.isfunction(value) or inspect.ismethod(value)
     module_name = _defined_module_name(value)
     qualified_name = getattr(value, "__qualname__", type(value).__qualname__)
-    if inspect.isfunction(value) and _is_verified_standard_library_definition(value):
+    if inspect.isfunction(value) and _is_verified_standard_library_definition(
+        value
+    ):
         return "callable-reference", module_name, qualified_name
 
     callable_state = _object_state_token(value, state, dependency_values=True)
@@ -497,7 +512,9 @@ def _callable_token(value: Any, state: _TokenState) -> tuple[Any, ...]:
                 )
             )
         code = (
-            implementation_code if isinstance(implementation_code, CodeType) else None
+            implementation_code
+            if isinstance(implementation_code, CodeType)
+            else None
         )
         namespace_value = getattr(implementation, "__globals__", _MISSING)
         closure_value = getattr(implementation, "__closure__", _MISSING)
@@ -522,7 +539,9 @@ def _callable_token(value: Any, state: _TokenState) -> tuple[Any, ...]:
     digest = hashlib.sha256()
     if code is not None:
         digest.update(
-            repr(_code_token(code, state)).encode("utf-8", errors="backslashreplace")
+            repr(_code_token(code, state)).encode(
+                "utf-8", errors="backslashreplace"
+            )
         )
         digest.update(
             repr(_referenced_globals_token(code, namespace, state)).encode(
@@ -531,12 +550,16 @@ def _callable_token(value: Any, state: _TokenState) -> tuple[Any, ...]:
         )
     digest.update(
         repr(
-            _dependency_token(getattr(implementation, "__defaults__", None), state)
+            _dependency_token(
+                getattr(implementation, "__defaults__", None), state
+            )
         ).encode("utf-8", errors="backslashreplace")
     )
     digest.update(
         repr(
-            _dependency_token(getattr(implementation, "__kwdefaults__", None), state)
+            _dependency_token(
+                getattr(implementation, "__kwdefaults__", None), state
+            )
         ).encode("utf-8", errors="backslashreplace")
     )
     if closure_value is None or closure_value is _MISSING:
@@ -592,9 +615,13 @@ def _callable_token(value: Any, state: _TokenState) -> tuple[Any, ...]:
                 type(bound_self).__qualname__,
                 object_state,
             )
-        digest.update(repr(bound_self_token).encode("utf-8", errors="backslashreplace"))
+        digest.update(
+            repr(bound_self_token).encode("utf-8", errors="backslashreplace")
+        )
     if callable_state is not None:
-        digest.update(repr(callable_state).encode("utf-8", errors="backslashreplace"))
+        digest.update(
+            repr(callable_state).encode("utf-8", errors="backslashreplace")
+        )
     if object_call is not _MISSING:
         digest.update(
             repr(_descriptor_token(object_call, state)).encode(
@@ -603,7 +630,9 @@ def _callable_token(value: Any, state: _TokenState) -> tuple[Any, ...]:
         )
     if malformed_attributes:
         digest.update(
-            repr(tuple(malformed_attributes)).encode("utf-8", errors="backslashreplace")
+            repr(tuple(malformed_attributes)).encode(
+                "utf-8", errors="backslashreplace"
+            )
         )
 
     return (
@@ -614,7 +643,9 @@ def _callable_token(value: Any, state: _TokenState) -> tuple[Any, ...]:
     )
 
 
-def _cycle_token(value: Any, back_reference_depth: int) -> tuple[str, str, str, int]:
+def _cycle_token(
+    value: Any, back_reference_depth: int
+) -> tuple[str, str, str, int]:
     return (
         "cycle",
         getattr(value, "__module__", type(value).__module__),
@@ -645,7 +676,9 @@ def _container_state_token(
     if isinstance(value, defaultdict):
         default_factory = value.default_factory
         default_factory_token = (
-            ("self",) if default_factory is value else tokenize(default_factory, state)
+            ("self",)
+            if default_factory is value
+            else tokenize(default_factory, state)
         )
         container_state.append(("default_factory", default_factory_token))
     return tuple(container_state) if container_state else None
@@ -714,7 +747,10 @@ def _semantic_token(value: Any, state: _TokenState) -> Any:
                 type(value).__module__,
                 type(value).__qualname__,
                 tuple(
-                    (field.name, _semantic_token(getattr(value, field.name), state))
+                    (
+                        field.name,
+                        _semantic_token(getattr(value, field.name), state),
+                    )
                     for field in dataclasses.fields(value)
                 ),
             )
