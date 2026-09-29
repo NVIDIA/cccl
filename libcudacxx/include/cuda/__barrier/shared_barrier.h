@@ -92,11 +92,8 @@ public:
 
     _CCCL_HOST_DEVICE_API void __assert_report_inspected() const noexcept
     {
-      if (__report_predicate_ && !__report_inspected_)
-      {
-        NV_IF_ELSE_TARGET(NV_IS_HOST, (::cuda::std::terminate();), (::__trap();))
-        _CCCL_UNREACHABLE();
-      }
+      _CCCL_VERIFY(!__report_predicate_ || __report_inspected_,
+                   "shared_barrier operation_status report was not inspected");
     }
 
   public:
@@ -159,11 +156,7 @@ public:
   private:
     _CCCL_DEVICE_API static void __assert_fabric_status(::cudaError_t __status) noexcept
     {
-      _CCCL_ASSERT(__status == ::cudaSuccess, "failed to decode shared_barrier status");
-      if (__status != ::cudaSuccess)
-      {
-        ::cuda::std::terminate();
-      }
+      _CCCL_VERIFY(__status == ::cudaSuccess, "failed to decode shared_barrier status");
     }
 
     [[nodiscard]] _CCCL_HOST_DEVICE_API static bool __encodes_fabric_errors(status_source __source) noexcept
@@ -241,12 +234,7 @@ public:
     [[nodiscard]] _CCCL_DEVICE_API status_action classify(status_source __source) const noexcept
     {
       __report_inspected_ = true;
-      _CCCL_ASSERT(__report_predicate_, "cannot classify a shared_barrier operation_status without a report");
-      if (!__report_predicate_)
-      {
-        NV_IF_ELSE_TARGET(NV_IS_HOST, (::cuda::std::terminate();), (::__trap();))
-        _CCCL_UNREACHABLE();
-      }
+      _CCCL_VERIFY(__report_predicate_, "cannot classify a shared_barrier operation_status without a report");
       return __error_count(__source) == 0 ? status_action::retry : status_action::abort;
     }
   };
@@ -406,11 +394,63 @@ private:
   }
 
   template <class _WaitArg>
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status __spin_wait_status(_WaitArg __wait_arg) const
+  {
+    auto __result = __poll_try_wait_status(__wait_arg);
+    while (!__result.complete())
+    {
+      __result = __poll_try_wait_status(__wait_arg);
+    }
+    return __result;
+  }
+
+  template <class _WaitArg>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void __spin_wait_ignoring_status(_WaitArg __wait_arg) const
+  {
+    while (!__poll_try_wait_ignoring_status(__wait_arg))
+    {
+    }
+  }
+
+  template <class _WaitArg>
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status
+  __spin_try_wait_for_status(_WaitArg __wait_arg, ::cuda::std::chrono::nanoseconds __nanosec) const
+  {
+    auto __result = __poll_try_wait_status(__wait_arg, static_cast<::cuda::std::uint32_t>(__nanosec.count()));
+    const ::cuda::std::chrono::high_resolution_clock::time_point __start =
+      ::cuda::std::chrono::high_resolution_clock::now();
+    ::cuda::std::chrono::nanoseconds __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
+    while (!__result.complete() && (__nanosec > __elapsed))
+    {
+      const ::cuda::std::uint32_t __wait_nsec = static_cast<::cuda::std::uint32_t>((__nanosec - __elapsed).count());
+      __result                                = __poll_try_wait_status(__wait_arg, __wait_nsec);
+      __elapsed                               = ::cuda::std::chrono::high_resolution_clock::now() - __start;
+    }
+    return __result;
+  }
+
+  template <class _WaitArg>
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
+  __spin_try_wait_for_ignoring_status(_WaitArg __wait_arg, ::cuda::std::chrono::nanoseconds __nanosec) const
+  {
+    bool __complete =
+      __poll_try_wait_ignoring_status(__wait_arg, static_cast<::cuda::std::uint32_t>(__nanosec.count()));
+    const ::cuda::std::chrono::high_resolution_clock::time_point __start =
+      ::cuda::std::chrono::high_resolution_clock::now();
+    ::cuda::std::chrono::nanoseconds __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
+    while (!__complete && (__nanosec > __elapsed))
+    {
+      const ::cuda::std::uint32_t __wait_nsec = static_cast<::cuda::std::uint32_t>((__nanosec - __elapsed).count());
+      __complete                              = __poll_try_wait_ignoring_status(__wait_arg, __wait_nsec);
+      __elapsed                               = ::cuda::std::chrono::high_resolution_clock::now() - __start;
+    }
+    return __complete;
+  }
+
+  template <class _WaitArg>
   [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status __wait_status(_WaitArg __wait_arg) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (auto __result = __poll_try_wait_status(__wait_arg); while (!__result.complete()) {
-                   __result = __poll_try_wait_status(__wait_arg);
-                 } return __result;))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __spin_wait_status(__wait_arg);))
 
     __unsupported_storage();
   }
@@ -418,7 +458,7 @@ private:
   template <class _WaitArg>
   _CCCL_HOST_DEVICE_API void __wait_ignoring_status(_WaitArg __wait_arg) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (while (!__poll_try_wait_ignoring_status(__wait_arg)) {} return;))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (__spin_wait_ignoring_status(__wait_arg); return;))
 
     __unsupported_storage();
   }
@@ -440,13 +480,6 @@ private:
     __unsupported_storage();
   }
 
-  _CCCL_HOST_DEVICE_API void __wait_conditional_phase(::cuda::std::uint32_t __phase) const
-  {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (while (!__try_wait_conditional_phase(__phase)) {} return;))
-
-    __unsupported_storage();
-  }
-
   template <class _WaitArg, class _Rep, class _Period>
   [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
   __try_wait_for_status(_WaitArg __wait_arg, const ::cuda::std::chrono::duration<_Rep, _Period>& __dur) const
@@ -457,17 +490,7 @@ private:
       return test_wait(__wait_arg, return_status);
     }
 
-    NV_IF_TARGET(
-      NV_PROVIDES_SM_90,
-      (auto __result = __poll_try_wait_status(__wait_arg, static_cast<::cuda::std::uint32_t>(__nanosec.count()));
-       const ::cuda::std::chrono::high_resolution_clock::time_point __start =
-         ::cuda::std::chrono::high_resolution_clock::now();
-       ::cuda::std::chrono::nanoseconds __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
-       while (!__result.complete() && (__nanosec > __elapsed)) {
-         const ::cuda::std::uint32_t __wait_nsec = static_cast<::cuda::std::uint32_t>((__nanosec - __elapsed).count());
-         __result                                = __poll_try_wait_status(__wait_arg, __wait_nsec);
-         __elapsed                               = ::cuda::std::chrono::high_resolution_clock::now() - __start;
-       } return __result;))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __spin_try_wait_for_status(__wait_arg, __nanosec);))
 
     __unsupported_storage();
   }
@@ -482,18 +505,7 @@ private:
       return __test_wait_ignoring_status(__wait_arg);
     }
 
-    NV_IF_TARGET(
-      NV_PROVIDES_SM_90,
-      (bool __complete =
-         __poll_try_wait_ignoring_status(__wait_arg, static_cast<::cuda::std::uint32_t>(__nanosec.count()));
-       const ::cuda::std::chrono::high_resolution_clock::time_point __start =
-         ::cuda::std::chrono::high_resolution_clock::now();
-       ::cuda::std::chrono::nanoseconds __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
-       while (!__complete && (__nanosec > __elapsed)) {
-         const ::cuda::std::uint32_t __wait_nsec = static_cast<::cuda::std::uint32_t>((__nanosec - __elapsed).count());
-         __complete                              = __poll_try_wait_ignoring_status(__wait_arg, __wait_nsec);
-         __elapsed                               = ::cuda::std::chrono::high_resolution_clock::now() - __start;
-       } return __complete;))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __spin_try_wait_for_ignoring_status(__wait_arg, __nanosec);))
 
     __unsupported_storage();
   }
@@ -770,7 +782,7 @@ public:
   //! @param __phase Conditional phase value to wait on.
   _CCCL_HOST_DEVICE_API void wait_conditional_phase(::cuda::std::uint32_t __phase) const
   {
-    __wait_conditional_phase(__phase);
+    __wait_ignoring_status(__conditional_phase{__phase});
   }
 
   //! @brief Tries to wait for a conditional phase to complete before a relative timeout.
