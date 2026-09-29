@@ -291,7 +291,7 @@ def test_static_warp_prefix_is_bounded_to_group_width(valid_items):
 
 
 def test_portable_scan_defers_to_compiler_activation_and_exports_root():
-    import cuda.coop as coop
+    from cuda import coop
 
     api = import_module("cuda.coop._core.api.scan")
     with pytest.raises(CoopCompilerContextRequiredError):
