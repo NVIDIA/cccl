@@ -157,7 +157,7 @@ _CCCL_HOST_DEVICE auto make_slice(ElementType* data, const ::std::tuple<Extents.
       return ::cuda::std::array<size_t, sizeof...(Extents)>{size_t(e)...};
     },
     extents);
-  ::cuda::std::array<size_t, Result::rank()> mdspan_strides{1, size_t(strides)...};
+  const ::cuda::std::array<size_t, Result::rank()> mdspan_strides{1, size_t(strides)...};
   return Result(data, typename Result::mapping_type(sizes, mdspan_strides));
 }
 
@@ -1117,8 +1117,8 @@ UNITTEST("slice hash")
   auto s  = make_slice(A, ::std::tuple{5, 2}, 5);
   auto s2 = make_slice(A, ::std::tuple{4, 2}, 5);
 
-  size_t h  = hash<slice<double, 2>>{}(s);
-  size_t h2 = hash<slice<double, 2>>{}(s2);
+  const size_t h  = hash<slice<double, 2>>{}(s);
+  const size_t h2 = hash<slice<double, 2>>{}(s2);
 
   EXPECT(h != h2);
 };
@@ -1133,8 +1133,8 @@ UNITTEST("slice hash 3D")
   // non-contiguous
   auto s2 = make_slice(A, ::std::tuple{4, 2, 40}, 5, 5 * 2);
 
-  size_t h  = hash<slice<double, 3>>{}(s);
-  size_t h2 = hash<slice<double, 3>>{}(s2);
+  const size_t h  = hash<slice<double, 3>>{}(s);
+  const size_t h2 = hash<slice<double, 3>>{}(s2);
 
   EXPECT(h != h2);
 };

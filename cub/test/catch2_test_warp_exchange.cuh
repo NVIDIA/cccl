@@ -48,26 +48,26 @@ struct exchange_data_t<InputT, OutputT, ItemsPerThread, Alg, std::enable_if_t<!s
   }
 };
 
-template <int LOGICAL_WARP_THREADS,
+template <int LogicalWarpThreads,
           int ItemsPerThread,
-          int TOTAL_WARPS,
+          int TotalWarps,
           cub::WarpExchangeAlgorithm Alg,
           typename InputT,
           typename OutputT>
 __global__ void scatter_kernel(const InputT* input_data, OutputT* output_data)
 {
-  using warp_exchange_t = cub::WarpExchange<InputT, ItemsPerThread, LOGICAL_WARP_THREADS, Alg>;
+  using warp_exchange_t = cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, Alg>;
   using storage_t       = typename warp_exchange_t::TempStorage;
 
-  constexpr int tile_size = ItemsPerThread * LOGICAL_WARP_THREADS;
-  __shared__ storage_t temp_storage[TOTAL_WARPS];
+  constexpr int tile_size = ItemsPerThread * LogicalWarpThreads;
+  __shared__ storage_t temp_storage[TotalWarps];
 
   const int tid =
     cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
   // Get warp index
-  const int warp_id = tid / LOGICAL_WARP_THREADS;
-  const int lane_id = tid % LOGICAL_WARP_THREADS;
+  const int warp_id = tid / LogicalWarpThreads;
+  const int lane_id = tid % LogicalWarpThreads;
 
   warp_exchange_t exchange(temp_storage[warp_id]);
 
@@ -91,46 +91,45 @@ __global__ void scatter_kernel(const InputT* input_data, OutputT* output_data)
   // Striped to blocked
   for (int item = 0; item < ItemsPerThread; item++)
   {
-    output_data[item * LOGICAL_WARP_THREADS + lane_id] = exchange_data.output[item];
+    output_data[item * LogicalWarpThreads + lane_id] = exchange_data.output[item];
   }
 }
 
-template <int LOGICAL_WARP_THREADS,
+template <int LogicalWarpThreads,
           int ItemsPerThread,
-          int TOTAL_WARPS,
+          int TotalWarps,
           cub::WarpExchangeAlgorithm Alg,
           typename InputT,
           typename OutputT>
 void warp_scatter_strided(c2h::device_vector<InputT>& in, c2h::device_vector<OutputT>& out)
 {
-  scatter_kernel<LOGICAL_WARP_THREADS, ItemsPerThread, TOTAL_WARPS, Alg, InputT, OutputT>
-    <<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(
-      thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()));
+  scatter_kernel<LogicalWarpThreads, ItemsPerThread, TotalWarps, Alg, InputT, OutputT>
+    <<<1, LogicalWarpThreads * TotalWarps>>>(thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()));
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
 
-template <int LOGICAL_WARP_THREADS,
+template <int LogicalWarpThreads,
           int ItemsPerThread,
-          int TOTAL_WARPS,
+          int TotalWarps,
           cub::WarpExchangeAlgorithm Alg,
           typename InputT,
           typename OutputT,
           typename ActionT>
 __global__ void kernel(const InputT* input_data, OutputT* output_data, ActionT action)
 {
-  using warp_exchange_t = cub::WarpExchange<InputT, ItemsPerThread, LOGICAL_WARP_THREADS, Alg>;
+  using warp_exchange_t = cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, Alg>;
   using storage_t       = typename warp_exchange_t::TempStorage;
 
-  constexpr int tile_size = ItemsPerThread * LOGICAL_WARP_THREADS;
-  __shared__ storage_t temp_storage[TOTAL_WARPS];
+  constexpr int tile_size = ItemsPerThread * LogicalWarpThreads;
+  __shared__ storage_t temp_storage[TotalWarps];
 
   const int tid =
     cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
   // Get warp index
-  const int warp_id = tid / LOGICAL_WARP_THREADS;
-  const int lane_id = tid % LOGICAL_WARP_THREADS;
+  const int warp_id = tid / LogicalWarpThreads;
+  const int lane_id = tid % LogicalWarpThreads;
 
   warp_exchange_t exchange(temp_storage[warp_id]);
 
@@ -152,17 +151,17 @@ __global__ void kernel(const InputT* input_data, OutputT* output_data, ActionT a
   }
 }
 
-template <int LOGICAL_WARP_THREADS,
+template <int LogicalWarpThreads,
           int ItemsPerThread,
-          int TOTAL_WARPS,
+          int TotalWarps,
           cub::WarpExchangeAlgorithm Alg,
           typename InputT,
           typename OutputT,
           typename ActionT>
 void warp_exchange(c2h::device_vector<InputT>& in, c2h::device_vector<OutputT>& out, ActionT action)
 {
-  kernel<LOGICAL_WARP_THREADS, ItemsPerThread, TOTAL_WARPS, Alg, InputT, OutputT, ActionT>
-    <<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(
+  kernel<LogicalWarpThreads, ItemsPerThread, TotalWarps, Alg, InputT, OutputT, ActionT>
+    <<<1, LogicalWarpThreads * TotalWarps>>>(
       thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), action);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
@@ -205,13 +204,13 @@ c2h::host_vector<T> compute_host_reference(const c2h::device_vector<T>& d_input,
   return input;
 }
 
-template <int logical_warp_threads>
+template <int LogicalWarpThreads>
 struct total_warps_t
 {
 private:
   static constexpr int max_warps      = 2;
-  static constexpr bool is_arch_warp  = (logical_warp_threads == cub::detail::warp_threads);
-  static constexpr bool is_pow_of_two = ((logical_warp_threads & (logical_warp_threads - 1)) == 0);
+  static constexpr bool is_arch_warp  = (LogicalWarpThreads == cub::detail::warp_threads);
+  static constexpr bool is_pow_of_two = ((LogicalWarpThreads & (LogicalWarpThreads - 1)) == 0);
   static constexpr int total_warps    = (is_arch_warp || is_pow_of_two) ? max_warps : 1;
 
 public:

@@ -15,6 +15,8 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <string>
+
 using namespace cuda::experimental::stf;
 
 #if !_CCCL_CTK_BELOW(12, 4)
@@ -56,8 +58,8 @@ void SPMV(context_t& ctx, csr_matrix& a, vector_t& x, vector_t& y)
   ctx.parallel_for(y.shape(), a.val_handle.read(), a.col_handle.read(), a.row_handle.read(), x.read(), y.write())
       .set_symbol("SPMV")
       ->*[] _CCCL_DEVICE(size_t row, auto da_val, auto da_col, auto da_row, auto dx, auto dy) {
-            int row_start = da_row(row);
-            int row_end   = da_row(row + 1);
+            const int row_start = da_row(row);
+            const int row_end   = da_row(row + 1);
 
             double sum = 0.0;
             for (int elt = row_start; elt < row_end; elt++)
@@ -93,7 +95,7 @@ void genTridiag(size_t* I, size_t* J, double* val, size_t N, size_t nz)
       I[1] = 2;
     }
 
-    start        = (i - 1) * 3 + 2;
+    start        = static_cast<int>((i - 1) * 3 + 2);
     J[start]     = i - 1;
     J[start + 1] = i;
 
@@ -159,14 +161,14 @@ void cg_solver(context_t& ctx, csr_matrix& A, vector_t& X, vector_t& B)
     // x = x + alpha * p;
     ctx.parallel_for(X.shape(), X.rw(), rsold.read(), pAp.read(), P.read()).set_symbol("X+=alpha*P")
         ->*[] _CCCL_DEVICE(size_t i, auto dX, auto drsold, auto dpAp, auto dP) {
-              double alpha = (*drsold / *dpAp);
+              const double alpha = (*drsold / *dpAp);
               dX(i) += alpha * dP(i);
             };
 
     // r = r - alpha * Ap;
     ctx.parallel_for(R.shape(), R.rw(), rsold.read(), pAp.read(), Ap.read()).set_symbol("R-=alpha*Ap")
         ->*[] _CCCL_DEVICE(size_t i, auto dR, auto drsold, auto dpAp, auto dAp) {
-              double alpha = (*drsold / *dpAp);
+              const double alpha = (*drsold / *dpAp);
               dR(i) -= alpha * dAp(i);
             };
 
@@ -176,7 +178,7 @@ void cg_solver(context_t& ctx, csr_matrix& A, vector_t& X, vector_t& B)
 
     while_guard.update_cond(rsnew.read())->*[] __device__(auto drsnew) {
       printf("RES %e\n", *drsnew);
-      bool converged = (*drsnew < 1e-13);
+      const bool converged = (*drsnew < 1e-13);
       return !converged;
     };
 
@@ -207,11 +209,11 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   if (argc > 1)
   {
-    N = atoi(argv[1]);
+    N = ::std::stoi(argv[1]);
     fprintf(stderr, "N = %zu\n", N);
   }
 
-  size_t nz = (N - 2) * 3 + 4;
+  const size_t nz = (N - 2) * 3 + 4;
 
   size_t* row_offsets;
   size_t* column_indices;

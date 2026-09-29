@@ -617,8 +617,7 @@ struct agent_batched_topk_cluster
     load_phase ^= (::cuda::std::uint32_t{1} << stage);
   }
 
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   // Per-segment, per-rank geometry computed once by `compute_segment_layout` at the top of `run`: the head-aligned
   // chunking, the logical (non-idle) cluster width and this rank's partition of it, the leader/idle roles, and the

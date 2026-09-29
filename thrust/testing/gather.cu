@@ -13,7 +13,7 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
 template <class Vector>
-void TestGatherSimple()
+void test_gather_simple()
 {
   Vector map{6, 2, 1, 7, 2}; // gather indices
   Vector src{0, 1, 2, 3, 4, 5, 6, 7}; // source vector
@@ -24,7 +24,7 @@ void TestGatherSimple()
   Vector ref{6, 2, 1, 7, 2};
   REQUIRE(dst == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestGatherSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_gather_simple);
 
 template <typename InputIterator, typename RandomAccessIterator, typename OutputIterator>
 OutputIterator gather(my_system& system, InputIterator, InputIterator, RandomAccessIterator, OutputIterator result)
@@ -63,7 +63,7 @@ TEST_CASE("TestGatherDispatchImplicit", "[gather]")
 }
 
 template <typename T>
-void TestGather(const size_t n)
+void test_gather(const size_t n)
 {
   const size_t source_size = std::min((size_t) 10, 2 * n);
 
@@ -90,10 +90,10 @@ void TestGather(const size_t n)
 
   REQUIRE(h_output == d_output);
 }
-DECLARE_VARIABLE_UNITTEST(TestGather);
+DECLARE_VARIABLE_UNITTEST(test_gather);
 
 template <typename T>
-void TestGatherToDiscardIterator(const size_t n)
+void test_gather_to_discard_iterator(const size_t n)
 {
   const size_t source_size = std::min((size_t) 10, 2 * n);
 
@@ -122,10 +122,10 @@ void TestGatherToDiscardIterator(const size_t n)
   REQUIRE(reference == h_result);
   REQUIRE(reference == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestGatherToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_gather_to_discard_iterator);
 
 template <class Vector>
-void TestGatherIfSimple()
+void test_gather_if_simple()
 {
   Vector flg{0, 1, 0, 1, 0}; // predicate array
   Vector map{6, 2, 1, 7, 2}; // gather indices
@@ -137,7 +137,7 @@ void TestGatherIfSimple()
   Vector ref{0, 2, 0, 7, 0};
   REQUIRE(dst == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestGatherIfSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_gather_if_simple);
 
 template <typename T>
 struct is_even_gather_if
@@ -199,7 +199,7 @@ TEST_CASE("TestGatherIfDispatchImplicit", "[gather]")
 }
 
 template <typename T>
-void TestGatherIf(const size_t n)
+void test_gather_if(const size_t n)
 {
   const size_t source_size = std::min((size_t) 10, 2 * n);
 
@@ -248,10 +248,10 @@ void TestGatherIf(const size_t n)
 
   REQUIRE(h_output == d_output);
 }
-DECLARE_VARIABLE_UNITTEST(TestGatherIf);
+DECLARE_VARIABLE_UNITTEST(test_gather_if);
 
 template <typename T>
-void TestGatherIfToDiscardIterator(const size_t n)
+void test_gather_if_to_discard_iterator(const size_t n)
 {
   const size_t source_size = std::min((size_t) 10, 2 * n);
 
@@ -300,10 +300,10 @@ void TestGatherIfToDiscardIterator(const size_t n)
   REQUIRE(reference == h_result);
   REQUIRE(reference == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestGatherIfToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_gather_if_to_discard_iterator);
 
 template <typename Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestGatherCountingIterator()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_gather_counting_iterator()
 {
   Vector source(10);
   thrust::sequence(source.begin(), source.end(), 0);
@@ -337,6 +337,6 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestGatherCountingIterator()
 
   REQUIRE(output == map);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestGatherCountingIterator);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_gather_counting_iterator);
 
 _CCCL_DIAG_POP
