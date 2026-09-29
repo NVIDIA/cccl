@@ -16,7 +16,9 @@ from ._thread_data import _coerce_thread_payload
 from ._thread_group import _require_complete_warp_partition
 
 _SCOPE = "cuda.coop.cutlass"
-_ALGORITHMS = frozenset({"raking_commutative_only", "raking", "warp_reductions"})
+_ALGORITHMS = frozenset(
+    {"raking_commutative_only", "raking", "warp_reductions"}
+)
 
 
 def _classify_valid_items(value):
@@ -48,7 +50,14 @@ def _normalize_algorithm(algorithm):
 
 
 def reduce(
-    group, value, /, *, binary_op=None, broadcast=True, valid_items=None, algorithm=None
+    group,
+    value,
+    /,
+    *,
+    binary_op=None,
+    broadcast=True,
+    valid_items=None,
+    algorithm=None,
 ):
     """Reduce scalars or per-thread register payloads with a built-in operator.
 
@@ -155,7 +164,11 @@ def sum(group, value, /, *, broadcast=True, valid_items=None, algorithm=None):
         Full-group built-in reductions use CUDAX.
     """
     return reduce(
-        group, value, broadcast=broadcast, valid_items=valid_items, algorithm=algorithm
+        group,
+        value,
+        broadcast=broadcast,
+        valid_items=valid_items,
+        algorithm=algorithm,
     )
 
 

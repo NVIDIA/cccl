@@ -270,7 +270,11 @@ def _storage_reuse_barrier_line(plan: GroupLoweringPlan) -> str:
                 raise ValueError("Reduce plan requires a static warp group")
         mask = "0xffffffffu"
         if logical_width < 32:
-            mask = f"{(1 << logical_width) - 1}u << ((threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z)) % 32u / {logical_width}u * {logical_width}u)"
+            mask = (
+                f"{(1 << logical_width) - 1}u << ((threadIdx.x + blockDim.x * "
+                "(threadIdx.y + blockDim.y * threadIdx.z)) % 32u / "
+                f"{logical_width}u * {logical_width}u)"
+            )
         return f"  __syncwarp({mask});"
     if synchronization.storage_reuse_barrier is SynchronizationScope.GROUP:
         return "  group.sync_aligned();"
@@ -284,7 +288,10 @@ def _render_group_prelude(group: ThreadGroup) -> list[str]:
         assert group.mapping is None
         hierarchy = "::cuda::experimental::implicit_hierarchy()"
         return [
-            f"  ::cuda::experimental::coop::this_{group.kind} group{{{hierarchy}}};"
+            (
+                f"  ::cuda::experimental::coop::this_{group.kind} "
+                f"group{{{hierarchy}}};"
+            )
         ]
     return [
         *render_hierarchy_decl(group.hierarchy),
@@ -333,8 +340,9 @@ def _render_cudax_reduce(request: _CudaxReduceRequest) -> list[str]:
             else []
         ),
         (
-            f"  {type_specification.cpp_type} thread_data["
-            f"{request.items_per_thread}] = {{{values}}};"
+            f"  {type_specification.cpp_type} "
+            f"thread_data[{request.items_per_thread}] "
+            f"= {{{values}}};"
         ),
     ]
     barrier_line = _storage_reuse_barrier_line(request.plan)
@@ -353,7 +361,10 @@ def _render_cudax_reduce(request: _CudaxReduceRequest) -> list[str]:
         lines.extend(
             [
                 "  auto reduced = ::cuda::experimental::coop::reduce(",
-                f"      group, thread_data, {operator_expression(request.op)});",
+                (
+                    "      group, thread_data, "
+                    f"{operator_expression(request.op)});"
+                ),
                 (
                     f"  {type_specification.cpp_type} result = "
                     f"reduced.value_or({type_specification.cpp_type}{{}});"
@@ -523,8 +534,9 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
         )
         input_name = "thread_data"
         input_lines.append(
-            f"  {type_specification.cpp_type} thread_data["
-            f"{request.items_per_thread}] = {{{values}}};"
+            f"  {type_specification.cpp_type} "
+            f"thread_data[{request.items_per_thread}] "
+            f"= {{{values}}};"
         )
 
     call_arguments = [input_name]
@@ -547,7 +559,11 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
                 f"storage[{instances}];"
             ),
             "  unsigned int storage_instance =",
-            f"      (threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z)) / {logical_width}u;",
+            (
+                "      (threadIdx.x + blockDim.x * "
+                "(threadIdx.y + blockDim.y * threadIdx.z)) / "
+                f"{logical_width}u;"
+            ),
         ]
         storage = "storage[storage_instance]"
 
@@ -559,12 +575,16 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
             f"{request.symbol_name}({', '.join(params)}) {{"
         ),
         (
-            f"  using implementation_type = ::cub::{implementation.struct_name}<"
+            "  using implementation_type = "
+            f"::cub::{implementation.struct_name}<"
             f"{template_arguments}>;"
         ),
         *(
             [
-                f"  if (valid_items < 1 || valid_items > {request.group.static_size}) {{",
+                (
+                    "  if (valid_items < 1 || valid_items > "
+                    f"{request.group.static_size}) {{"
+                ),
                 '    asm volatile("trap;" : : :);',
                 "  }",
             ]

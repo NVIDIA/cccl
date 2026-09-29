@@ -36,7 +36,13 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 _APIS = (coop, cutlass_coop)
 _BLOCK = (8, 4, 4)
 _THREADS = 128
-_WIDTHS = {"thread": 1, "warp": 32, "logical": 8, "block": _THREADS, "mapped": 64}
+_WIDTHS = {
+    "thread": 1,
+    "warp": 32,
+    "logical": 8,
+    "block": _THREADS,
+    "mapped": 64,
+}
 _OPS = ("sum", "multiplies", "min", "max", "bit_and", "bit_or", "bit_xor")
 _ALGORITHMS = ("raking_commutative_only", "raking", "warp_reductions")
 
@@ -68,14 +74,18 @@ def _fold(values, operation):
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("dtype", NUMPY_DTYPES)
-@pytest.mark.parametrize("items", (0, 1, 2), ids=("scalar", "one-item", "two-items"))
+@pytest.mark.parametrize(
+    "items", (0, 1, 2), ids=("scalar", "one-item", "two-items")
+)
 def test_sum_types(api, dtype, items):
     value_type = cutlass_dtype(dtype)
     extent = max(items, 1)
     size = _THREADS * extent
 
     @cute.kernel
-    def kernel(source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer):
+    def kernel(
+        source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer
+    ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.recast_tensor(
@@ -102,7 +112,9 @@ def test_sum_types(api, dtype, items):
         outputs[thread] = result
 
     @cute.jit
-    def launch(source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer):
+    def launch(
+        source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer
+    ):
         kernel(source, observed, preserved).launch(grid=1, block=_BLOCK)
 
     base = np.arange(size) % 3
@@ -157,7 +169,9 @@ def test_group_builtins(api, kind, operation, broadcast):
     observed = np.full(_THREADS, -101, dtype=np.int32)
     expected = observed.copy()
     for start in range(0, _THREADS, width):
-        result = _fold(source[start * items : (start + width) * items], operation)
+        result = _fold(
+            source[start * items : (start + width) * items], operation
+        )
         expected[start : start + width if broadcast else start + 1] = result
     with device_array(source) as src, device_array(observed) as out:
         launch(src, out)
@@ -207,11 +221,15 @@ def test_prefix(api, kind, runtime, prefix):
     prefix = width if prefix is None else prefix
 
     @cute.kernel
-    def kernel(source: cute.Pointer, observed: cute.Pointer, count: cutlass.Int64):
+    def kernel(
+        source: cute.Pointer, observed: cute.Pointer, count: cutlass.Int64
+    ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.make_tensor(source, cute.make_layout(_THREADS))
-        outputs = cute.make_tensor(observed, cute.make_layout(_THREADS // width))
+        outputs = cute.make_tensor(
+            observed, cute.make_layout(_THREADS // width)
+        )
         if cutlass.const_expr(runtime):
             result = api.reduce(
                 _group(api, kind),
@@ -232,13 +250,16 @@ def test_prefix(api, kind, runtime, prefix):
             outputs[thread // width] = result
 
     @cute.jit
-    def launch(source: cute.Pointer, observed: cute.Pointer, count: cutlass.Int64):
+    def launch(
+        source: cute.Pointer, observed: cute.Pointer, count: cutlass.Int64
+    ):
         kernel(source, observed, count).launch(grid=1, block=_BLOCK)
 
     source = values_for(np.int32, _THREADS, shift=23)
     observed = np.zeros(_THREADS // width, dtype=np.int32)
     expected = np.array(
-        [row[:prefix].max() for row in source.reshape(-1, width)], dtype=np.int32
+        [row[:prefix].max() for row in source.reshape(-1, width)],
+        dtype=np.int32,
     )
     with device_array(source) as src, device_array(observed) as out:
         launch(src, out, prefix)
@@ -252,19 +273,25 @@ def test_block_algorithm(api, algorithm, items):
     extent = max(items, 1)
 
     @cute.kernel
-    def kernel(source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer):
+    def kernel(
+        source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer
+    ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.make_tensor(source, cute.make_layout(_THREADS * extent))
         outputs = cute.make_tensor(observed, cute.make_layout(1))
-        checks = cute.make_tensor(preserved, cute.make_layout(_THREADS * extent))
+        checks = cute.make_tensor(
+            preserved, cute.make_layout(_THREADS * extent)
+        )
         if cutlass.const_expr(items):
             value = api.ThreadData(items, dtype=cutlass.Int32)
             for item in cutlass.range_constexpr(items):
                 value[item] = inputs[thread * items + item]
         else:
             value = inputs[thread]
-        result = api.sum(api.this_block(), value, broadcast=False, algorithm=algorithm)
+        result = api.sum(
+            api.this_block(), value, broadcast=False, algorithm=algorithm
+        )
         if thread == 0:
             outputs[0] = result
         if cutlass.const_expr(items):
@@ -274,7 +301,9 @@ def test_block_algorithm(api, algorithm, items):
             checks[thread] = value
 
     @cute.jit
-    def launch(source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer):
+    def launch(
+        source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer
+    ):
         kernel(source, observed, preserved).launch(grid=1, block=_BLOCK)
 
     source = values_for(np.int32, _THREADS * extent, shift=29)
@@ -293,7 +322,9 @@ def test_block_algorithm(api, algorithm, items):
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 def test_nonmembers(api):
     @cute.kernel
-    def kernel(source: cute.Pointer, observed: cute.Pointer, continued: cute.Pointer):
+    def kernel(
+        source: cute.Pointer, observed: cute.Pointer, continued: cute.Pointer
+    ):
         thread = cute.arch.thread_idx()[0]
         inputs = cute.make_tensor(source, cute.make_layout(_THREADS))
         outputs = cute.make_tensor(observed, cute.make_layout(_THREADS))
@@ -305,7 +336,9 @@ def test_nonmembers(api):
         checks[thread] = inputs[thread] + 1
 
     @cute.jit
-    def launch(source: cute.Pointer, observed: cute.Pointer, continued: cute.Pointer):
+    def launch(
+        source: cute.Pointer, observed: cute.Pointer, continued: cute.Pointer
+    ):
         kernel(source, observed, continued).launch(grid=1, block=_THREADS)
 
     source = values_for(np.int32, _THREADS, shift=37)
@@ -346,7 +379,9 @@ def test_cluster(api):
         thread = x + 8 * y
         index = block_index * block_threads + thread
         inputs = cute.make_tensor(source, cute.make_layout(total_threads))
-        outputs = cute.make_tensor(observed, cute.make_layout(fields * total_threads))
+        outputs = cute.make_tensor(
+            observed, cute.make_layout(fields * total_threads)
+        )
         cluster = api.this_cluster()
         cluster.sync()
         cluster.sync_aligned()
@@ -354,7 +389,9 @@ def test_cluster(api):
         payload = api.ThreadData(2, dtype=cutlass.Int32)
         payload[0] = inputs[index]
         payload[1] = inputs[index] + 3
-        outputs[total_threads + index] = api.reduce(cluster, payload, binary_op="max")
+        outputs[total_threads + index] = api.reduce(
+            cluster, payload, binary_op="max"
+        )
         outputs[2 * total_threads + index] = cluster.rank()
         outputs[3 * total_threads + index] = cluster.count()
         outputs[4 * total_threads + index] = api.this_block().rank("cluster")
@@ -375,9 +412,12 @@ def test_cluster(api):
     indices = np.arange(total_threads)
     expected = np.stack(
         (
-            np.repeat(source.reshape(-1, cluster_threads).sum(axis=1), cluster_threads),
             np.repeat(
-                source.reshape(-1, cluster_threads).max(axis=1) + 3, cluster_threads
+                source.reshape(-1, cluster_threads).sum(axis=1), cluster_threads
+            ),
+            np.repeat(
+                source.reshape(-1, cluster_threads).max(axis=1) + 3,
+                cluster_threads,
             ),
             indices % cluster_threads,
             np.full(total_threads, cluster_threads),
@@ -387,7 +427,9 @@ def test_cluster(api):
             np.full(total_threads, 4),
         )
     )
-    np.testing.assert_array_equal(observed.reshape(fields, total_threads), expected)
+    np.testing.assert_array_equal(
+        observed.reshape(fields, total_threads), expected
+    )
 
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
@@ -398,7 +440,9 @@ def test_reuse_loop(api, kind):
     count = width - 3
 
     @cute.kernel
-    def kernel(source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32):
+    def kernel(
+        source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32
+    ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.make_tensor(source, cute.make_layout(_THREADS))
@@ -417,7 +461,9 @@ def test_reuse_loop(api, kind):
             outputs[thread // width] = total
 
     @cute.jit
-    def launch(source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32):
+    def launch(
+        source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32
+    ):
         kernel(source, observed, iterations).launch(grid=1, block=_BLOCK)
 
     source = values_for(np.int32, _THREADS, shift=43)
@@ -475,7 +521,7 @@ with device_array(np.ones({_THREADS}, dtype=np.int32)) as src, device_array(np.z
     status = driver.cuCtxSynchronize()[0]
     print(f"prefix launch status: {{int(status)}}", flush=True)
 raise AssertionError("invalid Reduce prefix did not trap")
-""")
+""")  # noqa: E501 - Preserve embedded source bytes.
     environment = os.environ.copy()
     environment["PYTHONPATH"] = os.pathsep.join(
         filter(None, (str(PACKAGE_ROOT), environment.get("PYTHONPATH")))
@@ -503,7 +549,9 @@ raise AssertionError("invalid Reduce prefix did not trap")
 def test_final_cubin(tmp_path, route):
     cuobjdump = shutil.which("cuobjdump")
     if cuobjdump is None:
-        pytest.skip("cuobjdump is required to inspect final linked instructions")
+        pytest.skip(
+            "cuobjdump is required to inspect final linked instructions"
+        )
 
     @cute.kernel
     def kernel(source: cute.Pointer, observed: cute.Pointer):
@@ -531,7 +579,9 @@ def test_final_cubin(tmp_path, route):
     source = values_for(np.int32, _THREADS, shift=47)
     observed = np.zeros(1, dtype=np.int32)
     with device_array(source) as src, device_array(observed) as out:
-        compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](launch, src, out)
+        compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](
+            launch, src, out
+        )
         compiled(src, out)
     assert observed[0] == source.sum(dtype=np.int32)
     cubins = list(tmp_path.rglob("*.cubin"))
@@ -548,7 +598,9 @@ def test_final_cubin(tmp_path, route):
 @pytest.mark.parametrize("api", ("common", "qualified"))
 def test_example(api):
     path = PACKAGE_ROOT / "examples/cutlass/reduce.py"
-    spec = importlib.util.spec_from_file_location("cutlass_reduce_example", path)
+    spec = importlib.util.spec_from_file_location(
+        "cutlass_reduce_example", path
+    )
     example = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(example)
     example.run_example(api)
