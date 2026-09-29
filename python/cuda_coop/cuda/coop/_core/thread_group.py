@@ -296,7 +296,17 @@ def _validate_mapped_group_extent(
 
 @dataclass(frozen=True)
 class ThreadGroup:
-    """Backend-neutral descriptor for one group in a CUDA hierarchy."""
+    """Describe the participants in a cooperative operation.
+
+    Use the ``this_*`` factories to describe groups in the current kernel
+    launch. Constructing a descriptor does not synchronize threads or launch
+    a kernel. Load and Store support blocks, physical warps, and logical
+    warps; see :ref:`thread groups <coop-thread-groups>`.
+
+    Group descriptors can also be constructed in ordinary Python. Runtime
+    rank, size, membership, and synchronization queries are not available
+    in this API layer.
+    """
 
     kind: str
     hierarchy: ThreadHierarchy = field(default_factory=ThreadHierarchy.current)
@@ -513,7 +523,41 @@ class ThreadGroup:
         *,
         exhaustive: bool = True,
     ) -> _ThreadGroupT:
-        """Partition a physical warp by threads or a block by warps."""
+        """Partition a physical warp by threads or a block by warps.
+
+        Parameters
+        ----------
+        count : int
+            Positive compile-time number of units in each subgroup. For a warp
+            parent, the unit is one thread; for a block parent, it is one
+            physical warp. Thus ``this_warp().group_by(8)`` describes eight
+            lanes, while ``this_block().group_by(2)`` describes 64 threads.
+        exhaustive : bool, optional
+            Compile-time flag, default ``True``. An exhaustive partition must
+            divide the parent's unit count exactly. ``False`` permits a
+            remainder outside the complete groups. Each primitive still
+            determines which partitions it supports.
+
+        Returns
+        -------
+        cuda.coop.ThreadGroup
+            A descriptor for the subgroup containing the calling thread.
+            Nested partitions are unsupported. Load and Store support logical
+            warp widths of 1, 2, 4, 8, 16, or 32; mapped groups of physical
+            warps are not Load or Store targets.
+
+        Examples
+        --------
+        Descriptors can be inspected without compiling or launching a kernel:
+
+        .. code-block:: python
+
+            from cuda import coop
+
+            group = coop.this_warp().group_by(8)
+            assert group.kind == "threads_within_warp"
+            assert group.static_size == 8
+        """
 
         if self.mapping is not None:
             raise NotImplementedError("nested ThreadGroup.group_by is not supported")
