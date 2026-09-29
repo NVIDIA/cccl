@@ -52,7 +52,7 @@ binary_search_iteration(It data, Offset& begin, Offset& end, T key, int shift, C
 // Intersects the diagonal @p diag with the (lower- or upper-bound) merge path of two sorted sequences. Returns the
 // number of elements taken from the first sequence; the number taken from the second is @p diag minus the result.
 template <bool UpperBound, typename Offset, typename It1, typename It2, typename CompareOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE Offset
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Offset
 merge_path(It1 a, Offset a_count, It2 b, Offset b_count, Offset diag, CompareOp compare_op)
 {
   using key_t  = it_value_t<It1>;
@@ -81,7 +81,7 @@ merge_path(It1 a, Offset a_count, It2 b, Offset b_count, Offset diag, CompareOp 
 // Unbiased binary search returning the number of elements in [0, count) ordered before @p key (lower bound) or not
 // after @p key (upper bound).
 template <bool UpperBound, typename Offset, typename T, typename It, typename CompareOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE Offset binary_search(It data, Offset count, T key, CompareOp compare_op)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Offset binary_search(It data, Offset count, T key, CompareOp compare_op)
 {
   Offset begin = 0;
   Offset end   = count;
@@ -94,7 +94,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE Offset binary_search(It data, Offset count, T key
 
 // Binary search that first probes near @p begin for up to @p levels steps, accelerating runs that start near the front.
 template <bool UpperBound, typename IntT, typename Offset, typename T, typename It, typename CompareOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE Offset
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Offset
 biased_binary_search(It data, Offset count, T key, IntT levels, CompareOp compare_op)
 {
   Offset begin = 0;
@@ -128,7 +128,7 @@ biased_binary_search(It data, Offset count, T key, IntT levels, CompareOp compar
 //! inputs so set operations see consistent multiplicities. Returns (index into @p keys1, index into @p keys2); the
 //! latter may gain one (the "star") to break ties at an equal-run boundary.
 template <typename It1, typename It2, typename Offset, typename IntT, typename CompareOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<Offset, Offset>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<Offset, Offset>
 balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset diag, IntT levels, CompareOp compare_op)
 {
   using key_t = it_value_t<It1>;
@@ -177,7 +177,7 @@ struct serial_set_intersection
 {
   // max_input_size <= 32
   template <typename T, typename CompareOp, int ItemsPerThread>
-  _CCCL_DEVICE _CCCL_FORCEINLINE int operator()(
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
@@ -230,7 +230,7 @@ struct serial_set_symmetric_difference
 {
   // max_input_size <= 32
   template <typename T, typename CompareOp, int ItemsPerThread>
-  _CCCL_DEVICE _CCCL_FORCEINLINE int operator()(
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
@@ -289,7 +289,7 @@ struct serial_set_difference
 {
   // max_input_size <= 32
   template <typename T, typename CompareOp, int ItemsPerThread>
-  _CCCL_DEVICE _CCCL_FORCEINLINE int operator()(
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
@@ -349,7 +349,7 @@ struct serial_set_union
 {
   // max_input_size <= 32
   template <typename T, typename CompareOp, int ItemsPerThread>
-  _CCCL_DEVICE _CCCL_FORCEINLINE int operator()(
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,

@@ -134,7 +134,7 @@ template <typename KeysIt1,
           typename NumSelectedIteratorT,
           typename TuningEnvT            = ::cuda::std::execution::env<>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
+[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   KeysIt1 keys1,
