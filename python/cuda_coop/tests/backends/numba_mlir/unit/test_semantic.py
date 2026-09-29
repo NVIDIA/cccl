@@ -113,7 +113,9 @@ def test_numpy_scalar_callback_identity_preserves_nan_sign(dtype):
 def test_numpy_scalar_identity_preserves_dtype_and_nan_payload():
     from cuda.coop.numba_mlir._semantic import _numba_semantic_token
 
-    assert _numba_semantic_token(np.int32(0)) != _numba_semantic_token(np.uint32(0))
+    assert _numba_semantic_token(np.int32(0)) != _numba_semantic_token(
+        np.uint32(0)
+    )
     first = np.uint32(0x7FC00000).view(np.float32)
     second = np.uint32(0x7FC00001).view(np.float32)
     assert np.isnan(first) and np.isnan(second)
@@ -142,10 +144,14 @@ def test_nested_dispatchers_do_not_traverse_compiler_implementation(
     original = _symbols._type_dependency_token
 
     def reject_dispatcher_class(value, state):
-        assert value is not MLIRDispatcher, "fingerprinting compiler implementation"
+        assert value is not MLIRDispatcher, (
+            "fingerprinting compiler implementation"
+        )
         return original(value, state)
 
-    monkeypatch.setattr(_symbols, "_type_dependency_token", reject_dispatcher_class)
+    monkeypatch.setattr(
+        _symbols, "_type_dependency_token", reject_dispatcher_class
+    )
     helper = _helper()
     if location == "global":
         monkeypatch.setitem(globals(), "_HELPER", helper)
@@ -200,7 +206,9 @@ def test_frozen_signatures_matter_but_lazy_overloads_do_not(monkeypatch):
         observed.append(self)
         return [signature]
 
-    monkeypatch.setattr(MLIRDispatcher, "nopython_signatures", property(signatures))
+    monkeypatch.setattr(
+        MLIRDispatcher, "nopython_signatures", property(signatures)
+    )
     lazy = _numba_semantic_token(callback)
     assert not observed
     helper._can_compile = False
@@ -229,7 +237,9 @@ def test_nested_helper_semantics_control_symbols_and_lto_reuse(monkeypatch):
     sig = (types.int32, types.int32)
 
     def symbol():
-        return _types._python_operator_symbol_name(_global_callback, types.int32, sig)
+        return _types._python_operator_symbol_name(
+            _global_callback, types.int32, sig
+        )
 
     def compile_lto():
         return _types._compile_device_ltoir(
@@ -309,10 +319,14 @@ def test_core_operator_preserves_backend_policy_for_nested_helper(monkeypatch):
     original = _symbols._type_dependency_token
 
     def reject_dispatcher_class(value, state):
-        assert value is not MLIRDispatcher, "fingerprinting compiler implementation"
+        assert value is not MLIRDispatcher, (
+            "fingerprinting compiler implementation"
+        )
         return original(value, state)
 
-    monkeypatch.setattr(_symbols, "_type_dependency_token", reject_dispatcher_class)
+    monkeypatch.setattr(
+        _symbols, "_type_dependency_token", reject_dispatcher_class
+    )
     monkeypatch.setitem(globals(), "_HELPER", _helper(1))
     operator = PythonOperator(
         ret_dtype=INT32,

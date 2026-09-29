@@ -304,7 +304,8 @@ def _normalize_compute_capability(compute_capability) -> tuple[int, int]:
         or len(compute_capability) != 2
     ):
         raise RuntimeError(
-            "cuda.coop.numba_mlir requires a two-component CUDA compute capability"
+            "cuda.coop.numba_mlir requires a "
+            "two-component CUDA compute capability"
         )
     major, minor = compute_capability
     if (
@@ -1097,7 +1098,10 @@ class DependentPointerReference(DependentPointer):
         super().__init__(value_dtype, is_output)
 
     def __repr__(self) -> str:
-        return f"DependentPointerReference(dep={self.value_dtype}, out={self.is_output})"
+        return (
+            f"DependentPointerReference(dep="
+            f"{self.value_dtype}, out={self.is_output})"
+        )
 
     def specialize(self, template_arguments):
         return PointerReference(
@@ -1160,7 +1164,10 @@ class Array(Pointer):
         super().__init__(value_dtype, is_output)
 
     def __repr__(self) -> str:
-        return f"Array(dtype={self.value_dtype}, size={self.size}, out={self.is_output})"
+        return (
+            f"Array(dtype={self.value_dtype}, size="
+            f"{self.size}, out={self.is_output})"
+        )
 
     def cpp_decl(self, name):
         return f"{numba_type_to_cpp(self.value_dtype)} (&{name})[{self.size}]"
@@ -1191,7 +1198,8 @@ class TransformedArray(Array):
     def __repr__(self) -> str:
         return (
             "TransformedArray("
-            f"source_dtype={self.value_dtype}, target_dtype={self.target_dtype}, "
+            f"source_dtype={self.value_dtype}, "
+            f"target_dtype={self.target_dtype}, "
             f"size={self.size}, cpp_expression={self.cpp_expression!r})"
         )
 
@@ -1276,7 +1284,10 @@ class StatelessOperator(Parameter):
         ]
         if self.ret_cpp_type == "storage_t":
             arg_decls.append("void*")
-        return f'extern "C" __device__ {return_type} {self.name}({", ".join(arg_decls)});'
+        return (
+            f'extern "C" __device__ {return_type} '
+            f"{self.name}({', '.join(arg_decls)});"
+        )
 
     def wrap_decl(self, name):
         param_decls = []
@@ -1326,9 +1337,6 @@ class DependentPythonOperator:
             numba_types.CPointer(ret_dtype)
             if ret_cpp_type == "storage_t"
             else ret_dtype
-        )
-        arg_dtypes = tuple(
-            arg.resolve(template_arguments) for arg in self.arg_dtypes
         )
         arg_cpp_types = tuple(numba_type_to_cpp(dtype) for dtype in arg_dtypes)
         arg_numba_types = tuple(
@@ -1630,7 +1638,10 @@ class Algorithm:
         self._specialize(template_arguments)
 
     def __repr__(self) -> str:
-        return f"{self.struct_name}::{self.method_name}{self.template_parameters}: {self.parameters}"
+        return (
+            f"{self.struct_name}::"
+            f"{self.method_name}{self.template_parameters}: {self.parameters}"
+        )
 
     def _symbol_base_name(self):
         namespace = (
@@ -1944,7 +1955,8 @@ class Algorithm:
                     and isinstance(param, Pointer)
                     and param.value_dtype == numba_types.uint8
                 ):
-                    # Non-alloc wrappers receive raw temporary storage explicitly.
+                    # Non-alloc wrappers receive raw temporary storage
+                    # explicitly.
                     body_lines.append(
                         "    "
                         f"{temp_storage_type_name} *{cast_name} = "
@@ -1953,7 +1965,8 @@ class Algorithm:
                 else:
                     pointee_type = numba_type_to_cpp(param.value_dtype)
                     body_lines.append(
-                        f"    {pointee_type} *{cast_name} = reinterpret_cast<{pointee_type} *>({name});"
+                        f"    {pointee_type} *{cast_name} = reinterpret_cast<"
+                        f"{pointee_type} *>({name});"
                     )
                 call_args_by_pid[pid] = cast_name
             elif isinstance(param, Reference):
@@ -1988,13 +2001,15 @@ class Algorithm:
 
         if output_var is not None:
             body_lines.append(
-                f"    *reinterpret_cast<{output_cpp_type} *>(__ret) = {output_var};"
+                f"    *reinterpret_cast<{output_cpp_type}"
+                f" *>(__ret) = {output_var};"
             )
         body_lines.append("    return 0;")
 
         abi_params_csv = ", ".join(abi_param_decls)
         w(
-            f'extern "C" __device__ int {exported_name}__abi({abi_params_csv}) {{\n'
+            f'extern "C" __device__ int {exported_name}'
+            f"__abi({abi_params_csv}) {{\n"
         )
         for line in body_lines:
             w(f"{line}\n")
@@ -2018,8 +2033,10 @@ class Algorithm:
                 if callback_cc != provider_cc:
                     major, minor = param.compute_capability
                     raise RuntimeError(
-                        "Python operator LTO IR target does not match its provider: "
-                        f"callback {major}.{minor}, provider {provider_cc // 10}."
+                        "Python operator LTO IR target "
+                        "does not match its provider: "
+                        f"callback {major}.{minor}, provider "
+                        f"{provider_cc // 10}."
                         f"{provider_cc % 10}"
                     )
                 declaration = param.forward_decl()
@@ -2195,7 +2212,8 @@ class Algorithm:
                                 "pointer parameter."
                             )
                         param_args[pointer_arg_pos] = (
-                            f"({param_args[pointer_arg_pos]} + {offset_expression})"
+                            f"({param_args[pointer_arg_pos]} + "
+                            f"{offset_expression})"
                         )
                         continue
                     if isinstance(param, BoundedInteger):
@@ -2232,7 +2250,10 @@ class Algorithm:
                     elif isinstance(param, Array):
                         value_type = numba_type_to_cpp(param.value_dtype)
                         param_decls.append(f"{value_type} *{name}")
-                        param_arg = f"*reinterpret_cast<{value_type} (*)[{param.size}]>({name})"
+                        param_arg = (
+                            f"*reinterpret_cast<{value_type}"
+                            f" (*)[{param.size}]>({name})"
+                        )
                     else:
                         param_decls.append(param.cpp_decl(name))
                         if getattr(param, "deref_on_call", False):
@@ -2281,12 +2302,14 @@ class Algorithm:
                         )
                     instances = resolved_block_threads // logical_width
                     storage = (
-                        "unsigned __coop_thread_rank = threadIdx.x + blockDim.x * "
+                        "unsigned __coop_thread_rank "
+                        "= threadIdx.x + blockDim.x * "
                         "(threadIdx.y + blockDim.y * threadIdx.z);\n"
                         "    "
                         f"__shared__ {temp_storage_type_name} temp_storages"
                         f"[{instances}];\n"
-                        f"    {temp_storage_type_name} &temp_storage = temp_storages"
+                        f"    {temp_storage_type_name} "
+                        f"&temp_storage = temp_storages"
                         f"[__coop_thread_rank / {logical_width}];"
                     )
                 elif self.execution_scope is SynchronizationScope.NONE:
@@ -3278,7 +3301,8 @@ class Invocable:
 
     def __call__(self, *args):
         raise RuntimeError(
-            "__call__ should not be called directly outside of a numba_cuda_mlir.cuda.jit(...) kernel."
+            "__call__ should not be called directly outside of a "
+            "numba_cuda_mlir.cuda.jit(...) kernel."
         )
 
 
