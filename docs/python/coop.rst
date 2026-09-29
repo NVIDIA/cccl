@@ -9,6 +9,7 @@
 
    Overview <self>
    coop/programming_guide
+   coop/neighbor-operations
    coop/developer_overview
    coop/visualizations/index
    coop/glossary
@@ -24,6 +25,9 @@ They compute :doc:`reductions <coop/visualizations/reduce>` across a group.
 Groups can :doc:`sort keys and associated values <coop/visualizations/merge-sort>`.
 Blocks support :doc:`radix sorts and digit ranks <coop/visualizations/radix>`.
 :doc:`TopK <coop/visualizations/topk>` selects a block's smallest or largest keys.
+Blocks compare neighboring items with :doc:`Adjacent Difference
+<coop/visualizations/adjacent-difference>` and :doc:`Discontinuity
+<coop/visualizations/discontinuity>`.
 
 The common ``cuda.coop`` API describes those operations independently of a
 kernel compiler. Numba-CUDA-MLIR is the first supported backend; CUTLASS

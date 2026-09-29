@@ -1312,6 +1312,14 @@ check argument binding, inference, rewrites, and diagnostics. Compile
 tests use real NVRTC and nvJitLink with devices hidden; their fixtures
 provide an explicit target. Runtime tests check the resulting kernels.
 
+Result metadata must describe the returned payload independently of the
+input when their shapes differ. Discontinuity may return one flag payload or a pair.
+``GroupResultSource`` supplies dtype and extent
+resolution, while the registration's ``result_resolver`` selects the
+result tuple for a call. Record that information during planning so scalar
+indexing and subsequent primitives can infer the result without a later
+Store call supplying its type.
+
 
 Use tests that exercise the part you changed. A result-ownership change
 needs a check of the operation's documented mutation behavior. A storage change needs repeated calls

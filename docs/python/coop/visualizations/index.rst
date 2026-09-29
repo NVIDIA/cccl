@@ -20,6 +20,8 @@ do not predict GPU performance.
    shuffle
    reduce
    scan
+   adjacent-difference
+   discontinuity
    merge-sort
    radix
    topk
