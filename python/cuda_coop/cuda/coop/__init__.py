@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Cooperative algorithm backends for CUDA Python DSLs."""
+"""Cooperative operations for CUDA Python kernels."""
 
 import importlib
 import importlib.metadata

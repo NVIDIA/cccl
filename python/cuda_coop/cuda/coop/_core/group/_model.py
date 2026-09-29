@@ -2,13 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Shared identity and contract records for thread-group lowering.
-
-Primitive semantics and planner choices live in the adjacent family modules.
-This module owns only the cross-family records whose exact key shapes are
-consumed by backend caches and artifact generation.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field

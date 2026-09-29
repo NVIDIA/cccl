@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Provenance-based identities for ordered compiler include roots."""
+"""Hash ordered include directories and their contents for compiler caches."""
 
 from __future__ import annotations
 

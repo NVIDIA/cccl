@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typing contract for common CUDA thread groups and hierarchy."""
-
 from typing import Generic, Literal, TypeAlias, overload
 
 from typing_extensions import Self, TypeVar

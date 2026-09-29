@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Protocol for lowering core semantics into a DSL backend."""
-
 from __future__ import annotations
 
 from typing import Any, Protocol, runtime_checkable

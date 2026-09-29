@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Convenience constructors for Load/Store planner tests."""
-
 from cuda.coop._core import (
     GroupLoadStoreSemantics,
     LaunchFacts,
