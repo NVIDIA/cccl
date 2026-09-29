@@ -824,26 +824,6 @@ class CxxFunction(Parameter):
         return False
 
 
-class DependentCxxOperator:
-    def __init__(self, dep: Dependency, cpp: str):
-        self.dep = dep
-        self.cpp = cpp
-
-    def specialize(self, template_arguments):
-        dtype = self.dep.resolve(template_arguments)
-        dtype_cpp = numba_type_to_cpp(dtype)
-        source = f"<{self.dep.dep}>"
-        target = f"<{dtype_cpp}>"
-        match_count = self.cpp.count(source)
-        if match_count != 1:
-            raise ValueError(
-                f"Expected exactly one {source!r} placeholder in C++ operator "
-                f"{self.cpp!r}; found {match_count}."
-            )
-        cpp = self.cpp.replace(source, target, 1)
-        return CxxFunction(cpp=f"{cpp}{{}}", func_dtype=dtype)
-
-
 class DependentArray(Parameter):
     def __init__(self, value_dtype, size, is_output=False):
         self.value_dtype = value_dtype
