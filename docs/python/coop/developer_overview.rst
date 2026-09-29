@@ -973,8 +973,8 @@ choose operations that agree on that arrangement or insert an Exchange.
 The result contracts preserve the following public behavior:
 
 * Load and Store return ``None``. Load fills the supplied output in place.
-  Store preserves its input, including when its CUB implementation reorders
-  data internally.
+  Store follows CUB: transpose algorithms may rearrange the input payload
+  in place. Invalid Load slots are unspecified unless a default is supplied.
 * Exchange, array Shuffle, and array Scan return fresh payloads.
   Their inputs remain available to subsequent kernel code.
 * Reduce returns a scalar defined only at group rank zero. Every required
