@@ -15,6 +15,7 @@ from ci.compile_time import (
     collect_traces,
     combine_pr_comments,
     render_pr_comment,
+    summarize_events,
     summarize_tus,
 )
 
@@ -1405,6 +1406,11 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
         with (output / "summary.json").open(encoding="utf-8") as f:
             manifest = json.load(f)
 
+        self.assertEqual(manifest["status"], "complete")
+        self.assertEqual(
+            manifest["expected_slice_ids"],
+            ["all-events", "empty-events", "primary-templates"],
+        )
         self.assertEqual(
             [item["id"] for item in manifest["slices"]],
             ["all-events", "empty-events", "primary-templates"],
@@ -1426,6 +1432,85 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
             / "top-5-template-instantiation-grouped-by-primary-template-inclusive-by-total.csv"
         )
         self.assertEqual(grouped_rows[0]["event_key"], "cuda::std::__4::vector")
+
+    def test_failed_nested_slice_keeps_completed_reports(self) -> None:
+        traces = self.work / "traces"
+        slices = self.work / "slices.json"
+        output = self.work / "reports"
+        self.traces.write_trace(
+            traces / "trace.json",
+            [self.traces.event("Event", "detail", 0, 10)],
+            "trace",
+        )
+        slices.write_text(
+            json.dumps(
+                {
+                    "slices": [
+                        {
+                            "id": "parent",
+                            "title": "Parent",
+                            "filter": "all",
+                            "timing": "inclusive",
+                            "sort": "total",
+                            "top": 5,
+                            "threshold": 0,
+                            "children": [
+                                {
+                                    "id": child_id,
+                                    "title": child_id,
+                                    "filter": "all",
+                                    "timing": "inclusive",
+                                    "sort": "total",
+                                    "top": 5,
+                                    "threshold": 0,
+                                }
+                                for child_id in ("first-child", "second-child")
+                            ],
+                        }
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+        real_run_slice_report = summarize_events.run_slice_report
+
+        def run_slice_report(request, **kwargs):
+            if request.config.slice_id == "second-child":
+                raise RuntimeError("simulated nested report failure")
+            return real_run_slice_report(request, **kwargs)
+
+        with (
+            mock.patch.object(
+                sys,
+                "argv",
+                [
+                    SUMMARY_SCRIPT.as_posix(),
+                    traces.as_posix(),
+                    "-o",
+                    output.as_posix(),
+                    "--slices",
+                    slices.as_posix(),
+                ],
+            ),
+            mock.patch.object(
+                summarize_events, "run_slice_report", side_effect=run_slice_report
+            ),
+            self.assertRaisesRegex(RuntimeError, "simulated nested report failure"),
+        ):
+            summarize_events.main()
+
+        manifest = json.loads((output / "summary.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["status"], "failed")
+        self.assertEqual(
+            manifest["expected_slice_ids"],
+            ["parent", "first-child", "second-child"],
+        )
+        self.assertEqual([item["id"] for item in manifest["slices"]], ["parent"])
+        self.assertEqual(
+            [item["id"] for item in manifest["slices"][0]["children"]],
+            ["first-child"],
+        )
+        self.assertIn("simulated nested report failure", manifest["error"])
 
 
 class CompileTimeMatrixAndCommentTest(unittest.TestCase):
@@ -2093,6 +2178,37 @@ compile_time:
             rendered,
         )
 
+    def test_render_comment_marks_failed_report_as_incomplete(self) -> None:
+        rendered = render_pr_comment.render_comment(
+            {
+                "status": "failed",
+                "error": "RuntimeError: simulated report failure",
+                "expected_slice_ids": ["first", "second"],
+                "slices": [],
+            },
+            {
+                "id": "matx",
+                "name": "MatX",
+                "project": "matx",
+                "baseline_ref": "origin/main",
+                "targets": [],
+                "runner": "linux-amd64-cpu32",
+                "launch_args": "--cuda 13.3 --host gcc14 --cuda-ext",
+            },
+            artifacts_url="https://example.test/artifacts",
+            fragment=True,
+            run_outcome="failure",
+        )
+
+        self.assertIn("⚠️ MatX", rendered)
+        self.assertIn("Report generation failed", rendered)
+        self.assertIn("RuntimeError: simulated report failure", rendered)
+        self.assertIn("| Benchmark step | `failure` |", rendered)
+        self.assertNotIn(
+            "No compile-time benchmark changes exceeded the configured thresholds.",
+            rendered,
+        )
+
     def test_render_comment_fragment_wraps_one_configuration(self) -> None:
         rendered = render_pr_comment.render_comment(
             {"slices": []},
@@ -2355,6 +2471,72 @@ class CollectTracesTest(unittest.TestCase):
         self.assertTrue((output / "second" / "b.cu.obj.json").exists())
         self.assertFalse((output / "first" / "nested" / "not-a-trace.json").exists())
         self.assertFalse((output / "stale" / "old.cu.o.json").exists())
+
+    def test_overlapping_inputs_use_the_most_specific_root(self) -> None:
+        cudf = self.work / "cudf"
+        cudf_kafka = cudf / "cpp" / "libcudf_kafka"
+        output = self.work / "output"
+        cudf_trace = cudf / "cpp" / "build" / "cudf.cu.o.json"
+        kafka_trace = cudf_kafka / "build" / "kafka.cu.o.json"
+        cudf_trace.parent.mkdir(parents=True)
+        kafka_trace.parent.mkdir(parents=True)
+        cudf_trace.write_text("{}", encoding="utf-8")
+        kafka_trace.write_text("{}", encoding="utf-8")
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                COLLECT_SCRIPT.as_posix(),
+                "--input",
+                f"cudf={cudf}",
+                "--input",
+                f"cudf_kafka={cudf_kafka}",
+                "--output",
+                output.as_posix(),
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        self.assertIn("collected 2 trace(s)", completed.stdout)
+        self.assertTrue((output / "cudf" / "cpp" / "build" / cudf_trace.name).exists())
+        self.assertTrue((output / "cudf_kafka" / "build" / kafka_trace.name).exists())
+        self.assertFalse(
+            (
+                output / "cudf" / "cpp" / "libcudf_kafka" / "build" / kafka_trace.name
+            ).exists()
+        )
+
+    def test_rejects_external_link(self) -> None:
+        input_root = self.work / "input"
+        input_root.mkdir()
+        outside = self.work / "outside.cu.o.json"
+        outside.write_text("{}", encoding="utf-8")
+        (input_root / "trace.cu.o.json").symlink_to(outside)
+        output = self.work / "output"
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                COLLECT_SCRIPT.as_posix(),
+                "--input",
+                f"project={input_root}",
+                "--output",
+                output.as_posix(),
+            ],
+            cwd=REPO_ROOT,
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("trace escapes input directory", completed.stderr)
+        self.assertFalse(output.exists())
 
     def test_rejects_overlapping_input_and_output_paths(self) -> None:
         for relation in ("same", "output-parent", "output-child"):

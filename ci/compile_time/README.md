@@ -77,6 +77,10 @@ larger single-trace movement.
 `summarize_events.py --slices <json>` writes per-slice CSVs under
 `event_reports/<slice-id>/` and writes a normalized `event_reports/summary.json`
 manifest. The manifest is the renderer contract; CSVs are human artifacts.
+The manifest starts with `status: incomplete`, checkpoints each completed
+slice, and ends with `status: complete`. A failed run records `status: failed`,
+the error, and any completed slices so the CI comment can show partial results
+without presenting them as a successful comparison.
 Configured slices that match no events, have no matching trace files, or have no
 comparable event keys record warnings in the manifest so reporting failures are
 not presented as ordinary no-regression results.
@@ -98,8 +102,18 @@ In comparison mode, the wrapper preserves:
 
 - current raw traces: `compile_time/raw_traces`
 - baseline raw traces: `compile_time/baseline_raw_traces`
-- Perfetto copies: `compile_time/perfetto_traces/current` and
+- when enabled, Perfetto copies: `compile_time/perfetto_traces/current` and
   `compile_time/perfetto_traces/baseline`
+
+Third-party CI entries pass `-no-prepare-perfetto` to avoid storing another
+copy of each large trace. Their raw current and baseline traces remain available
+as artifacts and can be processed with `prepare_traces.py` after download. The
+wrapper still prepares Perfetto copies by default for interactive runs.
+
+CI uploads reports and raw traces from their build locations, avoiding another
+local copy before artifact upload. RAPIDS trace collection assigns nested
+projects, such as `cudf_kafka`, to their own labels instead of duplicating
+their traces under a parent project.
 
 ## PR comments
 

@@ -6,6 +6,7 @@ import heapq
 import json
 import os
 import re
+import sys
 from collections import defaultdict
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -1720,17 +1721,38 @@ def run_slice_report(
             f"from {stats.current_trace_count} trace(s) to {report_csv}"
         )
 
-    manifest["children"] = [
-        run_slice_report(
+    return manifest
+
+
+def run_slice_tree(
+    request: SliceRequest,
+    *,
+    prepared: dict[str, PreparedSliceStats],
+    output_dir: Path,
+    output_csv: Path | None,
+    allow_empty: bool,
+    manifests: list[dict[str, Any]],
+    checkpoint: Callable[[], None],
+) -> None:
+    manifest = run_slice_report(
+        request,
+        prepared=prepared,
+        output_dir=output_dir,
+        output_csv=output_csv,
+        allow_empty=allow_empty,
+    )
+    manifests.append(manifest)
+    checkpoint()
+    for child in request.children:
+        run_slice_tree(
             child,
             prepared=prepared,
             output_dir=output_dir / child.config.slice_id,
             output_csv=None,
             allow_empty=allow_empty,
+            manifests=manifest["children"],
+            checkpoint=checkpoint,
         )
-        for child in request.children
-    ]
-    return manifest
 
 
 def main() -> None:
@@ -1928,16 +1950,12 @@ def main() -> None:
         if args.slices is not None
         else [single_slice_request(args, parser)]
     )
-    prepared = prepare_all_slice_stats(
-        requests,
-        trace_dir=trace_dir,
-        baseline_dir=baseline_dir,
-        repo_root=repo_root,
-        baseline_repo_root=baseline_repo_root,
-    )
-
     manifest = {
         "schema_version": 1,
+        "status": "incomplete",
+        "expected_slice_ids": [
+            request.config.slice_id for request in flatten_slice_requests(requests)
+        ],
         "mode": "comparison" if baseline_dir is not None else "single",
         "trace_dir": trace_dir.as_posix(),
         "baseline_dir": baseline_dir.as_posix() if baseline_dir else None,
@@ -1946,22 +1964,48 @@ def main() -> None:
         "slices": [],
     }
 
-    for request in requests:
-        slice_output_dir = (
-            output_dir / request.config.slice_id if multi_slice else output_dir
+    summary_json = output_dir / "summary.json"
+    write_json(summary_json, manifest)
+
+    def checkpoint_manifest() -> None:
+        write_json(summary_json, manifest)
+
+    try:
+        prepared = prepare_all_slice_stats(
+            requests,
+            trace_dir=trace_dir,
+            baseline_dir=baseline_dir,
+            repo_root=repo_root,
+            baseline_repo_root=baseline_repo_root,
         )
-        manifest["slices"].append(
-            run_slice_report(
+        for request in requests:
+            slice_output_dir = (
+                output_dir / request.config.slice_id if multi_slice else output_dir
+            )
+            run_slice_tree(
                 request,
                 prepared=prepared,
                 output_dir=slice_output_dir,
                 output_csv=output_csv,
                 allow_empty=multi_slice,
+                manifests=manifest["slices"],
+                checkpoint=checkpoint_manifest,
             )
-        )
+    except BaseException as error:
+        manifest["status"] = "failed"
+        manifest["error"] = f"{type(error).__name__}: {error}"
+        try:
+            checkpoint_manifest()
+        except OSError as checkpoint_error:
+            print(
+                f"failed to checkpoint summary manifest: {checkpoint_error}",
+                file=sys.stderr,
+            )
+        raise
 
-    summary_json = output_dir / "summary.json"
-    write_json(summary_json, manifest)
+    manifest["status"] = "complete"
+    manifest.pop("error", None)
+    checkpoint_manifest()
     print(f"wrote summary manifest: {summary_json}")
 
 

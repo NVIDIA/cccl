@@ -258,6 +258,12 @@ if [[ "${project}" != "cccl" && "${#common_args[@]}" -ne 0 ]]; then
   exit 1
 fi
 
+# Keep compile-time jobs within the runner's CPU affinity or quota.
+available_processing_units="$(env -u OMP_NUM_THREADS -u OMP_THREAD_LIMIT nproc)"
+: "${PARALLEL_LEVEL:=${available_processing_units}}"
+export PARALLEL_LEVEL
+status "Using ${PARALLEL_LEVEL} build job(s); ${available_processing_units} processing unit(s) available."
+
 set -- "${common_args[@]}"
 # shellcheck source=ci/build_common.sh
 source "${ci_dir}/build_common.sh"
@@ -307,6 +313,14 @@ run_cccl_build() {
   )
 }
 
+rapids_source_root() {
+  case "$1" in
+    cudf_kafka) printf '%s\n' "${HOME}/cudf/cpp/libcudf_kafka" ;;
+    wholegraph) printf '%s\n' "${HOME}/cugraph-gnn" ;;
+    *) printf '%s\n' "${HOME}/$1" ;;
+  esac
+}
+
 collect_third_party_traces() {
   local output_dir="$1"
   declare -a collect_args=(--output "${output_dir}")
@@ -321,7 +335,7 @@ collect_third_party_traces() {
     rapids)
       local lib
       for lib in "${build_targets[@]}"; do
-        collect_args+=(--input "${lib}=${HOME}/${lib}")
+        collect_args+=(--input "${lib}=$(rapids_source_root "${lib}")")
       done
       ;;
     *)

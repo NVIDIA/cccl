@@ -236,19 +236,6 @@ jobs:
             -- "${container_command[@]}" \
             || rc=$?
 
-          if [[ -d "${report_root}/event_reports" ]]; then
-            cp -a "${report_root}/event_reports" "${artifact_root}/reports"
-          fi
-          if [[ -d "${report_root}/raw_traces" ]]; then
-            cp -a "${report_root}/raw_traces" "${artifact_root}/traces-current"
-          fi
-          if [[ -d "${report_root}/baseline_raw_traces" ]]; then
-            cp -a "${report_root}/baseline_raw_traces" "${artifact_root}/traces-baseline"
-          fi
-          if [[ -d "${report_root}/perfetto_traces" ]]; then
-            cp -a "${report_root}/perfetto_traces" "${artifact_root}/perfetto"
-          fi
-
           exit "${rc}"
 
       - name: Render compile-time comment
@@ -260,19 +247,25 @@ jobs:
           ARTIFACTS_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts
           CONFIG_PATH: ${{ steps.inputs.outputs.config }}
           RUN_ARTIFACT_ROOT: ${{ steps.run-bench.outputs.artifact_root }}
+          RUN_REPORT_ROOT: ${{ steps.run-bench.outputs.report_root }}
+          RUN_OUTCOME: ${{ steps.run-bench.outcome }}
         run: |
           artifact_root="${RUN_ARTIFACT_ROOT}"
           if [[ -z "${artifact_root}" ]]; then
             artifact_root="compile-time-artifacts/${CONFIG_ID}"
           fi
-          summary_json="${artifact_root}/reports/summary.json"
+          summary_json=""
+          if [[ -n "${RUN_REPORT_ROOT}" ]]; then
+            summary_json="${RUN_REPORT_ROOT}/event_reports/summary.json"
+          fi
           comment_md="${artifact_root}/comment.md"
           mkdir -p "${artifact_root}"
-          if [[ -f "${summary_json}" ]]; then
+          if [[ -n "${summary_json}" && -f "${summary_json}" ]]; then
             ci/compile_time/render_pr_comment.py \
               --summary "${summary_json}" \
               --config "${CONFIG_PATH}" \
               --artifacts-url "${ARTIFACTS_URL}" \
+              --run-outcome "${RUN_OUTCOME}" \
               --fragment \
               -o "${comment_md}"
           else
@@ -298,39 +291,39 @@ jobs:
           cat "${COMMENT_PATH}" >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Upload compile-time report artifacts
-        if: ${{ always() }}
+        if: ${{ always() && steps.run-bench.outputs.report_root != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: compile-time-${{ inputs.id }}-reports
-          path: compile-time-artifacts/${{ inputs.id }}/reports
+          path: ${{ steps.run-bench.outputs.report_root }}/event_reports
           if-no-files-found: warn
           retention-days: ${{ inputs.artifact_retention_days }}
 
       - name: Upload current trace artifacts
-        if: ${{ always() }}
+        if: ${{ always() && steps.run-bench.outputs.report_root != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: compile-time-${{ inputs.id }}-traces-current
-          path: compile-time-artifacts/${{ inputs.id }}/traces-current
+          path: ${{ steps.run-bench.outputs.report_root }}/raw_traces
           if-no-files-found: warn
           retention-days: ${{ inputs.artifact_retention_days }}
 
       - name: Upload baseline trace artifacts
-        if: ${{ always() }}
+        if: ${{ always() && steps.run-bench.outputs.report_root != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: compile-time-${{ inputs.id }}-traces-baseline
-          path: compile-time-artifacts/${{ inputs.id }}/traces-baseline
+          path: ${{ steps.run-bench.outputs.report_root }}/baseline_raw_traces
           if-no-files-found: warn
           retention-days: ${{ inputs.artifact_retention_days }}
 
       - name: Upload Perfetto trace artifacts
-        if: ${{ always() }}
+        if: ${{ always() && steps.run-bench.outputs.report_root != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: compile-time-${{ inputs.id }}-perfetto
-          path: compile-time-artifacts/${{ inputs.id }}/perfetto
-          if-no-files-found: warn
+          path: ${{ steps.run-bench.outputs.report_root }}/perfetto_traces
+          if-no-files-found: ignore
           retention-days: ${{ inputs.artifact_retention_days }}
 
       - name: Upload compile-time comment artifact

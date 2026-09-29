@@ -72,8 +72,8 @@ def main() -> None:
     if output.exists() and not output.is_dir():
         parser.error(f"output is not a directory: {args.output}")
 
-    collected: list[tuple[Path, Path]] = []
-    for label, input_path in args.inputs:
+    resolved_inputs: list[tuple[int, str, Path]] = []
+    for index, (label, input_path) in enumerate(args.inputs):
         try:
             root = input_path.resolve(strict=True)
         except OSError as error:
@@ -84,10 +84,23 @@ def main() -> None:
             parser.error(
                 f"input and output paths must not overlap: {input_path} and {args.output}"
             )
-        collected.extend(
-            (trace, output / label / trace.relative_to(root))
-            for trace in trace_paths(root)
-        )
+        resolved_inputs.append((index, label, root))
+
+    collected: list[tuple[Path, Path]] = []
+    seen_sources: set[Path] = set()
+    # A nested project can live below a broader checkout root. Assign each
+    # trace to the most specific input, regardless of the input order.
+    for _, label, root in sorted(
+        resolved_inputs, key=lambda item: (-len(item[2].parts), item[0])
+    ):
+        for trace in trace_paths(root):
+            source = trace.resolve(strict=True)
+            if root not in source.parents:
+                parser.error(f"trace escapes input directory: {trace}")
+            if source in seen_sources:
+                continue
+            seen_sources.add(source)
+            collected.append((trace, output / label / trace.relative_to(root)))
 
     if not collected:
         parser.error("no object-adjacent device-time traces found")

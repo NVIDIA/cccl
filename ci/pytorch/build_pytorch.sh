@@ -62,6 +62,7 @@ echo "::group::Setting up clone of CUDA environment with custom CCCL..."
 export PATH="$PWD/cuda/bin:$PATH"
 export CUDA_HOME="$PWD/cuda"
 export CUDA_PATH="$PWD/cuda"
+export CUDACXX="$PWD/cuda/bin/nvcc"
 command -v nvcc
 nvcc --version
 echo "::endgroup::"
@@ -90,6 +91,9 @@ declare -a cmake_args=(
   "-DUSE_NCCL=OFF"
   # Need to define this explicitly, torch's FindCUDA logic adds ancient arches if left undefined:
   "-DTORCH_CUDA_ARCH_LIST=7.5;8.0;9.0;10.0;12.0"
+  "-DCMAKE_CUDA_COMPILER:FILEPATH=${CUDACXX}"
+  "-DCUDA_NVCC_EXECUTABLE:FILEPATH=${CUDACXX}"
+  "-DCUDA_TOOLKIT_ROOT_DIR:PATH=${CUDA_HOME}"
 )
 if [[ "${CCCL_COMPILE_TIME_BENCH:-0}" == 1 ]]; then
   cmake_args+=(
