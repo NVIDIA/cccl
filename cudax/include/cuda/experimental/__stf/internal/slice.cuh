@@ -38,7 +38,6 @@
 #include <cuda/experimental/__stf/utility/memory.cuh>
 
 #include <iostream>
-#include <stdexcept>
 
 namespace cuda::experimental::stf
 {
@@ -902,7 +901,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 //! `std::hash<E>` or a custom hash function, if available. The hash is computed by
 //! traversing the multidimensional array in a dimension-major order and combining the
 //! hash values of each element. If neither a standard nor custom hash is available for
-//! the element type, the function throws `std::logic_error`.
+//! the element type, the program does not compile.
 //!
 //! The function supports both rank deduction and explicit index sequence specification.
 //! When called without an explicit index sequence, it generates one corresponding to the
@@ -918,65 +917,59 @@ _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 //!
 //! @return The combined hash value of all elements in the mdspan.
 //!
-//! @note Requires that either `std::hash<E>` or a custom hash function for `E` is defined.
-//!       If neither is available, the function throws `std::logic_error`.
+//! @note Requires that either `std::hash<E>` or a custom hash function for `E` is defined;
+//!       this is checked at compile time.
 //! @note If the mdspan is empty, the function returns 0.
 template <typename E, typename X, typename L, typename A, size_t... i>
-size_t data_hash([[maybe_unused]] mdspan<E, X, L, A> s, ::cuda::std::index_sequence<i...> = {})
+size_t data_hash(mdspan<E, X, L, A> s, ::cuda::std::index_sequence<i...> = {})
 {
+  static_assert(reserved::has_std_hash_v<E> || reserved::has_cudastf_hash_v<E>,
+                "data_hash requires ::std::hash<E> or a cudastf hash for the element type E");
   using Slice = mdspan<E, X, L, A>;
-  if constexpr (!reserved::has_std_hash_v<E> && !reserved::has_cudastf_hash_v<E>)
+  if constexpr (sizeof...(i) != Slice::rank())
   {
-    throw ::std::logic_error("cannot compute data_hash on an mdspan<E, ...> when neither ::std::hash<E> nor a cudastf "
-                             "hash for E is defined");
+    return data_hash(s, ::cuda::std::make_index_sequence<Slice::rank()>());
   }
   else
   {
-    if constexpr (sizeof...(i) != Slice::rank())
+    if (s.size() == 0)
     {
-      return data_hash(s, ::cuda::std::make_index_sequence<Slice::rank()>());
+      return 0;
     }
-    else
-    {
-      if (s.size() == 0)
+
+    size_t h          = 0;
+    auto content_hash = [&](auto... indices) -> void {
+      for (;;)
       {
-        return 0;
-      }
+        cuda::experimental::stf::hash_combine(h, s(indices...));
 
-      size_t h          = 0;
-      auto content_hash = [&](auto... indices) -> void {
-        for (;;)
+        bool bump = true;
+        each_in_pack(
+          [&](auto current_dim, size_t& index) {
+            if (!bump)
+            {
+              return;
+            }
+            ++index;
+            if (index >= s.extent(current_dim))
+            {
+              index = 0;
+            }
+            else
+            {
+              bump = false;
+            }
+          },
+          indices...);
+        if (bump)
         {
-          cuda::experimental::stf::hash_combine(h, s(indices...));
-
-          bool bump = true;
-          each_in_pack(
-            [&](auto current_dim, size_t& index) {
-              if (!bump)
-              {
-                return;
-              }
-              ++index;
-              if (index >= s.extent(current_dim))
-              {
-                index = 0;
-              }
-              else
-              {
-                bump = false;
-              }
-            },
-            indices...);
-          if (bump)
-          {
-            // Done with all dimensions
-            break;
-          }
+          // Done with all dimensions
+          break;
         }
-      };
-      content_hash((i * 0)...);
-      return h;
-    }
+      }
+    };
+    content_hash((i * 0)...);
+    return h;
   }
 }
 _CCCL_DIAG_POP
