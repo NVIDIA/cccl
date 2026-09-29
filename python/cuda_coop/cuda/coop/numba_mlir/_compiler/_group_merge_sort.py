@@ -43,7 +43,8 @@ def _payload(context, operation, name, value, is_common_root):
         )
     if is_common_root and not context.is_thread_data(operation, name, value):
         raise TypeError(
-            f"cuda.coop.{operation} {name} requires ThreadData; use cuda.coop.numba_mlir for local arrays"
+            f"cuda.coop.{operation} {name} requires ThreadData; use "
+            f"cuda.coop.numba_mlir for local arrays"
         )
     extent = context.array_extent(value)
     if extent is None:
@@ -106,7 +107,8 @@ def _lower_merge_sort(
     extent, key_dtype = payloads[0]
     if pairs and payloads[1][0] != extent:
         raise ValueError(
-            "Merge Sort keys and values must have matching items_per_thread extents"
+            "Merge Sort keys and values must have "
+            "matching items_per_thread extents"
         )
     value_dtype = payloads[1][1] if pairs else None
     descending = context.constant(arguments["descending"])
@@ -144,7 +146,8 @@ def _lower_merge_sort(
             )
             if sentinel_dtype != key_dtype:
                 raise TypeError(
-                    f"Merge Sort oob_default dtype {sentinel_dtype} does not match keys dtype {key_dtype}"
+                    f"Merge Sort oob_default dtype {sentinel_dtype} does not "
+                    f"match keys dtype {key_dtype}"
                 )
             sentinel = sentinel_raw
     semantics = GroupMergeSortSemantics(
@@ -170,7 +173,8 @@ def _lower_merge_sort(
         descriptor = context.temp_storage(temp_storage)
         if descriptor is None:
             raise GroupRewriteError(
-                "Merge Sort temp_storage must resolve to a compile-time TempStorage descriptor"
+                "Merge Sort temp_storage must resolve to a compile-time "
+                "TempStorage descriptor"
             )
         size, alignment, auto_sync, sharing = descriptor
         plan = replace(
