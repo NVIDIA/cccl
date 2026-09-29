@@ -806,6 +806,7 @@ def test_planned_storage_guardrails_fail_before_materialization(
 
     from cuda.coop._core import (
         GroupLoadStoreAlgorithm,
+        GroupLoweringTarget,
         GroupTopologyRequirements,
         LaunchFacts,
         ParticipationRequirements,
@@ -842,6 +843,7 @@ def test_planned_storage_guardrails_fail_before_materialization(
         )
         plan = replace(
             plan,
+            target=GroupLoweringTarget.CUDAX_GROUP,
             call=make_group_primitive_call(resolved_group, plan.call.operation),
             resolved_group=resolved_group,
             topology=requirements.topology,
@@ -864,6 +866,7 @@ def test_planned_storage_guardrails_fail_before_materialization(
         operation = plan.call.operation
         plan = replace(
             plan,
+            target=GroupLoweringTarget.CUDAX_GROUP,
             call=make_group_primitive_call(resolved_thread, operation),
             resolved_group=resolved_thread,
             topology=GroupTopologyRequirements(
