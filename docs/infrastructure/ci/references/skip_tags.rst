@@ -41,11 +41,17 @@ Tag reference
    * - ``[skip-pytorch]``
      - PyTorch canary and compile-time benchmark builds only.
      - Yes
+   * - ``[skip-compile-time-bench]``
+     - All compile-time benchmark jobs on a PR.
+     - Yes
    * - ``[bench-only]``
      - Equivalent to ``[skip-matrix][skip-vdc][skip-docs][skip-tpt]``.
      - Yes
 
 ``[skip-tpt]`` and ``[skip-third-party-testing]`` are aliases for the same tag.
+To run the nightly MatX, PyTorch, and RAPIDS compile-time jobs on a PR, add
+``[run-third-party-compile-time-bench]`` to the last commit message. This opt-in
+tag does not suppress CI jobs or block merging. Skip tags still take precedence.
 
 ``[bench-only]`` shorthand
 --------------------------

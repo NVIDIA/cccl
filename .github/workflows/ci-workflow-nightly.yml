@@ -39,6 +39,54 @@ jobs:
     with:
       workflows: nightly
 
+  compile-time-matrix:
+    name: Build nightly compile-time benchmark matrix
+    if: ${{ github.repository == 'NVIDIA/cccl' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      enabled: ${{ steps.parse.outputs.enabled }}
+      matrix: ${{ steps.parse.outputs.matrix }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Select third-party benchmarks
+        id: parse
+        run: |
+          matrix="$(ci/compile_time/parse_matrix.py ci/matrix.yaml --workflow pull_request \
+            | jq -c '.include |= map(select(.project != "cccl") | .baseline_ref = "HEAD~1")')"
+          enabled="$(jq -r 'if .include == [] then "false" else "true" end' <<< "${matrix}")"
+          echo "enabled=${enabled}" >> "${GITHUB_OUTPUT}"
+          echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
+
+  dispatch-compile-time-bench:
+    name: Compile-time Bench (${{ matrix.id }})
+    if: ${{ needs.compile-time-matrix.outputs.enabled == 'true' }}
+    needs: compile-time-matrix
+    permissions:
+      actions: read
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.compile-time-matrix.outputs.matrix) }}
+    uses: ./.github/workflows/compile-time-bench.yml
+    with:
+      id: ${{ matrix.id }}
+      name: ${{ matrix.name }}
+      project: ${{ matrix.project }}
+      runner: ${{ matrix.runner }}
+      launch_args: ${{ matrix.launch_args }}
+      baseline_ref: ${{ matrix.baseline_ref }}
+      preset: ${{ matrix.preset }}
+      targets_json: ${{ matrix.targets_json }}
+      args: ${{ matrix.args }}
+      slices_json: ${{ matrix.slices_json }}
+      artifact_retention_days: ${{ matrix.artifact_retention_days }}
+
   build-rapids:
     name: Build RAPIDS
     if: ${{ github.repository == 'NVIDIA/cccl' }}
@@ -85,6 +133,8 @@ jobs:
         github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
         (
           needs.matrix-build.result == 'failure' ||
+          needs.compile-time-matrix.result == 'failure' ||
+          needs.dispatch-compile-time-bench.result == 'failure' ||
           needs.build-rapids.result == 'failure' ||
           needs.build-matx.result == 'failure' ||
           needs.build-pytorch.result == 'failure'
@@ -92,6 +142,8 @@ jobs:
       }}
     needs:
       - matrix-build
+      - compile-time-matrix
+      - dispatch-compile-time-bench
       - build-rapids
       - build-matx
       - build-pytorch

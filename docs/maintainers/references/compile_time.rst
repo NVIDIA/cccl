@@ -195,12 +195,19 @@ Pull-request reporting
 ----------------------
 
 Compile-time PR reporting is configured in ``ci/matrix.yaml`` under
-``compile_time.pull_request``. Each config selects a project, GPU runner,
+``compile_time.pull_request``. Each config selects a project, runner,
 devcontainer launch arguments, baseline ref, wrapper arguments, and report
 slices. CCCL configs additionally select a preset and targets; RAPIDS
 configs select the libraries to build. ``ci/compile_time/parse_matrix.py``
 validates that section and emits the GitHub Actions matrix for the reusable
 compile-time benchmark workflow.
+
+CCCL configurations run on PRs by default. Third-party configurations run in
+the nightly workflow, using ``HEAD~1`` as the baseline, and upload their
+reports and traces as artifacts. A PR runs the third-party configurations only
+when its latest commit message contains
+``[run-third-party-compile-time-bench]``. Project skip tags and
+``[skip-compile-time-bench]`` still suppress their respective jobs.
 
 The third-party configurations report template-instantiation costs both by
 concrete specialization and grouped by NVCC's primary-template label. The CCCL

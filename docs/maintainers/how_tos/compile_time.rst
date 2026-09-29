@@ -54,6 +54,12 @@ those slice definitions to a JSON file shaped as:
     ]
   }
 
+CCCL compile-time jobs run on PRs by default. MatX, PyTorch, and RAPIDS run in
+the nightly workflow. To run them on a PR while testing a change, add the
+case-sensitive ``[run-third-party-compile-time-bench]`` tag to the latest
+commit message. The PR run compares against ``origin/main``; nightly compares
+against the current default-branch commit's first parent (``HEAD~1``).
+
 The wrapper holds the build shape constant between the current tree and the
 baseline commit. CCCL comparisons reuse the same preset, targets, and build
 arguments; third-party comparisons reuse the same upstream checkout and

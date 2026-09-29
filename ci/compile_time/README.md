@@ -1,7 +1,9 @@
 # Compile-time benchmark CI contracts
 
 The compile-time benchmark CI flow is configured from `ci/matrix.yaml` under
-`compile_time.pull_request`.
+`compile_time.pull_request`. CCCL runs on PRs. Third-party configurations run
+nightly and can be enabled on a PR by adding
+`[run-third-party-compile-time-bench]` to its latest commit message.
 
 ## Matrix schema
 
@@ -57,6 +59,12 @@ are not that benchmark's subject.
 `ci/compile_time/parse_matrix.py ci/matrix.yaml --workflow pull_request` emits
 the GitHub Actions matrix JSON. Missing or empty `compile_time.pull_request`
 emits `{"include":[]}`.
+
+The nightly workflow selects the third-party entries from this matrix and
+compares the current default-branch commit with its first parent (`HEAD~1`).
+It uploads the report and trace artifacts without posting a PR comment. The PR
+workflow selects only CCCL entries unless the opt-in tag is present. Existing
+project skip tags and `[skip-compile-time-bench]` still take precedence.
 
 In baseline comparisons, `threshold` is measured against the total selected
 inclusive/exclusive impact across all matched traces. The per-side reports still
