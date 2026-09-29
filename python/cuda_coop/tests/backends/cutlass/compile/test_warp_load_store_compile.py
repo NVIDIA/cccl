@@ -19,7 +19,7 @@ from cuda.coop import cutlass as cutlass_coop
 from cuda.coop._core import this_warp
 from cuda.coop.cutlass._compiler import _bundle, _rendering
 from cuda.coop.cutlass._lowering._load_store import _CubLoadStoreRequest
-from tests.support.group_planning import _load_store, _plan
+from tests._group_planning import _load_store, _plan
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 
