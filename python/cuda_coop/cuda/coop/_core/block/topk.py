@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block TopK specifications; the private CUB dependency is isolated here."""
+"""Wrap CUB's private ``cub::detail::block_topk`` implementation."""
 
 from __future__ import annotations
 
