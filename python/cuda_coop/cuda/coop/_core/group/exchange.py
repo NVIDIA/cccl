@@ -216,7 +216,6 @@ def _plan_exchange(
     contracts = _contracts(
         resolved,
         launch,
-        result=result,
         storage_ownership=StorageOwnership.IMPLEMENTATION,
         cpp_type=None,
     )

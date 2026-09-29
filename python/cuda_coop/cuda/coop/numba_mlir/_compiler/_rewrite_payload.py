@@ -109,7 +109,46 @@ class PayloadInference:
         if not isinstance(value, ir.Var):
             return (None, None)
         spec = self.context.thread_data(value)
+        if self.context.is_typed_group_payload(value) and (
+            spec is None or spec.items_per_thread is None
+        ):
+            raise CoopSinglePhaseRewriteError(
+                f"cooperative group operation {self.op_name!r} could not "
+                "infer the static "
+                "extent of a typed group payload"
+            )
         return (value, spec)
+
+    def array_candidate(
+        self, index: int
+    ) -> tuple[ir.Var | None, _ThreadDataSpec | None]:
+        if not 0 <= index < len(self.runtime_args):
+            return (None, None)
+        value = self.runtime_args[index]
+        if not isinstance(value, ir.Var):
+            return (None, None)
+        spec = self.context.array(value)
+        if self.context.is_typed_group_payload(value) and (
+            spec is None or spec.items_per_thread is None
+        ):
+            raise CoopSinglePhaseRewriteError(
+                f"cooperative group operation {self.op_name!r} could not "
+                "infer the static "
+                "extent of a typed group payload"
+            )
+        return (value, spec)
+
+    def inferred_array_dtype(
+        self,
+        value: ir.Var | None,
+        spec: _ThreadDataSpec | None,
+    ):
+        dtype = spec.dtype if spec is not None else None
+        if dtype is None and value is not None:
+            dtype = self.context.dtype(value)
+        if dtype is None and value is not None:
+            dtype = self.context.infer_thread_data_write_dtype(value)
+        return dtype
 
 
 class _PayloadRewrite:
