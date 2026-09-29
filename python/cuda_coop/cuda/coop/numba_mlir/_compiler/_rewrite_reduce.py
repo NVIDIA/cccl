@@ -48,7 +48,9 @@ def infer_reduce_payload(
 ) -> None:
     """Infer one scalar-result reduction payload."""
 
-    if not inference.runtime_args or not isinstance(inference.runtime_args[0], ir.Var):
+    if not inference.runtime_args or not isinstance(
+        inference.runtime_args[0], ir.Var
+    ):
         raise CoopSinglePhaseRewriteError(
             "coop reduce value must be a runtime scalar or fixed-size array"
         )
@@ -58,7 +60,8 @@ def infer_reduce_payload(
         items_per_thread = array_spec.items_per_thread
         if items_per_thread is None:
             raise CoopSinglePhaseRewriteError(
-                "coop reduce array value must have a static items_per_thread extent"
+                "coop reduce array value must have "
+                "a static items_per_thread extent"
             )
         dtype = inference.inferred_array_dtype(array_var, array_spec)
     else:
@@ -67,7 +70,9 @@ def infer_reduce_payload(
     if dtype is None:
         dtype = inference.factory_value("dtype")
     if dtype is None:
-        raise CoopSinglePhaseRewriteError("coop reduce could not infer value dtype")
+        raise CoopSinglePhaseRewriteError(
+            "coop reduce could not infer value dtype"
+        )
 
     dtype = _numeric_dtype(
         dtype,
@@ -83,7 +88,9 @@ def infer_reduce_payload(
         context.record_thread_data_dtype(value, dtype)
 
 
-def _group_width(factory_kwargs: dict[str, object], *, parameter: str) -> int | None:
+def _group_width(
+    factory_kwargs: dict[str, object], *, parameter: str
+) -> int | None:
     if parameter == "valid_items":
         value = factory_kwargs.get("threads_in_warp")
         if isinstance(value, Integral) and not isinstance(value, bool):
@@ -132,7 +139,8 @@ def _validate_valid_items(
             )
         if group_width is not None and value > group_width:
             raise CoopSinglePhaseRewriteError(
-                f"coop reduce {parameter} {value} exceeds group size {group_width}"
+                f"coop reduce {parameter} {value} "
+                f"exceeds group size {group_width}"
             )
         return
     if binding.kind is not BindingKind.RUNTIME:

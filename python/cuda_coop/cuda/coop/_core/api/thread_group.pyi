@@ -19,10 +19,14 @@ from cuda.coop._typing import (
 
 _ItemT = TypeVar("_ItemT", bound=ThreadGroupQueryScalar)
 _BuiltinIntDType: TypeAlias = Callable[[str | bytes | bytearray, int], int]
-_PhysicalGroupKind: TypeAlias = Literal["thread", "warp", "block", "cluster", "grid"]
+_PhysicalGroupKind: TypeAlias = Literal[
+    "thread", "warp", "block", "cluster", "grid"
+]
 _UniversalQueryLevel: TypeAlias = Literal["thread", "gpu_thread", "warp"]
 _ThreadsWithinWarpLevel: TypeAlias = Literal["thread", "gpu_thread", "warp"]
-_WarpsWithinBlockLevel: TypeAlias = Literal["thread", "gpu_thread", "warp", "block"]
+_WarpsWithinBlockLevel: TypeAlias = Literal[
+    "thread", "gpu_thread", "warp", "block"
+]
 _GroupKindT_co = TypeVar(
     "_GroupKindT_co",
     bound=ThreadGroupKind,
@@ -323,7 +327,9 @@ class ThreadGroup(Generic[_GroupKindT_co]):
     def is_member(self) -> IntegerValue:
         """Return whether the current thread belongs to this group."""
 
-MemoryGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp", "block"]]
+MemoryGroup: TypeAlias = ThreadGroup[
+    Literal["warp", "threads_within_warp", "block"]
+]
 ReductionGroup: TypeAlias = ThreadGroup[
     Literal[
         "thread",

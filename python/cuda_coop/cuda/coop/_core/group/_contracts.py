@@ -93,7 +93,9 @@ def _group_topology(
         execution_scope = SynchronizationScope.WARP
     elif kind == "warps_within_block":
         if block_threads is None:
-            raise ValueError("mapped block contracts require exact block dimensions")
+            raise ValueError(
+                "mapped block contracts require exact block dimensions"
+            )
         mapping = resolved_group.mapping
         assert mapping is not None
         groups_per_block = resolved_group.groups_per_parent

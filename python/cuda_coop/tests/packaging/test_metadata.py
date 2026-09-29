@@ -29,7 +29,8 @@ def test_project_metadata_declares_the_supported_python_range() -> None:
     )
     assert project["requires-python"] == ">=3.10"
     assert set(project["classifiers"]) >= {
-        f"Programming Language :: Python :: 3.{minor}" for minor in range(10, 15)
+        f"Programming Language :: Python :: 3.{minor}"
+        for minor in range(10, 15)
     }
 
 
@@ -63,18 +64,24 @@ def test_build_metadata_requires_a_universal_wheel() -> None:
 
 
 def test_all_bundled_header_licenses_are_declared() -> None:
-    force_include = _metadata()["tool"]["scikit-build"]["wheel"]["force-include"]
+    force_include = _metadata()["tool"]["scikit-build"]["wheel"][
+        "force-include"
+    ]
 
     assert force_include == {
         "../../LICENSE": "${SKBUILD_METADATA_DIR}/licenses/LICENSE",
-        "../../cub/LICENSE.TXT": ("${SKBUILD_METADATA_DIR}/licenses/cub/LICENSE.TXT"),
+        "../../cub/LICENSE.TXT": (
+            "${SKBUILD_METADATA_DIR}/licenses/cub/LICENSE.TXT"
+        ),
         "../../cudax/LICENSE.TXT": (
             "${SKBUILD_METADATA_DIR}/licenses/cudax/LICENSE.TXT"
         ),
         "../../libcudacxx/LICENSE.TXT": (
             "${SKBUILD_METADATA_DIR}/licenses/libcudacxx/LICENSE.TXT"
         ),
-        "../../thrust/LICENSE": ("${SKBUILD_METADATA_DIR}/licenses/thrust/LICENSE"),
+        "../../thrust/LICENSE": (
+            "${SKBUILD_METADATA_DIR}/licenses/thrust/LICENSE"
+        ),
     }
 
 
@@ -94,7 +101,9 @@ def test_excluded_python_implementations_are_absent() -> None:
         "numba_mlir/_compiler/_rewrite_scan.py",
     )
 
-    assert not [relative for relative in forbidden if (package / relative).exists()]
+    assert not [
+        relative for relative in forbidden if (package / relative).exists()
+    ]
     assert (package / "numba_mlir/_lowering/_thread_group.py").is_file()
 
     warp_files = {

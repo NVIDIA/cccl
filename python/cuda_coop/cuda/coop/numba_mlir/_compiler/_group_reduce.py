@@ -77,7 +77,9 @@ def _normalize_public_algorithm(
     token = value.strip().lower().replace("-", "_")
     if token not in _PORTABLE_ALGORITHMS:
         choices = ", ".join(sorted(_PORTABLE_ALGORITHMS))
-        raise ValueError(f"{namespace}.{operation} algorithm must be one of: {choices}")
+        raise ValueError(
+            f"{namespace}.{operation} algorithm must be one of: {choices}"
+        )
     return token
 
 
@@ -153,7 +155,8 @@ class _ReducePlanning:
     def _provider(plan: GroupLoweringPlan, *, operator_kind: str):
         if plan.provenance is None or plan.topology is None:
             raise GroupRewriteError(
-                "cuda.coop.numba_mlir.reduce requires provider provenance and topology"
+                "cuda.coop.numba_mlir.reduce requires "
+                "provider provenance and topology"
             )
         provenance = plan.provenance
         if (
@@ -266,7 +269,9 @@ class _ReducePlanning:
             is_common_root=is_common_root,
         )
 
-        valid_items = self._context.planning_binding(bound.arguments["valid_items"])
+        valid_items = self._context.planning_binding(
+            bound.arguments["valid_items"]
+        )
         if valid_items.kind is BindingKind.RUNTIME:
             valid_dtype = self._context.dtype(bound.arguments["valid_items"])
             if valid_dtype is None:
@@ -355,7 +360,9 @@ class _ReducePlanning:
             factory_kwargs.update(
                 {
                     "group": plan.resolved_group,
-                    "binary_op": None if operator_kind == "sum" else operator_kind,
+                    "binary_op": None
+                    if operator_kind == "sum"
+                    else operator_kind,
                     "broadcast": plan.call.operation.broadcast,
                     "items_per_thread": primitive.items_per_thread,
                     "value_kind": primitive.value_kind.value,

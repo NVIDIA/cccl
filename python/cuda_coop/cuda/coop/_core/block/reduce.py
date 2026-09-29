@@ -146,7 +146,10 @@ def make_block_reduce_spec(
     operation: str | BlockReduceOperation,
     algorithm: str | BlockReduceAlgorithm,
     value_kind: str | BlockReduceValueKind,
-    reduce_operator: CxxOperator | PythonOperator | StatefulOperator | None = None,
+    reduce_operator: CxxOperator
+    | PythonOperator
+    | StatefulOperator
+    | None = None,
     valid_items: bool | ArgumentBinding = False,
 ) -> BlockReduceSpec:
     """Build a fully specialized CUB BlockReduce description."""

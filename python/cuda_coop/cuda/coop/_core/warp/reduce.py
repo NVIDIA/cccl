@@ -36,7 +36,9 @@ def _validate_logical_warp_threads(value: Any) -> int:
         or isinstance(value, bool)
         or value not in _SUPPORTED_LOGICAL_WARP_THREADS
     ):
-        raise ValueError("threads_in_warp must be a power of two between 1 and 32")
+        raise ValueError(
+            "threads_in_warp must be a power of two between 1 and 32"
+        )
     return value
 
 
@@ -81,7 +83,10 @@ def make_warp_reduce_spec(
     dtype: Any,
     threads_in_warp: int,
     operation: str | WarpReduceOperation,
-    reduce_operator: CxxOperator | PythonOperator | StatefulOperator | None = None,
+    reduce_operator: CxxOperator
+    | PythonOperator
+    | StatefulOperator
+    | None = None,
     valid_items: bool | ArgumentBinding = False,
     include_full_warp: bool = False,
 ) -> WarpReduceSpec:
@@ -91,7 +96,9 @@ def make_warp_reduce_spec(
     threads_in_warp = _validate_logical_warp_threads(threads_in_warp)
     if isinstance(valid_items, bool):
         valid_items = (
-            ArgumentBinding.runtime() if valid_items else ArgumentBinding.omitted()
+            ArgumentBinding.runtime()
+            if valid_items
+            else ArgumentBinding.omitted()
         )
     elif not isinstance(valid_items, ArgumentBinding):
         raise TypeError("valid_items must be a bool or ArgumentBinding")
@@ -102,12 +109,15 @@ def make_warp_reduce_spec(
             raise ValueError("static valid_items must be a positive integer")
         if value > threads_in_warp:
             raise ValueError(
-                f"static valid_items {value} exceeds warp size {threads_in_warp}"
+                f"static valid_items {value} exceeds warp size "
+                f"{threads_in_warp}"
             )
     if operation in {WarpReduceOperation.MIN, WarpReduceOperation.MAX} and (
         valid_items.kind is not BindingKind.OMITTED
     ):
-        raise ValueError(f"WarpReduce {operation.value} does not accept valid_items")
+        raise ValueError(
+            f"WarpReduce {operation.value} does not accept valid_items"
+        )
     if operation is WarpReduceOperation.REDUCE:
         if not isinstance(reduce_operator, _REDUCE_OPERATORS):
             raise TypeError("custom WarpReduce requires a reduce operator")
@@ -156,7 +166,9 @@ def make_warp_reduce_spec(
     if valid_items.kind is BindingKind.OMITTED or include_full_warp:
         methods.append((*base_parameters, output))
     if valid_items.kind is BindingKind.RUNTIME:
-        methods.append((*base_parameters, Value(INT32, name="valid_items"), output))
+        methods.append(
+            (*base_parameters, Value(INT32, name="valid_items"), output)
+        )
     elif valid_items.kind is BindingKind.STATIC:
         methods.append(
             (
@@ -186,10 +198,14 @@ def make_warp_reduce_spec(
             "primitive": "reduce",
             "operation": operation,
             "operator": (
-                None if reduce_operator is None else type(reduce_operator).__qualname__
+                None
+                if reduce_operator is None
+                else type(reduce_operator).__qualname__
             ),
             "valid_items": semantic_token(valid_items),
-            "full_warp": (valid_items.kind is BindingKind.OMITTED or include_full_warp),
+            "full_warp": (
+                valid_items.kind is BindingKind.OMITTED or include_full_warp
+            ),
         },
     )
     return WarpReduceSpec(
@@ -198,5 +214,7 @@ def make_warp_reduce_spec(
         operation=operation,
         threads_in_warp=threads_in_warp,
         valid_items=valid_items,
-        has_full_warp=(valid_items.kind is BindingKind.OMITTED or include_full_warp),
+        has_full_warp=(
+            valid_items.kind is BindingKind.OMITTED or include_full_warp
+        ),
     )

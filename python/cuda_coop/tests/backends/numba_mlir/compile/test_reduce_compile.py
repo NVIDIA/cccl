@@ -38,7 +38,9 @@ _BLOCK_THREADS = 64
 
 
 @pytest.fixture(autouse=True)
-def _fixed_compiler_target(monkeypatch: pytest.MonkeyPatch) -> list[tuple[int, int]]:
+def _fixed_compiler_target(
+    monkeypatch: pytest.MonkeyPatch,
+) -> list[tuple[int, int]]:
     """Hide devices while giving both compiler paths an exact target."""
 
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == "", (
@@ -211,7 +213,9 @@ def test_cudax_hierarchy_reduce_compiles_without_external_storage(
     source = invocable.source
 
     first_include = source.index("#include")
-    enable_macro = source.index("#define _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX")
+    enable_macro = source.index(
+        "#define _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX"
+    )
     disable_macro = source.index("#define _CUDAX_DISABLE_CG_INTEROP")
     assert enable_macro < disable_macro < first_include
     assert invocable.storage_abi is StorageABI.NONE
@@ -444,8 +448,8 @@ def test_deterministic_cub_reduce_variants_compile_with_scoped_storage(
         width = kwargs["threads_in_warp"]
         assert method in source
         assert (
-            f"cub::WarpReduce<{_types.numba_type_to_cpp(kwargs['dtype'])}, {width}>"
-            in source
+            f"cub::WarpReduce<{_types.numba_type_to_cpp(kwargs['dtype'])}, "
+            f"{width}>" in source
         )
         assert "TempStorage" in source
         assert "__shared__" in source

@@ -163,7 +163,9 @@ def validate_reduce_operator_dtype(operation: str, dtype: Any) -> Any:
         operation="reduce",
         parameter="value",
     )
-    if operation in _BITWISE_REDUCE_OPERATORS and not isinstance(dtype, types.Integer):
+    if operation in _BITWISE_REDUCE_OPERATORS and not isinstance(
+        dtype, types.Integer
+    ):
         raise TypeError(
             f"cuda.coop.numba_mlir.reduce {operation} requires an integer dtype"
         )
@@ -187,7 +189,9 @@ def _provider_metadata(factory: Any, *, namespace: str) -> dict[str, Any]:
     if registered is None:
         raise RuntimeError(f"unregistered cuda.coop provider {factory!r}")
     if registered.namespace != namespace:
-        raise RuntimeError(f"invalid reduction provider registration {registered!r}")
+        raise RuntimeError(
+            f"invalid reduction provider registration {registered!r}"
+        )
     return {
         "storage_abi": registered.storage_abi,
         "execution_scope": registered.execution_scope,
@@ -586,7 +590,9 @@ def _group_reduce(
     _compile_context: _nvrtc.CompileContext | None = None,
 ) -> RawCAbiInvocable:
     if not isinstance(group, ThreadGroup):
-        raise TypeError("cuda.coop.numba_mlir.reduce group must be a ThreadGroup")
+        raise TypeError(
+            "cuda.coop.numba_mlir.reduce group must be a ThreadGroup"
+        )
     if group.kind == "grid":
         raise NotImplementedError(
             "cuda.coop.numba_mlir.reduce grid groups require a hidden "
@@ -605,7 +611,9 @@ def _group_reduce(
     dtype = validate_reduce_operator_dtype(operation, dtype)
     registered = factory_operation(provider_factory)
     if registered is None:
-        raise RuntimeError(f"unregistered cuda.coop provider {provider_factory!r}")
+        raise RuntimeError(
+            f"unregistered cuda.coop provider {provider_factory!r}"
+        )
     expected_scope = _expected_cudax_scope(group)
     if (
         registered.storage_abi is not StorageABI.NONE
@@ -616,7 +624,9 @@ def _group_reduce(
             "CUDAX reduction provider metadata does not match the group scope"
         )
     device = cuda.get_current_device()
-    cc = int(device.compute_capability[0]) * 10 + int(device.compute_capability[1])
+    cc = int(device.compute_capability[0]) * 10 + int(
+        device.compute_capability[1]
+    )
     compile_context = (
         _nvrtc.resolve_compile_context()
         if _compile_context is None

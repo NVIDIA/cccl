@@ -83,7 +83,9 @@ def _hierarchy_scalar_reductions(source, observed):
     observed[5 * _BLOCK_THREADS + thread] = qualified_coop.sum(
         qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS), value
     )
-    observed[6 * _BLOCK_THREADS + thread] = root_coop.sum(root_coop.this_block(), value)
+    observed[6 * _BLOCK_THREADS + thread] = root_coop.sum(
+        root_coop.this_block(), value
+    )
     observed[7 * _BLOCK_THREADS + thread] = qualified_coop.sum(
         qualified_coop.this_block(), value
     )
@@ -96,7 +98,9 @@ def _mapped_scalar_reductions(warps_per_group):
         value = source[thread]
         mapped_warps = root_coop.this_block().group_by(warps_per_group)
 
-        observed[0 * _BLOCK_THREADS + thread] = root_coop.sum(mapped_warps, value)
+        observed[0 * _BLOCK_THREADS + thread] = root_coop.sum(
+            mapped_warps, value
+        )
         observed[1 * _BLOCK_THREADS + thread] = qualified_coop.sum(
             qualified_coop.this_block().group_by(warps_per_group), value
         )
@@ -221,7 +225,8 @@ def _mixed_thread_data_builtins(source, observed, preserved):
 
 def test_consecutive_portable_and_qualified_builtins_preserve_thread_data():
     source = (
-        (np.arange(_BLOCK_THREADS * _ITEMS_PER_THREAD, dtype=np.int32) * 13) % 251
+        (np.arange(_BLOCK_THREADS * _ITEMS_PER_THREAD, dtype=np.int32) * 13)
+        % 251
     ) - 117
     observed = np.full(5 * _BLOCK_THREADS, -1, dtype=np.int32)
     preserved = np.full_like(source, -1)
@@ -264,7 +269,9 @@ def _qualified_local_array_root_sum(source, output, preserved):
     for item in range(_ITEMS_PER_THREAD):
         payload[item] = source[thread * _ITEMS_PER_THREAD + item]
 
-    total = qualified_coop.sum(qualified_coop.this_block(), payload, broadcast=False)
+    total = qualified_coop.sum(
+        qualified_coop.this_block(), payload, broadcast=False
+    )
     if thread == 0:
         output[0] = total
     for item in range(_ITEMS_PER_THREAD):
@@ -321,7 +328,9 @@ def test_both_namespaces_reduce_across_a_two_block_cluster():
             np.full_like(source, source.max()),
         )
     )
-    np.testing.assert_array_equal(observed.reshape(2, cluster_threads), expected)
+    np.testing.assert_array_equal(
+        observed.reshape(2, cluster_threads), expected
+    )
 
 
 @cuda.jit
@@ -439,7 +448,8 @@ def _cub_deterministic_algorithms(source, output, preserved):
 
 def test_each_deterministic_block_algorithm_matches_an_independent_oracle():
     source = (
-        (np.arange(_BLOCK_THREADS * _ITEMS_PER_THREAD, dtype=np.int32) * 17) % 257
+        (np.arange(_BLOCK_THREADS * _ITEMS_PER_THREAD, dtype=np.int32) * 17)
+        % 257
     ) - 121
     output = np.full(3, -1, dtype=np.int32)
     preserved = np.full_like(source, -1)
@@ -495,7 +505,9 @@ def test_distinct_constant_arrays_do_not_reuse_a_cached_callback():
         observed = np.full(1, -1, dtype=np.int32)
         make_kernel(offset)[1, _BLOCK_THREADS](source, observed)
         expected = _BLOCK_THREADS + (_BLOCK_THREADS - 1) * offset
-        np.testing.assert_array_equal(observed, np.full_like(observed, expected))
+        np.testing.assert_array_equal(
+            observed, np.full_like(observed, expected)
+        )
 
 
 def test_numpy_scalar_nan_sign_does_not_reuse_a_cached_callback():
@@ -524,11 +536,15 @@ def test_numpy_scalar_nan_sign_does_not_reuse_a_cached_callback():
         observed = np.full(1, -1, dtype=np.float64)
         make_kernel(captured)[1, _BLOCK_THREADS](source, observed)
         expected = _BLOCK_THREADS + (_BLOCK_THREADS - 1) * sign
-        np.testing.assert_array_equal(observed, np.full_like(observed, expected))
+        np.testing.assert_array_equal(
+            observed, np.full_like(observed, expected)
+        )
 
 
 @pytest.mark.parametrize("inline", [True, False])
-def test_qualified_reduce_accepts_a_callback_with_a_nested_device_helper(inline):
+def test_qualified_reduce_accepts_a_callback_with_a_nested_device_helper(
+    inline,
+):
     helper = cuda.jit(device=True, inline=inline)(_maximum)
 
     @cuda.jit(device=True)
@@ -551,7 +567,9 @@ def test_qualified_reduce_accepts_a_callback_with_a_nested_device_helper(inline)
     source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 7) % 41) - 20
     observed = np.full(1, -1, dtype=np.int32)
     kernel[1, _BLOCK_THREADS](source, observed)
-    np.testing.assert_array_equal(observed, np.full_like(observed, source.max()))
+    np.testing.assert_array_equal(
+        observed, np.full_like(observed, source.max())
+    )
 
 
 @cuda.jit
@@ -591,7 +609,8 @@ def _stateless_callback_reductions(
 
 def test_qualified_callbacks_cover_block_arrays_and_logical_warp_prefixes():
     source = (
-        (np.arange(_BLOCK_THREADS * _ITEMS_PER_THREAD, dtype=np.int32) * 29) % 313
+        (np.arange(_BLOCK_THREADS * _ITEMS_PER_THREAD, dtype=np.int32) * 29)
+        % 313
     ) - 173
     block_output = np.full(1, -1, dtype=np.int32)
     logical_output = np.full(
@@ -626,7 +645,9 @@ def _run_invalid_runtime_prefix_probe(
     # disposable child processes rather than the pytest worker.
     group_expression = {
         "block": "root_coop.this_block()",
-        "logical_warp": (f"root_coop.this_warp().group_by({_LOGICAL_WARP_THREADS})"),
+        "logical_warp": (
+            f"root_coop.this_warp().group_by({_LOGICAL_WARP_THREADS})"
+        ),
     }[group]
     script = f"""\
 import numpy as np

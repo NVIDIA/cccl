@@ -6,7 +6,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from cuda.coop._core import ThreadHierarchy, make_thread_group, normalize_thread_level
+from cuda.coop._core import (
+    ThreadHierarchy,
+    make_thread_group,
+    normalize_thread_level,
+)
 from cuda.coop._core.thread_group import ThreadGroup as PortableThreadGroup
 
 _ROOT_SCOPE = __name__.rsplit(".", 1)[0]
