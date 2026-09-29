@@ -6,8 +6,10 @@
 Run Length Decode
 =================
 
-This page describes the Numba-CUDA-MLIR implementation. See
-:ref:`backend coverage <coop-backends>` for CUTLASS availability.
+Both Numba-CUDA-MLIR and CUTLASS implement the common window and bulk
+operations. The examples below use Numba; the
+:ref:`CuTe example <coop-cutlass-run-length>` demonstrates the same
+decoding and scratch-reuse contracts.
 
 Run Length Decode expands each run value by its length. Values ``[7, 9]``
 with lengths ``[3, 2]`` describe the stream ``[7, 7, 7, 9, 9]``.
@@ -102,7 +104,7 @@ See the :doc:`../../coop_api` reference for dtype and size limits.
 A window with relative offsets
 ------------------------------
 
-The qualified API adds ``total_decoded_size`` and ``relative_offsets``
+The Numba-qualified API adds ``total_decoded_size`` and ``relative_offsets``
 outputs to the common window operation. The total is the size of the full
 stream, available in an extent-one payload in every thread. Relative
 offsets restart at zero for each run. Both outputs default to uint32;
@@ -133,8 +135,8 @@ before offset 3 and after the decoded interval keep their initial values.
    :end-before: # run-length-bulk-example-end
    :dedent: 4
 
-The qualified bulk operation can also write global relative offsets and
-select uint64 totals. Both forms allocate scratch automatically unless
+The Numba-qualified bulk operation can also write global relative offsets
+and select uint64 totals. Both backends allocate scratch automatically unless
 you supply ``temp_storage``. Scratch remains occupied through the internal
 loop. Explicit descriptors default to ``auto_sync=False``: synchronize the
 block after the call and before its next use, or request ``auto_sync=True``; see
