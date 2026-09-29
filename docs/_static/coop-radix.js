@@ -117,7 +117,7 @@
       const final = pass_end === end;
       phases.push({
         label: final ? "Return sorted payload" : `Pass ${pass}: scatter`,
-        description: `Move each key${pairs ? " and its associated value" : ""} to its digit rank.${final && striped ? " The final pass returns striped ownership through cuda.coop.numba_mlir; intermediate passes use blocked ownership." : " Results use blocked ownership."} Equal digits retain their previous order.`,
+        description: `Move each key${pairs ? " and its associated value" : ""} to its digit rank.${final && striped ? " The final pass returns striped ownership through either qualified API; intermediate passes use blocked ownership." : " Results use blocked ownership."} Equal digits retain their previous order.`,
         tokens: [...preserved, ...working_tokens(ordered, items, pairs, final && striped)],
       });
     }
@@ -127,8 +127,8 @@
       summary: `Logical sorted keys: [${ordered.map(entry => entry.key).join(", ")}].${pairs ? ` Associated values: [${ordered.map(entry => entry.origin).join(", ")}].` : ""} Returned ownership is ${striped ? "striped (qualified API)" : "blocked"}; inputs remain unchanged.`,
       notes: [
         "Every pass is stable. Ordering the least significant selected digit first lets later passes preserve the order established by earlier digits. Equal complete selected bit fields retain original blocked input order, also in descending mode.",
-        "The current provider uses up to four bits per sort pass. This pass width is an implementation choice, not a radix_sort argument. The stages show mathematical ranks and movement, not exact CUB instructions or scratch layout.",
-        striped ? `Only cuda.coop.numba_mlir exposes blocked_to_striped=True. Sorted position p returns at thread p % ${threads}, slot p // ${threads}. Store with matching striped ownership.` : `Blocked output puts sorted position p at thread p // ${items}, slot p % ${items}. The common API always returns blocked output.`,
+        "Both backends use the shared provider with up to four bits per sort pass. This pass width is an implementation choice, not a radix_sort argument. The stages show mathematical ranks and movement, not exact CUB instructions or scratch layout.",
+        striped ? `Both cuda.coop.numba_mlir and cuda.coop.cutlass expose blocked_to_striped=True. Sorted position p returns at thread p % ${threads}, slot p // ${threads}. Store with matching striped ownership.` : `Blocked output puts sorted position p at thread p // ${items}, slot p % ${items}. The common API always returns blocked output.`,
       ],
     };
   }
