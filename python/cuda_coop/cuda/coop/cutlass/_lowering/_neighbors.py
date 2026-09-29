@@ -56,7 +56,8 @@ def _valid_binding(value):
         or type_specification.token == "u64"
     ):
         raise TypeError(
-            "neighbor valid_items requires a signed integer up to 64 bits or an unsigned integer up to 32 bits"
+            "neighbor valid_items requires a signed integer up to 64 bits "
+            "or an unsigned integer up to 32 bits"
         )
     return ArgumentBinding.runtime()
 
@@ -257,12 +258,18 @@ def _render_neighbors(request):
         f"  using T = {cpp};",
         f"  using implementation_type = {request.cpp_type};",
         "  using storage_type = typename implementation_type::TempStorage;",
-        "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes < sizeof(storage_type) ||",
+        (
+            "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes "
+            "< sizeof(storage_type) ||"
+        ),
         "      (storage_address & (alignof(storage_type) - 1u)) != 0u) {",
         '    asm volatile("trap;");',
         "  }",
         "  unsigned long long generic_address;",
-        '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : "l"((unsigned long long)storage_address));',
+        (
+            '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : '
+            '"l"((unsigned long long)storage_address));'
+        ),
         "  auto& storage = *reinterpret_cast<storage_type*>(generic_address);",
         f"  T values[{request.items}] = {{{values}}};",
         *(f"  {output_cpp} {name}[{request.items}] = {{}};" for name in names),
