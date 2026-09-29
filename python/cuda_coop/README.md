@@ -57,9 +57,10 @@ architecture or launch state can belong to the original context. The upstream
 [context-isolation fix](https://github.com/NVIDIA/numba-cuda-mlir/pull/314)
 must be released and qualified before relying on that reuse.
 
-The CUTLASS integration targets Linux with CUDA 13. No public CUTLASS
-package version has passed consumer qualification, so there is no CUTLASS
-installation extra or supported minimum version. A compatible CuTe compiler must provide the external LTO-IR linking
+The CUTLASS integration is implemented with Linux and CUDA 13 as its initial
+development target. A supported public CUTLASS package has not yet been
+qualified, so there is no CUTLASS installation extra or supported minimum
+version. A compatible CuTe compiler must provide the external LTO-IR linking
 and compilation hooks described in its developer guide.
 
 - Numba-CUDA-MLIR: [Programming Guide](https://nvidia.github.io/cccl/unstable/python/coop/programming_guide.html)
@@ -136,16 +137,11 @@ local-array payloads, memory namespaces, and device callbacks. CUTLASS adds
 CuTe register conversions and the controls documented in its guide. Custom operators and Scan prefix
 callbacks are currently supported only by Numba-CUDA-MLIR.
 
-Both integrations accept `ThreadData(items_per_thread, alignment=None)`: use a compile-time
+Both integrations accept `ThreadData(..., alignment=None)`: use a compile-time
 positive power of two in bytes to request minimum payload storage alignment,
 or omit it to let the compiler choose. This does not assert alignment of Load
 or Store memory operands. Results belong to the active compiler; a NumPy dtype
 selector in a CuTe kernel still produces CuTe values.
-
-Pass `items_per_thread` as a kernel argument. Numba-CUDA-MLIR specializes the
-kernel for its value; CuTe kernels and their launchers declare the argument
-as `items_per_thread: cutlass.Constexpr`. The payload count stays fixed
-during execution.
 
 The [FAQs](https://nvidia.github.io/cccl/unstable/python/coop/faqs.html) explain
 namespace choices and temporary storage. The
@@ -161,7 +157,7 @@ explains terms and concepts, including blocked and striped layouts.
 | Scan | `scan`, `inclusive_scan`, `exclusive_scan`, `inclusive_sum`, `exclusive_sum` |
 | Data rearrangement | `exchange`, `shuffle` |
 | Comparison sorting | `merge_sort_keys`, `merge_sort_pairs` |
-| Radix sorting and ranking | `radix_sort_keys`, `radix_sort_pairs`, `radix_rank_keys` |
+| Radix sorting and ranking | `radix_sort_keys`, `radix_sort_pairs`, `radix_rank` |
 | Top-k selection | `topk_min_keys`, `topk_max_keys`, `topk_min_pairs`, `topk_max_pairs` |
 | Neighbor comparisons | `adjacent_difference`, `discontinuity` |
 | Counting | `histogram` |
@@ -218,7 +214,7 @@ For the two Boolean runtime switches, values are case-insensitive; `0`,
 The common and qualified Load/Store APIs share tile controls and in-place
 Load behavior. The following complete Load/Store vocabulary describes Numba;
 check the CUTLASS guide for its currently supported groups and algorithms. The following Numba kernel body clamps a grid tile tail, where
-`source`, `destination`, `count`, and `items_per_thread` are kernel arguments:
+`source`, `destination`, and `count` are kernel arguments:
 
 ```python
 from numba_cuda_mlir import cuda, types
@@ -226,8 +222,8 @@ from numba_cuda_mlir import cuda, types
 from cuda import coop
 
 block = coop.this_block()
-items = coop.ThreadData(items_per_thread)
-tile_items = cuda.blockDim.x * items_per_thread
+items = coop.ThreadData(2)
+tile_items = cuda.blockDim.x * 2
 tile_offset = cuda.blockIdx.x * tile_items
 valid_items = count - tile_offset
 if valid_items < 0:
@@ -354,8 +350,8 @@ compile-time constants. A logical threads-within-warp group can query its
 threads and immediate parent Warp; a mapped warps-within-block group can query
 its threads, physical Warps, and immediate parent block. Queries above the
 immediate physical parent are rejected. Mapped warps-within-block groups expose
-queries and `is_member()` but not `sync()` or `sync_aligned()`; the planner
-does not manage the lifetime of their block barriers. For a
+queries and `is_member()` but not `sync()` or `sync_aligned()`; their block
+barrier lifetime must be owned by a future planner contract. For a
 non-exhaustive partition, use `is_member()` to guard rank-dependent work for
 excluded threads. Do not use that branch to skip a primitive unless the
 primitive's participation contract explicitly permits it; every required
@@ -376,74 +372,66 @@ coop.load(block, source, items, algorithm="transpose", temp_storage=storage)
 ```
 
 For block, physical Warp, and logical Warp calls, `direct`, `striped`, and
-`vectorize` are storage-free: they default-construct CUB primitives without shared-memory allocation, pointer arguments, or
-barriers. For block calls, an explicit descriptor is validated but does not
-change their code generation. Construct `TempStorage` inside the kernel; module-global storage
-descriptors cannot be resolved. A descriptor may be passed to a device helper
-that Numba-CUDA-MLIR inlines into the kernel, which is the default.
+`vectorize` are storage-free where implemented: they need no shared-memory
+allocation, storage pointer arguments, or reuse barriers. An explicit block
+descriptor is validated but does not change that code generation.
 
-The three block transpose algorithms use CUB temporary storage. Without a descriptor,
-the compiler allocates the specialization's exact storage and inserts a block
-reuse barrier. A caller descriptor selects shared or exclusive slices and
-may request capacity and alignment. Both explicit and omitted storage
-participate in the shared-memory plan and launch accounting. The provider
-determines the required byte count and alignment.
+The three block transpose algorithms use CUB temporary storage. Without a
+descriptor, each compiler allocates the specialization's exact storage and
+inserts a block reuse barrier. A descriptor selects shared or exclusive slices
+and may request capacity and minimum alignment. The provider determines the
+required byte count and alignment.
 
 A descriptor's `sharing` selects only the slice layout: `"shared"` overlaps
-every call that passes the same descriptor on one region, while `"exclusive"`
-gives each call site its own slice. A call site inside a loop reuses its slice
-under either layout, so `auto_sync` is independent of `sharing` and defaults to
-`False` for both.
+calls that pass the same descriptor on one region; `"exclusive"` gives each
+call site its own slice. A call site inside a loop reuses its slice under either
+policy. `auto_sync` defaults to `False` for both policies and both integrations.
 
-Exclusive slices use more shared memory to avoid barriers needed solely for
-cross-call scratch reuse when `auto_sync=False`. Repeated execution of one
-call site still reuses its slice and must be synchronized. Omitting storage
-lets the compiler choose the layout and insert reuse barriers; it does not
-guarantee a separate slice per call site.
+Distinct descriptors and compiler-owned storage do not alias each other. With
+the default `auto_sync=False`, call `storage.sync()` or the appropriate block
+barrier before reusing the scratch, including on the next loop iteration.
+Set `auto_sync=True` to append a barrier after each scratch-using call,
+including the last call. That barrier protects reuse of CUB scratch; it does
+not replace barriers needed by the kernel's own shared-memory operations.
+Compiler-owned scratch always synchronizes.
 
-The synchronization model is deliberately simple. A descriptor names one
-region; distinct descriptors and compiler-owned storage never alias each other.
-With `auto_sync=True`, the compiler appends
-`cuda.syncthreads()` for block groups or `cuda.syncwarp(mask)` for Warp groups
-immediately after every call that consumes the storage, including the last
-one, and never inserts a barrier before a call. That trailing barrier only
-orders reuse of the temporary storage; it is not a general barrier for the
-kernel's own shared-memory traffic. With the default `auto_sync=False`, the
-caller issues `cuda.syncthreads()` between consecutive uses, and a call site
-inside a loop counts as a reuse on every iteration.
-Compiler-owned storage always synchronizes.
+Construct descriptors inside the kernel. Numba-CUDA-MLIR resolves descriptors
+in its compiler passes; a descriptor may also be passed to a device helper
+inlined into that kernel. CUTLASS records uses while tracing the CuTe kernel,
+probes exact storage requirements, and allocates through CuTe's shared-memory
+allocator before compilation finishes. The
+[Numba storage example](tests/backends/numba_mlir/runtime/test_storage_examples.py)
+and [CuTe storage example](examples/cutlass/block_storage.py) demonstrate
+reuse policies and synchronization.
 
-All descriptors and compiler-owned requirements of a kernel share one
-shared-memory backing. Above the 48 KiB static limit that backing moves to
-dynamic shared memory and the launch reserves the exact byte count.
-Supported Numba-CUDA-MLIR releases do not separate static and dynamic shared
-allocations reliably. A kernel using cooperative temporary storage must not
-also declare a zero-sized or runtime-sized `cuda.shared.array`. When
-cooperative backing becomes dynamic, user static shared arrays are also
-unsupported. Keep both user arrays and cooperative backing static, or move the
-user data out of shared memory. CUDAX Block, Cluster, and mapped-Warp
-reductions also allocate internal static shared memory, even without a
-`TempStorage` operand. They cannot coexist with user dynamic shared arrays
-or dynamic cooperative backing in these compiler releases.
+Numba-CUDA-MLIR has these additional compiler constraints:
 
-With `auto_sync=False`, a descriptor must originate from exactly one
-constructor site. Selecting between multiple manual-sync constructors is unsupported:
-the compiler cannot prove that caller barriers protect the merged region,
-even when a particular program supplies sufficient barriers.
+- All cooperative storage in a kernel shares one backing. Above the 48 KiB
+  static limit it moves to dynamic shared memory and the launch reserves the
+  exact byte count. Supported Numba-CUDA-MLIR releases do not reliably separate
+  static and dynamic allocations: a scratch-using kernel must not also declare
+  a zero-sized or runtime-sized `cuda.shared.array`. When cooperative backing
+  becomes dynamic, user static shared arrays are also unsupported. Storage-free
+  operations do not add these restrictions.
+- A descriptor with `auto_sync=False` must originate from one constructor site.
+  Selecting between multiple manual-sync constructors is unsupported.
+- Cooperative calls in device helpers must be inlined into the kernel. Use
+  `@cuda.jit(device=True, inline="always")` when selecting the policy explicitly.
+  Standalone primitive helpers and primitives inside standalone callbacks are
+  unsupported. `literal_unroll` values cannot determine cooperative payload
+  extents, group dimensions, selectors, or descriptor arguments. An unrelated
+  `literal_unroll` loop does not add this restriction.
 
-Cooperative calls in device helpers must be inlined into the kernel; use
-`@cuda.jit(device=True, inline="always")` when selecting the helper's
-policy explicitly. Standalone primitive helpers and primitives inside
-standalone callbacks are unsupported. `literal_unroll` values cannot
-determine cooperative payload extents, group dimensions,
-selectors, or descriptor constructor arguments. Write separate calls with
-explicit constants, or use an ordinary loop with one fixed cooperative shape.
-An unrelated `literal_unroll` loop does not add this restriction.
+CuTe traces helper functions through its own compiler and allocates cooperative
+scratch through its shared-memory allocator. For CuTe helper functions and
+compiler-owned allocation, see the
+[CUTLASS Programming Guide](https://nvidia.github.io/cccl/unstable/python/coop_cutlass.html)
+and [Developer Guide](https://nvidia.github.io/cccl/unstable/python/coop/cutlass_developer_guide.html).
 
 Warp `transpose` uses compiler-owned storage with one disjoint slice per
-physical or logical group and inserts `syncwarp` with the exact group mask.
-Explicit `TempStorage` is rejected by both the common and qualified APIs for
-every Warp Load and Store algorithm, including the storage-free modes.
+physical or logical group and masked synchronization for reuse. Both
+integrations reject explicit `TempStorage` for every Warp Load and Store
+algorithm, including the storage-free modes.
 
 ## Reduce and Sum
 
@@ -463,7 +451,7 @@ selected group must participate.
 By default, `broadcast=True` gives every group member the reduced scalar. With
 `broadcast=False`, only rank zero of each selected group has a defined result;
 other members must still execute the call and must not consume their returned
-value. For example, this full block reduction combines `items_per_thread` values per thread
+value. For example, this full block reduction combines two values per thread
 but writes only from the block root:
 
 ```python
@@ -473,11 +461,11 @@ from cuda import coop
 
 
 @cuda.jit
-def block_sum(source, output, items_per_thread):
+def block_sum(source, output):
     thread = cuda.threadIdx.x
-    values = coop.ThreadData(items_per_thread)
-    for item in range(items_per_thread):
-        values[item] = source[items_per_thread * thread + item]
+    values = coop.ThreadData(2, dtype=types.int32)
+    values[0] = source[2 * thread]
+    values[1] = source[2 * thread + 1]
     total = coop.sum(coop.this_block(), values, broadcast=False)
     if thread == 0:
         output[0] = total
@@ -595,7 +583,7 @@ def carry_prefix(state, block_aggregate):
 running_prefix = coop.StatefulFunction(carry_prefix, types.int64)
 
 # Inside a kernel, before a loop over tiles:
-state = coop.ThreadData(1)
+state = coop.ThreadData(1, dtype=types.int64)
 state[0] = types.int64(0)
 scanned = coop.exclusive_sum(
     coop.this_block(),
@@ -640,9 +628,9 @@ from cuda import coop
 
 
 @cuda.jit
-def block_scan_kernel(values, prefixes, items_per_thread):
+def block_scan_kernel(values, prefixes):
     block = coop.this_block()
-    items = coop.ThreadData(items_per_thread)
+    items = coop.ThreadData(2, dtype=np.int32)
     coop.load(block, values, items)
     scanned = coop.exclusive_sum(block, items)
     coop.store(block, prefixes, scanned)
