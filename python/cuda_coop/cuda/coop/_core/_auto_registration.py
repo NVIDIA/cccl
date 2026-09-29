@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Connect the portable ``cuda.coop`` API to compatible Python kernel DSLs.
+"""Connect the common ``cuda.coop`` API to compatible Python kernel DSLs.
 
 Importing ``cuda.coop`` probes an explicit allowlist of separately installed
 DSL integrations. Each probe verifies the compiler capabilities that its
@@ -33,7 +33,7 @@ _AUTO_DSL_CANDIDATES = ("numba_mlir",)
 
 
 class CudaCoopAutoRegistrationWarning(UserWarning):
-    """A detected optional DSL could not activate the portable API."""
+    """A detected optional DSL could not activate the common API."""
 
 
 class _BackendUnavailable(ImportError):
