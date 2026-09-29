@@ -37,7 +37,7 @@ def run_example(api="common"):
     def rearrange(source: cute.Pointer, destination: cute.Pointer):
         group = module.this_block()
         thread = group.rank()
-        payload = module.ThreadData(_ITEMS)
+        payload = module.ThreadData(items_per_thread=_ITEMS)
         module.load(group, source, payload)
         striped = module.exchange(group, payload, mode="blocked_to_striped")
         shifted = module.shuffle(group, striped, mode="down")
