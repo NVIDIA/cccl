@@ -97,7 +97,8 @@ class GroupReduceSemantics:
                 algorithm = normalize_block_reduce_algorithm(self.cub_algorithm)
             except ValueError as exc:
                 raise ValueError(
-                    f"unsupported CUB BlockReduce algorithm {self.cub_algorithm!r}"
+                    "unsupported CUB BlockReduce algorithm "
+                    f"{self.cub_algorithm!r}"
                 ) from exc
             object.__setattr__(self, "cub_algorithm", algorithm)
 
@@ -122,7 +123,9 @@ class GroupReduceSemantics:
         return self.primitive.valid_items
 
     @property
-    def reduce_operator(self) -> CxxOperator | PythonOperator | StatefulOperator | None:
+    def reduce_operator(
+        self,
+    ) -> CxxOperator | PythonOperator | StatefulOperator | None:
         return self.primitive.reduce_operator
 
     @property
@@ -166,12 +169,16 @@ def _call_classifications(
     operation: GroupReduceSemantics,
 ) -> tuple[ParameterClassification, ...]:
     classifications = [
-        ParameterClassification("value", ArgumentKind.RUNTIME, ParameterRole.INPUT)
+        ParameterClassification(
+            "value", ArgumentKind.RUNTIME, ParameterRole.INPUT
+        )
     ]
     operator = operation.reduce_operator
     if operator is not None:
         classifications.append(
-            ParameterClassification("binary_op", operator.argument_kind, operator.role)
+            ParameterClassification(
+                "binary_op", operator.argument_kind, operator.role
+            )
         )
     if operation.valid_items.argument_kind is not None:
         classifications.append(
@@ -316,7 +323,9 @@ def _plan_cub_reduce(
 
     if operation.valid_items.kind is BindingKind.STATIC:
         valid_items = operation.valid_items.value
-        if isinstance(valid_items, bool) or not isinstance(valid_items, Integral):
+        if isinstance(valid_items, bool) or not isinstance(
+            valid_items, Integral
+        ):
             raise TypeError("static valid_items must be an integer")
         valid_items = int(valid_items)
         group_size = resolved.static_size
@@ -325,13 +334,16 @@ def _plan_cub_reduce(
             raise ValueError("static valid_items must be at least 1")
         if valid_items > group_size:
             raise ValueError(
-                f"static valid_items {valid_items} exceeds group size {group_size}"
+                f"static valid_items {valid_items} exceeds group size "
+                f"{group_size}"
             )
 
     assert launch.exact_block_dim is not None
     reduce_operator = operation.reduce_operator
     if resolved.kind == "block":
-        algorithm = operation.cub_algorithm or BlockReduceAlgorithm.WARP_REDUCTIONS
+        algorithm = (
+            operation.cub_algorithm or BlockReduceAlgorithm.WARP_REDUCTIONS
+        )
         if algorithm is BlockReduceAlgorithm.WARP_REDUCTIONS_NONDETERMINISTIC:
             return _unsupported(
                 call,
@@ -374,7 +386,8 @@ def _plan_cub_reduce(
                 call,
                 resolved,
                 UnsupportedReasonCode.OPERATION_VARIANT,
-                "CUB algorithm selection applies to BlockReduce, not WarpReduce",
+                "CUB algorithm selection applies to BlockReduce, "
+                "not WarpReduce",
             )
         if operation.operand_kind is GroupOperandKind.ARRAY:
             return _unsupported(
@@ -412,7 +425,11 @@ def _plan_cub_reduce(
         storage_ownership=StorageOwnership.IMPLEMENTATION,
         cpp_type=None,
         uniform_arguments=(
-            *(("binary_op",) if isinstance(reduce_operator, StatefulOperator) else ()),
+            *(
+                ("binary_op",)
+                if isinstance(reduce_operator, StatefulOperator)
+                else ()
+            ),
             *(("valid_items",) if operation.primitive.has_valid_items else ()),
         ),
         valid_member_selection=(

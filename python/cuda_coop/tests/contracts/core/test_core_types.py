@@ -466,7 +466,9 @@ def test_operator_token_rechecks_callback_dependencies(
     [(PythonOperator, {}), (StatefulOperator, {"state_dtype": INT32})],
 )
 @pytest.mark.parametrize("use_tokenizer", [False, True])
-def test_operator_token_preserves_dtype_identity(operator_type, options, use_tokenizer):
+def test_operator_token_preserves_dtype_identity(
+    operator_type, options, use_tokenizer
+):
     def add(left, right):
         return left + right
 
@@ -480,7 +482,9 @@ def test_operator_token_preserves_dtype_identity(operator_type, options, use_tok
     original = semantic_token(operator)
 
     assert semantic_token(replace(operator, ret_dtype=INT64)) != original
-    assert semantic_token(replace(operator, arg_dtypes=(INT64, INT32))) != original
+    assert (
+        semantic_token(replace(operator, arg_dtypes=(INT64, INT32))) != original
+    )
     if isinstance(operator, StatefulOperator):
         assert semantic_token(replace(operator, state_dtype=INT64)) != original
 

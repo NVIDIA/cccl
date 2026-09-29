@@ -11,7 +11,9 @@ import pytest
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
-_SOURCE = 'extern "C" __device__ int raw_add_one(int value) { return value + 1; }'
+_SOURCE = (
+    'extern "C" __device__ int raw_add_one(int value) { return value + 1; }'
+)
 
 
 def _compile_context():
@@ -155,7 +157,9 @@ def test_raw_c_abi_invocable_typing_is_local_and_owns_artifact(monkeypatch):
     assert _registry_sizes() == registry_sizes
 
 
-def test_raw_c_abi_invocable_metadata_is_checked_by_generic_rewrite(monkeypatch):
+def test_raw_c_abi_invocable_metadata_is_checked_by_generic_rewrite(
+    monkeypatch,
+):
     from cuda.coop._core import SynchronizationScope
     from cuda.coop.numba_mlir._compiler._operations import (
         FactoryOperation,

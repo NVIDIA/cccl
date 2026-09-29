@@ -96,7 +96,9 @@ def _expected_diagnostics(consumer: Path) -> set[tuple[int, str]]:
     ("_core/api/thread_group.pyi", "numba_mlir/_thread_group.pyi"),
     ids=("portable", "qualified"),
 )
-def test_thread_group_stubs_expose_hierarchy_operations(relative_path: str) -> None:
+def test_thread_group_stubs_expose_hierarchy_operations(
+    relative_path: str,
+) -> None:
     stub = _package_stub_source() / relative_path
     module = ast.parse(stub.read_text(encoding="utf-8"), filename=str(stub))
     thread_group = next(

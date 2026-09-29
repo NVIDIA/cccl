@@ -71,7 +71,14 @@ def test_sum_example():
         tile_size = cuda.blockDim.x * 2
         offset = cuda.blockIdx.x * tile_size
         valid = min(max(source.size - offset, 0), tile_size)
-        coop.load(block, source, items, offset=offset, valid_items=valid, oob_default=0)
+        coop.load(
+            block,
+            source,
+            items,
+            offset=offset,
+            valid_items=valid,
+            oob_default=0,
+        )
         total = coop.sum(block, items, broadcast=False, algorithm="raking")
         if cuda.threadIdx.x == 0:
             totals[cuda.blockIdx.x] = total
@@ -80,6 +87,8 @@ def test_sum_example():
     source = cuda.to_device(values)
     totals = cuda.device_array(2, dtype=np.int32)
     sum_tiles[2, 128](source, totals)
-    expected = np.array([values[:256].sum(), values[256:].sum()], dtype=np.int32)
+    expected = np.array(
+        [values[:256].sum(), values[256:].sum()], dtype=np.int32
+    )
     np.testing.assert_array_equal(totals.copy_to_host(), expected)
     # sum-example-end

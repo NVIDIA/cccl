@@ -99,7 +99,8 @@ def reduce(
     All 128 threads participate in both calls; only thread zero writes the
     partial reduction's result.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_reduce_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_reduce_examples.py
         :language: python
         :start-after: # reduce-example-begin
         :end-before: # reduce-example-end
@@ -182,7 +183,8 @@ def sum(
     Sum an array in tiles of 256 elements using two values per thread. The last
     tile is padded with zero; each block writes one partial sum.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_reduce_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_reduce_examples.py
         :language: python
         :start-after: # sum-example-begin
         :end-before: # sum-example-end

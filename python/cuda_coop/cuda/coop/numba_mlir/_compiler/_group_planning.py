@@ -183,7 +183,8 @@ class GroupPlanningContext:
         storage_bearing = storage.ownership is not StorageOwnership.NONE
         if topology.execution_scope is SynchronizationScope.GROUP and (
             storage_bearing
-            or synchronization.storage_reuse_barrier is not SynchronizationScope.NONE
+            or synchronization.storage_reuse_barrier
+            is not SynchronizationScope.NONE
             or metadata.storage_abi is not StorageABI.NONE
             or metadata.execution_scope is not SynchronizationScope.GROUP
             or metadata.synchronization_scope is not SynchronizationScope.NONE

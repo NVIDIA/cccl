@@ -71,7 +71,7 @@ kernel[1, 32](output)
 cuda.synchronize()
 assert injected, "group synchronization assertions were not enabled"
 np.testing.assert_array_equal(output, np.array([1] * 30 + [0, 0]))
-"""
+"""  # noqa: E501 - Preserve embedded source bytes.
     result = subprocess.run(
         [sys.executable, "-c", script],
         check=False,
@@ -177,7 +177,9 @@ def _partial_warp_query_kernel(observed_rank, observed_count):
 
 def test_block_warp_queries_include_a_partial_final_warp() -> None:
     block_threads = 48
-    observed_rank = np.full(block_threads, np.iinfo(np.uint32).max, dtype=np.uint32)
+    observed_rank = np.full(
+        block_threads, np.iinfo(np.uint32).max, dtype=np.uint32
+    )
     observed_count = np.zeros(block_threads, dtype=np.uint32)
 
     _partial_warp_query_kernel[1, block_threads](observed_rank, observed_count)

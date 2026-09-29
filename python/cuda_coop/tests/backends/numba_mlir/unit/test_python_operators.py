@@ -136,7 +136,9 @@ def test_core_adapter_lowers_stateless_operator_and_emits_scalar_wrapper(
     assert ".Run(input, binary_op);" in named_source
 
 
-def test_core_adapter_normalizes_device_dispatcher_to_python_function(monkeypatch):
+def test_core_adapter_normalizes_device_dispatcher_to_python_function(
+    monkeypatch,
+):
     from numba_cuda_mlir import cuda, types
 
     from cuda.coop._core import PythonOperator
@@ -312,7 +314,9 @@ def test_pointer_abi_adapts_aggregate_operator(monkeypatch):
         True,
         (True, True),
     )
-    assert specialized.forward_decl().endswith("(const void*, const void*, void*);")
+    assert specialized.forward_decl().endswith(
+        "(const void*, const void*, void*);"
+    )
     wrapper = specialized.wrap_decl("binary_op")
     assert "const storage_t& wp_0" in wrapper
     assert f"{specialized.name}(&wp_0, &wp_1, &result);" in wrapper

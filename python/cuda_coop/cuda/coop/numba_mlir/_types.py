@@ -35,7 +35,9 @@ from ._compiler._operations import StorageABI
 from ._semantic import _numba_semantic_token
 
 _numba_mlir_compat = _get_numba_mlir_compat()
-_NumbaCudaMlirOverloadFunctionTemplate = _numba_mlir_compat.overload_function_template
+_NumbaCudaMlirOverloadFunctionTemplate = (
+    _numba_mlir_compat.overload_function_template
+)
 make_overload_template = _numba_mlir_compat.make_overload_template
 
 NUMBA_TYPES_TO_CPP = {
@@ -66,7 +68,9 @@ _DEVICE_LTOIR_CACHE: dict[
 
 @contextmanager
 def collect_specializations():
-    collected: list[tuple[object, int | None, int | tuple[int, ...] | None]] = []
+    collected: list[
+        tuple[object, int | None, int | tuple[int, ...] | None]
+    ] = []
     token = _COOP_SPECIALIZATION_COLLECTOR.set(collected)
     try:
         yield collected
@@ -146,7 +150,9 @@ def _symbol_component(value):
 def _hash_symbol_value(hasher, value, depth=0):
     del depth
     hasher.update(
-        repr(_numba_semantic_token(value)).encode("utf-8", errors="backslashreplace")
+        repr(_numba_semantic_token(value)).encode(
+            "utf-8", errors="backslashreplace"
+        )
     )
 
 
@@ -186,7 +192,8 @@ def _normalize_compute_capability(compute_capability) -> tuple[int, int]:
         or len(compute_capability) != 2
     ):
         raise RuntimeError(
-            "cuda.coop.numba_mlir requires a two-component CUDA compute capability"
+            "cuda.coop.numba_mlir requires a "
+            "two-component CUDA compute capability"
         )
     major, minor = compute_capability
     if (
@@ -208,7 +215,9 @@ def _normalize_compute_capability(compute_capability) -> tuple[int, int]:
 def _current_compute_capability() -> tuple[int, int]:
     """Return the exact target used for callback device compilation."""
 
-    return _normalize_compute_capability(cuda.get_current_device().compute_capability)
+    return _normalize_compute_capability(
+        cuda.get_current_device().compute_capability
+    )
 
 
 def _compute_capability_number(compute_capability: tuple[int, int]) -> int:
@@ -254,7 +263,9 @@ def _registered_struct_member_types(numba_type):
             return None
         if not isinstance(model, model_type):
             return None
-        return tuple(model.get_type(index) for index in range(model.field_count))
+        return tuple(
+            model.get_type(index) for index in range(model.field_count)
+        )
 
     cuda_manager = compat.cuda_data_manager.chain(compat.default_manager)
     cuda_members = get_member_types(cuda_manager, compat.cuda_struct_model)
@@ -309,7 +320,9 @@ def _size_alignment_from_numba_type(numba_type):
         elem_size = max(1, numba_type.underlying_float.bitwidth // 8)
         return 2 * elem_size, elem_size
     if isinstance(numba_type, types.UniTuple):
-        elem_size, elem_align = _size_alignment_from_numba_type(numba_type.dtype)
+        elem_size, elem_align = _size_alignment_from_numba_type(
+            numba_type.dtype
+        )
         return elem_size * numba_type.count, elem_align
     if isinstance(numba_type, AggregateType):
         if numba_type.is_bitfield_struct:
@@ -357,7 +370,8 @@ def _compile_device_ltoir(
         repr(sig),
         tuple(
             sorted(
-                (name, _numba_semantic_token(value)) for name, value in abi_info.items()
+                (name, _numba_semantic_token(value))
+                for name, value in abi_info.items()
             )
         ),
     )
@@ -373,7 +387,9 @@ def _compile_device_ltoir(
         forceinline=True,
         cc=compute_capability,
     )
-    ltoir_blob = ltoir.encode("utf-8") if isinstance(ltoir, str) else bytes(ltoir)
+    ltoir_blob = (
+        ltoir.encode("utf-8") if isinstance(ltoir, str) else bytes(ltoir)
+    )
     _DEVICE_LTOIR_CACHE[cache_key] = ltoir_blob
     return ltoir_blob
 
@@ -691,7 +707,9 @@ class BoundedInteger(Value):
         if not isinstance(provider_dtype, types.Integer) or isinstance(
             provider_dtype, types.IntegerLiteral
         ):
-            raise TypeError("provider_dtype must be a non-literal integer dtype")
+            raise TypeError(
+                "provider_dtype must be a non-literal integer dtype"
+            )
         for name, bound in (("minimum", minimum), ("maximum", maximum)):
             if not isinstance(bound, Integral) or isinstance(bound, bool):
                 raise TypeError(f"{name} must be an integer")
@@ -711,7 +729,9 @@ class BoundedInteger(Value):
                 "bounded integer limits must fit the provider integer dtype"
             )
         if not -(1 << 63) <= minimum <= maximum <= (1 << 63) - 1:
-            raise ValueError("bounded integer limits must fit the signed 64-bit ABI")
+            raise ValueError(
+                "bounded integer limits must fit the signed 64-bit ABI"
+            )
 
         self._provider_dtype = provider_dtype
         self.minimum = minimum
@@ -741,7 +761,8 @@ class BoundedInteger(Value):
 class PointerOffset(Value):
     def __init__(self, value_type, pointer_arg_index=0, static_value=None):
         if static_value is not None and (
-            not isinstance(static_value, Integral) or isinstance(static_value, bool)
+            not isinstance(static_value, Integral)
+            or isinstance(static_value, bool)
         ):
             raise TypeError("static pointer offset must be an integer")
         self.pointer_arg_index = pointer_arg_index
@@ -802,7 +823,9 @@ class DependentPointer(Parameter):
         return f"DependentPointer(dep={self.value_dtype}, out={self.is_output})"
 
     def specialize(self, template_arguments):
-        return Pointer(self.value_dtype.resolve(template_arguments), self.is_output)
+        return Pointer(
+            self.value_dtype.resolve(template_arguments), self.is_output
+        )
 
 
 class PointerReference(Pointer):
@@ -811,7 +834,9 @@ class PointerReference(Pointer):
         super().__init__(value_dtype, is_output)
 
     def __repr__(self) -> str:
-        return f"PointerReference(dtype={self.value_dtype}, out={self.is_output})"
+        return (
+            f"PointerReference(dtype={self.value_dtype}, out={self.is_output})"
+        )
 
 
 class DependentPointerReference(DependentPointer):
@@ -821,7 +846,8 @@ class DependentPointerReference(DependentPointer):
 
     def __repr__(self) -> str:
         return (
-            f"DependentPointerReference(dep={self.value_dtype}, out={self.is_output})"
+            f"DependentPointerReference(dep="
+            f"{self.value_dtype}, out={self.is_output})"
         )
 
     def specialize(self, template_arguments):
@@ -855,10 +881,14 @@ class DependentReference(Parameter):
         super().__init__(is_output)
 
     def __repr__(self) -> str:
-        return f"DependentReference(dep={self.value_dtype}, out={self.is_output})"
+        return (
+            f"DependentReference(dep={self.value_dtype}, out={self.is_output})"
+        )
 
     def specialize(self, template_arguments):
-        return Reference(self.value_dtype.resolve(template_arguments), self.is_output)
+        return Reference(
+            self.value_dtype.resolve(template_arguments), self.is_output
+        )
 
 
 class Array(Pointer):
@@ -868,7 +898,8 @@ class Array(Pointer):
 
     def __repr__(self) -> str:
         return (
-            f"Array(dtype={self.value_dtype}, size={self.size}, out={self.is_output})"
+            f"Array(dtype={self.value_dtype}, size="
+            f"{self.size}, out={self.is_output})"
         )
 
     def cpp_decl(self, name):
@@ -900,7 +931,8 @@ class TransformedArray(Array):
     def __repr__(self) -> str:
         return (
             "TransformedArray("
-            f"source_dtype={self.value_dtype}, target_dtype={self.target_dtype}, "
+            f"source_dtype={self.value_dtype}, "
+            f"target_dtype={self.target_dtype}, "
             f"size={self.size}, cpp_expression={self.cpp_expression!r})"
         )
 
@@ -926,7 +958,9 @@ class Dependency:
 
     def resolve(self, template_arguments):
         if self.dep not in template_arguments:
-            raise SubstitutionFailure(f"Template argument {self.dep} not provided")
+            raise SubstitutionFailure(
+                f"Template argument {self.dep} not provided"
+            )
         if template_arguments[self.dep] is None:
             raise SubstitutionFailure(f"Template argument {self.dep} is None")
         return template_arguments[self.dep]
@@ -957,7 +991,9 @@ class StatelessOperator(Parameter):
         self.ret_cpp_type = ret_cpp_type
         self.arg_cpp_types = tuple(arg_cpp_types)
         self.ltoir = bytes(ltoir)
-        self.compute_capability = _normalize_compute_capability(compute_capability)
+        self.compute_capability = _normalize_compute_capability(
+            compute_capability
+        )
 
     def __repr__(self) -> str:
         return f"StatelessOperator(name={self.name!r})"
@@ -966,14 +1002,18 @@ class StatelessOperator(Parameter):
         return self.name
 
     def forward_decl(self):
-        return_type = "void" if self.ret_cpp_type == "storage_t" else self.ret_cpp_type
+        return_type = (
+            "void" if self.ret_cpp_type == "storage_t" else self.ret_cpp_type
+        )
         arg_decls = [
-            "const void*" if arg == "storage_t" else arg for arg in self.arg_cpp_types
+            "const void*" if arg == "storage_t" else arg
+            for arg in self.arg_cpp_types
         ]
         if self.ret_cpp_type == "storage_t":
             arg_decls.append("void*")
         return (
-            f'extern "C" __device__ {return_type} {self.name}({", ".join(arg_decls)});'
+            f'extern "C" __device__ {return_type} '
+            f"{self.name}({', '.join(arg_decls)});"
         )
 
     def wrap_decl(self, name):
@@ -982,7 +1022,9 @@ class StatelessOperator(Parameter):
         for index, arg_type in enumerate(self.arg_cpp_types):
             arg_name = f"wp_{index}"
             param_decls.append(f"const {arg_type}& {arg_name}")
-            param_refs.append(f"&{arg_name}" if arg_type == "storage_t" else arg_name)
+            param_refs.append(
+                f"&{arg_name}" if arg_type == "storage_t" else arg_name
+            )
 
         param_decls_csv = ", ".join(param_decls)
         param_refs_csv = ", ".join(param_refs)
@@ -1019,9 +1061,13 @@ class DependentPythonOperator:
         ret_dtype = self.ret_dtype.resolve(template_arguments)
         ret_cpp_type = numba_type_to_cpp(ret_dtype)
         ret_numba_type = (
-            types.CPointer(ret_dtype) if ret_cpp_type == "storage_t" else ret_dtype
+            types.CPointer(ret_dtype)
+            if ret_cpp_type == "storage_t"
+            else ret_dtype
         )
-        arg_dtypes = tuple(arg.resolve(template_arguments) for arg in self.arg_dtypes)
+        arg_dtypes = tuple(
+            arg.resolve(template_arguments) for arg in self.arg_dtypes
+        )
         arg_cpp_types = tuple(numba_type_to_cpp(dtype) for dtype in arg_dtypes)
         arg_numba_types = tuple(
             types.CPointer(dtype) if cpp_type == "storage_t" else dtype
@@ -1253,7 +1299,10 @@ class Algorithm:
         self._provider_compile_identity = None
 
     def __repr__(self) -> str:
-        return f"{self.struct_name}::{self.method_name}{self.template_parameters}: {self.parameters}"
+        return (
+            f"{self.struct_name}::"
+            f"{self.method_name}{self.template_parameters}: {self.parameters}"
+        )
 
     def _symbol_base_name(self):
         namespace = (
@@ -1294,7 +1343,9 @@ class Algorithm:
         namespace.
         """
 
-        compile_identity = self._bind_provider_compile_identity(compile_identity)
+        compile_identity = self._bind_provider_compile_identity(
+            compile_identity
+        )
         key = algo_coalesce_key(
             self,
             threads=threads,
@@ -1384,7 +1435,8 @@ class Algorithm:
     def temp_storage_bytes(self):
         if self._temp_storage_bytes is None:
             raise RuntimeError(
-                "Temporary storage bytes not computed yet.  Call get_lto_ir() first."
+                "Temporary storage bytes not computed "
+                "yet.  Call get_lto_ir() first."
             )
         return self._temp_storage_bytes
 
@@ -1441,7 +1493,8 @@ class Algorithm:
                     and isinstance(param, Pointer)
                     and param.value_dtype == types.uint8
                 ):
-                    # Non-alloc wrappers receive raw temporary storage explicitly.
+                    # Non-alloc wrappers receive raw temporary storage
+                    # explicitly.
                     body_lines.append(
                         "    "
                         f"{temp_storage_type_name} *{cast_name} = "
@@ -1450,7 +1503,8 @@ class Algorithm:
                 else:
                     pointee_type = numba_type_to_cpp(param.value_dtype)
                     body_lines.append(
-                        f"    {pointee_type} *{cast_name} = reinterpret_cast<{pointee_type} *>({name});"
+                        f"    {pointee_type} *{cast_name} = reinterpret_cast<"
+                        f"{pointee_type} *>({name});"
                     )
                 call_args_by_pid[pid] = cast_name
             elif isinstance(param, Reference):
@@ -1485,12 +1539,16 @@ class Algorithm:
 
         if output_var is not None:
             body_lines.append(
-                f"    *reinterpret_cast<{output_cpp_type} *>(__ret) = {output_var};"
+                f"    *reinterpret_cast<{output_cpp_type}"
+                f" *>(__ret) = {output_var};"
             )
         body_lines.append("    return 0;")
 
         abi_params_csv = ", ".join(abi_param_decls)
-        w(f'extern "C" __device__ int {exported_name}__abi({abi_params_csv}) {{\n')
+        w(
+            f'extern "C" __device__ int {exported_name}'
+            f"__abi({abi_params_csv}) {{\n"
+        )
         for line in body_lines:
             w(f"{line}\n")
         w("}\n\n")
@@ -1514,12 +1572,16 @@ class Algorithm:
             for param in method:
                 if not isinstance(param, StatelessOperator):
                     continue
-                callback_cc = _compute_capability_number(param.compute_capability)
+                callback_cc = _compute_capability_number(
+                    param.compute_capability
+                )
                 if callback_cc != provider_cc:
                     major, minor = param.compute_capability
                     raise RuntimeError(
-                        "Python operator LTO IR target does not match its provider: "
-                        f"callback {major}.{minor}, provider {provider_cc // 10}."
+                        "Python operator LTO IR target "
+                        "does not match its provider: "
+                        f"callback {major}.{minor}, provider "
+                        f"{provider_cc // 10}."
                         f"{provider_cc % 10}"
                     )
                 declaration = param.forward_decl()
@@ -1532,7 +1594,9 @@ class Algorithm:
 
         return _dedupe_ltoirs(lto_irs), udf_declarations
 
-    def _source_code(self, threads=None, block_threads=None, *, compile_identity=None):
+    def _source_code(
+        self, threads=None, block_threads=None, *, compile_identity=None
+    ):
         compile_identity = self._qualify_private_symbols(
             threads=threads,
             block_threads=block_threads,
@@ -1581,7 +1645,8 @@ class Algorithm:
             )
             w(
                 "__device__ constexpr unsigned "
-                f"{temp_storage_bytes_symbol} = sizeof({temp_storage_type_name});\n"
+                f"{temp_storage_bytes_symbol} = "
+                f"sizeof({temp_storage_type_name});\n"
             )
             w(
                 "__device__ constexpr unsigned "
@@ -1599,7 +1664,9 @@ class Algorithm:
 
             param_arg_positions_by_pid = {}
             provider_parameters = (
-                method[1:] if self.storage_abi is StorageABI.LEADING_POINTER else method
+                method[1:]
+                if self.storage_abi is StorageABI.LEADING_POINTER
+                else method
             )
             parameter_names = _cpp_parameter_names(
                 provider_parameters,
@@ -1615,7 +1682,9 @@ class Algorithm:
                 zip(provider_parameters, parameter_names)
             ):
                 if isinstance(param, StatelessOperator):
-                    func_decls.extend(param.wrap_decl(name).rstrip().splitlines())
+                    func_decls.extend(
+                        param.wrap_decl(name).rstrip().splitlines()
+                    )
                     param_args.append(name)
                 elif isinstance(param, CxxFunction):
                     param_args.append(param.cpp)
@@ -1631,11 +1700,13 @@ class Algorithm:
                         )
                         if pointer_arg_pos is None:
                             raise ValueError(
-                                "PointerOffset must reference an earlier pointer "
+                                "PointerOffset must "
+                                "reference an earlier pointer "
                                 "parameter."
                             )
                         param_args[pointer_arg_pos] = (
-                            f"({param_args[pointer_arg_pos]} + {offset_expression})"
+                            f"({param_args[pointer_arg_pos]} + "
+                            f"{offset_expression})"
                         )
                         continue
                     if isinstance(param, BoundedInteger):
@@ -1673,7 +1744,8 @@ class Algorithm:
                         value_type = numba_type_to_cpp(param.value_dtype)
                         param_decls.append(f"{value_type} *{name}")
                         param_arg = (
-                            f"*reinterpret_cast<{value_type} (*)[{param.size}]>({name})"
+                            f"*reinterpret_cast<{value_type}"
+                            f" (*)[{param.size}]>({name})"
                         )
                     else:
                         param_decls.append(param.cpp_decl(name))
@@ -1683,7 +1755,9 @@ class Algorithm:
                             param_arg = name
                     if not self.fake_return and param.is_output:
                         if out_param is not None:
-                            raise ValueError("Multiple output parameters not supported")
+                            raise ValueError(
+                                "Multiple output parameters not supported"
+                            )
                         out_param = name
                         if self.output_by_reference:
                             param_arg_positions_by_pid[pid] = len(param_args)
@@ -1692,12 +1766,16 @@ class Algorithm:
                         param_arg_positions_by_pid[pid] = len(param_args)
                         param_args.append(param_arg)
 
-            provide_alloc_version = self.storage_abi is StorageABI.LEADING_POINTER
+            provide_alloc_version = (
+                self.storage_abi is StorageABI.LEADING_POINTER
+            )
             if provide_alloc_version:
                 assert temp_storage_type_name is not None
                 logical_width = None
                 if self.execution_scope is SynchronizationScope.BLOCK:
-                    storage = f"__shared__ {temp_storage_type_name} temp_storage;"
+                    storage = (
+                        f"__shared__ {temp_storage_type_name} temp_storage;"
+                    )
                 elif self.execution_scope is SynchronizationScope.WARP:
                     logical_width = _validate_logical_warp_threads(
                         threads if threads is not None else self.threads
@@ -1715,12 +1793,14 @@ class Algorithm:
                         )
                     instances = resolved_block_threads // logical_width
                     storage = (
-                        "unsigned __coop_thread_rank = threadIdx.x + blockDim.x * "
+                        "unsigned __coop_thread_rank "
+                        "= threadIdx.x + blockDim.x * "
                         "(threadIdx.y + blockDim.y * threadIdx.z);\n"
                         "    "
                         f"__shared__ {temp_storage_type_name} temp_storages"
                         f"[{instances}];\n"
-                        f"    {temp_storage_type_name} &temp_storage = temp_storages"
+                        f"    {temp_storage_type_name} "
+                        f"&temp_storage = temp_storages"
                         f"[__coop_thread_rank / {logical_width}];"
                     )
                 elif self.execution_scope is SynchronizationScope.NONE:
@@ -1817,7 +1897,9 @@ class Algorithm:
                     else temp_storage_type_name
                 ),
                 temp_storage_param_pid=(
-                    0 if self.storage_abi is StorageABI.LEADING_POINTER else None
+                    0
+                    if self.storage_abi is StorageABI.LEADING_POINTER
+                    else None
                 ),
             )
 
@@ -1839,14 +1921,18 @@ class Algorithm:
         )
         if self.execution_scope is SynchronizationScope.WARP:
             resolved_threads = _validate_logical_warp_threads(resolved_threads)
-            resolved_block_threads = _normalize_block_threads(resolved_block_threads)
+            resolved_block_threads = _normalize_block_threads(
+                resolved_block_threads
+            )
             if resolved_block_threads % resolved_threads != 0:
                 raise ValueError(
                     "warp-scoped provider width must divide the exact block "
                     f"size; got width={resolved_threads} and "
                     f"block_threads={resolved_block_threads}"
                 )
-        compile_identity = self._bind_provider_compile_identity(compile_identity)
+        compile_identity = self._bind_provider_compile_identity(
+            compile_identity
+        )
         return (
             self.storage_abi.value,
             self.execution_scope.value,
@@ -1856,11 +1942,15 @@ class Algorithm:
             compile_identity,
         )
 
-    def get_lto_ir(self, threads=None, block_threads=None, *, compile_identity=None):
+    def get_lto_ir(
+        self, threads=None, block_threads=None, *, compile_identity=None
+    ):
         # With no explicit identity, re-query the current device even when an
         # artifact is already cached. Reusing one Algorithm across devices must
         # fail closed instead of returning LTO compiled for the earlier target.
-        compile_identity = self._bind_provider_compile_identity(compile_identity)
+        compile_identity = self._bind_provider_compile_identity(
+            compile_identity
+        )
         cache_key = self._make_lto_ir_cache_key(
             threads,
             block_threads,
@@ -1900,7 +1990,8 @@ class Algorithm:
 
         if temp_storage_symbols:
             abi_globals = {
-                symbol: find_unsigned(symbol, ptx) for symbol in temp_storage_symbols
+                symbol: find_unsigned(symbol, ptx)
+                for symbol in temp_storage_symbols
             }
             self._temp_storage_bytes = abi_globals[temp_storage_symbols[0]]
             self._temp_storage_alignment = abi_globals[temp_storage_symbols[1]]
@@ -1942,7 +2033,8 @@ class Algorithm:
         def ignore_param(param):
             # C++ functions do not require additional argument handling.
             ignore = isinstance(param, (CxxFunction, StatelessOperator)) or (
-                isinstance(param, PointerOffset) and param.static_value is not None
+                isinstance(param, PointerOffset)
+                and param.static_value is not None
             )
             return ignore
 
@@ -1960,7 +2052,9 @@ class Algorithm:
             if ignore_param(param) or param.is_output:
                 if not ignore_param(param) and param.is_output:
                     if ret_type is not types.void:
-                        raise ValueError("Multiple output parameters not supported")
+                        raise ValueError(
+                            "Multiple output parameters not supported"
+                        )
                     ret_type = param.dtype()
                 continue
 
@@ -2190,7 +2284,9 @@ def prepare_ltoir_bundle(
 
     compile_contexts = {algo._resolved_compile_context() for algo in all_algos}
     if len(compile_contexts) != 1:
-        raise RuntimeError("coalesced providers must use one exact compiler context")
+        raise RuntimeError(
+            "coalesced providers must use one exact compiler context"
+        )
     compile_context = next(iter(compile_contexts))
     device = cuda.get_current_device()
     cc_major, cc_minor = device.compute_capability
@@ -2214,7 +2310,9 @@ def prepare_ltoir_bundle(
             block_threads=block_threads,
             compile_identity=compile_identity,
         )
-        key = algo_coalesce_key(algo, threads=threads, block_threads=block_threads)
+        key = algo_coalesce_key(
+            algo, threads=threads, block_threads=block_threads
+        )
         rep = key_to_rep.setdefault(key, algo)
         rep_for_algo_id[id(algo)] = rep
 
@@ -2277,7 +2375,10 @@ def prepare_ltoir_bundle(
     src = buf.getvalue() + "\n".join(bodies)
 
     if bundle_name is None:
-        bundle_name = f"cuda_coop_numba_mlir_bundle_{hashlib.sha1(src.encode('utf-8')).hexdigest()[:16]}"
+        bundle_name = (
+            "cuda_coop_numba_mlir_bundle_"
+            f"{hashlib.sha1(src.encode('utf-8')).hexdigest()[:16]}"
+        )
 
     _, ltoir = nvrtc.compile(
         cpp=src,
@@ -2297,7 +2398,9 @@ def prepare_ltoir_bundle(
 
     abi_globals = {symbol: find_unsigned(symbol, ptx) for symbol in symbols}
 
-    bundle_temp_file = _SharedTempFile(make_binary_tempfile(ltoir_blob, ".ltoir"))
+    bundle_temp_file = _SharedTempFile(
+        make_binary_tempfile(ltoir_blob, ".ltoir")
+    )
 
     for algo in all_algos:
         rep = rep_for_algo_id[id(algo)]
@@ -2313,7 +2416,9 @@ def prepare_ltoir_bundle(
         algo._lto_irs = extras
         algo._precompiled_ltoir_files = (bundle_temp_file,)
         algo.__dict__["_lto_ir_cache_key"] = algo._make_lto_ir_cache_key(
-            threads=threads_by_algo.get(id(algo), getattr(algo, "threads", None)),
+            threads=threads_by_algo.get(
+                id(algo), getattr(algo, "threads", None)
+            ),
             block_threads=block_threads_by_algo.get(
                 id(algo), getattr(algo, "block_threads", None)
             ),
@@ -2381,12 +2486,16 @@ class Invocable:
         owned_temp_files: Sequence[BinaryIO] | None = None,
     ):
         self._temp_files = temp_files
-        self._owned_temp_files = () if owned_temp_files is None else owned_temp_files
+        self._owned_temp_files = (
+            () if owned_temp_files is None else owned_temp_files
+        )
         self._temp_storage_bytes = temp_storage_bytes
         self._temp_storage_alignment = temp_storage_alignment
         self.specialization = algorithm
         self._temp_file_finalizer = weakref.finalize(
-            self, _cleanup_temp_files, tuple(v.name for v in self._owned_temp_files)
+            self,
+            _cleanup_temp_files,
+            tuple(v.name for v in self._owned_temp_files),
         )
         self._numba_type = None
 
@@ -2425,7 +2534,8 @@ class Invocable:
 
     def __call__(self, *args):
         raise RuntimeError(
-            "__call__ should not be called directly outside of a numba_cuda_mlir.cuda.jit(...) kernel."
+            "__call__ should not be called directly outside of a "
+            "numba_cuda_mlir.cuda.jit(...) kernel."
         )
 
 
@@ -2458,12 +2568,16 @@ class RawCAbiInvocable:
         if isinstance(cc, bool) or not isinstance(cc, int) or cc < 1:
             raise ValueError("raw C-ABI cc must be a positive integer")
         if not isinstance(compile_context, nvrtc.CompileContext):
-            raise TypeError("raw C-ABI compile_context must be a CompileContext")
+            raise TypeError(
+                "raw C-ABI compile_context must be a CompileContext"
+            )
 
         parameters = tuple(parameters)
         abi_transforms = tuple(abi_transforms)
         if len(parameters) != len(abi_transforms):
-            raise ValueError("raw C-ABI parameter metadata has inconsistent arity")
+            raise ValueError(
+                "raw C-ABI parameter metadata has inconsistent arity"
+            )
         for parameter in parameters:
             if isinstance(parameter, Parameter):
                 if parameter.is_output or not parameter.is_provided_by_user():
@@ -2475,7 +2589,9 @@ class RawCAbiInvocable:
                     "raw C-ABI parameters must be backend Parameter objects "
                     "or exact Numba types"
                 )
-        if any(transform not in {"ptr", "value"} for transform in abi_transforms):
+        if any(
+            transform not in {"ptr", "value"} for transform in abi_transforms
+        ):
             raise ValueError("raw C-ABI transforms must be 'ptr' or 'value'")
 
         storage_abi = StorageABI(storage_abi)
@@ -2559,7 +2675,9 @@ class RawCAbiInvocable:
                 typing_context = mlir_target.typing_context
                 for actual_type, parameter in zip(actual_types, parameters):
                     accepted = (
-                        parameter.accepts_actual_type(actual_type, typing_context)
+                        parameter.accepts_actual_type(
+                            actual_type, typing_context
+                        )
                         if isinstance(parameter, Parameter)
                         else actual_type == parameter
                     )

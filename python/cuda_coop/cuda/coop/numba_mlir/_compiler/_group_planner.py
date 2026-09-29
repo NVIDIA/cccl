@@ -1087,13 +1087,17 @@ class _GroupCallPlanner:
         self, inst: ir.Assign, call: ir.Expr, *, method: str, group: ThreadGroup
     ) -> None:
         if call.vararg is not None or call.varkwarg is not None:
-            raise GroupRewriteError(f"ThreadGroup.{method} does not support splats")
+            raise GroupRewriteError(
+                f"ThreadGroup.{method} does not support splats"
+            )
         kwargs = dict(call.kws)
         dtype = None
         level = "thread"
         if method in {"rank", "count"}:
             if len(call.args) > 1 or any(name != "level" for name in kwargs):
-                raise GroupRewriteError(f"invalid ThreadGroup.{method} arguments")
+                raise GroupRewriteError(
+                    f"invalid ThreadGroup.{method} arguments"
+                )
             if call.args and "level" in kwargs:
                 raise GroupRewriteError(
                     f"ThreadGroup.{method} received level more than once"
@@ -1107,7 +1111,9 @@ class _GroupCallPlanner:
             if len(call.args) > 2 or any(
                 name not in {"dtype", "level"} for name in kwargs
             ):
-                raise GroupRewriteError(f"invalid ThreadGroup.{method} arguments")
+                raise GroupRewriteError(
+                    f"invalid ThreadGroup.{method} arguments"
+                )
             if call.args and "dtype" in kwargs:
                 raise GroupRewriteError(
                     f"ThreadGroup.{method} received dtype more than once"
@@ -1127,7 +1133,9 @@ class _GroupCallPlanner:
             operation = method.removesuffix("_as")
         else:
             if call.args or kwargs:
-                raise GroupRewriteError(f"ThreadGroup.{method} accepts no arguments")
+                raise GroupRewriteError(
+                    f"ThreadGroup.{method} accepts no arguments"
+                )
             operation = method
 
         if operation in {"rank", "count"}:
@@ -1147,13 +1155,16 @@ class _GroupCallPlanner:
                 if level_order[level] > level_order[group.mapping.parent]:
                     raise NotImplementedError(
                         "cuda.coop.numba_mlir mapped ThreadGroup queries above "
-                        "the immediate parent require recursive group composition"
+                        "the immediate parent require "
+                        "recursive group composition"
                     )
             group = self._resolve_group(
                 group, feature=f"ThreadGroup.{operation}", through_level=level
             )
         else:
-            group = self._resolve_group(group, feature=f"ThreadGroup.{operation}")
+            group = self._resolve_group(
+                group, feature=f"ThreadGroup.{operation}"
+            )
         if group.kind == "warps_within_block" and operation in {
             "sync",
             "sync_aligned",
@@ -1165,7 +1176,8 @@ class _GroupCallPlanner:
         if group.kind == "grid" and operation in {"sync", "sync_aligned"}:
             raise NotImplementedError(
                 "cuda.coop.numba_mlir grid synchronization requires a verified "
-                "cooperative launch, which the current launch descriptor cannot "
+                "cooperative launch, which the "
+                "current launch descriptor cannot "
                 "request"
             )
 

@@ -34,7 +34,9 @@ def _numpy_dtype_identity(dtype):
         dtype.str,
         dtype.isalignedstruct,
         fields,
-        None if subdtype is None else (_numpy_dtype_identity(subdtype[0]), subdtype[1]),
+        None
+        if subdtype is None
+        else (_numpy_dtype_identity(subdtype[0]), subdtype[1]),
     )
 
 

@@ -256,7 +256,7 @@ def test_reduce_providers_load_only_during_reduce_planning():
         assert planner.run()
         assert provider_module in sys.modules
         assert reduce_factories()
-        """
+        """  # noqa: E501 - Preserve embedded source bytes.
     )
 
 
