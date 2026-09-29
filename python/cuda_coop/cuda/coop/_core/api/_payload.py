@@ -39,7 +39,7 @@ class _ReadableThreadDataLike(Protocol[_ItemT]):
 class ThreadDataLike(_ReadableThreadDataLike[_ItemT], Protocol[_ItemT]):
     """Mutable fixed-size per-thread payload understood by supported backends.
 
-    See :ref:`per-thread payloads <coop-thread-data>` for construction, item
+    See :ref:`per-thread payloads <coop-common-payloads>` for construction, item
     access, and dtype requirements.
     """
 
@@ -50,7 +50,7 @@ class ThreadDataLike(_ReadableThreadDataLike[_ItemT], Protocol[_ItemT]):
 class TempStorageLike(Protocol):
     """Explicit cooperative scratch descriptor understood by supported backends.
 
-    See :ref:`temporary storage <coop-temp-storage>` for construction,
+    See :ref:`temporary storage <coop-common-storage>` for construction,
     allocation sharing, and synchronization.
     """
 

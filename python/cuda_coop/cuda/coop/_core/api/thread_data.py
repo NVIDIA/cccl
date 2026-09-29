@@ -26,8 +26,8 @@ def ThreadData(
     """Construct a fixed-size payload owned by the calling thread.
 
     Each thread has its own slots. See :ref:`per-thread payloads
-    <coop-thread-data>` for their relationship to a group tile and the
-    :ref:`blocked and striped layouts <coop-data-layouts>`.
+    <coop-common-payloads>` for their relationship to a group tile and the
+    :ref:`blocked and striped layouts <coop-common-layouts>`.
 
     Parameters
     ----------
@@ -62,6 +62,10 @@ def ThreadData(
         :start-after: # thread-data-example-begin
         :end-before: # thread-data-example-end
         :dedent: 4
+
+    For per-thread payloads in CuTe kernels, see
+    :ref:`CUTLASS Load and Store <coop-cutlass-load-store>`. The qualified
+    :class:`cuda.coop.cutlass.ThreadData` also converts CuTe register values.
     """
 
     alignment = _normalize_alignment(alignment)

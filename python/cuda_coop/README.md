@@ -1,9 +1,8 @@
 # `cuda.coop`
 
 `cuda.coop` provides cooperative primitives for CUDA thread groups in Python
-kernel DSLs. They cover data movement, reductions, scans, sorting, selection,
-neighbor comparisons, counting, and run-length decoding. The first backend
-targets Numba-CUDA-MLIR and uses CUB and CUDAX implementations.
+kernel DSLs. Its optional Numba-CUDA-MLIR and CUTLASS integrations support
+Numba and CuTe kernels using CUB and CUDAX.
 
 The distribution is a universal Python wheel containing a coherent bundle of
 CUB, Thrust, libcu++, and CUDAX headers. Installed-wheel compilation uses that
@@ -20,12 +19,11 @@ Install `cuda-coop` without adding Python package dependencies:
 python -m pip install cuda-coop
 ```
 
-The wheel includes the common API, every shipped DSL integration (including
-`cuda.coop.numba_mlir`), type declarations, and bundled CCCL headers. The base
+The wheel includes the common API, `cuda.coop.numba_mlir`,
+`cuda.coop.cutlass`, type declarations, and bundled CCCL headers. The base
 install declares no Python package dependencies. You can import `cuda.coop`
 without a compiler or GPU; using an integration requires its backend
-dependencies to be installed. Numba-CUDA-MLIR is the first supported backend;
-CUTLASS support is planned.
+dependencies to be installed.
 
 For Numba-CUDA-MLIR, choose the extra matching the CUDA Toolkit major version:
 
@@ -39,7 +37,7 @@ integrations. The extra only adds the dependency requirements declared in
 `pyproject.toml` so pip installs the supported Numba-CUDA-MLIR stack for the
 selected CUDA major version.
 
-Python 3.10 through 3.14 is supported. The current backend integration requires
+Python 3.10 through 3.14 is supported. The Numba-CUDA-MLIR integration requires
 `numba-cuda-mlir>=0.5.0,<0.6`.
 
 Backend compiler and runtime CI is configured for Linux x86-64 with Python 3.14:
@@ -59,9 +57,21 @@ architecture or launch state can belong to the original context. The upstream
 [context-isolation fix](https://github.com/NVIDIA/numba-cuda-mlir/pull/314)
 must be released and qualified before relying on that reuse.
 
+The CUTLASS integration is implemented with Linux and CUDA 13 as its initial
+development target. A supported public CUTLASS package has not yet been
+qualified, so there is no CUTLASS installation extra or supported minimum
+version. A compatible CuTe compiler must provide the external LTO-IR linking
+and compilation hooks described in its developer guide.
+
+- Numba-CUDA-MLIR: [Programming Guide](https://nvidia.github.io/cccl/unstable/python/coop/programming_guide.html)
+  and [Developer Guide](https://nvidia.github.io/cccl/unstable/python/coop/developer_overview.html).
+- CUTLASS: [Programming Guide](https://nvidia.github.io/cccl/unstable/python/coop_cutlass.html)
+  and [Developer Guide](https://nvidia.github.io/cccl/unstable/python/coop/cutlass_developer_guide.html).
+
 ## Backend registration and imports
 
-Register the backend on the host before compiling kernels:
+Register the chosen backend on the host before compiling kernels. For
+Numba-CUDA-MLIR:
 
 ```python
 from cuda import coop
@@ -71,43 +81,67 @@ coop.register("numba-cuda-mlir")
 from numba_cuda_mlir import cuda
 ```
 
+For CUTLASS CuTe:
+
+```python
+from cuda import coop
+
+coop.register("cutlass")
+
+from cutlass import cute
+```
+
 `register` loads the backend and installs its compiler hooks regardless of
-import order. It also accepts `"numba_cuda_mlir"`. Repeated calls are safe and
-return `None`. It requires installed backend dependencies and does not install
-packages. Installing an extra is separate from registering a compiler in the
-running process; installed package metadata does not reliably record which
-extra was requested.
+import order. Repeated calls are safe and return `None`. The Numba name also
+accepts `"numba_cuda_mlir"`. Registration requires compatible dependencies;
+it does not install packages. Installing an extra is separate from activating
+a compiler in the running process.
 
-Importing `cuda.coop` after `numba_cuda_mlir` also registers the backend
-automatically. A standalone `cuda.coop` import does not load optional
-compilers. Explicit registration works when a dependency or earlier notebook
-cell already imported `cuda.coop`.
+Importing `cuda.coop` after either compiler runtime automatically registers a
+compatible integration. Importing `cuda.coop` alone does not load either
+compiler. Use explicit registration when a dependency or earlier notebook cell
+already imported `cuda.coop`. Both integrations can be registered in one
+process; common calls select the backend from the active compiler context.
 
-The common API exposed by `cuda.coop` describes operations independently of
-a particular compiler backend. Its public entry points are implemented in
+The common API in `cuda.coop` is the contract shared by Numba-CUDA-MLIR and
+CUTLASS. Each implemented operation follows the documented groups, dtypes,
+and result rules; consult backend coverage for availability. Its public entry points live in
 `cuda/coop/_core/api/`; the private `_core` package also contains shared
-implementation used by the backends. Each backend implements its supported
-operations, so a common spelling does not guarantee support in every compiler.
+implementation.
 
-To use Numba-specific features, import the qualified backend namespace; this
-also registers it:
+For CUTLASS-only code, use the qualified namespace directly:
+
+```python
+import cuda.coop.cutlass as coop
+```
+
+This also registers the integration; a separate `register` call is unnecessary.
+The host `cuda.coop.register` helper belongs to the common namespace.
+
+For a module containing both DSLs, use distinct qualified aliases:
 
 ```python
 import cuda.coop.numba_mlir as numba_coop
+import cuda.coop.cutlass as cutlass_coop
 ```
 
-Use `numba_coop` alongside common calls. In a program using only this backend,
-`import cuda.coop.numba_mlir as coop` is also supported. Keep the alias: a bare
-`import cuda.coop.numba_mlir` binds `cuda` to the top-level Python package and
-can replace the name used for Numba's `cuda.jit`.
+Each import registers its backend. Call `numba_coop` from Numba kernels and
+`cutlass_coop` from CuTe kernels. Examples comparing the APIs use `coop` for
+common calls and the longer aliases for qualified calls; application code
+need not import both namespaces for one backend. Aliasing dotted imports also
+avoids rebinding `cuda`, which Numba examples use for `cuda.jit`.
 
-Shared operations retain the common signatures, string selectors, and
-inference rules. The backend namespace adds Numba local-array payloads and
-memory namespaces.
-Both namespaces accept `ThreadData(..., alignment=None)`: use a compile-time
+Each qualified API includes its supported common operations, preserving their
+signatures, string selectors, and inference rules. Numba-CUDA-MLIR adds
+local-array payloads, memory namespaces, and device callbacks. CUTLASS adds
+CuTe register conversions and the controls documented in its guide. Custom operators and Scan prefix
+callbacks are currently supported only by Numba-CUDA-MLIR.
+
+Both integrations accept `ThreadData(..., alignment=None)`: use a compile-time
 positive power of two in bytes to request minimum payload storage alignment,
 or omit it to let the compiler choose. This does not assert alignment of Load
-or Store arrays.
+or Store memory operands. Results belong to the active compiler; a NumPy dtype
+selector in a CuTe kernel still produces CuTe values.
 
 The [FAQs](https://nvidia.github.io/cccl/unstable/python/coop/faqs.html) explain
 namespace choices and temporary storage. The
@@ -129,6 +163,11 @@ explains terms and concepts, including blocked and striped layouts.
 | Counting | `histogram` |
 | Run Length Decode | `run_length_decode`, `run_length_decode_into` |
 
+Numba-CUDA-MLIR implements every family in this table. CUTLASS coverage
+expands with its implemented families; the
+[coverage table](https://nvidia.github.io/cccl/unstable/python/coop.html#coop-backends)
+lists current support. Qualified APIs add the extensions documented in each guide.
+
 Each operation documents its supported groups and result ownership in the
 [API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).
 The [visualizations](https://nvidia.github.io/cccl/unstable/python/coop/visualizations/index.html)
@@ -145,10 +184,11 @@ Runtime configuration is controlled by these environment variables:
 | --- | --- |
 | `CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION` | A truthy value disables automatic backend activation during `cuda.coop` import. Explicit `coop.register(...)` and backend imports still work. |
 | `CUDA_COOP_CCCL_ROOT` | Selects a CCCL source checkout or a `cuda-coop` header bundle. An invalid configured root is an error; resolution does not fall back to another CCCL source. |
-| `CUDA_COOP_ENABLE_CACHE` | A truthy value enables the persistent compiler cache. The value is read when the backend cache module is imported. |
-| `XDG_CACHE_HOME` | On Linux and other POSIX systems, sets the cache base directory; entries are stored in `<value>/cccl`. Unset, empty, or relative values fall back to `~/.cache/cccl`. Read when the backend cache module is imported. |
-| `LOCALAPPDATA` | On Windows, sets the cache base directory; entries are stored in `<value>\cccl`. Unset, empty, or relative values fall back to `~\AppData\Local\cccl`. Read when the backend cache module is imported. |
-| `CUDA_COOP_SOURCE_DUMP_DIR` | Writes generated CUDA source as `cuda_coop_<backend>_<hash>.cu` files. Set before compiling; Numba provider cache hits also dump source. Unset or empty disables dumping. |
+| `CUDA_COOP_ENABLE_CACHE` | A truthy value enables the Numba-CUDA-MLIR persistent compiler cache. The value is read when its cache module is imported. |
+| `XDG_CACHE_HOME` | For Numba-CUDA-MLIR on Linux and other POSIX systems, sets the cache base directory; entries are stored in `<value>/cccl`. Unset, empty, or relative values fall back to `~/.cache/cccl`. Read when the backend cache module is imported. |
+| `LOCALAPPDATA` | For Numba-CUDA-MLIR on Windows, sets the cache base directory; entries are stored in `<value>\cccl`. Unset, empty, or relative values fall back to `~\AppData\Local\cccl`. Read when the backend cache module is imported. |
+| `CUDA_COOP_CUTLASS_PROVIDER_CACHE_DIR` | Selects the CUTLASS provider artifact cache directory. The default is a user-specific directory under the system temporary directory; see the [CUTLASS Developer Guide](https://nvidia.github.io/cccl/unstable/python/coop/cutlass_developer_guide.html) for cache validation and artifact lifetime. |
+| `CUDA_COOP_SOURCE_DUMP_DIR` | Writes generated CUDA source as `cuda_coop_<backend>_<hash>.cu` files. Set before compiling; provider cache hits in both integrations also dump source. Unset or empty disables dumping. |
 | `CUDA_PATH` | Supplies `<value>/include` as a CUDA header candidate if `cuda-pathfinder` does not resolve one. |
 | `CUDA_HOME` | Supplies `<value>/include` after `CUDA_PATH` under the same fallback rule. |
 | `CUDA_ROOT` | Supplies `<value>/include` after `CUDA_HOME` under the same fallback rule. |
@@ -171,10 +211,10 @@ For the two Boolean runtime switches, values are case-insensitive; `0`,
 
 ## Block and Warp Load and Store
 
-The common `cuda.coop` entry points and the qualified
-`cuda.coop.numba_mlir` entry points have matching signatures. The following
-kernel-body example clamps a grid tile tail, where `source`, `destination`, and
-`count` are kernel arguments:
+The common and qualified Load/Store APIs share tile controls and in-place
+Load behavior. The following complete Load/Store vocabulary describes Numba;
+check the CUTLASS guide for its currently supported groups and algorithms. The following Numba kernel body clamps a grid tile tail, where
+`source`, `destination`, and `count` are kernel arguments:
 
 ```python
 from numba_cuda_mlir import cuda, types
@@ -209,10 +249,15 @@ coop.store(
 )
 ```
 
+The [CuTe tile-copy example](examples/cutlass/block_load_store.py) uses the
+same controls with CuTe pointers. It includes allocation, launch, and a NumPy
+reference check.
+
 `load` fills the caller's output in place and returns `None`. `valid_items`
 counts items across the selected group tile, while `offset` is a nonnegative
-element offset. Runtime offsets are caller-validated. Source and destination arrays
-must be one-dimensional and contiguous. Without `oob_default`, invalid Load
+element offset. Runtime offsets are caller-validated. Numba source and
+destination arrays must be one-dimensional and contiguous. CuTe operands may
+be global-memory pointers or supported contiguous one-dimensional tensors. Without `oob_default`, invalid Load
 slots retain their previous values. Every supplied runtime control
 (`valid_items`, `oob_default`, and `offset`) must be uniform within its selected
 group; different groups may use different values.
@@ -243,6 +288,11 @@ cast computed values before storing them:
 value = types.int32(source[cuda.threadIdx.x] + 1)
 coop.store(block, destination, value, algorithm="direct")
 ```
+
+CuTe kernels have the same exact-dtype Store requirement; use a CUTLASS scalar
+constructor such as `cutlass.Int32(expression)` when an explicit conversion
+is needed. A NumPy dtype selector does not turn a traced CuTe scalar into a
+host NumPy value.
 
 Both common and qualified entry points use the same lowercase string
 algorithm vocabulary: `direct`, `striped`, `vectorize`, `transpose`,
@@ -287,11 +337,12 @@ when the group or queried outer level is the grid. Use
 an explicit signed or unsigned 8-, 16-, 32-, or 64-bit integer dtype.
 `is_member()` returns an integer membership flag.
 
+
 `sync()` and `sync_aligned()` expose the matching non-grid group barriers. All
 participating members must reach `sync()`. `sync_aligned()` additionally
-requires the caller to keep the group aligned and converged. Grid
-synchronization is not available because this backend cannot request a
-cooperative grid launch.
+requires the caller to keep the group aligned and converged. Neither integration
+supports grid synchronization. Numba-CUDA-MLIR cannot request a cooperative
+grid launch; CUTLASS does not expose a grid synchronization implementation.
 
 `group_by` remains static compiler vocabulary: `count` and `exhaustive` must be
 compile-time constants. A logical threads-within-warp group can query its

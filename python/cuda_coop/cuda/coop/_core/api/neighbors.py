@@ -33,6 +33,9 @@ def adjacent_difference(
 ) -> ThreadDataLike[Any]:
     """Return blocked neighbor differences without modifying the input.
 
+    Implemented by Numba-CUDA-MLIR. The CUTLASS backend does not currently
+    support this operation.
+
     Parameters
     ----------
     group : ThreadGroup
@@ -59,7 +62,7 @@ def adjacent_difference(
     temp_storage : TempStorageLike, optional
         Explicit block scratch descriptor. Omit it for automatic storage.
         With ``auto_sync=False``, synchronize the block before reusing the
-        descriptor in another collective.
+        descriptor in another primitive.
 
     Returns
     -------
@@ -91,6 +94,9 @@ def discontinuity(
 ) -> ThreadDataLike[Any] | tuple[ThreadDataLike[Any], ThreadDataLike[Any]]:
     """Flag unequal adjacent items in a full, blocked block tile.
 
+    Implemented by Numba-CUDA-MLIR. The CUTLASS backend does not currently
+    support this operation.
+
     Parameters
     ----------
     group : ThreadGroup
@@ -112,7 +118,7 @@ def discontinuity(
     temp_storage : TempStorageLike, optional
         Explicit block scratch descriptor. Omit it for automatic storage.
         With ``auto_sync=False``, synchronize the block before reusing the
-        descriptor in another collective.
+        descriptor in another primitive.
 
     Returns
     -------

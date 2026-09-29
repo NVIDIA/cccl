@@ -31,6 +31,9 @@ def histogram(
 ) -> Any:
     """Return fresh striped bin counts, preserving the input samples.
 
+    Implemented by Numba-CUDA-MLIR. The CUTLASS backend does not currently
+    support this operation.
+
     Parameters
     ----------
     group : ThreadGroup
@@ -54,7 +57,7 @@ def histogram(
     temp_storage : TempStorageLike, optional
         Explicit shared scratch for CUB storage and intermediate counters.
         Omit it for automatic storage. With ``auto_sync=False``, synchronize
-        the block before reusing the descriptor in another collective.
+        the block before reusing the descriptor in another primitive.
 
     Returns
     -------
@@ -73,7 +76,8 @@ def histogram(
     There is no ``valid_items`` control. Zero-padding an incomplete input
     tile adds counts to bin zero. The input tile size and projected output
     size must fit signed 32-bit integers. The CUB counterpart is
-    ``cub::BlockHistogram``.
+    ``cub::BlockHistogram``. Use
+    :func:`cuda.coop.numba_mlir.histogram` for scalar or local-array samples.
     """
     raise CoopCompilerContextRequiredError(
         "cuda.coop.histogram must be called from a supported GPU kernel."
