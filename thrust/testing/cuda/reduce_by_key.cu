@@ -282,7 +282,7 @@ TEST_CASE("TestReduceByKeyDeviceNoSync", "[reduce_by_key]")
 #endif
 
 template <typename ExecutionPolicy>
-void TestReduceByKeyCudaStreams(ExecutionPolicy policy)
+void test_reduce_by_key_cuda_streams(ExecutionPolicy policy)
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -377,12 +377,12 @@ void TestReduceByKeyCudaStreams(ExecutionPolicy policy)
 
 TEST_CASE("TestReduceByKeyCudaStreamsSync", "[reduce_by_key]")
 {
-  TestReduceByKeyCudaStreams(thrust::cuda::par);
+  test_reduce_by_key_cuda_streams(thrust::cuda::par);
 }
 
 TEST_CASE("TestReduceByKeyCudaStreamsNoSync", "[reduce_by_key]")
 {
-  TestReduceByKeyCudaStreams(thrust::cuda::par_nosync);
+  test_reduce_by_key_cuda_streams(thrust::cuda::par_nosync);
 }
 
 // Maps indices to key ids
@@ -422,7 +422,7 @@ public:
   }
 };
 
-void TestReduceByKeyWithBigIndexesHelper(int magnitude)
+void test_reduce_by_key_with_big_indexes_helper(int magnitude)
 {
   const std::int64_t key_size_magnitude = 8;
   REQUIRE(key_size_magnitude < magnitude);
@@ -471,11 +471,11 @@ void TestReduceByKeyWithBigIndexesHelper(int magnitude)
 
 TEST_CASE("TestReduceByKeyWithBigIndexes", "[reduce_by_key]")
 {
-  TestReduceByKeyWithBigIndexesHelper(30);
+  test_reduce_by_key_with_big_indexes_helper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
-  TestReduceByKeyWithBigIndexesHelper(31);
-  TestReduceByKeyWithBigIndexesHelper(32);
-  TestReduceByKeyWithBigIndexesHelper(33);
+  test_reduce_by_key_with_big_indexes_helper(31);
+  test_reduce_by_key_with_big_indexes_helper(32);
+  test_reduce_by_key_with_big_indexes_helper(33);
 #endif
 }
 

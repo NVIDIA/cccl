@@ -64,8 +64,7 @@ private:
 
 public:
   /// \smemstorage{BlockShuffle}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
 private:
   /// Shared storage reference

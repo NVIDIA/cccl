@@ -10,6 +10,8 @@
 
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
+#include <string>
+
 using namespace cuda::experimental::stf;
 
 /*
@@ -29,17 +31,40 @@ public:
       , handle(ctx.logical_data(&array[0], block_size + 2 * ghost_size))
   {}
 
-public:
+  size_t get_block_size() const
+  {
+    return block_size;
+  }
+
+  size_t get_ghost_size() const
+  {
+    return ghost_size;
+  }
+
+  int get_devid() const
+  {
+    return dev_id;
+  }
+
+  void set_devid(int device)
+  {
+    dev_id = device;
+  }
+
+  logical_data<slice<T>>& get_handle()
+  {
+    return handle;
+  }
+
+private:
   size_t beg;
   size_t end;
   size_t block_size;
   size_t ghost_size;
   int dev_id;
 
-private:
   std::vector<T> array;
 
-public:
   // HANDLE = whole data + boundaries
   logical_data<slice<T>> handle;
 };
@@ -49,10 +74,10 @@ T check_sum(stream_ctx& ctx, data_block<T>& bn)
 {
   T sum = 0.0;
 
-  auto t = ctx.task(exec_place::host(), bn.handle.read());
+  auto t = ctx.task(exec_place::host(), bn.get_handle().read());
   t->*[&](cudaStream_t stream, auto h_center) {
     cuda_safe_call(cudaStreamSynchronize(stream));
-    for (size_t offset = bn.ghost_size; offset < bn.ghost_size + bn.block_size; offset++)
+    for (size_t offset = bn.get_ghost_size(); offset < bn.get_ghost_size() + bn.get_block_size(); offset++)
     {
       sum += h_center.data_handle()[offset];
     }
@@ -67,20 +92,20 @@ __global__ void stencil_kernel(size_t cnt, size_t ghost_size, T* array, const T*
 {
   for (size_t idx = threadIdx.x + blockIdx.x * blockDim.x; idx < cnt; idx += blockDim.x * gridDim.x)
   {
-    size_t idx2 = idx + ghost_size;
-    array[idx2] = 0.9 * array1[idx2] + 0.05 * array1[idx2 - 1] + 0.05 * array1[idx2 + 1];
+    const size_t idx2 = idx + ghost_size;
+    array[idx2]       = 0.9 * array1[idx2] + 0.05 * array1[idx2 - 1] + 0.05 * array1[idx2 + 1];
   }
 }
 
 template <typename T>
 void stencil(stream_ctx& ctx, data_block<T>& bn, data_block<T>& bn1)
 {
-  int dev = bn.dev_id;
+  const int dev = bn.get_devid();
 
-  auto t = ctx.task(exec_place::device(dev), bn.handle.rw(), bn1.handle.read());
+  auto t = ctx.task(exec_place::device(dev), bn.get_handle().rw(), bn1.get_handle().read());
   t->*[&](cudaStream_t stream, auto bn_array, auto bn1_array) {
-    stencil_kernel<T>
-      <<<32, 64, 0, stream>>>(bn.block_size, bn.ghost_size, bn_array.data_handle(), bn1_array.data_handle());
+    stencil_kernel<T><<<32, 64, 0, stream>>>(
+      bn.get_block_size(), bn.get_ghost_size(), bn_array.data_handle(), bn1_array.data_handle());
   };
 }
 
@@ -106,7 +131,7 @@ void copy_task(
 {
   auto t = ctx.task(exec_place::device(dst_dev), dst.rw(), src.read(data_place::device(src_dev)));
   t->*[&](cudaStream_t stream, auto dst_array, auto src_array) {
-    int nblocks = (cnt > 64) ? 32 : 1;
+    const int nblocks = (cnt > 64) ? 32 : 1;
     copy_kernel<T>
       <<<nblocks, 64, 0, stream>>>(cnt, dst_array.data_handle() + offset_dst, src_array.data_handle() + offset_src);
   };
@@ -116,27 +141,27 @@ void copy_task(
 template <typename T>
 void update_halo(stream_ctx& ctx, data_block<T>& bn, data_block<T>& left, data_block<T>& right)
 {
-  size_t gs = bn.ghost_size;
-  size_t bs = bn.block_size;
+  const size_t gs = bn.get_ghost_size();
+  const size_t bs = bn.get_block_size();
 
   // Copy the bn.ghost_size last computed items in "left" (outside the halo)
-  copy_task<T>(ctx, gs, bn.handle, 0, bn.dev_id, left.handle, bs, left.dev_id);
+  copy_task<T>(ctx, gs, bn.get_handle(), 0, bn.get_devid(), left.get_handle(), bs, left.get_devid());
 
   // Copy the bn.ghost_size first computed items (outside the halo)
-  copy_task<T>(ctx, gs, bn.handle, gs + bs, bn.dev_id, right.handle, gs, right.dev_id);
+  copy_task<T>(ctx, gs, bn.get_handle(), gs + bs, bn.get_devid(), right.get_handle(), gs, right.get_devid());
 }
 
 // Copy inner part of bn into bn1
 template <typename T>
 void copy_inner(stream_ctx& ctx, data_block<T>& bn1, data_block<T>& bn)
 {
-  size_t gs = bn.ghost_size;
-  size_t bs = bn.block_size;
+  const size_t gs = bn.get_ghost_size();
+  const size_t bs = bn.get_block_size();
 
-  int dev_id = bn.dev_id;
+  const int dev_id = bn.get_devid();
 
   // Copy the bn.ghost_size last computed items in "left" (outside the halo)
-  copy_task<T>(ctx, bs, bn1.handle, gs, dev_id, bn.handle, gs, dev_id);
+  copy_task<T>(ctx, bs, bn1.get_handle(), gs, dev_id, bn.get_handle(), gs, dev_id);
 }
 
 int main(int argc, char** argv)
@@ -152,12 +177,12 @@ int main(int argc, char** argv)
 
   if (argc > 1)
   {
-    NITER = atoi(argv[1]);
+    NITER = ::std::stoi(argv[1]);
   }
 
   if (argc > 2)
   {
-    NBLOCKS = atoi(argv[2]);
+    NBLOCKS = ::std::stoi(argv[2]);
   }
 
   const size_t GHOST_SIZE = 1;
@@ -176,8 +201,8 @@ int main(int argc, char** argv)
   // Create blocks and allocates host data
   for (size_t b = 0; b < NBLOCKS; b++)
   {
-    size_t beg = b * BLOCK_SIZE;
-    size_t end = (b + 1) * BLOCK_SIZE;
+    const size_t beg = b * BLOCK_SIZE;
+    const size_t end = (b + 1) * BLOCK_SIZE;
 
     Un.emplace_back(ctx, beg, end, 1ull);
     Un1.emplace_back(ctx, beg, end, 1ull);
@@ -185,8 +210,8 @@ int main(int argc, char** argv)
 
   for (size_t b = 0; b < NBLOCKS; b++)
   {
-    Un[b].dev_id  = b % ndevs;
-    Un1[b].dev_id = b % ndevs;
+    Un[b].set_devid(static_cast<int>(b % ndevs));
+    Un1[b].set_devid(static_cast<int>(b % ndevs));
   }
 
   // Fill blocks with initial values. For the sake of simplicity, we are
@@ -196,12 +221,12 @@ int main(int argc, char** argv)
   {
     size_t beg = b * BLOCK_SIZE;
 
-    auto t = ctx.task(exec_place::host(), Un[b].handle.rw(), Un1[b].handle.rw());
+    auto t = ctx.task(exec_place::host(), Un[b].get_handle().rw(), Un1[b].get_handle().rw());
     t->*[&](cudaStream_t stream, auto Un_vals, auto Un1_vals) {
       cuda_safe_call(cudaStreamSynchronize(stream));
       for (size_t local_idx = 0; local_idx < BLOCK_SIZE; local_idx++)
       {
-        double val                                     = U0[(beg + local_idx + TOTAL_SIZE) % TOTAL_SIZE];
+        const double val                               = U0[(beg + local_idx + TOTAL_SIZE) % TOTAL_SIZE];
         Un1_vals.data_handle()[local_idx + GHOST_SIZE] = val;
         Un_vals.data_handle()[local_idx + GHOST_SIZE]  = val;
       }
@@ -249,7 +274,7 @@ int main(int argc, char** argv)
     sum += check_sum(ctx, Un[b]);
   }
 
-  double err = fabs(sum - 1.0);
+  const double err = fabs(sum - 1.0);
   EXPECT(err < 0.0001);
 
   ctx.finalize();

@@ -22,7 +22,7 @@ auto call_merge(Args&&... args) -> decltype(thrust::merge(std::forward<Args>(arg
 }
 
 template <typename U, typename CompareOp = void>
-void TestMergeKeyValue(size_t n)
+void test_merge_key_value(size_t n)
 {
   using T = key_value<U, U>;
 
@@ -65,11 +65,11 @@ void TestMergeKeyValue(size_t n)
   REQUIRE(h_end == h_result.end());
   REQUIRE(d_end == d_result.end());
 }
-DECLARE_VARIABLE_UNITTEST(TestMergeKeyValue);
+DECLARE_VARIABLE_UNITTEST(test_merge_key_value);
 
 template <typename U>
-void TestMergeKeyValueDescending(size_t n)
+void test_merge_key_value_descending(size_t n)
 {
-  TestMergeKeyValue<U, ::cuda::std::greater<key_value<U, U>>>(n);
+  test_merge_key_value<U, ::cuda::std::greater<key_value<U, U>>>(n);
 }
-DECLARE_VARIABLE_UNITTEST(TestMergeKeyValueDescending);
+DECLARE_VARIABLE_UNITTEST(test_merge_key_value_descending);

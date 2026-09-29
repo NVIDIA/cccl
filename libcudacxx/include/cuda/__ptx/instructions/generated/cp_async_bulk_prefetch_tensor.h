@@ -1,7 +1,7 @@
 // This file was automatically generated. Do not edit.
 
 // clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
-// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone, readability-identifier-naming)
 
 #ifndef _CUDA_PTX_GENERATED_CP_ASYNC_BULK_PREFETCH_TENSOR_H_
 #define _CUDA_PTX_GENERATED_CP_ASYNC_BULK_PREFETCH_TENSOR_H_
@@ -1229,6 +1229,6 @@ _CCCL_DEVICE_API void cp_async_bulk_prefetch_tensor_tile_gather4_L2_evict_last_o
 }
 #endif // __cccl_ptx_isa >= 940
 
-// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone, readability-identifier-naming)
 
 #endif // _CUDA_PTX_GENERATED_CP_ASYNC_BULK_PREFETCH_TENSOR_H_
