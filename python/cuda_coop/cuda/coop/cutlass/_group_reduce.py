@@ -50,17 +50,51 @@ def _normalize_algorithm(algorithm):
 def reduce(
     group, value, /, *, binary_op=None, broadcast=True, valid_items=None, algorithm=None
 ):
-    """Reduce a scalar or per-thread payload to one scalar.
+    """Reduce scalars or per-thread register payloads with a built-in operator.
 
-    Full built-in reductions use the hierarchy-aware CUDAX implementation.
-    Prefix counts and explicit block algorithms select direct CUB and require
-    ``broadcast=False``. Every group member must call; only group rank zero may
-    consume a nonbroadcast result. ``valid_items`` counts contributing members,
-    requires scalar input, and must be uniform and between one and group size.
-    Mapped groups of warps require every parent block thread to reach the call,
-    including threads excluded by a non-exhaustive mapping.
-    Inputs are preserved. Qualified register tensors and TensorSSA are adapted
-    to per-thread payloads. Custom callbacks are unsupported.
+    See :func:`cuda.coop.reduce` for the shared parameters, supported groups,
+    and participation rules. The qualified API adds CuTe register payloads and
+    the operator aliases below.
+
+    Parameters
+    ----------
+    value : numeric scalar, ThreadData, CuTe register tensor, or TensorSSA
+        Each member supplies one scalar or a fixed-size per-thread payload.
+        Register tensors and ``TensorSSA`` values are converted with
+        :meth:`cuda.coop.cutlass.ThreadData.from_payload`. Every payload element
+        contributes to one scalar result. Inputs remain unchanged.
+    binary_op : str or built-in alias, optional
+        Compile-time operator, default sum. Supported strings are ``"sum"``,
+        ``"multiplies"``, ``"min"``, ``"max"``, ``"bit_and"``, ``"bit_or"``,
+        and ``"bit_xor"``. Also accepts the corresponding ``operator`` or
+        NumPy aliases, such as ``operator.add`` and ``numpy.maximum``.
+        Bitwise operators require an integer dtype. Custom device functions
+        are not supported.
+
+    Returns
+    -------
+    CuTe numeric scalar
+        Reduced value with the input dtype, defined at every member when
+        ``broadcast=True`` and only at group rank zero otherwise. A NumPy
+        dtype selector still produces a CuTe scalar inside the kernel.
+
+    Notes
+    -----
+    Full-group built-in reductions use CUDAX. A ``valid_items`` prefix or an
+    explicit block ``algorithm`` selects CUB and requires ``broadcast=False``.
+    A prefix counts contributing members, requires scalar input, and does not
+    reduce the required participation. For a mapped group of warps, every
+    parent block thread must reach the call, including threads excluded by
+    a non-exhaustive mapping.
+
+    See Also
+    --------
+    cuda.coop.reduce
+        Shared reduction contract and executable examples.
+    cuda.coop.cutlass.sum
+        Sum with the same operand and result behavior.
+    :cpp:struct:`cub::BlockReduce`, :cpp:struct:`cub::WarpReduce`
+        C++ primitives used for valid prefixes and explicit block algorithms.
     """
 
     from ._operators import normalize_operator
@@ -98,7 +132,28 @@ def reduce(
 
 
 def sum(group, value, /, *, broadcast=True, valid_items=None, algorithm=None):
-    """Sum all per-thread contributions using the Reduce participation contract."""
+    """Sum scalars or per-thread register payloads with CUTLASS.
+
+    See :func:`cuda.coop.sum` for the shared parameters, defaults, supported
+    groups, and examples. The qualified operand forms and participation rules
+    are those of :func:`cuda.coop.cutlass.reduce`. Register tensors and
+    ``TensorSSA`` values contribute all their elements, and inputs remain
+    unchanged.
+
+    Returns
+    -------
+    CuTe numeric scalar
+        Sum with the input dtype, defined at every member when
+        ``broadcast=True`` and only at group rank zero otherwise.
+
+    See Also
+    --------
+    cuda.coop.cutlass.reduce
+        Built-in operators, register payloads, and result ownership.
+    :cpp:struct:`cub::BlockReduce`, :cpp:struct:`cub::WarpReduce`
+        C++ primitives used for valid prefixes and explicit block algorithms.
+        Full-group built-in reductions use CUDAX.
+    """
     return reduce(
         group, value, broadcast=broadcast, valid_items=valid_items, algorithm=algorithm
     )

@@ -133,6 +133,10 @@ call is successfully emitted. Store passes the existing items to its
 provider. The plan identifies equivalent requests so they can share one
 generated function and cached artifact.
 
+Other primitive families use the same approach. For Reduce, the planner
+chooses CUDAX for supported full-group reductions. It chooses CUB when the
+call supplies a valid-prefix count or a block algorithm. The Reduce lowering
+then generates the wrapper and adapts CuTe's values to its arguments.
 
 .. _coop-cutlass-exact-launch-facts:
 
@@ -148,7 +152,8 @@ fails if the primitive needs the missing value.
 For the tile copy, block dimensions determine both the CUB specialization
 and linear rank: ``x + block_x * (y + block_y * z)``. Warp primitives also
 need the exact block size to establish complete physical warps and allocate
-one scratch slice per group.
+one scratch slice per group. Cluster primitives need consistent cluster
+dimensions and launch mode.
 
 Do not substitute ``maxntid`` for exact dimensions: an upper bound does not
 prove the number of participating threads. The adapter does not infer
@@ -241,7 +246,8 @@ provider emission belong under ``cutlass``.
        ``cutlass/_temp_storage.py``, and their ``.pyi`` files
    * - Family validation and lowering
      - ``cutlass/_group_load_store.py`` and
-       ``cutlass/_lowering/_load_store.py``
+       ``cutlass/_lowering/_load_store.py``; the Reduce
+       files follow the same organization
    * - Launch facts and provider sessions
      - ``cutlass/_compiler/_launch.py``, ``cutlass/_compiler/_state.py``,
        ``cutlass/_compiler/_finalize.py``
