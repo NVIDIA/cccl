@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Logical Warp plans preserve subgroup participation and independent tiles."""
-
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
