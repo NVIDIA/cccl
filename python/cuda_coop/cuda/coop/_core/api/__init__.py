@@ -8,21 +8,21 @@ This module exports the public functions and group descriptions. Compiler
 adapters recognize these functions by identity and lower their kernel calls.
 """
 
-from .exchange import exchange  # noqa: F401
-from .load_store import load, store  # noqa: F401
+from .exchange import exchange
+from .load_store import load, store
 from .merge_sort import merge_sort_keys as merge_sort_keys
 from .merge_sort import merge_sort_pairs as merge_sort_pairs
-from .neighbors import adjacent_difference, discontinuity  # noqa: F401
-from .radix import radix_rank, radix_sort_keys, radix_sort_pairs  # noqa: F401
-from .reduce import reduce, sum  # noqa: F401
-from .scan import (  # noqa: F401
+from .neighbors import adjacent_difference, discontinuity
+from .radix import radix_rank, radix_sort_keys, radix_sort_pairs
+from .reduce import reduce, sum
+from .scan import (
     exclusive_scan,
     exclusive_sum,
     inclusive_scan,
     inclusive_sum,
     scan,
 )
-from .shuffle import shuffle  # noqa: F401
+from .shuffle import shuffle
 from .temp_storage import TempStorage, TempStorageLike
 from .thread_data import ThreadData, ThreadDataLike
 from .thread_group import (
@@ -35,7 +35,7 @@ from .thread_group import (
     this_thread,
     this_warp,
 )
-from .topk import (  # noqa: F401
+from .topk import (
     topk_max_keys,
     topk_max_pairs,
     topk_min_keys,
@@ -58,8 +58,6 @@ for _member_name in (
 del _member_name
 
 __all__ = [
-    "adjacent_difference",
-    "discontinuity",
     "Hierarchy",
     "TempStorage",
     "TempStorageLike",
@@ -67,11 +65,8 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
-    "this_block",
-    "this_cluster",
-    "this_grid",
-    "this_thread",
-    "this_warp",
+    "adjacent_difference",
+    "discontinuity",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
@@ -88,6 +83,11 @@ __all__ = [
     "shuffle",
     "store",
     "sum",
+    "this_block",
+    "this_cluster",
+    "this_grid",
+    "this_thread",
+    "this_warp",
     "topk_max_keys",
     "topk_max_pairs",
     "topk_min_keys",

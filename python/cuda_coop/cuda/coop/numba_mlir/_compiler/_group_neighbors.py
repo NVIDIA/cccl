@@ -213,16 +213,16 @@ def _lower_neighbors(context, inst, *, operation, group, bound, is_common_root):
         _cast(context, statements, inst, raw, dtype, name)
         for name, raw in boundaries.items()
     )
-    kwargs = dict(
-        dtype=dtype,
-        threads_per_block=plan.participation.exact_block_dim,
-        items_per_thread=extent,
-        mode=mode,
-        partial=partial,
-        predecessor=primitive.predecessor,
-        successor=primitive.successor,
-        op=op_raw,
-    )
+    kwargs = {
+        "dtype": dtype,
+        "threads_per_block": plan.participation.exact_block_dim,
+        "items_per_thread": extent,
+        "mode": mode,
+        "partial": partial,
+        "predecessor": primitive.predecessor,
+        "successor": primitive.successor,
+        "op": op_raw,
+    }
     if not context.is_none(storage):
         kwargs["temp_storage"] = storage
     statements.extend(
