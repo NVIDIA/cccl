@@ -262,7 +262,8 @@ def make_block_radix_rank_spec(
     """Build a fully specialized CUB BlockRadixRank description."""
 
     if not isinstance(with_exclusive_digit_prefix, bool):
-        raise ValueError("with_exclusive_digit_prefix must be a boolean")
+        # Keep the established ValueError contract for invalid controls.
+        raise ValueError("with_exclusive_digit_prefix must be a boolean")  # noqa: TRY004
     block_dim = normalize_block_dim(block_dim)
     block_threads = block_dim[0] * block_dim[1] * block_dim[2]
     bit_range = make_radix_bit_range(

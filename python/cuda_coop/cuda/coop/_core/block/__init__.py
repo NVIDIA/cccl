@@ -81,12 +81,6 @@ from .shuffle import (
 )
 
 __all__ = [
-    "BlockMergeSortPayload",
-    "BlockMergeSortTilePolicy",
-    "BlockMergeSortSemantics",
-    "BlockMergeSortSpec",
-    "make_block_merge_sort_semantics",
-    "make_block_merge_sort_spec",
     "ArgumentBinding",
     "BindingKind",
     "BlockExchangeMode",
@@ -98,6 +92,10 @@ __all__ = [
     "BlockLoadStoreKind",
     "BlockLoadStoreSemantics",
     "BlockLoadStoreSpec",
+    "BlockMergeSortPayload",
+    "BlockMergeSortSemantics",
+    "BlockMergeSortSpec",
+    "BlockMergeSortTilePolicy",
     "BlockRadixRankSemantics",
     "BlockRadixRankSpec",
     "BlockRadixSortBitPolicy",
@@ -126,6 +124,8 @@ __all__ = [
     "make_block_load_spec",
     "make_block_load_store_semantics",
     "make_block_load_store_spec",
+    "make_block_merge_sort_semantics",
+    "make_block_merge_sort_spec",
     "make_block_radix_rank_semantics",
     "make_block_radix_rank_spec",
     "make_block_radix_sort_semantics",
