@@ -12,12 +12,19 @@ from typing import Any
 
 from ._types import BundleRenderer, ScratchLayoutProbe
 
-_FEATURE_DEFINE_RE = re.compile(r"^#define\s+([A-Za-z_][A-Za-z0-9_]*)(?:\s|\(|$)")
+_FEATURE_DEFINE_RE = re.compile(
+    r"^#define\s+([A-Za-z_][A-Za-z0-9_]*)(?:\s|\(|$)"
+)
 _BUNDLE_RENDERERS: dict[str, BundleRenderer] = {}
 
 
 def register_bundle_renderer(
-    kind, *, render, include_lines=(), cccl_headers=(), scratch_layout_probe=None
+    kind,
+    *,
+    render,
+    include_lines=(),
+    cccl_headers=(),
+    scratch_layout_probe=None,
 ):
     if kind in _BUNDLE_RENDERERS:
         raise ValueError(f"bundle renderer {kind!r} is already registered")
@@ -37,14 +44,19 @@ def canonical_bundle_requests(requests: Iterable[Any]) -> tuple[Any, ...]:
     for request in requests:
         symbol = getattr(request, "symbol_name", None)
         if not isinstance(symbol, str) or not symbol:
-            raise ValueError("provider bundle requests require a non-empty symbol_name")
+            raise ValueError(
+                "provider bundle requests require a non-empty symbol_name"
+            )
         existing = requests_by_symbol.get(symbol)
         if existing is not None and existing != request:
             raise ValueError(
-                f"provider symbol {symbol!r} maps to conflicting bundle requests"
+                f"provider symbol {symbol!r} maps to conflicting "
+                "bundle requests"
             )
         requests_by_symbol[symbol] = request
-    return tuple(requests_by_symbol[symbol] for symbol in sorted(requests_by_symbol))
+    return tuple(
+        requests_by_symbol[symbol] for symbol in sorted(requests_by_symbol)
+    )
 
 
 def canonical_bundle_preamble_lines(lines: Iterable[str]) -> tuple[str, ...]:
@@ -58,7 +70,9 @@ def canonical_bundle_preamble_lines(lines: Iterable[str]) -> tuple[str, ...]:
         if line.startswith("#define "):
             match = _FEATURE_DEFINE_RE.match(line)
             if match is None:
-                raise ValueError(f"invalid provider feature definition: {line!r}")
+                raise ValueError(
+                    f"invalid provider feature definition: {line!r}"
+                )
             name = match.group(1)
             existing = feature_definitions.get(name)
             if existing is not None and existing != line:
@@ -91,7 +105,8 @@ def registered_bundle_headers() -> dict[str, str]:
             existing = headers.get(include)
             if existing is not None and existing != relative_path:
                 raise ValueError(
-                    f"provider include {include!r} maps to conflicting CCCL headers"
+                    f"provider include {include!r} maps to conflicting "
+                    "CCCL headers"
                 )
             headers[include] = relative_path
     return {include: headers[include] for include in sorted(headers)}
@@ -139,6 +154,8 @@ def render_bundle_source(requests):
     for request in requests:
         renderer = bundle_renderer_for(request)
         if renderer is None:
-            raise ValueError(f"No CUTLASS provider renderer for {request.kind!r}")
+            raise ValueError(
+                f"No CUTLASS provider renderer for {request.kind!r}"
+            )
         lines.extend(renderer.render(request))
     return "\n".join([*lines, "}", ""])

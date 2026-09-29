@@ -41,7 +41,9 @@ def _load_nvrtc():
     return nvrtc
 
 
-def resolve_compile_context(required_headers: tuple[str, ...]) -> CompileContext:
+def resolve_compile_context(
+    required_headers: tuple[str, ...],
+) -> CompileContext:
     paths = resolve_include_paths(
         start=Path(__file__),
         configured_roots=(os.environ.get("CUDA_COOP_CCCL_ROOT"),),
@@ -76,7 +78,10 @@ def compiler_options(context: CompileContext, arch: str) -> tuple[bytes, ...]:
         b"-dlto",
         b"-DCCCL_DISABLE_BF16_SUPPORT",
         f"--gpu-architecture={arch}".encode("ascii"),
-        *(os.fsencode(f"--include-path={path}") for path in context.include_dirs),
+        *(
+            os.fsencode(f"--include-path={path}")
+            for path in context.include_dirs
+        ),
     )
 
 
@@ -113,24 +118,33 @@ def _compile_ltoir(
         source.encode("utf-8"), b"cuda_coop_cutlass_bundle.cu", 0, [], []
     )
     if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
-        raise RuntimeError(f"Cannot create CUTLASS provider NVRTC program: {error}")
+        raise RuntimeError(
+            f"Cannot create CUTLASS provider NVRTC program: {error}"
+        )
     failed = False
     try:
         expressions = () if prepared is None else prepared.expressions
         for expression in expressions:
-            error = nvrtc.nvrtcAddNameExpression(program, expression.encode())[0]
+            error = nvrtc.nvrtcAddNameExpression(program, expression.encode())[
+                0
+            ]
             if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
                 raise RuntimeError(
                     f"Cannot register NVRTC storage layout probe: {error}"
                 )
-        error = nvrtc.nvrtcCompileProgram(program, len(options), list(options))[0]
+        error = nvrtc.nvrtcCompileProgram(program, len(options), list(options))[
+            0
+        ]
         if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
             raise RuntimeError(
-                f"CUTLASS provider compilation failed:\n{_program_log(nvrtc, program)}"
+                "CUTLASS provider compilation failed:\n"
+                f"{_program_log(nvrtc, program)}"
             )
         layouts: dict[str, ScratchLayout] = {}
         for expression in expressions:
-            error, name = nvrtc.nvrtcGetLoweredName(program, expression.encode())
+            error, name = nvrtc.nvrtcGetLoweredName(
+                program, expression.encode()
+            )
             if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
                 raise RuntimeError(
                     f"Cannot retrieve NVRTC storage layout probe: {error}"
@@ -141,11 +155,15 @@ def _compile_ltoir(
             )
         error, size = nvrtc.nvrtcGetLTOIRSize(program)
         if error != nvrtc.nvrtcResult.NVRTC_SUCCESS or size <= 0:
-            raise RuntimeError(f"Cannot retrieve CUTLASS provider LTO-IR size: {error}")
+            raise RuntimeError(
+                f"Cannot retrieve CUTLASS provider LTO-IR size: {error}"
+            )
         blob = bytearray(size)
         error = nvrtc.nvrtcGetLTOIR(program, blob)[0]
         if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
-            raise RuntimeError(f"Cannot retrieve CUTLASS provider LTO-IR: {error}")
+            raise RuntimeError(
+                f"Cannot retrieve CUTLASS provider LTO-IR: {error}"
+            )
         return bytes(blob), layouts
     except BaseException:
         failed = True

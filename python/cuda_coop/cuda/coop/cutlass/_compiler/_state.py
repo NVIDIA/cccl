@@ -63,11 +63,15 @@ class BundleSession:
         with self._lock:
             return list(canonical_bundle_requests(self.requests))
 
-    def add_deferred_temp_storage_event(self, event: DeferredTempStorageEvent) -> None:
+    def add_deferred_temp_storage_event(
+        self, event: DeferredTempStorageEvent
+    ) -> None:
         with self._lock:
             self._deferred_temp_storage_events.append(event)
 
-    def deferred_temp_storage_event_list(self) -> list[DeferredTempStorageEvent]:
+    def deferred_temp_storage_event_list(
+        self,
+    ) -> list[DeferredTempStorageEvent]:
         with self._lock:
             return list(self._deferred_temp_storage_events)
 

@@ -37,7 +37,9 @@ def _prepare_layout_probes(
     probes_by_key: dict[Hashable, tuple[str, str]] = {}
     for probe in layout_probes:
         if not isinstance(probe, ScratchLayoutProbe):
-            raise TypeError("layout_probes must contain ScratchLayoutProbe values")
+            raise TypeError(
+                "layout_probes must contain ScratchLayoutProbe values"
+            )
         try:
             hash(probe.requirement_key)
         except TypeError as exc:
@@ -80,7 +82,8 @@ def _prepare_layout_probes(
         f"__device__ unsigned char {symbol} = 0;\n"
     )
     expression_by_probe = {
-        probe: f"&{symbol}<({probe[0]}), ({probe[1]})>" for probe in unique_probes
+        probe: f"&{symbol}<({probe[0]}), ({probe[1]})>"
+        for probe in unique_probes
     }
     key_to_expression = {
         key: expression_by_probe[probe] for key, probe in probes_by_key.items()

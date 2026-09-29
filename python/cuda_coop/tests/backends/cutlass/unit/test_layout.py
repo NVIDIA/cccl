@@ -28,7 +28,10 @@ def test_probes_deduplicate_expressions_and_ignore_requirement_key_identity():
     assert prepared.source == reordered.source
     assert prepared.expressions == reordered.expressions
     assert len(prepared.expressions) == 1
-    assert prepared.key_to_expression["first"] == prepared.key_to_expression["second"]
+    assert (
+        prepared.key_to_expression["first"]
+        == prepared.key_to_expression["second"]
+    )
     assert prepared.source.count("template <unsigned long long") == 1
     assert "sizeof(Storage)" in prepared.expressions[0]
 
@@ -40,7 +43,10 @@ def test_probes_deduplicate_expressions_and_ignore_requirement_key_identity():
         ([ScratchLayoutProbe([], "16", "4")], TypeError, "hashable"),
         ([ScratchLayoutProbe("x", " ", "4")], ValueError, "non-empty"),
         (
-            [ScratchLayoutProbe("x", "16", "4"), ScratchLayoutProbe("x", "32", "4")],
+            [
+                ScratchLayoutProbe("x", "16", "4"),
+                ScratchLayoutProbe("x", "32", "4"),
+            ],
             ValueError,
             "conflicting",
         ),
@@ -53,7 +59,8 @@ def test_invalid_probes_fail_before_compilation(probes, exception, message):
 
 def test_lowered_name_recovers_exact_storage_layout():
     prepared = _layout._prepare_layout_probes(
-        "provider", [ScratchLayoutProbe("x", "sizeof(Storage)", "alignof(Storage)")]
+        "provider",
+        [ScratchLayoutProbe("x", "sizeof(Storage)", "alignof(Storage)")],
     )
     name = f"_Z{len(prepared.symbol)}{prepared.symbol}ILy1040ELy16EE\0".encode()
     result = _layout._decode_layout_probe_name(
@@ -90,13 +97,16 @@ def compilation(monkeypatch, tmp_path):
         "/nvjitlink",
         (13, 3),
     )
-    monkeypatch.setattr(_nvrtc, "resolve_compile_context", lambda headers: context)
+    monkeypatch.setattr(
+        _nvrtc, "resolve_compile_context", lambda headers: context
+    )
     calls = []
 
     def compile_source(prepared, options):
         calls.append(prepared)
         layouts = {
-            expression: ScratchLayout(1040, 16) for expression in prepared.expressions
+            expression: ScratchLayout(1040, 16)
+            for expression in prepared.expressions
         }
         return b"test-lto:" + prepared.source.encode(), layouts
 
@@ -138,7 +148,9 @@ def test_incomplete_layout_cache_is_recompiled(compilation, damage):
     elif damage == "invalid":
         next(iter(metadata["layouts"].values()))["alignment"] = 3
     else:
-        metadata["layouts"] = {"unrelated": {"size_in_bytes": 1040, "alignment": 16}}
+        metadata["layouts"] = {
+            "unrelated": {"size_in_bytes": 1040, "alignment": 16}
+        }
     metadata_path.write_text(json.dumps(metadata))
     _cache._SOURCE_CACHE.clear()
     assert _compile() == initial

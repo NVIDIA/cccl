@@ -41,7 +41,9 @@ class _CachedBundle:
     path: str
     artifact_size: int | None = None
     artifact_sha256: str | None = None
-    layouts_by_expression: dict[str, ScratchLayout] = field(default_factory=dict)
+    layouts_by_expression: dict[str, ScratchLayout] = field(
+        default_factory=dict
+    )
 
 
 def _acquire_state_lock_before_fork() -> None:
@@ -279,11 +281,15 @@ def load_bundle(path: str, cache_key: str) -> _CachedBundle | None:
             return None
         layouts = {
             expression: _validate_storage_layout(
-                layout["size_in_bytes"], layout["alignment"], description=expression
+                layout["size_in_bytes"],
+                layout["alignment"],
+                description=expression,
             )
             for expression, layout in metadata.get("layouts", {}).items()
         }
-        cached = _CachedBundle(path, metadata["size"], metadata["sha256"], layouts)
+        cached = _CachedBundle(
+            path, metadata["size"], metadata["sha256"], layouts
+        )
         return cached if _cached_artifact_is_valid(cached) else None
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
         return None
@@ -299,7 +305,10 @@ def publish_bundle(
     """Publish data before metadata while holding the artifact lock."""
 
     cached = _CachedBundle(
-        path, len(blob), hashlib.sha256(blob).hexdigest(), layouts_by_expression or {}
+        path,
+        len(blob),
+        hashlib.sha256(blob).hexdigest(),
+        layouts_by_expression or {},
     )
     write_binary_atomic(path, blob, scope="cuda.coop.cutlass")
     write_text_atomic(
@@ -311,7 +320,9 @@ def publish_bundle(
                 "sha256": cached.artifact_sha256,
                 "layouts": {
                     expression: asdict(layout)
-                    for expression, layout in cached.layouts_by_expression.items()
+                    for expression, layout in (
+                        cached.layouts_by_expression.items()
+                    )
                 },
             },
             sort_keys=True,
