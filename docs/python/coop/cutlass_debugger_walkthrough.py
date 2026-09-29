@@ -31,7 +31,7 @@ def main(*, algorithm="direct"):
     @cute.kernel
     def copy_tile(source: cute.Pointer, destination: cute.Pointer):
         block = coop.this_block()
-        items = coop.ThreadData(2, dtype=np.int32)
+        items = coop.ThreadData(items_per_thread=2)
         scratch = coop.TempStorage(auto_sync=True)
         coop.load(block, source, items, algorithm=algorithm, temp_storage=scratch)
         coop.store(block, destination, items, algorithm=algorithm, temp_storage=scratch)
