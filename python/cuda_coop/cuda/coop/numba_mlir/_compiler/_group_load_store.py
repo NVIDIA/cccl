@@ -39,7 +39,6 @@ from ._group_errors import (
     UnsupportedLoadStoreTargetError,
 )
 from ._group_planner_support import (
-    _PAYLOAD_DTYPE_LIKE,
     Any,
     GroupRewriteError,
     ThreadGroup,
@@ -73,13 +72,6 @@ _BLOCK_LOAD_STORE_ALGORITHMS = frozenset(
 )
 _WARP_LOAD_STORE_ALGORITHMS = frozenset({"direct", "striped", "vectorize", "transpose"})
 _SUPPORTED_WARP_WIDTHS = frozenset({1, 2, 4, 8, 16, 32})
-_MUTATING_STORE_ALGORITHMS = frozenset(
-    {
-        "transpose",
-        "warp_transpose",
-        "warp_transpose_timesliced",
-    }
-)
 
 
 def _load_store_algorithm(
@@ -114,12 +106,6 @@ _CUB_PLAN_ROUTES = {
     ): "load",
     (
         "CUB",
-        "cub/block/block_load.cuh",
-        "cub::CudaCoopBlockLoadPreservingInvalid",
-        "Load",
-    ): "load",
-    (
-        "CUB",
         "cub/block/block_store.cuh",
         "cub::BlockStore",
         "Store",
@@ -128,12 +114,6 @@ _CUB_PLAN_ROUTES = {
         "CUB",
         "cub/warp/warp_load.cuh",
         "cub::WarpLoad",
-        "Load",
-    ): "load",
-    (
-        "CUB",
-        "cub/warp/warp_load.cuh",
-        "cub::CudaCoopWarpLoadPreservingInvalid",
         "Load",
     ): "load",
     (
@@ -563,32 +543,6 @@ class _LoadStorePlanning:
             runtime_args = [bound.arguments["source"], bound.arguments["output"]]
         else:
             value = bound.arguments["value"]
-            if (
-                semantics.algorithm.value in _MUTATING_STORE_ALGORITHMS
-                and self._context.is_array(operation, value)
-            ):
-                scope = inst.target.scope
-                loc = inst.loc
-                preserved_value = self._context.typed_payload_like(
-                    statements,
-                    scope=scope,
-                    loc=loc,
-                    stem="store_preserved_value",
-                    prototype=value,
-                    is_array=True,
-                    dtype_policy=_PAYLOAD_DTYPE_LIKE,
-                    items_per_thread=semantics.items_per_thread,
-                )
-                self._context.copy_array_payload(
-                    statements,
-                    operation=operation,
-                    source=value,
-                    destination=preserved_value,
-                    scope=scope,
-                    loc=loc,
-                    known_items_per_thread=semantics.items_per_thread,
-                )
-                value = preserved_value
             runtime_args = [bound.arguments["destination"], value]
         statements.extend(
             self._context.rewrite_call(
