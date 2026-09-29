@@ -66,7 +66,7 @@ def test_manual_scratch():
     def copy_tiles_with_manual_sync(source, destination):
         block = coop.this_block()
         scratch = coop.TempStorage()
-        items = coop.ThreadData(2, dtype=np.int32)
+        items = coop.ThreadData(items_per_thread=2)
         for tile in range(2):
             offset = tile * cuda.blockDim.x * 2
             coop.load(
@@ -107,7 +107,7 @@ def test_reduce():
     @cuda.jit
     def tile_sums(source, totals, count):
         block = coop.this_block()
-        items = coop.ThreadData(2, dtype=np.int32)
+        items = coop.ThreadData(items_per_thread=2)
         tile_size = cuda.blockDim.x * 2
         offset = cuda.blockIdx.x * tile_size
         valid = min(max(count - offset, 0), tile_size)
