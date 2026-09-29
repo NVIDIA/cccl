@@ -290,7 +290,9 @@ def _stateful_prefix_kernel(algorithm: str, storage_mode: str):
             thread = cuda.threadIdx.x
             state = qualified_coop.ThreadData(1, dtype=types.int64)
             state[0] = _PREFIX_INITIAL_STATE
-            storage = qualified_coop.TempStorage(sharing="shared", auto_sync=True)
+            storage = qualified_coop.TempStorage(
+                sharing="shared", auto_sync=True
+            )
             for tile in range(_PREFIX_TILE_COUNT):
                 index = tile * _BLOCK_THREADS + thread
                 output[index] = qualified_coop.inclusive_sum(
@@ -378,7 +380,8 @@ def test_stateful_prefix_tracks_repeated_scans_across_modes_and_storage(
     storage_mode: str,
 ):
     source = (
-        (np.arange(_PREFIX_TILE_COUNT * _BLOCK_THREADS, dtype=np.int32) * 7) % 23
+        (np.arange(_PREFIX_TILE_COUNT * _BLOCK_THREADS, dtype=np.int32) * 7)
+        % 23
     ) + 1
     output = np.full_like(source, -1)
     final_state = np.full(1, -1, dtype=np.int64)

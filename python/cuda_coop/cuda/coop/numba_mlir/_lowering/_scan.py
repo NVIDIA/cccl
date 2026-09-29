@@ -91,7 +91,8 @@ def normalize_scan_operation(scan_op: Any) -> str | None:
     if callable(scan_op):
         return None
     raise TypeError(
-        "cuda.coop.numba_mlir scan_op must be a string or stateless device callback"
+        "cuda.coop.numba_mlir scan_op must be "
+        "a string or stateless device callback"
     )
 
 
@@ -106,7 +107,9 @@ def validate_scan_operator_dtype(scan_op: Any, dtype: Any) -> Any:
         parameter="value",
     )
     operation = normalize_scan_operation(scan_op)
-    if operation in _BITWISE_SCAN_OPERATORS and not isinstance(dtype, types.Integer):
+    if operation in _BITWISE_SCAN_OPERATORS and not isinstance(
+        dtype, types.Integer
+    ):
         raise TypeError(
             f"cuda.coop.numba_mlir scan {operation} requires an integer dtype"
         )
@@ -131,7 +134,8 @@ def _block_scan_algorithm(algorithm: Any) -> Any:
     token = algorithm.strip().lower().replace("-", "_")
     if token not in {"raking", "raking_memoize", "warp_scans"}:
         raise ValueError(
-            "block scan algorithm must be one of: raking, raking_memoize, warp_scans"
+            "block scan algorithm must be one "
+            "of: raking, raking_memoize, warp_scans"
         )
     return normalize_block_scan_algorithm(token)
 
@@ -178,7 +182,9 @@ def _scan_operator(scan_op: Any, *, force_sum_operator: bool) -> Any:
     return CxxOperator(cpp=cpp, dtype=Dependency("T"), name="scan_op")
 
 
-def _prefix_operator(prefix_op: Any) -> PythonOperator | StatefulOperator | None:
+def _prefix_operator(
+    prefix_op: Any,
+) -> PythonOperator | StatefulOperator | None:
     if prefix_op is None:
         return None
 
@@ -250,7 +256,9 @@ def _block_scan(
         raise ValueError("threads_per_block must be provided")
     block_dim = normalize_dim_param(threads_per_block)
     items_per_thread = _positive_int(items_per_thread, name="items_per_thread")
-    expected_kind = "array" if provider_factory is block_scan_array else "scalar"
+    expected_kind = (
+        "array" if provider_factory is block_scan_array else "scalar"
+    )
     if value_kind != expected_kind:
         raise ValueError(
             f"{provider_factory.__name__} requires value_kind={expected_kind!r}"
@@ -271,17 +279,28 @@ def _block_scan(
     stateful_prefix = isinstance(prefix_op, StatefulFunction)
     has_prefix_state = prefix_state is not None and prefix_state is not False
     if stateful_prefix and not has_prefix_state:
-        raise ValueError("StatefulFunction prefix callbacks require prefix_state")
+        raise ValueError(
+            "StatefulFunction prefix callbacks require prefix_state"
+        )
     if not stateful_prefix and has_prefix_state:
-        raise ValueError("stateless prefix callbacks do not accept prefix_state")
-    if prefix_operator is not None and initial_binding.kind is not BindingKind.OMITTED:
-        raise ValueError("initial_value and prefix callbacks are mutually exclusive")
+        raise ValueError(
+            "stateless prefix callbacks do not accept prefix_state"
+        )
+    if (
+        prefix_operator is not None
+        and initial_binding.kind is not BindingKind.OMITTED
+    ):
+        raise ValueError(
+            "initial_value and prefix callbacks are mutually exclusive"
+        )
     if (
         prefix_operator is not None
         and block_aggregate is not None
         and block_aggregate is not False
     ):
-        raise ValueError("block_aggregate and prefix callbacks are mutually exclusive")
+        raise ValueError(
+            "block_aggregate and prefix callbacks are mutually exclusive"
+        )
     if (
         mode == "exclusive"
         and operation != "sum"
@@ -303,7 +322,9 @@ def _block_scan(
         scan_operator=scan_operator,
         initial_value=_initial_value(initial_binding, dtype),
         prefix_operator=prefix_operator,
-        block_aggregate=(block_aggregate is not None and block_aggregate is not False),
+        block_aggregate=(
+            block_aggregate is not None and block_aggregate is not False
+        ),
     )
     adapter = NumbaMlirCoreAdapter()
     specialization = adapter.materialize(
@@ -379,7 +400,9 @@ def warp_scan(
         ),
         initial_value=_initial_value(initial_binding, dtype),
         valid_items=valid_items_binding,
-        warp_aggregate=(warp_aggregate is not None and warp_aggregate is not False),
+        warp_aggregate=(
+            warp_aggregate is not None and warp_aggregate is not False
+        ),
     )
     specialization = adapter.materialize(
         core_spec.specialization,

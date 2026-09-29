@@ -227,12 +227,14 @@ class _ScanPlanning:
         if not has_prefix:
             if has_state:
                 raise ValueError(
-                    "cuda.coop.numba_mlir scan prefix_state requires a prefix callback"
+                    "cuda.coop.numba_mlir scan "
+                    "prefix_state requires a prefix callback"
                 )
             return None, None, None
         if group.kind != "block":
             raise NotImplementedError(
-                "cuda.coop.numba_mlir scan prefix callbacks apply only to block groups"
+                "cuda.coop.numba_mlir scan prefix "
+                "callbacks apply only to block groups"
             )
 
         callback = self._context.constant(prefix_ref)
@@ -241,7 +243,8 @@ class _ScanPlanning:
         if isinstance(callback, StatefulFunction):
             if not has_state:
                 raise ValueError(
-                    "cuda.coop.numba_mlir scan StatefulFunction prefix callbacks "
+                    "cuda.coop.numba_mlir scan "
+                    "StatefulFunction prefix callbacks "
                     "require a third positional prefix_state argument"
                 )
             if not self._context.is_array(operation, state):
@@ -477,7 +480,8 @@ class _ScanPlanning:
             )
         if prefix_operator is not None and aggregate:
             raise ValueError(
-                "cuda.coop.numba_mlir scan aggregate_output and prefix callbacks "
+                "cuda.coop.numba_mlir scan "
+                "aggregate_output and prefix callbacks "
                 "are mutually exclusive"
             )
 

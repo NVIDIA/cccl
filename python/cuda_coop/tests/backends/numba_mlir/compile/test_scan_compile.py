@@ -688,7 +688,9 @@ def test_collective_inside_standalone_scan_callback_has_clear_diagnostic():
     from numba_cuda_mlir.numba_cuda.core.errors import TypingError
 
     import cuda.coop.numba_mlir as coop
-    from cuda.coop.numba_mlir._compiler._group_planner_support import GroupRewriteError
+    from cuda.coop.numba_mlir._compiler._group_planner_support import (
+        GroupRewriteError,
+    )
 
     @cuda.jit(device=True)
     def collective_prefix(aggregate):
