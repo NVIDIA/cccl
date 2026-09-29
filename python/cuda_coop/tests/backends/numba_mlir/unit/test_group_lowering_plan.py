@@ -436,8 +436,6 @@ def test_group_plan_allows_declared_sync_scope_when_auto_sync_is_disabled(
 ):
     from dataclasses import replace
 
-    from tests.support.group_planning import _load_store, _plan
-
     from cuda.coop._core import (
         StorageOwnership,
         SynchronizationRequirements,
@@ -453,6 +451,7 @@ def test_group_plan_allows_declared_sync_scope_when_auto_sync_is_disabled(
         FactoryOperation,
         StorageABI,
     )
+    from tests._group_planning import _load_store, _plan
 
     plan = _plan(this_block(), _load_store("load"))
     plan = replace(
@@ -493,8 +492,6 @@ def test_group_plan_rejects_declared_sync_for_implementation_owned_no_sync(
 ):
     from dataclasses import replace
 
-    from tests.support.group_planning import _load_store, _plan
-
     from cuda.coop._core import (
         StorageOwnership,
         SynchronizationRequirements,
@@ -513,6 +510,7 @@ def test_group_plan_rejects_declared_sync_for_implementation_owned_no_sync(
         FactoryOperation,
         StorageABI,
     )
+    from tests._group_planning import _load_store, _plan
 
     plan = _plan(this_block(), _load_store("load"))
     plan = replace(

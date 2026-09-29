@@ -159,7 +159,7 @@ case "$stage" in
     python -m pyright --warnings --project "$repo_root/python/cuda_coop/tests/typing/pyright-unused.json" \
       --pythonpath "$(command -v python)"
     cd "$tests_root"
-    python -m pytest -v contracts/ packaging/
+    python -m pytest -v test_*.py packaging/
     ;;
   numba-mlir-compile)
     # The compile contract is deliberately GPU-free. Tests may replace only
