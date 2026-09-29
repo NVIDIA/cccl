@@ -83,7 +83,9 @@ def test_common_frontends_accept_read_only_thread_data(monkeypatch, operation):
     monkeypatch.setattr(
         api, "_group_primitive_marker", lambda *_args, **_kwargs: "validated"
     )
-    kwargs = {"mode": "blocked_to_striped" if operation == "exchange" else "down"}
+    kwargs = {
+        "mode": "blocked_to_striped" if operation == "exchange" else "down"
+    }
     group = this_block()
     with monkeypatch.context() as compiler_context:
         compiler_context.setattr(
@@ -100,7 +102,8 @@ def test_common_frontends_accept_read_only_thread_data(monkeypatch, operation):
             lambda: "test.backend",
         )
         assert (
-            getattr(api, operation)(group, _ReadOnlyPayload(), **kwargs) == "validated"
+            getattr(api, operation)(group, _ReadOnlyPayload(), **kwargs)
+            == "validated"
         )
 
 

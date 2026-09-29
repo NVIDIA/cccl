@@ -126,7 +126,11 @@ def _storage_reuse_barrier_line(request: _CubExchangeRequest) -> str:
             raise ValueError("Exchange plan requires a static warp group")
         mask = "0xffffffffu"
         if logical_width < 32:
-            mask = f"{(1 << logical_width) - 1}u << ((threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z)) % 32u / {logical_width}u * {logical_width}u)"
+            mask = (
+                f"{(1 << logical_width) - 1}u << ((threadIdx.x + blockDim.x * "
+                "(threadIdx.y + blockDim.y * threadIdx.z)) % 32u / "
+                f"{logical_width}u * {logical_width}u)"
+            )
         return f"  __syncwarp({mask});"
     raise ValueError("Exchange plan requires a storage reuse barrier")
 
@@ -314,7 +318,8 @@ class _CubExchangeRequest:
         suffix = f"_{'_'.join(suffixes)}" if suffixes else ""
         return (
             "cuda_coop_cutlass_cub_exchange_"
-            f"{self.group_kind}_{self.block_dim[0]}x{self.block_dim[1]}x{self.block_dim[2]}_"
+            f"{self.group_kind}_{self.block_dim[0]}x"
+            f"{self.block_dim[1]}x{self.block_dim[2]}_"
             f"{self.implementation.method_name.lower()}_"
             f"{TYPE_SPECIFICATIONS[self.value_type].token}"
             f"_x{self.items_per_thread}"
@@ -358,7 +363,11 @@ def _render_cub_exchange(request: _CubExchangeRequest) -> list[str]:
                 f"storage[{instances}];"
             ),
             "  unsigned int storage_instance =",
-            f"      (threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z)) / {logical_width}u;",
+            (
+                "      (threadIdx.x + blockDim.x * "
+                "(threadIdx.y + blockDim.y * threadIdx.z)) / "
+                f"{logical_width}u;"
+            ),
         ]
         storage = "storage[storage_instance]"
 
@@ -387,8 +396,9 @@ def _render_cub_exchange(request: _CubExchangeRequest) -> list[str]:
     )
     input_lines = [
         (
-            f"  {type_specification.cpp_type} input_items["
-            f"{request.items_per_thread}] = {{{values}}};"
+            f"  {type_specification.cpp_type} "
+            f"input_items[{request.items_per_thread}] "
+            f"= {{{values}}};"
         ),
         (
             f"  {type_specification.cpp_type} "
@@ -401,8 +411,9 @@ def _render_cub_exchange(request: _CubExchangeRequest) -> list[str]:
             f"rank{index}" for index in range(request.items_per_thread)
         )
         input_lines.append(
-            f"  {rank_type_specification.cpp_type} ranks["
-            f"{request.items_per_thread}] = {{{ranks}}};"
+            f"  {rank_type_specification.cpp_type}"
+            f" ranks[{request.items_per_thread}] "
+            f"= {{{ranks}}};"
         )
         call_arguments.append("ranks")
     if flag_type_specification is not None:
@@ -423,7 +434,8 @@ def _render_cub_exchange(request: _CubExchangeRequest) -> list[str]:
     return [
         f"void {request.symbol_name}({', '.join(params)}) {{",
         (
-            f"  using implementation_type = ::cub::{implementation.struct_name}<"
+            "  using implementation_type = "
+            f"::cub::{implementation.struct_name}<"
             f"{template_arguments}>;"
         ),
         *storage_lines,

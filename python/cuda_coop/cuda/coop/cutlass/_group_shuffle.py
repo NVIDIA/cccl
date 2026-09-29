@@ -67,7 +67,8 @@ def shuffle(group, value, /, *, mode="down", distance=1):
     Rotate one scalar per thread by seven positions in a 64-thread block,
     including wraparound.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_collective_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_collective_examples.py
         :language: python
         :start-after: # qualified-rotate-example-begin
         :end-before: # qualified-rotate-example-end
@@ -76,7 +77,9 @@ def shuffle(group, value, /, *, mode="down", distance=1):
     if not isinstance(group, ThreadGroup):
         raise TypeError("cuda.coop.cutlass.shuffle group must be a ThreadGroup")
     if group.kind != "block":
-        raise NotImplementedError("cuda.coop.cutlass.shuffle requires a block group")
+        raise NotImplementedError(
+            "cuda.coop.cutlass.shuffle requires a block group"
+        )
     if not isinstance(mode, str) or isinstance(mode, Enum):
         raise TypeError("cuda.coop.cutlass.shuffle mode must be a string")
     mode = mode.strip().lower().replace("-", "_")

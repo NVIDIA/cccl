@@ -42,7 +42,9 @@ def _payload(value, *, name):
         common_root_payload_kind="thread_data",
     )
     if not isinstance(value, ThreadData):
-        raise TypeError(f"{_SCOPE}.exchange {name} must be a fixed-size ThreadData")
+        raise TypeError(
+            f"{_SCOPE}.exchange {name} must be a fixed-size ThreadData"
+        )
     return value
 
 
@@ -123,7 +125,8 @@ def exchange(
     Reverse a 128-item block tile by assigning each input its destination
     rank. Each of the 64 threads holds two items.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_collective_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_collective_examples.py
         :language: python
         :start-after: # qualified-scatter-example-begin
         :end-before: # qualified-scatter-example-end
@@ -132,36 +135,48 @@ def exchange(
     if not isinstance(group, ThreadGroup):
         raise TypeError(f"{_SCOPE}.exchange group must be a ThreadGroup")
     if group.kind not in {"block", "warp", "threads_within_warp"}:
-        raise NotImplementedError(f"{_SCOPE}.exchange requires a block or warp group")
+        raise NotImplementedError(
+            f"{_SCOPE}.exchange requires a block or warp group"
+        )
     mode = _normalize_exchange_mode(mode, group_kind=group.kind)
     if not isinstance(warp_time_slicing, bool):
         raise TypeError(
             f"{_SCOPE}.exchange warp_time_slicing must be a compile-time bool"
         )
     if warp_time_slicing and group.kind != "block":
-        raise ValueError(f"{_SCOPE}.exchange warp_time_slicing applies only to blocks")
+        raise ValueError(
+            f"{_SCOPE}.exchange warp_time_slicing applies only to blocks"
+        )
     if mode.uses_ranks != (ranks is not None):
         requirement = "requires" if mode.uses_ranks else "does not accept"
         raise ValueError(f"{_SCOPE}.exchange {mode.value} {requirement} ranks")
     if mode.uses_valid_flags != (valid_flags is not None):
         requirement = "requires" if mode.uses_valid_flags else "does not accept"
-        raise ValueError(f"{_SCOPE}.exchange {mode.value} {requirement} valid_flags")
+        raise ValueError(
+            f"{_SCOPE}.exchange {mode.value} {requirement} valid_flags"
+        )
     value = _payload(value, name="value")
     ranks = None if ranks is None else _payload(ranks, name="ranks")
     valid_flags = (
-        None if valid_flags is None else _payload(valid_flags, name="valid_flags")
+        None
+        if valid_flags is None
+        else _payload(valid_flags, name="valid_flags")
     )
 
     from ._compiler._launch import current_kernel_launch_facts
     from ._lowering import _exchange
 
     launch = current_kernel_launch_facts()
-    group = _resolve_primitive_group_from_launch(group, launch, feature="exchange")
+    group = _resolve_primitive_group_from_launch(
+        group, launch, feature="exchange"
+    )
     _require_complete_warp_partition(
         group, feature="exchange", exact_block_dim=launch.exact_block_dim
     )
-    value_type, rank_type, flag_type = _exchange._resolve_exchange_operand_types(
-        value=value, ranks=ranks, valid_flags=valid_flags
+    value_type, rank_type, flag_type = (
+        _exchange._resolve_exchange_operand_types(
+            value=value, ranks=ranks, valid_flags=valid_flags
+        )
     )
     plan = _exchange._make_group_exchange_plan(
         group=group,

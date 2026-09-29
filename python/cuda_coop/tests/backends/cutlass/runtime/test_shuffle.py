@@ -45,7 +45,9 @@ def _run_array(api, dtype, mode, *, block=_BLOCK):
     size = threads * _ITEMS
 
     @cute.kernel
-    def kernel(source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer):
+    def kernel(
+        source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer
+    ):
         x, y, z = cute.arch.thread_idx()
         thread = x + block[0] * (y + block[1] * z)
         inputs = cute.recast_tensor(
@@ -75,7 +77,9 @@ def _run_array(api, dtype, mode, *, block=_BLOCK):
             checks[thread * _ITEMS + item] = payload[item]
 
     @cute.jit
-    def launch(source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer):
+    def launch(
+        source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer
+    ):
         kernel(source, observed, preserved).launch(grid=1, block=block)
 
     source = values_for(dtype, size, shift=47)
@@ -137,7 +141,10 @@ def _run_scalar(dtype, mode, *, runtime, distance=5, distance_dtype=np.int64):
         value = inputs[thread]
         if cutlass.const_expr(runtime):
             result = cutlass_coop.shuffle(
-                cutlass_coop.this_block(), value, mode=mode, distance=distances[thread]
+                cutlass_coop.this_block(),
+                value,
+                mode=mode,
+                distance=distances[thread],
             )
         else:
             result = cutlass_coop.shuffle(
@@ -154,7 +161,9 @@ def _run_scalar(dtype, mode, *, runtime, distance=5, distance_dtype=np.int64):
         observed: cute.Pointer,
         preserved: cute.Pointer,
     ):
-        kernel(source, controls, observed, preserved).launch(grid=1, block=_BLOCK)
+        kernel(source, controls, observed, preserved).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(dtype, _THREADS, shift=53)
     if runtime:
@@ -255,7 +264,7 @@ with device_array(np.ones(64, dtype=np.int32)) as src, device_array(np.zeros(64,
     status = driver.cuCtxSynchronize()[0]
     print(f"shuffle launch status: {{int(status)}}", flush=True)
 raise AssertionError("invalid Shuffle distance did not trap")
-""")
+""")  # noqa: E501 - Preserve embedded source bytes.
     environment = os.environ.copy()
     environment["PYTHONPATH"] = os.pathsep.join(
         filter(None, (str(PACKAGE_ROOT), environment.get("PYTHONPATH")))
@@ -280,10 +289,14 @@ raise AssertionError("invalid Shuffle distance did not trap")
 
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
-@pytest.mark.parametrize("mixed", (False, True), ids=("shuffle", "exchange-shuffle"))
+@pytest.mark.parametrize(
+    "mixed", (False, True), ids=("shuffle", "exchange-shuffle")
+)
 def test_reuse_loop(api, mixed):
     @cute.kernel
-    def kernel(source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32):
+    def kernel(
+        source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32
+    ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.make_tensor(source, cute.make_layout(_TILE))
@@ -303,7 +316,9 @@ def test_reuse_loop(api, mixed):
             outputs[thread * _ITEMS + item] = payload[item]
 
     @cute.jit
-    def launch(source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32):
+    def launch(
+        source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32
+    ):
         kernel(source, observed, iterations).launch(grid=1, block=_BLOCK)
 
     source = values_for(np.int32, _TILE, shift=61)
@@ -319,11 +334,15 @@ def test_reuse_loop(api, mixed):
     np.testing.assert_array_equal(observed, expected)
 
 
-@pytest.mark.parametrize("scalar", (False, True), ids=("array-down", "scalar-rotate"))
+@pytest.mark.parametrize(
+    "scalar", (False, True), ids=("array-down", "scalar-rotate")
+)
 def test_final_cubin(tmp_path, scalar):
     cuobjdump = shutil.which("cuobjdump")
     if cuobjdump is None:
-        pytest.skip("cuobjdump is required to inspect final linked instructions")
+        pytest.skip(
+            "cuobjdump is required to inspect final linked instructions"
+        )
 
     @cute.kernel
     def kernel(source: cute.Pointer, observed: cute.Pointer):
@@ -332,7 +351,10 @@ def test_final_cubin(tmp_path, scalar):
         outputs = cute.make_tensor(observed, cute.make_layout(_TILE))
         if cutlass.const_expr(scalar):
             outputs[thread] = cutlass_coop.shuffle(
-                cutlass_coop.this_block(), inputs[thread], mode="rotate", distance=7
+                cutlass_coop.this_block(),
+                inputs[thread],
+                mode="rotate",
+                distance=7,
             )
         else:
             payload = cutlass_coop.ThreadData(_ITEMS, dtype=cutlass.Int32)
@@ -353,7 +375,9 @@ def test_final_cubin(tmp_path, scalar):
     source = values_for(np.int32, _TILE, shift=67)
     observed = np.zeros_like(source)
     with device_array(source) as src, device_array(observed) as out:
-        compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](launch, src, out)
+        compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](
+            launch, src, out
+        )
         compiled(src, out)
     if scalar:
         np.testing.assert_array_equal(

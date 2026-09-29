@@ -12,12 +12,24 @@ from typing_extensions import TypeVar
 
 from .._core.api.thread_group import BlockGroup, WarpGroup
 from .._typing import CommonNumericScalar, CommonThreadDataLike, ExchangeMode
-from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_data import (
+    CutlassTensorSample,
+    CutlassTensorSSASample,
+    ThreadData,
+)
 
 _ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 _RegisterPayload: TypeAlias = CutlassTensorSample | CutlassTensorSSASample
 _RankScalar: TypeAlias = (
-    int | np.int8 | np.int16 | np.int32 | np.int64 | Int8 | Int16 | Int32 | Int64
+    int
+    | np.int8
+    | np.int16
+    | np.int32
+    | np.int64
+    | Int8
+    | Int16
+    | Int32
+    | Int64
 )
 _FlagScalar: TypeAlias = (
     _RankScalar
@@ -35,7 +47,9 @@ _Flags: TypeAlias = CommonThreadDataLike[_FlagScalar] | _RegisterPayload
 _BlockLayoutMode: TypeAlias = (
     ExchangeMode | Literal["warp_striped_to_blocked", "blocked_to_warp_striped"]
 )
-_BlockScatterMode: TypeAlias = Literal["scatter_to_blocked", "scatter_to_striped"]
+_BlockScatterMode: TypeAlias = Literal[
+    "scatter_to_blocked", "scatter_to_striped"
+]
 
 @overload
 def exchange(
