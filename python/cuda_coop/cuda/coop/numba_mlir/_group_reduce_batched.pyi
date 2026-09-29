@@ -23,6 +23,8 @@ def reduce_batched(
     value: PortableThreadDataLike[_ItemT],
     /,
     *,
-    binary_op: ReduceOperator | Callable[[_ItemT, _ItemT], _ItemT] | None = None,
+    binary_op: ReduceOperator
+    | Callable[[_ItemT, _ItemT], _ItemT]
+    | None = None,
     output_layout: Literal["striped", "blocked"] = "striped",
 ) -> ThreadDataLike[_ItemT]: ...

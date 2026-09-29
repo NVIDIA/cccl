@@ -17,7 +17,10 @@ from cuda.coop._core import (
 from cuda.coop._core.warp.reduce_batched import make_warp_reduce_batched_spec
 
 from .._compiler._operations import StorageABI, register_factory
-from .._compiler._parameters import _validate_common_numeric_dtype, normalize_dim_param
+from .._compiler._parameters import (
+    _validate_common_numeric_dtype,
+    normalize_dim_param,
+)
 from .._semantic import _normalize_numba_callable, _numba_semantic_token
 from .._types import make_invocable_from_specialization, numba_type_to_wrapper
 from ._core import NumbaMlirCoreAdapter

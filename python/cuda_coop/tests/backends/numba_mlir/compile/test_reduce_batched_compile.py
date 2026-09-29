@@ -50,7 +50,9 @@ def test_reduce_batched_links_native_provider(compile_kernel, layout):
         block = coop.this_block()
         values = coop.ThreadData(33)
         coop.load(block, source, values)
-        result = coop.reduce_batched(coop.this_warp(), values, output_layout=layout)
+        result = coop.reduce_batched(
+            coop.this_warp(), values, output_layout=layout
+        )
         destination[cuda.threadIdx.x * 2] = result[0]
         destination[cuda.threadIdx.x * 2 + 1] = result[1]
 
@@ -61,9 +63,14 @@ def test_reduce_batched_links_native_provider(compile_kernel, layout):
 
 @pytest.mark.parametrize(
     ("kind", "layout", "message"),
-    [("block", "striped", "group kind.*block"), ("warp", "broadcast", "output_layout")],
+    [
+        ("block", "striped", "group kind.*block"),
+        ("warp", "broadcast", "output_layout"),
+    ],
 )
-def test_reduce_batched_rejects_invalid_contract(compile_kernel, kind, layout, message):
+def test_reduce_batched_rejects_invalid_contract(
+    compile_kernel, kind, layout, message
+):
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
         values = coop.ThreadData(3)

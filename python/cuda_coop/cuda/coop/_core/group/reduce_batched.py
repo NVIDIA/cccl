@@ -60,7 +60,9 @@ class GroupReduceBatchedSemantics:
 def _call_classifications(operation):
     del operation
     return (
-        ParameterClassification("value", ArgumentKind.RUNTIME, ParameterRole.INPUT),
+        ParameterClassification(
+            "value", ArgumentKind.RUNTIME, ParameterRole.INPUT
+        ),
         ParameterClassification(
             "binary_op", ArgumentKind.STATIC, ParameterRole.CONSTANT
         ),

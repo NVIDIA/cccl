@@ -36,14 +36,19 @@ def _result_extent(context, bound):
     return (batches + width - 1) // width
 
 
-def _lower_reduce_batched(context, inst, *, operation, group, bound, is_common_root):
+def _lower_reduce_batched(
+    context, inst, *, operation, group, bound, is_common_root
+):
     value = bound.arguments["value"]
     if not context.is_array(operation, value):
         raise TypeError(
-            "reduce_batched requires a fixed-size payload of independent batches"
+            "reduce_batched requires a fixed-size "
+            "payload of independent batches"
         )
     if is_common_root and not context.is_thread_data(operation, "value", value):
-        raise TypeError("cuda.coop.reduce_batched requires a ThreadData payload")
+        raise TypeError(
+            "cuda.coop.reduce_batched requires a ThreadData payload"
+        )
     batches = context.array_extent(value)
     if batches is None:
         raise GroupRewriteError("reduce_batched requires a static batch count")
@@ -67,7 +72,9 @@ def _lower_reduce_batched(context, inst, *, operation, group, bound, is_common_r
         binary_op, dtype, is_common_root=is_common_root
     )
     semantics = GroupReduceBatchedSemantics(
-        WarpReduceBatchedSemantics(dtype, batches, reduce_operator, output_layout)
+        WarpReduceBatchedSemantics(
+            dtype, batches, reduce_operator, output_layout
+        )
     )
     plan = plan_group_primitive(
         make_group_primitive_call(group, semantics), context.launch

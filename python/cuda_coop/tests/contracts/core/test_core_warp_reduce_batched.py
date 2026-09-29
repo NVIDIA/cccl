@@ -30,7 +30,9 @@ def test_batched_output_capacity_and_method(width, batches, layout):
     assert spec.specialization.method_name == (
         "ReduceToStriped" if layout == "striped" else "ReduceToBlocked"
     )
-    assert spec.specialization.template_arguments["SYNC_PHYSICAL_WARP"] == "false"
+    assert (
+        spec.specialization.template_arguments["SYNC_PHYSICAL_WARP"] == "false"
+    )
 
 
 @pytest.mark.parametrize("width", [0, 3, 33, True, 8.0])

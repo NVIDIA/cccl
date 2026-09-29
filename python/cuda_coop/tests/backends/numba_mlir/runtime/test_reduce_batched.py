@@ -14,7 +14,11 @@ if not cuda.is_available():
 import cuda.coop.numba_mlir as numba_coop
 from cuda import coop
 
-pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.runtime, pytest.mark.gpu]
+pytestmark = [
+    pytest.mark.backend_numba_mlir,
+    pytest.mark.runtime,
+    pytest.mark.gpu,
+]
 
 
 @pytest.mark.parametrize("width", [1, 8, 32])
@@ -48,7 +52,9 @@ def test_batch_reduction_layouts_preserve_input(width, batches, layout, dtype):
     output = cuda.device_array((64 // width) * batches, dtype=dtype)
     preserved = cuda.device_array_like(source)
     kernel[1, 64](d_source, output, preserved)
-    expected = source.reshape(64 // width, width, batches).sum(axis=1, dtype=dtype)
+    expected = source.reshape(64 // width, width, batches).sum(
+        axis=1, dtype=dtype
+    )
     np.testing.assert_array_equal(output.copy_to_host(), expected.ravel())
     np.testing.assert_array_equal(d_source.copy_to_host(), source)
     np.testing.assert_array_equal(preserved.copy_to_host(), source)
@@ -60,7 +66,9 @@ def test_batch_builtin_operators(operator):
     def kernel(source, output):
         values = coop.ThreadData(3)
         coop.load(coop.this_block(), source, values)
-        result = coop.reduce_batched(coop.this_warp(), values, binary_op=operator)
+        result = coop.reduce_batched(
+            coop.this_warp(), values, binary_op=operator
+        )
         if cuda.threadIdx.x < 3:
             output[cuda.threadIdx.x] = result[0]
 

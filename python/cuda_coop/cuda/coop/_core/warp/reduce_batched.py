@@ -39,7 +39,9 @@ class WarpReduceBatchedSemantics:
         if not isinstance(self.reduce_operator, (CxxOperator, PythonOperator)):
             raise TypeError("reduce_batched requires a reduction operator")
         if self.output_layout not in {"striped", "blocked"}:
-            raise ValueError("reduce_batched output_layout must be striped or blocked")
+            raise ValueError(
+                "reduce_batched output_layout must be striped or blocked"
+            )
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
@@ -78,13 +80,17 @@ def make_warp_reduce_batched_spec(
 ) -> WarpReduceBatchedSpec:
     """Use CUB's native batched collective and its distributed output layout."""
 
-    call = WarpReduceBatchedSemantics(dtype, batches, reduce_operator, output_layout)
+    call = WarpReduceBatchedSemantics(
+        dtype, batches, reduce_operator, output_layout
+    )
     threads_in_warp = _validate_logical_warp_threads(threads_in_warp)
     outputs_per_thread = (batches + threads_in_warp - 1) // threads_in_warp
     specialization = Algorithm(
         struct_name="WarpReduceBatched",
         method_name=(
-            "ReduceToStriped" if output_layout == "striped" else "ReduceToBlocked"
+            "ReduceToStriped"
+            if output_layout == "striped"
+            else "ReduceToBlocked"
         ),
         c_name="warp_reduce_batched",
         includes=(
