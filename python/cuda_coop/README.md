@@ -257,8 +257,9 @@ reference check.
 counts items across the selected group tile, while `offset` is a nonnegative
 element offset. Runtime offsets are caller-validated. Numba source and
 destination arrays must be one-dimensional and contiguous. CuTe operands may
-be global-memory pointers or supported contiguous one-dimensional tensors. Without `oob_default`, invalid Load
-slots retain their previous values. Every supplied runtime control
+be global-memory pointers or supported contiguous one-dimensional tensors.
+Without `oob_default`, invalid Load slots have unspecified values, even if
+initialized before Load. Every supplied runtime control
 (`valid_items`, `oob_default`, and `offset`) must be uniform within its selected
 group; different groups may use different values.
 
@@ -298,10 +299,10 @@ Both common and qualified entry points use the same lowercase string
 algorithm vocabulary: `direct`, `striped`, `vectorize`, `transpose`,
 `warp_transpose`, and `warp_transpose_timesliced`. All six are executable.
 `striped` exposes a striped per-thread payload; the other Load algorithms expose
-blocked payloads. Store consumes the matching arrangement. The transpose Store
-implementations copy their payload before calling CUB, so the caller's
-`ThreadData` remains unchanged. The two warp-transpose modes require a block
-size divisible by 32.
+blocked payloads. Store consumes the matching arrangement. As in CUB,
+transpose Store algorithms may rearrange the input payload in place. Copy
+values before Store if they are needed later. The two warp-transpose modes
+require a block size divisible by 32.
 
 Algorithm selectors are normalized to lowercase underscore-delimited strings.
 Enum and integer selectors, including `0`, are rejected.

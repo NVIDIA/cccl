@@ -435,7 +435,6 @@ def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
 
     @compiler_cuda.jit(chip="sm_90")
     def storage_bearing(source, destination):
-        thread = compiler_cuda.threadIdx.x
         payload = numba_coop.ThreadData(2, dtype=types.int32)
         numba_coop.load(
             numba_coop.this_block(),
@@ -449,8 +448,6 @@ def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
             payload,
             algorithm="warp_transpose_timesliced",
         )
-        for item in range(2):
-            destination[thread * 2 + item] = payload[item]
 
     signature = types.void(types.int32[::1], types.int32[::1])
     launch_config_key = (
