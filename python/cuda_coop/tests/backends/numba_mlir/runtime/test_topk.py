@@ -94,10 +94,14 @@ def test_numeric_profile_and_partial_counts(dtype, selection):
         keys = coop.ThreadData(2, dtype=dtype)
         coop.load(coop.this_block(), source, keys)
         chosen = topk(coop.this_block(), keys, k=k, valid_items=count)
-        coop.store(coop.this_block(), destination, chosen, valid_items=min(k, count))
+        coop.store(
+            coop.this_block(), destination, chosen, valid_items=min(k, count)
+        )
 
     source = ((np.arange(128) * 17) % 127).astype(dtype)
-    if np.issubdtype(dtype, np.signedinteger) or np.issubdtype(dtype, np.floating):
+    if np.issubdtype(dtype, np.signedinteger) or np.issubdtype(
+        dtype, np.floating
+    ):
         source -= dtype(63)
     output = np.empty_like(source)
     for k, count in [(0, 128), (0, 0), (17, 0), (17, 7), (128, 128), (7, 91)]:
@@ -149,8 +153,12 @@ def test_ties_preserve_selected_pairs_and_float_zero_bits():
         chosen, positions = numba_coop.topk_min_pairs(
             numba_coop.this_block(), keys, values, k=17
         )
-        numba_coop.store(numba_coop.this_block(), output, chosen, valid_items=17)
-        numba_coop.store(numba_coop.this_block(), indices, positions, valid_items=17)
+        numba_coop.store(
+            numba_coop.this_block(), output, chosen, valid_items=17
+        )
+        numba_coop.store(
+            numba_coop.this_block(), indices, positions, valid_items=17
+        )
         numba_coop.store(numba_coop.this_block(), preserved, keys)
 
     source = np.tile(np.array([-0.0, 0.0, 1.0, 2.0], dtype=np.float32), 32)
@@ -164,11 +172,14 @@ def test_ties_preserve_selected_pairs_and_float_zero_bits():
     np.testing.assert_array_equal(
         output[:17].view(np.uint32), source[indices[:17]].view(np.uint32)
     )
-    np.testing.assert_array_equal(preserved.view(np.uint32), source.view(np.uint32))
+    np.testing.assert_array_equal(
+        preserved.view(np.uint32), source.view(np.uint32)
+    )
 
 
 @pytest.mark.parametrize(
-    "k,count", [(-1, 128), (129, 128), (2**32, 128), (7, -1), (7, 129), (7, 2**32)]
+    "k,count",
+    [(-1, 128), (129, 128), (2**32, 128), (7, -1), (7, 129), (7, 2**32)],
 )
 def test_invalid_runtime_counts_trap_before_narrowing(k, count):
     # A trap poisons the CUDA context, so each invalid launch needs a child.
@@ -195,7 +206,7 @@ except Exception as error:
     print("EXPECTED_TOPK_TRAP")
 else:
     raise AssertionError("invalid TopK control did not trap")
-"""
+"""  # noqa: E501 - Preserve embedded source bytes.
     result = subprocess.run(
         [sys.executable, "-c", script],
         env=os.environ.copy(),
@@ -256,14 +267,22 @@ def test_chained_results_infer_dtype_from_indexed_writes(
             keys[item] = source[index]
             values[item] = positions[index]
         if pairs:
-            first_keys, first_values = api.topk_min_pairs(block, keys, values, k=keep)
+            first_keys, first_values = api.topk_min_pairs(
+                block, keys, values, k=keep
+            )
             chosen, associated = api.topk_max_pairs(
-                block, first_keys, first_values, k=selected_count, valid_items=keep
+                block,
+                first_keys,
+                first_values,
+                k=selected_count,
+                valid_items=keep,
             )
             api.store(block, indices, associated, valid_items=selected_count)
         else:
             first = api.topk_min_keys(block, keys, k=keep)
-            chosen = api.topk_max_keys(block, first, k=selected_count, valid_items=keep)
+            chosen = api.topk_max_keys(
+                block, first, k=selected_count, valid_items=keep
+            )
         api.store(block, output, chosen, valid_items=selected_count)
         api.store(block, preserved, keys)
 
@@ -275,7 +294,8 @@ def test_chained_results_infer_dtype_from_indexed_writes(
     kernel[1, threads](source, positions, output, indices, preserved)
     cuda.synchronize()
     np.testing.assert_array_equal(
-        np.sort(output[:selected_count]), np.sort(source)[keep - selected_count : keep]
+        np.sort(output[:selected_count]),
+        np.sort(source)[keep - selected_count : keep],
     )
     np.testing.assert_array_equal(preserved, source)
     if pairs:

@@ -26,7 +26,10 @@ from ._operations import (
     register_group_primitive,
     register_rewrite_operation,
 )
-from ._parameters import _validate_common_numeric_dtype, _validate_runtime_integer_dtype
+from ._parameters import (
+    _validate_common_numeric_dtype,
+    _validate_runtime_integer_dtype,
+)
 from ._rewrite_support import CoopSinglePhaseRewriteError
 
 
@@ -51,7 +54,9 @@ def _infer_payload(context, inference):
         dtype = inference.inferred_array_dtype(value, spec)
         if dtype is None:
             dtype = inference.factory_value(name)
-        dtype = _validate_common_numeric_dtype(dtype, operation="topk", parameter=name)
+        dtype = _validate_common_numeric_dtype(
+            dtype, operation="topk", parameter=name
+        )
         inference.infer_kwarg(name, dtype)
         context.record_thread_data_dtype(value, dtype)
     inference.infer_kwarg("items_per_thread", extent)
@@ -60,23 +65,34 @@ def _infer_payload(context, inference):
 def _lower_topk(context, inst, *, operation, group, bound, is_common_root):
     from .._lowering import _topk
 
-    payload_names = ("keys", "values") if operation.endswith("pairs") else ("keys",)
+    payload_names = (
+        ("keys", "values") if operation.endswith("pairs") else ("keys",)
+    )
     extent = None
     dtypes = []
     for name in payload_names:
         value = bound.arguments[name]
         if not context.is_array(operation, value):
             raise TypeError(
-                f"{operation} {name} must be a fixed-size ThreadData or local array"
+                f"{operation} {name} must be a "
+                f"fixed-size ThreadData or local array"
             )
         size = context.array_extent(value)
         if size is None:
-            raise GroupRewriteError(f"{operation} requires a static payload extent")
+            raise GroupRewriteError(
+                f"{operation} requires a static payload extent"
+            )
         if extent is not None and extent != size:
-            raise ValueError(f"{operation} keys and values must have matching extents")
+            raise ValueError(
+                f"{operation} keys and values must have matching extents"
+            )
         extent = size
-        if is_common_root and not context.is_thread_data(operation, name, value):
-            raise TypeError(f"cuda.coop.{operation} requires {name} to be ThreadData")
+        if is_common_root and not context.is_thread_data(
+            operation, name, value
+        ):
+            raise TypeError(
+                f"cuda.coop.{operation} requires {name} to be ThreadData"
+            )
         dtype = context.dtype(value)
         if dtype is None:
             dtype = context.payload_write_dtype(value)
@@ -94,7 +110,9 @@ def _lower_topk(context, inst, *, operation, group, bound, is_common_root):
                 raise GroupRewriteError(
                     f"{operation} could not infer runtime {name} dtype"
                 )
-            _validate_runtime_integer_dtype(dtype, operation=operation, parameter=name)
+            _validate_runtime_integer_dtype(
+                dtype, operation=operation, parameter=name
+            )
         bindings[name] = binding
     semantics = GroupTopKSemantics(
         key_dtype=dtypes[0],
@@ -185,7 +203,9 @@ def _lower_topk(context, inst, *, operation, group, bound, is_common_root):
             value = context.new_var(scope, loc, f"topk_{name}_i64")
             statements.append(
                 ir.Assign(
-                    ir.Expr.call(cast, [bound.arguments[name]], (), loc), value, loc
+                    ir.Expr.call(cast, [bound.arguments[name]], (), loc),
+                    value,
+                    loc,
                 )
             )
         else:

@@ -21,7 +21,9 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 
 @pytest.mark.parametrize("selection", ["min", "max"])
 @pytest.mark.parametrize("pairs", [False, True])
-def test_topk_production_compile_links_checked_provider(monkeypatch, selection, pairs):
+def test_topk_production_compile_links_checked_provider(
+    monkeypatch, selection, pairs
+):
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == ""
     device = SimpleNamespace(compute_capability=(9, 0))
     monkeypatch.setattr(_types.cuda, "get_current_device", lambda: device)
@@ -43,11 +45,18 @@ def test_topk_production_compile_links_checked_provider(monkeypatch, selection, 
             values[0] = types.int64(cuda.threadIdx.x * 2)
             values[1] = types.int64(cuda.threadIdx.x * 2 + 1)
             selected, indices = topk(
-                block, keys, values, k=k, valid_items=count, temp_storage=scratch
+                block,
+                keys,
+                values,
+                k=k,
+                valid_items=count,
+                temp_storage=scratch,
             )
             destination[cuda.threadIdx.x * 2] = selected[0] + indices[0]
         else:
-            selected = topk(block, keys, k=k, valid_items=count, temp_storage=scratch)
+            selected = topk(
+                block, keys, k=k, valid_items=count, temp_storage=scratch
+            )
             destination[cuda.threadIdx.x * 2] = selected[0]
 
     signature = types.void(
