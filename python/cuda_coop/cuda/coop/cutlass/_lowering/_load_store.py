@@ -32,7 +32,7 @@ from cuda.coop._core import (
 
 from .._compiler import _rendering, _state, _types
 from .._compiler._types import ALL_PROVIDER_TYPES, TYPE_SPECS
-from .._thread_data import _UNSET, ThreadData, _make_rmem_tensor
+from .._thread_data import ThreadData, _make_rmem_tensor
 from .._thread_group import ThreadGroup
 from ._load_store_layout import contiguous_layout_reason, static_layout_elements
 
@@ -245,18 +245,11 @@ def _render_cub_load_store(request):
         lines.append(
             f"  tile_ptr += static_cast<long long>(group_index) * {tile_items}ll;"
         )
-    if is_load:
-        preserve = (
-            operation.valid_items.kind is not BindingKind.OMITTED
-            and operation.oob_default.kind is BindingKind.OMITTED
-        )
-        initial = (
-            ", ".join(f"result_items[{i}]" for i in range(operation.items_per_thread))
-            if preserve
-            else ""
-        )
-    else:
-        initial = ", ".join(f"item{i}" for i in range(operation.items_per_thread))
+    initial = (
+        ""
+        if is_load
+        else ", ".join(f"item{i}" for i in range(operation.items_per_thread))
+    )
     lines.append(
         f"  {spec.cpp_type} items[{operation.items_per_thread}] = {{{initial}}};"
     )
@@ -355,9 +348,6 @@ def provider_load(
         offset=offset,
     )
     result = _make_rmem_tensor(output.items_per_thread, value_type, output.alignment)
-    if valid_items is not None and oob_default is None:
-        for i, value in enumerate(output._values):
-            result[i] = value_type(0) if value is _UNSET else value_type(value)
     snapshot = _state.snapshot_active_session_state()
     try:
         _state.register_request(request)
