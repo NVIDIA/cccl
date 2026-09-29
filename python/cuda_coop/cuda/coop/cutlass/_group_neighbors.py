@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Input-preserving block neighbor operations for CuTe kernels."""
-
 from cuda.coop._core.block.neighbors import validate_neighbor_options
 from cuda.coop._core.thread_group import ThreadGroup
 
