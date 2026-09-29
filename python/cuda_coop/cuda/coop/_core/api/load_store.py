@@ -2,12 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compiler-recognized calls for cooperative load and store.
-
-The compiler checks these arguments and generates the device operation.
-The Python bodies reject calls outside a supported kernel.
-"""
-
 from __future__ import annotations
 
 from typing import Any

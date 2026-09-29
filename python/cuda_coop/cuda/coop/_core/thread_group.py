@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Backend-neutral CUDA thread-hierarchy and group descriptors."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field

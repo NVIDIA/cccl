@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typing contract for common per-thread payload storage."""
-
 from typing import Any, overload
 
 from typing_extensions import TypeVar

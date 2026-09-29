@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block-scoped cooperative primitive semantic builders."""
-
 from .._bindings import ArgumentBinding, BindingKind, binding
 from ._common import normalize_block_dim, normalize_positive_int
 from .load_store import (
