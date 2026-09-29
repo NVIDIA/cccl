@@ -185,7 +185,7 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroupKind",
     "ThreadLevel",
-    "WarpLoadStoreAlgorithm",
     "WarpExchangeMode",
+    "WarpLoadStoreAlgorithm",
     'CommonShuffleMode',
 ]
