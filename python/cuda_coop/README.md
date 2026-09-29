@@ -136,16 +136,11 @@ local-array payloads, memory namespaces, and device callbacks. CUTLASS adds
 CuTe register conversions and the controls documented in its guide. Custom operators and Scan prefix
 callbacks are currently supported only by Numba-CUDA-MLIR.
 
-Both integrations accept `ThreadData(items_per_thread, alignment=None)`: use a compile-time
+Both integrations accept `ThreadData(items_per_thread=..., alignment=None)`: use a compile-time
 positive power of two in bytes to request minimum payload storage alignment,
 or omit it to let the compiler choose. This does not assert alignment of Load
 or Store memory operands. Results belong to the active compiler; a NumPy dtype
 selector in a CuTe kernel still produces CuTe values.
-
-Pass `items_per_thread` as a kernel argument. Numba-CUDA-MLIR specializes the
-kernel for its value; CuTe kernels and their launchers declare the argument
-as `items_per_thread: cutlass.Constexpr`. The payload count stays fixed
-during execution.
 
 The [FAQs](https://nvidia.github.io/cccl/unstable/python/coop/faqs.html) explain
 namespace choices and temporary storage. The
@@ -215,10 +210,10 @@ For the two Boolean runtime switches, values are case-insensitive; `0`,
 
 ## Block and Warp Load and Store
 
-The common and qualified Load/Store APIs share tile controls and in-place
-Load behavior. The following complete Load/Store vocabulary describes Numba;
-check the CUTLASS guide for its currently supported groups and algorithms. The following Numba kernel body clamps a grid tile tail, where
-`source`, `destination`, `count`, and `items_per_thread` are kernel arguments:
+The common `cuda.coop` and qualified `numba_coop` and `cutlass_coop`
+Load/Store calls share algorithm names, tile controls, and in-place Load
+behavior. The following Numba kernel body clamps a grid tile tail, where
+`source`, `destination`, and `count` are kernel arguments:
 
 ```python
 from numba_cuda_mlir import cuda, types
@@ -226,8 +221,8 @@ from numba_cuda_mlir import cuda, types
 from cuda import coop
 
 block = coop.this_block()
-items = coop.ThreadData(items_per_thread)
-tile_items = cuda.blockDim.x * items_per_thread
+items = coop.ThreadData(items_per_thread=2)
+tile_items = cuda.blockDim.x * 2
 tile_offset = cuda.blockIdx.x * tile_items
 valid_items = count - tile_offset
 if valid_items < 0:
@@ -376,7 +371,7 @@ coop.load(block, source, items, algorithm="transpose", temp_storage=storage)
 ```
 
 For block, physical Warp, and logical Warp calls, `direct`, `striped`, and
-`vectorize` are storage-free where implemented: they need no shared-memory
+`vectorize` are storage-free in both integrations: they need no shared-memory
 allocation, storage pointer arguments, or reuse barriers. An explicit block
 descriptor is validated but does not change that code generation.
 
@@ -463,7 +458,7 @@ selected group must participate.
 By default, `broadcast=True` gives every group member the reduced scalar. With
 `broadcast=False`, only rank zero of each selected group has a defined result;
 other members must still execute the call and must not consume their returned
-value. For example, this full block reduction combines `items_per_thread` values per thread
+value. For example, this full block reduction combines two values per thread
 but writes only from the block root:
 
 ```python
@@ -473,11 +468,11 @@ from cuda import coop
 
 
 @cuda.jit
-def block_sum(source, output, items_per_thread):
+def block_sum(source, output):
     thread = cuda.threadIdx.x
-    values = coop.ThreadData(items_per_thread)
-    for item in range(items_per_thread):
-        values[item] = source[items_per_thread * thread + item]
+    values = coop.ThreadData(items_per_thread=2)
+    values[0] = source[2 * thread]
+    values[1] = source[2 * thread + 1]
     total = coop.sum(coop.this_block(), values, broadcast=False)
     if thread == 0:
         output[0] = total
@@ -595,7 +590,7 @@ def carry_prefix(state, block_aggregate):
 running_prefix = coop.StatefulFunction(carry_prefix, types.int64)
 
 # Inside a kernel, before a loop over tiles:
-state = coop.ThreadData(1)
+state = coop.ThreadData(items_per_thread=1)
 state[0] = types.int64(0)
 scanned = coop.exclusive_sum(
     coop.this_block(),
@@ -640,9 +635,9 @@ from cuda import coop
 
 
 @cuda.jit
-def block_scan_kernel(values, prefixes, items_per_thread):
+def block_scan_kernel(values, prefixes):
     block = coop.this_block()
-    items = coop.ThreadData(items_per_thread)
+    items = coop.ThreadData(items_per_thread=2)
     coop.load(block, values, items)
     scanned = coop.exclusive_sum(block, items)
     coop.store(block, prefixes, scanned)
