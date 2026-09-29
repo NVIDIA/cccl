@@ -16,7 +16,10 @@ from cutlass.cute.runtime import make_ptr
 
 from cuda import coop
 from cuda.coop import cutlass as cutlass_coop
-from cuda.coop.cutlass._compiler._types import ALL_PROVIDER_TYPES, INTEGER_VALUE_TYPES
+from cuda.coop.cutlass._compiler._types import (
+    ALL_PROVIDER_TYPES,
+    INTEGER_VALUE_TYPES,
+)
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 
@@ -25,7 +28,9 @@ def _pointer(dtype=cutlass.Int32):
     return make_ptr(dtype, 0, cute.AddressSpace.gmem, assumed_align=16)
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
 @pytest.mark.parametrize("mode", ("striped_to_blocked", "blocked_to_striped"))
 def test_logical_layouts(api, width, mode):
@@ -34,7 +39,9 @@ def test_logical_layouts(api, width, mode):
         payload = api.ThreadData(2, dtype=cutlass.Int32, alignment=64)
         payload[0] = cutlass.Int32(1)
         payload[1] = cutlass.Int32(2)
-        result = api.exchange(api.this_warp().group_by(width), payload, mode=mode)
+        result = api.exchange(
+            api.this_warp().group_by(width), payload, mode=mode
+        )
         cute.make_tensor(memory, cute.make_layout(1))[0] = result[0]
 
     @cute.jit
@@ -48,7 +55,9 @@ def test_logical_layouts(api, width, mode):
 def test_typed_result(dtype):
     @cute.kernel
     def kernel(memory: cute.Pointer):
-        payload = cutlass_coop.ThreadData(2, dtype=dtype, values=[dtype(1), dtype(2)])
+        payload = cutlass_coop.ThreadData(
+            2, dtype=dtype, values=[dtype(1), dtype(2)]
+        )
         result = cutlass_coop.exchange(cutlass_coop.this_block(), payload)
         total = cutlass_coop.sum(cutlass_coop.this_block(), result)
         cute.make_tensor(memory, cute.make_layout(1))[0] = total
@@ -57,7 +66,9 @@ def test_typed_result(dtype):
     def launch(memory: cute.Pointer):
         kernel(memory).launch(grid=1, block=(8, 4, 2))
 
-    assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer(dtype)) is not None
+    assert (
+        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(dtype)) is not None
+    )
 
 
 @pytest.mark.parametrize(
@@ -71,7 +82,10 @@ def test_rank_width(rank_type):
             2, dtype=rank_type, values=[rank_type(0), rank_type(1)]
         )
         result = cutlass_coop.exchange(
-            cutlass_coop.this_block(), value, mode="scatter_to_blocked", ranks=ranks
+            cutlass_coop.this_block(),
+            value,
+            mode="scatter_to_blocked",
+            ranks=ranks,
         )
         cute.make_tensor(memory, cute.make_layout(1))[0] = result[0]
 
@@ -145,7 +159,10 @@ def test_invalid_controls(case, expected):
             cutlass_coop.exchange(group, cutlass.Int32(1))
         elif cutlass.const_expr(case == "warp_scatter"):
             cutlass_coop.exchange(
-                cutlass_coop.this_warp(), value, mode="scatter_to_striped", ranks=ranks
+                cutlass_coop.this_warp(),
+                value,
+                mode="scatter_to_striped",
+                ranks=ranks,
             )
         elif cutlass.const_expr(case == "missing_ranks"):
             cutlass_coop.exchange(group, value, mode="scatter_to_blocked")
@@ -162,14 +179,18 @@ def test_invalid_controls(case, expected):
                 group,
                 value,
                 mode="scatter_to_blocked",
-                ranks=cutlass_coop.ThreadData(1, dtype=cutlass.Int32, values=[0]),
+                ranks=cutlass_coop.ThreadData(
+                    1, dtype=cutlass.Int32, values=[0]
+                ),
             )
         elif cutlass.const_expr(case == "rank_unsigned"):
             cutlass_coop.exchange(
                 group,
                 value,
                 mode="scatter_to_blocked",
-                ranks=cutlass_coop.ThreadData(2, dtype=cutlass.Uint32, values=[0, 1]),
+                ranks=cutlass_coop.ThreadData(
+                    2, dtype=cutlass.Uint32, values=[0, 1]
+                ),
             )
         elif cutlass.const_expr(case == "flag_float"):
             cutlass_coop.exchange(
@@ -234,7 +255,9 @@ def test_invalid_controls(case, expected):
 
 
 @pytest.mark.parametrize("ssa", (False, True))
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 def test_register_payload(ssa, api):
     @cute.kernel
     def kernel(memory: cute.Pointer):

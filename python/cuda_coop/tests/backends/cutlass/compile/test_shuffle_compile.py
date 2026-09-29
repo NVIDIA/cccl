@@ -41,7 +41,9 @@ def test_profiles(dtype, mode):
                 cutlass_coop.this_block(), payload, mode=mode
             )[0]
         else:
-            result = cutlass_coop.shuffle(cutlass_coop.this_block(), value, mode=mode)
+            result = cutlass_coop.shuffle(
+                cutlass_coop.this_block(), value, mode=mode
+            )
         cute.make_tensor(memory, cute.make_layout(1))[0] = result
 
     assert _compile(kernel, dtype) is not None
@@ -65,7 +67,10 @@ def test_dynamic_distance(mode, dtype):
     def kernel(memory: cute.Pointer):
         distance = dtype(cute.arch.thread_idx()[0] % 7 + 1)
         result = cutlass_coop.shuffle(
-            cutlass_coop.this_block(), cutlass.Int32(1), mode=mode, distance=distance
+            cutlass_coop.this_block(),
+            cutlass.Int32(1),
+            mode=mode,
+            distance=distance,
         )
         cute.make_tensor(memory, cute.make_layout(1))[0] = result
 
@@ -97,7 +102,9 @@ def test_invalid_profiles(case, pattern):
     def kernel(memory: cute.Pointer):
         group = cutlass_coop.this_block()
         value = cutlass.Int32(1)
-        payload = cutlass_coop.ThreadData(2, dtype=cutlass.Int32, values=[value, value])
+        payload = cutlass_coop.ThreadData(
+            2, dtype=cutlass.Int32, values=[value, value]
+        )
         if cutlass.const_expr(case == "warp"):
             cutlass_coop.shuffle(cutlass_coop.this_warp(), payload)
         elif cutlass.const_expr(case == "scalar_up"):
@@ -142,7 +149,9 @@ def test_invalid_profiles(case, pattern):
 def test_one_thread_rotate():
     @cute.kernel
     def kernel(memory: cute.Pointer):
-        cutlass_coop.shuffle(cutlass_coop.this_block(), cutlass.Int32(1), mode="rotate")
+        cutlass_coop.shuffle(
+            cutlass_coop.this_block(), cutlass.Int32(1), mode="rotate"
+        )
 
     with pytest.raises(Exception, match="at least two"):
         _compile(kernel, block=1)

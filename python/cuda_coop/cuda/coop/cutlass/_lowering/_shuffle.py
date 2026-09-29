@@ -68,7 +68,8 @@ def _distance_binding(distance, *, array):
         or type_specification.token == "u64"
     ):
         raise TypeError(
-            f"{_SCOPE}.shuffle distance requires a signed integer up to 64 bits "
+            f"{_SCOPE}.shuffle distance requires a signed integer "
+            "up to 64 bits "
             "or an unsigned integer up to 32 bits"
         )
     return ArgumentBinding.runtime()
@@ -151,7 +152,8 @@ class _CubShuffleRequest:
             is not SynchronizationScope.BLOCK
         ):
             raise ValueError(
-                "BlockShuffle requires owned block scratch and reuse synchronization"
+                "BlockShuffle requires owned block scratch "
+                "and reuse synchronization"
             )
 
     @property
@@ -229,7 +231,10 @@ def _render_shuffle(request):
             )
             distance = "distance"
         else:
-            distance = f"{binding.value if binding.kind is BindingKind.STATIC else 1}ll"
+            distance = (
+                f"{binding.value if binding.kind is BindingKind.STATIC else 1}"
+                "ll"
+            )
         arguments = f"value, result, static_cast<{cast}>({distance})"
         output.append("  return result;")
     template_arguments = ", ".join(
@@ -237,10 +242,13 @@ def _render_shuffle(request):
     )
     return [
         (
-            f"{'void' if primitive.is_array else type_specification.cpp_type}"
-            f" {request.symbol_name}({', '.join(params)}) {{"
+            f"{'void' if primitive.is_array else type_specification.cpp_type} "
+            f"{request.symbol_name}({', '.join(params)}) {{"
         ),
-        f"  using implementation_type = ::cub::BlockShuffle<{template_arguments}>;",
+        (
+            "  using implementation_type = "
+            f"::cub::BlockShuffle<{template_arguments}>;"
+        ),
         "  __shared__ typename implementation_type::TempStorage storage;",
         *setup,
         f"  implementation_type(storage).{primitive.method_name}({arguments});",
