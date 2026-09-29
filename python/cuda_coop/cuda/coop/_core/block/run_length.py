@@ -231,6 +231,9 @@ class BlockRunLengthDecodeSpecialization:
     decoded_items_per_thread: int
 
 
+_DEFAULT_OFFSET = ArgumentBinding.static(0)
+
+
 def make_block_run_length_decode_specialization(
     *,
     item_dtype: Any,
@@ -240,7 +243,7 @@ def make_block_run_length_decode_specialization(
     decoded_items_per_thread: int,
     decoded_offset_dtype: Any = UINT32,
     control_dtype: Any = UINT64,
-    offset: ArgumentBinding = ArgumentBinding.static(0),
+    offset: ArgumentBinding = _DEFAULT_OFFSET,
     bulk: bool = False,
     relative_offsets: bool = False,
 ) -> BlockRunLengthDecodeSpecialization:
