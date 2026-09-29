@@ -30,7 +30,6 @@
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/coop/__group/fwd.cuh>
-#include <cuda/experimental/coop/__group/implicit_hierarchy.cuh>
 #include <cuda/experimental/coop/__group/synchronizer/level_synchronizer.cuh>
 #include <cuda/experimental/coop/__group/traits.cuh>
 

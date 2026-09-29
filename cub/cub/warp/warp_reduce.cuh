@@ -722,8 +722,7 @@ private:
 public:
   struct InternalWarpReduce
   {
-    struct TempStorage : Uninitialized<_TempStorage>
-    {};
+    using TempStorage = Uninitialized<_TempStorage>;
 
     _CCCL_DEVICE _CCCL_FORCEINLINE InternalWarpReduce(TempStorage& /*temp_storage */) {}
 

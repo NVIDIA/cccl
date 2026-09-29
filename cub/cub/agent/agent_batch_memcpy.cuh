@@ -678,8 +678,7 @@ private:
   //-----------------------------------------------------------------------------
 
 public:
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //-----------------------------------------------------------------------------
   // PRIVATE MEMBER FUNCTIONS
