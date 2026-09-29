@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Fresh block histogram counters for CuTe kernels."""
-
 from cuda.coop._core.block._common import normalize_positive_int
 from cuda.coop._core.block.histogram import normalize_histogram_algorithm
 from cuda.coop._core.thread_group import ThreadGroup

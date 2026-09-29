@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Histogram planning includes counter storage and independent output types."""
-
 from dataclasses import replace
 from types import SimpleNamespace
 

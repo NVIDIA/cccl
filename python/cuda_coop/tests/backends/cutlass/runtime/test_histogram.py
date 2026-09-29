@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Fresh histogram counts, striped ownership, and unchanged samples."""
-
 import re
 import shutil
 import subprocess
