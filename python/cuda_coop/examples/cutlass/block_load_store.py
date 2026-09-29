@@ -43,7 +43,7 @@ def run_example(api="common"):
     @cute.kernel
     def block_copy(source: cute.Pointer, destination: cute.Pointer):
         block = module.this_block()
-        payload = module.ThreadData(_ITEMS)
+        payload = module.ThreadData(items_per_thread=_ITEMS)
         module.load(
             block,
             source,
