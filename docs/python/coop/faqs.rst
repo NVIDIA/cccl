@@ -45,8 +45,8 @@ Importing a qualified namespace also registers its backend. Common and
 qualified calls for the same compiler can appear in one kernel and follow the
 shared contracts. Kernel launch syntax and other DSL code still need
 adaptation when moving between compilers; compiler-owned payloads cannot cross
-that boundary. The :ref:`coverage table <coop-backends>` lists the families
-implemented by each backend.
+that boundary. See the :ref:`operation support table
+<coop-backend-operation-support>` for the families each backend implements.
 
 .. _i-only-use-numba-cuda-mlir-can-i-import-its-namespace-as-coop:
 .. _coop-faq-numba-only:
@@ -94,8 +94,8 @@ Start with an inferred payload:
 
 .. code-block:: python
 
-   # Inside a kernel; source and items_per_thread are kernel arguments.
-   items = coop.ThreadData(items_per_thread)
+   # Inside a kernel; source is a typed memory operand.
+   items = coop.ThreadData(items_per_thread=2)
    coop.load(coop.this_block(), source, items)
 
 Load supplies the source element type. In Numba-CUDA-MLIR, supported indexed
@@ -166,9 +166,9 @@ share scratch while the values stay in each thread's payload:
 
 .. code-block:: python
 
-   # Inside a Numba kernel; source, destination, and items_per_thread are kernel arguments.
+   # Inside a kernel; source and destination are kernel arguments.
    block = coop.this_block()
-   items = coop.ThreadData(items_per_thread)
+   items = coop.ThreadData(items_per_thread=2)
    scratch = coop.TempStorage(auto_sync=True)
    coop.load(
        block, source, items, algorithm="transpose", temp_storage=scratch
@@ -192,8 +192,8 @@ synchronization.
 Explicit descriptors control scratch for Numba's supported block primitives;
 see :ref:`Numba storage rules <coop-temp-storage>` for the complete list.
 Storage-free block Load/Store accept and validate a descriptor but do not use
-it. CUTLASS currently provides storage-free block Load/Store only. See the
-:ref:`shared storage model <coop-common-storage>` and the
+it. CUTLASS currently accepts explicit descriptors for block transpose-family
+Load/Store. See the :ref:`shared storage model <coop-common-storage>` and the
 :doc:`CUTLASS Programming Guide <../coop_cutlass>` for reuse rules.
 
 Numba's restrictions on combining cooperative backing with user static or
@@ -236,9 +236,9 @@ No. It selects the smallest or largest keys and places them in a blocked
 output prefix without promising their order. Only the first
 ``min(k, valid_items)`` positions are defined. When keys tie at the selection
 boundary, any of the tied keys may fill the remaining positions. Pair variants
-keep each selected key attached to its value. Use a sorting primitive when you
-need ordered output. See the :ref:`Numba TopK example <coop-topk>` and current
-:ref:`backend coverage <coop-backends>`.
+keep each selected key attached to its value. Use a sorting primitive when
+you need ordered output. See the :ref:`Numba TopK example <coop-topk>` and
+current :ref:`backend operation support <coop-backend-operation-support>`.
 
 .. _coop-faq-global-sort:
 
