@@ -108,8 +108,8 @@ _create_rapids_cmake_override_json() {
 
     # RAPIDS repos include <cub/cub.cuh> directly and build with -Werror, so disable CUB's
     # compile-time warning about including the umbrella header to avoid breaking their builds.
-    cmake_args+=("-DCMAKE_CXX_FLAGS=-DCCCL_DISABLE_CUB_CUH_COMPILE_TIME_WARNING");
-    cmake_args+=("-DCMAKE_CUDA_FLAGS=-DCCCL_DISABLE_CUB_CUH_COMPILE_TIME_WARNING");
+    cmake_args+=("-DCMAKE_CXX_FLAGS=-DCCCL_DISABLE_CUB_UMBRELLA_HEADER_WARNING");
+    cmake_args+=("-DCMAKE_CUDA_FLAGS=-DCCCL_DISABLE_CUB_UMBRELLA_HEADER_WARNING");
 
     # Tell rapids-cmake to use custom CCCL and cuCollections forks
     cmake_args+=("-Drapids-cmake-branch=${rapids_cmake_tag}");

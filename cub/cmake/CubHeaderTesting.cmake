@@ -18,7 +18,7 @@ function(cub_add_header_test label definitions)
     GLOBS "cub/*.cuh"
     PER_HEADER_DEFINES
       DEFINE
-      CCCL_DISABLE_CUB_CUH_COMPILE_TIME_WARNING
+      CCCL_DISABLE_CUB_UMBRELLA_HEADER_WARNING
       "cub/cub\\.cuh"
   )
   cub_configure_cuda_target(${headertest_target} RDC ${CUB_FORCE_RDC})
