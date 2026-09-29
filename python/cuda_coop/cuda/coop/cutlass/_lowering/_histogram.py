@@ -99,17 +99,17 @@ class _CubHistogramRequest:
             raise TypeError(
                 "histogram request has an unsupported sample or counter dtype"
             )
-        expected = dict(
-            SampleT=self.operation.sample_dtype,
-            BLOCK_DIM_X=self.plan.participation.exact_block_dim[0],
-            ITEMS_PER_THREAD=self.operation.items_per_thread,
-            BINS=self.operation.bins,
-            BINS_PER_THREAD=self.operation.bins_per_thread,
-            CounterT=self.operation.counter_dtype,
-            ALGORITHM="::cub::BLOCK_HISTO_ATOMIC"
+        expected = {
+            "SampleT": self.operation.sample_dtype,
+            "BLOCK_DIM_X": self.plan.participation.exact_block_dim[0],
+            "ITEMS_PER_THREAD": self.operation.items_per_thread,
+            "BINS": self.operation.bins,
+            "BINS_PER_THREAD": self.operation.bins_per_thread,
+            "CounterT": self.operation.counter_dtype,
+            "ALGORITHM": "::cub::BLOCK_HISTO_ATOMIC"
             if self.operation.algorithm == "atomic"
             else "::cub::BLOCK_HISTO_SORT",
-        )
+        }
         if (
             self.implementation.method_name != "Histogram"
             or self.implementation.template_arguments != expected
