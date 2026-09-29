@@ -23,8 +23,8 @@
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/tie_break.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/array>
 #include <cuda/std/cstdint>
+#include <cuda/std/inplace_vector>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::batched_topk
@@ -145,8 +145,8 @@ inline constexpr int sorted_output_policy_count =
 struct baseline_topk_policy
 {
   //! Per-segment worker policies ordered by decreasing tile size. At compile time the smallest policy whose tile size
-  //! still covers the upper bound of the segment size is selected.
-  ::cuda::std::array<worker_policy, 6> worker_per_segment_policies;
+  //! still covers the upper bound of the segment size is selected. At most 10 policies can be specified.
+  ::cuda::std::inplace_vector<worker_policy, 10> worker_per_segment_policies;
   multi_worker_policy multi_worker_per_segment_policy; //!< Worker policy for segments too large for a single block.
 
   _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -187,14 +187,14 @@ struct baseline_topk_policy
   constexpr auto scan_alg  = BLOCK_SCAN_WARP_SCANS;
   constexpr auto epilogue  = epilogue_policy{16, load_alg, store_alg, scan_alg};
   return baseline_topk_policy{
-    {{
+    {
       worker_policy{256, 64, load_alg, store_alg, epilogue},
       worker_policy{256, 32, load_alg, store_alg, epilogue},
       worker_policy{256, 16, load_alg, store_alg, epilogue},
       worker_policy{256, 8, load_alg, store_alg, epilogue},
       worker_policy{256, 4, load_alg, store_alg, epilogue},
       worker_policy{128, 2, load_alg, store_alg, epilogue},
-    }},
+    },
     multi_worker_policy{256, 64}};
 }
 
