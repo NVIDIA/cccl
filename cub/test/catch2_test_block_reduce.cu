@@ -307,12 +307,12 @@ CUB_TEST("Block reduce works with custom types",
       return static_cast<type>(lhs + rhs);
     }));
 
-  if (GENERATE(false, true))
+  SECTION("Sum")
   {
     block_reduce<algorithm, items_per_thread, block_dim_x, block_dim_y, block_dim_z, type>(
       d_in, d_out, sum_partial_tile_op_t{});
   }
-  else
+  SECTION("Reduce")
   {
     block_reduce<algorithm, items_per_thread, block_dim_x, block_dim_y, block_dim_z, type>(
       d_in, d_out, reduce_sum_partial_tile_op_t{});
