@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """Compile real Merge Sort providers, partial shims, and inferred results."""
 
@@ -137,7 +136,7 @@ def test_invalid_profiles(case, message):
         elif cutlass.const_expr(case == "extent"):
             values = coop.ThreadData(1, dtype=cutlass.Int32)
             values[0] = cutlass.Int32(1)
-            result, result_values = coop.merge_sort_pairs(
+            result, _result_values = coop.merge_sort_pairs(
                 coop.this_block(), keys, values
             )
         elif cutlass.const_expr(case == "incomplete_warp"):
