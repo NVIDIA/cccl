@@ -56,23 +56,78 @@ def exchange(
     valid_flags=None,
     warp_time_slicing=False,
 ):
-    """Return a fresh payload in the requested layout, preserving all inputs.
+    """Exchange register payloads, including ranked block scatters.
 
-    Blocks support blocked/striped and warp-striped layouts, plus ranked
-    scatter. Physical and logical warps support blocked/striped layouts.
-    Warp groups and block warp-striped layouts require complete 32-lane warps.
-    All participating group members must reach the primitive.
+    See :func:`cuda.coop.exchange` for the shared group requirements, layout
+    definitions, and dtypes. The qualified API adds CuTe register payloads,
+    block scatter modes, and the controls below. Every group member must call,
+    including members whose scatter items are all invalid.
 
-    Scatter ranks require a signed integer dtype and the same per-thread
-    extent as the values. Valid ranks must be unique across the block and
-    within its tile. Guarded scatter skips negative ranks. Flagged scatter
-    requires non-boolean integer flags of matching extent and scatters items
-    with nonzero flags. Unwritten destinations have undefined values.
+    Parameters
+    ----------
+    value : ThreadData, CuTe register tensor, or TensorSSA
+        Fixed-size per-thread payload. Register tensors and ``TensorSSA``
+        values are converted with :meth:`cuda.coop.cutlass.ThreadData.from_payload`.
+        Every member must supply the same dtype and extent.
+    mode : str, optional
+        Compile-time conversion, default ``"striped_to_blocked"``. Blocks
+        also support ``"blocked_to_warp_striped"`` and
+        ``"warp_striped_to_blocked"``, which stripe within each physical warp
+        and require a block size divisible by 32. Block scatter modes are
+        ``"scatter_to_blocked"``, ``"scatter_to_striped"``,
+        ``"scatter_to_striped_guarded"``, and ``"scatter_to_striped_flagged"``.
+        Physical and logical warps support only ``"striped_to_blocked"`` and
+        ``"blocked_to_striped"``; their enclosing block must contain complete
+        physical warps.
+    ranks : ThreadData, CuTe register tensor, or TensorSSA, optional
+        Destination ranks, required for every scatter mode and rejected for
+        layout conversions. Must have a signed integer dtype and the same
+        per-thread extent as ``value``. Valid ranks must be distinct across
+        the block and lie in ``[0, block_tile_size)``. Guarded scatter skips
+        negative ranks. Other scatter modes require each participating item's
+        rank to be in range. ``None`` is the default.
+    valid_flags : ThreadData, CuTe register tensor, or TensorSSA, optional
+        Per-item flags, required for ``"scatter_to_striped_flagged"`` and
+        rejected for other modes. Must have an integer, non-boolean dtype and
+        the same extent as ``value``. Only items with nonzero flags scatter;
+        their ranks must be distinct and in range. ``None`` is the default.
+    warp_time_slicing : bool, optional
+        Compile-time option, default ``False``. Reuse block exchange scratch
+        across warps to reduce shared memory usage at the cost of additional
+        synchronization. Requires a block; guarded and flagged scatter do
+        not support it.
 
-    Block warp_time_slicing is a compile-time bool and is unavailable for
-    guarded or flagged scatter. Scratch allocation and trailing synchronization
-    are automatic. Qualified CuTe register payloads are accepted and outputs
-    retain the input dtype, extent, and requested alignment.
+    Returns
+    -------
+    cuda.coop.cutlass.ThreadData
+        New writable payload with the input dtype, extent, and requested
+        alignment in the output layout. All inputs, ranks, and flags remain
+        unchanged. A scatter destination with no valid input is undefined;
+        initialize it before reading it.
+
+    Notes
+    -----
+    Scratch allocation and trailing synchronization are automatic. See
+    :ref:`coop-temp-storage` for storage reuse and :ref:`coop-thread-groups`
+    for participation requirements.
+
+    See Also
+    --------
+    cuda.coop.exchange
+        Shared blocked and striped layout conversions.
+    :cpp:struct:`cub::BlockExchange`, :cpp:struct:`cub::WarpExchange`
+        C++ exchange primitives.
+
+    Examples
+    --------
+    Reverse a 128-item block tile by assigning each input its destination
+    rank. Each of the 64 threads holds two items.
+
+    .. literalinclude:: ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_collective_examples.py
+        :language: python
+        :start-after: # qualified-scatter-example-begin
+        :end-before: # qualified-scatter-example-end
+        :dedent: 4
     """
     if not isinstance(group, ThreadGroup):
         raise TypeError(f"{_SCOPE}.exchange group must be a ThreadGroup")

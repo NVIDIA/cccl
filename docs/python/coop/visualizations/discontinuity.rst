@@ -7,7 +7,7 @@ Discontinuity
 =============
 
 This page describes the Numba-CUDA-MLIR implementation. See :ref:`backend
-coverage <coop-backends>` for CUTLASS availability.
+operation support <coop-backend-operation-support>` for CUTLASS availability.
 
 :func:`cuda.coop.discontinuity` flags changes between adjacent values in a
 full block tile. A head marks the start of a run; a tail marks its end.
