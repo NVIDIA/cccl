@@ -82,7 +82,9 @@ def _cast(context, statements, inst, value, dtype, name):
         statements, scope=scope, loc=loc, stem=name, value=value
     )
     result = context.new_var(scope, loc, name + "_cast")
-    statements.append(ir.Assign(ir.Expr.call(cast, [argument], (), loc), result, loc))
+    statements.append(
+        ir.Assign(ir.Expr.call(cast, [argument], (), loc), result, loc)
+    )
     return result
 
 
@@ -95,7 +97,9 @@ def _lower_neighbors(context, inst, *, operation, group, bound, is_common_root):
         raise TypeError(
             f"{operation} values must be fixed-size ThreadData or a local array"
         )
-    if is_common_root and not context.is_thread_data(operation, "values", value):
+    if is_common_root and not context.is_thread_data(
+        operation, "values", value
+    ):
         raise TypeError(f"cuda.coop.{operation} requires ThreadData")
     extent = context.array_extent(value)
     if extent is None:
@@ -116,7 +120,9 @@ def _lower_neighbors(context, inst, *, operation, group, bound, is_common_root):
     partial = valid.kind is not BindingKind.OMITTED
     if valid.kind is BindingKind.RUNTIME:
         _validate_runtime_integer_dtype(
-            context.dtype(valid_raw), operation=operation, parameter="valid_items"
+            context.dtype(valid_raw),
+            operation=operation,
+            parameter="valid_items",
         )
     boundaries = {}
     for name in ("tile_predecessor_item", "tile_successor_item"):
@@ -133,7 +139,8 @@ def _lower_neighbors(context, inst, *, operation, group, bound, is_common_root):
                 actual = context.dtype(raw)
                 if actual != dtype:
                     raise TypeError(
-                        f"{operation} {name} dtype must match input dtype {dtype}"
+                        f"{operation} {name} dtype "
+                        f"must match input dtype {dtype}"
                     )
                 boundaries[name] = raw
     primitive = BlockNeighborSemantics(
@@ -157,7 +164,8 @@ def _lower_neighbors(context, inst, *, operation, group, bound, is_common_root):
         descriptor = context.temp_storage(storage)
         if descriptor is None:
             raise GroupRewriteError(
-                f"{operation} temp_storage must resolve to a TempStorage descriptor"
+                f"{operation} temp_storage must "
+                f"resolve to a TempStorage descriptor"
             )
         size, alignment, auto_sync, sharing = descriptor
         plan = replace(
@@ -192,10 +200,14 @@ def _lower_neighbors(context, inst, *, operation, group, bound, is_common_root):
             stem="neighbor_" + name,
             prototype=source,
             is_array=True,
-            dtype_policy=_PAYLOAD_DTYPE_LIKE if adjacent else _PAYLOAD_DTYPE_INT32,
+            dtype_policy=_PAYLOAD_DTYPE_LIKE
+            if adjacent
+            else _PAYLOAD_DTYPE_INT32,
             items_per_thread=extent,
         )
-        context.record_thread_data_dtype(output, dtype if adjacent else types.int32)
+        context.record_thread_data_dtype(
+            output, dtype if adjacent else types.int32
+        )
         outputs.append(output)
     count = (
         valid_raw
@@ -264,7 +276,9 @@ for _name in ("adjacent_difference", "discontinuity", "discontinuity_both"):
         RewriteOperationSpec(
             factory_namespaces=frozenset({"block"}),
             dtype_factory_kwargs=frozenset({"dtype"}),
-            runtime_arg_counts=frozenset({6} if _name == "discontinuity_both" else {5}),
+            runtime_arg_counts=frozenset(
+                {6} if _name == "discontinuity_both" else {5}
+            ),
             runtime_factory_kwargs=(),
             runtime_factory_kw_prerequisites=(),
             allowed_factory_kwargs=frozenset(

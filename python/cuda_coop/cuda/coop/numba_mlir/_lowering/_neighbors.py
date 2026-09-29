@@ -16,8 +16,15 @@ from cuda.coop._core.block.neighbors import (
     make_block_neighbor_spec,
 )
 
-from .._compiler._operations import StorageABI, factory_operation, register_factory
-from .._compiler._parameters import _validate_common_numeric_dtype, normalize_dim_param
+from .._compiler._operations import (
+    StorageABI,
+    factory_operation,
+    register_factory,
+)
+from .._compiler._parameters import (
+    _validate_common_numeric_dtype,
+    normalize_dim_param,
+)
 from .._semantic import _normalize_numba_callable, _numba_semantic_token
 from .._types import make_invocable_from_specialization
 from ._core import NumbaMlirCoreAdapter
@@ -27,7 +34,9 @@ def neighbor_operator(operation, op):
     dtype = Dependency("T")
     if op is None:
         name = "minus" if operation == "adjacent_difference" else "not_equal_to"
-        return CxxOperator(cpp=f"::cuda::std::{name}<T>", dtype=dtype, name="op")
+        return CxxOperator(
+            cpp=f"::cuda::std::{name}<T>", dtype=dtype, name="op"
+        )
     if not callable(op):
         raise TypeError(f"{operation} operator must be a stateless callable")
     return PythonOperator(

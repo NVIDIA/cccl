@@ -69,7 +69,8 @@ def adjacent_difference(
 
 
 @group_operation(
-    "discontinuity", family_module="cuda.coop.numba_mlir._compiler._group_neighbors"
+    "discontinuity",
+    family_module="cuda.coop.numba_mlir._compiler._group_neighbors",
 )
 def discontinuity(
     group: ThreadGroup,
