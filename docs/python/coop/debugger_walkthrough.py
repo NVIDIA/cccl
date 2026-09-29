@@ -14,7 +14,7 @@ from cuda import coop  # First breakpoint: observe backend registration.
 @cuda.jit
 def copy_tile(source, destination):
     block = coop.this_block()
-    items = coop.ThreadData(2, dtype=np.int32)
+    items = coop.ThreadData(items_per_thread=2)
     coop.load(block, source, items, algorithm="direct")
     coop.store(block, destination, items, algorithm="direct")
 

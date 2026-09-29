@@ -27,7 +27,7 @@ def test_warp_copy():
     @cuda.jit
     def copy_warp_tiles(source, destination, count):
         group = coop.this_warp().group_by(8)
-        items = coop.ThreadData(2, dtype=np.int32)
+        items = coop.ThreadData(items_per_thread=2)
         block_origin = cuda.blockIdx.x * cuda.blockDim.x * 2
         group_origin = (cuda.threadIdx.x // 8) * 16
         valid = min(max(count - block_origin - group_origin, 0), 16)

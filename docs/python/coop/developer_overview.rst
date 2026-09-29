@@ -38,7 +38,7 @@ threads, with two items per thread:
    @cuda.jit
    def copy_tile(source, destination):
        block = coop.this_block()
-       items = coop.ThreadData(2, dtype=np.int32)
+       items = coop.ThreadData(items_per_thread=2)
        coop.load(block, source, items, algorithm="direct")
        coop.store(block, destination, items, algorithm="direct")
 
@@ -56,7 +56,7 @@ sees device pointers in either case.
 Each thread owns a separate ``items`` payload. With the direct algorithm,
 thread 0 gets elements 0 and 1, thread 1 gets elements 2 and 3, and so on.
 The Load fills that payload; the Store writes it back. This is a *blocked*
-arrangement of the tile. ``ThreadData(2)`` describes two values per thread,
+arrangement of the tile. ``ThreadData(items_per_thread=2)`` describes two values per thread,
 not two values shared by the block.
 
 The :doc:`Load <visualizations/load>` and :doc:`Store <visualizations/store>`
@@ -330,11 +330,11 @@ type inference, and some comes from the configured launch:
    * - Group
      - ``this_block()`` and ``[1, 128]``
      - Resolve a block with dimensions ``(128, 1, 1)``.
-   * - Payload dtype
-     - ``ThreadData(..., dtype=np.int32)``
-     - Select the C++ element type and check the source and destination types.
+   * - Payload element type
+     - Load's typed source array
+     - Infer the C++ element type and check the destination type.
    * - Items per thread
-     - ``ThreadData(2, ...)``
+     - ``ThreadData(items_per_thread=2)``
      - Instantiate a fixed array extent of two.
    * - Algorithm
      - ``algorithm="direct"``
@@ -527,7 +527,7 @@ fragment, the Load's source establishes the dtype:
 
 .. code-block:: python
 
-   items = coop.ThreadData(2)
+   items = coop.ThreadData(items_per_thread=2)
    coop.load(block, source, items)
    coop.store(block, destination, items)
 
@@ -593,7 +593,7 @@ A block operation can expose that reuse choice through ``TempStorage``:
 
    # Inside a kernel; source and destination each contain one full tile.
    scratch = coop.TempStorage(auto_sync=True)
-   items = coop.ThreadData(2, dtype=np.int32)
+   items = coop.ThreadData(items_per_thread=2)
    coop.load(block, source, items,
              algorithm="transpose", temp_storage=scratch)
    coop.store(block, destination, items,
@@ -1035,7 +1035,7 @@ set the two additional storage breakpoints listed below:
    @cuda.jit
    def copy_tile(source, destination):
        block = coop.this_block()
-       items = coop.ThreadData(2, dtype=np.int32)
+       items = coop.ThreadData(items_per_thread=2)
        scratch = coop.TempStorage(auto_sync=True)
        coop.load(
            block, source, items, algorithm="transpose", temp_storage=scratch
