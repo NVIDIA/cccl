@@ -153,24 +153,162 @@ bool send_request(int fd, child_command command, const cuda::logical_endpoint_fa
   return write_exactly(fd, &request, sizeof(request));
 }
 
-int skip_parent(int request_fd, pid_t child, const char* reason)
+struct parent_child
+{
+  int request_fd;
+  int result_fd;
+  pid_t pid;
+  bool waited = false;
+};
+
+int wait_for(parent_child& child)
+{
+  if (child.waited)
+  {
+    return EXIT_SUCCESS;
+  }
+
+  child.waited = true;
+  return wait_for_child(child.pid);
+}
+
+void send_no_throw(parent_child& child, child_command command)
+{
+  if (!child.waited)
+  {
+    static_cast<void>(send_request(child.request_fd, command));
+  }
+}
+
+int skip(parent_child& child, const char* reason)
 {
   std::fprintf(stderr, "skipping: %s\n", reason);
-  if (!send_request(request_fd, child_command::skip))
+  if (!send_request(child.request_fd, child_command::skip))
   {
     std::fprintf(stderr, "parent failed to send skip request\n");
     return EXIT_FAILURE;
   }
-  return wait_for_child(child);
+  return wait_for(child);
 }
 
-int fail_parent(int request_fd, pid_t child, const char* reason)
+void abort_child_no_throw(parent_child& child)
 {
-  std::fprintf(stderr, "%s\n", reason);
-  static_cast<void>(send_request(request_fd, child_command::skip));
-  static_cast<void>(wait_for_child(child));
-  return EXIT_FAILURE;
+  if (!child.waited)
+  {
+    send_no_throw(child, child_command::skip);
+    static_cast<void>(wait_for(child));
+  }
 }
+
+void send_or_throw(
+  parent_child& child,
+  child_command command,
+  const cuda::logical_endpoint_fabric_handle& handle,
+  const char* failure_message)
+{
+  if (!send_request(child.request_fd, command, handle))
+  {
+    throw std::runtime_error(failure_message);
+  }
+}
+
+child_result read_child_result(parent_child& child)
+{
+  child_result result = child_result::failure;
+  if (!read_exactly(child.result_fd, &result, sizeof(result)))
+  {
+    throw std::runtime_error("parent failed to read the child result");
+  }
+  return result;
+}
+
+void require_success_and_wait(
+  parent_child& child,
+  child_command command,
+  const cuda::logical_endpoint_fabric_handle& handle,
+  const char* send_failure_message,
+  const char* child_failure_message)
+{
+  send_or_throw(child, command, handle, send_failure_message);
+  const child_result result = read_child_result(child);
+  const int child_status   = wait_for(child);
+  if (child_status != EXIT_SUCCESS || result != child_result::success)
+  {
+    throw std::runtime_error(child_failure_message);
+  }
+}
+
+void request_unicast_import(parent_child& child, const cuda::logical_endpoint_fabric_handle& handle)
+{
+  require_success_and_wait(
+    child,
+    child_command::import_unicast_handle,
+    handle,
+    "parent failed to send the unicast logical endpoint handle",
+    "child failed to import the unicast logical endpoint");
+}
+
+void request_unicast_put(parent_child& child, const cuda::logical_endpoint_fabric_handle& handle)
+{
+  require_success_and_wait(
+    child,
+    child_command::put_to_unicast_endpoint,
+    handle,
+    "parent failed to send the unicast logical endpoint handle",
+    "child failed to put to imported unicast logical endpoint");
+}
+
+void request_multicast_import(parent_child& child, const cuda::logical_endpoint_fabric_handle& handle)
+{
+  send_or_throw(
+    child,
+    child_command::import_multicast_handle,
+    handle,
+    "parent failed to send the multicast logical endpoint handle");
+  if (read_child_result(child) != child_result::success)
+  {
+    static_cast<void>(wait_for(child));
+    throw std::runtime_error("child failed to import the multicast logical endpoint");
+  }
+}
+
+int finish_multicast_import(parent_child& child)
+{
+  send_or_throw(child, child_command::finish, {}, "parent failed to send multicast finish command");
+  return wait_for(child);
+}
+
+struct skipped_test
+{
+  const char* reason;
+};
+
+#define SKIP_IF_REASON(reason_expr)                                        \
+  do                                                                       \
+  {                                                                        \
+    if (const char* cccl_logical_endpoint_skip_reason = (reason_expr))     \
+    {                                                                      \
+      throw skipped_test{cccl_logical_endpoint_skip_reason};               \
+    }                                                                      \
+  } while (false)
+
+#define SKIP_UNLESS(condition, reason)                         \
+  do                                                          \
+  {                                                           \
+    if (!(condition))                                         \
+    {                                                         \
+      throw skipped_test{reason};                             \
+    }                                                         \
+  } while (false)
+
+#define FAIL_UNLESS(condition, reason)                         \
+  do                                                          \
+  {                                                           \
+    if (!(condition))                                         \
+    {                                                         \
+      throw std::runtime_error(reason);                       \
+    }                                                         \
+  } while (false)
 
 template <class... Devices>
 const char* fabric_ipc_unsupported_reason(int minimum_device_count, cuda::device_ref device, Devices... devices)
@@ -223,6 +361,12 @@ bool endpoint_size(cuda::logical_endpoint_limits limits, cuda::std::uint64_t& by
       && (limits.max_size == 0 || bytes <= limits.max_size);
 }
 
+struct endpoint_config
+{
+  cuda::logical_endpoint_limits limits{};
+  cuda::std::uint64_t bytes{};
+};
+
 template <class Spec, class... Devices>
 bool probe_endpoint_support(
   const Spec& spec, logical_endpoint_test::support_result& support, const char*& reason, Devices... devices)
@@ -243,6 +387,18 @@ bool probe_endpoint_support(
     return false;
   }
   return true;
+}
+
+template <class Spec, class... Devices>
+endpoint_config require_endpoint_config(const Spec& spec, Devices... devices)
+{
+  logical_endpoint_test::support_result support{};
+  const char* support_reason = nullptr;
+  SKIP_UNLESS(probe_endpoint_support(spec, support, support_reason, devices...), support_reason);
+
+  cuda::std::uint64_t bytes = 0;
+  FAIL_UNLESS(endpoint_size(support.limits, bytes), "logical endpoint smoke size is not valid for reported limits");
+  return {support.limits, bytes};
 }
 
 cuda::unicast_logical_endpoint import_unicast(const cuda::logical_endpoint_fabric_handle& handle)
@@ -396,119 +552,74 @@ int child_main(int request_fd, int result_fd)
   return EXIT_FAILURE;
 }
 
-int read_child_result_and_wait(int result_fd, pid_t child)
+template <class Action>
+int run_parent_action(parent_child& child, const char* failure_message, Action action)
 {
-  child_result result = child_result::failure;
-  if (!read_exactly(result_fd, &result, sizeof(result)))
-  {
-    std::fprintf(stderr, "parent failed to read the child result\n");
-    static_cast<void>(wait_for_child(child));
-    return EXIT_FAILURE;
-  }
-
-  const int child_status = wait_for_child(child);
-  if (child_status != EXIT_SUCCESS || result != child_result::success)
-  {
-    return EXIT_FAILURE;
-  }
-  return EXIT_SUCCESS;
-}
-
-int parent_import_unicast(int request_fd, int result_fd, pid_t child)
-{
-  cuda::unicast_logical_endpoint local;
-
   try
   {
-    cuda::device_ref device{0};
-    if (const char* reason = fabric_ipc_unsupported_reason(1, device))
-    {
-      return skip_parent(request_fd, child, reason);
-    }
-
-    auto spec = cuda::unicast_logical_endpoint_spec{device};
-    logical_endpoint_test::support_result support{};
-    const char* support_reason = nullptr;
-    if (!probe_endpoint_support(spec, support, support_reason, device))
-    {
-      return skip_parent(request_fd, child, support_reason);
-    }
-
-    cuda::std::uint64_t bytes = 0;
-    if (!endpoint_size(support.limits, bytes))
-    {
-      return fail_parent(request_fd, child, "logical endpoint smoke size is not valid for reported limits");
-    }
-
-    local = cuda::unicast_logical_endpoint{spec, bytes};
-    if (!local.wait_ready_for(logical_endpoint_test::ready_timeout))
-    {
-      return fail_parent(request_fd, child, "local unicast logical endpoint did not become ready");
-    }
-    if (!send_request(request_fd, child_command::import_unicast_handle, local.export_endpoint(cuda::fabric_handle)))
-    {
-      return fail_parent(request_fd, child, "parent failed to send the unicast logical endpoint handle");
-    }
+    return action();
+  }
+  catch (const skipped_test& skipped)
+  {
+    return skip(child, skipped.reason);
   }
   catch (const cuda::cuda_error& e)
   {
     if (e.status() == cudaErrorNoDevice)
     {
-      return skip_parent(request_fd, child, "logical endpoint tests require a CUDA device");
+      return skip(child, "logical endpoint tests require a CUDA device");
     }
-    std::fprintf(stderr, "parent failed to create/export the unicast logical endpoint: %s\n", e.what());
-    static_cast<void>(send_request(request_fd, child_command::skip));
-    static_cast<void>(wait_for_child(child));
-    return EXIT_FAILURE;
+    std::fprintf(stderr, "%s: %s\n", failure_message, e.what());
   }
   catch (const std::exception& e)
   {
-    std::fprintf(stderr, "parent failed to create/export the unicast logical endpoint: %s\n", e.what());
-    static_cast<void>(send_request(request_fd, child_command::skip));
-    static_cast<void>(wait_for_child(child));
-    return EXIT_FAILURE;
+    std::fprintf(stderr, "%s: %s\n", failure_message, e.what());
   }
 
-  return read_child_result_and_wait(result_fd, child);
+  abort_child_no_throw(child);
+  return EXIT_FAILURE;
 }
 
-int parent_put_to_unicast(int request_fd, int result_fd, pid_t child)
+int parent_test_unicast_import(int request_fd, int result_fd, pid_t child)
 {
+  parent_child parent{request_fd, result_fd, child};
   cuda::unicast_logical_endpoint local;
 
-  try
-  {
+  return run_parent_action(parent, "parent failed to create/export the unicast logical endpoint", [&] {
     cuda::device_ref device{0};
-    if (const char* reason = fabric_ipc_unsupported_reason(1, device))
-    {
-      return skip_parent(request_fd, child, reason);
-    }
-    if (!logical_endpoint_test::fabric_memory_pools_supported(device))
-    {
-      return skip_parent(request_fd, child, "fabric memory pool allocations are not supported");
-    }
-    if (!logical_endpoint_test::fabric_ptx_supported(device))
-    {
-      return skip_parent(
-        request_fd, child, "fabric PTX logical endpoint smoke requires an SM 100+ device and PTX ISA 9.3+");
-    }
+    SKIP_IF_REASON(fabric_ipc_unsupported_reason(1, device));
 
     auto spec = cuda::unicast_logical_endpoint_spec{device};
-    logical_endpoint_test::support_result support{};
-    const char* support_reason = nullptr;
-    if (!probe_endpoint_support(spec, support, support_reason, device))
-    {
-      return skip_parent(request_fd, child, support_reason);
-    }
+    const endpoint_config config = require_endpoint_config(spec, device);
 
-    cuda::std::uint64_t bytes = 0;
-    if (!endpoint_size(support.limits, bytes))
-    {
-      return fail_parent(request_fd, child, "logical endpoint smoke size is not valid for reported limits");
-    }
+    local = cuda::unicast_logical_endpoint{spec, config.bytes};
+    FAIL_UNLESS(
+      local.wait_ready_for(logical_endpoint_test::ready_timeout),
+      "local unicast logical endpoint did not become ready");
+    request_unicast_import(parent, local.export_endpoint(cuda::fabric_handle));
+    return EXIT_SUCCESS;
+  });
+}
 
-    const auto alignment        = support.limits.bind_alignment;
-    const auto allocation_bytes = bytes + alignment;
+int parent_test_unicast_imported_put(int request_fd, int result_fd, pid_t child)
+{
+  parent_child parent{request_fd, result_fd, child};
+  cuda::unicast_logical_endpoint local;
+
+  return run_parent_action(parent, "parent failed to run imported unicast put test", [&] {
+    cuda::device_ref device{0};
+    SKIP_IF_REASON(fabric_ipc_unsupported_reason(1, device));
+    SKIP_UNLESS(
+      logical_endpoint_test::fabric_memory_pools_supported(device), "fabric memory pool allocations are not supported");
+    SKIP_UNLESS(
+      logical_endpoint_test::fabric_ptx_supported(device),
+      "fabric PTX logical endpoint smoke requires an SM 100+ device and PTX ISA 9.3+");
+
+    auto spec = cuda::unicast_logical_endpoint_spec{device};
+    const endpoint_config config = require_endpoint_config(spec, device);
+
+    const auto alignment        = config.limits.bind_alignment;
+    const auto allocation_bytes = config.bytes + alignment;
     cuda::stream stream{device};
     cuda::shared_device_memory_pool resource{device, logical_endpoint_test::fabric_memory_pool_properties()};
     auto allocation = cuda::make_buffer<cuda::std::uint8_t>(stream, resource, allocation_bytes, cuda::no_init);
@@ -517,38 +628,22 @@ int parent_put_to_unicast(int request_fd, int result_fd, pid_t child)
     const auto allocation_addr = reinterpret_cast<cuda::std::uintptr_t>(allocation.data());
     const auto bind_addr       = logical_endpoint_test::align_up(allocation_addr, alignment);
     void* bind_ptr             = reinterpret_cast<void*>(bind_addr);
-    if (bind_addr + bytes > allocation_addr + allocation_bytes)
-    {
-      return fail_parent(request_fd, child, "aligned bind range falls outside allocation");
-    }
+    FAIL_UNLESS(
+      bind_addr + config.bytes <= allocation_addr + allocation_bytes, "aligned bind range falls outside allocation");
 
-    local = cuda::unicast_logical_endpoint{spec, bytes};
-    if (!local.wait_ready_for(logical_endpoint_test::ready_timeout))
-    {
-      return fail_parent(request_fd, child, "local unicast logical endpoint did not become ready");
-    }
-    local.bind(device, 0, bind_ptr, bytes);
+    local = cuda::unicast_logical_endpoint{spec, config.bytes};
+    FAIL_UNLESS(
+      local.wait_ready_for(logical_endpoint_test::ready_timeout),
+      "local unicast logical endpoint did not become ready");
+    local.bind(device, 0, bind_ptr, config.bytes);
+    // If this isolated test process fails after binding, process teardown is enough; keep the test body simple.
     cuda::fill_bytes(stream,
                      cuda::std::span<cuda::std::uint8_t>{
                        static_cast<cuda::std::uint8_t*>(bind_ptr), logical_endpoint_test::payload_bytes},
                      0);
     stream.sync();
 
-    if (!send_request(request_fd, child_command::put_to_unicast_endpoint, local.export_endpoint(cuda::fabric_handle)))
-    {
-      local.unbind(device, 0, bytes);
-      return fail_parent(request_fd, child, "parent failed to send the unicast logical endpoint handle");
-    }
-
-    child_result result = child_result::failure;
-    if (!read_exactly(result_fd, &result, sizeof(result)))
-    {
-      local.unbind(device, 0, bytes);
-      std::fprintf(stderr, "parent failed to read the child result\n");
-      static_cast<void>(wait_for_child(child));
-      return EXIT_FAILURE;
-    }
-    const int child_status = wait_for_child(child);
+    request_unicast_put(parent, local.export_endpoint(cuda::fabric_handle));
 
     cuda::std::uint32_t observed[logical_endpoint_test::payload_words]{};
     cuda::copy_bytes(stream,
@@ -556,102 +651,41 @@ int parent_put_to_unicast(int request_fd, int result_fd, pid_t child)
                        static_cast<cuda::std::uint32_t*>(bind_ptr), logical_endpoint_test::payload_words},
                      cuda::std::span<cuda::std::uint32_t>{observed, logical_endpoint_test::payload_words});
     stream.sync();
-    local.unbind(device, 0, bytes);
+    local.unbind(device, 0, config.bytes);
 
-    if (child_status != EXIT_SUCCESS || result != child_result::success)
-    {
-      return EXIT_FAILURE;
-    }
-    if (observed[0] != 0x13572468u || observed[1] != 0x24681357u || observed[2] != 0xdeadbeefu
-        || observed[3] != 0xcafef00du)
-    {
-      std::fprintf(
-        stderr,
-        "parent observed unexpected payload: %08x %08x %08x %08x\n",
-        observed[0],
-        observed[1],
-        observed[2],
-        observed[3]);
-      return EXIT_FAILURE;
-    }
-  }
-  catch (const cuda::cuda_error& e)
-  {
-    if (e.status() == cudaErrorNoDevice)
-    {
-      return skip_parent(request_fd, child, "logical endpoint tests require a CUDA device");
-    }
-    std::fprintf(stderr, "parent failed to run imported unicast put test: %s\n", e.what());
-    static_cast<void>(send_request(request_fd, child_command::skip));
-    static_cast<void>(wait_for_child(child));
-    return EXIT_FAILURE;
-  }
-  catch (const std::exception& e)
-  {
-    std::fprintf(stderr, "parent failed to run imported unicast put test: %s\n", e.what());
-    static_cast<void>(send_request(request_fd, child_command::skip));
-    static_cast<void>(wait_for_child(child));
-    return EXIT_FAILURE;
-  }
-
-  return EXIT_SUCCESS;
+    FAIL_UNLESS(
+      observed[0] == 0x13572468u && observed[1] == 0x24681357u && observed[2] == 0xdeadbeefu
+        && observed[3] == 0xcafef00du,
+      "parent observed unexpected payload");
+    return EXIT_SUCCESS;
+  });
 }
 
-int parent_import_multicast(int request_fd, int result_fd, pid_t child)
+int parent_test_multicast_import(int request_fd, int result_fd, pid_t child)
 {
+  parent_child parent{request_fd, result_fd, child};
   cuda::multicast_logical_endpoint local;
 
-  try
-  {
+  return run_parent_action(parent, "parent failed to run multicast import test", [&] {
     cuda::device_ref device{0};
     cuda::device_ref child_device{1};
-    if (const char* reason = fabric_ipc_unsupported_reason(2, device, child_device))
-    {
-      return skip_parent(request_fd, child, reason);
-    }
-    if (!logical_endpoint_test::fabric_memory_pools_supported(device, child_device))
-    {
-      return skip_parent(request_fd, child, "fabric memory pool allocations are not supported");
-    }
+    SKIP_IF_REASON(fabric_ipc_unsupported_reason(2, device, child_device));
+    SKIP_UNLESS(
+      logical_endpoint_test::fabric_memory_pools_supported(device, child_device),
+      "fabric memory pool allocations are not supported");
 
     auto spec = cuda::multicast_logical_endpoint_spec{2};
-    logical_endpoint_test::support_result support{};
-    const char* support_reason = nullptr;
-    if (!probe_endpoint_support(spec, support, support_reason, device, child_device))
-    {
-      return skip_parent(request_fd, child, support_reason);
-    }
+    const endpoint_config config = require_endpoint_config(spec, device, child_device);
 
-    cuda::std::uint64_t bytes = 0;
-    if (!endpoint_size(support.limits, bytes))
-    {
-      return fail_parent(request_fd, child, "logical endpoint smoke size is not valid for reported limits");
-    }
-
-    local = cuda::multicast_logical_endpoint{spec, bytes};
+    local = cuda::multicast_logical_endpoint{spec, config.bytes};
     local.add_device(device);
-    if (!send_request(request_fd, child_command::import_multicast_handle, local.export_endpoint(cuda::fabric_handle)))
-    {
-      return fail_parent(request_fd, child, "parent failed to send the multicast logical endpoint handle");
-    }
+    request_multicast_import(parent, local.export_endpoint(cuda::fabric_handle));
+    FAIL_UNLESS(
+      local.wait_ready_for(logical_endpoint_test::ready_timeout),
+      "local multicast logical endpoint did not become ready");
 
-    child_result result = child_result::failure;
-    if (!read_exactly(result_fd, &result, sizeof(result)))
-    {
-      std::fprintf(stderr, "parent failed to read the child result\n");
-      static_cast<void>(send_request(request_fd, child_command::skip));
-      static_cast<void>(wait_for_child(child));
-      return EXIT_FAILURE;
-    }
-    if (result != child_result::success || !local.wait_ready_for(logical_endpoint_test::ready_timeout))
-    {
-      static_cast<void>(send_request(request_fd, child_command::finish));
-      static_cast<void>(wait_for_child(child));
-      return EXIT_FAILURE;
-    }
-
-    const auto alignment        = support.limits.bind_alignment;
-    const auto allocation_bytes = bytes + alignment;
+    const auto alignment        = config.limits.bind_alignment;
+    const auto allocation_bytes = config.bytes + alignment;
     cuda::stream stream{device};
     cuda::shared_device_memory_pool resource{device, logical_endpoint_test::fabric_memory_pool_properties()};
     auto allocation = cuda::make_buffer<cuda::std::uint8_t>(stream, resource, allocation_bytes, cuda::no_init);
@@ -660,44 +694,14 @@ int parent_import_multicast(int request_fd, int result_fd, pid_t child)
     const auto allocation_addr = reinterpret_cast<cuda::std::uintptr_t>(allocation.data());
     const auto bind_addr       = logical_endpoint_test::align_up(allocation_addr, alignment);
     void* bind_ptr             = reinterpret_cast<void*>(bind_addr);
-    if (bind_addr + bytes > allocation_addr + allocation_bytes)
-    {
-      static_cast<void>(send_request(request_fd, child_command::finish));
-      static_cast<void>(wait_for_child(child));
-      std::fprintf(stderr, "aligned bind range falls outside allocation\n");
-      return EXIT_FAILURE;
-    }
+    FAIL_UNLESS(
+      bind_addr + config.bytes <= allocation_addr + allocation_bytes, "aligned bind range falls outside allocation");
 
-    local.bind(device, 0, bind_ptr, bytes);
-    local.unbind(device, 0, bytes);
+    local.bind(device, 0, bind_ptr, config.bytes);
+    local.unbind(device, 0, config.bytes);
 
-    if (!send_request(request_fd, child_command::finish))
-    {
-      std::fprintf(stderr, "parent failed to send multicast finish command\n");
-      static_cast<void>(wait_for_child(child));
-      return EXIT_FAILURE;
-    }
-  }
-  catch (const cuda::cuda_error& e)
-  {
-    if (e.status() == cudaErrorNoDevice)
-    {
-      return skip_parent(request_fd, child, "logical endpoint tests require a CUDA device");
-    }
-    std::fprintf(stderr, "parent failed to run multicast import test: %s\n", e.what());
-    static_cast<void>(send_request(request_fd, child_command::skip));
-    static_cast<void>(wait_for_child(child));
-    return EXIT_FAILURE;
-  }
-  catch (const std::exception& e)
-  {
-    std::fprintf(stderr, "parent failed to run multicast import test: %s\n", e.what());
-    static_cast<void>(send_request(request_fd, child_command::skip));
-    static_cast<void>(wait_for_child(child));
-    return EXIT_FAILURE;
-  }
-
-  return wait_for_child(child);
+    return finish_multicast_import(parent);
+  });
 }
 
 using parent_case = int (*)(int, int, pid_t);
@@ -771,20 +775,24 @@ int run_test(int argc, char** argv)
   (void) argc;
   (void) argv;
 
-  if (run_isolated_child_case(parent_import_unicast) != EXIT_SUCCESS)
+  if (run_isolated_child_case(parent_test_unicast_import) != EXIT_SUCCESS)
   {
     return EXIT_FAILURE;
   }
-  if (run_isolated_child_case(parent_put_to_unicast) != EXIT_SUCCESS)
+  if (run_isolated_child_case(parent_test_unicast_imported_put) != EXIT_SUCCESS)
   {
     return EXIT_FAILURE;
   }
-  if (run_isolated_child_case(parent_import_multicast) != EXIT_SUCCESS)
+  if (run_isolated_child_case(parent_test_multicast_import) != EXIT_SUCCESS)
   {
     return EXIT_FAILURE;
   }
   return EXIT_SUCCESS;
 }
+
+#undef FAIL_UNLESS
+#undef SKIP_UNLESS
+#undef SKIP_IF_REASON
 } // namespace
 
 #endif // _CCCL_CTK_AT_LEAST(13, 3)
