@@ -23,7 +23,9 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 @pytest.mark.parametrize(
     "algorithm", ("transpose", "warp_transpose", "warp_transpose_timesliced")
 )
-def test_undersized_storage_is_rejected_before_kernel_execution(sharing, algorithm):
+def test_undersized_storage_is_rejected_before_kernel_execution(
+    sharing, algorithm
+):
     @cute.kernel
     def kernel(memory: cute.Pointer):
         storage = cutlass_coop.TempStorage(1, sharing=sharing)
@@ -40,12 +42,16 @@ def test_undersized_storage_is_rejected_before_kernel_execution(sharing, algorit
     def launch(memory: cute.Pointer):
         kernel(memory).launch(grid=1, block=64)
 
-    pointer = make_ptr(cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16)
+    pointer = make_ptr(
+        cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16
+    )
     with pytest.raises(Exception, match="(?i)(capacity|size|smaller)"):
         cute.compile[(GPUArch("sm_80"),)](launch, pointer)
 
 
-@pytest.mark.parametrize("algorithm", ("warp_transpose", "warp_transpose_timesliced"))
+@pytest.mark.parametrize(
+    "algorithm", ("warp_transpose", "warp_transpose_timesliced")
+)
 def test_warp_transpose_rejects_partial_physical_warps(algorithm):
     @cute.kernel
     def kernel(memory: cute.Pointer):
@@ -60,6 +66,8 @@ def test_warp_transpose_rejects_partial_physical_warps(algorithm):
     def launch(memory: cute.Pointer):
         kernel(memory).launch(grid=1, block=33)
 
-    pointer = make_ptr(cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16)
+    pointer = make_ptr(
+        cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16
+    )
     with pytest.raises(Exception, match="multiple of 32"):
         cute.compile[(GPUArch("sm_80"),)](launch, pointer)
