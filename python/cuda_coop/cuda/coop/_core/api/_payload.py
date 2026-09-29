@@ -14,7 +14,9 @@ _ItemT = TypeVar("_ItemT")
 
 @runtime_checkable
 class _ReadableThreadDataLike(Protocol[_ItemT]):
-    """Readable fixed-size per-thread payload understood by supported backends."""
+    """Readable fixed-size per-thread payload understood by supported
+    backends.
+    """
 
     items_per_thread: int
     dtype: object | None

@@ -71,9 +71,10 @@ def load(
         prefix have unspecified values unless ``oob_default`` is given.
     oob_default : numeric scalar, optional
         Value written to slots beyond ``valid_items``. Requires an explicit
-        ``valid_items`` count. For example, use zero to pad a partial tile. A runtime value must have the payload dtype and
-        be uniform across the group. With ``None``, those slots are unspecified,
-        even if initialized before the Load; assign them before reading them.
+        ``valid_items`` count. For example, use zero to pad a partial tile. A
+        runtime value must have the payload dtype and be uniform across the
+        group. With ``None``, those slots are unspecified, even if initialized
+        before the Load; assign them before reading them.
     offset : int or integer scalar, optional
         Nonnegative offset in elements from the start of ``source``, uniform
         across the group. ``None`` means zero. For block tiles, supply the

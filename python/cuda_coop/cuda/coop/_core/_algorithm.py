@@ -112,7 +112,9 @@ class Algorithm:
         *,
         metadata: Mapping[str, Any] | None = None,
     ) -> AlgorithmSpec:
-        """Bind template/dependency values without performing backend lowering."""
+        """Bind template/dependency values without performing backend
+        lowering.
+        """
 
         missing = [
             name
@@ -212,7 +214,9 @@ class AlgorithmSpec:
 
     @property
     def ordered_specialization_arguments(self) -> tuple[tuple[str, Any], ...]:
-        """Template arguments followed by deterministically ordered auxiliaries."""
+        """Template arguments followed by deterministically ordered
+        auxiliaries.
+        """
 
         template_names = set(self.template_parameter_names)
         auxiliary = sorted(
