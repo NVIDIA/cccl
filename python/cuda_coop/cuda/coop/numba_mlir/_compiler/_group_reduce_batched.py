@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Plan independent batches and their distributed warp result payloads."""
+"""Each thread's result holds ``ceil(batches / warp_width)`` elements."""
 
 from cuda.coop._core import (
     make_group_primitive_call,
