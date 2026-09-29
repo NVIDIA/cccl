@@ -521,7 +521,9 @@ def test_untyped_load_composes_directly_into_exchange(
 
 
 def _evaluate_warp_mask(definitions, operand, rank):
-    """Evaluate only the emitted mask dependencies, independently of the rewrite."""
+    """Evaluate only the emitted mask dependencies, independently of the
+    rewrite.
+    """
     expression = definitions[operand]
     operation = expression.split()[0]
     inputs = re.findall(r"%[\w-]+", expression)
