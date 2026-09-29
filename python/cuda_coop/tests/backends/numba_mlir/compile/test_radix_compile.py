@@ -66,7 +66,10 @@ def test_radix_compiles_and_preserves_result_dtype(operation, dtype):
             values[0] = associated[t * 2]
             values[1] = associated[t * 2 + 1]
             result, payload = coop.radix_sort_pairs(
-                coop.this_block(), keys, values, temp_storage=coop.TempStorage()
+                coop.this_block(),
+                keys,
+                values,
+                temp_storage=coop.TempStorage(auto_sync=True),
             )
             destination[t * 2] = result[0]
             associated[t * 2] = payload[0]
