@@ -395,12 +395,18 @@ namespace detail
 template <class T = void>
 CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
 {
+  // When compiling with nvc++ in CUDA mode, we always use the minimum cc tuning for all architectures, because we don't
+  // implement nvc++-compatible arch dispatch on device.
+#  if _CCCL_CUDA_COMPILER(NVHPC)
+  cc = ::cuda::compute_capability{NV_TARGET_MINIMUM_SM_INTEGER};
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
   int ptx_version = 0;
   if (const auto error = PtxVersion<T>(ptx_version))
   {
     return error;
   }
   cc = ::cuda::compute_capability{ptx_version / 10};
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
 
 #  if _CCCL_CUDA_COMPILATION()
   // PtxVersion() (via cudaFuncGetAttributes() and .ptxVersion) can report a virtual architecture that does not

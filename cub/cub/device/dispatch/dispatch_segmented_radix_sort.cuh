@@ -313,33 +313,19 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
         ::cuda::std::min(max_num_segments_per_invocation, num_segments - current_segment_offset);
 
       // Log kernel configuration
-#ifdef CUB_DEBUG_LOG
-      _CubLog(
-        "Invoking segmented_kernels<<<%lld, %lld, 0, %lld>>>(), "
-        "%lld items per thread, %lld SM occupancy, "
-        "current segment offset %lld, current bit %d, bit_grain %d\n",
-        (long long) num_current_segments,
-        (long long) pass_config.segmented_config.threads_per_block,
-        (long long) stream,
-        (long long) pass_config.segmented_config.items_per_thread,
+      _CUB_LOG_KERNEL_LAUNCH(
+        "segmented_kernels",
+        static_cast<int>(num_current_segments),
+        1,
+        1,
+        static_cast<int>(pass_config.segmented_config.threads_per_block),
+        0,
+        stream,
+        ", SM occupancy: %lld, current segment offset: %lld, current bit: %d, bit_grain: %d",
         (long long) pass_config.segmented_config.sm_occupancy,
         (long long) current_segment_offset,
         current_bit,
         pass_bits);
-#else // CUB_DEBUG_LOG
-      detail::log(
-        "Invoking segmented_kernels<<<%lld, %lld, 0, %lld>>>(), "
-        "%lld items per thread, %lld SM occupancy, "
-        "current segment offset %lld, current bit %d, bit_grain %d\n",
-        (long long) num_current_segments,
-        (long long) pass_config.segmented_config.threads_per_block,
-        (long long) stream,
-        (long long) pass_config.segmented_config.items_per_thread,
-        (long long) pass_config.segmented_config.sm_occupancy,
-        (long long) current_segment_offset,
-        current_bit,
-        pass_bits);
-#endif // CUB_DEBUG_LOG
 
       launcher_factory(
         static_cast<unsigned int>(num_current_segments), pass_config.segmented_config.threads_per_block, 0, stream)
@@ -798,32 +784,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
         ::cuda::std::min(max_num_segments_per_invocation, num_segments - current_segment_offset);
 
       // Log kernel configuration
-#ifdef CUB_DEBUG_LOG
-      _CubLog(
-        "Invoking segmented_kernels<<<%lld, %lld, 0, %lld>>>(), "
-        "%lld items per thread, %lld SM occupancy, "
-        "current segment offset %lld, current bit %d, bit_grain %d\n",
-        (long long) num_current_segments,
-        (long long) config.threads_per_block,
-        (long long) stream,
-        (long long) config.items_per_thread,
+      _CUB_LOG_KERNEL_LAUNCH(
+        "segmented_kernels",
+        static_cast<int>(num_current_segments),
+        1,
+        1,
+        static_cast<int>(config.threads_per_block),
+        0,
+        stream,
+        ", SM occupancy: %lld, current segment offset: %lld, current bit: %d, bit_grain: %d",
         (long long) config.sm_occupancy,
         (long long) current_segment_offset,
         current_bit,
         pass_bits);
-#else // CUB_DEBUG_LOG
-      log("Invoking segmented_kernels<<<%lld, %lld, 0, %lld>>>(), "
-          "%lld items per thread, %lld SM occupancy, "
-          "current segment offset %lld, current bit %d, bit_grain %d\n",
-          (long long) num_current_segments,
-          (long long) config.threads_per_block,
-          (long long) stream,
-          (long long) config.items_per_thread,
-          (long long) config.sm_occupancy,
-          (long long) current_segment_offset,
-          current_bit,
-          pass_bits);
-#endif // CUB_DEBUG_LOG
 
       if (const auto err = CubDebug(
             launcher_factory(static_cast<unsigned int>(num_current_segments), config.threads_per_block, 0, stream)

@@ -36,7 +36,7 @@ TEST_CASE("TestPermutationIteratorTraits", "[permutation_iterator]")
 }
 
 template <class Vector>
-void TestPermutationIteratorSimple()
+void test_permutation_iterator_simple()
 {
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
@@ -70,12 +70,12 @@ void TestPermutationIteratorSimple()
   Vector ref{10, 2, 3, 4, 5, 20, 7, 8};
   REQUIRE(source == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_permutation_iterator_simple);
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::permutation_iterator<int*, int*>>::value);
 static_assert(cuda::std::is_trivially_copyable<thrust::permutation_iterator<int*, int*>>::value);
 
 template <class Vector>
-void TestPermutationIteratorGather()
+void test_permutation_iterator_gather()
 {
   using Iterator = typename Vector::iterator;
 
@@ -93,10 +93,10 @@ void TestPermutationIteratorGather()
   Vector ref{4, 1, 6, 8};
   REQUIRE(output == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorGather);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_permutation_iterator_gather);
 
 template <class Vector>
-void TestPermutationIteratorScatter()
+void test_permutation_iterator_scatter()
 {
   using Iterator = typename Vector::iterator;
 
@@ -115,10 +115,10 @@ void TestPermutationIteratorScatter()
   Vector ref{10, 2, 3, 10, 5, 10, 7, 10};
   REQUIRE(output == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorScatter);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_permutation_iterator_scatter);
 
 template <class Vector>
-void TestMakePermutationIterator()
+void test_make_permutation_iterator()
 {
   Vector source(8);
   Vector indices{3, 0, 5, 7};
@@ -134,10 +134,10 @@ void TestMakePermutationIterator()
   Vector ref{4, 1, 6, 8};
   REQUIRE(output == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestMakePermutationIterator);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_make_permutation_iterator);
 
 template <typename Vector>
-void TestPermutationIteratorReduce()
+void test_permutation_iterator_reduce()
 {
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
@@ -165,7 +165,7 @@ void TestPermutationIteratorReduce()
     ::cuda::std::plus<T>());
   REQUIRE(result2 == -19);
 };
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorReduce);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_permutation_iterator_reduce);
 
 TEST_CASE("TestPermutationIteratorHostDeviceGather", "[permutation_iterator]")
 {
@@ -240,7 +240,7 @@ TEST_CASE("TestPermutationIteratorHostDeviceScatter", "[permutation_iterator]")
 }
 
 template <typename Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestPermutationIteratorWithCountingIterator()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_permutation_iterator_with_counting_iterator()
 {
   using T      = typename Vector::value_type;
   using diff_t = typename thrust::counting_iterator<T>::difference_type;
@@ -273,4 +273,4 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestPermutationIteratorWithCountingIte
     REQUIRE(output == ref);
   }
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorWithCountingIterator);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_permutation_iterator_with_counting_iterator);

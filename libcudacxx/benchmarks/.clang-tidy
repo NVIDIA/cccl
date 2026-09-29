@@ -1,0 +1,6 @@
+---
+InheritParentConfig: true
+CheckOptions:
+ - key:             readability-identifier-naming.TemplateParameterPrefix
+   value:           ''
+...

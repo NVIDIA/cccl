@@ -116,9 +116,15 @@
 #  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
 
-#if _CCCL_CHECK_BUILTIN(builtin_constant_p) || _CCCL_COMPILER(GCC)
+// NVRTC supports __builtin_constant_p in CTK 13.4, but _CCCL_HAS_BUILTIN does not detect it.
+#if _CCCL_HAS_BUILTIN(__builtin_constant_p) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC, >=, 13, 4)
 #  define _CCCL_BUILTIN_CONSTANT_P(...) __builtin_constant_p(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_constant_p)
+#endif // builtin_constant_p availability
+
+// NVCC doesn't recognize it in host/device code before 13.4
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 4) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_CONSTANT_P
+#endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 4) && _CCCL_DEVICE_COMPILATION()
 
 #if _CCCL_CHECK_BUILTIN(builtin_expect) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_EXPECT(_EXPR, _VAL) __builtin_expect(_EXPR, _VAL)
@@ -290,10 +296,6 @@
 #  define _CCCL_BUILTIN_HAS_NOTHROW_COPY(...) __has_nothrow_copy(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(has_nothrow_copy) && gcc >= 4.3
 
-#if _CCCL_HAS_BUILTIN(__integer_pack)
-#  define _CCCL_BUILTIN_INTEGER_PACK(...) __integer_pack(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__integer_pack)
-
 #if _CCCL_CHECK_BUILTIN(is_array)
 #  define _CCCL_BUILTIN_IS_ARRAY(...) __is_array(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_array)
@@ -355,10 +357,6 @@
 #if 0 // _CCCL_HAS_BUILTIN(__is_scalar)
 #  define _CCCL_BUILTIN_IS_SCALAR(...) __is_scalar(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_scalar)
-
-#if _CCCL_CHECK_BUILTIN(make_integer_seq) || _CCCL_COMPILER(MSVC, >=, 19, 23)
-#  define _CCCL_BUILTIN_MAKE_INTEGER_SEQ(...) __make_integer_seq<__VA_ARGS__>
-#endif // _CCCL_CHECK_BUILTIN(make_integer_seq)
 
 #if _CCCL_HAS_BUILTIN(__reference_constructs_from_temporary)
 #  define _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY(...) __reference_constructs_from_temporary(__VA_ARGS__)

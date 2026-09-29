@@ -47,7 +47,7 @@ public:
 
   template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
   TEST_FUNC constexpr cpp17_output_iterator(cpp17_output_iterator<U>&& u)
-      : it_(u.it_)
+      : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
@@ -106,7 +106,7 @@ public:
 
   template <class U, class T, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
   TEST_FUNC constexpr cpp17_input_iterator(cpp17_input_iterator<U, T>&& u)
-      : it_(u.it_)
+      : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
@@ -176,7 +176,7 @@ public:
 
   template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
   TEST_FUNC constexpr forward_iterator(forward_iterator<U>&& other)
-      : it_(other.it_)
+      : it_(cuda::std::move(other.it_))
   {
     other.it_ = U();
   }
@@ -249,7 +249,7 @@ public:
 
   template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
   TEST_FUNC constexpr bidirectional_iterator(bidirectional_iterator<U>&& u)
-      : it_(u.it_)
+      : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
@@ -326,7 +326,7 @@ public:
 
   template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
   TEST_FUNC constexpr random_access_iterator(random_access_iterator<U>&& u)
-      : it_(u.it_)
+      : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
@@ -497,7 +497,7 @@ public:
 
   template <class U>
   TEST_FUNC constexpr cpp20_random_access_iterator(cpp20_random_access_iterator<U>&& u)
-      : it_(u.it_)
+      : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
@@ -639,7 +639,7 @@ public:
             class = cuda::std::enable_if_t<cuda::std::is_constructible<It, U>::value
                                            && cuda::std::is_default_constructible<U>::value>>
   TEST_FUNC constexpr contiguous_iterator(contiguous_iterator<U>&& u)
-      : it_(u.it_)
+      : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
@@ -781,7 +781,7 @@ public:
 
   template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
   TEST_FUNC constexpr three_way_contiguous_iterator(three_way_contiguous_iterator<U>&& u)
-      : it_(u.it_)
+      : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
@@ -2235,7 +2235,7 @@ public:
 
   template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
   constexpr host_only_iterator(host_only_iterator<U>&& u)
-      : it_(u.it_)
+      : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }
@@ -2364,7 +2364,7 @@ public:
 
   template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
   TEST_DEVICE_FUNC constexpr device_only_iterator(device_only_iterator<U>&& u)
-      : it_(u.it_)
+      : it_(cuda::std::move(u.it_))
   {
     u.it_ = U();
   }

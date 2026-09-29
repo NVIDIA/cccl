@@ -694,15 +694,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
         // Log scan_init_kernel configuration
         const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
 
-#ifdef CUB_DEBUG_LOG
-        _CubLog("Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",
-                init_grid_size,
-                INIT_KERNEL_THREADS,
-                (long long) stream);
-#else // CUB_DEBUG_LOG
-        detail::log(
-          "Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#endif // CUB_DEBUG_LOG
+        _CUB_LOG_KERNEL_LAUNCH("scan_init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
         // Invoke scan_init_kernel to initialize tile descriptors
         error = CubDebug(
@@ -727,8 +719,13 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
           return cudaSuccess;
         }
 
-// Log select_if_kernel configuration
+        // Log select_if_kernel configuration
 #ifdef CUB_DEBUG_LOG
+        constexpr bool cub_debug_log_select_if_kernel = true;
+#else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
+        const bool cub_debug_log_select_if_kernel = detail::logging_enabled();
+#endif // !CUB_DEBUG_LOG
+        if (cub_debug_log_select_if_kernel)
         {
           // Get SM occupancy for select_if_kernel
           int range_select_sm_occupancy;
@@ -740,37 +737,17 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
             return error;
           }
 
-          _CubLog("Invoking select_if_kernel<<<%d, %d, 0, "
-                  "%lld>>>(), %d items per thread, %d SM occupancy\n",
-                  current_num_tiles,
-                  threads_per_block,
-                  (long long) stream,
-                  items_per_thread,
-                  range_select_sm_occupancy);
-        }
-#else // CUB_DEBUG_LOG
-        if (detail::logging_enabled())
-        {
-          // Get SM occupancy for select_if_kernel
-          int range_select_sm_occupancy;
-          error = CubDebug(MaxSmOccupancy(range_select_sm_occupancy, // out
-                                          select_if_kernel,
-                                          threads_per_block));
-          if (cudaSuccess != error)
-          {
-            return error;
-          }
-
-          detail::log(
-            "Invoking select_if_kernel<<<%d, %d, 0, "
-            "%lld>>>(), %d items per thread, %d SM occupancy\n",
+          _CUB_LOG_KERNEL_LAUNCH(
+            "select_if_kernel",
             current_num_tiles,
+            1,
+            1,
             threads_per_block,
-            (long long) stream,
-            items_per_thread,
+            0,
+            stream,
+            ", SM occupancy: %d",
             range_select_sm_occupancy);
         }
-#endif // CUB_DEBUG_LOG
 
         // Invoke select_if_kernel
         error = CubDebug(
@@ -1006,12 +983,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
 
     const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, init_kernel_threads));
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog(
-      "Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#else // CUB_DEBUG_LOG
-    log("Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("scan_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
 
     if (const auto error = CubDebug(
           launcher_factory(init_grid_size, init_kernel_threads, 0, stream)
@@ -1034,6 +1006,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
     }
 
 #ifdef CUB_DEBUG_LOG
+    constexpr bool cub_debug_log_select_sweep_kernel = true;
+#else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
+    const bool cub_debug_log_select_sweep_kernel = logging_enabled();
+#endif // !CUB_DEBUG_LOG
+    if (cub_debug_log_select_sweep_kernel)
     {
       int range_select_sm_occupancy;
       if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
@@ -1054,45 +1031,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
         return error;
       }
 
-      _CubLog("Invoking DeviceSelectSweepKernel<<<%d, %d, 0, "
-              "%lld>>>(), %d items per thread, %d SM occupancy\n",
-              current_num_tiles,
-              threads_per_block,
-              (long long) stream,
-              items_per_thread,
-              range_select_sm_occupancy);
+      _CUB_LOG_KERNEL_LAUNCH(
+        "DeviceSelectSweepKernel",
+        current_num_tiles,
+        1,
+        1,
+        threads_per_block,
+        0,
+        stream,
+        ", SM occupancy: %d",
+        range_select_sm_occupancy);
     }
-#else // CUB_DEBUG_LOG
-    if (logging_enabled())
-    {
-      int range_select_sm_occupancy;
-      if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
-            range_select_sm_occupancy,
-            DeviceSelectSweepKernel<PolicySelector,
-                                    InputIteratorT,
-                                    FlagsInputIteratorT,
-                                    SelectedOutputIteratorT,
-                                    NumSelectedIteratorT,
-                                    ScanTileStateT,
-                                    SelectOpT,
-                                    EqualityOpT,
-                                    per_partition_offset_t,
-                                    streaming_context_t,
-                                    SelectionOpt>,
-            threads_per_block)))
-      {
-        return error;
-      }
-
-      log("Invoking DeviceSelectSweepKernel<<<%d, %d, 0, "
-          "%lld>>>(), %d items per thread, %d SM occupancy\n",
-          current_num_tiles,
-          threads_per_block,
-          (long long) stream,
-          items_per_thread,
-          range_select_sm_occupancy);
-    }
-#endif // CUB_DEBUG_LOG
 
     if (const auto error = CubDebug(
           launcher_factory(current_num_tiles, threads_per_block, 0, stream)

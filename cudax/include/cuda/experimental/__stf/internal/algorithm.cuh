@@ -363,7 +363,11 @@ private:
     {
       static int print_to_dot_cnt = 0; // Warning: not thread-safe
       ::std::string filename      = "algo_" + symbol + "_" + ::std::to_string(print_to_dot_cnt++) + ".dot";
-      cuda_safe_call(cudaGraphDebugDotPrint(*gctx_graph, filename.c_str(), cudaGraphDebugDotFlags(0)));
+      // A debugging aid that cannot write its file says so; it does not end the computation.
+      ON_THROW(notify)
+      {
+        cuda_try<cudaGraphDebugDotPrint>(*gctx_graph, filename.c_str(), cudaGraphDebugDotFlags(0));
+      };
     }
   }
 
