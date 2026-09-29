@@ -136,7 +136,7 @@ __make_default_device_memory_pools()
   ::cuda::__simple_vector<__default_device_memory_pool> __pools{__count, ::cuda::no_init};
   for (::cuda::std::size_t __i = 0; __i < __count; ++__i)
   {
-    ::cuda::std::__construct_at(__pools.data() + __i);
+    __pools.emplace_back();
   }
   return __pools;
 }

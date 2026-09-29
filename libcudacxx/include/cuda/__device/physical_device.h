@@ -31,7 +31,6 @@
 #  include <cuda/__utility/call_once.h>
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__memory/construct_at.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/span>
 #  include <cuda/std/string_view>
@@ -118,7 +117,7 @@ class __physical_device
         // both ways here just to be safe
         if (__dev.has_peer_access_to(__other_dev) && __other_dev.has_peer_access_to(__dev))
         {
-          ::cuda::std::__construct_at(__peers.data() + __num_peers, __other_dev);
+          __peers.emplace_back(__other_dev);
           ++__num_peers;
         }
       }
@@ -140,16 +139,16 @@ class __physical_device
 
     for (::cuda::std::size_t __i = 0; __i < __domain_count; ++__i)
     {
-      ::cuda::std::__construct_at(__params.data() + __i);
-      __params.data()[__i].flags            = ::CU_DEV_SM_RESOURCE_GROUP_LOCALITY_DOMAIN_ID;
-      __params.data()[__i].localityDomainId = static_cast<unsigned int>(__i);
+      auto& __param            = __params.emplace_back();
+      __param.flags            = ::CU_DEV_SM_RESOURCE_GROUP_LOCALITY_DOMAIN_ID;
+      __param.localityDomainId = static_cast<unsigned int>(__i);
     }
 
     auto __groups = ::cuda::__simple_vector<::CUdevResource>{__domain_count, ::cuda::no_init};
 
     for (::cuda::std::size_t __i = 0; __i < __domain_count; ++__i)
     {
-      ::cuda::std::__construct_at(__groups.data() + __i);
+      __groups.emplace_back();
     }
 
     // We don't care about the returned remainder so ignore it
@@ -164,8 +163,7 @@ class __physical_device
     {
       const auto __desc = ::cuda::__driver::__devResourceGenerateDesc(__groups.data() + __i, /*__num_resources=*/1);
 
-      ::cuda::std::__construct_at(
-        __domains.data() + __i,
+      __domains.emplace_back(
         __logical_device::from_native_handle(__device_, ::cuda::__driver::__greenCtxCreate(__device_, __desc)));
     }
 
@@ -173,7 +171,7 @@ class __physical_device
 
     for (::cuda::std::size_t __i = 0; __i < __domain_count; ++__i)
     {
-      ::cuda::std::__construct_at(__refs.data() + __i, __domains.data()[__i]);
+      __refs.emplace_back(__domains.data()[__i]);
     }
 
     // Commit only once every step succeeds, so a throw leaves this object as it was.
@@ -185,11 +183,11 @@ class __physical_device
   {
     auto __domains = ::cuda::__simple_vector<__logical_device>{/*__size=*/1, ::cuda::no_init};
 
-    ::cuda::std::__construct_at(__domains.data(), __device_);
+    __domains.emplace_back(__device_);
 
     auto __refs = ::cuda::__simple_vector<__logical_device_ref>{/*__size=*/1, ::cuda::no_init};
 
-    ::cuda::std::__construct_at(__refs.data(), __domains.data()[0]);
+    __refs.emplace_back(__domains.data()[0]);
 
     // Commit only once every step succeeds, so a throw leaves this object as it was.
     __locality_domains_     = ::cuda::std::move(__domains);
@@ -273,8 +271,8 @@ __make_physical_devices(::cuda::std::size_t __device_count)
   ::cuda::__simple_vector<__physical_device> __devices{__device_count, ::cuda::no_init};
   for (::cuda::std::size_t __i = 0; __i < __device_count; ++__i)
   {
-    ::cuda::std::__construct_at(__devices.data() + __i);
-    __devices.data()[__i].__device_ = static_cast<int>(__i);
+    auto& __device     = __devices.emplace_back();
+    __device.__device_ = static_cast<int>(__i);
   }
   return __devices;
 }

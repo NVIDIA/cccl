@@ -29,7 +29,6 @@
 #  include <cuda/__memory_pool/device_memory_pool.h>
 #  include <cuda/__utility/call_once.h>
 #  include <cuda/__utility/no_init.h>
-#  include <cuda/std/__memory/construct_at.h>
 #  include <cuda/std/__utility/move.h>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -73,8 +72,7 @@ class __per_device_locality_pools
       _CCCL_VERIFY(false, "We should have taken the full-device memory pool path earlier.");
 #  endif // ^^^ 13.3- ^^^
 
-      ::cuda::std::__construct_at(
-        __tmp.data() + __domain_id, ::cuda::__get_default_memory_pool(__location, ::CU_MEM_ALLOCATION_TYPE_PINNED));
+      __tmp.emplace_back(::cuda::__get_default_memory_pool(__location, ::CU_MEM_ALLOCATION_TYPE_PINNED));
       // This only works if __locality_domains() iterates with monotonically increasing domain
       // ID without holes. Otherwise we will need a more complicated strategy for remember
       // which domains to delete.
@@ -103,7 +101,7 @@ __make_per_device_locality_pools()
   ::cuda::__simple_vector<__per_device_locality_pools> __pools{__count, ::cuda::no_init};
   for (::cuda::std::size_t __i = 0; __i < __count; ++__i)
   {
-    ::cuda::std::__construct_at(__pools.data() + __i);
+    __pools.emplace_back();
   }
   return __pools;
 }
