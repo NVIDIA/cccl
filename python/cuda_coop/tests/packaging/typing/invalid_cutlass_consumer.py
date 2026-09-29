@@ -84,8 +84,14 @@ cutlass_coop.sum(  # expected-error: [call-overload]
 )
 
 cutlass_coop.inclusive_sum(warp, values)  # expected-error: [arg-type]
-cutlass_coop.exclusive_sum(block, scalar, valid_items=7)  # expected-error: [arg-type]
-cutlass_coop.scan(block, scalar, scan_op="max")  # expected-error: [call-overload]
+cutlass_coop.exclusive_sum(
+    block,  # expected-error: [arg-type]
+    scalar,
+    valid_items=7,
+)
+cutlass_coop.scan(  # expected-error: [call-overload]
+    block, scalar, scan_op="max"
+)
 cutlass_coop.exclusive_scan(
     block,
     scalar,
@@ -99,14 +105,20 @@ cutlass_coop.inclusive_scan(
     scalar,
     scan_op=callback,  # expected-error: [arg-type]
 )
-cutlass_coop.scan(block, scalar, prefix_op=callback)  # expected-error: [call-overload]
-cutlass_coop.exclusive_sum(block, scalar, values)  # expected-error: [call-overload]
+cutlass_coop.scan(  # expected-error: [call-overload]
+    block, scalar, prefix_op=callback
+)
+cutlass_coop.exclusive_sum(  # expected-error: [call-overload]
+    block, scalar, values
+)
 cutlass_coop.scan(
     warp,  # expected-error: [arg-type]
     scalar,
     temp_storage=cutlass_coop.TempStorage(),
 )
-cutlass_coop.scan(warp, scalar, algorithm="raking")  # expected-error: [call-overload]
+cutlass_coop.scan(  # expected-error: [call-overload]
+    warp, scalar, algorithm="raking"
+)
 cutlass_coop.scan(  # expected-error: [call-overload]
     block, scalar, aggregate_output=scalar
 )
@@ -114,7 +126,9 @@ cutlass_coop.inclusive_sum(
     cutlass_coop.this_cluster(),  # expected-error: [arg-type]
     scalar,
 )
-common.exclusive_sum(warp, scalar, valid_items=7)  # expected-error: [call-overload]
+common.exclusive_sum(  # expected-error: [call-overload]
+    warp, scalar, valid_items=7
+)
 common.scan(  # expected-error: [call-overload]
     block, scalar, aggregate_output=cutlass_coop.ThreadData(1, Int32)
 )

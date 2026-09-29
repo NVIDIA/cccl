@@ -42,7 +42,11 @@ from cuda.coop._core.thread_group import ThreadGroup
 from .._compiler import _rendering, _state, _storage, _types
 from .._compiler._types import ALL_PROVIDER_TYPES, TYPE_SPECS
 from .._group_reduce import _classify_valid_items
-from .._operators import OPERATOR_CPP, operator_expression, validate_operator_dtype
+from .._operators import (
+    OPERATOR_CPP,
+    operator_expression,
+    validate_operator_dtype,
+)
 from .._thread_data import ThreadData, _make_rmem_tensor
 
 _provider_rendering = _rendering
@@ -82,11 +86,17 @@ def _make_group_scan_plan(
         algorithm = BlockScanAlgorithm.RAKING
     if mode == ScanMode.INCLUSIVE.value and initial_value is not None:
         raise ValueError(
-            f"{_ROOT_SCOPE}.scan initial_value is not supported for inclusive scans"
+            f"{_ROOT_SCOPE}.scan initial_value is not supported "
+            "for inclusive scans"
         )
-    if mode == ScanMode.EXCLUSIVE.value and op != "sum" and initial_value is None:
+    if (
+        mode == ScanMode.EXCLUSIVE.value
+        and op != "sum"
+        and initial_value is None
+    ):
         raise ValueError(
-            f"{_ROOT_SCOPE}.scan requires initial_value for non-default exclusive scans"
+            f"{_ROOT_SCOPE}.scan requires initial_value "
+            "for non-default exclusive scans"
         )
 
     initial_descriptor = (
@@ -158,15 +168,20 @@ def _validate_scan_request_plan(
     scan_operator = operation.scan_operator
     if scan_operator is None:
         if op != "sum":
-            raise ValueError("group scan request operator does not match its plan")
+            raise ValueError(
+                "group scan request operator does not match its plan"
+            )
     else:
         if not isinstance(scan_operator, CxxOperator):
             raise NotImplementedError(
-                "CUTLASS group scan currently supports built-in C++ operators only"
+                "CUTLASS group scan currently supports "
+                "built-in C++ operators only"
             )
         expected_cpp = _normalize_cpp_operator(operator_expression(op))
         if _normalize_cpp_operator(scan_operator.cpp) != expected_cpp:
-            raise ValueError("group scan request operator does not match its plan")
+            raise ValueError(
+                "group scan request operator does not match its plan"
+            )
 
     initial_value = operation.initial_value
     if (
@@ -183,7 +198,8 @@ def _validate_scan_request_plan(
         )
     ):
         raise NotImplementedError(
-            "Scan initial descriptor must be a runtime value or canonical typed zero"
+            "Scan initial descriptor must be a runtime value "
+            "or canonical typed zero"
         )
 
     implementation = plan.implementation
@@ -195,10 +211,14 @@ def _validate_scan_request_plan(
     if plan.target is not expected_target:
         raise ValueError("CUB scan target does not match its resolved group")
     expected_struct = (
-        "BlockScan" if plan.target is GroupLoweringTarget.CUB_BLOCK else "WarpScan"
+        "BlockScan"
+        if plan.target is GroupLoweringTarget.CUB_BLOCK
+        else "WarpScan"
     )
     if implementation.struct_name != expected_struct:
-        raise ValueError("CUB scan implementation does not match its group target")
+        raise ValueError(
+            "CUB scan implementation does not match its group target"
+        )
     expected_prefix = (
         "Exclusive" if operation.mode is ScanMode.EXCLUSIVE else "Inclusive"
     )
@@ -214,10 +234,15 @@ def _validate_scan_request_plan(
     if template_arguments.get("T") is not value_type:
         raise ValueError("CUB scan template dtype does not match its request")
     if operation.operand_kind.value == ScanValueKind.ARRAY.value:
-        if template_arguments.get("ITEMS_PER_THREAD") != operation.items_per_thread:
+        if (
+            template_arguments.get("ITEMS_PER_THREAD")
+            != operation.items_per_thread
+        ):
             raise ValueError("CUB scan item count does not match its request")
     elif "ITEMS_PER_THREAD" in template_arguments:
-        raise ValueError("scalar CUB scan plan cannot carry an array item count")
+        raise ValueError(
+            "scalar CUB scan plan cannot carry an array item count"
+        )
     participation = plan.participation
     if participation is None:
         raise ValueError("CUB scan plan requires a participation contract")
@@ -253,11 +278,15 @@ def _validate_scan_request_plan(
         ):
             raise ValueError("BlockScan requires exact shared storage")
     elif temp_storage.ownership is not StorageOwnership.IMPLEMENTATION:
-        raise ValueError("internal Scan scratch requires implementation ownership")
+        raise ValueError(
+            "internal Scan scratch requires implementation ownership"
+        )
 
     result = plan.result
     if result is None or result.has_aggregate != operation.aggregate:
-        raise ValueError("CUB scan result contract does not match aggregate semantics")
+        raise ValueError(
+            "CUB scan result contract does not match aggregate semantics"
+        )
     return operation
 
 
@@ -358,7 +387,9 @@ class _CubScanRequest:
             BindingKind.RUNTIME: "valid_runtime",
             BindingKind.STATIC: f"valid_{self.valid_items.value}",
         }[self.valid_items.kind]
-        signature = hashlib.sha256(repr(self.semantic_key).encode()).hexdigest()[:12]
+        signature = hashlib.sha256(
+            repr(self.semantic_key).encode()
+        ).hexdigest()[:12]
         symbol = (
             "cuda_coop_cutlass_cub_scan_"
             f"{self.group.symbol_suffix}_"
@@ -407,13 +438,17 @@ def _render_cub_template_argument(
 ) -> str:
     if name == "T":
         if value is not request.value_type:
-            raise ValueError("CUB scan template dtype does not match its request")
+            raise ValueError(
+                "CUB scan template dtype does not match its request"
+            )
         return TYPE_SPECS[request.value_type].cpp_type
     if isinstance(value, int) and not isinstance(value, bool):
         return str(value)
     if isinstance(value, str):
         return value
-    raise TypeError(f"cannot render CUB scan template argument {name}={value!r}")
+    raise TypeError(
+        f"cannot render CUB scan template argument {name}={value!r}"
+    )
 
 
 def _storage_reuse_barrier_line(plan: GroupLoweringPlan) -> str:
@@ -426,7 +461,11 @@ def _storage_reuse_barrier_line(plan: GroupLoweringPlan) -> str:
         _, logical_width = _warp_instances(plan)
         mask = "0xffffffffu"
         if logical_width < 32:
-            mask = f"{(1 << logical_width) - 1}u << ((threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z)) % 32u / {logical_width}u * {logical_width}u)"
+            mask = (
+                f"{(1 << logical_width) - 1}u << ((threadIdx.x + blockDim.x * "
+                "(threadIdx.y + blockDim.y * threadIdx.z)) % 32u / "
+                f"{logical_width}u * {logical_width}u)"
+            )
         return f"  __syncwarp({mask});"
     if synchronization.storage_reuse_barrier is SynchronizationScope.NONE:
         return ""
@@ -441,7 +480,9 @@ def _warp_instances(plan: GroupLoweringPlan) -> tuple[int, int]:
     block_threads = block_dim[0] * block_dim[1] * block_dim[2]
     implementation = plan.implementation
     assert isinstance(implementation, AlgorithmSpec)
-    logical_width = implementation.template_arguments.get("VIRTUAL_WARP_THREADS")
+    logical_width = implementation.template_arguments.get(
+        "VIRTUAL_WARP_THREADS"
+    )
     if not isinstance(logical_width, int) or logical_width < 1:
         raise ValueError("WarpScan plan requires a static logical warp width")
     if block_threads < logical_width or block_threads % logical_width != 0:
@@ -465,24 +506,41 @@ def _render_cub_scan(request: _CubScanRequest) -> list[str]:
     )
 
     storage = "storage"
-    storage_lines = ["  __shared__ typename implementation_type::TempStorage storage;"]
+    storage_lines = [
+        "  __shared__ typename implementation_type::TempStorage storage;"
+    ]
     if request.external_scratch:
         storage_lines = [
             "  constexpr unsigned long long required_temp_bytes =",
-            "      (unsigned long long)sizeof(typename implementation_type::TempStorage);",
+            (
+                "      (unsigned long long)sizeof"
+                "(typename implementation_type::TempStorage);"
+            ),
             "  constexpr unsigned long long required_temp_alignment =",
-            "      (unsigned long long)alignof(typename implementation_type::TempStorage);",
+            (
+                "      (unsigned long long)alignof"
+                "(typename implementation_type::TempStorage);"
+            ),
             "  if (temp_storage_bytes <= 0 ||",
-            "      (unsigned long long)temp_storage_bytes < required_temp_bytes ||",
+            (
+                "      (unsigned long long)temp_storage_bytes "
+                "< required_temp_bytes ||"
+            ),
             "      ((unsigned long long)temp_storage_smem_addr &",
             "       (required_temp_alignment - 1ull)) != 0ull) {",
             '    asm volatile("trap;");',
             "  }",
             "  unsigned long long generic_addr;",
-            '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_addr) : "l"(static_cast<unsigned long long>(temp_storage_smem_addr)));',
+            (
+                '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_addr) : '
+                '"l"(static_cast<unsigned long long>(temp_storage_smem_addr)));'
+            ),
             "  void* temp_storage_ptr = reinterpret_cast<void*>(generic_addr);",
             "  auto* storage_ptr = reinterpret_cast<",
-            "      typename implementation_type::TempStorage*>(temp_storage_ptr);",
+            (
+                "      typename implementation_type::"
+                "TempStorage*>(temp_storage_ptr);"
+            ),
         ]
         storage = "*storage_ptr"
     elif request.plan.target is GroupLoweringTarget.CUB_WARP:
@@ -493,7 +551,11 @@ def _render_cub_scan(request: _CubScanRequest) -> list[str]:
                 f"storage[{instances}];"
             ),
             "  unsigned int storage_instance =",
-            f"      (threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z)) / {logical_width}u;",
+            (
+                "      (threadIdx.x + blockDim.x * "
+                "(threadIdx.y + blockDim.y * threadIdx.z)) / "
+                f"{logical_width}u;"
+            ),
         ]
         storage = "storage[storage_instance]"
 
@@ -502,13 +564,17 @@ def _render_cub_scan(request: _CubScanRequest) -> list[str]:
     output_lines: list[str] = []
     if request.is_array:
         params.extend(
-            f"{spec.cpp_type} item{index}" for index in range(request.items_per_thread)
+            f"{spec.cpp_type} item{index}"
+            for index in range(request.items_per_thread)
         )
-        values = ", ".join(f"item{index}" for index in range(request.items_per_thread))
+        values = ", ".join(
+            f"item{index}" for index in range(request.items_per_thread)
+        )
         input_lines.extend(
             [
                 (
-                    f"  {spec.cpp_type} input_items[{request.items_per_thread}] = "
+                    f"  {spec.cpp_type} "
+                    f"input_items[{request.items_per_thread}] = "
                     f"{{{values}}};"
                 ),
                 f"  {spec.cpp_type} output_items[{request.items_per_thread}];",
@@ -570,12 +636,16 @@ def _render_cub_scan(request: _CubScanRequest) -> list[str]:
             f"{request.symbol_name}({', '.join(params)}) {{"
         ),
         (
-            f"  using implementation_type = ::cub::{implementation.struct_name}<"
+            "  using implementation_type = "
+            f"::cub::{implementation.struct_name}<"
             f"{template_arguments}>;"
         ),
         *(
             [
-                f"  if (valid_items < 1 || valid_items > {request.group.static_size}) {{",
+                (
+                    "  if (valid_items < 1 || valid_items > "
+                    f"{request.group.static_size}) {{"
+                ),
                 '    asm volatile("trap;" : : :);',
                 "  }",
             ]
@@ -635,9 +705,13 @@ _resolve_type = _provider_types.make_provider_type_resolver(
 
 def _typed_value(value, value_type, *, name="value", initial=False):
     if isinstance(value, np.generic):
-        if initial and _provider_types.canonical_dsl_type(value) is not value_type:
+        if (
+            initial
+            and _provider_types.canonical_dsl_type(value) is not value_type
+        ):
             raise TypeError(
-                "cuda.coop.cutlass.scan initial_value dtype must match value dtype"
+                "cuda.coop.cutlass.scan initial_value dtype must match "
+                "value dtype"
             )
         value = value.item()
     if initial and type(value) is float and (not math.isfinite(value)):
@@ -662,7 +736,9 @@ def _validate_aggregate_output(output, *, value_type):
     if output is None:
         return
     if not isinstance(output, ThreadData):
-        raise TypeError("cuda.coop.cutlass.scan aggregate_output must be ThreadData")
+        raise TypeError(
+            "cuda.coop.cutlass.scan aggregate_output must be ThreadData"
+        )
     if output.items_per_thread != 1:
         raise ValueError(
             "cuda.coop.cutlass.scan aggregate_output must contain one item"
@@ -672,7 +748,8 @@ def _validate_aggregate_output(output, *, value_type):
         and _provider_types.canonical_dsl_type(output.dtype) is not value_type
     ):
         raise TypeError(
-            "cuda.coop.cutlass.scan aggregate_output dtype must match value dtype"
+            "cuda.coop.cutlass.scan aggregate_output dtype must match "
+            "value dtype"
         )
 
 
@@ -696,7 +773,9 @@ def _with_block_storage(plan, descriptor):
             requested_size_in_bytes=None
             if descriptor is None
             else descriptor.size_in_bytes,
-            requested_alignment=None if descriptor is None else descriptor.alignment,
+            requested_alignment=None
+            if descriptor is None
+            else descriptor.alignment,
             auto_sync=True if descriptor is None else descriptor.auto_sync,
         ),
         synchronization=dataclasses.replace(
@@ -723,7 +802,9 @@ def _materialize_scan(
     initial_args = []
     if request.has_runtime_initial:
         initial_args = [
-            _typed_value(initial_value, value_type, name="initial_value", initial=True)
+            _typed_value(
+                initial_value, value_type, name="initial_value", initial=True
+            )
         ]
     elif initial_value is not None:
         raise ValueError("Scan initial value does not match its plan")
@@ -752,10 +833,12 @@ def _materialize_scan(
                 from .._temp_storage import TempStorage
 
                 temp_storage = TempStorage(auto_sync=True)
-            scratch_args = _provider_storage.register_deferred_temp_storage_event(
-                temp_storage,
-                primitive_name="scan",
-                requirement_key=request.scratch_requirement_key,
+            scratch_args = (
+                _provider_storage.register_deferred_temp_storage_event(
+                    temp_storage,
+                    primitive_name="scan",
+                    requirement_key=request.scratch_requirement_key,
+                )
             )
         result = ffi(
             name=request.symbol_name,
@@ -764,8 +847,16 @@ def _materialize_scan(
                 *([value_type] if request.has_runtime_initial else []),
                 *([Int32] if valid_args else []),
                 *([Uint32, Int32, Int32] if request.external_scratch else []),
-                *([llvm.PointerType.get(0)] if aggregate_tensor is not None else []),
-                *([llvm.PointerType.get(0)] if result_tensor is not None else []),
+                *(
+                    [llvm.PointerType.get(0)]
+                    if aggregate_tensor is not None
+                    else []
+                ),
+                *(
+                    [llvm.PointerType.get(0)]
+                    if result_tensor is not None
+                    else []
+                ),
             ],
             return_type=None if request.is_array else value_type,
         )(
@@ -778,7 +869,11 @@ def _materialize_scan(
                 if aggregate_tensor is not None
                 else []
             ),
-            *([result_tensor.iterator.llvm_ptr] if result_tensor is not None else []),
+            *(
+                [result_tensor.iterator.llvm_ptr]
+                if result_tensor is not None
+                else []
+            ),
         )
         if aggregate_output is not None:
             aggregate_output.dtype = value_type
@@ -786,7 +881,9 @@ def _materialize_scan(
         if result_tensor is not None:
             return ThreadData(
                 request.items_per_thread,
-                dtype=_provider_types.thread_data_output_dtype(value, value_type),
+                dtype=_provider_types.thread_data_output_dtype(
+                    value, value_type
+                ),
                 values=[
                     value_type(result_tensor[i])
                     for i in range(request.items_per_thread)
@@ -824,11 +921,13 @@ def provider_scan(
 
         if not isinstance(temp_storage, TempStorage):
             raise TypeError(
-                "cuda.coop.cutlass.scan temp_storage must be CUTLASS TempStorage"
+                "cuda.coop.cutlass.scan temp_storage must be "
+                "CUTLASS TempStorage"
             )
         if group.kind != "block":
             raise ValueError(
-                "cuda.coop.cutlass.scan TempStorage applies only to block groups"
+                "cuda.coop.cutlass.scan TempStorage applies only "
+                "to block groups"
             )
     if isinstance(value, ThreadData):
         value_type, values = _provider_types.resolve_thread_data_value_type(
@@ -840,7 +939,9 @@ def provider_scan(
         )
         value_kind = ScanValueKind.ARRAY
     else:
-        value_type = _resolve_type(value, allowed=ALL_PROVIDER_TYPES, feature="scan")
+        value_type = _resolve_type(
+            value, allowed=ALL_PROVIDER_TYPES, feature="scan"
+        )
         values, value_kind = (value,), ScanValueKind.SCALAR
     validate_operator_dtype(op, value_type, primitive="scan")
     plan = _make_group_scan_plan(
@@ -859,7 +960,9 @@ def provider_scan(
     external_scratch = plan.target is GroupLoweringTarget.CUB_BLOCK
     if external_scratch:
         plan = _with_block_storage(plan, temp_storage)
-    request = _CubScanRequest(plan, op, value_type, external_scratch=external_scratch)
+    request = _CubScanRequest(
+        plan, op, value_type, external_scratch=external_scratch
+    )
     return _materialize_scan(
         request=request,
         value=value,

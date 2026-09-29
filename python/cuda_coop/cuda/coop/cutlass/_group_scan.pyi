@@ -65,13 +65,23 @@ from cuda.coop._typing import (
 )
 
 from .._core.api.thread_group import BlockGroup, WarpGroup
-from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_data import (
+    CutlassTensorSample,
+    CutlassTensorSSASample,
+    ThreadData,
+)
 
 _ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 _ScalarT = TypeVar("_ScalarT", bound=CommonNumericScalar)
 _RegisterPayload: TypeAlias = CutlassTensorSample | CutlassTensorSSASample
 _NumpyScanUfuncName: TypeAlias = Literal[
-    "add", "multiply", "minimum", "maximum", "bitwise_and", "bitwise_or", "bitwise_xor"
+    "add",
+    "multiply",
+    "minimum",
+    "maximum",
+    "bitwise_and",
+    "bitwise_or",
+    "bitwise_xor",
 ]
 
 class _NumpyScanUfunc(Protocol):
@@ -88,7 +98,9 @@ class _NumpySumScanUfunc(_NumpyScanUfunc, Protocol):
 
 # The compiler accepts known identities only, not arbitrary callbacks.
 _OperatorScanAlias: TypeAlias = Callable[[object, object], object]
-_BuiltinScanOperator: TypeAlias = ScanOperator | _OperatorScanAlias | _NumpyScanUfunc
+_BuiltinScanOperator: TypeAlias = (
+    ScanOperator | _OperatorScanAlias | _NumpyScanUfunc
+)
 _SeededScanOperator: TypeAlias = (
     NonSumScanOperator | _OperatorScanAlias | _NumpyScanUfunc
 )
