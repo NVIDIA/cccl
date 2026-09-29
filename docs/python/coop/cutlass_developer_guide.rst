@@ -82,8 +82,7 @@ unloaded.
 A call through the common API must select the backend for the compiler
 tracing the kernel. CUTLASS registers a predicate that compares the active
 environment with CuTe's initialized environment. The dispatcher calls it
-without creating another compiler or importing another runtime. An explicit
-private ``_compiler_scope`` takes precedence over environment detection.
+without creating another compiler or importing another runtime.
 Both integrations can be registered in the same process. If two predicates
 claim the same active environment, dispatch fails.
 

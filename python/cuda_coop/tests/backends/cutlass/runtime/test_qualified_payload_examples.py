@@ -23,7 +23,7 @@ def test_register_conversion_example():
 
     @cute.kernel
     def convert_registers(destination: cute.Pointer):
-        thread = cutlass_coop.this_block().rank()
+        thread = cute.arch.thread_idx()[0]
         original = cute.make_rmem_tensor(2, cutlass.Int32)
         original[0] = thread * 2
         original[1] = thread * 2 + 1

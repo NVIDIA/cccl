@@ -107,7 +107,7 @@ For a CuTe qualified call, this tested example scans a logical warp's valid
 prefix and writes its aggregate. ``operator.add`` selects the built-in sum;
 it is not a custom device callback.
 
-.. literalinclude:: ../../../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_collective_examples.py
+.. literalinclude:: ../../../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_scan_examples.py
    :language: python
    :start-after: # qualified-exclusive-scan-example-begin
    :end-before: # qualified-exclusive-scan-example-end
