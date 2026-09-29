@@ -127,10 +127,10 @@ coop.store(  # expected-error: [call-overload]
     values,
     offset="1",
 )
-coop.BlockLoadAlgorithm  # expected-error: [attr-defined]
-coop.BlockStoreAlgorithm  # expected-error: [attr-defined]
-coop.WarpLoadAlgorithm  # expected-error: [attr-defined]
-coop.WarpStoreAlgorithm  # expected-error: [attr-defined]
+coop.BlockLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
+coop.BlockStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
+coop.WarpLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
+coop.WarpStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
 portable.exchange(
     portable.this_block(),
     portable_values,

@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """Exchange and Shuffle runtime qualification for Numba-CUDA-MLIR."""
 
@@ -12,7 +11,7 @@ import re
 import shutil
 import subprocess
 import sys
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
 
 import numpy as np
@@ -175,7 +174,7 @@ def _scatter_exchange_oracle(
     return result, compared
 
 
-@lru_cache(maxsize=None)
+@cache
 def _structured_exchange_kernel(
     scope: str,
     mode: str,
@@ -385,7 +384,7 @@ def test_inferred_load_payload_composes_directly_into_exchange() -> None:
     np.testing.assert_array_equal(observed, expected)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _qualified_block_exchange_kernel(mode: str, warp_time_slicing: bool):
     if mode in {
         "striped_to_blocked",
@@ -573,7 +572,7 @@ def test_block_exchange_warp_time_slicing_matches_the_full_storage_oracle(
         np.testing.assert_array_equal(ranks_out, ranks)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _repeated_warp_exchange_kernel(width: int):
     if width == _WARP_THREADS:
 
@@ -642,7 +641,7 @@ def test_warp_exchange_inverse_round_trip(width: int) -> None:
     np.testing.assert_array_equal(observed, source)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _array_shuffle_kernel(mode: str, api: str):
     if api == "portable":
 
@@ -771,7 +770,7 @@ def test_scalar_offset_accepts_per_thread_negative_and_positive_int32_distances(
     np.testing.assert_array_equal(observed[compared], expected[compared])
 
 
-@lru_cache(maxsize=None)
+@cache
 def _static_rotate_kernel(distance: int):
     @cuda.jit
     def kernel(source, observed):
@@ -1066,6 +1065,7 @@ namespace['_run_same_direction_warp_reuse']({width}, check_output={not disable_b
                 "-c",
                 script,
             ],
+            check=False,
             capture_output=True,
             text=True,
             timeout=180,
