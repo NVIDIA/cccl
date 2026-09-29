@@ -319,8 +319,7 @@ struct AgentSelectIf
   };
 
   // Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per-thread fields

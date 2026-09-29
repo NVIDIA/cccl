@@ -13,10 +13,10 @@
 #include <algorithm>
 
 #include "catch2_large_problem_helper.cuh"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
-#include <c2h/device_and_stream.h>
 
 struct fake_equal_to
 {
@@ -274,43 +274,7 @@ CUB_TEST(
     }
   };
 
-  SECTION("DeviceSelect::Unique works with cudaStream_t")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_unique(stream.get());
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_unique(stream);
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::stream_ref")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const cuda::stream_ref stream_ref{stream};
-    test_unique(stream_ref);
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_unique(env);
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_unique(policy);
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_unique(policy);
-  }
+  test_with_custom_streams(test_unique);
 }
 #endif // TEST_LAUNCH == 0
 

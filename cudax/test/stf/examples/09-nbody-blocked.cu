@@ -11,6 +11,7 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <random>
+#include <string>
 
 using namespace cuda::experimental::stf;
 
@@ -124,7 +125,7 @@ int main(int argc, char** argv)
   if (argc > 1)
   {
     // Get dataset from file
-    std::string filename = argv[1];
+    const std::string filename = argv[1];
 
     load_input_file(filename, particles);
 
@@ -156,8 +157,8 @@ int main(int argc, char** argv)
 
   cuda_safe_call(cudaHostRegister(&particles[0], BODY_CNT * sizeof(body), cudaHostRegisterPortable));
 
-  double dt    = 0.005;
-  size_t NITER = 7; // 7000;
+  const double dt    = 0.005;
+  const size_t NITER = 7; // 7000;
 
   context ctx;
 
@@ -166,12 +167,12 @@ int main(int argc, char** argv)
   // Accelerations
   std::vector<logical_data<slice<double, 2>>> acc_parts;
 
-  size_t block_cnt = (BODY_CNT + BLOCK_SIZE - 1) / BLOCK_SIZE;
+  const size_t block_cnt = (BODY_CNT + BLOCK_SIZE - 1) / BLOCK_SIZE;
   for (size_t i = 0; i < block_cnt; i++)
   {
-    size_t first = i * BLOCK_SIZE;
-    size_t last  = std::min((i + 1) * BLOCK_SIZE, BODY_CNT);
-    auto p_i     = ctx.logical_data(make_slice(&particles[first], last - first));
+    const size_t first = i * BLOCK_SIZE;
+    const size_t last  = std::min((i + 1) * BLOCK_SIZE, BODY_CNT);
+    auto p_i           = ctx.logical_data(make_slice(&particles[first], last - first));
     parts.push_back(p_i);
 
     auto acc_p_i = ctx.logical_data(shape_of<slice<double, 2>>(last - first, 3));
@@ -190,7 +191,7 @@ int main(int argc, char** argv)
     // Initialize acceleration to 0
     for (size_t b = 0; b < block_cnt; b++)
     {
-      ctx.launch(exec_place::device(b % ngpus), acc_parts[b].write())
+      ctx.launch(exec_place::device(static_cast<int>(b % ngpus)), acc_parts[b].write())
           //.set_symbol("init_acc")
           ->*[=] _CCCL_DEVICE(auto t, slice<double, 2> acc) {
                 for (size_t i = t.rank(); i < acc.extent(0); i += t.size())
@@ -208,7 +209,8 @@ int main(int argc, char** argv)
     {
       for (size_t b_other = 0; b_other < block_cnt; b_other++)
       {
-        ctx.launch(exec_place::device(b % ngpus), parts[b].read(), parts[b_other].read(), acc_parts[b].rw())
+        ctx.launch(
+          exec_place::device(static_cast<int>(b % ngpus)), parts[b].read(), parts[b_other].read(), acc_parts[b].rw())
             //.set_symbol("compute_acc")
             ->*[=] _CCCL_DEVICE(auto t, slice<const body> p, slice<const body> p_other, slice<double, 2> acc) {
                   for (size_t i = t.rank(); i < p.extent(0); i += t.size())
@@ -223,8 +225,8 @@ int main(int argc, char** argv)
                           d[k] = p_other(j).pos[k] - p(i).pos[k];
                         }
 
-                        double dist     = d[0] * d[0] + d[1] * d[1] + d[2] * d[2] + kSofteningSquared;
-                        double dist_inv = 1.0 / sqrt(dist);
+                        const double dist     = d[0] * d[0] + d[1] * d[1] + d[2] * d[2] + kSofteningSquared;
+                        const double dist_inv = 1.0 / sqrt(dist);
 
                         for (size_t k = 0; k < 3; k++)
                         {
@@ -240,7 +242,7 @@ int main(int argc, char** argv)
     for (size_t b = 0; b < block_cnt; b++)
     {
       // Update velocity and positions
-      ctx.launch(exec_place::device(b % ngpus), parts[b].rw(), acc_parts[b].read())
+      ctx.launch(exec_place::device(static_cast<int>(b % ngpus)), parts[b].rw(), acc_parts[b].read())
           //.set_symbol("update")
           ->*[=] _CCCL_DEVICE(auto t, slice<body> p, slice<const double, 2> acc) {
                 for (size_t i = t.rank(); i < p.extent(0); i += t.size())
@@ -260,9 +262,9 @@ int main(int argc, char** argv)
 
     // Write the VTK file for this time step
     const char* dump_freq_str = getenv("DUMP_FREQ");
-    if (dump_freq_str && iter % atoi(dump_freq_str) == 0)
+    if (dump_freq_str && iter % ::std::stoi(dump_freq_str) == 0)
     {
-      std::string filename = "time_step_" + std::to_string(iter) + ".vtk";
+      const std::string filename = "time_step_" + std::to_string(iter) + ".vtk";
       writeVTKFile(ctx, filename, BLOCK_SIZE, BODY_CNT, parts);
     }
   }
@@ -277,7 +279,8 @@ int main(int argc, char** argv)
   cuda_safe_call(cudaEventElapsedTime(&elapsed, start, stop));
 
   // rough approximation !
-  double FLOP_COUNT = 21.0 * (1.0 * BODY_CNT) * (1.0 * BODY_CNT) * NITER;
+  const double FLOP_COUNT =
+    21.0 * (1.0 * static_cast<double>(BODY_CNT)) * (1.0 * static_cast<double>(BODY_CNT)) * static_cast<double>(NITER);
 
   printf("NBODY: elapsed %f ms, %f GFLOPS\n", elapsed, FLOP_COUNT / elapsed / 1000000.0);
 }

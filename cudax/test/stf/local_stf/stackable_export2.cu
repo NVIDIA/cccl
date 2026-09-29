@@ -21,16 +21,16 @@ using namespace cuda::experimental::stf;
 
 __global__ void kernel(slice<int> b, long long int clock_cnt)
 {
-  long long int start_clock  = clock64();
-  long long int clock_offset = 0;
+  const long long int start_clock = clock64();
+  long long int clock_offset      = 0;
   while (clock_offset < clock_cnt)
   {
     clock_offset = clock64() - start_clock;
   }
 
-  size_t n   = b.size();
-  int i      = blockIdx.x * blockDim.x + threadIdx.x;
-  int stride = blockDim.x * gridDim.x;
+  const size_t n   = b.size();
+  int i            = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int stride = static_cast<int>(blockDim.x * gridDim.x);
 
   while (i < n)
   {
@@ -48,7 +48,7 @@ int main()
   int clock_rate;
   cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device);
 
-  double ms               = 500;
+  const double ms         = 500;
   long long int clock_cnt = (long long int) (ms * clock_rate);
 
   stackable_ctx sctx;
