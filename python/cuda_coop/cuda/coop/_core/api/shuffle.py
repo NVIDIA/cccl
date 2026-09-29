@@ -44,10 +44,10 @@ def shuffle(
     ----------
     group : cuda.coop.ThreadGroup
         Complete block whose members all call the primitive; see
-        :ref:`thread groups <coop-thread-groups>`. Warp, mapped-warp, cluster,
+        :ref:`thread groups <coop-common-groups>`. Warp, mapped-warp, cluster,
         and grid groups are unsupported.
     value : cuda.coop.ThreadDataLike
-        Readable :ref:`per-thread payload <coop-thread-data>` in blocked
+        Readable :ref:`per-thread payload <coop-common-payloads>` in blocked
         order. All threads must use the same dtype and fixed extent.
         Supports signed and unsigned 8-, 16-, 32-, and 64-bit integers,
         ``float32``, and ``float64``. Scalar inputs are unsupported.
@@ -60,9 +60,10 @@ def shuffle(
         the first output element is undefined.
     distance : int, optional
         Compile-time shift distance, which must be exactly ``1``. The shift
-        crosses thread boundaries as needed. Use a qualified
-        ``cuda.coop.<backend>`` API for scalar offset or rotate operations
-        where supported.
+        crosses thread boundaries as needed. Both
+        :func:`cuda.coop.numba_mlir.shuffle` and
+        :func:`cuda.coop.cutlass.shuffle` support scalar offset and rotate
+        operations with compile-time or runtime distances.
 
     Returns
     -------
@@ -75,7 +76,7 @@ def shuffle(
     -----
     The shift has no wraparound. Its unit is one element in the flattened
     block tile. The implementation manages
-    :ref:`temporary storage <coop-temp-storage>` automatically.
+    :ref:`temporary storage <coop-common-storage>` automatically.
 
     See Also
     --------
@@ -92,6 +93,11 @@ def shuffle(
         :start-after: # shuffle-example-begin
         :end-before: # shuffle-example-end
         :dedent: 4
+
+    For payload shifts in CuTe, see
+    :ref:`CUTLASS Shuffle <coop-cutlass-shuffle>`. Both
+    :func:`cuda.coop.numba_mlir.shuffle` and :func:`cuda.coop.cutlass.shuffle`
+    also support scalar offset and rotate operations.
     """
 
     mode = _common_selector(

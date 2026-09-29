@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 // Adapted from CooperativeDataMotion.tsx at cccl-mirror trentn/dev/cuda-coop
-// 5dba3d36b6eaae48b967d6fa48f9d15e98136000; contracts follow this Numba stack.
+// 5dba3d36b6eaae48b967d6fa48f9d15e98136000; contracts follow the shared and qualified APIs.
 (() => {
   "use strict";
 
@@ -56,7 +56,7 @@
     }
     const formula = state.algorithm === "up" ? "output[p] = input[p - 1]" : state.algorithm === "down" ? "output[p] = input[p + 1]" : state.algorithm === "offset" ? `output[t] = input[t + ${distance}]` : `output[t] = input[(t + ${distance}) % 8]`;
     return {
-      detail: `${formula}. ${is_scalar ? "Each thread supplies one scalar through the qualified Numba-CUDA-MLIR API." : "The common API shifts the flattened blocked payload by exactly one item, including across thread boundaries."}`,
+      detail: `${formula}. ${is_scalar ? "Each thread supplies one scalar through cuda.coop.numba_mlir.shuffle or cuda.coop.cutlass.shuffle." : "The common API shifts the flattened blocked payload by exactly one item, including across thread boundaries."}`,
       rows: [
         { id: "input", label: "Input values · working copies", count, groups },
         { id: "scratch", label: is_scalar ? "Shared scratch · one scalar per thread" : "Shared scratch · boundary value from each thread", count: 8 },
