@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """Merge Sort contracts include readonly inputs and checked partial tiles."""
 
@@ -31,16 +30,16 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
 
 def _request(*, group=None, count=None, pairs=False, storage=None, **options):
-    kwargs = dict(
-        group=this_block() if group is None else group,
-        launch=LaunchFacts(exact_block_dim=(8, 4, 2)),
-        key_type=cutlass.Int32,
-        value_type=cutlass.Float64 if pairs else None,
-        items_per_thread=3,
-        descending=False,
-        valid_items=count,
-        temp_storage=storage,
-    )
+    kwargs = {
+        "group": this_block() if group is None else group,
+        "launch": LaunchFacts(exact_block_dim=(8, 4, 2)),
+        "key_type": cutlass.Int32,
+        "value_type": cutlass.Float64 if pairs else None,
+        "items_per_thread": 3,
+        "descending": False,
+        "valid_items": count,
+        "temp_storage": storage,
+    }
     kwargs.update(options)
     return _merge_sort._CubMergeSortRequest(_merge_sort._make_merge_sort_plan(**kwargs))
 
