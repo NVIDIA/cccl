@@ -2,7 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Merge Sort runtime contracts, including tuple results and input preservation."""
+"""Merge Sort runtime contracts, including tuple results and input
+preservation.
+"""
 
 import numpy as np
 import pytest
