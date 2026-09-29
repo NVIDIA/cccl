@@ -2,11 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Reduction semantics and lowering for explicit thread groups.
-
-Full built-in reductions use the hierarchy-aware CUDAX implementation. Direct
-CUB BlockReduce or WarpReduce remains available for prefixes, explicit block
-algorithms, and arbitrary custom operators.
+"""Select CUDAX for full built-in reductions and CUB for prefixes,
+explicit block algorithms, or custom operators.
 """
 
 from __future__ import annotations
