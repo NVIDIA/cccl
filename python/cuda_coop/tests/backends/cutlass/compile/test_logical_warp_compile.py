@@ -14,7 +14,12 @@ from cutlass.cute.runtime import make_ptr
 
 from cuda import coop
 from cuda.coop import cutlass as cutlass_coop
-from cuda.coop._core import ArgumentBinding, GroupLoadStoreKind, LaunchFacts, this_warp
+from cuda.coop._core import (
+    ArgumentBinding,
+    GroupLoadStoreKind,
+    LaunchFacts,
+    this_warp,
+)
 from cuda.coop.cutlass._compiler import _bundle, _rendering
 from cuda.coop.cutlass._compiler._types import ScratchLayoutProbe
 from cuda.coop.cutlass._lowering import _load_store
@@ -51,8 +56,12 @@ def test_exact_subgroup_scratch(width):
         probes.append(
             ScratchLayoutProbe(
                 requirement_key=("single_group", request.operation.kind),
-                size_expression=f"sizeof(typename {request.cpp_type}::TempStorage)",
-                alignment_expression=f"alignof(typename {request.cpp_type}::TempStorage)",
+                size_expression=(
+                    f"sizeof(typename {request.cpp_type}::TempStorage)"
+                ),
+                alignment_expression=(
+                    f"alignof(typename {request.cpp_type}::TempStorage)"
+                ),
             )
         )
     compilation = _bundle.compile_bundle_source_with_layouts(
@@ -66,13 +75,17 @@ def test_exact_subgroup_scratch(width):
         block_threads = 32 if index % 2 == 0 else 64
         actual = compilation.layouts[request.scratch_requirement_key]
         assert single.size_in_bytes > 0
-        assert actual.size_in_bytes == single.size_in_bytes * (block_threads // width)
+        assert actual.size_in_bytes == single.size_in_bytes * (
+            block_threads // width
+        )
         assert actual.alignment == single.alignment
 
 
 @pytest.mark.parametrize("width", _WIDTHS)
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 def test_logical_warp_compile(width, algorithm, api):
     @cute.kernel
     def kernel(source: cute.Pointer, destination: cute.Pointer):
@@ -100,7 +113,10 @@ def test_logical_warp_compile(width, algorithm, api):
     def launch(source: cute.Pointer, destination: cute.Pointer):
         kernel(source, destination).launch(grid=1, block=(8, 4, 2))
 
-    assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), _pointer()) is not None
+    assert (
+        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), _pointer())
+        is not None
+    )
 
 
 @pytest.mark.parametrize("width", _WIDTHS)
@@ -121,7 +137,9 @@ def test_nonexhaustive_divisor_compile(width):
     assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer()) is not None
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 def test_explicit_storage_rejected(api, algorithm):
     @cute.kernel
@@ -140,13 +158,18 @@ def test_explicit_storage_rejected(api, algorithm):
 
     with pytest.raises(
         Exception,
-        match="temp_storage is not supported|explicit TempStorage is supported only",
+        match=(
+            "temp_storage is not supported|"
+            "explicit TempStorage is supported only"
+        ),
     ):
         cute.compile[(GPUArch("sm_80"),)](launch, _pointer())
 
 
 @pytest.mark.parametrize("case", ("width_three", "nested", "mapped_warps"))
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 def test_unsupported_mapping(case, api):
     @cute.kernel
     def kernel(memory: cute.Pointer):
@@ -165,7 +188,10 @@ def test_unsupported_mapping(case, api):
     expected = {
         "width_three": "power-of-two group width",
         "nested": "nested ThreadGroup.group_by is not supported",
-        "mapped_warps": "does not support group kind|requires a block, physical warp, or logical warp group",
+        "mapped_warps": (
+            "does not support group kind|"
+            "requires a block, physical warp, or logical warp group"
+        ),
     }[case]
     with pytest.raises(Exception, match=expected):
         cute.compile[(GPUArch("sm_80"),)](launch, _pointer())
@@ -175,7 +201,9 @@ def test_partial_physical_warp_fails():
     @cute.kernel
     def kernel(memory: cute.Pointer):
         cutlass_coop.load(
-            cutlass_coop.this_warp().group_by(8), memory, cutlass_coop.ThreadData(2)
+            cutlass_coop.this_warp().group_by(8),
+            memory,
+            cutlass_coop.ThreadData(2),
         )
 
     @cute.jit
@@ -190,7 +218,9 @@ def test_dynamic_dimensions_fail():
     @cute.kernel
     def kernel(memory: cute.Pointer):
         cutlass_coop.load(
-            cutlass_coop.this_warp().group_by(8), memory, cutlass_coop.ThreadData(2)
+            cutlass_coop.this_warp().group_by(8),
+            memory,
+            cutlass_coop.ThreadData(2),
         )
 
     @cute.jit
