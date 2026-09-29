@@ -196,7 +196,26 @@ def from_numpy_dtype(dtype: np.dtype | type) -> TypeDescriptor:
             field_info = dtype.fields[name]
             field_dtype = field_info[0]
             fields[name] = from_numpy_dtype(field_dtype)
-        return struct(fields)  # type: ignore[arg-type]
+        td = struct(fields)  # type: ignore[arg-type]
+        native_dtype = td.dtype
+        assert native_dtype is not None
+        assert native_dtype.fields is not None
+        for name in dtype.names:
+            off = dtype.fields[name][1]
+            native_off = native_dtype.fields[name][1]
+            if off != native_off:
+                raise ValueError(
+                    f"field '{name}' is at offset {off}, but natural C alignment "
+                    f"would place it at offset {native_off}: cuda.compute only "
+                    f"supports dtypes with natural C alignment (align=True)"
+                )
+        if dtype.itemsize != native_dtype.itemsize:
+            raise ValueError(
+                f"itemsize is {dtype.itemsize}, but natural C alignment gives "
+                f"{native_dtype.itemsize}: cuda.compute only supports dtypes with "
+                f"natural C alignment (align=True)"
+            )
+        return td
 
     # Some other NumPy type (e.g., complex64) for which we don't
     # have a specific TypeDescriptor. Use STORAGE and preserve the original dtype.
