@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Hierarchy queries and synchronization against flat-coordinate oracles."""
-
 import re
 import shutil
 import subprocess

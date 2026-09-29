@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Unsupported qualified hierarchy queries and reduction controls."""
-
 from __future__ import annotations
 
 import numpy as np
