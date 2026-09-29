@@ -264,12 +264,12 @@ cutlass_coop.merge_sort_pairs(
     values,
 )
 cutlass_coop.merge_sort_keys(block, scalar)  # expected-error: [call-overload]
-cutlass_coop.merge_sort_pairs(
+cutlass_coop.merge_sort_pairs(  # expected-error: [call-overload]
     block, values, scalar
-)  # expected-error: [call-overload]
-cutlass_coop.merge_sort_keys(
+)
+cutlass_coop.merge_sort_keys(  # expected-error: [call-overload]
     block, values, True
-)  # expected-error: [call-overload]
+)
 cutlass_coop.merge_sort_keys(  # expected-error: [call-overload]
     group=block, keys=values
 )

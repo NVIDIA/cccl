@@ -316,21 +316,36 @@ def _render_merge_sort(request):
         )
         storage_lines = [
             "  using storage_type = typename implementation_type::TempStorage;",
-            "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes < sizeof(storage_type) ||",
+            (
+                "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes "
+                "< sizeof(storage_type) ||"
+            ),
             "      (storage_address & (alignof(storage_type) - 1u)) != 0u) {",
             '    asm volatile("trap;");',
             "  }",
             "  unsigned long long generic_address;",
-            '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : "l"((unsigned long long)storage_address));',
-            "  auto& storage = *reinterpret_cast<storage_type*>(generic_address);",
+            (
+                '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : '
+                '"l"((unsigned long long)storage_address));'
+            ),
+            (
+                "  auto& storage = "
+                "*reinterpret_cast<storage_type*>(generic_address);"
+            ),
         ]
         barrier = ["  if (storage_auto_sync != 0) { __syncthreads(); }"]
     else:
         x, y, z = request.plan.participation.exact_block_dim
         width = request.plan.resolved_group.static_size
         storage_lines = [
-            f"  __shared__ typename implementation_type::TempStorage scratch[{x * y * z // width}];",
-            "  unsigned int tid = threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z);",
+            (
+                "  __shared__ typename implementation_type::TempStorage "
+                f"scratch[{x * y * z // width}];"
+            ),
+            (
+                "  unsigned int tid = threadIdx.x + blockDim.x * "
+                "(threadIdx.y + blockDim.y * threadIdx.z);"
+            ),
             f"  auto& storage = scratch[tid / {width}u];",
         ]
         mask = (

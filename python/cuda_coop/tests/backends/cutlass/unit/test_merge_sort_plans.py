@@ -41,7 +41,9 @@ def _request(*, group=None, count=None, pairs=False, storage=None, **options):
         "temp_storage": storage,
     }
     kwargs.update(options)
-    return _merge_sort._CubMergeSortRequest(_merge_sort._make_merge_sort_plan(**kwargs))
+    return _merge_sort._CubMergeSortRequest(
+        _merge_sort._make_merge_sort_plan(**kwargs)
+    )
 
 
 @pytest.mark.parametrize("dtype", tuple(ALL_PROVIDER_TYPES))
@@ -86,9 +88,12 @@ def test_infinite_sentinel_requires_matching_float_dtype(value):
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
 def test_group_storage(width):
     request = _request(group=this_warp().group_by(width), count=0)
-    assert request.plan.temp_storage.ownership is StorageOwnership.IMPLEMENTATION
     assert (
-        request.plan.synchronization.storage_reuse_barrier is SynchronizationScope.WARP
+        request.plan.temp_storage.ownership is StorageOwnership.IMPLEMENTATION
+    )
+    assert (
+        request.plan.synchronization.storage_reuse_barrier
+        is SynchronizationScope.WARP
     )
     assert request.plan.temp_storage.instances == 64 // width
 
@@ -158,7 +163,9 @@ class _Readonly:
 def test_readonly_snapshot(dtype, primitive):
     source = _Readonly(dtype)
     with _common_root_operation_scope(primitive):
-        result = _snapshot_readable_payload(source, name="keys", primitive=primitive)
+        result = _snapshot_readable_payload(
+            source, name="keys", primitive=primitive
+        )
     assert result.items_per_thread == 3
     assert result.dtype is dtype
     assert result.alignment == 64
@@ -170,7 +177,9 @@ def test_readonly_mixed_dtype_rejected():
     source = _Readonly(None)
     source._items = (np.int32(1), np.float32(2), np.int32(3))
     with pytest.raises(TypeError, match="common dtype"):
-        _snapshot_readable_payload(source, name="keys", primitive="merge_sort_keys")
+        _snapshot_readable_payload(
+            source, name="keys", primitive="merge_sort_keys"
+        )
 
 
 def test_failed_storage_emission_restores_session(monkeypatch):

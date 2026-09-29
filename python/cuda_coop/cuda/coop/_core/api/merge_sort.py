@@ -116,7 +116,9 @@ def merge_sort_keys(
     if not isinstance(descending, bool):
         raise TypeError("descending must be a compile-time bool")
     if (valid_items is None) != (oob_default is None):
-        raise ValueError("valid_items and oob_default must be provided together")
+        raise ValueError(
+            "valid_items and oob_default must be provided together"
+        )
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
             "merge_sort_keys",
@@ -231,7 +233,9 @@ def merge_sort_pairs(
     if not isinstance(descending, bool):
         raise TypeError("descending must be a compile-time bool")
     if (valid_items is None) != (oob_default is None):
-        raise ValueError("valid_items and oob_default must be provided together")
+        raise ValueError(
+            "valid_items and oob_default must be provided together"
+        )
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
             "merge_sort_pairs",
