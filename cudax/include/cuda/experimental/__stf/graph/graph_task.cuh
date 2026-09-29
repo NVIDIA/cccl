@@ -68,9 +68,7 @@ public:
       , graph_mutex(graph_mutex)
       , stage(stage)
       , ctx(mv(ctx))
-  {
-    this->ctx.increment_task_count();
-  }
+  {}
 
   graph_task(graph_task&&)            = default;
   graph_task& operator=(graph_task&&) = default;

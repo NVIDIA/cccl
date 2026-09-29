@@ -32,7 +32,6 @@
 #include <cuda/experimental/__stf/utility/pretty_print.cuh>
 
 #include <optional>
-#include <stdexcept>
 #include <string>
 
 namespace cuda::experimental::stf
@@ -303,9 +302,8 @@ public:
       }
     }
 
-    char msg[512];
-    snprintf(msg, sizeof(msg), "pointer %p was released, but does not belong to a known pool", ptr);
-    throw ::std::invalid_argument(msg);
+    // Only STF's own bookkeeping releases pointers here, so this is an internal invariant.
+    _CCCL_VERIFY(false, "pointer released to the pooled allocator does not belong to any of its pools");
   }
 
   event_list deinit_pools(backend_ctx_untyped& ctx)

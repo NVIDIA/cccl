@@ -62,9 +62,7 @@ public:
   stream_task(backend_ctx_untyped ctx_, exec_place e_place = exec_place::current_device())
       : task(mv(e_place))
       , ctx(mv(ctx_))
-  {
-    ctx.increment_task_count();
-  }
+  {}
 
   // Tasks are move-only: a task wrapper owns per-instance in-flight state
   // (capture stream, frontier, done nodes, held mutex during stream capture)

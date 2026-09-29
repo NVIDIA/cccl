@@ -104,6 +104,10 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     }
   }
 
+  // The task is counted once it is admitted: a rejected task never reaches release(), where the
+  // matching finished-task count is kept.
+  ctx.increment_task_count();
+
   // Automatically set the appropriate context (device, SM affinity, ...)
   pimpl->saved_place_ctx = exec_place_scope(eplace);
 
