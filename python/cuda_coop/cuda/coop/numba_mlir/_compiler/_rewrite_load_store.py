@@ -29,7 +29,9 @@ class _LoadStoreMatchMetadata:
 
 
 class _ExactStoreScalar:
-    """Check the compiler's scalar type before the boxing assignment can cast it."""
+    """Check the compiler's scalar type before the boxing assignment can cast
+    it.
+    """
 
     def __init__(self, dtype):
         self.dtype = dtype

@@ -575,7 +575,9 @@ class CoopSinglePhaseRewrite(
         return new_block
 
     def _clear_unused_payload_callees(self, new_block):
-        """Retire constructor bindings only after their last call is rewritten."""
+        """Retire constructor bindings only after their last call is
+        rewritten.
+        """
 
         blocks = [
             new_block if block is self._block else block

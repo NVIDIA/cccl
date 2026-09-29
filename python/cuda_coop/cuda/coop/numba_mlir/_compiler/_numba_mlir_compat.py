@@ -154,7 +154,9 @@ def _detected_version(runtime: Any) -> str | None:
 
 
 def _is_supported_runtime_version(version: str | None) -> bool:
-    """Return whether ``version`` is covered by the private compatibility shim."""
+    """Return whether ``version`` is covered by the private compatibility
+    shim.
+    """
 
     return (
         isinstance(version, str)
