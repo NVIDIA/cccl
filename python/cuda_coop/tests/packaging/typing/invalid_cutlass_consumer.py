@@ -328,8 +328,8 @@ cutlass_coop.radix_rank(  # expected-error: [call-overload]
 cutlass_coop.radix_rank(
     block,
     values,
-    exclusive_digit_prefix=cutlass_coop.ThreadData(  # expected-error: [arg-type]
-        1, np.uint32
+    exclusive_digit_prefix=(
+        cutlass_coop.ThreadData(1, np.uint32)  # expected-error: [arg-type]
     ),
 )
 cutlass_coop.radix_rank(  # expected-error: [call-overload]
