@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Ordinary integer literals follow the shared floating-payload contract."""
-
 import numpy as np
 import pytest
 
