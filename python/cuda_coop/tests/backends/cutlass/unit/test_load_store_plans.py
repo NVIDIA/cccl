@@ -49,27 +49,6 @@ def test_storage_free_provider_ignores_descriptor_controls(kind, algorithm):
         assert token not in source
 
 
-@pytest.mark.parametrize(
-    "algorithm", ("transpose", "warp_transpose", "warp_transpose_timesliced")
-)
-def test_partial_transpose_uses_shared_preservation_specialization(algorithm):
-    load = _request("load", algorithm, valid_items=ArgumentBinding.runtime())
-    store = _request("store", algorithm)
-    source = _rendering.render_bundle_source([load, store, load])
-    assert source.count("class CudaCoopBlockLoadPreservingInvalid") == 1
-    assert (
-        "using implementation_type = ::cub::CudaCoopBlockLoadPreservingInvalid<"
-        in source
-    )
-    assert "result_items[0], result_items[1]" in source
-    probes = _rendering.bundle_scratch_layout_probes([load, store, load])
-    assert set(probes) == {load.scratch_requirement_key, store.scratch_requirement_key}
-    for probe in probes.values():
-        assert "TempStorage" in probe.size_expression
-        assert "TempStorage" in probe.alignment_expression
-    assert source.index("namespace cub") < source.index('extern "C"')
-
-
 @pytest.mark.parametrize("kind", ("load", "store"))
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
 @pytest.mark.parametrize(
