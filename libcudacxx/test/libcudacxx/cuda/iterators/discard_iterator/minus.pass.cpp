@@ -52,8 +52,8 @@ TEST_FUNC constexpr bool test()
       const int index2 = 2;
       cuda::discard_iterator iter1(index1);
       cuda::discard_iterator iter2(index2);
-      assert(iter1 - iter2 == index2 - index1);
-      assert(iter2 - iter1 == index1 - index2);
+      assert(iter1 - iter2 == index1 - index2);
+      assert(iter2 - iter1 == index2 - index1);
 
       static_assert(cuda::std::is_same_v<decltype(iter1 - iter2), cuda::std::ptrdiff_t>);
     }
@@ -63,8 +63,8 @@ TEST_FUNC constexpr bool test()
       const int index2 = 2;
       const cuda::discard_iterator iter1(index1);
       const cuda::discard_iterator iter2(index2);
-      assert(iter1 - iter2 == index2 - index1);
-      assert(iter2 - iter1 == index1 - index2);
+      assert(iter1 - iter2 == index1 - index2);
+      assert(iter2 - iter1 == index2 - index1);
 
       static_assert(cuda::std::is_same_v<decltype(iter1 - iter2), cuda::std::ptrdiff_t>);
     }
