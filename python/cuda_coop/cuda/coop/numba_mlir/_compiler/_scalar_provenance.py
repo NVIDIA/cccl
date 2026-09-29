@@ -159,4 +159,54 @@ def try_resolve_static_scalar(
     return (resolved, None if scalar is None else _typed_static_value(scalar))
 
 
+def scalar_expression_dtype(definition, dtype):
+    """Infer a scalar operator's result from the operand types already known."""
+
+    from ._parameters import _scalar_operator_result_dtype
+
+    if definition.op in {"binop", "inplace_binop"}:
+        operands = (definition.lhs, definition.rhs)
+    else:
+        operands = (definition.value,)
+    return _scalar_operator_result_dtype(
+        definition.fn,
+        *(
+            dtype(value) if isinstance(value, ir.Var) else None
+            for value in operands
+        ),
+    )
+
+
+def scalar_call_dtype(function, arguments, dtype):
+    """Infer an explicit scalar cast, retaining the compiler's numeric rules."""
+
+    from ._parameters import _scalar_cast_dtype, _scalar_operator_result_dtype
+
+    cast_dtype = _scalar_cast_dtype(function)
+    if cast_dtype is None:
+        return None
+    if len(arguments) == 1 and isinstance(arguments[0], ir.Var):
+        inferred = _scalar_operator_result_dtype(function, dtype(arguments[0]))
+        if inferred is not None:
+            return inferred
+    return cast_dtype
+
+
+def cuda_index_dtype(definition, attribute_chain, cuda_module):
+    """Return the compiler dtype of CUDA launch indices and dimensions."""
+
+    if definition.op != "getattr":
+        return None
+    chain = attribute_chain(definition.value)
+    if chain is not None:
+        root, attributes = chain
+        if root is cuda_module and (*attributes, definition.attr) in {
+            (index, component)
+            for index in ("blockDim", "blockIdx", "gridDim", "threadIdx")
+            for component in ("x", "y", "z")
+        }:
+            return types.int32
+    return None
+
+
 __all__: tuple[str, ...] = ()
