@@ -609,11 +609,13 @@ def _make_hashable(value):
     if hasattr(value, "py_func") and callable(value.py_func):
         return CachableFunction(value.py_func)
     elif is_device_array(value):
-        # Ops with device arrays in globals/closures will be handled
-        # by stateful op machinery, which enables updating the state
-        # (pointers). Thus, we only cache on the dtype and shape of
-        # the referenced array, but not its pointer.
-        return (get_dtype(value), get_shape(value))
+        # Ops with device arrays in globals/closures are handled by
+        # stateful op machinery, which threads both the array's pointer and
+        # its shape through the runtime state buffer (see
+        # _jit._pack_state_bytes) rather than baking either into the
+        # compiled code. Only the array's rank (ndim) affects the compiled
+        # wrapper, so the key includes dtype and rank, not pointer or shape.
+        return (get_dtype(value), len(get_shape(value)))
     elif isinstance(value, (np.number, np.bool_)):
         return ("numpy.scalar", value.dtype.str, value.tobytes())
     elif isinstance(value, (bool, int, float)):
