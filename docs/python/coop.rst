@@ -382,9 +382,9 @@ The signatures are:
 number of valid items per thread. A Warp-group tile contains
 ``group_size * items_per_thread`` elements, where ``group_size`` is 32 for
 ``this_warp()`` or the width passed to ``group_by``. The count must be uniform
-within that group. With Load, invalid output slots remain unchanged unless
-``oob_default`` is supplied; a runtime default must also be uniform within the
-group. A default is valid only when ``valid_items`` is present. With Store,
+within that group. With Load, invalid output slots are unspecified unless
+``oob_default`` is supplied, even if initialized before Load. A runtime
+default must also be uniform within the group. A default is valid only when ``valid_items`` is present. With Store,
 elements outside the valid prefix are not written.
 
 .. warning::
