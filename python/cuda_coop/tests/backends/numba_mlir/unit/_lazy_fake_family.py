@@ -88,10 +88,14 @@ class LazyFamilySemantics:
 
     def __post_init__(self) -> None:
         if self.operation not in OPERATIONS:
-            raise ValueError(f"unsupported lazy-family operation {self.operation!r}")
+            raise ValueError(
+                f"unsupported lazy-family operation {self.operation!r}"
+            )
         expected_results = 2 if self.operation == PAIR_OPERATION else 1
         if len(self.result_dtypes) != expected_results:
-            raise ValueError("result_dtypes does not match the operation results")
+            raise ValueError(
+                "result_dtypes does not match the operation results"
+            )
         if (
             not isinstance(self.array_extent, int)
             or isinstance(self.array_extent, bool)
@@ -169,7 +173,8 @@ def _plan(
     if resolved_group.kind not in expected_group_kinds:
         expected = ", ".join(sorted(expected_group_kinds))
         raise ValueError(
-            f"{semantics.operation} requires one of these group kinds: {expected}"
+            f"{semantics.operation} requires one of these group kinds: "
+            f"{expected}"
         )
     storage_abi = _STORAGE_ABI_BY_OPERATION[semantics.operation]
     storage_ownership = (
@@ -220,7 +225,9 @@ _dispatch._register_group_operation_family(
     classifications=_classifications,
     planner=_plan,
     group_kinds=frozenset({"thread", "warp", "threads_within_warp", "block"}),
-    unsupported_group_message="lazy fake family requires thread, warp, or block",
+    unsupported_group_message=(
+        "lazy fake family requires thread, warp, or block"
+    ),
 )
 
 
@@ -265,7 +272,9 @@ PLANNING_EVENTS: list[tuple[str, str, bool, GroupLoweringPlan]] = []
 def _make_provider(operation: str):
     def provider(*runtime_args: Any, value_type: Any):
         if runtime_args:
-            raise AssertionError("provider factories receive only specialization args")
+            raise AssertionError(
+                "provider factories receive only specialization args"
+            )
         FACTORY_CALLS.append((operation, value_type))
         return INVOCABLES[operation]
 
@@ -304,10 +313,13 @@ def _lower(
 ):
     sources = _RESULT_SOURCES_BY_OPERATION[operation]
     result_dtypes = tuple(
-        context.dtype(bound.arguments[source.dtype_parameter]) for source in sources
+        context.dtype(bound.arguments[source.dtype_parameter])
+        for source in sources
     )
     if any(dtype is None for dtype in result_dtypes):
-        raise TypeError("lazy fake family requires statically known result dtypes")
+        raise TypeError(
+            "lazy fake family requires statically known result dtypes"
+        )
     array_sources = [
         source.array_parameter
         for source in sources
@@ -333,7 +345,9 @@ def _lower(
     if not context.is_none(temp_storage_value):
         descriptor = context.temp_storage(temp_storage_value)
         if descriptor is None:
-            raise TypeError("lazy fake family requires a TempStorage descriptor")
+            raise TypeError(
+                "lazy fake family requires a TempStorage descriptor"
+            )
         size_in_bytes, alignment, auto_sync, sharing = descriptor
         assert plan.temp_storage is not None
         plan = replace(

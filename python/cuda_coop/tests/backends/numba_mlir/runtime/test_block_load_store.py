@@ -97,14 +97,18 @@ def test_runtime_payload_index_reuses_one_specialization(module):
     for index in range(_ITEMS_PER_THREAD):
         kernel[1, _THREADS](source, destination, index)
         cuda.synchronize()
-        np.testing.assert_array_equal(destination, source[index::_ITEMS_PER_THREAD])
+        np.testing.assert_array_equal(
+            destination, source[index::_ITEMS_PER_THREAD]
+        )
         assert len(kernel._launch_config_overloads) == 1
 
 
 @pytest.mark.parametrize(
     "module", (root_coop, qualified_coop), ids=("portable", "qualified")
 )
-@pytest.mark.parametrize("dtype", (None, types.int32), ids=("inferred", "explicit"))
+@pytest.mark.parametrize(
+    "dtype", (None, types.int32), ids=("inferred", "explicit")
+)
 @pytest.mark.parametrize("scope", ("block", "warp", "logical-warp"))
 def test_load_mutates_original_payload_and_returns_none(module, dtype, scope):
     @cuda.jit
@@ -207,7 +211,9 @@ def test_direct_multi_item_store_matches_an_independent_oracle_for_every_dtype(
 
 
 @pytest.mark.parametrize("block_shape", _BLOCK_SHAPES, ids=("1d", "2d", "3d"))
-def test_direct_load_uses_x_major_thread_order_for_exact_block_shape(block_shape):
+def test_direct_load_uses_x_major_thread_order_for_exact_block_shape(
+    block_shape,
+):
     source = _values(np.dtype(np.int32), _TILE_ITEMS)
     observed = np.full(_TILE_ITEMS, -1, dtype=np.int32)
 
@@ -217,7 +223,9 @@ def test_direct_load_uses_x_major_thread_order_for_exact_block_shape(block_shape
 
 
 @pytest.mark.parametrize("block_shape", _BLOCK_SHAPES, ids=("1d", "2d", "3d"))
-def test_direct_store_uses_x_major_thread_order_for_exact_block_shape(block_shape):
+def test_direct_store_uses_x_major_thread_order_for_exact_block_shape(
+    block_shape,
+):
     source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=7)
     destination = np.full(_TILE_ITEMS, -1, dtype=np.int32)
 
@@ -359,7 +367,9 @@ def _store_valid_prefix(source, destination, valid_items, destination_offset):
     (0, _TILE_ITEMS - 9, _TILE_ITEMS),
     ids=("zero", "partial", "full"),
 )
-def test_store_writes_only_the_valid_prefix_at_an_independent_offset(valid_items):
+def test_store_writes_only_the_valid_prefix_at_an_independent_offset(
+    valid_items,
+):
     source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=17)
     destination = np.full(
         _STORE_OFFSET + _TILE_ITEMS + 3,
@@ -484,7 +494,9 @@ def _expected_loaded_payload(
         for item in range(_ITEMS_PER_THREAD):
             payload_index = thread * _ITEMS_PER_THREAD + item
             tile_index = (
-                thread + item * _THREADS if algorithm == "striped" else payload_index
+                thread + item * _THREADS
+                if algorithm == "striped"
+                else payload_index
             )
             if tile_index < valid_items:
                 expected[payload_index] = source[offset + tile_index]
@@ -504,14 +516,18 @@ def _expected_stored_tile(
         for item in range(_ITEMS_PER_THREAD):
             payload_index = thread * _ITEMS_PER_THREAD + item
             tile_index = (
-                thread + item * _THREADS if algorithm == "striped" else payload_index
+                thread + item * _THREADS
+                if algorithm == "striped"
+                else payload_index
             )
             if tile_index < valid_items:
                 expected[offset + tile_index] = source[payload_index]
     return expected
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("portable", "qualified")
+)
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize(
     "valid_items",
@@ -542,7 +558,9 @@ def test_each_block_load_algorithm_matches_its_layout_oracle(
     np.testing.assert_array_equal(observed, expected)
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("portable", "qualified")
+)
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize(
     "valid_items",
@@ -619,7 +637,9 @@ def _partial_transpose_load_kernel(algorithm: str, qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("portable", "qualified")
+)
 @pytest.mark.parametrize(
     "algorithm",
     ("transpose", "warp_transpose", "warp_transpose_timesliced"),
@@ -705,9 +725,15 @@ def _unguarded_wide_load_store_kernel(algorithm: str, qualified: bool):
     return kernel
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
-@pytest.mark.parametrize("algorithm", ("vectorize", "warp_transpose_timesliced"))
-def test_unguarded_wide_load_store_executes_full_tile_path(qualified, algorithm):
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("portable", "qualified")
+)
+@pytest.mark.parametrize(
+    "algorithm", ("vectorize", "warp_transpose_timesliced")
+)
+def test_unguarded_wide_load_store_executes_full_tile_path(
+    qualified, algorithm
+):
     load_source = _values(np.dtype(np.int32), _WIDE_TILE_ITEMS, shift=59)
     store_source = _values(np.dtype(np.int32), _WIDE_TILE_ITEMS, shift=67)
     observed = np.full(_WIDE_TILE_ITEMS, -1, dtype=np.int32)
@@ -760,7 +786,9 @@ def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
         @cuda.jit
         def kernel(source, destination, observed):
             thread = cuda.threadIdx.x
-            storage = qualified_coop.TempStorage(sharing="shared", auto_sync=True)
+            storage = qualified_coop.TempStorage(
+                sharing="shared", auto_sync=True
+            )
             payload = qualified_coop.ThreadData(
                 _ITEMS_PER_THREAD,
                 dtype=types.int32,
@@ -1060,7 +1088,9 @@ def test_thread_data_constructor_alias_across_branch(module, monkeypatch):
     def bounded_apply(rewrite):
         nonlocal applications
         applications += 1
-        assert applications < 10, "constructor alias repeatedly matched the rewrite"
+        assert applications < 10, (
+            "constructor alias repeatedly matched the rewrite"
+        )
         return original_apply(rewrite)
 
     monkeypatch.setattr(CoopSinglePhaseRewrite, "apply", bounded_apply)
@@ -1079,7 +1109,9 @@ def test_thread_data_constructor_alias_across_branch(module, monkeypatch):
     kernel[1, _THREADS](source, destination)
 
     np.testing.assert_array_equal(destination[:16], source[:16])
-    np.testing.assert_array_equal(destination[16:], np.full_like(source[16:], -1))
+    np.testing.assert_array_equal(
+        destination[16:], np.full_like(source[16:], -1)
+    )
 
 
 @cuda.jit
@@ -1156,7 +1188,9 @@ def test_untyped_thread_data_infers_dtype_through_tuple_aliases(
 @pytest.mark.parametrize(
     "module", (root_coop, qualified_coop), ids=("root", "qualified")
 )
-@pytest.mark.parametrize("dtype", (None, types.int32), ids=("inferred", "explicit"))
+@pytest.mark.parametrize(
+    "dtype", (None, types.int32), ids=("inferred", "explicit")
+)
 def test_thread_data_item_extent_drives_a_kernel_loop(module, dtype):
     @cuda.jit
     def kernel(source, destination, extents):
@@ -1174,7 +1208,9 @@ def test_thread_data_item_extent_drives_a_kernel_loop(module, dtype):
     kernel[1, _THREADS](source, destination, extents)
 
     np.testing.assert_array_equal(destination, source)
-    np.testing.assert_array_equal(extents, np.full_like(extents, _ITEMS_PER_THREAD))
+    np.testing.assert_array_equal(
+        extents, np.full_like(extents, _ITEMS_PER_THREAD)
+    )
 
 
 def test_qualified_load_infers_an_untyped_payload():
@@ -1611,7 +1647,9 @@ def _looped_shared_store(source, destination, observed):
         )
         tile_offset = iteration * _TILE_ITEMS
         for item in range(_ITEMS_PER_THREAD):
-            payload[item] = source[tile_offset + thread * _ITEMS_PER_THREAD + item]
+            payload[item] = source[
+                tile_offset + thread * _ITEMS_PER_THREAD + item
+            ]
         qualified_coop.store(
             qualified_coop.this_block(),
             destination,
@@ -1726,7 +1764,9 @@ def _looped_exclusive_store_kernel(manual_sync: bool):
         @cuda.jit
         def kernel(destination):
             thread = cuda.threadIdx.x
-            storage = qualified_coop.TempStorage(sharing="exclusive", auto_sync=True)
+            storage = qualified_coop.TempStorage(
+                sharing="exclusive", auto_sync=True
+            )
             payload = qualified_coop.ThreadData(
                 _LOOPED_ITEMS_PER_THREAD,
                 dtype=types.int32,
@@ -1754,8 +1794,12 @@ def _looped_exclusive_store_kernel(manual_sync: bool):
     (False, True),
     ids=("exclusive-auto-sync", "exclusive-manual-sync"),
 )
-def test_exclusive_storage_reused_by_a_looped_call_site_stays_ordered(manual_sync):
-    destination = np.full(_LOOPED_TILES * _LOOPED_TILE_ITEMS, -1, dtype=np.int32)
+def test_exclusive_storage_reused_by_a_looped_call_site_stays_ordered(
+    manual_sync,
+):
+    destination = np.full(
+        _LOOPED_TILES * _LOOPED_TILE_ITEMS, -1, dtype=np.int32
+    )
 
     dispatcher = _looped_exclusive_store_kernel(manual_sync)
     dispatcher[1, _LOOPED_THREADS](destination)

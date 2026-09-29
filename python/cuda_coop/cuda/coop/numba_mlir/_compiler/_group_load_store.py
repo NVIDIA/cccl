@@ -70,7 +70,9 @@ _BLOCK_LOAD_STORE_ALGORITHMS = frozenset(
         "warp_transpose_timesliced",
     }
 )
-_WARP_LOAD_STORE_ALGORITHMS = frozenset({"direct", "striped", "vectorize", "transpose"})
+_WARP_LOAD_STORE_ALGORITHMS = frozenset(
+    {"direct", "striped", "vectorize", "transpose"}
+)
 _SUPPORTED_WARP_WIDTHS = frozenset({1, 2, 4, 8, 16, 32})
 
 
@@ -81,7 +83,9 @@ def _load_store_algorithm(
     group_kind: str,
 ) -> str:
     if not isinstance(value, str) or isinstance(value, Enum):
-        raise TypeError(f"cuda.coop.numba_mlir.{operation} algorithm must be a string")
+        raise TypeError(
+            f"cuda.coop.numba_mlir.{operation} algorithm must be a string"
+        )
     token = value.strip().lower().replace("-", "_")
     algorithm_scope = (
         "warp" if group_kind in {"warp", "threads_within_warp"} else group_kind
@@ -162,12 +166,15 @@ class _LoadStorePlanning:
         assert plan.temp_storage is not None
         storage_free = plan.temp_storage.ownership is StorageOwnership.NONE
         if plan.target is GroupLoweringTarget.CUB_BLOCK:
-            factory_name = operation if storage_free else f"_{operation}_with_storage"
+            factory_name = (
+                operation if storage_free else f"_{operation}_with_storage"
+            )
             factory_kwargs = {"threads_per_block": block_dim}
         elif plan.target is GroupLoweringTarget.CUB_WARP:
             if (
                 plan.topology is None
-                or plan.topology.group_kind not in {"warp", "threads_within_warp"}
+                or plan.topology.group_kind
+                not in {"warp", "threads_within_warp"}
                 or plan.topology.logical_width not in _SUPPORTED_WARP_WIDTHS
             ):
                 raise GroupRewriteError(
@@ -229,7 +236,8 @@ class _LoadStorePlanning:
         if not is_array:
             if operation == "load":
                 raise TypeError(
-                    "cuda.coop.numba_mlir.load output must be a fixed-size local array"
+                    "cuda.coop.numba_mlir.load output "
+                    "must be a fixed-size local array"
                 )
             return 1
         extent = self._context.array_extent(payload)
@@ -258,7 +266,9 @@ class _LoadStorePlanning:
             raise UnknownLoadStoreDtypeError(operation)
         dtype = _validate_common_numeric_dtype(dtype, operation=operation)
         if operation == "store" and not payload_is_array:
-            resolved, provenance = self._context.try_static_scalar_provenance(payload)
+            resolved, provenance = self._context.try_static_scalar_provenance(
+                payload
+            )
             if resolved:
                 assert provenance is not None
                 coerce_static_scalar(
@@ -276,7 +286,9 @@ class _LoadStorePlanning:
             and memory_dtype is not None
             and payload_dtype != memory_dtype
         ):
-            raise MemoryDtypeMismatchError(operation, memory_dtype, payload_dtype)
+            raise MemoryDtypeMismatchError(
+                operation, memory_dtype, payload_dtype
+            )
         if operation == "load":
             self._context.record_thread_data_dtype(payload, dtype)
 
@@ -322,7 +334,9 @@ class _LoadStorePlanning:
             dtype=dtype,
             items_per_thread=items_per_thread,
             algorithm=GroupLoadStoreAlgorithm(algorithm),
-            valid_items=self._context.planning_binding(bound.arguments["valid_items"]),
+            valid_items=self._context.planning_binding(
+                bound.arguments["valid_items"]
+            ),
             oob_default=oob_default,
             offset=self._context.planning_binding(bound.arguments["offset"]),
             **storage_options,
@@ -347,7 +361,9 @@ class _LoadStorePlanning:
         try:
             return _CUB_PLAN_ROUTES[plan.provenance.semantic_key]
         except KeyError as exc:
-            raise UnknownLoadStoreProviderError(plan.provenance.semantic_key) from exc
+            raise UnknownLoadStoreProviderError(
+                plan.provenance.semantic_key
+            ) from exc
 
     @staticmethod
     def _planned_argument(
@@ -395,7 +411,9 @@ class _LoadStorePlanning:
                 value=value,
             )
 
-        def binary(function: Any, lhs: ir.Var, rhs: ir.Var, stem: str) -> ir.Var:
+        def binary(
+            function: Any, lhs: ir.Var, rhs: ir.Var, stem: str
+        ) -> ir.Var:
             result = new_var(stem)
             statements.append(
                 ir.Assign(ir.Expr.binop(function, lhs, rhs, loc), result, loc)
@@ -405,7 +423,9 @@ class _LoadStorePlanning:
         module = value_var(_cuda_module, "cuda")
         thread_idx = new_var("thread_idx")
         statements.append(
-            ir.Assign(ir.Expr.getattr(module, "threadIdx", loc), thread_idx, loc)
+            ir.Assign(
+                ir.Expr.getattr(module, "threadIdx", loc), thread_idx, loc
+            )
         )
 
         def component(axis: str) -> ir.Var:
@@ -509,7 +529,9 @@ class _LoadStorePlanning:
             factory_kwargs["_common_root_operation"] = operation
         semantics = plan.call.operation
         requires_runtime_effective_offset = bool(
-            plan.implementation.metadata.get("requires_runtime_effective_offset", False)
+            plan.implementation.metadata.get(
+                "requires_runtime_effective_offset", False
+            )
         )
         statements: list[Any] = []
         for public_name, factory_name in (
@@ -540,7 +562,10 @@ class _LoadStorePlanning:
         if not self._context.is_none(bound.arguments["temp_storage"]):
             factory_kwargs["temp_storage"] = bound.arguments["temp_storage"]
         if operation == "load":
-            runtime_args = [bound.arguments["source"], bound.arguments["output"]]
+            runtime_args = [
+                bound.arguments["source"],
+                bound.arguments["output"],
+            ]
         else:
             value = bound.arguments["value"]
             runtime_args = [bound.arguments["destination"], value]

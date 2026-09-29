@@ -29,11 +29,18 @@ def _source(algorithm):
 
 
 @pytest.mark.parametrize("operation", ("load", "store"))
-def test_data_movement_retains_names_through_dependent_specialization(operation):
+def test_data_movement_retains_names_through_dependent_specialization(
+    operation,
+):
     from cuda.coop._core import INT32, ArgumentBinding
-    from cuda.coop._core.block import make_block_load_spec, make_block_store_spec
+    from cuda.coop._core.block import (
+        make_block_load_spec,
+        make_block_store_spec,
+    )
 
-    factory = make_block_load_spec if operation == "load" else make_block_store_spec
+    factory = (
+        make_block_load_spec if operation == "load" else make_block_store_spec
+    )
     specification = factory(
         dtype=INT32,
         block_dim=(32, 1, 1),
@@ -45,7 +52,9 @@ def test_data_movement_retains_names_through_dependent_specialization(operation)
     algorithm = _materialize(specification)
     method = algorithm.parameters[0]
     assert [parameter.parameter_name for parameter in method] == (
-        ["src", "dst", "offset"] if operation == "load" else ["dst", "src", "offset"]
+        ["src", "dst", "offset"]
+        if operation == "load"
+        else ["dst", "src", "offset"]
     )
     source = _source(algorithm)
     abi_signature = next(
@@ -100,19 +109,23 @@ def test_parameter_renaming_preserves_provider_identity():
         c_name="named_provider",
         includes=(),
         template_parameters=(),
-        parameters=((Value(INT32, name="value"), Reference(INT32, name="result")),),
+        parameters=(
+            (Value(INT32, name="value"), Reference(INT32, name="result")),
+        ),
     )
     renamed_definition = replace(
         definition,
-        parameters=((Value(INT32, name="input"), Reference(INT32, name="output")),),
+        parameters=(
+            (Value(INT32, name="input"), Reference(INT32, name="output")),
+        ),
     )
     original = _materialize(definition.specialize({}))
     renamed = _materialize(renamed_definition.specialize({}))
 
     assert algo_coalesce_key(original) == algo_coalesce_key(renamed)
-    assert original.mangled_name(original.parameters[0]) == renamed.mangled_name(
-        renamed.parameters[0]
-    )
+    assert original.mangled_name(
+        original.parameters[0]
+    ) == renamed.mangled_name(renamed.parameters[0])
     original_source = _source(original)
     renamed_source = _source(renamed)
     assert "__abi(void *__ret, ::cuda::std::int32_t value," in original_source

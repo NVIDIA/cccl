@@ -28,14 +28,20 @@ def descriptor_definitions(value, definitions, *, seen=None):
     seen = {*seen, value.name}
     for definition in definitions(value):
         if isinstance(definition, ir.Var):
-            yield from descriptor_definitions(definition, definitions, seen=seen)
+            yield from descriptor_definitions(
+                definition, definitions, seen=seen
+            )
         elif isinstance(definition, ir.Expr) and definition.op in {
             "cast",
             "exhaust_iter",
         }:
-            yield from descriptor_definitions(definition.value, definitions, seen=seen)
+            yield from descriptor_definitions(
+                definition.value, definitions, seen=seen
+            )
         elif isinstance(definition, ir.Expr) and definition.op == "phi":
             for incoming in getattr(definition, "incoming_values", ()):
-                yield from descriptor_definitions(incoming, definitions, seen=seen)
+                yield from descriptor_definitions(
+                    incoming, definitions, seen=seen
+                )
         else:
             yield value.name, definition

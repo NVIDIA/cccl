@@ -33,7 +33,9 @@ _FIXED_COMPUTE_CAPABILITY = (9, 0)
 
 
 @pytest.fixture(autouse=True)
-def _fixed_current_device(monkeypatch: pytest.MonkeyPatch) -> list[tuple[int, int]]:
+def _fixed_current_device(
+    monkeypatch: pytest.MonkeyPatch,
+) -> list[tuple[int, int]]:
     """Hide runtime discovery while leaving NVRTC and nvJitLink entirely
     real.
     """
@@ -76,7 +78,9 @@ def _algorithm(
             valid_items=valid_items,
         )
     )
-    factory = make_block_load_spec if operation == "load" else make_block_store_spec
+    factory = (
+        make_block_load_spec if operation == "load" else make_block_store_spec
+    )
     spec = factory(
         dtype=adapter.core_dtype(dtype),
         block_dim=block_dim,
@@ -87,10 +91,14 @@ def _algorithm(
     storage_free = algorithm in {"direct", "striped", "vectorize"}
     algorithm = adapter.materialize(
         spec.specialization,
-        storage_abi=(StorageABI.NONE if storage_free else StorageABI.LEADING_POINTER),
+        storage_abi=(
+            StorageABI.NONE if storage_free else StorageABI.LEADING_POINTER
+        ),
         execution_scope=SynchronizationScope.BLOCK,
         synchronization_scope=(
-            SynchronizationScope.NONE if storage_free else SynchronizationScope.BLOCK
+            SynchronizationScope.NONE
+            if storage_free
+            else SynchronizationScope.BLOCK
         ),
         extra_type_definitions=(_types.numba_type_to_wrapper(dtype),),
     )
@@ -110,7 +118,9 @@ def _storage_abi_variant(source: str, algorithm: _types.Algorithm) -> str:
 
     wrapper = f"{algorithm.mangled_name(algorithm.parameters[0])}__abi"
     original = f"{wrapper}(void *__ret, "
-    changed = f"{wrapper}(void *__ret, unsigned long long __cuda_coop_storage_abi, "
+    changed = (
+        f"{wrapper}(void *__ret, unsigned long long __cuda_coop_storage_abi, "
+    )
     assert source.count(original) == 1
     return source.replace(original, changed, 1)
 
@@ -149,7 +159,8 @@ def test_direct_load_store_compile_without_temp_storage_or_barriers(
 
     for algorithm, source in zip(algorithms, sources):
         explicit_wrappers = tuple(
-            f"{algorithm.mangled_name(method)}__abi" for method in algorithm.parameters
+            f"{algorithm.mangled_name(method)}__abi"
+            for method in algorithm.parameters
         )
         implicit_wrappers = tuple(
             f"{algorithm.mangled_name(method)}_alloc__abi"
@@ -181,7 +192,9 @@ def test_direct_load_store_compile_without_temp_storage_or_barriers(
     assert ".shared" not in ptx
     assert "bar.sync" not in ptx
     assert all(algorithm.temp_storage_bytes == 0 for algorithm in algorithms)
-    assert all(algorithm.temp_storage_alignment == 1 for algorithm in algorithms)
+    assert all(
+        algorithm.temp_storage_alignment == 1 for algorithm in algorithms
+    )
 
     shared_artifact = algorithms[0]._precompiled_ltoir_files[0]
     assert algorithms[1]._precompiled_ltoir_files[0] is shared_artifact
@@ -191,11 +204,15 @@ def test_direct_load_store_compile_without_temp_storage_or_barriers(
     assert artifact_path.read_bytes() == ltoir
 
     invocables = [
-        _types.make_invocable_from_specialization(algorithm) for algorithm in algorithms
+        _types.make_invocable_from_specialization(algorithm)
+        for algorithm in algorithms
     ]
-    assert all(invocable.files == [str(artifact_path)] for invocable in invocables)
     assert all(
-        invocable.temp_storage_bytes == invocable.specialization.temp_storage_bytes
+        invocable.files == [str(artifact_path)] for invocable in invocables
+    )
+    assert all(
+        invocable.temp_storage_bytes
+        == invocable.specialization.temp_storage_bytes
         for invocable in invocables
     )
     assert all(
@@ -208,7 +225,9 @@ def test_direct_load_store_compile_without_temp_storage_or_barriers(
     gc.collect()
     assert shared_artifact_ref() is not None
     assert artifact_path.is_file()
-    assert all(invocable.files == [str(artifact_path)] for invocable in invocables)
+    assert all(
+        invocable.files == [str(artifact_path)] for invocable in invocables
+    )
 
 
 def test_all_block_load_store_algorithms_compile_with_declared_storage(
@@ -252,11 +271,15 @@ def test_all_block_load_store_algorithms_compile_with_declared_storage(
 
     for operation in ("load", "store"):
         providers = [algorithms[(operation, name)] for name in algorithm_names]
-        assert len({provider.c_name for provider in providers}) == len(providers)
-        assert len({provider._private_symbol_key for provider in providers}) == len(
+        assert len({provider.c_name for provider in providers}) == len(
             providers
         )
-        assert len({_source(provider) for provider in providers}) == len(providers)
+        assert len(
+            {provider._private_symbol_key for provider in providers}
+        ) == len(providers)
+        assert len({_source(provider) for provider in providers}) == len(
+            providers
+        )
 
     bundle = _types.prepare_ltoir_bundle(
         list(algorithms.values()),
@@ -302,7 +325,9 @@ def test_unguarded_vectorize_compiles_the_full_tile_overload(
     )
     assert isinstance(bundle, bytes)
     assert bundle
-    assert all(specialization.temp_storage_bytes == 0 for specialization in algorithms)
+    assert all(
+        specialization.temp_storage_bytes == 0 for specialization in algorithms
+    )
 
 
 def test_timesliced_transpose_uses_less_storage_for_multiple_warps(
@@ -330,7 +355,9 @@ def test_timesliced_transpose_uses_less_storage_for_multiple_warps(
         regular = algorithms[(operation, "warp_transpose")]
         timesliced = algorithms[(operation, "warp_transpose_timesliced")]
         assert 0 < timesliced.temp_storage_bytes < regular.temp_storage_bytes
-        assert timesliced.temp_storage_alignment == regular.temp_storage_alignment
+        assert (
+            timesliced.temp_storage_alignment == regular.temp_storage_alignment
+        )
 
 
 def test_representative_dtypes_compile_for_each_additional_algorithm(
@@ -383,7 +410,9 @@ def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
         "get_gpu_compute_capability",
         fixed_compute_capability,
     )
-    monkeypatch.setattr(compiler_cuda, "get_current_device", lambda: fixed_device)
+    monkeypatch.setattr(
+        compiler_cuda, "get_current_device", lambda: fixed_device
+    )
 
     @compiler_cuda.jit(chip="sm_90")
     def storage_free(source, destination):
@@ -422,7 +451,9 @@ def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
         ("cluster", None),
     )
     results = [
-        dispatcher._compile_launch_config_signature(signature, launch_config_key)
+        dispatcher._compile_launch_config_signature(
+            signature, launch_config_key
+        )
         for dispatcher in (storage_free, storage_bearing)
     ]
     for result in results:
@@ -490,7 +521,9 @@ def test_real_nvrtc_cache_hits_and_invalidates_every_compile_axis(
         assert _cache_files(tmp_path) == files
         assert _stat_identity(files[0]) == first_disk_identity
 
-        dimension_source = _source(_algorithm(compile_context, block_dim=(8, 4, 1)))
+        dimension_source = _source(
+            _algorithm(compile_context, block_dim=(8, 4, 1))
+        )
         dtype_source = _source(_algorithm(compile_context, dtype=types.uint16))
         items_source = _source(_algorithm(compile_context, items_per_thread=3))
         static_binding_source = _source(
@@ -499,14 +532,19 @@ def test_real_nvrtc_cache_hits_and_invalidates_every_compile_axis(
                 valid_items=ArgumentBinding.static(17),
             )
         )
-        algorithm_source = _source(_algorithm(compile_context, algorithm="striped"))
+        algorithm_source = _source(
+            _algorithm(compile_context, algorithm="striped")
+        )
         storage_abi_source = _storage_abi_variant(base_source, base_algorithm)
         changed_context = replace(
             compile_context,
             header_identity=f"{compile_context.header_identity}-changed",
         )
         variants = {
-            "source": {**base_kwargs, "cpp": f"{base_source}\nstatic_assert(true);\n"},
+            "source": {
+                **base_kwargs,
+                "cpp": f"{base_source}\nstatic_assert(true);\n",
+            },
             "block-dimension": {**base_kwargs, "cpp": dimension_source},
             "dtype": {**base_kwargs, "cpp": dtype_source},
             "items-per-thread": {**base_kwargs, "cpp": items_source},
@@ -545,7 +583,9 @@ def test_real_nvrtc_cache_hits_and_invalidates_every_compile_axis(
                 b"-DCUDA_COOP_COMPILE_OPTION_IDENTITY_TEST=1",
             )
 
-        monkeypatch.setattr(_nvrtc, "_compiler_options", changed_compiler_options)
+        monkeypatch.setattr(
+            _nvrtc, "_compiler_options", changed_compiler_options
+        )
         _version, option_changed = _nvrtc.compile(**base_kwargs)
         option_info = _nvrtc.compile_impl.cache_info()
         assert option_info.misses == previous_misses + 1
@@ -668,9 +708,9 @@ def test_parameter_names_do_not_split_identical_bundle_providers(
     bundle = _types.prepare_ltoir_bundle([original, renamed])
     assert bundle is None
     assert original._private_symbol_key == renamed._private_symbol_key
-    assert original.mangled_name(original.parameters[0]) == renamed.mangled_name(
-        renamed.parameters[0]
-    )
+    assert original.mangled_name(
+        original.parameters[0]
+    ) == renamed.mangled_name(renamed.parameters[0])
 
 
 def test_wrapper_parameters_do_not_shadow_function_type_or_return_local(
@@ -684,7 +724,9 @@ def test_wrapper_parameters_do_not_shadow_function_type_or_return_local(
         _types.Value(types.int32),
         _types.Reference(types.int32, is_output=True),
     ]
-    for parameter, name in zip(method, ("invoke", "scratch_t", "out", "result")):
+    for parameter, name in zip(
+        method, ("invoke", "scratch_t", "out", "result")
+    ):
         parameter.parameter_name = name
     source_buffer = StringIO()
     source_buffer.write(
