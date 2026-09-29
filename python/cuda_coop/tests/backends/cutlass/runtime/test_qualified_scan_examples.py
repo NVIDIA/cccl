@@ -31,7 +31,7 @@ def test_partial_warp_scan_example():
         inputs = cute.make_tensor(source, cute.make_layout(64))
         outputs = cute.make_tensor(destination, cute.make_layout(64))
         totals = cute.make_tensor(aggregates, cute.make_layout(64))
-        aggregate = cutlass_coop.ThreadData(1)
+        aggregate = cutlass_coop.ThreadData(items_per_thread=1)
         result = cutlass_coop.exclusive_scan(
             group,
             inputs[thread],
