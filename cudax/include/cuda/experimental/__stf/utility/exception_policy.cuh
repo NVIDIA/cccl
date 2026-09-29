@@ -512,13 +512,18 @@ struct when_t
 
 /**
  * @brief Boundary translation: catches a `_From` (catch-clause rules: same or publicly
- * derived) and throws a `_To` -- constructed from the caught `_From` when such a constructor
- * exists, default-constructed otherwise. Anything that is not a `_From` declines untouched,
- * so `translate<low, high> | ...` ladders compose; a following arm sees the `_To`.
+ * derived) and throws a `_To` (a `std::exception` derivative) -- constructed from the caught
+ * `_From` when such a constructor exists, default-constructed otherwise. Anything that is not a `_From` declines
+ * untouched, so `translate<low, high> | ...` ladders compose; a following arm sees the `_To`.
  */
 template <class _From, class _To>
 struct translate_t
 {
+  // The target must be a std::exception: the rest of the algebra reports through what(), and so
+  // does _CCCL_THROW in a build without exceptions.
+  static_assert(::cuda::std::is_base_of_v<::std::exception, _To>,
+                "translate: the target type must derive from std::exception");
+
   using __exception_sink_tag = void;
 
   template <class _Fn>
