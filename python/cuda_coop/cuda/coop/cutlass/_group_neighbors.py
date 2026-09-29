@@ -23,7 +23,9 @@ def _neighbors(
     temp_storage=None,
 ):
     if not isinstance(group, ThreadGroup):
-        raise TypeError(f"cuda.coop.cutlass.{operation} group must be a ThreadGroup")
+        raise TypeError(
+            f"cuda.coop.cutlass.{operation} group must be a ThreadGroup"
+        )
     if group.kind != "block":
         raise NotImplementedError(
             f"cuda.coop.cutlass.{operation} requires a block group"
@@ -37,9 +39,12 @@ def _neighbors(
     )
     if temp_storage is not None and not isinstance(temp_storage, TempStorage):
         raise TypeError(
-            f"cuda.coop.cutlass.{operation} temp_storage must be CUTLASS TempStorage"
+            f"cuda.coop.cutlass.{operation} temp_storage must be "
+            "CUTLASS TempStorage"
         )
-    values = _snapshot_readable_payload(values, name="values", primitive=operation)
+    values = _snapshot_readable_payload(
+        values, name="values", primitive=operation
+    )
     from ._compiler._launch import current_kernel_launch_facts
     from ._lowering._neighbors import provider_neighbors
 

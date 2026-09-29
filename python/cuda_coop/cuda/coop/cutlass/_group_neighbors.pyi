@@ -15,7 +15,11 @@ from .._typing import (
     IntegerValue,
     TempStorageLike,
 )
-from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_data import (
+    CutlassTensorSample,
+    CutlassTensorSSASample,
+    ThreadData,
+)
 
 _T = TypeVar("_T", bound=CommonNumericScalar)
 _RegisterPayload: TypeAlias = CutlassTensorSample | CutlassTensorSSASample

@@ -67,7 +67,9 @@ def _run(
     compile_options=(),
 ):
     value_type = cutlass_dtype(dtype)
-    result_type = value_type if operation == "adjacent_difference" else cutlass.Int32
+    result_type = (
+        value_type if operation == "adjacent_difference" else cutlass.Int32
+    )
     items, blocks = 3, 2
     tile = int(np.prod(block)) * items
     size = blocks * tile
@@ -75,7 +77,9 @@ def _run(
         7 if boundary and mode in {"left", "heads", "heads_and_tails"} else None
     )
     successor = (
-        11 if boundary and mode in {"right", "tails", "heads_and_tails"} else None
+        11
+        if boundary and mode in {"right", "tails", "heads_and_tails"}
+        else None
     )
 
     @cute.kernel
@@ -177,7 +181,9 @@ def _run(
             grid=blocks, block=block
         )
 
-    source = np.repeat(values_for(dtype, (size + 3) // 4, shift=17), 4)[:size].copy()
+    source = np.repeat(values_for(dtype, (size + 3) // 4, shift=17), 4)[
+        :size
+    ].copy()
     output_dtype = dtype if operation == "adjacent_difference" else np.int32
     observed = np.zeros(size, dtype=output_dtype)
     secondary = np.zeros_like(observed)
@@ -210,20 +216,29 @@ def _run(
             limit = tile if count is None else count
             with np.errstate(over="ignore"):
                 if mode == "left":
-                    expected[1:limit] = values[1:limit] - values[: max(0, limit - 1)]
+                    expected[1:limit] = (
+                        values[1:limit] - values[: max(0, limit - 1)]
+                    )
                     if predecessor is not None and limit:
-                        expected[0] = values[0] - np.dtype(dtype).type(predecessor)
+                        expected[0] = values[0] - np.dtype(dtype).type(
+                            predecessor
+                        )
                 else:
                     expected[: max(0, limit - 1)] = (
                         values[: max(0, limit - 1)] - values[1:limit]
                     )
                     if successor is not None and limit:
-                        expected[limit - 1] = values[limit - 1] - np.dtype(dtype).type(
-                            successor
-                        )
-            np.testing.assert_array_equal(observed[start : start + tile], expected)
+                        expected[limit - 1] = values[limit - 1] - np.dtype(
+                            dtype
+                        ).type(successor)
+            np.testing.assert_array_equal(
+                observed[start : start + tile], expected
+            )
         else:
-            heads, tails = np.ones(tile, dtype=np.int32), np.ones(tile, dtype=np.int32)
+            heads, tails = (
+                np.ones(tile, dtype=np.int32),
+                np.ones(tile, dtype=np.int32),
+            )
             heads[1:] = values[1:] != values[:-1]
             tails[:-1] = values[:-1] != values[1:]
             if predecessor is not None:
@@ -231,13 +246,18 @@ def _run(
             if successor is not None:
                 tails[-1] = values[-1] != successor
             np.testing.assert_array_equal(
-                observed[start : start + tile], tails if mode == "tails" else heads
+                observed[start : start + tile],
+                tails if mode == "tails" else heads,
             )
             if mode == "heads_and_tails":
-                np.testing.assert_array_equal(secondary[start : start + tile], tails)
+                np.testing.assert_array_equal(
+                    secondary[start : start + tile], tails
+                )
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("dtype", NUMPY_DTYPES)
 @pytest.mark.parametrize(
     "operation,mode",
@@ -273,7 +293,9 @@ def test_boundary(operation, mode):
     _run(operation=operation, mode=mode, boundary=True)
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize(
     "operation,mode",
     [("adjacent_difference", "left"), ("discontinuity", "heads_and_tails")],
@@ -327,7 +349,9 @@ def test_final_cubin(tmp_path):
     cubins = list(tmp_path.rglob("*.cubin"))
     assert cubins
     for cubin in cubins:
-        sass = subprocess.check_output([tool, "--dump-sass", str(cubin)], text=True)
+        sass = subprocess.check_output(
+            [tool, "--dump-sass", str(cubin)], text=True
+        )
         assert "cuda_coop_cutlass_adjacent_difference_" not in sass
         assert re.search(r"\bCALL\b", sass) is None
 
@@ -378,7 +402,9 @@ def test_documented_neighbor_composition():
         values = coop.ThreadData(2, dtype=cutlass.Int32)
         coop.load(block, source, values)
         scratch = coop.TempStorage(alignment=16, auto_sync=True)
-        differences = coop.adjacent_difference(block, values, temp_storage=scratch)
+        differences = coop.adjacent_difference(
+            block, values, temp_storage=scratch
+        )
         heads, tails = coop.discontinuity(
             block, values, mode="heads_and_tails", temp_storage=scratch
         )

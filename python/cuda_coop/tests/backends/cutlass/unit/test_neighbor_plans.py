@@ -37,7 +37,9 @@ def _request(**options):
         "mode": "left",
     }
     arguments.update(options)
-    return _neighbors._CubNeighborRequest(_neighbors._make_neighbor_plan(**arguments))
+    return _neighbors._CubNeighborRequest(
+        _neighbors._make_neighbor_plan(**arguments)
+    )
 
 
 @pytest.mark.parametrize("dtype", tuple(ALL_PROVIDER_TYPES))
@@ -56,7 +58,9 @@ def test_results(dtype, operation, mode):
     assert request.output_type is (
         dtype if operation == "adjacent_difference" else cutlass.Int32
     )
-    assert len(request.plan.result.values) == (2 if mode == "heads_and_tails" else 1)
+    assert len(request.plan.result.values) == (
+        2 if mode == "heads_and_tails" else 1
+    )
     assert request.plan.temp_storage.exact_layout_required
     source = _rendering.render_bundle_source([request])
     assert source.index("struct CudaCoopBlock") < source.index('extern "C"')
@@ -66,7 +70,10 @@ def test_results(dtype, operation, mode):
 def test_invalid_count(count):
     # NumPy integers are trace-static; uint64 is valid when its value fits.
     if isinstance(count, np.uint64):
-        assert _request(valid_items=count).plan.call.operation.valid_items.value == 5
+        assert (
+            _request(valid_items=count).plan.call.operation.valid_items.value
+            == 5
+        )
     else:
         with pytest.raises((TypeError, ValueError), match="valid_items"):
             _request(valid_items=count)
@@ -95,7 +102,9 @@ def test_complete_block_required():
 @pytest.mark.parametrize("auto_sync", (False, True))
 def test_storage_controls(sharing, auto_sync):
     request = _request(
-        temp_storage=TempStorage(alignment=128, sharing=sharing, auto_sync=auto_sync)
+        temp_storage=TempStorage(
+            alignment=128, sharing=sharing, auto_sync=auto_sync
+        )
     )
     assert request.plan.temp_storage.ownership is StorageOwnership.CALLER
     assert request.plan.temp_storage.requested_alignment == 128
