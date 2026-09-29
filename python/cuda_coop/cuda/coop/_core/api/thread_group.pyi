@@ -4,7 +4,8 @@
 
 """Typing contract for common CUDA thread groups and hierarchy."""
 
-from typing import Callable, Generic, Literal, TypeAlias, overload
+from collections.abc import Callable
+from typing import Generic, Literal, TypeAlias, overload
 
 from typing_extensions import Self, TypeVar
 
