@@ -960,7 +960,8 @@ def check_cutlass_neighbors() -> None:
         cutlass_coop.ThreadData[Any],
     )
     assert_type(
-        cutlass_coop.discontinuity(block, values), cutlass_coop.ThreadData[Int32]
+        cutlass_coop.discontinuity(block, values),
+        cutlass_coop.ThreadData[Int32],
     )
     assert_type(
         cutlass_coop.discontinuity(block, values, mode="heads_and_tails"),
