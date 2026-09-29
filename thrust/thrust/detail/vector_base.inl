@@ -609,6 +609,11 @@ typename vector_base<T, Alloc>::reference vector_base<T, Alloc>::emplace_back(Ar
     // do not exceed maximum storage
     new_capacity = ::cuda::std::min<size_type>(new_capacity, max_size());
 
+    if (new_capacity > max_size())
+    {
+      throw std::length_error("insert(): insertion exceeds max_size().");
+    } // end if
+
     // create new storage
     storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
 

@@ -1036,7 +1036,6 @@ struct RemembersCopy
   _CCCL_HOST_DEVICE explicit RemembersCopy(int n)
       : n_(n)
   {
-    n_      = n;
     copied_ = false;
   }
   _CCCL_HOST_DEVICE RemembersCopy(const RemembersCopy& other)
@@ -1056,7 +1055,7 @@ struct RemembersCopy
   }
 
   int n_;
-  bool copied_ = false;
+  bool copied_;
 };
 
 // functor used to count if elements are copied
@@ -1195,4 +1194,38 @@ TEST_CASE("TestVectorEmplaceBackReturnsReference", "[vector]")
   static_assert(cuda::std::is_same_v<decltype(v_d.emplace_back(42)), thrust::device_vector<T>::reference>);
   static_assert(cuda::std::is_same_v<decltype(v_h.emplace_back(42)), thrust::host_vector<T>::reference>);
   static_assert(cuda::std::is_same_v<decltype(v_u.emplace_back(42)), thrust::universal_vector<T>::reference>);
+}
+
+struct HasMultiArgumentCtor
+{
+  _CCCL_HOST_DEVICE HasMultiArgumentCtor(int n0, int n1)
+      : n0_(n0)
+      , n1_(n1)
+  {}
+
+  _CCCL_HOST_DEVICE int sum()
+  {
+    return n0_ + n1_;
+  }
+
+private:
+  int n0_;
+  int n1_;
+};
+
+TEST_CASE("TestVectorEmplaceWorksWithMultiArgumentCtor", "[vector]")
+{
+  using T = HasMultiArgumentCtor;
+
+  thrust::device_vector<T> v_d;
+  thrust::host_vector<T> v_h;
+  thrust::universal_vector<T> v_u;
+
+  v_d.emplace_back(41, 42);
+  v_h.emplace_back(41, 42);
+  v_u.emplace_back(41, 42);
+
+  assert(v_d[0].sum() == 41 + 42);
+  assert(v_h[0].sum() == 41 + 42);
+  assert(v_u[0].sum() == 41 + 42);
 }
