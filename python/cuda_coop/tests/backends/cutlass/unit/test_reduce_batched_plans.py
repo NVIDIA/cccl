@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Batched-reduction topology, provider identity, and failure transactions."""
-
 from dataclasses import replace
 
 import pytest
