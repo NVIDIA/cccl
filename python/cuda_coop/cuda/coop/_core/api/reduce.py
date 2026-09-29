@@ -306,8 +306,8 @@ def sum(
         the primitive.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's contribution. A :ref:`per-thread payload
-        <coop-common-payloads>` contributes all its elements; its dtype and fixed
-        extent must agree across the group. Input values are preserved.
+        <coop-common-payloads>` contributes all its elements; its dtype and
+        fixed extent must agree across the group. Input values are preserved.
         Supports signed and unsigned 8-, 16-, 32-, and 64-bit integers,
         ``float32``, and ``float64``.
     broadcast : bool, optional

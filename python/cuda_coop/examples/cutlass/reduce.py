@@ -2,7 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Reduce per-thread payloads over a block, logical warps, and a valid prefix."""
+"""Reduce per-thread payloads over a block, logical warps, and a valid
+prefix.
+"""
 
 import cutlass
 import numpy as np
