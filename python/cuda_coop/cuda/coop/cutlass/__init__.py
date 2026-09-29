@@ -18,9 +18,9 @@ from ._thread_data import ThreadData
 from ._thread_group import Hierarchy, ThreadGroup, ThreadHierarchy, this_block
 
 __all__ = [
+    "Hierarchy",
     "TempStorage",
     "TempStorageLike",
-    "Hierarchy",
     "ThreadData",
     "ThreadDataLike",
     "ThreadGroup",
