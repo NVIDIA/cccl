@@ -111,7 +111,9 @@ class ThreadGroup(Generic[_GroupKindT_co]):
     def count(
         self: ThreadGroup[_PhysicalGroupKind], level: ThreadLevel = "thread"
     ) -> IntegerValue:
-        """Return count using the outer C++ hierarchy boundary's product type."""
+        """Return count using the outer C++ hierarchy boundary's product
+        type.
+        """
     @overload
     def count(
         self: ThreadGroup[Literal["threads_within_warp"]],
