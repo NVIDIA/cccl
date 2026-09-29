@@ -28,7 +28,9 @@ def _decode(
             "run_length_decode requires a complete this_block() group"
         )
     if temp_storage is not None and not isinstance(temp_storage, TempStorage):
-        raise TypeError("run_length_decode temp_storage must be CUTLASS TempStorage")
+        raise TypeError(
+            "run_length_decode temp_storage must be CUTLASS TempStorage"
+        )
     primitive = "run_length_decode_into" if bulk else "run_length_decode"
     values = _snapshot_readable_payload(
         run_values, name="run_values", primitive=primitive

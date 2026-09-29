@@ -80,7 +80,9 @@ def test_integer_offset_required(offset):
 
 @pytest.mark.parametrize("extent", (0, -1, True, 1.5, 1 << 31))
 def test_output_extent_validation(extent):
-    with pytest.raises((ValueError, TypeError), match="positive|integer|signed 32-bit"):
+    with pytest.raises(
+        (ValueError, TypeError), match="positive|integer|signed 32-bit"
+    ):
         _request(decoded=extent)
 
 
@@ -132,7 +134,9 @@ def test_result_mismatch_rejected():
         _run_length._CubRunLengthRequest(replace(request.plan, result=result))
 
 
-@pytest.mark.parametrize("name", ("run_length_decode", "run_length_decode_into"))
+@pytest.mark.parametrize(
+    "name", ("run_length_decode", "run_length_decode_into")
+)
 def test_common_signature(name):
     expected, actual = (
         inspect.signature(getattr(coop, name)),
@@ -150,8 +154,12 @@ def test_common_signature(name):
         )
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
-@pytest.mark.parametrize("primitive", ("run_length_decode", "run_length_decode_into"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
+@pytest.mark.parametrize(
+    "primitive", ("run_length_decode", "run_length_decode_into")
+)
 @pytest.mark.parametrize("invalid", ("run_values", "run_lengths"))
 def test_invalid_payload_names_operation(api, primitive, invalid):
     values = cutlass_coop.ThreadData(1, dtype=cutlass.Int32, values=[3])

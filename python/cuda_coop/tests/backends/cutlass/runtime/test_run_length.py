@@ -86,13 +86,16 @@ def _run(
         thread, _, _ = cute.arch.thread_idx()
         block, _, _ = cute.arch.block_idx()
         sources = cute.recast_tensor(
-            cute.make_tensor(source, cute.make_layout(blocks * run_tile)), value_type
+            cute.make_tensor(source, cute.make_layout(blocks * run_tile)),
+            value_type,
         )
         counts_tensor = cute.recast_tensor(
-            cute.make_tensor(counts, cute.make_layout(blocks * run_tile)), length_type
+            cute.make_tensor(counts, cute.make_layout(blocks * run_tile)),
+            length_type,
         )
         outputs = cute.recast_tensor(
-            cute.make_tensor(output, cute.make_layout(blocks * output_size)), value_type
+            cute.make_tensor(output, cute.make_layout(blocks * output_size)),
+            value_type,
         )
         values_check = cute.recast_tensor(
             cute.make_tensor(value_check, cute.make_layout(blocks * run_tile)),
@@ -103,7 +106,8 @@ def _run(
             length_type,
         )
         total_output = cute.recast_tensor(
-            cute.make_tensor(totals, cute.make_layout(blocks * threads)), cutlass.Uint32
+            cute.make_tensor(totals, cute.make_layout(blocks * threads)),
+            cutlass.Uint32,
         )
         group = api.this_block()
         values = api.ThreadData(
@@ -122,7 +126,10 @@ def _run(
             None
             if sharing is None
             else api.TempStorage(
-                storage_bytes, alignment=alignment, sharing=sharing, auto_sync=auto_sync
+                storage_bytes,
+                alignment=alignment,
+                sharing=sharing,
+                auto_sync=auto_sync,
             )
         )
         start = offset if static else dynamic_offset
@@ -131,7 +138,8 @@ def _run(
                 extent = dynamic_capacity_arg if dynamic_capacity else capacity
                 destination = cute.recast_tensor(
                     cute.make_tensor(
-                        outputs.iterator + block * capacity, cute.make_layout(extent)
+                        outputs.iterator + block * capacity,
+                        cute.make_layout(extent),
                     ),
                     value_type,
                 )
@@ -160,7 +168,9 @@ def _run(
                 assert result.items_per_thread == decoded
                 assert result.alignment == alignment
                 for item in cutlass.range_constexpr(decoded):
-                    outputs[block * window + thread * decoded + item] = result[item]
+                    outputs[block * window + thread * decoded + item] = result[
+                        item
+                    ]
             if cutlass.const_expr(sharing is not None and not auto_sync):
                 storage.sync()
         for item in cutlass.range_constexpr(runs):
@@ -207,11 +217,23 @@ def _run(
     elif invalid == "wide-overflow":
         counts[0] = (1 << 64) - 1
     observed = np.full(blocks * output_size, 42, dtype=dtype)
-    preserved_values, preserved_lengths = np.empty_like(source), np.empty_like(counts)
+    preserved_values, preserved_lengths = (
+        np.empty_like(source),
+        np.empty_like(counts),
+    )
     totals = np.full(blocks * threads, (1 << 32) - 1, dtype=np.uint32)
-    arrays = (source, counts, observed, preserved_values, preserved_lengths, totals)
+    arrays = (
+        source,
+        counts,
+        observed,
+        preserved_values,
+        preserved_lengths,
+        totals,
+    )
     with ExitStack() as stack:
-        pointers = [stack.enter_context(device_array(array)) for array in arrays]
+        pointers = [
+            stack.enter_context(device_array(array)) for array in arrays
+        ]
         args = (
             *pointers,
             control_type(offset),
@@ -235,7 +257,8 @@ def _run(
             expected = np.full(capacity, 42, dtype=dtype)
             expected[offset : offset + len(expected_stream)] = expected_stream
             np.testing.assert_array_equal(
-                totals[block * threads : (block + 1) * threads], len(expected_stream)
+                totals[block * threads : (block + 1) * threads],
+                len(expected_stream),
             )
         else:
             expected = np.zeros(window, dtype=dtype)
@@ -246,13 +269,17 @@ def _run(
             )
             expected[: len(chunk)] = chunk
         np.testing.assert_array_equal(
-            observed[block * output_size : (block + 1) * output_size].view(np.uint8),
+            observed[block * output_size : (block + 1) * output_size].view(
+                np.uint8
+            ),
             expected.view(np.uint8),
         )
     return compiled
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("bulk", (False, True))
 @pytest.mark.parametrize("static", (False, True))
 def test_entrypoints(api, bulk, static):
@@ -289,12 +316,20 @@ def test_readonly_and_inferred(bulk):
 @pytest.mark.parametrize("auto_sync", (False, True))
 @pytest.mark.parametrize("bulk", (False, True))
 def test_scratch_reuse(sharing, auto_sync, bulk):
-    _run(bulk=bulk, repeats=3, sharing=sharing, auto_sync=auto_sync, alignment=128)
+    _run(
+        bulk=bulk,
+        repeats=3,
+        sharing=sharing,
+        auto_sync=auto_sync,
+        alignment=128,
+    )
 
 
 @pytest.mark.parametrize("bulk", (False, True))
 def test_alignment_minimum(bulk):
-    _run(bulk=bulk, repeats=3, sharing="shared", alignment=1, storage_bytes=32768)
+    _run(
+        bulk=bulk, repeats=3, sharing="shared", alignment=1, storage_bytes=32768
+    )
 
 
 def test_dynamic_capacity():

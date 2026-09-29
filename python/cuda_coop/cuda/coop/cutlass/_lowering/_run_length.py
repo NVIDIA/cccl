@@ -48,12 +48,16 @@ _resolve_type = _types.make_provider_type_resolver(
 
 def _offset_binding(value):
     if isinstance(value, (bool, np.bool_, Enum)):
-        raise TypeError("run_length_decode offset must be an integer, not bool or Enum")
+        raise TypeError(
+            "run_length_decode offset must be an integer, not bool or Enum"
+        )
     if isinstance(value, Integral):
         return ArgumentBinding.static(int(value)), Uint64
     dtype = _types.canonical_dsl_type(value)
     if dtype not in _types.INTEGER_VALUE_TYPES:
-        raise TypeError("run_length_decode offset must be an integer up to 64 bits")
+        raise TypeError(
+            "run_length_decode offset must be an integer up to 64 bits"
+        )
     return ArgumentBinding.runtime(), dtype
 
 
@@ -81,7 +85,9 @@ def _make_run_length_plan(
         bulk=bulk,
     )
     source = (
-        "common_root" if _common_root_operation_name() is not None else "cutlass_root"
+        "common_root"
+        if _common_root_operation_name() is not None
+        else "cutlass_root"
     )
     plan = plan_group_primitive(
         make_group_primitive_call(group, operation, source=source), launch
@@ -123,10 +129,14 @@ class _CubRunLengthRequest:
         self.plan.require_supported()
         if (
             self.plan.target is not GroupLoweringTarget.CUB_BLOCK
-            or not isinstance(self.plan.call.operation, GroupRunLengthDecodeSemantics)
+            or not isinstance(
+                self.plan.call.operation, GroupRunLengthDecodeSemantics
+            )
             or not isinstance(self.plan.implementation, AlgorithmSpec)
         ):
-            raise ValueError("run_length_decode requires a shared CUB block plan")
+            raise ValueError(
+                "run_length_decode requires a shared CUB block plan"
+            )
         p, spec = self.operation, self.implementation
         if (
             p.item_dtype not in _types.ALL_PROVIDER_TYPES
@@ -134,20 +144,25 @@ class _CubRunLengthRequest:
             or p.control_dtype not in _types.INTEGER_VALUE_TYPES
         ):
             raise TypeError(
-                "run_length_decode requires numeric values and integer lengths/offsets"
+                "run_length_decode requires numeric values "
+                "and integer lengths/offsets"
             )
         if p.decoded_offset_dtype is not Uint32 or p.relative_offsets:
             raise ValueError(
                 "run_length_decode requires the common uint32 result profile"
             )
-        if spec.struct_name != "BlockRunLengthDecodeCoop" or spec.method_name != (
-            "Into" if p.bulk else "Window"
+        if (
+            spec.struct_name != "BlockRunLengthDecodeCoop"
+            or spec.method_name != ("Into" if p.bulk else "Window")
         ):
-            raise ValueError("run_length_decode implementation does not match its plan")
+            raise ValueError(
+                "run_length_decode implementation does not match its plan"
+            )
         dimensions = self.plan.participation.exact_block_dim
         if dimensions is None or dimensions[1:] != (1, 1):
             raise ValueError(
-                "run_length_decode requires exact one-dimensional block dimensions"
+                "run_length_decode requires exact one-dimensional "
+                "block dimensions"
             )
         expected = {
             "ItemT": p.item_dtype,
@@ -162,7 +177,9 @@ class _CubRunLengthRequest:
             raise ValueError(
                 "run_length_decode template arguments do not match its plan"
             )
-        results = self.plan.result.values if self.plan.result is not None else ()
+        results = (
+            self.plan.result.values if self.plan.result is not None else ()
+        )
         if (
             len(results) != 1
             or results[0].dtype is not (Uint32 if p.bulk else p.item_dtype)
@@ -186,7 +203,8 @@ class _CubRunLengthRequest:
             else SynchronizationScope.NONE
         ):
             raise ValueError(
-                "run_length_decode storage synchronization does not match its plan"
+                "run_length_decode storage synchronization "
+                "does not match its plan"
             )
 
     @property
@@ -213,7 +231,9 @@ class _CubRunLengthRequest:
 
     @property
     def symbol_name(self):
-        digest = hashlib.sha256(repr(self.plan.artifact_key).encode()).hexdigest()[:16]
+        digest = hashlib.sha256(
+            repr(self.plan.artifact_key).encode()
+        ).hexdigest()[:16]
         return f"cuda_coop_cutlass_run_length_{digest}"
 
     def __eq__(self, other):
@@ -231,11 +251,16 @@ def _render_run_length(request):
     p = request.operation
     item_cpp = _types.TYPE_SPECS[p.item_dtype].cpp_type
     params, inputs = [], []
-    for name, dtype in (("values", p.item_dtype), ("lengths", p.run_length_dtype)):
+    for name, dtype in (
+        ("values", p.item_dtype),
+        ("lengths", p.run_length_dtype),
+    ):
         cpp = _types.TYPE_SPECS[dtype].cpp_type
         params.extend(f"{cpp} {name}{i}" for i in range(p.runs_per_thread))
         inputs.append(
-            f"  {cpp} {name}[{p.runs_per_thread}] = {{{', '.join(f'{name}{i}' for i in range(p.runs_per_thread))}}};"
+            f"  {cpp} {name}[{p.runs_per_thread}] = {{"
+            f"{', '.join(f'{name}{i}' for i in range(p.runs_per_thread))}"
+            "};"
         )
     if p.bulk:
         params.extend((f"{item_cpp}* destination", "long long capacity"))
@@ -245,13 +270,21 @@ def _render_run_length(request):
     else:
         offset = f"{p.offset.value}ULL"
     params.extend(
-        ("unsigned int storage_address", "int storage_bytes", "int storage_auto_sync")
+        (
+            "unsigned int storage_address",
+            "int storage_bytes",
+            "int storage_auto_sync",
+        )
     )
     if p.bulk:
         result_type = "unsigned int"
         body = [
             "  unsigned int total;",
-            f"  implementation_type(storage).Into(values, lengths, destination, capacity, {offset}, total);",
+            (
+                "  implementation_type(storage).Into"
+                "(values, lengths, destination, capacity, "
+                f"{offset}, total);"
+            ),
         ]
         outputs = ["  return total;"]
     else:
@@ -261,21 +294,31 @@ def _render_run_length(request):
             f"  {item_cpp} decoded[{p.decoded_items_per_thread}];",
             "  unsigned int total[1];",
             f"  unsigned int relative[{p.decoded_items_per_thread}];",
-            f"  implementation_type(storage).Window(values, lengths, decoded, total, relative, {offset});",
+            (
+                "  implementation_type(storage).Window"
+                f"(values, lengths, decoded, total, relative, {offset});"
+            ),
         ]
         outputs = [
-            f"  result[{i}] = decoded[{i}];" for i in range(p.decoded_items_per_thread)
+            f"  result[{i}] = decoded[{i}];"
+            for i in range(p.decoded_items_per_thread)
         ]
     return [
         f"{result_type} {request.symbol_name}({', '.join(params)}) {{",
         f"  using implementation_type = {request.cpp_type};",
         "  using storage_type = typename implementation_type::TempStorage;",
-        "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes < sizeof(storage_type) ||",
+        (
+            "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes "
+            "< sizeof(storage_type) ||"
+        ),
         "      (storage_address & (alignof(storage_type) - 1u)) != 0u) {",
         '    asm volatile("trap;");',
         "  }",
         "  unsigned long long generic_address;",
-        '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : "l"((unsigned long long)storage_address));',
+        (
+            '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : '
+            '"l"((unsigned long long)storage_address));'
+        ),
         "  auto& storage = *reinterpret_cast<storage_type*>(generic_address);",
         *inputs,
         *body,
@@ -291,13 +334,17 @@ _rendering.register_bundle_renderer(
     include_lines=tuple(f"#include <{header}>" for header in _HEADERS),
     cccl_headers=tuple((f"#include <{header}>", header) for header in _HEADERS),
     scratch_layout_probe=lambda request: _rendering.make_scratch_layout_probe(
-        request.scratch_requirement_key, f"typename {request.cpp_type}::TempStorage"
+        request.scratch_requirement_key,
+        f"typename {request.cpp_type}::TempStorage",
     ),
 )
 
 
 def _destination(destination, value_type):
-    message = "run_length_decode_into destination must be a contiguous one-dimensional global-memory tensor with the run-value dtype"
+    message = (
+        "run_length_decode_into destination must be a contiguous "
+        "one-dimensional global-memory tensor with the run-value dtype"
+    )
     if (
         not isinstance(destination, cute.Tensor)
         or destination.element_type is not value_type
@@ -315,7 +362,8 @@ def _destination(destination, value_type):
     if isinstance(shape, Integral):
         if not 0 <= shape <= (1 << 63) - 1:
             raise ValueError(
-                "run_length_decode_into destination capacity must fit a nonnegative int64"
+                "run_length_decode_into destination capacity must fit "
+                "a nonnegative int64"
             )
     elif _types.canonical_dsl_type(shape) not in _types.INTEGER_VALUE_TYPES:
         raise TypeError(message)
@@ -329,7 +377,11 @@ def _typed_item(value, dtype):
     if isinstance(value, np.generic):
         value = value.item()
     converted = _types.coerce_plain_scalar(
-        value, dtype, name="run_length_decode item", scope=_SCOPE, allow_nonfinite=True
+        value,
+        dtype,
+        name="run_length_decode item",
+        scope=_SCOPE,
+        allow_nonfinite=True,
     )
     return dtype(value) if converted is _types._NOT_PLAIN_SCALAR else converted
 
@@ -393,7 +445,9 @@ def provider_run_length_decode(
     try:
         _state.register_request(request)
         descriptor = (
-            TempStorage(auto_sync=True) if temp_storage is None else temp_storage
+            TempStorage(auto_sync=True)
+            if temp_storage is None
+            else temp_storage
         )
         arguments.extend(
             _storage.register_deferred_temp_storage_event(
