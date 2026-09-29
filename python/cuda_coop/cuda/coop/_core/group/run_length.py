@@ -33,6 +33,8 @@ from ._model import (
     StorageOwnership,
 )
 
+_DEFAULT_OFFSET = ArgumentBinding.static(0)
+
 
 @dataclass(frozen=True, eq=False)
 class GroupRunLengthDecodeSemantics:
@@ -40,7 +42,7 @@ class GroupRunLengthDecodeSemantics:
     run_length_dtype: Any
     runs_per_thread: int
     decoded_items_per_thread: int
-    offset: ArgumentBinding = ArgumentBinding.static(0)
+    offset: ArgumentBinding = _DEFAULT_OFFSET
     decoded_offset_dtype: Any = UINT32
     control_dtype: Any = UINT64
     bulk: bool = False
