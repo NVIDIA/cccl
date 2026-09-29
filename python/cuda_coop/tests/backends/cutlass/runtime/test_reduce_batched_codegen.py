@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Inspect final linked code for the register-only batched provider."""
-
 import re
 import shutil
 import subprocess
