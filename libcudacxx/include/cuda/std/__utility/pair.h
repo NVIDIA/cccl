@@ -161,8 +161,8 @@ struct __pair_base<_T1, _T2, true>
   operator=(conditional_t<is_move_assignable_v<_T1> && is_move_assignable_v<_T2>, __pair_base, __nat>&& __p) noexcept(
     is_nothrow_move_assignable_v<_T1> && is_nothrow_move_assignable_v<_T2>)
   {
-    first  = ::cuda::std::move(__p.first);
-    second = ::cuda::std::move(__p.second);
+    first  = static_cast<_T1&&>(__p.first);
+    second = static_cast<_T2&&>(__p.second);
     return *this;
   }
 
@@ -517,8 +517,8 @@ public:
   operator=(pair<_U1, _U2>&& __p) noexcept( // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     is_nothrow_assignable_v<_T1&, _U1> && is_nothrow_assignable_v<_T2&, _U2>)
   {
-    this->first  = ::cuda::std::forward<_U1>(__p.first);
-    this->second = ::cuda::std::forward<_U2>(__p.second);
+    this->first  = static_cast<_U1&&>(__p.first);
+    this->second = static_cast<_U2&&>(__p.second);
     return *this;
   }
 
@@ -530,8 +530,8 @@ public:
   operator=(pair<_U1, _U2>&& __p) const // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     noexcept(is_nothrow_assignable_v<const _T1&, _U1> && is_nothrow_assignable_v<const _T2&, _U2>)
   {
-    this->first  = ::cuda::std::forward<_U1>(__p.first);
-    this->second = ::cuda::std::forward<_U2>(__p.second);
+    this->first  = static_cast<_U1&&>(__p.first);
+    this->second = static_cast<_U2&&>(__p.second);
     return *this;
   }
 
