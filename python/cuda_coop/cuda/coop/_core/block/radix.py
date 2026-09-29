@@ -150,7 +150,9 @@ def resolve_static_radix_end_bit(
     default_to_bit_width: bool = False,
     clamp_default: bool = False,
 ) -> int:
-    """Resolve a frontend's static default and validate the resulting interval."""
+    """Resolve a frontend's static default and validate the resulting
+    interval.
+    """
 
     begin = _bit_binding("begin_bit", begin_bit)
     if begin.kind is not BindingKind.STATIC:
