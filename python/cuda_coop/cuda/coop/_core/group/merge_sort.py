@@ -115,14 +115,14 @@ def _plan_merge_sort(
     operation: GroupMergeSortSemantics,
 ) -> GroupLoweringPlan:
     primitive = operation.primitive
-    kwargs = dict(
-        key_dtype=primitive.key_dtype,
-        value_dtype=primitive.value_dtype,
-        items_per_thread=primitive.items_per_thread,
-        compare_operator=primitive.compare_operator,
-        valid_items=0 if primitive.has_partial_tile else None,
-        oob_default=0 if primitive.has_partial_tile else None,
-    )
+    kwargs = {
+        "key_dtype": primitive.key_dtype,
+        "value_dtype": primitive.value_dtype,
+        "items_per_thread": primitive.items_per_thread,
+        "compare_operator": primitive.compare_operator,
+        "valid_items": 0 if primitive.has_partial_tile else None,
+        "oob_default": 0 if primitive.has_partial_tile else None,
+    }
     assert launch.exact_block_dim is not None
     if resolved.kind == "block":
         width = launch.exact_block_threads
@@ -150,11 +150,13 @@ def _plan_merge_sort(
         header = "cub/warp/warp_merge_sort.cuh"
         cpp_class = "cub::WarpMergeSort"
     capacity = width * primitive.items_per_thread
-    if operation.valid_items.kind is BindingKind.STATIC:
-        if not 0 <= operation.valid_items.value <= capacity:
-            raise ValueError(
-                f"valid_items must be between 0 and the group tile size ({capacity})"
-            )
+    if (
+        operation.valid_items.kind is BindingKind.STATIC
+        and not 0 <= operation.valid_items.value <= capacity
+    ):
+        raise ValueError(
+            f"valid_items must be between 0 and the group tile size ({capacity})"
+        )
     outputs = [("keys", primitive.key_dtype)]
     if primitive.has_values:
         outputs.append(("values", primitive.value_dtype))
