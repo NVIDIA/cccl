@@ -48,7 +48,9 @@ def test_adjacent_partial_boundaries_and_input_preservation(dtype, direction):
     def kernel(source, output, original, count):
         block = coop.this_block()
         values = coop.ThreadData(3)
-        thread = cuda.threadIdx.x + 5 * (cuda.threadIdx.y + 3 * cuda.threadIdx.z)
+        thread = cuda.threadIdx.x + 5 * (
+            cuda.threadIdx.y + 3 * cuda.threadIdx.z
+        )
         for i in range(3):
             values[i] = source[thread * 3 + i]
         if direction == "left":
@@ -113,7 +115,10 @@ def test_flags_boundaries_pair_results_and_chained_scan(dtype, mode, boundary):
         elif mode == "heads":
             if boundary:
                 result = coop.discontinuity(
-                    block, values, mode=mode, tile_predecessor_item=compiler_dtype(0)
+                    block,
+                    values,
+                    mode=mode,
+                    tile_predecessor_item=compiler_dtype(0),
                 )
             else:
                 result = coop.discontinuity(block, values, mode=mode)
@@ -122,7 +127,10 @@ def test_flags_boundaries_pair_results_and_chained_scan(dtype, mode, boundary):
         else:
             if boundary:
                 result = coop.discontinuity(
-                    block, values, mode=mode, tile_successor_item=compiler_dtype(5)
+                    block,
+                    values,
+                    mode=mode,
+                    tile_successor_item=compiler_dtype(5),
                 )
             else:
                 result = coop.discontinuity(block, values, mode=mode)
@@ -137,7 +145,9 @@ def test_flags_boundaries_pair_results_and_chained_scan(dtype, mode, boundary):
     tails = np.r_[
         source[:-1] != source[1:], int(source[-1] != 5) if boundary else 1
     ].astype(np.int32)
-    head_out, tail_out, prefix_out = [np.empty(96, dtype=np.int32) for _ in range(3)]
+    head_out, tail_out, prefix_out = [
+        np.empty(96, dtype=np.int32) for _ in range(3)
+    ]
     original = np.empty_like(source)
     kernel[1, 32](source, head_out, tail_out, prefix_out, original)
     if mode != "tails":
@@ -261,7 +271,9 @@ def test_full_tile_default_boundary_and_chained_result(direction):
         values = coop.ThreadData(1)
         values[0] = source[cuda.threadIdx.x]
         first = coop.adjacent_difference(block, values, direction=direction)
-        second = numba_coop.adjacent_difference(block, first, direction=direction)
+        second = numba_coop.adjacent_difference(
+            block, first, direction=direction
+        )
         coop.store(block, output, second)
 
     source = ((np.arange(65) * 13) % 29).astype(np.int32)
@@ -300,7 +312,7 @@ output = np.empty_like(source)
 kernel[1, 64](source, output, np.int64({count}))
 cuda.synchronize()
 raise AssertionError('invalid count did not trap')
-"""
+"""  # noqa: E501 - Preserve embedded source bytes.
     result = subprocess.run(
         [
             sys.executable,
@@ -318,5 +330,8 @@ raise AssertionError('invalid count did not trap')
     assert result.returncode != 0, output
     assert any(
         error in output
-        for error in ("CUDA_ERROR_ILLEGAL_INSTRUCTION", "CUDA_ERROR_LAUNCH_FAILED")
+        for error in (
+            "CUDA_ERROR_ILLEGAL_INSTRUCTION",
+            "CUDA_ERROR_LAUNCH_FAILED",
+        )
     ), output
