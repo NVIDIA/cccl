@@ -4,7 +4,7 @@
 //
 // Adapted from python/cuda_coop/docs/fern/fern/components/CooperativeReductionScan.tsx
 // at cccl-mirror trentn/dev/cuda-coop 5dba3d36b6eaae48b967d6fa48f9d15e98136000.
-// API choices follow the current common and Numba-CUDA-MLIR group planners.
+// API choices follow the shared planners and backend-specific callback contracts.
 
 (() => {
   "use strict";
@@ -108,7 +108,7 @@
       "Only rank zero of each group has a defined return value; ? marks every other return.",
       "The partial-combine rows show an illustrative legal reduction tree, not a CUB instruction trace. Floating-point results can depend on combination order.",
     ];
-    if (state.operator === "custom_max") notes.push("Custom max uses a device callback through cuda.coop.numba_mlir; the common API accepts built-in operator names.");
+    if (state.operator === "custom_max") notes.push("Custom max uses a device callback through cuda.coop.numba_mlir. CUTLASS supports built-in operators; the common API accepts built-in operator names.");
     return {
       detail: `${algorithm.label}: ${state.scope.replaceAll("_", " ")} groups combine ${valid * items} values using ${state.operator === "sum" ? "sum" : "maximum"}.`,
       rows: [
