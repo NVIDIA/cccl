@@ -2,29 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-import inspect
 from enum import Enum
-from numbers import Integral
-from typing import Any
 
-import numba_cuda_mlir.numba_cuda.types as _numba_types
-from numba_cuda_mlir.cuda.local import array as _cuda_local_array
-from numba_cuda_mlir.extending import (
-    WholeFunctionPlanner,
-    register_planner,
-    require_launch_config,
-)
-from numba_cuda_mlir.numba_cuda.core.errors import ForceLiteralArg
-
-import cuda.coop._core.api as _portable_api
 import cuda.coop._core.api._dispatch as _portable_dispatch
-from cuda.coop._core import (
-    LaunchFactOrigin,
-    LaunchFacts,
-    ThreadGroup,
-    ThreadHierarchy,
-    resolve_thread_group,
-)
 
 from .._temp_storage import TempStorage
 from .._thread_data import ThreadData
@@ -38,15 +18,32 @@ from ._group_errors import (
     InvalidGroupSelectorError,
     NonConstantGroupArgumentError,
     NonConstantThreadGroupError,
+    UnknownResultExtentError,
 )
 from ._group_planner_support import (
     _GROUP_CONSTRUCTORS,
     _NAME_COUNTER,
     _PORTABLE_GROUP_CONSTRUCTORS,
+    Any,
+    ForceLiteralArg,
     GroupRewriteError,
+    Integral,
+    LaunchFactOrigin,
+    LaunchFacts,
+    ThreadGroup,
+    ThreadHierarchy,
+    WholeFunctionPlanner,
+    _cuda_module,
     _group_operation_name,
     _is_common_root_operation,
+    _portable_api,
+    _typed_group_payload_like,
+    inspect,
     ir,
+    register_planner,
+    require_launch_config,
+    resolve_thread_group,
+    types,
 )
 from ._group_planning import GroupPlanningContext
 from ._operations import group_primitive
@@ -180,7 +177,7 @@ class _GroupCallPlanner:
         if depends_on_unroll(value, set()):
             raise GroupRewriteError(
                 "cuda.coop.numba_mlir does not support literal_unroll values "
-                f"that determine {parameter}. Write separate "
+                f"that determine {parameter} in the MVP. Write separate "
                 "cooperative calls with explicit constant shapes/selectors, "
                 "or use an ordinary loop with a fixed cooperative shape."
             )
@@ -214,7 +211,7 @@ class _GroupCallPlanner:
         if isinstance(definition, ir.Arg):
             position = definition.index
             argtype = self.state.args[position]
-            if not isinstance(argtype, _numba_types.Literal):
+            if not isinstance(argtype, types.Literal):
                 raise ForceLiteralArg({position})
             return argtype.literal_value
         if isinstance(definition, (ir.Global, ir.FreeVar, ir.Const)):
@@ -236,11 +233,10 @@ class _GroupCallPlanner:
             definition = self._definition(value)
             if isinstance(definition, ir.Arg):
                 argtype = self.state.args[definition.index]
-                if isinstance(argtype, _numba_types.Literal):
+                if isinstance(argtype, types.Literal):
                     return (True, argtype.literal_value)
-                if isinstance(argtype, _numba_types.NoneType) or (
-                    isinstance(argtype, _numba_types.Omitted)
-                    and argtype.value is None
+                if isinstance(argtype, types.NoneType) or (
+                    isinstance(argtype, types.Omitted) and argtype.value is None
                 ):
                     return (True, None)
                 return (False, None)
@@ -462,6 +458,29 @@ class _GroupCallPlanner:
             return True
         return None
 
+    def _result_source(self, definition: Any, index: int | None = None):
+        if not isinstance(definition, ir.Expr) or definition.op != "call":
+            return None
+        operation = _group_operation_name(self._callable(definition.func))
+        registration = None if operation is None else group_primitive(operation)
+        if registration is None:
+            return None
+        results = registration.results
+        if index is None:
+            if len(results) != 1:
+                return None
+            result = results[0]
+        else:
+            if len(results) == 1:
+                # A single-result primitive returns its value directly, so an
+                # integer subscript selects an element of that value (a
+                # scalar), not a tuple item.
+                return None
+            if not -len(results) <= index < len(results):
+                return None
+            result = results[index]
+        return result, self._bind(self._callable(definition.func), definition)
+
     def _is_array_tuple_item(
         self,
         value: Any,
@@ -531,7 +550,17 @@ class _GroupCallPlanner:
             )
         if definition.op != "call":
             return False
-        return False
+        resolved = self._result_source(definition, index)
+        if resolved is None:
+            return False
+        result, bound = resolved
+        if result.array_parameter is None:
+            return False
+        return self._is_array_value(
+            bound.arguments[result.array_parameter],
+            seen=seen,
+            thread_data_only=thread_data_only,
+        )
 
     def _is_array_value(
         self,
@@ -602,9 +631,23 @@ class _GroupCallPlanner:
         function = self._callable(definition.func)
         if function in {ThreadData, _portable_api.ThreadData}:
             return True
-        if function is _cuda_local_array:
+        if function is _typed_group_payload_like:
+            return self._is_array_value(
+                definition.args[0], seen=seen, thread_data_only=thread_data_only
+            )
+        if function is _cuda_module.local.array:
             return not thread_data_only
-        return False
+        resolved = self._result_source(definition)
+        if resolved is None:
+            return False
+        result, bound = resolved
+        if result.array_parameter is None:
+            return False
+        return self._is_array_value(
+            bound.arguments[result.array_parameter],
+            seen=seen,
+            thread_data_only=thread_data_only,
+        )
 
     @staticmethod
     def _new_var(scope: Any, loc: ir.Loc, stem: str) -> ir.Var:
@@ -638,6 +681,7 @@ class _GroupCallPlanner:
         factory: Any,
         args: list[Any],
         kwargs: dict[str, Any],
+        return_alias: ir.Var | tuple[ir.Var, ...] | None = None,
         common_root_operation: str | None = None,
     ) -> list[Any]:
         statements: list[Any] = []
@@ -669,15 +713,30 @@ class _GroupCallPlanner:
                 for name, value in kwargs.items()
             )
         )
+        call_target = (
+            inst.target
+            if return_alias is None
+            else self._new_var(scope, loc, "ignored_result")
+        )
         statements.append(
             ir.Assign(
                 ir.Expr.call(
                     function_var, rewritten_args, rewritten_kwargs, loc
                 ),
-                inst.target,
+                call_target,
                 loc,
             )
         )
+        if isinstance(return_alias, tuple):
+            statements.append(
+                ir.Assign(
+                    ir.Expr.build_tuple(list(return_alias), loc),
+                    inst.target,
+                    loc,
+                )
+            )
+        elif return_alias is not None:
+            statements.append(ir.Assign(return_alias, inst.target, loc))
         return statements
 
     def _array_operand_state(self, operation: str, value: Any) -> bool:
@@ -771,7 +830,16 @@ class _GroupCallPlanner:
             return self._array_extent(items[index], seen=set(seen))
         if definition.op != "call":
             return None
-        return None
+        resolved = self._result_source(definition, index)
+        if resolved is None:
+            return None
+        result, bound = resolved
+        if result.array_parameter is None:
+            return 1
+        return self._array_extent(
+            bound.arguments[result.array_parameter],
+            seen=seen,
+        )
 
     def _array_extent_definition(
         self, definition: Any, *, seen: set[str]
@@ -806,6 +874,24 @@ class _GroupCallPlanner:
         if definition.op != "call":
             return None
         function = self._callable(definition.func)
+        if function is _typed_group_payload_like:
+            try:
+                is_array = self._constant(definition.args[1])
+            except (GroupRewriteError, IndexError):
+                return None
+            if len(definition.args) >= 4:
+                try:
+                    extent = self._constant(definition.args[3])
+                except GroupRewriteError:
+                    return None
+                if isinstance(extent, Integral) and (
+                    not isinstance(extent, bool)
+                ):
+                    return int(extent)
+                return None
+            if is_array is False:
+                return 1
+            return self._array_extent(definition.args[0], seen=seen)
         if function in {ThreadData, _portable_api.ThreadData}:
             bound = self._bind(function, definition)
             extent_argument = bound.arguments["items_per_thread"]
@@ -817,7 +903,7 @@ class _GroupCallPlanner:
             if isinstance(extent, Integral) and (not isinstance(extent, bool)):
                 return int(extent)
             return None
-        if function is _cuda_local_array:
+        if function is _cuda_module.local.array:
             shape_ref = (
                 definition.args[0]
                 if definition.args
@@ -833,7 +919,102 @@ class _GroupCallPlanner:
             if isinstance(extent, Integral) and (not isinstance(extent, bool)):
                 return int(extent)
             return None
-        return None
+        resolved = self._result_source(definition)
+        if resolved is None:
+            return None
+        result, bound = resolved
+        if result.array_parameter is None:
+            return 1
+        return self._array_extent(
+            bound.arguments[result.array_parameter], seen=seen
+        )
+
+    def _copy_array_payload(
+        self,
+        statements: list[Any],
+        *,
+        operation: str,
+        source: ir.Var,
+        destination: ir.Var,
+        scope: Any,
+        loc: ir.Loc,
+        known_items_per_thread: int | None = None,
+    ) -> None:
+        """Copy a static local payload into a fresh result payload."""
+
+        extent = (
+            known_items_per_thread
+            if known_items_per_thread is not None
+            else self._array_extent(source)
+        )
+        if extent is None:
+            raise UnknownResultExtentError(operation)
+        for item_index in range(extent):
+            index = self._value_var(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem=f"{operation}_copy_index_{item_index}",
+                value=item_index,
+            )
+            item = self._new_var(
+                scope, loc, f"{operation}_copy_item_{item_index}"
+            )
+            statements.append(
+                ir.Assign(ir.Expr.getitem(source, index, loc), item, loc)
+            )
+            statements.append(ir.SetItem(destination, index, item, loc))
+
+    def _typed_payload_like(
+        self,
+        statements: list[Any],
+        *,
+        scope: Any,
+        loc: ir.Loc,
+        stem: str,
+        prototype: ir.Var,
+        is_array: bool,
+        dtype_policy: str,
+        items_per_thread: Any = None,
+    ) -> ir.Var:
+        function_var = self._new_var(scope, loc, f"{stem}_payload_factory")
+        statements.append(
+            ir.Assign(
+                ir.Global(function_var.name, _typed_group_payload_like, loc),
+                function_var,
+                loc,
+            )
+        )
+        is_array_var = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{stem}_is_array",
+            value=is_array,
+        )
+        dtype_policy_var = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{stem}_dtype_policy",
+            value=dtype_policy,
+        )
+        args = [prototype, is_array_var, dtype_policy_var]
+        if items_per_thread is not None:
+            args.append(
+                self._value_var(
+                    statements,
+                    scope=scope,
+                    loc=loc,
+                    stem=f"{stem}_items_per_thread",
+                    value=items_per_thread,
+                )
+            )
+        payload = self._new_var(scope, loc, f"{stem}_payload")
+        statements.append(
+            ir.Assign(ir.Expr.call(function_var, args, (), loc), payload, loc)
+        )
+        return payload
 
     def _lower_root_operation(
         self, inst: ir.Assign, call: ir.Expr, function: Any, operation: str

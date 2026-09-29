@@ -2,24 +2,45 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+# The family planners import this module's private support names explicitly.
+# ruff: noqa: F401
+
 from __future__ import annotations
 
+import inspect
 from itertools import count
-from typing import TYPE_CHECKING, Any
+from numbers import Integral
+from typing import Any
+
+import numpy as np
+from numba_cuda_mlir import cuda, types
+from numba_cuda_mlir.errors import ForceLiteralArg
+from numba_cuda_mlir.extending import (
+    WholeFunctionPlanner,
+    register_planner,
+    require_launch_config,
+)
 
 import cuda.coop._core.api as _portable_api
 import cuda.coop._core.api._dispatch as _portable_dispatch
+from cuda.coop._core import (
+    LaunchFactOrigin,
+    LaunchFacts,
+    ThreadGroup,
+    ThreadHierarchy,
+    normalize_thread_level,
+    resolve_thread_group,
+)
 
 from .. import _thread_group as _thread_groups
 from ._numba_mlir_compat import _get_numba_mlir_compat
 from ._operations import group_operation_name
 
-if TYPE_CHECKING:
-    from numba_cuda_mlir.numba_cuda.core import ir
-else:
-    ir = _get_numba_mlir_compat().numba_ir
+_cuda_module = cuda
+ir = _get_numba_mlir_compat().numba_ir
 
 _NAME_COUNTER = count()
+_PAYLOAD_DTYPE_LIKE = "like"
 _GROUP_CONSTRUCTORS = {
     _thread_groups.this_thread: _thread_groups.this_thread,
     _thread_groups.this_warp: _thread_groups.this_warp,
@@ -60,3 +81,17 @@ def _is_common_root_operation(function: Any, operation: str) -> bool:
     return (
         _portable_dispatch._portable_group_operation_name(function) == operation
     )
+
+
+def _typed_group_payload_like(
+    _prototype: Any,
+    _is_array: bool,
+    _dtype_policy: str,
+    _items_per_thread: int | None = None,
+) -> Any:
+    raise GroupRewriteError(
+        "typed group payload markers must be lowered before device compilation"
+    )
+
+
+# Support consumers import the private names they use explicitly.

@@ -55,6 +55,16 @@ class InconsistentTupleExtentError(GroupRewriteError):
         )
 
 
+class UnknownResultExtentError(GroupRewriteError):
+    def __init__(self, operation):
+        super().__init__(
+            _wrap_diagnostic(
+                f"cuda.coop.numba_mlir.{operation} could not infer a static "
+                f"items_per_thread extent for its non-mutating result",
+            )
+        )
+
+
 class NonConstantThreadGroupError(GroupRewriteError):
     def __init__(self, operation):
         super().__init__(

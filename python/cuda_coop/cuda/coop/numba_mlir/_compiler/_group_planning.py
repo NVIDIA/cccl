@@ -5,11 +5,9 @@
 from __future__ import annotations
 
 from numbers import Integral
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-import numba_cuda_mlir.numba_cuda.types as _numba_types
-from numba_cuda_mlir import cuda as _cuda_module
-from numba_cuda_mlir.cuda.local import array as _cuda_local_array
+from numba_cuda_mlir import types
 
 import cuda.coop._core.api as _portable_api
 from cuda.coop._core import (
@@ -26,7 +24,12 @@ from ._descriptor_provenance import (
     payload_write_dtypes,
     temp_storage_constructor,
 )
-from ._group_planner_support import GroupRewriteError, ir
+from ._group_planner_support import (
+    GroupRewriteError,
+    _cuda_module,
+    _typed_group_payload_like,
+    ir,
+)
 from ._operations import (
     _GROUP_LOWERING_PLAN_KWARG,
     StorageABI,
@@ -42,16 +45,13 @@ from ._scalar_provenance import (
     scalar_expression_dtype,
 )
 
-if TYPE_CHECKING:
-    from ._group_planner import _GroupCallPlanner
-
 
 class GroupPlanningContext:
     """Stable cross-family view of one whole-function planner."""
 
     __slots__ = ("__planner", "__thread_data_dtypes")
 
-    def __init__(self, planner: _GroupCallPlanner) -> None:
+    def __init__(self, planner: Any) -> None:
         self.__planner = planner
         self.__thread_data_dtypes: dict[int, Any] = {}
 
@@ -293,6 +293,7 @@ class GroupPlanningContext:
         factory: Any,
         args: list[Any],
         kwargs: dict[str, Any],
+        return_alias: ir.Var | tuple[ir.Var, ...] | None = None,
         common_root_operation: str | None = None,
     ) -> list[Any]:
         self._validate_provider_contract(
@@ -314,8 +315,15 @@ class GroupPlanningContext:
             factory=factory,
             args=args,
             kwargs=kwargs,
+            return_alias=return_alias,
             common_root_operation=common_root_operation,
         )
+
+    def copy_array_payload(self, *args: Any, **kwargs: Any) -> None:
+        self.__planner._copy_array_payload(*args, **kwargs)
+
+    def typed_payload_like(self, *args: Any, **kwargs: Any) -> ir.Var:
+        return self.__planner._typed_payload_like(*args, **kwargs)
 
     def planning_binding(self, value: Any) -> ArgumentBinding:
         resolved, constant = self.try_static_scalar(value)
@@ -327,9 +335,9 @@ class GroupPlanningContext:
 
     @staticmethod
     def _dtype_from_numba_type(value: Any) -> Any | None:
-        if isinstance(value, _numba_types.Array):
+        if isinstance(value, types.Array):
             value = value.dtype
-        elif not isinstance(value, _numba_types.Type):
+        elif not isinstance(value, types.Type):
             return None
         return normalize_dtype_param(value)
 
@@ -350,6 +358,21 @@ class GroupPlanningContext:
         if not resolved or any(dtype is None for dtype in resolved):
             return None
         return cls._one_dtype(set(resolved), message=message)
+
+    def _result_dtype(
+        self,
+        definition: ir.Expr,
+        *,
+        index: int | None,
+        seen: set[str],
+    ) -> Any | None:
+        resolved = self.__planner._result_source(definition, index)
+        if resolved is None:
+            return None
+        result, bound = resolved
+        if result.dtype_parameter is None:
+            return None
+        return self.dtype(bound.arguments[result.dtype_parameter], seen=seen)
 
     def record_thread_data_dtype(self, value: Any, dtype: Any) -> None:
         """Keep an output's inferred dtype available to subsequent group
@@ -373,7 +396,6 @@ class GroupPlanningContext:
                         continue
                 if not isinstance(index, Integral) or isinstance(index, bool):
                     continue
-                index = int(index)
                 next_seen = {*seen, current.name}
                 for packed in payload_definitions(definition.value, next_seen):
                     if (
@@ -457,6 +479,8 @@ class GroupPlanningContext:
             if not -len(items) <= index < len(items):
                 return None
             return self.dtype(items[index], seen=seen)
+        if definition.op == "call":
+            return self._result_dtype(definition, index=index, seen=seen)
         return None
 
     def _dtype_definition(
@@ -519,7 +543,7 @@ class GroupPlanningContext:
             if resolved and dtype is not None:
                 return normalize_dtype_param(dtype)
             return self.__thread_data_dtypes.get(id(definition))
-        if function is _cuda_local_array:
+        if function is _cuda_module.local.array:
             if len(definition.args) >= 2:
                 resolved, dtype = self.try_constant(definition.args[1])
                 if resolved:
@@ -530,6 +554,11 @@ class GroupPlanningContext:
                 if resolved:
                     return normalize_dtype_param(dtype)
             return None
+        if function is _typed_group_payload_like and definition.args:
+            return self.dtype(definition.args[0], seen=seen)
+        result_dtype = self._result_dtype(definition, index=None, seen=seen)
+        if result_dtype is not None:
+            return result_dtype
         return scalar_call_dtype(
             function,
             definition.args,
