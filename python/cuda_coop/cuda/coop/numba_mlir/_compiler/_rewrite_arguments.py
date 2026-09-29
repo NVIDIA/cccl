@@ -198,7 +198,8 @@ class _ArgumentRewrite:
                 )
                 raise CoopSinglePhaseRewriteError(
                     f"cooperative group operation {op_name!r} does not support "
-                    f"factory keyword {name!r}. Allowed keywords are: {allowed}."
+                    f"factory keyword {name!r}. "
+                    f"Allowed keywords are: {allowed}."
                 )
             if name in seen_factory_kwargs:
                 raise CoopSinglePhaseRewriteError(
@@ -288,7 +289,8 @@ class _ArgumentRewrite:
                     )
             missing_csv = ", ".join(sorted(missing))
             raise CoopSinglePhaseRewriteError(
-                f"coop operation '{op_name}' requires explicit factory keywords: {missing_csv}."
+                f"coop operation '{op_name}' requires explicit factory "
+                f"keywords: {missing_csv}."
             )
         if (
             runtime_temp_storage is not None

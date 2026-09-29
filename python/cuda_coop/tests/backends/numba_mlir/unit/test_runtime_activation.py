@@ -92,7 +92,9 @@ def _fake_compat_modules():
             rewrite_registry=rewrite_registry,
         ),
         "numba_cuda_mlir.numba_cuda.core.errors": SimpleNamespace(
-            ConstantInferenceError=type("ConstantInferenceError", (Exception,), {})
+            ConstantInferenceError=type(
+                "ConstantInferenceError", (Exception,), {}
+            )
         ),
         "numba_cuda_mlir.numba_cuda.typing.typeof": SimpleNamespace(
             typeof=lambda value: value
@@ -338,7 +340,7 @@ def test_runtime_loading_retries_after_a_failed_qualified_import(monkeypatch):
     assert _activation._cuda_module is runtime
 
 
-def test_failed_activation_after_types_import_leaves_typeof_registry_unchanged():
+def test_failed_activation_after_types_import_leaves_typeof_registry_unchanged():  # noqa: E501 - Preserve descriptive test name.
     script = textwrap.dedent(
         """
         import importlib
@@ -429,7 +431,9 @@ def test_compat_accepts_public_0_5_capabilities_without_refresh(monkeypatch):
     ],
 )
 def test_compat_owns_runtime_version_predicate(version, supported):
-    assert _numba_mlir_compat._is_supported_runtime_version(version) is supported
+    assert (
+        _numba_mlir_compat._is_supported_runtime_version(version) is supported
+    )
 
 
 def test_compat_runtime_requirement_uses_detected_version():
@@ -480,7 +484,9 @@ def test_compat_wraps_required_module_import_failures(monkeypatch):
     )
 
     with pytest.raises(_activation._NumbaMlirBackendImportError) as exc_info:
-        _numba_mlir_compat._load_numba_mlir_compat(SimpleNamespace(__version__="0.5.1"))
+        _numba_mlir_compat._load_numba_mlir_compat(
+            SimpleNamespace(__version__="0.5.1")
+        )
 
     error = exc_info.value
     assert error.reason_code == "runtime-hook-api-import-failed"
@@ -491,7 +497,9 @@ def test_compat_wraps_required_module_import_failures(monkeypatch):
 @pytest.mark.parametrize("version", ["0.4.9", "0.6.0", "1.0.0"])
 def test_compat_rejects_unsupported_runtime_series(version):
     with pytest.raises(_activation._NumbaMlirBackendImportError) as exc_info:
-        _numba_mlir_compat._load_numba_mlir_compat(SimpleNamespace(__version__=version))
+        _numba_mlir_compat._load_numba_mlir_compat(
+            SimpleNamespace(__version__=version)
+        )
 
     error = exc_info.value
     assert error.reason_code == "unsupported-runtime-version"
@@ -505,12 +513,17 @@ def test_compat_rejects_unsupported_runtime_series(version):
     ("module_name", "attribute"),
     [
         ("numba_cuda_mlir.extending", "_NumbaCudaMlirOverloadFunctionTemplate"),
-        ("numba_cuda_mlir.numba_cuda.typing.templates", "make_overload_template"),
+        (
+            "numba_cuda_mlir.numba_cuda.typing.templates",
+            "make_overload_template",
+        ),
         ("numba_cuda_mlir.numbair_transforms", "ir"),
         ("numba_cuda_mlir._whole_function_planners", "_planner_registry"),
     ],
 )
-def test_compat_reports_missing_private_api(monkeypatch, module_name, attribute):
+def test_compat_reports_missing_private_api(
+    monkeypatch, module_name, attribute
+):
     modules = _fake_compat_modules()
     delattr(modules[module_name], attribute)
     monkeypatch.setattr(
@@ -520,7 +533,9 @@ def test_compat_reports_missing_private_api(monkeypatch, module_name, attribute)
     )
 
     with pytest.raises(_activation._NumbaMlirBackendImportError) as exc_info:
-        _numba_mlir_compat._load_numba_mlir_compat(SimpleNamespace(__version__="0.5.1"))
+        _numba_mlir_compat._load_numba_mlir_compat(
+            SimpleNamespace(__version__="0.5.1")
+        )
 
     assert exc_info.value.reason_code == "incomplete-runtime-hook-api"
     assert exc_info.value.details["missing"] == attribute
@@ -541,7 +556,9 @@ def test_private_compiler_imports_are_confined_to_compatibility_shim():
     for source in backend_root.rglob("*.py"):
         if source == compat_path:
             continue
-        module = ast.parse(source.read_text(encoding="utf-8"), filename=str(source))
+        module = ast.parse(
+            source.read_text(encoding="utf-8"), filename=str(source)
+        )
         for node in ast.walk(module):
             imported = []
             if isinstance(node, ast.Import):

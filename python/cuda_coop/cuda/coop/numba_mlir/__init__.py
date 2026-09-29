@@ -44,7 +44,9 @@ __all__ = [
 
 def __getattr__(name):
     if name in {"local", "shared"}:
-        value = getattr(importlib.import_module(f"{__name__}._thread_data"), name)
+        value = getattr(
+            importlib.import_module(f"{__name__}._thread_data"), name
+        )
         globals()[name] = value
         return value
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

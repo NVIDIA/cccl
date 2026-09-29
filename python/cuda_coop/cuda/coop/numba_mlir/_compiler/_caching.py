@@ -65,7 +65,9 @@ def _json_cache_key(value):
             "__cuda_coop_numba_mlir_cache_type__": "builtins.dict",
             "items": [
                 (_json_cache_key(key), _json_cache_key(item))
-                for key, item in sorted(value.items(), key=lambda entry: repr(entry[0]))
+                for key, item in sorted(
+                    value.items(), key=lambda entry: repr(entry[0])
+                )
             ],
         }
     raise TypeError(f"Unsupported disk cache key value: {value!r}")

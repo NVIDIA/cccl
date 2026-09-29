@@ -1198,7 +1198,7 @@ def test_transpose_storage_contract_reaches_whole_function_rewrite(
 @pytest.mark.parametrize(
     "qualified", (False, True), ids=("portable", "qualified")
 )
-def test_transpose_storage_contract_rejects_insufficient_capacity_before_codegen(
+def test_transpose_storage_contract_rejects_insufficient_capacity_before_codegen(  # noqa: E501 - Preserve descriptive test name.
     qualified,
 ):
     from numba_cuda_mlir import types
@@ -2580,7 +2580,7 @@ def test_unsupported_dtypes_fail_before_provider_materialization(
         pytest.param(1 << 65, id="outside-64-bit"),
     ],
 )
-def test_direct_provider_rejects_invalid_static_oob_default_before_materialization(
+def test_direct_provider_rejects_invalid_static_oob_default_before_materialization(  # noqa: E501 - Preserve descriptive test name.
     monkeypatch,
     oob_default,
 ):

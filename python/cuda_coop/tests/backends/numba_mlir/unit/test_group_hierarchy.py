@@ -59,7 +59,9 @@ def test_group_marker_detection_distinguishes_group_ir():
     assert not has_group_markers(run_frontend(plain_function))
 
 
-def test_group_marker_detection_does_not_semantically_resolve_group_by(monkeypatch):
+def test_group_marker_detection_does_not_semantically_resolve_group_by(
+    monkeypatch,
+):
     def grouped(count):
         return _GLOBAL_BLOCK_GROUP.group_by(count)
 
@@ -89,7 +91,9 @@ def test_group_marker_detection_follows_merged_group_by_receivers(monkeypatch):
     assert has_group_markers(run_frontend(grouped))
 
 
-@pytest.mark.parametrize("api", (portable_coop, coop), ids=("portable", "qualified"))
+@pytest.mark.parametrize(
+    "api", (portable_coop, coop), ids=("portable", "qualified")
+)
 def test_standalone_collective_helper_is_rejected_without_requesting_launch(
     api, monkeypatch
 ):
@@ -105,7 +109,10 @@ def test_standalone_collective_helper_is_rejected_without_requesting_launch(
         args=(),
         metadata={"targetoptions": {"device": True}},
     )
-    before = {label: tuple(block.body) for label, block in state.func_ir.blocks.items()}
+    before = {
+        label: tuple(block.body)
+        for label, block in state.func_ir.blocks.items()
+    }
 
     monkeypatch.setattr(
         _group_planner,
@@ -115,14 +122,19 @@ def test_standalone_collective_helper_is_rejected_without_requesting_launch(
         ),
     )
 
-    with pytest.raises(GroupRewriteError, match="device_helper.*must be inlined"):
+    with pytest.raises(
+        GroupRewriteError, match="device_helper.*must be inlined"
+    ):
         CoopGroupHierarchyPlanner(state).run()
     assert {
-        label: tuple(block.body) for label, block in state.func_ir.blocks.items()
+        label: tuple(block.body)
+        for label, block in state.func_ir.blocks.items()
     } == before
 
 
-@pytest.mark.parametrize("api", (portable_coop, coop), ids=("portable", "qualified"))
+@pytest.mark.parametrize(
+    "api", (portable_coop, coop), ids=("portable", "qualified")
+)
 @pytest.mark.parametrize(("constructor_name", "kind"), _GROUP_KINDS)
 def test_planner_recognizes_the_full_group_descriptor_vocabulary(
     api,

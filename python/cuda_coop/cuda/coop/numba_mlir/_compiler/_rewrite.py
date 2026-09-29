@@ -275,7 +275,8 @@ class CoopSinglePhaseRewrite(
                     )
                     raise CoopSinglePhaseRewriteError(
                         f"Failed to infer dtype for {subject}. Use it with a "
-                        "cooperative group operation that provides dtype context."
+                        "cooperative group operation "
+                        "that provides dtype context."
                     )
                 if thread_data_specification.common_root:
                     from ._parameters import _validate_common_numeric_dtype
@@ -431,7 +432,8 @@ class CoopSinglePhaseRewrite(
                 ctor_key = self._resolve_temp_storage_ctor_key(inst.target)
                 if ctor_key is None:
                     raise CoopSinglePhaseRewriteError(
-                        f"Missing TempStorage metadata for '{inst.target.name}'."
+                        f"Missing TempStorage metadata "
+                        f"for '{inst.target.name}'."
                     )
                 if ctor_key not in self._func_temp_storage_requirements:
                     new_block.append(
@@ -519,7 +521,8 @@ class CoopSinglePhaseRewrite(
                 # Barrier emission consults both parsers; refuse to continue
                 # when they disagree instead of silently emitting nothing.
                 raise CoopSinglePhaseRewriteError(
-                    "cooperative provider TempStorage automatic synchronization "
+                    "cooperative provider TempStorage "
+                    "automatic synchronization "
                     "disagrees between the group lowering plan and the "
                     "descriptor."
                 )

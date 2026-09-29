@@ -86,7 +86,9 @@ def _group_operation_name(function: Any) -> str | None:
 
 
 def _is_common_root_operation(function: Any, operation: str) -> bool:
-    return _portable_dispatch._portable_group_operation_name(function) == operation
+    return (
+        _portable_dispatch._portable_group_operation_name(function) == operation
+    )
 
 
 def _typed_group_payload_like(

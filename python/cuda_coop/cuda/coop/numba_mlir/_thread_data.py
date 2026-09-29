@@ -44,7 +44,8 @@ def ThreadData(
     """
 
     raise CoopCompilerContextRequiredError(
-        "cuda.coop.numba_mlir.ThreadData must be called from a supported GPU kernel."
+        "cuda.coop.numba_mlir.ThreadData must "
+        "be called from a supported GPU kernel."
     )
 
 

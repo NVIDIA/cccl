@@ -24,7 +24,9 @@ def test_cache_treats_non_object_json_as_a_miss(tmp_path, payload):
     assert _caching._read_cache(path) is _caching._CACHE_MISS
 
 
-def test_disk_cache_disables_itself_when_its_directory_is_unavailable(monkeypatch):
+def test_disk_cache_disables_itself_when_its_directory_is_unavailable(
+    monkeypatch,
+):
     calls = []
 
     def unavailable(_cache_identity):
@@ -93,7 +95,9 @@ def test_disk_cache_bypasses_unsupported_result_values(monkeypatch, tmp_path):
     assert _caching._CACHE_USABLE
 
 
-def test_disk_cache_persists_byte_valued_compiler_options(monkeypatch, tmp_path):
+def test_disk_cache_persists_byte_valued_compiler_options(
+    monkeypatch, tmp_path
+):
     calls = []
 
     monkeypatch.setattr(_caching, "_CACHE_USABLE", True)
@@ -158,9 +162,21 @@ def test_numba_type_tokens_remain_distinct():
         ("nt", {"LOCALAPPDATA": r"D:\Cache"}, r"D:\Cache\cccl"),
         ("nt", {}, r"C:\Users\test\AppData\Local\cccl"),
         ("nt", {"LOCALAPPDATA": ""}, r"C:\Users\test\AppData\Local\cccl"),
-        ("nt", {"LOCALAPPDATA": "relative"}, r"C:\Users\test\AppData\Local\cccl"),
-        ("nt", {"LOCALAPPDATA": r"D:relative"}, r"C:\Users\test\AppData\Local\cccl"),
-        ("nt", {"XDG_CACHE_HOME": r"D:\Cache"}, r"C:\Users\test\AppData\Local\cccl"),
+        (
+            "nt",
+            {"LOCALAPPDATA": "relative"},
+            r"C:\Users\test\AppData\Local\cccl",
+        ),
+        (
+            "nt",
+            {"LOCALAPPDATA": r"D:relative"},
+            r"C:\Users\test\AppData\Local\cccl",
+        ),
+        (
+            "nt",
+            {"XDG_CACHE_HOME": r"D:\Cache"},
+            r"C:\Users\test\AppData\Local\cccl",
+        ),
     ],
 )
 def test_cache_location_uses_platform_cache_directory(

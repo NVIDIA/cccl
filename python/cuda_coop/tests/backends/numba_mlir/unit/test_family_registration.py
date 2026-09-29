@@ -1066,7 +1066,12 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
         }
         assert {
             (operation, group_kind, is_common_root)
-            for operation, group_kind, is_common_root, _ in family.PLANNING_EVENTS
+            for (
+                operation,
+                group_kind,
+                is_common_root,
+                _,
+            ) in family.PLANNING_EVENTS
         } == {
             (operations["scalar"], "thread", True),
             (operations["thread_storage"], "thread", True),

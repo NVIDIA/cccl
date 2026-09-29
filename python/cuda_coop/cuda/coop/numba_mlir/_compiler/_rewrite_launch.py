@@ -45,9 +45,11 @@ class _LaunchRewrite:
                 launch_block = self._launch_block_from_context()
                 raise CoopSinglePhaseRewriteError(
                     f"cuda.coop factory '{op_name}' received "
-                    f"threads_per_block={explicit_threads_per_block!r}, but the "
+                    f"threads_per_block="
+                    f"{explicit_threads_per_block!r}, but the "
                     f"exact kernel launch block is {launch_block!r}. Make "
-                    "threads_per_block match the launch block or omit it to infer "
+                    "threads_per_block match the "
+                    "launch block or omit it to infer "
                     "the dimension."
                 )
             return
@@ -83,7 +85,9 @@ class _LaunchRewrite:
         else:
             launch_config = targetoptions["__launch_config__"]
             if not isinstance(launch_config, dict):
-                detail = f"__launch_config__ metadata is invalid: {launch_config!r}"
+                detail = (
+                    f"__launch_config__ metadata is invalid: {launch_config!r}"
+                )
             elif "block" not in launch_config:
                 detail = (
                     "__launch_config__ metadata contains no block shape: "
@@ -91,11 +95,13 @@ class _LaunchRewrite:
                 )
             else:
                 detail = (
-                    f"launch metadata reported invalid block={launch_config['block']!r}"
+                    "launch metadata reported invalid "
+                    f"block={launch_config['block']!r}"
                 )
         if "launch_bounds" in targetoptions:
             detail += (
-                f"; launch_bounds={targetoptions['launch_bounds']!r} is only an "
+                f"; launch_bounds={targetoptions['launch_bounds']!r} "
+                "is only an "
                 "upper bound, not an exact launch shape"
             )
         return detail
@@ -133,7 +139,8 @@ class _LaunchRewrite:
             return
         if "threads_per_block" in seen_factory_kwargs:
             raise CoopSinglePhaseRewriteError(
-                f"cuda.coop factory '{op_name}' received both 'threads_per_block' "
+                f"cuda.coop factory '{op_name}' received both "
+                f"'threads_per_block' "
                 "and its 'dim' alias; provide only one."
             )
         factory_kwargs["threads_per_block"] = factory_kwargs.pop("dim")
