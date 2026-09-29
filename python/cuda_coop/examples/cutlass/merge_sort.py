@@ -45,8 +45,8 @@ def run_example(api="common"):
         original_values: cute.Pointer,
     ):
         group = module.this_block()
-        keys = module.ThreadData(_ITEMS)
-        values = module.ThreadData(_ITEMS)
+        keys = module.ThreadData(items_per_thread=_ITEMS)
+        values = module.ThreadData(items_per_thread=_ITEMS)
         module.load(
             group, source_keys, keys, valid_items=_VALID, oob_default=1000
         )
