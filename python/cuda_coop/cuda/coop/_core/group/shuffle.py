@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Shuffle semantics and complete-block lowering."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

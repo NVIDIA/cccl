@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block and physical or logical Warp Exchange IR planning."""
-
 from __future__ import annotations
 
 from enum import Enum
