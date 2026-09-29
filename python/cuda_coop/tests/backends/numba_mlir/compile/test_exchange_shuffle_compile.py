@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""GPU-free, real-toolchain compilation contracts for Exchange and Shuffle."""
-
 from __future__ import annotations
 
 import os

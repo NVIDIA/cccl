@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Exchange signatures for block, physical-Warp, and logical-Warp groups."""
-
 from typing import Literal, TypeAlias, overload
 
 from typing_extensions import TypeVar

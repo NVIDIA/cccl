@@ -2,12 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Primitive-family lowering factories for Numba-CUDA-MLIR.
-
-This package registers exact factory identities for the compiler; it does not
-recognize providers by module or function name.
-"""
-
 from ._exchange import exchange as exchange
 from ._exchange import exchange_flagged as exchange_flagged
 from ._exchange import exchange_ranked as exchange_ranked
