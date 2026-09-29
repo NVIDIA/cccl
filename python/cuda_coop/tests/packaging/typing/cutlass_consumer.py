@@ -6,10 +6,9 @@
 
 ``test_typing.py`` runs ``mypy --strict`` on this file against copied
 ``.pyi`` stubs. This prevents implementation modules from supplying missing
-declarations. Checks cover group queries, Reduce and Scan results,
-Exchange and Shuffle calls, Load/Store returns, descriptor attributes,
-and calls across namespaces. Payload constructors and conversions must
-preserve the scalar dtype.
+declarations. Checks cover group query types, Reduce and Scan results,
+Load/Store returns, descriptor attributes, and calls across namespaces.
+Payload constructors and conversions must preserve the scalar dtype.
 
 The test neither imports this file nor traces or launches a kernel.
 """

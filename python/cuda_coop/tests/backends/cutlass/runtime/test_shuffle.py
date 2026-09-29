@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Array and scalar Shuffle oracles, controls, and scratch reuse."""
-
 import importlib.util
 import os
 import re
