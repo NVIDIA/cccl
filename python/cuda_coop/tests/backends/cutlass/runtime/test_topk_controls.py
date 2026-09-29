@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""TopK wide count guards, scratch reuse, mixed bundles, and final code."""
-
 import os
 import re
 import shutil

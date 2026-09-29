@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Input-preserving block TopK signatures for qualified CuTe payloads."""
-
 from typing import Any, TypeAlias, overload
 
 import numpy as np
