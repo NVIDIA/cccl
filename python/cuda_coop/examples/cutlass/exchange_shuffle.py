@@ -61,18 +61,28 @@ def run_example(api="common"):
         try:
             _check(driver.cuMemcpyHtoD(src, source.ctypes.data, source.nbytes))
             _check(
-                driver.cuMemcpyHtoD(dst, destination.ctypes.data, destination.nbytes)
+                driver.cuMemcpyHtoD(
+                    dst, destination.ctypes.data, destination.nbytes
+                )
             )
             src_pointer = make_ptr(
-                cutlass.Int32, int(src), cute.AddressSpace.gmem, assumed_align=16
+                cutlass.Int32,
+                int(src),
+                cute.AddressSpace.gmem,
+                assumed_align=16,
             )
             dst_pointer = make_ptr(
-                cutlass.Int32, int(dst), cute.AddressSpace.gmem, assumed_align=16
+                cutlass.Int32,
+                int(dst),
+                cute.AddressSpace.gmem,
+                assumed_align=16,
             )
             launch(src_pointer, dst_pointer)
             _check(driver.cuCtxSynchronize())
             _check(
-                driver.cuMemcpyDtoH(destination.ctypes.data, dst, destination.nbytes)
+                driver.cuMemcpyDtoH(
+                    destination.ctypes.data, dst, destination.nbytes
+                )
             )
         finally:
             _check(driver.cuMemFree(dst))

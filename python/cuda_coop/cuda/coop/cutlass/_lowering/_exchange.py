@@ -25,11 +25,18 @@ from cuda.coop._core import (
     make_group_primitive_call,
     plan_group_primitive,
 )
-from cuda.coop._core.block import BlockExchangeMode, make_block_exchange_semantics
+from cuda.coop._core.block import (
+    BlockExchangeMode,
+    make_block_exchange_semantics,
+)
 from cuda.coop._core.thread_group import ThreadGroup
 
 from .._compiler import _rendering, _state, _types
-from .._compiler._types import ALL_PROVIDER_TYPES, INTEGER_VALUE_TYPES, TYPE_SPECS
+from .._compiler._types import (
+    ALL_PROVIDER_TYPES,
+    INTEGER_VALUE_TYPES,
+    TYPE_SPECS,
+)
 from .._thread_data import ThreadData, _make_rmem_tensor
 
 _provider_rendering = _rendering
@@ -90,13 +97,17 @@ def _render_template_argument(
 ) -> str:
     if name == "T":
         if value is not request.value_type:
-            raise ValueError("CUB Exchange template dtype does not match its request")
+            raise ValueError(
+                "CUB Exchange template dtype does not match its request"
+            )
         return TYPE_SPECS[value].cpp_type
     if isinstance(value, int) and not isinstance(value, bool):
         return str(value)
     if isinstance(value, str):
         return value
-    raise TypeError(f"cannot render CUB Exchange template argument {name}={value!r}")
+    raise TypeError(
+        f"cannot render CUB Exchange template argument {name}={value!r}"
+    )
 
 
 def _storage_reuse_barrier_line(request: _CubExchangeRequest) -> str:
@@ -115,7 +126,11 @@ def _storage_reuse_barrier_line(request: _CubExchangeRequest) -> str:
             raise ValueError("Exchange plan requires a static warp group")
         mask = "0xffffffffu"
         if logical_width < 32:
-            mask = f"{(1 << logical_width) - 1}u << ((threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z)) % 32u / {logical_width}u * {logical_width}u)"
+            mask = (
+                f"{(1 << logical_width) - 1}u << ((threadIdx.x + blockDim.x * "
+                "(threadIdx.y + blockDim.y * threadIdx.z)) % 32u / "
+                f"{logical_width}u * {logical_width}u)"
+            )
         return f"  __syncwarp({mask});"
     raise ValueError("Exchange plan requires a storage reuse barrier")
 
@@ -133,7 +148,9 @@ def _validate_planned_exchange(
     if rank_type is not None and rank_type not in _RANK_TYPES:
         raise TypeError("Exchange ranks must have a signed integer dtype")
     if valid_flag_type is not None and valid_flag_type not in _VALID_FLAG_TYPES:
-        raise TypeError("Exchange valid_flags must have an integer, non-boolean dtype")
+        raise TypeError(
+            "Exchange valid_flags must have an integer, non-boolean dtype"
+        )
     if plan.target not in {
         GroupLoweringTarget.CUB_BLOCK,
         GroupLoweringTarget.CUB_WARP,
@@ -166,7 +183,9 @@ def _validate_planned_exchange(
         raise ValueError("CUB Exchange method does not match its plan")
     template_arguments = implementation.template_arguments
     if template_arguments.get("T") is not value_type:
-        raise ValueError("CUB Exchange template dtype does not match its request")
+        raise ValueError(
+            "CUB Exchange template dtype does not match its request"
+        )
     if template_arguments.get("ITEMS_PER_THREAD") != primitive.items_per_thread:
         raise ValueError("CUB Exchange item count does not match its request")
 
@@ -181,11 +200,15 @@ def _validate_planned_exchange(
             template_arguments.get("BLOCK_DIM_Z"),
         )
         if expected_dims != block_dim:
-            raise ValueError("CUB BlockExchange dimensions do not match its plan")
+            raise ValueError(
+                "CUB BlockExchange dimensions do not match its plan"
+            )
         if template_arguments.get("WARP_TIME_SLICING") != int(
             primitive.warp_time_slicing
         ):
-            raise ValueError("group BlockExchange time slicing does not match its plan")
+            raise ValueError(
+                "group BlockExchange time slicing does not match its plan"
+            )
     else:
         if template_arguments.get("LOGICAL_WARP_THREADS") != (
             plan.resolved_group.static_size
@@ -194,18 +217,26 @@ def _validate_planned_exchange(
         if template_arguments.get("WARP_EXCHANGE_ALGORITHM") != (
             "::cub::WARP_EXCHANGE_SMEM"
         ):
-            raise ValueError("group WarpExchange requires the CUB SMEM algorithm")
+            raise ValueError(
+                "group WarpExchange requires the CUB SMEM algorithm"
+            )
 
     temp_storage = plan.temp_storage
     if temp_storage is None:
-        raise ValueError("CUB Exchange plan requires a temporary-storage contract")
+        raise ValueError(
+            "CUB Exchange plan requires a temporary-storage contract"
+        )
     if temp_storage.ownership is not StorageOwnership.IMPLEMENTATION:
-        raise ValueError("CUB Exchange temporary storage must be implementation-owned")
+        raise ValueError(
+            "CUB Exchange temporary storage must be implementation-owned"
+        )
     result = plan.result
     if result is None or len(result.values) != 1:
         raise ValueError("CUB Exchange plan requires one logical result")
     if result.values[0].items_per_member != primitive.items_per_thread:
-        raise ValueError("CUB Exchange result item count does not match its request")
+        raise ValueError(
+            "CUB Exchange result item count does not match its request"
+        )
 
 
 @dataclasses.dataclass(frozen=True, eq=False)
@@ -245,7 +276,9 @@ class _CubExchangeRequest:
     def block_dim(self) -> tuple[int, int, int]:
         participation = self.plan.participation
         if participation is None or participation.exact_block_dim is None:
-            raise ValueError("CUB Exchange request requires exact block dimensions")
+            raise ValueError(
+                "CUB Exchange request requires exact block dimensions"
+            )
         return participation.exact_block_dim
 
     @property
@@ -272,9 +305,9 @@ class _CubExchangeRequest:
     @property
     def symbol_name(self) -> str:
         assert self.plan.artifact_key is not None
-        signature = hashlib.sha256(repr(self.plan.artifact_key).encode()).hexdigest()[
-            :12
-        ]
+        signature = hashlib.sha256(
+            repr(self.plan.artifact_key).encode()
+        ).hexdigest()[:12]
         suffixes = []
         if self.rank_type is not None:
             suffixes.append(f"rank_{TYPE_SPECS[self.rank_type].token}")
@@ -283,7 +316,8 @@ class _CubExchangeRequest:
         suffix = f"_{'_'.join(suffixes)}" if suffixes else ""
         return (
             "cuda_coop_cutlass_cub_exchange_"
-            f"{self.group_kind}_{self.block_dim[0]}x{self.block_dim[1]}x{self.block_dim[2]}_"
+            f"{self.group_kind}_{self.block_dim[0]}x"
+            f"{self.block_dim[1]}x{self.block_dim[2]}_"
             f"{self.implementation.method_name.lower()}_"
             f"{TYPE_SPECS[self.value_type].token}_x{self.items_per_thread}"
             f"{suffix}_{signature}"
@@ -297,7 +331,9 @@ def _warp_instances(request: _CubExchangeRequest) -> tuple[int, int]:
         "LOGICAL_WARP_THREADS"
     )
     if not isinstance(logical_width, int) or logical_width < 1:
-        raise ValueError("WarpExchange plan requires a static logical warp width")
+        raise ValueError(
+            "WarpExchange plan requires a static logical warp width"
+        )
     if block_threads < logical_width or block_threads % logical_width != 0:
         raise ValueError("WarpExchange plan requires complete logical warps")
     return block_threads // logical_width, logical_width
@@ -313,7 +349,9 @@ def _render_cub_exchange(request: _CubExchangeRequest) -> list[str]:
     )
 
     storage = "storage"
-    storage_lines = ["  __shared__ typename implementation_type::TempStorage storage;"]
+    storage_lines = [
+        "  __shared__ typename implementation_type::TempStorage storage;"
+    ]
     if request.group_kind in {"warp", "threads_within_warp"}:
         instances, logical_width = _warp_instances(request)
         storage_lines = [
@@ -322,12 +360,17 @@ def _render_cub_exchange(request: _CubExchangeRequest) -> list[str]:
                 f"storage[{instances}];"
             ),
             "  unsigned int storage_instance =",
-            f"      (threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z)) / {logical_width}u;",
+            (
+                "      (threadIdx.x + blockDim.x * "
+                "(threadIdx.y + blockDim.y * threadIdx.z)) / "
+                f"{logical_width}u;"
+            ),
         ]
         storage = "storage[storage_instance]"
 
     params = [
-        f"{spec.cpp_type} item{index}" for index in range(request.items_per_thread)
+        f"{spec.cpp_type} item{index}"
+        for index in range(request.items_per_thread)
     ]
     rank_spec = None
     if request.rank_type is not None:
@@ -345,20 +388,30 @@ def _render_cub_exchange(request: _CubExchangeRequest) -> list[str]:
         )
     params.append(f"{spec.cpp_type}* result_items")
 
-    values = ", ".join(f"item{index}" for index in range(request.items_per_thread))
+    values = ", ".join(
+        f"item{index}" for index in range(request.items_per_thread)
+    )
     input_lines = [
-        f"  {spec.cpp_type} input_items[{request.items_per_thread}] = {{{values}}};",
+        (
+            f"  {spec.cpp_type} input_items[{request.items_per_thread}] "
+            f"= {{{values}}};"
+        ),
         f"  {spec.cpp_type} output_items[{request.items_per_thread}];",
     ]
     call_arguments = ["input_items", "output_items"]
     if rank_spec is not None:
-        ranks = ", ".join(f"rank{index}" for index in range(request.items_per_thread))
+        ranks = ", ".join(
+            f"rank{index}" for index in range(request.items_per_thread)
+        )
         input_lines.append(
-            f"  {rank_spec.cpp_type} ranks[{request.items_per_thread}] = {{{ranks}}};"
+            f"  {rank_spec.cpp_type} ranks[{request.items_per_thread}] "
+            f"= {{{ranks}}};"
         )
         call_arguments.append("ranks")
     if flag_spec is not None:
-        flags = ", ".join(f"valid{index}" for index in range(request.items_per_thread))
+        flags = ", ".join(
+            f"valid{index}" for index in range(request.items_per_thread)
+        )
         input_lines.append(
             f"  {flag_spec.cpp_type} valid_flags[{request.items_per_thread}] = "
             f"{{{flags}}};"
@@ -372,7 +425,8 @@ def _render_cub_exchange(request: _CubExchangeRequest) -> list[str]:
     return [
         f"void {request.symbol_name}({', '.join(params)}) {{",
         (
-            f"  using implementation_type = ::cub::{implementation.struct_name}<"
+            "  using implementation_type = "
+            f"::cub::{implementation.struct_name}<"
             f"{template_arguments}>;"
         ),
         *storage_lines,
@@ -446,7 +500,9 @@ def _resolve_auxiliary_values(
             if name == "ranks"
             else "an integer, non-boolean dtype"
         )
-        raise TypeError(f"{_ROOT_SCOPE}.exchange {name} must have {required}") from exc
+        raise TypeError(
+            f"{_ROOT_SCOPE}.exchange {name} must have {required}"
+        ) from exc
     return value_type, tuple(values)
 
 
@@ -456,7 +512,12 @@ def _resolve_exchange_operands(
     ranks: ThreadData | None,
     valid_flags: ThreadData | None,
 ) -> tuple[
-    type, tuple[Any, ...], type | None, tuple[Any, ...], type | None, tuple[Any, ...]
+    type,
+    tuple[Any, ...],
+    type | None,
+    tuple[Any, ...],
+    type | None,
+    tuple[Any, ...],
 ]:
     value_type, values = _provider_types.resolve_thread_data_value_type(
         value,
@@ -493,19 +554,29 @@ def _resolve_exchange_operand_types(
     ranks: ThreadData | None,
     valid_flags: ThreadData | None,
 ) -> tuple[type, type | None, type | None]:
-    value_type, _, rank_type, _, valid_flag_type, _ = _resolve_exchange_operands(
-        value=value,
-        ranks=ranks,
-        valid_flags=valid_flags,
+    value_type, _, rank_type, _, valid_flag_type, _ = (
+        _resolve_exchange_operands(
+            value=value,
+            ranks=ranks,
+            valid_flags=valid_flags,
+        )
     )
     return value_type, rank_type, valid_flag_type
 
 
 def _typed_item(value, dtype):
     converted = _provider_types.coerce_plain_scalar(
-        value, dtype, name="exchange value", scope=_ROOT_SCOPE, allow_nonfinite=True
+        value,
+        dtype,
+        name="exchange value",
+        scope=_ROOT_SCOPE,
+        allow_nonfinite=True,
     )
-    return dtype(value) if converted is _provider_types._NOT_PLAIN_SCALAR else converted
+    return (
+        dtype(value)
+        if converted is _provider_types._NOT_PLAIN_SCALAR
+        else converted
+    )
 
 
 def provider_exchange(
@@ -518,7 +589,9 @@ def provider_exchange(
     """Materialize one plan-validated CUB Exchange call."""
 
     if not isinstance(plan, GroupLoweringPlan):
-        raise TypeError(f"{_ROOT_SCOPE}.exchange plan must be a GroupLoweringPlan")
+        raise TypeError(
+            f"{_ROOT_SCOPE}.exchange plan must be a GroupLoweringPlan"
+        )
     if not isinstance(value, ThreadData):
         raise TypeError(f"{_ROOT_SCOPE}.exchange value must be ThreadData")
     (
@@ -542,7 +615,9 @@ def provider_exchange(
     mode = request.mode
     if mode.uses_ranks != (rank_type is not None):
         requirement = "requires" if mode.uses_ranks else "does not accept"
-        raise ValueError(f"{_ROOT_SCOPE}.exchange {mode.value} {requirement} ranks")
+        raise ValueError(
+            f"{_ROOT_SCOPE}.exchange {mode.value} {requirement} ranks"
+        )
     if mode.uses_valid_flags != (valid_flag_type is not None):
         requirement = "requires" if mode.uses_valid_flags else "does not accept"
         raise ValueError(
@@ -551,7 +626,9 @@ def provider_exchange(
 
     typed_values = [_typed_item(item, value_type) for item in values]
     typed_ranks = [_typed_item(item, rank_type) for item in rank_values]
-    typed_flags = [_typed_item(item, valid_flag_type) for item in valid_flag_values]
+    typed_flags = [
+        _typed_item(item, valid_flag_type) for item in valid_flag_values
+    ]
     result_tensor = _make_rmem_tensor(
         value.items_per_thread, value_type, value.alignment
     )
@@ -585,7 +662,8 @@ def provider_exchange(
             value.items_per_thread,
             dtype=_provider_types.thread_data_output_dtype(value, value_type),
             values=[
-                value_type(result_tensor[i]) for i in range(value.items_per_thread)
+                value_type(result_tensor[i])
+                for i in range(value.items_per_thread)
             ],
             alignment=value.alignment,
         )

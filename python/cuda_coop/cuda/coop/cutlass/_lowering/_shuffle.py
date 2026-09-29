@@ -51,27 +51,36 @@ def _distance_binding(distance, *, array):
     if isinstance(distance, Integral):
         if array:
             if int(distance) != 1:
-                raise ValueError(f"{_SCOPE}.shuffle array distance must be exactly 1")
+                raise ValueError(
+                    f"{_SCOPE}.shuffle array distance must be exactly 1"
+                )
             return ArgumentBinding.omitted()
         return ArgumentBinding.static(int(distance))
     if array:
-        raise TypeError(f"{_SCOPE}.shuffle array distance must be a compile-time 1")
+        raise TypeError(
+            f"{_SCOPE}.shuffle array distance must be a compile-time 1"
+        )
     dtype = _types.canonical_dsl_type(distance)
     spec = _types.TYPE_SPECS.get(dtype)
     if spec is None or spec.token[0] not in {"i", "u"} or spec.token == "u64":
         raise TypeError(
-            f"{_SCOPE}.shuffle distance requires a signed integer up to 64 bits "
+            f"{_SCOPE}.shuffle distance requires a signed integer "
+            "up to 64 bits "
             "or an unsigned integer up to 32 bits"
         )
     return ArgumentBinding.runtime()
 
 
-def _make_shuffle_plan(*, group, launch, dtype, items_per_thread, mode, distance):
+def _make_shuffle_plan(
+    *, group, launch, dtype, items_per_thread, mode, distance
+):
     primitive = make_block_shuffle_semantics(
         dtype=dtype,
         mode=mode,
         items_per_thread=items_per_thread,
-        distance=_distance_binding(distance, array=items_per_thread is not None),
+        distance=_distance_binding(
+            distance, array=items_per_thread is not None
+        ),
     )
     return plan_group_primitive(
         make_group_primitive_call(
@@ -106,7 +115,9 @@ class _CubShuffleRequest:
             implementation.struct_name != "BlockShuffle"
             or implementation.method_name != operation.primitive.method_name
         ):
-            raise ValueError("BlockShuffle implementation does not match its plan")
+            raise ValueError(
+                "BlockShuffle implementation does not match its plan"
+            )
         participation = self.plan.participation
         if participation is None:
             raise ValueError("BlockShuffle requires exact block participation")
@@ -116,22 +127,29 @@ class _CubShuffleRequest:
             or tuple(arguments.get(f"BLOCK_DIM_{axis}") for axis in "XYZ")
             != participation.exact_block_dim
         ):
-            raise ValueError("BlockShuffle template arguments do not match its plan")
+            raise ValueError(
+                "BlockShuffle template arguments do not match its plan"
+            )
         if (
             operation.primitive.is_array
             and arguments.get("ITEMS_PER_THREAD") != operation.items_per_thread
         ):
             raise ValueError("BlockShuffle extent does not match its plan")
-        storage, synchronization = self.plan.temp_storage, self.plan.synchronization
+        storage, synchronization = (
+            self.plan.temp_storage,
+            self.plan.synchronization,
+        )
         if (
             storage is None
             or storage.ownership is not StorageOwnership.IMPLEMENTATION
             or storage.instances != 1
             or synchronization is None
-            or synchronization.storage_reuse_barrier is not SynchronizationScope.BLOCK
+            or synchronization.storage_reuse_barrier
+            is not SynchronizationScope.BLOCK
         ):
             raise ValueError(
-                "BlockShuffle requires owned block scratch and reuse synchronization"
+                "BlockShuffle requires owned block scratch "
+                "and reuse synchronization"
             )
 
     @property
@@ -152,7 +170,9 @@ class _CubShuffleRequest:
 
     @property
     def symbol_name(self):
-        digest = hashlib.sha256(repr(self.semantic_key).encode()).hexdigest()[:16]
+        digest = hashlib.sha256(repr(self.semantic_key).encode()).hexdigest()[
+            :16
+        ]
         return f"cuda_coop_cutlass_shuffle_{self.operation.mode.value}_{digest}"
 
 
@@ -174,7 +194,9 @@ def _render_shuffle(request):
             ]
         )
         arguments = "input_items, output_items"
-        output.extend(f"  result_items[{i}] = output_items[{i}];" for i in range(count))
+        output.extend(
+            f"  result_items[{i}] = output_items[{i}];" for i in range(count)
+        )
     else:
         params.append(f"{spec.cpp_type} value")
         setup.append(f"  {spec.cpp_type} result = value;")
@@ -197,13 +219,24 @@ def _render_shuffle(request):
             )
             distance = "distance"
         else:
-            distance = f"{binding.value if binding.kind is BindingKind.STATIC else 1}ll"
+            distance = (
+                f"{binding.value if binding.kind is BindingKind.STATIC else 1}"
+                "ll"
+            )
         arguments = f"value, result, static_cast<{cast}>({distance})"
         output.append("  return result;")
-    template_arguments = ", ".join((spec.cpp_type, *(str(d) for d in block_dim)))
+    template_arguments = ", ".join(
+        (spec.cpp_type, *(str(d) for d in block_dim))
+    )
     return [
-        f"{'void' if primitive.is_array else spec.cpp_type} {request.symbol_name}({', '.join(params)}) {{",
-        f"  using implementation_type = ::cub::BlockShuffle<{template_arguments}>;",
+        (
+            f"{'void' if primitive.is_array else spec.cpp_type} "
+            f"{request.symbol_name}({', '.join(params)}) {{"
+        ),
+        (
+            "  using implementation_type = "
+            f"::cub::BlockShuffle<{template_arguments}>;"
+        ),
         "  __shared__ typename implementation_type::TempStorage storage;",
         *setup,
         f"  implementation_type(storage).{primitive.method_name}({arguments});",
@@ -251,14 +284,22 @@ def provider_shuffle(*, group, launch, value, mode, distance):
     typed_values = []
     for item in values:
         converted = _types.coerce_plain_scalar(
-            item, value_type, name="shuffle value", scope=_SCOPE, allow_nonfinite=True
+            item,
+            value_type,
+            name="shuffle value",
+            scope=_SCOPE,
+            allow_nonfinite=True,
         )
         typed_values.append(
-            value_type(item) if converted is _types._NOT_PLAIN_SCALAR else converted
+            value_type(item)
+            if converted is _types._NOT_PLAIN_SCALAR
+            else converted
         )
     runtime_distance = request.operation.distance.kind is BindingKind.RUNTIME
     result_tensor = (
-        _make_rmem_tensor(len(values), value_type, value.alignment) if array else None
+        _make_rmem_tensor(len(values), value_type, value.alignment)
+        if array
+        else None
     )
     snapshot = _state.snapshot_active_session_state()
     try:
@@ -280,7 +321,9 @@ def provider_shuffle(*, group, launch, value, mode, distance):
             return ThreadData(
                 len(values),
                 dtype=_types.thread_data_output_dtype(value, value_type),
-                values=[value_type(result_tensor[i]) for i in range(len(values))],
+                values=[
+                    value_type(result_tensor[i]) for i in range(len(values))
+                ],
                 alignment=value.alignment,
             )
         return value_type(result)

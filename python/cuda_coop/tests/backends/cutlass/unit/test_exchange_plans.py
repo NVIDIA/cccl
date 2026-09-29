@@ -23,14 +23,19 @@ from cuda.coop._core import (
 )
 from cuda.coop.cutlass import ThreadData
 from cuda.coop.cutlass._compiler import _rendering, _state
-from cuda.coop.cutlass._compiler._types import ALL_PROVIDER_TYPES, INTEGER_VALUE_TYPES
+from cuda.coop.cutlass._compiler._types import (
+    ALL_PROVIDER_TYPES,
+    INTEGER_VALUE_TYPES,
+)
 from cuda.coop.cutlass._group_exchange import _normalize_exchange_mode
 from cuda.coop.cutlass._lowering import _exchange
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
 
-def _request(group=None, *, mode="striped_to_blocked", block=(8, 4, 2), **options):
+def _request(
+    group=None, *, mode="striped_to_blocked", block=(8, 4, 2), **options
+):
     mode = BlockExchangeMode(mode)
     kwargs = {
         "group": this_block() if group is None else group,
@@ -48,18 +53,25 @@ def _request(group=None, *, mode="striped_to_blocked", block=(8, 4, 2), **option
     )
 
 
-@pytest.mark.parametrize("mode", tuple(mode.value for mode in BlockExchangeMode))
+@pytest.mark.parametrize(
+    "mode", tuple(mode.value for mode in BlockExchangeMode)
+)
 def test_block_mode_contract(mode):
     request = _request(mode=mode)
     assert request.plan.target is GroupLoweringTarget.CUB_BLOCK
-    assert request.plan.temp_storage.ownership is StorageOwnership.IMPLEMENTATION
     assert (
-        request.plan.synchronization.storage_reuse_barrier is SynchronizationScope.BLOCK
+        request.plan.temp_storage.ownership is StorageOwnership.IMPLEMENTATION
+    )
+    assert (
+        request.plan.synchronization.storage_reuse_barrier
+        is SynchronizationScope.BLOCK
     )
     assert request.plan.result.visibility is ResultVisibility.PER_MEMBER
     assert request.plan.result.result_items_per_thread == 2
     assert request.operation.uses_ranks == (request.rank_type is not None)
-    assert request.operation.uses_valid_flags == (request.valid_flag_type is not None)
+    assert request.operation.uses_valid_flags == (
+        request.valid_flag_type is not None
+    )
 
 
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
@@ -69,7 +81,8 @@ def test_warp_instances(width, mode):
     assert request.plan.target is GroupLoweringTarget.CUB_WARP
     assert _exchange._warp_instances(request) == (64 // width, width)
     assert (
-        request.plan.synchronization.storage_reuse_barrier is SynchronizationScope.WARP
+        request.plan.synchronization.storage_reuse_barrier
+        is SynchronizationScope.WARP
     )
     one = _request(this_warp().group_by(width), mode=mode, block=(32, 1, 1))
     assert request.symbol_name != one.symbol_name
@@ -88,18 +101,28 @@ def test_value_types(dtype):
     "dtype", (cutlass.Int8, cutlass.Int16, cutlass.Int32, cutlass.Int64)
 )
 def test_signed_ranks(dtype):
-    assert _request(mode="scatter_to_blocked", rank_dtype=dtype).rank_type is dtype
+    assert (
+        _request(mode="scatter_to_blocked", rank_dtype=dtype).rank_type is dtype
+    )
 
 
 @pytest.mark.parametrize("dtype", tuple(INTEGER_VALUE_TYPES))
 def test_integer_flags(dtype):
-    request = _request(mode="scatter_to_striped_flagged", valid_flag_dtype=dtype)
+    request = _request(
+        mode="scatter_to_striped_flagged", valid_flag_dtype=dtype
+    )
     assert request.valid_flag_type is dtype
 
 
 @pytest.mark.parametrize(
     "dtype",
-    (cutlass.Uint8, cutlass.Uint16, cutlass.Uint32, cutlass.Uint64, cutlass.Float32),
+    (
+        cutlass.Uint8,
+        cutlass.Uint16,
+        cutlass.Uint32,
+        cutlass.Uint64,
+        cutlass.Float32,
+    ),
 )
 def test_rank_type_rejected(dtype):
     with pytest.raises(TypeError, match="ranks.*signed integer"):
@@ -108,7 +131,9 @@ def test_rank_type_rejected(dtype):
 
 def test_float_flag_rejected():
     with pytest.raises(TypeError, match="valid_flags.*integer"):
-        _request(mode="scatter_to_striped_flagged", valid_flag_dtype=cutlass.Float32)
+        _request(
+            mode="scatter_to_striped_flagged", valid_flag_dtype=cutlass.Float32
+        )
 
 
 @pytest.mark.parametrize(
@@ -148,13 +173,17 @@ def test_failed_ffi_rollback(group, monkeypatch):
     payload = ThreadData(2, dtype=cutlass.Int32, values=[1, 2], alignment=64)
     snapshot = object()
     registered, restored, allocations = [], [], []
-    monkeypatch.setattr(_state, "snapshot_active_session_state", lambda: snapshot)
+    monkeypatch.setattr(
+        _state, "snapshot_active_session_state", lambda: snapshot
+    )
     monkeypatch.setattr(_state, "register_request", registered.append)
     monkeypatch.setattr(_state, "restore_active_session_state", restored.append)
     monkeypatch.setattr(
         _exchange,
         "llvm",
-        SimpleNamespace(PointerType=SimpleNamespace(get=lambda space: object())),
+        SimpleNamespace(
+            PointerType=SimpleNamespace(get=lambda space: object())
+        ),
     )
 
     def allocate(*args):
