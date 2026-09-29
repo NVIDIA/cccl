@@ -51,7 +51,10 @@ def radix_rank(
         expression = (
             "(static_cast<unsigned int>({value}) ^ 0x80000000u)"
             if dtype.bitwidth == 32
-            else "(static_cast<unsigned long long>({value}) ^ 0x8000000000000000ull)"
+            else (
+                "(static_cast<unsigned long long>({value}) ^ "
+                "0x8000000000000000ull)"
+            )
         )
         transforms = {
             "keys": NumbaMlirArrayInputTransform(

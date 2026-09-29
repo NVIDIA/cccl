@@ -432,7 +432,7 @@ def _checked_radix_sort_type() -> TypeDefinition:
     }}
     PrimitiveT::{method}(keys{values_argument}, static_cast<int>(begin_bit), static_cast<int>(end_bit));
   }}
-""")
+""")  # noqa: E501 - Embedded C++ source.
     return TypeDefinition(
         name="cuda_coop_checked_block_radix_sort",
         code="""
@@ -447,7 +447,7 @@ struct CudaCoopBlockRadixSort : BlockRadixSort<
   using PrimitiveT = BlockRadixSort<KeyT, BlockDimX, ItemsPerThread, ValueT,
     RadixBits, MemoizeOuterScan, InnerScanAlgorithm, SMemConfig, BlockDimY, BlockDimZ>;
   using PrimitiveT::PrimitiveT;
-"""
+"""  # noqa: E501 - Embedded C++ source.
         + "\n".join(methods)
         + "\n};\n}\n",
     )
