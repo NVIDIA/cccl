@@ -53,7 +53,8 @@ def test_warp_storage_free_contract(algorithm, kind):
     assert request.plan.topology.logical_width == 32
     assert request.plan.temp_storage.ownership is StorageOwnership.NONE
     assert (
-        request.plan.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+        request.plan.synchronization.storage_reuse_barrier
+        is SynchronizationScope.NONE
     )
     assert not _rendering.bundle_scratch_layout_probes([request])
     source = _rendering.render_bundle_source([request])
@@ -72,17 +73,24 @@ def test_scratch_probe_counts_instances():
     assert one.symbol_name != two.symbol_name
     probes = _rendering.bundle_scratch_layout_probes([one, two])
     assert len(probes) == 2
-    first, second = (probes[request.scratch_requirement_key] for request in (one, two))
+    first, second = (
+        probes[request.scratch_requirement_key] for request in (one, two)
+    )
     assert first.size_expression != second.size_expression
     assert two.plan.temp_storage.ownership is StorageOwnership.IMPLEMENTATION
-    assert two.plan.synchronization.storage_reuse_barrier is SynchronizationScope.WARP
+    assert (
+        two.plan.synchronization.storage_reuse_barrier
+        is SynchronizationScope.WARP
+    )
     source = _rendering.render_bundle_source([two])
     assert "__syncthreads" not in source
     assert "bar.sync" not in source
 
 
 @pytest.mark.parametrize("valid", (0, 17, 64))
-@pytest.mark.parametrize("algorithm", ("direct", "striped", "vectorize", "transpose"))
+@pytest.mark.parametrize(
+    "algorithm", ("direct", "striped", "vectorize", "transpose")
+)
 def test_extent_includes_all_group_tiles(valid, algorithm):
     request = _request(
         algorithm=algorithm,
@@ -117,7 +125,9 @@ def test_offset_headroom():
         _request(offset=ArgumentBinding.static(maximum + 1))
 
 
-@pytest.mark.parametrize("block", ((1, 1, 1), (31, 1, 1), (33, 1, 1), (8, 3, 1)))
+@pytest.mark.parametrize(
+    "block", ((1, 1, 1), (31, 1, 1), (33, 1, 1), (8, 3, 1))
+)
 def test_partial_warp_block_rejected(block):
     with pytest.raises(NotImplementedError, match="complete"):
         _request(block=block)
@@ -128,7 +138,9 @@ def test_unknown_block_rejected():
         _request(block=None)
 
 
-@pytest.mark.parametrize("algorithm", ("warp_transpose", "warp_transpose_timesliced"))
+@pytest.mark.parametrize(
+    "algorithm", ("warp_transpose", "warp_transpose_timesliced")
+)
 def test_block_algorithm_rejected(algorithm):
     with pytest.raises(NotImplementedError, match="algorithm"):
         _request(algorithm=algorithm)

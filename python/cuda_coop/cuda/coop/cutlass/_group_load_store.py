@@ -56,7 +56,8 @@ def _resolve_group(group, algorithm, temp_storage, operation):
         )
     if group.kind == "warp" and temp_storage is not None:
         raise NotImplementedError(
-            f"{_SCOPE}.{operation} explicit TempStorage is supported only for block groups"
+            f"{_SCOPE}.{operation} explicit TempStorage is supported only "
+            "for block groups"
         )
     algorithm = _normalize_algorithm(algorithm)
     if temp_storage is not None:
@@ -280,7 +281,8 @@ def _classify_integer_binding(value: Any, *, name: str) -> ArgumentBinding:
     if isinstance(value, Integer):
         return ArgumentBinding.runtime()
     raise TypeError(
-        f"{_SCOPE}.load/store {name} must be an integer, not {type(value).__name__}"
+        f"{_SCOPE}.load/store {name} must be an integer, "
+        f"not {type(value).__name__}"
     )
 
 
