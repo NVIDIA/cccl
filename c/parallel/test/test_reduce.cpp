@@ -128,7 +128,7 @@ struct reduce_build_ex
     return cc_major < 9;
   }
 
-  cccl_build_config config;
+  const cccl_build_config config;
 
   reduce_build_ex(const char** extra_compile_flags, size_t num_flags, const char** extra_include_dirs, size_t num_dirs)
       : config(make_build_config(extra_compile_flags, num_flags, extra_include_dirs, num_dirs))
@@ -147,7 +147,7 @@ struct reduce_build_ex
     const char* cub_path,
     const char* thrust_path,
     const char* libcudacxx_path,
-    const char* ctk_path) noexcept
+    const char* ctk_path) const noexcept
   {
     return cccl_device_reduce_build_ex(
       build_ptr,
