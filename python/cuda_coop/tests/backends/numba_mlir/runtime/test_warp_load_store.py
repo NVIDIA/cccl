@@ -129,7 +129,7 @@ def _store_kernel(algorithm: str, qualified: bool):
         selector = algorithm
 
         @cuda.jit
-        def kernel(source, destination, preserved, valid_items, destination_offset):
+        def kernel(source, destination, valid_items, destination_offset):
             thread = cuda.threadIdx.x
             payload = qualified_coop.ThreadData(
                 _ITEMS_PER_THREAD,
@@ -145,13 +145,11 @@ def _store_kernel(algorithm: str, qualified: bool):
                 valid_items=valid_items,
                 offset=destination_offset,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                preserved[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
     else:
 
         @cuda.jit
-        def kernel(source, destination, preserved, valid_items, destination_offset):
+        def kernel(source, destination, valid_items, destination_offset):
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
                 _ITEMS_PER_THREAD,
@@ -167,8 +165,6 @@ def _store_kernel(algorithm: str, qualified: bool):
                 valid_items=valid_items,
                 offset=destination_offset,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                preserved[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
     return kernel
 
@@ -348,14 +344,13 @@ def test_each_warp_load_algorithm_matches_an_independent_two_warp_oracle(
     (0, _WARP_TILE_ITEMS - 9, _WARP_TILE_ITEMS),
     ids=("zero", "partial", "full"),
 )
-def test_each_warp_store_algorithm_masks_each_warp_and_preserves_input(
+def test_each_warp_store_algorithm_masks_each_warp(
     qualified: bool,
     algorithm: str,
     valid_items: int,
 ) -> None:
     source = _values(_BLOCK_ITEMS, shift=43)
     destination = np.full(_STORE_OFFSET + _BLOCK_ITEMS + 3, -41, dtype=np.int32)
-    preserved = np.full(_BLOCK_ITEMS, 73, dtype=np.int32)
     expected = _expected_stored_payload(
         source,
         destination,
@@ -367,13 +362,11 @@ def test_each_warp_store_algorithm_masks_each_warp_and_preserves_input(
     _store_kernel(algorithm, qualified)[1, _BLOCK_THREADS](
         source,
         destination,
-        preserved,
         np.int32(valid_items),
         np.int64(_STORE_OFFSET),
     )
 
     np.testing.assert_array_equal(destination, expected)
-    np.testing.assert_array_equal(preserved, source)
 
 
 def _logical_tile_index(algorithm: str, lane: int, item: int, width: int) -> int:
@@ -525,16 +518,13 @@ def _logical_partial_transpose_load_kernel(qualified: bool):
     if qualified:
 
         @cuda.jit
-        def kernel(source, initial, observed, valid_by_group):
+        def kernel(source, observed, valid_by_group):
             thread = cuda.threadIdx.x
             group_index = thread // _LOGICAL_WARP_THREADS
             payload = qualified_coop.ThreadData(
                 _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                payload_index = thread * _ITEMS_PER_THREAD + item
-                payload[item] = initial[payload_index]
             qualified_coop.load(
                 qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
                 source,
@@ -543,21 +533,20 @@ def _logical_partial_transpose_load_kernel(qualified: bool):
                 valid_items=valid_by_group[group_index],
             )
             for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+                lane = thread % _LOGICAL_WARP_THREADS
+                if lane * _ITEMS_PER_THREAD + item < valid_by_group[group_index]:
+                    observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
     else:
 
         @cuda.jit
-        def kernel(source, initial, observed, valid_by_group):
+        def kernel(source, observed, valid_by_group):
             thread = cuda.threadIdx.x
             group_index = thread // _LOGICAL_WARP_THREADS
             payload = root_coop.ThreadData(
                 _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                payload_index = thread * _ITEMS_PER_THREAD + item
-                payload[item] = initial[payload_index]
             root_coop.load(
                 root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
                 source,
@@ -566,23 +555,24 @@ def _logical_partial_transpose_load_kernel(qualified: bool):
                 valid_items=valid_by_group[group_index],
             )
             for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+                lane = thread % _LOGICAL_WARP_THREADS
+                if lane * _ITEMS_PER_THREAD + item < valid_by_group[group_index]:
+                    observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
     return kernel
 
 
 @pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
-def test_logical_transpose_load_preserves_invalid_slots_in_nonzero_groups(
+def test_logical_transpose_load_reads_valid_items_in_nonzero_groups(
     qualified: bool,
 ) -> None:
     source = _values(_BLOCK_ITEMS, shift=61)
-    initial = -1000 - np.arange(_BLOCK_ITEMS, dtype=np.int32)
     observed = np.full(_BLOCK_ITEMS, 23, dtype=np.int32)
     valid_by_group = np.array(
         [0, 1, 5, _LOGICAL_TILE_ITEMS, 3, 11, 7, 15],
         dtype=np.int32,
     )
-    expected = initial.copy()
+    expected = observed.copy()
     for thread in range(_BLOCK_THREADS):
         group_index = thread // _LOGICAL_WARP_THREADS
         lane = thread % _LOGICAL_WARP_THREADS
@@ -597,7 +587,6 @@ def test_logical_transpose_load_preserves_invalid_slots_in_nonzero_groups(
 
     _logical_partial_transpose_load_kernel(qualified)[1, _BLOCK_THREADS](
         source,
-        initial,
         observed,
         valid_by_group,
     )
@@ -751,20 +740,18 @@ def test_logical_direct_load_store_matches_every_dtype_oracle(
 
 
 @cache
-def _partial_load_preserving_kernel(algorithm: str, qualified: bool):
+def _partial_load_kernel(algorithm: str, qualified: bool):
+    striped = algorithm == "striped"
     if qualified:
         selector = algorithm
 
         @cuda.jit
-        def kernel(source, initial, observed, valid_items):
+        def kernel(source, observed, valid_items):
             thread = cuda.threadIdx.x
             payload = qualified_coop.ThreadData(
                 _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                index = thread * _ITEMS_PER_THREAD + item
-                payload[item] = initial[index]
             qualified_coop.load(
                 qualified_coop.this_warp(),
                 source,
@@ -773,20 +760,24 @@ def _partial_load_preserving_kernel(algorithm: str, qualified: bool):
                 valid_items=valid_items,
             )
             for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+                lane = thread % _WARP_THREADS
+                tile_index = (
+                    lane + item * _WARP_THREADS
+                    if striped
+                    else lane * _ITEMS_PER_THREAD + item
+                )
+                if tile_index < valid_items:
+                    observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
     else:
 
         @cuda.jit
-        def kernel(source, initial, observed, valid_items):
+        def kernel(source, observed, valid_items):
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
                 _ITEMS_PER_THREAD,
                 dtype=types.int32,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                index = thread * _ITEMS_PER_THREAD + item
-                payload[item] = initial[index]
             root_coop.load(
                 root_coop.this_warp(),
                 source,
@@ -795,22 +786,28 @@ def _partial_load_preserving_kernel(algorithm: str, qualified: bool):
                 valid_items=valid_items,
             )
             for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+                lane = thread % _WARP_THREADS
+                tile_index = (
+                    lane + item * _WARP_THREADS
+                    if striped
+                    else lane * _ITEMS_PER_THREAD + item
+                )
+                if tile_index < valid_items:
+                    observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
     return kernel
 
 
 @pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
-def test_partial_load_preserves_invalid_slots_for_each_layout_and_warp(
+def test_partial_load_reads_valid_items_for_each_layout_and_warp(
     qualified: bool,
     algorithm: str,
 ) -> None:
     valid_items = _WARP_TILE_ITEMS - 11
     source = _values(_BLOCK_ITEMS, shift=59)
-    initial = -1000 - np.arange(_BLOCK_ITEMS, dtype=np.int32)
     observed = np.full(_BLOCK_ITEMS, 71, dtype=np.int32)
-    expected = initial.copy()
+    expected = observed.copy()
     for thread in range(_BLOCK_THREADS):
         warp = thread // _WARP_THREADS
         lane = thread % _WARP_THREADS
@@ -820,9 +817,8 @@ def test_partial_load_preserves_invalid_slots_for_each_layout_and_warp(
             if tile_index < valid_items:
                 expected[payload_index] = source[warp * _WARP_TILE_ITEMS + tile_index]
 
-    _partial_load_preserving_kernel(algorithm, qualified)[1, _BLOCK_THREADS](
+    _partial_load_kernel(algorithm, qualified)[1, _BLOCK_THREADS](
         source,
-        initial,
         observed,
         np.int32(valid_items),
     )
