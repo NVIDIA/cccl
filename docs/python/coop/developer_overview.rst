@@ -641,8 +641,9 @@ common payload APIs require their supported numeric dtypes.
 These payload conversions and the Python callback compilation described
 below are Numba-CUDA-MLIR-specific. CUTLASS materializes ``ThreadData`` from
 CuTe scalar values and handles register-tensor conversion in its qualified
-namespace. Python device callbacks and stateful Scan prefixes are not supported
-by CUTLASS; see its guide for the implemented primitive families. See :ref:`coop-programming-api-choice` for the Numba-qualified
+namespace. Its current Reduce and Scan implementations accept built-in
+operators; Python device callbacks and stateful Scan prefixes are not
+supported. See :ref:`coop-programming-api-choice` for the Numba-qualified
 API comparison.
 
 Shared memory and reuse
