@@ -47,28 +47,6 @@ from ._scalar_provenance import (
 
 
 class _ProvenanceRewrite:
-    @staticmethod
-    def _require_matching_items_per_thread(
-        op_name: str,
-        lhs_name: str,
-        lhs_spec: _ThreadDataSpec | None,
-        rhs_name: str,
-        rhs_spec: _ThreadDataSpec | None,
-    ) -> None:
-        if lhs_spec is None or rhs_spec is None:
-            return
-        lhs_items = lhs_spec.items_per_thread
-        rhs_items = rhs_spec.items_per_thread
-        if (
-            lhs_items is not None
-            and rhs_items is not None
-            and (lhs_items != rhs_items)
-        ):
-            raise CoopSinglePhaseRewriteError(
-                f"coop single-phase '{op_name}' requires {lhs_name}/{rhs_name} "
-                f"arrays to have matching items_per_thread."
-            )
-
     def __init__(
         self,
         state,

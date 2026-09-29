@@ -120,16 +120,6 @@ class InvalidLoadStoreAlgorithmError(ValueError):
         )
 
 
-class UnsupportedLoadStoreAlgorithmError(NotImplementedError):
-    def __init__(self, operation, token):
-        super().__init__(
-            _wrap_diagnostic(
-                f"cuda.coop.numba_mlir.{operation} algorithm {token!r} is not "
-                f"executable; only 'direct' is currently supported",
-            )
-        )
-
-
 class UnknownBlockDimensionError(GroupRewriteError):
     def __init__(self, operation):
         super().__init__(
