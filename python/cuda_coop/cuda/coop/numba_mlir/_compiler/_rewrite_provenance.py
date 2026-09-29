@@ -2,12 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""IR definition, payload-provenance, and constructor analysis.
-
-This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
-ordering remain in the rewrite orchestrator.
-"""
-
 from enum import Enum
 
 from cuda.coop._core import StorageOwnership, SynchronizationScope

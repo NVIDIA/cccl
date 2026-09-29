@@ -2,7 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Numba-CUDA-MLIR-qualified cooperative group building blocks."""
+"""Importing this module registers cooperative operations with
+Numba-CUDA-MLIR.
+"""
 
 import importlib
 
