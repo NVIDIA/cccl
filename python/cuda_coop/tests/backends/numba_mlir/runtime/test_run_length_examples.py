@@ -28,12 +28,12 @@ def test_run_length_window_example():
     @cuda.jit
     def decode_window(values, lengths, output, offsets, totals):
         block = numba_coop.this_block()
-        runs = numba_coop.ThreadData(2)
-        sizes = numba_coop.ThreadData(2)
+        runs = numba_coop.ThreadData(items_per_thread=2)
+        sizes = numba_coop.ThreadData(items_per_thread=2)
         numba_coop.load(block, values, runs)
         numba_coop.load(block, lengths, sizes)
-        relative = numba_coop.ThreadData(4, dtype=np.uint32)
-        total = numba_coop.ThreadData(1, dtype=np.uint32)
+        relative = numba_coop.ThreadData(items_per_thread=4)
+        total = numba_coop.ThreadData(items_per_thread=1)
         decoded = numba_coop.run_length_decode(
             block,
             runs,
@@ -77,8 +77,8 @@ def test_run_length_bulk_example():
     @cuda.jit
     def decode_all(values, lengths, output, totals):
         block = coop.this_block()
-        runs = coop.ThreadData(2)
-        sizes = coop.ThreadData(2)
+        runs = coop.ThreadData(items_per_thread=2)
+        sizes = coop.ThreadData(items_per_thread=2)
         coop.load(block, values, runs)
         coop.load(block, lengths, sizes)
         # CUB prepares the run table once for all internal windows.
