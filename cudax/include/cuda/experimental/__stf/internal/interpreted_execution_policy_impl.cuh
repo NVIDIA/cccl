@@ -131,13 +131,12 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     {
       if (int(l1_size) > kernel_limits.block_size_limit)
       {
-        char msg[512];
-        snprintf(msg,
-                 sizeof(msg),
-                 "unsatisfiable spec: maximum block size %d threads, requested %zu (level 1)",
-                 kernel_limits.block_size_limit,
-                 l1_size);
-        throw ::std::invalid_argument(msg);
+        throw ::std::invalid_argument(
+          ::std::string("unsatisfiable spec: maximum block size ")
+            .append(::std::to_string(kernel_limits.block_size_limit))
+            .append(" threads, requested ")
+            .append(::std::to_string(l1_size))
+            .append(" (level 1)"));
       }
     }
 
@@ -182,13 +181,12 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     {
       if (int(l2_size) > kernel_limits.block_size_limit)
       {
-        char msg[512];
-        snprintf(msg,
-                 sizeof(msg),
-                 "unsatisfiable spec: maximum block size %d threads, requested %zu (level 2)",
-                 kernel_limits.block_size_limit,
-                 l2_size);
-        throw ::std::invalid_argument(msg);
+        throw ::std::invalid_argument(
+          ::std::string("unsatisfiable spec: maximum block size ")
+            .append(::std::to_string(kernel_limits.block_size_limit))
+            .append(" threads, requested ")
+            .append(::std::to_string(l2_size))
+            .append(" (level 2)"));
       }
     }
 
