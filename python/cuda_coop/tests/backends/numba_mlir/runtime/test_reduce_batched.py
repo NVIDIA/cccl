@@ -130,7 +130,7 @@ def test_warp_feature_sums_example():
     @cuda.jit
     def feature_sums(samples, totals):
         warp = coop.this_warp()
-        features = coop.ThreadData(3)
+        features = coop.ThreadData(items_per_thread=3)
         coop.load(warp, samples, features)
         sums = coop.reduce_batched(warp, features)
         # Lane 0 owns feature 0's sum, lane 1 feature 1's, and so on.
