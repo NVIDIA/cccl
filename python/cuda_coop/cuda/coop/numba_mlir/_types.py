@@ -13,6 +13,7 @@ import os
 import re
 import weakref
 from collections import OrderedDict
+from collections.abc import Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from copy import copy
@@ -20,7 +21,7 @@ from io import StringIO
 from numbers import Integral
 from textwrap import dedent
 from types import FunctionType as PyFunctionType
-from typing import BinaryIO, Sequence
+from typing import BinaryIO
 
 from numba_cuda_mlir import cuda, types
 from numba_cuda_mlir.compiler import ExternFunction
@@ -99,7 +100,8 @@ def _validate_logical_warp_threads(threads):
 
 def _normalize_block_threads(threads_per_block):
     if isinstance(threads_per_block, bool):
-        raise ValueError(
+        # Keep the established ValueError contract for invalid block dimensions.
+        raise ValueError(  # noqa: TRY004
             "block_threads must be a positive integer or dimension tuple; "
             f"got {threads_per_block!r}"
         )
@@ -124,7 +126,8 @@ def _normalize_block_threads(threads_per_block):
                 )
             block_threads *= dimension
     else:
-        raise ValueError(
+        # Keep the established ValueError contract for invalid block dimensions.
+        raise ValueError(  # noqa: TRY004
             "block_threads must be a positive integer or dimension tuple; "
             f"got {threads_per_block!r}"
         )
@@ -297,7 +300,7 @@ class TypeWrapper:
             value_type = abi_context.get_value_type(numba_type)
             size = value_type.get_abi_size(abi_context.target_data)
             alignment = value_type.get_abi_alignment(abi_context.target_data)
-        except Exception:
+        except Exception:  # noqa: BLE001 - unsupported LLVM layouts use the validated fallback.
             size, alignment = _size_alignment_from_numba_type(numba_type)
         buf = StringIO()
         w = buf.write
@@ -314,19 +317,108 @@ def numba_type_to_wrapper(numba_type: types.Type):
 
 
 _CPP_PARAMETER_RESERVED_NAMES = frozenset(
-    """
-    alignas alignof and and_eq asm atomic_cancel atomic_commit atomic_noexcept
-    auto bitand bitor bool break case catch char char8_t char16_t char32_t class
-    compl concept const consteval constexpr constinit const_cast continue
-    co_await co_return co_yield decltype default delete do double dynamic_cast
-    else enum explicit export extern false float for friend goto if inline int
-    long mutable namespace new noexcept not not_eq nullptr operator or or_eq
-    private protected public reflexpr register reinterpret_cast requires return
-    short signed sizeof static static_assert static_cast struct switch
-    synchronized template this thread_local throw true try typedef typeid
-    typename union unsigned using virtual void volatile wchar_t while xor xor_eq
-    threadIdx blockDim storage_t
-    """.split()
+    [
+        "alignas",
+        "alignof",
+        "and",
+        "and_eq",
+        "asm",
+        "atomic_cancel",
+        "atomic_commit",
+        "atomic_noexcept",
+        "auto",
+        "bitand",
+        "bitor",
+        "bool",
+        "break",
+        "case",
+        "catch",
+        "char",
+        "char8_t",
+        "char16_t",
+        "char32_t",
+        "class",
+        "compl",
+        "concept",
+        "const",
+        "consteval",
+        "constexpr",
+        "constinit",
+        "const_cast",
+        "continue",
+        "co_await",
+        "co_return",
+        "co_yield",
+        "decltype",
+        "default",
+        "delete",
+        "do",
+        "double",
+        "dynamic_cast",
+        "else",
+        "enum",
+        "explicit",
+        "export",
+        "extern",
+        "false",
+        "float",
+        "for",
+        "friend",
+        "goto",
+        "if",
+        "inline",
+        "int",
+        "long",
+        "mutable",
+        "namespace",
+        "new",
+        "noexcept",
+        "not",
+        "not_eq",
+        "nullptr",
+        "operator",
+        "or",
+        "or_eq",
+        "private",
+        "protected",
+        "public",
+        "reflexpr",
+        "register",
+        "reinterpret_cast",
+        "requires",
+        "return",
+        "short",
+        "signed",
+        "sizeof",
+        "static",
+        "static_assert",
+        "static_cast",
+        "struct",
+        "switch",
+        "synchronized",
+        "template",
+        "this",
+        "thread_local",
+        "throw",
+        "true",
+        "try",
+        "typedef",
+        "typeid",
+        "typename",
+        "union",
+        "unsigned",
+        "using",
+        "virtual",
+        "void",
+        "volatile",
+        "wchar_t",
+        "while",
+        "xor",
+        "xor_eq",
+        "threadIdx",
+        "blockDim",
+        "storage_t",
+    ]
 )
 
 
@@ -1603,14 +1695,14 @@ class Algorithm:
                 extern_fn, arg_transforms, returns_value=returns_value
             )
             if link_files:
-                setattr(impl, "__numba_cuda_mlir_link__", link_files)
+                impl.__numba_cuda_mlir_link__ = link_files
             return impl
 
         wrapped_algorithm_impl = war_introspection(
             algorithm_impl, num_user_provided_params
         )
         if link_files:
-            setattr(wrapped_algorithm_impl, "__numba_cuda_mlir_link__", link_files)
+            wrapped_algorithm_impl.__numba_cuda_mlir_link__ = link_files
         return make_overload_template(
             func_to_overload,
             wrapped_algorithm_impl,
@@ -1849,13 +1941,13 @@ def prepare_ltoir_bundle(
     buf = StringIO()
     w = buf.write
     w("#include <cuda/std/cstdint>\n")
-    for include in includes.keys():
+    for include in includes:
         w(f"#include <{include}>\n")
-    for code in type_defs.keys():
+    for code in type_defs:
         w(f"{code}\n")
     w("\n")
     if udf_decls:
-        for decl in udf_decls.keys():
+        for decl in udf_decls:
             w(f"{decl}\n")
         w("\n")
 

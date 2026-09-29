@@ -40,7 +40,7 @@ class _ArgumentRewrite:
             )
         runtime_arg_count = len(call.args)
         if runtime_arg_count not in spec.runtime_arg_counts:
-            expected_csv = ", ".join((str(v) for v in sorted(spec.runtime_arg_counts)))
+            expected_csv = ", ".join(str(v) for v in sorted(spec.runtime_arg_counts))
             raise CoopSinglePhaseRewriteError(
                 f"cooperative group operation {op_name!r} expects a positional "
                 f"runtime argument count in {{{expected_csv}}}; got "
