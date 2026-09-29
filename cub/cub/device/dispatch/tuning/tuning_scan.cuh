@@ -750,9 +750,6 @@ _CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_scan_store(const Scan
   return warpspeed::SquadDesc{1, policy.reduce_and_scan_warps};
 }
 
-// Combines bulk-loading the current tile and stealing the next tile index (via cluster launch control) into a
-// single warp: the CLC try_cancel is very cheap compared to the bulk load, so folding it into the load squad saves
-// an entire warp compared to using a dedicated scheduling squad.
 _CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_load_and_next_idx(const ScanLookaheadPolicy&)
 {
   return warpspeed::SquadDesc{2, 1}; // no point in being more than 1 warp
@@ -850,7 +847,6 @@ _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
     policy.lookahead_stages > 0 ? policy.lookahead_stages : ::cuda::std::max(1, num_stages + policy.lookahead_stages);
 
   void* inout_base = smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(inout_stride * num_stages), align_inout);
-  // stealing the next block index is now folded into the load squad, so it shares the same number of stages
   void* next_block_idx_base =
     smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(sizeof(uint4) * num_stages), alignof(uint4));
   void* sum_exclusive_base =

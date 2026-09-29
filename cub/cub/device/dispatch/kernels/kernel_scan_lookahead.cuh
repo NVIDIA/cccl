@@ -121,7 +121,6 @@ allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& sm
 
   ScanResourcesT res = {
     warpspeed::SmemResource<in_out_t>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
-    // stealing the next block index is folded into the load squad
     warpspeed::SmemResource<uint4>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
     warpspeed::SmemResource<AccumT>(syncHandler, smemAllocator, warpspeed::Stages{num_aggr_exclusive_cta_stages}),
     warpspeed::SmemResource<thread_and_warp_aggr_t>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
