@@ -72,9 +72,9 @@ def run_length_decode(
     signed 32-bit integers.
 
     Each call prepares its own CUB run table. Use
-    :func:`cuda.coop.run_length_decode_into` to write a full stream while preparing
-    that table once, or the qualified operation for total-size and relative
-    run-offset outputs.
+    :func:`cuda.coop.run_length_decode_into` to write a full stream while
+    preparing that table once, or the qualified operation for total-size and
+    relative run-offset outputs.
     """
     raise CoopCompilerContextRequiredError(
         "cuda.coop.run_length_decode must be called from a supported GPU kernel."
