@@ -23,8 +23,8 @@ def test_scatter_example():
     def reverse_tile(source: cute.Pointer, destination: cute.Pointer):
         block = cutlass_coop.this_block()
         thread = block.rank()
-        items = cutlass_coop.ThreadData(2, dtype=cutlass.Int32)
-        ranks = cutlass_coop.ThreadData(2, dtype=cutlass.Int32)
+        items = cutlass_coop.ThreadData(items_per_thread=2)
+        ranks = cutlass_coop.ThreadData(items_per_thread=2)
         cutlass_coop.load(block, source, items)
         for item in cutlass.range_constexpr(2):
             ranks[item] = cutlass.Int32(127 - (thread * 2 + item))
