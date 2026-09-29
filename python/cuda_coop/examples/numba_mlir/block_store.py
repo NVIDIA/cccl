@@ -20,7 +20,7 @@ def block_store(source, destination, valid_items):
     """Store the valid tile prefix while retaining the destination suffix."""
 
     thread = cuda.threadIdx.x
-    payload = coop.ThreadData(_ITEMS_PER_THREAD)
+    payload = coop.ThreadData(items_per_thread=_ITEMS_PER_THREAD)
     for item in range(_ITEMS_PER_THREAD):
         payload[item] = source[thread * _ITEMS_PER_THREAD + item]
     coop.store(

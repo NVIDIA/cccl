@@ -270,8 +270,6 @@ class _TempStorageGlobalPlan:
     max_alignment: int
     uses_dynamic_smem: bool
     dynamic_shared_bytes: int
-    max_default_smem: int
-    max_optin_smem: int
 
 
 # Support consumers import the private names they use explicitly.

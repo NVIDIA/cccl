@@ -34,7 +34,11 @@ def ThreadData(
     The parameters, uninitialized contents, and example follow
     :func:`cuda.coop.ThreadData`. This qualified constructor returns the
     active Numba-CUDA-MLIR runtime's local-array representation. The compiler
-    can infer an omitted dtype from supported producers such as Load.
+    infers the element type from supported context, including Load's
+    source, Store's destination, and typed indexed assignments. Leave the
+    constructor type unspecified for those uses. See
+    :ref:`element-type inference <coop-faq-thread-data-dtype>` for cases that
+    need additional type information.
 
     ``alignment`` requests a minimum alignment in bytes. This backend also
     enforces the compiler's pointer-alignment requirement. See
