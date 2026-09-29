@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Independent NumPy oracles for block differences and boundary flags."""
-
 import os
 import re
 import shutil
