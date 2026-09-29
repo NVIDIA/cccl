@@ -50,7 +50,7 @@ template <typename _SrcExtentT,
           ::cuda::std::size_t _MaxRank>
 [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t
 __vector_size_bytes(const __raw_tensor<_SrcExtentT, _SrcStrideT, _TpSrc, _MaxRank>& __src,
-                    const __raw_tensor<_DstExtentT, _DstStrideT, _TpDst, _MaxRank>& __dst) noexcept
+                    const __raw_tensor<_DstExtentT, _DstStrideT, _TpDst, _MaxRank>& __dst)
 {
   return ::cuda::std::min(
     {::cuda::__max_alignment(__src), ::cuda::__max_alignment(__dst), ::cuda::__max_gpu_arch_vector_size()});
@@ -77,7 +77,7 @@ template <typename _ExtentT,
 _CCCL_HOST_API void __dispatch_by_vector_size(
   const __raw_tensor<_ExtentT, _StrideTIn, _TpIn, _Rank>& __src,
   const __raw_tensor<_ExtentT, _StrideTOut, _TpOut, _Rank>& __dst,
-  _Op __op) noexcept
+  _Op __op)
 {
   const auto __call_vectorized = [&](auto __const_vector_size) {
     const auto __src_recast = ::cuda::__reshape_vectorized<__const_vector_size>(__src);

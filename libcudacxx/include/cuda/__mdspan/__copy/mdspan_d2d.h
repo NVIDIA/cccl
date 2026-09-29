@@ -85,7 +85,7 @@ _CCCL_HOST_API void __copy_simplified_rank(
   const __raw_tensor<_ExtentT, _StrideTOut, _TpOut, _MaxRank>& __dst,
   ::cuda::stream_ref __stream,
   const _SrcAccessor& __src_accessor,
-  const _DstAccessor& __dst_accessor) noexcept
+  const _DstAccessor& __dst_accessor)
 {
   // create a copy of the tensors with compile-time rank
   const auto __src_narrow = ::cuda::__narrow_raw_tensor_rank<_RankOut>(__src);

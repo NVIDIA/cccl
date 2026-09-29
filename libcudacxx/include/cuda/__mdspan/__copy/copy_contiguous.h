@@ -121,7 +121,7 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_contiguous_kernel(
 //!
 //! Delegates to CUB's architecture-specific tuning.
 //! @return Bytes-in-flight target (e.g. 12KB for V100, 16KB for A100, 48KB for H200, 64KB for B200)
-[[nodiscard]] _CCCL_HOST_API inline int __bytes_in_flight() noexcept
+[[nodiscard]] _CCCL_HOST_API inline int __bytes_in_flight()
 {
   const auto __dev_id = ::cuda::__driver::__cudevice_to_ordinal(::cuda::__driver::__ctxGetDevice());
   const auto __dev    = ::cuda::devices[__dev_id];
@@ -129,7 +129,7 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_contiguous_kernel(
   return CUB_NS_QUALIFIER::detail::transform::cc_to_min_bytes_in_flight(__cc);
 }
 
-[[nodiscard]] _CCCL_HOST_API inline int __max_threads_per_sm() noexcept
+[[nodiscard]] _CCCL_HOST_API inline int __max_threads_per_sm()
 {
   const auto __dev_id = ::cuda::__driver::__cudevice_to_ordinal(::cuda::__driver::__ctxGetDevice());
   const auto __dev    = ::cuda::devices[__dev_id];
@@ -137,7 +137,7 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_contiguous_kernel(
 }
 
 // Compute the number of elements each thread copies for a given vector width.
-[[nodiscard]] _CCCL_HOST_API inline int __elem_per_thread(int __access_bytes, int __bytes_in_flight) noexcept
+[[nodiscard]] _CCCL_HOST_API inline int __elem_per_thread(int __access_bytes, int __bytes_in_flight)
 {
   const auto __threads_per_sm = ::cuda::__max_threads_per_sm();
   return ::cuda::std::max(__bytes_in_flight / (__access_bytes * __threads_per_sm), 1);
@@ -145,7 +145,7 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_contiguous_kernel(
 
 // Dispatch a callable with a compile-time tile size derived from a runtime value.
 template <typename _Op>
-_CCCL_HOST_API void __dispatch_tile_size(int __tile_size, _Op __op) noexcept
+_CCCL_HOST_API void __dispatch_tile_size(int __tile_size, _Op __op)
 {
   if (__tile_size >= 2048)
   {
