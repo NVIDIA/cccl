@@ -738,7 +738,7 @@ With Load and Store connected, we can put a primitive between them:
    @cuda.jit
    def scan_tile(source, destination):
        block = coop.this_block()
-       items = coop.ThreadData(2, dtype=np.int32)
+       items = coop.ThreadData(items_per_thread=2)
        coop.load(block, source, items)
        scanned = coop.exclusive_sum(block, items)
        coop.store(block, destination, scanned)
