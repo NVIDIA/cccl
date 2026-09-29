@@ -134,7 +134,6 @@ def _plan(call, resolved, launch, operation):
     topology, participation, sync, storage = _contracts(
         resolved,
         launch,
-        result=result,
         storage_ownership=StorageOwnership.IMPLEMENTATION,
         cpp_type=None,
         uniform_arguments=(
