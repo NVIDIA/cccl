@@ -72,17 +72,6 @@ LLD_HAS_DRIVER(elf)
 
 namespace libnvcc
 {
-// CompilerConfig::libdevice_path is populated by make_jit_config() for
-// pip-installed toolkits, where libdevice.10.bc may live outside
-// cuda_toolkit_path (see util/build_utils.h find_libdevice_bc()). Configs
-// built via detectDefaultConfig() alone (env/system CTK) leave it empty, so
-// fall back to the historical derivation from cuda_toolkit_path.
-static std::string resolved_libdevice_path(const hostjit::CompilerConfig& config)
-{
-  return config.libdevice_path.empty() ? config.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc"
-                                        : config.libdevice_path;
-}
-
 static std::once_flag llvm_init_flag;
 
 static void initialize_llvm()
@@ -123,6 +112,8 @@ static bool runWithLargeStack(Fn&& fn)
 struct CompilerOptions
 {
   std::string cuda_toolkit_path;
+  std::string libdevice_path; // Full path to libdevice.10.bc; defaults to
+                              // <cuda_toolkit_path>/nvvm/libdevice/libdevice.10.bc if empty
   std::string hostjit_include_path;
   std::string clang_headers_path;
   std::string device_pch_path;
@@ -155,6 +146,17 @@ struct BitcodeResult
   bool success = false;
   std::string diagnostics;
 };
+
+// CompilerOptions::libdevice_path is populated from the --libdevice-path=
+// flag (see hostjit::CompilerConfig::appendCommandLineArguments /
+// util/build_utils.h find_libdevice_bc()) for pip-installed toolkits where
+// libdevice.10.bc may live outside cuda_toolkit_path. Falls back to the
+// historical derivation from cuda_toolkit_path when the flag wasn't passed.
+static std::string resolved_libdevice_path(const CompilerOptions& config)
+{
+  return config.libdevice_path.empty() ? config.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc"
+                                        : config.libdevice_path;
+}
 
 struct LinkResult
 {
@@ -364,6 +366,10 @@ static bool parseOptions(int num_options, const char* const* raw_options, Compil
     if (option.starts_with("--cuda-path="))
     {
       options.cuda_toolkit_path = value_after_equals(option, "--cuda-path=");
+    }
+    else if (option.starts_with("--libdevice-path="))
+    {
+      options.libdevice_path = value_after_equals(option, "--libdevice-path=");
     }
     else if (option.starts_with("--hostjit-include-path="))
     {

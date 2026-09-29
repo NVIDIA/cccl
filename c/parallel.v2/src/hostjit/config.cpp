@@ -61,6 +61,10 @@ void CompilerConfig::appendCommandLineArguments(std::vector<std::string>& args) 
   {
     args.push_back("--cuda-path=" + cuda_toolkit_path);
   }
+  if (!libdevice_path.empty())
+  {
+    args.push_back("--libdevice-path=" + libdevice_path);
+  }
   if (!hostjit_include_path.empty())
   {
     args.push_back("--hostjit-include-path=" + hostjit_include_path);
