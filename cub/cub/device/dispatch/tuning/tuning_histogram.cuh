@@ -304,7 +304,7 @@ public:
           && sample_size == 1)
       {
         // ipt_9.tpb_128.rle_0.ws_0.mem_0.ld_1.laid_2.vec_2 1.115  1.088  1.592  2.162
-        return HistogramPolicy{128, 9, 1 << 2, BLOCK_LOAD_STRIPED, LOAD_LDG, false, GMEM, false, 2048};
+        return HistogramPolicy{128, 9, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, false, GMEM, false, 2048};
       }
     }
 
