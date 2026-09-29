@@ -397,7 +397,7 @@ def test_documented_neighbor_composition():
         tail_flags: cute.Pointer,
     ):
         block = coop.this_block()
-        values = coop.ThreadData(2, dtype=cutlass.Int32)
+        values = coop.ThreadData(items_per_thread=2)
         coop.load(block, source, values)
         scratch = coop.TempStorage(alignment=16, auto_sync=True)
         differences = coop.adjacent_difference(
