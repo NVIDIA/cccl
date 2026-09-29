@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Deliberately invalid calls proving the public stubs reject misuse."""
-
 from __future__ import annotations
 
 import numpy as np

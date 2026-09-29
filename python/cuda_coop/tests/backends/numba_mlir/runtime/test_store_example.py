@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Executable example included in the ``cuda.coop.store`` docstring."""
-
 import pytest
 
 cuda = pytest.importorskip("numba_cuda_mlir.cuda")

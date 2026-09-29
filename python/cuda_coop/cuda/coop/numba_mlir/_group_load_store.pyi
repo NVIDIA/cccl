@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block and Warp Load/Store signatures for Numba-CUDA-MLIR."""
-
 from typing import overload
 
 from typing_extensions import TypeVar
