@@ -43,11 +43,15 @@ def test_width_layout(api, width, algorithm, operation):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.make_tensor(source, cute.make_layout(_BLOCK_TILE + 3))
-        outputs = cute.make_tensor(destination, cute.make_layout(_BLOCK_TILE + 3))
+        outputs = cute.make_tensor(
+            destination, cute.make_layout(_BLOCK_TILE + 3)
+        )
         group = api.this_warp().group_by(width)
         payload = api.ThreadData(_ITEMS, dtype=cutlass.Int32)
         if cutlass.const_expr(operation == "load"):
-            returned = api.load(group, inputs, payload, algorithm=algorithm, offset=3)
+            returned = api.load(
+                group, inputs, payload, algorithm=algorithm, offset=3
+            )
             assert returned is None
             for item in cutlass.range_constexpr(_ITEMS):
                 outputs[thread * _ITEMS + item] = payload[item]
@@ -146,7 +150,9 @@ def test_group_controls(api, algorithm, exhaustive):
         group, lane = divmod(thread, width)
         for item in range(_ITEMS):
             index = (
-                lane + item * width if algorithm == "striped" else lane * _ITEMS + item
+                lane + item * width
+                if algorithm == "striped"
+                else lane * _ITEMS + item
             )
             payload_index = thread * _ITEMS + item
             memory_index = offsets[group] + group * tile + index
@@ -211,7 +217,9 @@ def test_partial_transpose_loads_valid_items_without_default(api, width):
     expected = observed.copy()
     for group in range(groups):
         start = group * tile
-        expected[start : start + counts[group]] = source[start : start + counts[group]]
+        expected[start : start + counts[group]] = source[
+            start : start + counts[group]
+        ]
     with (
         device_array(source) as src,
         device_array(observed) as out,
@@ -228,7 +236,9 @@ def test_partial_transpose_loads_valid_items_without_default(api, width):
 )
 def test_transpose_loop(api, width, divergent):
     @cute.kernel
-    def kernel(source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32):
+    def kernel(
+        source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32
+    ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         group_index = thread // width
@@ -260,7 +270,9 @@ def test_transpose_loop(api, width, divergent):
                 )
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32):
+    def launch(
+        source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32
+    ):
         kernel(source, destination, tiles).launch(grid=1, block=_BLOCK)
 
     tiles = 8
@@ -290,7 +302,9 @@ def test_transpose_loop(api, width, divergent):
 def test_final_cubin(tmp_path, width, algorithm):
     cuobjdump = shutil.which("cuobjdump")
     if cuobjdump is None:
-        pytest.skip("cuobjdump is required to inspect final linked instructions")
+        pytest.skip(
+            "cuobjdump is required to inspect final linked instructions"
+        )
 
     @cute.kernel
     def kernel(source: cute.Pointer, destination: cute.Pointer):
@@ -306,7 +320,9 @@ def test_final_cubin(tmp_path, width, algorithm):
     source = values_for(np.int32, _BLOCK_TILE, shift=89)
     destination = np.zeros_like(source)
     with device_array(source) as src, device_array(destination) as dst:
-        compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](launch, src, dst)
+        compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](
+            launch, src, dst
+        )
         compiled(src, dst)
     np.testing.assert_array_equal(destination, source)
     cubins = list(tmp_path.rglob("*.cubin"))
@@ -324,7 +340,9 @@ def test_final_cubin(tmp_path, width, algorithm):
         assert "cuda_coop_cutlass_store_" not in sass
         assert re.search(r"\bCALL(?:\.[A-Z0-9_]+)*\b", sass) is None
         assert re.search(r"\bBAR(?:\.[A-Z0-9_]+)*\b", sass) is None
-        shared = [int(size) for size in re.findall(r"\bSHARED:(\d+)", resources)]
+        shared = [
+            int(size) for size in re.findall(r"\bSHARED:(\d+)", resources)
+        ]
         assert shared
         if algorithm != "transpose":
             assert not any(shared)
@@ -336,7 +354,9 @@ def test_final_cubin(tmp_path, width, algorithm):
 @pytest.mark.parametrize("api", ("common", "qualified"))
 def test_example(api):
     path = PACKAGE_ROOT / "examples/cutlass/logical_warp_load_store.py"
-    spec = importlib.util.spec_from_file_location("cutlass_logical_warp_example", path)
+    spec = importlib.util.spec_from_file_location(
+        "cutlass_logical_warp_example", path
+    )
     example = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(example)
     example.run_example(api)
