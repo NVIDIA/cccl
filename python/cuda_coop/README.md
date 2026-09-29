@@ -342,6 +342,9 @@ when the group or queried outer level is the grid. Use
 an explicit signed or unsigned 8-, 16-, 32-, or 64-bit integer dtype.
 `is_member()` returns an integer membership flag.
 
+These widths apply to both integrations. CuTe queries return `Uint32` or
+`Uint64`, and `is_member()` returns `Uint8`; Numba queries return the matching
+Numba integer types.
 
 `sync()` and `sync_aligned()` expose the matching non-grid group barriers. All
 participating members must reach `sync()`. `sync_aligned()` additionally
@@ -451,7 +454,8 @@ algorithm, including the storage-free modes.
 one scalar with the payload element dtype. The common API accepts a numeric
 scalar or fixed-size `ThreadData`; reducing a `ThreadData` payload combines all
 items contributed by every participating member. The qualified
-`cuda.coop.numba_mlir` API also accepts fixed-size `cuda.local.array` payloads.
+`numba_coop` API also accepts fixed-size `cuda.local.array` payloads;
+`cutlass_coop` accepts CuTe register tensors and `TensorSSA` values.
 
 A full built-in reduction has no `valid_items` or explicit `algorithm`. It uses
 the storage-free CUDAX implementation for the current thread, a physical Warp,
@@ -483,14 +487,16 @@ def block_sum(source, output, items_per_thread):
         output[0] = total
 ```
 
-The complete runnable form is in `examples/numba_mlir/block_sum.py`.
+The complete Numba example is [block_sum.py](examples/numba_mlir/block_sum.py).
+The [CuTe reduction example](examples/cutlass/reduce.py) also demonstrates
+payload sums, logical-warp reductions, and root-only prefix results.
 
 `sum` selects addition. `reduce` accepts the aliases `+`, `sum`, `add`, and
 `plus`; `*`, `mul`, `multiply`, and `multiplies`; `min` and `minimum`; `max`
 and `maximum`; and the bitwise pairs `&`/`bit_and`, `|`/`bit_or`, and
 `^`/`bit_xor`. Bitwise reductions require an integer payload dtype. The
-qualified API additionally recognizes the corresponding Python `operator`
-functions and NumPy ufuncs. Built-in operator and algorithm selectors are
+qualified APIs in both integrations additionally recognize the corresponding
+Python `operator` functions and NumPy ufuncs. Built-in operator and algorithm selectors are
 normalized to canonical lowercase strings. Enum-like and other non-string
 selector objects are rejected.
 
@@ -511,8 +517,8 @@ Three controls select a direct CUB reduction instead:
   `cuda.coop.numba_mlir.reduce`, must be stateless, and requires
   `broadcast=False`. It uses CUB for block, physical-Warp, or logical-Warp
   groups. Warp callbacks accept scalar payloads; block callbacks may also
-  reduce fixed arrays. Stateful callbacks and their per-launch state plumbing
-  are deferred.
+  reduce fixed arrays. CUTLASS supports built-in reductions only. Stateful
+  reduction callbacks are unsupported in both integrations.
 
 Full CUDAX reductions have no external temporary-storage ABI, backing
 allocation, or compiler-inserted post-call barrier; the primitive call still
