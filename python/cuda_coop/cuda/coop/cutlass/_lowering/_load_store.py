@@ -403,7 +403,6 @@ def _make_group_load_store_plan(
     valid_items: ArgumentBinding,
     oob_default: ArgumentBinding,
     offset: ArgumentBinding,
-    source: str = "cutlass_root",
 ) -> GroupLoweringPlan:
     """Build the canonical shared-core plan for group Load or Store."""
 
@@ -416,7 +415,10 @@ def _make_group_load_store_plan(
         oob_default=oob_default,
         offset=offset,
     )
-    call = make_group_primitive_call(group, operation, source=source)
+    call = make_group_primitive_call(
+        group,
+        operation,
+    )
     return plan_group_primitive(call, launch)
 
 
