@@ -53,7 +53,9 @@ def run_example(api="common"):
     try:
         dst = _check(driver.cuMemAlloc(totals.nbytes))
         try:
-            _check(driver.cuMemcpyHtoD(src, samples.ctypes.data, samples.nbytes))
+            _check(
+                driver.cuMemcpyHtoD(src, samples.ctypes.data, samples.nbytes)
+            )
             _check(driver.cuMemcpyHtoD(dst, totals.ctypes.data, totals.nbytes))
             pointers = [
                 make_ptr(

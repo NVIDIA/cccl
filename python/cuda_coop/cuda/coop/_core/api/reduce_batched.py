@@ -80,7 +80,9 @@ def reduce_batched(
     binary_op = _common_reduce_operator(binary_op)
     if _backend_module_name() is not None:
         if not isinstance(value, _ReadableThreadDataLike):
-            raise TypeError("cuda.coop.reduce_batched requires a ThreadData payload")
+            raise TypeError(
+                "cuda.coop.reduce_batched requires a ThreadData payload"
+            )
         _validate_common_reduce_value("reduce_batched", value, binary_op)
     return _group_primitive_marker(
         "reduce_batched",

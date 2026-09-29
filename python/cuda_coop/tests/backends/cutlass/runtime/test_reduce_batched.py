@@ -15,7 +15,11 @@ from cutlass import cute
 
 from cuda import coop
 from cuda.coop import cutlass as cutlass_coop
-from tests.backends.cutlass.support import NUMPY_DTYPES, cutlass_dtype, device_array
+from tests.backends.cutlass.support import (
+    NUMPY_DTYPES,
+    cutlass_dtype,
+    device_array,
+)
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
@@ -38,7 +42,9 @@ def _run(
     value_type = cutlass_dtype(dtype)
 
     @cute.kernel
-    def kernel(source: cute.Pointer, output: cute.Pointer, preserved: cute.Pointer):
+    def kernel(
+        source: cute.Pointer, output: cute.Pointer, preserved: cute.Pointer
+    ):
         block_group = api.this_block()
         warp = api.this_warp().group_by(width)
         values = api.ThreadData(batches)
@@ -53,7 +59,9 @@ def _run(
         api.load(block_group, source_tensor, values)
         thread = block_group.rank()
         output_tensor = cute.recast_tensor(
-            cute.make_tensor(output, cute.make_layout((threads // width) * batches)),
+            cute.make_tensor(
+                output, cute.make_layout((threads // width) * batches)
+            ),
             dtype=value_type,
         )
         if cutlass.const_expr(payload_kind == "rmem"):
@@ -74,15 +82,17 @@ def _run(
                     else:
                         batch = lane * output_count + item
                     if batch < batches:
-                        output_tensor[(thread // width) * batches + batch] = result[
-                            item
-                        ]
+                        output_tensor[(thread // width) * batches + batch] = (
+                            result[item]
+                        )
         if cutlass.const_expr(payload_kind != "thread_data"):
             values = api.ThreadData.from_payload(values)
         api.store(block_group, preserved_tensor, values)
 
     @cute.jit
-    def launch(source: cute.Pointer, output: cute.Pointer, preserved: cute.Pointer):
+    def launch(
+        source: cute.Pointer, output: cute.Pointer, preserved: cute.Pointer
+    ):
         kernel(source, output, preserved).launch(grid=1, block=block)
 
     # Small positive integers keep products exact for the floating-point cases.
@@ -91,7 +101,8 @@ def _run(
     preserved = np.zeros_like(source)
     with ExitStack() as stack:
         pointers = [
-            stack.enter_context(device_array(x)) for x in (source, output, preserved)
+            stack.enter_context(device_array(x))
+            for x in (source, output, preserved)
         ]
         compiled = cute.compile[compile_options](launch, *pointers)
         compiled(*pointers)
@@ -115,7 +126,9 @@ def _run(
     return compiled
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
 @pytest.mark.parametrize("batches", (3, 33))
 @pytest.mark.parametrize("layout", ("striped", "blocked"))

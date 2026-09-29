@@ -236,7 +236,9 @@ def check_cutlass_reduce_surface(scalar: Uint32) -> None:
     )
     assert_type(
         cutlass_coop.reduce_batched(
-            cutlass_coop.this_warp().group_by(8), values, output_layout="blocked"
+            cutlass_coop.this_warp().group_by(8),
+            values,
+            output_layout="blocked",
         ),
         cutlass_coop.ThreadData[np.int32],
     )

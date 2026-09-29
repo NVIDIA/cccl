@@ -42,9 +42,9 @@ def test_common_exports(qualified_api):
 def test_common_function_call_shape(qualified_api, name):
     common = inspect.signature(getattr(common_api, name)).parameters
     qualified = inspect.signature(getattr(qualified_api, name)).parameters
-    assert tuple(parameter for parameter in qualified if parameter in common) == tuple(
-        common
-    )
+    assert tuple(
+        parameter for parameter in qualified if parameter in common
+    ) == tuple(common)
     for parameter, expected in common.items():
         actual = qualified[parameter]
         assert actual.kind == expected.kind
@@ -63,7 +63,11 @@ def test_common_function_call_shape(qualified_api, name):
     assert qualified_positional[: len(common_positional)] == common_positional
     for parameter, value in qualified.items():
         if parameter not in common:
-            assert value.default is not inspect.Parameter.empty or value.kind in {
-                inspect.Parameter.VAR_POSITIONAL,
-                inspect.Parameter.VAR_KEYWORD,
-            }
+            assert (
+                value.default is not inspect.Parameter.empty
+                or value.kind
+                in {
+                    inspect.Parameter.VAR_POSITIONAL,
+                    inspect.Parameter.VAR_KEYWORD,
+                }
+            )
