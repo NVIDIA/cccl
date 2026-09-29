@@ -52,8 +52,7 @@ _CCCL_IKET_CREATE_PUSH_POP_RANGE(Prologue);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadReduce);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadScanStore);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadLoadAndNextIdx);
-// Load is declared in cub/agent/agent_scan.cuh, which kernel_scan.cuh always includes before this header, so it's
-// shared between the classic (lookback) and warpspeed (lookahead) scan kernels instead of being redeclared here.
+// _CCCL_IKET_CREATE_PUSH_POP_RANGE(Load); // Already declared in cub/agent/agent_scan.cuh, can't declare again
 _CCCL_IKET_CREATE_PUSH_POP_RANGE(NextIdx);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadLookahead);
 _CCCL_IKET_CREATE_PUSH_POP_RANGE(GetNextIdx);
