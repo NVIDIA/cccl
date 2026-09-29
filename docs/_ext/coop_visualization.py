@@ -15,10 +15,12 @@ _EXPLORERS = {
     "reduce": "coop-collectives.js",
     "scan": "coop-collectives.js",
     "merge-sort": "coop-merge-sort.js",
+    "radix": "coop-radix.js",
 }
 
 _VISUALIZATION_TITLES = {
     "merge-sort": "Merge Sort",
+    "radix": "Radix Rank/Sort",
 }
 
 _API_VISUALIZATIONS = {
@@ -33,9 +35,13 @@ _API_VISUALIZATIONS = {
     "shuffle": "shuffle",
     "reduce": "reduce",
     "merge-sort": "merge-sort",
+    "radix": "radix",
     "sum": "reduce",
     "merge_sort_keys": "merge-sort",
     "merge_sort_pairs": "merge-sort",
+    "radix_sort_keys": "radix",
+    "radix_sort_pairs": "radix",
+    "radix_rank": "radix",
 }
 
 

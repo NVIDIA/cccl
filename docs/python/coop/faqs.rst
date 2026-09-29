@@ -96,7 +96,7 @@ slices with ``sharing="exclusive"``. Explicit descriptors default to
 loop iterations. The example requests ``auto_sync=True`` to insert those
 barriers automatically. Separate slices do not remove the need to protect reuse.
 
-The current backend accepts explicit descriptors for block transpose-family Load/Store, Block Scan, Block Merge Sort.
+The current backend accepts explicit descriptors for block transpose-family Load/Store, Block Scan, Block Merge Sort, Block Radix Sort.
 Warp operations use compiler-owned scratch. See
 :ref:`temporary storage <coop-temp-storage>` for the complete contract and
 shared-memory restrictions.
