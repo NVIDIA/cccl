@@ -648,18 +648,23 @@ template <>
 class _CCCL_TYPE_VISIBILITY_DEFAULT tuple<>
 {
 public:
-  _CCCL_HIDE_FROM_ABI constexpr tuple() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr tuple() noexcept                        = default;
+  _CCCL_HIDE_FROM_ABI constexpr tuple(const tuple&) noexcept            = default;
+  _CCCL_HIDE_FROM_ABI constexpr tuple(tuple&&) noexcept                 = default;
+  _CCCL_HIDE_FROM_ABI constexpr tuple& operator=(const tuple&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr tuple& operator=(tuple&&) noexcept      = default;
+
   template <class _Alloc>
   _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc&) noexcept
   {}
   template <class _Alloc>
   _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc&, const tuple&) noexcept
   {}
-  template <class _Up>
-  _CCCL_API constexpr tuple(array<_Up, 0>) noexcept
-  {}
   template <class _Alloc, class _Up>
   _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc&, array<_Up, 0>) noexcept
+  {}
+  template <class _UTuple, enable_if_t<__tuple_like_with_size<_UTuple, 0>, int> = 0>
+  _CCCL_API constexpr tuple(_UTuple&&) noexcept
   {}
 
   template <class _UTuple,
