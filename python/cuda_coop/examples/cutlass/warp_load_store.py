@@ -28,7 +28,9 @@ def _check(result):
 
 
 def run_example(api="common"):
-    """Run both independent warp tiles and verify their prefixes and defaults."""
+    """Run both independent warp tiles and verify their prefixes and
+    defaults.
+    """
 
     if api not in {"common", "qualified"}:
         raise ValueError("api must be 'common' or 'qualified'")
