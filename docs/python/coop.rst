@@ -21,6 +21,7 @@ They rearrange values with :doc:`Exchange <coop/visualizations/exchange>`
 and :doc:`Shuffle <coop/visualizations/shuffle>`.
 They compute :doc:`reductions <coop/visualizations/reduce>` across a group.
 :doc:`Scans <coop/visualizations/scan>` compute ordered prefixes.
+Groups can :doc:`sort keys and associated values <coop/visualizations/merge-sort>`.
 
 The common ``cuda.coop`` API describes those operations independently of a
 kernel compiler. Numba-CUDA-MLIR is the first supported backend; CUTLASS
