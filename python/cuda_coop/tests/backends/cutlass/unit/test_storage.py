@@ -180,7 +180,9 @@ def test_event_rollback():
 
 
 @pytest.mark.parametrize("kernel_name", ("cuda.kernel", "lir.func"))
-@pytest.mark.parametrize("nested", (False, True), ids=("entry", "nested-region"))
+@pytest.mark.parametrize(
+    "nested", (False, True), ids=("entry", "nested-region")
+)
 def test_registration_uses_fresh_operands(kernel_name, nested):
     session = _state.BundleSession()
     storage = TempStorage(128, auto_sync=False)
@@ -236,9 +238,15 @@ def test_registration_uses_fresh_operands(kernel_name, nested):
     "parent_name,function_name,attribute_names",
     [
         pytest.param("gpu.module", "lir.func", (), id="device-function"),
-        pytest.param("gpu.module", "lir.func", ("cu_attrs",), id="launch-attrs-only"),
-        pytest.param("builtin.module", "lir.func", ("gpu.kernel",), id="wrong-parent"),
-        pytest.param("gpu.module", "func.func", ("gpu.kernel",), id="other-function"),
+        pytest.param(
+            "gpu.module", "lir.func", ("cu_attrs",), id="launch-attrs-only"
+        ),
+        pytest.param(
+            "builtin.module", "lir.func", ("gpu.kernel",), id="wrong-parent"
+        ),
+        pytest.param(
+            "gpu.module", "func.func", ("gpu.kernel",), id="other-function"
+        ),
     ],
 )
 def test_kernel_discovery_rejects_non_kernel_functions(
@@ -250,14 +258,18 @@ def test_kernel_discovery_rejects_non_kernel_functions(
         with ir.InsertionPoint(module.body):
             parent = _region_op(parent_name)
         attributes = {
-            name: ir.DictAttr.get({}) if name == "cu_attrs" else ir.UnitAttr.get()
+            name: ir.DictAttr.get({})
+            if name == "cu_attrs"
+            else ir.UnitAttr.get()
             for name in attribute_names
         }
         with ir.InsertionPoint(parent.regions[0].blocks[0]):
             function = _region_op(function_name, attributes)
         with (
             ir.InsertionPoint(function.regions[0].blocks[0]),
-            pytest.raises(_storage.DSLRuntimeError, match="enclosing CUDA kernel"),
+            pytest.raises(
+                _storage.DSLRuntimeError, match="enclosing CUDA kernel"
+            ),
         ):
             _storage._active_cuda_kernel_op()
 
@@ -266,7 +278,9 @@ def test_kernel_discovery_requires_an_active_trace():
     with (
         ir.Context(),
         ir.Location.unknown(),
-        pytest.raises(_storage.DSLRuntimeError, match="active CuTe kernel trace"),
+        pytest.raises(
+            _storage.DSLRuntimeError, match="active CuTe kernel trace"
+        ),
     ):
         _storage._active_cuda_kernel_op()
 
