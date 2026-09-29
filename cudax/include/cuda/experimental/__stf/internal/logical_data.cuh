@@ -2316,9 +2316,8 @@ inline void ensure_task_deps_initialized(const task_dep_vector_untyped& deps)
   {
     if (!dep.has_data() || !dep.get_data().is_initialized())
     {
-      char msg[128];
-      snprintf(msg, sizeof(msg), "dependency number %zu is an uninitialized logical data", index);
-      throw ::std::invalid_argument(msg);
+      throw ::std::invalid_argument(
+        ::std::string("dependency number ").append(::std::to_string(index)).append(" is an uninitialized logical data"));
     }
     ++index;
   }
