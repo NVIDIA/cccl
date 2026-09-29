@@ -198,7 +198,9 @@ class ThreadHierarchy:
 
     @property
     def block_dim_token(self) -> str:
-        """Return the canonical symbol token for this hierarchy's block shape."""
+        """Return the canonical symbol token for this hierarchy's block
+        shape.
+        """
 
         if self.block_dim is None:
             return "current"
@@ -505,7 +507,9 @@ class ThreadGroup:
         *,
         source: str = "resolved",
     ) -> _ThreadGroupT:
-        """Return the same backend group type with resolved hierarchy extents."""
+        """Return the same backend group type with resolved hierarchy
+        extents.
+        """
 
         if self.mapping is None:
             return type(self)(kind=self.kind, hierarchy=hierarchy, source=source)
