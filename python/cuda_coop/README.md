@@ -124,6 +124,7 @@ explains terms and concepts, including blocked and striped layouts.
 | Comparison sorting | `merge_sort_keys`, `merge_sort_pairs` |
 | Radix sorting and ranking | `radix_sort_keys`, `radix_sort_pairs`, `radix_rank` |
 | Top-k selection | `topk_min_keys`, `topk_max_keys`, `topk_min_pairs`, `topk_max_pairs` |
+| Neighbor comparisons | `adjacent_difference`, `discontinuity` |
 
 Each operation documents its supported groups and result ownership in the
 [API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).

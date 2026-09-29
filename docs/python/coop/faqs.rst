@@ -96,7 +96,7 @@ slices with ``sharing="exclusive"``. Explicit descriptors default to
 loop iterations. The example requests ``auto_sync=True`` to insert those
 barriers automatically. Separate slices do not remove the need to protect reuse.
 
-The current backend accepts explicit descriptors for block transpose-family Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, TopK.
+The current backend accepts explicit descriptors for block transpose-family Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, TopK, Adjacent Difference and Discontinuity.
 Warp operations use compiler-owned scratch. See
 :ref:`temporary storage <coop-temp-storage>` for the complete contract and
 shared-memory restrictions.
@@ -146,3 +146,20 @@ Each call sorts only the selected group's tile. Several blocks therefore
 produce independently sorted tiles. A globally sorted array requires an
 algorithm that combines those tiles. Warp and logical-warp Merge Sort
 likewise sort each participating group's tile independently.
+
+.. _coop-faq-neighbor-operations:
+
+When should I use Adjacent Difference or Discontinuity?
+-------------------------------------------------------
+
+Use :func:`cuda.coop.adjacent_difference` to compute a value from each item
+and its neighbor, such as the delta between successive samples. Use
+:func:`cuda.coop.discontinuity` to produce flags that mark boundaries, such
+as the first and last item of each equal-value run. It returns ``int32``
+flags; ``mode="heads_and_tails"`` returns both payloads.
+
+Tile boundaries matter for both operations. Supply a predecessor or
+successor when comparisons must continue across tiles. A multiblock
+kernel that reads global neighbors must preserve those source values
+until all readers finish. The :doc:`neighbor examples <neighbor-operations>`
+use separate input and output arrays.

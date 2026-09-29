@@ -48,6 +48,26 @@ Terms
       accept scalars or backend-specific arrays. See
       :ref:`thread data <coop-thread-data>`.
 
+   tile boundary
+      The edge between one group's tile and the neighboring data.
+      Adjacent Difference and Discontinuity can consume an explicit
+      predecessor or successor value to compare across this edge.
+      Without one, their endpoint rules apply to the local tile. See
+      :doc:`neighbor operations <neighbor-operations>`.
+
+   head flag
+      An integer flag marking the start of a sequence according to
+      Discontinuity's comparison predicate. With the default inequality
+      predicate, it is one where an item differs from its predecessor.
+      Without an explicit tile predecessor, the first item is a head.
+      See :doc:`Discontinuity <visualizations/discontinuity>`.
+
+   tail flag
+      An integer flag marking the end of a sequence according to
+      Discontinuity's comparison predicate. With the default inequality
+      predicate, it is one where an item differs from its successor.
+      Without an explicit tile successor, the last item is a tail.
+
    key-value pair
       A key used for ordering or selection and an associated value, such as
       its original array index. Pair operations move the two together.

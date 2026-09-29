@@ -132,6 +132,9 @@ several operations:
      - Integer-key sorting and digit ranks
      - Also supports floating-point sorting, striped sort output,
        digit-prefix output, scalars, and fixed local arrays
+   * - Neighbor comparisons
+     - Adjacent differences and head/tail flags with tile boundary controls
+     - Also accepts stateless ``difference_op`` and ``flag_op`` callbacks
    * - Load/Store algorithms and explicit scratch
      - String algorithm selectors and ``TempStorage`` on supported block calls
      - Same shared controls; qualifying the import is unnecessary for these
@@ -594,7 +597,7 @@ allocation. Its contents are opaque; keep application values in
      - Scratch behavior in the current backend
    * - Direct, striped, or vectorize Load/Store
      - No shared scratch or reuse barrier
-   * - Block transpose-family Load/Store; Block Scan; Block Merge Sort; Block Radix Sort; TopK
+   * - Block transpose-family Load/Store; Block Scan; Block Merge Sort; Block Radix Sort; TopK; Adjacent Difference; Discontinuity
      - Automatic scratch, or an explicit ``TempStorage``
    * - Warp transpose Load/Store; Warp Scan; Warp Merge Sort
      - Automatic scratch per group; explicit descriptors are rejected
@@ -986,6 +989,28 @@ Use a sorting primitive when the result must be ordered. TopK can avoid
 ordering elements that the kernel will discard; it does not promise that
 its selected prefix is already sorted. See :ref:`the TopK FAQ
 <coop-faq-topk-order>`.
+
+.. _coop-neighbor-comparisons:
+
+Comparing neighboring values
+----------------------------
+
+:func:`cuda.coop.adjacent_difference` computes an arithmetic result for each
+item and its left or right neighbor. It returns a fresh payload and
+preserves its input. A tile predecessor or successor lets comparisons
+continue across tile boundaries. With ``valid_items``, the invalid suffix
+is copied from the input. The current CUB interface does not support a
+right partial difference with an explicit successor; that combination
+is rejected.
+
+:func:`cuda.coop.discontinuity` returns ``int32`` head flags, tail flags,
+or both. Its default predicate marks unequal neighbors. Both operations
+interpret inputs in blocked order, but Discontinuity always processes a
+full tile. Arbitrary padding can change the last valid item's tail flag.
+See :doc:`neighbor operations <neighbor-operations>` for tested delta and
+run-boundary examples, or explore
+:doc:`Adjacent Difference <visualizations/adjacent-difference>` and
+:doc:`Discontinuity <visualizations/discontinuity>` interactively.
 
 
 Checking and tuning a kernel

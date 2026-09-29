@@ -136,6 +136,15 @@ See :ref:`selecting the smallest or largest keys <coop-topk>`.
 .. autofunction:: topk_min_pairs
 .. autofunction:: topk_max_pairs
 
+Neighbor comparisons
+^^^^^^^^^^^^^^^^^^^^
+
+See :doc:`neighbor operations <coop/neighbor-operations>` for tile boundaries
+and the difference between arithmetic results and flags.
+
+.. autofunction:: adjacent_difference
+.. autofunction:: discontinuity
+
 
 .. _coop-numba-extensions:
 
@@ -217,3 +226,9 @@ Top-k selection
 .. autofunction:: topk_max_keys
 .. autofunction:: topk_min_pairs
 .. autofunction:: topk_max_pairs
+
+Neighbor comparisons
+^^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: adjacent_difference
+.. autofunction:: discontinuity
