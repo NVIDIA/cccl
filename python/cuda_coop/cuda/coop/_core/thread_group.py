@@ -77,7 +77,9 @@ def normalize_thread_dim(
         if not dims:
             raise ValueError(f"{scope} {label} shape cannot be empty")
         if len(dims) > 3:
-            raise ValueError(f"{scope} {label} shape must have at most 3 dimensions")
+            raise ValueError(
+                f"{scope} {label} shape must have at most 3 dimensions"
+            )
     else:
         raise TypeError(f"{scope} {label} shape must be an int or tuple/list")
 
@@ -120,7 +122,9 @@ def normalize_thread_group_kind(kind: str, *, scope: str, feature: str) -> str:
         kind = "thread"
     if kind not in THREAD_GROUP_KINDS:
         names = ", ".join(sorted(THREAD_GROUP_KINDS))
-        raise ValueError(f"{scope}.{feature} group kind must be one of: {names}")
+        raise ValueError(
+            f"{scope}.{feature} group kind must be one of: {names}"
+        )
     return kind
 
 
@@ -135,7 +139,9 @@ def validate_thread_group_query_dtype(dtype: Any, *, scope: str) -> str:
     token = str(token).lower()
     if token not in THREAD_GROUP_QUERY_DTYPE_NAMES:
         names = ", ".join(sorted(THREAD_GROUP_QUERY_DTYPE_NAMES))
-        raise TypeError(f"{scope}.ThreadGroup query dtype must be one of: {names}")
+        raise TypeError(
+            f"{scope}.ThreadGroup query dtype must be one of: {names}"
+        )
     return token
 
 
@@ -420,7 +426,8 @@ def _validate_mapped_group_extent(
     block_threads = hierarchy.block_thread_count
     if block_threads is not None and block_threads % 32 != 0:
         raise ValueError(
-            "mapped group_by requires an enclosing block composed of complete warps"
+            "mapped group_by requires an enclosing block "
+            "composed of complete warps"
         )
     if kind == "threads_within_warp":
         parent_units = 32
@@ -431,7 +438,9 @@ def _validate_mapped_group_extent(
             return
         parent_units = block_threads // 32
         if mapping.count > parent_units:
-            raise ValueError("block group_by count cannot exceed the parent warp count")
+            raise ValueError(
+                "block group_by count cannot exceed the parent warp count"
+            )
     if mapping.exhaustive and parent_units % mapping.count != 0:
         raise ValueError(
             "exhaustive ThreadGroup.group_by requires the count to divide "
@@ -465,7 +474,8 @@ class ThreadGroup:
     Query thread, warp, block, and grid coordinates with Numba-CUDA-MLIR.
     Every row below has one result per launched thread.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_group_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_group_examples.py
         :language: python
         :start-after: # queries-example-begin
         :end-before: # queries-example-end
@@ -503,23 +513,37 @@ class ThreadGroup:
 
         if kind in MAPPED_GROUP_KINDS:
             if not isinstance(self.parent, ThreadGroup):
-                raise TypeError("mapped ThreadGroup requires a parent ThreadGroup")
+                raise TypeError(
+                    "mapped ThreadGroup requires a parent ThreadGroup"
+                )
             if not isinstance(self.mapping, GroupByMapping):
                 raise TypeError("mapped ThreadGroup requires GroupByMapping")
-            expected_parent = "warp" if kind == "threads_within_warp" else "block"
-            expected_unit = "thread" if kind == "threads_within_warp" else "warp"
+            expected_parent = (
+                "warp" if kind == "threads_within_warp" else "block"
+            )
+            expected_unit = (
+                "thread" if kind == "threads_within_warp" else "warp"
+            )
             if self.parent.kind != expected_parent:
-                raise ValueError(f"{kind} requires a physical {expected_parent} parent")
+                raise ValueError(
+                    f"{kind} requires a physical {expected_parent} parent"
+                )
             if (
                 self.mapping.parent != expected_parent
                 or self.mapping.unit != expected_unit
             ):
-                raise ValueError(f"{kind} mapping does not match its group kind")
+                raise ValueError(
+                    f"{kind} mapping does not match its group kind"
+                )
             if self.parent.hierarchy != hierarchy:
-                raise ValueError("mapped ThreadGroup hierarchy must match its parent")
+                raise ValueError(
+                    "mapped ThreadGroup hierarchy must match its parent"
+                )
             _validate_mapped_group_extent(kind, hierarchy, self.mapping)
         elif self.parent is not None or self.mapping is not None:
-            raise ValueError("physical ThreadGroup cannot carry mapping metadata")
+            raise ValueError(
+                "physical ThreadGroup cannot carry mapping metadata"
+            )
 
     @property
     def block_dim(self) -> tuple[int, int, int] | None:
@@ -725,7 +749,9 @@ class ThreadGroup:
         """
 
         if self.mapping is None:
-            return type(self)(kind=self.kind, hierarchy=hierarchy, source=source)
+            return type(self)(
+                kind=self.kind, hierarchy=hierarchy, source=source
+            )
         assert self.parent is not None
         return type(self)(
             kind=self.kind,
@@ -778,7 +804,8 @@ class ThreadGroup:
         Form eight-lane groups, then partition a three-warp block into pairs
         of warps. The final warp is outside the latter partition.
 
-        .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_group_examples.py
+        .. literalinclude::
+            ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_group_examples.py
             :language: python
             :start-after: # partition-example-begin
             :end-before: # partition-example-end
@@ -786,9 +813,13 @@ class ThreadGroup:
         """
 
         if self.mapping is not None:
-            raise NotImplementedError("nested ThreadGroup.group_by is not supported")
+            raise NotImplementedError(
+                "nested ThreadGroup.group_by is not supported"
+            )
         if not isinstance(count, int) or isinstance(count, bool):
-            raise TypeError("ThreadGroup.group_by count must be a static integer")
+            raise TypeError(
+                "ThreadGroup.group_by count must be a static integer"
+            )
         if count <= 0:
             raise ValueError("ThreadGroup.group_by count must be positive")
         if not isinstance(exhaustive, bool):
@@ -804,7 +835,8 @@ class ThreadGroup:
             synchronizer = "barrier"
         else:
             raise NotImplementedError(
-                "ThreadGroup.group_by supports only physical warp and block parents"
+                "ThreadGroup.group_by supports only physical warp "
+                "and block parents"
             )
 
         mapping = GroupByMapping(
@@ -1155,20 +1187,28 @@ def render_group_decl_lines(
     if group.kind == "threads_within_warp":
         lines.extend(
             [
-                f"{indent}::cuda::experimental::coop::generic_group {var_name}{{",
+                (
+                    f"{indent}::cuda::experimental::coop::generic_group "
+                    f"{var_name}{{"
+                ),
                 f"{indent}    ::cuda::gpu_thread, {parent_name},",
                 (
                     f"{indent}    ::cuda::experimental::coop::group_by<"
                     f"{mapping.count}, {exhaustive}>{{{mapping_args}}},"
                 ),
-                f"{indent}    ::cuda::experimental::coop::lane_synchronizer{{}}}};",
+                (
+                    f"{indent}    "
+                    "::cuda::experimental::coop::lane_synchronizer{}};"
+                ),
             ]
         )
         return lines
 
     groups_per_parent = group.groups_per_parent
     if groups_per_parent is None:
-        raise ValueError("mapped warp group requires a static parent group count")
+        raise ValueError(
+            "mapped warp group requires a static parent group count"
+        )
     lines.extend(
         [
             f"{indent}using {var_name}_barriers_type =",
@@ -1192,7 +1232,8 @@ def render_group_decl_lines(
                 f"{mapping.count}, {exhaustive}>{{{mapping_args}}},"
             ),
             (
-                f"{indent}    ::cuda::experimental::coop::barrier_synchronizer{{"
+                f"{indent}    "
+                "::cuda::experimental::coop::barrier_synchronizer{"
                 f"{var_name}_barriers}}}};"
             ),
         ]
@@ -1208,7 +1249,9 @@ def cpp_level_expr(level: str) -> str:
     """
 
     return _CPP_LEVEL_EXPR[
-        normalize_thread_level(level, scope="cuda.coop", feature="cpp_level_expr")
+        normalize_thread_level(
+            level, scope="cuda.coop", feature="cpp_level_expr"
+        )
     ]
 
 

@@ -162,8 +162,10 @@ class EscapingGroupDescriptorError(GroupRewriteError):
         super().__init__(
             _wrap_diagnostic(
                 f"cuda.coop.numba_mlir ThreadGroup/ThreadHierarchy values are "
-                f"compile-time descriptors and may only feed this_*(), group_by(), "
-                f"group methods, or group-first primitives; descriptor use involving {names!r} "
+                f"compile-time descriptors and may "
+                f"only feed this_*(), group_by(), "
+                f"group methods, or group-first primitives; descriptor use "
+                f"involving {names!r} "
                 f"would escape to runtime",
             )
         )
@@ -176,7 +178,8 @@ class InvalidLoadStoreAlgorithmError(ValueError):
         group = "" if group_kind is None else f" for {group_kind} groups"
         super().__init__(
             _wrap_diagnostic(
-                f"cuda.coop.numba_mlir.{operation} algorithm{group} must be one of: {choices}",
+                f"cuda.coop.numba_mlir.{operation} "
+                f"algorithm{group} must be one of: {choices}",
             )
         )
 

@@ -40,7 +40,11 @@ _PORTABLE_EXPORTS = [
     "sum",
 ]
 _QUALIFIED_EXPORTS = [
-    *(name for name in _PORTABLE_EXPORTS if name not in {"__version__", "register"}),
+    *(
+        name
+        for name in _PORTABLE_EXPORTS
+        if name not in {"__version__", "register"}
+    ),
     "local",
     "shared",
 ]
@@ -82,7 +86,9 @@ def test_public_exports_are_only_the_supported_group_families():
     assert "cuda.coop.numba_mlir._group_load_store" in loaded
     assert "cuda.coop.numba_mlir._compiler._rewrite" in loaded
     assert set(_EXCLUDED_BACKEND_MODULES).isdisjoint(loaded)
-    assert importlib.import_module("cuda.coop.numba_mlir._lowering").__all__ == ()
+    assert (
+        importlib.import_module("cuda.coop.numba_mlir._lowering").__all__ == ()
+    )
 
     coop_root = Path(portable_coop.__file__).resolve().parent
     assert not (coop_root / "cutlass").exists()
@@ -90,12 +96,17 @@ def test_public_exports_are_only_the_supported_group_families():
 
 def test_qualified_surface_is_portable_plus_backend_extensions():
     assert set(coop.__all__) - set(portable_coop.__all__) == {"local", "shared"}
-    assert set(portable_coop.__all__) - set(coop.__all__) == {"__version__", "register"}
+    assert set(portable_coop.__all__) - set(coop.__all__) == {
+        "__version__",
+        "register",
+    }
 
     def call_shape(function):
         return tuple(
             (name, parameter.kind, parameter.default)
-            for name, parameter in inspect.signature(function).parameters.items()
+            for name, parameter in inspect.signature(
+                function
+            ).parameters.items()
         )
 
     for operation in ("load", "reduce", "shuffle", "store", "sum"):
@@ -109,7 +120,10 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
         qualified_parameter = qualified_exchange.parameters[name]
         assert qualified_parameter.kind == parameter.kind
         assert qualified_parameter.default == parameter.default
-    assert qualified_exchange.return_annotation == portable_exchange.return_annotation
+    assert (
+        qualified_exchange.return_annotation
+        == portable_exchange.return_annotation
+    )
     assert tuple(qualified_exchange.parameters)[
         len(portable_exchange.parameters) :
     ] == (
@@ -173,8 +187,14 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
         coop.load,
         eval_str=True,
     )
-    assert qualified_load_annotations["output"] == portable_load_annotations["output"]
-    assert qualified_load_annotations["return"] == portable_load_annotations["return"]
+    assert (
+        qualified_load_annotations["output"]
+        == portable_load_annotations["output"]
+    )
+    assert (
+        qualified_load_annotations["return"]
+        == portable_load_annotations["return"]
+    )
 
     coop_root = Path(portable_coop.__file__).resolve().parent
 
@@ -183,12 +203,13 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
         return [
             (node.name, ast.dump(node.args), ast.dump(node.returns))
             for node in module.body
-            if isinstance(node, ast.FunctionDef) and node.name in {"load", "store"}
+            if isinstance(node, ast.FunctionDef)
+            and node.name in {"load", "store"}
         ]
 
-    assert stub_signatures(coop_root / "numba_mlir" / "_group_load_store.pyi") == (
-        stub_signatures(coop_root / "_core" / "api" / "load_store.pyi")
-    )
+    assert stub_signatures(
+        coop_root / "numba_mlir" / "_group_load_store.pyi"
+    ) == (stub_signatures(coop_root / "_core" / "api" / "load_store.pyi"))
 
 
 def test_group_descriptors_expose_only_canonical_extent_names():
@@ -230,9 +251,9 @@ def test_python_operator_compilation_is_stateless_only():
     assert hasattr(_types, "DependentPythonOperator")
     assert hasattr(_types, "StatelessOperator")
     assert not hasattr(_types, "StatefulOperator")
-    assert tuple(inspect.signature(_types.numba_type_to_wrapper).parameters) == (
-        "numba_type",
-    )
+    assert tuple(
+        inspect.signature(_types.numba_type_to_wrapper).parameters
+    ) == ("numba_type",)
 
 
 @pytest.mark.parametrize(
@@ -303,7 +324,9 @@ def test_physical_warp_factories_use_exact_callable_identity(operation):
             operation=operation,
             namespace="warp",
             storage_abi=(
-                StorageABI.LEADING_POINTER if storage_bearing else StorageABI.NONE
+                StorageABI.LEADING_POINTER
+                if storage_bearing
+                else StorageABI.NONE
             ),
             execution_scope=SynchronizationScope.WARP,
             synchronization_scope=(

@@ -112,7 +112,9 @@ def test_group_method_marker_fails_clearly_outside_compilation():
         coop.this_block().count("tile")
 
 
-@pytest.mark.parametrize("api", (portable_coop, coop), ids=("portable", "qualified"))
+@pytest.mark.parametrize(
+    "api", (portable_coop, coop), ids=("portable", "qualified")
+)
 def test_thread_group_surface_exposes_hierarchy_operations(api):
     group = api.this_block()
 

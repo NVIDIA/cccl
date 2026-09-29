@@ -83,7 +83,9 @@ def _reduce(
 
 def _plan(group, operation, launch=64):
     facts = launch if isinstance(launch, LaunchFacts) else LaunchFacts(launch)
-    return plan_group_primitive(make_group_primitive_call(group, operation), facts)
+    return plan_group_primitive(
+        make_group_primitive_call(group, operation), facts
+    )
 
 
 def _cluster_facts():
@@ -145,7 +147,9 @@ def test_builtin_full_reduce_uses_storage_free_cudax_across_hierarchy(
     plan = _plan(group, operation, facts)
 
     assert plan.target is GroupLoweringTarget.CUDAX_GROUP
-    assert plan.implementation.overload == ("broadcasted" if broadcast else "root_only")
+    assert plan.implementation.overload == (
+        "broadcasted" if broadcast else "root_only"
+    )
     assert plan.implementation.return_kind is (
         CudaxReturnKind.VALUE if broadcast else CudaxReturnKind.OPTIONAL_VALUE
     )
@@ -162,7 +166,9 @@ def test_builtin_full_reduce_uses_storage_free_cudax_across_hierarchy(
     assert plan.temp_storage.address_space is None
     assert plan.temp_storage.instances is None
     assert not plan.temp_storage.auto_sync
-    assert plan.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+    assert (
+        plan.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+    )
     assert plan.provenance.library == "CUDAX"
 
 
@@ -353,7 +359,10 @@ def test_block_reduce_algorithms_fail_closed_on_unproven_semantics():
         ),
     )
 
-    assert nondeterministic.unsupported.code is UnsupportedReasonCode.OPERATION_VARIANT
+    assert (
+        nondeterministic.unsupported.code
+        is UnsupportedReasonCode.OPERATION_VARIANT
+    )
     assert "addition-specific" in nondeterministic.unsupported.message
     assert unproven.unsupported.code is UnsupportedReasonCode.OPERATION_VARIANT
     assert "proven commutativity" in unproven.unsupported.message
@@ -382,7 +391,10 @@ def test_default_cub_algorithm_is_canonical_in_plan_identity():
         ),
     )
 
-    assert omitted.call.operation.cub_algorithm is BlockReduceAlgorithm.WARP_REDUCTIONS
+    assert (
+        omitted.call.operation.cub_algorithm
+        is BlockReduceAlgorithm.WARP_REDUCTIONS
+    )
     assert omitted.semantic_key == explicit.semantic_key
     assert omitted.artifact_key == explicit.artifact_key
 

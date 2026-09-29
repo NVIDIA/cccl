@@ -24,7 +24,9 @@ portable_block.rank_as(bool)  # expected-error: [arg-type]
 portable.this_grid().sync()  # expected-error: [misc]
 portable_block.group_by(2).sync()  # expected-error: [misc]
 portable_block.group_by(2).rank("grid")  # expected-error: [call-overload]
-portable.this_warp().group_by(8).count("block")  # expected-error: [call-overload]
+portable.this_warp().group_by(8).count(  # expected-error: [call-overload]
+    "block"
+)
 qualified_block = coop.this_block()
 qualified_block.rank_as(np.float32)  # expected-error: [arg-type]
 qualified_block.count_as(np.bool_)  # expected-error: [arg-type]

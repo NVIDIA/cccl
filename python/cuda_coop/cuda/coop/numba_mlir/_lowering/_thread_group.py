@@ -99,7 +99,10 @@ def _mapped_warp_query_prelude(group: ThreadGroup) -> list[str]:
                 f"  constexpr ::cuda::std::uint32_t group_warp_count = "
                 f"{group.mapping.count};"
             ),
-            f"  constexpr ::cuda::std::uint32_t grouped_warp_count = {grouped_warps};",
+            (
+                f"  constexpr ::cuda::std::uint32_t "
+                f"grouped_warp_count = {grouped_warps};"
+            ),
         )
     )
     return lines
@@ -170,7 +173,9 @@ def _normalize_query_dtype(
 ) -> Any:
     if dtype is None:
         dtype = (
-            types.uint64 if level == "grid" or group.kind == "grid" else types.uint32
+            types.uint64
+            if level == "grid" or group.kind == "grid"
+            else types.uint32
         )
     else:
         dtype = normalize_dtype_param(dtype)
@@ -195,7 +200,8 @@ def make_group_method_invocable(
         "sync_aligned",
     }:
         raise NotImplementedError(
-            "mapped-Warp synchronization requires planner-owned barrier lifetime"
+            "mapped-Warp synchronization requires "
+            "planner-owned barrier lifetime"
         )
     if operation in {"rank", "count"}:
         dtype = _normalize_query_dtype(group, level, dtype)
@@ -261,7 +267,8 @@ def make_group_method_invocable(
                     "    return;",
                     "  }",
                 )
-                if group.mapping is not None and group.complete_membership is False
+                if group.mapping is not None
+                and group.complete_membership is False
                 else ()
             ),
             f"  group.{operation}();",
