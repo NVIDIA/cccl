@@ -4,7 +4,7 @@
 
 """Trace-static parameter normalization for Numba-CUDA-MLIR lowering.
 
-This module canonicalizes dimensions, dtypes, portable dtype profiles, and
+This module canonicalizes dimensions, dtypes, common dtype profiles, and
 typed scalar literals before provider construction.  It does not inspect IR,
 infer launch metadata, or own persistent cache formats.
 """
@@ -144,7 +144,7 @@ _NUMBA_MLIR_DTYPE_NAMES = {
 
 
 def _normalize_common_dtype(dtype):
-    """Return a backend dtype and its portable normalized name."""
+    """Return a backend dtype and its common normalized name."""
 
     dtype = normalize_dtype_param(dtype)
     return dtype, _NUMBA_MLIR_DTYPE_NAMES.get(dtype, str(dtype))
@@ -156,7 +156,7 @@ def _validate_common_numeric_dtype(
     operation: str,
     parameter: str | None = None,
 ):
-    """Return one normalized dtype from the portable numeric profile."""
+    """Return one normalized dtype from the common API's numeric profile."""
 
     dtype, dtype_name = _normalize_common_dtype(dtype)
     validate_portable_numeric_dtype_name(
