@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""CUB block TopK provider factories."""
-
 from __future__ import annotations
 
 from cuda.coop._core import SynchronizationScope

@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Family-local planning and payload inference for block TopK."""
-
 from __future__ import annotations
 
 from dataclasses import replace
