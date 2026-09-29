@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 560" role="img" aria-labelledby="title desc">
+<title id="title">Block TopK selects an unordered prefix of key/value pairs</title>
+<desc id="desc">Eight threads each own two blocked items. The first twelve keys are valid. For k equal to four, one permitted maximum selection has keys 11, 14, 9, 12 and original positions 8, 6, 4, 2. Only the first four returned slots are defined; all remaining slots are unspecified. Inputs stay unchanged.</desc>
+<rect width="1100" height="560" rx="12" fill="#f7f9fc"/>
+<g font-family="sans-serif" fill="#203341">
+<text x="26" y="34" font-size="21" text-anchor="start" font-weight="600">Block TopK maximum pairs</text>
+<text x="26" y="60" font-size="14" text-anchor="start">8 threads · 2 items per thread · k = 4 · valid_items = 12 · defined output = min(4, 12) = 4</text>
+<text x="26" y="94" font-size="16" text-anchor="start" font-weight="600">Input payloads remain unchanged</text>
+<text x="87" y="118" font-size="13" text-anchor="middle" font-weight="600">T0</text>
+<rect x="28" y="129" width="54" height="67" rx="6" fill="#dceac1" stroke="#9facba"/>
+<text x="55" y="154" font-size="17" text-anchor="middle" font-weight="600">7</text>
+<text x="55" y="180" font-size="14" text-anchor="middle">0</text>
+<rect x="88" y="129" width="54" height="67" rx="6" fill="#dceac1" stroke="#9facba"/>
+<text x="115" y="154" font-size="17" text-anchor="middle" font-weight="600">2</text>
+<text x="115" y="180" font-size="14" text-anchor="middle">1</text>
+<text x="85" y="218" font-size="12" text-anchor="middle">key / position</text>
+<text x="218" y="118" font-size="13" text-anchor="middle" font-weight="600">T1</text>
+<rect x="159" y="129" width="54" height="67" rx="6" fill="#c9eaf0" stroke="#9facba"/>
+<text x="186" y="154" font-size="17" text-anchor="middle" font-weight="600">12</text>
+<text x="186" y="180" font-size="14" text-anchor="middle">2</text>
+<rect x="219" y="129" width="54" height="67" rx="6" fill="#c9eaf0" stroke="#9facba"/>
+<text x="246" y="154" font-size="17" text-anchor="middle" font-weight="600">5</text>
+<text x="246" y="180" font-size="14" text-anchor="middle">3</text>
+<text x="216" y="218" font-size="12" text-anchor="middle">key / position</text>
+<text x="349" y="118" font-size="13" text-anchor="middle" font-weight="600">T2</text>
+<rect x="290" y="129" width="54" height="67" rx="6" fill="#fff0bd" stroke="#9facba"/>
+<text x="317" y="154" font-size="17" text-anchor="middle" font-weight="600">9</text>
+<text x="317" y="180" font-size="14" text-anchor="middle">4</text>
+<rect x="350" y="129" width="54" height="67" rx="6" fill="#fff0bd" stroke="#9facba"/>
+<text x="377" y="154" font-size="17" text-anchor="middle" font-weight="600">1</text>
+<text x="377" y="180" font-size="14" text-anchor="middle">5</text>
+<text x="347" y="218" font-size="12" text-anchor="middle">key / position</text>
+<text x="480" y="118" font-size="13" text-anchor="middle" font-weight="600">T3</text>
+<rect x="421" y="129" width="54" height="67" rx="6" fill="#f5d5e4" stroke="#9facba"/>
+<text x="448" y="154" font-size="17" text-anchor="middle" font-weight="600">14</text>
+<text x="448" y="180" font-size="14" text-anchor="middle">6</text>
+<rect x="481" y="129" width="54" height="67" rx="6" fill="#f5d5e4" stroke="#9facba"/>
+<text x="508" y="154" font-size="17" text-anchor="middle" font-weight="600">4</text>
+<text x="508" y="180" font-size="14" text-anchor="middle">7</text>
+<text x="478" y="218" font-size="12" text-anchor="middle">key / position</text>
+<text x="611" y="118" font-size="13" text-anchor="middle" font-weight="600">T4</text>
+<rect x="552" y="129" width="54" height="67" rx="6" fill="#e8def7" stroke="#9facba"/>
+<text x="579" y="154" font-size="17" text-anchor="middle" font-weight="600">11</text>
+<text x="579" y="180" font-size="14" text-anchor="middle">8</text>
+<rect x="612" y="129" width="54" height="67" rx="6" fill="#e8def7" stroke="#9facba"/>
+<text x="639" y="154" font-size="17" text-anchor="middle" font-weight="600">3</text>
+<text x="639" y="180" font-size="14" text-anchor="middle">9</text>
+<text x="609" y="218" font-size="12" text-anchor="middle">key / position</text>
+<text x="742" y="118" font-size="13" text-anchor="middle" font-weight="600">T5</text>
+<rect x="683" y="129" width="54" height="67" rx="6" fill="#fde2c9" stroke="#9facba"/>
+<text x="710" y="154" font-size="17" text-anchor="middle" font-weight="600">8</text>
+<text x="710" y="180" font-size="14" text-anchor="middle">10</text>
+<rect x="743" y="129" width="54" height="67" rx="6" fill="#fde2c9" stroke="#9facba"/>
+<text x="770" y="154" font-size="17" text-anchor="middle" font-weight="600">6</text>
+<text x="770" y="180" font-size="14" text-anchor="middle">11</text>
+<text x="740" y="218" font-size="12" text-anchor="middle">key / position</text>
+<text x="873" y="118" font-size="13" text-anchor="middle" font-weight="600">T6</text>
+<rect x="814" y="129" width="54" height="67" rx="6" fill="#e4e8ec" stroke="#9facba"/>
+<text x="841" y="154" font-size="17" text-anchor="middle" font-weight="600">15</text>
+<text x="841" y="180" font-size="14" text-anchor="middle">12</text>
+<rect x="874" y="129" width="54" height="67" rx="6" fill="#e4e8ec" stroke="#9facba"/>
+<text x="901" y="154" font-size="17" text-anchor="middle" font-weight="600">0</text>
+<text x="901" y="180" font-size="14" text-anchor="middle">13</text>
+<text x="871" y="218" font-size="12" text-anchor="middle">ignored</text>
+<text x="1004" y="118" font-size="13" text-anchor="middle" font-weight="600">T7</text>
+<rect x="945" y="129" width="54" height="67" rx="6" fill="#e4e8ec" stroke="#9facba"/>
+<text x="972" y="154" font-size="17" text-anchor="middle" font-weight="600">10</text>
+<text x="972" y="180" font-size="14" text-anchor="middle">14</text>
+<rect x="1005" y="129" width="54" height="67" rx="6" fill="#e4e8ec" stroke="#9facba"/>
+<text x="1032" y="154" font-size="17" text-anchor="middle" font-weight="600">13</text>
+<text x="1032" y="180" font-size="14" text-anchor="middle">15</text>
+<text x="1002" y="218" font-size="12" text-anchor="middle">ignored</text>
+<text x="26" y="334" font-size="16" text-anchor="start" font-weight="600">Returned payloads: one permitted unordered selection</text>
+<text x="87" y="358" font-size="13" text-anchor="middle" font-weight="600">T0</text>
+<rect x="28" y="369" width="54" height="67" rx="6" fill="#e8def7" stroke="#9facba"/>
+<text x="55" y="394" font-size="17" text-anchor="middle" font-weight="600">11</text>
+<text x="55" y="420" font-size="14" text-anchor="middle">8</text>
+<rect x="88" y="369" width="54" height="67" rx="6" fill="#f5d5e4" stroke="#9facba"/>
+<text x="115" y="394" font-size="17" text-anchor="middle" font-weight="600">14</text>
+<text x="115" y="420" font-size="14" text-anchor="middle">6</text>
+<text x="85" y="458" font-size="12" text-anchor="middle">key / position</text>
+<text x="218" y="358" font-size="13" text-anchor="middle" font-weight="600">T1</text>
+<rect x="159" y="369" width="54" height="67" rx="6" fill="#fff0bd" stroke="#9facba"/>
+<text x="186" y="394" font-size="17" text-anchor="middle" font-weight="600">9</text>
+<text x="186" y="420" font-size="14" text-anchor="middle">4</text>
+<rect x="219" y="369" width="54" height="67" rx="6" fill="#c9eaf0" stroke="#9facba"/>
+<text x="246" y="394" font-size="17" text-anchor="middle" font-weight="600">12</text>
+<text x="246" y="420" font-size="14" text-anchor="middle">2</text>
+<text x="216" y="458" font-size="12" text-anchor="middle">key / position</text>
+<text x="349" y="358" font-size="13" text-anchor="middle" font-weight="600">T2</text>
+<rect x="290" y="369" width="54" height="67" rx="6" fill="#e4e8ec" stroke="#9facba"/>
+<text x="317" y="394" font-size="17" text-anchor="middle" font-weight="600">?</text>
+<text x="317" y="420" font-size="14" text-anchor="middle">?</text>
+<rect x="350" y="369" width="54" height="67" rx="6" fill="#e4e8ec" stroke="#9facba"/>
+<text x="377" y="394" font-size="17" text-anchor="middle" font-weight="600">?</text>
+<text x="377" y="420" font-size="14" text-anchor="middle">?</text>
+<text x="347" y="458" font-size="12" text-anchor="middle">unspecified</text>
+<text x="480" y="358" font-size="13" text-anchor="middle" font-weight="600">T3</text>
+<rect x="421" y="369" width="54" height="67" rx="6" fill="#e4e8ec" stroke="#9facba"/>
+<text x="448" y="394" font-size="17" text-anchor="middle" font-weight="600">?</text>
+<text x="448" y="420" font-size="14" text-anchor="middle">?</text>
+<rect x="481" y="369" width="54" height="67" rx="6" fill="#e4e8ec" stroke="#9facba"/>
+<text x="508" y="394" font-size="17" text-anchor="middle" font-weight="600">?</text>
+<text x="508" y="420" font-size="14" text-anchor="middle">?</text>
+<text x="478" y="458" font-size="12" text-anchor="middle">unspecified</text>
+<text x="611" y="358" font-size="13" text-anchor="middle" font-weight="600">T4</text>
+<rect x="552" y="369" width="54" height="67" rx="6" fill="#e4e8ec" stroke="#9facba"/>
+<text x="579" y="394" font-size="17" text-anchor="middle" font-weight="600">?</text>
+<text x="579" y="420" font-size="14" text-anchor="middle">?</text>
+<rect x="612" y="369" width="54" height="67" rx="6" fill="#e4e8ec" stroke="#9facba"/>
+<text x="639" y="394" font-size="17" text-anchor="middle" font-weight="600">?</text>
+<text x="639" y="420" font-size="14" text-anchor="middle">?</text>
+<text x="609" y="458" font-size="12" text-anchor="middle">unspecified</text>
+<text x="742" y="358" font-size="13" text-anchor="middle" font-weight="600">T5</text>
+<rect x="683" y="369" width="54" height="67" rx="6" fill="#e4e8ec" stroke="#9facba"/>
+<text x="710" y="394" font-size="17" text-anchor="middle" font-weight="600">?</text>
+<text x="710" y="420" font-size="14" text-anchor="middle">?</text>
+<rect x="743" y="369" width="54" height="67" rx="6" fill="#e4e8ec" stroke="#9facba"/>
+<text x="770" y="394" font-size="17" text-anchor="middle" font-weight="600">?</text>
+<text x="770" y="420" font-size="14" text-anchor="middle">?</text>
+<text x="740" y="458" font-size="12" text-anchor="middle">unspecified</text>
+<text x="873" y="358" font-size="13" text-anchor="middle" font-weight="600">T6</text>
+<rect x="814" y="369" width="54" height="67" rx="6" fill="#e4e8ec" stroke="#9facba"/>
+<text x="841" y="394" font-size="17" text-anchor="middle" font-weight="600">?</text>
+<text x="841" y="420" font-size="14" text-anchor="middle">?</text>
+<rect x="874" y="369" width="54" height="67" rx="6" fill="#e4e8ec" stroke="#9facba"/>
+<text x="901" y="394" font-size="17" text-anchor="middle" font-weight="600">?</text>
+<text x="901" y="420" font-size="14" text-anchor="middle">?</text>
+<text x="871" y="458" font-size="12" text-anchor="middle">unspecified</text>
+<text x="1004" y="358" font-size="13" text-anchor="middle" font-weight="600">T7</text>
+<rect x="945" y="369" width="54" height="67" rx="6" fill="#e4e8ec" stroke="#9facba"/>
+<text x="972" y="394" font-size="17" text-anchor="middle" font-weight="600">?</text>
+<text x="972" y="420" font-size="14" text-anchor="middle">?</text>
+<rect x="1005" y="369" width="54" height="67" rx="6" fill="#e4e8ec" stroke="#9facba"/>
+<text x="1032" y="394" font-size="17" text-anchor="middle" font-weight="600">?</text>
+<text x="1032" y="420" font-size="14" text-anchor="middle">?</text>
+<text x="1002" y="458" font-size="12" text-anchor="middle">unspecified</text>
+<text x="26" y="254" font-size="14" text-anchor="start">Illustrative filtering: count digit buckets; retain better keys and refine the boundary bucket.</text>
+<text x="26" y="280" font-size="14" text-anchor="start">Gather four selected pairs into blocked positions 0–3. Tied-key choices and output order are unspecified.</text>
+<text x="26" y="505" font-size="15" text-anchor="start" font-weight="600">Read or store only the defined prefix. Every ? lies outside min(k, valid_items).</text>
+<text x="26" y="532" font-size="14" text-anchor="start">Teaching example of the selection contract; no full sort or exact CUB instruction trace is shown.</text>
+</g>
+</svg>
