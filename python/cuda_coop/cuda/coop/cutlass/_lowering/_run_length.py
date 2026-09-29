@@ -24,7 +24,6 @@ from cuda.coop._core import (
     make_group_primitive_call,
     plan_group_primitive,
 )
-from cuda.coop._core.api._dispatch import _common_root_operation_name
 from cuda.coop._core.group.run_length import GroupRunLengthDecodeSemantics
 
 from .._compiler import _rendering, _state, _storage, _types
@@ -82,13 +81,12 @@ def _make_run_length_plan(
         control_dtype=control_type,
         bulk=bulk,
     )
-    source = (
-        "common_root"
-        if _common_root_operation_name() is not None
-        else "cutlass_root"
-    )
     plan = plan_group_primitive(
-        make_group_primitive_call(group, operation, source=source), launch
+        make_group_primitive_call(
+            group,
+            operation,
+        ),
+        launch,
     ).require_supported()
     return replace(
         plan,
