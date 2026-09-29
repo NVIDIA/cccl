@@ -31,7 +31,9 @@ def _check(result):
 
 
 def run_example(api="common"):
-    """Run the partial copy and compare its complete output with a CPU oracle."""
+    """Run the partial copy and compare its complete output with a CPU
+    oracle.
+    """
 
     if api not in {"common", "qualified"}:
         raise ValueError("api must be 'common' or 'qualified'")

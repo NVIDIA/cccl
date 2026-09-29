@@ -147,7 +147,9 @@ def _missing_capabilities(
 
 @functools.lru_cache(maxsize=1)
 def validate_cutlass_runtime() -> CutlassRuntime:
-    """Return CUTLASS modules with the capabilities required by ``cuda.coop``."""
+    """Return CUTLASS modules with the capabilities required by
+    ``cuda.coop``.
+    """
 
     try:
         cutlass_dsl = importlib.import_module("cutlass.cutlass_dsl")
@@ -198,7 +200,9 @@ def raise_for_missing_cutlass_runtime(error: ImportError) -> None:
 
 
 def guard_cutlass_runtime(function: Callable[..., Any]) -> Callable[..., Any]:
-    """Translate CUTLASS import failures from lazily imported provider modules."""
+    """Translate CUTLASS import failures from lazily imported provider
+    modules.
+    """
 
     @functools.wraps(function)
     def guarded(*args: Any, **kwargs: Any) -> Any:
