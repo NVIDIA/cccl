@@ -1261,14 +1261,6 @@ class _StorageRewrite:
                                 self._extract_thread_data_spec(call),
                             )
                         )
-                    elif self._is_typed_group_payload_ctor_call(call):
-                        self._thread_data_like_vars.add(inst.target.name)
-                        self._thread_data_specs[inst.target.name] = (
-                            self._merge_thread_data_specs(
-                                self._thread_data_specs.get(inst.target.name),
-                                self._extract_typed_group_payload_spec(call),
-                            )
-                        )
                     elif self._is_temp_storage_ctor_call(call):
                         self._record_temp_storage_ctor(inst, call)
                         self._temp_storage_ctor_order.setdefault(
