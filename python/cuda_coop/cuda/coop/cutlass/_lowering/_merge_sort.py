@@ -85,10 +85,15 @@ def _make_merge_sort_plan(
         oob_default=0 if partial else None,
     )
     plan = plan_group_primitive(
-        make_group_primitive_call(group, GroupMergeSortSemantics(primitive, valid)),
+        make_group_primitive_call(
+            group, GroupMergeSortSemantics(primitive, valid)
+        ),
         launch,
     ).require_supported()
-    if temp_storage is not None and plan.target is not GroupLoweringTarget.CUB_BLOCK:
+    if (
+        temp_storage is not None
+        and plan.target is not GroupLoweringTarget.CUB_BLOCK
+    ):
         raise ValueError("Merge Sort temp_storage applies only to block groups")
     if temp_storage is not None and not isinstance(temp_storage, TempStorage):
         raise TypeError("Merge Sort temp_storage must be CUTLASS TempStorage")
@@ -108,7 +113,9 @@ def _make_merge_sort_plan(
                 requested_alignment=None
                 if temp_storage is None
                 else temp_storage.alignment,
-                auto_sync=True if temp_storage is None else temp_storage.auto_sync,
+                auto_sync=True
+                if temp_storage is None
+                else temp_storage.auto_sync,
             ),
             synchronization=replace(
                 plan.synchronization,
@@ -133,11 +140,14 @@ class _CubMergeSortRequest:
         }:
             raise ValueError("Merge Sort requires a CUB block or warp plan")
         if not isinstance(self.plan.call.operation, GroupMergeSortSemantics):
-            raise TypeError("Merge Sort request requires shared Merge Sort semantics")
+            raise TypeError(
+                "Merge Sort request requires shared Merge Sort semantics"
+            )
         if not isinstance(self.plan.implementation, AlgorithmSpec):
             raise TypeError("Merge Sort request requires an AlgorithmSpec")
         if self.key_type not in ALL_PROVIDER_TYPES or (
-            self.value_type is not None and self.value_type not in ALL_PROVIDER_TYPES
+            self.value_type is not None
+            and self.value_type not in ALL_PROVIDER_TYPES
         ):
             raise TypeError("Merge Sort requires supported numeric dtypes")
         comparator = self.operation.primitive.compare_operator
@@ -153,13 +163,17 @@ class _CubMergeSortRequest:
             self.implementation.struct_name != expected
             or self.implementation.method_name != "Sort"
         ):
-            raise ValueError("Merge Sort implementation does not match its plan")
+            raise ValueError(
+                "Merge Sort implementation does not match its plan"
+            )
         arguments = self.implementation.template_arguments
         if (
             arguments.get("KeyT") is not self.key_type
             or arguments.get("ITEMS_PER_THREAD") != self.items
         ):
-            raise ValueError("Merge Sort template payload does not match its plan")
+            raise ValueError(
+                "Merge Sort template payload does not match its plan"
+            )
         if arguments.get("ValueT") != (
             self.value_type if self.value_type else "::cub::NullType"
         ):
@@ -170,9 +184,13 @@ class _CubMergeSortRequest:
                 tuple(arguments.get(f"BLOCK_DIM_{axis}") for axis in "XYZ")
                 != dimensions
             ):
-                raise ValueError("Merge Sort block dimensions do not match its plan")
+                raise ValueError(
+                    "Merge Sort block dimensions do not match its plan"
+                )
             if not self.plan.temp_storage.exact_layout_required:
-                raise ValueError("Block Merge Sort requires exact scratch layout")
+                raise ValueError(
+                    "Block Merge Sort requires exact scratch layout"
+                )
         elif (
             arguments.get("VIRTUAL_WARP_THREADS")
             != self.plan.resolved_group.static_size
@@ -229,8 +247,12 @@ class _CubMergeSortRequest:
             elif isinstance(value, (int, str)) and not isinstance(value, bool):
                 arguments.append(str(value))
             else:
-                raise TypeError(f"Unsupported Merge Sort template argument {name}")
-        return f"::cub::{self.implementation.struct_name}<{', '.join(arguments)}>"
+                raise TypeError(
+                    f"Unsupported Merge Sort template argument {name}"
+                )
+        return (
+            f"::cub::{self.implementation.struct_name}<{', '.join(arguments)}>"
+        )
 
     @property
     def scratch_requirement_key(self):
@@ -238,7 +260,9 @@ class _CubMergeSortRequest:
 
     @property
     def symbol_name(self):
-        digest = hashlib.sha256(repr(self.plan.artifact_key).encode()).hexdigest()[:16]
+        digest = hashlib.sha256(
+            repr(self.plan.artifact_key).encode()
+        ).hexdigest()[:16]
         return f"cuda_coop_cutlass_merge_sort_{digest}"
 
     def __eq__(self, other):
@@ -286,21 +310,36 @@ def _render_merge_sort(request):
         )
         storage_lines = [
             "  using storage_type = typename implementation_type::TempStorage;",
-            "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes < sizeof(storage_type) ||",
+            (
+                "  if (storage_bytes <= 0 || (unsigned long long)storage_bytes "
+                "< sizeof(storage_type) ||"
+            ),
             "      (storage_address & (alignof(storage_type) - 1u)) != 0u) {",
             '    asm volatile("trap;");',
             "  }",
             "  unsigned long long generic_address;",
-            '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : "l"((unsigned long long)storage_address));',
-            "  auto& storage = *reinterpret_cast<storage_type*>(generic_address);",
+            (
+                '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_address) : '
+                '"l"((unsigned long long)storage_address));'
+            ),
+            (
+                "  auto& storage = "
+                "*reinterpret_cast<storage_type*>(generic_address);"
+            ),
         ]
         barrier = ["  if (storage_auto_sync != 0) { __syncthreads(); }"]
     else:
         x, y, z = request.plan.participation.exact_block_dim
         width = request.plan.resolved_group.static_size
         storage_lines = [
-            f"  __shared__ typename implementation_type::TempStorage scratch[{x * y * z // width}];",
-            "  unsigned int tid = threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z);",
+            (
+                "  __shared__ typename implementation_type::TempStorage "
+                f"scratch[{x * y * z // width}];"
+            ),
+            (
+                "  unsigned int tid = threadIdx.x + blockDim.x * "
+                "(threadIdx.y + blockDim.y * threadIdx.z);"
+            ),
             f"  auto& storage = scratch[tid / {width}u];",
         ]
         mask = (
@@ -329,7 +368,8 @@ def _scratch_probe(request):
     if not request.is_block:
         return None
     return _rendering.make_scratch_layout_probe(
-        request.scratch_requirement_key, f"typename {request.cpp_type}::TempStorage"
+        request.scratch_requirement_key,
+        f"typename {request.cpp_type}::TempStorage",
     )
 
 
@@ -342,8 +382,14 @@ _rendering.register_bundle_renderer(
         "#include <cuda/std/functional>",
     ),
     cccl_headers=(
-        ("#include <cub/block/block_merge_sort.cuh>", "cub/block/block_merge_sort.cuh"),
-        ("#include <cub/warp/warp_merge_sort.cuh>", "cub/warp/warp_merge_sort.cuh"),
+        (
+            "#include <cub/block/block_merge_sort.cuh>",
+            "cub/block/block_merge_sort.cuh",
+        ),
+        (
+            "#include <cub/warp/warp_merge_sort.cuh>",
+            "cub/warp/warp_merge_sort.cuh",
+        ),
     ),
     scratch_layout_probe=_scratch_probe,
 )
@@ -352,10 +398,14 @@ _rendering.register_bundle_renderer(
 def _typed_value(value, dtype, *, sentinel=False):
     if isinstance(value, np.generic):
         if _types.canonical_dsl_type(value) is not dtype:
-            raise TypeError("Merge Sort scalar dtype does not match payload dtype")
+            raise TypeError(
+                "Merge Sort scalar dtype does not match payload dtype"
+            )
         value = value.item()
     if sentinel and type(value) is float and math.isnan(value):
-        raise ValueError("cuda.coop.cutlass.Merge Sort oob_default must not be NaN")
+        raise ValueError(
+            "cuda.coop.cutlass.Merge Sort oob_default must not be NaN"
+        )
     converted = _types.coerce_plain_scalar(
         value,
         dtype,
@@ -375,7 +425,15 @@ def _typed_value(value, dtype, *, sentinel=False):
 
 
 def provider_merge_sort(
-    *, group, launch, keys, values, descending, valid_items, oob_default, temp_storage
+    *,
+    group,
+    launch,
+    keys,
+    values,
+    descending,
+    valid_items,
+    oob_default,
+    temp_storage,
 ):
     payloads = [keys] if values is None else [keys, values]
     resolved = [
@@ -419,7 +477,9 @@ def provider_merge_sort(
         _state.register_request(request)
         if request.is_block:
             descriptor = (
-                TempStorage(auto_sync=True) if temp_storage is None else temp_storage
+                TempStorage(auto_sync=True)
+                if temp_storage is None
+                else temp_storage
             )
             arguments.extend(
                 _storage.register_deferred_temp_storage_event(
@@ -431,14 +491,18 @@ def provider_merge_sort(
             parameter_types.extend((Uint32, Int32, Int32))
         arguments.extend(tensor.iterator.llvm_ptr for tensor in tensors)
         parameter_types.extend([llvm.PointerType.get(0)] * len(tensors))
-        ffi(name=request.symbol_name, params_types=parameter_types, return_type=None)(
-            *arguments
-        )
+        ffi(
+            name=request.symbol_name,
+            params_types=parameter_types,
+            return_type=None,
+        )(*arguments)
         results = tuple(
             ThreadData(
                 payload.items_per_thread,
                 dtype=_types.thread_data_output_dtype(payload, dtype),
-                values=[dtype(tensor[i]) for i in range(payload.items_per_thread)],
+                values=[
+                    dtype(tensor[i]) for i in range(payload.items_per_thread)
+                ],
                 alignment=payload.alignment,
             )
             for payload, (dtype, _), tensor in zip(payloads, resolved, tensors)

@@ -47,8 +47,12 @@ def run_example(api="common"):
         group = module.this_block()
         keys = module.ThreadData(_ITEMS)
         values = module.ThreadData(_ITEMS)
-        module.load(group, source_keys, keys, valid_items=_VALID, oob_default=1000)
-        module.load(group, source_values, values, valid_items=_VALID, oob_default=0.0)
+        module.load(
+            group, source_keys, keys, valid_items=_VALID, oob_default=1000
+        )
+        module.load(
+            group, source_values, values, valid_items=_VALID, oob_default=0.0
+        )
         scratch = module.TempStorage(alignment=16, auto_sync=True)
         sorted_keys = module.merge_sort_keys(
             group,
@@ -108,21 +112,34 @@ def run_example(api="common"):
         pointers = []
         for array in arrays:
             allocation = _check(driver.cuMemAlloc(array.nbytes))
-            cleanup.callback(lambda ptr=allocation: _check(driver.cuMemFree(ptr)))
+            cleanup.callback(
+                lambda ptr=allocation: _check(driver.cuMemFree(ptr))
+            )
             allocations.append(allocation)
-            _check(driver.cuMemcpyHtoD(allocation, array.ctypes.data, array.nbytes))
-            dtype = cutlass.Int32 if array.dtype == np.int32 else cutlass.Float64
+            _check(
+                driver.cuMemcpyHtoD(allocation, array.ctypes.data, array.nbytes)
+            )
+            dtype = (
+                cutlass.Int32 if array.dtype == np.int32 else cutlass.Float64
+            )
             pointers.append(
                 make_ptr(
-                    dtype, int(allocation), cute.AddressSpace.gmem, assumed_align=16
+                    dtype,
+                    int(allocation),
+                    cute.AddressSpace.gmem,
+                    assumed_align=16,
                 )
             )
         launch(*pointers)
         _check(driver.cuCtxSynchronize())
         for array, allocation in zip(outputs, allocations[2:]):
-            _check(driver.cuMemcpyDtoH(array.ctypes.data, allocation, array.nbytes))
+            _check(
+                driver.cuMemcpyDtoH(array.ctypes.data, allocation, array.nbytes)
+            )
 
-    ascending, descending, sorted_values, original_keys, original_values = outputs
+    ascending, descending, sorted_values, original_keys, original_values = (
+        outputs
+    )
     expected_keys = np.sort(source_keys)
     np.testing.assert_array_equal(ascending[:_VALID], expected_keys)
     np.testing.assert_array_equal(descending[:_VALID], expected_keys[::-1])

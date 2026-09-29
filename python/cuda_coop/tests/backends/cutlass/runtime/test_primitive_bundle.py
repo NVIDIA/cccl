@@ -62,10 +62,14 @@ def test_mixed_primitives(api):
     assert observed[64] == source[:90:2].sum(dtype=np.int32)
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 def test_sort_scan_shared_storage(api):
     @cute.kernel
-    def kernel(source: cute.Pointer, output: cute.Pointer, tiles: cutlass.Int32):
+    def kernel(
+        source: cute.Pointer, output: cute.Pointer, tiles: cutlass.Int32
+    ):
         group = api.this_block()
         storage = api.TempStorage(alignment=128, auto_sync=True)
         for tile in range(tiles):
@@ -90,7 +94,9 @@ def test_sort_scan_shared_storage(api):
             )
 
     @cute.jit
-    def launch(source: cute.Pointer, output: cute.Pointer, tiles: cutlass.Int32):
+    def launch(
+        source: cute.Pointer, output: cute.Pointer, tiles: cutlass.Int32
+    ):
         kernel(source, output, tiles).launch(grid=1, block=(8, 4, 2))
 
     source = values_for(np.int32, 512, shift=19)

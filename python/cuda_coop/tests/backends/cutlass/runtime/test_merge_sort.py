@@ -219,7 +219,10 @@ def _run(
     if np.dtype(value_dtype).kind == "f":
         payload += np.dtype(value_dtype).type(0.25)
     observed, associated = np.zeros_like(source), np.zeros_like(payload)
-    preserved_keys, preserved_values = np.zeros_like(source), np.zeros_like(payload)
+    preserved_keys, preserved_values = (
+        np.zeros_like(source),
+        np.zeros_like(payload),
+    )
     with (
         device_array(source) as src,
         device_array(payload) as val,
@@ -256,7 +259,9 @@ def _run(
         expected = np.sort(source[start : start + valid_count])
         if descending:
             expected = expected[::-1]
-        np.testing.assert_array_equal(observed[start : start + valid_count], expected)
+        np.testing.assert_array_equal(
+            observed[start : start + valid_count], expected
+        )
         if pairs:
             actual = sorted(
                 zip(
@@ -273,7 +278,9 @@ def _run(
             assert actual == original
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("dtype", NUMPY_DTYPES)
 @pytest.mark.parametrize("pairs", (False, True))
 def test_numeric_keys(api, dtype, pairs):
@@ -284,18 +291,24 @@ def test_numeric_keys(api, dtype, pairs):
 @pytest.mark.parametrize("descending", (False, True))
 @pytest.mark.parametrize("prefix", ("zero", "one", "interior", "full"))
 def test_group_prefix(width, descending, prefix):
-    count = {"zero": 0, "one": 1, "interior": width * 3 - 1, "full": width * 3}[prefix]
+    count = {"zero": 0, "one": 1, "interior": width * 3 - 1, "full": width * 3}[
+        prefix
+    ]
     _run(width=width, partial=True, count=count, descending=descending)
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("readonly", ("keys", "values", "both"))
 @pytest.mark.parametrize("inferred", (False, True))
 def test_readonly_inputs(api, readonly, inferred):
     _run(api, readonly=readonly, inferred=inferred, width=8, partial=True)
 
 
-@pytest.mark.parametrize("value_dtype", (np.int8, np.uint16, np.float32, np.uint64))
+@pytest.mark.parametrize(
+    "value_dtype", (np.int8, np.uint16, np.float32, np.uint64)
+)
 def test_independent_value_type(value_dtype):
     _run(value_dtype=value_dtype, width=32, partial=True)
 
@@ -306,7 +319,9 @@ def test_partial_key_types(dtype, descending):
     _run(dtype=dtype, partial=True, descending=descending)
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("dtype", (np.float32, np.float64))
 @pytest.mark.parametrize("descending", (False, True))
 @pytest.mark.parametrize("width", (8, 64))
@@ -323,7 +338,9 @@ def test_infinite_partial_bound(api, dtype, descending, width, pairs):
     )
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 def test_readonly_keys_only(api):
     _run(api, pairs=False, readonly="keys", inferred=True)
 
@@ -369,7 +386,9 @@ def test_final_cubin(tmp_path, width):
     cubins = list(tmp_path.rglob("*.cubin"))
     assert cubins
     for cubin in cubins:
-        sass = subprocess.check_output([tool, "--dump-sass", str(cubin)], text=True)
+        sass = subprocess.check_output(
+            [tool, "--dump-sass", str(cubin)], text=True
+        )
         assert "cuda_coop_cutlass_merge_sort_" not in sass
         assert re.search(r"\bCALL\b", sass) is None
         if width < 64:

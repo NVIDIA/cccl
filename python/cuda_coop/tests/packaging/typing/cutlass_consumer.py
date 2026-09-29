@@ -639,11 +639,17 @@ def check_cutlass_merge_sort_surface() -> None:
     values = cutlass_coop.ThreadData(3, np.float64)
     storage = cutlass_coop.TempStorage(alignment=32)
     assert_type(
-        cutlass_coop.merge_sort_keys(block, keys), cutlass_coop.ThreadData[np.int32]
+        cutlass_coop.merge_sort_keys(block, keys),
+        cutlass_coop.ThreadData[np.int32],
     )
     assert_type(
-        cutlass_coop.merge_sort_pairs(block, keys, values, temp_storage=storage),
-        tuple[cutlass_coop.ThreadData[np.int32], cutlass_coop.ThreadData[np.float64]],
+        cutlass_coop.merge_sort_pairs(
+            block, keys, values, temp_storage=storage
+        ),
+        tuple[
+            cutlass_coop.ThreadData[np.int32],
+            cutlass_coop.ThreadData[np.float64],
+        ],
     )
     assert_type(
         cutlass_coop.merge_sort_keys(
@@ -664,7 +670,10 @@ def check_cutlass_merge_sort_surface() -> None:
             valid_items=np.int64(31),
             oob_default=-1000,
         ),
-        tuple[cutlass_coop.ThreadData[np.int32], cutlass_coop.ThreadData[np.float64]],
+        tuple[
+            cutlass_coop.ThreadData[np.int32],
+            cutlass_coop.ThreadData[np.float64],
+        ],
     )
     assert_type(
         cutlass_coop.merge_sort_keys(
@@ -677,8 +686,12 @@ def check_cutlass_merge_sort_surface() -> None:
         cutlass_coop.ThreadData[np.int32],
     )
     assert_type(
-        cutlass_coop.merge_sort_pairs(logical, _ReadOnlyKeys(), _ReadOnlyKeys()),
-        tuple[cutlass_coop.ThreadData[np.int32], cutlass_coop.ThreadData[np.int32]],
+        cutlass_coop.merge_sort_pairs(
+            logical, _ReadOnlyKeys(), _ReadOnlyKeys()
+        ),
+        tuple[
+            cutlass_coop.ThreadData[np.int32], cutlass_coop.ThreadData[np.int32]
+        ],
     )
     assert_type(
         cutlass_coop.merge_sort_keys(common_coop.this_block(), keys),
@@ -687,7 +700,8 @@ def check_cutlass_merge_sort_surface() -> None:
     assert_type(
         common_coop.merge_sort_pairs(block, keys, values),
         tuple[
-            common_coop.ThreadDataLike[np.int32], common_coop.ThreadDataLike[np.float64]
+            common_coop.ThreadDataLike[np.int32],
+            common_coop.ThreadDataLike[np.float64],
         ],
     )
     assert_type(
@@ -696,10 +710,14 @@ def check_cutlass_merge_sort_surface() -> None:
     )
     assert_type(
         cutlass_coop.merge_sort_pairs(warp, keys.to_tensor_ssa(), values),
-        tuple[cutlass_coop.ThreadData[Any], cutlass_coop.ThreadData[np.float64]],
+        tuple[
+            cutlass_coop.ThreadData[Any], cutlass_coop.ThreadData[np.float64]
+        ],
     )
     assert_type(
-        cutlass_coop.merge_sort_pairs(logical, keys, values.to_register_tensor()),
+        cutlass_coop.merge_sort_pairs(
+            logical, keys, values.to_register_tensor()
+        ),
         tuple[cutlass_coop.ThreadData[np.int32], cutlass_coop.ThreadData[Any]],
     )
     assert_type(

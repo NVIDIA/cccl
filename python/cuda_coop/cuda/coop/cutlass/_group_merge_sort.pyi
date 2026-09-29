@@ -17,7 +17,11 @@ from .._typing import (
     ContextualInitialValue,
     TempStorageLike,
 )
-from ._thread_data import CutlassTensorSample, CutlassTensorSSASample, ThreadData
+from ._thread_data import (
+    CutlassTensorSample,
+    CutlassTensorSSASample,
+    ThreadData,
+)
 
 _KeyT = TypeVar("_KeyT", bound=CommonNumericScalar)
 _ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)
