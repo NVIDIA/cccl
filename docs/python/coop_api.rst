@@ -152,6 +152,13 @@ See the :doc:`Histogram visualization <coop/visualizations/histogram>`.
 
 .. autofunction:: histogram
 
+Run Length Decode
+^^^^^^^^^^^^^^^^^
+
+See :doc:`windowed and bulk decoding <coop/visualizations/run-length-decode>`.
+
+.. autofunction:: run_length_decode
+.. autofunction:: run_length_decode_into
 
 .. _coop-numba-extensions:
 
@@ -244,3 +251,9 @@ Histogram
 ^^^^^^^^^
 
 .. autofunction:: histogram
+
+Run Length Decode
+^^^^^^^^^^^^^^^^^
+
+.. autofunction:: run_length_decode
+.. autofunction:: run_length_decode_into
