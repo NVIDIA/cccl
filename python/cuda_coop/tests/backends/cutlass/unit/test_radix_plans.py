@@ -69,7 +69,9 @@ def test_sort_plans(dtype, pairs):
     assert request.implementation.struct_name == "CudaCoopBlockRadixSort"
 
 
-@pytest.mark.parametrize("begin,end", ((-1, 4), (4, 4), (7, 3), (0, 33), (1 << 32, 32)))
+@pytest.mark.parametrize(
+    "begin,end", ((-1, 4), (4, 4), (7, 3), (0, 33), (1 << 32, 32))
+)
 def test_invalid_static_bits(begin, end):
     with pytest.raises(ValueError, match="bit"):
         _sort(begin_bit=begin, end_bit=end)
@@ -109,7 +111,9 @@ def test_prefix_identity_and_initialization():
 @pytest.mark.parametrize("auto_sync", (False, True))
 def test_storage_policy(sharing, auto_sync):
     request = _sort(
-        temp_storage=TempStorage(alignment=128, sharing=sharing, auto_sync=auto_sync)
+        temp_storage=TempStorage(
+            alignment=128, sharing=sharing, auto_sync=auto_sync
+        )
     )
     assert request.plan.temp_storage.ownership is StorageOwnership.CALLER
     assert request.plan.temp_storage.requested_alignment == 128
@@ -120,7 +124,9 @@ def test_storage_policy(sharing, auto_sync):
 
 @pytest.mark.parametrize("factory", (_sort, _rank))
 def test_physical_block_required(factory):
-    with pytest.raises((ValueError, NotImplementedError), match="physical block"):
+    with pytest.raises(
+        (ValueError, NotImplementedError), match="physical block"
+    ):
         factory(group=this_warp())
 
 
