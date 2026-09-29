@@ -29,7 +29,7 @@ def run_example(api="common"):
     @cute.kernel
     def feature_sums(samples: cute.Pointer, totals: cute.Pointer):
         warp = module.this_warp()
-        features = module.ThreadData(3)
+        features = module.ThreadData(items_per_thread=3)
         module.load(warp, samples, features)
         sums = module.reduce_batched(warp, features)
         outputs = cute.make_tensor(totals, cute.make_layout(6))
