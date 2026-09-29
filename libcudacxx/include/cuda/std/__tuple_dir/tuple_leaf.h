@@ -120,19 +120,19 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API inline __tuple_leaf(integral_constant<int, 0>, const _Alloc&)
+  _CCCL_API constexpr __tuple_leaf(integral_constant<int, 0>, const _Alloc&)
       : __value_()
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API inline __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a)
+  _CCCL_API constexpr __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a)
       : __value_(allocator_arg_t(), __a)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API inline __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a)
+  _CCCL_API constexpr __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a)
       : __value_(__a)
   {}
 
@@ -294,18 +294,18 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API inline __tuple_leaf(integral_constant<int, 0>, const _Alloc&)
+  _CCCL_API constexpr __tuple_leaf(integral_constant<int, 0>, const _Alloc&)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API inline __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a)
+  _CCCL_API constexpr __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a)
       : _Hp(allocator_arg_t(), __a)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API inline __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a)
+  _CCCL_API constexpr __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a)
       : _Hp(__a)
   {}
 

@@ -23,11 +23,10 @@
 #endif // no system header
 
 #include <cuda/std/__memory/uses_allocator.h>
-#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__utility/forward.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -42,41 +41,35 @@ inline constexpr allocator_arg_t allocator_arg = allocator_arg_t();
 
 // allocator construction
 
+// 0: ordinary construction. 1: allocator_arg first. 2: allocator last.
 template <class _Tp, class _Alloc, class... _Args>
-struct __uses_alloc_ctor_imp
-{
-  using _RawAlloc _CCCL_NODEBUG = remove_cvref_t<_Alloc>;
-  static const bool __ua        = uses_allocator<_Tp, _RawAlloc>::value;
-  static const bool __ic        = is_constructible_v<_Tp, allocator_arg_t, _Alloc, _Args...>;
-  static const int value        = __ua ? 2 - __ic : 0;
-};
+inline constexpr int __uses_alloc_ctor_imp_v =
+  uses_allocator<_Tp, remove_cvref_t<_Alloc>>::value
+    ? 2 - is_constructible_v<_Tp, allocator_arg_t, _Alloc, _Args...>
+    : 0;
 
 template <class _Tp, class _Alloc, class... _Args>
-struct __uses_alloc_ctor : integral_constant<int, __uses_alloc_ctor_imp<_Tp, _Alloc, _Args...>::value>
+struct __uses_alloc_ctor : integral_constant<int, __uses_alloc_ctor_imp_v<_Tp, _Alloc, _Args...>>
 {};
 
-template <class _Tp, class _Allocator, class... _Args>
-_CCCL_API inline void
-__user_alloc_construct_impl(integral_constant<int, 0>, _Tp* __storage, const _Allocator&, _Args&&... __args)
-{
-  new (__storage) _Tp(::cuda::std::forward<_Args>(__args)...);
-}
+template <int _Kind, class _Tp, class _Alloc, class... _Args>
+inline constexpr bool __is_nothrow_uses_allocator_constructible = false;
 
-// FIXME: This should have a version which takes a non-const alloc.
-template <class _Tp, class _Allocator, class... _Args>
-_CCCL_API inline void
-__user_alloc_construct_impl(integral_constant<int, 1>, _Tp* __storage, const _Allocator& __a, _Args&&... __args)
-{
-  new (__storage) _Tp(allocator_arg, __a, ::cuda::std::forward<_Args>(__args)...);
-}
+template <class _Tp, class _Alloc, class... _Args>
+inline constexpr bool __is_nothrow_uses_allocator_constructible<0, _Tp, _Alloc, _Args...> =
+  is_nothrow_constructible_v<_Tp, _Args...>;
 
-// FIXME: This should have a version which takes a non-const alloc.
-template <class _Tp, class _Allocator, class... _Args>
-_CCCL_API inline void
-__user_alloc_construct_impl(integral_constant<int, 2>, _Tp* __storage, const _Allocator& __a, _Args&&... __args)
-{
-  new (__storage) _Tp(::cuda::std::forward<_Args>(__args)..., __a);
-}
+template <class _Tp, class _Alloc, class... _Args>
+inline constexpr bool __is_nothrow_uses_allocator_constructible<1, _Tp, _Alloc, _Args...> =
+  is_nothrow_constructible_v<_Tp, allocator_arg_t, const _Alloc&, _Args...>;
+
+template <class _Tp, class _Alloc, class... _Args>
+inline constexpr bool __is_nothrow_uses_allocator_constructible<2, _Tp, _Alloc, _Args...> =
+  is_nothrow_constructible_v<_Tp, _Args..., const _Alloc&>;
+
+template <class _Tp, class _Alloc, class... _Args>
+inline constexpr bool __is_nothrow_uses_allocator_constructible_v =
+  __is_nothrow_uses_allocator_constructible<__uses_alloc_ctor_imp_v<_Tp, _Alloc, _Args...>, _Tp, _Alloc, _Args...>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
