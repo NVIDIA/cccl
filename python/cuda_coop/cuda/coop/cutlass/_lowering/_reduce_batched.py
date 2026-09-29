@@ -18,7 +18,6 @@ from cuda.coop._core import (
     make_group_primitive_call,
     plan_group_primitive,
 )
-from cuda.coop._core.api._dispatch import _common_root_operation_name
 from cuda.coop._core.group.reduce_batched import GroupReduceBatchedSemantics
 from cuda.coop._core.warp.reduce_batched import WarpReduceBatchedSemantics
 
@@ -49,14 +48,10 @@ def _make_reduce_batched_plan(
         ),
         output_layout,
     )
-    source = (
-        "common_root"
-        if _common_root_operation_name() is not None
-        else "cutlass_root"
-    )
     return plan_group_primitive(
         make_group_primitive_call(
-            group, GroupReduceBatchedSemantics(primitive), source=source
+            group,
+            GroupReduceBatchedSemantics(primitive),
         ),
         launch,
     ).require_supported()
