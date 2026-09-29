@@ -107,6 +107,9 @@ inline constexpr bool __is_std_tuple_like_v<::std::complex<_Tp>> = true;
 #  endif // __cpp_lib_tuple_like >= 202311L
 #endif // _CCCL_HAS_HOST_STD_LIB()
 
+// NOTE: We are not defining __is_std_tuple_like_v for ::std::ranges::subrange, because that is not trivially forward
+// declarable due to multiple iterator concepts that are required
+
 template <class _Tp>
 _CCCL_CONCEPT __tuple_like = __tuple_like_ext<remove_cvref_t<_Tp>>;
 

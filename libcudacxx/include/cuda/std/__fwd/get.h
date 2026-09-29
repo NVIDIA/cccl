@@ -46,8 +46,18 @@ constexpr const typename tuple_element<_Ip, tuple<_Tp...>>::type& get(const tupl
 template <size_t _Ip, class... _Tp>
 constexpr typename tuple_element<_Ip, tuple<_Tp...>>::type&& get(tuple<_Tp...>&&) noexcept;
 
+// libstdc++ before GCC 8 has no get(const tuple&&). The parameter is an lvalue, so this calls the const
+// lvalue overload. Cast that result to the const rvalue the caller asked for.
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8)
+template <size_t _Ip, class... _Tp>
+constexpr const typename tuple_element<_Ip, tuple<_Tp...>>::type&& get(const tuple<_Tp...>&& __t) noexcept
+{
+  return static_cast<const typename tuple_element<_Ip, tuple<_Tp...>>::type&&>(::std::get<_Ip>(__t));
+}
+#  else // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8) ^^^ / vvv !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8) vvv
 template <size_t _Ip, class... _Tp>
 constexpr const typename tuple_element<_Ip, tuple<_Tp...>>::type&& get(const tuple<_Tp...>&&) noexcept;
+#  endif // !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8)
 
 template <size_t _Ip, class _T1, class _T2>
 constexpr typename tuple_element<_Ip, pair<_T1, _T2>>::type& get(pair<_T1, _T2>&) noexcept;
@@ -58,8 +68,16 @@ constexpr const typename tuple_element<_Ip, pair<_T1, _T2>>::type& get(const pai
 template <size_t _Ip, class _T1, class _T2>
 constexpr typename tuple_element<_Ip, pair<_T1, _T2>>::type&& get(pair<_T1, _T2>&&) noexcept;
 
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8)
+template <size_t _Ip, class _T1, class _T2>
+constexpr const typename tuple_element<_Ip, pair<_T1, _T2>>::type&& get(const pair<_T1, _T2>&& __p) noexcept
+{
+  return static_cast<const typename tuple_element<_Ip, pair<_T1, _T2>>::type&&>(::std::get<_Ip>(__p));
+}
+#  else // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8) ^^^ / vvv !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8) vvv
 template <size_t _Ip, class _T1, class _T2>
 constexpr const typename tuple_element<_Ip, pair<_T1, _T2>>::type&& get(const pair<_T1, _T2>&&) noexcept;
+#  endif // !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8)
 
 template <size_t _Ip, class _Tp, size_t _Size>
 constexpr _Tp& get(array<_Tp, _Size>&) noexcept;
@@ -70,8 +88,16 @@ constexpr const _Tp& get(const array<_Tp, _Size>&) noexcept;
 template <size_t _Ip, class _Tp, size_t _Size>
 constexpr _Tp&& get(array<_Tp, _Size>&&) noexcept;
 
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8)
+template <size_t _Ip, class _Tp, size_t _Size>
+constexpr const _Tp&& get(const array<_Tp, _Size>&& __arr) noexcept
+{
+  return static_cast<const _Tp&&>(::std::get<_Ip>(__arr));
+}
+#  else // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8) ^^^ / vvv !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8) vvv
 template <size_t _Ip, class _Tp, size_t _Size>
 constexpr const _Tp&& get(const array<_Tp, _Size>&&) noexcept;
+#  endif // !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8)
 
 #  if __cpp_lib_tuple_like >= 202311L
 template <size_t _Ip, class _Tp>

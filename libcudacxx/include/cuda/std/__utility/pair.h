@@ -237,6 +237,7 @@ private:
   // GCC7 substitutes the later default template arguments of the pair-like constructors even if
   // __disambiguate_pair_like already failed, so guard the call to get behind an if constexpr. This cannot be done with
   // an alias template, because that would always instantiate the decltype.
+  _CCCL_EXEC_CHECK_DISABLE
   template <size_t _Index, class _UPair>
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL decltype(auto)
   __get_type([[maybe_unused]] _UPair&& __pair) noexcept
