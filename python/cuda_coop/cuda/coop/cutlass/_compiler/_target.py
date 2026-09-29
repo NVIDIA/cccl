@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Resolve the CuTe compilation target for NVRTC providers."""
+"""Select the NVRTC target from CuTe settings or the current device."""
 
 from __future__ import annotations
 

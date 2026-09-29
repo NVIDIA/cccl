@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typing declarations for CUTLASS group descriptors."""
-
 from typing import Generic, Literal, TypeAlias
 
 from typing_extensions import TypeVar

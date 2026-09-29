@@ -2,12 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Common root-backend selection and dispatch state.
-
-Compiler integrations activate one qualified backend through this module while
-family frontends validate the common profile before delegation. It owns no
-primitive semantics, provider rendering, or compiler cache state.
-"""
+"""Route cooperative calls through the backend active in the compiler trace."""
 
 from __future__ import annotations
 

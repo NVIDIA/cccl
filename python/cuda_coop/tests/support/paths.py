@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Location-independent paths for the cuda.coop test suite."""
-
 from pathlib import Path
 
 TESTS_ROOT = Path(__file__).resolve().parents[1]
