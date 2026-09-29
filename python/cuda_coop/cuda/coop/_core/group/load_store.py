@@ -409,7 +409,6 @@ def _plan_load_store(
     contracts = _contracts(
         resolved,
         launch,
-        result=None,
         storage_ownership=(
             StorageOwnership.NONE
             if storage_free
