@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """Radix plan, ABI, storage, and side-output transaction contracts."""
 
@@ -27,34 +26,34 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
 
 def _sort(**kwargs):
-    options = dict(
-        group=this_block(),
-        launch=LaunchFacts(exact_block_dim=(8, 4, 2)),
-        key_type=cutlass.Int32,
-        value_type=None,
-        items=3,
-        scalar=False,
-        begin_bit=0,
-        end_bit=32,
-        descending=False,
-        blocked_to_striped=False,
-    )
+    options = {
+        "group": this_block(),
+        "launch": LaunchFacts(exact_block_dim=(8, 4, 2)),
+        "key_type": cutlass.Int32,
+        "value_type": None,
+        "items": 3,
+        "scalar": False,
+        "begin_bit": 0,
+        "end_bit": 32,
+        "descending": False,
+        "blocked_to_striped": False,
+    }
     options.update(kwargs)
     return _radix._CubRadixRequest(_radix._sort_plan(**options))
 
 
 def _rank(**kwargs):
-    options = dict(
-        group=this_block(),
-        launch=LaunchFacts(exact_block_dim=(8, 4, 2)),
-        key_type=cutlass.Int32,
-        items=3,
-        scalar=False,
-        begin_bit=0,
-        end_bit=4,
-        descending=False,
-        prefix_items=None,
-    )
+    options = {
+        "group": this_block(),
+        "launch": LaunchFacts(exact_block_dim=(8, 4, 2)),
+        "key_type": cutlass.Int32,
+        "items": 3,
+        "scalar": False,
+        "begin_bit": 0,
+        "end_bit": 4,
+        "descending": False,
+        "prefix_items": None,
+    }
     options.update(kwargs)
     return _radix._CubRadixRequest(_radix._rank_plan(**options))
 
