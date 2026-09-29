@@ -79,13 +79,59 @@ def merge_sort_keys(
     oob_default=None,
     temp_storage=None,
 ):
-    """Return freshly sorted keys in blocked order, preserving readable inputs.
+    """Sort keys across a block or warp without changing the input.
 
-    Blocks require a power-of-two thread count. Physical and logical warp
-    groups require complete enclosing physical warps. All members participate
-    with uniform controls. Only the valid prefix of a partial tile is defined;
-    its oob_default must sort after valid keys. Equal keys have no stability
-    guarantee. Custom comparison predicates are not supported.
+    This qualified form of :func:`cuda.coop.merge_sort_keys` also accepts
+    CuTe register payloads. Each thread contributes the same fixed number of
+    items in blocked order, and all members of the group must participate.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        ``this_block()``, ``this_warp()``, or
+        ``this_warp().group_by(width)``. Blocks require a power-of-two total
+        thread count and may be multidimensional. Logical warp widths are
+        1, 2, 4, 8, 16, and 32; their enclosing physical warps must be complete.
+    keys : ThreadData or CuTe register payload
+        Per-thread keys in blocked order, with a positive, compile-time
+        extent. Read-only payloads are accepted. CuTe register-memory tensors
+        and ``TensorSSA`` values are converted through
+        :meth:`ThreadData.from_payload <cuda.coop.cutlass.ThreadData.from_payload>`.
+        Supported element types are signed and unsigned 8-, 16-, 32-, and
+        64-bit integers, ``Float32``, and ``Float64``.
+    descending : bool, optional
+        Compile-time order selector. The default is ascending order.
+        Custom comparison predicates are not supported.
+    valid_items : integer, optional
+        Group-uniform count in ``[0, group_size * items_per_thread]``.
+        Only this blocked input prefix participates in the sort. Supply
+        ``oob_default`` together with this argument for a partial tile.
+        Runtime counts accept signed integer types up to 64 bits or unsigned
+        integer types up to 32 bits. Invalid static counts fail compilation;
+        invalid runtime counts trap before conversion to CUB's count type.
+    oob_default : scalar, optional
+        Group-uniform sentinel that sorts after valid keys: an upper bound
+        for ascending order or a lower bound for descending order. A runtime
+        CuTe scalar must match the key type exactly. Representable Python
+        numeric literals are converted to the key type.
+    temp_storage : TempStorage, optional
+        Explicit block scratch. Omit it for automatic allocation. Warp groups
+        always use automatic storage with independent slices per group.
+        If the descriptor has ``auto_sync=False``, synchronize the block
+        before reusing its storage.
+
+    Returns
+    -------
+    ThreadData
+        Fresh sorted keys with the input element type and per-thread extent,
+        including when the input is a CuTe register payload. Output is blocked:
+        thread ``t`` owns sorted positions ``t * items_per_thread + i``.
+        Only the first ``valid_items`` positions are defined for a partial
+        tile. Equal keys have no stability guarantee.
+
+    See Also
+    --------
+    cuda.coop.cutlass.merge_sort_pairs
     """
     return _merge_sort(
         group,
@@ -109,10 +155,49 @@ def merge_sort_pairs(
     oob_default=None,
     temp_storage=None,
 ):
-    """Return fresh sorted keys and associated values, preserving both inputs.
+    """Sort keys and their associated values without changing either input.
 
-    Keys and values have equal per-thread extents and independent numeric
-    dtypes. Group, prefix, storage, and ordering rules match merge_sort_keys.
+    This qualified form of :func:`cuda.coop.merge_sort_pairs` accepts CuTe
+    register payloads for either operand. Group participation and ordering
+    follow :func:`cuda.coop.cutlass.merge_sort_keys`.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        Complete block, physical warp, or supported logical warp. Block
+        thread counts must be powers of two; enclosing physical warps must
+        be complete for warp operations.
+    keys, values : ThreadData or CuTe register payload
+        Fixed-size per-thread payloads with equal extents, in blocked order.
+        Either operand may be read-only or use a CuTe register representation.
+        Key and value types are independent: signed and unsigned 8-, 16-,
+        32-, and 64-bit integers, ``Float32``, and ``Float64`` are supported.
+    descending : bool, optional
+        Compile-time order selector. The default is ascending key order.
+        Custom comparison predicates are not supported.
+    valid_items : integer, optional
+        Group-uniform length of the valid blocked input prefix, from zero
+        through the group tile size. Supply it together with ``oob_default``.
+        Count types and runtime checks match ``merge_sort_keys``.
+    oob_default : scalar, optional
+        Key sentinel that sorts after valid keys. Runtime CuTe scalars must
+        have the key type; representable Python literals are converted to it.
+    temp_storage : TempStorage, optional
+        Explicit scratch for block groups only. Warp storage is automatic.
+        Retain automatic synchronization or synchronize before scratch reuse.
+
+    Returns
+    -------
+    tuple[ThreadData, ThreadData]
+        Fresh sorted keys and corresponding values, each retaining its own
+        input element type and extent. CuTe register inputs also return
+        ``ThreadData``. Only the valid blocked prefix is defined for a partial
+        tile. Key/value associations are preserved; equal keys have no
+        stability guarantee.
+
+    See Also
+    --------
+    cuda.coop.cutlass.merge_sort_keys
     """
     return _merge_sort(
         group,
