@@ -164,10 +164,10 @@ static_assert(cuda::std::is_same_v<
               decltype(cuda::std::declval<cuda::multicast_logical_endpoint&>().release()),
               cuda::std::pair<cuda::logical_endpoint_id, cuda::std::optional<cuda::logical_endpoint_id_range>>>);
 static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<cuda::logical_endpoint_fabric_handle&>().native_handle()),
-                                   cuda::logical_endpoint_fabric_handle::native_handle_type*>);
+                                   cuda::logical_endpoint_fabric_handle::native_handle_type>);
 static_assert(
   cuda::std::is_same_v<decltype(cuda::std::declval<const cuda::logical_endpoint_fabric_handle&>().native_handle()),
-                       const cuda::logical_endpoint_fabric_handle::native_handle_type*>);
+                       cuda::logical_endpoint_fabric_handle::native_handle_type>);
 static_assert(cuda::std::is_same_v<
               decltype(cuda::std::declval<const cuda::unicast_logical_endpoint&>().export_endpoint(cuda::fabric_handle)),
               cuda::logical_endpoint_fabric_handle>);

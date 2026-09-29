@@ -250,8 +250,7 @@ C2H_CCCLRT_TEST("logical endpoint validates host-only state without driver calls
   CHECK(moved_multicast.size() == 0);
 
   cuda::logical_endpoint_fabric_handle handle;
-  CHECK(handle.native_handle() != nullptr);
-  CHECK(static_cast<const cuda::logical_endpoint_fabric_handle&>(handle).native_handle() != nullptr);
+  [[maybe_unused]] const auto native_handle = handle.native_handle();
 
 #  if TEST_HAS_EXCEPTIONS()
   CHECK_THROWS_AS((cuda::unicast_logical_endpoint{cuda::logical_endpoint_id{13}, handle}), std::invalid_argument);
@@ -294,6 +293,10 @@ C2H_CCCLRT_TEST("unicast logical endpoint lifecycle with caller-owned ID range",
   CHECK(endpoint.id() == cuda::invalid_logical_endpoint_id);
   CHECK(moved.size() == bytes);
   CHECK(moved.id() == ids[0]);
+
+#  if TEST_HAS_EXCEPTIONS()
+  CHECK_THROWS_AS(moved.export_endpoint(cuda::fabric_handle), std::invalid_argument);
+#  endif // TEST_HAS_EXCEPTIONS()
 
   auto released = moved.release();
   CHECK(moved.size() == 0);
@@ -397,8 +400,7 @@ C2H_CCCLRT_TEST("unicast logical endpoint exports and imports endpoint handles i
   REQUIRE(local.wait_ready_for(logical_endpoint_test::ready_timeout));
 
   cuda::logical_endpoint_fabric_handle handle = local.export_endpoint(cuda::fabric_handle);
-  CHECK(handle.native_handle() != nullptr);
-  CHECK(static_cast<const cuda::logical_endpoint_fabric_handle&>(handle).native_handle() != nullptr);
+  [[maybe_unused]] const auto native_handle   = handle.native_handle();
 
 #  if TEST_HAS_EXCEPTIONS()
   CHECK_THROWS_AS((cuda::multicast_logical_endpoint{cuda::logical_endpoint_id{123}, handle}), std::invalid_argument);

@@ -393,22 +393,14 @@ public:
   using native_handle_type = ::CUlogicalEndpointFabricHandle;
 
   //! @brief Creates an empty logical endpoint fabric handle wrapper.
-  constexpr logical_endpoint_fabric_handle() noexcept = default;
+  _CCCL_HOST_API constexpr logical_endpoint_fabric_handle() noexcept {} // NOLINT(modernize-use-equals-default)
 
-  //! @brief Returns writable native handle storage for CUDA driver calls.
+  //! @brief Returns the native CUDA logical endpoint fabric handle.
   //!
-  //! @return A pointer to the native handle storage.
-  [[nodiscard]] _CCCL_HOST_API constexpr native_handle_type* native_handle() noexcept
+  //! @return The native handle storage.
+  [[nodiscard]] _CCCL_HOST_API constexpr native_handle_type native_handle() const noexcept
   {
-    return &__handle_;
-  }
-
-  //! @brief Returns readable native handle storage for CUDA driver calls.
-  //!
-  //! @return A pointer to the native handle storage.
-  [[nodiscard]] _CCCL_HOST_API constexpr const native_handle_type* native_handle() const noexcept
-  {
-    return &__handle_;
+    return __handle_;
   }
 
 private:
@@ -417,13 +409,23 @@ private:
   ::cuda::std::uint64_t __size_{};
   ::cuda::std::uint64_t __bind_alignment_{};
 
+  [[nodiscard]] _CCCL_HOST_API constexpr native_handle_type* __native_handle_pointer() noexcept
+  {
+    return &__handle_;
+  }
+
+  [[nodiscard]] _CCCL_HOST_API constexpr const native_handle_type* __native_handle_pointer() const noexcept
+  {
+    return &__handle_;
+  }
+
   _CCCL_HOST_API constexpr logical_endpoint_fabric_handle(
     ::cuda::__detail::__logical_endpoint_type __type,
     ::cuda::std::uint64_t __size,
     ::cuda::std::uint64_t __bind_alignment) noexcept
-      : __type_(__type)
-      , __size_(__size)
-      , __bind_alignment_(__bind_alignment)
+      : __type_{__type}
+      , __size_{__size}
+      , __bind_alignment_{__bind_alignment}
   {}
 };
 
@@ -447,19 +449,6 @@ template <class _EndpointAttribute>
     {
       return false;
     }
-
-#  if _CCCL_CTK_AT_LEAST(13, 4)
-    if (::cuda::__driver::__version_below(13, 4))
-    {
-      return false;
-    }
-    const auto __supported_handle_types =
-      __device.attribute(::cuda::device_attributes::logical_endpoint_supported_handle_types);
-    if ((__supported_handle_types & ::cuda::std::to_underlying(__ipc)) != ::cuda::std::to_underlying(__ipc))
-    {
-      return false;
-    }
-#  endif // _CCCL_CTK_AT_LEAST(13, 4)
   }
 
   if ((__flags & logical_endpoint_flag::counted_ops) != logical_endpoint_flag::none)
@@ -723,7 +712,7 @@ protected:
     constexpr auto __ipc = logical_endpoint_ipc_handle_type::fabric;
     ::cuda::__driver::__logicalEndpointImport(
       __id.native_handle(),
-      __handle.native_handle(),
+      __handle.__native_handle_pointer(),
       static_cast<::CUlogicalEndpointIpcHandleType>(::cuda::std::to_underlying(__ipc)));
 
     static_cast<_Ref&>(*this) = _Ref{__id};
@@ -852,15 +841,19 @@ public:
   //!
   //! @param[in] __tag The fabric export tag.
   //! @return A logical endpoint fabric handle wrapper.
-  [[nodiscard]] _CCCL_HOST_API logical_endpoint_fabric_handle export_endpoint(fabric_handle_t __tag) const
+  [[nodiscard]] _CCCL_HOST_API logical_endpoint_fabric_handle
+  export_endpoint([[maybe_unused]] fabric_handle_t __tag) const
   {
-    (void) __tag;
     _CCCL_ASSERT(__is_engaged(), "Cannot export an empty logical endpoint");
+    if (__ipc_handle_type_ != logical_endpoint_ipc_handle_type::fabric)
+    {
+      _CCCL_THROW(::std::invalid_argument, "Cannot export a logical endpoint that was not created with fabric IPC");
+    }
 
     constexpr auto __ipc = logical_endpoint_ipc_handle_type::fabric;
     logical_endpoint_fabric_handle __handle{_Type, __size_, __bind_alignment_};
     ::cuda::__driver::__logicalEndpointExport(
-      __handle.native_handle(),
+      __handle.__native_handle_pointer(),
       this->native_handle(),
       static_cast<::CUlogicalEndpointIpcHandleType>(::cuda::std::to_underlying(__ipc)));
     return __handle;

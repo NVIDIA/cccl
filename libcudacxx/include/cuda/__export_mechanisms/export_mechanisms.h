@@ -27,9 +27,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief Tag selecting fabric-handle export.
 struct fabric_handle_t
-{
-  constexpr explicit fabric_handle_t() noexcept = default;
-};
+{};
 
 //! @brief Selects fabric-handle export.
 inline constexpr fabric_handle_t fabric_handle{};
