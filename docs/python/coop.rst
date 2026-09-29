@@ -642,7 +642,7 @@ positional argument:
    running_prefix = coop.StatefulFunction(carry_prefix, types.int64)
 
    # Inside a kernel, before a loop over tiles:
-   state = coop.ThreadData(1, dtype=types.int64)
+   state = coop.ThreadData(items_per_thread=1)
    state[0] = types.int64(0)
    result = coop.exclusive_sum(
        coop.this_block(),
