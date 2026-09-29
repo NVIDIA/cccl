@@ -42,7 +42,8 @@ def _lower_reduce_batched(
     value = bound.arguments["value"]
     if not context.is_array(operation, value):
         raise TypeError(
-            "reduce_batched requires a fixed-size payload of independent batches"
+            "reduce_batched requires a fixed-size "
+            "payload of independent batches"
         )
     if is_common_root and not context.is_thread_data(operation, "value", value):
         raise TypeError(
