@@ -36,31 +36,15 @@
 #include <cuda/__fp/fpemu_impl.h>
 #include <cuda/__fp/fpemu_impl_unpack.h>
 #include <cuda/std/__bit/countl.h>
+// ::fma, the host seed. Declaring it by hand instead cannot be made portable:
+// the exception specification has to match the platform's <math.h> (glibc marks
+// it __THROW, MSVC's CRT does not), and on Windows the CRT prototype carries a
+// dllimport that a plain redeclaration conflicts with.
+#include <cuda/std/__host_stdlib/math.h>
 
 #include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
-
-#if _CCCL_HOST_COMPILATION()
-// Host seed: the libm symbol, declared at global scope. Inside
-// cuda::experimental it would be promoted with the rest of the component, and
-// because C language linkage makes it the same entity as ::fma, the namespace
-// would gain a scalar fma overload aliasing libm.
-//
-// The exception spec must match the platform's <math.h> prototype exactly,
-// otherwise this extern-"C" redeclaration conflicts with ::fma when <cmath> is
-// also in the TU (in C++17+ the exception spec is part of the type, so a
-// mismatch is an error, not just a warning):
-//   - glibc marks fma __THROW (noexcept), so the redeclaration must be noexcept.
-//   - MSVC's CRT/CUDA prototype carries no exception specification, so a
-//     noexcept redeclaration is a mismatched extern-"C" overload (C2382/C2733
-//     under C++20); declare it without noexcept to match.
-#  if _CCCL_COMPILER(MSVC)
-extern "C" double fma(double __x, double __y, double __z);
-#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-extern "C" double fma(double __x, double __y, double __z) noexcept;
-#  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
-#endif // _CCCL_HOST_COMPILATION()
 
 namespace cuda::experimental
 {

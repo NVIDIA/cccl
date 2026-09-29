@@ -39,32 +39,15 @@
 #include <cuda/__fp/fpemu_impl.h>
 #include <cuda/__fp/fpemu_impl_unpack.h>
 #include <cuda/std/__bit/countl.h>
+// ::sqrt and ::sqrtf, the host seeds. Declaring them by hand instead cannot be
+// made portable: the exception specification has to match the platform's
+// <math.h> (glibc marks these __THROW, MSVC's CRT does not), and on Windows the
+// CRT prototypes carry a dllimport that a plain redeclaration conflicts with.
+#include <cuda/std/__host_stdlib/math.h>
 
 #include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
-
-#if _CCCL_HOST_COMPILATION()
-// Host seeds: the libm symbols. Declared at global scope, where they belong: a
-// name declared inside cuda::experimental would be promoted along with the rest
-// of the component, and C language linkage makes these the very same entities as
-// ::sqrt/::sqrtf, so the component's namespace would gain scalar sqrt overloads
-// aliasing libm.
-//
-// On glibc these are declared noexcept to match the standard <math.h> prototypes
-// (marked __THROW); otherwise the extern-"C" redeclarations conflict with
-// ::sqrt/::sqrtf when <cmath> is also in the TU (-Werror). On MSVC the CRT/CUDA
-// prototypes carry no exception specification, so a noexcept redeclaration is a
-// mismatched extern-"C" overload (C2382/C2733 under C++20); declare them without
-// noexcept to match.
-#  if _CCCL_COMPILER(MSVC)
-extern "C" double sqrt(double __x);
-extern "C" float sqrtf(float __x); // host seed for the reciprocal-sqrt builtin
-#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-extern "C" double sqrt(double __x) noexcept;
-extern "C" float sqrtf(float __x) noexcept; // host seed for the reciprocal-sqrt builtin
-#  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
-#endif // _CCCL_HOST_COMPILATION()
 
 namespace cuda::experimental
 {
