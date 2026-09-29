@@ -23,6 +23,7 @@ timing and geometry do not predict GPU performance.
    adjacent-difference
    discontinuity
    histogram
+   run-length-decode
    merge-sort
    radix
    topk
