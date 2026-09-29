@@ -72,29 +72,6 @@ class PayloadInference:
         specification = self.context.thread_data(value)
         return (value, specification)
 
-    def array_candidate(
-        self, index: int
-    ) -> tuple[ir.Var | None, _ThreadDataSpecification | None]:
-        if not 0 <= index < len(self.runtime_args):
-            return (None, None)
-        value = self.runtime_args[index]
-        if not isinstance(value, ir.Var):
-            return (None, None)
-        specification = self.context.array(value)
-        return (value, specification)
-
-    def inferred_array_dtype(
-        self,
-        value: ir.Var | None,
-        specification: _ThreadDataSpecification | None,
-    ):
-        dtype = specification.dtype if specification is not None else None
-        if dtype is None and value is not None:
-            dtype = self.context.dtype(value)
-        if dtype is None and value is not None:
-            dtype = self.context.infer_thread_data_write_dtype(value)
-        return dtype
-
 
 class _PayloadRewrite:
     """Dispatch payload inference to the owning primitive-family mixin."""
