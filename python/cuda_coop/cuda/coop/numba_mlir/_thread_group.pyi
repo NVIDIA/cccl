@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Thread-group descriptors and constructors for the qualified backend."""
-
 from collections.abc import Callable
 from typing import Generic, Literal, TypeAlias, overload
 
