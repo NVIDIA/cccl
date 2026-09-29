@@ -84,7 +84,7 @@ TEST_FUNC constexpr bool test()
     {
       const int index = 3;
       cuda::discard_iterator iter(index);
-      assert((iter - cuda::std::default_sentinel) == -index);
+      assert((iter - cuda::std::default_sentinel) == index);
 
       static_assert(cuda::std::is_same_v<decltype(iter - cuda::std::default_sentinel), cuda::std::ptrdiff_t>);
     }
@@ -92,7 +92,7 @@ TEST_FUNC constexpr bool test()
     {
       const int index = 3;
       const cuda::discard_iterator iter(index);
-      assert((iter - cuda::std::default_sentinel) == -index);
+      assert((iter - cuda::std::default_sentinel) == index);
 
       static_assert(cuda::std::is_same_v<decltype(iter - cuda::std::default_sentinel), cuda::std::ptrdiff_t>);
     }
@@ -102,7 +102,7 @@ TEST_FUNC constexpr bool test()
     {
       const int index = 3;
       cuda::discard_iterator iter(index);
-      assert((cuda::std::default_sentinel - iter) == index);
+      assert((cuda::std::default_sentinel - iter) == -index);
 
       static_assert(cuda::std::is_same_v<decltype(cuda::std::default_sentinel - iter), cuda::std::ptrdiff_t>);
     }
@@ -110,10 +110,20 @@ TEST_FUNC constexpr bool test()
     {
       const int index = 3;
       const cuda::discard_iterator iter(index);
-      assert((cuda::std::default_sentinel - iter) == index);
+      assert((cuda::std::default_sentinel - iter) == -index);
 
       static_assert(cuda::std::is_same_v<decltype(cuda::std::default_sentinel - iter), cuda::std::ptrdiff_t>);
     }
+  }
+
+  { // sentinel differences match the difference to the equivalent discard_iterator(0)
+    const cuda::discard_iterator iter(-3);
+    const cuda::discard_iterator end(0);
+    assert(iter + 3 == cuda::std::default_sentinel);
+    assert((cuda::std::default_sentinel - iter) == 3);
+    assert((iter - cuda::std::default_sentinel) == -3);
+    assert((cuda::std::default_sentinel - iter) == end - iter);
+    assert((iter - cuda::std::default_sentinel) == iter - end);
   }
 
   return true;
