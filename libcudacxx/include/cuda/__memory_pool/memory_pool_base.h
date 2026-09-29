@@ -485,7 +485,8 @@ struct memory_pool_properties
 class __memory_pool_base
 {
 protected:
-  ::cudaMemPool_t __pool_;
+  // Derived pool classes release and destroy this handle.
+  ::cudaMemPool_t __pool_; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   //! @brief Checks whether the passed in alignment is valid.
   //! @param __alignment the alignment to check.
