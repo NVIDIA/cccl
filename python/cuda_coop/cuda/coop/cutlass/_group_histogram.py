@@ -30,10 +30,10 @@ def histogram(
     group : ThreadGroup
         A complete one-dimensional block. Every thread participates.
     samples : ThreadData or CuTe register payload
-        Readable fixed-size bin indices in ``[0, bins)``. Supports uint8,
-        int32, uint32, int64, and uint64. CuTe register tensors and immutable
-        vectors are copied through
-        :meth:`ThreadData.from_payload <cuda.coop.cutlass.ThreadData.from_payload>`.
+        Readable fixed-size bin indices in ``[0, bins)``. Supports uint8, int32,
+        uint32, int64, and uint64. CuTe register tensors and immutable vectors
+        are copied through :meth:`ThreadData.from_payload
+        <cuda.coop.cutlass.ThreadData.from_payload>`.
     bins : int
         Positive compile-time number of bins.
     bins_per_thread : int, optional
