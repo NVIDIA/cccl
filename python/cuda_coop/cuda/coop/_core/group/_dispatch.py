@@ -116,10 +116,7 @@ def _call_classifications(
 def make_group_primitive_call(
     group: ThreadGroup,
     operation: GroupOperationSemantics,
-    *,
-    source: str = "canonical",
 ) -> GroupPrimitiveCall:
-    del source
     return GroupPrimitiveCall(group=group, operation=operation)
 
 
@@ -127,7 +124,7 @@ def plan_group_primitive(
     call: GroupPrimitiveCall,
     launch: LaunchFacts,
 ) -> GroupLoweringPlan:
-    """Resolve a compile-time group call to an official CUDAX/CUB target."""
+    """Resolve a compile-time group call to a CUB target."""
 
     if not isinstance(call, GroupPrimitiveCall):
         raise TypeError("call must be a GroupPrimitiveCall")

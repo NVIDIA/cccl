@@ -9,33 +9,21 @@ from enum import Enum
 from typing import Any, Protocol
 
 from .._algorithm import AlgorithmSpec
-from .._symbols import semantic_token
 from .._types import ParameterClassification
 from ..launch import Dim3, LaunchFacts
 from ..thread_group import MAPPED_GROUP_KINDS, ThreadGroup
 
 
 class GroupLoweringTarget(str, Enum):
-    CUDAX_GROUP = "cudax_group"
     CUB_BLOCK = "cub_block"
     CUB_WARP = "cub_warp"
     UNSUPPORTED = "unsupported"
-
-
-class GroupOperandKind(str, Enum):
-    SCALAR = "scalar"
-    ARRAY = "array"
 
 
 class ResultVisibility(str, Enum):
     ALL_MEMBERS = "all_members"
     GROUP_ROOT = "group_root"
     PER_MEMBER = "per_member"
-
-
-class ResultOwnership(str, Enum):
-    EACH_MEMBER = "each_member"
-    GROUP_ROOT = "group_root"
 
 
 class PreconditionEnforcement(str, Enum):
@@ -104,11 +92,6 @@ class UnsupportedReasonCode(str, Enum):
     LAUNCH_CAPABILITY = "launch_capability"
 
 
-class CudaxReturnKind(str, Enum):
-    VALUE = "value"
-    OPTIONAL_VALUE = "optional_value"
-
-
 class GroupOperationSemantics(Protocol):
     """Structural contract implemented by every primitive-family record."""
 
@@ -120,14 +103,6 @@ class GroupOperationSemantics(Protocol):
 
     @property
     def returns_value(self) -> bool: ...
-
-
-def _lowered_operation_semantic_key(
-    operation: GroupOperationSemantics,
-    target: GroupLoweringTarget,
-) -> tuple[Any, ...]:
-    del target
-    return operation.semantic_key
 
 
 def _requested_result_visibility(
@@ -193,45 +168,6 @@ class GroupPrimitiveCall:
 
     def __hash__(self) -> int:
         return hash(self.semantic_key)
-
-
-@dataclass(frozen=True)
-class CudaxCallDescription:
-    primitive: str
-    header: str
-    namespace: str
-    overload: str | None = None
-    parameters: tuple[ParameterClassification, ...] = ()
-    return_kind: CudaxReturnKind = CudaxReturnKind.VALUE
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "parameters", tuple(self.parameters))
-        object.__setattr__(
-            self, "return_kind", CudaxReturnKind(self.return_kind)
-        )
-        if any(
-            not isinstance(parameter, ParameterClassification)
-            for parameter in self.parameters
-        ):
-            raise TypeError(
-                "CUDAX parameters must be ParameterClassification records"
-            )
-        forbidden = {"group", "launch", "launch_facts"}
-        if any(parameter.name in forbidden for parameter in self.parameters):
-            raise ValueError(
-                "CUDAX runtime ABI cannot contain group or launch markers"
-            )
-
-    @property
-    def semantic_key(self) -> tuple[Any, ...]:
-        return (
-            self.primitive,
-            self.header,
-            self.namespace,
-            self.overload,
-            self.parameters,
-            self.return_kind.value,
-        )
 
 
 @dataclass(frozen=True)
@@ -311,111 +247,6 @@ class ParticipationContract:
         ]
         if len(names) != len(set(names)):
             raise ValueError("argument precondition names must be unique")
-
-
-@dataclass(frozen=True, eq=False)
-class LogicalResultContract:
-    name: str
-    dtype: Any
-    visibility: ResultVisibility
-    ownership: ResultOwnership
-    operand_kind: GroupOperandKind
-    items_per_member: int
-    root_rank: int | None = None
-
-    def __post_init__(self) -> None:
-        if not self.name:
-            raise ValueError("logical result name must not be empty")
-        object.__setattr__(
-            self, "visibility", ResultVisibility(self.visibility)
-        )
-        object.__setattr__(self, "ownership", ResultOwnership(self.ownership))
-        object.__setattr__(
-            self, "operand_kind", GroupOperandKind(self.operand_kind)
-        )
-        if (
-            not isinstance(self.items_per_member, int)
-            or isinstance(self.items_per_member, bool)
-            or self.items_per_member < 1
-        ):
-            raise ValueError("items_per_member must be a positive integer")
-        if (
-            self.operand_kind is GroupOperandKind.SCALAR
-            and self.items_per_member != 1
-        ):
-            raise ValueError("scalar logical results contain exactly one item")
-        is_root_result = self.ownership is ResultOwnership.GROUP_ROOT
-        if is_root_result != (self.visibility is ResultVisibility.GROUP_ROOT):
-            raise ValueError("group-root visibility and ownership must agree")
-        if is_root_result:
-            if (
-                not isinstance(self.root_rank, int)
-                or isinstance(self.root_rank, bool)
-                or self.root_rank != 0
-            ):
-                raise ValueError("group-root results require root rank 0")
-        elif self.root_rank is not None:
-            raise ValueError("non-root results cannot define a root rank")
-
-    @property
-    def semantic_key(self) -> tuple[Any, ...]:
-        return (
-            self.name,
-            semantic_token(self.dtype),
-            self.visibility.value,
-            self.ownership.value,
-            self.operand_kind.value,
-            self.items_per_member,
-            self.root_rank,
-        )
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, LogicalResultContract):
-            return NotImplemented
-        return self.semantic_key == other.semantic_key
-
-    def __hash__(self) -> int:
-        return hash(self.semantic_key)
-
-
-@dataclass(frozen=True)
-class ResultContract:
-    values: tuple[LogicalResultContract, ...]
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "values", tuple(self.values))
-        if not self.values:
-            raise ValueError(
-                "result contract requires at least one logical result"
-            )
-        if any(
-            not isinstance(value, LogicalResultContract)
-            for value in self.values
-        ):
-            raise TypeError("values must contain LogicalResultContract records")
-        names = [value.name for value in self.values]
-        if len(names) != len(set(names)):
-            raise ValueError("logical result names must be unique")
-
-    @property
-    def primary(self) -> LogicalResultContract:
-        return self.values[0]
-
-    @property
-    def visibility(self) -> ResultVisibility:
-        return self.primary.visibility
-
-    @property
-    def operand_kind(self) -> GroupOperandKind:
-        return self.primary.operand_kind
-
-    @property
-    def result_items_per_thread(self) -> int:
-        return self.primary.items_per_member
-
-    @property
-    def has_aggregate(self) -> bool:
-        return any(value.name == "aggregate" for value in self.values)
 
 
 @dataclass(frozen=True)
@@ -558,10 +389,10 @@ class GroupLoweringPlan:
     target: GroupLoweringTarget
     call: GroupPrimitiveCall
     resolved_group: ThreadGroup
-    implementation: CudaxCallDescription | AlgorithmSpec | None
+    implementation: AlgorithmSpec | None
     topology: GroupTopologyContract | None
     participation: ParticipationContract | None
-    result: ResultContract | None
+    result: None
     synchronization: SynchronizationContract | None
     temp_storage: TempStorageContract | None
     provenance: ImplementationProvenance | None
@@ -571,9 +402,6 @@ class GroupLoweringPlan:
         is_unsupported = self.target is GroupLoweringTarget.UNSUPPORTED
         if is_unsupported != (self.unsupported is not None):
             raise ValueError("unsupported plans require exactly one reason")
-        result_required = self.call.operation.returns_value
-        if not isinstance(result_required, bool):
-            raise TypeError("operation returns_value must be a bool")
         if not is_unsupported and (
             self.implementation is None
             or self.topology is None
@@ -581,7 +409,6 @@ class GroupLoweringPlan:
             or self.synchronization is None
             or self.temp_storage is None
             or self.provenance is None
-            or (result_required and self.result is None)
         ):
             raise ValueError(
                 "supported plans require complete lowering contracts"
@@ -655,13 +482,10 @@ class GroupLoweringPlan:
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
-        result_visibility = (
-            None if self.result is None else self.result.visibility.value
-        )
         return (
             _group_key(self.resolved_group),
-            _lowered_operation_semantic_key(self.call.operation, self.target),
-            result_visibility,
+            self.call.operation.semantic_key,
+            None,
         )
 
     @property
@@ -678,7 +502,7 @@ class GroupLoweringPlan:
             _group_key(self.resolved_group),
             self.resolved_group.hierarchy.block_dim,
             self.topology,
-            _lowered_operation_semantic_key(self.call.operation, self.target),
+            self.call.operation.semantic_key,
             implementation_key,
             self.participation,
             self.result,
@@ -710,20 +534,14 @@ class GroupLoweringPlan:
 
 __all__ = [
     "ArgumentPrecondition",
-    "CudaxCallDescription",
-    "CudaxReturnKind",
     "GroupLoweringPlan",
     "GroupLoweringTarget",
-    "GroupOperandKind",
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
     "GroupTopologyContract",
     "ImplementationProvenance",
-    "LogicalResultContract",
     "ParticipationContract",
     "PreconditionEnforcement",
-    "ResultContract",
-    "ResultOwnership",
     "ResultVisibility",
     "StorageOwnership",
     "SynchronizationContract",
