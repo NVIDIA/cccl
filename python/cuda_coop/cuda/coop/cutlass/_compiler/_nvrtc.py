@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compile providers with the CUDA toolkit selected by their headers."""
+"""Compile generated C++ with the CUDA toolkit selected by its headers."""
 
 from __future__ import annotations
 

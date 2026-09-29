@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typed CUB Load/Store requests lowered from the shared group planner."""
-
 from __future__ import annotations
 
 import dataclasses

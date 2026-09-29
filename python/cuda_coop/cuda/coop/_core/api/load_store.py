@@ -2,7 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Cooperative load and store calls with validation for tracing compilers."""
+"""Define the shared Load and Store call signatures and memory contracts.
+
+The decorators register each function's identity and supported group kinds.
+Compiler adapters recognize these calls and generate the selected memory
+operation. The Python bodies reject calls outside a supported GPU kernel.
+"""
 
 from __future__ import annotations
 

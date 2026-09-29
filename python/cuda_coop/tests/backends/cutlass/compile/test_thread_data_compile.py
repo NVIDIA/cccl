@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""ThreadData carries typed lanes through CuTe calls, branches, and loops."""
-
 import pytest
 
 cutlass = pytest.importorskip("cutlass")

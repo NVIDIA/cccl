@@ -2,11 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Common per-thread payload construction.
+"""Define the common constructor for per-thread values in a GPU kernel.
 
-ThreadData is a compiler-owned fixed-size value container; this frontend only
-forwards its static extent, optional dtype, and alignment to the active backend.
-Primitive payload validation lives in the family frontends and shared helpers.
+A compiler replaces this call with storage for the calling thread. The Python
+body rejects host execution because it cannot provide that device storage.
 """
 
 from __future__ import annotations

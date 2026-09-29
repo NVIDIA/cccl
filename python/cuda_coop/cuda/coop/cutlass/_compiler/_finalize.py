@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Finalize each trace's provider requests before final CuTe linking."""
+"""Compile a trace's C++ requests and attach the result for CuTe linking."""
 
 from __future__ import annotations
 

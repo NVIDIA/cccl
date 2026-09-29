@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Executable register conversion example for the qualified API reference."""
-
 import numpy as np
 import pytest
 

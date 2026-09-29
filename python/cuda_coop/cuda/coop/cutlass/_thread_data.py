@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Per-thread payloads and qualified CuTe register conversions."""
-
 from __future__ import annotations
 
 import inspect as _inspect

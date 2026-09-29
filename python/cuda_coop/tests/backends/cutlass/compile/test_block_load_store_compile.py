@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Invalid block movement inputs fail before linking or device execution."""
-
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
