@@ -125,17 +125,24 @@ def check_cutlass_warp_surface(source: object, destination: object) -> None:
     cutlass_coop.store(common_coop.this_warp(), destination, values)
 
 
-def check_cutlass_logical_warp_surface(source: object, destination: object) -> None:
+def check_cutlass_logical_warp_surface(
+    source: object, destination: object
+) -> None:
     values = cutlass_coop.ThreadData(2, np.int32)
     for width in (1, 2, 4, 8, 16, 32):
         group = cutlass_coop.this_warp().group_by(width)
-        assert_type(group, cutlass_coop.ThreadGroup[Literal["threads_within_warp"]])
+        assert_type(
+            group, cutlass_coop.ThreadGroup[Literal["threads_within_warp"]]
+        )
         for algorithm in ("direct", "striped", "vectorize", "transpose"):
             assert_type(
-                cutlass_coop.load(group, source, values, algorithm=algorithm), None
+                cutlass_coop.load(group, source, values, algorithm=algorithm),
+                None,
             )
             assert_type(
-                cutlass_coop.store(group, destination, values, algorithm=algorithm),
+                cutlass_coop.store(
+                    group, destination, values, algorithm=algorithm
+                ),
                 None,
             )
         common_coop.load(group, source, values)

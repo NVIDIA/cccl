@@ -72,7 +72,9 @@ def run_example(api="common"):
     # docs: end cutlass-logical-warp-load-store
 
     source = np.arange(_BLOCK_TILE + _SOURCE_OFFSET, dtype=np.int32)
-    destination = np.full(_BLOCK_TILE + _DESTINATION_OFFSET + 3, -101, dtype=np.int32)
+    destination = np.full(
+        _BLOCK_TILE + _DESTINATION_OFFSET + 3, -101, dtype=np.int32
+    )
     cutlass.cuda.initialize_cuda_context()
     src = _check(driver.cuMemAlloc(source.nbytes))
     try:
@@ -80,18 +82,28 @@ def run_example(api="common"):
         try:
             _check(driver.cuMemcpyHtoD(src, source.ctypes.data, source.nbytes))
             _check(
-                driver.cuMemcpyHtoD(dst, destination.ctypes.data, destination.nbytes)
+                driver.cuMemcpyHtoD(
+                    dst, destination.ctypes.data, destination.nbytes
+                )
             )
             src_pointer = make_ptr(
-                cutlass.Int32, int(src), cute.AddressSpace.gmem, assumed_align=16
+                cutlass.Int32,
+                int(src),
+                cute.AddressSpace.gmem,
+                assumed_align=16,
             )
             dst_pointer = make_ptr(
-                cutlass.Int32, int(dst), cute.AddressSpace.gmem, assumed_align=16
+                cutlass.Int32,
+                int(dst),
+                cute.AddressSpace.gmem,
+                assumed_align=16,
             )
             launch(src_pointer, dst_pointer)
             _check(driver.cuCtxSynchronize())
             _check(
-                driver.cuMemcpyDtoH(destination.ctypes.data, dst, destination.nbytes)
+                driver.cuMemcpyDtoH(
+                    destination.ctypes.data, dst, destination.nbytes
+                )
             )
         finally:
             _check(driver.cuMemFree(dst))
@@ -102,7 +114,9 @@ def run_example(api="common"):
         origin = group_index * _GROUP_TILE
         count = _GROUP_TILE - 1 - group_index * 3
         expected[
-            _DESTINATION_OFFSET + origin : _DESTINATION_OFFSET + origin + _GROUP_TILE
+            _DESTINATION_OFFSET + origin : _DESTINATION_OFFSET
+            + origin
+            + _GROUP_TILE
         ] = -1
         expected[
             _DESTINATION_OFFSET + origin : _DESTINATION_OFFSET + origin + count
