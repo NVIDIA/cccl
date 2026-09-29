@@ -43,6 +43,9 @@ def reduce_batched(
 ) -> ThreadDataLike[_ItemT]:
     """Reduce each payload slot independently across the selected warp.
 
+    Implemented by Numba-CUDA-MLIR. The CUTLASS backend does not currently
+    support this operation.
+
     Parameters
     ----------
     group : ThreadGroup
