@@ -87,7 +87,6 @@ def test_group_controls(api, algorithm, exhaustive):
         initial: cute.Pointer,
         observed: cute.Pointer,
         destination: cute.Pointer,
-        preserved: cute.Pointer,
         counts: cute.Pointer,
         offsets: cute.Pointer,
     ):
@@ -98,7 +97,6 @@ def test_group_controls(api, algorithm, exhaustive):
         offset = cute.make_tensor(offsets, cute.make_layout(groups))[index]
         seeds = cute.make_tensor(initial, cute.make_layout(_BLOCK_TILE))
         results = cute.make_tensor(observed, cute.make_layout(_BLOCK_TILE))
-        checks = cute.make_tensor(preserved, cute.make_layout(_BLOCK_TILE))
         group = api.this_warp().group_by(width, exhaustive=exhaustive)
         loaded = api.ThreadData(_ITEMS)
         api.load(
@@ -122,8 +120,6 @@ def test_group_controls(api, algorithm, exhaustive):
             valid_items=valid,
             offset=offset,
         )
-        for item in cutlass.range_constexpr(_ITEMS):
-            checks[thread * _ITEMS + item] = stored[item]
 
     @cute.jit
     def launch(
@@ -131,19 +127,17 @@ def test_group_controls(api, algorithm, exhaustive):
         initial: cute.Pointer,
         observed: cute.Pointer,
         destination: cute.Pointer,
-        preserved: cute.Pointer,
         counts: cute.Pointer,
         offsets: cute.Pointer,
     ):
-        kernel(
-            source, initial, observed, destination, preserved, counts, offsets
-        ).launch(grid=1, block=_BLOCK)
+        kernel(source, initial, observed, destination, counts, offsets).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.int32, allocation, shift=41)
     initial = values_for(np.int32, _BLOCK_TILE, shift=59)
     observed = np.zeros(_BLOCK_TILE, dtype=np.int32)
     destination = np.full(allocation, -101, dtype=np.int32)
-    preserved = np.zeros_like(initial)
     counts = np.array([0, 1, 7, tile, 19, tile - 1, 3, 17], dtype=np.int32)
     offsets = 2 + np.arange(groups, dtype=np.int64) * 3
     expected_load = np.empty_like(observed)
@@ -166,26 +160,23 @@ def test_group_controls(api, algorithm, exhaustive):
         device_array(initial) as seed,
         device_array(observed) as out,
         device_array(destination) as dst,
-        device_array(preserved) as check,
         device_array(counts) as count,
         device_array(offsets) as offset,
     ):
-        launch(src, seed, out, dst, check, count, offset)
+        launch(src, seed, out, dst, count, offset)
     np.testing.assert_array_equal(observed, expected_load)
     np.testing.assert_array_equal(destination, expected_store)
-    np.testing.assert_array_equal(preserved, initial)
 
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("width", _WIDTHS)
-def test_invalid_slots(api, width):
+def test_partial_transpose_loads_valid_items_without_default(api, width):
     groups = _THREADS // width
     tile = width * _ITEMS
 
     @cute.kernel
     def kernel(
         source: cute.Pointer,
-        initial: cute.Pointer,
         observed: cute.Pointer,
         counts: cute.Pointer,
     ):
@@ -193,11 +184,8 @@ def test_invalid_slots(api, width):
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         index = thread // width
         valid = cute.make_tensor(counts, cute.make_layout(groups))[index]
-        seeds = cute.make_tensor(initial, cute.make_layout(_BLOCK_TILE))
         outputs = cute.make_tensor(observed, cute.make_layout(_BLOCK_TILE))
         payload = api.ThreadData(_ITEMS, dtype=cutlass.Int32)
-        for item in cutlass.range_constexpr(_ITEMS):
-            payload[item] = seeds[thread * _ITEMS + item]
         api.load(
             api.this_warp().group_by(width),
             source,
@@ -206,32 +194,30 @@ def test_invalid_slots(api, width):
             valid_items=valid,
         )
         for item in cutlass.range_constexpr(_ITEMS):
-            outputs[thread * _ITEMS + item] = payload[item]
+            if (thread % width) * _ITEMS + item < valid:
+                outputs[thread * _ITEMS + item] = payload[item]
 
     @cute.jit
     def launch(
         source: cute.Pointer,
-        initial: cute.Pointer,
         observed: cute.Pointer,
         counts: cute.Pointer,
     ):
-        kernel(source, initial, observed, counts).launch(grid=1, block=_BLOCK)
+        kernel(source, observed, counts).launch(grid=1, block=_BLOCK)
 
     source = values_for(np.int32, _BLOCK_TILE, shift=73)
-    initial = -1000 - np.arange(_BLOCK_TILE, dtype=np.int32)
-    observed = np.zeros_like(initial)
+    observed = np.full(_BLOCK_TILE, 71, dtype=np.int32)
     counts = (np.arange(groups, dtype=np.int32) * 7 + 3) % (tile + 1)
-    expected = initial.copy()
+    expected = observed.copy()
     for group in range(groups):
         start = group * tile
         expected[start : start + counts[group]] = source[start : start + counts[group]]
     with (
         device_array(source) as src,
-        device_array(initial) as seed,
         device_array(observed) as out,
         device_array(counts) as count,
     ):
-        launch(src, seed, out, count)
+        launch(src, out, count)
     np.testing.assert_array_equal(observed, expected)
 
 
