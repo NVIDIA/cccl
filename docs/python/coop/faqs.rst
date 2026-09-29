@@ -191,7 +191,7 @@ synchronization.
 
 Numba accepts explicit descriptors for its supported block primitives;
 see :ref:`Numba storage rules <coop-temp-storage>` for the complete list.
-CUTLASS currently accepts explicit descriptors for block transpose-family Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, TopK, Adjacent Difference and Discontinuity, Histogram.
+CUTLASS currently accepts explicit descriptors for block transpose-family Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, TopK, Adjacent Difference and Discontinuity, Histogram, both Run Length Decode forms.
 See the :ref:`shared storage model <coop-common-storage>` and the
 :doc:`CUTLASS Programming Guide <../coop_cutlass>` for reuse rules.
 Numba's restrictions on combining cooperative backing with user static or
