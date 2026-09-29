@@ -143,7 +143,7 @@ def test_block_scan_custom_operator_and_initial_value_signature():
 
 def test_block_scan_accepts_stateless_python_operator():
     def maximum(left, right):
-        return left if left > right else right
+        return max(right, left)
 
     spec = make_block_scan_spec(
         dtype="int32",

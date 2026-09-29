@@ -8,17 +8,17 @@ This module exports the public functions and group descriptions. Compiler
 adapters recognize these functions by identity and lower their kernel calls.
 """
 
-from .exchange import exchange  # noqa: F401
-from .load_store import load, store  # noqa: F401
-from .reduce import reduce, sum  # noqa: F401
-from .scan import (  # noqa: F401
+from .exchange import exchange
+from .load_store import load, store
+from .reduce import reduce, sum
+from .scan import (
     exclusive_scan,
     exclusive_sum,
     inclusive_scan,
     inclusive_sum,
     scan,
 )
-from .shuffle import shuffle  # noqa: F401
+from .shuffle import shuffle
 from .temp_storage import TempStorage, TempStorageLike
 from .thread_data import ThreadData, ThreadDataLike
 from .thread_group import (
@@ -55,11 +55,6 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
-    "this_block",
-    "this_cluster",
-    "this_grid",
-    "this_thread",
-    "this_warp",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
@@ -71,4 +66,9 @@ __all__ = [
     "shuffle",
     "store",
     "sum",
+    "this_block",
+    "this_cluster",
+    "this_grid",
+    "this_thread",
+    "this_warp",
 ]
