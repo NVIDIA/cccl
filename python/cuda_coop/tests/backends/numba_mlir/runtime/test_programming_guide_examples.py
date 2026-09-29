@@ -95,7 +95,9 @@ def test_manual_scratch():
     np.testing.assert_array_equal(destination, source)
     # coop-pg-manual-scratch-end
 
-    compiled = next(iter(copy_tiles_with_manual_sync._launch_config_overloads.values()))
+    compiled = next(
+        iter(copy_tiles_with_manual_sync._launch_config_overloads.values())
+    )
     # The descriptor adds no barriers to the explicit block.sync() calls.
     assert compiled.metadata["mlir_module_str"].count("gpu.barrier") == 0
 
@@ -126,7 +128,8 @@ def test_reduce():
     tile_sums[4, 128](source, totals, source.size)
     cuda.synchronize()
     expected = [
-        source[start : start + 256].sum() for start in range(0, source.size, 256)
+        source[start : start + 256].sum()
+        for start in range(0, source.size, 256)
     ]
     np.testing.assert_array_equal(totals, expected)
     # coop-pg-reduce-end

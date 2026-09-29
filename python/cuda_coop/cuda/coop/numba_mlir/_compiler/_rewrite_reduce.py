@@ -60,7 +60,8 @@ def infer_reduce_payload(
         items_per_thread = array_specification.items_per_thread
         if items_per_thread is None:
             raise CoopSinglePhaseRewriteError(
-                "coop reduce array value must have a static items_per_thread extent"
+                "coop reduce array value must have "
+                "a static items_per_thread extent"
             )
         dtype = inference.inferred_array_dtype(array_var, array_specification)
     else:
@@ -138,7 +139,8 @@ def _validate_valid_items(
             )
         if group_width is not None and value > group_width:
             raise CoopSinglePhaseRewriteError(
-                f"coop reduce {parameter} {value} exceeds group size {group_width}"
+                f"coop reduce {parameter} {value} "
+                f"exceeds group size {group_width}"
             )
         return
     if binding.kind is not BindingKind.RUNTIME:

@@ -101,7 +101,8 @@ class GroupReduceSemantics:
                 algorithm = normalize_block_reduce_algorithm(self.cub_algorithm)
             except ValueError as exc:
                 raise ValueError(
-                    f"unsupported CUB BlockReduce algorithm {self.cub_algorithm!r}"
+                    "unsupported CUB BlockReduce algorithm "
+                    f"{self.cub_algorithm!r}"
                 ) from exc
             object.__setattr__(self, "cub_algorithm", algorithm)
 
@@ -337,7 +338,8 @@ def _plan_cub_reduce(
             raise ValueError("static valid_items must be at least 1")
         if valid_items > group_size:
             raise ValueError(
-                f"static valid_items {valid_items} exceeds group size {group_size}"
+                f"static valid_items {valid_items} exceeds group size "
+                f"{group_size}"
             )
 
     assert launch.exact_block_dim is not None
@@ -388,7 +390,8 @@ def _plan_cub_reduce(
                 call,
                 resolved,
                 UnsupportedReasonCode.OPERATION_VARIANT,
-                "CUB algorithm selection applies to BlockReduce, not WarpReduce",
+                "CUB algorithm selection applies to BlockReduce, "
+                "not WarpReduce",
             )
         if operation.operand_kind is GroupOperandKind.ARRAY:
             return _unsupported(
