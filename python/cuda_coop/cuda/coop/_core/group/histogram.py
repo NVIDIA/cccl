@@ -126,5 +126,7 @@ _register_group_operation_family(
     classifications=_classifications,
     planner=_plan_histogram,
     group_kinds=frozenset({"block"}),
-    unsupported_group_message="histogram supports only complete this_block() groups",
+    unsupported_group_message=(
+        "histogram supports only complete this_block() groups"
+    ),
 )
