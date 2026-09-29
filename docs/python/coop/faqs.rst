@@ -96,7 +96,7 @@ slices with ``sharing="exclusive"``. Explicit descriptors default to
 loop iterations. The example requests ``auto_sync=True`` to insert those
 barriers automatically. Separate slices do not remove the need to protect reuse.
 
-The current backend accepts explicit descriptors for block transpose-family Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, TopK, Adjacent Difference and Discontinuity.
+The current backend accepts explicit descriptors for block transpose-family Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, TopK, Adjacent Difference and Discontinuity, Histogram.
 Warp operations use compiler-owned scratch. See
 :ref:`temporary storage <coop-temp-storage>` for the complete contract and
 shared-memory restrictions.
@@ -163,3 +163,34 @@ successor when comparisons must continue across tiles. A multiblock
 kernel that reads global neighbors must preserve those source values
 until all readers finish. The :doc:`neighbor examples <neighbor-operations>`
 use separate input and output arrays.
+
+.. _coop-faq-histogram-padding:
+
+Can I zero-pad a partial Histogram tile?
+----------------------------------------
+
+Every input sample contributes to a bin, including a padded zero. A
+zero-padded load therefore adds extra counts to bin zero. Histogram has
+no ``valid_items`` parameter. Process complete tiles or handle the tail
+separately with a kernel that counts only valid samples.
+
+Output padding is different: returned counter slots whose bin index is
+at least ``bins`` contain zero. Store the first ``bins`` counters using
+the striped layout. See the :doc:`Histogram explorer <visualizations/histogram>`.
+
+.. _coop-faq-histogram-accumulation:
+
+Does Histogram retain counters between calls?
+---------------------------------------------
+
+Each call returns fresh counts and preserves its samples. For repeated
+tiles within a kernel, keep an accumulator payload and add the returned
+counts to it. Each thread retains the same striped bin ownership when
+the configuration stays fixed. The :doc:`tested accumulation example
+<visualizations/histogram>` shows this pattern.
+
+CUB's ``BlockHistogram::Composite`` accumulates into a caller's counter
+buffer. That persistent state belongs to the buffer; it does not require
+a persistent C++ Histogram object. The Python API exposes the fresh-count
+operation, so neither a parent object nor retained counters in
+``TempStorage`` are needed.

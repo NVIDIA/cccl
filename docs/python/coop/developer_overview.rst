@@ -1301,7 +1301,7 @@ tests use real NVRTC and nvJitLink with devices hidden; their fixtures
 provide an explicit target. Runtime tests check the resulting kernels.
 
 Result metadata must describe the returned payload independently of the
-input when their shapes differ. Discontinuity may return one flag payload or a pair.
+input when their shapes differ. Discontinuity may return one flag payload or a pair. Histogram uses ``bins_per_thread`` and a selected counter dtype.
 ``GroupResultSource`` supplies dtype and extent
 resolution, while the registration's ``result_resolver`` selects the
 result tuple for a call. Record that information during planning so scalar
