@@ -53,10 +53,10 @@ def topk_min_keys(group, keys, /, *, k, valid_items=None, temp_storage=None):
     keys : ThreadData or CuTe register payload
         Per-thread keys in blocked order with a positive, compile-time extent.
         Read-only payloads, CuTe register-memory tensors, and ``TensorSSA``
-        values are accepted. Supported element types are signed and unsigned
-        8-, 16-, 32-, and 64-bit integers, ``Float32``, and ``Float64``.
-        Register inputs are converted through
-        :meth:`ThreadData.from_payload <cuda.coop.cutlass.ThreadData.from_payload>`.
+        values are accepted. Supported element types are signed and unsigned 8-,
+        16-, 32-, and 64-bit integers, ``Float32``, and ``Float64``. Register
+        inputs are converted through :meth:`ThreadData.from_payload
+        <cuda.coop.cutlass.ThreadData.from_payload>`.
     k : integer
         Block-uniform number of requested items in ``[0, N]``, where
         ``N = block_threads * items_per_thread``. May be static or runtime.
