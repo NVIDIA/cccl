@@ -83,7 +83,8 @@ def _wheel_under_test() -> Path:
     wheels = sorted((_REPO_ROOT / "wheelhouse").glob("cuda_coop-*.whl"))
     if not wheels:
         pytest.skip(
-            f"set {_WHEEL_ENVIRONMENT_VARIABLE} or build a wheel under wheelhouse/"
+            f"set {_WHEEL_ENVIRONMENT_VARIABLE} "
+            "or build a wheel under wheelhouse/"
         )
     assert len(wheels) == 1, f"expected one cuda-coop wheel, found {wheels}"
     return wheels[0]
@@ -111,7 +112,9 @@ def test_wheel_validator_accepts_cmake_source_revision_tokens(
         _WHEEL_VALIDATOR._validate_provenance(archive)
 
 
-@pytest.mark.parametrize("revision", ("contains space", "path/name", 'bad"quote'))
+@pytest.mark.parametrize(
+    "revision", ("contains space", "path/name", 'bad"quote')
+)
 def test_wheel_validator_rejects_invalid_source_revision_tokens(
     tmp_path,
     revision,
@@ -138,10 +141,14 @@ def test_wheel_is_universal_and_contains_the_complete_payload() -> None:
         names = set(archive.namelist())
 
         missing = (_REQUIRED_PACKAGE_MEMBERS | _REQUIRED_HEADER_MEMBERS) - names
-        assert not missing, f"wheel is missing required members: {sorted(missing)}"
+        assert not missing, (
+            f"wheel is missing required members: {sorted(missing)}"
+        )
 
         forbidden = _FORBIDDEN_PACKAGE_MEMBERS & names
-        assert not forbidden, f"wheel contains excluded implementations: {forbidden}"
+        assert not forbidden, (
+            f"wheel contains excluded implementations: {forbidden}"
+        )
         warp_members = {
             name for name in names if name.startswith("cuda/coop/_core/warp/")
         }
@@ -149,7 +156,15 @@ def test_wheel_is_universal_and_contains_the_complete_payload() -> None:
         assert not any(name.startswith("cuda/coop/cutlass/") for name in names)
         assert "cuda/__init__.py" not in names
 
-        native_suffixes = {".a", ".dll", ".dylib", ".exe", ".lib", ".pyd", ".so"}
+        native_suffixes = {
+            ".a",
+            ".dll",
+            ".dylib",
+            ".exe",
+            ".lib",
+            ".pyd",
+            ".so",
+        }
         native = sorted(
             name
             for name in names
@@ -191,12 +206,14 @@ def test_wheel_is_universal_and_contains_the_complete_payload() -> None:
         assert wheel_metadata.get_all("Tag") == ["py3-none-any"]
 
         provenance = json.loads(
-            archive.read("cuda/coop/_headers/cccl-bundle-provenance.json").decode(
-                "utf-8"
-            )
+            archive.read(
+                "cuda/coop/_headers/cccl-bundle-provenance.json"
+            ).decode("utf-8")
         )
         assert set(provenance) == {"cccl_source_commit"}
-        assert re.fullmatch(r"[0-9A-Za-z._+-]+", provenance["cccl_source_commit"])
+        assert re.fullmatch(
+            r"[0-9A-Za-z._+-]+", provenance["cccl_source_commit"]
+        )
 
         license_members = {
             name.split(".dist-info/licenses/", 1)[1]

@@ -62,7 +62,8 @@ def _git_include_root_identities(
 ) -> dict[Path, str]:
     relatives = tuple(root.relative_to(repo) for root in roots)
     pathspecs = tuple(
-        "." if not relative.parts else relative.as_posix() for relative in relatives
+        "." if not relative.parts else relative.as_posix()
+        for relative in relatives
     )
     status = _run_git(
         repo,
@@ -86,7 +87,9 @@ def _git_include_root_identities(
             # `S` marks skip-worktree; lowercase marks assume-unchanged.
             return {}
 
-    staged_entries = _run_git(repo, "ls-files", "--stage", "-z", "--", *pathspecs)
+    staged_entries = _run_git(
+        repo, "ls-files", "--stage", "-z", "--", *pathspecs
+    )
     if staged_entries.returncode != 0 or not staged_entries.stdout:
         return {}
     symlinked_roots: set[Path] = set()
@@ -110,7 +113,9 @@ def _git_include_root_identities(
                 symlinked_roots.add(root)
 
     result: dict[Path, str] = {}
-    non_root_relatives = tuple(relative for relative in relatives if relative.parts)
+    non_root_relatives = tuple(
+        relative for relative in relatives if relative.parts
+    )
     tree_oids: dict[str, bytes] = {}
     if non_root_relatives:
         tree = _run_git(
@@ -131,7 +136,9 @@ def _git_include_root_identities(
             fields = metadata.split()
             if separator != b"\t" or len(fields) != 3 or fields[1] != b"tree":
                 return {}
-            tree_oids[path.decode("utf-8", errors="surrogateescape")] = fields[2]
+            tree_oids[path.decode("utf-8", errors="surrogateescape")] = fields[
+                2
+            ]
 
     repository_tree: bytes | None = None
     if any(not relative.parts for relative in relatives):
@@ -310,7 +317,9 @@ def include_dirs_identity(include_dirs: Iterable[str]) -> IncludeDirsIdentity:
     for index, identity in enumerate(root_identities):
         aggregate_digest.update(str(index).encode("ascii"))
         aggregate_digest.update(b"\0")
-        aggregate_digest.update(identity.path.encode("utf-8", errors="surrogateescape"))
+        aggregate_digest.update(
+            identity.path.encode("utf-8", errors="surrogateescape")
+        )
         aggregate_digest.update(b"\0")
         aggregate_digest.update(identity.method.encode("ascii"))
         aggregate_digest.update(b"\0")

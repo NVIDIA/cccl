@@ -40,10 +40,14 @@ def _portable_group_operation(
     """Register one common group overload by exact callable identity."""
 
     if not name or not group_kinds:
-        raise ValueError("portable group operations require a name and group kinds")
+        raise ValueError(
+            "portable group operations require a name and group kinds"
+        )
 
     def decorate(function: _CallableT) -> _CallableT:
-        registration = _PortableGroupOperation(name, tuple(group_kinds), function)
+        registration = _PortableGroupOperation(
+            name, tuple(group_kinds), function
+        )
         existing = _PORTABLE_GROUP_OPERATIONS_BY_NAME.get(name)
         if existing is not None and existing != registration:
             raise RuntimeError(
