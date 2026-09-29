@@ -137,7 +137,7 @@ CuTe register conversions and qualified controls such
 as warp Scan aggregates and scalar Shuffle. Custom operators and Scan prefix
 callbacks are currently supported only by Numba-CUDA-MLIR.
 
-Both integrations accept `ThreadData(..., alignment=None)`: use a compile-time
+Both integrations accept `ThreadData(items_per_thread=..., alignment=None)`: use a compile-time
 positive power of two in bytes to request minimum payload storage alignment,
 or omit it to let the compiler choose. This does not assert alignment of Load
 or Store memory operands. Results belong to the active compiler; a NumPy dtype
@@ -222,7 +222,7 @@ from numba_cuda_mlir import cuda, types
 from cuda import coop
 
 block = coop.this_block()
-items = coop.ThreadData(2)
+items = coop.ThreadData(items_per_thread=2)
 tile_items = cuda.blockDim.x * 2
 tile_offset = cuda.blockIdx.x * tile_items
 valid_items = count - tile_offset
@@ -390,6 +390,12 @@ calls that pass the same descriptor on one region; `"exclusive"` gives each
 call site its own slice. A call site inside a loop reuses its slice under either
 policy. `auto_sync` defaults to `False` for both policies and both integrations.
 
+Exclusive slices use more shared memory to avoid barriers needed solely for
+cross-call scratch reuse when `auto_sync=False`. Repeated execution of one
+call site still reuses its slice and must be synchronized. Omitting storage
+lets the compiler choose the layout and insert reuse barriers; it does not
+guarantee a separate slice per call site.
+
 Distinct descriptors and compiler-owned storage do not alias each other. With
 the default `auto_sync=False`, call `storage.sync()` or the appropriate block
 barrier before reusing the scratch, including on the next loop iteration.
@@ -469,7 +475,7 @@ from cuda import coop
 @cuda.jit
 def block_sum(source, output):
     thread = cuda.threadIdx.x
-    values = coop.ThreadData(2, dtype=types.int32)
+    values = coop.ThreadData(items_per_thread=2)
     values[0] = source[2 * thread]
     values[1] = source[2 * thread + 1]
     total = coop.sum(coop.this_block(), values, broadcast=False)
@@ -596,7 +602,7 @@ def carry_prefix(state, block_aggregate):
 running_prefix = numba_coop.StatefulFunction(carry_prefix, types.int64)
 
 # Inside a kernel, before a loop over tiles:
-state = numba_coop.ThreadData(1, dtype=types.int64)
+state = numba_coop.ThreadData(items_per_thread=1)
 state[0] = types.int64(0)
 scanned = numba_coop.exclusive_sum(
     numba_coop.this_block(),
@@ -641,7 +647,7 @@ from cuda import coop
 @cuda.jit
 def block_scan_kernel(values, prefixes):
     block = coop.this_block()
-    items = coop.ThreadData(2, dtype=np.int32)
+    items = coop.ThreadData(items_per_thread=2)
     coop.load(block, values, items)
     scanned = coop.exclusive_sum(block, items)
     coop.store(block, prefixes, scanned)
