@@ -138,11 +138,13 @@ To work on the integration, follow a kernel through the
    <span id="backend-coverage"></span>
    <span id="block-prefix-callbacks"></span>
    <span id="build-time-cmake-variables"></span>
+   <span id="calling-conventions"></span>
    <span id="common-and-qualified-apis"></span>
    <span id="compilation-and-headers"></span>
    <span id="configuration"></span>
    <span id="coop-api-namespaces"></span>
    <span id="coop-backend-registration"></span>
+   <span id="coop-common-calling-conventions"></span>
    <span id="coop-common-groups"></span>
    <span id="coop-common-layouts"></span>
    <span id="coop-common-participation"></span>
