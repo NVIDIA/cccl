@@ -1,14 +1,13 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 from __future__ import annotations
 
 import subprocess
 import sys
 import textwrap
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
 
 import numpy as np
@@ -131,7 +130,7 @@ def test_load_mutates_original_payload_and_returns_none(module, dtype, scope):
     np.testing.assert_array_equal(returned_none, np.ones_like(returned_none))
 
 
-@lru_cache(maxsize=None)
+@cache
 def _full_load_kernel(numba_dtype, algorithm="direct"):
     @cuda.jit
     def kernel(source, observed):
@@ -154,7 +153,7 @@ def _full_load_kernel(numba_dtype, algorithm="direct"):
     return kernel
 
 
-@lru_cache(maxsize=None)
+@cache
 def _full_store_kernel(numba_dtype, algorithm="direct"):
     @cuda.jit
     def kernel(source, destination):
@@ -380,7 +379,7 @@ def test_store_writes_only_the_valid_prefix_at_an_independent_offset(valid_items
     np.testing.assert_array_equal(destination, expected)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _algorithm_load_kernel(algorithm: str, qualified: bool):
     if qualified:
 
@@ -427,7 +426,7 @@ def _algorithm_load_kernel(algorithm: str, qualified: bool):
     return kernel
 
 
-@lru_cache(maxsize=None)
+@cache
 def _algorithm_store_kernel(algorithm: str, qualified: bool):
     if qualified:
 
@@ -580,7 +579,7 @@ def test_each_block_store_algorithm_matches_its_layout_oracle_and_preserves_inpu
     np.testing.assert_array_equal(preserved, source)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _partial_transpose_load_preserving_kernel(algorithm: str, qualified: bool):
     if qualified:
 
@@ -654,7 +653,7 @@ def test_partial_transpose_load_preserves_each_invalid_payload_slot(
     np.testing.assert_array_equal(observed, expected)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _unguarded_wide_load_store_kernel(algorithm: str, qualified: bool):
     if qualified:
 
@@ -745,7 +744,7 @@ def test_unguarded_wide_load_store_executes_full_tile_path(qualified, algorithm)
     np.testing.assert_array_equal(preserved, store_source)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
     if dynamic:
 
@@ -876,8 +875,7 @@ def _portable_grid_stride_load_store(source, destination):
         valid_items = source.size - tile_offset
         # Runtime counts trap rather than saturate. Clamp each grid-stride
         # remainder to the exact tile accepted by this block.
-        if valid_items > _TILE_ITEMS:
-            valid_items = _TILE_ITEMS
+        valid_items = min(valid_items, _TILE_ITEMS)
         payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
         root_coop.load(
             root_coop.this_block(),
@@ -904,8 +902,7 @@ def _qualified_grid_stride_load_store(source, destination):
         valid_items = source.size - tile_offset
         # Runtime counts trap rather than saturate. Clamp each grid-stride
         # remainder to the exact tile accepted by this block.
-        if valid_items > _TILE_ITEMS:
-            valid_items = _TILE_ITEMS
+        valid_items = min(valid_items, _TILE_ITEMS)
         payload = qualified_coop.ThreadData(
             _ITEMS_PER_THREAD,
             dtype=types.int32,
@@ -1237,7 +1234,7 @@ def test_qualified_store_infers_an_untyped_payload():
     np.testing.assert_array_equal(destination, source)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _storage_load_kernel(storage_mode: str):
     if storage_mode == "implicit":
 
@@ -1324,7 +1321,7 @@ def _storage_load_kernel(storage_mode: str):
     return kernel
 
 
-@lru_cache(maxsize=None)
+@cache
 def _storage_store_kernel(storage_mode: str):
     if storage_mode == "implicit":
 
@@ -1435,7 +1432,7 @@ def test_direct_store_accepts_each_temp_storage_descriptor_mode(storage_mode):
     np.testing.assert_array_equal(destination, source)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _divergent_storage_free_load_store(algorithm: str):
     @cuda.jit
     def kernel(source, destination, observed):
@@ -1716,7 +1713,7 @@ _LOOPED_TILE_ITEMS = _LOOPED_THREADS * _LOOPED_ITEMS_PER_THREAD
 _LOOPED_TILES = 8
 
 
-@lru_cache(maxsize=None)
+@cache
 def _looped_exclusive_store_kernel(manual_sync: bool):
     # One transpose store call site reuses its exclusive slice on every loop
     # iteration. Correctness requires a reuse barrier between iterations.

@@ -156,7 +156,7 @@ def _auto_register_known_dsls() -> tuple[str, ...]:
             candidate.activate()
         except _BackendUnavailable:
             _remove_failed_backend_modules(package_prefix, before)
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001 - optional activation must not break the root import.
             _remove_failed_backend_modules(package_prefix, before)
             _warn_incompatible(candidate, error)
         else:

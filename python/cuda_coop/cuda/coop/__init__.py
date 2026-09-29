@@ -17,6 +17,7 @@ from ._registration import register
 __path__ = extend_path(__path__, __name__)
 
 from ._core import api as _portable_api
+from ._core._auto_registration import _auto_register_known_dsls
 
 globals().update(
     {name: getattr(_portable_api, name) for name in _portable_api.__all__}
@@ -43,8 +44,6 @@ def __dir__() -> list[str]:
 
     return sorted(__all__)
 
-
-from ._core._auto_registration import _auto_register_known_dsls  # noqa: E402
 
 _auto_register_known_dsls()
 del _auto_register_known_dsls

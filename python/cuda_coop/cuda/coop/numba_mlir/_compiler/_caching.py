@@ -73,7 +73,7 @@ def _json_cache_key(value):
 
 def json_hash(*args, **kwargs):
     hasher = hashlib.sha256()
-    hasher.update(f"v{_CACHE_SCHEMA_VERSION}:".encode("utf-8"))
+    hasher.update(f"v{_CACHE_SCHEMA_VERSION}:".encode())
     payload = json.dumps(
         _json_cache_key((args, kwargs)),
         separators=(",", ":"),

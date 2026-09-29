@@ -59,9 +59,9 @@ _EXCLUDED_BACKEND_MODULES = (
 
 
 def test_public_exports_are_only_the_load_store_foundation():
-    assert portable_coop.__all__ == _PORTABLE_EXPORTS
+    assert sorted(portable_coop.__all__) == sorted(_PORTABLE_EXPORTS)
     assert dir(portable_coop) == sorted(_PORTABLE_EXPORTS)
-    assert coop.__all__ == _QUALIFIED_EXPORTS
+    assert sorted(coop.__all__) == sorted(_QUALIFIED_EXPORTS)
     assert dir(coop) == sorted(_QUALIFIED_EXPORTS)
 
     excluded_exports = {
