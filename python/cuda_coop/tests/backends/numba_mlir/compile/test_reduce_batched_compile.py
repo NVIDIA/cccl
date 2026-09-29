@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""GPU-free final linking and rejection checks for batched warp reductions."""
-
 import os
 from types import SimpleNamespace
 
