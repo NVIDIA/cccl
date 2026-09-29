@@ -11,14 +11,14 @@ primitive semantics, provider rendering, or compiler cache state.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
 from enum import Enum
 from importlib import import_module
 from types import ModuleType
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
 

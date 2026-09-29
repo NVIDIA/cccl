@@ -16,9 +16,9 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
-    "this_block",
     "load",
     "store",
+    "this_block",
 ]
 
 

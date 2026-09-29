@@ -33,7 +33,7 @@ def _normalize_index_int(value: Any) -> int | None:
         return None
     try:
         normalized = _operator.index(value)
-    except Exception:
+    except Exception:  # noqa: BLE001 - Dynamic DSL values may reject integer conversion.
         return None
     if isinstance(normalized, bool):
         return None
@@ -43,7 +43,7 @@ def _normalize_index_int(value: Any) -> int | None:
 def _normalize_group_width(value: Any) -> int | None:
     try:
         normalized = _normalize_index_int(value)
-    except Exception:
+    except Exception:  # noqa: BLE001 - An uninspectable width is not a static extent.
         return None
     if normalized is not None and normalized > 0:
         return normalized
@@ -53,7 +53,7 @@ def _normalize_group_width(value: Any) -> int | None:
 def _get_optional_metadata_attr(value: Any, attr_name: str) -> Any:
     try:
         return getattr(value, attr_name, None)
-    except Exception:
+    except Exception:  # noqa: BLE001 - Optional foreign metadata may reject access.
         return None
 
 
@@ -125,7 +125,7 @@ def _infer_vector_items_per_thread(vector: Any) -> int | None:
     if callable(numel):
         try:
             inferred = _normalize_group_width(numel())
-        except Exception:
+        except Exception:  # noqa: BLE001 - A failing optional numel method cannot prove an extent.
             inferred = None
         if inferred is not None:
             return inferred
@@ -141,7 +141,7 @@ def _infer_vector_items_per_thread(vector: Any) -> int | None:
 def _is_register_fragment(value: Any) -> bool:
     try:
         memspace = getattr(value, "memspace", None)
-    except Exception:
+    except Exception:  # noqa: BLE001 - Uninspectable memory space cannot prove register storage.
         return False
     return _is_register_memory_space(memspace)
 
@@ -152,20 +152,20 @@ def _is_register_memory_space(memspace: Any) -> bool:
         from cutlass import AddressSpace as CutlassAddressSpace
 
         register_spaces.append(CutlassAddressSpace.rmem)
-    except Exception:
+    except Exception:  # noqa: BLE001, S110 - Optional CUTLASS address-space discovery may be unavailable.
         pass
     try:
         from cutlass._mlir.dialects.cute import AddressSpace as CuteAddressSpace
 
         register_spaces.append(CuteAddressSpace.rmem)
-    except Exception:
+    except Exception:  # noqa: BLE001, S110 - Optional CuTe address-space discovery may be unavailable.
         pass
 
     for register_space in register_spaces:
         try:
             if memspace == register_space:
                 return True
-        except Exception:
+        except Exception:  # noqa: BLE001, S112 - Foreign address-space wrappers may reject equality.
             continue
     return False
 
@@ -174,7 +174,7 @@ def _has_memory_space(value: Any) -> bool:
     for attr_name in ("memspace", "space"):
         try:
             attr = getattr(value, attr_name, None)
-        except Exception:
+        except Exception:  # noqa: BLE001 - Reject payloads with a declared but unreadable memory space.
             try:
                 _inspect.getattr_static(value, attr_name)
             except AttributeError:
@@ -196,7 +196,7 @@ def _has_memory_protocol(value: Any) -> bool:
 
         try:
             attr = getattr(value, attr_name, None)
-        except Exception:
+        except Exception:  # noqa: BLE001 - A failing memory protocol still identifies memory-backed data.
             return True
         if attr is not None:
             return True
