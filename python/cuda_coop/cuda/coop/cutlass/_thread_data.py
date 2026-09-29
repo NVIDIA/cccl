@@ -353,9 +353,12 @@ class ThreadData:
     items_per_thread : int
         Positive compile-time item count.
     dtype : type, optional
-        Numeric dtype metadata, such as ``cutlass.Int32`` or ``numpy.int32``.
-        If omitted, consuming primitives infer the type from initialized
-        values. The constructor does not cast entries supplied in ``values``.
+        Optional numeric element-type metadata. Load supplies the memory
+        element type; consuming primitives can infer it from homogeneous
+        initialized values. Advanced interop may need explicit metadata
+        when a raw integer IR value has no signedness. See
+        :ref:`coop-cutlass-dtype-inference`. The constructor does not cast
+        entries supplied in ``values``.
     values : tuple or list, optional
         Initial values, with exactly ``items_per_thread`` entries. When
         omitted, the items remain uninitialized until assigned or loaded.
