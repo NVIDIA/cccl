@@ -146,7 +146,9 @@ dimension or flag is unavailable, it stays unknown in that object. Planning
 fails if the primitive needs the missing value.
 
 For the tile copy, block dimensions determine both the CUB specialization
-and linear rank: ``x + block_x * (y + block_y * z)``.
+and linear rank: ``x + block_x * (y + block_y * z)``. Warp primitives also
+need the exact block size to establish complete physical warps and allocate
+one scratch slice per group.
 
 Do not substitute ``maxntid`` for exact dimensions: an upper bound does not
 prove the number of participating threads. The adapter does not infer
@@ -213,7 +215,9 @@ Exclusive slices still need reuse synchronization when one call site runs
 again in a loop. Explicit descriptors default to ``auto_sync=False`` for both
 sharing modes, so the kernel must call ``storage.sync()`` before reuse. Set
 ``auto_sync=True`` to insert automatic trailing synchronization. Compiler-managed
-scratch synchronizes automatically. See the programming guide for each family's explicit-storage
+scratch synchronizes automatically. Physical warp primitives use
+independent per-group storage and the appropriate warp mask rather than a
+block barrier. See the programming guide for each family's explicit-storage
 support and participation rules.
 
 Finding the implementation
