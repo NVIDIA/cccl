@@ -812,7 +812,9 @@ def provider_scan(
     valid_items: Any = None,
     temp_storage: Any = None,
 ) -> Any:
-    """Materialize one current-plan CUB Scan with exact scratch and launch facts."""
+    """Materialize one current-plan CUB Scan with exact scratch and launch
+    facts.
+    """
     if not isinstance(group, ThreadGroup):
         raise TypeError("cuda.coop.cutlass.scan group must be a ThreadGroup")
     if not isinstance(launch, LaunchFacts):

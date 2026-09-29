@@ -174,10 +174,10 @@ def scan(
         execute the primitive together.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's input. Blocks accept a scalar or a readable
-        :ref:`per-thread payload <coop-common-payloads>`; warps accept one scalar
-        per lane. Payloads have the same item count and dtype in each thread.
-        A block scans payloads in blocked order: all items from thread zero,
-        then all items from thread one, and so on. Scalar inputs follow
+        :ref:`per-thread payload <coop-common-payloads>`; warps accept one
+        scalar per lane. Payloads have the same item count and dtype in each
+        thread. A block scans payloads in blocked order: all items from thread
+        zero, then all items from thread one, and so on. Scalar inputs follow
         linear group rank. The input is preserved.
     mode : {"exclusive", "inclusive"}, optional
         Compile-time choice, default ``"exclusive"``. An exclusive prefix
@@ -295,8 +295,8 @@ def exclusive_sum(
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's input. Blocks accept a scalar or a readable
-        :ref:`per-thread payload <coop-common-payloads>`; warps accept one scalar
-        per lane. All threads use the same dtype and item count. Payload
+        :ref:`per-thread payload <coop-common-payloads>`; warps accept one
+        scalar per lane. All threads use the same dtype and item count. Payload
         items follow blocked order, with all items from each thread placed
         consecutively in linear group-rank order. The input is preserved.
     algorithm : str, optional
@@ -387,8 +387,8 @@ def inclusive_sum(
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's input. Blocks accept a scalar or a readable
-        :ref:`per-thread payload <coop-common-payloads>`; warps accept one scalar
-        per lane. All threads use the same dtype and item count. Payload
+        :ref:`per-thread payload <coop-common-payloads>`; warps accept one
+        scalar per lane. All threads use the same dtype and item count. Payload
         items follow blocked order, with all items from each thread placed
         consecutively in linear group-rank order. The input is preserved.
     algorithm : str, optional
@@ -483,8 +483,8 @@ def exclusive_scan(
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's input. Blocks accept a scalar or a readable
-        :ref:`per-thread payload <coop-common-payloads>`; warps accept one scalar
-        per lane. All threads use the same dtype and item count. Payload
+        :ref:`per-thread payload <coop-common-payloads>`; warps accept one
+        scalar per lane. All threads use the same dtype and item count. Payload
         items follow blocked order, with all items from each thread placed
         consecutively in linear group-rank order. The input is preserved.
     scan_op : str, optional
@@ -592,8 +592,8 @@ def inclusive_scan(
         require an enclosing block size divisible by 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
         Each thread's input. Blocks accept a scalar or a readable
-        :ref:`per-thread payload <coop-common-payloads>`; warps accept one scalar
-        per lane. All threads use the same dtype and item count. Payload
+        :ref:`per-thread payload <coop-common-payloads>`; warps accept one
+        scalar per lane. All threads use the same dtype and item count. Payload
         items follow blocked order, with all items from each thread placed
         consecutively in linear group-rank order. The input is preserved.
     scan_op : str, optional
