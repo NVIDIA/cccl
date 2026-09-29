@@ -31,6 +31,7 @@ from enum import Enum
 from typing import Any, Protocol
 
 from .._algorithm import Algorithm
+from .._symbols import semantic_token
 from .._types import ParameterClassification
 from ..launch import Dim3, LaunchFacts
 from ..thread_group import MAPPED_GROUP_KINDS, ThreadGroup
@@ -48,6 +49,11 @@ class GroupLoweringTarget(str, Enum):
     UNSUPPORTED = "unsupported"
 
 
+class GroupOperandKind(str, Enum):
+    SCALAR = "scalar"
+    ARRAY = "array"
+
+
 class ResultVisibility(str, Enum):
     """Which group members have meaningful results from the operation.
 
@@ -59,6 +65,11 @@ class ResultVisibility(str, Enum):
     ALL_MEMBERS = "all_members"
     GROUP_ROOT = "group_root"
     PER_MEMBER = "per_member"
+
+
+class ResultOwnership(str, Enum):
+    EACH_MEMBER = "each_member"
+    GROUP_ROOT = "group_root"
 
 
 class PreconditionEnforcement(str, Enum):
@@ -419,6 +430,111 @@ class ParticipationRequirements:
             raise ValueError("argument precondition names must be unique")
 
 
+@dataclass(frozen=True, eq=False)
+class LogicalResultContract:
+    name: str
+    dtype: Any
+    visibility: ResultVisibility
+    ownership: ResultOwnership
+    operand_kind: GroupOperandKind
+    items_per_member: int
+    root_rank: int | None = None
+
+    def __post_init__(self) -> None:
+        if not self.name:
+            raise ValueError("logical result name must not be empty")
+        object.__setattr__(
+            self, "visibility", ResultVisibility(self.visibility)
+        )
+        object.__setattr__(self, "ownership", ResultOwnership(self.ownership))
+        object.__setattr__(
+            self, "operand_kind", GroupOperandKind(self.operand_kind)
+        )
+        if (
+            not isinstance(self.items_per_member, int)
+            or isinstance(self.items_per_member, bool)
+            or self.items_per_member < 1
+        ):
+            raise ValueError("items_per_member must be a positive integer")
+        if (
+            self.operand_kind is GroupOperandKind.SCALAR
+            and self.items_per_member != 1
+        ):
+            raise ValueError("scalar logical results contain exactly one item")
+        is_root_result = self.ownership is ResultOwnership.GROUP_ROOT
+        if is_root_result != (self.visibility is ResultVisibility.GROUP_ROOT):
+            raise ValueError("group-root visibility and ownership must agree")
+        if is_root_result:
+            if (
+                not isinstance(self.root_rank, int)
+                or isinstance(self.root_rank, bool)
+                or self.root_rank != 0
+            ):
+                raise ValueError("group-root results require root rank 0")
+        elif self.root_rank is not None:
+            raise ValueError("non-root results cannot define a root rank")
+
+    @property
+    def semantic_key(self) -> tuple[Any, ...]:
+        return (
+            self.name,
+            semantic_token(self.dtype),
+            self.visibility.value,
+            self.ownership.value,
+            self.operand_kind.value,
+            self.items_per_member,
+            self.root_rank,
+        )
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, LogicalResultContract):
+            return NotImplemented
+        return self.semantic_key == other.semantic_key
+
+    def __hash__(self) -> int:
+        return hash(self.semantic_key)
+
+
+@dataclass(frozen=True)
+class ResultContract:
+    values: tuple[LogicalResultContract, ...]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "values", tuple(self.values))
+        if not self.values:
+            raise ValueError(
+                "result contract requires at least one logical result"
+            )
+        if any(
+            not isinstance(value, LogicalResultContract)
+            for value in self.values
+        ):
+            raise TypeError("values must contain LogicalResultContract records")
+        names = [value.name for value in self.values]
+        if len(names) != len(set(names)):
+            raise ValueError("logical result names must be unique")
+
+    @property
+    def primary(self) -> LogicalResultContract:
+        return self.values[0]
+
+    @property
+    def visibility(self) -> ResultVisibility:
+        return self.primary.visibility
+
+    @property
+    def operand_kind(self) -> GroupOperandKind:
+        return self.primary.operand_kind
+
+    @property
+    def result_items_per_thread(self) -> int:
+        return self.primary.items_per_member
+
+    @property
+    def has_aggregate(self) -> bool:
+        return any(value.name == "aggregate" for value in self.values)
+
+
 @dataclass(frozen=True)
 class SynchronizationRequirements:
     """Entry and scratch-reuse synchronization required by the plan.
@@ -541,7 +657,7 @@ class TempStorageRequirements:
                 or self.instances < 1
             ):
                 raise ValueError(
-                    "storage-bearing operations require "
+                    "storage-bearing contracts require "
                     "a positive instance count"
                 )
             if (
@@ -549,7 +665,7 @@ class TempStorageRequirements:
                 or not self.instance_index
             ):
                 raise ValueError(
-                    "storage-bearing operations require "
+                    "storage-bearing contracts require "
                     "a non-empty instance index"
                 )
         if self.ownership is StorageOwnership.IMPLEMENTATION:
@@ -728,9 +844,9 @@ class GroupLoweringPlan:
         Group instances and rank rules used for indexing and execution.
     participation : ParticipationRequirements or None
         Required membership, launch shape, uniformity, and scalar bounds.
-    result : None
-        Load/Store writes its results through the supplied item array or
-        memory pointer and has no separate returned value.
+    result : ResultContract or None
+        Returned-value descriptions for supported operations that return a
+        value. Load/Store writes through its destination and uses ``None``.
     synchronization : SynchronizationRequirements or None
         Converged-entry and scratch-reuse requirements.
     temp_storage : TempStorageRequirements or None
@@ -755,7 +871,7 @@ class GroupLoweringPlan:
     implementation: Algorithm | None
     topology: GroupTopologyRequirements | None
     participation: ParticipationRequirements | None
-    result: None
+    result: ResultContract | None
     synchronization: SynchronizationRequirements | None
     temp_storage: TempStorageRequirements | None
     provenance: ImplementationProvenance | None
@@ -773,6 +889,9 @@ class GroupLoweringPlan:
         is_unsupported = self.target is GroupLoweringTarget.UNSUPPORTED
         if is_unsupported != (self.unsupported is not None):
             raise ValueError("unsupported plans require exactly one reason")
+        result_required = self.call.operation.returns_value
+        if not isinstance(result_required, bool):
+            raise TypeError("operation returns_value must be a bool")
         if not is_unsupported and (
             self.implementation is None
             or self.topology is None
@@ -780,6 +899,7 @@ class GroupLoweringPlan:
             or self.synchronization is None
             or self.temp_storage is None
             or self.provenance is None
+            or (result_required and self.result is None)
         ):
             raise ValueError(
                 "supported plans require complete lowering requirements"
@@ -859,10 +979,13 @@ class GroupLoweringPlan:
         also distinguish plans.
         """
 
+        result_visibility = (
+            None if self.result is None else self.result.visibility.value
+        )
         return (
             _group_key(self.resolved_group),
             self.call.operation.semantic_key,
-            None,
+            result_visibility,
         )
 
     @property
@@ -930,12 +1053,16 @@ __all__ = [
     "GroupExecutionRequirements",
     "GroupLoweringPlan",
     "GroupLoweringTarget",
+    "GroupOperandKind",
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
     "GroupTopologyRequirements",
     "ImplementationProvenance",
+    "LogicalResultContract",
     "ParticipationRequirements",
     "PreconditionEnforcement",
+    "ResultContract",
+    "ResultOwnership",
     "ResultVisibility",
     "StorageOwnership",
     "SynchronizationRequirements",

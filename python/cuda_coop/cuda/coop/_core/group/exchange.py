@@ -220,7 +220,6 @@ def _plan_exchange(
     requirements = _build_execution_requirements(
         resolved,
         launch,
-        result=result,
         storage_ownership=StorageOwnership.IMPLEMENTATION,
         cpp_type=None,
     )
