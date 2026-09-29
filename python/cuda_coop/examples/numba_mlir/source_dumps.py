@@ -20,7 +20,7 @@ from cuda import coop
 @cuda.jit
 def copy_direct(source, destination):
     block = coop.this_block()
-    items = coop.ThreadData(2, dtype=np.int32)
+    items = coop.ThreadData(items_per_thread=2)
     coop.load(
         block,
         source,
@@ -42,7 +42,7 @@ def copy_direct(source, destination):
 @cuda.jit
 def copy_transpose(source, destination):
     block = coop.this_block()
-    items = coop.ThreadData(2, dtype=np.int32)
+    items = coop.ThreadData(items_per_thread=2)
     scratch = coop.TempStorage(auto_sync=True)
     coop.load(
         block,
