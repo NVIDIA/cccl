@@ -14,8 +14,15 @@ from cuda.coop._core import (
 from cuda.coop._core.block.merge_sort import make_block_merge_sort_spec
 from cuda.coop._core.warp.merge_sort import make_warp_merge_sort_spec
 
-from .._compiler._operations import StorageABI, factory_operation, register_factory
-from .._compiler._parameters import _validate_common_numeric_dtype, normalize_dim_param
+from .._compiler._operations import (
+    StorageABI,
+    factory_operation,
+    register_factory,
+)
+from .._compiler._parameters import (
+    _validate_common_numeric_dtype,
+    normalize_dim_param,
+)
 from .._semantic import _normalize_numba_callable, _numba_semantic_token
 from .._types import make_invocable_from_specialization
 from ._core import NumbaMlirCoreAdapter
@@ -27,10 +34,13 @@ def comparison_operator(descending, compare_op):
     if compare_op is not None:
         if descending:
             raise ValueError(
-                "Merge Sort compare_op and descending=True are mutually exclusive"
+                "Merge Sort compare_op and "
+                "descending=True are mutually exclusive"
             )
         if not callable(compare_op):
-            raise TypeError("Merge Sort compare_op must be a stateless callable")
+            raise TypeError(
+                "Merge Sort compare_op must be a stateless callable"
+            )
         return PythonOperator(
             op_tokenizer=_numba_semantic_token,
             ret_dtype=INT8,
@@ -39,7 +49,9 @@ def comparison_operator(descending, compare_op):
             name="compare_op",
         )
     return CxxOperator(
-        cpp="::cuda::std::greater<KeyT>" if descending else "::cuda::std::less<KeyT>",
+        cpp="::cuda::std::greater<KeyT>"
+        if descending
+        else "::cuda::std::less<KeyT>",
         dtype=Dependency("KeyT"),
         name="compare_op",
     )
@@ -79,9 +91,13 @@ def _make_provider(namespace, pairs, partial):
             "oob_default": 0 if partial else None,
         }
         if namespace == "block":
-            spec = make_block_merge_sort_spec(block_dim=tuple(block_dim), **kwargs)
+            spec = make_block_merge_sort_spec(
+                block_dim=tuple(block_dim), **kwargs
+            )
         else:
-            spec = make_warp_merge_sort_spec(threads_in_warp=threads_in_warp, **kwargs)
+            spec = make_warp_merge_sort_spec(
+                threads_in_warp=threads_in_warp, **kwargs
+            )
         metadata = factory_operation(provider)
         assert metadata is not None
         specialization = adapter.materialize(

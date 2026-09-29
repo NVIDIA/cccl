@@ -25,7 +25,9 @@ from cuda.coop._core import (
     this_warp,
 )
 
-_COMPARE = CxxOperator("::cuda::std::less<KeyT>", Dependency("KeyT"), "compare_op")
+_COMPARE = CxxOperator(
+    "::cuda::std::less<KeyT>", Dependency("KeyT"), "compare_op"
+)
 
 
 def _operation(*, pairs=False, valid=None):
@@ -44,7 +46,8 @@ def _operation(*, pairs=False, valid=None):
 
 def _plan(group, **kwargs):
     return plan_group_primitive(
-        make_group_primitive_call(group, _operation(**kwargs)), LaunchFacts((8, 4, 2))
+        make_group_primitive_call(group, _operation(**kwargs)),
+        LaunchFacts((8, 4, 2)),
     )
 
 
@@ -124,7 +127,11 @@ def test_non_power_of_two_block_is_unsupported():
     ],
 )
 def test_primitive_controls(kwargs):
-    controls = {"key_dtype": INT32, "items_per_thread": 3, "compare_operator": _COMPARE}
+    controls = {
+        "key_dtype": INT32,
+        "items_per_thread": 3,
+        "compare_operator": _COMPARE,
+    }
     controls.update(kwargs)
     with pytest.raises((ValueError, TypeError)):
         make_block_merge_sort_semantics(**controls)

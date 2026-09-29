@@ -11,7 +11,10 @@ from typing import Any
 
 from .._bindings import ArgumentBinding, BindingKind, _normalize_i32_binding
 from .._types import ArgumentKind, ParameterClassification, ParameterRole
-from ..block.merge_sort import BlockMergeSortSemantics, make_block_merge_sort_spec
+from ..block.merge_sort import (
+    BlockMergeSortSemantics,
+    make_block_merge_sort_spec,
+)
 from ..launch import LaunchFacts
 from ..thread_group import ThreadGroup
 from ..warp.merge_sort import make_warp_merge_sort_spec
@@ -37,7 +40,9 @@ from ._model import (
 @dataclass(frozen=True, eq=False)
 class GroupMergeSortSemantics:
     primitive: BlockMergeSortSemantics
-    valid_items: ArgumentBinding = field(default_factory=ArgumentBinding.omitted)
+    valid_items: ArgumentBinding = field(
+        default_factory=ArgumentBinding.omitted
+    )
 
     def __post_init__(self) -> None:
         if not isinstance(self.primitive, BlockMergeSortSemantics):
@@ -52,7 +57,9 @@ class GroupMergeSortSemantics:
         if self.primitive.has_partial_tile != (
             self.valid_items.kind is not BindingKind.OMITTED
         ):
-            raise ValueError("partial Merge Sort requires a valid_items binding")
+            raise ValueError(
+                "partial Merge Sort requires a valid_items binding"
+            )
 
     @property
     def dtype(self) -> Any:
@@ -81,11 +88,15 @@ class GroupMergeSortSemantics:
 
 def _classifications(operation):
     result = [
-        ParameterClassification("keys", ArgumentKind.RUNTIME, ParameterRole.INPUT)
+        ParameterClassification(
+            "keys", ArgumentKind.RUNTIME, ParameterRole.INPUT
+        )
     ]
     if operation.primitive.has_values:
         result.append(
-            ParameterClassification("values", ArgumentKind.RUNTIME, ParameterRole.INPUT)
+            ParameterClassification(
+                "values", ArgumentKind.RUNTIME, ParameterRole.INPUT
+            )
         )
     result.append(
         ParameterClassification(
@@ -132,7 +143,8 @@ def _plan_merge_sort(
                 call,
                 resolved,
                 UnsupportedReasonCode.OPERATION_VARIANT,
-                "cub::BlockMergeSort requires a power-of-two block thread count",
+                "cub::BlockMergeSort requires "
+                "a power-of-two block thread count",
             )
         spec = make_block_merge_sort_spec(
             block_dim=launch.exact_block_dim, **kwargs
@@ -145,7 +157,9 @@ def _plan_merge_sort(
         if error is not None:
             return error
         assert width is not None
-        spec = make_warp_merge_sort_spec(threads_in_warp=width, **kwargs).specialization
+        spec = make_warp_merge_sort_spec(
+            threads_in_warp=width, **kwargs
+        ).specialization
         target = GroupLoweringTarget.CUB_WARP
         header = "cub/warp/warp_merge_sort.cuh"
         cpp_class = "cub::WarpMergeSort"
@@ -155,7 +169,8 @@ def _plan_merge_sort(
         and not 0 <= operation.valid_items.value <= capacity
     ):
         raise ValueError(
-            f"valid_items must be between 0 and the group tile size ({capacity})"
+            "valid_items must be between 0 and the group tile size "
+            f"({capacity})"
         )
     outputs = [("keys", primitive.key_dtype)]
     if primitive.has_values:
@@ -218,7 +233,10 @@ _register_group_operation_family(
     classifications=_classifications,
     planner=_plan_merge_sort,
     group_kinds=frozenset({"block", "warp", "threads_within_warp"}),
-    unsupported_group_message="Merge Sort supports complete block, physical warp, and power-of-two logical warp groups",
+    unsupported_group_message=(
+        "Merge Sort supports complete block, physical warp, "
+        "and power-of-two logical warp groups"
+    ),
 )
 
 __all__ = ["GroupMergeSortSemantics"]

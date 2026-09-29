@@ -43,7 +43,8 @@ def _payload(context, operation, name, value, is_common_root):
         )
     if is_common_root and not context.is_thread_data(operation, name, value):
         raise TypeError(
-            f"cuda.coop.{operation} {name} requires ThreadData; use cuda.coop.numba_mlir for local arrays"
+            f"cuda.coop.{operation} {name} requires ThreadData; use "
+            f"cuda.coop.numba_mlir for local arrays"
         )
     extent = context.array_extent(value)
     if extent is None:
@@ -53,7 +54,9 @@ def _payload(context, operation, name, value, is_common_root):
         dtype = context.payload_write_dtype(value)
     if dtype is None:
         raise GroupRewriteError(f"{operation} could not infer {name} dtype")
-    dtype = _validate_common_numeric_dtype(dtype, operation=operation, parameter=name)
+    dtype = _validate_common_numeric_dtype(
+        dtype, operation=operation, parameter=name
+    )
     context.record_thread_data_dtype(value, dtype)
     return extent, dtype
 
@@ -66,7 +69,9 @@ def _cast(context, statements, inst, value, dtype, name):
     value = context.value_var(
         statements, stem=f"merge_sort_{name}", value=value, **kwargs
     )
-    result = context.new_var(inst.target.scope, inst.loc, f"merge_sort_{name}_cast")
+    result = context.new_var(
+        inst.target.scope, inst.loc, f"merge_sort_{name}_cast"
+    )
     statements.append(
         ir.Assign(ir.Expr.call(cast, [value], (), inst.loc), result, inst.loc)
     )
@@ -74,7 +79,9 @@ def _cast(context, statements, inst, value, dtype, name):
 
 
 def _coerce_static_sentinel(value, dtype, *, operation):
-    if (type(value) is float or isinstance(value, np.floating)) and math.isinf(value):
+    if (type(value) is float or isinstance(value, np.floating)) and math.isinf(
+        value
+    ):
         # Validate the scalar dtype before preserving an infinite sorting bound.
         zero = coerce_static_scalar(
             type(value)(0), dtype, operation=operation, parameter="oob_default"
@@ -85,7 +92,9 @@ def _coerce_static_sentinel(value, dtype, *, operation):
     )
 
 
-def _lower_merge_sort(context, inst, *, operation, group, bound, is_common_root):
+def _lower_merge_sort(
+    context, inst, *, operation, group, bound, is_common_root
+):
     from .._lowering import _merge_sort
 
     arguments = bound.arguments
@@ -98,12 +107,15 @@ def _lower_merge_sort(context, inst, *, operation, group, bound, is_common_root)
     extent, key_dtype = payloads[0]
     if pairs and payloads[1][0] != extent:
         raise ValueError(
-            "Merge Sort keys and values must have matching items_per_thread extents"
+            "Merge Sort keys and values must have "
+            "matching items_per_thread extents"
         )
     value_dtype = payloads[1][1] if pairs else None
     descending = context.constant(arguments["descending"])
     compare_raw = arguments.get("compare_op")
-    compare_op = None if context.is_none(compare_raw) else context.constant(compare_raw)
+    compare_op = (
+        None if context.is_none(compare_raw) else context.constant(compare_raw)
+    )
     compare_operator = _merge_sort.comparison_operator(descending, compare_op)
     valid_raw = arguments["valid_items"]
     sentinel_raw = arguments["oob_default"]
@@ -115,7 +127,9 @@ def _lower_merge_sort(context, inst, *, operation, group, bound, is_common_root)
         )
     if valid.kind is BindingKind.RUNTIME:
         _validate_runtime_integer_dtype(
-            context.dtype(valid_raw), operation=operation, parameter="valid_items"
+            context.dtype(valid_raw),
+            operation=operation,
+            parameter="valid_items",
         )
     sentinel = None
     if partial:
@@ -132,7 +146,8 @@ def _lower_merge_sort(context, inst, *, operation, group, bound, is_common_root)
             )
             if sentinel_dtype != key_dtype:
                 raise TypeError(
-                    f"Merge Sort oob_default dtype {sentinel_dtype} does not match keys dtype {key_dtype}"
+                    f"Merge Sort oob_default dtype {sentinel_dtype} does not "
+                    f"match keys dtype {key_dtype}"
                 )
             sentinel = sentinel_raw
     semantics = GroupMergeSortSemantics(
@@ -152,11 +167,14 @@ def _lower_merge_sort(context, inst, *, operation, group, bound, is_common_root)
     temp_storage = arguments["temp_storage"]
     if not context.is_none(temp_storage):
         if plan.target is not GroupLoweringTarget.CUB_BLOCK:
-            raise ValueError("Merge Sort temp_storage applies only to block groups")
+            raise ValueError(
+                "Merge Sort temp_storage applies only to block groups"
+            )
         descriptor = context.temp_storage(temp_storage)
         if descriptor is None:
             raise GroupRewriteError(
-                "Merge Sort temp_storage must resolve to a compile-time TempStorage descriptor"
+                "Merge Sort temp_storage must resolve to a compile-time "
+                "TempStorage descriptor"
             )
         size, alignment, auto_sync, sharing = descriptor
         plan = replace(
@@ -177,15 +195,20 @@ def _lower_merge_sort(context, inst, *, operation, group, bound, is_common_root)
                 else SynchronizationScope.NONE,
             ),
         )
-    namespace = "block" if plan.target is GroupLoweringTarget.CUB_BLOCK else "warp"
+    namespace = (
+        "block" if plan.target is GroupLoweringTarget.CUB_BLOCK else "warp"
+    )
     assert plan.provenance is not None
     expected_class = (
         "cub::BlockMergeSort" if namespace == "block" else "cub::WarpMergeSort"
     )
     if plan.provenance.cpp_class != expected_class:
-        raise GroupRewriteError("Merge Sort received unknown provider provenance")
+        raise GroupRewriteError(
+            "Merge Sort received unknown provider provenance"
+        )
     factory = getattr(
-        _merge_sort, f"{namespace}_{operation}" + ("_partial" if partial else "")
+        _merge_sort,
+        f"{namespace}_{operation}" + ("_partial" if partial else ""),
     )
     kwargs = {
         "key_dtype": key_dtype,
@@ -235,8 +258,17 @@ def _lower_merge_sort(context, inst, *, operation, group, bound, is_common_root)
         count = valid.value if valid.kind is BindingKind.STATIC else valid_raw
         runtime_args.extend(
             (
-                _cast(context, statements, inst, count, types.int64, "valid_items"),
-                _cast(context, statements, inst, sentinel, key_dtype, "oob_default"),
+                _cast(
+                    context, statements, inst, count, types.int64, "valid_items"
+                ),
+                _cast(
+                    context,
+                    statements,
+                    inst,
+                    sentinel,
+                    key_dtype,
+                    "oob_default",
+                ),
             )
         )
     statements.extend(
@@ -256,7 +288,10 @@ for _name, _results in (
     ("merge_sort_keys", (GroupResultSource("keys", "keys"),)),
     (
         "merge_sort_pairs",
-        (GroupResultSource("keys", "keys"), GroupResultSource("values", "values")),
+        (
+            GroupResultSource("keys", "keys"),
+            GroupResultSource("values", "values"),
+        ),
     ),
 ):
     register_group_primitive(_name, lower=_lower_merge_sort, results=_results)
@@ -266,7 +301,9 @@ for _name, _results in (
             RewriteOperationSpec(
                 factory_namespaces=frozenset({"block", "warp"}),
                 dtype_factory_kwargs=frozenset({"key_dtype", "value_dtype"}),
-                runtime_arg_counts=frozenset({len(_results) + (2 if _partial else 0)}),
+                runtime_arg_counts=frozenset(
+                    {len(_results) + (2 if _partial else 0)}
+                ),
                 runtime_factory_kwargs=(),
                 runtime_factory_kw_prerequisites=(),
                 allowed_factory_kwargs=frozenset(

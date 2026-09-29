@@ -25,7 +25,9 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 def _fixed_device(monkeypatch):
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == ""
     monkeypatch.setattr(
-        cuda, "get_current_device", lambda: SimpleNamespace(compute_capability=(9, 0))
+        cuda,
+        "get_current_device",
+        lambda: SimpleNamespace(compute_capability=(9, 0)),
     )
     monkeypatch.setattr(
         numba_mlir_tools,
