@@ -1796,11 +1796,13 @@ class _ProvenanceRewrite:
             pass
         if isinstance(value_ref, ir.Var):
             definition = self._lookup_definition(value_ref)
-            if isinstance(definition, ir.Expr) and definition.op == "getattr":
-                if definition.attr == "dtype" and isinstance(
-                    definition.value, ir.Var
-                ):
-                    return self._resolve_var_dtype(definition.value)
+            if (
+                isinstance(definition, ir.Expr)
+                and definition.op == "getattr"
+                and definition.attr == "dtype"
+                and isinstance(definition.value, ir.Var)
+            ):
+                return self._resolve_var_dtype(definition.value)
             return self._resolve_var_dtype(value_ref)
         return None
 
