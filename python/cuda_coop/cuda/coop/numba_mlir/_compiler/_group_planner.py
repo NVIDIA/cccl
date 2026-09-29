@@ -2199,7 +2199,8 @@ class _GroupCallPlanner:
                 if level_order[level] > level_order[group.mapping.parent]:
                     raise NotImplementedError(
                         "cuda.coop.numba_mlir mapped ThreadGroup queries above "
-                        "the immediate parent require recursive group composition"
+                        "the immediate parent require "
+                        "recursive group composition"
                     )
             group = self._resolve_group(
                 group, feature=f"ThreadGroup.{operation}", through_level=level
@@ -2219,7 +2220,8 @@ class _GroupCallPlanner:
         if group.kind == "grid" and operation in {"sync", "sync_aligned"}:
             raise NotImplementedError(
                 "cuda.coop.numba_mlir grid synchronization requires a verified "
-                "cooperative launch, which the current launch descriptor cannot "
+                "cooperative launch, which the "
+                "current launch descriptor cannot "
                 "request"
             )
 
