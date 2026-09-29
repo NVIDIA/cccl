@@ -31,7 +31,6 @@ from cuda.coop._core import (
     plan_group_primitive,
 )
 from cuda.coop._core._types import INT32
-from cuda.coop._core.api._dispatch import _common_root_operation_name
 from cuda.coop._core.api.radix import _radix_bounds
 from cuda.coop._core.block.radix_rank import (
     block_radix_rank_bins_per_thread,
@@ -72,13 +71,12 @@ def _bit_binding(value, name):
 
 
 def _plan(group, launch, operation, temp_storage=None):
-    source = (
-        "common_root"
-        if _common_root_operation_name() is not None
-        else "cutlass_root"
-    )
     plan = plan_group_primitive(
-        make_group_primitive_call(group, operation, source=source), launch
+        make_group_primitive_call(
+            group,
+            operation,
+        ),
+        launch,
     ).require_supported()
     if (
         operation.primitive.items_per_thread * launch.exact_block_threads
