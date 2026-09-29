@@ -382,7 +382,7 @@ public:
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(pair<_U1, _U2>&& __p) noexcept(
     is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
-      : __base(::cuda::std::move(__p.first), ::cuda::std::move(__p.second))
+      : __base(static_cast<_U1&&>(__p.first), static_cast<_U2&&>(__p.second))
   {}
 
   template <class _U1,
@@ -391,7 +391,7 @@ public:
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr pair(pair<_U1, _U2>&& __p) noexcept(
     is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
-      : __base(::cuda::std::move(__p.first), ::cuda::std::move(__p.second))
+      : __base(static_cast<_U1&&>(__p.first), static_cast<_U2&&>(__p.second))
   {}
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
@@ -408,7 +408,7 @@ public:
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(const pair<_U1, _U2>&& __p) noexcept(
     is_nothrow_constructible_v<_T1, const _U1> && is_nothrow_constructible_v<_T2, const _U2>)
-      : __base(::cuda::std::move(__p.first), ::cuda::std::move(__p.second))
+      : __base(static_cast<const _U1&&>(__p.first), static_cast<const _U2&&>(__p.second))
   {}
 
   template <class _U1,
@@ -417,7 +417,7 @@ public:
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr pair(const pair<_U1, _U2>&& __p) noexcept(
     is_nothrow_constructible_v<_T1, const _U1> && is_nothrow_constructible_v<_T2, const _U2>)
-      : __base(::cuda::std::move(__p.first), ::cuda::std::move(__p.second))
+      : __base(static_cast<const _U1&&>(__p.first), static_cast<const _U2&&>(__p.second))
   {}
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
