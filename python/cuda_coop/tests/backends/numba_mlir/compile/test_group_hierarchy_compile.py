@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Production compile coverage for Numba-CUDA-MLIR group hierarchy methods."""
-
 from types import SimpleNamespace
 
 import pytest
