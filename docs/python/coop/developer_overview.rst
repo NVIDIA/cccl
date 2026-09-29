@@ -810,6 +810,27 @@ This uses the same general technique as Python operators in
 contract, including associativity, and the supported input and output
 dtype contract. Successful compilation cannot establish associativity.
 
+A Block Scan *prefix callback* is a different operand from its binary scan
+operator. It receives the block aggregate and returns a prefix to apply
+to that block's scan. The qualified API names it ``prefix_op``. For a
+running prefix, ``StatefulFunction`` describes a callback whose first
+argument is a pointer to explicit per-thread state; the state payload is
+passed as the third positional argument to the Scan call.
+
+The descriptor identifies the callable and state dtype. The state itself
+remains runtime data, so repeated calls can update it without changing the
+compiled operator. Its lifetime is separate from CUB scratch reuse. The
+current implementation requires numeric, one-item state and exact dtype
+matching with the descriptor. The state dtype can differ from the scan
+dtype.
+
+CUB invokes the prefix callback in the first warp of the block. Only
+lane zero's returned prefix is used, and only thread zero's state is
+authoritative after the call. Callers initialize each participating state
+cell equally. This is local state for successive tiles handled by one
+block; it does not provide communication between blocks. Prefix callbacks
+currently cannot be combined with ``initial_value`` or
+``aggregate_output`` and are not supported for Warp Scan.
 
 Activation and compilation reuse
 --------------------------------
