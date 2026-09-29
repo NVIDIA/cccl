@@ -28,7 +28,7 @@ common_block.group_by(2).rank("grid")  # expected-error: [call-overload]
 common.this_warp().group_by(8).count(
     "block"
 )  # expected-error: [call-overload]
-common.StatefulFunction  # expected-error: [attr-defined]
+common.StatefulFunction  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
 qualified_block = coop.this_block()
 qualified_block.rank_as(np.float32)  # expected-error: [arg-type]
 qualified_block.count_as(np.bool_)  # expected-error: [arg-type]
