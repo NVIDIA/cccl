@@ -11,13 +11,13 @@ from cuda.coop._core.block.topk import make_block_topk_spec
 
 
 def _spec(**overrides):
-    args = dict(
-        key_dtype=INT32,
-        block_dim=(64, 1, 1),
-        items_per_thread=2,
-        selection="min",
-        k=ArgumentBinding.static(7),
-    )
+    args = {
+        "key_dtype": INT32,
+        "block_dim": (64, 1, 1),
+        "items_per_thread": 2,
+        "selection": "min",
+        "k": ArgumentBinding.static(7),
+    }
     args.update(overrides)
     return make_block_topk_spec(**args)
 
