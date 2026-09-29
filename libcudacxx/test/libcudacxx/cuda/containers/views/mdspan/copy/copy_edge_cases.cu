@@ -539,7 +539,7 @@ TEST_CASE("copy d2d contiguous kernel outer size > max grid y", "[copy][d2d][con
   const src_mapping_t src_mapping(extents_t(M, N), cuda::std::array<long long, 2>{Ld, 1});
 
   const src_mdspan_t src(thrust::raw_pointer_cast(d_src.data()), src_mapping);
-  const dst_mdspan_t dst(thrust::raw_pointer_cast(d_dst.data()), extents_t(M, N), src_mapping);
+  const dst_mdspan_t dst(thrust::raw_pointer_cast(d_dst.data()), extents_t(M, N));
 
   cuda::copy(src, dst, copy_stream);
   copy_stream.sync();
