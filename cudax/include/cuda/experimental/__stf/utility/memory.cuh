@@ -895,7 +895,7 @@ public:
     {
       if (small_length < small_cap)
       {
-        new (small_begin() + small_length) T(mv(value));
+        new (small_begin() + small_length) T(::cuda::std::move(value));
         ++small_length;
         return;
       }
@@ -903,7 +903,7 @@ public:
       assert(!is_small());
       // fall through to big case
     }
-    big().push_back(mv(value));
+    big().push_back(::cuda::std::move(value));
   }
 
   template <class... Args>
@@ -1108,7 +1108,7 @@ private:
 
   void adopt_big_vector(::std::vector<T>&& vec)
   {
-    new (&big())::std::vector<T>(mv(vec));
+    new (&big())::std::vector<T>(::cuda::std::move(vec));
     small_length = small_size_t(-1);
   }
 
