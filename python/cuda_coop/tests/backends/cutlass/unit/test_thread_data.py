@@ -119,15 +119,17 @@ def test_qualified_vector_conversion_and_common_boundary():
     assert ThreadData.from_payload(_Vector()).values("test") == (2, 3, 4)
     with pytest.raises(ValueError, match="does not match"):
         ThreadData.from_vector(_Vector(), items_per_thread=2)
-    with _common_root_operation_scope("store"):
-        with pytest.raises(TypeError, match="backend-qualified"):
-            _coerce_thread_payload(
-                _Vector(),
-                scope="cuda.coop.cutlass",
-                primitive_name="store",
-                arg_name="value",
-                common_root_payload_kind="scalar_or_thread_data",
-            )
+    with (
+        _common_root_operation_scope("store"),
+        pytest.raises(TypeError, match="backend-qualified"),
+    ):
+        _coerce_thread_payload(
+            _Vector(),
+            scope="cuda.coop.cutlass",
+            primitive_name="store",
+            arg_name="value",
+            common_root_payload_kind="scalar_or_thread_data",
+        )
 
 
 def test_memory_payloads_require_explicit_register_conversion():

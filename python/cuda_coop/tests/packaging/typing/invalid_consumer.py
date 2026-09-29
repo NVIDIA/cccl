@@ -28,7 +28,7 @@ common.this_grid().sync()  # expected-error: [misc]
 common_block.group_by(2).sync()  # expected-error: [misc]
 common_block.group_by(2).rank("grid")  # expected-error: [call-overload]
 common.this_warp().group_by(8).count("block")  # expected-error: [call-overload]
-common.StatefulFunction  # expected-error: [attr-defined]
+common.StatefulFunction  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
 qualified_block = numba_coop.this_block()
 qualified_block.rank_as(np.float32)  # expected-error: [arg-type]
 qualified_block.count_as(np.bool_)  # expected-error: [arg-type]
@@ -133,10 +133,10 @@ numba_coop.store(  # expected-error: [call-overload]
     values,
     offset="1",
 )
-numba_coop.BlockLoadAlgorithm  # expected-error: [attr-defined]
-numba_coop.BlockStoreAlgorithm  # expected-error: [attr-defined]
-numba_coop.WarpLoadAlgorithm  # expected-error: [attr-defined]
-numba_coop.WarpStoreAlgorithm  # expected-error: [attr-defined]
+numba_coop.BlockLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
+numba_coop.BlockStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
+numba_coop.WarpLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
+numba_coop.WarpStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
 common.exchange(
     common.this_block(),
     common_values,
@@ -349,7 +349,7 @@ numba_coop.reduce(  # expected-error: [call-overload]
     broadcast=False,
     algorithm="raking_commutative_only",
 )
-numba_coop.BlockScanAlgorithm  # expected-error: [attr-defined]
+numba_coop.BlockScanAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
 common.scan(  # expected-error: [call-overload]
     common_block,
     np.int32(1),

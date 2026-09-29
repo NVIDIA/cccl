@@ -75,9 +75,9 @@ _EXCLUDED_BACKEND_MODULES = (
 
 
 def test_public_exports_are_only_the_supported_group_families():
-    assert common_coop.__all__ == _COMMON_EXPORTS
+    assert sorted(common_coop.__all__) == sorted(_COMMON_EXPORTS)
     assert dir(common_coop) == sorted(_COMMON_EXPORTS)
-    assert numba_coop.__all__ == _QUALIFIED_EXPORTS
+    assert sorted(numba_coop.__all__) == sorted(_QUALIFIED_EXPORTS)
     assert dir(numba_coop) == sorted(_QUALIFIED_EXPORTS)
 
     excluded_exports = {
