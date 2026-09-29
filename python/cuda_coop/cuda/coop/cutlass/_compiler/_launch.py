@@ -14,7 +14,9 @@ from ._runtime import validate_cutlass_runtime
 
 
 def normalize_block_dim(value: Any) -> tuple[int, int, int] | None:
-    """Normalize a static shape without coercing floats or Boolean dimensions."""
+    """Normalize a static shape without coercing floats or Boolean
+    dimensions.
+    """
 
     dimensions = value if isinstance(value, (tuple, list)) else (value,)
     if not 1 <= len(dimensions) <= 3:

@@ -73,10 +73,10 @@ def run_length_decode(
     signed 32-bit integers.
 
     Each call prepares its own CUB run table. Use
-    :func:`cuda.coop.run_length_decode_into` to write a full stream while preparing
-    that table once, or :func:`cuda.coop.numba_mlir.run_length_decode` for
-    total-size and relative run-offset outputs. The qualified Numba operation
-    also accepts local-array run inputs.
+    :func:`cuda.coop.run_length_decode_into` to write a full stream while
+    preparing that table once, or :func:`cuda.coop.numba_mlir.run_length_decode`
+    for total-size and relative run-offset outputs. The qualified Numba
+    operation also accepts local-array run inputs.
     """
     raise CoopCompilerContextRequiredError(
         "cuda.coop.run_length_decode must be called from a supported "

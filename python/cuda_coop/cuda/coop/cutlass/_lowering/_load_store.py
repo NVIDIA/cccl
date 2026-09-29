@@ -523,7 +523,9 @@ def _contiguous_memory_proof(
     *,
     primitive_name: str,
 ) -> tuple[_ContiguousMemoryProof | None, str]:
-    """Classify raw-pointer eligibility without registering a provider request."""
+    """Classify raw-pointer eligibility without registering a provider
+    request.
+    """
 
     layout_reason = contiguous_layout_reason(value)
     if layout_reason is not None:

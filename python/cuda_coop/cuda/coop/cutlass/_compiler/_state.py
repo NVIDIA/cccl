@@ -181,7 +181,9 @@ def _select_session(
 def lookup_bundle_session(
     compile_options: Any, *, trace_module_op: Any = _UNSPECIFIED_MODULE
 ) -> BundleSession | None:
-    """Find a trace's session without disturbing other modules on the same DSL."""
+    """Find a trace's session without disturbing other modules on the same
+    DSL.
+    """
 
     with _STATE_LOCK:
         return _select_session(
