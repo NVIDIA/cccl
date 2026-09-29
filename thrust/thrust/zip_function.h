@@ -35,18 +35,18 @@ THRUST_NAMESPACE_BEGIN
  *  \{
  */
 
-/*! \p zip_function is a function object that allows the easy use of N-ary
- *  function objects with \p zip_iterators without redefining them to take a
- *  \p tuple instead of N arguments.
+/*! \p zip_function adapts a callable that takes N arguments into a unary
+ *  function object that takes a tuple of N elements. It unpacks the tuple and
+ *  passes its elements as separate arguments to the underlying callable.
  *
- *  This means that if a functor that takes 2 arguments which could be used with
- *  the \p transform function and \p device_iterators can be extended to take 3
- *  arguments and \p zip_iterators without rewriting the functor in terms of
- *  \p tuple.
+ *  This is useful with \p zip_iterator, which combines N iterators and returns
+ *  a tuple of their references when dereferenced. Using \p zip_function lets
+ *  an algorithm such as \p transform apply an existing N-argument callable to
+ *  that tuple without rewriting the callable to extract the tuple elements.
  *
  *  The \p make_zip_function convenience function is provided to avoid having
  *  to explicitly define the type of the functor when creating a \p zip_function,
- *  whic is especially helpful when using lambdas as the functor.
+ *  which is especially helpful when using lambdas as the functor.
  *
  *  \code
  *  #include <thrust/iterator/zip_iterator.h>

@@ -6,7 +6,7 @@
 #include <unittest/unittest.h>
 
 // see also: https://github.com/NVIDIA/cccl/issues/3541
-void TestTransformWithLambda()
+void test_transform_with_lambda()
 {
   auto l = [] __host__ __device__(int v) {
     return v < 4;
@@ -17,7 +17,7 @@ void TestTransformWithLambda()
   thrust::device_vector<int> B{1, 2, 3, 4, 5, 6, 7};
   REQUIRE(thrust::any_of(B.begin(), B.end(), l));
 }
-TEST_CASE("TestTransformWithLambda", "[transform_iterator]")
+TEST_CASE("test_transform_with_lambda", "[transform_iterator]")
 {
-  TestTransformWithLambda();
+  test_transform_with_lambda();
 }

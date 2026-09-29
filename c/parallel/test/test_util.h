@@ -723,16 +723,16 @@ struct pointer_t
   size_t size{};
 
   pointer_t(std::size_t num_items)
+      : size(num_items)
   {
     REQUIRE(cudaSuccess == cudaMalloc(&ptr, num_items * sizeof(T)));
-    size = num_items;
   }
 
   pointer_t(const std::vector<T>& vec)
+      : size(vec.size())
   {
     REQUIRE(cudaSuccess == cudaMalloc(&ptr, vec.size() * sizeof(T)));
     REQUIRE(cudaSuccess == cudaMemcpy(ptr, vec.data(), vec.size() * sizeof(T), cudaMemcpyHostToDevice));
-    size = vec.size();
   }
 
   pointer_t() = default;

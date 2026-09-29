@@ -281,6 +281,34 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::cuda::complex<_Tp>>
   using type _CCCL_NODEBUG = _Tp;
 };
 
+template <size_t _Index, class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp& get(::cuda::complex<_Tp>& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+  return get<_Index>(__z);
+}
+
+template <size_t _Index, class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp&& get(::cuda::complex<_Tp>&& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+  return get<_Index>(::cuda::std::move(__z));
+}
+
+template <size_t _Index, class _Tp>
+[[nodiscard]] _CCCL_API constexpr const _Tp& get(const ::cuda::complex<_Tp>& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+  return get<_Index>(__z);
+}
+
+template <size_t _Index, class _Tp>
+[[nodiscard]] _CCCL_API constexpr const _Tp&& get(const ::cuda::complex<_Tp>&& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+  return get<_Index>(::cuda::std::move(__z));
+}
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 // tuple protocol for cuda::std::complex
