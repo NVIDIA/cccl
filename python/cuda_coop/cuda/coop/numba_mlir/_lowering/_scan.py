@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""CUB BlockScan and WarpScan provider lowering."""
-
 from __future__ import annotations
 
 import operator
