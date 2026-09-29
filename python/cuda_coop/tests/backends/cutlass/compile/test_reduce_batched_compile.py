@@ -51,17 +51,23 @@ def _compile(api=coop, *, block=64, bad=None, width=8):
     def launch(memory: cute.Pointer):
         kernel(memory).launch(grid=1, block=block)
 
-    pointer = make_ptr(cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16)
+    pointer = make_ptr(
+        cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16
+    )
     return cute.compile[(GPUArch("sm_80"),)](launch, pointer)
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("width", (1, 8, 32))
 def test_entry_points(api, width):
     assert _compile(api, width=width) is not None
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize(
     "bad,message",
     (
@@ -73,7 +79,8 @@ def test_entry_points(api, width):
 )
 def test_invalid_profiles(api, bad, message):
     with pytest.raises(
-        (TypeError, ValueError, NotImplementedError, DSLRuntimeError), match=message
+        (TypeError, ValueError, NotImplementedError, DSLRuntimeError),
+        match=message,
     ):
         _compile(api, bad=bad)
 

@@ -168,7 +168,8 @@ def _render_reduce_batched(request):
         f"  const {cpp} inputs[{p.batches}] = {{{inputs}}};",
         f"  {cpp} outputs[{request.outputs_per_thread}] = {{}};",
         (
-            f"  implementation_type(storage).{request.implementation.method_name}("
+            "  implementation_type(storage)."
+            f"{request.implementation.method_name}("
             f"inputs, outputs, {operator_expression(request.op)});"
         ),
         *(
