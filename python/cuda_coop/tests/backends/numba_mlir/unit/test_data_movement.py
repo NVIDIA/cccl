@@ -419,18 +419,18 @@ def test_common_direct_block_load_store_lowers_to_private_factories():
 )
 @pytest.mark.parametrize("operation", ("load", "store"))
 @pytest.mark.parametrize(
-    ("algorithm", "storage_free", "mutates_store_payload"),
+    ("algorithm", "storage_free"),
     (
-        ("direct", True, False),
-        ("striped", True, False),
-        ("vectorize", True, False),
-        ("transpose", False, True),
-        ("warp_transpose", False, True),
-        ("warp_transpose_timesliced", False, True),
+        ("direct", True),
+        ("striped", True),
+        ("vectorize", True),
+        ("transpose", False),
+        ("warp_transpose", False),
+        ("warp_transpose_timesliced", False),
     ),
 )
 def test_group_planner_selects_algorithm_storage_provider(
-    qualified, operation, algorithm, storage_free, mutates_store_payload
+    qualified, operation, algorithm, storage_free
 ):
     from numba_cuda_mlir import types
     from numba_cuda_mlir.numbair_transforms import ir
@@ -477,16 +477,6 @@ def test_group_planner_selects_algorithm_storage_provider(
         if factory is expected
     ]
     assert len(calls) == 1
-    preserved_payloads = {
-        inst.target.name
-        for block in func_ir.blocks.values()
-        for inst in block.body
-        if isinstance(inst, ir.Assign)
-        and "store_preserved_value_payload" in inst.target.name
-    }
-    assert bool(preserved_payloads) is (
-        operation == "store" and mutates_store_payload
-    )
 
 
 @pytest.mark.parametrize(
@@ -545,12 +535,12 @@ def test_group_planner_normalizes_algorithm_strings(qualified, operation):
 )
 @pytest.mark.parametrize("operation", ("load", "store"))
 @pytest.mark.parametrize(
-    ("algorithm", "storage_free", "mutates_store_payload"),
+    ("algorithm", "storage_free"),
     (
-        ("direct", True, False),
-        ("striped", True, False),
-        ("vectorize", True, False),
-        ("transpose", False, True),
+        ("direct", True),
+        ("striped", True),
+        ("vectorize", True),
+        ("transpose", False),
     ),
 )
 def test_warp_planner_selects_declared_provider(
@@ -559,7 +549,6 @@ def test_warp_planner_selects_declared_provider(
     operation,
     algorithm,
     storage_free,
-    mutates_store_payload,
 ):
     from numba_cuda_mlir import types
     from numba_cuda_mlir.numbair_transforms import ir
@@ -624,17 +613,6 @@ def test_warp_planner_selects_declared_provider(
     assert constants[keywords["threads_per_block"].name] == (64, 1, 1)
     assert constants[keywords["algorithm"].name] == algorithm
     assert "warp_tile_effective_offset" in keywords["offset"].name
-
-    preserved_payloads = {
-        inst.target.name
-        for block in func_ir.blocks.values()
-        for inst in block.body
-        if isinstance(inst, ir.Assign)
-        and "store_preserved_value_payload" in inst.target.name
-    }
-    assert bool(preserved_payloads) is (
-        operation == "store" and mutates_store_payload
-    )
 
 
 @pytest.mark.parametrize("group_kind", ("block", "warp", "logical_warp"))

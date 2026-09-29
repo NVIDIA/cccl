@@ -62,13 +62,13 @@ def load(
         Number of valid elements in the group's tile, shared by all threads
         in that group. Supply a value between zero and the tile size,
         inclusive. ``None`` loads the full tile. Slots beyond this valid
-        prefix retain their previous values unless ``oob_default`` is given.
+        prefix have unspecified values unless ``oob_default`` is given.
     oob_default : numeric scalar, optional
         Value written to slots beyond ``valid_items``. Requires an explicit
         ``valid_items`` count. For example, use zero to pad a partial tile
         before summing it. A runtime value must have the payload dtype and
-        be uniform across the group. ``None`` leaves those slots unchanged;
-        initialize them before reading them.
+        be uniform across the group. With ``None``, those slots are unspecified,
+        even if initialized before the Load; assign them before reading them.
     offset : int or integer scalar, optional
         Nonnegative offset in elements from the start of ``source``, uniform
         across the group. ``None`` means zero. For block tiles, supply the
@@ -144,8 +144,9 @@ def store(
         This thread's value or readable :ref:`payload <coop-thread-data>`.
         Initialize every item that will be stored. The tile contains
         ``group_size * items_per_thread`` elements, with one item per thread
-        for a scalar. Store preserves the input, including when its algorithm
-        rearranges values internally.
+        for a scalar. As in CUB, transpose algorithms may rearrange the payload
+        in place. Do not rely on its contents after Store; copy values before
+        the call if they are needed later.
     algorithm : str, optional
         Compile-time store algorithm, default ``"direct"``. ``"direct"``
         expects blocked values; ``"striped"`` expects striped values.
@@ -174,7 +175,7 @@ def store(
     Returns
     -------
     None
-        The call writes to ``destination`` and leaves ``value`` unchanged.
+        The call writes to ``destination``. The input payload may be rearranged.
 
     See Also
     --------
@@ -184,8 +185,8 @@ def store(
     Examples
     --------
     Store a partial tile at an element offset. The untouched prefix and
-    suffix keep their sentinel values. A second output checks that transpose
-    Store preserved every thread's input payload.
+    suffix keep their sentinel values. The input payload is not used after
+    the transpose Store.
 
     .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_store_example.py
         :language: python
