@@ -106,7 +106,6 @@ def _plan_reduce_batched(
     requirements = _build_execution_requirements(
         resolved,
         launch,
-        result=result,
         storage_ownership=StorageOwnership.IMPLEMENTATION,
         cpp_type=None,
     )
