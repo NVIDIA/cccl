@@ -1023,7 +1023,9 @@ class Algorithm:
     def _qualify_private_symbols(
         self, *, threads=None, block_threads=None, compile_identity=None
     ):
-        """Give each emitted provider interface a deterministic private namespace."""
+        """Give each emitted provider interface a deterministic private
+        namespace.
+        """
 
         compile_identity = self._bind_provider_compile_identity(compile_identity)
         key = algo_coalesce_key(

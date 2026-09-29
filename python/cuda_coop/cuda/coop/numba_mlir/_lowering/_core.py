@@ -70,7 +70,9 @@ def _optional_binding(value: Any) -> ArgumentBinding:
 
 
 class NumbaMlirCoreAdapter(CoreBackendAdapter):
-    """Translate core descriptors while retaining Numba-CUDA-MLIR linking and caching."""
+    """Translate core descriptors while retaining Numba-CUDA-MLIR linking and
+    caching.
+    """
 
     _BUILTIN_DTYPES: ClassVar[dict[BuiltinDType, types.Type]] = {
         INT8: types.int8,
