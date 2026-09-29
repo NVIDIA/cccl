@@ -119,7 +119,8 @@ def exclusive_scan(
     All lanes participate and receive the aggregate; only valid lanes write
     prefixes.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_scan_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_scan_examples.py
         :language: python
         :start-after: # qualified-exclusive-scan-example-begin
         :end-before: # qualified-exclusive-scan-example-end
@@ -167,7 +168,8 @@ def inclusive_scan(
     Supply a device maximum operator and a local array with two items per
     thread. The built-in ``"max"`` operator gives the same result.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_scan_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_scan_examples.py
         :language: python
         :start-after: # qualified-inclusive-scan-example-begin
         :end-before: # qualified-inclusive-scan-example-end

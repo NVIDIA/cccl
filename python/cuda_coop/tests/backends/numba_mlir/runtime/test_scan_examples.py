@@ -138,7 +138,9 @@ def test_inclusive_scan_example():
     def warp_maxima(source, destination):
         thread = cuda.threadIdx.x
         group = coop.this_warp().group_by(8)
-        destination[thread] = coop.inclusive_scan(group, source[thread], scan_op="max")
+        destination[thread] = coop.inclusive_scan(
+            group, source[thread], scan_op="max"
+        )
 
     values = ((np.arange(64, dtype=np.int32) * 7) % 31) - 15
     source = cuda.to_device(values)

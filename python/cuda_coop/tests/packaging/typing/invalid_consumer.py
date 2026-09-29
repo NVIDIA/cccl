@@ -266,7 +266,8 @@ coop.reduce(  # expected-error: [call-overload]
     broadcast=False,
     algorithm="raking_commutative_only",
 )
-coop.BlockScanAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
+# Test rejected attributes.
+coop.BlockScanAlgorithm  # expected-error: [attr-defined]  # noqa: B018
 portable.scan(  # expected-error: [call-overload]
     portable_block,
     np.int32(1),
@@ -303,7 +304,10 @@ portable.exclusive_scan(  # expected-error: [misc]
     initial_value=np.float64(0),
 )
 portable.scan(  # expected-error: [call-overload]
-    portable.this_warp(), np.int32(1), mode="exclusive", initial_value=np.float64(0)
+    portable.this_warp(),
+    np.int32(1),
+    mode="exclusive",
+    initial_value=np.float64(0),
 )
 coop.exclusive_scan(  # expected-error: [misc]
     qualified_block,

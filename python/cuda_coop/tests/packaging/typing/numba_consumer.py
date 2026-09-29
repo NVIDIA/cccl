@@ -64,7 +64,9 @@ def check_numba_scan_seeds(integer_seed: int, floating_seed: float) -> None:
         coop.ThreadDataLike[np.uint16],
     )
     assert_type(
-        coop.scan(warp, np.float64(4), mode="exclusive", initial_value=np.float64(0)),
+        coop.scan(
+            warp, np.float64(4), mode="exclusive", initial_value=np.float64(0)
+        ),
         np.float64,
     )
     assert_type(
@@ -72,7 +74,9 @@ def check_numba_scan_seeds(integer_seed: int, floating_seed: float) -> None:
         np.int32,
     )
     assert_type(
-        coop.scan(block, np.float32(4), mode="exclusive", initial_value=floating_seed),
+        coop.scan(
+            block, np.float32(4), mode="exclusive", initial_value=floating_seed
+        ),
         np.float32,
     )
     assert_type(
@@ -311,8 +315,12 @@ def check_numba_surface(
         coop.exclusive_scan(block, values, scan_op=np.add),
         coop.ThreadDataLike[np.uint16],
     )
-    assert_type(coop.exclusive_scan(block, np.int32(4), scan_op=np.add), np.int32)
-    assert_type(coop.exclusive_scan(warp, np.int32(4), scan_op=np.add), np.int32)
+    assert_type(
+        coop.exclusive_scan(block, np.int32(4), scan_op=np.add), np.int32
+    )
+    assert_type(
+        coop.exclusive_scan(warp, np.int32(4), scan_op=np.add), np.int32
+    )
     assert_type(
         coop.scan(
             block,

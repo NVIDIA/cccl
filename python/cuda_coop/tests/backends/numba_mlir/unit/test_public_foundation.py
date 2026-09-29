@@ -145,8 +145,12 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
             qualified_parameter = qualified_scan.parameters[name]
             assert qualified_parameter.kind == parameter.kind
             assert qualified_parameter.default == parameter.default
-        assert qualified_scan.return_annotation == portable_scan.return_annotation
-        assert tuple(qualified_scan.parameters)[len(portable_scan.parameters) :] == (
+        assert (
+            qualified_scan.return_annotation == portable_scan.return_annotation
+        )
+        assert tuple(qualified_scan.parameters)[
+            len(portable_scan.parameters) :
+        ] == (
             "valid_items",
             "aggregate_output",
         )

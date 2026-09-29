@@ -101,7 +101,8 @@ def scan(
     Numba-CUDA-MLIR. The qualified import activates the backend, and the
     calls use the common ``cuda.coop`` API.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_scan_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_scan_examples.py
         :language: python
         :start-after: # scan-example-begin
         :end-before: # scan-example-end
@@ -174,7 +175,8 @@ def exclusive_sum(
     Turn per-thread item counts into offsets within one block using
     Numba-CUDA-MLIR. Each offset is the sum of earlier threads' counts.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_scan_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_scan_examples.py
         :language: python
         :start-after: # exclusive-sum-example-begin
         :end-before: # exclusive-sum-example-end
@@ -248,7 +250,8 @@ def inclusive_sum(
     Store use the same blocked order, so the output is the prefix sum of
     the source array. The original per-thread values remain available.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_scan_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_scan_examples.py
         :language: python
         :start-after: # inclusive-sum-example-begin
         :end-before: # inclusive-sum-example-end
@@ -336,7 +339,8 @@ def exclusive_scan(
     output. Each later output is the minimum of that seed and earlier
     input values.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_scan_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_scan_examples.py
         :language: python
         :start-after: # exclusive-scan-example-begin
         :end-before: # exclusive-scan-example-end
@@ -415,7 +419,8 @@ def inclusive_scan(
     Compute running maxima independently in each group of eight lanes
     with Numba-CUDA-MLIR. The 64-thread block contains eight logical warps.
 
-    .. literalinclude:: ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_scan_examples.py
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_scan_examples.py
         :language: python
         :start-after: # inclusive-scan-example-begin
         :end-before: # inclusive-scan-example-end

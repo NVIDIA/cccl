@@ -127,7 +127,8 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
     def __init__(
         self,
         *,
-        input_transforms: Mapping[str, NumbaMlirArrayInputTransform] | None = None,
+        input_transforms: Mapping[str, NumbaMlirArrayInputTransform]
+        | None = None,
         value_abis: Mapping[str, backend.Value] | None = None,
     ) -> None:
         self._input_transforms = dict(input_transforms or {})
@@ -138,7 +139,9 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
             try:
                 return self._BUILTIN_DTYPES[dtype]
             except KeyError as exc:
-                raise TypeError(f"unsupported core dtype {dtype.name!r}") from exc
+                raise TypeError(
+                    f"unsupported core dtype {dtype.name!r}"
+                ) from exc
         return dtype
 
     def core_dtype(self, dtype: Any) -> Any:
@@ -225,7 +228,8 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
             if transform is not None:
                 if parameter.is_output or parameter.is_inout:
                     raise ValueError(
-                        f"input transform {parameter.name!r} targets an output array"
+                        f"input transform {parameter.name!r}"
+                        f" targets an output array"
                     )
                 target_dtype = parameter.dtype
                 if isinstance(target_dtype, Dependency):
@@ -239,7 +243,11 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
                     size = size.resolve(specialization.template_arguments)
                 elif isinstance(size, Constant):
                     size = size.value
-                if not isinstance(size, int) or isinstance(size, bool) or size < 1:
+                if (
+                    not isinstance(size, int)
+                    or isinstance(size, bool)
+                    or size < 1
+                ):
                     raise ValueError(
                         "Numba-CUDA-MLIR input transforms require a positive "
                         "specialized array extent"
@@ -250,9 +258,9 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
                     size,
                     transform.cpp_expression,
                 )
-            if isinstance(parameter.dtype, (Dependency, Constant)) or isinstance(
-                parameter.size, (Dependency, Constant)
-            ):
+            if isinstance(
+                parameter.dtype, (Dependency, Constant)
+            ) or isinstance(parameter.size, (Dependency, Constant)):
                 return backend.DependentArray(
                     self._resolvable(parameter.dtype),
                     self._resolvable(parameter.size),
@@ -276,7 +284,9 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
                     is_output=self._is_backend_output(parameter),
                 )
             pointer_type = (
-                backend.PointerReference if parameter.deref_on_call else backend.Pointer
+                backend.PointerReference
+                if parameter.deref_on_call
+                else backend.Pointer
             )
             return pointer_type(
                 self.normalize_dtype(dtype),
@@ -332,7 +342,9 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
                 cpp,
                 self.normalize_dtype(dtype),
             )
-        raise TypeError(f"unsupported Numba-CUDA-MLIR core parameter {parameter!r}")
+        raise TypeError(
+            f"unsupported Numba-CUDA-MLIR core parameter {parameter!r}"
+        )
 
     def lower_cxx_operator(
         self,
@@ -454,7 +466,8 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         if kwargs:
             unexpected = ", ".join(sorted(kwargs))
             raise TypeError(
-                f"unexpected Numba-CUDA-MLIR materialization options: {unexpected}"
+                f"unexpected Numba-CUDA-MLIR "
+                f"materialization options: {unexpected}"
             )
 
         storage_abi = StorageABI(storage_abi)
@@ -507,7 +520,8 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         if invalid_value_targets:
             names = ", ".join(sorted(invalid_value_targets))
             raise ValueError(
-                f"Numba-CUDA-MLIR value ABIs require scalar Value parameters: {names}"
+                f"Numba-CUDA-MLIR value ABIs require "
+                f"scalar Value parameters: {names}"
             )
         dtype_mismatches = {
             name
@@ -528,7 +542,8 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
             name
             for name, parameters in value_parameters_by_name.items()
             if any(
-                self._is_backend_output(parameter) != self._value_abis[name].is_output
+                self._is_backend_output(parameter)
+                != self._value_abis[name].is_output
                 for parameter in parameters
             )
         }
@@ -549,11 +564,15 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
             for name in self._input_transforms
         }
         unknown_transforms = {
-            name for name, parameters in parameters_by_name.items() if not parameters
+            name
+            for name, parameters in parameters_by_name.items()
+            if not parameters
         }
         if unknown_transforms:
             names = ", ".join(sorted(unknown_transforms))
-            raise ValueError(f"unknown Numba-CUDA-MLIR input transform(s): {names}")
+            raise ValueError(
+                f"unknown Numba-CUDA-MLIR input transform(s): {names}"
+            )
         invalid_transforms = {
             name
             for name, parameters in parameters_by_name.items()
@@ -579,7 +598,8 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         ordered_parameters = sorted(
             specialization.parameters,
             key=lambda method: any(
-                isinstance(parameter, PointerOffset) and parameter.static_value is None
+                isinstance(parameter, PointerOffset)
+                and parameter.static_value is None
                 for parameter in method
             ),
         )
@@ -599,7 +619,8 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
             )
             named_parameters = []
             for parameter, lowered in zip(core_parameters, lowered_parameters):
-                # Scalar ABI overrides may be reused by several parameters or specs.
+                # Scalar ABI overrides may be reused by several parameters
+                # or specs.
                 named = copy(lowered)
                 named.parameter_name = parameter.name
                 named_parameters.append(named)

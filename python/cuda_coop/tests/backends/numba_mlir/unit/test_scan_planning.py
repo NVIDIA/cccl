@@ -58,7 +58,9 @@ def _planned_factory_calls(func_ir):
 
 def _provider_call(func_ir, provider):
     calls = [
-        call for target, call in _planned_factory_calls(func_ir) if target is provider
+        call
+        for target, call in _planned_factory_calls(func_ir)
+        if target is provider
     ]
     assert len(calls) == 1
     return calls[0]
@@ -72,7 +74,8 @@ def _kwarg_value(func_ir, call, name):
         statement.value
         for block in func_ir.blocks.values()
         for statement in block.body
-        if isinstance(statement, ir.Assign) and statement.target.name == variable.name
+        if isinstance(statement, ir.Assign)
+        and statement.target.name == variable.name
     ]
     assert len(definitions) == 1
     definition = definitions[0]
@@ -117,13 +120,15 @@ def test_scan_registers_all_spellings_results_and_provider_abis():
         assert metadata.execution_scope is SynchronizationScope(scope)
         assert metadata.synchronization_scope is SynchronizationScope(scope)
 
-    assert rewrite_operation("block_scan_scalar").runtime_arg_counts == frozenset(
-        {1, 2, 3}
+    assert rewrite_operation(
+        "block_scan_scalar"
+    ).runtime_arg_counts == frozenset({1, 2, 3})
+    assert rewrite_operation(
+        "block_scan_array"
+    ).runtime_arg_counts == frozenset({2, 3, 4})
+    assert rewrite_operation("warp_scan").runtime_arg_counts == frozenset(
+        {1, 2, 3, 4}
     )
-    assert rewrite_operation("block_scan_array").runtime_arg_counts == frozenset(
-        {2, 3, 4}
-    )
-    assert rewrite_operation("warp_scan").runtime_arg_counts == frozenset({1, 2, 3, 4})
 
 
 def test_public_signatures_keep_portable_surface_narrow_and_omit_n6_callbacks():
@@ -159,10 +164,18 @@ def test_public_signatures_keep_portable_surface_narrow_and_omit_n6_callbacks():
         "inclusive_sum": ("group", "value", "algorithm", "temp_storage"),
     }
     for name, expected in shared.items():
-        portable_parameters = tuple(signature(getattr(portable, name)).parameters)
-        qualified_parameters = tuple(signature(getattr(qualified, name)).parameters)
+        portable_parameters = tuple(
+            signature(getattr(portable, name)).parameters
+        )
+        qualified_parameters = tuple(
+            signature(getattr(qualified, name)).parameters
+        )
         assert portable_parameters == expected
-        assert qualified_parameters == (*expected, "valid_items", "aggregate_output")
+        assert qualified_parameters == (
+            *expected,
+            "valid_items",
+            "aggregate_output",
+        )
         assert "prefix_op" not in qualified_parameters
         assert "block_prefix_callback_op" not in qualified_parameters
 
@@ -216,12 +229,16 @@ def test_scan_planning_rejects_non_string_selectors_before_provider(
     elif parameter == "algorithm":
 
         def kernel(value):
-            return coop.inclusive_sum(coop.this_block(), value, algorithm=selector)
+            return coop.inclusive_sum(
+                coop.this_block(), value, algorithm=selector
+            )
 
     else:
 
         def kernel(value):
-            return coop.inclusive_scan(coop.this_block(), value, scan_op=selector)
+            return coop.inclusive_scan(
+                coop.this_block(), value, scan_op=selector
+            )
 
     _, planner = _plan(kernel, arg_types=(types.int32,))
     with pytest.raises(TypeError, match=rf"{parameter} must be .*string"):
@@ -298,7 +315,9 @@ def test_all_five_spellings_plan_through_one_block_provider(
     if spelling == "scan":
 
         def kernel(value):
-            return coop.scan(coop.this_block(), value, mode="inclusive", scan_op="max")
+            return coop.scan(
+                coop.this_block(), value, mode="inclusive", scan_op="max"
+            )
 
     elif spelling == "exclusive_scan":
 
@@ -382,7 +401,9 @@ def test_block_thread_data_and_local_array_plan_out_of_place_with_storage():
         items = coop.ThreadData(2, dtype=types.int32)
         items[0] = value
         items[1] = types.int32(value + 1)
-        return coop.inclusive_sum(coop.this_block(), items, algorithm="raking_memoize")
+        return coop.inclusive_sum(
+            coop.this_block(), items, algorithm="raking_memoize"
+        )
 
     func_ir, planner = _plan(thread_data_kernel, arg_types=(types.int32,))
     assert planner.run()
@@ -417,8 +438,12 @@ def test_block_thread_data_and_local_array_plan_out_of_place_with_storage():
     }
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
-def test_untyped_thread_data_scan_infers_writes_and_chains_into_store(qualified):
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("portable", "qualified")
+)
+def test_untyped_thread_data_scan_infers_writes_and_chains_into_store(
+    qualified,
+):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as qualified_coop
@@ -470,7 +495,9 @@ def test_warp_planning_preserves_width_runtime_prefix_and_aggregate_position():
     assert _kwarg_value(func_ir, call, "threads_in_warp") == 8
     assert "scan_valid_items_i64" in dict(call.kws)["valid_items"].name
     assert "warp_aggregate" in dict(call.kws)
-    assert any(target is types.int64 for target, _ in _planned_factory_calls(func_ir))
+    assert any(
+        target is types.int64 for target, _ in _planned_factory_calls(func_ir)
+    )
 
 
 def test_qualified_callback_plans_for_block_and_warp_but_portable_rejects_it():
@@ -484,7 +511,9 @@ def test_qualified_callback_plans_for_block_and_warp_but_portable_rejects_it():
         return left if left > right else right  # noqa: FURB136
 
     def block_kernel(value):
-        return qualified.inclusive_scan(qualified.this_block(), value, scan_op=combine)
+        return qualified.inclusive_scan(
+            qualified.this_block(), value, scan_op=combine
+        )
 
     func_ir, planner = _plan(block_kernel, arg_types=(types.int32,))
     assert planner.run()
@@ -500,7 +529,9 @@ def test_qualified_callback_plans_for_block_and_warp_but_portable_rejects_it():
     assert _provider_call(func_ir, _scan.warp_scan)
 
     def portable_kernel(value):
-        return portable.inclusive_scan(portable.this_block(), value, scan_op=combine)
+        return portable.inclusive_scan(
+            portable.this_block(), value, scan_op=combine
+        )
 
     _, planner = _plan(portable_kernel, arg_types=(types.int32,))
     with pytest.raises(NotImplementedError, match="built-in operators only"):
@@ -519,7 +550,9 @@ def test_qualified_callback_plans_for_block_and_warp_but_portable_rejects_it():
         ("warp_array", "one scalar value per lane"),
     ),
 )
-def test_invalid_scan_shapes_and_initials_fail_during_planning(case: str, match: str):
+def test_invalid_scan_shapes_and_initials_fail_during_planning(
+    case: str, match: str
+):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as coop
@@ -544,7 +577,9 @@ def test_invalid_scan_shapes_and_initials_fail_during_planning(case: str, match:
     elif case == "runtime_initial_dtype":
 
         def kernel(value, initial):
-            return coop.exclusive_scan(coop.this_block(), value, initial_value=initial)
+            return coop.exclusive_scan(
+                coop.this_block(), value, initial_value=initial
+            )
 
         arg_types = (types.int32, types.int64)
     elif case == "aggregate_extent":
@@ -582,7 +617,9 @@ def test_invalid_scan_shapes_and_initials_fail_during_planning(case: str, match:
         arg_types = (types.int32,)
 
     _, planner = _plan(kernel, arg_types=arg_types)
-    with pytest.raises((TypeError, ValueError, NotImplementedError), match=match):
+    with pytest.raises(
+        (TypeError, ValueError, NotImplementedError), match=match
+    ):
         planner.run()
 
 
@@ -593,10 +630,14 @@ def test_static_initial_must_convert_exactly_to_payload_dtype(initial):
     import cuda.coop.numba_mlir as coop
 
     def kernel(value):
-        return coop.exclusive_scan(coop.this_block(), value, initial_value=initial)
+        return coop.exclusive_scan(
+            coop.this_block(), value, initial_value=initial
+        )
 
     _, planner = _plan(kernel, arg_types=(types.int8,))
-    with pytest.raises((TypeError, OverflowError, ValueError), match="initial_value"):
+    with pytest.raises(
+        (TypeError, OverflowError, ValueError), match="initial_value"
+    ):
         planner.run()
 
 
@@ -620,7 +661,9 @@ def test_static_initial_accepts_literal_boundaries_and_exact_typed_scalars(
     import cuda.coop.numba_mlir as coop
 
     def kernel(value):
-        return coop.exclusive_scan(coop.this_block(), value, initial_value=initial)
+        return coop.exclusive_scan(
+            coop.this_block(), value, initial_value=initial
+        )
 
     _, planner = _plan(kernel, arg_types=(getattr(types, dtype),))
     assert planner.run()
