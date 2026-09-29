@@ -7,7 +7,7 @@ Exchange
 ========
 
 This page describes the Numba-CUDA-MLIR implementation. See :ref:`backend
-coverage <coop-backends>` for CUTLASS availability.
+operation support <coop-backend-operation-support>` for CUTLASS availability.
 
 :func:`cuda.coop.exchange` rearranges register values across a group. It
 returns a new payload with the requested ownership and preserves the input

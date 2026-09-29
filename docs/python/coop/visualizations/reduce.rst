@@ -7,7 +7,7 @@ Reduce
 ======
 
 This page describes the Numba-CUDA-MLIR implementation. See :ref:`backend
-coverage <coop-backends>` for CUTLASS availability.
+operation support <coop-backend-operation-support>` for CUTLASS availability.
 
 :func:`cuda.coop.reduce` combines a group's values into one aggregate.
 :func:`cuda.coop.sum` is the sum specialization. Blocks and warps accept one
