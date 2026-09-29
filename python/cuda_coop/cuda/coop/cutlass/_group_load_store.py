@@ -31,7 +31,8 @@ def _resolve_group(group, algorithm, temp_storage, operation):
         )
     if group.kind == "warp" and temp_storage is not None:
         raise NotImplementedError(
-            f"{_SCOPE}.{operation} explicit TempStorage is supported only for block groups"
+            f"{_SCOPE}.{operation} explicit TempStorage is supported only "
+            "for block groups"
         )
     algorithm = _normalize_algorithm(algorithm)
     if temp_storage is not None:
@@ -39,7 +40,9 @@ def _resolve_group(group, algorithm, temp_storage, operation):
     from ._compiler._launch import current_kernel_launch_facts
 
     launch = current_kernel_launch_facts()
-    resolved = _resolve_primitive_group_from_launch(group, launch, feature=operation)
+    resolved = _resolve_primitive_group_from_launch(
+        group, launch, feature=operation
+    )
     _require_complete_warp_partition(
         resolved, feature=operation, exact_block_dim=launch.exact_block_dim
     )
@@ -70,7 +73,9 @@ def load(
         raise TypeError(f"{_SCOPE}.load output must be ThreadData")
     if oob_default is not None and valid_items is None:
         raise ValueError(f"{_SCOPE}.load oob_default requires valid_items")
-    group, launch, algorithm = _resolve_group(group, algorithm, temp_storage, "load")
+    group, launch, algorithm = _resolve_group(
+        group, algorithm, temp_storage, "load"
+    )
     from ._lowering._load_store import provider_load
 
     provider_load(
@@ -80,7 +85,9 @@ def load(
         output=output,
         algorithm=algorithm,
         valid_items=valid_items,
-        valid_items_binding=_classify_integer_binding(valid_items, name="valid_items"),
+        valid_items_binding=_classify_integer_binding(
+            valid_items, name="valid_items"
+        ),
         oob_default=oob_default,
         oob_default_binding=_classify_oob_default(oob_default),
         offset=offset,
@@ -109,7 +116,9 @@ def store(
     allocation and reuse.
     """
 
-    group, launch, algorithm = _resolve_group(group, algorithm, temp_storage, "store")
+    group, launch, algorithm = _resolve_group(
+        group, algorithm, temp_storage, "store"
+    )
     from ._lowering._load_store import provider_store
 
     provider_store(
@@ -119,7 +128,9 @@ def store(
         value=value,
         algorithm=algorithm,
         valid_items=valid_items,
-        valid_items_binding=_classify_integer_binding(valid_items, name="valid_items"),
+        valid_items_binding=_classify_integer_binding(
+            valid_items, name="valid_items"
+        ),
         offset=offset,
         offset_binding=_classify_integer_binding(offset, name="offset"),
         temp_storage=temp_storage,
@@ -173,7 +184,8 @@ def _classify_integer_binding(value: Any, *, name: str) -> ArgumentBinding:
     if isinstance(value, Integer):
         return ArgumentBinding.runtime()
     raise TypeError(
-        f"{_SCOPE}.load/store {name} must be an integer, not {type(value).__name__}"
+        f"{_SCOPE}.load/store {name} must be an integer, "
+        f"not {type(value).__name__}"
     )
 
 
@@ -181,7 +193,9 @@ def _classify_oob_default(value: Any) -> ArgumentBinding:
     if value is None:
         return ArgumentBinding.omitted()
     if _is_boolean(value):
-        raise TypeError(f"{_SCOPE}.load oob_default must be numeric, not boolean")
+        raise TypeError(
+            f"{_SCOPE}.load oob_default must be numeric, not boolean"
+        )
     if isinstance(value, Integral):
         return ArgumentBinding.static(int(value))
     if isinstance(value, Real):

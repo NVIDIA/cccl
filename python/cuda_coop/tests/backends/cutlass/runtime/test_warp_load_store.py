@@ -40,17 +40,25 @@ _BLOCK_TILE = _THREADS * _ITEMS
 
 
 def _index(algorithm, lane, item):
-    return lane + item * _WIDTH if algorithm == "striped" else lane * _ITEMS + item
+    return (
+        lane + item * _WIDTH if algorithm == "striped" else lane * _ITEMS + item
+    )
 
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize(
-    "base_valid", (0, 100, _WARP_TILE), ids=("zero", "partial", "full-first-warp")
+    "base_valid",
+    (0, 100, _WARP_TILE),
+    ids=("zero", "partial", "full-first-warp"),
 )
-def test_group_local_load_counts_offsets_and_defaults(api, algorithm, base_valid):
+def test_group_local_load_counts_offsets_and_defaults(
+    api, algorithm, base_valid
+):
     @cute.kernel
-    def kernel(source: cute.Pointer, observed: cute.Pointer, valid: cutlass.Int32):
+    def kernel(
+        source: cute.Pointer, observed: cute.Pointer, valid: cutlass.Int32
+    ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         warp = thread // _WIDTH
@@ -73,7 +81,9 @@ def test_group_local_load_counts_offsets_and_defaults(api, algorithm, base_valid
             outputs[thread * _ITEMS + item] = payload[item]
 
     @cute.jit
-    def launch(source: cute.Pointer, observed: cute.Pointer, valid: cutlass.Int32):
+    def launch(
+        source: cute.Pointer, observed: cute.Pointer, valid: cutlass.Int32
+    ):
         kernel(source, observed, valid).launch(grid=1, block=_BLOCK)
 
     source = values_for(np.int32, _BLOCK_TILE + 7, shift=11)
@@ -96,7 +106,9 @@ def test_group_local_load_counts_offsets_and_defaults(api, algorithm, base_valid
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize(
-    "base_valid", (0, 100, _WARP_TILE), ids=("zero", "partial", "full-first-warp")
+    "base_valid",
+    (0, 100, _WARP_TILE),
+    ids=("zero", "partial", "full-first-warp"),
 )
 def test_group_local_store_counts_and_offsets(api, algorithm, base_valid):
     @cute.kernel
@@ -163,7 +175,8 @@ def test_warp_layout_for_every_dtype(api, dtype, operation, algorithm):
             cute.make_tensor(source, cute.make_layout(_BLOCK_TILE)), value_type
         )
         outputs = cute.recast_tensor(
-            cute.make_tensor(destination, cute.make_layout(_BLOCK_TILE)), value_type
+            cute.make_tensor(destination, cute.make_layout(_BLOCK_TILE)),
+            value_type,
         )
         payload = api.ThreadData(_ITEMS, dtype=value_type)
         if cutlass.const_expr(operation == "load"):
@@ -187,7 +200,9 @@ def test_warp_layout_for_every_dtype(api, dtype, operation, algorithm):
 
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
-@pytest.mark.parametrize("static_count", (False, True), ids=("runtime", "static"))
+@pytest.mark.parametrize(
+    "static_count", (False, True), ids=("runtime", "static")
+)
 def test_partial_transpose_loads_each_warps_valid_items_without_default(
     api, static_count
 ):
@@ -219,7 +234,9 @@ def test_partial_transpose_loads_each_warps_valid_items_without_default(
                 algorithm="transpose",
                 valid_items=count - (thread // _WIDTH) * 13,
             )
-        selected_count = valid if static_count else count - (thread // _WIDTH) * 13
+        selected_count = (
+            valid if static_count else count - (thread // _WIDTH) * 13
+        )
         for item in cutlass.range_constexpr(_ITEMS):
             if (thread % _WIDTH) * _ITEMS + item < selected_count:
                 outputs[thread * _ITEMS + item] = payload[item]
@@ -250,7 +267,9 @@ def test_partial_transpose_loads_each_warps_valid_items_without_default(
 )
 def test_transpose_runtime_loop_and_whole_warp_divergence(api, divergent):
     @cute.kernel
-    def kernel(source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32):
+    def kernel(
+        source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32
+    ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         warp = thread // _WIDTH
@@ -265,7 +284,9 @@ def test_transpose_runtime_loop_and_whole_warp_divergence(api, divergent):
                     offset=tile * _BLOCK_TILE,
                 )
                 for item in cutlass.range_constexpr(_ITEMS):
-                    payload[item] = payload[item] + cutlass.Int32(tile + warp + 1)
+                    payload[item] = payload[item] + cutlass.Int32(
+                        tile + warp + 1
+                    )
                 api.store(
                     api.this_warp(),
                     destination,
@@ -275,7 +296,9 @@ def test_transpose_runtime_loop_and_whole_warp_divergence(api, divergent):
                 )
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32):
+    def launch(
+        source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32
+    ):
         kernel(source, destination, tiles).launch(grid=1, block=_BLOCK)
 
     tiles = 8
@@ -299,7 +322,9 @@ def test_transpose_runtime_loop_and_whole_warp_divergence(api, divergent):
 def test_final_warp_cubin_has_no_block_barrier(tmp_path, algorithm):
     cuobjdump = shutil.which("cuobjdump")
     if cuobjdump is None:
-        pytest.skip("cuobjdump is required to inspect final linked instructions")
+        pytest.skip(
+            "cuobjdump is required to inspect final linked instructions"
+        )
 
     @cute.kernel
     def kernel(source: cute.Pointer, destination: cute.Pointer):
@@ -318,7 +343,9 @@ def test_final_warp_cubin_has_no_block_barrier(tmp_path, algorithm):
     source = values_for(np.int32, _BLOCK_TILE, shift=59)
     destination = np.zeros_like(source)
     with device_array(source) as src, device_array(destination) as dst:
-        compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](launch, src, dst)
+        compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](
+            launch, src, dst
+        )
         compiled(src, dst)
     np.testing.assert_array_equal(destination, source)
     cubins = list(tmp_path.rglob("*.cubin"))
@@ -336,7 +363,9 @@ def test_final_warp_cubin_has_no_block_barrier(tmp_path, algorithm):
         assert "cuda_coop_cutlass_store_" not in sass
         assert re.search(r"\bCALL(?:\.[A-Z0-9_]+)*\b", sass) is None
         assert re.search(r"\bBAR(?:\.[A-Z0-9_]+)*\b", sass) is None
-        shared = [int(size) for size in re.findall(r"\bSHARED:(\d+)", resources)]
+        shared = [
+            int(size) for size in re.findall(r"\bSHARED:(\d+)", resources)
+        ]
         assert shared
         assert any(shared) is (algorithm == "transpose")
         if algorithm != "transpose":
