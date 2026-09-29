@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import operator
-from enum import Enum
 
 from cuda.coop._core import (
     ArgumentBinding,
@@ -41,6 +40,11 @@ from ._group_planner_support import (
     ir,
 )
 from ._group_planning import GroupPlanningContext
+from ._load_store_algorithms import (
+    _BLOCK_LOAD_STORE_ALGORITHMS,
+    _WARP_LOAD_STORE_ALGORITHMS,
+    _resolve_algorithm,
+)
 from ._operations import (
     RewriteOperationSpecification,
     register_group_primitive,
@@ -54,19 +58,6 @@ from ._rewrite_load_store import (
     validate_load_store_runtime_controls,
 )
 
-_BLOCK_LOAD_STORE_ALGORITHMS = frozenset(
-    {
-        "direct",
-        "striped",
-        "vectorize",
-        "transpose",
-        "warp_transpose",
-        "warp_transpose_timesliced",
-    }
-)
-_WARP_LOAD_STORE_ALGORITHMS = frozenset(
-    {"direct", "striped", "vectorize", "transpose"}
-)
 _SUPPORTED_WARP_WIDTHS = frozenset({1, 2, 4, 8, 16, 32})
 
 
@@ -76,11 +67,6 @@ def _load_store_algorithm(
     operation: str,
     group_kind: str,
 ) -> str:
-    if not isinstance(value, str) or isinstance(value, Enum):
-        raise TypeError(
-            f"cuda.coop.numba_mlir.{operation} algorithm must be a string"
-        )
-    token = value.strip().lower().replace("-", "_")
     algorithm_scope = (
         "warp" if group_kind in {"warp", "threads_within_warp"} else group_kind
     )
@@ -89,10 +75,15 @@ def _load_store_algorithm(
         if algorithm_scope == "warp"
         else _BLOCK_LOAD_STORE_ALGORITHMS
     )
-    if token in allowed:
-        return token
-    choices = ", ".join(sorted(allowed))
-    raise InvalidLoadStoreAlgorithmError(operation, choices, group_kind)
+    try:
+        return _resolve_algorithm(
+            value, allowed, f"cuda.coop.numba_mlir.{operation}"
+        )
+    except ValueError:
+        choices = ", ".join(sorted(allowed))
+        raise InvalidLoadStoreAlgorithmError(
+            operation, choices, group_kind
+        ) from None
 
 
 _CUB_PLAN_ROUTES = {

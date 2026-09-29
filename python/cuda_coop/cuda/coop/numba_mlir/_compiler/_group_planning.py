@@ -19,11 +19,14 @@ from cuda.coop._core import (
 
 from .._temp_storage import TempStorage
 from .._thread_data import ThreadData
-from ._descriptor_provenance import descriptor_definitions
+from ._descriptor_provenance import (
+    descriptor_definitions,
+    payload_write_dtypes,
+    temp_storage_constructor,
+)
 from ._group_planner_support import (
     GroupRewriteError,
     _cuda_module,
-    _typed_group_payload_like,
     ir,
 )
 from ._operations import (
@@ -33,9 +36,12 @@ from ._operations import (
 )
 from ._parameters import (
     _python_scalar_dtype,
-    _scalar_cast_dtype,
-    _scalar_operator_result_dtype,
     normalize_dtype_param,
+)
+from ._scalar_provenance import (
+    cuda_index_dtype,
+    scalar_call_dtype,
+    scalar_expression_dtype,
 )
 
 
@@ -286,7 +292,6 @@ class GroupPlanningContext:
         factory: Any,
         args: list[Any],
         kwargs: dict[str, Any],
-        return_alias: ir.Var | tuple[ir.Var, ...] | None = None,
         common_root_operation: str | None = None,
     ) -> list[Any]:
         self._validate_provider_contract(
@@ -308,23 +313,8 @@ class GroupPlanningContext:
             factory=factory,
             args=args,
             kwargs=kwargs,
-            return_alias=return_alias,
             common_root_operation=common_root_operation,
         )
-
-    def copy_array_payload(self, *args: Any, **kwargs: Any) -> None:
-        self.__planner._copy_array_payload(*args, **kwargs)
-
-    def typed_payload_like(self, *args: Any, **kwargs: Any) -> ir.Var:
-        return self.__planner._typed_payload_like(*args, **kwargs)
-
-    def box_group_operand(
-        self, *args: Any, **kwargs: Any
-    ) -> tuple[ir.Var, bool]:
-        return self.__planner._boxed_group_operand(*args, **kwargs)
-
-    def result_value(self, *args: Any, **kwargs: Any) -> ir.Var:
-        return self.__planner._result_value(*args, **kwargs)
 
     def planning_binding(self, value: Any) -> ArgumentBinding:
         resolved, constant = self.try_static_scalar(value)
@@ -359,21 +349,6 @@ class GroupPlanningContext:
         if not resolved or any(dtype is None for dtype in resolved):
             return None
         return cls._one_dtype(set(resolved), message=message)
-
-    def _result_dtype(
-        self,
-        definition: ir.Expr,
-        *,
-        index: int | None,
-        seen: set[str],
-    ) -> Any | None:
-        resolved = self.__planner._result_source(definition, index)
-        if resolved is None:
-            return None
-        result, bound = resolved
-        if result.dtype_parameter is None:
-            return None
-        return self.dtype(bound.arguments[result.dtype_parameter], seen=seen)
 
     def record_thread_data_dtype(self, value: Any, dtype: Any) -> None:
         """Keep an output's inferred dtype available to subsequent group
@@ -480,8 +455,6 @@ class GroupPlanningContext:
             if not -len(items) <= index < len(items):
                 return None
             return self.dtype(items[index], seen=seen)
-        if definition.op == "call":
-            return self._result_dtype(definition, index=index, seen=seen)
         return None
 
     def _dtype_definition(
@@ -527,33 +500,14 @@ class GroupPlanningContext:
                 if tuple_dtype is not None:
                     return tuple_dtype
             return self.dtype(definition.value, seen=seen)
-        if definition.op in {"binop", "inplace_binop"}:
-            return _scalar_operator_result_dtype(
-                getattr(definition, "fn", None),
-                self.dtype(getattr(definition, "lhs", None), seen=set(seen)),
-                self.dtype(getattr(definition, "rhs", None), seen=set(seen)),
-            )
-        if definition.op == "unary":
-            return _scalar_operator_result_dtype(
-                getattr(definition, "fn", None),
-                self.dtype(getattr(definition, "value", None), seen=set(seen)),
+        if definition.op in {"binop", "inplace_binop", "unary"}:
+            return scalar_expression_dtype(
+                definition, lambda value: self.dtype(value, seen=set(seen))
             )
         if definition.op == "getattr":
-            chain = self._attribute_chain(definition.value)
-            if chain is not None:
-                root, attributes = chain
-                if root is _cuda_module and (*attributes, definition.attr) in {
-                    (index, component)
-                    for index in (
-                        "blockDim",
-                        "blockIdx",
-                        "gridDim",
-                        "threadIdx",
-                    )
-                    for component in ("x", "y", "z")
-                }:
-                    return types.int32
-            return None
+            return cuda_index_dtype(
+                definition, self._attribute_chain, _cuda_module
+            )
         if definition.op != "call":
             return None
         function = self._callable(definition.func)
@@ -574,22 +528,11 @@ class GroupPlanningContext:
                 if resolved:
                     return normalize_dtype_param(dtype)
             return None
-        if function is _typed_group_payload_like and definition.args:
-            return self.dtype(definition.args[0], seen=seen)
-        result_dtype = self._result_dtype(definition, index=None, seen=seen)
-        if result_dtype is not None:
-            return result_dtype
-        cast_dtype = _scalar_cast_dtype(function)
-        if cast_dtype is None:
-            return None
-        if len(definition.args) == 1:
-            inferred = _scalar_operator_result_dtype(
-                function,
-                self.dtype(definition.args[0], seen=set(seen)),
-            )
-            if inferred is not None:
-                return inferred
-        return cast_dtype
+        return scalar_call_dtype(
+            function,
+            definition.args,
+            lambda value: self.dtype(value, seen=set(seen)),
+        )
 
     def _attribute_chain(
         self, value: Any
@@ -628,79 +571,17 @@ class GroupPlanningContext:
     def payload_write_dtype(self, payload: Any) -> Any | None:
         """Infer an untyped payload from values written through its aliases."""
 
-        if not isinstance(payload, ir.Var):
-            return None
-        alias_names = {payload.name}
-        changed = True
-        while changed:
-            changed = False
-            for block in self.__planner.func_ir.blocks.values():
-                for statement in block.body:
-                    if not isinstance(statement, ir.Assign):
-                        continue
-                    definition = statement.value
-                    sources: tuple[ir.Var, ...] = ()
-                    if isinstance(definition, ir.Var):
-                        sources = (definition,)
-                    elif isinstance(definition, ir.Expr) and definition.op in {
-                        "cast",
-                        "exhaust_iter",
-                    }:
-                        if isinstance(definition.value, ir.Var):
-                            sources = (definition.value,)
-                    elif (
-                        isinstance(definition, ir.Expr)
-                        and definition.op == "phi"
-                    ):
-                        sources = tuple(
-                            incoming
-                            for incoming in getattr(
-                                definition, "incoming_values", ()
-                            )
-                            if isinstance(incoming, ir.Var)
-                        )
-                    source_names = {source.name for source in sources}
-                    if (
-                        statement.target.name in alias_names
-                        or source_names & alias_names
-                    ):
-                        additions = {
-                            statement.target.name,
-                            *source_names,
-                        } - alias_names
-                        if additions:
-                            alias_names.update(additions)
-                            changed = True
-
         inferred = None
-        static_setitem_cls = getattr(ir, "StaticSetItem", None)
-        for block in self.__planner.func_ir.blocks.values():
-            for statement in block.body:
-                if isinstance(statement, ir.SetItem) or (
-                    static_setitem_cls is not None
-                    and isinstance(statement, static_setitem_cls)
-                ):
-                    target = getattr(statement, "target", None)
-                    value = getattr(statement, "value", None)
-                else:
-                    continue
-                if (
-                    not isinstance(target, ir.Var)
-                    or target.name not in alias_names
-                ):
-                    continue
-                if not isinstance(value, ir.Var):
-                    continue
-                value_dtype = self.dtype(value)
-                if value_dtype is None:
-                    continue
-                if inferred is None:
-                    inferred = value_dtype
-                elif inferred != value_dtype:
-                    raise TypeError(
-                        "cuda.coop.numba_mlir could not infer one consistent "
-                        "dtype from payload writes"
-                    )
+        for value_dtype in payload_write_dtypes(
+            self.__planner.func_ir, payload, self.dtype
+        ):
+            if inferred is None:
+                inferred = value_dtype
+            elif inferred != value_dtype:
+                raise TypeError(
+                    "cuda.coop.numba_mlir could not infer one consistent "
+                    "dtype from payload writes"
+                )
         return inferred
 
     def temp_storage(
@@ -725,13 +606,11 @@ class GroupPlanningContext:
             ):
                 non_descriptor = True
                 continue
-            function = self._callable(definition.func)
-            bound = self.bind(function, definition)
-            values = {
-                name: self.constant(argument)
-                for name, argument in bound.arguments.items()
-            }
-            descriptor = TempStorage(**values)
+            descriptor = temp_storage_constructor(
+                definition,
+                lambda argument, *, name: self.constant(argument),
+                syntax_error=GroupRewriteError,
+            )
             candidates.add(
                 (
                     descriptor.size_in_bytes,

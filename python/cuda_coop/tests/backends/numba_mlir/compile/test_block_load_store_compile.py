@@ -419,16 +419,24 @@ def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
 
     @compiler_cuda.jit(chip="sm_90")
     def storage_free(source, destination):
-        thread = compiler_cuda.threadIdx.x
+        storage = coop.TempStorage(
+            128 * 1024, alignment=16, sharing="exclusive", auto_sync=True
+        )
         payload = coop.ThreadData(4, dtype=types.int32)
         coop.load(
             coop.this_block(),
             source,
             payload,
             algorithm="vectorize",
+            temp_storage=storage,
         )
-        for item in range(4):
-            destination[thread * 4 + item] = payload[item]
+        coop.store(
+            coop.this_block(),
+            destination,
+            payload,
+            algorithm="vectorize",
+            temp_storage=storage,
+        )
 
     @compiler_cuda.jit(chip="sm_90")
     def storage_bearing(source, destination):
