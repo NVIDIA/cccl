@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """Radix runtime guards, storage reuse, failure recovery, and final code."""
 
@@ -80,6 +79,7 @@ def test_invalid_runtime_bits_trap(begin, end, control):
         capture_output=True,
         text=True,
         timeout=180,
+        check=False,
     )
     output = completed.stdout + completed.stderr
     assert completed.returncode != 0, output

@@ -183,4 +183,4 @@ def radix_rank(
     )
 
 
-__all__ = ["radix_sort_keys", "radix_sort_pairs", "radix_rank"]
+__all__ = ["radix_rank", "radix_sort_keys", "radix_sort_pairs"]
