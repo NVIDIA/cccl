@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typed shared-planner providers for stable block Radix Sort and Rank."""
-
 import hashlib
 from dataclasses import dataclass, replace
 from enum import Enum

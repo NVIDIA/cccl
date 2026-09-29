@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Radix compiler contracts and qualified input/output controls."""
-
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
