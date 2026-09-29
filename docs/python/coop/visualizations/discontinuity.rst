@@ -6,9 +6,8 @@
 Discontinuity
 =============
 
-These primitives are currently implemented by Numba-CUDA-MLIR. CUTLASS does
-not yet implement them; see :ref:`backend operation support
-<coop-backend-operation-support>`.
+This page describes the Numba-CUDA-MLIR implementation. See :ref:`backend
+operation support <coop-backend-operation-support>` for CUTLASS availability.
 
 :func:`cuda.coop.discontinuity` flags changes between adjacent values in a
 full block tile. A head marks the start of a run; a tail marks its end.
