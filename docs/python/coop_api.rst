@@ -150,6 +150,13 @@ and the difference between arithmetic results and flags.
 .. autofunction:: adjacent_difference
 .. autofunction:: discontinuity
 
+Histogram
+^^^^^^^^^
+
+See the :doc:`Histogram visualization <coop/visualizations/histogram>`.
+
+.. autofunction:: histogram
+
 
 .. _coop-numba-extensions:
 
@@ -238,3 +245,8 @@ Neighbor comparisons
 
 .. autofunction:: adjacent_difference
 .. autofunction:: discontinuity
+
+Histogram
+^^^^^^^^^
+
+.. autofunction:: histogram
