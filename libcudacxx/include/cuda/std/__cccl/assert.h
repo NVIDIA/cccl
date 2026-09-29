@@ -77,7 +77,7 @@ extern "C" {
 _CCCL_HOST_DEVICE
 #    endif // !_CCCL_CUDA_COMPILER(CLANG)
 #    if _CCCL_OS(APPLE)
-void __assert_rtn(const char* __function, const char* __assertion, const char* __file, unsigned int __line) noexcept
+void __assert_rtn(const char* __function, const char* __file, int __line, const char* __assertion)
   __attribute__((__noreturn__));
 #    else // ^^^ _CCCL_OS(APPLE) ^^^ / vvv !_CCCL_OS(APPLE) ^^^
 void __assert_fail(const char* __assertion, const char* __file, unsigned int __line, const char* __function) noexcept
