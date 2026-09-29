@@ -387,9 +387,9 @@ rejected during compilation; invalid runtime counts trap on the device.
 It is independent of the valid count. Other families define their own
 valid-prefix controls; for example, reduction counts contributing threads.
 
-Load leaves invalid payload slots unchanged unless ``oob_default`` is
-provided. Store leaves destination elements outside the valid prefix
-untouched. A valid prefix controls data access; it does not make it safe
+Load leaves invalid payload slots unspecified unless ``oob_default`` is
+provided, even if those slots were initialized before Load. Store leaves
+destination elements outside the valid prefix untouched. A valid prefix controls data access; it does not make it safe
 to skip a required participant or a reuse barrier.
 
 .. _coop-common-payloads:
@@ -401,8 +401,9 @@ Per-thread payloads
 payload of ``K`` values owned by each thread. Load fills the supplied
 payload in place and returns ``None``. Its source can establish the dtype
 of an untyped output. Other operations either consume that payload or
-return a new scalar or payload according to their contract. Store preserves
-its input.
+return a new scalar or payload according to their contract. As in CUB,
+transpose Store algorithms may rearrange the input payload in place. Copy
+values before Store if they are needed later.
 
 Supported payload dtypes are signed and unsigned 8-, 16-, 32-, and 64-bit
 integers and 32- and 64-bit floating-point values. An explicit alignment is
@@ -411,8 +412,8 @@ is materialized. It does not assert alignment of an input or output array.
 
 The payload extent is a compile-time value available as
 ``items.items_per_thread``. Initialize every item an operation will read;
-Load without ``oob_default`` does not initialize invalid slots. Backend
-value rules still apply: Numba-qualified calls can accept supported local
+Load without ``oob_default`` leaves invalid slots unspecified. Assign those
+slots after Load before reading them. Backend value rules still apply: Numba-qualified calls can accept supported local
 arrays, while CUTLASS-qualified ``ThreadData`` supports CuTe register-tensor
 conversions. A dtype selector describes the element representation; the
 active compiler still owns the scalar values. For example, selecting a
