@@ -158,7 +158,8 @@ def make_block_scan_specialization(
     block_threads = block_dim[0] * block_dim[1] * block_dim[2]
     if algorithm is BlockScanAlgorithm.WARP_SCANS and block_threads % 32 != 0:
         raise ValueError(
-            "BLOCK_SCAN_WARP_SCANS requires a block size that is a multiple of 32"
+            "BLOCK_SCAN_WARP_SCANS requires a block size "
+            "that is a multiple of 32"
         )
     call = make_scan_semantics(
         dtype=dtype,

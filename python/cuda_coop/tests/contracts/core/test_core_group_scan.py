@@ -114,7 +114,10 @@ def test_aggregate_is_a_scalar_all_member_side_output_excluding_initial():
     call = make_group_primitive_call(this_block(), operation)
     plan = plan_group_primitive(call, LaunchFacts(64))
 
-    assert [value.name for value in plan.result.values] == ["value", "aggregate"]
+    assert [value.name for value in plan.result.values] == [
+        "value",
+        "aggregate",
+    ]
     aggregate = plan.result.values[1]
     assert aggregate.dtype == "float32"
     assert aggregate.visibility is ResultVisibility.ALL_MEMBERS
@@ -165,7 +168,9 @@ def test_partial_logical_warp_scan_bounds_and_declares_runtime_controls():
         "algorithm",
     ]
     valid_items = next(
-        item for item in plan.implementation.parameters[0] if item.name == "valid_items"
+        item
+        for item in plan.implementation.parameters[0]
+        if item.name == "valid_items"
     )
     assert valid_items.dtype.name == "int32"
 
@@ -253,8 +258,13 @@ def test_scan_rejects_group_and_operand_variants_without_exact_cub_support():
     cluster = _plan(this_cluster(), _scan(mode="inclusive"))
 
     assert warp_array.unsupported.code is UnsupportedReasonCode.OPERAND_FORM
-    assert warp_algorithm.unsupported.code is UnsupportedReasonCode.OPERATION_VARIANT
-    assert block_prefix.unsupported.code is UnsupportedReasonCode.OPERATION_VARIANT
+    assert (
+        warp_algorithm.unsupported.code
+        is UnsupportedReasonCode.OPERATION_VARIANT
+    )
+    assert (
+        block_prefix.unsupported.code is UnsupportedReasonCode.OPERATION_VARIANT
+    )
     assert thread.unsupported.code is UnsupportedReasonCode.GROUP_KIND
     assert cluster.unsupported.code is UnsupportedReasonCode.GROUP_KIND
 

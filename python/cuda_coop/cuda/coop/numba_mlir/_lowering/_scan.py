@@ -92,7 +92,8 @@ def normalize_scan_operation(scan_op: Any) -> str | None:
     if callable(scan_op):
         return None
     raise TypeError(
-        "cuda.coop.numba_mlir scan_op must be a string or stateless device callback"
+        "cuda.coop.numba_mlir scan_op must be "
+        "a string or stateless device callback"
     )
 
 
@@ -134,7 +135,8 @@ def _block_scan_algorithm(algorithm: Any) -> Any:
     token = algorithm.strip().lower().replace("-", "_")
     if token not in {"raking", "raking_memoize", "warp_scans"}:
         raise ValueError(
-            "block scan algorithm must be one of: raking, raking_memoize, warp_scans"
+            "block scan algorithm must be one "
+            "of: raking, raking_memoize, warp_scans"
         )
     return normalize_block_scan_algorithm(token)
 
