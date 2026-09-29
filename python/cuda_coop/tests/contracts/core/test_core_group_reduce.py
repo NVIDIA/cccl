@@ -57,6 +57,9 @@ def _builtin_operator(name="plus"):
     return CxxOperator(cpp, Dependency("T"), name="binary_op")
 
 
+_OMITTED_VALID_ITEMS = ArgumentBinding.omitted()
+
+
 def _reduce(
     *,
     dtype="int32",
@@ -64,7 +67,7 @@ def _reduce(
     value_kind="scalar",
     items_per_thread=1,
     reduce_operator=None,
-    valid_items=ArgumentBinding.omitted(),
+    valid_items=_OMITTED_VALID_ITEMS,
     cub_algorithm=None,
     **storage,
 ):

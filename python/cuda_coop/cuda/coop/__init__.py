@@ -18,6 +18,7 @@ from ._registration import register
 __path__ = extend_path(__path__, __name__)
 
 from ._core import api as _common_api
+from ._core._auto_registration import _auto_register_known_dsls
 
 globals().update(
     {name: getattr(_common_api, name) for name in _common_api.__all__}
@@ -35,7 +36,8 @@ def _package_version() -> str:
 
 __version__ = _package_version()
 
-__all__ = ["__version__", "register", *_common_exports]
+__all__ = ["__version__", "register"]
+__all__.extend(_common_api.__all__)
 
 
 def __dir__() -> list[str]:
@@ -43,8 +45,6 @@ def __dir__() -> list[str]:
 
     return sorted(__all__)
 
-
-from ._core._auto_registration import _auto_register_known_dsls  # noqa: E402
 
 _auto_register_known_dsls()
 del _auto_register_known_dsls

@@ -215,7 +215,7 @@ class ThreadHierarchy:
         block_dim: int | tuple[int, ...] | list[int],
         grid_dim: int | tuple[int, ...] | list[int] | None = None,
         cluster_dim: int | tuple[int, ...] | list[int] | None = None,
-    ) -> "ThreadHierarchy":
+    ) -> ThreadHierarchy:
         """Construct a hierarchy from dimensions supplied by a planner.
 
         Normalize each supplied shape and mark the result as explicit. The
@@ -260,7 +260,7 @@ class ThreadHierarchy:
         return hierarchy
 
     @classmethod
-    def current(cls) -> "ThreadHierarchy":
+    def current(cls) -> ThreadHierarchy:
         """Return a descriptor for the compiler's current kernel launch.
 
         Equivalent to ``ThreadHierarchy()``. See
@@ -484,7 +484,7 @@ class ThreadGroup:
 
     kind: str
     hierarchy: ThreadHierarchy = field(default_factory=ThreadHierarchy.current)
-    parent: "ThreadGroup | None" = None
+    parent: ThreadGroup | None = None
     mapping: GroupByMapping | None = None
     # Source labels do not affect structural identity or cache keys.
     # Planners can still use them to preserve public API policy.
@@ -732,7 +732,8 @@ class ThreadGroup:
             self.hierarchy.semantic_key,  # type: ignore[union-attr]
         )
 
-    def with_hierarchy(
+    # Keep runtime annotations dependency-free on Python 3.10.
+    def with_hierarchy(  # noqa: PYI019
         self: _ThreadGroupT,
         hierarchy: ThreadHierarchy,
         *,
@@ -758,7 +759,8 @@ class ThreadGroup:
             source=source,
         )
 
-    def group_by(
+    # Keep runtime annotations dependency-free on Python 3.10.
+    def group_by(  # noqa: PYI019
         self: _ThreadGroupT,
         count: int,
         *,
@@ -1149,12 +1151,12 @@ def this_grid() -> ThreadGroup:
 
 __all__ = [
     "COMPLETE_WARP_GROUP_KINDS",
-    "CoopCompilerContextRequiredError",
     "MAPPED_GROUP_KINDS",
     "PHYSICAL_GROUP_KINDS",
-    "THREAD_LEVELS",
     "THREAD_GROUP_KINDS",
     "THREAD_GROUP_QUERY_DTYPE_NAMES",
+    "THREAD_LEVELS",
+    "CoopCompilerContextRequiredError",
     "GroupByMapping",
     "Hierarchy",
     "ThreadGroup",
