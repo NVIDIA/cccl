@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typing contract for the portable reduction family."""
+"""Typing contract for the common reduction family."""
 
 from typing import Literal, overload
 
