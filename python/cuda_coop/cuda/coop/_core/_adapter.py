@@ -8,9 +8,6 @@ from typing import Any, Protocol, runtime_checkable
 
 from ._algorithm import AlgorithmSpec
 from ._types import (
-    CxxOperator,
-    PythonOperator,
-    StatefulOperator,
     TempStorageParameter,
 )
 
@@ -38,33 +35,6 @@ class CoreBackendAdapter(Protocol):
         specialization: AlgorithmSpec,
     ) -> Any:
         """Lower a value, pointer, reference, or array parameter."""
-        ...
-
-    def lower_cxx_operator(
-        self,
-        operator: CxxOperator,
-        *,
-        specialization: AlgorithmSpec,
-    ) -> Any:
-        """Lower a statically described C++ operator."""
-        ...
-
-    def lower_python_operator(
-        self,
-        operator: PythonOperator,
-        *,
-        specialization: AlgorithmSpec,
-    ) -> Any:
-        """Lower a stateless Python callable through backend compilation."""
-        ...
-
-    def lower_stateful_operator(
-        self,
-        operator: StatefulOperator,
-        *,
-        specialization: AlgorithmSpec,
-    ) -> Any:
-        """Lower a Python callable whose captured state is runtime data."""
         ...
 
     def lower_temp_storage(
@@ -102,27 +72,6 @@ def lower_method_parameters(
                         specialization=specialization,
                     )
                 )
-        elif isinstance(parameter, CxxOperator):
-            lowered.append(
-                adapter.lower_cxx_operator(
-                    parameter,
-                    specialization=specialization,
-                )
-            )
-        elif isinstance(parameter, PythonOperator):
-            lowered.append(
-                adapter.lower_python_operator(
-                    parameter,
-                    specialization=specialization,
-                )
-            )
-        elif isinstance(parameter, StatefulOperator):
-            lowered.append(
-                adapter.lower_stateful_operator(
-                    parameter,
-                    specialization=specialization,
-                )
-            )
         else:
             lowered.append(
                 adapter.lower_parameter(

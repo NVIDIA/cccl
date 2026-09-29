@@ -29,8 +29,6 @@ class ParameterRole(str, Enum):
     INOUT = "inout"
     CONSTANT = "constant"
     TEMP_STORAGE = "temp_storage"
-    OPERATOR = "operator"
-    STATE = "state"
 
 
 @dataclass(frozen=True)
@@ -128,10 +126,6 @@ class _StaticParameter:
     @property
     def argument_kind(self) -> ArgumentKind:
         return ArgumentKind.STATIC
-
-    @property
-    def role(self) -> ParameterRole:
-        return ParameterRole.OPERATOR
 
 
 @dataclass(frozen=True)
@@ -241,43 +235,6 @@ class CxxFunction(_StaticParameter):
     @property
     def role(self) -> ParameterRole:
         return ParameterRole.CONSTANT
-
-
-@dataclass(frozen=True)
-class CxxOperator(_StaticParameter):
-    cpp: str
-    dtype: Any
-    name: str | None = None
-
-
-@dataclass(frozen=True)
-class PythonOperator(_StaticParameter):
-    ret_dtype: Any
-    arg_dtypes: tuple[Any, ...]
-    op: Any
-    name: str | None = None
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "arg_dtypes", tuple(self.arg_dtypes))
-
-
-@dataclass(frozen=True)
-class StatefulOperator(_RuntimeParameter):
-    """Python callable whose state is passed as a runtime operand."""
-
-    op: Any
-    state_dtype: Any
-    ret_dtype: Any
-    arg_dtypes: tuple[Any, ...]
-    name: str | None = None
-    is_output: bool = False
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "arg_dtypes", tuple(self.arg_dtypes))
-
-    @property
-    def role(self) -> ParameterRole:
-        return ParameterRole.STATE
 
 
 def classify_parameter(parameter: Any) -> ParameterClassification:
