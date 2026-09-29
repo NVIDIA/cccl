@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Common block radix ordering operations."""
-
 from __future__ import annotations
 
 from numbers import Integral

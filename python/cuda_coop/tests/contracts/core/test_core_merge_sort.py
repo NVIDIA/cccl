@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Backend-neutral Merge Sort payload, topology, and validation contracts."""
-
 import pytest
 
 from cuda.coop._core import (
