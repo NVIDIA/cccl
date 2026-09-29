@@ -27,9 +27,9 @@ def test_decode_example():
     ):
         block = coop.this_block()
         rank = cutlass.Int32(block.rank())
-        values = coop.ThreadData(1, dtype=cutlass.Int32)
+        values = coop.ThreadData(items_per_thread=1)
         values[0] = rank + 10
-        lengths = coop.ThreadData(1, dtype=cutlass.Uint32)
+        lengths = coop.ThreadData(items_per_thread=1)
         lengths[0] = cutlass.Uint32(2)
         scratch = coop.TempStorage(auto_sync=True)
         window = coop.run_length_decode(
