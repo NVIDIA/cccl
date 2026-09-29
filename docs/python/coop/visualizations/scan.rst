@@ -63,12 +63,18 @@ accepts ``valid_items``: every lane participates, but only the first
 results with ``?``.
 
 Exclusive sums begin at zero. A generic exclusive scan accepts
-``initial_value``; a non-sum operator requires it. Inclusive scans reject
+``initial_value``; a non-sum operator requires it unless a qualified block
+prefix callback supplies the prefix. Inclusive scans reject
 ``initial_value``. The initial value is an operand: for maximum, an initial
 value of 10 keeps every output at least 10.
 
 The qualified ``aggregate_output`` returns the input aggregate to every
-member, excluding the initial value.
+member, excluding the initial prefix. Prefix callbacks are block-only and
+cannot be combined with ``initial_value`` or ``aggregate_output``. The
+callback receives the input aggregate and returns the prefix to apply. The
+explorer's stateless callback returns ``aggregate + 7``; its stateful example
+returns the previous running value of 10 and updates that value with the tile
+aggregate.
 
 Using Scan in a kernel
 ----------------------
@@ -115,5 +121,55 @@ size matches the input:
            coop.this_block(), source[thread], scan_op=maximum
        )
 
-See :doc:`../../coop_api` for the qualified operator and aggregate-output
+A stateless prefix callback uses the qualified ``prefix_op`` argument. Define
+this function at module scope, then pass it inside the kernel:
+
+.. code-block:: python
+
+   @cuda.jit(device=True)
+   def prefix_after_aggregate(aggregate):
+       return aggregate + 7
+
+   # Inside a kernel, with an int32 scalar value in each thread:
+   prefix = coop.exclusive_sum(
+       coop.this_block(), value, prefix_op=prefix_after_aggregate
+   )
+
+For consecutive tiles, a ``StatefulFunction`` carries a running prefix. This
+kernel scans two tiles of 128 ``int64`` values with an initial prefix of 10.
+Each thread initializes its state cell identically. Only thread zero's final
+state is authoritative.
+
+.. code-block:: python
+
+   from numba_cuda_mlir import types
+
+   @cuda.jit(device=True)
+   def running_prefix(state, aggregate):
+       previous = state[0]
+       state[0] = previous + aggregate
+       return previous
+
+   prefix_callback = coop.StatefulFunction(
+       running_prefix, types.int64, name="running_prefix"
+   )
+
+   @cuda.jit
+   def scan_two_tiles(source, output, final_state):
+       thread = cuda.threadIdx.x
+       state = coop.ThreadData(1, dtype=types.int64)
+       state[0] = 10
+       for tile in range(2):
+           index = tile * 128 + thread
+           output[index] = coop.exclusive_sum(
+               coop.this_block(), source[index], state,
+               prefix_op=prefix_callback,
+           )
+       if thread == 0:
+           final_state[0] = state[0]
+
+This example uses compiler-managed scratch with automatic reuse synchronization.
+For an explicit ``TempStorage`` descriptor, request ``auto_sync=True`` or provide
+barriers before reusing scratch.
+See :doc:`../../coop_api` for the qualified callback and aggregate-output
 contracts, and the :doc:`../programming_guide` for backend activation.

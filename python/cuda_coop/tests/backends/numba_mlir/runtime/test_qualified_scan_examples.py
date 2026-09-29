@@ -90,3 +90,48 @@ def test_qualified_exclusive_scan_example():
     np.testing.assert_array_equal(destination.copy_to_host(), expected.ravel())
     np.testing.assert_array_equal(totals.copy_to_host(), expected_totals)
     # qualified-exclusive-scan-example-end
+
+
+def test_qualified_exclusive_sum_example():
+    # qualified-exclusive-sum-example-begin
+    import numpy as np
+    from numba_cuda_mlir import cuda, types
+
+    import cuda.coop.numba_mlir as numba_coop
+
+    @cuda.jit(device=True)
+    def carry_total(state, tile_total):
+        previous = state[0]
+        state[0] = previous + tile_total
+        return previous
+
+    running_prefix = numba_coop.StatefulFunction(carry_total, types.int64)
+
+    @cuda.jit
+    def scan_successive_tiles(source, destination, final_total):
+        block = numba_coop.this_block()
+        state = numba_coop.ThreadData(1, dtype=types.int64)
+        state[0] = types.int64(0)
+        scratch = numba_coop.TempStorage(auto_sync=True)
+        for tile in range(3):
+            index = tile * cuda.blockDim.x + cuda.threadIdx.x
+            destination[index] = numba_coop.exclusive_sum(
+                block,
+                source[index],
+                state,
+                prefix_op=running_prefix,
+                temp_storage=scratch,
+            )
+        if block.rank() == 0:
+            final_total[0] = state[0]
+
+    values = np.arange(192, dtype=np.int32) % 9
+    source = cuda.to_device(values)
+    destination = cuda.device_array_like(source)
+    final_total = cuda.device_array(1, dtype=np.int64)
+    scan_successive_tiles[1, 64](source, destination, final_total)
+    expected = np.zeros_like(values)
+    expected[1:] = np.cumsum(values[:-1], dtype=np.int32)
+    np.testing.assert_array_equal(destination.copy_to_host(), expected)
+    np.testing.assert_array_equal(final_total.copy_to_host(), [values.sum()])
+    # qualified-exclusive-sum-example-end

@@ -116,7 +116,8 @@ several operations:
        callback restrictions depend on the operation and group
    * - Extra Scan results or prefixes
      - Inclusive and exclusive results, including an exclusive initial value
-     - Also supports ``aggregate_output`` and partial Warp Scan
+     - Also supports ``aggregate_output``, partial Warp Scan, and Block
+       Scan prefix callbacks
    * - Layout exchange
      - Blocked-to-striped and striped-to-blocked conversion
      - Also supports block scatter and warp-striped layouts, with optional
@@ -653,7 +654,8 @@ restriction reflects what the planner can establish; it does not mean that
 every rejected program necessarily races.
 
 Scratch lasts for the kernel's execution on that block. It cannot carry
-state between blocks or kernel launches. Keep persistent application state in a separate payload.
+state between blocks or kernel launches. For running scan state within a
+block, use a separate payload as in the prefix-callback example below.
 
 When the combined scratch requirement exceeds the default static shared-memory
 limit, the backend can use dynamic shared memory, subject to the GPU's opt-in
@@ -749,7 +751,8 @@ value. Block array scans flatten their inputs in blocked order and return
 one result for every input element.
 
 The :doc:`Scan visualization <visualizations/scan>` compares inclusive and
-exclusive results and shows how an initial value changes the sequence.
+exclusive results and shows how an initial value or prefix callback changes
+the sequence.
 
 Built-in operators use the same string vocabulary as Reduce. Scan relies
 on an associative operation: regrouping the inputs must preserve the
@@ -774,6 +777,48 @@ device function shows where to put an application's own associative
 operator. It executes on the GPU and must return the payload dtype.
 Binary Scan callbacks are stateless in the current API; supported payloads
 remain numeric scalars even when a thread owns several items.
+
+.. _coop-prefix-callbacks:
+
+Several tiles in one block
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A Block Scan prefix callback supplies the prefix preceding a tile. A
+stateful callback can also update a running total for the next tile. The
+following kernel scans 384 values using one block and three successive
+128-element tiles:
+
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
+   :language: python
+   :name: coop-pg-prefix-callback
+   :start-after: # coop-pg-prefix-callback-begin
+   :end-before: # coop-pg-prefix-callback-end
+   :dedent: 4
+
+The callback receives the state first and the tile aggregate second. It
+returns the old total as the tile's prefix and saves the new total for the
+next call. The state payload is created before the loop, and every thread
+initializes its copy identically. Automatic scratch barriers remain enabled.
+
+CUB can invoke the callback in every lane of the block's first warp; only
+lane zero's returned prefix is applied. After the calls, read the final
+state from thread zero, as above. Other threads' state copies are not
+authoritative.
+
+State must be a numeric one-item payload with exactly the dtype declared
+by ``StatefulFunction``. Its dtype may differ from the scanned value dtype,
+as it does here, but the output still has the scanned dtype. A wider state
+does not widen the scan results.
+
+Prefix callbacks are available only on qualified Block Scan calls. They
+cannot be combined with ``initial_value`` or ``aggregate_output``. A
+stateless prefix callback accepts just the tile aggregate and returns the
+prefix. Warp Scan has no prefix callback support.
+
+Each block has its own state. Launching this kernel with several blocks
+would require separate input/output ranges and would create independent
+running sums. For a whole-array scan across many blocks, use an appropriate
+device-wide scan or design the additional inter-block algorithm explicitly.
 
 
 Checking and tuning a kernel

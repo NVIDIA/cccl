@@ -11,6 +11,8 @@ cuda = pytest.importorskip("numba_cuda_mlir.cuda")
 if not cuda.is_available():
     pytest.skip("requires a CUDA-capable runtime", allow_module_level=True)
 
+from numba_cuda_mlir import types
+
 import cuda.coop.numba_mlir as numba_coop
 from cuda import coop
 
@@ -288,3 +290,41 @@ def test_custom_scan():
     cuda.synchronize()
     np.testing.assert_array_equal(destination, np.maximum.accumulate(source))
     # coop-pg-custom-scan-end
+
+
+def test_prefix_callback():
+    # coop-pg-prefix-callback-begin
+    @cuda.jit(device=True)
+    def carry_total(state, tile_total):
+        previous = state[0]
+        state[0] = previous + tile_total
+        return previous
+
+    running_prefix = numba_coop.StatefulFunction(carry_total, types.int64)
+
+    @cuda.jit
+    def scan_successive_tiles(source, destination, final_total):
+        block = numba_coop.this_block()
+        state = numba_coop.ThreadData(1, dtype=types.int64)
+        state[0] = types.int64(0)
+        scratch = numba_coop.TempStorage(auto_sync=True)
+        for tile in range(3):
+            index = tile * cuda.blockDim.x + cuda.threadIdx.x
+            destination[index] = numba_coop.exclusive_sum(
+                block,
+                source[index],
+                state,
+                prefix_op=running_prefix,
+                temp_storage=scratch,
+            )
+        if block.rank() == 0:
+            final_total[0] = state[0]
+
+    source = (np.arange(384) % 9).astype(np.int32)
+    destination = np.empty_like(source)
+    final_total = np.empty(1, dtype=np.int64)
+    scan_successive_tiles[1, 128](source, destination, final_total)
+    cuda.synchronize()
+    np.testing.assert_array_equal(destination, np.cumsum(source) - source)
+    np.testing.assert_array_equal(final_total, [source.sum()])
+    # coop-pg-prefix-callback-end

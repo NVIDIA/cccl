@@ -145,6 +145,7 @@
   function prefix_choices(state) {
     const generic_exclusive = state.variant === "exclusive_scan";
     const choices = generic_exclusive ? [choice("zero", "Initial value 0"), choice("ten", "Initial value 10")] : [choice("none", "No added prefix")];
+    if (state.scope === "block") choices.push(choice("callback", "Callback: aggregate + 7"), choice("stateful", "Running state: prefix 10"));
     return choices;
   }
 
@@ -157,7 +158,7 @@
     const values = input_values(threads * items, operator);
     const totals = Array.from({ length: threads }, (_, thread) => fold(values.slice(thread * items, (thread + 1) * items), operator));
     const aggregates = Array.from({ length: threads / width }, (_, group) => fold(values.slice(group * width * items, (group * width + valid) * items), operator));
-    const seeds = aggregates.map(aggregate => state.prefix === "ten" ? 10 : state.prefix === "zero" || !inclusive ? 0 : null);
+    const seeds = aggregates.map(aggregate => state.prefix === "callback" ? aggregate + 7 : ["ten", "stateful"].includes(state.prefix) ? 10 : state.prefix === "zero" || !inclusive ? 0 : null);
     const local = values.map((_, index) => {
       const thread = Math.floor(index / items);
       const value = fold(values.slice(thread * items, index + 1), operator);
@@ -192,21 +193,28 @@
       for (let thread = 0; thread < threads; ++thread) output.push(token(`aggregate${thread}`, aggregates[Math.floor(thread / width)], "aggregate", thread,
         "The group input aggregate is returned to every lane; initial_value is not included.", Math.floor(thread / width) * width));
     }
+    if (state.prefix === "stateful") {
+      rows.push({ id: "state", label: "Running state · inspect at block rank zero", count: 1 });
+      output.push(token("state", combine(10, aggregates[0], operator), "state", 0,
+        `The callback returned the previous prefix 10 and updated its state with tile aggregate ${aggregates[0]}.`, 0));
+    }
     const algorithm = state.scope === "block" ? block_scan_algorithms.find(value => value.id === state.algorithm) : { label: "Warp scan" };
     const notes = [
       `${inclusive ? "Inclusive output includes the current item." : "Exclusive output stops before the current item."} Order is blocked: all of T0's items, then T1's, and so on within each group.`,
       "The local and incoming prefixes are mathematical decompositions. Raking stages through shared segments; memoization retains partials in registers; warp_scans propagates totals between warp scans. The figure does not specify exact instructions or storage padding.",
       state.scope === "block" ? "Block scans accept scalar values or ThreadData, and return a separate result without changing the input." : "Physical and logical warp scans accept one scalar per lane. Every lane participates; ranks beyond valid_items have undefined scan outputs.",
     ];
+    if (state.prefix === "callback") notes.push(`The qualified block prefix callback receives input aggregate ${aggregates[0]} and returns ${seeds[0]} (aggregate + 7). That returned value is combined before the scanned sequence.`);
+    if (state.prefix === "stateful") notes.push("The qualified StatefulFunction receives one-item mutable running state as the third positional argument. Here it returns 10 and combines the tile aggregate into the state for a later scan.");
     if (state.operator === "custom_max" && !state.variant.endsWith("_sum")) notes.push("Custom maximum is a device callback passed as scan_op through cuda.coop.numba_mlir.");
-    if (state.aggregate === "emit") notes.push("aggregate_output is a qualified-backend one-item output. It excludes any initial prefix.");
+    if (state.aggregate === "emit") notes.push("aggregate_output is a qualified-backend one-item output. It excludes any initial prefix and cannot be combined with a prefix callback.");
     return {
       detail: `${algorithm.label}: ${state.variant.replaceAll("_", " ")} over ${width * items} ordered items per ${state.scope.replaceAll("_", " ")} group.`,
       rows,
       phases: [
         { label: "Inputs", description: "Values are ordered by thread rank and then by local item slot.", tokens: source_tokens(values, items) },
         { label: "Local prefixes", description: "Each thread computes prefixes within its own items; these do not yet include earlier threads.", tokens: local },
-        { label: "Propagate prefixes", description: "Each thread receives the aggregate of earlier threads, combined with any initial prefix.", tokens: prefixes },
+        { label: "Propagate prefixes", description: "Each thread receives the aggregate of earlier threads, combined with any initial or callback prefix.", tokens: prefixes },
         { label: "Scan results", description: notes[0], tokens: output },
       ],
       notes,
@@ -224,7 +232,7 @@
       { id: "operator", label: "Operator", value: "sum", choices: state => state.variant.endsWith("_sum") ? [choice("sum", "Sum")] : [choice("sum", "Sum"), choice("max", "Maximum"), choice("custom_max", "Custom maximum callback")] },
       { id: "prefix", label: "Prefix", value: "none", choices: prefix_choices },
       { id: "valid", label: "Contributing ranks", value: "full", choices: state => [choice("full", "All group members"), ...(state.scope !== "block" ? [choice("half", "First half (valid_items)")] : [])] },
-      { id: "aggregate", label: "Aggregate output", value: "none", choices: [choice("none", "Scan results only"), choice("emit", "Also return input aggregate")] },
+      { id: "aggregate", label: "Aggregate output", value: "none", choices: state => [choice("none", "Scan results only"), ...(!["callback", "stateful"].includes(state.prefix) ? [choice("emit", "Also return input aggregate")] : [])] },
     ],
     build: build_scan,
   });
