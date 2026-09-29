@@ -29,31 +29,40 @@ def _merge_sort(
             f"{_SCOPE}.{primitive} requires a block or warp group"
         )
     if not isinstance(descending, bool):
-        raise TypeError(f"{_SCOPE}.{primitive} descending must be a compile-time bool")
+        raise TypeError(
+            f"{_SCOPE}.{primitive} descending must be a compile-time bool"
+        )
     if (valid_items is None) != (oob_default is None):
         raise ValueError(
             "Merge Sort valid_items and oob_default must be provided together"
         )
     if temp_storage is not None:
         if group.kind != "block":
-            raise ValueError("Merge Sort temp_storage applies only to block groups")
+            raise ValueError(
+                "Merge Sort temp_storage applies only to block groups"
+            )
         _validate_common_temp_storage(primitive, temp_storage)
     keys = _snapshot_readable_payload(keys, name="keys", primitive=primitive)
     values = (
         None
         if values is None
-        else _snapshot_readable_payload(values, name="values", primitive=primitive)
+        else _snapshot_readable_payload(
+            values, name="values", primitive=primitive
+        )
     )
     if values is not None and keys.items_per_thread != values.items_per_thread:
         raise ValueError(
-            "Merge Sort keys and values must have matching items_per_thread extents"
+            "Merge Sort keys and values must have matching "
+            "items_per_thread extents"
         )
 
     from ._compiler._launch import current_kernel_launch_facts
     from ._lowering._merge_sort import provider_merge_sort
 
     launch = current_kernel_launch_facts()
-    group = _resolve_primitive_group_from_launch(group, launch, feature=primitive)
+    group = _resolve_primitive_group_from_launch(
+        group, launch, feature=primitive
+    )
     _require_complete_warp_partition(
         group, feature=primitive, exact_block_dim=launch.exact_block_dim
     )
