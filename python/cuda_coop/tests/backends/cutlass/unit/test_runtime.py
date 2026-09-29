@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Optional-runtime diagnostics and compiler-environment activation."""
-
 import importlib.util
 import sys
 from types import SimpleNamespace

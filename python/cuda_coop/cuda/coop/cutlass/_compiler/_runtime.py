@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Validate and diagnose the separately installed CUTLASS DSL runtime."""
+"""Check the installed CUTLASS DSL for the required compiler APIs."""
 
 from __future__ import annotations
 

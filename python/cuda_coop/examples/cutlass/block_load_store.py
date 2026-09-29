@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Copy a partial block tile with CUTLASS and the common ``cuda.coop`` API."""
+"""Copy a partial tile with CUTLASS and ``cuda.coop.load``/``store``."""
 
 import cutlass
 import numpy as np
