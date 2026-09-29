@@ -48,8 +48,8 @@ def run_example(api="common"):
         original_positions: cute.Pointer,
     ):
         block = module.this_block()
-        keys = module.ThreadData(_ITEMS)
-        positions = module.ThreadData(_ITEMS)
+        keys = module.ThreadData(items_per_thread=_ITEMS)
+        positions = module.ThreadData(items_per_thread=_ITEMS)
         module.load(block, source, keys)
         for item in cutlass.range_constexpr(_ITEMS):
             positions[item] = cutlass.Int32(block.rank()) * _ITEMS + item
