@@ -13,9 +13,16 @@
 Common API
 ----------
 
+``ThreadGroup`` and ``ThreadHierarchy`` describe which threads cooperate.
+``ThreadData`` constructs the per-thread payload supplied to a primitive.
+
 The primitive functions below are compiler markers; ``register`` is a
 host-side configuration function. The installed ``.pyi`` files are
-authoritative for overload and result typing.
+authoritative for overload and result typing. Implemented operations follow
+these common contracts; see :ref:`backend operation support
+<coop-backend-operation-support>` for each integration. The :ref:`calling
+conventions <coop-common-calling-conventions>` explain positional operands and
+keyword-only controls for both DSLs.
 
 .. currentmodule:: cuda.coop
 
@@ -29,10 +36,9 @@ See :ref:`registering a backend <coop-backend-registration>`.
 Thread groups
 ^^^^^^^^^^^^^
 
-See :ref:`thread groups <coop-thread-groups>` and :ref:`participation and
-synchronization <coop-participation>` for the shared execution model. ``ThreadGroup`` and ``ThreadHierarchy`` describe which
-threads cooperate. A descriptor's availability does not imply that every primitive supports that
-group.
+See :ref:`thread groups <coop-common-groups>` and :ref:`participation and
+synchronization <coop-common-participation>` for the shared execution model.
+Not every primitive supports every available group.
 
 .. autofunction:: this_thread
 .. autofunction:: this_warp
@@ -64,9 +70,6 @@ group.
 Payloads and temporary storage
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``ThreadData`` constructs the per-thread payload supplied to a primitive;
-thread-group descriptors describe the participating threads.
-
 .. autofunction:: ThreadData
 
 .. autoclass:: ThreadDataLike
@@ -88,7 +91,7 @@ Memory operations
 Reduction
 ^^^^^^^^^
 
-See :ref:`reduction and result ownership <coop-reductions>`.
+See :ref:`reduction and result ownership <coop-common-results>`.
 
 .. autofunction:: reduce
 .. autofunction:: sum
@@ -97,7 +100,8 @@ See :ref:`reduction and result ownership <coop-reductions>`.
 Scan
 ^^^^
 
-See :ref:`scan operators and prefixes <coop-scans>`.
+See Scan in the :ref:`Numba guide <coop-scans>` and
+:ref:`CUTLASS guide <coop-cutlass-scan>`.
 
 .. autofunction:: scan
 .. autofunction:: exclusive_sum
@@ -108,7 +112,7 @@ See :ref:`scan operators and prefixes <coop-scans>`.
 Data rearrangement
 ^^^^^^^^^^^^^^^^^^
 
-See :ref:`blocked and striped layouts <coop-data-layouts>`.
+See :ref:`blocked and striped layouts <coop-common-layouts>`.
 
 .. autofunction:: exchange
 .. autofunction:: shuffle
@@ -116,7 +120,7 @@ See :ref:`blocked and striped layouts <coop-data-layouts>`.
 Comparison sorting
 ^^^^^^^^^^^^^^^^^^
 
-See :ref:`sorting keys and associated values <coop-merge-sort>`.
+See the :ref:`Numba Merge Sort examples <coop-merge-sort>`.
 
 .. autofunction:: merge_sort_keys
 .. autofunction:: merge_sort_pairs
@@ -124,7 +128,7 @@ See :ref:`sorting keys and associated values <coop-merge-sort>`.
 Radix sorting and ranking
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-See :ref:`radix sorting and digit ranks <coop-radix>`.
+See the :ref:`Numba Radix Sort and Rank examples <coop-radix>`.
 
 .. autofunction:: radix_sort_keys
 .. autofunction:: radix_sort_pairs
@@ -133,7 +137,7 @@ See :ref:`radix sorting and digit ranks <coop-radix>`.
 Top-k selection
 ^^^^^^^^^^^^^^^
 
-See :ref:`selecting the smallest or largest keys <coop-topk>`.
+See the :ref:`Numba TopK examples <coop-topk>`.
 
 .. autofunction:: topk_min_keys
 .. autofunction:: topk_max_keys
@@ -172,18 +176,39 @@ Numba-CUDA-MLIR-qualified API
 
 .. py:module:: cuda.coop.numba_mlir
 
-Use this module for the extensions below. Shared parameters and behavior
-follow the :ref:`Common API <coop-common-api>`.
+This module includes every common kernel operation and the Numba extensions
+below. Shared parameters and behavior follow the
+:ref:`Common API <coop-common-api>`. The
+:ref:`comparison table <coop-programming-api-choice>` in the
+:doc:`Numba-CUDA-MLIR Programming Guide <coop/programming_guide>` explains
+when to choose qualified calls. The
+:doc:`Numba-CUDA-MLIR Developer Guide <coop/developer_overview>` follows
+their compiler implementation.
 
 .. code-block:: python
 
-   import cuda.coop.numba_mlir as coop
+   import cuda.coop.numba_mlir as numba_coop
 
 Qualified calls also accept fixed-size, one-dimensional local arrays where
 the operation accepts per-thread payloads. ``local`` and ``shared`` expose
 Numba-CUDA-MLIR's memory namespaces.
 
 .. currentmodule:: cuda.coop.numba_mlir
+
+Payloads and temporary storage
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: ThreadData
+
+.. autoclass:: TempStorage
+   :no-members:
+   :no-special-members:
+
+Memory operations
+^^^^^^^^^^^^^^^^^
+
+.. autofunction:: load
+.. autofunction:: store
 
 Reduction
 ^^^^^^^^^
@@ -255,13 +280,57 @@ CUTLASS-qualified API
 
 .. py:module:: cuda.coop.cutlass
 
-The qualified CUTLASS surface provides hierarchy queries and supported group
-synchronization, Block and Warp ``load``/``store``, and built-in Reduce and
-Scan families. Warp operations include supported logical subgroups. Load
-returns ``None`` and fills its destination payload; Store, Reduce, and Scan
-preserve their input payloads. ``ThreadData`` adds conversions to and from
-CuTe register-memory tensors and immutable register values. See
-:doc:`coop_cutlass` for algorithms, result ownership, runtime requirements,
-and executable examples. Qualified Scan adds valid-prefix and aggregate-output
-controls. Custom operators and Scan prefix callbacks are not supported. The
-installed ``.pyi`` files declare the supported signatures.
+This module includes the implemented common operations, CuTe register
+conversions, and the extensions documented below:
+
+.. code-block:: python
+
+   import cuda.coop.cutlass as cutlass_coop
+
+Group construction, synchronization, Load/Store, and temporary storage follow
+the :ref:`Common API <coop-common-api>`. Use the qualified ``ThreadData``
+conversion methods below to adapt CuTe register tensors before Load or Store.
+Qualified Reduce and Sum also accept register tensors and ``TensorSSA`` values
+directly. Their scalar results are CuTe values, including when a NumPy dtype
+selects the payload type.
+
+The :doc:`CUTLASS Programming Guide <coop_cutlass>` explains how to choose
+between common and qualified calls. Qualified Reduce also accepts Python
+``operator`` functions and NumPy ufuncs as aliases for its built-in operators.
+Sum always adds. CUTLASS does not implement Scan, and its Reduce rejects
+custom operators. See :ref:`CUTLASS-specific behavior and limits
+<coop-cutlass-differences>` for participation and launch requirements,
+and the :doc:`CUTLASS Developer Guide <coop/cutlass_developer_guide>` for
+compilation, linking, and debugging.
+
+.. currentmodule:: cuda.coop.cutlass
+
+Per-thread payloads and CuTe conversion
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: ThreadData
+   :no-members:
+   :no-special-members:
+
+.. automethod:: ThreadData.from_values
+.. automethod:: ThreadData.from_fn
+.. automethod:: ThreadData.from_register_tensor
+.. automethod:: ThreadData.from_vector
+.. automethod:: ThreadData.from_payload
+.. automethod:: ThreadData.to_tensor_ssa
+.. automethod:: ThreadData.to_register_tensor
+
+Reduction
+^^^^^^^^^
+
+.. autofunction:: reduce
+.. autofunction:: sum
+
+Scan
+^^^^
+
+.. autofunction:: scan
+.. autofunction:: exclusive_sum
+.. autofunction:: inclusive_sum
+.. autofunction:: exclusive_scan
+.. autofunction:: inclusive_scan

@@ -140,8 +140,8 @@ Terms
       The contract shared by Numba-CUDA-MLIR and CUTLASS, exposed through
       ``from cuda import coop``. Implemented operations on thread groups,
       values, and storage follow the documented argument and result rules; see
-      :ref:`backend coverage <coop-backends>` for availability. Qualified APIs
-      add compiler-specific extensions. See
+      :ref:`backend operation support <coop-backend-operation-support>` for
+      availability. Qualified APIs add compiler-specific extensions. See
       :ref:`choosing an API <coop-api-namespaces>`.
 
    qualified API
