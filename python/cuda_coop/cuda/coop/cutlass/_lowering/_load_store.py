@@ -462,11 +462,11 @@ def _is_local_memory_space(value: Any) -> bool:
     try:
         if int(value) == _LLVM_LOCAL_ADDRESS_SPACE:
             return True
-    except Exception:
+    except Exception:  # noqa: BLE001, S110 - Foreign memory-space values may only support symbolic names.
         pass
     try:
         name = str(getattr(value, "name", value)).strip().lower()
-    except Exception:
+    except Exception:  # noqa: BLE001 - Uninspectable metadata cannot prove a memory space.
         return False
     return name in {"local", "local_memory", "rmem"}
 
@@ -476,7 +476,7 @@ def _uses_local_memory(value: Any) -> bool:
     for name in ("iterator", "pointer", "ptr", "_pointer", "_ptr"):
         try:
             candidate = getattr(value, name)
-        except Exception:
+        except Exception:  # noqa: BLE001, S112 - Optional pointer metadata may reject access.
             continue
         if candidate is not None:
             candidates.append(candidate)
@@ -484,7 +484,7 @@ def _uses_local_memory(value: Any) -> bool:
         for name in ("memspace", "space", "address_space"):
             try:
                 memory_space = getattr(candidate, name)
-            except Exception:
+            except Exception:  # noqa: BLE001, S112 - Optional memory-space metadata may reject access.
                 continue
             if _is_local_memory_space(memory_space):
                 return True
@@ -497,7 +497,7 @@ def _try_raw_memory_pointer(value: Any) -> Any | None:
     if callable(data_ptr):
         try:
             candidates.append(data_ptr())
-        except Exception:
+        except Exception:  # noqa: BLE001, S110 - Try other pointer protocols if this optional conversion fails.
             pass
     for name in ("iterator", "pointer", "ptr", "_pointer", "_ptr"):
         try:
@@ -517,7 +517,7 @@ def _try_raw_memory_pointer(value: Any) -> Any | None:
             continue
         try:
             pointer_type = llvm.PointerType(pointer.type)
-        except Exception:
+        except Exception:  # noqa: BLE001, S112 - A non-pointer candidate does not establish raw-pointer eligibility.
             continue
         if pointer_type.address_space == _LLVM_LOCAL_ADDRESS_SPACE:
             return None
