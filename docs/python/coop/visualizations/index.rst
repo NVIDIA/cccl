@@ -18,3 +18,4 @@ do not predict GPU performance.
    load
    store
    reduce
+   scan
