@@ -67,7 +67,8 @@ class _ProvenanceRewrite:
             and (lhs_items != rhs_items)
         ):
             raise CoopSinglePhaseRewriteError(
-                f"coop single-phase '{op_name}' requires {lhs_name}/{rhs_name} arrays to have matching items_per_thread."
+                f"coop single-phase '{op_name}' requires {lhs_name}/{rhs_name} "
+                f"arrays to have matching items_per_thread."
             )
 
     def __init__(
@@ -412,7 +413,8 @@ class _ProvenanceRewrite:
             seen = set()
         if len(call.args) not in {3, 4} or call.kws:
             raise CoopSinglePhaseRewriteError(
-                "typed group payload marker requires prototype, array-kind, dtype-policy, and optional explicit-extent arguments"
+                "typed group payload marker requires prototype, array-kind, "
+                "dtype-policy, and optional explicit-extent arguments"
             )
         prototype, is_array_ref, dtype_policy_ref = call.args[:3]
         if not isinstance(prototype, ir.Var):
@@ -424,7 +426,8 @@ class _ProvenanceRewrite:
             dtype_policy = self._infer_constant(dtype_policy_ref)
         except _INFERENCE_EXCEPTIONS as exc:
             raise CoopSinglePhaseRewriteError(
-                "typed group payload shape and dtype policy must be compile-time constants"
+                "typed group payload shape and dtype policy must be "
+                "compile-time constants"
             ) from exc
         if not isinstance(is_array, bool):
             raise CoopSinglePhaseRewriteError(
@@ -444,7 +447,8 @@ class _ProvenanceRewrite:
                 items_per_thread = self._infer_constant(call.args[3])
             except _INFERENCE_EXCEPTIONS as exc:
                 raise CoopSinglePhaseRewriteError(
-                    "typed group payload explicit extent must be a compile-time positive integer"
+                    "typed group payload explicit extent must be a "
+                    "compile-time positive integer"
                 ) from exc
             if (
                 isinstance(items_per_thread, bool)
@@ -452,7 +456,8 @@ class _ProvenanceRewrite:
                 or items_per_thread < 1
             ):
                 raise CoopSinglePhaseRewriteError(
-                    "typed group payload explicit extent must be a compile-time positive integer"
+                    "typed group payload explicit extent must be a "
+                    "compile-time positive integer"
                 )
         elif is_array:
             items_per_thread = (
@@ -497,7 +502,8 @@ class _ProvenanceRewrite:
             extent_refs.append(("items_per_thread", kw_map["items_per_thread"]))
         if len(call.args) > 2:
             raise CoopSinglePhaseRewriteError(
-                "coop.ThreadData accepts at most items_per_thread and dtype positional arguments."
+                "coop.ThreadData accepts at most items_per_thread and dtype "
+                "positional arguments."
             )
         if len(extent_refs) > 1:
             names = " and ".join((name for name, _ in extent_refs))
@@ -515,7 +521,8 @@ class _ProvenanceRewrite:
         if "dtype" in kw_map:
             if dtype_ref is not None:
                 raise CoopSinglePhaseRewriteError(
-                    "coop.ThreadData received dtype both positionally and by keyword."
+                    "coop.ThreadData received dtype "
+                    "both positionally and by keyword."
                 )
             dtype_ref = kw_map["dtype"]
         alignment = None
@@ -525,7 +532,8 @@ class _ProvenanceRewrite:
                 raw_alignment = self._infer_constant(alignment_ref)
             except _INFERENCE_EXCEPTIONS as exc:
                 raise CoopSinglePhaseRewriteError(
-                    "coop.ThreadData alignment must be a compile-time integer or None"
+                    "coop.ThreadData alignment must "
+                    "be a compile-time integer or None"
                 ) from exc
             try:
                 alignment = _normalize_thread_data_alignment(raw_alignment)
@@ -578,7 +586,8 @@ class _ProvenanceRewrite:
             and (existing.items_per_thread != observed.items_per_thread)
         ):
             raise CoopSinglePhaseRewriteError(
-                "Inconsistent items_per_thread across merged coop.ThreadData aliases."
+                "Inconsistent items_per_thread across "
+                "merged coop.ThreadData aliases."
             )
         if (
             existing.dtype is not None
@@ -615,7 +624,8 @@ class _ProvenanceRewrite:
             return observed
         if existing != observed:
             raise CoopSinglePhaseRewriteError(
-                "Inconsistent TempStorage constructor metadata across merged aliases."
+                "Inconsistent TempStorage constructor "
+                "metadata across merged aliases."
             )
         return existing
 
@@ -647,9 +657,11 @@ class _ProvenanceRewrite:
         names: str, sites: int
     ) -> CoopSinglePhaseRewriteError:
         return CoopSinglePhaseRewriteError(
-            "TempStorage with auto_sync=False must be constructed at exactly one "
+            "TempStorage with auto_sync=False "
+            "must be constructed at exactly one "
             f"site; {names} reaches {sites} constructor sites. The compiler "
-            "cannot verify caller synchronization when it merges these regions. "
+            "cannot verify caller synchronization "
+            "when it merges these regions. "
             "Construct the descriptor once or set auto_sync=True."
         )
 
@@ -729,7 +741,8 @@ class _ProvenanceRewrite:
         parameter_names = ("size_in_bytes", "alignment", "auto_sync", "sharing")
         if len(call.args) > 1:
             raise CoopSinglePhaseRewriteError(
-                "TempStorage accepts only size_in_bytes positionally; alignment, auto_sync, and sharing are keyword-only."
+                "TempStorage accepts only size_in_bytes positionally; "
+                "alignment, auto_sync, and sharing are keyword-only."
             )
         unexpected_keywords = sorted(set(kw_map) - set(parameter_names))
         if unexpected_keywords:
@@ -795,7 +808,8 @@ class _ProvenanceRewrite:
             sharing = infer_constant(sharing_ref, name="sharing")
             if not isinstance(sharing, str) or isinstance(sharing, Enum):
                 raise CoopSinglePhaseRewriteError(
-                    "TempStorage sharing must be a string: 'shared' or 'exclusive'."
+                    "TempStorage sharing must be a "
+                    "string: 'shared' or 'exclusive'."
                 )
             sharing = sharing.strip().lower()
         if sharing not in {"shared", "exclusive"}:
@@ -814,8 +828,10 @@ class _ProvenanceRewrite:
         name: str,
     ) -> CoopSinglePhaseRewriteError:
         return CoopSinglePhaseRewriteError(
-            "TempStorage variables must be bound to a TempStorage descriptor on "
-            f"every path; {name!r} is also bound to a non-descriptor value such "
+            "TempStorage variables must be "
+            "bound to a TempStorage descriptor on "
+            f"every path; {name!r} is also bound "
+            f"to a non-descriptor value such "
             "as None. Remove the None initializer or construct the descriptor "
             "unconditionally."
         )
@@ -992,7 +1008,8 @@ class _ProvenanceRewrite:
             storage.instance_index != topology.instance_index
         ):
             raise CoopSinglePhaseRewriteError(
-                "cooperative provider storage layout disagrees with its group topology."
+                "cooperative provider storage layout "
+                "disagrees with its group topology."
             )
         if storage.ownership is StorageOwnership.CALLER:
             # Explicit single-block storage keeps the established caller-owned
@@ -1081,7 +1098,8 @@ class _ProvenanceRewrite:
         )
         if ctor_specification is None:
             raise CoopSinglePhaseRewriteError(
-                f"Missing TempStorage constructor metadata for variable '{var_name}'."
+                f"Missing TempStorage constructor "
+                f"metadata for variable '{var_name}'."
             )
         requirements = self._func_temp_storage_requirements.get(var_name)
         uses = list(requirements.uses) if requirements is not None else []
@@ -1117,7 +1135,8 @@ class _ProvenanceRewrite:
             )
         if required_size > 0 and size_in_bytes < required_size:
             raise CoopSinglePhaseRewriteError(
-                f"TempStorage size_in_bytes is smaller than required by primitive uses ({size_in_bytes} < {required_size})."
+                f"TempStorage size_in_bytes is smaller than required by "
+                f"primitive uses ({size_in_bytes} < {required_size})."
             )
         if ctor_specification.alignment is None:
             alignment = _default_temp_storage_alignment(required_alignment)
@@ -1715,7 +1734,8 @@ class _ProvenanceRewrite:
                     continue
                 if inferred != rhs_dtype:
                     raise CoopSinglePhaseRewriteError(
-                        "Failed to infer a consistent dtype from coop.ThreadData writes."
+                        "Failed to infer a consistent dtype from "
+                        "coop.ThreadData writes."
                     )
         if inferred is not None:
             self._record_inferred_thread_data_dtype(value, inferred)
@@ -1867,7 +1887,9 @@ class _ProvenanceRewrite:
             getitem_temp_storage = getattr(func_def, "index_var", None)
         if not isinstance(getitem_temp_storage, ir.Var):
             raise CoopSinglePhaseRewriteError(
-                f"coop single-phase getitem syntax expects a runtime temp-storage variable: '{factory.__name__}[temp_storage](...)'."
+                f"coop single-phase getitem syntax expects a runtime "
+                f"temp-storage variable: '{factory.__name__}"
+                f"[temp_storage](...)'."
             )
         return _ResolvedCallTarget(
             factory=factory,

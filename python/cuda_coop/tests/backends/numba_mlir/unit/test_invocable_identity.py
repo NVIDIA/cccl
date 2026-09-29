@@ -86,7 +86,9 @@ def test_invocable_cache_partitions_registered_factory_identities():
         )
 
     first, first_created = rewrite._materialize_invocable(match(first_factory))
-    second, second_created = rewrite._materialize_invocable(match(second_factory))
+    second, second_created = rewrite._materialize_invocable(
+        match(second_factory)
+    )
     assert first_created
     assert second_created
     assert first.name == "first"

@@ -33,7 +33,8 @@ def normalize_dim_param(dim) -> dim3:
     elif isinstance(dim, tuple):
         if not 1 <= len(dim) <= 3:
             raise ValueError(
-                f"Tuple dimension must have one, two, or three elements; got {len(dim)}"
+                f"Tuple dimension must have one, two, "
+                f"or three elements; got {len(dim)}"
             )
         values = dim
     else:
@@ -210,7 +211,9 @@ def _scalar_operator_result_dtype(function, *operand_dtypes):
     ):
         return None
     try:
-        normalized = tuple(normalize_dtype_param(dtype) for dtype in operand_dtypes)
+        normalized = tuple(
+            normalize_dtype_param(dtype) for dtype in operand_dtypes
+        )
         from numba_cuda_mlir.descriptor import mlir_target
 
         mlir_target.ensure_initialized()
@@ -276,11 +279,14 @@ def coerce_static_scalar(
         if normalized_source != target_dtype:
             raise TypeError(
                 f"cuda.coop.{operation} {parameter} dtype "
-                f"{normalized_source} does not match payload dtype {target_dtype}"
+                f"{normalized_source} does not "
+                f"match payload dtype {target_dtype}"
             )
         scalar = value.item() if isinstance(value, np.generic) else value
         if isinstance(scalar, Real) and not math.isfinite(float(scalar)):
-            raise ValueError(f"cuda.coop.{operation} {parameter} must be finite")
+            raise ValueError(
+                f"cuda.coop.{operation} {parameter} must be finite"
+            )
         return target_numpy_dtype.type(value)
 
     if isinstance(value, bool) or type(value) is bool:
@@ -350,7 +356,8 @@ def _scalar_cpp_literal(value):
             return "-INFINITY"
         return repr(value)
     raise ValueError(
-        f"Unsupported scalar literal type for compile-time binding: {type(value)}"
+        f"Unsupported scalar literal type for "
+        f"compile-time binding: {type(value)}"
     )
 
 
@@ -363,6 +370,7 @@ def make_typed_cpp_literal(value, dtype):
     cpp_type = numba_type_to_cpp(dtype)
     if cpp_type == "storage_t":
         raise ValueError(
-            "Compile-time scalar literal binding does not support user-defined dtypes"
+            "Compile-time scalar literal binding "
+            "does not support user-defined dtypes"
         )
     return f"static_cast<{cpp_type}>({_scalar_cpp_literal(value)})"

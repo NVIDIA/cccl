@@ -26,7 +26,9 @@ class StaticScalarProvenance:
     dtype: Any | None = None
 
 
-def _static_scalar(value: Any, dtype: Any | None = None) -> StaticScalarProvenance:
+def _static_scalar(
+    value: Any, dtype: Any | None = None
+) -> StaticScalarProvenance:
     if dtype is None and isinstance(value, np.generic):
         dtype = value.dtype
     return StaticScalarProvenance(value=value, dtype=dtype)
@@ -66,7 +68,9 @@ def try_resolve_static_scalar_provenance(
             arg_type = argument_type(definition.index)
             if isinstance(arg_type, types.Literal):
                 resolved_values.append(
-                    _static_scalar(arg_type.literal_value, arg_type.literal_type)
+                    _static_scalar(
+                        arg_type.literal_value, arg_type.literal_type
+                    )
                 )
                 continue
             if isinstance(arg_type, types.NoneType) or (
@@ -102,7 +106,10 @@ def try_resolve_static_scalar_provenance(
             continue
         if isinstance(definition, ir.Expr) and definition.op == "phi":
             incoming_values = getattr(definition, "incoming_values", ())
-            if not isinstance(incoming_values, (list, tuple)) or not incoming_values:
+            if (
+                not isinstance(incoming_values, (list, tuple))
+                or not incoming_values
+            ):
                 return (False, None)
             for incoming in incoming_values:
                 resolved, scalar = try_resolve_static_scalar_provenance(

@@ -79,7 +79,9 @@ def test_required_headers_reject_a_partial_configured_bundle(
 ) -> None:
     bundle = tmp_path / "partial-bundle"
     missing = "cuda/experimental/coop/group"
-    present_headers = (set(_nvrtc._REQUIRED_HEADERS) - {missing}) | {"cub/version.cuh"}
+    present_headers = (set(_nvrtc._REQUIRED_HEADERS) - {missing}) | {
+        "cub/version.cuh"
+    }
     for header in present_headers:
         destination = bundle / header
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -192,8 +194,12 @@ def test_resolve_context_preserves_order_and_recursive_header_identity(
     (first / "header.cuh").write_bytes(b"mutated content")
     mutated = _nvrtc.resolve_compile_context()
 
-    assert forward.include_dirs == tuple(str(path) for path in (first, second, cuda))
-    assert reverse.include_dirs == tuple(str(path) for path in (second, first, cuda))
+    assert forward.include_dirs == tuple(
+        str(path) for path in (first, second, cuda)
+    )
+    assert reverse.include_dirs == tuple(
+        str(path) for path in (second, first, cuda)
+    )
     assert forward.header_identity != reverse.header_identity
     assert reverse.header_identity != mutated.header_identity
 
@@ -231,7 +237,9 @@ def test_compile_forwards_complete_context_into_cache_key(
     monkeypatch.setattr(
         _nvrtc,
         "resolve_compile_context",
-        lambda: pytest.fail("compile must not resolve a supplied context again"),
+        lambda: pytest.fail(
+            "compile must not resolve a supplied context again"
+        ),
     )
     monkeypatch.setattr(_nvrtc, "_dump_source", lambda *args: None)
     monkeypatch.setattr(
@@ -306,7 +314,9 @@ def test_resolve_context_rejects_loaded_nvrtc_version_mismatch(
 
     with pytest.raises(
         RuntimeError,
-        match=r"headers report Toolkit 13\.3, but loaded NVRTC .* reports 12\.8",
+        match=(
+            r"headers report Toolkit 13\.3, but loaded NVRTC .* reports 12\.8"
+        ),
     ):
         _nvrtc.resolve_compile_context()
 
@@ -354,7 +364,9 @@ def test_compile_impl_rejects_nvrtc_version_change_before_compilation(
         )
 
 
-def test_shared_source_dump_runs_before_provider_cache_lookup(tmp_path, monkeypatch):
+def test_shared_source_dump_runs_before_provider_cache_lookup(
+    tmp_path, monkeypatch
+):
     source = 'extern "C" __device__ int probe() { return 1; }\n'
     monkeypatch.setenv("CUDA_COOP_SOURCE_DUMP_DIR", str(tmp_path))
 
@@ -380,7 +392,9 @@ def test_shared_source_dump_survives_compile_failure(tmp_path, monkeypatch):
 
     monkeypatch.setattr(_nvrtc, "compile_impl", fail)
     with pytest.raises(RuntimeError, match="NVRTC compilation failed"):
-        _nvrtc.compile(cpp=source, cc=90, rdc=True, code="lto", context=_context())
+        _nvrtc.compile(
+            cpp=source, cc=90, rdc=True, code="lto", context=_context()
+        )
 
     dumped = tuple(tmp_path.glob("cuda_coop_numba_mlir_*.cu"))
     assert len(dumped) == 1
@@ -388,7 +402,9 @@ def test_shared_source_dump_survives_compile_failure(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("shared_value", (None, ""))
-def test_retired_source_dump_setting_is_ignored(tmp_path, monkeypatch, shared_value):
+def test_retired_source_dump_setting_is_ignored(
+    tmp_path, monkeypatch, shared_value
+):
     monkeypatch.setenv("CUDA_COOP_NUMBA_MLIR_NVRTC_DUMP_DIR", str(tmp_path))
     if shared_value is None:
         monkeypatch.delenv("CUDA_COOP_SOURCE_DUMP_DIR", raising=False)
