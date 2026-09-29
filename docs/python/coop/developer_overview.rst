@@ -908,8 +908,8 @@ choose operations that agree on that arrangement or insert an Exchange.
 The result contracts preserve the following public behavior:
 
 * Load and Store return ``None``. Load fills the supplied output in place.
-  Store preserves its input, including when its CUB implementation reorders
-  data internally.
+  Store follows CUB: transpose algorithms may rearrange the input payload
+  in place. Invalid Load slots are unspecified unless a default is supplied.
 * Exchange returns a fresh payload. Its input remains available to
   subsequent kernel code.
 
