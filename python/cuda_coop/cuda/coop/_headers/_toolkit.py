@@ -337,7 +337,7 @@ def _nvrtc_version(path: str) -> tuple[int, int]:
 
     handle = _exact_library_handle(path, kind="NVRTC")
     try:
-        version = getattr(handle, "nvrtcVersion")
+        version = handle.nvrtcVersion
     except AttributeError as exc:
         raise RuntimeError(
             f"loaded NVRTC does not export nvrtcVersion: {path}"
@@ -360,7 +360,7 @@ def _nvjitlink_version(path: str) -> tuple[int, int]:
 
     handle = _exact_library_handle(path, kind="nvJitLink")
     try:
-        version = getattr(handle, "nvJitLinkVersion")
+        version = handle.nvJitLinkVersion
     except AttributeError as exc:
         raise RuntimeError(
             f"loaded nvJitLink does not export nvJitLinkVersion: {path}"

@@ -617,9 +617,7 @@ class GroupLoweringPlan:
         if self.unsupported is not None:
             return None
         implementation_key = (
-            None
-            if self.implementation is None
-            else getattr(self.implementation, "semantic_key")
+            None if self.implementation is None else self.implementation.semantic_key
         )
         return (
             self.target.value,
@@ -650,7 +648,7 @@ class GroupLoweringPlan:
         assert self.unsupported is not None
         return "unsupported", self.semantic_key, self.unsupported.code.value
 
-    def require_supported(self) -> "GroupLoweringPlan":
+    def require_supported(self) -> GroupLoweringPlan:
         if self.unsupported is not None:
             raise NotImplementedError(self.unsupported.message)
         return self

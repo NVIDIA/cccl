@@ -27,7 +27,8 @@ def _package_version() -> str:
 
 __version__ = _package_version()
 
-__all__ = ["__version__", "register", *_portable_exports]
+__all__ = ["__version__", "register"]
+__all__.extend(_portable_exports)
 
 
 def __dir__() -> list[str]:

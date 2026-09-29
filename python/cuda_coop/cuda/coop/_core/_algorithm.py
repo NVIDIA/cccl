@@ -6,10 +6,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import Any, Mapping
+from typing import Any
 
 from ._symbols import semantic_token
 from ._types import ParameterClassification, TemplateParameter, classify_parameter
@@ -111,7 +111,7 @@ class Algorithm:
         template_arguments: Mapping[str, Any],
         *,
         metadata: Mapping[str, Any] | None = None,
-    ) -> "AlgorithmSpec":
+    ) -> AlgorithmSpec:
         """Bind template/dependency values without performing backend lowering."""
 
         missing = [
