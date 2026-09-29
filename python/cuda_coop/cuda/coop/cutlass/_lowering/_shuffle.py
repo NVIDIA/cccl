@@ -82,7 +82,8 @@ def _make_shuffle_plan(
     )
     return plan_group_primitive(
         make_group_primitive_call(
-            group, GroupShuffleSemantics(primitive), source="cutlass_root"
+            group,
+            GroupShuffleSemantics(primitive),
         ),
         launch,
     ).require_supported()
