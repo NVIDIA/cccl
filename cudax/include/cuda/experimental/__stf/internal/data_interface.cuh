@@ -431,7 +431,7 @@ private:
     if (typeid(shape_t) != asked_ti)
     {
       throw ::std::invalid_argument(
-        "shape type mismatch: assumed " + ::std::string(type_name<shape_t>) + ", actual " + ::std::string(tname));
+        ::std::string("shape type mismatch: assumed ").append(type_name<shape_t>).append(", actual ").append(tname));
     }
     return &shape;
   }
@@ -442,7 +442,7 @@ private:
     if (ti != typeid(rw_type_of<T>) && ti != typeid(void))
     {
       throw ::std::invalid_argument(
-        "data interface type mismatch: assumed " + ::std::string(type_name<T>) + ", actual " + ::std::string(tname));
+        ::std::string("data interface type mismatch: assumed ").append(type_name<T>).append(", actual ").append(tname));
     }
     return &instance(instance_id);
   }
@@ -454,7 +454,7 @@ private:
     if (ti != typeid(rw_type_of<T>) && ti != typeid(void))
     {
       throw ::std::invalid_argument(
-        "data interface type mismatch: assumed " + ::std::string(type_name<T>) + ", actual " + ::std::string(tname));
+        ::std::string("data interface type mismatch: assumed ").append(type_name<T>).append(", actual ").append(tname));
     }
     return &instance(instance_id);
   }

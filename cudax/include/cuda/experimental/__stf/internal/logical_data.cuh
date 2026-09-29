@@ -2297,7 +2297,8 @@ inline instance_id_t task::find_data_instance_id(const logical_data_untyped& d) 
   }
 
   // This task does not have d among its dependencies
-  throw ::std::invalid_argument("logical data '" + d.get_symbol() + "' is not a dependency of this task");
+  throw ::std::invalid_argument(
+    ::std::string("logical data '").append(d.get_symbol()).append("' is not a dependency of this task"));
 }
 
 namespace reserved
@@ -2315,8 +2316,9 @@ inline void ensure_task_deps_initialized(const task_dep_vector_untyped& deps)
   {
     if (!dep.has_data() || !dep.get_data().is_initialized())
     {
-      throw ::std::invalid_argument(
-        "dependency number " + ::std::to_string(index) + " is an uninitialized logical data");
+      char msg[128];
+      snprintf(msg, sizeof(msg), "dependency number %zu is an uninitialized logical data", index);
+      throw ::std::invalid_argument(msg);
     }
     ++index;
   }

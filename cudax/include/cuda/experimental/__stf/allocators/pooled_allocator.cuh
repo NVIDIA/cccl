@@ -303,10 +303,9 @@ public:
       }
     }
 
-    char where[32];
-    snprintf(where, sizeof(where), "%p", ptr);
-    throw ::std::invalid_argument(
-      ::std::string("pointer ") + where + " was released, but does not belong to a known pool");
+    char msg[512];
+    snprintf(msg, sizeof(msg), "pointer %p was released, but does not belong to a known pool", ptr);
+    throw ::std::invalid_argument(msg);
   }
 
   event_list deinit_pools(backend_ctx_untyped& ctx)

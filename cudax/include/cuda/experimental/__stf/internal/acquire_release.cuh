@@ -86,15 +86,21 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     auto [frozen, frozen_mode] = d.is_frozen();
     if (frozen && !(frozen_mode == access_mode::read && mode == access_mode::read))
     {
-      throw ::std::logic_error("illegal access on frozen logical data '" + d.get_symbol() + "': frozen with mode "
-                               + access_mode_string(frozen_mode) + ", requested " + access_mode_string(mode));
+      throw ::std::logic_error(
+        ::std::string("illegal access on frozen logical data '")
+          .append(d.get_symbol())
+          .append("': frozen with mode ")
+          .append(access_mode_string(frozen_mode))
+          .append(", requested ")
+          .append(access_mode_string(mode)));
     }
 
     // The logical data and the task must belong to the same context (compared by the addresses
     // of their context states).
     if (ctx != d.get_ctx())
     {
-      throw ::std::invalid_argument("logical data '" + d.get_symbol() + "' does not belong to the context of the task");
+      throw ::std::invalid_argument(
+        ::std::string("logical data '").append(d.get_symbol()).append("' does not belong to the context of the task"));
     }
   }
 

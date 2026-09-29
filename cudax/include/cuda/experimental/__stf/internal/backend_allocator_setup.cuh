@@ -52,62 +52,39 @@ auto allocators_create_and_attach(ctx_impl_t& i, Args&&... args)
   return res;
 };
 
-//! Which allocator CUDASTF_DEFAULT_ALLOCATOR selects as the context-wide default.
-enum class default_allocator_kind
+//! Read CUDASTF_DEFAULT_ALLOCATOR ("cached" when unset). An unknown value throws
+//! std::invalid_argument; callers read the selection before they touch any context state, so a bad
+//! value leaves the context as it was.
+inline ::std::string default_allocator_from_env()
 {
-  cached, // the default when the variable is unset
-  uncached,
-  cached_fifo,
-  pooled
-};
-
-//! Read CUDASTF_DEFAULT_ALLOCATOR. An unknown value throws std::invalid_argument; callers read the
-//! selection before they touch any context state, so a bad value leaves the context as it was.
-inline default_allocator_kind default_allocator_kind_from_env()
-{
-  const char* default_alloc_env = getenv("CUDASTF_DEFAULT_ALLOCATOR");
-  if (!default_alloc_env)
+  const char* env = getenv("CUDASTF_DEFAULT_ALLOCATOR");
+  ::std::string kind(env ? env : "cached");
+  if (kind != "cached" && kind != "uncached" && kind != "cached_fifo" && kind != "pooled")
   {
-    return default_allocator_kind::cached;
+    throw ::std::invalid_argument(::std::string("invalid CUDASTF_DEFAULT_ALLOCATOR value '").append(kind).append("'"));
   }
-
-  const ::std::string default_alloc_str(default_alloc_env);
-  if (default_alloc_str == "uncached")
-  {
-    return default_allocator_kind::uncached;
-  }
-  if (default_alloc_str == "cached")
-  {
-    return default_allocator_kind::cached;
-  }
-  if (default_alloc_str == "cached_fifo")
-  {
-    return default_allocator_kind::cached_fifo;
-  }
-  if (default_alloc_str == "pooled")
-  {
-    return default_allocator_kind::pooled;
-  }
-  throw ::std::invalid_argument("invalid CUDASTF_DEFAULT_ALLOCATOR value '" + default_alloc_str + "'");
+  return kind;
 }
 
 template <typename ctx_impl_t>
-void backend_ctx_set_default_allocator(ctx_impl_t& i, block_allocator_untyped& uncached, default_allocator_kind kind)
+void backend_ctx_set_default_allocator(ctx_impl_t& i, block_allocator_untyped& uncached, const ::std::string& kind)
 {
-  switch (kind)
+  if (kind == "uncached")
   {
-    case default_allocator_kind::uncached:
-      i.default_allocator = uncached;
-      break;
-    case default_allocator_kind::cached_fifo:
-      i.default_allocator = allocators_create_and_attach<cached_block_allocator_fifo>(i, uncached);
-      break;
-    case default_allocator_kind::pooled:
-      i.default_allocator = allocators_create_and_attach<pooled_allocator>(i);
-      break;
-    case default_allocator_kind::cached:
-      i.default_allocator = allocators_create_and_attach<cached_block_allocator>(i, uncached);
-      break;
+    i.default_allocator = uncached;
+  }
+  else if (kind == "cached_fifo")
+  {
+    i.default_allocator = allocators_create_and_attach<cached_block_allocator_fifo>(i, uncached);
+  }
+  else if (kind == "pooled")
+  {
+    i.default_allocator = allocators_create_and_attach<pooled_allocator>(i);
+  }
+  else
+  {
+    // "cached", the default
+    i.default_allocator = allocators_create_and_attach<cached_block_allocator>(i, uncached);
   }
 
   // Make it possible to customize the context-wide default allocator (use the default one for now)
@@ -117,7 +94,7 @@ void backend_ctx_set_default_allocator(ctx_impl_t& i, block_allocator_untyped& u
 template <typename ctx_impl_t>
 void backend_ctx_set_default_allocator(ctx_impl_t& i, block_allocator_untyped& uncached)
 {
-  backend_ctx_set_default_allocator(i, uncached, default_allocator_kind_from_env());
+  backend_ctx_set_default_allocator(i, uncached, default_allocator_from_env());
 }
 
 /**
@@ -132,7 +109,7 @@ template <typename ctx_impl_t, typename uncached_allocator_t>
 void backend_ctx_setup_allocators(ctx_impl_t& i)
 {
   // Read the selection first: an invalid value must not leave a half-configured context.
-  const auto kind      = default_allocator_kind_from_env();
+  const auto kind      = default_allocator_from_env();
   i.uncached_allocator = allocators_create_and_attach<uncached_allocator_t>(i);
 
   // Select the default allocator based on this uncached allocator
@@ -151,7 +128,7 @@ template <typename ctx_impl_t>
 void backend_ctx_update_uncached_allocator(ctx_impl_t& i, block_allocator_untyped uncached_allocator)
 {
   // Read the selection first, so a bad CUDASTF_DEFAULT_ALLOCATOR leaves every allocator as it was.
-  const auto kind = default_allocator_kind_from_env();
+  const auto kind = default_allocator_from_env();
 
   // Update the uncached allocator
   i.uncached_allocator = uncached_allocator;
