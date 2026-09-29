@@ -2,9 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Run a block load, exclusive scan, and store through the common API with
-Numba.
-"""
+"""Load a block tile, compute its exclusive prefix sum, and store the result."""
 
 from __future__ import annotations
 
