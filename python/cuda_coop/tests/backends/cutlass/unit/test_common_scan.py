@@ -20,7 +20,9 @@ class _ThreadData:
     def __init__(self, items_per_thread=2, *, dtype=np.float32, length=None):
         self.items_per_thread = items_per_thread
         self.dtype = dtype
-        self._items = [np.float32(0)] * (items_per_thread if length is None else length)
+        self._items = [np.float32(0)] * (
+            items_per_thread if length is None else length
+        )
 
     def __len__(self):
         return len(self._items)
@@ -113,7 +115,9 @@ def test_common_scan_rejects_inclusive_initial_before_delegation(monkeypatch):
             lambda: "test.backend",
         )
         with pytest.raises(ValueError, match="not supported for inclusive"):
-            api.scan(this_block(), np.int32(1), mode="inclusive", initial_value=0)
+            api.scan(
+                this_block(), np.int32(1), mode="inclusive", initial_value=0
+            )
     assert calls == []
 
 

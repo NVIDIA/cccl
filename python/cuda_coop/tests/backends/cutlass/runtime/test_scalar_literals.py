@@ -17,7 +17,9 @@ from tests.backends.cutlass.support import cutlass_dtype, device_array
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("dtype", (np.float32, np.float64))
 def test_integer_default_and_seed(api, dtype):
     value_type = cutlass_dtype(dtype)
@@ -38,7 +40,9 @@ def test_integer_default_and_seed(api, dtype):
     observed = np.zeros_like(source)
     values = source.copy()
     values[51:] = 0
-    expected = np.concatenate((np.zeros(1, dtype=dtype), np.cumsum(values)[:-1])) + 2
+    expected = (
+        np.concatenate((np.zeros(1, dtype=dtype), np.cumsum(values)[:-1])) + 2
+    )
     with device_array(source) as src, device_array(observed) as out:
         launch(src, out)
     np.testing.assert_array_equal(observed, expected)

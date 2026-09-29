@@ -42,7 +42,9 @@ def _package_stub_source() -> Path:
         return _PACKAGE_ROOT / "cuda" / "coop"
 
     installed = Path(distribution.locate_file("cuda/coop"))
-    assert installed.is_dir(), f"installed cuda-coop package is missing: {installed}"
+    assert installed.is_dir(), (
+        f"installed cuda-coop package is missing: {installed}"
+    )
     return installed
 
 
@@ -121,7 +123,9 @@ def test_public_stub_exports_match_runtime(relative_path: str) -> None:
     runtime_exports = _literal_exports(stub.with_suffix(".py"))
     if relative_path == "__init__.pyi":
         # The root expands the common API exports without importing a compiler.
-        runtime_exports |= _literal_exports(package_root / "_core/api/__init__.py")
+        runtime_exports |= _literal_exports(
+            package_root / "_core/api/__init__.py"
+        )
 
     assert _literal_exports(stub) == runtime_exports
 
@@ -135,7 +139,9 @@ def test_public_stub_exports_match_runtime(relative_path: str) -> None:
     ),
     ids=("common", "numba-mlir", "cutlass"),
 )
-def test_thread_group_stubs_expose_hierarchy_operations(relative_path: str) -> None:
+def test_thread_group_stubs_expose_hierarchy_operations(
+    relative_path: str,
+) -> None:
     stub = _package_stub_source() / relative_path
     module = ast.parse(stub.read_text(encoding="utf-8"), filename=str(stub))
     thread_group = next(
@@ -144,7 +150,9 @@ def test_thread_group_stubs_expose_hierarchy_operations(relative_path: str) -> N
         if isinstance(node, ast.ClassDef) and node.name == "ThreadGroup"
     )
     methods = {
-        node.name for node in thread_group.body if isinstance(node, ast.FunctionDef)
+        node.name
+        for node in thread_group.body
+        if isinstance(node, ast.FunctionDef)
     }
 
     assert _THREAD_GROUP_HIERARCHY_METHODS <= methods
@@ -156,7 +164,10 @@ def test_public_stubs_pass_strict_consumer_type_checks(
 ) -> None:
     if importlib.util.find_spec("mypy") is None:
         pytest.skip("mypy is not installed")
-    if consumer_family == "cutlass" and importlib.util.find_spec("cutlass") is None:
+    if (
+        consumer_family == "cutlass"
+        and importlib.util.find_spec("cutlass") is None
+    ):
         pytest.skip("qualified CUTLASS scalar typing requires CUTLASS DSL")
 
     package_root = _package_stub_source()
@@ -174,7 +185,9 @@ def test_public_stubs_pass_strict_consumer_type_checks(
     consumer_root.mkdir()
     valid_consumers = []
     consumer_names = (
-        ("cutlass_consumer.py",) if consumer_family == "cutlass" else _VALID_CONSUMERS
+        ("cutlass_consumer.py",)
+        if consumer_family == "cutlass"
+        else _VALID_CONSUMERS
     )
     for name in consumer_names:
         destination = consumer_root / name
@@ -185,7 +198,9 @@ def test_public_stubs_pass_strict_consumer_type_checks(
     # Common Scan also consumes CUTLASS scalar annotations when available.
     # Keep generated experimental bindings outside these public API checks.
     if importlib.util.find_spec("cutlass") is not None:
-        mypy_args.extend(["--config-file", str(_CONSUMER_ROOT / "cutlass_mypy.ini")])
+        mypy_args.extend(
+            ["--config-file", str(_CONSUMER_ROOT / "cutlass_mypy.ini")]
+        )
     result = _run_mypy(
         mypy_args,
         valid_consumers,
@@ -216,4 +231,6 @@ def test_public_stubs_pass_strict_consumer_type_checks(
             flags=re.MULTILINE,
         )
     }
-    assert diagnostics == _expected_diagnostics(invalid_consumer), invalid_output
+    assert diagnostics == _expected_diagnostics(invalid_consumer), (
+        invalid_output
+    )

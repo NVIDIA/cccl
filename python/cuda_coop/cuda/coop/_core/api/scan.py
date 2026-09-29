@@ -87,14 +87,22 @@ def _validate_common_scan_options(
     _validate_common_operation_group(operation, group)
     if mode == "inclusive" and initial_value is not None:
         raise ValueError(
-            f"cuda.coop.{operation} initial_value is not supported for inclusive scans"
+            f"cuda.coop.{operation} initial_value is not supported "
+            "for inclusive scans"
         )
-    if mode == "exclusive" and scan_op not in {None, "sum"} and (initial_value is None):
+    if (
+        mode == "exclusive"
+        and scan_op not in {None, "sum"}
+        and (initial_value is None)
+    ):
         raise ValueError(
-            f"cuda.coop.{operation} non-sum exclusive scans require initial_value"
+            f"cuda.coop.{operation} non-sum exclusive scans "
+            "require initial_value"
         )
     if initial_value is not None:
-        _validate_common_numeric_scalar(operation, "initial_value", initial_value)
+        _validate_common_numeric_scalar(
+            operation, "initial_value", initial_value
+        )
     if group.kind in _WARP_GROUP_KINDS:
         if isinstance(value, _ReadableThreadDataLike):
             raise TypeError(
@@ -108,7 +116,8 @@ def _validate_common_scan_options(
             )
         if temp_storage is not None:
             raise ValueError(
-                f"cuda.coop.{operation} temp_storage is supported only for blocks"
+                f"cuda.coop.{operation} temp_storage is supported "
+                "only for blocks"
             )
     elif temp_storage is not None:
         _validate_common_temp_storage(operation, temp_storage)

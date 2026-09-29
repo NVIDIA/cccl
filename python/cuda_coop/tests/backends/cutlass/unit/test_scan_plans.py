@@ -44,7 +44,9 @@ def _plan(group=None, **options):
     return _scan._make_group_scan_plan(**kwargs).require_supported()
 
 
-@pytest.mark.parametrize("algorithm", ("raking", "raking_memoize", "warp_scans"))
+@pytest.mark.parametrize(
+    "algorithm", ("raking", "raking_memoize", "warp_scans")
+)
 @pytest.mark.parametrize("array", (False, True))
 @pytest.mark.parametrize("mode", ("inclusive", "exclusive"))
 def test_block_contracts(algorithm, array, mode):
@@ -62,11 +64,14 @@ def test_block_contracts(algorithm, array, mode):
     assert plan.result.visibility is ResultVisibility.PER_MEMBER
     assert plan.result.has_aggregate
     assert plan.result.result_items_per_thread == (3 if array else 1)
-    assert request.plan.temp_storage.ownership is StorageOwnership.IMPLEMENTATION
+    assert (
+        request.plan.temp_storage.ownership is StorageOwnership.IMPLEMENTATION
+    )
     assert request.plan.temp_storage.exact_layout_required
     assert request.plan.temp_storage.sharing is None
     assert (
-        request.plan.synchronization.storage_reuse_barrier is SynchronizationScope.BLOCK
+        request.plan.synchronization.storage_reuse_barrier
+        is SynchronizationScope.BLOCK
     )
     assert len(_rendering.bundle_scratch_layout_probes([request])) == 1
 
@@ -86,7 +91,9 @@ def test_warp_prefix_contracts(width, mode):
     assert plan.participation.argument_preconditions[0].minimum == 1
     assert plan.participation.argument_preconditions[0].maximum == width
     assert plan.result.has_aggregate
-    assert plan.synchronization.storage_reuse_barrier is SynchronizationScope.WARP
+    assert (
+        plan.synchronization.storage_reuse_barrier is SynchronizationScope.WARP
+    )
     assert not _rendering.bundle_scratch_layout_probes([request])
     if mode == "exclusive":
         assert isinstance(request.operation.initial_value, CxxFunction)
@@ -107,7 +114,9 @@ def test_request_dtype_profile(dtype, op):
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
 @pytest.mark.parametrize("auto_sync", (True, False))
 def test_descriptor_contract(sharing, auto_sync):
-    descriptor = TempStorage(8192, alignment=128, sharing=sharing, auto_sync=auto_sync)
+    descriptor = TempStorage(
+        8192, alignment=128, sharing=sharing, auto_sync=auto_sync
+    )
     plan = _scan._with_block_storage(_plan(), descriptor)
     request = _scan._CubScanRequest(plan, "sum", cutlass.Int32, True)
     assert plan.temp_storage.ownership is StorageOwnership.CALLER
@@ -115,10 +124,14 @@ def test_descriptor_contract(sharing, auto_sync):
     assert plan.temp_storage.requested_size_in_bytes == 8192
     assert plan.temp_storage.requested_alignment == 128
     assert plan.temp_storage.auto_sync is auto_sync
-    expected = SynchronizationScope.BLOCK if auto_sync else SynchronizationScope.NONE
+    expected = (
+        SynchronizationScope.BLOCK if auto_sync else SynchronizationScope.NONE
+    )
     assert plan.synchronization.storage_reuse_barrier is expected
     other = _scan._CubScanRequest(
-        _scan._with_block_storage(_plan(), TempStorage(auto_sync=not auto_sync)),
+        _scan._with_block_storage(
+            _plan(), TempStorage(auto_sync=not auto_sync)
+        ),
         "sum",
         cutlass.Int32,
         True,
@@ -146,7 +159,8 @@ def test_request_plan_mismatch():
                 implementation=replace(
                     plan.implementation,
                     algorithm=replace(
-                        plan.implementation.algorithm, method_name="InclusiveSum"
+                        plan.implementation.algorithm,
+                        method_name="InclusiveSum",
                     ),
                 ),
             ),
@@ -158,7 +172,9 @@ def test_request_plan_mismatch():
 @pytest.mark.parametrize("initial", (np.float32(np.inf), np.float32(np.nan)))
 def test_nonfinite_seed(initial):
     with pytest.raises(ValueError, match="finite"):
-        _scan._typed_value(initial, cutlass.Float32, name="initial_value", initial=True)
+        _scan._typed_value(
+            initial, cutlass.Float32, name="initial_value", initial=True
+        )
 
 
 def test_seed_dtype_and_range():
@@ -193,7 +209,9 @@ def test_numpy_payload_dtype_mismatch():
 def test_failed_ffi_rolls_back(block, monkeypatch):
     snapshot = object()
     registered, restored, events = [], [], []
-    monkeypatch.setattr(_state, "snapshot_active_session_state", lambda: snapshot)
+    monkeypatch.setattr(
+        _state, "snapshot_active_session_state", lambda: snapshot
+    )
     monkeypatch.setattr(_state, "register_request", registered.append)
     monkeypatch.setattr(_state, "restore_active_session_state", restored.append)
 
