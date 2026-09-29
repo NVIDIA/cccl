@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""RLD traps, final linked providers, and scratch race checking."""
-
 import os
 import re
 import shutil

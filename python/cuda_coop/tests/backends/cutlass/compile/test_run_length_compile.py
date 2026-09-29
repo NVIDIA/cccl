@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Final-link, wide-control, and destination contracts without a GPU."""
-
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
