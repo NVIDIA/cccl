@@ -147,8 +147,8 @@ struct ScanLookaheadPolicy
   int lookahead_stages = 2; //!< Number of pipeline stages for the lookahead squad
 
   //! Deprecated [Since CCCL 3.6]
-  CCCL_DEPRECATED_BECAUSE("block_idx_stages no longer has any effect and will be removed in CCCL 4.0") int
-    block_idx_stages = -1;
+  CCCL_DEPRECATED_BECAUSE("block_idx_stages no longer has any effect and will be removed in CCCL 4.0") //
+  int block_idx_stages = -1;
 
   _CCCL_HOST_DEVICE_API constexpr int tile_size() const noexcept
   {
