@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Explicit scratch-storage configuration for cooperative primitives."""
-
 from .._typing import TempStorageSharing
 
 class TempStorage:

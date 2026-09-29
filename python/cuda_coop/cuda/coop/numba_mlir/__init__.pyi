@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Numba-CUDA-MLIR-qualified group-first cooperative primitives."""
-
 from .._core.api import TempStorageLike, ThreadDataLike
 from ._group_load_store import load, store
 from ._temp_storage import TempStorage
