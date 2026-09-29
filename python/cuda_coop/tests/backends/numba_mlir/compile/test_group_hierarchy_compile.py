@@ -228,8 +228,15 @@ def test_exact_launch_infers_bounds_without_overriding_user_options(
         output[index] = cuda.threadIdx.y + cuda.threadIdx.z * cuda.blockDim.y
 
     original = dict(kernel.targetoptions)
-    key = (("grid", (1, 1, 1)), ("block", block), ("sharedmem", 0), ("cluster", None))
-    result = kernel._compile_launch_config_signature(types.void(types.int32[::1]), key)
+    key = (
+        ("grid", (1, 1, 1)),
+        ("block", block),
+        ("sharedmem", 0),
+        ("cluster", None),
+    )
+    result = kernel._compile_launch_config_signature(
+        types.void(types.int32[::1]), key
+    )
     assert result.metadata["cubin"]
     ptx = next(iter(kernel.inspect_lto_ptx().values()))
     if maximum is None:
@@ -263,7 +270,9 @@ def test_launch_bounds_follow_each_exact_specialization(monkeypatch):
             ("cluster", None),
         )
         results.append(
-            kernel._compile_launch_config_signature(types.void(types.int32[::1]), key)
+            kernel._compile_launch_config_signature(
+                types.void(types.int32[::1]), key
+            )
         )
     assert len({id(result) for result in results}) == 3
     assert [
@@ -288,6 +297,9 @@ def test_exact_launch_exceeding_explicit_bounds_is_attributable(monkeypatch):
         ("cluster", None),
     )
     with pytest.raises(
-        GroupRewriteError, match="64 threads, exceeding explicit launch_bounds=32"
+        GroupRewriteError,
+        match="64 threads, exceeding explicit launch_bounds=32",
     ):
-        kernel._compile_launch_config_signature(types.void(types.int32[::1]), key)
+        kernel._compile_launch_config_signature(
+            types.void(types.int32[::1]), key
+        )
