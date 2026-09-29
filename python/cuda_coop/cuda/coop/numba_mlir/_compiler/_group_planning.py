@@ -64,7 +64,9 @@ class GroupPlanningContext:
         return self.__planner._callable(value)
 
     def constant(self, value: Any) -> Any:
-        self.__planner._reject_literal_unroll_value(value, "a compile-time argument")
+        self.__planner._reject_literal_unroll_value(
+            value, "a compile-time argument"
+        )
         return self.__planner._constant(value)
 
     def try_constant(self, value: Any) -> tuple[bool, Any]:
@@ -102,7 +104,9 @@ class GroupPlanningContext:
     def is_array(self, operation: str, value: Any) -> bool:
         return self.__planner._array_operand_state(operation, value)
 
-    def is_thread_data(self, operation: str, parameter: str, value: Any) -> bool:
+    def is_thread_data(
+        self, operation: str, parameter: str, value: Any
+    ) -> bool:
         return self.__planner._thread_data_operand_state(
             operation,
             parameter,
@@ -193,7 +197,9 @@ class GroupPlanningContext:
                     "cuda.coop.numba_mlir storage-bearing providers require "
                     "exact block dimensions"
                 )
-            block_threads = exact_block_dim[0] * exact_block_dim[1] * exact_block_dim[2]
+            block_threads = (
+                exact_block_dim[0] * exact_block_dim[1] * exact_block_dim[2]
+            )
             if topology.logical_width * topology.instances != block_threads:
                 raise GroupRewriteError(
                     "cuda.coop.numba_mlir group topology does not cover the "
@@ -236,7 +242,9 @@ class GroupPlanningContext:
             )
         expected = {
             "storage_abi": (
-                StorageABI.LEADING_POINTER if storage_bearing else StorageABI.NONE
+                StorageABI.LEADING_POINTER
+                if storage_bearing
+                else StorageABI.NONE
             ),
             "execution_scope": topology.execution_scope,
             "synchronization_scope": synchronization.storage_reuse_barrier,
@@ -290,7 +298,8 @@ class GroupPlanningContext:
         )
         if _GROUP_LOWERING_PLAN_KWARG in kwargs:
             raise GroupRewriteError(
-                "cuda.coop.numba_mlir family lowering used a reserved provider keyword"
+                "cuda.coop.numba_mlir family lowering "
+                "used a reserved provider keyword"
             )
         kwargs = {
             **kwargs,
@@ -311,7 +320,9 @@ class GroupPlanningContext:
     def typed_payload_like(self, *args: Any, **kwargs: Any) -> ir.Var:
         return self.__planner._typed_payload_like(*args, **kwargs)
 
-    def box_group_operand(self, *args: Any, **kwargs: Any) -> tuple[ir.Var, bool]:
+    def box_group_operand(
+        self, *args: Any, **kwargs: Any
+    ) -> tuple[ir.Var, bool]:
         return self.__planner._boxed_group_operand(*args, **kwargs)
 
     def result_value(self, *args: Any, **kwargs: Any) -> ir.Var:
@@ -395,7 +406,9 @@ class GroupPlanningContext:
                         and packed.op == "build_tuple"
                         and -len(packed.items) <= index < len(packed.items)
                     ):
-                        yield from payload_definitions(packed.items[index], next_seen)
+                        yield from payload_definitions(
+                            packed.items[index], next_seen
+                        )
 
         for definition in payload_definitions(value, set()):
             if (
@@ -434,7 +447,10 @@ class GroupPlanningContext:
                 )
                 for definition in self._all_definitions(value)
             ),
-            message=("cuda.coop.numba_mlir tuple projections have inconsistent dtypes"),
+            message=(
+                "cuda.coop.numba_mlir tuple "
+                "projections have inconsistent dtypes"
+            ),
         )
 
     def _tuple_dtype_definition(
@@ -470,7 +486,9 @@ class GroupPlanningContext:
             return self._result_dtype(definition, index=index, seen=seen)
         return None
 
-    def _dtype_definition(self, definition: Any, *, seen: set[str]) -> Any | None:
+    def _dtype_definition(
+        self, definition: Any, *, seen: set[str]
+    ) -> Any | None:
         if isinstance(definition, ir.Var):
             return self.dtype(definition, seen=seen)
         if isinstance(definition, ir.Arg):
@@ -492,7 +510,8 @@ class GroupPlanningContext:
                     for incoming in getattr(definition, "incoming_values", ())
                 ),
                 message=(
-                    "cuda.coop.numba_mlir payload aliases have inconsistent dtypes"
+                    "cuda.coop.numba_mlir payload "
+                    "aliases have inconsistent dtypes"
                 ),
             )
         if definition.op in {"getitem", "static_getitem"}:
@@ -527,7 +546,12 @@ class GroupPlanningContext:
                 root, attributes = chain
                 if root is _cuda_module and (*attributes, definition.attr) in {
                     (index, component)
-                    for index in ("blockDim", "blockIdx", "gridDim", "threadIdx")
+                    for index in (
+                        "blockDim",
+                        "blockIdx",
+                        "gridDim",
+                        "threadIdx",
+                    )
                     for component in ("x", "y", "z")
                 }:
                     return types.int32
@@ -569,7 +593,9 @@ class GroupPlanningContext:
                 return inferred
         return cast_dtype
 
-    def _attribute_chain(self, value: Any) -> tuple[Any, tuple[str, ...]] | None:
+    def _attribute_chain(
+        self, value: Any
+    ) -> tuple[Any, tuple[str, ...]] | None:
         attributes: list[str] = []
         current = self._definition(value)
         while isinstance(current, ir.Expr) and current.op == "getattr":
@@ -596,7 +622,9 @@ class GroupPlanningContext:
                 )
                 for definition in self._all_definitions(value)
             ),
-            message="cuda.coop.numba_mlir payload aliases have inconsistent dtypes",
+            message=(
+                "cuda.coop.numba_mlir payload aliases have inconsistent dtypes"
+            ),
         )
 
     def payload_write_dtype(self, payload: Any) -> Any | None:
@@ -622,10 +650,15 @@ class GroupPlanningContext:
                     }:
                         if isinstance(definition.value, ir.Var):
                             sources = (definition.value,)
-                    elif isinstance(definition, ir.Expr) and definition.op == "phi":
+                    elif (
+                        isinstance(definition, ir.Expr)
+                        and definition.op == "phi"
+                    ):
                         sources = tuple(
                             incoming
-                            for incoming in getattr(definition, "incoming_values", ())
+                            for incoming in getattr(
+                                definition, "incoming_values", ()
+                            )
                             if isinstance(incoming, ir.Var)
                         )
                     source_names = {source.name for source in sources}
@@ -633,7 +666,10 @@ class GroupPlanningContext:
                         statement.target.name in alias_names
                         or source_names & alias_names
                     ):
-                        additions = {statement.target.name, *source_names} - alias_names
+                        additions = {
+                            statement.target.name,
+                            *source_names,
+                        } - alias_names
                         if additions:
                             alias_names.update(additions)
                             changed = True
@@ -650,7 +686,10 @@ class GroupPlanningContext:
                     value = getattr(statement, "value", None)
                 else:
                     continue
-                if not isinstance(target, ir.Var) or target.name not in alias_names:
+                if (
+                    not isinstance(target, ir.Var)
+                    or target.name not in alias_names
+                ):
                     continue
                 if not isinstance(value, ir.Var):
                     continue
@@ -706,7 +745,8 @@ class GroupPlanningContext:
             sites.add(id(definition))
         if len(candidates) > 1:
             raise GroupRewriteError(
-                "cuda.coop.numba_mlir TempStorage aliases have inconsistent contracts"
+                "cuda.coop.numba_mlir TempStorage "
+                "aliases have inconsistent contracts"
             )
         descriptor = next(iter(candidates), None)
         if descriptor is not None and non_descriptor:
@@ -714,7 +754,8 @@ class GroupPlanningContext:
                 "cuda.coop.numba_mlir TempStorage variables must be bound to "
                 f"a TempStorage descriptor on every path; {value.name!r} is "
                 "also bound to a non-descriptor value such as None. Remove "
-                "the None initializer or construct the descriptor unconditionally."
+                "the None initializer or construct "
+                "the descriptor unconditionally."
             )
         if descriptor is not None and descriptor[2] is False and len(sites) > 1:
             raise GroupRewriteError(

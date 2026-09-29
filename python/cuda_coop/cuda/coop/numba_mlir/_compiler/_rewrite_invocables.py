@@ -63,7 +63,8 @@ class _InvocableRewrite:
         op_name = factory_metadata.operation
         if not callable(invocable) or not hasattr(invocable, "files"):
             raise CoopSinglePhaseRewriteError(
-                f"coop single-phase factory for '{op_name}' did not produce a coop invocable; got {type(invocable)!r}."
+                f"coop single-phase factory for '{op_name}' did not produce a "
+                f"coop invocable; got {type(invocable)!r}."
             )
         expected_contract = {
             "storage_abi": factory_metadata.storage_abi,
@@ -84,10 +85,13 @@ class _InvocableRewrite:
         if mismatches:
             details = ", ".join(mismatches)
             raise CoopSinglePhaseRewriteError(
-                f"coop provider '{op_name}' returned incompatible metadata: {details}."
+                f"coop provider '{op_name}' returned "
+                f"incompatible metadata: {details}."
             )
 
-    def _prepare_ltoir_bundle_for_matches(self, matches: list[_RewriteMatch]) -> None:
+    def _prepare_ltoir_bundle_for_matches(
+        self, matches: list[_RewriteMatch]
+    ) -> None:
         self._prebundled_specializations = {}
         if not matches:
             return
@@ -165,7 +169,8 @@ class _InvocableRewrite:
                 invocable = match.factory(**match.factory_kwargs)
         except Exception as e:
             raise CoopSinglePhaseRewriteError(
-                f"Failed to evaluate coop single-phase factory at compile time for '{match.op_name}'."
+                f"Failed to evaluate coop single-phase factory at compile time "
+                f"for '{match.op_name}'."
             ) from e
         self._validate_invocable(invocable, match.factory_metadata)
         self._invocable_cache[key] = invocable
@@ -175,12 +180,17 @@ class _InvocableRewrite:
     def _record_invocable_specialization(self, invocable):
         specialization = getattr(invocable, "specialization", None)
         link_key = (
-            algo_coalesce_key(specialization) if specialization is not None else None
+            algo_coalesce_key(specialization)
+            if specialization is not None
+            else None
         )
         materialized_specializations = self._state.metadata.setdefault(
             "__cuda_coop_numba_mlir_materialized_specializations__", []
         )
-        if link_key is not None and link_key not in materialized_specializations:
+        if (
+            link_key is not None
+            and link_key not in materialized_specializations
+        ):
             materialized_specializations.append(link_key)
 
 

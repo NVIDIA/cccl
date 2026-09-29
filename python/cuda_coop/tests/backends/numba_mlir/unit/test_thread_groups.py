@@ -82,12 +82,15 @@ def test_group_constructors_preserve_shared_validation():
         coop.this_warp().group_by(8).group_by(2)
 
 
-@pytest.mark.parametrize("api", (portable_coop, coop), ids=("portable", "qualified"))
+@pytest.mark.parametrize(
+    "api", (portable_coop, coop), ids=("portable", "qualified")
+)
 def test_thread_group_runtime_surface_is_descriptor_only(api):
     group = api.this_block()
 
     assert callable(group.group_by)
     assert _UNSUPPORTED_THREAD_GROUP_METHODS.isdisjoint(dir(group))
     assert all(
-        not hasattr(group, method) for method in _UNSUPPORTED_THREAD_GROUP_METHODS
+        not hasattr(group, method)
+        for method in _UNSUPPORTED_THREAD_GROUP_METHODS
     )

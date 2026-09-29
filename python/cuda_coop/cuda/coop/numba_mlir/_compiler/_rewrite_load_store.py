@@ -52,7 +52,8 @@ class _ExactStoreScalar:
                 if actual_dtype != dtype:
                     raise compat.numba_errors.TypingError(
                         "cuda.coop.numba_mlir.store value dtype "
-                        f"{actual_dtype} does not match destination dtype {dtype}"
+                        f"{actual_dtype} does not "
+                        f"match destination dtype {dtype}"
                     )
 
                 def impl(value):
@@ -73,7 +74,9 @@ class _ExactStoreScalar:
         return self._numba_type
 
     def __call__(self, value):
-        raise RuntimeError("Store scalar validation requires device compilation")
+        raise RuntimeError(
+            "Store scalar validation requires device compilation"
+        )
 
 
 class _LoadStoreRewrite:
@@ -186,8 +189,13 @@ class _LoadStoreRewrite:
             )
 
         offset = factory_kwargs.get("offset")
-        if isinstance(offset, ArgumentBinding) and offset.kind is BindingKind.STATIC:
-            if isinstance(offset.value, bool) or not isinstance(offset.value, Integral):
+        if (
+            isinstance(offset, ArgumentBinding)
+            and offset.kind is BindingKind.STATIC
+        ):
+            if isinstance(offset.value, bool) or not isinstance(
+                offset.value, Integral
+            ):
                 raise CoopSinglePhaseRewriteError(
                     f"coop {op_name} offset must be an integer"
                 )
@@ -198,7 +206,8 @@ class _LoadStoreRewrite:
                 )
             if normalized_offset > (1 << 63) - 1:
                 raise CoopSinglePhaseRewriteError(
-                    "coop load/store static offset must fit a signed 64-bit integer"
+                    "coop load/store static offset "
+                    "must fit a signed 64-bit integer"
                 )
 
         checks: list[tuple[str, int]] = []
@@ -254,15 +263,21 @@ class _LoadStoreRewrite:
         inference: PayloadInference,
     ) -> None:
         payload_var, payload_spec = inference.candidate(1)
-        memory_var = inference.runtime_args[0] if inference.runtime_args else None
+        memory_var = (
+            inference.runtime_args[0] if inference.runtime_args else None
+        )
         memory_dtype = (
-            context.dtype(memory_var) if isinstance(memory_var, ir.Var) else None
+            context.dtype(memory_var)
+            if isinstance(memory_var, ir.Var)
+            else None
         )
 
         payload_is_array = payload_spec is not None
         if payload_spec is None:
             payload_dtype = (
-                context.dtype(payload_var) if isinstance(payload_var, ir.Var) else None
+                context.dtype(payload_var)
+                if isinstance(payload_var, ir.Var)
+                else None
             )
             inference.infer_kwarg("items_per_thread", 1)
             inference.infer_kwarg(
@@ -270,7 +285,9 @@ class _LoadStoreRewrite:
                 memory_dtype if memory_dtype is not None else payload_dtype,
             )
         else:
-            inference.infer_kwarg("items_per_thread", payload_spec.items_per_thread)
+            inference.infer_kwarg(
+                "items_per_thread", payload_spec.items_per_thread
+            )
             payload_dtype = payload_spec.dtype
             if payload_dtype is None and payload_var is not None:
                 payload_dtype = context.dtype(payload_var)
@@ -279,8 +296,12 @@ class _LoadStoreRewrite:
                 and payload_dtype is None
                 and payload_var is not None
             ):
-                payload_dtype = context.infer_thread_data_write_dtype(payload_var)
-            inferred_dtype = memory_dtype if memory_dtype is not None else payload_dtype
+                payload_dtype = context.infer_thread_data_write_dtype(
+                    payload_var
+                )
+            inferred_dtype = (
+                memory_dtype if memory_dtype is not None else payload_dtype
+            )
             if inferred_dtype is None:
                 inferred_dtype = inference.factory_value("dtype")
             inference.infer_kwarg("dtype", inferred_dtype)
@@ -331,11 +352,13 @@ class _LoadStoreRewrite:
             if inference.op_name != "store" or payload_is_array:
                 raise CoopSinglePhaseRewriteError(
                     f"cuda.coop.numba_mlir.{inference.op_name} memory dtype "
-                    f"{memory_dtype} does not match payload dtype {payload_dtype}"
+                    f"{memory_dtype} does not match "
+                    f"payload dtype {payload_dtype}"
                 )
             raise CoopSinglePhaseRewriteError(
                 "cuda.coop.numba_mlir.store value dtype "
-                f"{payload_dtype} does not match destination dtype {memory_dtype}"
+                f"{payload_dtype} does not match "
+                f"destination dtype {memory_dtype}"
             )
 
 
@@ -377,12 +400,15 @@ def analyze_load_store_match(
     if common_root_operation is not None:
         if common_root_operation != op_name:
             raise CoopSinglePhaseRewriteError(
-                "_common_root_operation does not match the rewritten group operation"
+                "_common_root_operation does not "
+                "match the rewritten group operation"
             )
         from ._parameters import _validate_common_numeric_dtype
 
         operand_names = (
-            ("source", "output") if op_name == "load" else ("destination", "value")
+            ("source", "output")
+            if op_name == "load"
+            else ("destination", "value")
         )
         operands = list(zip(operand_names, runtime_args))
         if op_name == "store" and len(runtime_args) >= 2:
@@ -429,10 +455,14 @@ def prepare_load_store_runtime_args(
     if not metadata.box_root_store_scalar:
         return runtime_args
     if len(runtime_args) < 2:
-        raise CoopSinglePhaseRewriteError("root store is missing its value argument")
+        raise CoopSinglePhaseRewriteError(
+            "root store is missing its value argument"
+        )
     dtype = match.factory_kwargs.get("dtype")
     if dtype is None:
-        raise CoopSinglePhaseRewriteError("root store requires an inferred dtype")
+        raise CoopSinglePhaseRewriteError(
+            "root store requires an inferred dtype"
+        )
     items_per_thread = match.factory_kwargs.get("items_per_thread", 1)
     if (
         isinstance(items_per_thread, bool)
@@ -463,8 +493,12 @@ def prepare_load_store_runtime_args(
             loc,
         )
     )
-    block.append(ir.Assign(ir.Expr.getattr(module_var, "local", loc), local_var, loc))
-    block.append(ir.Assign(ir.Expr.getattr(local_var, "array", loc), array_fn, loc))
+    block.append(
+        ir.Assign(ir.Expr.getattr(module_var, "local", loc), local_var, loc)
+    )
+    block.append(
+        ir.Assign(ir.Expr.getattr(local_var, "array", loc), array_fn, loc)
+    )
     block.append(ir.Assign(ir.Const(items_per_thread, loc), shape_var, loc))
     block.append(
         ir.Assign(
@@ -487,14 +521,18 @@ def prepare_load_store_runtime_args(
         block.append(
             ir.Assign(
                 ir.Global(
-                    _next_global_name("store_scalar"), _ExactStoreScalar(dtype), loc
+                    _next_global_name("store_scalar"),
+                    _ExactStoreScalar(dtype),
+                    loc,
                 ),
                 validator,
                 loc,
             )
         )
         block.append(
-            ir.Assign(ir.Expr.call(validator, [value], (), loc), checked_value, loc)
+            ir.Assign(
+                ir.Expr.call(validator, [value], (), loc), checked_value, loc
+            )
         )
         value = checked_value
     for item_index in range(items_per_thread):

@@ -55,7 +55,9 @@ def find_unsigned(name, txt):
     if found is not None:
         return int(found.group(1))
 
-    declaration = re.compile(f".global .align 4 .u32 {escaped_name};", re.MULTILINE)
+    declaration = re.compile(
+        f".global .align 4 .u32 {escaped_name};", re.MULTILINE
+    )
     if declaration.search(txt) is not None:
         return 0
     raise ValueError(f"{name} not found in text")

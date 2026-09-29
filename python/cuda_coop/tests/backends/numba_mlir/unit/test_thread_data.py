@@ -45,8 +45,13 @@ def test_temp_storage_uses_canonical_defaults_and_normalization():
     assert exclusive.sharing == "exclusive"
     assert exclusive.auto_sync is False
     assert coop.TempStorage(auto_sync=None).auto_sync is False
-    assert coop.TempStorage(sharing="exclusive", auto_sync=True).auto_sync is True
-    assert coop.TempStorage(sharing="exclusive", auto_sync=False).auto_sync is False
+    assert (
+        coop.TempStorage(sharing="exclusive", auto_sync=True).auto_sync is True
+    )
+    assert (
+        coop.TempStorage(sharing="exclusive", auto_sync=False).auto_sync
+        is False
+    )
 
 
 def test_temp_storage_rejects_string_enum_sharing():

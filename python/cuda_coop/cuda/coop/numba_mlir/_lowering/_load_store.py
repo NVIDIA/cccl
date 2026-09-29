@@ -65,7 +65,9 @@ def _positive_int(value, *, name: str) -> int:
     return value
 
 
-def _resolve_algorithm(algorithm, allowed_algorithms, primitive_name: str) -> str:
+def _resolve_algorithm(
+    algorithm, allowed_algorithms, primitive_name: str
+) -> str:
     if not isinstance(algorithm, str) or isinstance(algorithm, Enum):
         raise TypeError(f"{primitive_name} algorithm must be a string")
     token = algorithm.strip().lower().replace("-", "_")
@@ -173,7 +175,9 @@ def _load(
     items_per_thread = _positive_int(items_per_thread, name="items_per_thread")
     registered = factory_operation(provider_factory)
     if registered is None:
-        raise RuntimeError(f"unregistered cuda.coop provider {provider_factory!r}")
+        raise RuntimeError(
+            f"unregistered cuda.coop provider {provider_factory!r}"
+        )
     if registered.namespace == "block":
         if threads_in_warp is not None:
             raise ValueError("block Load does not accept threads_in_warp")
@@ -193,7 +197,8 @@ def _load(
         group_kwargs = {"threads_in_warp": threads_in_warp}
     else:
         raise ValueError(
-            f"unsupported cuda.coop Load provider namespace {registered.namespace!r}"
+            f"unsupported cuda.coop Load provider namespace "
+            f"{registered.namespace!r}"
         )
     registered = _registered_provider_metadata(provider_factory, algorithm)
     adapter = NumbaMlirCoreAdapter(
@@ -206,7 +211,9 @@ def _load(
         )
     )
     spec_factory = (
-        make_block_load_spec if registered.namespace == "block" else make_warp_load_spec
+        make_block_load_spec
+        if registered.namespace == "block"
+        else make_warp_load_spec
     )
     core_spec = spec_factory(
         dtype=adapter.core_dtype(dtype),
@@ -366,7 +373,9 @@ def _store(
     items_per_thread = _positive_int(items_per_thread, name="items_per_thread")
     registered = factory_operation(provider_factory)
     if registered is None:
-        raise RuntimeError(f"unregistered cuda.coop provider {provider_factory!r}")
+        raise RuntimeError(
+            f"unregistered cuda.coop provider {provider_factory!r}"
+        )
     if registered.namespace == "block":
         if threads_in_warp is not None:
             raise ValueError("block Store does not accept threads_in_warp")
@@ -386,7 +395,8 @@ def _store(
         group_kwargs = {"threads_in_warp": threads_in_warp}
     else:
         raise ValueError(
-            f"unsupported cuda.coop Store provider namespace {registered.namespace!r}"
+            f"unsupported cuda.coop Store provider namespace "
+            f"{registered.namespace!r}"
         )
     registered = _registered_provider_metadata(provider_factory, algorithm)
     adapter = NumbaMlirCoreAdapter(

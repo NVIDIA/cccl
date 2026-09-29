@@ -61,9 +61,14 @@ class _ProvenanceRewrite:
             return
         lhs_items = lhs_spec.items_per_thread
         rhs_items = rhs_spec.items_per_thread
-        if lhs_items is not None and rhs_items is not None and (lhs_items != rhs_items):
+        if (
+            lhs_items is not None
+            and rhs_items is not None
+            and (lhs_items != rhs_items)
+        ):
             raise CoopSinglePhaseRewriteError(
-                f"coop single-phase '{op_name}' requires {lhs_name}/{rhs_name} arrays to have matching items_per_thread."
+                f"coop single-phase '{op_name}' requires {lhs_name}/{rhs_name} "
+                f"arrays to have matching items_per_thread."
             )
 
     def __init__(
@@ -102,7 +107,9 @@ class _ProvenanceRewrite:
         ] = {}
         self._temp_storage_plans: dict[str, _TempStoragePlan] = {}
         self._temp_storage_global_plan: _TempStorageGlobalPlan | None = None
-        self._implicit_temp_storage_requirements = _TempStorageRequirementSummary()
+        self._implicit_temp_storage_requirements = (
+            _TempStorageRequirementSummary()
+        )
         self._implicit_temp_storage_plan: _TempStoragePlan | None = None
         self._temp_storage_backing_var: ir.Var | None = None
         self._temp_storage_backing_emitted = False
@@ -190,17 +197,17 @@ class _ProvenanceRewrite:
         if isinstance(value, ir.Var):
             if value.name in self._block_defs:
                 add(self._block_defs[value.name])
-            for definition in (getattr(self._func_ir, "_definitions", {}) or {}).get(
-                value.name, ()
-            ):
+            for definition in (
+                getattr(self._func_ir, "_definitions", {}) or {}
+            ).get(value.name, ()):
                 add(definition)
             return defs
         if isinstance(value, str):
             if value in self._block_defs:
                 add(self._block_defs[value])
-            for definition in (getattr(self._func_ir, "_definitions", {}) or {}).get(
-                value, ()
-            ):
+            for definition in (
+                getattr(self._func_ir, "_definitions", {}) or {}
+            ).get(value, ()):
                 add(definition)
             return defs
         return [value]
@@ -281,9 +288,17 @@ class _ProvenanceRewrite:
             return None
         if isinstance(value, int):
             return value
-        if isinstance(value, tuple) and len(value) == 1 and isinstance(value[0], int):
+        if (
+            isinstance(value, tuple)
+            and len(value) == 1
+            and isinstance(value[0], int)
+        ):
             return int(value[0])
-        if isinstance(value, list) and len(value) == 1 and isinstance(value[0], int):
+        if (
+            isinstance(value, list)
+            and len(value) == 1
+            and isinstance(value[0], int)
+        ):
             return int(value[0])
         return None
 
@@ -394,7 +409,8 @@ class _ProvenanceRewrite:
             seen = set()
         if len(call.args) not in {3, 4} or call.kws:
             raise CoopSinglePhaseRewriteError(
-                "typed group payload marker requires prototype, array-kind, dtype-policy, and optional explicit-extent arguments"
+                "typed group payload marker requires prototype, array-kind, "
+                "dtype-policy, and optional explicit-extent arguments"
             )
         prototype, is_array_ref, dtype_policy_ref = call.args[:3]
         if not isinstance(prototype, ir.Var):
@@ -406,7 +422,8 @@ class _ProvenanceRewrite:
             dtype_policy = self._infer_constant(dtype_policy_ref)
         except _INFERENCE_EXCEPTIONS as exc:
             raise CoopSinglePhaseRewriteError(
-                "typed group payload shape and dtype policy must be compile-time constants"
+                "typed group payload shape and dtype policy must be "
+                "compile-time constants"
             ) from exc
         if not isinstance(is_array, bool):
             raise CoopSinglePhaseRewriteError(
@@ -418,13 +435,16 @@ class _ProvenanceRewrite:
             raise CoopSinglePhaseRewriteError(
                 f"unknown typed group payload dtype policy {dtype_policy!r}"
             )
-        prototype_spec = self._resolve_array_spec_from_var(prototype, seen=set(seen))
+        prototype_spec = self._resolve_array_spec_from_var(
+            prototype, seen=set(seen)
+        )
         if len(call.args) == 4:
             try:
                 items_per_thread = self._infer_constant(call.args[3])
             except _INFERENCE_EXCEPTIONS as exc:
                 raise CoopSinglePhaseRewriteError(
-                    "typed group payload explicit extent must be a compile-time positive integer"
+                    "typed group payload explicit extent must be a "
+                    "compile-time positive integer"
                 ) from exc
             if (
                 isinstance(items_per_thread, bool)
@@ -432,11 +452,14 @@ class _ProvenanceRewrite:
                 or items_per_thread < 1
             ):
                 raise CoopSinglePhaseRewriteError(
-                    "typed group payload explicit extent must be a compile-time positive integer"
+                    "typed group payload explicit extent must be a "
+                    "compile-time positive integer"
                 )
         elif is_array:
             items_per_thread = (
-                prototype_spec.items_per_thread if prototype_spec is not None else None
+                prototype_spec.items_per_thread
+                if prototype_spec is not None
+                else None
             )
         else:
             items_per_thread = 1
@@ -469,7 +492,8 @@ class _ProvenanceRewrite:
             extent_refs.append(("items_per_thread", kw_map["items_per_thread"]))
         if len(call.args) > 2:
             raise CoopSinglePhaseRewriteError(
-                "coop.ThreadData accepts at most items_per_thread and dtype positional arguments."
+                "coop.ThreadData accepts at most items_per_thread and dtype "
+                "positional arguments."
             )
         if len(extent_refs) > 1:
             names = " and ".join((name for name, _ in extent_refs))
@@ -487,7 +511,8 @@ class _ProvenanceRewrite:
         if "dtype" in kw_map:
             if dtype_ref is not None:
                 raise CoopSinglePhaseRewriteError(
-                    "coop.ThreadData received dtype both positionally and by keyword."
+                    "coop.ThreadData received dtype "
+                    "both positionally and by keyword."
                 )
             dtype_ref = kw_map["dtype"]
         alignment = None
@@ -497,12 +522,15 @@ class _ProvenanceRewrite:
                 raw_alignment = self._infer_constant(alignment_ref)
             except _INFERENCE_EXCEPTIONS as exc:
                 raise CoopSinglePhaseRewriteError(
-                    "coop.ThreadData alignment must be a compile-time integer or None"
+                    "coop.ThreadData alignment must "
+                    "be a compile-time integer or None"
                 ) from exc
             try:
                 alignment = _normalize_thread_data_alignment(raw_alignment)
             except (TypeError, ValueError) as exc:
-                raise CoopSinglePhaseRewriteError(f"coop.ThreadData {exc}") from exc
+                raise CoopSinglePhaseRewriteError(
+                    f"coop.ThreadData {exc}"
+                ) from exc
         try:
             raw_items_per_thread = self._infer_constant(items_ref)
         except _INFERENCE_EXCEPTIONS as exc:
@@ -510,7 +538,9 @@ class _ProvenanceRewrite:
                 "items_per_thread must be a compile-time integer"
             ) from exc
         if isinstance(raw_items_per_thread, bool):
-            raise CoopSinglePhaseRewriteError("items_per_thread must be an integer")
+            raise CoopSinglePhaseRewriteError(
+                "items_per_thread must be an integer"
+            )
         try:
             items_per_thread = operator.index(raw_items_per_thread)
         except TypeError as exc:
@@ -545,7 +575,8 @@ class _ProvenanceRewrite:
             and (existing.items_per_thread != observed.items_per_thread)
         ):
             raise CoopSinglePhaseRewriteError(
-                "Inconsistent items_per_thread across merged coop.ThreadData aliases."
+                "Inconsistent items_per_thread across "
+                "merged coop.ThreadData aliases."
             )
         if (
             existing.dtype is not None
@@ -581,7 +612,8 @@ class _ProvenanceRewrite:
             return observed
         if existing != observed:
             raise CoopSinglePhaseRewriteError(
-                "Inconsistent TempStorage constructor metadata across merged aliases."
+                "Inconsistent TempStorage constructor "
+                "metadata across merged aliases."
             )
         return existing
 
@@ -598,7 +630,8 @@ class _ProvenanceRewrite:
         spec = self._extract_temp_storage_ctor_spec(call)
         existing = self._temp_storage_ctor_specs.get(name)
         if existing is not None and (
-            self._temp_storage_contract(existing) != self._temp_storage_contract(spec)
+            self._temp_storage_contract(existing)
+            != self._temp_storage_contract(spec)
         ):
             raise CoopSinglePhaseRewriteError(
                 "TempStorage aliases have inconsistent contracts across "
@@ -612,9 +645,11 @@ class _ProvenanceRewrite:
         names: str, sites: int
     ) -> CoopSinglePhaseRewriteError:
         return CoopSinglePhaseRewriteError(
-            "TempStorage with auto_sync=False must be constructed at exactly one "
+            "TempStorage with auto_sync=False "
+            "must be constructed at exactly one "
             f"site; {names} reaches {sites} constructor sites. The compiler "
-            "cannot verify caller synchronization when it merges these regions. "
+            "cannot verify caller synchronization "
+            "when it merges these regions. "
             "Construct the descriptor once or set auto_sync=True."
         )
 
@@ -662,16 +697,22 @@ class _ProvenanceRewrite:
             if definition.op == "cast":
                 cast_value = getattr(definition, "value", None)
                 if isinstance(cast_value, ir.Var):
-                    self._record_inferred_thread_data_dtype(cast_value, dtype, seen)
+                    self._record_inferred_thread_data_dtype(
+                        cast_value, dtype, seen
+                    )
             elif definition.op == "phi":
                 for incoming in _phi_incoming_values(definition):
                     if isinstance(incoming, ir.Var):
-                        self._record_inferred_thread_data_dtype(incoming, dtype, seen)
+                        self._record_inferred_thread_data_dtype(
+                            incoming, dtype, seen
+                        )
             elif definition.op == "static_getitem":
                 for item in self._resolve_static_tuple_item_vars(definition):
                     self._record_inferred_thread_data_dtype(item, dtype, seen)
 
-    def _extract_temp_storage_ctor_spec(self, call: ir.Expr) -> _TempStorageCtorSpec:
+    def _extract_temp_storage_ctor_spec(
+        self, call: ir.Expr
+    ) -> _TempStorageCtorSpec:
         if (
             getattr(call, "vararg", None) is not None
             or getattr(call, "varkwarg", None) is not None
@@ -686,7 +727,8 @@ class _ProvenanceRewrite:
         parameter_names = ("size_in_bytes", "alignment", "auto_sync", "sharing")
         if len(call.args) > 1:
             raise CoopSinglePhaseRewriteError(
-                "TempStorage accepts only size_in_bytes positionally; alignment, auto_sync, and sharing are keyword-only."
+                "TempStorage accepts only size_in_bytes positionally; "
+                "alignment, auto_sync, and sharing are keyword-only."
             )
         unexpected_keywords = sorted(set(kw_map) - set(parameter_names))
         if unexpected_keywords:
@@ -752,7 +794,8 @@ class _ProvenanceRewrite:
             sharing = infer_constant(sharing_ref, name="sharing")
             if not isinstance(sharing, str) or isinstance(sharing, Enum):
                 raise CoopSinglePhaseRewriteError(
-                    "TempStorage sharing must be a string: 'shared' or 'exclusive'."
+                    "TempStorage sharing must be a "
+                    "string: 'shared' or 'exclusive'."
                 )
             sharing = sharing.strip().lower()
         if sharing not in {"shared", "exclusive"}:
@@ -767,10 +810,14 @@ class _ProvenanceRewrite:
         )
 
     @staticmethod
-    def _mixed_temp_storage_binding_error(name: str) -> CoopSinglePhaseRewriteError:
+    def _mixed_temp_storage_binding_error(
+        name: str,
+    ) -> CoopSinglePhaseRewriteError:
         return CoopSinglePhaseRewriteError(
-            "TempStorage variables must be bound to a TempStorage descriptor on "
-            f"every path; {name!r} is also bound to a non-descriptor value such "
+            "TempStorage variables must be "
+            "bound to a TempStorage descriptor on "
+            f"every path; {name!r} is also bound "
+            f"to a non-descriptor value such "
             "as None. Remove the None initializer or construct the descriptor "
             "unconditionally."
         )
@@ -896,11 +943,16 @@ class _ProvenanceRewrite:
             return None
         return self._merge_temp_storage_ctor_keys(keys)
 
-    def _resolve_temp_storage_plan(self, value: ir.Var) -> _TempStoragePlan | None:
+    def _resolve_temp_storage_plan(
+        self, value: ir.Var
+    ) -> _TempStoragePlan | None:
         key = self._resolve_temp_storage_ctor_key(value)
         if key is None:
             return None
-        if self._temp_storage_global_plan is None and self._temp_storage_ctor_specs:
+        if (
+            self._temp_storage_global_plan is None
+            and self._temp_storage_ctor_specs
+        ):
             self._ensure_temp_storage_global_plan()
         return self._finalize_temp_storage_plan_for_var(key)
 
@@ -933,7 +985,8 @@ class _ProvenanceRewrite:
             storage.instance_index != topology.instance_index
         ):
             raise CoopSinglePhaseRewriteError(
-                "cooperative provider storage layout disagrees with its group topology."
+                "cooperative provider storage layout "
+                "disagrees with its group topology."
             )
         if storage.ownership is StorageOwnership.CALLER:
             # Explicit single-block storage keeps the established caller-owned
@@ -983,7 +1036,9 @@ class _ProvenanceRewrite:
                 _MIN_TEMP_STORAGE_ALIGNMENT,
                 *(max(1, int(entry.alignment)) for entry in domain_uses),
             )
-            per_instance_size = max(int(entry.size_in_bytes) for entry in domain_uses)
+            per_instance_size = max(
+                int(entry.size_in_bytes) for entry in domain_uses
+            )
             instance_stride = _align_up(per_instance_size, domain_alignment)
             first_plan = domain_uses[0].lowering_plan
             instances = (
@@ -1002,11 +1057,15 @@ class _ProvenanceRewrite:
                     lowering_plan=entry.lowering_plan,
                 )
             required_size += (
-                per_instance_size if instances == 1 else instance_stride * instances
+                per_instance_size
+                if instances == 1
+                else instance_stride * instances
             )
         return required_size, required_alignment, slices_by_call_id
 
-    def _finalize_temp_storage_plan_for_var(self, var_name: str) -> _TempStoragePlan:
+    def _finalize_temp_storage_plan_for_var(
+        self, var_name: str
+    ) -> _TempStoragePlan:
         var_name = self._canonical_temp_storage_ctor_key(var_name)
         cached = self._temp_storage_plans.get(var_name)
         if cached is not None:
@@ -1014,7 +1073,8 @@ class _ProvenanceRewrite:
         ctor_spec = self._temp_storage_ctor_specs.get(var_name)
         if ctor_spec is None:
             raise CoopSinglePhaseRewriteError(
-                f"Missing TempStorage constructor metadata for variable '{var_name}'."
+                f"Missing TempStorage constructor "
+                f"metadata for variable '{var_name}'."
             )
         requirements = self._func_temp_storage_requirements.get(var_name)
         uses = list(requirements.uses) if requirements is not None else []
@@ -1049,17 +1109,23 @@ class _ProvenanceRewrite:
             )
         if required_size > 0 and size_in_bytes < required_size:
             raise CoopSinglePhaseRewriteError(
-                f"TempStorage size_in_bytes is smaller than required by primitive uses ({size_in_bytes} < {required_size})."
+                f"TempStorage size_in_bytes is smaller than required by "
+                f"primitive uses ({size_in_bytes} < {required_size})."
             )
         if ctor_spec.alignment is None:
             alignment = _default_temp_storage_alignment(required_alignment)
         else:
-            requested_alignment = _normalize_temp_storage_alignment(ctor_spec.alignment)
+            requested_alignment = _normalize_temp_storage_alignment(
+                ctor_spec.alignment
+            )
             alignment = max(
-                requested_alignment, _default_temp_storage_alignment(required_alignment)
+                requested_alignment,
+                _default_temp_storage_alignment(required_alignment),
             )
         _validate_temp_storage_alignment(alignment)
-        auto_sync = False if ctor_spec.auto_sync is None else ctor_spec.auto_sync
+        auto_sync = (
+            False if ctor_spec.auto_sync is None else ctor_spec.auto_sync
+        )
         if not uses and (ctor_spec.sharing != "shared" or auto_sync):
             raise CoopSinglePhaseRewriteError(
                 "TempStorage non-default sharing or auto_sync requires a "
@@ -1099,7 +1165,9 @@ class _ProvenanceRewrite:
         return _ThreadDataSpec(items_per_thread=items_per_thread, dtype=dtype)
 
     def _is_shared_array_ctor_call(self, call: ir.Expr) -> bool:
-        return self._resolve_python_value(call.func) is _cuda_module.shared.array
+        return (
+            self._resolve_python_value(call.func) is _cuda_module.shared.array
+        )
 
     def _extract_shared_array_spec(self, call: ir.Expr) -> _ThreadDataSpec:
         kw_map = {name: value for name, value in call.kws}
@@ -1147,13 +1215,21 @@ class _ProvenanceRewrite:
                 elif definition.op == "cast":
                     cast_value = getattr(definition, "value", None)
                     if isinstance(cast_value, ir.Var):
-                        candidate = self._resolve_array_spec_from_var(cast_value, seen)
+                        candidate = self._resolve_array_spec_from_var(
+                            cast_value, seen
+                        )
                 elif definition.op == "static_getitem":
-                    for item in self._resolve_static_tuple_item_vars(definition):
-                        item_spec = self._resolve_array_spec_from_var(item, set(seen))
+                    for item in self._resolve_static_tuple_item_vars(
+                        definition
+                    ):
+                        item_spec = self._resolve_array_spec_from_var(
+                            item, set(seen)
+                        )
                         if item_spec is None:
                             continue
-                        merged = self._merge_thread_data_specs(merged, item_spec)
+                        merged = self._merge_thread_data_specs(
+                            merged, item_spec
+                        )
                     continue
                 elif definition.op == "phi":
                     for incoming in _phi_incoming_values(definition):
@@ -1164,7 +1240,9 @@ class _ProvenanceRewrite:
                         )
                         if incoming_spec is None:
                             continue
-                        merged = self._merge_thread_data_specs(merged, incoming_spec)
+                        merged = self._merge_thread_data_specs(
+                            merged, incoming_spec
+                        )
                     continue
             elif isinstance(definition, ir.Var):
                 candidate = self._resolve_array_spec_from_var(definition, seen)
@@ -1207,13 +1285,17 @@ class _ProvenanceRewrite:
                             cast_value, seen
                         )
                 elif definition.op == "static_getitem":
-                    for item in self._resolve_static_tuple_item_vars(definition):
+                    for item in self._resolve_static_tuple_item_vars(
+                        definition
+                    ):
                         item_spec = self._resolve_thread_data_spec_from_var(
                             item, set(seen)
                         )
                         if item_spec is None:
                             continue
-                        merged = self._merge_thread_data_specs(merged, item_spec)
+                        merged = self._merge_thread_data_specs(
+                            merged, item_spec
+                        )
                     continue
                 elif definition.op == "phi":
                     for incoming in _phi_incoming_values(definition):
@@ -1224,17 +1306,23 @@ class _ProvenanceRewrite:
                         )
                         if incoming_spec is None:
                             continue
-                        merged = self._merge_thread_data_specs(merged, incoming_spec)
+                        merged = self._merge_thread_data_specs(
+                            merged, incoming_spec
+                        )
                     continue
             elif isinstance(definition, ir.Var):
-                candidate = self._resolve_thread_data_spec_from_var(definition, seen)
+                candidate = self._resolve_thread_data_spec_from_var(
+                    definition, seen
+                )
             if candidate is not None:
                 merged = self._merge_thread_data_specs(merged, candidate)
         if merged is not None:
             self._thread_data_specs[value.name] = merged
         return merged
 
-    def _resolve_static_tuple_item_vars(self, definition: ir.Expr) -> list[ir.Var]:
+    def _resolve_static_tuple_item_vars(
+        self, definition: ir.Expr
+    ) -> list[ir.Var]:
         index = getattr(definition, "index", None)
         tuple_value = getattr(definition, "value", None)
         if not isinstance(index, int) or not isinstance(tuple_value, ir.Var):
@@ -1269,7 +1357,9 @@ class _ProvenanceRewrite:
                 source = getattr(tuple_definition, "value", None)
                 if isinstance(source, ir.Var):
                     items.extend(
-                        self._resolve_tuple_item_vars(source, index, seen=set(seen))
+                        self._resolve_tuple_item_vars(
+                            source, index, seen=set(seen)
+                        )
                     )
                 continue
             if tuple_definition.op == "phi":
@@ -1282,7 +1372,9 @@ class _ProvenanceRewrite:
                         )
         return items
 
-    def _resolve_thread_data_spec(self, value: ir.Var) -> _ThreadDataSpec | None:
+    def _resolve_thread_data_spec(
+        self, value: ir.Var
+    ) -> _ThreadDataSpec | None:
         if not isinstance(value, ir.Var):
             return None
         return self._resolve_thread_data_spec_from_var(value, seen=set())
@@ -1326,11 +1418,15 @@ class _ProvenanceRewrite:
                         if isinstance(incoming, ir.Var)
                     )
                 elif definition.op == "static_getitem":
-                    sources.extend(self._resolve_static_tuple_item_vars(definition))
+                    sources.extend(
+                        self._resolve_static_tuple_item_vars(definition)
+                    )
                 if not sources:
                     states.append(False)
                     continue
-                states.extend(resolve(source, set(active)) for source in sources)
+                states.extend(
+                    resolve(source, set(active)) for source in sources
+                )
             if False in states:
                 return False
             if any(state is True for state in states):
@@ -1404,7 +1500,9 @@ class _ProvenanceRewrite:
                 dtype = normalize_dtype_param(dtype)
             except (TypeError, ValueError):
                 pass
-            if any(_dtype_values_match(dtype, existing) for existing in resolved):
+            if any(
+                _dtype_values_match(dtype, existing) for existing in resolved
+            ):
                 continue
             resolved.append(dtype)
         return resolved[0] if len(resolved) == 1 else None
@@ -1454,7 +1552,9 @@ class _ProvenanceRewrite:
             cuda_dtype = self._cuda_index_dtype(definition)
             if cuda_dtype is not None:
                 return cuda_dtype
-            if definition.attr == "dtype" and isinstance(definition.value, ir.Var):
+            if definition.attr == "dtype" and isinstance(
+                definition.value, ir.Var
+            ):
                 return self._resolve_var_dtype(definition.value, seen=set(seen))
             return None
         if definition.op in {"getitem", "static_getitem"}:
@@ -1514,18 +1614,30 @@ class _ProvenanceRewrite:
                     sources: tuple[ir.Var, ...] = ()
                     if isinstance(definition, ir.Var):
                         sources = (definition,)
-                    elif isinstance(definition, ir.Expr) and definition.op == "cast":
+                    elif (
+                        isinstance(definition, ir.Expr)
+                        and definition.op == "cast"
+                    ):
                         if isinstance(definition.value, ir.Var):
                             sources = (definition.value,)
-                    elif isinstance(definition, ir.Expr) and definition.op == "phi":
+                    elif (
+                        isinstance(definition, ir.Expr)
+                        and definition.op == "phi"
+                    ):
                         sources = tuple(
                             incoming
                             for incoming in _phi_incoming_values(definition)
                             if isinstance(incoming, ir.Var)
                         )
                     source_names = {source.name for source in sources}
-                    if stmt.target.name in alias_names or source_names & alias_names:
-                        additions = {stmt.target.name, *source_names} - alias_names
+                    if (
+                        stmt.target.name in alias_names
+                        or source_names & alias_names
+                    ):
+                        additions = {
+                            stmt.target.name,
+                            *source_names,
+                        } - alias_names
                         if additions:
                             alias_names.update(additions)
                             changed = True
@@ -1541,7 +1653,10 @@ class _ProvenanceRewrite:
                     rhs = getattr(stmt, "value", None)
                 else:
                     continue
-                if not isinstance(target, ir.Var) or target.name not in alias_names:
+                if (
+                    not isinstance(target, ir.Var)
+                    or target.name not in alias_names
+                ):
                     continue
                 if not isinstance(rhs, ir.Var):
                     continue
@@ -1553,7 +1668,8 @@ class _ProvenanceRewrite:
                     continue
                 if inferred != rhs_dtype:
                     raise CoopSinglePhaseRewriteError(
-                        "Failed to infer a consistent dtype from coop.ThreadData writes."
+                        "Failed to infer a consistent dtype from "
+                        "coop.ThreadData writes."
                     )
         if inferred is not None:
             self._record_inferred_thread_data_dtype(value, inferred)
@@ -1600,10 +1716,14 @@ class _ProvenanceRewrite:
                         if isinstance(incoming, ir.Var)
                     )
                 elif definition.op == "static_getitem":
-                    sources = tuple(self._resolve_static_tuple_item_vars(definition))
+                    sources = tuple(
+                        self._resolve_static_tuple_item_vars(definition)
+                    )
             for source in sources:
                 roots.update(
-                    self._collect_thread_data_write_roots(source, seen=set(seen))
+                    self._collect_thread_data_write_roots(
+                        source, seen=set(seen)
+                    )
                 )
         return roots
 
@@ -1698,7 +1818,9 @@ class _ProvenanceRewrite:
             getitem_temp_storage = getattr(func_def, "index_var", None)
         if not isinstance(getitem_temp_storage, ir.Var):
             raise CoopSinglePhaseRewriteError(
-                f"coop single-phase getitem syntax expects a runtime temp-storage variable: '{factory.__name__}[temp_storage](...)'."
+                f"coop single-phase getitem syntax expects a runtime "
+                f"temp-storage variable: '{factory.__name__}"
+                f"[temp_storage](...)'."
             )
         return _ResolvedCallTarget(
             factory=factory,

@@ -143,12 +143,16 @@ class GroupPrimitiveRegistration:
         if not callable(self.lower):
             raise TypeError("lower must be callable")
         object.__setattr__(self, "results", tuple(self.results))
-        if any(not isinstance(result, GroupResultSource) for result in self.results):
+        if any(
+            not isinstance(result, GroupResultSource) for result in self.results
+        ):
             raise TypeError("results must contain GroupResultSource records")
         if self.validate_common_arguments is not None and not callable(
             self.validate_common_arguments
         ):
-            raise TypeError("validate_common_arguments must be callable or None")
+            raise TypeError(
+                "validate_common_arguments must be callable or None"
+            )
 
 
 @dataclass(frozen=True)
@@ -188,18 +192,23 @@ class RewriteOperationSpec:
         raw_prerequisites = tuple(self.runtime_factory_kw_prerequisites)
         prerequisites: list[tuple[str, str]] = []
         for prerequisite in raw_prerequisites:
-            if not isinstance(prerequisite, (tuple, list)) or len(prerequisite) != 2:
+            if (
+                not isinstance(prerequisite, (tuple, list))
+                or len(prerequisite) != 2
+            ):
                 raise TypeError(
                     "runtime_factory_kw_prerequisites must contain name pairs"
                 )
             name, required_name = prerequisite
             if not isinstance(name, str) or not name:
                 raise ValueError(
-                    "runtime_factory_kw_prerequisite names must be non-empty strings"
+                    "runtime_factory_kw_prerequisite "
+                    "names must be non-empty strings"
                 )
             if not isinstance(required_name, str) or not required_name:
                 raise ValueError(
-                    "runtime_factory_kw_prerequisite names must be non-empty strings"
+                    "runtime_factory_kw_prerequisite "
+                    "names must be non-empty strings"
                 )
             prerequisites.append((name, required_name))
         object.__setattr__(
@@ -211,7 +220,9 @@ class RewriteOperationSpec:
             not isinstance(namespace, str) or not namespace
             for namespace in self.factory_namespaces
         ):
-            raise ValueError("factory_namespaces must contain non-empty strings")
+            raise ValueError(
+                "factory_namespaces must contain non-empty strings"
+            )
         for field_name in (
             "dtype_factory_kwargs",
             "allowed_factory_kwargs",
@@ -229,33 +240,47 @@ class RewriteOperationSpec:
             not isinstance(count, int) or isinstance(count, bool) or count < 0
             for count in self.runtime_arg_counts
         ):
-            raise ValueError("runtime_arg_counts must contain non-negative integers")
+            raise ValueError(
+                "runtime_arg_counts must contain non-negative integers"
+            )
         if any(
             not isinstance(name, str) or not name
             for name in self.runtime_factory_kwargs
         ):
-            raise ValueError("runtime_factory_kwargs must contain non-empty strings")
-        if len(set(self.runtime_factory_kwargs)) != len(self.runtime_factory_kwargs):
+            raise ValueError(
+                "runtime_factory_kwargs must contain non-empty strings"
+            )
+        if len(set(self.runtime_factory_kwargs)) != len(
+            self.runtime_factory_kwargs
+        ):
             raise ValueError("runtime_factory_kwargs must be unique")
         runtime_factory_kwargs = frozenset(self.runtime_factory_kwargs)
-        unknown_runtime_kwargs = runtime_factory_kwargs - self.allowed_factory_kwargs
+        unknown_runtime_kwargs = (
+            runtime_factory_kwargs - self.allowed_factory_kwargs
+        )
         if unknown_runtime_kwargs:
             names = ", ".join(sorted(unknown_runtime_kwargs))
             raise ValueError(
-                f"runtime_factory_kwargs must be allowed factory kwargs: {names}"
+                f"runtime_factory_kwargs must be "
+                f"allowed factory kwargs: {names}"
             )
         base_runtime_arg_count = min(self.runtime_arg_counts)
         if max(self.runtime_arg_counts) - base_runtime_arg_count > len(
             self.runtime_factory_kwargs
         ):
             raise ValueError(
-                "runtime_arg_counts require more trailing runtime arguments than "
+                "runtime_arg_counts require more "
+                "trailing runtime arguments than "
                 "runtime_factory_kwargs declares"
             )
         prerequisite_names = [name for name, _ in prerequisites]
         if len(set(prerequisite_names)) != len(prerequisite_names):
-            raise ValueError("runtime_factory_kw_prerequisite names must be unique")
-        known_prerequisites = runtime_factory_kwargs | self.allowed_factory_kwargs
+            raise ValueError(
+                "runtime_factory_kw_prerequisite names must be unique"
+            )
+        known_prerequisites = (
+            runtime_factory_kwargs | self.allowed_factory_kwargs
+        )
         for name, required_name in prerequisites:
             if name not in runtime_factory_kwargs:
                 raise ValueError(
@@ -264,14 +289,17 @@ class RewriteOperationSpec:
                 )
             if required_name not in known_prerequisites:
                 raise ValueError(
-                    "runtime_factory_kw_prerequisite requirements must be known "
+                    "runtime_factory_kw_prerequisite "
+                    "requirements must be known "
                     f"factory kwargs: {required_name}"
                 )
             if name == required_name:
                 raise ValueError(
                     "runtime_factory_kw_prerequisites cannot require themselves"
                 )
-        unknown_dtype_kwargs = self.dtype_factory_kwargs - self.allowed_factory_kwargs
+        unknown_dtype_kwargs = (
+            self.dtype_factory_kwargs - self.allowed_factory_kwargs
+        )
         if unknown_dtype_kwargs:
             names = ", ".join(sorted(unknown_dtype_kwargs))
             raise ValueError(
@@ -283,9 +311,12 @@ class RewriteOperationSpec:
         if unknown_required_kwargs:
             names = ", ".join(sorted(unknown_required_kwargs))
             raise ValueError(
-                f"required_factory_kwargs must be allowed factory kwargs: {names}"
+                f"required_factory_kwargs must be "
+                f"allowed factory kwargs: {names}"
             )
-        unknown_scalar_kwargs = self.scalar_binding_kwargs - runtime_factory_kwargs
+        unknown_scalar_kwargs = (
+            self.scalar_binding_kwargs - runtime_factory_kwargs
+        )
         if unknown_scalar_kwargs:
             names = ", ".join(sorted(unknown_scalar_kwargs))
             raise ValueError(
@@ -305,7 +336,8 @@ class RewriteOperationSpec:
                 )
             if self.runtime_offset_kwarg in runtime_factory_kwargs:
                 raise ValueError(
-                    "runtime_offset_kwarg must not also be a runtime factory kwarg"
+                    "runtime_offset_kwarg must not "
+                    "also be a runtime factory kwarg"
                 )
         if not isinstance(self.accepts_temp_storage, bool):
             raise TypeError("accepts_temp_storage must be a bool")
@@ -340,7 +372,8 @@ def group_operation(
         existing = _GROUP_OPERATIONS.get(function)
         if existing is not None and existing != operation:
             raise RuntimeError(
-                f"group marker {function!r} is already registered as {existing!r}"
+                f"group marker {function!r} is "
+                f"already registered as {existing!r}"
             )
         _GROUP_OPERATIONS[function] = operation
         existing_module = _GROUP_FAMILY_MODULES.get(operation)
@@ -390,7 +423,9 @@ def register_group_primitive(
     )
     existing = _GROUP_PRIMITIVES.get(operation)
     if existing is not None and existing != registration:
-        raise RuntimeError(f"group primitive {operation!r} is already registered")
+        raise RuntimeError(
+            f"group primitive {operation!r} is already registered"
+        )
     _GROUP_PRIMITIVES[operation] = registration
 
 
@@ -412,7 +447,9 @@ def register_rewrite_operation(
         raise TypeError("spec must be a RewriteOperationSpec")
     existing = _REWRITE_OPERATIONS.get(operation)
     if existing is not None and existing != spec:
-        raise RuntimeError(f"rewrite operation {operation!r} is already registered")
+        raise RuntimeError(
+            f"rewrite operation {operation!r} is already registered"
+        )
     _REWRITE_OPERATIONS[operation] = spec
 
 
@@ -447,7 +484,8 @@ def register_factory(
     existing = _FACTORY_OPERATIONS.get(function)
     if existing is not None and existing != metadata:
         raise RuntimeError(
-            f"lowering factory {function!r} is already registered as {existing!r}"
+            f"lowering factory {function!r} is "
+            f"already registered as {existing!r}"
         )
     _FACTORY_OPERATIONS[function] = metadata
     return function

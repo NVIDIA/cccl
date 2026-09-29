@@ -98,7 +98,9 @@ def test_group_planner_tracks_runtime_scalar_expression_provenance():
     for name, dtype in expected.items():
         value = _assigned_var(func_ir, name)
         assert planner.context.dtype(value) == dtype
-        assert planner.context.planning_binding(value).kind is BindingKind.RUNTIME
+        assert (
+            planner.context.planning_binding(value).kind is BindingKind.RUNTIME
+        )
 
 
 def test_group_planner_marks_only_explicit_static_scalar_provenance_static():
@@ -160,7 +162,9 @@ def test_group_planner_marks_only_explicit_static_scalar_provenance_static():
 
 
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
-def test_runtime_arithmetic_controls_share_planning_and_rewrite_paths(qualified):
+def test_runtime_arithmetic_controls_share_planning_and_rewrite_paths(
+    qualified,
+):
     from numba_cuda_mlir import cuda, types
 
     import cuda.coop.numba_mlir as qualified_coop
@@ -295,7 +299,9 @@ def test_direct_load_provider_is_selected_from_complete_core_plan(monkeypatch):
     assert plan.result is None
     assert not plan.call.operation.returns_value
     assert plan.synchronization is not None
-    assert plan.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+    assert (
+        plan.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+    )
     assert plan.temp_storage is not None
     assert plan.temp_storage.ownership is StorageOwnership.NONE
     assert plan.temp_storage.address_space is None
@@ -585,7 +591,9 @@ def test_logical_warp_plan_selects_typed_cub_provider(monkeypatch):
     [True, np.float16(1), np.complex64(1 + 2j)],
     ids=["bool", "float16", "complex"],
 )
-def test_static_oob_default_rejects_before_provider_selection(monkeypatch, oob_default):
+def test_static_oob_default_rejects_before_provider_selection(
+    monkeypatch, oob_default
+):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as coop
@@ -623,7 +631,9 @@ def test_static_oob_default_rejects_before_provider_selection(monkeypatch, oob_d
         pytest.param("float32", id="mismatched"),
     ],
 )
-def test_runtime_oob_default_rejects_before_provider_selection(monkeypatch, oob_type):
+def test_runtime_oob_default_rejects_before_provider_selection(
+    monkeypatch, oob_type
+):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as coop
@@ -652,7 +662,9 @@ def test_runtime_oob_default_rejects_before_provider_selection(monkeypatch, oob_
         else getattr(types, oob_type)
     )
     array_type = types.Array(types.int32, 1, "C")
-    with pytest.raises((TypeError, ValueError), match="oob_default|supports dtypes"):
+    with pytest.raises(
+        (TypeError, ValueError), match="oob_default|supports dtypes"
+    ):
         _planner(memory, arg_types=(array_type, value_type)).run()
 
 
@@ -740,7 +752,9 @@ def test_static_oob_default_boundaries_use_the_load_payload_dtype(
 
     module = qualified_coop if qualified else root_coop
     numpy_kind = np.dtype(numpy_dtype).kind
-    info = np.iinfo(numpy_dtype) if numpy_kind in "iu" else np.finfo(numpy_dtype)
+    info = (
+        np.iinfo(numpy_dtype) if numpy_kind in "iu" else np.finfo(numpy_dtype)
+    )
     boundaries = (int(info.min), int(info.max))
     if numpy_kind == "f":
         boundaries = (-float(info.max), float(info.max))
