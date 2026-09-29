@@ -13,7 +13,6 @@ struct stream_registry_factory_t;
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 
-#include <cuda/__execution/policy.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/iterator>
 #include <cuda/std/cstdint>
@@ -22,6 +21,7 @@ struct stream_registry_factory_t;
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/device_and_stream.h>
 
@@ -61,7 +61,7 @@ CUB_TEST_CASE("DeviceMemcpy::Batched works with default environment", "[memcpy][
 {
   // 3 buffers: [10, 20], [30, 40, 50], [60]
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
-  auto d_dst     = c2h::device_vector<int>(6);
+  auto d_dst     = c2h::device_vector<int>(6, thrust::no_init);
   auto d_offsets = c2h::device_vector<int>{0, 2, 5, 6};
 
   const int num_buffers = 3;
@@ -84,7 +84,7 @@ CUB_TEST("DeviceMemcpy::Batched uses environment", "[memcpy][device]", CUB_SMALL
 {
   // 3 buffers: [10, 20], [30, 40, 50], [60]
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
-  auto d_dst     = c2h::device_vector<int>(6, 0);
+  auto d_dst     = c2h::device_vector<int>(6, thrust::no_init);
   auto d_offsets = c2h::device_vector<int>{0, 2, 5, 6};
 
   const int num_buffers = 3;
@@ -111,7 +111,7 @@ CUB_TEST_CASE("DeviceMemcpy::Batched uses custom stream", "[memcpy][device]", CU
 {
   // 3 buffers: [10, 20], [30, 40, 50], [60]
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
-  auto d_dst     = c2h::device_vector<int>(6, 0);
+  auto d_dst     = c2h::device_vector<int>(6, thrust::no_init);
   auto d_offsets = c2h::device_vector<int>{0, 2, 5, 6};
 
   const int num_buffers = 3;
@@ -164,7 +164,7 @@ CUB_TEST("DeviceMemcpy::Batched can be tuned", "[memcpy][device]", CUB_SMALL, bl
 
   // 3 buffers of 2 ints each (8 bytes)
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
-  auto d_dst     = c2h::device_vector<int>(6, 0);
+  auto d_dst     = c2h::device_vector<int>(6, thrust::no_init);
   auto d_offsets = c2h::device_vector<int>{0, 2, 4, 6};
 
   const int num_buffers          = 3;
@@ -194,71 +194,11 @@ CUB_TEST("DeviceMemcpy::Batched can be tuned", "[memcpy][device]", CUB_SMALL, bl
 // The two-phase overload takes the same environment as the single-phase one but never allocates, so it does not go
 // through the launch wrappers and would run identically in every TEST_LAUNCH variant. Test it with host launch only.
 
-// Runs the two-phase overload wrapped by two_phase once per supported kind of environment: queries the temporary
-// storage size, executes with user provided storage, and checks that every kernel is launched on the stream carried
-// by the environment (or on the default stream if the environment carries none).
-template <class TwoPhaseFn>
-void test_two_phase_env_kinds(size_t expected_temp_storage_bytes, TwoPhaseFn two_phase)
-{
-  const cuda::stream stream = c2h::make_current_device_stream();
-  const cuda::stream_ref default_stream{cudaStream_t{}};
-
-  auto run = [&](const auto& env, cuda::stream_ref expected_stream) {
-    size_t temp_storage_bytes = 0;
-    REQUIRE(cudaSuccess == two_phase(nullptr, temp_storage_bytes, env));
-    REQUIRE(temp_storage_bytes == expected_temp_storage_bytes);
-
-    c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
-    {
-      // stream_registry_factory_t fails the test if a kernel is launched on any other stream
-      const stream_scope scope{expected_stream.get()};
-      REQUIRE(cudaSuccess == two_phase(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, env));
-    }
-    REQUIRE(cudaSuccess == cudaPeekAtLastError());
-    expected_stream.sync();
-  };
-
-  SECTION("default environment")
-  {
-    run(stdexec::env<>{}, default_stream);
-  }
-
-  SECTION("cudaStream_t")
-  {
-    run(stream.get(), cuda::stream_ref{stream});
-  }
-
-  SECTION("cuda::stream")
-  {
-    run(stream, cuda::stream_ref{stream});
-  }
-
-  SECTION("cuda::stream_ref")
-  {
-    run(cuda::stream_ref{stream}, cuda::stream_ref{stream});
-  }
-
-  SECTION("environment with stream")
-  {
-    run(stdexec::env{cuda::stream_ref{stream}}, cuda::stream_ref{stream});
-  }
-
-  SECTION("cuda::execution::gpu")
-  {
-    run(cuda::execution::gpu, default_stream);
-  }
-
-  SECTION("cuda::execution::gpu with stream")
-  {
-    run(cuda::execution::gpu.with(cuda::get_stream, cuda::stream_ref{stream}), cuda::stream_ref{stream});
-  }
-}
-
 CUB_TEST_CASE("DeviceMemcpy::Batched works with user provided memory and environment", "[memcpy][device]", CUB_SMALL)
 {
   // 3 buffers: [10, 20], [30, 40, 50], [60]
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
-  auto d_dst     = c2h::device_vector<int>(6, 0);
+  auto d_dst     = c2h::device_vector<int>(6, thrust::no_init);
   auto d_offsets = c2h::device_vector<int>{0, 2, 5, 6};
 
   const int num_buffers = 3;
@@ -272,12 +212,24 @@ CUB_TEST_CASE("DeviceMemcpy::Batched works with user provided memory and environ
 
   size_t expected_bytes{};
   REQUIRE(cudaSuccess == cub::DeviceMemcpy::Batched(nullptr, expected_bytes, input_it, output_it, sizes, num_buffers));
+  auto temp          = c2h::device_vector<cuda::std::uint8_t>(expected_bytes, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(temp.data());
 
-  test_two_phase_env_kinds(expected_bytes, [&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
-    return cub::DeviceMemcpy::Batched(d_temp_storage, temp_storage_bytes, input_it, output_it, sizes, num_buffers, env);
-  });
+  auto test_memcpy_batched = [&](const auto& env) {
+    size_t num_bytes = 0;
+    REQUIRE(
+      cudaSuccess == cub::DeviceMemcpy::Batched(nullptr, num_bytes, input_it, output_it, sizes, num_buffers, env));
+    REQUIRE(num_bytes == expected_bytes);
 
-  REQUIRE(d_dst == d_src);
+    REQUIRE(
+      cudaSuccess == cub::DeviceMemcpy::Batched(temp_storage, num_bytes, input_it, output_it, sizes, num_buffers, env));
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    REQUIRE(d_dst == d_src);
+  };
+
+  test_with_custom_streams(test_memcpy_batched);
 }
 
 // Before the environment parameter, the two-phase overload took `cudaStream_t stream = nullptr`, so callers passing
@@ -288,7 +240,7 @@ CUB_TEST_CASE("DeviceMemcpy::Batched two-phase overload accepts legacy null stre
 {
   // 3 buffers: [10, 20], [30, 40, 50], [60]
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
-  auto d_dst     = c2h::device_vector<int>(6, 0);
+  auto d_dst     = c2h::device_vector<int>(6, thrust::no_init);
   auto d_offsets = c2h::device_vector<int>{0, 2, 5, 6};
 
   const int num_buffers = 3;
@@ -341,7 +293,7 @@ CUB_TEST("DeviceMemcpy::Batched can be tuned with user provided memory", "[memcp
 
   // 3 buffers of 2 ints each (8 bytes)
   auto d_src     = c2h::device_vector<int>{10, 20, 30, 40, 50, 60};
-  auto d_dst     = c2h::device_vector<int>(6, 0);
+  auto d_dst     = c2h::device_vector<int>(6, thrust::no_init);
   auto d_offsets = c2h::device_vector<int>{0, 2, 4, 6};
 
   const int num_buffers          = 3;
