@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Plan-driven CUDAX/CUB provider renderer for CUTLASS group reductions."""
-
 from __future__ import annotations
 
 import dataclasses

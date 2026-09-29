@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Built-in reduction signatures for the qualified CUTLASS backend."""
-
 from collections.abc import Callable
 from typing import Literal, Protocol, TypeAlias, overload
 

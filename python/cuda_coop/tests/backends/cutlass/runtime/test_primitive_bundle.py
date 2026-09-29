@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Movement, hierarchy, and both reduction routes in one compiler trace."""
-
 import numpy as np
 import pytest
 

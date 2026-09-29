@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""CUTLASS group-first built-in Reduce and Sum entry points."""
-
 from enum import Enum
 from numbers import Integral
 

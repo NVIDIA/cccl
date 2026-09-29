@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Repeated CUDAX primitives with independent group results."""
-
 import numpy as np
 import pytest
 

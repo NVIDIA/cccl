@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Exact launch requirements and storage-free hierarchy metadata."""
-
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
