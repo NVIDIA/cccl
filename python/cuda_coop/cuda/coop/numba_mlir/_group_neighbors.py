@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Numba block neighbor APIs with optional stateless binary operators."""
-
 from __future__ import annotations
 
 from typing import Any

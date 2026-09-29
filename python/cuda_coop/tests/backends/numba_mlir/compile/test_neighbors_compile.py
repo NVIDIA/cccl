@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Neighbor provider and production compilation without a GPU."""
-
 import os
 from types import SimpleNamespace
 

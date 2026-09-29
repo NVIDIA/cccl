@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Plan and lower input-preserving block neighbor operations."""
+"""Allocate separate result payloads for block neighbor operations."""
 
 from dataclasses import replace
 

@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block neighbor result, participation, and scratch contracts."""
-
 from dataclasses import dataclass, field
 
 from .._bindings import ArgumentBinding, BindingKind, _normalize_i32_binding

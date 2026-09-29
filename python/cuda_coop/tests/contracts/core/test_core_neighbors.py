@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Neighbor topology, boundary, output, and partial-count contracts."""
-
 import pytest
 
 from cuda import coop
