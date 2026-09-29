@@ -176,7 +176,11 @@ def _common_numeric_dtype_name(dtype: Any) -> str:
     if isinstance(dtype_name, str):
         dtype_name = dtype_name.lower()
         for prefix in ("int", "uint", "float", "complex"):
-            suffix = dtype_name[len(prefix) :] if dtype_name.startswith(prefix) else ""
+            suffix = (
+                dtype_name[len(prefix) :]
+                if dtype_name.startswith(prefix)
+                else ""
+            )
             if suffix.isdigit():
                 return dtype_name
         if dtype_name in {"bool", "boolean"}:
@@ -237,7 +241,8 @@ def _validate_common_numeric_scalar(
     if not _is_common_numeric_scalar(value):
         raise TypeError(
             f"cuda.coop.{operation} {parameter} must be a numeric scalar "
-            "supported by the common API; use a backend-qualified import for backend-specific values"
+            "supported by the common API; use a backend-qualified import "
+            "for backend-specific values"
         )
     dtype = getattr(value, "dtype", None)
     if dtype is None:
@@ -287,7 +292,11 @@ def _validate_common_numeric_value(
 ) -> str | None:
     """Require one common scalar or fixed-size per-thread payload."""
 
-    protocol = _ReadableThreadDataLike if allow_readonly_thread_data else ThreadDataLike
+    protocol = (
+        _ReadableThreadDataLike
+        if allow_readonly_thread_data
+        else ThreadDataLike
+    )
     if isinstance(value, protocol):
         _common_thread_data_extent(operation, parameter, value)
         if value.dtype is None and allow_untyped_thread_data:

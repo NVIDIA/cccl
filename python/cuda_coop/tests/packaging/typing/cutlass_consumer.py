@@ -42,13 +42,19 @@ def check_cutlass_surface(source: object, destination: object) -> None:
 
     copied = cutlass_coop.ThreadData.from_payload(values)
     assert_type(copied, cutlass_coop.ThreadData[np.int32])
-    generated = cutlass_coop.ThreadData.from_fn(2, lambda index: np.int32(index))
+    generated = cutlass_coop.ThreadData.from_fn(
+        2, lambda index: np.int32(index)
+    )
     assert_type(generated, cutlass_coop.ThreadData[np.int32])
     initialized = cutlass_coop.ThreadData.from_values(np.int32(1), np.int32(2))
     assert_type(initialized, cutlass_coop.ThreadData[np.int32])
     fragment = values.to_register_tensor()
-    restored = cutlass_coop.ThreadData.from_register_tensor(fragment, dtype=np.int32)
+    restored = cutlass_coop.ThreadData.from_register_tensor(
+        fragment, dtype=np.int32
+    )
     assert_type(restored, cutlass_coop.ThreadData[np.int32])
     vector = values.to_tensor_ssa()
-    restored_vector = cutlass_coop.ThreadData.from_vector(vector, dtype=np.int32)
+    restored_vector = cutlass_coop.ThreadData.from_vector(
+        vector, dtype=np.int32
+    )
     assert_type(restored_vector, cutlass_coop.ThreadData[np.int32])

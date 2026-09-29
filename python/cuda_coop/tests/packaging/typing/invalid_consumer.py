@@ -26,7 +26,8 @@ common.this_grid().sync()  # expected-error: [misc]
 common_block.group_by(2).sync()  # expected-error: [misc]
 common_block.group_by(2).rank("grid")  # expected-error: [call-overload]
 common.this_warp().group_by(8).count("block")  # expected-error: [call-overload]
-common.StatefulFunction  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
+# Test rejected attributes.
+common.StatefulFunction  # expected-error: [attr-defined]  # noqa: B018
 qualified_block = numba_coop.this_block()
 qualified_block.rank_as(np.float32)  # expected-error: [arg-type]
 qualified_block.count_as(np.bool_)  # expected-error: [arg-type]
@@ -34,7 +35,9 @@ qualified_block.count_as(bool)  # expected-error: [arg-type]
 numba_coop.this_grid().sync_aligned()  # expected-error: [misc]
 qualified_block.group_by(2).sync_aligned()  # expected-error: [misc]
 qualified_block.group_by(2).count("grid")  # expected-error: [call-overload]
-numba_coop.this_warp().group_by(8).rank("cluster")  # expected-error: [call-overload]
+numba_coop.this_warp().group_by(8).rank(  # expected-error: [call-overload]
+    "cluster"
+)
 common.load(  # expected-error: [call-overload]
     common.this_block(),
     object(),
@@ -131,10 +134,11 @@ numba_coop.store(  # expected-error: [call-overload]
     values,
     offset="1",
 )
-numba_coop.BlockLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
-numba_coop.BlockStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
-numba_coop.WarpLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
-numba_coop.WarpStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
+# Test rejected attributes.
+numba_coop.BlockLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018
+numba_coop.BlockStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018
+numba_coop.WarpLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018
+numba_coop.WarpStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018
 common.exchange(
     common.this_block(),
     common_values,
@@ -252,7 +256,9 @@ class BinaryPrefixFunctor:
 prefix_state = numba_coop.ThreadData(1, np.int32)
 stateful_prefix = numba_coop.StatefulFunction(carry_prefix, np.int32)
 stateful_int64_state = numba_coop.StatefulFunction(carry_int64_state, np.int64)
-stateful_float32_value = numba_coop.StatefulFunction(carry_float32_value, np.int32)
+stateful_float32_value = numba_coop.StatefulFunction(
+    carry_float32_value, np.int32
+)
 numba_coop.StatefulFunction(
     unary_stateful_prefix,  # expected-error: [arg-type]
     np.int32,
@@ -347,7 +353,8 @@ numba_coop.reduce(  # expected-error: [call-overload]
     broadcast=False,
     algorithm="raking_commutative_only",
 )
-numba_coop.BlockScanAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
+# Test rejected attributes.
+numba_coop.BlockScanAlgorithm  # expected-error: [attr-defined]  # noqa: B018
 common.scan(  # expected-error: [call-overload]
     common_block,
     np.int32(1),
@@ -384,7 +391,10 @@ common.exclusive_scan(  # expected-error: [misc]
     initial_value=np.float64(0),
 )
 common.scan(  # expected-error: [call-overload]
-    common.this_warp(), np.int32(1), mode="exclusive", initial_value=np.float64(0)
+    common.this_warp(),
+    np.int32(1),
+    mode="exclusive",
+    initial_value=np.float64(0),
 )
 numba_coop.exclusive_scan(  # expected-error: [misc]
     qualified_block,
@@ -406,7 +416,10 @@ numba_coop.exclusive_scan(  # expected-error: [misc]
     initial_value=np.float64(0),
 )
 numba_coop.scan(  # expected-error: [call-overload]
-    numba_coop.this_warp(), np.int32(1), mode="exclusive", initial_value=np.float64(0)
+    numba_coop.this_warp(),
+    np.int32(1),
+    mode="exclusive",
+    initial_value=np.float64(0),
 )
 common.scan(  # expected-error: [call-overload]
     common_block,
@@ -611,7 +624,10 @@ numba_coop.merge_sort_pairs(  # expected-error: [call-overload]
 
 radix_keys = common.ThreadData(2, np.int32)
 radix_float = common.ThreadData(2, np.float32)
-common.radix_sort_keys(common.this_warp(), radix_keys)  # expected-error: [arg-type]
+common.radix_sort_keys(
+    common.this_warp(),  # expected-error: [arg-type]
+    radix_keys,
+)
 common.radix_sort_keys(  # expected-error: [type-var]
     common.this_block(), radix_float
 )

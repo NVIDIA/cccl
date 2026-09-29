@@ -112,7 +112,9 @@ def test_group_method_marker_fails_clearly_outside_compilation():
         numba_coop.this_block().count("tile")
 
 
-@pytest.mark.parametrize("api", (common_coop, numba_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (common_coop, numba_coop), ids=("common", "qualified")
+)
 def test_thread_group_surface_exposes_hierarchy_operations(api):
     group = api.this_block()
 

@@ -26,7 +26,8 @@ def register_trace_context() -> None:
     if environment is None:
         raise CutlassRuntimeDependencyError(
             "backend-runtime-incompatible",
-            "cuda.coop.cutlass requires a compiler environment owned by CuTeDSL.",
+            "cuda.coop.cutlass requires a compiler environment "
+            "owned by CuTeDSL.",
             missing_capabilities=("cutlass.cutlass_dsl.CuTeDSL.envar",),
         )
     current_environment = runtime.common.get_current_env_manager
@@ -34,7 +35,9 @@ def register_trace_context() -> None:
     def is_current_cutlass_environment() -> bool:
         return current_environment() is environment
 
-    _register_compiler_context_probe(_BACKEND_MODULE, is_current_cutlass_environment)
+    _register_compiler_context_probe(
+        _BACKEND_MODULE, is_current_cutlass_environment
+    )
 
 
 __all__ = ["register_trace_context"]

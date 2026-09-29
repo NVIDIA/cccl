@@ -78,13 +78,17 @@ def test_direct_layout_matches_independent_oracle(api, dtype, operation):
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("valid", (0, 35, _TILE))
-@pytest.mark.parametrize("runtime_valid", (False, True), ids=("static", "runtime"))
+@pytest.mark.parametrize(
+    "runtime_valid", (False, True), ids=("static", "runtime")
+)
 @pytest.mark.parametrize("default", (None, -7), ids=("no-default", "default"))
 def test_partial_load_valid_items_and_explicit_default(
     api, valid, runtime_valid, default
 ):
     @cute.kernel
-    def kernel(source: cute.Pointer, destination: cute.Pointer, count: cutlass.Int32):
+    def kernel(
+        source: cute.Pointer, destination: cute.Pointer, count: cutlass.Int32
+    ):
         payload = api.ThreadData(_ITEMS, dtype=cutlass.Int32)
         if cutlass.const_expr(runtime_valid):
             api.load(
@@ -112,7 +116,9 @@ def test_partial_load_valid_items_and_explicit_default(
         )
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer, count: cutlass.Int32):
+    def launch(
+        source: cute.Pointer, destination: cute.Pointer, count: cutlass.Int32
+    ):
         kernel(source, destination, count).launch(grid=1, block=_BLOCK)
 
     source = values_for(np.int32, _TILE + 3)
@@ -127,7 +133,9 @@ def test_partial_load_valid_items_and_explicit_default(
 
 
 @pytest.mark.parametrize("valid", (0, 35, _TILE))
-@pytest.mark.parametrize("runtime_valid", (False, True), ids=("static", "runtime"))
+@pytest.mark.parametrize(
+    "runtime_valid", (False, True), ids=("static", "runtime")
+)
 def test_partial_store_respects_runtime_offsets_and_tail(valid, runtime_valid):
     @cute.kernel
     def kernel(
@@ -201,7 +209,9 @@ def test_runtime_load_default_and_offset_change_between_launches():
         default: cutlass.Int32,
         offset: cutlass.Int64,
     ):
-        kernel(source, destination, count, default, offset).launch(grid=1, block=_BLOCK)
+        kernel(source, destination, count, default, offset).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.int32, _TILE + 7)
     for count, default, offset in ((0, -17, 3), (27, -23, 5), (_TILE, -31, 7)):
@@ -220,12 +230,17 @@ def test_scalar_store_and_payload_alignment(block, alignment):
     def kernel(destination: cute.Pointer):
         tx, ty, tz = cute.arch.thread_idx()
         thread = tx + block[0] * (ty + block[1] * tz)
-        payload = cutlass_coop.ThreadData(1, dtype=cutlass.Int32, alignment=alignment)
+        payload = cutlass_coop.ThreadData(
+            1, dtype=cutlass.Int32, alignment=alignment
+        )
         payload[0] = cutlass.Int32(thread * 3 + 1)
         cutlass_coop.store(cutlass_coop.this_block(), destination, payload)
         cutlass_coop.load(cutlass_coop.this_block(), destination, payload)
         cutlass_coop.store(
-            cutlass_coop.this_block(), destination, payload, offset=math.prod(block)
+            cutlass_coop.this_block(),
+            destination,
+            payload,
+            offset=math.prod(block),
         )
         cutlass_coop.store(
             cutlass_coop.this_block(),
@@ -246,13 +261,17 @@ def test_scalar_store_and_payload_alignment(block, alignment):
     np.testing.assert_array_equal(
         destination[count : 2 * count], np.arange(count) * 3 + 1
     )
-    np.testing.assert_array_equal(destination[2 * count :], np.arange(count) + 7)
+    np.testing.assert_array_equal(
+        destination[2 * count :], np.arange(count) + 7
+    )
 
 
 def test_final_cubin_eliminates_direct_providers_and_scratch(tmp_path):
     cuobjdump = shutil.which("cuobjdump")
     if cuobjdump is None:
-        pytest.skip("cuobjdump is required to inspect final linked instructions")
+        pytest.skip(
+            "cuobjdump is required to inspect final linked instructions"
+        )
 
     @cute.kernel
     def kernel(source: cute.Pointer, destination: cute.Pointer):
@@ -267,7 +286,9 @@ def test_final_cubin_eliminates_direct_providers_and_scratch(tmp_path):
     source = values_for(np.int32, _TILE)
     destination = np.zeros_like(source)
     with device_array(source) as src, device_array(destination) as dst:
-        compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](launch, src, dst)
+        compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](
+            launch, src, dst
+        )
         compiled(src, dst)
     np.testing.assert_array_equal(destination, source)
     cubins = list(tmp_path.rglob("*.cubin"))
@@ -280,7 +301,9 @@ def test_final_cubin_eliminates_direct_providers_and_scratch(tmp_path):
         assert "cuda_coop_cutlass_load_" not in sass
         assert "cuda_coop_cutlass_store_" not in sass
         assert (
-            re.search(r"\b(?:CALL|LDL|STL|LDS|STS|BAR)(?:\.[A-Z0-9_]+)*\b", sass)
+            re.search(
+                r"\b(?:CALL|LDL|STL|LDS|STS|BAR)(?:\.[A-Z0-9_]+)*\b", sass
+            )
             is None
         )
         assert "LDG" in sass and "STG" in sass
@@ -289,7 +312,9 @@ def test_final_cubin_eliminates_direct_providers_and_scratch(tmp_path):
 @pytest.mark.parametrize("api", ("common", "qualified"))
 def test_executable_example(api):
     path = PACKAGE_ROOT / "examples/cutlass/block_load_store.py"
-    spec = importlib.util.spec_from_file_location("cutlass_load_store_example", path)
+    spec = importlib.util.spec_from_file_location(
+        "cutlass_load_store_example", path
+    )
     example = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(example)
     example.run_example(api)

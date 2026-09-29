@@ -86,7 +86,9 @@ _CANDIDATES = {
         display_name="CUTLASS CuTe DSL",
         runtime_module="cutlass",
         distributions=("nvidia-cutlass-dsl",),
-        install_hint="CUTLASS CuTe DSL runtime with external LTO-IR linking support",
+        install_hint=(
+            "CUTLASS CuTe DSL runtime with external LTO-IR linking support"
+        ),
         activate=_activate_cutlass,
     ),
     "numba_mlir": _Candidate(

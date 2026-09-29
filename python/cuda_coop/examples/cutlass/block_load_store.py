@@ -53,7 +53,11 @@ def run_example(api="common"):
             offset=_LOAD_OFFSET,
         )
         module.store(
-            block, destination, payload, valid_items=_STORE_VALID, offset=_STORE_OFFSET
+            block,
+            destination,
+            payload,
+            valid_items=_STORE_VALID,
+            offset=_STORE_OFFSET,
         )
 
     @cute.jit
@@ -70,11 +74,15 @@ def run_example(api="common"):
         destination_device = _check(driver.cuMemAlloc(destination.nbytes))
         try:
             _check(
-                driver.cuMemcpyHtoD(source_device, source.ctypes.data, source.nbytes)
+                driver.cuMemcpyHtoD(
+                    source_device, source.ctypes.data, source.nbytes
+                )
             )
             _check(
                 driver.cuMemcpyHtoD(
-                    destination_device, destination.ctypes.data, destination.nbytes
+                    destination_device,
+                    destination.ctypes.data,
+                    destination.nbytes,
                 )
             )
             source_pointer = make_ptr(
@@ -93,7 +101,9 @@ def run_example(api="common"):
             _check(driver.cuCtxSynchronize())
             _check(
                 driver.cuMemcpyDtoH(
-                    destination.ctypes.data, destination_device, destination.nbytes
+                    destination.ctypes.data,
+                    destination_device,
+                    destination.nbytes,
                 )
             )
         finally:

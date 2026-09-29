@@ -70,12 +70,14 @@ def launch_facts_from_cutlass_api(
         if field_name.startswith("exact_"):
             if not isinstance(value, tuple) or len(value) != 3:
                 raise ValueError(
-                    f"{detail} field {field_name!r} must be a static three-dimensional shape"
+                    f"{detail} field {field_name!r} must be a static "
+                    "three-dimensional shape"
                 )
             value = normalize_block_dim(value)
             if value is None:
                 raise ValueError(
-                    f"{detail} field {field_name!r} must contain positive integers"
+                    f"{detail} field {field_name!r} must contain "
+                    "positive integers"
                 )
         elif not isinstance(value, bool):
             raise ValueError(f"{detail} field {field_name!r} must be a bool")

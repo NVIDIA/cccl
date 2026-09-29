@@ -38,7 +38,9 @@ class _RunningPrefixFunctor:
 
 
 @pytest.fixture(autouse=True)
-def _fixed_compiler_target(monkeypatch: pytest.MonkeyPatch) -> list[tuple[int, int]]:
+def _fixed_compiler_target(
+    monkeypatch: pytest.MonkeyPatch,
+) -> list[tuple[int, int]]:
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == "", (
         "the Numba-CUDA-MLIR compile stage must hide all CUDA devices"
     )
@@ -162,7 +164,9 @@ def test_block_scalar_array_algorithms_methods_and_aggregates_compile(
         for factory, kwargs, _method, _algorithm in cases
     ]
 
-    for item, (_factory, kwargs, method, algorithm_name) in zip(collected, cases):
+    for item, (_factory, kwargs, method, algorithm_name) in zip(
+        collected, cases
+    ):
         algorithm = item[0]
         source = _source(item)
         assert method in source
@@ -178,7 +182,9 @@ def test_block_scalar_array_algorithms_methods_and_aggregates_compile(
         if kwargs.get("value_kind") == "array":
             cpp_dtype = _types.numba_type_to_cpp(kwargs["dtype"])
             items_per_thread = kwargs["items_per_thread"]
-            array_cast = f"reinterpret_cast<{cpp_dtype} (*)[{items_per_thread}]>"
+            array_cast = (
+                f"reinterpret_cast<{cpp_dtype} (*)[{items_per_thread}]>"
+            )
             # Both the compiler-owned and caller-owned storage entry points
             # accept distinct input/output array pointers and reinterpret them
             # as CUB's fixed-size array references.
@@ -192,7 +198,9 @@ def test_block_scalar_array_algorithms_methods_and_aggregates_compile(
                 if method in line and "algorithm_t_" in line
             ]
             assert call_lines
-            assert all(line.endswith(", *block_aggregate);") for line in call_lines)
+            assert all(
+                line.endswith(", *block_aggregate);") for line in call_lines
+            )
 
     bundle = _compile_bundle(
         collected,
@@ -309,8 +317,8 @@ def test_physical_and_logical_warp_methods_prefixes_and_aggregates_compile(
         width = kwargs["threads_in_warp"]
         assert method in source
         assert (
-            f"cub::WarpScan<{_types.numba_type_to_cpp(kwargs['dtype'])}, {width}>"
-            in source
+            f"cub::WarpScan<{_types.numba_type_to_cpp(kwargs['dtype'])}, "
+            f"{width}>" in source
         )
         assert "TempStorage" in source
         assert "__shared__" in source
@@ -326,7 +334,9 @@ def test_physical_and_logical_warp_methods_prefixes_and_aggregates_compile(
                 if method in line and "algorithm_t_" in line
             ]
             assert call_lines
-            assert all(line.endswith(", *warp_aggregate);") for line in call_lines)
+            assert all(
+                line.endswith(", *warp_aggregate);") for line in call_lines
+            )
 
     runtime_prefix = _source(collected[-1])
     assert "::cuda::std::int64_t" in runtime_prefix
@@ -678,7 +688,9 @@ def test_primitive_inside_standalone_scan_callback_has_clear_diagnostic():
     from numba_cuda_mlir.numba_cuda.core.errors import TypingError
 
     import cuda.coop.numba_mlir as numba_coop
-    from cuda.coop.numba_mlir._compiler._group_planner_support import GroupRewriteError
+    from cuda.coop.numba_mlir._compiler._group_planner_support import (
+        GroupRewriteError,
+    )
 
     @cuda.jit(device=True)
     def primitive_prefix(aggregate):

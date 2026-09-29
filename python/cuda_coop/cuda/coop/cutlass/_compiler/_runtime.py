@@ -68,8 +68,9 @@ def _runtime_requirement() -> str:
     if isinstance(version, str) and version:
         detected = f"detected {distribution}=={version}"
     return (
-        f"{detected}. Use a CUTLASS DSL runtime with scoped trace finalization, "
-        "active compiler-environment ownership, exact launch facts, and external "
+        f"{detected}. Use a CUTLASS DSL runtime with scoped trace "
+        "finalization, active compiler-environment ownership, exact launch "
+        "facts, and external "
         "LTO-IR linking support."
     )
 
@@ -90,7 +91,8 @@ def _runtime_import_error(error: ImportError) -> CutlassRuntimeDependencyError:
     ):
         return CutlassRuntimeDependencyError(
             "conflicting-backend-runtime",
-            "cuda.coop.cutlass found a package named 'cutlass', but it does not "
+            "cuda.coop.cutlass found a package named 'cutlass', "
+            "but it does not "
             "provide the complete CUTLASS DSL compiler runtime; missing "
             f"{missing!r}. Remove the conflicting package. "
             f"{_runtime_requirement()}",
@@ -137,7 +139,8 @@ def _missing_capabilities(
         missing.append("cutlass.base_dsl.compiler.LinkLibraries")
     elif getattr(link_libraries, "_option_name", None) != "link-libraries":
         missing.append(
-            "cutlass.base_dsl.compiler.LinkLibraries._option_name=link-libraries"
+            "cutlass.base_dsl.compiler.LinkLibraries."
+            "_option_name=link-libraries"
         )
 
     if not callable(getattr(compiler, "GPUArch", None)):
@@ -169,12 +172,15 @@ def validate_cutlass_runtime() -> CutlassRuntime:
             exception_type=type(error).__name__,
         ) from error
 
-    missing_capabilities = _missing_capabilities(cutlass_dsl, cute, compiler, common)
+    missing_capabilities = _missing_capabilities(
+        cutlass_dsl, cute, compiler, common
+    )
     if missing_capabilities:
         raise CutlassRuntimeDependencyError(
             "backend-runtime-incompatible",
             "cuda.coop.cutlass requires active compiler-environment ownership, "
-            "scoped trace finalization, exact launch facts, architecture selection, and "
+            "scoped trace finalization, exact launch facts, "
+            "architecture selection, and "
             "link-library merging; missing: "
             + ", ".join(missing_capabilities)
             + f". {_runtime_requirement()}",

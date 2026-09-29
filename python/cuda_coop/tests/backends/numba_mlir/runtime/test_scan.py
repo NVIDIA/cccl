@@ -59,7 +59,9 @@ def _five_scan_spellings(source, output, aggregates, initial):
     value = source[thread]
     aggregate = numba_coop.ThreadData(1)
 
-    output[0 * _BLOCK_THREADS + thread] = root_coop.scan(root_coop.this_block(), value)
+    output[0 * _BLOCK_THREADS + thread] = root_coop.scan(
+        root_coop.this_block(), value
+    )
     output[1 * _BLOCK_THREADS + thread] = numba_coop.exclusive_scan(
         numba_coop.this_block(),
         value,
@@ -123,7 +125,9 @@ def _thread_data_algorithm_kernel(algorithm: str):
     return kernel
 
 
-@pytest.mark.parametrize("algorithm", ("raking", "raking_memoize", "warp_scans"))
+@pytest.mark.parametrize(
+    "algorithm", ("raking", "raking_memoize", "warp_scans")
+)
 def test_block_algorithms_scan_thread_data_out_of_place(algorithm: str):
     source = ((np.arange(_TILE_ITEMS, dtype=np.int32) * 5) % 37) - 11
     output = np.full_like(source, -1)
@@ -191,7 +195,9 @@ def test_qualified_local_array_and_numpy_ufunc_preserve_input_and_aggregate():
     preserved = np.full_like(source, -1)
     aggregates = np.full(_BLOCK_THREADS, -1, dtype=np.int32)
 
-    _local_array_numpy_scan[1, _BLOCK_THREADS](source, output, preserved, aggregates)
+    _local_array_numpy_scan[1, _BLOCK_THREADS](
+        source, output, preserved, aggregates
+    )
 
     np.testing.assert_array_equal(output, np.maximum.accumulate(source))
     np.testing.assert_array_equal(preserved, source)
@@ -372,7 +378,8 @@ def test_stateful_prefix_tracks_repeated_scans_across_modes_and_storage(
     storage_mode: str,
 ):
     source = (
-        (np.arange(_PREFIX_TILE_COUNT * _BLOCK_THREADS, dtype=np.int32) * 7) % 23
+        (np.arange(_PREFIX_TILE_COUNT * _BLOCK_THREADS, dtype=np.int32) * 7)
+        % 23
     ) + 1
     output = np.full_like(source, -1)
     final_state = np.full(1, -1, dtype=np.int64)
@@ -396,7 +403,9 @@ def test_stateful_prefix_tracks_repeated_scans_across_modes_and_storage(
 
 
 @cuda.jit
-def _warp_scans(source, operator_output, callback_output, partial, aggregates, valid):
+def _warp_scans(
+    source, operator_output, callback_output, partial, aggregates, valid
+):
     thread = cuda.threadIdx.x
     value = source[thread]
     logical_warp = numba_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
@@ -417,7 +426,7 @@ def _warp_scans(source, operator_output, callback_output, partial, aggregates, v
     aggregates[thread] = aggregate[0]
 
 
-def test_physical_and_logical_warp_forms_cover_alias_callback_and_valid_prefix():
+def test_physical_and_logical_warp_forms_cover_alias_callback_and_valid_prefix():  # noqa: E501 - Preserve descriptive test name.
     source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 13) % 47) + 1
     operator_output = np.full_like(source, -1)
     callback_output = np.full_like(source, -1)
@@ -546,7 +555,9 @@ def _storage_scan_kernel(storage_mode: str):
 
 
 @pytest.mark.parametrize("storage_mode", ("implicit", "caller", "dynamic"))
-def test_block_scan_accepts_implicit_caller_and_dynamic_storage(storage_mode: str):
+def test_block_scan_accepts_implicit_caller_and_dynamic_storage(
+    storage_mode: str,
+):
     source = np.arange(1, _BLOCK_THREADS + 1, dtype=np.int32)
     output = np.full_like(source, -1)
     dispatcher = _storage_scan_kernel(storage_mode)
@@ -579,7 +590,9 @@ def test_reused_caller_storage_keeps_calls_ordered_and_input_unchanged():
     inclusive = np.full_like(source, -1)
     preserved = np.full_like(source, -1)
 
-    _reuse_scan_storage[1, _BLOCK_THREADS](source, exclusive, inclusive, preserved)
+    _reuse_scan_storage[1, _BLOCK_THREADS](
+        source, exclusive, inclusive, preserved
+    )
 
     np.testing.assert_array_equal(exclusive, _exclusive_sum(source))
     np.testing.assert_array_equal(inclusive, np.cumsum(source, dtype=np.int32))
@@ -638,7 +651,9 @@ raise AssertionError("invalid Scan valid_items did not trap")
     (-1, 0, _LOGICAL_WARP_THREADS + 1),
     ids=("negative", "zero", "beyond-logical-warp"),
 )
-def test_invalid_runtime_valid_items_traps_in_an_isolated_process(valid_items: int):
+def test_invalid_runtime_valid_items_traps_in_an_isolated_process(
+    valid_items: int,
+):
     result = _run_invalid_runtime_prefix_probe(valid_items)
     output = result.stdout + result.stderr
 

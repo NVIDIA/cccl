@@ -58,7 +58,9 @@ _DTYPES = (
 
 
 @pytest.fixture(autouse=True)
-def _fixed_current_device(monkeypatch: pytest.MonkeyPatch) -> list[tuple[int, int]]:
+def _fixed_current_device(
+    monkeypatch: pytest.MonkeyPatch,
+) -> list[tuple[int, int]]:
     """Hide runtime discovery while leaving NVRTC and nvJitLink real."""
 
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == "", (
@@ -165,7 +167,9 @@ def test_all_block_exchange_modes_compile_with_owned_storage(
     compile_context: _nvrtc.CompileContext,
     _fixed_current_device: list[tuple[int, int]],
 ) -> None:
-    collected = [_block_exchange(compile_context, mode=mode) for mode in _BLOCK_MODES]
+    collected = [
+        _block_exchange(compile_context, mode=mode) for mode in _BLOCK_MODES
+    ]
 
     for mode, item in zip(_BLOCK_MODES, collected):
         algorithm = item[0]
@@ -207,7 +211,9 @@ def test_block_exchange_time_slicing_changes_storage_identity_and_size(
     assert "cub::BlockExchange<::cuda::std::int32_t, 64, 2, 0, 1, 1>" in (
         ordinary_source
     )
-    assert "cub::BlockExchange<::cuda::std::int32_t, 64, 2, 1, 1, 1>" in (sliced_source)
+    assert "cub::BlockExchange<::cuda::std::int32_t, 64, 2, 1, 1, 1>" in (
+        sliced_source
+    )
     assert algo_coalesce_key(ordinary[0]) != algo_coalesce_key(sliced[0])
 
     _compile_bundle(
@@ -232,7 +238,11 @@ def test_all_warp_exchange_modes_and_logical_widths_compile(
 
     for item, (width, mode) in zip(
         collected,
-        ((width, mode) for width in _LOGICAL_WARP_WIDTHS for mode in _WARP_MODES),
+        (
+            (width, mode)
+            for width in _LOGICAL_WARP_WIDTHS
+            for mode in _WARP_MODES
+        ),
     ):
         algorithm = item[0]
         source = _source(item)
@@ -262,7 +272,9 @@ def test_all_warp_exchange_modes_and_logical_widths_compile(
         bundle_name="cuda_coop_numba_mlir_all_warp_exchange_widths",
     )
     assert all(item[0].temp_storage_bytes > 0 for item in collected)
-    assert len({algo_coalesce_key(item[0]) for item in collected}) == len(collected)
+    assert len({algo_coalesce_key(item[0]) for item in collected}) == len(
+        collected
+    )
 
 
 def test_shuffle_modes_compile_with_exact_distance_abis(
@@ -416,7 +428,9 @@ def _production_compile_environment(monkeypatch: pytest.MonkeyPatch):
         "get_gpu_compute_capability",
         fixed_compute_capability,
     )
-    monkeypatch.setattr(compiler_cuda, "get_current_device", lambda: fixed_device)
+    monkeypatch.setattr(
+        compiler_cuda, "get_current_device", lambda: fixed_device
+    )
     return compiler_cuda
 
 
@@ -538,7 +552,9 @@ def _evaluate_warp_mask(definitions, operand, rank):
         assert expression.endswith("to i32")
         return values[0] & 0xFFFFFFFF
     if operation == "arith.extsi":
-        assert len(values) == 1 and expression.endswith(": i32 to i64"), expression
+        assert len(values) == 1 and expression.endswith(": i32 to i64"), (
+            expression
+        )
         value = values[0] & 0xFFFFFFFF
         return value - (1 << 32) if value & (1 << 31) else value
     assert (
@@ -567,7 +583,9 @@ def _evaluate_warp_mask(definitions, operand, rank):
 
 
 @pytest.mark.parametrize("width", _LOGICAL_WARP_WIDTHS)
-def test_production_warp_exchange_emits_ordered_reuse_barriers(width, monkeypatch):
+def test_production_warp_exchange_emits_ordered_reuse_barriers(
+    width, monkeypatch
+):
     import cuda.coop.numba_mlir as numba_coop
 
     monkeypatch.setattr(
@@ -583,10 +601,14 @@ def test_production_warp_exchange_emits_ordered_reuse_barriers(width, monkeypatc
         payload[0] = source[thread * 2]
         payload[1] = source[thread * 2 + 1]
         first = numba_coop.exchange(
-            numba_coop.this_warp().group_by(width), payload, mode="blocked_to_striped"
+            numba_coop.this_warp().group_by(width),
+            payload,
+            mode="blocked_to_striped",
         )
         second = numba_coop.exchange(
-            numba_coop.this_warp().group_by(width), first, mode="blocked_to_striped"
+            numba_coop.this_warp().group_by(width),
+            first,
+            mode="blocked_to_striped",
         )
         destination[thread * 2] = second[0]
         destination[thread * 2 + 1] = second[1]
@@ -602,7 +624,9 @@ def test_production_warp_exchange_emits_ordered_reuse_barriers(width, monkeypatc
     )
     assert result.metadata["cubin"]
     mlir = result.metadata["mlir_module_str"]
-    definitions = dict(re.findall(r"^\s*(%[\w-]+) = (.*)$", mlir, flags=re.MULTILINE))
+    definitions = dict(
+        re.findall(r"^\s*(%[\w-]+) = (.*)$", mlir, flags=re.MULTILINE)
+    )
     operands = re.findall(r"nvvm.bar.warp.sync\s+(%[\w-]+)", mlir)
     assert len(operands) == 2
     assert "gpu.barrier" not in mlir
@@ -615,8 +639,11 @@ def test_production_warp_exchange_emits_ordered_reuse_barriers(width, monkeypatc
     assert events == ["call", "barrier", "call", "barrier"]
     for rank in range(_BLOCK_THREADS):
         group_start = (rank % 32 // width) * width
-        expected = sum(1 << lane for lane in range(group_start, group_start + width))
+        expected = sum(
+            1 << lane for lane in range(group_start, group_start + width)
+        )
         for operand in operands:
             assert (
-                _evaluate_warp_mask(definitions, operand, rank) & 0xFFFFFFFF == expected
+                _evaluate_warp_mask(definitions, operand, rank) & 0xFFFFFFFF
+                == expected
             )

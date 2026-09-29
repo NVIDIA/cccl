@@ -56,7 +56,9 @@ def _planned_factory_calls(func_ir):
 
 def _provider_call(func_ir, provider):
     calls = [
-        call for target, call in _planned_factory_calls(func_ir) if target is provider
+        call
+        for target, call in _planned_factory_calls(func_ir)
+        if target is provider
     ]
     assert len(calls) == 1
     return calls[0]
@@ -70,7 +72,8 @@ def _kwarg_value(func_ir, call, name):
         statement.value
         for block in func_ir.blocks.values()
         for statement in block.body
-        if isinstance(statement, ir.Assign) and statement.target.name == variable.name
+        if isinstance(statement, ir.Assign)
+        and statement.target.name == variable.name
     ]
     assert len(definitions) == 1
     definition = definitions[0]
@@ -115,13 +118,15 @@ def test_scan_registers_all_spellings_results_and_provider_abis():
         assert metadata.execution_scope is SynchronizationScope(scope)
         assert metadata.synchronization_scope is SynchronizationScope(scope)
 
-    assert rewrite_operation("block_scan_scalar").runtime_arg_counts == frozenset(
-        {1, 2, 3}
+    assert rewrite_operation(
+        "block_scan_scalar"
+    ).runtime_arg_counts == frozenset({1, 2, 3})
+    assert rewrite_operation(
+        "block_scan_array"
+    ).runtime_arg_counts == frozenset({2, 3, 4})
+    assert rewrite_operation("warp_scan").runtime_arg_counts == frozenset(
+        {1, 2, 3, 4}
     )
-    assert rewrite_operation("block_scan_array").runtime_arg_counts == frozenset(
-        {2, 3, 4}
-    )
-    assert rewrite_operation("warp_scan").runtime_arg_counts == frozenset({1, 2, 3, 4})
 
 
 def test_public_signatures_keep_common_surface_narrow_and_add_n6_callbacks():
@@ -158,7 +163,9 @@ def test_public_signatures_keep_common_surface_narrow_and_add_n6_callbacks():
     }
     for name, expected in shared.items():
         common_parameters = tuple(signature(getattr(common, name)).parameters)
-        qualified_parameters = tuple(signature(getattr(numba_coop, name)).parameters)
+        qualified_parameters = tuple(
+            signature(getattr(numba_coop, name)).parameters
+        )
         assert common_parameters == expected
         assert qualified_parameters == (
             "group",
@@ -173,7 +180,9 @@ def test_public_signatures_keep_common_surface_narrow_and_add_n6_callbacks():
     package = Path(numba_coop.__file__).parent
     assert not (package / "_scan_op.py").exists()
     assert (package / "_stateful_function.py").is_file()
-    assert numba_coop.StatefulFunction.__module__.endswith("._stateful_function")
+    assert numba_coop.StatefulFunction.__module__.endswith(
+        "._stateful_function"
+    )
 
 
 @pytest.mark.parametrize(
@@ -186,7 +195,9 @@ def test_public_signatures_keep_common_surface_narrow_and_add_n6_callbacks():
         "inclusive_sum",
     ),
 )
-def test_all_qualified_scan_spellings_plan_stateless_prefix_callbacks(spelling: str):
+def test_all_qualified_scan_spellings_plan_stateless_prefix_callbacks(
+    spelling: str,
+):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as numba_coop
@@ -263,7 +274,9 @@ def test_all_qualified_scan_spellings_plan_stateless_prefix_callbacks(spelling: 
     prefix = plan.call.operation.prefix_callback
     assert prefix.op is prefix_from_aggregate
     classification = next(
-        item for item in plan.call.argument_classifications if item.name == "prefix_op"
+        item
+        for item in plan.call.argument_classifications
+        if item.name == "prefix_op"
     )
     assert classification.kind is ArgumentKind.STATIC
     assert classification.role is ParameterRole.OPERATOR
@@ -321,7 +334,9 @@ def test_all_qualified_scan_spellings_plan_explicit_state(spelling: str):
         state[0] = previous + block_aggregate
         return previous
 
-    running = numba_coop.StatefulFunction(carry_prefix, types.int64, name="running")
+    running = numba_coop.StatefulFunction(
+        carry_prefix, types.int64, name="running"
+    )
 
     if spelling == "scan":
 
@@ -390,7 +405,9 @@ def test_all_qualified_scan_spellings_plan_explicit_state(spelling: str):
     prefix = plan.call.operation.prefix_callback
     assert prefix.state_dtype == types.int64
     classification = next(
-        item for item in plan.call.argument_classifications if item.name == "prefix_op"
+        item
+        for item in plan.call.argument_classifications
+        if item.name == "prefix_op"
     )
     assert classification.kind is ArgumentKind.RUNTIME
     assert classification.role is ParameterRole.STATE
@@ -433,7 +450,9 @@ def test_scan_prefix_validation_fails_during_planning(case: str, match: str):
 
         def kernel(value):
             state = numba_coop.ThreadData(1, dtype=types.int64)
-            return numba_coop.inclusive_sum(numba_coop.this_block(), value, state)
+            return numba_coop.inclusive_sum(
+                numba_coop.this_block(), value, state
+            )
 
     elif case == "stateful_without_state":
 
@@ -577,12 +596,16 @@ def test_scan_planning_rejects_non_string_selectors_before_provider(
     elif parameter == "algorithm":
 
         def kernel(value):
-            return coop.inclusive_sum(coop.this_block(), value, algorithm=selector)
+            return coop.inclusive_sum(
+                coop.this_block(), value, algorithm=selector
+            )
 
     else:
 
         def kernel(value):
-            return coop.inclusive_scan(coop.this_block(), value, scan_op=selector)
+            return coop.inclusive_scan(
+                coop.this_block(), value, scan_op=selector
+            )
 
     _, planner = _plan(kernel, arg_types=(types.int32,))
     with pytest.raises(TypeError, match=rf"{parameter} must be .*string"):
@@ -784,8 +807,12 @@ def test_block_thread_data_and_local_array_plan_out_of_place_with_storage():
     }
 
 
-@pytest.mark.parametrize("qualified", (False, True), ids=("common", "qualified"))
-def test_untyped_thread_data_scan_infers_writes_and_chains_into_store(qualified):
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("common", "qualified")
+)
+def test_untyped_thread_data_scan_infers_writes_and_chains_into_store(
+    qualified,
+):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as numba_coop
@@ -837,7 +864,9 @@ def test_warp_planning_preserves_width_runtime_prefix_and_aggregate_position():
     assert _kwarg_value(func_ir, call, "threads_in_warp") == 8
     assert "scan_valid_items_i64" in dict(call.kws)["valid_items"].name
     assert "warp_aggregate" in dict(call.kws)
-    assert any(target is types.int64 for target, _ in _planned_factory_calls(func_ir))
+    assert any(
+        target is types.int64 for target, _ in _planned_factory_calls(func_ir)
+    )
 
 
 def test_qualified_callback_plans_for_block_and_warp_but_common_rejects_it():
@@ -869,7 +898,9 @@ def test_qualified_callback_plans_for_block_and_warp_but_common_rejects_it():
     assert _provider_call(func_ir, _scan.warp_scan)
 
     def common_kernel(value):
-        return common.inclusive_scan(common.this_block(), value, scan_op=combine)
+        return common.inclusive_scan(
+            common.this_block(), value, scan_op=combine
+        )
 
     _, planner = _plan(common_kernel, arg_types=(types.int32,))
     with pytest.raises(NotImplementedError, match="built-in operators only"):
@@ -888,7 +919,9 @@ def test_qualified_callback_plans_for_block_and_warp_but_common_rejects_it():
         ("warp_array", "one scalar value per lane"),
     ),
 )
-def test_invalid_scan_shapes_and_initials_fail_during_planning(case: str, match: str):
+def test_invalid_scan_shapes_and_initials_fail_during_planning(
+    case: str, match: str
+):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as numba_coop
@@ -957,7 +990,9 @@ def test_invalid_scan_shapes_and_initials_fail_during_planning(case: str, match:
         arg_types = (types.int32,)
 
     _, planner = _plan(kernel, arg_types=arg_types)
-    with pytest.raises((TypeError, ValueError, NotImplementedError), match=match):
+    with pytest.raises(
+        (TypeError, ValueError, NotImplementedError), match=match
+    ):
         planner.run()
 
 
@@ -973,7 +1008,9 @@ def test_static_initial_must_convert_exactly_to_payload_dtype(initial):
         )
 
     _, planner = _plan(kernel, arg_types=(types.int8,))
-    with pytest.raises((TypeError, OverflowError, ValueError), match="initial_value"):
+    with pytest.raises(
+        (TypeError, OverflowError, ValueError), match="initial_value"
+    ):
         planner.run()
 
 
