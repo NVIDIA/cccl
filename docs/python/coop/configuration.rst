@@ -17,10 +17,11 @@ Install ``cuda-coop`` without adding Python package dependencies:
    python -m pip install cuda-coop
 
 The wheel includes the common API, every shipped DSL integration (including
-``cuda.coop.numba_mlir``), type declarations, and a matching bundle of CUB,
-Thrust, and libcu++ headers. The base install declares no Python
-package dependencies. You can import ``cuda.coop`` without a compiler or GPU;
-using an integration requires its backend dependencies to be installed.
+``cuda.coop.numba_mlir`` and ``cuda.coop.cutlass``), type declarations, and a
+matching bundle of CUB, Thrust, and libcu++ headers. The base install
+declares no Python package dependencies. You can import ``cuda.coop`` without
+a compiler or GPU; using an integration requires its backend dependencies to
+be installed.
 
 For Numba-CUDA-MLIR, install the extra matching your CUDA major version:
 
@@ -34,6 +35,10 @@ integrations. The extra only adds the dependency requirements declared in
 ``pyproject.toml`` so pip installs the supported Numba-CUDA-MLIR stack for
 the selected CUDA major version. The current integration requires
 ``numba-cuda-mlir>=0.5.0,<0.6``.
+For CUTLASS / CuTe DSL, install the base wheel alongside a runtime meeting
+the :ref:`CUTLASS requirements <coop-cutlass-requirements>`. A public CUTLASS
+extra and minimum version await qualification of an official artifact.
+
 Installing an extra does not register a backend in a running Python process;
 see :ref:`installation versus registration <coop-faq-installed-extra>`.
 
@@ -93,8 +98,8 @@ and leading and trailing whitespace is ignored. An unset variable is false.
 ``CUDA_COOP_SOURCE_DUMP_DIR``
    Writes generated CUDA source to this directory for compiler diagnostics.
    Files use ``cuda_coop_<backend>_<hash>.cu`` names so different backends can
-   share a directory. Set it before compiling; the Numba backend also writes
-   the source when its provider compilation cache is hit. Unset or empty
+   share a directory. Set it before compiling; both backends also write
+   the source when their provider compilation cache is hit. Unset or empty
    disables dumping.
 
 ``CUDA_PATH``
