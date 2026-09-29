@@ -84,7 +84,7 @@ source and destination elements for each block.
 .. code-block:: python
 
    block = coop.this_block()
-   items = coop.ThreadData(2, dtype=np.int32)
+   items = coop.ThreadData(items_per_thread=2)
    offset = cuda.blockIdx.x * 256
    coop.load(block, source, items, algorithm="striped", offset=offset)
    blocked = coop.exchange(block, items, mode="striped_to_blocked")
@@ -98,8 +98,8 @@ following full-tile permutation writes every destination exactly once:
 .. code-block:: python
 
    block = coop.this_block()
-   items = coop.ThreadData(2, dtype=np.int32)
-   ranks = coop.ThreadData(2, dtype=np.int32)
+   items = coop.ThreadData(items_per_thread=2)
+   ranks = coop.ThreadData(items_per_thread=2)
    offset = cuda.blockIdx.x * 256
    coop.load(block, source, items, algorithm="direct", offset=offset)
    for item in range(2):
