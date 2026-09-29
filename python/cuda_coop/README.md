@@ -1,8 +1,9 @@
 # `cuda.coop`
 
 `cuda.coop` provides cooperative primitives for CUDA thread groups in Python
-kernel DSLs. The first backend targets Numba-CUDA-MLIR. The table below
-lists the available operations.
+kernel DSLs. They cover data movement, reductions, scans, sorting, selection,
+neighbor comparisons, counting, and run-length decoding. The first backend
+targets Numba-CUDA-MLIR and uses CUB and CUDAX implementations.
 
 The distribution is a universal Python wheel containing a coherent bundle of
 CUB, Thrust, libcu++, and CUDAX headers. Installed-wheel compilation uses that
@@ -118,7 +119,7 @@ explains terms and concepts, including blocked and striped layouts.
 | Family | Entry points |
 | --- | --- |
 | Memory operations | `load`, `store` |
-| Reduction | `reduce`, `sum` |
+| Reduction | `reduce`, `sum`, `reduce_batched` |
 | Scan | `scan`, `inclusive_scan`, `exclusive_scan`, `inclusive_sum`, `exclusive_sum` |
 | Data rearrangement | `exchange`, `shuffle` |
 | Comparison sorting | `merge_sort_keys`, `merge_sort_pairs` |
@@ -142,7 +143,7 @@ Runtime configuration is controlled by these environment variables:
 
 | Variable | Effect |
 | --- | --- |
-| `CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION` | A truthy value disables automatic backend activation during `cuda.coop` import. Explicit qualified-backend import still works. |
+| `CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION` | A truthy value disables automatic backend activation during `cuda.coop` import. Explicit `coop.register(...)` and backend imports still work. |
 | `CUDA_COOP_CCCL_ROOT` | Selects a CCCL source checkout or a `cuda-coop` header bundle. An invalid configured root is an error; resolution does not fall back to another CCCL source. |
 | `CUDA_COOP_ENABLE_CACHE` | A truthy value enables the persistent compiler cache. The value is read when the backend cache module is imported. |
 | `XDG_CACHE_HOME` | On Linux and other POSIX systems, sets the cache base directory; entries are stored in `<value>/cccl`. Unset, empty, or relative values fall back to `~/.cache/cccl`. Read when the backend cache module is imported. |
@@ -152,8 +153,10 @@ Runtime configuration is controlled by these environment variables:
 | `CUDA_HOME` | Supplies `<value>/include` after `CUDA_PATH` under the same fallback rule. |
 | `CUDA_ROOT` | Supplies `<value>/include` after `CUDA_HOME` under the same fallback rule. |
 
-If those mechanisms do not resolve CUDA headers, `/usr/local/cuda/include` is
-tried last.
+On POSIX, `/usr/local/cuda/include` is tried last. Windows uses
+`cuda-pathfinder` or the configured toolkit roots above, without the Unix
+fallback. Compilation reports a header-resolution error if none resolves
+valid CUDA headers.
 
 The build recognizes these CMake cache variables:
 
@@ -258,7 +261,7 @@ Warp Load and Store accept `this_warp()` and support `direct`, `striped`,
 logical groups with `this_warp().group_by(width)`, where `width` is 1, 2, 4, 8,
 16, or 32. The enclosing block must contain a multiple of 32 threads and must
 not have an incomplete final physical warp. Every member of a participating
-group must reach the collective; complete sibling logical groups may diverge.
+group must reach the primitive; complete sibling logical groups may diverge.
 `direct` and `vectorize` expose blocked payloads, `striped` exposes a striped
 payload, and `transpose` uses striped memory transactions while exposing a
 blocked payload.
@@ -298,9 +301,9 @@ immediate physical parent are rejected. Mapped warps-within-block groups expose
 queries and `is_member()` but not `sync()` or `sync_aligned()`; their block
 barrier lifetime must be owned by a future planner contract. For a
 non-exhaustive partition, use `is_member()` to guard rank-dependent work for
-excluded threads. Do not use that branch to skip a collective unless the
-collective's participation contract explicitly permits it; every required
-group or parent-group participant must still reach the collective.
+excluded threads. Do not use that branch to skip a primitive unless the
+primitive's participation contract explicitly permits it; every required
+group or parent-group participant must still reach the primitive.
 
 ## Temporary storage
 
@@ -365,7 +368,7 @@ merged region, even when a particular program supplies sufficient barriers.
 
 Cooperative calls in device helpers must be inlined into the kernel; use
 `@cuda.jit(device=True, inline="always")` when selecting the helper's
-policy explicitly. Standalone collective helpers and collectives inside
+policy explicitly. Standalone primitive helpers and primitives inside
 standalone callbacks are unsupported. For the MVP, `literal_unroll`
 values cannot determine cooperative payload extents, group dimensions,
 selectors, or descriptor constructor arguments. Write separate calls with
@@ -447,7 +450,7 @@ Three controls select a direct CUB reduction instead:
   are deferred.
 
 Full CUDAX reductions have no external temporary-storage ABI, backing
-allocation, or compiler-inserted post-call barrier; the collective call still
+allocation, or compiler-inserted post-call barrier; the primitive call still
 requires converged group participation. Direct CUB reductions use
 compiler-owned shared storage. Block paths append a block reuse barrier, while
 physical and logical Warp paths append `syncwarp` for the exact participating
@@ -480,8 +483,7 @@ checked and converted in that context. A block-prefix callback can supply that
 prefix instead. Inclusive scans reject an initial value. The aggregate reports
 only the input reduction and does not include the exclusive initial value.
 
-The common root API intentionally exposes only the common surface above. The
-qualified API additionally accepts `aggregate_output`, an exact-dtype one-item
+The qualified API additionally accepts `aggregate_output`, an exact-dtype one-item
 `ThreadData` or local array populated with the group aggregate. Warp forms also
 accept `valid_items`, which selects the first N lanes by group rank and requires
 `1 <= N <= warp_width`; only those N result lanes are defined. The initial
@@ -562,8 +564,8 @@ rules. When repeated calls reuse an explicit Block Scan descriptor, set
 persistent per-thread data, not CUB
 temporary storage.
 
-This common example loads a block tile, computes its exclusive sum, and
-stores the out-of-place result:
+This example uses the common API to load a block tile, compute its exclusive
+sum, and store the out-of-place result:
 
 ```python
 import numpy as np

@@ -142,6 +142,9 @@ several operations:
      - A decoded window, or bulk decoding into an array
      - Also supports relative run offsets, window total output, and a
        selected unsigned decoded-offset dtype
+   * - Batched warp reductions
+     - One built-in reduction per payload slot, with distributed results
+     - Also accepts a stateless device reduction callback
    * - Load/Store algorithms and explicit scratch
      - String algorithm selectors and ``TempStorage`` on supported block calls
      - Same shared controls; qualifying the import is unnecessary for these
@@ -604,9 +607,12 @@ allocation. Its contents are opaque; keep application values in
      - Scratch behavior in the current backend
    * - Direct, striped, or vectorize Load/Store
      - No shared scratch or reuse barrier
-   * - Block transpose-family Load/Store; Block Scan; Block Merge Sort; Block Radix Sort; TopK; Adjacent Difference; Discontinuity; Histogram; Run Length Decode (windowed or bulk)
+   * - Block transpose-family Load/Store; Block Scan; Block Merge Sort;
+       Block Radix Sort; TopK; Adjacent Difference; Discontinuity;
+       Histogram; Run Length Decode (windowed or bulk)
      - Automatic scratch, or an explicit ``TempStorage``
-   * - Warp transpose Load/Store; Warp Scan; Warp Merge Sort
+   * - Warp transpose Load/Store; Warp Scan; Warp Merge Sort;
+       Batched Warp Reduction
      - Automatic scratch per group; explicit descriptors are rejected
    * - Exchange and Shuffle
      - Compiler-owned scratch and reuse synchronization
@@ -1070,6 +1076,26 @@ offset. The :doc:`RLD visualization <visualizations/run-length-decode>`
 shows both interfaces with tested kernels and a window crossing a run
 boundary.
 
+.. _coop-batched-reductions:
+
+Reducing independent batches within a warp
+------------------------------------------
+
+:func:`cuda.coop.reduce_batched` treats each local input slot as a separate
+batch. With three items per lane, it reduces three batches across the
+warp and distributes their three results among lanes. It preserves the
+input and returns ``ceil(batches / warp_width)`` slots per thread.
+
+The default ``output_layout="striped"`` assigns batch
+``lane + slot * warp_width`` to a result slot. ``"blocked"`` assigns batch
+``lane * result_extent + slot``. Guard reads and stores when that batch
+index is outside the input batch count: extra allocated slots are
+unspecified. Every member of the selected warp participates, including
+lanes that own no result.
+
+See the :doc:`feature-sum kernel <visualizations/reduce-batched>` for a
+complete example. The :ref:`batched reduction FAQ <coop-faq-batched-reduce>`
+compares this operation with ordinary Reduce.
 
 Checking and tuning a kernel
 ----------------------------
