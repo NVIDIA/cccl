@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""TopK shape, type, wide count, and qualified conversion compilation."""
-
 import pytest
 
 cutlass = pytest.importorskip("cutlass")

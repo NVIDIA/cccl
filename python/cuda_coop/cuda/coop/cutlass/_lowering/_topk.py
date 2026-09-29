@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Typed TopK provider using the shared checked CUB compatibility shim."""
-
 import hashlib
 from dataclasses import dataclass, replace
 from enum import Enum

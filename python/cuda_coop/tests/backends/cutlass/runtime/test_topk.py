@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Independent TopK membership, pairing, and preservation oracles."""
-
 from collections import Counter
 from contextlib import ExitStack
 
