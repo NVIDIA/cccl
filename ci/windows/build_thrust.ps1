@@ -28,13 +28,15 @@ Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList @($CXX_STANDARD, $CU
 $PRESET = "thrust"
 $LOCAL_CMAKE_OPTIONS = "-DCMAKE_CXX_STANDARD=$CXX_STANDARD -DCMAKE_CUDA_STANDARD=$CXX_STANDARD"
 
-configure_and_build_preset "Thrust" $PRESET $LOCAL_CMAKE_OPTIONS
+try {
+    configure_and_build_preset "Thrust" $PRESET $LOCAL_CMAKE_OPTIONS
+} finally {
+    if ($env:GITHUB_ACTIONS) {
+        Write-Host "Packaging test artifacts..."
+        & bash "./upload_thrust_test_artifacts.sh"
+    }
 
-if ($env:GITHUB_ACTIONS) {
-    Write-Host "Packaging test artifacts..."
-    & bash "./upload_thrust_test_artifacts.sh"
-}
-
-If($CURRENT_PATH -ne "ci") {
-    popd
+    If($CURRENT_PATH -ne "ci") {
+        popd
+    }
 }

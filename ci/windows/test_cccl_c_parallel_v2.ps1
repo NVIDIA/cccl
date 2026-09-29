@@ -29,10 +29,12 @@ Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STAND
 $PRESET = "cccl-c-parallel-v2"
 $LOCAL_CMAKE_OPTIONS = ""
 
-configure_and_build_preset "CCCL C Parallel v2 (HostJIT)" $PRESET $LOCAL_CMAKE_OPTIONS
+try {
+    configure_and_build_preset "CCCL C Parallel v2 (HostJIT)" $PRESET $LOCAL_CMAKE_OPTIONS
 
-test_preset "CCCL C Parallel v2 (HostJIT)" "$PRESET"
-
-If($CURRENT_PATH -ne "ci") {
-    popd
+    test_preset "CCCL C Parallel v2 (HostJIT)" "$PRESET"
+} finally {
+    If($CURRENT_PATH -ne "ci") {
+        popd
+    }
 }
