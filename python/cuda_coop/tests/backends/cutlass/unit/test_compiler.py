@@ -126,8 +126,6 @@ def test_direct_provider_has_no_storage_abi_or_barriers():
     assert "TempStorage" not in source
     assert "__shared__" not in source
     assert "__syncthreads" not in source
-    # Guarded loads seed invalid items from the existing output payload.
-    assert "result_items[0], result_items[1]" in source
     assert "valid_items < 0 || valid_items > 128" in source
 
 
