@@ -44,7 +44,9 @@ def validate_neighbor_options(
     if operation == "discontinuity" and partial:
         raise ValueError("discontinuity requires a full tile")
     if mode == "right" and partial and successor:
-        raise ValueError("right partial tiles do not support tile_successor_item")
+        raise ValueError(
+            "right partial tiles do not support tile_successor_item"
+        )
 
 
 @dataclass(frozen=True)
@@ -85,7 +87,11 @@ class BlockNeighborSemantics:
     def result_names(self):
         if self.operation == "adjacent_difference":
             return ("differences",)
-        return ("heads", "tails") if self.mode == "heads_and_tails" else (self.mode,)
+        return (
+            ("heads", "tails")
+            if self.mode == "heads_and_tails"
+            else (self.mode,)
+        )
 
     @property
     def semantic_key(self):
@@ -107,7 +113,8 @@ def make_block_neighbor_spec(
 ) -> AlgorithmSpec:
     block_dim = tuple(block_dim)
     if len(block_dim) != 3 or any(
-        not isinstance(d, int) or isinstance(d, bool) or d < 1 for d in block_dim
+        not isinstance(d, int) or isinstance(d, bool) or d < 1
+        for d in block_dim
     ):
         raise ValueError("block_dim must contain three positive dimensions")
     dtype = Dependency("T")
@@ -171,14 +178,16 @@ def make_block_neighbor_spec(
             if call.successor:
                 args.append("successor")
     wrapper_name = "CudaCoop" + primitive + "_" + call.mode
-    wrapper_name += f"_{int(call.partial)}{int(call.predecessor)}{int(call.successor)}"
+    wrapper_name += (
+        f"_{int(call.partial)}{int(call.predecessor)}{int(call.successor)}"
+    )
     guard = (
         """
     if (valid_items < 0 || valid_items > BlockDimX * BlockDimY * BlockDimZ * ItemsPerThread)
     {
       asm volatile("trap;");
     }
-"""
+"""  # noqa: E501 - Embedded C++ source.
         if call.partial
         else ""
     )
@@ -200,17 +209,26 @@ struct {wrapper_name} : {primitive}<T, BlockDimX, BlockDimY, BlockDimZ>
   }}
 }};
 }}
-""",
+""",  # noqa: E501 - Embedded C++ source.
     )
     return Algorithm(
         struct_name=wrapper_name,
         method_name="Apply",
         c_name="block_" + call.operation,
-        includes=(f"cub/block/block_{call.operation}.cuh", "cuda/std/functional"),
+        includes=(
+            f"cub/block/block_{call.operation}.cuh",
+            "cuda/std/functional",
+        ),
         type_definitions=(definition,),
         template_parameters=tuple(
             TemplateParameter(name)
-            for name in ("T", "BlockDimX", "BlockDimY", "BlockDimZ", "ItemsPerThread")
+            for name in (
+                "T",
+                "BlockDimX",
+                "BlockDimY",
+                "BlockDimZ",
+                "ItemsPerThread",
+            )
         ),
         parameters=(tuple(parameters),),
     ).specialize(
@@ -221,7 +239,11 @@ struct {wrapper_name} : {primitive}<T, BlockDimX, BlockDimY, BlockDimZ>
             "BlockDimZ": block_dim[2],
             "ItemsPerThread": call.items_per_thread,
         },
-        metadata={"scope": "block", "primitive": call.operation, "method": method},
+        metadata={
+            "scope": "block",
+            "primitive": call.operation,
+            "method": method,
+        },
     )
 
 

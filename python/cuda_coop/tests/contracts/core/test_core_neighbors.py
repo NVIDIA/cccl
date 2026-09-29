@@ -48,7 +48,9 @@ def _primitive(operation="adjacent_difference", mode="left", **kwargs):
 def test_result_contract_and_non_power_of_two_block(operation, mode, names):
     primitive = _primitive(operation, mode)
     plan = plan_group_primitive(
-        make_group_primitive_call(coop.this_block(), GroupNeighborSemantics(primitive)),
+        make_group_primitive_call(
+            coop.this_block(), GroupNeighborSemantics(primitive)
+        ),
         LaunchFacts(exact_block_dim=(5, 3, 2)),
     ).require_supported()
     assert primitive.result_names == names
@@ -116,9 +118,15 @@ def test_unsupported_boundary_combinations(operation, mode, options):
 
 
 def test_boundary_presence_and_partial_policy_change_identity():
-    calls = [_primitive(), _primitive(predecessor=True), _primitive(partial=True)]
+    calls = [
+        _primitive(),
+        _primitive(predecessor=True),
+        _primitive(partial=True),
+    ]
     assert len({call.semantic_key for call in calls}) == 3
-    specs = [make_block_neighbor_spec(call, block_dim=(32, 1, 1)) for call in calls]
+    specs = [
+        make_block_neighbor_spec(call, block_dim=(32, 1, 1)) for call in calls
+    ]
     assert len({spec.semantic_key for spec in specs}) == 3
 
 

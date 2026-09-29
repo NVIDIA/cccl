@@ -295,7 +295,9 @@ def check_neighbor_results() -> None:
     assert_type(
         coop.adjacent_difference(block, values), coop.ThreadDataLike[np.float64]
     )
-    assert_type(coop.discontinuity(block, values), coop.ThreadDataLike[np.int32])
+    assert_type(
+        coop.discontinuity(block, values), coop.ThreadDataLike[np.int32]
+    )
     assert_type(
         coop.discontinuity(block, values, mode="heads_and_tails"),
         tuple[coop.ThreadDataLike[np.int32], coop.ThreadDataLike[np.int32]],

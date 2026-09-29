@@ -29,7 +29,9 @@ from ._model import (
 @dataclass(frozen=True, eq=False)
 class GroupNeighborSemantics:
     primitive: BlockNeighborSemantics
-    valid_items: ArgumentBinding = field(default_factory=ArgumentBinding.omitted)
+    valid_items: ArgumentBinding = field(
+        default_factory=ArgumentBinding.omitted
+    )
 
     def __post_init__(self):
         if not isinstance(self.primitive, BlockNeighborSemantics):
@@ -39,8 +41,12 @@ class GroupNeighborSemantics:
             "valid_items",
             _normalize_i32_binding(self.valid_items, name="valid_items"),
         )
-        if self.primitive.partial != (self.valid_items.kind is not BindingKind.OMITTED):
-            raise ValueError("partial neighbor calls require a valid_items binding")
+        if self.primitive.partial != (
+            self.valid_items.kind is not BindingKind.OMITTED
+        ):
+            raise ValueError(
+                "partial neighbor calls require a valid_items binding"
+            )
 
     @property
     def dtype(self):
@@ -69,12 +75,16 @@ class GroupNeighborSemantics:
 
 def _classifications(operation):
     result = [
-        ParameterClassification("values", ArgumentKind.RUNTIME, ParameterRole.INPUT)
+        ParameterClassification(
+            "values", ArgumentKind.RUNTIME, ParameterRole.INPUT
+        )
     ]
     if operation.primitive.partial:
         result.append(
             ParameterClassification(
-                "valid_items", operation.valid_items.argument_kind, ParameterRole.INPUT
+                "valid_items",
+                operation.valid_items.argument_kind,
+                ParameterRole.INPUT,
             )
         )
     for flag, name in (
@@ -83,10 +93,14 @@ def _classifications(operation):
     ):
         if flag:
             result.append(
-                ParameterClassification(name, ArgumentKind.RUNTIME, ParameterRole.INPUT)
+                ParameterClassification(
+                    name, ArgumentKind.RUNTIME, ParameterRole.INPUT
+                )
             )
     result.append(
-        ParameterClassification("operator", ArgumentKind.STATIC, ParameterRole.OPERATOR)
+        ParameterClassification(
+            "operator", ArgumentKind.STATIC, ParameterRole.OPERATOR
+        )
     )
     return tuple(result)
 
@@ -99,7 +113,8 @@ def _plan_neighbors(call, resolved, launch, operation):
         and not 0 <= operation.valid_items.value <= capacity
     ):
         raise ValueError(
-            f"valid_items must be between 0 and the block tile size ({capacity})"
+            "valid_items must be between 0 and the block tile size "
+            f"({capacity})"
         )
     result = ResultContract(
         tuple(

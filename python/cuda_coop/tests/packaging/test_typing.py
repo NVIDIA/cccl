@@ -120,7 +120,9 @@ def test_public_stub_exports_match_runtime(relative_path: str) -> None:
     runtime_exports = _literal_exports(stub.with_suffix(".py"))
     if relative_path == "__init__.pyi":
         # The root expands the common API exports without importing a compiler.
-        runtime_exports |= _literal_exports(package_root / "_core/api/__init__.py")
+        runtime_exports |= _literal_exports(
+            package_root / "_core/api/__init__.py"
+        )
 
     assert _literal_exports(stub) == runtime_exports
 
