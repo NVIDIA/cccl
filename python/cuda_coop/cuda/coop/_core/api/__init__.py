@@ -8,7 +8,7 @@ This module exports the public functions and group descriptions. Compiler
 adapters recognize these functions by identity and lower their kernel calls.
 """
 
-from .load_store import load, store  # noqa: F401
+from .load_store import load, store
 from .temp_storage import TempStorage, TempStorageLike
 from .thread_data import ThreadData, ThreadDataLike
 from .thread_group import (
@@ -45,11 +45,11 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
+    "load",
+    "store",
     "this_block",
     "this_cluster",
     "this_grid",
     "this_thread",
     "this_warp",
-    "load",
-    "store",
 ]

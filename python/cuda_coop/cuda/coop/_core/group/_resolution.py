@@ -97,12 +97,14 @@ def resolve_thread_group(
             "is only an upper bound",
         )
     assert group.hierarchy is not None
-    if group.hierarchy.block_dim is not None:
-        if group.hierarchy.block_dim != exact_block_dim:
-            raise ValueError(
-                f"group block dimensions {group.hierarchy.block_dim!r} do not "
-                f"match the exact kernel launch dimensions {exact_block_dim!r}",
-            )
+    if (
+        group.hierarchy.block_dim is not None
+        and group.hierarchy.block_dim != exact_block_dim
+    ):
+        raise ValueError(
+            f"group block dimensions {group.hierarchy.block_dim!r} do not "
+            f"match the exact kernel launch dimensions {exact_block_dim!r}",
+        )
     needs_cluster = (
         _THREAD_LEVEL_ORDER[required_level] >= _THREAD_LEVEL_ORDER["cluster"]
     )

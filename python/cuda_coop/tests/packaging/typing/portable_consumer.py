@@ -11,7 +11,7 @@ from typing import Literal
 import numpy as np
 from typing_extensions import assert_type
 
-import cuda.coop as coop
+from cuda import coop
 
 
 def check_portable_surface(source: object, destination: object) -> None:
