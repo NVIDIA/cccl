@@ -69,7 +69,9 @@ def normalize_scan_operator_alias(value: object) -> str | None:
 _PREFIX_CALLBACKS = (PythonOperator, StatefulOperator)
 
 
-def _initial_dtype_matches(dtype: Any, initial_value: CxxFunction | Reference) -> bool:
+def _initial_dtype_matches(
+    dtype: Any, initial_value: CxxFunction | Reference
+) -> bool:
     initial_dtype = initial_value.dtype
     if isinstance(initial_dtype, Dependency):
         return initial_dtype.name == "T"
@@ -137,7 +139,9 @@ def make_scan_semantics(
         raise ValueError("items_per_thread must be a positive integer")
     if value_kind is ScanValueKind.SCALAR and items_per_thread != 1:
         raise ValueError("scalar scan requires items_per_thread == 1")
-    if scan_operator is not None and not isinstance(scan_operator, _SCAN_OPERATORS):
+    if scan_operator is not None and not isinstance(
+        scan_operator, _SCAN_OPERATORS
+    ):
         raise TypeError(f"unsupported scan operator {scan_operator!r}")
     if initial_value is not None:
         if not isinstance(initial_value, _INITIAL_VALUES):
@@ -159,7 +163,9 @@ def make_scan_semantics(
             "scan initial value and prefix callback are mutually exclusive"
         )
     if aggregate and prefix_callback is not None:
-        raise ValueError("scan aggregate and prefix callback are mutually exclusive")
+        raise ValueError(
+            "scan aggregate and prefix callback are mutually exclusive"
+        )
 
     return ScanSemantics(
         dtype=dtype,

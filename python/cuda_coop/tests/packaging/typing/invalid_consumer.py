@@ -25,8 +25,11 @@ portable_block.rank_as(bool)  # expected-error: [arg-type]
 portable.this_grid().sync()  # expected-error: [misc]
 portable_block.group_by(2).sync()  # expected-error: [misc]
 portable_block.group_by(2).rank("grid")  # expected-error: [call-overload]
-portable.this_warp().group_by(8).count("block")  # expected-error: [call-overload]
-portable.StatefulFunction  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
+portable.this_warp().group_by(8).count(  # expected-error: [call-overload]
+    "block"
+)
+# Test rejected attributes.
+portable.StatefulFunction  # expected-error: [attr-defined]  # noqa: B018
 qualified_block = coop.this_block()
 qualified_block.rank_as(np.float32)  # expected-error: [arg-type]
 qualified_block.count_as(np.bool_)  # expected-error: [arg-type]
@@ -131,10 +134,11 @@ coop.store(  # expected-error: [call-overload]
     values,
     offset="1",
 )
-coop.BlockLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
-coop.BlockStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
-coop.WarpLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
-coop.WarpStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
+# Test rejected attributes.
+coop.BlockLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018
+coop.BlockStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018
+coop.WarpLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018
+coop.WarpStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018
 portable.exchange(
     portable.this_block(),
     portable_values,
@@ -266,9 +270,11 @@ bad_functor: coop.StatefulFunction[np.int64, np.int32] = coop.StatefulFunction(
     Float32PrefixFunctor,  # expected-error: [arg-type]
     np.int64,
 )
-bad_binary_functor: coop.StatefulFunction[np.int64, np.int32] = coop.StatefulFunction(
-    BinaryPrefixFunctor,  # expected-error: [arg-type]
-    np.int64,
+bad_binary_functor: coop.StatefulFunction[np.int64, np.int32] = (
+    coop.StatefulFunction(
+        BinaryPrefixFunctor,  # expected-error: [arg-type]
+        np.int64,
+    )
 )
 
 
@@ -343,7 +349,8 @@ coop.reduce(  # expected-error: [call-overload]
     broadcast=False,
     algorithm="raking_commutative_only",
 )
-coop.BlockScanAlgorithm  # expected-error: [attr-defined]  # noqa: B018 - test rejected attributes.
+# Test rejected attributes.
+coop.BlockScanAlgorithm  # expected-error: [attr-defined]  # noqa: B018
 portable.scan(  # expected-error: [call-overload]
     portable_block,
     np.int32(1),
@@ -380,7 +387,10 @@ portable.exclusive_scan(  # expected-error: [misc]
     initial_value=np.float64(0),
 )
 portable.scan(  # expected-error: [call-overload]
-    portable.this_warp(), np.int32(1), mode="exclusive", initial_value=np.float64(0)
+    portable.this_warp(),
+    np.int32(1),
+    mode="exclusive",
+    initial_value=np.float64(0),
 )
 coop.exclusive_scan(  # expected-error: [misc]
     qualified_block,

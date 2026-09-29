@@ -1212,24 +1212,33 @@ class StatefulOperator(Parameter):
         self.ret_cpp_type = ret_cpp_type
         self.arg_cpp_types = tuple(arg_cpp_types)
         self.ltoir = bytes(ltoir)
-        self.compute_capability = _normalize_compute_capability(compute_capability)
+        self.compute_capability = _normalize_compute_capability(
+            compute_capability
+        )
 
     def __repr__(self) -> str:
-        return f"StatefulOperator(name={self.name!r}, state_dtype={self.state_dtype})"
+        return (
+            f"StatefulOperator(name={self.name!r}"
+            f", state_dtype={self.state_dtype})"
+        )
 
     def mangled_name(self):
         return self.name
 
     def forward_decl(self):
-        return_type = "void" if self.ret_cpp_type == "storage_t" else self.ret_cpp_type
+        return_type = (
+            "void" if self.ret_cpp_type == "storage_t" else self.ret_cpp_type
+        )
         arg_decls = ["char *state"]
         arg_decls.extend(
-            "const void*" if arg == "storage_t" else arg for arg in self.arg_cpp_types
+            "const void*" if arg == "storage_t" else arg
+            for arg in self.arg_cpp_types
         )
         if self.ret_cpp_type == "storage_t":
             arg_decls.append("void*")
         return (
-            f'extern "C" __device__ {return_type} {self.name}({", ".join(arg_decls)});'
+            f'extern "C" __device__ {return_type} '
+            f"{self.name}({', '.join(arg_decls)});"
         )
 
     def cpp_decl(self, name):
@@ -1244,7 +1253,9 @@ class StatefulOperator(Parameter):
         for index, arg_type in enumerate(self.arg_cpp_types):
             arg_name = f"wp_{index}"
             param_decls.append(f"const {arg_type}& {arg_name}")
-            param_refs.append(f"&{arg_name}" if arg_type == "storage_t" else arg_name)
+            param_refs.append(
+                f"&{arg_name}" if arg_type == "storage_t" else arg_name
+            )
 
         state_name = f"{name}_state"
         buf = StringIO()
@@ -1365,7 +1376,9 @@ class DependentStatefulOperator:
             )
 
         operator_py_func = op.__call__ if isinstance(op, type) else op
-        operator_py_func = getattr(operator_py_func, "py_func", operator_py_func)
+        operator_py_func = getattr(
+            operator_py_func, "py_func", operator_py_func
+        )
         compute_capability = _current_compute_capability()
         mangled_name = _python_operator_symbol_name(
             operator_py_func,
@@ -1962,7 +1975,8 @@ class Algorithm:
                     )
                 elif isinstance(param, StatefulOperator):
                     body_lines.append(
-                        f"    char *{cast_name} = reinterpret_cast<char *>({name});"
+                        f"    char *{cast_name} = "
+                        f"reinterpret_cast<char *>({name});"
                     )
                 else:
                     pointee_type = numba_type_to_cpp(param.value_dtype)
@@ -2217,7 +2231,9 @@ class Algorithm:
                     )
                     param_args.append(name)
                 elif isinstance(param, StatefulOperator):
-                    func_decls.extend(param.wrap_decl(name).rstrip().splitlines())
+                    func_decls.extend(
+                        param.wrap_decl(name).rstrip().splitlines()
+                    )
                     param_args.append(name)
                     param_decls.append(param.cpp_decl(name))
                 elif isinstance(param, CxxFunction):

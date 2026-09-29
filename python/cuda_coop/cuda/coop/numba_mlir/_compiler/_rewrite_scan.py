@@ -158,13 +158,18 @@ def _validate_prefix_state(
             )
         return index
     initial = inference.factory_kwargs.get("initial_value")
-    if isinstance(initial, ArgumentBinding) and initial.kind is not BindingKind.OMITTED:
+    if (
+        isinstance(initial, ArgumentBinding)
+        and initial.kind is not BindingKind.OMITTED
+    ):
         raise CoopSinglePhaseRewriteError(
-            "coop scan initial_value and prefix callbacks are mutually exclusive"
+            "coop scan initial_value and prefix "
+            "callbacks are mutually exclusive"
         )
     if inference.factory_kwargs.get("block_aggregate"):
         raise CoopSinglePhaseRewriteError(
-            "coop scan block_aggregate and prefix callbacks are mutually exclusive"
+            "coop scan block_aggregate and prefix "
+            "callbacks are mutually exclusive"
         )
     if stateful and not has_state:
         raise CoopSinglePhaseRewriteError(
@@ -190,7 +195,8 @@ def _validate_prefix_state(
     spec = context.thread_data(state)
     if spec is None:
         raise CoopSinglePhaseRewriteError(
-            "coop scan prefix_state must be a one-item ThreadData or local array"
+            "coop scan prefix_state must be a "
+            "one-item ThreadData or local array"
         )
     if spec.items_per_thread != 1:
         raise CoopSinglePhaseRewriteError(

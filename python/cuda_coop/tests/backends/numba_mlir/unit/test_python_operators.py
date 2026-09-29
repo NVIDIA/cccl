@@ -529,7 +529,9 @@ def test_core_adapter_lowers_stateful_operator_and_emits_state_capture(
     assert ".Run(input, running_prefix);" in named_source
 
 
-def test_stateful_symbols_use_callable_semantics_not_diagnostic_name(monkeypatch):
+def test_stateful_symbols_use_callable_semantics_not_diagnostic_name(
+    monkeypatch,
+):
     from numba_cuda_mlir import types
 
     from cuda.coop.numba_mlir import StatefulFunction, _types

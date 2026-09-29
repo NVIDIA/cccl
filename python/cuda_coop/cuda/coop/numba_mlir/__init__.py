@@ -103,7 +103,9 @@ def __getattr__(name):
         globals()[name] = value
         return value
     if name == "StatefulFunction":
-        value = getattr(importlib.import_module(f"{__name__}._stateful_function"), name)
+        value = getattr(
+            importlib.import_module(f"{__name__}._stateful_function"), name
+        )
         globals()[name] = value
         return value
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
