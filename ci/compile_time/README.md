@@ -2,7 +2,7 @@
 
 The compile-time benchmark CI flow is configured from `ci/matrix.yaml` under
 `compile_time.pull_request`. CCCL runs on PRs. Third-party configurations run
-nightly and can be enabled on a PR by adding
+weekly and can be enabled on a PR by adding
 `[run-third-party-compile-time-bench]` to its latest commit message.
 
 ## Matrix schema
@@ -60,11 +60,19 @@ are not that benchmark's subject.
 the GitHub Actions matrix JSON. Missing or empty `compile_time.pull_request`
 emits `{"include":[]}`.
 
-The nightly workflow selects the third-party entries from this matrix and
-compares the current default-branch commit with its first parent (`HEAD~1`).
-It uploads the report and trace artifacts without posting a PR comment. The PR
-workflow selects only CCCL entries unless the opt-in tag is present. Existing
-project skip tags and `[skip-compile-time-bench]` still take precedence.
+The weekly workflow selects the third-party entries from this matrix and runs
+each twice: once against the head commit of the preceding scheduled weekly run,
+and once against the latest published final CCCL release (`vX.Y.Z`). It resolves
+the release tag to a commit SHA, including nested annotated tags. Python package
+releases, release candidates, and draft releases are excluded. Each comparison
+builds its baseline in the current runner environment; it does not reuse old
+trace artifacts. The weekly workflow uploads reports and traces without posting
+a PR comment.
+
+The PR workflow selects only CCCL entries unless the opt-in tag is present.
+With the tag, it runs the same two third-party comparisons and includes them in
+the combined PR comment. Existing project skip tags and
+`[skip-compile-time-bench]` still take precedence.
 
 In baseline comparisons, `threshold` is measured against the total selected
 inclusive/exclusive impact across all matched traces. The per-side reports still

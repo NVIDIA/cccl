@@ -35,6 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.repository == 'NVIDIA/cccl' }}
     permissions:
+      actions: read
       contents: read
       pull-requests: write
     outputs:
@@ -110,6 +111,8 @@ jobs:
       - name: Build compile-time benchmark dispatch matrix
         id: build-compile-time-matrix
         env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GH_TOKEN: ${{ github.token }}
           MATX_ENABLED: ${{ steps.export-flags.outputs.matx_enabled }}
           PYTORCH_ENABLED: ${{ steps.export-flags.outputs.pytorch_enabled }}
           RAPIDS_ENABLED: ${{ steps.export-flags.outputs.rapids_enabled }}
@@ -130,16 +133,26 @@ jobs:
               --argjson matx_enabled "${MATX_ENABLED}" \
               --argjson pytorch_enabled "${PYTORCH_ENABLED}" \
               --argjson rapids_enabled "${RAPIDS_ENABLED}" \
-              --argjson third_party_enabled "${THIRD_PARTY_COMPILE_TIME_ENABLED}" \
               '
                 .include |= map(select(
-                  (.project == "cccl" or $third_party_enabled)
-                  and (.project != "matx" or $matx_enabled)
+                  (.project != "matx" or $matx_enabled)
                   and (.project != "pytorch" or $pytorch_enabled)
                   and (.project != "rapids" or $rapids_enabled)
                 ))
               ' <<< "${compile_time_matrix_json}"
           )"
+          if [[ "${THIRD_PARTY_COMPILE_TIME_ENABLED}" == "true" ]]; then
+            compile_time_matrix_json="$(
+              python3 ci/compile_time/weekly_matrix.py \
+                --branch "${DEFAULT_BRANCH}" --include-cccl \
+                <<< "${compile_time_matrix_json}"
+            )"
+          else
+            compile_time_matrix_json="$(
+              jq -c '.include |= map(select(.project == "cccl"))' \
+                <<< "${compile_time_matrix_json}"
+            )"
+          fi
           compile_time_enabled="$(
             jq -r 'if (.include // []) == [] then "false" else "true" end' \
               <<< "${compile_time_matrix_json}"

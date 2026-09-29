@@ -324,7 +324,7 @@ Tags appended to the commit summary (case-sensitive) control CI behavior:
 * `[skip-vdc]`: Skip "Verify Devcontainer" jobs. Safe unless CI or devcontainer infra is modified.
 * `[skip-docs]`: Skip doc tests/previews. Safe if docs are unaffected.
 * `[skip-compile-time-bench]`: Skip informational compile-time benchmark telemetry. Safe if compile-time benchmark scripts/configuration are unaffected.
-* `[run-third-party-compile-time-bench]`: Run the nightly MatX, PyTorch, and RAPIDS compile-time benchmarks on a PR for testing.
+* `[run-third-party-compile-time-bench]`: Run both weekly baseline comparisons for MatX, PyTorch, and RAPIDS on a PR for testing.
 * `[skip-sass-diff]`: Skip the informational CUB benchmark SASS comparison. The job already runs only when `ci/inspect_changes.py` marks CUB dirty, either directly or through a dependency such as libcudacxx or Thrust, so this tag is only necessary to skip a comparison that would otherwise run.
 * `[skip-third-party-testing]` / `[skip-tpt]`: Skip third-party smoke tests (MatX, PyTorch, RAPIDS).
 * `[skip-matx]`: Skip building the MatX third-party smoke test.

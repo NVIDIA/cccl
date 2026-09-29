@@ -202,10 +202,11 @@ configs select the libraries to build. ``ci/compile_time/parse_matrix.py``
 validates that section and emits the GitHub Actions matrix for the reusable
 compile-time benchmark workflow.
 
-CCCL configurations run on PRs by default. Third-party configurations run in
-the nightly workflow, using ``HEAD~1`` as the baseline, and upload their
-reports and traces as artifacts. A PR runs the third-party configurations only
-when its latest commit message contains
+CCCL configurations run on PRs by default. The weekly workflow expands each
+third-party configuration into two jobs, using the preceding scheduled weekly
+run's head SHA and the latest published final ``vX.Y.Z`` CCCL release commit as
+baselines. It uploads their reports and traces as artifacts. A PR runs those
+same two comparisons only when its latest commit message contains
 ``[run-third-party-compile-time-bench]``. Project skip tags and
 ``[skip-compile-time-bench]`` still suppress their respective jobs.
 

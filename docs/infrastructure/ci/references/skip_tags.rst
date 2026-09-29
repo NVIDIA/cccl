@@ -49,7 +49,7 @@ Tag reference
      - Yes
 
 ``[skip-tpt]`` and ``[skip-third-party-testing]`` are aliases for the same tag.
-To run the nightly MatX, PyTorch, and RAPIDS compile-time jobs on a PR, add
+To run the weekly MatX, PyTorch, and RAPIDS compile-time jobs on a PR, add
 ``[run-third-party-compile-time-bench]`` to the last commit message. This opt-in
 tag does not suppress CI jobs or block merging. Skip tags still take precedence.
 

@@ -46,7 +46,7 @@ compile_time:
           sort: total
           top: 15
           threshold: 0.2
-    # Third-party configs run nightly; PRs opt in with [run-third-party-compile-time-bench].
+    # Third-party configs run weekly; PRs opt in with [run-third-party-compile-time-bench].
     - id: pytorch-gcc14
       name: PyTorch compile-time bench
       project: pytorch
