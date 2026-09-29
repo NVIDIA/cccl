@@ -662,7 +662,7 @@ but only lane 0's returned prefix is applied to the scan. Other per-thread
 state copies are not authoritative; after one or more calls, consume the final
 state only from thread 0. The callback is mutually exclusive with
 ``initial_value`` and ``aggregate_output``. It is not available for physical
-or logical Warp Scan, through the portable :mod:`cuda.coop` API, as a stateful
+or logical Warp Scan, through the common :mod:`cuda.coop` API, as a stateful
 binary ``scan_op``, or with structured state.
 
 All Scan forms use CUB temporary storage. Block calls may use compiler-owned,
