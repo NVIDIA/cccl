@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Shared Shuffle plans retain exact distances, ownership, and payload types."""
-
 from dataclasses import replace
 
 import numpy as np

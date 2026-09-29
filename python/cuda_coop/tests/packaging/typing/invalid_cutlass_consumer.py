@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Unsupported qualified groups, payloads, and primitive controls."""
-
 from __future__ import annotations
 
 import numpy as np

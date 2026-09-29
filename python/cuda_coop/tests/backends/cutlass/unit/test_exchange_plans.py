@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Exchange requests retain layout, auxiliary dtype, and group contracts."""
-
 from dataclasses import replace
 from types import SimpleNamespace
 
