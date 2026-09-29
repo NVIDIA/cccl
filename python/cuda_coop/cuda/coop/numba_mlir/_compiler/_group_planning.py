@@ -367,7 +367,9 @@ class GroupPlanningContext:
         return self.dtype(bound.arguments[result.dtype_parameter], seen=seen)
 
     def record_thread_data_dtype(self, value: Any, dtype: Any) -> None:
-        """Keep an output's inferred dtype available to subsequent group calls."""
+        """Keep an output's inferred dtype available to subsequent group
+        calls.
+        """
 
         def payload_definitions(current, seen):
             for _, definition in descriptor_definitions(

@@ -307,7 +307,9 @@ class _ProvenanceRewrite:
 
     @staticmethod
     def _is_jitted_dispatcher(obj) -> bool:
-        """Return whether a resolved callee is a Numba dispatcher (device function)."""
+        """Return whether a resolved callee is a Numba dispatcher (device
+        function).
+        """
 
         return (
             obj is not None
@@ -1722,7 +1724,9 @@ class _ProvenanceRewrite:
     def _collect_thread_data_write_roots(
         self, value: ir.Var, seen: set[str] | None = None
     ) -> dict[str, ir.Var]:
-        """Find concrete ThreadData constructors behind group payload markers."""
+        """Find concrete ThreadData constructors behind group payload
+        markers.
+        """
         if not isinstance(value, ir.Var):
             return {}
         if seen is None:
