@@ -41,7 +41,7 @@ def test_first_kernel():
     @cuda.jit
     def scan_tiles(source, destination, count):
         block = coop.this_block()
-        items = coop.ThreadData(2, dtype=np.int32)
+        items = coop.ThreadData(items_per_thread=2)
         tile_size = cuda.blockDim.x * 2
         offset = cuda.blockIdx.x * tile_size
         valid = min(max(count - offset, 0), tile_size)
@@ -148,7 +148,7 @@ def test_exchange():
     @cuda.jit
     def scan_striped_input(source, destination):
         block = coop.this_block()
-        items = coop.ThreadData(2, dtype=np.int32)
+        items = coop.ThreadData(items_per_thread=2)
         coop.load(block, source, items, algorithm="striped")
         blocked = coop.exchange(block, items, mode="striped_to_blocked")
         prefixes = coop.inclusive_sum(block, blocked)
@@ -167,7 +167,7 @@ def test_warp_copy():
     @cuda.jit
     def copy_warp_tiles(source, destination, count):
         group = coop.this_warp().group_by(8)
-        items = coop.ThreadData(2, dtype=np.int32)
+        items = coop.ThreadData(items_per_thread=2)
         block_origin = cuda.blockIdx.x * cuda.blockDim.x * 2
         group_origin = (cuda.threadIdx.x // 8) * 16
         valid = min(max(count - block_origin - group_origin, 0), 16)
@@ -204,7 +204,7 @@ def test_shared_scratch():
     def scan_with_shared_scratch(source, destination):
         block = coop.this_block()
         scratch = coop.TempStorage(auto_sync=True)
-        items = coop.ThreadData(2, dtype=np.int32)
+        items = coop.ThreadData(items_per_thread=2)
 
         coop.load(
             block, source, items, algorithm="transpose", temp_storage=scratch
@@ -232,7 +232,7 @@ def test_manual_scratch():
     def copy_tiles_with_manual_sync(source, destination):
         block = coop.this_block()
         scratch = coop.TempStorage()
-        items = coop.ThreadData(2, dtype=np.int32)
+        items = coop.ThreadData(items_per_thread=2)
         for tile in range(2):
             offset = tile * cuda.blockDim.x * 2
             coop.load(
@@ -273,7 +273,7 @@ def test_reduce():
     @cuda.jit
     def tile_sums(source, totals, count):
         block = coop.this_block()
-        items = coop.ThreadData(2, dtype=np.int32)
+        items = coop.ThreadData(items_per_thread=2)
         tile_size = cuda.blockDim.x * 2
         offset = cuda.blockIdx.x * tile_size
         valid = min(max(count - offset, 0), tile_size)
@@ -312,7 +312,7 @@ def test_custom_scan():
     @cuda.jit
     def running_maximum(source, destination):
         block = numba_coop.this_block()
-        items = numba_coop.ThreadData(2, dtype=np.int32)
+        items = numba_coop.ThreadData(items_per_thread=2)
         numba_coop.load(block, source, items)
         result = numba_coop.inclusive_scan(block, items, scan_op=maximum)
         numba_coop.store(block, destination, result)
@@ -345,7 +345,7 @@ def test_prefix_callback():
     @cuda.jit
     def scan_successive_tiles(source, destination, final_total):
         block = numba_coop.this_block()
-        state = numba_coop.ThreadData(1, dtype=types.int64)
+        state = numba_coop.ThreadData(items_per_thread=1)
         state[0] = types.int64(0)
         scratch = numba_coop.TempStorage(auto_sync=True)
         for tile in range(3):
