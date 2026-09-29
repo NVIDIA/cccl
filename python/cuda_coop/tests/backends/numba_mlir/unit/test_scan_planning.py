@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compiler planning contracts for the Numba-CUDA-MLIR Scan family."""
-
 from __future__ import annotations
 
 from enum import Enum
