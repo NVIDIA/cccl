@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Strict consumer of the portable Block Load and Store surface."""
+"""Strict consumer of the common cooperative data-movement surface."""
 
 from __future__ import annotations
 
