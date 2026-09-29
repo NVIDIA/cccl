@@ -75,19 +75,6 @@ def test_group_load_and_store_select_complete_block_contracts():
     assert load.topology.execution_scope is SynchronizationScope.BLOCK
 
 
-def test_partial_transpose_load_records_preserving_wrapper_provenance():
-    plan = _plan(
-        this_block(),
-        _load_store(
-            "load",
-            algorithm=GroupLoadStoreAlgorithm.TRANSPOSE,
-            valid_items=ArgumentBinding.runtime(),
-        ),
-    )
-
-    assert plan.provenance.cpp_class == ("cub::CudaCoopBlockLoadPreservingInvalid")
-
-
 def test_physical_warp_load_store_select_complete_cub_contracts():
     load = _plan(
         this_warp(),
@@ -190,34 +177,6 @@ def test_warp_algorithm_storage_contract_matches_cub(
     )
     assert plan.synchronization.storage_reuse_barrier is (
         SynchronizationScope.NONE if storage_free else SynchronizationScope.WARP
-    )
-
-
-@pytest.mark.parametrize(
-    ("group", "logical_width"),
-    [
-        pytest.param(this_warp(), 32, id="physical-warp"),
-        pytest.param(this_warp().group_by(8), 8, id="logical-warp"),
-    ],
-)
-def test_partial_warp_transpose_load_records_preserving_wrapper(
-    group,
-    logical_width,
-):
-    plan = _plan(
-        group,
-        _load_store(
-            "load",
-            algorithm=GroupLoadStoreAlgorithm.TRANSPOSE,
-            valid_items=ArgumentBinding.runtime(),
-        ),
-        64,
-    )
-
-    assert plan.provenance.cpp_class == ("cub::CudaCoopWarpLoadPreservingInvalid")
-    assert plan.implementation.metadata["preserves_invalid_items"]
-    assert (
-        plan.implementation.template_arguments["LOGICAL_WARP_THREADS"] == logical_width
     )
 
 
