@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """Shared TopK policy, checked count ABI, and storage transactions."""
 
@@ -29,16 +28,16 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
 
 def _request(**kwargs):
-    options = dict(
-        group=this_block(),
-        launch=LaunchFacts(exact_block_dim=(64, 1, 1)),
-        key_type=cutlass.Int32,
-        value_type=None,
-        items=2,
-        selection="min",
-        k=17,
-        valid_items=None,
-    )
+    options = {
+        "group": this_block(),
+        "launch": LaunchFacts(exact_block_dim=(64, 1, 1)),
+        "key_type": cutlass.Int32,
+        "value_type": None,
+        "items": 2,
+        "selection": "min",
+        "k": 17,
+        "valid_items": None,
+    }
     options.update(kwargs)
     return _topk._CubTopKRequest(_topk._make_topk_plan(**options))
 
@@ -124,9 +123,15 @@ def test_common_signature(name):
     expected = inspect.signature(getattr(coop, name))
     actual = inspect.signature(getattr(cutlass_coop, name))
     assert tuple(actual.parameters) == tuple(expected.parameters)
-    for name in actual.parameters:
-        assert actual.parameters[name].kind is expected.parameters[name].kind
-        assert actual.parameters[name].default == expected.parameters[name].default
+    for parameter_name in actual.parameters:
+        assert (
+            actual.parameters[parameter_name].kind
+            is expected.parameters[parameter_name].kind
+        )
+        assert (
+            actual.parameters[parameter_name].default
+            == expected.parameters[parameter_name].default
+        )
 
 
 def test_failed_storage_restores_session(monkeypatch):
