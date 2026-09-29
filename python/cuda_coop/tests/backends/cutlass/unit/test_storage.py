@@ -78,7 +78,10 @@ def test_exclusive_slices(capacity, requested, auto_sync):
     (plan,) = _storage.plan_deferred_temp_storage_events(events, layouts)
     assert plan.size_in_bytes == (capacity or 48)
     assert plan.alignment == max(requested or 1, 16)
-    assert [binding.byte_offset_in_bytes for binding in plan.bindings] == [0, 32]
+    assert [binding.byte_offset_in_bytes for binding in plan.bindings] == [
+        0,
+        32,
+    ]
     assert [binding.size_in_bytes for binding in plan.bindings] == [24, 16]
     assert [binding.alignment for binding in plan.bindings] == [8, 16]
     assert all(
@@ -87,7 +90,9 @@ def test_exclusive_slices(capacity, requested, auto_sync):
     )
 
 
-@pytest.mark.parametrize("sharing,capacity", [("shared", 23), ("exclusive", 47)])
+@pytest.mark.parametrize(
+    "sharing,capacity", [("shared", 23), ("exclusive", 47)]
+)
 def test_undersized_capacity(sharing, capacity):
     storage = TempStorage(capacity, sharing=sharing)
     kernel = object()
@@ -141,7 +146,9 @@ def test_configuration_change_rejected(changed):
 
 def test_missing_layout_is_diagnostic():
     event = _event(TempStorage(), "missing", object())
-    with pytest.raises(_storage.DSLRuntimeError, match=r"No exact C\+\+ scratch"):
+    with pytest.raises(
+        _storage.DSLRuntimeError, match=r"No exact C\+\+ scratch"
+    ):
         _storage.plan_deferred_temp_storage_events([event], {})
 
 

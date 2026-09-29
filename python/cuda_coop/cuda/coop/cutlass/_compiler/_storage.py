@@ -69,7 +69,8 @@ def _active_cuda_kernel_op() -> Any:
 def _cuda_kernel_name(kernel_op: Any) -> str:
     try:
         return str(kernel_op.attributes["sym_name"])
-    except Exception:  # noqa: BLE001 - A diagnostic name must not break scratch planning.
+    except Exception:  # noqa: BLE001
+        # A diagnostic name must not break scratch planning.
         return f"cuda.kernel@{id(kernel_op):x}"
 
 
@@ -100,7 +101,8 @@ def register_deferred_temp_storage_event(
     size_placeholder = _fresh_i32_placeholder()
     try:
         location = str(smem_addr_placeholder.owner.location)
-    except Exception:  # noqa: BLE001 - Missing diagnostic locations do not invalidate scratch.
+    except Exception:  # noqa: BLE001
+        # Missing diagnostic locations do not invalidate scratch.
         location = "unknown location"
 
     session.add_deferred_temp_storage_event(
@@ -168,9 +170,13 @@ def plan_deferred_temp_storage_events(
                 )
             event_layouts.append((event, layout))
 
-        required_plan_alignment = max(layout.alignment for _, layout in event_layouts)
+        required_plan_alignment = max(
+            layout.alignment for _, layout in event_layouts
+        )
         if first.sharing == "shared":
-            planned_size = max(layout.size_in_bytes for _, layout in event_layouts)
+            planned_size = max(
+                layout.size_in_bytes for _, layout in event_layouts
+            )
             planned_bindings = tuple(
                 (event, 0, planned_size, required_plan_alignment)
                 for event, _ in event_layouts
@@ -189,13 +195,16 @@ def plan_deferred_temp_storage_events(
         capacity_size = first.capacity_size_in_bytes
         if capacity_size is not None and capacity_size < planned_size:
             raise DSLRuntimeError(
-                "Deferred TempStorage capacity is smaller than its resolved plan "
+                "Deferred TempStorage capacity is smaller than "
+                "its resolved plan "
                 f"in {first.kernel_name} ({capacity_size} < {planned_size})."
             )
         resolved_size_in_bytes = (
             capacity_size if capacity_size is not None else planned_size
         )
-        plan_alignment = max(first.capacity_alignment or 1, required_plan_alignment)
+        plan_alignment = max(
+            first.capacity_alignment or 1, required_plan_alignment
+        )
 
         bindings = tuple(
             DeferredTempStorageBinding(
@@ -237,7 +246,8 @@ def _replace_all_uses(old_value: Any, new_value: Any) -> None:
         try:
             replace(new_value)
             return
-        except Exception:  # noqa: BLE001, S112 - Try the alternate MLIR spelling before reporting incompatibility.
+        except Exception:  # noqa: BLE001, S112
+            # Try the alternate MLIR spelling before reporting incompatibility.
             continue
     _deferred_temp_storage_capability_error()
 
@@ -292,7 +302,10 @@ def materialize_deferred_temp_storage_plans(
             ):
                 if not any(
                     callable(getattr(placeholder, method_name, None))
-                    for method_name in ("replace_all_uses_with", "replaceAllUsesWith")
+                    for method_name in (
+                        "replace_all_uses_with",
+                        "replaceAllUsesWith",
+                    )
                 ):
                     _deferred_temp_storage_capability_error()
 

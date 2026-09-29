@@ -73,7 +73,11 @@ def check_cutlass_surface(source: object, destination: object) -> None:
 
     common_storage = common_coop.TempStorage(alignment=32)
     cutlass_coop.store(
-        block, destination, values, algorithm="transpose", temp_storage=common_storage
+        block,
+        destination,
+        values,
+        algorithm="transpose",
+        temp_storage=common_storage,
     )
 
     copied = cutlass_coop.ThreadData.from_payload(values)

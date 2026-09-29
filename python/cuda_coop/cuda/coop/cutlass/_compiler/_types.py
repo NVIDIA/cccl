@@ -45,7 +45,9 @@ class BundleRenderer:
     include_lines: tuple[str, ...]
     cccl_headers: tuple[tuple[str, str], ...]
     render: Callable[[Any], list[str]]
-    scratch_layout_probe: Callable[[Any], ScratchLayoutProbe | None] | None = None
+    scratch_layout_probe: Callable[[Any], ScratchLayoutProbe | None] | None = (
+        None
+    )
 
 
 @dataclass(frozen=True)

@@ -60,7 +60,9 @@ def run_example(*, sharing="shared", manual_sync=False):
                 storage.sync()
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32):
+    def launch(
+        source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32
+    ):
         transform(source, destination, tiles).launch(grid=1, block=_BLOCK)
 
     # docs: end cutlass-block-storage
@@ -75,25 +77,36 @@ def run_example(*, sharing="shared", manual_sync=False):
         try:
             _check(driver.cuMemcpyHtoD(src, source.ctypes.data, source.nbytes))
             _check(
-                driver.cuMemcpyHtoD(dst, destination.ctypes.data, destination.nbytes)
+                driver.cuMemcpyHtoD(
+                    dst, destination.ctypes.data, destination.nbytes
+                )
             )
             src_pointer = make_ptr(
-                cutlass.Int32, int(src), cute.AddressSpace.gmem, assumed_align=16
+                cutlass.Int32,
+                int(src),
+                cute.AddressSpace.gmem,
+                assumed_align=16,
             )
             dst_pointer = make_ptr(
-                cutlass.Int32, int(dst), cute.AddressSpace.gmem, assumed_align=16
+                cutlass.Int32,
+                int(dst),
+                cute.AddressSpace.gmem,
+                assumed_align=16,
             )
             launch(src_pointer, dst_pointer, tiles)
             _check(driver.cuCtxSynchronize())
             _check(
-                driver.cuMemcpyDtoH(destination.ctypes.data, dst, destination.nbytes)
+                driver.cuMemcpyDtoH(
+                    destination.ctypes.data, dst, destination.nbytes
+                )
             )
         finally:
             _check(driver.cuMemFree(dst))
     finally:
         _check(driver.cuMemFree(src))
     expected = (
-        source.reshape(tiles, _TILE) + np.arange(1, tiles + 1, dtype=np.int32)[:, None]
+        source.reshape(tiles, _TILE)
+        + np.arange(1, tiles + 1, dtype=np.int32)[:, None]
     )
     np.testing.assert_array_equal(destination, expected.reshape(-1))
     return destination

@@ -92,7 +92,9 @@ def _compile_bundle_source(
             )
             if cached is None:
                 if prepared.expressions:
-                    blob, layouts = _nvrtc.compile_ltoir_with_layouts(prepared, options)
+                    blob, layouts = _nvrtc.compile_ltoir_with_layouts(
+                        prepared, options
+                    )
                 else:
                     blob, layouts = _nvrtc.compile_ltoir(source, options), {}
                 cached = _cache.publish_bundle(
