@@ -255,17 +255,17 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
                     raise TypeError(f"{name} dtype must match decoded_offset_dtype")
                 context.record_thread_data_dtype(value, offset_dtype)
             args.append(value)
-    kwargs = dict(
-        item_dtype=dtypes[0],
-        run_length_dtype=dtypes[1],
-        decoded_offset_dtype=offset_dtype,
-        control_dtype=control_dtype,
-        threads_per_block=plan.participation.exact_block_dim,
-        runs_per_thread=extent,
-        decoded_items_per_thread=decoded_extent,
-        offset=control if binding.kind is BindingKind.RUNTIME else binding,
-        relative_offsets=has_relative,
-    )
+    kwargs = {
+        "item_dtype": dtypes[0],
+        "run_length_dtype": dtypes[1],
+        "decoded_offset_dtype": offset_dtype,
+        "control_dtype": control_dtype,
+        "threads_per_block": plan.participation.exact_block_dim,
+        "runs_per_thread": extent,
+        "decoded_items_per_thread": decoded_extent,
+        "offset": control if binding.kind is BindingKind.RUNTIME else binding,
+        "relative_offsets": has_relative,
+    }
     if not context.is_none(storage):
         kwargs["temp_storage"] = storage
     statements.extend(
