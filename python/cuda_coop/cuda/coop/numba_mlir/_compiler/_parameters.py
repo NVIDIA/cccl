@@ -222,7 +222,7 @@ def _scalar_operator_result_dtype(function, *operand_dtypes):
         if signature is None:
             return None
         return normalize_dtype_param(signature.return_type)
-    except Exception:
+    except Exception:  # noqa: BLE001 - authoritative typing reports failures later.
         # This is best-effort provenance, not the authoritative typing pass.
         return None
 

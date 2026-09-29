@@ -12,7 +12,7 @@ from collections.abc import Mapping
 from copy import copy
 from dataclasses import dataclass
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, ClassVar
 
 from numba_cuda_mlir import types
 
@@ -74,7 +74,7 @@ def _optional_binding(value: Any) -> ArgumentBinding:
 class NumbaMlirCoreAdapter(CoreBackendAdapter):
     """Translate core descriptors while retaining Numba-CUDA-MLIR linking and caching."""
 
-    _BUILTIN_DTYPES = {
+    _BUILTIN_DTYPES: ClassVar[dict[BuiltinDType, types.Type]] = {
         INT8: types.int8,
         UINT8: types.uint8,
         INT16: types.int16,
@@ -86,7 +86,9 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         FLOAT32: types.float32,
         FLOAT64: types.float64,
     }
-    _CORE_DTYPES = {value: key for key, value in _BUILTIN_DTYPES.items()}
+    _CORE_DTYPES: ClassVar[dict[types.Type, BuiltinDType]] = {
+        value: key for key, value in _BUILTIN_DTYPES.items()
+    }
 
     def __init__(
         self,
