@@ -21,7 +21,8 @@ pytestmark = [pytest.mark.unit, pytest.mark.backend_cutlass]
 def _request(kind, algorithm, **kwargs):
     return _CubLoadStoreRequest(
         _plan(
-            this_block(), _load_store(kind, dtype=Int32, algorithm=algorithm, **kwargs)
+            this_block(),
+            _load_store(kind, dtype=Int32, algorithm=algorithm, **kwargs),
         ),
         Int32,
     )
@@ -65,7 +66,11 @@ def test_storage_free_provider_ignores_descriptor_controls(kind, algorithm):
 def test_reuse_barrier_requires_explicit_opt_in(
     monkeypatch, kind, sharing, options, expected_sync
 ):
-    from cuda.coop._core import GroupLoadStoreKind, LaunchFacts, SynchronizationScope
+    from cuda.coop._core import (
+        GroupLoadStoreKind,
+        LaunchFacts,
+        SynchronizationScope,
+    )
     from cuda.coop.cutlass import TempStorage
     from cuda.coop.cutlass._compiler import _storage
     from cuda.coop.cutlass._lowering._load_store import (
@@ -73,7 +78,9 @@ def test_reuse_barrier_requires_explicit_opt_in(
         _scratch_arguments,
     )
 
-    storage = None if options is None else TempStorage(sharing=sharing, **options)
+    storage = (
+        None if options is None else TempStorage(sharing=sharing, **options)
+    )
     plan = _make_group_load_store_plan(
         group=this_block(),
         launch=LaunchFacts((64, 1, 1)),
@@ -87,7 +94,9 @@ def test_reuse_barrier_requires_explicit_opt_in(
         temp_storage=storage,
     )
     expected = (
-        SynchronizationScope.BLOCK if expected_sync else SynchronizationScope.NONE
+        SynchronizationScope.BLOCK
+        if expected_sync
+        else SynchronizationScope.NONE
     )
     assert plan.temp_storage.auto_sync is expected_sync
     assert plan.synchronization.storage_reuse_barrier is expected
@@ -97,6 +106,8 @@ def test_reuse_barrier_requires_explicit_opt_in(
         observed.append(descriptor.auto_sync)
         return (object(), object(), object())
 
-    monkeypatch.setattr(_storage, "register_deferred_temp_storage_event", register)
+    monkeypatch.setattr(
+        _storage, "register_deferred_temp_storage_event", register
+    )
     _scratch_arguments(_CubLoadStoreRequest(plan, Int32), storage)
     assert observed == [expected_sync]

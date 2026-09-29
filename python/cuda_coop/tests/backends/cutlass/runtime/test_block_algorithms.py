@@ -42,18 +42,24 @@ _TILE = _THREADS * _ITEMS
 
 def _tile_index(algorithm, thread, item):
     return (
-        thread + item * _THREADS if algorithm == "striped" else thread * _ITEMS + item
+        thread + item * _THREADS
+        if algorithm == "striped"
+        else thread * _ITEMS + item
     )
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize(
     "valid", (0, _TILE - 19, _TILE), ids=("zero", "partial", "full")
 )
 def test_load_layout_and_runtime_bounds(api, algorithm, valid):
     @cute.kernel
-    def kernel(source: cute.Pointer, observed: cute.Pointer, count: cutlass.Int32):
+    def kernel(
+        source: cute.Pointer, observed: cute.Pointer, count: cutlass.Int32
+    ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         payload = api.ThreadData(_ITEMS)
@@ -71,7 +77,9 @@ def test_load_layout_and_runtime_bounds(api, algorithm, valid):
             outputs[thread * _ITEMS + item] = payload[item]
 
     @cute.jit
-    def launch(source: cute.Pointer, observed: cute.Pointer, count: cutlass.Int32):
+    def launch(
+        source: cute.Pointer, observed: cute.Pointer, count: cutlass.Int32
+    ):
         kernel(source, observed, count).launch(grid=1, block=_BLOCK)
 
     source = values_for(np.int32, _TILE + 3, shift=17)
@@ -87,7 +95,9 @@ def test_load_layout_and_runtime_bounds(api, algorithm, valid):
     np.testing.assert_array_equal(observed, expected)
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize(
     "valid", (0, _TILE - 19, _TILE), ids=("zero", "partial", "full")
@@ -128,8 +138,12 @@ def test_store_layout_and_bounds(api, algorithm, valid):
 
 
 @pytest.mark.parametrize("algorithm", _SCRATCH_ALGORITHMS)
-@pytest.mark.parametrize("static_count", (False, True), ids=("runtime", "static"))
-def test_partial_transpose_loads_valid_items_without_default(algorithm, static_count):
+@pytest.mark.parametrize(
+    "static_count", (False, True), ids=("runtime", "static")
+)
+def test_partial_transpose_loads_valid_items_without_default(
+    algorithm, static_count
+):
     valid = _TILE - 19
 
     @cute.kernel
@@ -179,11 +193,17 @@ def test_partial_transpose_loads_valid_items_without_default(algorithm, static_c
     np.testing.assert_array_equal(observed, expected)
 
 
-@pytest.mark.parametrize("offset", (0, 1), ids=("aligned", "misaligned-fallback"))
-@pytest.mark.parametrize("algorithm", ("vectorize", "warp_transpose_timesliced"))
+@pytest.mark.parametrize(
+    "offset", (0, 1), ids=("aligned", "misaligned-fallback")
+)
+@pytest.mark.parametrize(
+    "algorithm", ("vectorize", "warp_transpose_timesliced")
+)
 def test_unguarded_full_tiles_use_the_correct_layout(algorithm, offset):
     @cute.kernel
-    def kernel(source: cute.Pointer, destination: cute.Pointer, observed: cute.Pointer):
+    def kernel(
+        source: cute.Pointer, destination: cute.Pointer, observed: cute.Pointer
+    ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.make_tensor(source, cute.make_layout(_TILE + 1))
@@ -209,7 +229,9 @@ def test_unguarded_full_tiles_use_the_correct_layout(algorithm, offset):
         )
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer, observed: cute.Pointer):
+    def launch(
+        source: cute.Pointer, destination: cute.Pointer, observed: cute.Pointer
+    ):
         kernel(source, destination, observed).launch(grid=1, block=_BLOCK)
 
     source = values_for(np.int32, _TILE + 1, shift=59)
@@ -231,9 +253,13 @@ def test_unguarded_full_tiles_use_the_correct_layout(algorithm, offset):
 @pytest.mark.parametrize("capacity", (None, 16384), ids=("deferred", "fixed"))
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
 @pytest.mark.parametrize("manual_sync", (False, True), ids=("auto", "manual"))
-def test_storage_reuse_in_runtime_loop(algorithm, capacity, sharing, manual_sync):
+def test_storage_reuse_in_runtime_loop(
+    algorithm, capacity, sharing, manual_sync
+):
     @cute.kernel
-    def kernel(source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32):
+    def kernel(
+        source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32
+    ):
         storage = cutlass_coop.TempStorage(
             capacity,
             sharing=sharing,
@@ -266,27 +292,34 @@ def test_storage_reuse_in_runtime_loop(algorithm, capacity, sharing, manual_sync
                 storage.sync()
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32):
+    def launch(
+        source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32
+    ):
         kernel(source, destination, tiles).launch(grid=1, block=_BLOCK)
 
     tiles = 8
     source = values_for(np.int32, tiles * _TILE, shift=61)
     destination = np.full_like(source, -101)
     expected = (
-        source.reshape(tiles, _TILE) + np.arange(1, tiles + 1, dtype=np.int32)[:, None]
+        source.reshape(tiles, _TILE)
+        + np.arange(1, tiles + 1, dtype=np.int32)[:, None]
     )
     with device_array(source) as src, device_array(destination) as dst:
         launch(src, dst, tiles)
     np.testing.assert_array_equal(destination, expected.reshape(-1))
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("alignment", (1, 32, 64))
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
 def test_requested_storage_alignment_is_a_minimum(api, alignment, sharing):
     @cute.kernel
     def kernel(source: cute.Pointer, destination: cute.Pointer):
-        storage = api.TempStorage(alignment=alignment, sharing=sharing, auto_sync=True)
+        storage = api.TempStorage(
+            alignment=alignment, sharing=sharing, auto_sync=True
+        )
         payload = api.ThreadData(_ITEMS)
         api.load(
             api.this_block(),
@@ -318,13 +351,17 @@ def test_requested_storage_alignment_is_a_minimum(api, alignment, sharing):
 @pytest.mark.parametrize("manual_sync", (False, True))
 def test_storage_example(sharing, manual_sync):
     path = PACKAGE_ROOT / "examples/cutlass/block_storage.py"
-    spec = importlib.util.spec_from_file_location("cutlass_block_storage_example", path)
+    spec = importlib.util.spec_from_file_location(
+        "cutlass_block_storage_example", path
+    )
     example = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(example)
     example.run_example(sharing=sharing, manual_sync=manual_sync)
 
 
-@pytest.mark.parametrize("api", (coop, cutlass_coop), ids=("common", "qualified"))
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
 def test_deferred_storage_preserves_user_shared_memory(api, sharing):
     @cute.kernel
@@ -335,7 +372,9 @@ def test_deferred_storage_preserves_user_shared_memory(api, sharing):
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         allocator = SmemAllocator()
         canary = cute.make_tensor(
-            allocator.allocate_array(cutlass.Int32, _THREADS, byte_alignment=16),
+            allocator.allocate_array(
+                cutlass.Int32, _THREADS, byte_alignment=16
+            ),
             cute.make_layout(_THREADS),
         )
         canary[thread] = 101 + 7 * thread
@@ -388,7 +427,9 @@ def test_deferred_storage_preserves_user_shared_memory(api, sharing):
 def test_final_cubin_storage_contract(tmp_path, algorithm):
     cuobjdump = shutil.which("cuobjdump")
     if cuobjdump is None:
-        pytest.skip("cuobjdump is required to inspect final linked instructions")
+        pytest.skip(
+            "cuobjdump is required to inspect final linked instructions"
+        )
 
     @cute.kernel
     def kernel(source: cute.Pointer, destination: cute.Pointer):
@@ -418,7 +459,9 @@ def test_final_cubin_storage_contract(tmp_path, algorithm):
     source = values_for(np.int32, _TILE, shift=67)
     destination = np.full_like(source, -101)
     with device_array(source) as src, device_array(destination) as dst:
-        compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](launch, src, dst)
+        compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](
+            launch, src, dst
+        )
         compiled(src, dst)
     np.testing.assert_array_equal(destination, source)
     cubins = list(tmp_path.rglob("*.cubin"))
@@ -437,7 +480,9 @@ def test_final_cubin_storage_contract(tmp_path, algorithm):
         assert re.search(r"\bCALL(?:\.[A-Z0-9_]+)*\b", sass) is None
         # Generic LD/ST instructions can address the shared-memory window;
         # the final cubin's allocation report is authoritative for capacity.
-        shared_sizes = [int(size) for size in re.findall(r"\bSHARED:(\d+)", resources)]
+        shared_sizes = [
+            int(size) for size in re.findall(r"\bSHARED:(\d+)", resources)
+        ]
         assert shared_sizes
         has_shared = any(shared_sizes)
         has_barrier = re.search(r"\bBAR(?:\.[A-Z0-9_]+)*\b", sass) is not None
