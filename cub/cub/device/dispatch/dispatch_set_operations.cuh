@@ -195,10 +195,10 @@ template <typename KeysIt1,
     {
       return error;
     }
-    const size_t partitions_bytes = static_cast<size_t>(num_tiles + 1) * sizeof(::cuda::std::pair<Offset, Offset>);
-    const size_t vsmem_bytes      = static_cast<size_t>(num_tiles) * vsmem_helper_impl<agent_t>::vsmem_per_block;
-    void* allocations[3]          = {nullptr, nullptr, nullptr};
-    size_t allocation_sizes[3]    = {tile_state_bytes, partitions_bytes, vsmem_bytes};
+    const size_t partitions_bytes    = static_cast<size_t>(num_tiles + 1) * sizeof(::cuda::std::pair<Offset, Offset>);
+    const size_t vsmem_bytes         = static_cast<size_t>(num_tiles) * vsmem_helper_impl<agent_t>::vsmem_per_block;
+    void* allocations[3]             = {nullptr, nullptr, nullptr};
+    const size_t allocation_sizes[3] = {tile_state_bytes, partitions_bytes, vsmem_bytes};
     if (const auto error =
           CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
