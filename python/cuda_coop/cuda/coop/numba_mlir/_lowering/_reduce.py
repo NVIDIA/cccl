@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""CUB and CUDAX reduction provider lowering."""
+"""Generate CUB reduction wrappers and CUDAX group-reduction helpers."""
 
 from __future__ import annotations
 

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""LTO-IR providers for Numba-CUDA-MLIR CUDAX group operations."""
+"""Compile group queries and synchronization helpers to LTO IR."""
 
 from __future__ import annotations
 
