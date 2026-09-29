@@ -78,7 +78,8 @@ def _lower_topk(context, inst, *, operation, group, bound, is_common_root):
         value = bound.arguments[name]
         if not context.is_array(operation, value):
             raise TypeError(
-                f"{operation} {name} must be a fixed-size ThreadData or local array"
+                f"{operation} {name} must be a "
+                f"fixed-size ThreadData or local array"
             )
         size = context.array_extent(value)
         if size is None:
