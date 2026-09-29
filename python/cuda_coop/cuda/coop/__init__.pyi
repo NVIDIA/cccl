@@ -56,10 +56,6 @@ def register(
 ) -> None: ...
 
 __all__ = [
-    "topk_min_keys",
-    "topk_min_pairs",
-    "topk_max_keys",
-    "topk_max_pairs",
     "Hierarchy",
     "TempStorage",
     "TempStorageLike",
@@ -73,9 +69,9 @@ __all__ = [
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
-    "histogram",
     "load",
     "merge_sort_keys",
     "merge_sort_pairs",
@@ -84,9 +80,9 @@ __all__ = [
     "radix_sort_pairs",
     "reduce",
     "reduce_batched",
+    "register",
     "run_length_decode",
     "run_length_decode_into",
-    "register",
     "scan",
     "shuffle",
     "store",
@@ -96,4 +92,8 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]

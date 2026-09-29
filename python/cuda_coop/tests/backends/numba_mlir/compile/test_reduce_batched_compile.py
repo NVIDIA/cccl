@@ -1,7 +1,6 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-# ruff: noqa: E402
 
 """GPU-free final linking and rejection checks for batched warp reductions."""
 
