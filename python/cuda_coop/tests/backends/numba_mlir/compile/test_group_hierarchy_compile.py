@@ -30,7 +30,9 @@ def _production_compile_environment(monkeypatch: pytest.MonkeyPatch):
         "get_gpu_compute_capability",
         fixed_compute_capability,
     )
-    monkeypatch.setattr(compiler_cuda, "get_current_device", lambda: fixed_device)
+    monkeypatch.setattr(
+        compiler_cuda, "get_current_device", lambda: fixed_device
+    )
     return compiler_cuda
 
 
@@ -74,16 +76,18 @@ def test_production_kernel_compiles_physical_and_mapped_group_methods(
             types.uint64,
             "thread",
         )
-        output[10 * _BLOCK_THREADS + thread_index] = thread.count_as(types.int16)
+        output[10 * _BLOCK_THREADS + thread_index] = thread.count_as(
+            types.int16
+        )
         output[11 * _BLOCK_THREADS + thread_index] = grid.rank("thread")
         output[12 * _BLOCK_THREADS + thread_index] = grid.count("block")
         output[13 * _BLOCK_THREADS + thread_index] = grid.is_member()
-        output[14 * _BLOCK_THREADS + thread_index] = block.rank() + block.rank_as(
-            types.uint32
+        output[14 * _BLOCK_THREADS + thread_index] = (
+            block.rank() + block.rank_as(types.uint32)
         )
-        output[15 * _BLOCK_THREADS + thread_index] = block.rank_as(int) + block.rank_as(
-            types.int32
-        )
+        output[15 * _BLOCK_THREADS + thread_index] = block.rank_as(
+            int
+        ) + block.rank_as(types.int32)
 
     signature = types.void(types.uint64[::1])
     launch_config_key = (

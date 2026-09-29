@@ -74,7 +74,10 @@ def make_reduce_semantics(
     items_per_thread: int,
     operation: str | ReduceOperation,
     value_kind: str | ReduceValueKind,
-    reduce_operator: CxxOperator | PythonOperator | StatefulOperator | None = None,
+    reduce_operator: CxxOperator
+    | PythonOperator
+    | StatefulOperator
+    | None = None,
     valid_items: bool | ArgumentBinding = False,
 ) -> ReduceSemantics:
     """Build a scope-independent reduction operation record."""
@@ -93,7 +96,9 @@ def make_reduce_semantics(
         raise ValueError("scalar reduce requires items_per_thread == 1")
     if isinstance(valid_items, bool):
         valid_items = (
-            ArgumentBinding.runtime() if valid_items else ArgumentBinding.omitted()
+            ArgumentBinding.runtime()
+            if valid_items
+            else ArgumentBinding.omitted()
         )
     elif not isinstance(valid_items, ArgumentBinding):
         raise TypeError("valid_items must be a bool or ArgumentBinding")
