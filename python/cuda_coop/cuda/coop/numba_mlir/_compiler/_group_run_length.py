@@ -112,7 +112,8 @@ def _infer_payload(context, inference):
                 or actual.dtype != dtype
             ):
                 raise TypeError(
-                    f"run_length_decode_into {name} must be a writable contiguous "
+                    f"run_length_decode_into {name} "
+                    f"must be a writable contiguous "
                     f"one-dimensional array with dtype {dtype}"
                 )
 
@@ -158,7 +159,8 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
         size = context.array_extent(value)
         if size is None or (extent is not None and extent != size):
             raise ValueError(
-                f"{operation} run values and lengths require matching fixed extents"
+                f"{operation} run values and lengths "
+                f"require matching fixed extents"
             )
         extent = size
         if is_common_root and not context.is_thread_data(
@@ -213,7 +215,8 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
         descriptor = context.temp_storage(storage)
         if descriptor is None:
             raise GroupRewriteError(
-                "run_length_decode temp_storage requires a TempStorage descriptor"
+                "run_length_decode temp_storage "
+                "requires a TempStorage descriptor"
             )
         size, alignment, auto_sync, sharing = descriptor
         plan = replace(
@@ -286,7 +289,8 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
                     or context.array_extent(value) != size
                 ):
                     raise TypeError(
-                        f"{name} requires a fixed per-thread payload of extent {size}"
+                        f"{name} requires a fixed "
+                        f"per-thread payload of extent {size}"
                     )
                 dtype = context.dtype(value) or context.payload_write_dtype(
                     value
