@@ -131,6 +131,13 @@ several operations:
    * - Extra Scan results or prefixes
      - Inclusive and exclusive results, including an exclusive initial value
      - Also supports ``aggregate_output`` and partial Warp Scan
+   * - Layout exchange
+     - Blocked-to-striped and striped-to-blocked conversion
+     - Also supports block scatter and warp-striped layouts, with optional
+       warp time slicing where supported
+   * - Shifting values
+     - Unit ``up`` and ``down`` shifts of a block's ``ThreadData`` tile
+     - Also supports scalar block ``offset`` and ``rotate`` modes
    * - Comparison sorting
      - Ascending or descending Merge Sort of keys or key-value pairs
      - Also accepts a custom ``compare_op`` and fixed local arrays
@@ -249,14 +256,14 @@ parts of the API.
      - Hierarchy queries
    * - ``coop.this_warp()``
      - One physical warp
-     - Load, Store, Reduce, scalar Scan, Merge Sort
+     - Load, Store, Exchange, Reduce, scalar Scan, Merge Sort
    * - ``coop.this_warp().group_by(8)``
      - Eight consecutive lanes within a physical warp
      - Logical-warp forms of those operations
    * - ``coop.this_block()``
      - All threads in the block
-     - Load, Store, Reduce, Scan, Merge Sort, Radix Sort, Radix Rank,
-       and TopK
+     - Load, Store, Exchange, Shuffle, Reduce, Scan, Merge Sort, Radix Sort,
+       Radix Rank, and TopK
    * - ``coop.this_block().group_by(2)``
      - Two consecutive physical warps
      - Hierarchy queries
@@ -384,7 +391,7 @@ Constructing a group or a ``ThreadData`` object does not synchronize threads.
 ``coop.ThreadData(items_per_thread)`` gives each thread that many slots.
 With 128 threads, the group owns ``128 * items_per_thread`` values. Each
 thread indexes only its own slots with ``items[i]``. To move values between
-threads, use a cooperative operation such as Scan.
+threads, use an operation such as Exchange, Shuffle, or Scan.
 
 :class:`~cuda.coop.ThreadDataLike` names the common payload interface used
 in API signatures. It describes the item count, dtype, and indexed reads and
@@ -475,9 +482,9 @@ Conflicting type requirements are errors. See :ref:`element-type inference
 Load writes into the payload supplied by the caller. Transpose Store
 algorithms may rearrange their input payload in place, as in CUB. Copy values
 before Store if they are needed later. Both operations return ``None``.
-Array Scan, Merge Sort, array Radix Sort, array Radix Rank, and TopK
-return fresh payloads, so their input values remain available afterwards.
-Reduction returns a scalar, including when each thread contributes
+Array Scan, Exchange, array Shuffle, Merge Sort, array Radix Sort, array Radix
+Rank, and TopK return fresh payloads, so their input values remain available
+afterwards. Reduction returns a scalar, including when each thread contributes
 several items.
 
 Numba can promote integer arithmetic. Store requires an exact match to the
@@ -561,6 +568,41 @@ measure alternatives with the actual dtype, item count, and surrounding
 work. Coalesced accesses can justify rearrangement costs, but the best
 choice depends on the kernel.
 
+An explicit layout conversion
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Exchange converts per-thread values between blocked and striped layouts.
+For example, ``striped_to_blocked`` lets a striped Load feed an operation
+that expects consecutive values in each thread. The logical tile order
+stays the same. Use ``blocked_to_striped`` for the reverse conversion.
+
+This kernel loads striped data, exchanges it into blocked order, and then
+computes the inclusive sum in the original array order:
+
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
+   :language: python
+   :name: coop-pg-exchange
+   :start-after: # coop-pg-exchange-begin
+   :end-before: # coop-pg-exchange-end
+   :dedent: 4
+
+Qualified block scatter modes let you supply destination ranks for finer
+control. Valid ranks and unique active destinations are caller requirements;
+duplicate destinations and holes leave unspecified slots.
+
+The :doc:`Exchange visualization <visualizations/exchange>` shows both
+layout conversions and ranked scatters, including the holes left by
+suppressed writes.
+
+Shuffle operates on a block's flattened blocked tile. The common ``up``
+and ``down`` modes shift it by one element and return a fresh payload.
+The first ``up`` slot or last ``down`` slot is unspecified. Set that
+boundary yourself before consuming it. Qualified scalar ``offset`` and
+``rotate`` modes have different distance rules; see :doc:`../coop_api`
+before substituting them for an array shift.
+
+Use the :doc:`Shuffle visualization <visualizations/shuffle>` to compare
+the array shifts with scalar offsets and rotation.
 
 Warp tile addresses
 ^^^^^^^^^^^^^^^^^^^
@@ -680,6 +722,8 @@ such use, ``release()`` hands the region to application code as a shared array.
      - Automatic scratch, or an explicit ``TempStorage``
    * - Warp transpose Load/Store; Warp Reduce; Warp Scan; Warp Merge Sort
      - Automatic scratch per group; explicit descriptors are rejected
+   * - Exchange and Shuffle
+     - Compiler-owned scratch and reuse synchronization
    * - Radix Rank
      - Compiler-owned block scratch and reuse synchronization
 
@@ -994,7 +1038,8 @@ Initialize every input slot. If an application pads a partial tile, it
 must choose padding that sorts outside the desired output prefix.
 
 Qualified ``blocked_to_striped=True`` changes the result layout. Use
-``store(..., algorithm="striped")`` to write that result in sorted order.
+``store(..., algorithm="striped")`` to write that result in sorted order,
+or Exchange to convert it before an operation expecting blocked data.
 
 Radix Rank assigns a destination rank without moving keys. With
 ``begin_bit=0, end_bit=4``, it ranks keys by their lowest four bits and
