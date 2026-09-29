@@ -96,7 +96,7 @@ slices with ``sharing="exclusive"``. Explicit descriptors default to
 loop iterations. The example requests ``auto_sync=True`` to insert those
 barriers automatically. Separate slices do not remove the need to protect reuse.
 
-The current backend accepts explicit descriptors for block transpose-family Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, TopK, Adjacent Difference and Discontinuity, Histogram.
+The current backend accepts explicit descriptors for block transpose-family Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, TopK, Adjacent Difference and Discontinuity, Histogram, both Run Length Decode forms.
 Warp operations use compiler-owned scratch. See
 :ref:`temporary storage <coop-temp-storage>` for the complete contract and
 shared-memory restrictions.
@@ -194,3 +194,43 @@ buffer. That persistent state belongs to the buffer; it does not require
 a persistent C++ Histogram object. The Python API exposes the fresh-count
 operation, so neither a parent object nor retained counters in
 ``TempStorage`` are needed.
+
+.. _coop-faq-rld-lifecycle:
+
+Why do windowed and bulk Run Length Decode use different calls?
+---------------------------------------------------------------
+
+:func:`cuda.coop.run_length_decode` returns a fixed-size payload for the
+window beginning at ``decoded_window_offset``. Use it when the kernel
+needs to work with that window's values. It prepares the run table on
+each call, even when calls share a ``TempStorage`` descriptor.
+
+:func:`cuda.coop.run_length_decode_into` writes the entire expanded
+sequence into a destination array. It prepares the table once, loops
+over decoding windows internally, and returns the total decoded size to
+every thread. The destination must have enough remaining capacity;
+use separate source and destination storage.
+
+The prepared run table persists only within the call. A window offset
+selects a position in the expanded sequence; the decoder does not advance
+a hidden cursor. A shared scratch descriptor controls allocation reuse,
+not decoder state. See :ref:`run positions and windows
+<coop-glossary-decoding>` and the
+:doc:`RLD explorer <visualizations/run-length-decode>`.
+
+.. _coop-faq-rld-padding:
+
+How do I pad run inputs and recognize the end of decoded output?
+----------------------------------------------------------------
+
+Use a positive prefix of run lengths followed by zeros. An all-zero tile
+represents an empty sequence; an interior zero followed by a positive
+length is invalid. The values associated with padding runs are ignored.
+
+A windowed decode fills positions beyond the expanded sequence with
+zero. Zero may also be a real run value, so use the total decoded size
+to determine which positions are valid. The qualified API can write
+that total and relative run offsets to auxiliary payloads; invalid
+relative offsets contain the maximum value of the selected unsigned
+offset dtype. Bulk decoding writes only valid items, leaving the rest
+of the destination unchanged.
