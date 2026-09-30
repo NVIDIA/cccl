@@ -20,8 +20,9 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 
 @pytest.mark.parametrize("algorithm", ["atomic", "sort"])
 @pytest.mark.parametrize("counter_name", ["int32", "uint32", "int64", "uint64"])
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_histogram_links_with_independent_counter_type(
-    monkeypatch, algorithm, counter_name
+    monkeypatch, algorithm, counter_name, items_per_thread
 ):
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == ""
     monkeypatch.setattr(
@@ -37,9 +38,9 @@ def test_histogram_links_with_independent_counter_type(
     counter = getattr(types, counter_name)
 
     @cuda.jit(chip="sm_90")
-    def kernel(source, destination):
+    def kernel(source, destination, items_per_thread):
         block = coop.this_block()
-        samples = coop.ThreadData(3)
+        samples = coop.ThreadData(items_per_thread)
         coop.load(block, source, samples)
         counts = coop.histogram(
             block,
@@ -59,7 +60,12 @@ def test_histogram_links_with_independent_counter_type(
         ("cluster", None),
     )
     result = kernel._compile_launch_config_signature(
-        types.void(types.uint8[::1], counter[::1]), launch
+        types.void(
+            types.uint8[::1],
+            counter[::1],
+            types.IntegerLiteral(items_per_thread),
+        ),
+        launch,
     )
     assert result.metadata["cubin"]
     assert result.metadata["linked_external_link_items"]
