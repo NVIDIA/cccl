@@ -160,8 +160,12 @@ def test_common_signature(name):
 )
 @pytest.mark.parametrize("invalid", ("run_values", "run_lengths"))
 def test_invalid_payload_names_operation(api, primitive, invalid):
-    values = cutlass_coop.ThreadData(1, dtype=cutlass.Int32, values=[3])
-    lengths = cutlass_coop.ThreadData(1, dtype=cutlass.Uint32, values=[2])
+    values = cutlass_coop.ThreadData(
+        items_per_thread=1, dtype=cutlass.Int32, values=[3]
+    )
+    lengths = cutlass_coop.ThreadData(
+        items_per_thread=1, dtype=cutlass.Uint32, values=[2]
+    )
     args = [
         this_block(),
         object() if invalid == "run_values" else values,
@@ -191,8 +195,12 @@ def test_failed_storage_restores_session(monkeypatch):
         raise RuntimeError("run length scratch emission failed")
 
     monkeypatch.setattr(_storage, "register_deferred_temp_storage_event", fail)
-    values = cutlass_coop.ThreadData(1, dtype=cutlass.Int32, values=[3])
-    lengths = cutlass_coop.ThreadData(1, dtype=cutlass.Uint32, values=[2])
+    values = cutlass_coop.ThreadData(
+        items_per_thread=1, dtype=cutlass.Int32, values=[3]
+    )
+    lengths = cutlass_coop.ThreadData(
+        items_per_thread=1, dtype=cutlass.Uint32, values=[2]
+    )
     with pytest.raises(RuntimeError, match="scratch emission failed"):
         _run_length.provider_run_length_decode(
             group=this_block(),

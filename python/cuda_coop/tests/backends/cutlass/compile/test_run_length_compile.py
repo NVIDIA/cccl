@@ -35,11 +35,14 @@ def _compile(
 ):
     @cute.kernel
     def kernel(
-        memory: cute.Pointer, offset: control_type, capacity: cutlass.Int64
+        memory: cute.Pointer,
+        offset: control_type,
+        capacity: cutlass.Int64,
+        items_per_thread: cutlass.Constexpr,
     ):
-        values = api.ThreadData(2, dtype=dtype)
+        values = api.ThreadData(items_per_thread, dtype=dtype)
         lengths = api.ThreadData(
-            1 if bad == "extent" else 2, dtype=length_dtype
+            items_per_thread=1 if bad == "extent" else 2, dtype=length_dtype
         )
         for i in cutlass.range_constexpr(2):
             values[i] = dtype(i)
@@ -97,13 +100,18 @@ def _compile(
 
     @cute.jit
     def launch(
-        memory: cute.Pointer, offset: control_type, capacity: cutlass.Int64
+        memory: cute.Pointer,
+        offset: control_type,
+        capacity: cutlass.Int64,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(memory, offset, capacity).launch(grid=1, block=block)
+        kernel(memory, offset, capacity, items_per_thread).launch(
+            grid=1, block=block
+        )
 
     pointer = make_ptr(dtype, 0, cute.AddressSpace.gmem, assumed_align=16)
     return cute.compile[(GPUArch("sm_80"),)](
-        launch, pointer, control_type(0), cutlass.Int64(256)
+        launch, pointer, control_type(0), cutlass.Int64(256), 2
     )
 
 
