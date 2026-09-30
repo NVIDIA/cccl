@@ -609,7 +609,7 @@ typename vector_base<T, Alloc>::reference vector_base<T, Alloc>::emplace_back(Ar
 
     try
     {
-      // construct copy all elements into the newly allocated storage
+      // construct-copy all elements into the newly allocated storage
       new_end = m_storage.uninitialized_copy(begin(), end(), new_storage.begin());
 
       // emplace construct the new element at the end
