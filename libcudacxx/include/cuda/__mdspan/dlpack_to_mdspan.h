@@ -166,7 +166,7 @@ __to_mdspan(const ::DLTensor& __tensor)
   {
     _CCCL_THROW(::std::invalid_argument, "DLTensor data type does not match expected type");
   }
-  ::cuda::std::array<int64_t, _Rank> __extents_array{};
+  [[maybe_unused]] ::cuda::std::array<int64_t, _Rank> __extents_array{};
   // A rank-0 mdspan has required_span_size() == 1, so it is not empty.
   bool __empty_tensor = false;
   if constexpr (_Rank > 0)
