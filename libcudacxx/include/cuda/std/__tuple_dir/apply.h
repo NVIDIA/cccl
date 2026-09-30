@@ -26,6 +26,7 @@
 #include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/forward.h>
 
@@ -75,13 +76,26 @@ _CCCL_API constexpr _Tp __make_from_tuple_impl(_Tuple&& __t, __tuple_indices<_Id
 
     _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Tuple>
-_CCCL_API constexpr _Tp make_from_tuple(_Tuple&& __t)
-  _LIBCUDACXX_NOEXCEPT_RETURN(::cuda::std::__make_from_tuple_impl<_Tp>(
-    ::cuda::std::forward<_Tuple>(__t), __make_tuple_indices_t<tuple_size_v<remove_reference_t<_Tuple>>>{}))
+[[nodiscard]] _CCCL_API constexpr _Tp
+make_from_tuple(_Tuple&& __t) noexcept(noexcept(::cuda::std::__make_from_tuple_impl<_Tp>(
+  ::cuda::std::forward<_Tuple>(__t), __make_tuple_indices_t<::cuda::std::tuple_size_v<remove_reference_t<_Tuple>>>{})))
+{
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  if constexpr (::cuda::std::tuple_size_v<remove_reference_t<_Tuple>> == 1)
+  {
+    static_assert(
+      !::cuda::std::
+        reference_constructs_from_temporary_v<_Tp, decltype(::cuda::std::get<0>(::cuda::std::forward<_Tuple>(__t)))>,
+      "make_from_tuple cannot return a reference to a temporary");
+  }
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+  return ::cuda::std::__make_from_tuple_impl<_Tp>(
+    ::cuda::std::forward<_Tuple>(__t), __make_tuple_indices_t<::cuda::std::tuple_size_v<remove_reference_t<_Tuple>>>{});
+}
 
 #undef _LIBCUDACXX_NOEXCEPT_RETURN
 
-    _CCCL_END_NAMESPACE_CUDA_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
