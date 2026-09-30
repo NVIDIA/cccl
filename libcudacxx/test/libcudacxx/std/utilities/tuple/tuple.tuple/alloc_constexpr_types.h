@@ -125,23 +125,23 @@ struct throw_on_alloc_arg
 
   TEST_FUNC throw_on_alloc_arg(cuda::std::allocator_arg_t, const A1<int>&)
   {
-    TEST_THROW(1);
+    NV_IF_TARGET(NV_IS_HOST, (TEST_THROW(1);))
   }
   TEST_FUNC throw_on_alloc_arg(cuda::std::allocator_arg_t, const A1<int>&, int)
   {
-    TEST_THROW(1);
+    NV_IF_TARGET(NV_IS_HOST, (TEST_THROW(1);))
   }
   TEST_FUNC throw_on_alloc_arg(cuda::std::allocator_arg_t, const A1<int>&, float)
   {
-    TEST_THROW(1);
+    NV_IF_TARGET(NV_IS_HOST, (TEST_THROW(1);))
   }
   TEST_FUNC throw_on_alloc_arg(cuda::std::allocator_arg_t, const A1<int>&, const throw_on_alloc_arg&)
   {
-    TEST_THROW(1);
+    NV_IF_TARGET(NV_IS_HOST, (TEST_THROW(1);))
   }
   TEST_FUNC throw_on_alloc_arg(cuda::std::allocator_arg_t, const A1<int>&, throw_on_alloc_arg&&)
   {
-    TEST_THROW(1);
+    NV_IF_TARGET(NV_IS_HOST, (TEST_THROW(1);))
   }
 };
 
@@ -157,23 +157,23 @@ struct throw_on_alloc_last
 
   TEST_FUNC throw_on_alloc_last(const A1<int>&)
   {
-    TEST_THROW(2);
+    NV_IF_TARGET(NV_IS_HOST, (TEST_THROW(2);))
   }
   TEST_FUNC throw_on_alloc_last(int, const A1<int>&)
   {
-    TEST_THROW(2);
+    NV_IF_TARGET(NV_IS_HOST, (TEST_THROW(2);))
   }
   TEST_FUNC throw_on_alloc_last(float, const A1<int>&)
   {
-    TEST_THROW(2);
+    NV_IF_TARGET(NV_IS_HOST, (TEST_THROW(2);))
   }
   TEST_FUNC throw_on_alloc_last(const throw_on_alloc_last&, const A1<int>&)
   {
-    TEST_THROW(2);
+    NV_IF_TARGET(NV_IS_HOST, (TEST_THROW(2);))
   }
   TEST_FUNC throw_on_alloc_last(throw_on_alloc_last&&, const A1<int>&)
   {
-    TEST_THROW(2);
+    NV_IF_TARGET(NV_IS_HOST, (TEST_THROW(2);))
   }
 };
 
