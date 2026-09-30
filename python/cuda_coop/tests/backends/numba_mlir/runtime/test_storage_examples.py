@@ -27,19 +27,22 @@ def test_thread_data_example():
     from cuda import coop
 
     @cuda.jit
-    def square_indices(destination):
+    def square_indices(destination, items_per_thread):
         block = coop.this_block()
-        items = coop.ThreadData(items_per_thread=2, alignment=16)
-        offset = cuda.blockIdx.x * cuda.blockDim.x * 2
+        items = coop.ThreadData(items_per_thread, alignment=16)
+        offset = cuda.blockIdx.x * cuda.blockDim.x * items_per_thread
         for i in range(items.items_per_thread):
-            index = offset + cuda.threadIdx.x * 2 + i
+            index = offset + cuda.threadIdx.x * items_per_thread + i
             items[i] = types.int32(index * index)
         coop.store(block, destination, items, offset=offset)
 
-    destination = cuda.device_array(256, dtype=np.int32)
-    square_indices[2, 64](destination)
-    expected = np.arange(256, dtype=np.int32) ** 2
-    np.testing.assert_array_equal(destination.copy_to_host(), expected)
+    for items_per_thread in (1, 4):
+        destination = cuda.device_array(
+            2 * 64 * items_per_thread, dtype=np.int32
+        )
+        square_indices[2, 64](destination, items_per_thread)
+        expected = np.arange(2 * 64 * items_per_thread, dtype=np.int32) ** 2
+        np.testing.assert_array_equal(destination.copy_to_host(), expected)
     # thread-data-example-end
 
 
@@ -52,12 +55,12 @@ def test_temp_storage_example():
     from cuda import coop
 
     @cuda.jit
-    def copy_tiles(source, destination):
+    def copy_tiles(source, destination, items_per_thread):
         block = coop.this_block()
         scratch = coop.TempStorage(alignment=16, auto_sync=True)
-        items = coop.ThreadData(items_per_thread=2)
+        items = coop.ThreadData(items_per_thread)
         for tile in range(2):
-            offset = tile * cuda.blockDim.x * 2
+            offset = tile * cuda.blockDim.x * items_per_thread
             coop.load(
                 block,
                 source,
@@ -75,9 +78,10 @@ def test_temp_storage_example():
                 temp_storage=scratch,
             )
 
-    values = (np.arange(512) % 7).astype(np.int32)
-    source = cuda.to_device(values)
-    destination = cuda.device_array_like(source)
-    copy_tiles[1, 128](source, destination)
-    np.testing.assert_array_equal(destination.copy_to_host(), values)
+    for items_per_thread in (1, 4):
+        values = (np.arange(2 * 128 * items_per_thread) % 7).astype(np.int32)
+        source = cuda.to_device(values)
+        destination = cuda.device_array_like(source)
+        copy_tiles[1, 128](source, destination, items_per_thread)
+        np.testing.assert_array_equal(destination.copy_to_host(), values)
     # temp-storage-example-end
