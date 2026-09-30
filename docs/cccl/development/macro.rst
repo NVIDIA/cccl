@@ -361,23 +361,34 @@ In C++23, the ``if consteval`` statement (`link <https://en.cppreference.com/w/c
 
 CUDA doesn't support exceptions in device code, however, sometimes we need to write host/device functions that use exceptions on host and ``__trap()`` on device. CCCL provides a set of macros that should be used in place of the standard C++ keywords to make the code compile in both, host and device code.
 
-+-----------------------------+------------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_TRY``               | Replacement for the ``try`` keyword.                                                                             |
-+-----------------------------+------------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_CATCH (X)``         | Replacement for the ``catch (/*X*/)`` statement.                                                                 |
-+-----------------------------+------------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_CATCH_ALL``         | Replacement for the ``catch (...)`` statement.                                                                   |
-+-----------------------------+------------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_THROW(X, ...)``     | Replacement for the ``throw X(...)`` expression. ``X`` must be fully qualified type, without the leading ``::``. |
-+-----------------------------+------------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_RETHROW``           | Replacement for the plain ``throw`` expression.                                                                  |
-+-----------------------------+------------------------------------------------------------------------------------------------------------------+
++-------------------------------------------+-------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_TRY``                             | Replacement for the ``try`` keyword.                                                                                    |
++-------------------------------------------+-------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_CATCH (X)``                       | Replacement for the ``catch (/*X*/)`` statement.                                                                        |
++-------------------------------------------+-------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_CATCH_ALL``                       | Replacement for the ``catch (...)`` statement.                                                                          |
++-------------------------------------------+-------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_THROW(X, ...)``                   | Replacement for the ``throw X(...)`` expression. ``X`` must be fully qualified type, without the leading ``::``.        |
++-------------------------------------------+-------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_RETHROW``                         | Replacement for the plain ``throw`` expression.                                                                         |
++-------------------------------------------+-------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_THROW_WITH_NESTED(X, ...)``       | Replacement for ``std::throw_with_nested(X(...))``: throws an ``X`` carrying the active exception as its nested cause.  |
++-------------------------------------------+-------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_THROW_MAYBE_WITH_NESTED(X, ...)`` | Like ``_CCCL_THROW_WITH_NESTED`` inside a handler; a plain ``throw X(...)`` when no exception is active.                |
++-------------------------------------------+-------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_RETHROW_IF_NESTED(e)``            | Replacement for ``std::rethrow_if_nested(e)``: rethrows the cause nested in ``e`` if there is one, otherwise no effect. |
++-------------------------------------------+-------------------------------------------------------------------------------------------------------------------------+
 
 *Note*: The ``_CCCL_CATCH`` clause must always introduce a named variable, like: ``_CCCL_CATCH(const exception_type& var)``.
 
 .. note::
 
   ``_CCCL_THROW`` requires to include the ``<stdexcept>`` header, regardless exceptions are enabled or not.
+  The nested-exception macros are host-only library calls underneath. On device the throwing forms terminate like
+  ``_CCCL_THROW`` and ``_CCCL_RETHROW_IF_NESTED`` has no effect, since no exception can be nested there; without
+  exceptions the throwing forms report and terminate like ``_CCCL_THROW`` and ``_CCCL_RETHROW_IF_NESTED`` has no
+  effect. Prefer ``_CCCL_THROW_MAYBE_WITH_NESTED`` where the code may run outside a handler: ``std::throw_with_nested``
+  called with no active exception stores an empty cause, and rethrowing that cause later calls ``std::terminate``.
 
 Example:
 
