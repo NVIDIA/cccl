@@ -82,9 +82,9 @@ def scan(
     Notes
     -----
     A stateful prefix callback can carry a prefix across successive tiles in
-    one block. Keep automatic scratch synchronization enabled or supply the
-    required block barriers between calls. A wider state dtype does not
-    widen the scan outputs.
+    one block. Use compiler-owned scratch, set ``auto_sync=True`` on an
+    explicit descriptor, or supply the required block barriers between calls.
+    A wider state dtype does not widen the scan outputs.
 
     See Also
     --------
