@@ -186,6 +186,7 @@ struct ScanLookaheadPolicy
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 //! The tuning policy for all algorithms in @ref DeviceScan.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct ScanPolicy
 {
   ScanAlgorithm algorithm; //!< The scan algorithm to use
@@ -880,6 +881,7 @@ _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
   return static_cast<int>(smemAllocator.sizeBytes());
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct policy_selector
 {
   int input_value_size;

@@ -61,7 +61,7 @@ Resource get_resource()
 static void ensure_managed_ptr(void* ptr)
 {
   CHECK(ptr != nullptr);
-  cudaPointerAttributes attributes;
+  cudaPointerAttributes attributes{};
   const cudaError_t status = cudaPointerGetAttributes(&attributes, ptr);
   CHECK(status == cudaSuccess);
   CHECK(attributes.type == cudaMemoryTypeManaged);
