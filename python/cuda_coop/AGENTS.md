@@ -3,6 +3,20 @@
 Apply this guidance to package code, tests, documentation, API docstrings, and
 runnable examples.
 
+# Design Tenets
+
+As a guiding principle, the design tenets behind `cuda.coop` are
+**performant, consistent, delightful**:
+
+- **Performant:** target negligible overhead over the underlying primitives
+  through compile-time planning, inlining, and LTO; avoid hidden work.
+- **Consistent:** the same operation should look and behave the same across
+  DSLs, including argument order and result ownership.
+- **Delightful:** Pythonic APIs, useful defaults, and inference should make
+  common cases work out of the box, with clear errors for unsupported uses.
+
+# Conventions
+
 Write the API/project name as `cuda.coop` and the distribution as `cuda-coop`.
 
 Use these import conventions in each module:
@@ -37,23 +51,16 @@ supersets built on that contract: the same names, argument order, defaults,
 behavior, and result ownership for shared operations. Add only the extensions
 needed by each DSL.
 
-Preserve CUB behavior for CUB-backed operations, including output validity and
-input mutation. For example, `valid_items=` does not promise to preserve or
-zero invalid Load slots; supply `oob_default=` for a specified fill value.
-Transpose Store may rearrange its input payload. Do not add hidden
-initialization, preservation copies, or wrapper layers to promise stronger
+Ensure new primitives have thorough docstrings and are captured in the API
+reference docs; see existing precedence in code base.
+
+Preserve CUB behavior for all primitives and don't invent new or stronger
 semantics than CUB provides.
 
+Tests should be geared toward testing the end-user primitives, not internal
+helper functions or supporting glue--that infrastructure is exercised and
+implicitly tested when doing primitive-level tests.
+
 Update the source of `literalinclude` snippets and run affected examples when
-changing them. Apply changes at the first owning PR and preserve them when
-restacking both the Numba-CUDA-MLIR and CUTLASS integrations.
-
-As a guiding principle, the design tenets behind `cuda.coop` are
-**performant, consistent, delightful**:
-
-- **Performant:** target negligible overhead over the underlying primitives
-  through compile-time planning, inlining, and LTO; avoid hidden work.
-- **Consistent:** the same operation should look and behave the same across
-  DSLs, including argument order and result ownership.
-- **Delightful:** Pythonic APIs, useful defaults, and inference should make
-  common cases work out of the box, with clear errors for unsupported uses.
+changing them. Apply changes at the first owning PR and preserve them when doing
+PR restacking.
