@@ -196,8 +196,9 @@ The item count must be a positive compile-time integer. You can use
 
 Initialize every slot before reading it. Constructing ``ThreadData`` does
 not fill it with zeros. A full Load initializes the entire payload; a
-partial Load needs either an ``oob_default`` or previously initialized slots
-for the missing elements.
+partial Load leaves out-of-bounds slots unspecified unless ``oob_default`` is
+provided. Initialize those slots after the Load or supply ``oob_default``
+before reading them.
 
 .. _coop-data-layouts:
 
