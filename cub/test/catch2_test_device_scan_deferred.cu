@@ -48,8 +48,8 @@ static_assert(cub::detail::is_num_items_v<deferred_count_t>);
 static_assert(cub::detail::is_num_items_v<int32_t>);
 static_assert(cuda::std::is_same_v<cub::detail::num_items_offset_t<deferred_count_t>, uint32_t>);
 
-using value_t = int32_t;
-using count_t = int32_t;
+using scan_value_t = int32_t;
+using count_t      = int32_t;
 
 template <typename InputT, typename OutputT, typename AccumT, typename ScanOpT>
 struct small_batch_policy_selector
@@ -79,7 +79,7 @@ struct lookahead_preferred_policy_selector
 };
 
 using lookahead_preferred_int_policy =
-  lookahead_preferred_policy_selector<value_t, value_t, value_t, cuda::std::plus<>>;
+  lookahead_preferred_policy_selector<scan_value_t, scan_value_t, scan_value_t, cuda::std::plus<>>;
 static_assert(lookahead_preferred_int_policy{}(cuda::compute_capability{10, 0}).algorithm
               == cub::ScanAlgorithm::lookahead);
 static_assert(
@@ -88,7 +88,7 @@ static_assert(
 
 struct is_even_t
 {
-  _CCCL_DEVICE_API bool operator()(value_t value) const
+  _CCCL_DEVICE_API bool operator()(scan_value_t value) const
   {
     return value % 2 == 0;
   }
@@ -96,9 +96,9 @@ struct is_even_t
 
 struct less_than_t
 {
-  value_t bound;
+  scan_value_t bound;
 
-  _CCCL_HOST_DEVICE_API bool operator()(value_t value) const
+  _CCCL_HOST_DEVICE_API bool operator()(scan_value_t value) const
   {
     return value < bound;
   }
@@ -179,10 +179,11 @@ struct select_then_scan_t
   }
 };
 
-static c2h::host_vector<value_t> reference_exclusive_sum(const c2h::host_vector<value_t>& values, count_t num_items)
+static c2h::host_vector<scan_value_t>
+reference_exclusive_sum(const c2h::host_vector<scan_value_t>& values, count_t num_items)
 {
-  c2h::host_vector<value_t> result(static_cast<size_t>(num_items));
-  value_t running{};
+  c2h::host_vector<scan_value_t> result(static_cast<size_t>(num_items));
+  scan_value_t running{};
   for (count_t i = 0; i < num_items; ++i)
   {
     result[i] = running;
@@ -195,12 +196,12 @@ CUB_TEST("DeviceScan::ExclusiveSum consumes a count produced by DeviceSelect::If
 {
   constexpr count_t num_items = 100'000;
 
-  c2h::device_vector<value_t> input(num_items, thrust::no_init);
-  c2h::gen(C2H_SEED(1), input, value_t{0}, value_t{9});
+  c2h::device_vector<scan_value_t> input(num_items, thrust::no_init);
+  c2h::gen(C2H_SEED(1), input, scan_value_t{0}, scan_value_t{9});
 
-  c2h::device_vector<value_t> selected_items(num_items, value_t{-1});
+  c2h::device_vector<scan_value_t> selected_items(num_items, scan_value_t{-1});
   c2h::device_vector<count_t> device_num_selected(1, count_t{-1});
-  c2h::device_vector<value_t> output(num_items, value_t{-1});
+  c2h::device_vector<scan_value_t> output(num_items, scan_value_t{-1});
 
   const auto d_input          = thrust::raw_pointer_cast(input.data());
   const auto d_selected_items = thrust::raw_pointer_cast(selected_items.data());
@@ -213,9 +214,9 @@ CUB_TEST("DeviceScan::ExclusiveSum consumes a count produced by DeviceSelect::If
   REQUIRE(selected_count >= count_t{0});
   REQUIRE(selected_count <= num_items);
 
-  const c2h::host_vector<value_t> host_selected = selected_items;
-  const c2h::host_vector<value_t> host_output   = output;
-  const auto expected                           = reference_exclusive_sum(host_selected, selected_count);
+  const c2h::host_vector<scan_value_t> host_selected = selected_items;
+  const c2h::host_vector<scan_value_t> host_output   = output;
+  const auto expected                                = reference_exclusive_sum(host_selected, selected_count);
 
   for (count_t i = 0; i < selected_count; ++i)
   {
@@ -224,7 +225,7 @@ CUB_TEST("DeviceScan::ExclusiveSum consumes a count produced by DeviceSelect::If
 
   if (selected_count < num_items)
   {
-    REQUIRE(host_output[selected_count] == value_t{-1});
+    REQUIRE(host_output[selected_count] == scan_value_t{-1});
   }
 }
 
@@ -234,37 +235,37 @@ CUB_TEST("DeviceScan entry points accept deferred num_items", "[device][scan][de
   const count_t num_items    = GENERATE_COPY(count_t{0}, count_t{1}, count_t{2}, count_t{1'000}, capacity);
   CAPTURE(num_items);
 
-  const c2h::device_vector<value_t> input(capacity, value_t{2});
+  const c2h::device_vector<scan_value_t> input(capacity, scan_value_t{2});
   const c2h::device_vector<count_t> device_num_items(1, num_items);
-  c2h::device_vector<value_t> output(capacity, value_t{-1});
+  c2h::device_vector<scan_value_t> output(capacity, scan_value_t{-1});
 
   const auto count = cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())};
 
   device_exclusive_sum(input.begin(), output.begin(), count);
   for (count_t i = 0; i < num_items; ++i)
   {
-    REQUIRE(output[i] == value_t{2} * i);
+    REQUIRE(output[i] == scan_value_t{2} * i);
   }
 
-  thrust::fill(output.begin(), output.end(), value_t{-1});
+  thrust::fill(output.begin(), output.end(), scan_value_t{-1});
   device_inclusive_sum(input.begin(), output.begin(), count);
   for (count_t i = 0; i < num_items; ++i)
   {
-    REQUIRE(output[i] == value_t{2} * (i + 1));
+    REQUIRE(output[i] == scan_value_t{2} * (i + 1));
   }
 
-  thrust::fill(output.begin(), output.end(), value_t{-1});
-  device_exclusive_scan(input.begin(), output.begin(), cuda::std::plus<>{}, value_t{7}, count);
+  thrust::fill(output.begin(), output.end(), scan_value_t{-1});
+  device_exclusive_scan(input.begin(), output.begin(), cuda::std::plus<>{}, scan_value_t{7}, count);
   for (count_t i = 0; i < num_items; ++i)
   {
-    REQUIRE(output[i] == value_t{7} + value_t{2} * i);
+    REQUIRE(output[i] == scan_value_t{7} + scan_value_t{2} * i);
   }
 
-  thrust::fill(output.begin(), output.end(), value_t{-1});
+  thrust::fill(output.begin(), output.end(), scan_value_t{-1});
   device_inclusive_scan(input.begin(), output.begin(), cuda::std::plus<>{}, count);
   for (count_t i = 0; i < num_items; ++i)
   {
-    REQUIRE(output[i] == value_t{2} * (i + 1));
+    REQUIRE(output[i] == scan_value_t{2} * (i + 1));
   }
 }
 
@@ -281,40 +282,40 @@ CUB_TEST("DeviceScan in-place entry points accept deferred num_items", "[device]
   const auto count = cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())};
 
   // Items past num_items must be left untouched, which also proves the deferred count reached the kernel.
-  const auto check = [&](const c2h::device_vector<value_t>& data, auto expected_at) {
-    const c2h::host_vector<value_t> host = data;
+  const auto check = [&](const c2h::device_vector<scan_value_t>& data, auto expected_at) {
+    const c2h::host_vector<scan_value_t> host = data;
     for (count_t i = 0; i < num_items; ++i)
     {
       REQUIRE(host[i] == expected_at(i));
     }
     if (num_items < capacity)
     {
-      REQUIRE(host[num_items] == value_t{2});
+      REQUIRE(host[num_items] == scan_value_t{2});
     }
   };
 
-  c2h::device_vector<value_t> data(capacity, value_t{2});
+  c2h::device_vector<scan_value_t> data(capacity, scan_value_t{2});
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(data.begin(), count));
   check(data, [](count_t i) {
-    return value_t{2} * i;
+    return scan_value_t{2} * i;
   });
 
-  thrust::fill(data.begin(), data.end(), value_t{2});
+  thrust::fill(data.begin(), data.end(), scan_value_t{2});
   REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveSum(data.begin(), count));
   check(data, [](count_t i) {
-    return value_t{2} * (i + 1);
+    return scan_value_t{2} * (i + 1);
   });
 
-  thrust::fill(data.begin(), data.end(), value_t{2});
-  REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveScan(data.begin(), cuda::std::plus<>{}, value_t{7}, count));
+  thrust::fill(data.begin(), data.end(), scan_value_t{2});
+  REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveScan(data.begin(), cuda::std::plus<>{}, scan_value_t{7}, count));
   check(data, [](count_t i) {
-    return value_t{7} + value_t{2} * i;
+    return scan_value_t{7} + scan_value_t{2} * i;
   });
 
-  thrust::fill(data.begin(), data.end(), value_t{2});
+  thrust::fill(data.begin(), data.end(), scan_value_t{2});
   REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScan(data.begin(), cuda::std::plus<>{}, count));
   check(data, [](count_t i) {
-    return value_t{2} * (i + 1);
+    return scan_value_t{2} * (i + 1);
   });
 }
 
@@ -326,23 +327,23 @@ CUB_TEST("DeviceScan::InclusiveScanInit accepts a deferred num_items", "[device]
   const count_t num_items    = GENERATE_COPY(count_t{0}, count_t{1}, count_t{1'000}, capacity);
   CAPTURE(num_items);
 
-  constexpr value_t init = 7;
-  const c2h::device_vector<value_t> input(capacity, value_t{2});
+  constexpr scan_value_t init = 7;
+  const c2h::device_vector<scan_value_t> input(capacity, scan_value_t{2});
   const c2h::device_vector<count_t> device_num_items(1, num_items);
-  const c2h::device_vector<value_t> device_init(1, init);
-  c2h::device_vector<value_t> output(capacity, value_t{-1});
+  const c2h::device_vector<scan_value_t> device_init(1, init);
+  c2h::device_vector<scan_value_t> output(capacity, scan_value_t{-1});
 
   const auto count = cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())};
 
   const auto check = [&] {
-    const c2h::host_vector<value_t> host = output;
+    const c2h::host_vector<scan_value_t> host = output;
     for (count_t i = 0; i < num_items; ++i)
     {
-      REQUIRE(host[i] == init + value_t{2} * (i + 1));
+      REQUIRE(host[i] == init + scan_value_t{2} * (i + 1));
     }
     if (num_items < capacity)
     {
-      REQUIRE(host[num_items] == value_t{-1});
+      REQUIRE(host[num_items] == scan_value_t{-1});
     }
   };
 
@@ -350,7 +351,7 @@ CUB_TEST("DeviceScan::InclusiveScanInit accepts a deferred num_items", "[device]
     cudaSuccess == cub::DeviceScan::InclusiveScanInit(input.begin(), output.begin(), cuda::std::plus<>{}, init, count));
   check();
 
-  thrust::fill(output.begin(), output.end(), value_t{-1});
+  thrust::fill(output.begin(), output.end(), scan_value_t{-1});
   REQUIRE(cudaSuccess
           == cub::DeviceScan::InclusiveScanInit(
             input.begin(),
@@ -366,9 +367,9 @@ CUB_TEST("DeviceScan with a deferred size forces a lookahead policy to lookback"
   constexpr count_t capacity  = 10'000;
   constexpr count_t num_items = 1'000;
 
-  const c2h::device_vector<value_t> input(capacity, value_t{1});
+  const c2h::device_vector<scan_value_t> input(capacity, scan_value_t{1});
   const c2h::device_vector<count_t> device_num_items(1, num_items);
-  c2h::device_vector<value_t> output(capacity, value_t{-1});
+  c2h::device_vector<scan_value_t> output(capacity, scan_value_t{-1});
 
   const auto count = cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())};
   const auto env   = cuda::execution::tune(lookahead_preferred_int_policy{});
@@ -393,10 +394,10 @@ CUB_TEST("DeviceScan::ExclusiveSum uses batched lookback within a single batch f
   using large_count_t               = int64_t;
   constexpr large_count_t num_items = 5'000'000;
 
-  const c2h::device_vector<value_t> input(static_cast<size_t>(num_items), value_t{1});
+  const c2h::device_vector<scan_value_t> input(static_cast<size_t>(num_items), scan_value_t{1});
   const c2h::device_vector<large_count_t> device_num_items(1, num_items);
-  c2h::device_vector<value_t> expected(static_cast<size_t>(num_items), value_t{-1});
-  c2h::device_vector<value_t> output(static_cast<size_t>(num_items), value_t{-1});
+  c2h::device_vector<scan_value_t> expected(static_cast<size_t>(num_items), scan_value_t{-1});
+  c2h::device_vector<scan_value_t> output(static_cast<size_t>(num_items), scan_value_t{-1});
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), expected.begin(), num_items));
   REQUIRE(cudaSuccess
@@ -413,11 +414,12 @@ CUB_TEST("DeviceScan reusable lookback batches handle exact boundaries", "[devic
     large_count_t{0}, large_count_t{1}, batch_items - 1, batch_items, batch_items + 1, 2 * batch_items + 17);
   CAPTURE(num_items);
 
-  const c2h::device_vector<value_t> input(static_cast<size_t>(num_items), value_t{1});
+  const c2h::device_vector<scan_value_t> input(static_cast<size_t>(num_items), scan_value_t{1});
   const c2h::device_vector<large_count_t> device_num_items(1, num_items);
-  c2h::device_vector<value_t> expected(static_cast<size_t>(num_items), value_t{-1});
-  c2h::device_vector<value_t> output(static_cast<size_t>(num_items), value_t{-1});
-  const auto env = cuda::execution::tune(small_batch_policy_selector<value_t, value_t, value_t, cuda::std::plus<>>{});
+  c2h::device_vector<scan_value_t> expected(static_cast<size_t>(num_items), scan_value_t{-1});
+  c2h::device_vector<scan_value_t> output(static_cast<size_t>(num_items), scan_value_t{-1});
+  const auto env =
+    cuda::execution::tune(small_batch_policy_selector<scan_value_t, scan_value_t, scan_value_t, cuda::std::plus<>>{});
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), expected.begin(), num_items, env));
   REQUIRE(
@@ -435,14 +437,14 @@ CUB_TEST("DeviceScan reusable lookback batches handle exact boundaries", "[devic
 
   REQUIRE(cudaSuccess
           == cub::DeviceScan::ExclusiveScan(
-            input.begin(), expected.begin(), cuda::std::plus<>{}, value_t{7}, num_items, env));
+            input.begin(), expected.begin(), cuda::std::plus<>{}, scan_value_t{7}, num_items, env));
   REQUIRE(
     cudaSuccess
     == cub::DeviceScan::ExclusiveScan(
       input.begin(),
       output.begin(),
       cuda::std::plus<>{},
-      value_t{7},
+      scan_value_t{7},
       cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())},
       env));
   REQUIRE(output == expected);
@@ -515,10 +517,10 @@ CUB_TEST("DeviceScan batched lookback makes progress on concurrent streams",
   constexpr large_count_t batch_items = static_cast<large_count_t>(cub::detail::scan::tiles_per_batch) * 128;
   constexpr large_count_t num_items   = 2 * batch_items + 12'345;
 
-  const c2h::device_vector<value_t> input(static_cast<size_t>(num_items), value_t{1});
+  const c2h::device_vector<scan_value_t> input(static_cast<size_t>(num_items), scan_value_t{1});
   const c2h::device_vector<large_count_t> device_num_items(1, num_items);
-  c2h::device_vector<value_t> first(static_cast<size_t>(num_items), value_t{-1});
-  c2h::device_vector<value_t> second(static_cast<size_t>(num_items), value_t{-1});
+  c2h::device_vector<scan_value_t> first(static_cast<size_t>(num_items), scan_value_t{-1});
+  c2h::device_vector<scan_value_t> second(static_cast<size_t>(num_items), scan_value_t{-1});
   const auto count = cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())};
 
   cudaStream_t first_stream{};
@@ -527,7 +529,7 @@ CUB_TEST("DeviceScan batched lookback makes progress on concurrent streams",
   REQUIRE(cudaSuccess == cudaStreamCreate(&second_stream));
 
   const auto tuning =
-    cuda::execution::tune(small_batch_policy_selector<value_t, value_t, value_t, cuda::std::plus<>>{});
+    cuda::execution::tune(small_batch_policy_selector<scan_value_t, scan_value_t, scan_value_t, cuda::std::plus<>>{});
   const auto first_env  = cuda::std::execution::env{cuda::stream_ref{first_stream}, tuning};
   const auto second_env = cuda::std::execution::env{cuda::stream_ref{second_stream}, tuning};
 
@@ -538,10 +540,10 @@ CUB_TEST("DeviceScan batched lookback makes progress on concurrent streams",
   REQUIRE(cudaSuccess == cudaStreamDestroy(first_stream));
   REQUIRE(cudaSuccess == cudaStreamDestroy(second_stream));
 
-  REQUIRE(first.front() == value_t{0});
-  REQUIRE(first.back() == static_cast<value_t>(num_items - 1));
-  REQUIRE(second.front() == value_t{0});
-  REQUIRE(second.back() == static_cast<value_t>(num_items - 1));
+  REQUIRE(first.front() == scan_value_t{0});
+  REQUIRE(first.back() == static_cast<scan_value_t>(num_items - 1));
+  REQUIRE(second.front() == scan_value_t{0});
+  REQUIRE(second.back() == static_cast<scan_value_t>(num_items - 1));
 }
 
 CUB_TEST("DeviceScan::ExclusiveSum consumes a deferred count produced in another stream after an event",
@@ -558,10 +560,10 @@ CUB_TEST("DeviceScan::ExclusiveSum consumes a deferred count produced in another
   REQUIRE(cudaSuccess == cudaStreamCreate(&consumer));
   REQUIRE(cudaSuccess == cudaEventCreate(&count_ready));
 
-  const auto input = cuda::counting_iterator<value_t>{value_t{0}};
-  c2h::device_vector<value_t> selected_items(capacity, value_t{-1});
+  const auto input = cuda::counting_iterator<scan_value_t>{scan_value_t{0}};
+  c2h::device_vector<scan_value_t> selected_items(capacity, scan_value_t{-1});
   c2h::device_vector<count_t> device_num_selected(1, count_t{-1});
-  c2h::device_vector<value_t> output(capacity, value_t{-1});
+  c2h::device_vector<scan_value_t> output(capacity, scan_value_t{-1});
 
   const auto d_selected_items = thrust::raw_pointer_cast(selected_items.data());
   const auto d_num_selected   = thrust::raw_pointer_cast(device_num_selected.data());
@@ -615,7 +617,7 @@ CUB_TEST("DeviceScan::ExclusiveSum consumes a deferred count produced in another
   {
     REQUIRE(output[i] == i * (i - 1) / 2);
   }
-  REQUIRE(output[selected_count] == value_t{-1});
+  REQUIRE(output[selected_count] == scan_value_t{-1});
 
   REQUIRE(cudaSuccess == cudaEventDestroy(count_ready));
   REQUIRE(cudaSuccess == cudaStreamDestroy(producer));
@@ -630,21 +632,21 @@ CUB_TEST("DeviceScan::ExclusiveSum with a deferred size handles tile boundaries"
     GENERATE_COPY(count_t{0}, count_t{1}, count_t{127}, count_t{8'447}, count_t{8'448}, count_t{8'449}, capacity);
   CAPTURE(num_items);
 
-  const c2h::device_vector<value_t> input(capacity, value_t{1});
+  const c2h::device_vector<scan_value_t> input(capacity, scan_value_t{1});
   const c2h::device_vector<count_t> device_num_items(1, num_items);
-  c2h::device_vector<value_t> output(capacity, value_t{-1});
+  c2h::device_vector<scan_value_t> output(capacity, scan_value_t{-1});
 
   const auto count = cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())};
   device_exclusive_sum(input.begin(), output.begin(), count);
 
-  const c2h::host_vector<value_t> host_output = output;
+  const c2h::host_vector<scan_value_t> host_output = output;
   for (count_t i = 0; i < num_items; ++i)
   {
     REQUIRE(host_output[i] == i);
   }
   if (num_items < capacity)
   {
-    REQUIRE(host_output[num_items] == value_t{-1});
+    REQUIRE(host_output[num_items] == scan_value_t{-1});
   }
 }
 
@@ -655,14 +657,14 @@ CUB_TEST("DeviceScan::ExclusiveSum accepts deferred span, iterator and bounded s
   constexpr count_t capacity  = 50'000;
   constexpr count_t num_items = 1'000;
 
-  const c2h::device_vector<value_t> input(capacity, value_t{1});
+  const c2h::device_vector<scan_value_t> input(capacity, scan_value_t{1});
   c2h::device_vector<count_t> device_num_items(1, num_items);
-  c2h::device_vector<value_t> output(capacity, value_t{-1});
+  c2h::device_vector<scan_value_t> output(capacity, scan_value_t{-1});
 
   const auto d_num_items = thrust::raw_pointer_cast(device_num_items.data());
 
   const auto check = [&] {
-    const c2h::host_vector<value_t> host_output = output;
+    const c2h::host_vector<scan_value_t> host_output = output;
     for (count_t i = 0; i < num_items; ++i)
     {
       REQUIRE(host_output[i] == i);
@@ -673,12 +675,12 @@ CUB_TEST("DeviceScan::ExclusiveSum accepts deferred span, iterator and bounded s
   device_exclusive_sum(input.begin(), output.begin(), cuda::args::deferred{const_count_span});
   check();
 
-  thrust::fill(output.begin(), output.end(), value_t{-1});
+  thrust::fill(output.begin(), output.end(), scan_value_t{-1});
   const auto count_transform = cuda::transform_iterator(d_num_items, cuda::std::identity{});
   device_exclusive_sum(input.begin(), output.begin(), cuda::args::deferred{count_transform});
   check();
 
-  thrust::fill(output.begin(), output.end(), value_t{-1});
+  thrust::fill(output.begin(), output.end(), scan_value_t{-1});
   const auto bounded_count = cuda::args::deferred{
     d_num_items, cuda::args::bounds<count_t{0}, capacity>(), cuda::args::bounds(count_t{0}, capacity)};
   device_exclusive_sum(input.begin(), output.begin(), bounded_count);
@@ -696,18 +698,18 @@ CUB_TEST("DeviceScan::ExclusiveSum with a deferred size returns the same result 
   constexpr count_t capacity  = 100'000;
   constexpr count_t num_items = 60'000;
 
-  c2h::device_vector<value_t> input(capacity, thrust::no_init);
-  c2h::gen(C2H_SEED(1), input, value_t{0}, value_t{9});
+  c2h::device_vector<scan_value_t> input(capacity, thrust::no_init);
+  c2h::gen(C2H_SEED(1), input, scan_value_t{0}, scan_value_t{9});
   const c2h::device_vector<count_t> device_num_items(1, num_items);
-  c2h::device_vector<value_t> first(capacity, value_t{-1});
-  c2h::device_vector<value_t> second(capacity, value_t{-1});
+  c2h::device_vector<scan_value_t> first(capacity, scan_value_t{-1});
+  c2h::device_vector<scan_value_t> second(capacity, scan_value_t{-1});
 
   const auto count = cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())};
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), first.begin(), count));
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), second.begin(), count));
   REQUIRE(first == second);
-  REQUIRE(first[num_items] == value_t{-1});
+  REQUIRE(first[num_items] == scan_value_t{-1});
 }
 
 CUB_TEST("DeviceScan::ExclusiveSum with a deferred size matches the immediate result",
@@ -718,11 +720,11 @@ CUB_TEST("DeviceScan::ExclusiveSum with a deferred size matches the immediate re
   const count_t num_items    = GENERATE_COPY(count_t{0}, count_t{1}, count_t{8'448}, count_t{60'000}, capacity);
   CAPTURE(num_items);
 
-  c2h::device_vector<value_t> input(capacity, thrust::no_init);
-  c2h::gen(C2H_SEED(1), input, value_t{0}, value_t{9});
+  c2h::device_vector<scan_value_t> input(capacity, thrust::no_init);
+  c2h::gen(C2H_SEED(1), input, scan_value_t{0}, scan_value_t{9});
   const c2h::device_vector<count_t> device_num_items(1, num_items);
-  c2h::device_vector<value_t> reference(capacity, value_t{-1});
-  c2h::device_vector<value_t> deferred(capacity, value_t{-1});
+  c2h::device_vector<scan_value_t> reference(capacity, scan_value_t{-1});
+  c2h::device_vector<scan_value_t> deferred(capacity, scan_value_t{-1});
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), reference.begin(), num_items));
   REQUIRE(cudaSuccess
@@ -743,18 +745,18 @@ CUB_TEST("DeviceScan::ExclusiveSum with a deferred size accepts run_to_run and g
   const large_count_t num_items       = GENERATE_COPY(large_count_t{30'000}, batch_items + 4'567);
   CAPTURE(num_items);
 
-  const c2h::device_vector<value_t> input(static_cast<size_t>(num_items), value_t{1});
+  const c2h::device_vector<scan_value_t> input(static_cast<size_t>(num_items), scan_value_t{1});
   const c2h::device_vector<large_count_t> device_num_items(1, num_items);
-  c2h::device_vector<value_t> output(static_cast<size_t>(num_items), value_t{-1});
+  c2h::device_vector<scan_value_t> output(static_cast<size_t>(num_items), scan_value_t{-1});
   const auto count  = cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())};
-  const auto tuning = small_batch_policy_selector<value_t, value_t, value_t, cuda::std::plus<>>{};
+  const auto tuning = small_batch_policy_selector<scan_value_t, scan_value_t, scan_value_t, cuda::std::plus<>>{};
 
   // Exactly associative, so the result must match the closed form regardless of the batch grouping.
   const auto check_exact = [&] {
-    const c2h::host_vector<value_t> host_output = output;
+    const c2h::host_vector<scan_value_t> host_output = output;
     for (large_count_t i = 0; i < num_items; ++i)
     {
-      if (host_output[static_cast<size_t>(i)] != static_cast<value_t>(i))
+      if (host_output[static_cast<size_t>(i)] != static_cast<scan_value_t>(i))
       {
         CAPTURE(i, host_output[static_cast<size_t>(i)]);
         return false;
@@ -768,7 +770,7 @@ CUB_TEST("DeviceScan::ExclusiveSum with a deferred size accepts run_to_run and g
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), output.begin(), count, run_to_run));
   REQUIRE(check_exact());
 
-  thrust::fill(output.begin(), output.end(), value_t{-1});
+  thrust::fill(output.begin(), output.end(), scan_value_t{-1});
   const auto gpu_to_gpu = cuda::std::execution::env{
     cuda::execution::require(cuda::execution::determinism::gpu_to_gpu), cuda::execution::tune(tuning)};
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), output.begin(), count, gpu_to_gpu));
@@ -811,9 +813,9 @@ CUB_TEST("DeviceScan::ExclusiveSum with a deferred size supports not_guaranteed 
   constexpr count_t capacity  = 50'000;
   constexpr count_t num_items = 30'000;
 
-  const c2h::device_vector<value_t> input(capacity, value_t{1});
+  const c2h::device_vector<scan_value_t> input(capacity, scan_value_t{1});
   const c2h::device_vector<count_t> device_num_items(1, num_items);
-  c2h::device_vector<value_t> output(capacity, value_t{-1});
+  c2h::device_vector<scan_value_t> output(capacity, scan_value_t{-1});
 
   const auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
   REQUIRE(
@@ -821,7 +823,7 @@ CUB_TEST("DeviceScan::ExclusiveSum with a deferred size supports not_guaranteed 
     == cub::DeviceScan::ExclusiveSum(
       input.begin(), output.begin(), cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())}, env));
 
-  const c2h::host_vector<value_t> host_output = output;
+  const c2h::host_vector<scan_value_t> host_output = output;
   for (count_t i = 0; i < num_items; ++i)
   {
     REQUIRE(host_output[i] == i);
@@ -837,9 +839,9 @@ CUB_TEST("captured DeviceScan::ExclusiveSum replays with zero and nonzero deferr
 {
   constexpr count_t capacity = 100'000;
 
-  c2h::device_vector<value_t> input(capacity, value_t{1});
+  c2h::device_vector<scan_value_t> input(capacity, scan_value_t{1});
   c2h::device_vector<count_t> device_num_items(1, count_t{-1});
-  c2h::device_vector<value_t> output(capacity, value_t{-1});
+  c2h::device_vector<scan_value_t> output(capacity, scan_value_t{-1});
 
   const auto d_num_items = thrust::raw_pointer_cast(device_num_items.data());
   const auto d_output    = thrust::raw_pointer_cast(output.data());
@@ -868,21 +870,22 @@ CUB_TEST("captured DeviceScan::ExclusiveSum replays with zero and nonzero deferr
   for (const count_t num_items : {capacity, count_t{0}, count_t{1'000}, capacity})
   {
     REQUIRE(cudaSuccess == cudaMemcpyAsync(d_num_items, &num_items, sizeof(num_items), cudaMemcpyHostToDevice, stream));
-    REQUIRE(cudaSuccess == cudaMemsetAsync(d_output, 0xff, sizeof(value_t) * static_cast<size_t>(capacity), stream));
+    REQUIRE(
+      cudaSuccess == cudaMemsetAsync(d_output, 0xff, sizeof(scan_value_t) * static_cast<size_t>(capacity), stream));
     REQUIRE(cudaSuccess == cudaGraphLaunch(executable, stream));
     REQUIRE(cudaSuccess == cudaStreamSynchronize(stream));
 
     if (num_items == 0)
     {
-      REQUIRE(output[0] == value_t{-1});
+      REQUIRE(output[0] == scan_value_t{-1});
     }
     else
     {
-      REQUIRE(output[0] == value_t{0});
+      REQUIRE(output[0] == scan_value_t{0});
       REQUIRE(output[num_items - 1] == num_items - 1);
       if (num_items < capacity)
       {
-        REQUIRE(output[num_items] == value_t{-1});
+        REQUIRE(output[num_items] == scan_value_t{-1});
       }
     }
   }

@@ -1476,56 +1476,41 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke(
   KernelLauncherFactory launcher_factory)
 {
   const bool dependent_launch = cc >= ::cuda::compute_capability{9, 0};
-  if constexpr (detail::is_deferred_v<NumItemsT>)
+  if constexpr (!detail::is_deferred_v<NumItemsT>)
   {
-    return invoke_lookback(
-      policy_getter,
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      scan_op,
-      init_value,
-      num_items,
-      stream,
-      dependent_launch,
-      kernel_source,
-      launcher_factory);
+    if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == ScanAlgorithm::lookahead)
+    {
+      const bool atomic_scheduling = cc == ::cuda::compute_capability{9, 0};
+      return invoke_lookahead(
+        policy_getter,
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        scan_op,
+        init_value,
+        num_items,
+        stream,
+        dependent_launch,
+        atomic_scheduling,
+        kernel_source,
+        launcher_factory);
+    }
   }
-  else if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == ScanAlgorithm::lookahead)
-  {
-    const bool atomic_scheduling = cc == ::cuda::compute_capability{9, 0};
-    return invoke_lookahead(
-      policy_getter,
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      scan_op,
-      init_value,
-      num_items,
-      stream,
-      dependent_launch,
-      atomic_scheduling,
-      kernel_source,
-      launcher_factory);
-  }
-  else
-  {
-    return invoke_lookback(
-      policy_getter,
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      scan_op,
-      init_value,
-      num_items,
-      stream,
-      dependent_launch,
-      kernel_source,
-      launcher_factory);
-  }
+
+  return invoke_lookback(
+    policy_getter,
+    d_temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_out,
+    scan_op,
+    init_value,
+    num_items,
+    stream,
+    dependent_launch,
+    kernel_source,
+    launcher_factory);
 }
 
 template <
@@ -1550,16 +1535,16 @@ template <
                                                        StableReductionOrder,
                                                        detail::is_deferred_v<NumItemsT>>,
   typename KernelSource   = DeviceScanKernelSource<
-      deferred_policy_selector_t<PolicySelector, detail::is_deferred_v<NumItemsT>>,
-      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
-      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
-      ScanOpT,
-      InitValueT,
-      OffsetT,
-      detail::parameter_from_host_t<OffsetT, NumItemsT>,
-      AccumT,
-      EnforceInclusive,
-      StableReductionOrder>,
+    deferred_policy_selector_t<PolicySelector, detail::is_deferred_v<NumItemsT>>,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
+    ScanOpT,
+    InitValueT,
+    OffsetT,
+    detail::parameter_from_host_t<OffsetT, NumItemsT>,
+    AccumT,
+    EnforceInclusive,
+    StableReductionOrder>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires scan_policy_selector<PolicySelector>
@@ -1632,16 +1617,16 @@ template <
                                                        StableReductionOrder,
                                                        detail::is_deferred_v<NumItemsT>>,
   typename KernelSource   = DeviceScanKernelSource<
-      deferred_policy_selector_t<PolicySelector, detail::is_deferred_v<NumItemsT>>,
-      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
-      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
-      ScanOpT,
-      InitValueT,
-      OffsetT,
-      detail::parameter_from_host_t<OffsetT, NumItemsT>,
-      AccumT,
-      EnforceInclusive,
-      StableReductionOrder>,
+    deferred_policy_selector_t<PolicySelector, detail::is_deferred_v<NumItemsT>>,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
+    ScanOpT,
+    InitValueT,
+    OffsetT,
+    detail::parameter_from_host_t<OffsetT, NumItemsT>,
+    AccumT,
+    EnforceInclusive,
+    StableReductionOrder>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_with_accum(
   void* d_temp_storage,
