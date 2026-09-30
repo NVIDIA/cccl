@@ -598,8 +598,8 @@ def check_numba_surface(
 
 
 def check_merge_sort_surface() -> None:
-    keys = coop.ThreadData(3, np.int32)
-    values = coop.ThreadData(3, np.float64)
+    keys = coop.ThreadData(items_per_thread=3, dtype=np.int32)
+    values = coop.ThreadData(items_per_thread=3, dtype=np.float64)
 
     def compare(left: np.int32, right: np.int32) -> np.bool_:
         return left > right

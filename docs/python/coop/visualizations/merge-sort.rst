@@ -83,8 +83,9 @@ partial-tile contract and :doc:`../../coop_api` for parameter details.
 Using Merge Sort in a kernel
 ----------------------------
 
-This tested example sorts 128 keys in one block of 64 threads. Each thread
-owns two keys and two original-position values. The checks verify both key
+This tested example sorts ``64 * items_per_thread`` keys in one block of
+64 threads. Each thread owns ``items_per_thread`` keys and matching
+original-position values. The checks verify both key
 order and the association between each returned key and its original index.
 
 .. literalinclude:: ../../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_merge_sort_examples.py

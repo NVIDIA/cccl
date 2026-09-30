@@ -902,7 +902,7 @@ does not sort an array spanning several blocks.
 Follow keys and their associated values through the
 :doc:`Merge Sort visualization <visualizations/merge-sort>`.
 
-This example sorts 128 keys and carries their original positions through
+This example sorts a block tile and carries the keys' original positions through
 the same permutation:
 
 .. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_merge_sort_examples.py
