@@ -78,14 +78,7 @@ endfunction()
 
 find_program(
   CCCL_FILECHECK
-  NAMES
-    FileCheck
-    FileCheck-23
-    FileCheck-22
-    FileCheck-21
-    FileCheck-20
-    FileCheck-19
-    FileCheck-18
+  NAMES FileCheck FileCheck-${LLVM_VERSION_MAJOR}
   HINTS "${LLVM_TOOLS_BINARY_DIR}"
   REQUIRED
 )
@@ -262,3 +255,5 @@ endfunction()
 
 # The parent enables testing after configuring this directory.
 enable_testing()
+
+add_subdirectory(prefer_cuda_traits)
