@@ -1244,3 +1244,57 @@ TEST_CASE("TestVectorEmplaceWorksWithMultiArgumentCtor", "[vector]")
   REQUIRE(v_h[0].sum() == 41 + 42);
   REQUIRE(v_u[0].sum() == 41 + 42);
 }
+
+template <typename T>
+struct small_allocator : std::allocator<T>
+{
+  std::size_t max_size() const
+  {
+    return 8;
+  }
+};
+
+using small_vector = thrust::host_vector<int, small_allocator<int>>;
+
+TEST_CASE("TestVectorInsertionAtMaxSize", "[vector]")
+{
+  small_vector v(8); // size() == capacity() == max_size()
+
+  REQUIRE_THROWS_AS(v.push_back(1), std::length_error);
+  REQUIRE_THROWS_AS(v.emplace_back(1), std::length_error);
+  REQUIRE_THROWS_AS(v.resize(9), std::length_error);
+  REQUIRE(v.size() == 8);
+}
+
+TEST_CASE("TestVectorBulkInsertionBeyondMaxSize", "[vector]")
+{
+  small_vector v(3);
+  const thrust::host_vector<int> src(6, 1); // 3 + 6 > max_size()
+
+  REQUIRE_THROWS_AS(v.insert(v.end(), 6, 1), std::length_error);
+  REQUIRE_THROWS_AS(v.insert(v.end(), src.begin(), src.end()), std::length_error);
+  REQUIRE_THROWS_AS(v.resize(9, 1), std::length_error);
+  REQUIRE(v.size() == 3);
+}
+
+TEST_CASE("TestVectorGrowthSaturatesAtMaxSize", "[vector]")
+{
+  // doubling capacity 5 would give 10 > max_size(), so growth must stop at 8
+  const std::vector<int> one(1, 1);
+
+  small_vector a(5);
+  a.push_back(1);
+  REQUIRE(a.capacity() == 8);
+
+  small_vector b(5);
+  b.emplace_back(1);
+  REQUIRE(b.capacity() == 8);
+
+  small_vector c(5);
+  c.insert(c.end(), one.begin(), one.end());
+  REQUIRE(c.capacity() == 8);
+
+  small_vector d(5);
+  d.resize(6);
+  REQUIRE(d.capacity() == 8);
+}

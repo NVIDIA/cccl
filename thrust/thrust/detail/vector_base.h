@@ -573,6 +573,8 @@ private:
   {
     a.swap(b);
   }
+
+  size_type compute_new_capacity(size_type additional_size) const;
 }; // end vector_base
 
 /*! This operator allows comparison between two vectors.

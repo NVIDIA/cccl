@@ -22,7 +22,6 @@
 #include <thrust/fill.h>
 #include <thrust/iterator/iterator_traits.h>
 
-#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/operations.h>
@@ -600,19 +599,7 @@ typename vector_base<T, Alloc>::reference vector_base<T, Alloc>::emplace_back(Ar
   {
     const size_type old_size = size();
 
-    // compute the new capacity after the allocation
-    size_type new_capacity = old_size + ::cuda::std::max(old_size, size_type{1});
-
-    // allocate exponentially larger new storage
-    new_capacity = ::cuda::std::max<size_type>(new_capacity, 2 * capacity());
-
-    // do not exceed maximum storage
-    new_capacity = ::cuda::std::min<size_type>(new_capacity, max_size());
-
-    if (new_capacity > max_size())
-    {
-      throw std::length_error("insert(): insertion exceeds max_size().");
-    } // end if
+    const size_type new_capacity = compute_new_capacity(1);
 
     // create new storage
     storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
@@ -816,20 +803,7 @@ void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first
     {
       const size_type old_size = size();
 
-      // compute the new capacity after the allocation
-      size_type new_capacity =
-        old_size + ::cuda::std::max THRUST_PREVENT_MACRO_SUBSTITUTION(old_size, num_new_elements);
-
-      // allocate exponentially larger new storage
-      new_capacity = ::cuda::std::max<size_type>(new_capacity, 2 * capacity());
-
-      // do not exceed maximum storage
-      new_capacity = ::cuda::std::min<size_type>(new_capacity, max_size());
-
-      if (new_capacity > max_size())
-      {
-        throw std::length_error("insert(): insertion exceeds max_size().");
-      } // end if
+      const size_type new_capacity = compute_new_capacity(num_new_elements);
 
       storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
 
@@ -892,14 +866,7 @@ void vector_base<T, Alloc>::append(size_type n)
     {
       const size_type old_size = size();
 
-      // compute the new capacity after the allocation
-      size_type new_capacity = old_size + ::cuda::std::max THRUST_PREVENT_MACRO_SUBSTITUTION(old_size, n);
-
-      // allocate exponentially larger new storage
-      new_capacity = ::cuda::std::max<size_type>(new_capacity, 2 * capacity());
-
-      // do not exceed maximum storage
-      new_capacity = ::cuda::std::min<size_type>(new_capacity, max_size());
+      const size_type new_capacity = compute_new_capacity(n);
 
       // create new storage
       storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
@@ -992,9 +959,7 @@ void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T&
   {
     const size_type old_size = size();
 
-    // Ensure allocation grows exponentially within bounds
-    const size_type new_capacity =
-      ::cuda::std::clamp<size_type>(old_size + n, static_cast<size_type>(2 * capacity()), max_size());
+    const size_type new_capacity = compute_new_capacity(n);
 
     storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
 
@@ -1181,6 +1146,21 @@ void vector_base<T, Alloc>::allocate_and_copy(
     throw;
   } // end catch
 } // end vector_base::allocate_and_copy()
+
+template <typename T, typename Alloc>
+typename vector_base<T, Alloc>::size_type vector_base<T, Alloc>::compute_new_capacity(size_type additional_size) const
+{
+  const size_type ms = max_size();
+  const size_type sz = size();
+  if (additional_size > ms - sz) // no wrap
+  {
+    throw std::length_error("new size exceeds max_size()");
+  }
+  const size_type required = sz + additional_size;
+  const size_type cap      = capacity();
+  const size_type doubled  = cap > ms / 2 ? ms : static_cast<size_type>(cap * 2);
+  return ::cuda::std::max(required, doubled);
+}
 
 // iterator tags match
 template <typename InputIterator1, typename InputIterator2>
