@@ -49,88 +49,81 @@ TEST_FUNC void test_primary_template()
   }
   { // Testing (2)
     cuda::std::pair<int, char> p1(1, 'c');
-    cuda::std::tuple t1(p1);
+    [[maybe_unused]] cuda::std::tuple t1(p1);
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<int, char>>);
 
     cuda::std::pair<int, cuda::std::tuple<char, long, void*>> p2(
       1, cuda::std::tuple<char, long, void*>('c', 3l, nullptr));
-    cuda::std::tuple t2(p2);
+    [[maybe_unused]] cuda::std::tuple t2(p2);
     static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<int, cuda::std::tuple<char, long, void*>>>);
 
     int i = 3;
     cuda::std::pair<cuda::std::reference_wrapper<int>, char> p3(cuda::std::ref(i), 'c');
-    cuda::std::tuple t3(p3);
+    [[maybe_unused]] cuda::std::tuple t3(p3);
     static_assert(cuda::std::is_same_v<decltype(t3), cuda::std::tuple<cuda::std::reference_wrapper<int>, char>>);
 
     cuda::std::pair<int&, char> p4(i, 'c');
-    cuda::std::tuple t4(p4);
+    [[maybe_unused]] cuda::std::tuple t4(p4);
     static_assert(cuda::std::is_same_v<decltype(t4), cuda::std::tuple<int&, char>>);
 
-    cuda::std::tuple t5(cuda::std::pair<int, char>(1, 'c'));
+    [[maybe_unused]] cuda::std::tuple t5(cuda::std::pair<int, char>(1, 'c'));
     static_assert(cuda::std::is_same_v<decltype(t5), cuda::std::tuple<int, char>>);
-    unused(t1, t2, t3, t4, t5);
   }
   { // Testing (3)
     using T = ExplicitTestTypes::TestType;
     static_assert(!cuda::std::is_convertible<T const&, T>::value);
 
-    cuda::std::tuple t1(T{});
+    [[maybe_unused]] cuda::std::tuple t1(T{});
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<T>>);
-    unused(t1);
 
 #if !TEST_COMPILER(GCC, <, 12) // GCC fails to deduct here, also with std::tuple
     const T v{};
-    cuda::std::tuple t2(T{}, 101l, v);
+    [[maybe_unused]] cuda::std::tuple t2(T{}, 101l, v);
     static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<T, long, T>>);
-    unused(t2);
 #endif // !TEST_COMPILER(GCC, <, 12)
   }
   { // Testing (4)
     int x = 101;
-    cuda::std::tuple t1(AT, A, 42);
+    [[maybe_unused]] cuda::std::tuple t1(AT, A, 42);
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<int>>);
 
-    cuda::std::tuple t2(AT, A, 42, 0.0, x);
+    [[maybe_unused]] cuda::std::tuple t2(AT, A, 42, 0.0, x);
     static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<int, double, int>>);
-    unused(t1, t2);
   }
   { // Testing (5)
     using T = ExplicitTestTypes::TestType;
     static_assert(!cuda::std::is_convertible<T const&, T>::value);
 
-    cuda::std::tuple t1(AT, A, T{});
+    [[maybe_unused]] cuda::std::tuple t1(AT, A, T{});
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<T>>);
-    unused(t1);
 
 #if !TEST_COMPILER(GCC) // GCC has issues deducting this
     const T v{};
-    cuda::std::tuple t2(AT, A, T{}, 101l, v);
+    [[maybe_unused]] cuda::std::tuple t2(AT, A, T{}, 101l, v);
     static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<T, long, T>>);
-    unused(t2);
 #endif // !TEST_COMPILER(GCC)
   }
   { // Testing (6)
     cuda::std::pair<int, char> p1(1, 'c');
-    cuda::std::tuple t1(AT, A, p1);
+    [[maybe_unused]] cuda::std::tuple t1(AT, A, p1);
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<int, char>>);
 
     cuda::std::pair<int, cuda::std::tuple<char, long, void*>> p2(
       1, cuda::std::tuple<char, long, void*>('c', 3l, nullptr));
-    cuda::std::tuple t2(AT, A, p2);
+    [[maybe_unused]] cuda::std::tuple t2(AT, A, p2);
     static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<int, cuda::std::tuple<char, long, void*>>>);
 
     int i = 3;
     cuda::std::pair<cuda::std::reference_wrapper<int>, char> p3(cuda::std::ref(i), 'c');
-    cuda::std::tuple t3(AT, A, p3);
+    [[maybe_unused]] cuda::std::tuple t3(AT, A, p3);
     static_assert(cuda::std::is_same_v<decltype(t3), cuda::std::tuple<cuda::std::reference_wrapper<int>, char>>);
 
     cuda::std::pair<int&, char> p4(i, 'c');
-    cuda::std::tuple t4(AT, A, p4);
+    [[maybe_unused]] cuda::std::tuple t4(AT, A, p4);
     static_assert(cuda::std::is_same_v<decltype(t4), cuda::std::tuple<int&, char>>);
 
-    cuda::std::tuple t5(AT, A, cuda::std::pair<int, char>(1, 'c'));
+    [[maybe_unused]] cuda::std::tuple t5(AT, A, cuda::std::pair<int, char>(1, 'c'));
     static_assert(cuda::std::is_same_v<decltype(t5), cuda::std::tuple<int, char>>);
-    unused(t1, t2, t3, t4, t5);
   }
   { // Testing (7)
     using Tup = cuda::std::tuple<int, decltype(nullptr)>;
