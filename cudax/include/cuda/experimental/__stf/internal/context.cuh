@@ -1612,8 +1612,8 @@ UNITTEST("context task")
   auto lb = ctx.logical_data(la.shape());
 
   ctx.task(la.read(), lb.write())->*[](auto s, auto a, auto b) {
-    // no-op
-    cuda_try<cudaMemcpyAsync>(&b(0), &a(0), sizeof(int), cudaMemcpyDeviceToDevice, s);
+    // cudaMemcpyAsync is overloaded in CTK 13.3, so the introspected `cuda_try<fun>` form cannot name it
+    cuda_try(cudaMemcpyAsync(&b(0), &a(0), sizeof(int), cudaMemcpyDeviceToDevice, s));
   };
 
   ctx.finalize();
