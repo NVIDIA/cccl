@@ -13,8 +13,8 @@ common.register("numba")  # expected-error: [arg-type]
 
 coop.TempStorage(64, 16)  # expected-error: [call-arg]
 common.TempStorage(64, 16)  # expected-error: [call-arg]
-values = coop.ThreadData(2, np.int32)
-common_values = common.ThreadData(2, np.int32)
+values = coop.ThreadData(items_per_thread=2, dtype=np.int32)
+common_values = common.ThreadData(items_per_thread=2, dtype=np.int32)
 common_block = common.this_block()
 common_block.rank()  # expected-error: [attr-defined]
 common_block.count()  # expected-error: [attr-defined]

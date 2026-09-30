@@ -40,6 +40,10 @@ def ThreadData(
     :ref:`element-type inference <coop-faq-thread-data-dtype>` for cases that
     need additional type information.
 
+    Prefer a kernel parameter named ``items_per_thread`` and construct the
+    payload with ``ThreadData(items_per_thread)``. The compiler specializes
+    the kernel for each supplied count, which remains fixed during execution.
+
     ``alignment`` requests a minimum alignment in bytes. This backend also
     enforces the compiler's pointer-alignment requirement. See
     :ref:`per-thread payloads <coop-thread-data>` for indexing and lifetime.

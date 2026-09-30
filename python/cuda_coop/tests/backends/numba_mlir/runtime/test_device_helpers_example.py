@@ -25,27 +25,26 @@ def test_device_helpers_example():
 
     from cuda import coop
 
-    coop.register("numba-cuda-mlir")
-
     @cuda.jit(device=True, inline="always")
     def load_into(group, source, items):
         coop.load(group, source, items)
 
     @cuda.jit(device=True)
-    def load_tile(group, source):
-        items = coop.ThreadData(items_per_thread=2)
+    def load_tile(group, source, items_per_thread):
+        items = coop.ThreadData(items_per_thread)
         load_into(group, source, items)
         return items
 
     @cuda.jit
-    def copy_tile(source, destination):
+    def copy_tile(source, destination, items_per_thread):
         block = coop.this_block()
-        items = load_tile(block, source)
+        items = load_tile(block, source, items_per_thread)
         coop.store(block, destination, items)
 
-    expected = np.arange(256, dtype=np.int32)
-    source = cuda.to_device(expected)
-    destination = cuda.device_array_like(source)
-    copy_tile[1, 128](source, destination)
-    np.testing.assert_array_equal(destination.copy_to_host(), expected)
+    for items_per_thread in (1, 4):
+        expected = np.arange(128 * items_per_thread, dtype=np.int32)
+        source = cuda.to_device(expected)
+        destination = cuda.device_array_like(source)
+        copy_tile[1, 128](source, destination, items_per_thread)
+        np.testing.assert_array_equal(destination.copy_to_host(), expected)
     # coop-pg-device-helpers-end

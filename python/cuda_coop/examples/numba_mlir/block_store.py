@@ -10,19 +10,17 @@ from numba_cuda_mlir import cuda
 import cuda.coop.numba_mlir as coop
 
 _THREADS = 32
-_ITEMS_PER_THREAD = 2
-_TILE_ITEMS = _THREADS * _ITEMS_PER_THREAD
 _DESTINATION_OFFSET = 5
 
 
 @cuda.jit
-def block_store(source, destination, valid_items):
+def block_store(source, destination, valid_items, items_per_thread):
     """Store the valid tile prefix while retaining the destination suffix."""
 
     thread = cuda.threadIdx.x
-    payload = coop.ThreadData(items_per_thread=_ITEMS_PER_THREAD)
-    for item in range(_ITEMS_PER_THREAD):
-        payload[item] = source[thread * _ITEMS_PER_THREAD + item]
+    payload = coop.ThreadData(items_per_thread)
+    for item in range(items_per_thread):
+        payload[item] = source[thread * items_per_thread + item]
     coop.store(
         coop.this_block(),
         destination,
@@ -33,16 +31,19 @@ def block_store(source, destination, valid_items):
     )
 
 
-def main() -> None:
-    valid_items = _TILE_ITEMS - 9
-    source = np.arange(_TILE_ITEMS, dtype=np.int32) + 100
+def main(items_per_thread: int = 4) -> None:
+    tile_items = _THREADS * items_per_thread
+    valid_items = tile_items - 9
+    source = np.arange(tile_items, dtype=np.int32) + 100
     destination = np.full(
-        _DESTINATION_OFFSET + _TILE_ITEMS,
+        _DESTINATION_OFFSET + tile_items,
         -1,
         dtype=np.int32,
     )
 
-    block_store[1, _THREADS](source, destination, np.int32(valid_items))
+    block_store[1, _THREADS](
+        source, destination, np.int32(valid_items), items_per_thread
+    )
 
     expected = np.full_like(destination, -1)
     expected[_DESTINATION_OFFSET : _DESTINATION_OFFSET + valid_items] = source[
