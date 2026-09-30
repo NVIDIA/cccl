@@ -50,6 +50,7 @@ def _permutation(keys, begin, end, descending):
     return np.argsort(~digits if descending else digits, kind="stable")
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "dtype,descending,partial,value_dtype",
     [
@@ -81,13 +82,13 @@ def _permutation(keys, begin, end, descending):
     ],
 )
 def test_pairs_preserve_stability_association_and_inputs(
-    dtype, descending, partial, value_dtype
+    dtype, descending, partial, value_dtype, *, items_per_thread
 ):
     compiler_dtype = getattr(types, np.dtype(dtype).name)
     value_compiler_dtype = getattr(types, np.dtype(value_dtype).name)
     qualified = np.dtype(dtype).kind == "f"
     source = (
-        (np.arange(_THREADS * _ITEMS, dtype=np.int64) * 17) % 43 - 21
+        (np.arange(_THREADS * items_per_thread, dtype=np.int64) * 17) % 43 - 21
     ).astype(dtype)
     if qualified:
         source[0:6] = [np.inf, -np.inf, -0.0, 0.0, -1.5, 1.5]
@@ -108,14 +109,21 @@ def test_pairs_preserve_stability_association_and_inputs(
 
     @cuda.jit
     def kernel(
-        keys_in, values_in, keys_out, values_out, preserved, begin_bit, end_bit
+        keys_in,
+        values_in,
+        keys_out,
+        values_out,
+        preserved,
+        begin_bit,
+        end_bit,
+        items_per_thread,
     ):
         t = cuda.threadIdx.x
-        keys = coop.ThreadData(_ITEMS, dtype=compiler_dtype)
-        values = coop.ThreadData(_ITEMS, dtype=value_compiler_dtype)
-        for i in range(_ITEMS):
-            keys[i] = keys_in[t * _ITEMS + i]
-            values[i] = values_in[t * _ITEMS + i]
+        keys = coop.ThreadData(items_per_thread, dtype=compiler_dtype)
+        values = coop.ThreadData(items_per_thread, dtype=value_compiler_dtype)
+        for i in range(items_per_thread):
+            keys[i] = keys_in[t * items_per_thread + i]
+            values[i] = values_in[t * items_per_thread + i]
         if qualified:
             sorted_keys, sorted_values = numba_coop.radix_sort_pairs(
                 numba_coop.this_block(),
@@ -135,16 +143,23 @@ def test_pairs_preserve_stability_association_and_inputs(
                 descending=descending,
                 temp_storage=coop.TempStorage(),
             )
-        for i in range(_ITEMS):
-            keys_out[t * _ITEMS + i] = sorted_keys[i]
-            values_out[t * _ITEMS + i] = sorted_values[i]
-            preserved[t * _ITEMS + i] = keys[i]
+        for i in range(items_per_thread):
+            keys_out[t * items_per_thread + i] = sorted_keys[i]
+            values_out[t * items_per_thread + i] = sorted_values[i]
+            preserved[t * items_per_thread + i] = keys[i]
 
     keys_out = np.empty_like(source)
     values_out = np.empty_like(payload)
     preserved = np.empty_like(source)
     kernel[1, _THREADS](
-        source, payload, keys_out, values_out, preserved, begin, end
+        source,
+        payload,
+        keys_out,
+        values_out,
+        preserved,
+        begin,
+        end,
+        items_per_thread,
     )
     order = _permutation(source, begin, end, descending)
     np.testing.assert_array_equal(keys_out, source[order])
@@ -155,37 +170,38 @@ def test_pairs_preserve_stability_association_and_inputs(
     )
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("dtype", [np.int32, np.uint32, np.int64, np.uint64])
 @pytest.mark.parametrize("descending", [False, True])
 @pytest.mark.parametrize("sign_window", [False, True])
 def test_rank_is_stable_signed_int32_and_composes(
-    dtype, descending, sign_window
+    dtype, descending, sign_window, *, items_per_thread
 ):
     compiler_dtype = getattr(types, np.dtype(dtype).name)
     source = (
-        (np.arange(_THREADS * _ITEMS, dtype=np.int64) * 17) % 43 - 21
+        (np.arange(_THREADS * items_per_thread, dtype=np.int64) * 17) % 43 - 21
     ).astype(dtype)
     begin = source.dtype.itemsize * 8 - 4 if sign_window else 0
 
     @cuda.jit
-    def kernel(keys_in, output, sorted_ranks, preserved):
+    def kernel(keys_in, output, sorted_ranks, preserved, items_per_thread):
         t = cuda.threadIdx.x
-        keys = coop.ThreadData(_ITEMS, dtype=compiler_dtype)
-        for i in range(_ITEMS):
-            keys[i] = keys_in[t * _ITEMS + i]
+        keys = coop.ThreadData(items_per_thread, dtype=compiler_dtype)
+        for i in range(items_per_thread):
+            keys[i] = keys_in[t * items_per_thread + i]
         ranks = coop.radix_rank(
             coop.this_block(), keys, begin_bit=begin, descending=descending
         )
         ordered = coop.radix_sort_keys(coop.this_block(), ranks)
-        for i in range(_ITEMS):
-            output[t * _ITEMS + i] = ranks[i]
-            sorted_ranks[t * _ITEMS + i] = ordered[i]
-            preserved[t * _ITEMS + i] = keys[i]
+        for i in range(items_per_thread):
+            output[t * items_per_thread + i] = ranks[i]
+            sorted_ranks[t * items_per_thread + i] = ordered[i]
+            preserved[t * items_per_thread + i] = keys[i]
 
     output = np.empty(source.size, dtype=np.int32)
     ordered = np.empty_like(output)
     preserved = np.empty_like(source)
-    kernel[1, _THREADS](source, output, ordered, preserved)
+    kernel[1, _THREADS](source, output, ordered, preserved, items_per_thread)
     permutation = _permutation(source, begin, begin + 4, descending)
     expected = np.empty_like(output)
     expected[permutation] = np.arange(source.size, dtype=np.int32)
@@ -196,17 +212,22 @@ def test_rank_is_stable_signed_int32_and_composes(
     np.testing.assert_array_equal(preserved, source)
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("descending", [False, True])
-def test_qualified_striped_keys_and_exclusive_prefix(descending):
-    source = (np.arange(_THREADS * _ITEMS, dtype=np.int32) * 17) % 97
+def test_qualified_striped_keys_and_exclusive_prefix(
+    descending, *, items_per_thread
+):
+    source = (np.arange(_THREADS * items_per_thread, dtype=np.int32) * 17) % 97
+
+    array_items_per_thread = items_per_thread
 
     @cuda.jit
-    def kernel(keys_in, output, ranks_out, prefixes):
+    def kernel(keys_in, output, ranks_out, prefixes, items_per_thread):
         t = cuda.threadIdx.x
-        keys = cuda.local.array(_ITEMS, dtype=types.int32)
-        for i in range(_ITEMS):
-            keys[i] = keys_in[t * _ITEMS + i]
-        prefix = numba_coop.ThreadData(2, dtype=types.int32)
+        keys = cuda.local.array(array_items_per_thread, dtype=types.int32)
+        for i in range(items_per_thread):
+            keys[i] = keys_in[t * items_per_thread + i]
+        prefix = numba_coop.ThreadData(items_per_thread=2, dtype=types.int32)
         ranks = numba_coop.radix_rank(
             numba_coop.this_block(),
             keys,
@@ -220,16 +241,16 @@ def test_qualified_striped_keys_and_exclusive_prefix(descending):
             blocked_to_striped=True,
             descending=descending,
         )
-        for i in range(_ITEMS):
+        for i in range(items_per_thread):
             output[i * _THREADS + t] = result[i]
-            ranks_out[t * _ITEMS + i] = ranks[i]
+            ranks_out[t * items_per_thread + i] = ranks[i]
         for i in range(2):
             prefixes[t * 2 + i] = prefix[i]
 
     output = np.empty_like(source)
     ranks = np.empty_like(source)
     prefixes = np.empty(_THREADS * 2, dtype=np.int32)
-    kernel[1, _THREADS](source, output, ranks, prefixes)
+    kernel[1, _THREADS](source, output, ranks, prefixes, items_per_thread)
     permutation = _permutation(source, 0, 7, descending)
     np.testing.assert_array_equal(output, source[permutation])
     expected_ranks = np.empty_like(ranks)
@@ -290,7 +311,7 @@ from cuda import coop
 assert Path(numba_coop.__file__).resolve() == Path({str(Path(numba_coop.__file__).resolve())!r})
 @cuda.jit
 def kernel(source, output, begin, end):
-    keys = coop.ThreadData(2, dtype=types.int32)
+    keys = coop.ThreadData(items_per_thread=2, dtype=types.int32)
     keys[0] = source[cuda.threadIdx.x * 2]
     keys[1] = source[cuda.threadIdx.x * 2 + 1]
     if {pairs!r}:
@@ -329,20 +350,29 @@ raise AssertionError("invalid radix interval did not trap")
     ), output
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("qualified", [False, True])
 @pytest.mark.parametrize("pairs", [False, True])
 def test_chained_sorts_and_ranks_infer_dtypes_from_indexed_writes(
-    qualified, pairs
+    qualified, pairs, *, items_per_thread
 ):
     api = numba_coop if qualified else coop
 
     @cuda.jit
-    def kernel(source, payload, output, associated, ordered_ranks, preserved):
+    def kernel(
+        source,
+        payload,
+        output,
+        associated,
+        ordered_ranks,
+        preserved,
+        items_per_thread,
+    ):
         block = api.this_block()
-        keys = api.ThreadData(_ITEMS)
-        values = api.ThreadData(_ITEMS)
-        for item in range(_ITEMS):
-            index = cuda.threadIdx.x * _ITEMS + item
+        keys = api.ThreadData(items_per_thread)
+        values = api.ThreadData(items_per_thread)
+        for item in range(items_per_thread):
+            index = cuda.threadIdx.x * items_per_thread + item
             keys[item] = source[index]
             values[item] = payload[index]
         if pairs:
@@ -362,14 +392,22 @@ def test_chained_sorts_and_ranks_infer_dtypes_from_indexed_writes(
         api.store(block, output, chosen)
         api.store(block, preserved, keys)
 
-    source = ((np.arange(_THREADS * _ITEMS) * 17) % 43 - 21).astype(np.int64)
+    source = ((np.arange(_THREADS * items_per_thread) * 17) % 43 - 21).astype(
+        np.int64
+    )
     payload = np.arange(source.size, dtype=np.float32) + np.float32(0.25)
     output = np.empty_like(source)
     associated = np.empty_like(payload)
     ordered_ranks = np.empty(source.size, dtype=np.int32)
     preserved = np.empty_like(source)
     kernel[1, _THREADS](
-        source, payload, output, associated, ordered_ranks, preserved
+        source,
+        payload,
+        output,
+        associated,
+        ordered_ranks,
+        preserved,
+        items_per_thread,
     )
     cuda.synchronize()
     permutation = np.argsort(source, kind="stable")
