@@ -30,22 +30,22 @@ def compiler_environment(monkeypatch):
 def test_probe_selects_only_the_current_compiler(compiler_environment):
     assert coop.this_block().kind == "block"
     with pytest.raises(CoopCompilerContextRequiredError):
-        coop.ThreadData(1)
+        coop.ThreadData(items_per_thread=1)
 
     first = compiler_environment.set("first")
     try:
-        assert coop.ThreadData(1) == "first"
+        assert coop.ThreadData(items_per_thread=1) == "first"
         second = compiler_environment.set("second")
         try:
-            assert coop.ThreadData(1) == "second"
+            assert coop.ThreadData(items_per_thread=1) == "second"
         finally:
             compiler_environment.reset(second)
-        assert coop.ThreadData(1) == "first"
+        assert coop.ThreadData(items_per_thread=1) == "first"
     finally:
         compiler_environment.reset(first)
 
     with pytest.raises(CoopCompilerContextRequiredError):
-        coop.ThreadData(1)
+        coop.ThreadData(items_per_thread=1)
 
 
 def test_competing_compiler_environments_fail_closed(compiler_environment):
@@ -57,7 +57,7 @@ def test_competing_compiler_environments_fail_closed(compiler_environment):
         with pytest.raises(
             CoopCompilerContextRequiredError, match="Multiple backends"
         ):
-            coop.ThreadData(1)
+            coop.ThreadData(items_per_thread=1)
     finally:
         compiler_environment.reset(token)
 
@@ -72,5 +72,5 @@ def test_probe_failure_preserves_cause(compiler_environment):
         "test_backend_first", failed_probe
     )
     with pytest.raises(CoopCompilerContextRequiredError) as caught:
-        coop.ThreadData(1)
+        coop.ThreadData(items_per_thread=1)
     assert caught.value.__cause__ is failure
