@@ -70,7 +70,7 @@ def merge_sort_keys(
         Caller-provided scratch for a block group. Omit it to let the compiler
         manage scratch. Warp groups always use compiler-managed storage with
         a separate slice for each physical or logical warp. When sharing
-        scratch between block calls, retain automatic synchronization or
+        scratch between block calls, set ``auto_sync=True`` or
         synchronize explicitly before reuse.
     compare_op : callable, optional
         Stateless device-compatible predicate ``compare_op(left, right)``
@@ -168,7 +168,7 @@ def merge_sort_pairs(
         Caller-provided scratch for a block group. Omit it to let the compiler
         manage scratch. Warp groups always use compiler-managed storage with
         a separate slice for each physical or logical warp. When sharing
-        scratch between block calls, retain automatic synchronization or
+        scratch between block calls, set ``auto_sync=True`` or
         synchronize explicitly before reuse.
     compare_op : callable, optional
         Stateless device-compatible predicate ``compare_op(left, right)``
