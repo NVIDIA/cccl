@@ -186,10 +186,10 @@ def test_thread_data_rejects_rebound_dtype_in_a_branch():
     def kernel(flag):
         if flag:
             dtype = np.int32
-            first = coop.ThreadData(2, dtype)
+            first = numba_coop.ThreadData(2, dtype)
             first[0] = 16777217
             dtype = np.float32
-            second = coop.ThreadData(2, dtype)
+            second = numba_coop.ThreadData(2, dtype)
             second[0] = 1.5
             return first[0] + second[0]
         return 0
@@ -203,9 +203,9 @@ def test_thread_data_rejects_rebound_alignment_in_a_loop():
         result = 0
         for _ in range(count):
             alignment = 64
-            first = coop.ThreadData(2, types.int32, alignment=alignment)
+            first = numba_coop.ThreadData(2, types.int32, alignment=alignment)
             alignment = 16
-            second = coop.ThreadData(2, types.int32, alignment=alignment)
+            second = numba_coop.ThreadData(2, types.int32, alignment=alignment)
             result += first[0] + second[0]
         return result
 
