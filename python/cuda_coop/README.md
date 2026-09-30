@@ -430,8 +430,8 @@ Numba-CUDA-MLIR has these additional compiler constraints:
   byte count within the opt-in limit. Supported Numba-CUDA-MLIR releases do not reliably separate
   static and dynamic allocations: a scratch-using kernel must not also declare
   a zero-sized or runtime-sized `cuda.shared.array`. When cooperative backing
-  becomes dynamic, user static shared arrays are also unsupported. Storage-free
-  operations do not add these restrictions.
+  becomes dynamic, user static shared arrays are also unsupported. Reduce uses the same cooperative
+  backing, including when `temp_storage` is omitted.
 - A descriptor with `auto_sync=False` must originate from one constructor site.
   Selecting between multiple manual-sync constructors is unsupported.
 - Cooperative calls in device helpers must be inlined into the kernel. Use
