@@ -49,6 +49,7 @@ def _run(
     *,
     dtype=np.int32,
     value_dtype=np.float64,
+    items_per_thread=3,
     width=64,
     pairs=True,
     partial=False,
@@ -68,10 +69,9 @@ def _run(
 ):
     key_type, value_type = cutlass_dtype(dtype), cutlass_dtype(value_dtype)
     threads = int(np.prod(block))
-    items = 3
-    size = threads * items
+    size = threads * items_per_thread
     group_size = threads if width == 64 else width
-    tile = group_size * items
+    tile = group_size * items_per_thread
     count = tile - 2 if count is None else count
     info = np.finfo(dtype) if np.dtype(dtype).kind == "f" else np.iinfo(dtype)
     sentinel = np.dtype(dtype).type(info.min if descending else info.max).item()
@@ -88,6 +88,7 @@ def _run(
         check_values: cute.Pointer,
         valid: cutlass.Int64,
         repeats: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + block[0] * (y + block[1] * z)
@@ -116,14 +117,18 @@ def _run(
         else:
             group = api.this_warp().group_by(width)
         keys = api.ThreadData(
-            items, dtype=None if inferred else key_type, alignment=alignment
+            items_per_thread,
+            dtype=None if inferred else key_type,
+            alignment=alignment,
         )
         values = api.ThreadData(
-            items, dtype=None if inferred else value_type, alignment=alignment
+            items_per_thread,
+            dtype=None if inferred else value_type,
+            alignment=alignment,
         )
-        for item in cutlass.range_constexpr(items):
-            keys[item] = sources[thread * items + item]
-            values[item] = inputs[thread * items + item]
+        for item in cutlass.range_constexpr(items_per_thread):
+            keys[item] = sources[thread * items_per_thread + item]
+            values[item] = inputs[thread * items_per_thread + item]
         if cutlass.const_expr(readonly in {"keys", "both"}):
             key_input = _Readonly(keys)
         else:
@@ -182,11 +187,11 @@ def _run(
                         )
                 if cutlass.const_expr(reuse and width == 64 and manual_sync):
                     storage.sync()
-        for item in cutlass.range_constexpr(items):
-            outputs[thread * items + item] = result[item]
-            associated[thread * items + item] = result_values[item]
-            key_checks[thread * items + item] = keys[item]
-            value_checks[thread * items + item] = values[item]
+        for item in cutlass.range_constexpr(items_per_thread):
+            outputs[thread * items_per_thread + item] = result[item]
+            associated[thread * items_per_thread + item] = result_values[item]
+            key_checks[thread * items_per_thread + item] = keys[item]
+            value_checks[thread * items_per_thread + item] = values[item]
 
     @cute.jit
     def launch(
@@ -198,6 +203,7 @@ def _run(
         check_values: cute.Pointer,
         valid: cutlass.Int64,
         repeats: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         kernel(
             source,
@@ -208,6 +214,7 @@ def _run(
             check_values,
             valid,
             repeats,
+            items_per_thread,
         ).launch(grid=1, block=block)
 
     source = values_for(dtype, size, shift=17)
@@ -240,9 +247,9 @@ def _run(
             cutlass.Int32(3 if reuse else 1),
         )
         compiled = (
-            cute.compile[compile_options](launch, *args)
+            cute.compile[compile_options](launch, *args, items_per_thread)
             if compile_options
-            else cute.compile(launch, *args)
+            else cute.compile(launch, *args, items_per_thread)
         )
         compiled(*args)
     np.testing.assert_array_equal(preserved_keys, source)
@@ -281,8 +288,9 @@ def _run(
 )
 @pytest.mark.parametrize("dtype", NUMPY_DTYPES)
 @pytest.mark.parametrize("pairs", (False, True))
-def test_numeric_keys(api, dtype, pairs):
-    _run(api, dtype=dtype, pairs=pairs)
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_numeric_keys(api, dtype, pairs, items_per_thread):
+    _run(api, dtype=dtype, pairs=pairs, items_per_thread=items_per_thread)
 
 
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32, 64))
