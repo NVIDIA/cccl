@@ -353,7 +353,7 @@ def check_run_length_surface(destination: object) -> None:
 
 def check_batched_reduction_typing() -> None:
     warp = coop.this_warp()
-    values = coop.ThreadData(3, np.float32)
+    values = coop.ThreadData(items_per_thread=3, dtype=np.float32)
     assert_type(
         coop.reduce_batched(warp, values), coop.ThreadDataLike[np.float32]
     )

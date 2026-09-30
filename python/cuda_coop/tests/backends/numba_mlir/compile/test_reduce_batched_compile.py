@@ -28,8 +28,11 @@ def compile_kernel(monkeypatch):
         lambda as_type=str: (9, 0) if as_type is tuple else "sm_90",
     )
 
-    def compile_(kernel, block=64):
-        signature = types.void(types.float64[::1], types.float64[::1])
+    def compile_(kernel, block=64, items_per_thread=None):
+        arguments = (types.float64[::1], types.float64[::1])
+        if items_per_thread is not None:
+            arguments += (types.IntegerLiteral(items_per_thread),)
+        signature = types.void(*arguments)
         launch = (
             ("grid", (1, 1, 1)),
             ("block", (block, 1, 1)),
@@ -42,19 +45,23 @@ def compile_kernel(monkeypatch):
 
 
 @pytest.mark.parametrize("layout", ["striped", "blocked"])
-def test_reduce_batched_links_native_provider(compile_kernel, layout):
+@pytest.mark.parametrize("items_per_thread", [1, 4, 33])
+def test_reduce_batched_links_native_provider(
+    compile_kernel, layout, items_per_thread
+):
     @cuda.jit(chip="sm_90")
-    def kernel(source, destination):
+    def kernel(source, destination, items_per_thread):
         block = coop.this_block()
-        values = coop.ThreadData(33)
+        values = coop.ThreadData(items_per_thread)
         coop.load(block, source, values)
         result = coop.reduce_batched(
             coop.this_warp(), values, output_layout=layout
         )
-        destination[cuda.threadIdx.x * 2] = result[0]
-        destination[cuda.threadIdx.x * 2 + 1] = result[1]
+        output_items = result.items_per_thread
+        for item in range(output_items):
+            destination[cuda.threadIdx.x * output_items + item] = result[item]
 
-    compiled = compile_kernel(kernel)
+    compiled = compile_kernel(kernel, items_per_thread=items_per_thread)
     assert compiled.metadata["cubin"]
     assert compiled.metadata["linked_external_link_items"]
 
@@ -71,7 +78,7 @@ def test_reduce_batched_rejects_invalid_contract(
 ):
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
-        values = coop.ThreadData(3)
+        values = coop.ThreadData(items_per_thread=3)
         coop.load(coop.this_block(), source, values)
         if kind == "block":
             group = coop.this_block()
@@ -87,7 +94,7 @@ def test_reduce_batched_rejects_invalid_contract(
 def test_reduce_batched_rejects_partial_physical_warp(compile_kernel):
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
-        values = coop.ThreadData(3)
+        values = coop.ThreadData(items_per_thread=3)
         coop.load(coop.this_block(), source, values)
         result = coop.reduce_batched(coop.this_warp(), values)
         destination[cuda.threadIdx.x] = result[0]
