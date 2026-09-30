@@ -1151,6 +1151,126 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
             ).exists()
         )
 
+    def test_parallel_jobs_match_serial_slice_reports(self) -> None:
+        baseline = self.work / "baseline"
+        current = self.work / "current"
+        slices = self.work / "slices.json"
+        parent = self.traces.project_detail("libcudacxx/include/cuda/std/parent.h")
+        child = self.traces.project_detail("libcudacxx/include/cuda/std/child.h")
+        current_only = self.traces.project_detail(
+            "libcudacxx/include/cuda/std/only_current.h"
+        )
+        for directory, parent_dur, child_dur in (
+            (baseline, 30, 10),
+            (current, 50, 10),
+        ):
+            self.traces.write_trace(
+                directory / "target" / "matched-a.json",
+                [
+                    self.traces.event("Processing Header File", parent, 0, parent_dur),
+                    self.traces.event("Processing Header File", child, 0, child_dur),
+                ],
+                "matched-a",
+            )
+            self.traces.write_trace(
+                directory / "target" / "matched-b.json",
+                [self.traces.event("Processing Header File", parent, 0, parent_dur)],
+                "matched-b",
+            )
+        self.traces.write_trace(
+            current / "target" / "current-only.json",
+            [self.traces.event("Processing Header File", current_only, 0, 7)],
+            "current-only",
+        )
+        slices.write_text(
+            json.dumps(
+                {
+                    "slices": [
+                        {
+                            "id": "files",
+                            "title": "File processing",
+                            "filter": "file-processing",
+                            "timing": "exclusive",
+                            "sort": "total",
+                            "top": 5,
+                            "threshold": 0,
+                            "children": [
+                                {
+                                    "id": "child-files",
+                                    "title": "Nested file processing",
+                                    "filter": "file-processing",
+                                    "timing": "inclusive",
+                                    "sort": "total",
+                                    "top": 5,
+                                    "threshold": 0,
+                                }
+                            ],
+                        },
+                        {
+                            "id": "all-events",
+                            "title": "All events",
+                            "filter": "all",
+                            "timing": "inclusive",
+                            "sort": "max",
+                            "top": 5,
+                            "threshold": 0,
+                        },
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        outputs = []
+        for jobs in (1, 4):
+            output = self.work / f"reports-jobs-{jobs}"
+            self.run_summary(
+                current,
+                baseline,
+                output,
+                "--slices",
+                slices.as_posix(),
+                "--jobs",
+                str(jobs),
+            )
+            outputs.append(output)
+
+        serial, parallel = outputs
+
+        def relative_files(root: Path) -> list[str]:
+            return sorted(
+                path.relative_to(root).as_posix()
+                for path in root.rglob("*")
+                if path.is_file()
+            )
+
+        files = relative_files(serial)
+        self.assertEqual(files, relative_files(parallel))
+        self.assertGreater(len(files), 1)
+        for rel in files:
+            serial_text = (serial / rel).read_text(encoding="utf-8")
+            parallel_text = (parallel / rel).read_text(encoding="utf-8")
+            if rel.endswith(".json"):
+                serial_text = serial_text.replace(serial.as_posix(), "<output>")
+                parallel_text = parallel_text.replace(parallel.as_posix(), "<output>")
+            self.assertEqual(serial_text, parallel_text, rel)
+
+        worse = csv_rows(
+            serial
+            / "files"
+            / "comparison"
+            / "top-5-file-processing-exclusive-same-filter-by-total-worse.csv"
+        )
+        self.assertGreater(len(worse), 0)
+        child_report = (
+            serial
+            / "files"
+            / "child-files"
+            / "current"
+            / "top-5-file-processing-inclusive-by-total.csv"
+        )
+        self.assertGreater(len(csv_rows(child_report)), 0)
+
 
 class CompileTimeMatrixAndCommentTest(unittest.TestCase):
     def setUp(self) -> None:
