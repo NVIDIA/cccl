@@ -615,8 +615,8 @@ coop.merge_sort_pairs(  # expected-error: [call-overload]
 )
 
 
-radix_keys = portable.ThreadData(2, np.int32)
-radix_float = portable.ThreadData(2, np.float32)
+radix_keys = portable.ThreadData(items_per_thread=2, dtype=np.int32)
+radix_float = portable.ThreadData(items_per_thread=2, dtype=np.float32)
 portable.radix_sort_keys(
     portable.this_warp(),  # expected-error: [arg-type]
     radix_keys,
