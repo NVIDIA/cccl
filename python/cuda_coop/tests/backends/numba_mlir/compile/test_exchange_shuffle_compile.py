@@ -434,8 +434,9 @@ def _production_compile_environment(monkeypatch: pytest.MonkeyPatch):
     return compiler_cuda
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_production_kernel_compile_links_shared_storage_and_barriers(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, items_per_thread
 ) -> None:
     compiler_cuda = _production_compile_environment(monkeypatch)
 
@@ -443,11 +444,11 @@ def test_production_kernel_compile_links_shared_storage_and_barriers(
     from cuda import coop as portable_coop
 
     @compiler_cuda.jit(chip="sm_90")
-    def kernel(source, destination, distance):
+    def kernel(source, destination, distance, items_per_thread):
         thread = compiler_cuda.threadIdx.x
-        payload = qualified_coop.ThreadData(2, dtype=types.int32)
-        payload[0] = source[thread * 2]
-        payload[1] = source[thread * 2 + 1]
+        payload = qualified_coop.ThreadData(items_per_thread, dtype=types.int32)
+        for item in range(items_per_thread):
+            payload[item] = source[thread * items_per_thread + item]
         exchanged = portable_coop.exchange(
             portable_coop.this_block(),
             payload,
@@ -464,10 +465,17 @@ def test_production_kernel_compile_links_shared_storage_and_barriers(
             mode="rotate",
             distance=distance,
         )
-        destination[thread * 2] = shifted[0] + rotated
-        destination[thread * 2 + 1] = shifted[1]
+        for item in range(items_per_thread):
+            destination[thread * items_per_thread + item] = (
+                shifted[item] + rotated if item == 0 else shifted[item]
+            )
 
-    signature = types.void(types.int32[::1], types.int32[::1], types.int32)
+    signature = types.void(
+        types.int32[::1],
+        types.int32[::1],
+        types.int32,
+        types.IntegerLiteral(items_per_thread),
+    )
     launch_config_key = (
         ("grid", (1, 1, 1)),
         ("block", (_BLOCK_THREADS, 1, 1)),
@@ -490,8 +498,9 @@ def test_production_kernel_compile_links_shared_storage_and_barriers(
     assert "bar.sync" in ptx
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_untyped_load_composes_directly_into_exchange(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, items_per_thread
 ) -> None:
     compiler_cuda = _production_compile_environment(monkeypatch)
 
@@ -499,9 +508,9 @@ def test_untyped_load_composes_directly_into_exchange(
     from cuda import coop as portable_coop
 
     @compiler_cuda.jit(chip="sm_90")
-    def kernel(source, destination):
+    def kernel(source, destination, items_per_thread):
         thread = compiler_cuda.threadIdx.x
-        payload = qualified_coop.ThreadData(2)
+        payload = qualified_coop.ThreadData(items_per_thread)
         portable_coop.load(
             portable_coop.this_block(),
             source,
@@ -513,10 +522,14 @@ def test_untyped_load_composes_directly_into_exchange(
             payload,
             mode="blocked_to_striped",
         )
-        destination[thread * 2] = exchanged[0]
-        destination[thread * 2 + 1] = exchanged[1]
+        for item in range(items_per_thread):
+            destination[thread * items_per_thread + item] = exchanged[item]
 
-    signature = types.void(types.int32[::1], types.int32[::1])
+    signature = types.void(
+        types.int32[::1],
+        types.int32[::1],
+        types.IntegerLiteral(items_per_thread),
+    )
     launch_config_key = (
         ("grid", (1, 1, 1)),
         ("block", (_BLOCK_THREADS, 1, 1)),
@@ -583,8 +596,9 @@ def _evaluate_warp_mask(definitions, operand, rank):
 
 
 @pytest.mark.parametrize("width", _LOGICAL_WARP_WIDTHS)
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_production_warp_exchange_emits_ordered_reuse_barriers(
-    width, monkeypatch
+    width, monkeypatch, items_per_thread
 ):
     import cuda.coop.numba_mlir as coop
 
@@ -595,19 +609,21 @@ def test_production_warp_exchange_emits_ordered_reuse_barriers(
     )
 
     @cuda.jit(chip="sm_90")
-    def kernel(source, destination):
+    def kernel(source, destination, items_per_thread):
         thread = cuda.threadIdx.x
-        payload = coop.ThreadData(2, dtype=types.int32)
-        payload[0] = source[thread * 2]
-        payload[1] = source[thread * 2 + 1]
+        payload = coop.ThreadData(items_per_thread, dtype=types.int32)
+        for item in range(items_per_thread):
+            payload[item] = source[thread * items_per_thread + item]
         first = coop.exchange(
-            coop.this_warp().group_by(width), payload, mode="blocked_to_striped"
+            coop.this_warp().group_by(width),
+            payload,
+            mode="blocked_to_striped",
         )
         second = coop.exchange(
             coop.this_warp().group_by(width), first, mode="blocked_to_striped"
         )
-        destination[thread * 2] = second[0]
-        destination[thread * 2 + 1] = second[1]
+        for item in range(items_per_thread):
+            destination[thread * items_per_thread + item] = second[item]
 
     launch_key = (
         ("grid", (1, 1, 1)),
@@ -616,7 +632,12 @@ def test_production_warp_exchange_emits_ordered_reuse_barriers(
         ("cluster", None),
     )
     result = kernel._compile_launch_config_signature(
-        types.void(types.int32[::1], types.int32[::1]), launch_key
+        types.void(
+            types.int32[::1],
+            types.int32[::1],
+            types.IntegerLiteral(items_per_thread),
+        ),
+        launch_key,
     )
     assert result.metadata["cubin"]
     mlir = result.metadata["mlir_module_str"]
