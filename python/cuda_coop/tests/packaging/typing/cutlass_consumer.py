@@ -975,7 +975,7 @@ def check_cutlass_neighbors() -> None:
 
 def check_cutlass_histogram() -> None:
     block = cutlass_coop.this_block()
-    samples = cutlass_coop.ThreadData(3, np.uint8)
+    samples = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.uint8)
     storage = cutlass_coop.TempStorage(alignment=16)
     assert_type(
         cutlass_coop.histogram(

@@ -47,6 +47,7 @@ def _run(
     threads=64,
     bins=65,
     bins_per_thread=2,
+    items_per_thread=3,
     reuse=False,
     sharing="shared",
     manual_sync=False,
@@ -62,8 +63,8 @@ def _run(
         cutlass_dtype(dtype),
         cutlass_dtype(counter_dtype),
     )
-    items, blocks, repeats = 3, 2, 4 if reuse else 1
-    tile, projection = threads * items, threads * bins_per_thread
+    blocks, repeats = 2, 4 if reuse else 1
+    tile, projection = threads * items_per_thread, threads * bins_per_thread
     size = tile * blocks * repeats
     selector = (
         None
@@ -79,6 +80,7 @@ def _run(
         output: cute.Pointer,
         preserved: cute.Pointer,
         iterations: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         thread = cute.arch.thread_idx()[0]
         block_index = cute.arch.block_idx()[0]
@@ -94,9 +96,11 @@ def _run(
             cute.make_tensor(preserved, cute.make_layout(size)), value_type
         )
         samples = api.ThreadData(
-            items, dtype=None if inferred else value_type, alignment=alignment
+            items_per_thread,
+            dtype=None if inferred else value_type,
+            alignment=alignment,
         )
-        for item in cutlass.range_constexpr(items):
+        for item in cutlass.range_constexpr(items_per_thread):
             samples[item] = value_type(0)
         if cutlass.const_expr(reuse):
             scratch = api.TempStorage(
@@ -108,8 +112,10 @@ def _run(
         else:
             scratch = None
         for iteration in range(iterations):
-            start = (block_index * repeats + iteration) * tile + thread * items
-            for item in cutlass.range_constexpr(items):
+            start = (
+                block_index * repeats + iteration
+            ) * tile + thread * items_per_thread
+            for item in cutlass.range_constexpr(items_per_thread):
                 samples[item] = inputs[start + item]
             if cutlass.const_expr(payload == "readonly"):
                 values = _Readonly(samples)
@@ -132,7 +138,7 @@ def _run(
                 outputs[block_index * projection + thread + item * threads] = (
                     counts[item]
                 )
-            for item in cutlass.range_constexpr(items):
+            for item in cutlass.range_constexpr(items_per_thread):
                 originals[start + item] = samples[item]
             if cutlass.const_expr(reuse and manual_sync):
                 scratch.sync()
@@ -143,8 +149,9 @@ def _run(
         output: cute.Pointer,
         preserved: cute.Pointer,
         iterations: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, output, preserved, iterations).launch(
+        kernel(source, output, preserved, iterations, items_per_thread).launch(
             grid=blocks, block=threads
         )
 
@@ -161,9 +168,9 @@ def _run(
     ):
         args = src, out, keep, cutlass.Int32(repeats)
         compiled = (
-            cute.compile[compile_options](launch, *args)
+            cute.compile[compile_options](launch, *args, items_per_thread)
             if compile_options
-            else cute.compile(launch, *args)
+            else cute.compile(launch, *args, items_per_thread)
         )
         compiled(*args)
     np.testing.assert_array_equal(preserved, source)
@@ -188,8 +195,17 @@ def _run(
     "counter_dtype", (np.int32, np.uint32, np.int64, np.uint64)
 )
 @pytest.mark.parametrize("algorithm", ("atomic", "sort"))
-def test_counts_types_and_preservation(api, dtype, counter_dtype, algorithm):
-    _run(api, dtype=dtype, counter_dtype=counter_dtype, algorithm=algorithm)
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_counts_types_and_preservation(
+    api, dtype, counter_dtype, algorithm, items_per_thread
+):
+    _run(
+        api,
+        dtype=dtype,
+        counter_dtype=counter_dtype,
+        algorithm=algorithm,
+        items_per_thread=items_per_thread,
+    )
 
 
 @pytest.mark.parametrize("algorithm", ("atomic", "sort"))
@@ -265,12 +281,17 @@ def test_final_cubin(tmp_path, algorithm):
         assert re.search(r"\bCALL\b", sass) is None
 
 
-def test_documented_histogram():
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_documented_histogram(items_per_thread):
     # docs: start cutlass-histogram
     @cute.kernel
-    def count_samples(source: cute.Pointer, destination: cute.Pointer):
+    def count_samples(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
         block = coop.this_block()
-        samples = coop.ThreadData(items_per_thread=3)
+        samples = coop.ThreadData(items_per_thread)
         coop.load(block, source, samples)
         counts = coop.histogram(
             block, samples, bins=65, bins_per_thread=2, counter_dtype=np.int64
@@ -278,15 +299,21 @@ def test_documented_histogram():
         coop.store(block, destination, counts, algorithm="striped")
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer):
-        count_samples(source, destination).launch(grid=1, block=64)
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        count_samples(source, destination, items_per_thread).launch(
+            grid=1, block=64
+        )
 
     # docs: end cutlass-histogram
 
-    source = (np.arange(192, dtype=np.int32) * 13) % 65
+    source = (np.arange(64 * items_per_thread, dtype=np.int32) * 13) % 65
     output = np.full(128, -1, dtype=np.int64)
     with device_array(source) as src, device_array(output) as out:
-        launch(src, out)
+        launch(src, out, items_per_thread)
     np.testing.assert_array_equal(
         output[:65], np.bincount(source, minlength=65)
     )
