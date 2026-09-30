@@ -84,8 +84,9 @@ guides for partial-tile examples and :doc:`../../coop_api` for parameter details
 Using Merge Sort in a kernel
 ----------------------------
 
-This Numba example sorts 128 keys in one block of 64 threads. Each thread
-owns two keys and two original-position values. The checks verify both key
+This Numba example sorts ``64 * items_per_thread`` keys in one block of
+64 threads. Each thread owns ``items_per_thread`` keys and matching
+original-position values. The checks verify both key
 order and the association between each returned key and its original index.
 
 .. literalinclude:: ../../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_merge_sort_examples.py
@@ -94,8 +95,9 @@ order and the association between each returned key and its original index.
    :end-before: # merge-sort-example-end
    :dedent: 4
 
-This CuTe example sorts a partial tile with 64 threads and three items per
-thread. ``module`` selects the common or CUTLASS-qualified API. It checks
+This CuTe example sorts a partial tile with 64 threads and an
+``items_per_thread`` argument, defaulting to three. ``module`` selects the
+common or CUTLASS-qualified API. It checks
 both key order and pair association while preserving the original inputs.
 :download:`Download the complete CuTe example
 <../../../../python/cuda_coop/examples/cutlass/merge_sort.py>` for constants,

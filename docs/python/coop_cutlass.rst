@@ -164,25 +164,24 @@ not load CUTLASS or initialize CUDA bindings.
 Activation and example
 ----------------------
 
-To use the common API, register CUTLASS on the host before compiling:
+Import CuTe before ``cuda.coop`` to register the backend automatically:
 
 .. code-block:: python
 
-   from cuda import coop
-
-   coop.register("cutlass")
-
    import cutlass.cute as cute
 
-Registration works in either import order, is safe to repeat, and remains
-available when automatic registration is disabled. Importing
-``cuda.coop.cutlass`` also registers the backend. For convenience, importing
-``cuda.coop`` after ``cutlass`` activates it automatically.
+   from cuda import coop
+
+If you cannot ensure import order, call ``coop.register("cutlass")`` on the
+host before compiling. It is safe to repeat, including when the backend is
+already registered, and remains available when automatic registration is
+disabled. Importing ``cuda.coop.cutlass`` also registers the backend.
 
 After registration, call the primitives inside ``@cute.kernel`` or a
 ``@cute.jit`` function called by that kernel.
 
-This example loads two adjacent items per thread and stores a partial tile in
+This example takes ``items_per_thread`` as a kernel argument; its host entry
+point defaults to two adjacent items per thread. It stores a partial tile in
 the same blocked layout. ``module`` selects the common or qualified API. The
 full example defines the tile dimensions and checks the output against a CPU
 reference. :download:`Download the example
@@ -213,6 +212,13 @@ determines the layout expected by that call; the payload does not carry a
 layout tag. See the :doc:`Load <coop/visualizations/load>` and
 :doc:`Exchange <coop/visualizations/exchange>` visualizations for the mappings.
 
+Pass the item count as ``items_per_thread: cutlass.Constexpr`` on the
+``@cute.kernel`` and its ``@cute.jit`` launcher, and construct the payload
+with ``coop.ThreadData(items_per_thread)``. Forward the host value through
+the launcher to the kernel. CuTe specializes the count during compilation;
+it remains fixed while the kernel executes. Use
+``cutlass.range_constexpr(items_per_thread)`` when indexing each slot.
+
 Leave the constructor's element type unspecified for normal use. Load
 infers it from the memory operand; consuming primitives can infer it from
 homogeneous initialized values. Use typed scalar assignments, such as
@@ -236,7 +242,7 @@ operations document their result ownership below. Read results only at the
 positions or threads where the primitive defines them.
 
 Index payloads with compile-time integers and initialize each item before
-reading it. ``ThreadData(items_per_thread=4, alignment=16)`` requests at
+reading it. ``ThreadData(items_per_thread, alignment=16)`` requests at
 least 16-byte alignment when storage is materialized. Input and output memory
 alignment is separate. The compiler decides which values remain in registers
 and which spill to local memory. The :ref:`qualified conversion methods
@@ -323,7 +329,7 @@ alignment permit them, with direct accesses as a fallback.
 
 Direct, striped, and vectorized Load/Store use no shared scratch and need no
 scratch-reuse barrier, even when passed a ``TempStorage`` descriptor.
-``ThreadData(items_per_thread=2, alignment=...)`` requests a minimum payload alignment; it does
+``ThreadData(items_per_thread, alignment=...)`` requests a minimum payload alignment; it does
 not change the logical item layout.
 
 .. _coop-cutlass-storage:
@@ -541,7 +547,7 @@ Built-in Scan
 ``scan``, ``exclusive_scan``, ``inclusive_scan``, ``exclusive_sum``, and
 ``inclusive_sum`` support block, physical warp, and logical warp groups. Block
 primitives accept scalars and fixed multi-item payloads; warp primitives
-accept one scalar per lane. A ``ThreadData(items_per_thread=1)`` remains an array payload
+accept one scalar per lane. A ``ThreadData(1)`` remains an array payload
 and is not accepted by Warp Scan. Input values are preserved. A scalar input
 returns a scalar; a block payload returns a fresh ``ThreadData`` with the same
 dtype and extent in blocked order.

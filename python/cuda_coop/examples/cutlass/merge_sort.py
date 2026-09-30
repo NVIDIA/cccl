@@ -16,9 +16,6 @@ from cuda.bindings import driver
 from cuda.coop import cutlass as cutlass_coop
 
 _BLOCK = (8, 4, 2)
-_ITEMS = 3
-_TILE = 64 * _ITEMS
-_VALID = _TILE - 7
 
 
 def _check(result):
@@ -27,8 +24,10 @@ def _check(result):
     return result[1] if len(result) == 2 else result[1:]
 
 
-def run_example(api="common"):
+def run_example(api="common", items_per_thread=3):
     """Check key ordering, pair association, and unchanged input payloads."""
+    tile_size = 64 * items_per_thread
+    valid_items = tile_size - 7
     if api not in {"common", "qualified"}:
         raise ValueError("api must be 'common' or 'qualified'")
     module = coop if api == "common" else cutlass_coop
@@ -43,21 +42,32 @@ def run_example(api="common"):
         sorted_values: cute.Pointer,
         original_keys: cute.Pointer,
         original_values: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
+        tile_size = 64 * items_per_thread
+        valid_items = tile_size - 7
         group = module.this_block()
-        keys = module.ThreadData(items_per_thread=_ITEMS)
-        values = module.ThreadData(items_per_thread=_ITEMS)
+        keys = module.ThreadData(items_per_thread)
+        values = module.ThreadData(items_per_thread)
         module.load(
-            group, source_keys, keys, valid_items=_VALID, oob_default=1000
+            group,
+            source_keys,
+            keys,
+            valid_items=valid_items,
+            oob_default=1000,
         )
         module.load(
-            group, source_values, values, valid_items=_VALID, oob_default=0.0
+            group,
+            source_values,
+            values,
+            valid_items=valid_items,
+            oob_default=0.0,
         )
         scratch = module.TempStorage(alignment=16, auto_sync=True)
         sorted_keys = module.merge_sort_keys(
             group,
             keys,
-            valid_items=_VALID,
+            valid_items=valid_items,
             oob_default=1000,
             temp_storage=scratch,
         )
@@ -66,15 +76,40 @@ def run_example(api="common"):
             keys,
             values,
             descending=True,
-            valid_items=_VALID,
+            valid_items=valid_items,
             oob_default=-1000,
             temp_storage=scratch,
         )
-        module.store(group, ascending, sorted_keys, valid_items=_VALID)
-        module.store(group, descending, pair_keys, valid_items=_VALID)
-        module.store(group, sorted_values, pair_values, valid_items=_VALID)
-        module.store(group, original_keys, keys, valid_items=_VALID)
-        module.store(group, original_values, values, valid_items=_VALID)
+        module.store(
+            group,
+            ascending,
+            sorted_keys,
+            valid_items=valid_items,
+        )
+        module.store(
+            group,
+            descending,
+            pair_keys,
+            valid_items=valid_items,
+        )
+        module.store(
+            group,
+            sorted_values,
+            pair_values,
+            valid_items=valid_items,
+        )
+        module.store(
+            group,
+            original_keys,
+            keys,
+            valid_items=valid_items,
+        )
+        module.store(
+            group,
+            original_values,
+            values,
+            valid_items=valid_items,
+        )
 
     @cute.jit
     def launch(
@@ -85,6 +120,7 @@ def run_example(api="common"):
         sorted_values: cute.Pointer,
         original_keys: cute.Pointer,
         original_values: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
         sort_tile(
             source_keys,
@@ -94,15 +130,16 @@ def run_example(api="common"):
             sorted_values,
             original_keys,
             original_values,
+            items_per_thread,
         ).launch(grid=1, block=_BLOCK)
 
     # docs: end cutlass-merge-sort
 
     rng = np.random.default_rng(42)
-    source_keys = rng.integers(-31, 32, size=_VALID, dtype=np.int32)
-    source_values = np.arange(_VALID, dtype=np.float64) + 0.25
+    source_keys = rng.integers(-31, 32, size=valid_items, dtype=np.int32)
+    source_values = np.arange(valid_items, dtype=np.float64) + 0.25
     outputs = [
-        np.full(_TILE, -999, dtype=dtype)
+        np.full(tile_size, -999, dtype=dtype)
         for dtype in (np.int32, np.int32, np.float64, np.int32, np.float64)
     ]
     arrays = [source_keys, source_values, *outputs]
@@ -130,7 +167,7 @@ def run_example(api="common"):
                     assumed_align=16,
                 )
             )
-        launch(*pointers)
+        launch(*pointers, items_per_thread)
         _check(driver.cuCtxSynchronize())
         for array, allocation in zip(outputs, allocations[2:]):
             _check(
@@ -141,16 +178,19 @@ def run_example(api="common"):
         outputs
     )
     expected_keys = np.sort(source_keys)
-    np.testing.assert_array_equal(ascending[:_VALID], expected_keys)
-    np.testing.assert_array_equal(descending[:_VALID], expected_keys[::-1])
+    np.testing.assert_array_equal(ascending[:valid_items], expected_keys)
+    np.testing.assert_array_equal(descending[:valid_items], expected_keys[::-1])
     # Equal keys have no stability guarantee; compare complete key/value pairs.
-    assert sorted(zip(descending[:_VALID], sorted_values[:_VALID])) == sorted(
-        zip(source_keys, source_values)
-    )
-    np.testing.assert_array_equal(original_keys[:_VALID], source_keys)
-    np.testing.assert_array_equal(original_values[:_VALID], source_values)
+    assert sorted(
+        zip(
+            descending[:valid_items],
+            sorted_values[:valid_items],
+        )
+    ) == sorted(zip(source_keys, source_values))
+    np.testing.assert_array_equal(original_keys[:valid_items], source_keys)
+    np.testing.assert_array_equal(original_values[:valid_items], source_values)
     for output in outputs:
-        np.testing.assert_array_equal(output[_VALID:], -999)
+        np.testing.assert_array_equal(output[valid_items:], -999)
     return outputs
 
 

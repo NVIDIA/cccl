@@ -635,8 +635,8 @@ def check_cutlass_merge_sort_surface() -> None:
     block = cutlass_coop.this_block()
     warp = cutlass_coop.this_warp()
     logical = warp.group_by(8)
-    keys = cutlass_coop.ThreadData(3, np.int32)
-    values = cutlass_coop.ThreadData(3, np.float64)
+    keys = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.int32)
+    values = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.float64)
     storage = cutlass_coop.TempStorage(alignment=32)
     assert_type(
         cutlass_coop.merge_sort_keys(block, keys),
