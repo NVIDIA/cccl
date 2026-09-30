@@ -128,7 +128,7 @@ struct reduce_build_ex
     return cc_major < 9;
   }
 
-  const cccl_build_config config;
+  cccl_build_config config;
 
   reduce_build_ex(const char** extra_compile_flags, size_t num_flags, const char** extra_include_dirs, size_t num_dirs)
       : config(make_build_config(extra_compile_flags, num_flags, extra_include_dirs, num_dirs))
@@ -667,7 +667,7 @@ C2H_TEST("Reduce works with C++ source operations using _ex build", "[reduce]")
   const auto& build_info  = BuildInformation<device_id>::init();
 
   BuildResultT build{};
-  reduce_build_ex builder(extra_flags, 1, extra_includes, 1);
+  const reduce_build_ex builder(extra_flags, 1, extra_includes, 1);
 
   REQUIRE(
     CUDA_SUCCESS
