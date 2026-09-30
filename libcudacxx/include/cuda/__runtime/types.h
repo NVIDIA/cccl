@@ -33,7 +33,13 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 
 using memory_location = ::cudaMemLocation;
 
-inline constexpr memory_location host_memory_location = {
+// Not constexpr: for CUDA 12.1-, cudaMemLocationTypeHost isn't a named
+// enumerator yet, so the fallback casts a raw int into cudaMemLocationType.
+// That cast's result is only an "unspecified value" (not ill-formed) per
+// [dcl.enum] when evaluated at runtime, but a constant-expression context
+// (constexpr) requires it to name an enumerator, which this doesn't for
+// CUDA 12.1-, so strict compilers reject it there.
+inline const memory_location host_memory_location = {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
   ::cudaMemLocationTypeHost,
 #  else // ^^^ CUDA 12.2+ ^^^ / vvv CUDA 12.1- vvv
