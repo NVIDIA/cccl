@@ -187,15 +187,14 @@ struct baseline_topk_policy
   constexpr auto scan_alg  = BLOCK_SCAN_WARP_SCANS;
   constexpr auto epilogue  = epilogue_policy{16, load_alg, store_alg, scan_alg};
   return baseline_topk_policy{
-    {{
-       worker_policy{256, 64, load_alg, store_alg, epilogue},
-       worker_policy{256, 32, load_alg, store_alg, epilogue},
-       worker_policy{256, 16, load_alg, store_alg, epilogue},
-       worker_policy{256, 8, load_alg, store_alg, epilogue},
-       worker_policy{256, 4, load_alg, store_alg, epilogue},
-       worker_policy{128, 2, load_alg, store_alg, epilogue},
-     },
-     6},
+    {
+      worker_policy{256, 64, load_alg, store_alg, epilogue},
+      worker_policy{256, 32, load_alg, store_alg, epilogue},
+      worker_policy{256, 16, load_alg, store_alg, epilogue},
+      worker_policy{256, 8, load_alg, store_alg, epilogue},
+      worker_policy{256, 4, load_alg, store_alg, epilogue},
+      worker_policy{128, 2, load_alg, store_alg, epilogue},
+    },
     multi_worker_policy{256, 64}};
 }
 

@@ -46,13 +46,23 @@ struct structural_inplace_vector
   using iterator        = T*;
   using const_iterator  = const T*;
 
-  // Kept as an aggregate (no user-declared constructors): older MSVC toolsets (< 19.44) fail to correctly
-  // constant-fold this type through CC dispatch's NTTP-based policy resolution once it gains a user-declared
-  // constructor (observed as a worker_policy silently reading back as zero-initialized deep in agent instantiation,
-  // rather than a hard error at the actual fault). Callers list Capacity elements, using `{}` to pad unused slots,
-  // and set `count` explicitly -- see e.g. make_baseline_policy().
   T elems[Capacity]{};
   size_type count = 0;
+
+  constexpr structural_inplace_vector() = default;
+
+  // A parameter pack rather than an initializer_list<T> constructor: older MSVC toolsets (< 19.44) fail to
+  // correctly constant-fold this type through CC dispatch's NTTP-based policy resolution when constructed from an
+  // initializer_list (observed as a worker_policy silently reading back as zero-initialized deep in agent
+  // instantiation, rather than a hard error at the actual fault). The pack is spliced directly into elems's
+  // mem-initializer, so there's no runtime loop involved.
+  template <typename... Us>
+  _CCCL_HOST_DEVICE_API constexpr structural_inplace_vector(Us... us)
+      : elems{static_cast<T>(us)...}
+      , count(sizeof...(Us))
+  {
+    static_assert(sizeof...(Us) <= Capacity, "structural_inplace_vector: too many elements for capacity");
+  }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool empty() const noexcept
   {
