@@ -98,9 +98,16 @@ class _ProvenanceRewrite:
         ] = {}
         self._deferred_launch_dim_inference = False
 
+    def _lookup_block_definition(self, name):
+        # Before SSA, a name can be rebound in a loop or branch. The block map
+        # retains only its last assignment, which may follow the current use.
+        if len(self._func_ir._definitions.get(name, ())) > 1:
+            return None
+        return self._block_defs.get(name)
+
     def _infer_constant(self, value):
         if isinstance(value, ir.Var):
-            definition = self._block_defs.get(value.name)
+            definition = self._lookup_block_definition(value.name)
             if isinstance(definition, (ir.Const, ir.Global, ir.FreeVar)):
                 return definition.value
         return self._func_ir.infer_constant(value)
@@ -141,15 +148,17 @@ class _ProvenanceRewrite:
 
     def _lookup_definition(self, value):
         if isinstance(value, ir.Var):
-            if value.name in self._block_defs:
-                return self._block_defs[value.name]
+            definition = self._lookup_block_definition(value.name)
+            if definition is not None:
+                return definition
             try:
                 return self._func_ir.get_definition(value)
             except KeyError:
                 return None
         if isinstance(value, str):
-            if value in self._block_defs:
-                return self._block_defs[value]
+            definition = self._lookup_block_definition(value)
+            if definition is not None:
+                return definition
             try:
                 return self._func_ir.get_definition(value)
             except KeyError:
@@ -170,16 +179,14 @@ class _ProvenanceRewrite:
             defs.append(candidate)
 
         if isinstance(value, ir.Var):
-            if value.name in self._block_defs:
-                add(self._block_defs[value.name])
+            add(self._lookup_block_definition(value.name))
             for definition in (
                 getattr(self._func_ir, "_definitions", {}) or {}
             ).get(value.name, ()):
                 add(definition)
             return defs
         if isinstance(value, str):
-            if value in self._block_defs:
-                add(self._block_defs[value])
+            add(self._lookup_block_definition(value))
             for definition in (
                 getattr(self._func_ir, "_definitions", {}) or {}
             ).get(value, ()):
@@ -436,6 +443,14 @@ class _ProvenanceRewrite:
         dtype = None
         if dtype_ref is not None:
             dtype = self._resolve_dtype_ref(dtype_ref)
+            if dtype is None:
+                try:
+                    self._infer_constant(dtype_ref)
+                except _INFERENCE_EXCEPTIONS as exc:
+                    raise CoopSinglePhaseRewriteError(
+                        "coop.ThreadData dtype must resolve to a "
+                        "compile-time dtype or None"
+                    ) from exc
             if any(dtype is alias for alias in (bool, int, float, complex)):
                 dtype = normalize_dtype_param(dtype)
         return _ThreadDataSpec(
