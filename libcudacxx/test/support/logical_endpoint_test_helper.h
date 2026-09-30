@@ -55,16 +55,15 @@ struct support_result
 
 [[nodiscard]] inline const char* runtime_unsupported_reason(int minimum_device_count = 1)
 {
-  if (cuda::__driver::__version_below(13, 3))
-  {
-    return "logical endpoints require a CUDA 13.3 driver";
-  }
-
   int device_count = 0;
   if (minimum_device_count > 0
       && (::cudaGetDeviceCount(&device_count) != cudaSuccess || device_count < minimum_device_count))
   {
     return "logical endpoint tests require a CUDA device";
+  }
+  if (cuda::__driver::__version_below(13, 3))
+  {
+    return "logical endpoints require a CUDA 13.3 driver";
   }
   return nullptr;
 }
