@@ -1302,7 +1302,7 @@ _CCCL_FPMP_MATH_DISPATCH_1A(cospi)
  * Split a float into a nearby integer and an exact residual in [-1/2, 1/2].
  * The integer is returned mod 2; only its parity changes sin(pi*x) and cos(pi*x).
  */
-_CCCL_FPMP_CORE_API int __internal_fpmp2_pi_limb(float __x, float* __f) noexcept
+[[nodiscard]] _CCCL_FPMP_CORE_API int __internal_fpmp2_pi_limb(float __x, float* __f) noexcept
 {
   const float __abs = (__x < 0.0f) ? -__x : __x;
   if (__abs >= 0x1p24f)
