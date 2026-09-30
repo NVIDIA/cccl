@@ -40,7 +40,6 @@ Each guideline is a section of the form:
   `test`, `infra`, `docs`.
 
 ## build.compiler-matrix (important, all C++ code)
-
 <!-- provenance:
   #534→#536 MSVC int128/asm;
   #1403→#1423 VLAs;
@@ -60,10 +59,16 @@ Each guideline is a section of the form:
 
 Flag compiler-specific constructs unless guarded by a feature macro: `__int128`, GNU inline
 `asm`, `__attribute__`, VLAs, visibility attributes, one-compiler warning suppressions, etc.
-CCCL must build with GCC, Clang, MSVC, NVHPC/NVC++ (incl. `-stdpar`), and NVRTC; PR CI does
-not cover all of these, so green CI is not sufficient. Compiler-detection refactors must
-stay equivalent for every supported compiler — beware masquerading (Clang and NVHPC define
-`__GNUC__`). Benchmarks and tests count too.
+CCCL must build with GCC, Clang, MSVC, ICC, NVHPC/NVC++ (incl. `-stdpar`), and NVRTC; PR CI
+does not cover all of these, so green CI is not sufficient. Compiler-detection refactors must
+stay equivalent for every supported compiler: when an `#if`/`#elif` is rewritten from raw
+macros (`__GNUC__`, `__clang__`, `..._HOST_COMPILER == ..._GCC`) to exact-identity macros,
+re-evaluate it per compiler — Clang, ICC, and NVHPC masquerade by defining `__GNUC__`, so the
+old branch matched them while the new one matches real GCC only. Tell-tale bug: a converted
+allowlist (`#if GCC || CLANG || ICC`) gating an `#include` or feature that later code uses
+unconditionally — NVHPC silently drops out; flag any converted allowlist missing an NVHPC
+term (or not rewritten as a denylist) and any deleted `#else` fallback. Benchmarks and tests
+count too — CCCL builds them with MSVC, which supports none of the above constructs.
 
 ## build.fp16-implicit-ops (important, C++ code using `__half`/`__nv_bfloat16` or similar extended FP types)
 
@@ -154,7 +159,6 @@ as utility for other functions, not documented, etc.). The entity should be mark
 appropriate.
 
 ## abi.missing-hide-from-abi (critical, inline functions in public headers whose behavior depends on the build configuration)
-
 <!-- provenance:
   #2591→#3209 CUB kernel-source getters returned kernel pointers without _CCCL_HIDE_FROM_ABI;
   #5255→#5272 driver_api.h promoted into the public libcudacxx tree carrying plain-inline functions without _CCCL_HOST_API
@@ -165,7 +169,10 @@ into one binary (e.g., built against different CUDA toolkits or CCCL versions) �
 returning kernel or function pointers — unless it is marked `_CCCL_HIDE_FROM_ABI` (or an attribute macro
 that includes it, like `_CCCL_HOST_API`). With default visibility the linker keeps ONE definition
 across all copies, so the losing copy's callers get the other build's result (e.g. a wrong kernel
-pointer) — no build error, just wrong behavior at run time.
+pointer) — no build error, just wrong behavior at run time. When a header is new to a shipped
+include tree — including files moved or promoted from elsewhere (e.g. cudax or detail into
+libcudacxx) — scan the whole file for bare `inline` function definitions, not just the changed
+lines, and flag each one that lacks such a macro.
 
 ## correctness.cuda-driver-symbol-version-guard (critical, code calling CUDA Driver API symbols)
 
@@ -199,7 +206,6 @@ Flag dependencies fetched by branch name (`CPMAddPackage("gh:org/repo#main")`, `
 main`); pin a commit or tag. Candidate for a pre-commit grep.
 
 ## correctness.stale-refs-after-rename (important, renames, moves, or splits of files, symbols, or modules anywhere in the repo)
-
 <!-- provenance:
   #3177→#3192 cuda.parallel module split left docs automodule pointing at emptied package;
   #10012→#10042 docs flattening left stale path in a test comment and an empty api/thread toctree stub;
@@ -212,11 +218,13 @@ main`); pin a commit or tag. Candidate for a pre-commit grep.
   would cover the last clause mechanically; retire it once such a check exists.
 -->
 
-When a diff renames, moves, or splits a file, macro, symbol, or module, `git grep` for the old name:
-each remaining hit must be updated, or be classified as an unrelated entity that merely shares
-the name. Doc directives (`automodule::`/`toctree::`) can go stale without containing the old name and
-still build cleanly (autodoc renders emptied packages as blank pages) — verify the rendered docs, not
-just the grep.
+When a diff renames, moves, or splits a file, macro, symbol, or module, `git grep` the entire repo
+(not just the directories the diff touches) for the old name: each remaining hit must be updated, or
+be classified as an unrelated entity that merely shares the name. Beware CCCL's mirror trees: examples
+live both under `<project>/examples/` and top-level `examples/<project>/`, so a bulk rename that
+updates one copy can silently miss the other. Doc directives (`automodule::`/`toctree::`) can go stale without
+containing the old name and still build cleanly (autodoc renders emptied packages as blank pages) —
+verify the rendered docs, not just the grep.
 
 ## correctness.workaround-breaks-constexpr (important, constexpr-marked)
 
@@ -243,7 +251,6 @@ Replacing calls to `cudaMemset` by kernels launched using PDL should be strongly
 pointed out as suggestions.
 
 ## api.type-replacement (critical, public types in thrust/libcudacxx/cub)
-
 <!-- provenance:
   #262→#1249 (backport #1292) pair trivial copyability;
   #454→#1286,#1425,#1497 complex reverted three times;
@@ -251,23 +258,29 @@ pointed out as suggestions.
 -->
 
 When a diff reimplements, re-derives, or aliases any public type (`thrust::pair`/`tuple`/`complex`,
-iterators, …), verify every observable property of the old type is preserved: trivial copyability and
-layout (downstream code `memcpy`s them), size/alignment, implicit conversions and promotions, overload
-resolution, and numerical behavior.
+iterators, …) — e.g. replacing a hand-written struct with an alias of or derivation from a
+`cuda::std::`/libc++ type — do not assume equivalence: open the replacement's definition and verify
+every observable property of the old type is preserved: trivial copyability (any user-provided,
+non-defaulted copy/move constructor or `operator=` in the replacement or its bases kills it) and
+layout (downstream code `memcpy`s them and passes them as kernel arguments), size/alignment, implicit
+conversions and promotions, overload resolution, and numerical behavior. Flag a lost property as a
+present defect unless the diff adds `static_assert`s pinning it.
 
 ## build.windows-min-max-macro (important, C++ code calling `.max()`/`.min()` or naming a new member/trait `max`/`min`)
-
 <!-- provenance:
   #8875→#9246 argument-annotation trait member named max, computed via unparenthesized numeric_limits<T>::max(), a preprocessor argument-count error under <windows.h>'s max/min macros;
   renamed to highest/lowest and parenthesized
 -->
 
 Flag an unparenthesized call to a function literally named `max`/`min` (e.g.
-`std::numeric_limits<T>::max()`), and any new member or trait named `max`/`min`. On Windows,
-`<windows.h>` defines `max`/`min` as function-like macros, breaking such code. Headers sandwiched
-between `<cuda/std/__cccl/prologue.h>`/`epilogue.h` (libcudacxx, cudax) are safe; everywhere else
-(CUB, Thrust, tests, examples), require the macro-safe spelling `(std::numeric_limits<T>::max)()`
-and prefer other member names. Candidate for a pre-commit grep.
+`std::numeric_limits<T>::max()`), and any new member or trait member named `max`/`min` (e.g.
+`static constexpr T max = ...;` in a traits struct). On Windows, `<windows.h>` defines `max`/`min`
+as function-like macros, breaking such code. Headers sandwiched between
+`<cuda/std/__cccl/prologue.h>`/`epilogue.h` (libcudacxx, cudax) are safe for calls, but NOT for new
+declarations named `max`/`min`: user code spelling `some_trait<T>::max` still expands the macro.
+Everywhere else (CUB, Thrust, tests, examples), require the macro-safe spelling
+`(std::numeric_limits<T>::max)()`. Always require a different member name (e.g. `highest`/`lowest`).
+Candidate for a pre-commit grep.
 
 ## perf.benchmark-exec-tag-sync-without-sync-call (important, nvbench benchmark harness `state.exec(...)` calls)
 
@@ -313,7 +326,6 @@ destruction. Require a test that moves the object and confirms the action fires 
 moved-from object has been disarmed.
 
 ## correctness.verification-removed-without-replacement (important, any diff deleting a check or test)
-
 <!-- provenance:
   #3743→#3866 dropping deprecated cub::Traits CATEGORY usage also deleted the static_assert cross-checks (old_IS_SMALL_UNSIGNED, "sanity check, remove eventually") comparing new type classification to the old one, breaking dispatch for library-extended types (NVBug 5121653);
   #3970→#9211 (issue #807) generate/raw_reference_cast simplification deleted the compile-fail harness (runtime_static_assert.h, unittest_static_assert.cu) with no replacement
@@ -323,7 +335,11 @@ When a diff deletes a check verifying a property, but does not delete the checke
 `static_assert` cross-checking a new computation against an old one (tells: "sanity check" comments,
 `old_*` names), a negative or compile-fail test (`*_fail*`, `*_static_assert*`, `UNSUPPORTED`/`XFAIL`
 markers), a runtime assertion, then do not accept the deletion of the check, unless the diff shows the
-property now holds by construction or adds a replacement check verifying the same property.
+property now holds by construction or adds a replacement check verifying the same property. Be
+especially wary when the old side of a deleted cross-check reads a user-specializable trait or
+customization point while the surviving new side uses a fixed standard trait: for user-extended types
+the two can disagree, so dispatch silently changes with no compile error — that the old mechanism is
+deprecated does not make the deletion safe.
 
 ## correctness.temp-storage-raw-alignment (critical, CUB/Thrust device-dispatch code allocating or indexing into `d_temp_storage`)
 
@@ -444,19 +460,20 @@ the byte offset does not, so the multiplication must be widened to 64 bits first
 `offset * size_t{sizeof(T)}`).
 
 ## perf.jit-cache-key-vs-codegen-inputs (important, cuda.compute build-result caching)
-
 <!-- provenance:
   #7657→#9596 (pair auto-inferred as #9475→#9596) histogram build cache keyed on runtime lower/upper level values and exact num_samples, forcing a recompile per distinct bounds (issue #9594)
 -->
 
 When a diff constructs or changes the cache key of a memoized build result (factories decorated with
-`@cache_with_registered_key_functions`, the shared `cache_build_results` cache), require the key to
+`@cache_with_registered_key_functions`, the shared `cache_build_results` cache), audit every argument
+in the key list individually — even in mechanical-looking refactors — and require the key to
 consist of exactly the inputs that affect the generated code: dtypes, iterator kinds, operator
-identity, compile-regime flags. Flag runtime kernel arguments in the key — scalar bounds, exact
-element counts — since every distinct runtime value then triggers a full recompile, silently
-destroying cache hit rates; canonicalize them into their compile-relevant form first (dtype,
-32/64-bit-offset flag). Scalars captured by a JIT-compiled operator are deliberately keyed by value.
-Conversely, flag a key that omits a compile-affecting input, which causes wrong-kernel reuse.
+identity, compile-regime flags. Flag runtime kernel arguments in the key — scalar bounds such as
+histogram lower/upper levels, exact element/sample counts like `num_samples` — since every distinct
+runtime value then triggers a full recompile, silently destroying cache hit rates; canonicalize them
+into their compile-relevant form first (dtype, 32/64-bit-offset flag). Scalars captured by a
+JIT-compiled operator are deliberately keyed by value. Conversely, flag a key that omits a
+compile-affecting input, which causes wrong-kernel reuse.
 
 ## test.sibling-config-drift (important, CMake test configuration)
 
@@ -513,7 +530,6 @@ base revision. A copy that recomputes the type inline silently misses the new ca
 the inline computation with the shared helper.
 
 ## perf.tuning-refactor-verification (important, CUB tuning-policy selectors in `cub/device/dispatch/tuning/*.cuh` and perf-critical type/arch dispatch)
-
 <!-- provenance:
   #3127→#3239 RLE tuning LOAD_LDG/LOAD_DEFAULT fallback swap;
   #3137→#3240 same bug in ReduceByKey tuning;
@@ -526,14 +542,14 @@ the inline computation with the shared helper.
 
 A policy selector is a constexpr function from a compute capability and type information to a tuning
 policy value. When a diff refactors one (or anything it calls, or the `*Policy` structs it returns)
-without claiming a perf change, the function must return the same policy values for every input as
-before — check equivalence per (architecture, type, size, operation) combination, not per code branch.
-Typical silent breaks: a combination that used to hit tuned values now falls through to a fallback or
-empty `optional` (no compile error, just an untuned policy); a field added/removed/reordered in a
-policy struct shifting every positional brace-init (`ScanLookaheadPolicy{6, 104 - 1, 8, 2, 2}`); a
-dispatch wrapper no longer forwarding its policy selector to an inner dispatch call. A claim of "no
-SASS changes" verified on one test type is not sufficient; demand a SASS diff or benchmark sweep over
-non-default/non-primitive value types and every affected architecture.
+without claiming a perf change, it must return the same policy values for every (architecture, type,
+operation) combination as before. Typical silent breaks: a member-detection/SFINAE selector dropping
+every architecture whose tunings lack a detected member (e.g. `load_algorithm`) to an untuned fallback
+with no compile error; merged fallback paths whose hardcoded fields differ (`LOAD_DEFAULT` vs
+`LOAD_LDG`) — reconstruct the old fallback from removed lines and diff it field by field; positional
+brace-init shifts after policy-struct field changes; a dispatch wrapper no longer forwarding its policy
+hub to an inner dispatch whose policy parameter is defaulted (an unused `PolicyChainT` in the wrapper
+is a tell). Demand SASS-diff or benchmark evidence beyond one test type, on every affected architecture.
 
 ## perf.shared-primitive-consumers (important, shared thread/warp/block-scope primitives in cub/thrust/libcudacxx)
 
@@ -607,7 +623,6 @@ follow-up PR):
 - Recommended: `ci/matrix.yaml` — new SM number added to at least one `sm:`/`codegen_target` job.
 
 ## infra.ci-flag-removal (important, `ci/*.sh`, `ci/matrix.yaml`, and other shared automation/config)
-
 <!-- provenance:
   #493→#1458 removed -disable-benchmarks / ENABLE_CUB_BENCHMARKS env-var override when refactoring ci/build_cub.sh;
   #7919→#10057 (via prerequisite #8160) a PR titled "Remove CuPy upper bound" also silently dropped 12.0 from ctk: lists in ci/matrix.yaml, cutting CTK 12.0 python CI coverage unnoticed for months (issue #8156);
@@ -617,16 +632,25 @@ follow-up PR):
 When a diff changes CI infrastructure — `ci/matrix.yaml`, CI shell scripts, build/test scripts,
 workflow files — and removes or restricts CI coverage in any way (a version dropped from a job row's
 value list, a CLI flag or `${VAR:=default}` override deleted, a job or filter removed), cross-check
-the PR title and description: the removal must be intended and clearly pointed out. If it looks
-accidental — e.g. the PR's stated purpose is unrelated — flag it and have the author confirm the
-removal is intended. A coverage drop produces no CI failure and can go undetected for months.
+the PR title and description: the removal must be intended and clearly pointed out. When such a script
+is refactored, enumerate every CLI flag and env-var override on the deleted lines and verify each is
+still honored afterward — a removed `${VAR:=default}` replaced by an unconditional `VAR=...` looks like
+a harmless rewrite but silently ignores callers who set the knob. If a removal looks accidental — e.g.
+the PR's stated purpose is unrelated — flag it and have the author confirm the removal is intended.
+A coverage drop produces no CI failure and can go undetected for months.
 
 ## docs.link-resolves (important, diffs adding or changing hyperlinks in docs, comments, or messages)
-
 <!-- provenance:
   #10887→#10895 bulk CUDA-guide link migration pointed memcpy_async performance guidance at the device-callable-APIs appendix instead of the async-copies page
 -->
 
-When a diff adds or changes a hyperlink, verify the URL actually resolves, including the `#fragment`:
-the anchor must exist on the target page. CI runs no link checker, so a broken or misdirected link
-ships silently. Also check that the target page covers the topic the surrounding prose promises.
+When a diff adds or changes a hyperlink, verify the URL resolves, including the `#fragment`. In a
+bulk link migration (many `-`/`+` URL pairs), do NOT accept "the new anchor exists" as proof: for
+each changed link, mechanically compare the OLD fragment's words against the NEW path+fragment. If
+the old anchor named a specific topic (e.g. `#performance-guidance-for-<X>`, `#using-<X>`) but the
+new link drops those qualifier words and points at a bare `#<X>` anchor on an
+`appendices`/`device-callable-apis`/reference page, flag it — the link was downgraded from topical
+guidance to an API listing. Likewise flag when surrounding prose promises performance or how-to
+content but the new target is a reference/appendix page; the correct target is usually a
+special-topics page — sibling links in the same diff pointing there for the same subject are a
+strong hint.
