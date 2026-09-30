@@ -27,6 +27,7 @@
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -36,7 +37,7 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr int __bit_fns_impl(const _Tp __value, const int __rank) noexcept
 {
   constexpr int __digits = ::cuda::std::numeric_limits<_Tp>::digits;
-  if constexpr (sizeof(_Tp) > sizeof(unsigned))
+  if constexpr (sizeof(_Tp) > sizeof(::cuda::std::uint32_t))
   {
     // Keep only the half that contains the wanted set bit, so the remaining steps run on a narrower type.
     using __half_bits_t         = ::cuda::std::__make_nbit_uint_t<__digits / 2>;
