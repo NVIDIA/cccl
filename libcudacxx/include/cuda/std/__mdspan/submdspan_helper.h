@@ -117,13 +117,11 @@ _CCCL_EXEC_CHECK_DISABLE
 template <size_t _Index, class... _Slices>
 [[nodiscard]] _CCCL_API constexpr decltype(auto) __get_slice_at(_Slices&&... __slices) noexcept
 {
-  // Pull in `::std::get` via ADL for host library types
-  using ::cuda::std::get;
 #if _CCCL_COMPILER(MSVC)
   tuple<_Slices...> __tuple{::cuda::std::forward<_Slices>(__slices)...};
-  return get<_Index>(::cuda::std::move(__tuple));
+  return ::cuda::std::get<_Index>(::cuda::std::move(__tuple));
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-  return get<_Index>(::cuda::std::forward_as_tuple(::cuda::std::forward<_Slices>(__slices)...));
+  return ::cuda::std::get<_Index>(::cuda::std::forward_as_tuple(::cuda::std::forward<_Slices>(__slices)...));
 #endif // !_CCCL_COMPILER(MSVC)
 }
 
@@ -146,9 +144,7 @@ template <class _IndexType, size_t _Index, class... _Slices>
   {
     if constexpr (__index_pair_like<_SliceType, _IndexType>)
     {
-      // Pull in `::std::get` via ADL for host library types
-      using ::cuda::std::get;
-      return ::cuda::std::__index_cast<_IndexType>(get<0>(__slice));
+      return ::cuda::std::__index_cast<_IndexType>(::cuda::std::get<0>(__slice));
     }
     else if constexpr (__is_strided_slice<_SliceType>)
     {
@@ -179,9 +175,7 @@ __last_extent_from_slice(const _Extents& __src, _Slices... __slices) noexcept
   {
     if constexpr (__index_pair_like<_SliceType, _IndexType>)
     {
-      // Pull in `::std::get` via ADL for host library types
-      using ::cuda::std::get;
-      return ::cuda::std::__index_cast<_IndexType>(get<1>(__slice));
+      return ::cuda::std::__index_cast<_IndexType>(::cuda::std::get<1>(__slice));
     }
     else if constexpr (__is_strided_slice<_SliceType>)
     {
