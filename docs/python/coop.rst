@@ -91,10 +91,12 @@ divergent participation safe.
 Per-thread payloads
 -------------------
 
-``coop.ThreadData(items_per_thread=2)`` gives each thread two slots.
-With 128 threads, a group tile contains 256 values. Each thread accesses its own
-slots with ``items[0]`` and ``items[1]``. The positive compile-time item count
-is also available as ``items.items_per_thread``.
+``coop.ThreadData(items_per_thread)`` gives each thread that many slots.
+With 128 threads, a group tile contains ``128 * items_per_thread`` values.
+Each thread accesses its own slots with ``items[i]``. Pass the positive
+compile-time count as a kernel argument using the backend's supported
+specialization mechanism. The count is also available as
+``items.items_per_thread``.
 
 Leave the element type unspecified for normal use. A supported producer
 such as Load supplies it; backend-supported typed assignments can also
