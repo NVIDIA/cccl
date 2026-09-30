@@ -1364,11 +1364,11 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
   float __f_lo;
   if (__abs_hi < 0x1p23f)
   {
-    int __n            = __fpmp_fp2int_rn(__x_hi);
-    const float __n_f  = __fpmp_int2fp_rn<float>(__n);
-    const float __e    = __x_hi - __n_f;
-    float __fl         = 0.0f;
-    float __fh         = __fpmp_two_sum(__e, __x_lo, &__fl);
+    int __n           = __fpmp_fp2int_rn(__x_hi);
+    const float __n_f = __fpmp_int2fp_rn<float>(__n);
+    const float __e   = __x_hi - __n_f;
+    float __fl        = 0.0f;
+    float __fh        = __fpmp_two_sum(__e, __x_lo, &__fl);
     if (__fh > 0.5f || (__fh == 0.5f && __fl > 0.0f))
     {
       ++__n;
@@ -1389,11 +1389,11 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
   else
   {
     const int __odd_hi = (__abs_hi < 0x1p24f) ? (__fpmp_fp2int_rn(__x_hi) & 1) : 0;
-    float __lo_f        = 0.0f;
-    const int __odd_lo  = __internal_fpmp2_pi_limb(__x_lo, &__lo_f);
-    __odd               = __odd_hi ^ __odd_lo;
-    __f_hi              = __lo_f;
-    __f_lo              = 0.0f;
+    float __lo_f       = 0.0f;
+    const int __odd_lo = __internal_fpmp2_pi_limb(__x_lo, &__lo_f);
+    __odd              = __odd_hi ^ __odd_lo;
+    __f_hi             = __lo_f;
+    __f_lo             = 0.0f;
   }
 
   /* Fold into [-1/4, 1/4]. q == 1 uses sin=cos, cos=sin; q == 3 uses sin=-cos, cos=sin. */
@@ -1426,7 +1426,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
   float __p_lo       = 0.0f;
   const float __p_hi = __fpmp_two_mult_fma(__f_hi, __pi1, &__p_lo);
   __afloat __angle(__p_hi, __p_lo);
-  float __q_lo = 0.0f;
+  float __q_lo       = 0.0f;
   const float __q_hi = __fpmp_two_mult_fma(__f_lo, __pi1, &__q_lo);
   __angle            = __angle + __afloat(__q_hi, __q_lo);
   __angle            = __angle + __afloat(__f_hi * __pi2);
