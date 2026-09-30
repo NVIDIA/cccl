@@ -27,45 +27,80 @@ pytestmark = [
 ]
 
 
-@pytest.mark.parametrize("selection", ["min", "max"])
-@pytest.mark.parametrize("pairs", [False, True])
-@pytest.mark.parametrize("qualified", [False, True])
-def test_topk_preserves_inputs_and_pairs(selection, pairs, qualified):
+@pytest.mark.parametrize(
+    "selection,pairs,qualified,value_dtype",
+    [
+        (selection, pairs, qualified, np.int64)
+        for selection in ("min", "max")
+        for pairs in (False, True)
+        for qualified in (False, True)
+    ]
+    + [
+        ("min", True, False, dtype)
+        for dtype in (
+            np.int8,
+            np.uint8,
+            np.int16,
+            np.uint16,
+            np.int32,
+            np.uint32,
+            np.uint64,
+            np.float32,
+            np.float64,
+        )
+    ],
+)
+def test_topk_preserves_inputs_and_pairs(
+    selection, pairs, qualified, value_dtype
+):
     api = numba_coop if qualified else coop
     topk = getattr(api, f"topk_{selection}_{'pairs' if pairs else 'keys'}")
 
     @cuda.jit
-    def kernel(source, selected, associated, preserved, k, count):
+    def kernel(source, payload, selected, associated, preserved, k, count):
         block = api.this_block()
         keys = api.ThreadData(2)
         api.load(block, source, keys)
         if pairs:
-            values = api.ThreadData(2, dtype=np.int64)
-            values[0] = np.int64(cuda.threadIdx.x * 2)
-            values[1] = np.int64(cuda.threadIdx.x * 2 + 1)
-            chosen, indices = topk(block, keys, values, k=k, valid_items=count)
-            api.store(block, associated, indices, valid_items=min(k, count))
+            values = api.ThreadData(2)
+            api.load(block, payload, values)
+            chosen, chosen_values = topk(
+                block, keys, values, k=k, valid_items=count
+            )
+            api.store(
+                block, associated, chosen_values, valid_items=min(k, count)
+            )
         else:
             chosen = topk(block, keys, k=k, valid_items=count)
         api.store(block, selected, chosen, valid_items=min(k, count))
         api.store(block, preserved, keys)
 
     source = ((np.arange(128) * 17) % 131 - 64).astype(np.int32)
+    payload = np.arange(128, dtype=value_dtype)
+    if np.issubdtype(value_dtype, np.floating):
+        payload = payload / value_dtype(4) - value_dtype(16.125)
+    elif np.issubdtype(value_dtype, np.signedinteger):
+        payload -= value_dtype(64)
+    if value_dtype == np.float64:
+        payload += value_dtype(2**-30)
+    elif value_dtype == np.int64:
+        payload *= value_dtype(1 << 33)
+    elif value_dtype == np.uint64:
+        payload += value_dtype(1 << 63)
     selected = np.empty_like(source)
     preserved = np.empty_like(source)
-    indices = np.empty(128, dtype=np.int64)
-    kernel[1, 64](source, selected, indices, preserved, 17, 103)
+    associated = np.empty_like(payload)
+    kernel[1, 64](source, payload, selected, associated, preserved, 17, 103)
     cuda.synchronize()
-    expected = (
-        np.sort(source[:103])[:17]
-        if selection == "min"
-        else np.sort(source[:103])[-17:]
-    )
-    np.testing.assert_array_equal(np.sort(selected[:17]), expected)
+    order = np.argsort(source[:103])
+    order = order[:17] if selection == "min" else order[-17:]
+    selected_order = np.argsort(selected[:17])
+    np.testing.assert_array_equal(selected[:17][selected_order], source[order])
     np.testing.assert_array_equal(preserved, source)
     if pairs:
-        np.testing.assert_array_equal(selected[:17], source[indices[:17]])
-        assert len(set(indices[:17])) == 17
+        np.testing.assert_array_equal(
+            associated[:17][selected_order], payload[order]
+        )
 
 
 @pytest.mark.parametrize(
@@ -101,6 +136,14 @@ def test_numeric_profile_and_partial_counts(dtype, selection):
         dtype, np.floating
     ):
         source -= dtype(63)
+    if np.issubdtype(dtype, np.floating):
+        source = source / dtype(4) + dtype(0.125)
+    elif np.issubdtype(dtype, np.unsignedinteger):
+        source += dtype(1 << (np.dtype(dtype).itemsize * 8 - 1))
+    if dtype == np.float64:
+        source += dtype(2**-30)
+    elif dtype == np.int64:
+        source *= dtype(1 << 33)
     output = np.empty_like(source)
     for k, count in [(0, 128), (0, 0), (17, 0), (17, 7), (128, 128), (7, 91)]:
         kernel[1, 64](source, output, np.int64(k), np.int64(count))
