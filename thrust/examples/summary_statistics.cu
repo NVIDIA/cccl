@@ -25,33 +25,33 @@ struct summary_stats_data
   T min;
   T max;
   T mean;
-  T M2;
-  T M3;
-  T M4;
+  T m2;
+  T m3;
+  T m4;
 
   // initialize to the identity element
   void initialize()
   {
-    n = mean = M2 = M3 = M4 = 0;
+    n = mean = m2 = m3 = m4 = 0;
     min                     = std::numeric_limits<T>::max();
     max                     = std::numeric_limits<T>::min();
   }
 
   T variance()
   {
-    return M2 / (n - 1);
+    return m2 / (n - 1);
   }
   T variance_n()
   {
-    return M2 / n;
+    return m2 / n;
   }
   T skewness()
   {
-    return std::sqrt(n) * M3 / std::pow(M2, (T) 1.5);
+    return std::sqrt(n) * m3 / std::pow(m2, (T) 1.5);
   }
   T kurtosis()
   {
-    return n * M4 / (M2 * M2);
+    return n * m4 / (m2 * m2);
   }
 };
 
@@ -67,9 +67,9 @@ struct summary_stats_unary_op
     result.min  = x;
     result.max  = x;
     result.mean = x;
-    result.M2   = 0;
-    result.M3   = 0;
-    result.M4   = 0;
+    result.m2   = 0;
+    result.m3   = 0;
+    result.m4   = 0;
 
     return result;
   }
@@ -104,17 +104,17 @@ struct summary_stats_binary_op
 
     result.mean = x.mean + delta * y.n / n;
 
-    result.M2 = x.M2 + y.M2;
-    result.M2 += delta2 * x.n * y.n / n;
+    result.m2 = x.m2 + y.m2;
+    result.m2 += delta2 * x.n * y.n / n;
 
-    result.M3 = x.M3 + y.M3;
-    result.M3 += delta3 * x.n * y.n * (x.n - y.n) / n2;
-    result.M3 += (T) 3.0 * delta * (x.n * y.M2 - y.n * x.M2) / n;
+    result.m3 = x.m3 + y.m3;
+    result.m3 += delta3 * x.n * y.n * (x.n - y.n) / n2;
+    result.m3 += (T) 3.0 * delta * (x.n * y.m2 - y.n * x.m2) / n;
 
-    result.M4 = x.M4 + y.M4;
-    result.M4 += delta4 * x.n * y.n * (x.n * x.n - x.n * y.n + y.n * y.n) / n3;
-    result.M4 += (T) 6.0 * delta2 * (x.n * x.n * y.M2 + y.n * y.n * x.M2) / n2;
-    result.M4 += (T) 4.0 * delta * (x.n * y.M3 - y.n * x.M3) / n;
+    result.m4 = x.m4 + y.m4;
+    result.m4 += delta4 * x.n * y.n * (x.n * x.n - x.n * y.n + y.n * y.n) / n3;
+    result.m4 += (T) 6.0 * delta2 * (x.n * x.n * y.m2 + y.n * y.n * x.m2) / n2;
+    result.m4 += (T) 4.0 * delta * (x.n * y.m3 - y.n * x.m3) / n;
 
     return result;
   }

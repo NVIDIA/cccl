@@ -330,8 +330,7 @@ private:
 
 public:
   /// @smemstorage{BlockReduce}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{

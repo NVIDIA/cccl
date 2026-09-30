@@ -2,9 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import importlib.metadata
+
 import numpy as np
 import pytest
 from _utils.device_array import DeviceArray
+from packaging.version import Version
 
 import cuda.compute
 from cuda.compute import (
@@ -21,6 +24,10 @@ try:
     from cuda.compute._build_info import USING_V2
 except ImportError:
     USING_V2 = False
+
+
+# The numba-cuda-mlir bug behind the version-gated xfail below was fixed in 0.5.4.
+_NUMBA_CUDA_MLIR_VERSION = Version(importlib.metadata.version("numba-cuda-mlir"))
 
 
 def unary_transform_host(h_input: np.ndarray, op):
@@ -1079,9 +1086,10 @@ def test_store_into_a_local_array_of_a_wider_dtype_keeps_unsigned_values():
 
 
 @pytest.mark.xfail(
+    _NUMBA_CUDA_MLIR_VERSION < Version("0.5.4"),
     strict=True,
-    reason="numba-cuda-mlir NVIDIA/numba-cuda-mlir#304: a float converts to a "
-    "bool by truncation, so 1.25 arrives as False",
+    reason="numba-cuda-mlir NVIDIA/numba-cuda-mlir#304 (fixed in 0.5.4): a float "
+    "converts to a bool by truncation, so 1.25 arrives as False",
 )
 def test_store_into_captured_bool_state_asks_whether_it_is_nonzero():
     """Storing a float into captured bool state converts as ``x != 0``.

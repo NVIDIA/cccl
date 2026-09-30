@@ -21,7 +21,7 @@ struct vector_like
 };
 
 template <class Vector>
-void TestVectorLowerBoundDescendingSimple()
+void test_vector_lower_bound_descending_simple()
 {
   using T = typename Vector::value_type;
 
@@ -43,10 +43,10 @@ void TestVectorLowerBoundDescendingSimple()
   const IntVector ref{4, 4, 3, 3, 3, 2, 2, 1, 0, 0};
   REQUIRE(ref == integral_output);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorLowerBoundDescendingSimple);
+DECLARE_VECTOR_UNITTEST(test_vector_lower_bound_descending_simple);
 
 template <class Vector>
-void TestVectorUpperBoundDescendingSimple()
+void test_vector_upper_bound_descending_simple()
 {
   Vector vec{8, 7, 5, 2, 0};
 
@@ -67,10 +67,10 @@ void TestVectorUpperBoundDescendingSimple()
   const IntVector ref{5, 4, 4, 3, 3, 3, 2, 2, 1, 0};
   REQUIRE(ref == integral_output);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorUpperBoundDescendingSimple);
+DECLARE_VECTOR_UNITTEST(test_vector_upper_bound_descending_simple);
 
 template <class Vector>
-void TestVectorBinarySearchDescendingSimple()
+void test_vector_binary_search_descending_simple()
 {
   Vector vec{8, 7, 5, 2, 0};
 
@@ -103,7 +103,7 @@ void TestVectorBinarySearchDescendingSimple()
 
   REQUIRE(int_ref == integral_output);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorBinarySearchDescendingSimple);
+DECLARE_VECTOR_UNITTEST(test_vector_binary_search_descending_simple);
 
 template <typename T>
 struct TestVectorLowerBoundDescending

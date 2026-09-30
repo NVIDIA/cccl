@@ -15,8 +15,6 @@
  *
  */
 
-#include <cub/cub.cuh> // or equivalently <cub/device/device_scan.cuh>
-
 #include <cuda/experimental/stf.cuh>
 
 #include <string>
