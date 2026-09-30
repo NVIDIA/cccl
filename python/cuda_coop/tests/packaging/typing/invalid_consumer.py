@@ -333,7 +333,7 @@ common.scan(  # expected-error: [call-overload]
 common.inclusive_sum(  # expected-error: [call-overload]
     common_block,
     np.int32(1),
-    aggregate_output=common.ThreadData(1, np.int32),
+    aggregate_output=common.ThreadData(items_per_thread=1, dtype=np.int32),
 )
 common.inclusive_scan(  # expected-error: [call-overload]
     common_block,
