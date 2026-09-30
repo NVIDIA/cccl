@@ -43,7 +43,9 @@ def test_public_stubs_type_check_a_consumer(tmp_path):
             def kernel(source: object, destination: object) -> None:
                 block = coop.this_block()
                 warp = coop.this_warp().group_by(8)
-                values = coop.ThreadData(2, np.int32, alignment=16)
+                values = coop.ThreadData(
+                    items_per_thread=2, dtype=np.int32, alignment=16
+                )
                 scratch = coop.TempStorage(64, auto_sync=True)
                 assert_type(block, coop.ThreadGroup[Literal["block"]])
                 assert_type(values, coop.ThreadDataLike[np.int32])

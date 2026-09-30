@@ -27,7 +27,9 @@ def ThreadData(
     items_per_thread : int
         Positive compile-time number of items owned by each thread.
         This extent is fixed for the lifetime of the payload and is available
-        inside the kernel as ``items.items_per_thread``.
+        inside the kernel as ``items.items_per_thread``. Pass it as a
+        compile-time kernel argument using the backend's supported
+        specialization mechanism.
     dtype : dtype-like, optional
         Optional numeric element type. Leave unspecified for normal use:
         a supported producer such as :func:`cuda.coop.load` supplies it.
