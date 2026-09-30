@@ -302,8 +302,10 @@ public:
       }
     }
 
-    // Only STF's own bookkeeping releases pointers here, so this is an internal invariant.
-    _CCCL_VERIFY(false, "pointer released to the pooled allocator does not belong to any of its pools");
+    // Only STF's own bookkeeping releases pointers here, so this is an internal invariant. Kept as a
+    // report and abort rather than _CCCL_VERIFY so the offending pointer stays in the message.
+    fprintf(stderr, "Error: pointer %p was released, but does not belong to a known pool.\n", ptr);
+    abort();
   }
 
   event_list deinit_pools(backend_ctx_untyped& ctx)
