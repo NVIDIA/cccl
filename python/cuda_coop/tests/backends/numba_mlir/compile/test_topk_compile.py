@@ -19,8 +19,9 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 
 @pytest.mark.parametrize("selection", ["min", "max"])
 @pytest.mark.parametrize("pairs", [False, True])
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_topk_production_compile_links_checked_provider(
-    monkeypatch, selection, pairs
+    monkeypatch, selection, pairs, items_per_thread
 ):
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == ""
     device = SimpleNamespace(compute_capability=(9, 0))
@@ -33,15 +34,17 @@ def test_topk_production_compile_links_checked_provider(
     topk = getattr(coop, f"topk_{selection}_{'pairs' if pairs else 'keys'}")
 
     @cuda.jit(chip="sm_90")
-    def kernel(source, destination, k, count):
+    def kernel(source, destination, k, count, items_per_thread):
         block = coop.this_block()
         scratch = coop.TempStorage()
-        keys = coop.ThreadData(2, dtype=types.float64)
+        keys = coop.ThreadData(items_per_thread, dtype=types.float64)
         coop.load(block, source, keys)
         if pairs:
-            values = coop.ThreadData(2, dtype=types.int64)
-            values[0] = types.int64(cuda.threadIdx.x * 2)
-            values[1] = types.int64(cuda.threadIdx.x * 2 + 1)
+            values = coop.ThreadData(items_per_thread, dtype=types.int64)
+            for item in range(items_per_thread):
+                values[item] = types.int64(
+                    cuda.threadIdx.x * items_per_thread + item
+                )
             selected, indices = topk(
                 block,
                 keys,
@@ -50,15 +53,21 @@ def test_topk_production_compile_links_checked_provider(
                 valid_items=count,
                 temp_storage=scratch,
             )
-            destination[cuda.threadIdx.x * 2] = selected[0] + indices[0]
+            destination[cuda.threadIdx.x * items_per_thread] = (
+                selected[0] + indices[0]
+            )
         else:
             selected = topk(
                 block, keys, k=k, valid_items=count, temp_storage=scratch
             )
-            destination[cuda.threadIdx.x * 2] = selected[0]
+            destination[cuda.threadIdx.x * items_per_thread] = selected[0]
 
     signature = types.void(
-        types.float64[::1], types.float64[::1], types.int64, types.int64
+        types.float64[::1],
+        types.float64[::1],
+        types.int64,
+        types.int64,
+        types.IntegerLiteral(items_per_thread),
     )
     launch = (
         ("grid", (1, 1, 1)),
