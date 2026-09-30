@@ -63,12 +63,12 @@ def test_warp_copy():
 def test_manual_scratch():
     # coop-pg-manual-scratch-begin
     @cuda.jit
-    def copy_tiles_with_manual_sync(source, destination):
+    def copy_tiles_with_manual_sync(source, destination, items_per_thread):
         block = coop.this_block()
         scratch = coop.TempStorage()
-        items = coop.ThreadData(items_per_thread=2)
+        items = coop.ThreadData(items_per_thread)
         for tile in range(2):
-            offset = tile * cuda.blockDim.x * 2
+            offset = tile * cuda.blockDim.x * items_per_thread
             coop.load(
                 block,
                 source,
@@ -88,27 +88,30 @@ def test_manual_scratch():
             )
             block.sync()
 
-    source = np.arange(512, dtype=np.int32)
-    destination = np.empty_like(source)
-    copy_tiles_with_manual_sync[1, 128](source, destination)
-    cuda.synchronize()
-    np.testing.assert_array_equal(destination, source)
-    # coop-pg-manual-scratch-end
+    for items_per_thread in (1, 4):
+        source = np.arange(2 * 128 * items_per_thread, dtype=np.int32)
+        destination = np.empty_like(source)
+        copy_tiles_with_manual_sync[1, 128](
+            source, destination, items_per_thread
+        )
+        cuda.synchronize()
+        np.testing.assert_array_equal(destination, source)
+        # coop-pg-manual-scratch-end
 
-    compiled = next(
-        iter(copy_tiles_with_manual_sync._launch_config_overloads.values())
-    )
-    # The descriptor adds no barriers to the explicit block.sync() calls.
-    assert compiled.metadata["mlir_module_str"].count("gpu.barrier") == 0
+        compiled = next(
+            iter(copy_tiles_with_manual_sync._launch_config_overloads.values())
+        )
+        # The descriptor adds no barriers to the explicit block.sync() calls.
+        assert compiled.metadata["mlir_module_str"].count("gpu.barrier") == 0
 
 
 def test_reduce():
     # coop-pg-reduce-begin
     @cuda.jit
-    def tile_sums(source, totals, count):
+    def tile_sums(source, totals, count, items_per_thread):
         block = coop.this_block()
-        items = coop.ThreadData(items_per_thread=2)
-        tile_size = cuda.blockDim.x * 2
+        items = coop.ThreadData(items_per_thread)
+        tile_size = cuda.blockDim.x * items_per_thread
         offset = cuda.blockIdx.x * tile_size
         valid = min(max(count - offset, 0), tile_size)
         coop.load(
@@ -123,13 +126,16 @@ def test_reduce():
         if block.rank() == 0:
             totals[cuda.blockIdx.x] = total
 
-    source = (np.arange(785) % 17).astype(np.int32)
-    totals = np.empty(4, dtype=np.int32)
-    tile_sums[4, 128](source, totals, source.size)
-    cuda.synchronize()
-    expected = [
-        source[start : start + 256].sum()
-        for start in range(0, source.size, 256)
-    ]
-    np.testing.assert_array_equal(totals, expected)
+    for items_per_thread in (1, 4):
+        source = (np.arange(785) % 17).astype(np.int32)
+        tile_size = 128 * items_per_thread
+        blocks = (source.size + tile_size - 1) // tile_size
+        totals = np.empty(blocks, dtype=np.int32)
+        tile_sums[blocks, 128](source, totals, source.size, items_per_thread)
+        cuda.synchronize()
+        expected = [
+            source[start : start + tile_size].sum()
+            for start in range(0, source.size, tile_size)
+        ]
+        np.testing.assert_array_equal(totals, expected)
     # coop-pg-reduce-end
