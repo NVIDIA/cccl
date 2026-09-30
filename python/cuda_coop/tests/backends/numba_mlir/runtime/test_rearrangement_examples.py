@@ -27,18 +27,19 @@ def test_exchange_example():
     from cuda import coop
 
     @cuda.jit
-    def exchange_tile(source, destination):
+    def exchange_tile(source, destination, items_per_thread):
         block = coop.this_block()
-        striped = coop.ThreadData(items_per_thread=2)
+        striped = coop.ThreadData(items_per_thread)
         coop.load(block, source, striped, algorithm="striped")
         blocked = coop.exchange(block, striped, mode="striped_to_blocked")
         coop.store(block, destination, blocked)
 
-    values = np.arange(256, dtype=np.int32) * 3 - 200
-    source = cuda.to_device(values)
-    destination = cuda.device_array_like(source)
-    exchange_tile[1, 128](source, destination)
-    np.testing.assert_array_equal(destination.copy_to_host(), values)
+    for items_per_thread in (1, 4):
+        values = np.arange(128 * items_per_thread, dtype=np.int32) * 3 - 200
+        source = cuda.to_device(values)
+        destination = cuda.device_array_like(source)
+        exchange_tile[1, 128](source, destination, items_per_thread)
+        np.testing.assert_array_equal(destination.copy_to_host(), values)
     # exchange-example-end
 
 
@@ -50,22 +51,23 @@ def test_exchange_striped_output():
     from cuda import coop
 
     @cuda.jit
-    def exchange_tile(source, destination, preserved):
+    def exchange_tile(source, destination, preserved, items_per_thread):
         block = coop.this_block()
-        blocked = coop.ThreadData(items_per_thread=2)
+        blocked = coop.ThreadData(items_per_thread)
         coop.load(block, source, blocked)
         striped = coop.exchange(block, blocked, mode="blocked_to_striped")
         coop.store(block, destination, striped)
         coop.store(block, preserved, blocked)
 
-    values = np.arange(256, dtype=np.int32) * 3 - 200
-    source = cuda.to_device(values)
-    destination = cuda.device_array_like(source)
-    preserved = cuda.device_array_like(source)
-    exchange_tile[1, 128](source, destination, preserved)
-    expected = values.reshape(2, 128).T.flatten()
-    np.testing.assert_array_equal(destination.copy_to_host(), expected)
-    np.testing.assert_array_equal(preserved.copy_to_host(), values)
+    for items_per_thread in (1, 4):
+        values = np.arange(128 * items_per_thread, dtype=np.int32) * 3 - 200
+        source = cuda.to_device(values)
+        destination = cuda.device_array_like(source)
+        preserved = cuda.device_array_like(source)
+        exchange_tile[1, 128](source, destination, preserved, items_per_thread)
+        expected = values.reshape(items_per_thread, 128).T.flatten()
+        np.testing.assert_array_equal(destination.copy_to_host(), expected)
+        np.testing.assert_array_equal(preserved.copy_to_host(), values)
 
 
 def test_shuffle_example():
@@ -77,29 +79,30 @@ def test_shuffle_example():
     from cuda import coop
 
     @cuda.jit
-    def shift_tile(source, following, preceding):
+    def shift_tile(source, following, preceding, items_per_thread):
         block = coop.this_block()
-        items = coop.ThreadData(items_per_thread=2)
+        items = coop.ThreadData(items_per_thread)
         coop.load(block, source, items)
         down = coop.shuffle(block, items, mode="down")
         up = coop.shuffle(block, items, mode="up")
         # Define each exposed boundary before it is read by store.
         if cuda.threadIdx.x == cuda.blockDim.x - 1:
-            down[1] = 0
+            down[items_per_thread - 1] = 0
         if cuda.threadIdx.x == 0:
             up[0] = 0
         coop.store(block, following, down)
         coop.store(block, preceding, up)
 
-    values = np.arange(256, dtype=np.int32) * 3 - 200
-    source = cuda.to_device(values)
-    following = cuda.device_array_like(source)
-    preceding = cuda.device_array_like(source)
-    shift_tile[1, 128](source, following, preceding)
-    np.testing.assert_array_equal(
-        following.copy_to_host(), np.append(values[1:], 0)
-    )
-    np.testing.assert_array_equal(
-        preceding.copy_to_host(), np.insert(values[:-1], 0, 0)
-    )
+    for items_per_thread in (1, 4):
+        values = np.arange(128 * items_per_thread, dtype=np.int32) * 3 - 200
+        source = cuda.to_device(values)
+        following = cuda.device_array_like(source)
+        preceding = cuda.device_array_like(source)
+        shift_tile[1, 128](source, following, preceding, items_per_thread)
+        np.testing.assert_array_equal(
+            following.copy_to_host(), np.append(values[1:], 0)
+        )
+        np.testing.assert_array_equal(
+            preceding.copy_to_host(), np.insert(values[:-1], 0, 0)
+        )
     # shuffle-example-end

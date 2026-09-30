@@ -156,7 +156,7 @@ coop.exchange(  # expected-error: [call-overload]
     coop.this_warp(),
     values,
     mode="scatter_to_striped",
-    ranks=coop.ThreadData(2, np.int32),
+    ranks=coop.ThreadData(items_per_thread=2, dtype=np.int32),
 )
 coop.shuffle(  # expected-error: [call-overload]
     coop.this_block(),
@@ -168,8 +168,8 @@ coop.shuffle(  # expected-error: [call-overload]
     np.int32(1),
     mode="up",
 )
-floating_ranks = coop.ThreadData(2, np.float32)
-floating_flags = coop.ThreadData(2, np.float32)
+floating_ranks = coop.ThreadData(items_per_thread=2, dtype=np.float32)
+floating_flags = coop.ThreadData(items_per_thread=2, dtype=np.float32)
 coop.exchange(  # expected-error: [call-overload]
     coop.this_block(),
     values,
