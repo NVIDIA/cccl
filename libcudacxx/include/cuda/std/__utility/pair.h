@@ -223,17 +223,13 @@ private:
     // NOLINTEND(bugprone-branch-clone)
   }
 
+  // CUDA 12.0/MSVC rejects a static constexpr variable template member during dependent pair
+  // instantiations. An alias to bool_constant is not a static data member.
   template <class _UPair>
-  static constexpr bool __disambiguate_pair_like =
-    // Disambiguate other constructors
-    // [pairs#pair]-42.1 different-from<P, pair> is true
-    !is_same_v<pair, remove_cvref_t<_UPair>>
-    // [pairs#pair]-15.1 remove_cvref_t<P> is not a specialization of ranges::subrange,
-    // [pairs#pair]-42.2 remove_cvref_t<P> is not a specialization of ranges::subrange
-    && !__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UPair>>
-    // [pairs#pair]-13 template<pair-like P>
-    // [pairs#pair]-42 template<pair-like P>
-    && __pair_like<_UPair>;
+  using __disambiguate_pair_like =
+    bool_constant<!is_same_v<pair, remove_cvref_t<_UPair>> // [pairs#pair]-42.1 different-from<P, pair> is true
+                  && !__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UPair>> // [pairs#pair]-15.1, [pairs#pair]-42.2
+                  && __pair_like<_UPair>>; // [pairs#pair]-13, [pairs#pair]-42 template<pair-like P>
 
 #if _CCCL_COMPILER(GCC, <, 8)
   // GCC7 substitutes the later default template arguments of the pair-like constructors even if
@@ -269,7 +265,10 @@ private:
     // removes the constructor during overload resolution.
     if constexpr (sizeof...(_Args) == 1 && is_reference_v<_Tp>)
     {
-      return reference_constructs_from_temporary_v<_Tp, _Args...>;
+      // Piecewise construction forwards each tuple element as Args&&, so check that
+      // category. Checking Args as a prvalue would incorrectly reject direct binding to
+      // a same-type value element such as tuple<int> into const int& or int&&.
+      return reference_constructs_from_temporary_v<_Tp, _Args&&...>;
     }
     else
     {
@@ -501,7 +500,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <
     class _UPair,
-    enable_if_t<__disambiguate_pair_like<_UPair>, int> = 0,
+    enable_if_t<__disambiguate_pair_like<_UPair>::value, int> = 0,
     __select_constructor _Constraints = pair::__select_variadic_constructible<__get_t<0, _UPair>, __get_t<1, _UPair>>(),
     enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(_UPair&& __p) noexcept(
@@ -519,7 +518,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <
     class _UPair,
-    enable_if_t<__disambiguate_pair_like<_UPair>, int> = 0,
+    enable_if_t<__disambiguate_pair_like<_UPair>::value, int> = 0,
     __select_constructor _Constraints = pair::__select_variadic_constructible<__get_t<0, _UPair>, __get_t<1, _UPair>>(),
     enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr pair(_UPair&& __p) noexcept(
@@ -531,7 +530,7 @@ public:
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
   template <
     class _UPair,
-    enable_if_t<__disambiguate_pair_like<_UPair>, int> = 0,
+    enable_if_t<__disambiguate_pair_like<_UPair>::value, int> = 0,
     __select_constructor _Constraints = pair::__select_variadic_constructible<__get_t<0, _UPair>, __get_t<1, _UPair>>(),
     enable_if_t<_ConstructorConstraint<_Constraints>::__is_deleted, int> = 0>
   _CCCL_API constexpr pair(_UPair&&) = delete;
@@ -621,7 +620,7 @@ public:
   // NOLINTBEGIN(bugprone-use-after-move)
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UPair,
-            enable_if_t<__disambiguate_pair_like<_UPair>, int>          = 0,
+            enable_if_t<__disambiguate_pair_like<_UPair>::value, int>   = 0,
             enable_if_t<is_assignable_v<_T1&, __get_t<0, _UPair>>, int> = 0,
             enable_if_t<is_assignable_v<_T2&, __get_t<1, _UPair>>, int> = 0>
   _CCCL_API constexpr pair& operator=(_UPair&& __p) noexcept(
@@ -634,7 +633,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UPair,
-            enable_if_t<__disambiguate_pair_like<_UPair>, int>                = 0,
+            enable_if_t<__disambiguate_pair_like<_UPair>::value, int>         = 0,
             enable_if_t<is_assignable_v<const _T1&, __get_t<0, _UPair>>, int> = 0,
             enable_if_t<is_assignable_v<const _T2&, __get_t<1, _UPair>>, int> = 0>
   _CCCL_API constexpr const pair& operator=(_UPair&& __p) const

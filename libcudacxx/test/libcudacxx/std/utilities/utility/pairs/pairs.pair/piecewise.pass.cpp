@@ -76,20 +76,21 @@ TEST_FUNC void test_constraints()
   test_piecewise_constructible<true, cuda::std::pair<int&, int&>, cuda::std::tuple<int&>, cuda::std::tuple<int&>>();
   test_piecewise_constructible<true, cuda::std::pair<const int&, int>, cuda::std::tuple<int&>, cuda::std::tuple<int>>();
 
+  // Same-type value tuple elements are forwarded as Args&&, so the reference binds directly
+  // to the tuple element rather than materializing a temporary.
+  test_piecewise_constructible<true, cuda::std::pair<const int&, int>, cuda::std::tuple<int>, cuda::std::tuple<int>>();
+  test_piecewise_constructible<true, cuda::std::pair<int&&, int&&>, cuda::std::tuple<int>, cuda::std::tuple<int>>();
+  test_piecewise_constructible<true,
+                               cuda::std::pair<const int&, const int&>,
+                               cuda::std::tuple<int>,
+                               cuda::std::tuple<int>>();
+
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
   // A conversion materializes a temporary, so the reference member would dangle.
   test_piecewise_constructible<false, cuda::std::pair<const int&, int>, cuda::std::tuple<long>, cuda::std::tuple<int>>();
   test_piecewise_constructible<false, cuda::std::pair<int, const int&>, cuda::std::tuple<int>, cuda::std::tuple<long>>();
   test_piecewise_constructible<false, cuda::std::pair<int&&, int&&>, cuda::std::tuple<long>, cuda::std::tuple<int>>();
   test_piecewise_constructible<false, cuda::std::pair<int&&, int&&>, cuda::std::tuple<int>, cuda::std::tuple<long>>();
-
-  // reference_constructs_from_temporary_v<int&&, int> and
-  // reference_constructs_from_temporary_v<const int&, int> are true, so these are deleted.
-  test_piecewise_constructible<false, cuda::std::pair<int&&, int&&>, cuda::std::tuple<int>, cuda::std::tuple<int>>();
-  test_piecewise_constructible<false,
-                               cuda::std::pair<const int&, const int&>,
-                               cuda::std::tuple<int>,
-                               cuda::std::tuple<int>>();
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 }
 
