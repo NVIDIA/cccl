@@ -77,6 +77,9 @@ def test_public_stubs_pass_strict_consumer_type_checks(tmp_path: Path) -> None:
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, destination)
     shutil.copyfile(package_root / "py.typed", stub_root / "py.typed")
+    # Package markers keep an installed wheel from winning namespace lookup.
+    (stub_root.parent / "__init__.pyi").touch()
+    (stub_root / "_core" / "__init__.pyi").touch()
 
     consumer_root = tmp_path / "consumers"
     consumer_root.mkdir()
