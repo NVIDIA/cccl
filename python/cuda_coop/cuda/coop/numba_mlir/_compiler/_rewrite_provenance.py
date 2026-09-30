@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from numba_cuda_mlir import types
+from numba_cuda_mlir.errors import ForceLiteralArg
+
 from cuda.coop._core import StorageOwnership, SynchronizationScope
 
 from .._temp_storage import TempStorage
@@ -114,6 +117,9 @@ class _ProvenanceRewrite:
             definition = self._lookup_block_definition(value.name)
             if isinstance(definition, (ir.Const, ir.Global, ir.FreeVar)):
                 return definition.value
+        scalar = self._resolve_static_scalar_provenance(value)
+        if scalar is not _UNRESOLVED:
+            return scalar.value
         return self._func_ir.infer_constant(value)
 
     def _resolve_static_scalar_value(
@@ -400,6 +406,14 @@ class _ProvenanceRewrite:
                 "coop.ThreadData requires items_per_thread."
             )
         items_ref = extent_refs[0][1]
+        try:
+            definition = self._func_ir.get_definition(items_ref)
+        except KeyError:
+            definition = None
+        if isinstance(definition, ir.Arg) and not isinstance(
+            self._state.args[definition.index], types.Literal
+        ):
+            raise ForceLiteralArg({definition.index})
         dtype_ref = None
         if len(call.args) == 2:
             dtype_ref = call.args[1]

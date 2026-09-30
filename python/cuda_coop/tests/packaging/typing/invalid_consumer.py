@@ -13,8 +13,8 @@ portable.register("numba")  # expected-error: [arg-type]
 
 coop.TempStorage(64, 16)  # expected-error: [call-arg]
 portable.TempStorage(64, 16)  # expected-error: [call-arg]
-values = coop.ThreadData(2, np.int32)
-portable_values = portable.ThreadData(2, np.int32)
+values = coop.ThreadData(items_per_thread=2, dtype=np.int32)
+portable_values = portable.ThreadData(items_per_thread=2, dtype=np.int32)
 portable_block = portable.this_block()
 portable_block.rank()  # expected-error: [attr-defined]
 portable_block.count()  # expected-error: [attr-defined]
