@@ -319,7 +319,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
 
     if constexpr (!::cuda::std::is_same_v<KernelNumItemsT, OffsetT>)
     {
-      constexpr auto tile_items = static_cast<OffsetT>(policy.threads_per_block * policy.items_per_thread);
+      constexpr auto tile_items = static_cast<OffsetT>(policy.threads_per_block) * policy.items_per_thread;
       if (static_cast<OffsetT>(start_tile) + blockIdx.x >= ::cuda::ceil_div(num_items, tile_items))
       {
         return;
@@ -431,15 +431,15 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   const OffsetT num_items             = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
   constexpr ScanLookbackPolicy policy = current_policy<PolicySelector>().lookback;
   using scan_policy_t                 = agent_scan_policy<
-                    0,
-                    0,
-                    void,
-                    policy.load_algorithm,
-                    policy.load_modifier,
-                    policy.store_algorithm,
-                    policy.scan_algorithm,
-                    NoScaling<policy.threads_per_block, policy.items_per_thread>,
-                    delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
+    0,
+    0,
+    void,
+    policy.load_algorithm,
+    policy.load_modifier,
+    policy.store_algorithm,
+    policy.scan_algorithm,
+    NoScaling<policy.threads_per_block, policy.items_per_thread>,
+    delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
   // Disable PDL because each persistent CTA consumes multiple tiles.
   using agent_t =
     AgentScan<scan_policy_t,

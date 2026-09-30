@@ -1327,7 +1327,7 @@ struct policy_selector
 
     if (cc >= ::cuda::compute_capability{8, 0})
     {
-      // seperate tunings for deferred lookback scan
+      // separate tunings for deferred lookback scan
       if (is_deferred && benchmark_match && operation_t == op_kind_t::plus)
       {
         switch (accum_type)
