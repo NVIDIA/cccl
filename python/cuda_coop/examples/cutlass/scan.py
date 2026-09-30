@@ -15,8 +15,6 @@ from cuda.coop import cutlass as cutlass_coop
 
 _BLOCK = (8, 4, 2)
 _THREADS = 64
-_ITEMS = 2
-_BLOCK_TILE = _THREADS * _ITEMS
 
 
 def _check(result):
@@ -25,21 +23,26 @@ def _check(result):
     return result[1] if len(result) == 2 else result[1:]
 
 
-def run_example(api="common"):
+def run_example(api="common", items_per_thread=2):
     """Run a seeded block scan and verify its ordered prefixes."""
 
+    tile_size = _THREADS * items_per_thread
     if api not in {"common", "qualified"}:
         raise ValueError("api must be 'common' or 'qualified'")
     module = coop if api == "common" else cutlass_coop
 
     # docs: start cutlass-scan
     @cute.kernel
-    def scan_tiles(source: cute.Pointer, destination: cute.Pointer):
+    def scan_tiles(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
         group = module.this_block()
         storage = module.TempStorage(
             sharing="shared", alignment=64, auto_sync=True
         )
-        payload = module.ThreadData(items_per_thread=_ITEMS)
+        payload = module.ThreadData(items_per_thread)
         module.load(
             group, source, payload, algorithm="transpose", temp_storage=storage
         )
@@ -56,13 +59,19 @@ def run_example(api="common"):
         )
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer):
-        scan_tiles(source, destination).launch(grid=1, block=_BLOCK)
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        scan_tiles(source, destination, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     # docs: end cutlass-scan
 
-    source = np.arange(_BLOCK_TILE, dtype=np.int32)
-    destination = np.full(_BLOCK_TILE, -101, dtype=np.int32)
+    source = np.arange(tile_size, dtype=np.int32)
+    destination = np.full(tile_size, -101, dtype=np.int32)
     cutlass.cuda.initialize_cuda_context()
     src = _check(driver.cuMemAlloc(source.nbytes))
     try:
@@ -86,7 +95,7 @@ def run_example(api="common"):
                 cute.AddressSpace.gmem,
                 assumed_align=16,
             )
-            launch(src_pointer, dst_pointer)
+            launch(src_pointer, dst_pointer, items_per_thread)
             _check(driver.cuCtxSynchronize())
             _check(
                 driver.cuMemcpyDtoH(

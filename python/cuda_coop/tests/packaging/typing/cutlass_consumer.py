@@ -269,9 +269,9 @@ def check_cutlass_reduce_surface(scalar: Uint32) -> None:
 def check_cutlass_scan_surface(scalar: Uint32) -> None:
     block = cutlass_coop.this_block()
     logical = cutlass_coop.this_warp().group_by(8)
-    values = cutlass_coop.ThreadData(2, np.int32)
-    aggregate = cutlass_coop.ThreadData(1, Uint32)
-    common_aggregate = common_coop.ThreadData(1, Uint32)
+    values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
+    aggregate = cutlass_coop.ThreadData(items_per_thread=1, dtype=Uint32)
+    common_aggregate = common_coop.ThreadData(items_per_thread=1, dtype=Uint32)
     assert_type(
         cutlass_coop.exclusive_sum(
             block, scalar, aggregate_output=common_aggregate
@@ -371,8 +371,8 @@ def check_cutlass_scan_surface(scalar: Uint32) -> None:
 def check_cutlass_scan_seeds(integer_seed: int, floating_seed: float) -> None:
     block = cutlass_coop.this_block()
     warp = cutlass_coop.this_warp()
-    numpy_values = cutlass_coop.ThreadData(2, np.int32)
-    cute_values = cutlass_coop.ThreadData(2, Float32)
+    numpy_values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
+    cute_values = cutlass_coop.ThreadData(items_per_thread=2, dtype=Float32)
     assert_type(
         cutlass_coop.exclusive_scan(block, Int32(4), initial_value=Int32(0)),
         Int32,

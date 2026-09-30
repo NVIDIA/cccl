@@ -83,14 +83,14 @@ Using Scan in a kernel
 
 This common-API fragment works in either DSL with the
 :ref:`kernel-fragment setup <coop-visualization-kernels>`. Launch with
-128 threads and provide at least 256 elements for each block. Each block
-scans its own tile independently.
+128 threads and provide at least ``128 * items_per_thread`` elements for
+each block. Each block scans its own tile independently.
 
 .. code-block:: python
 
    block = coop.this_block()
-   values = coop.ThreadData(items_per_thread=2)
-   offset = block_index * 256
+   values = coop.ThreadData(items_per_thread)
+   offset = block_index * 128 * items_per_thread
    coop.load(block, source, values, offset=offset)
    prefixes = coop.inclusive_sum(block, values, algorithm="raking_memoize")
    coop.store(block, output, prefixes, offset=offset)
@@ -169,7 +169,7 @@ state is authoritative.
    @cuda.jit
    def scan_two_tiles(source, output, final_state):
        thread = cuda.threadIdx.x
-       state = numba_coop.ThreadData(items_per_thread=1)
+       state = numba_coop.ThreadData(1)
        state[0] = 10
        for tile in range(2):
            index = tile * 128 + thread

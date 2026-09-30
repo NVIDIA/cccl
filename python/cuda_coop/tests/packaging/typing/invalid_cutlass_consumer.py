@@ -130,7 +130,9 @@ common.exclusive_sum(  # expected-error: [call-overload]
     warp, scalar, valid_items=7
 )
 common.scan(  # expected-error: [call-overload]
-    block, scalar, aggregate_output=cutlass_coop.ThreadData(1, Int32)
+    block,
+    scalar,
+    aggregate_output=cutlass_coop.ThreadData(items_per_thread=1, dtype=Int32),
 )
 
 # Discard results so an assignment cannot constrain seed inference.
@@ -151,7 +153,7 @@ common.exclusive_scan(  # expected-error: [misc]
 )
 common.scan(  # expected-error: [call-overload]
     block,
-    cutlass_coop.ThreadData(2, Float32),
+    cutlass_coop.ThreadData(items_per_thread=2, dtype=Float32),
     mode="exclusive",
     initial_value=Float64(0),
 )

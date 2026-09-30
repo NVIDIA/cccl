@@ -31,10 +31,12 @@ def _pointer(dtype=cutlass.Int32):
 @pytest.mark.parametrize("array", (False, True))
 def test_block_forms(api, algorithm, array):
     @cute.kernel
-    def kernel(memory: cute.Pointer):
+    def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         value = cutlass.Int32(cute.arch.thread_idx()[0])
         if cutlass.const_expr(array):
-            payload = api.ThreadData(2, dtype=cutlass.Int32, alignment=64)
+            payload = api.ThreadData(
+                items_per_thread, dtype=cutlass.Int32, alignment=64
+            )
             payload[0] = value
             payload[1] = value
             value = payload
@@ -50,33 +52,36 @@ def test_block_forms(api, algorithm, array):
         cute.make_tensor(memory, cute.make_layout(1))[0] = result
 
     @cute.jit
-    def launch(memory: cute.Pointer):
-        kernel(memory).launch(grid=1, block=(8, 4, 2))
+    def launch(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        kernel(memory, items_per_thread).launch(grid=1, block=(8, 4, 2))
 
-    assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer()) is not None
+    assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), 2) is not None
 
 
 @pytest.mark.parametrize("dtype", tuple(ALL_PROVIDER_TYPES))
 def test_typed_zero_partial(dtype):
     @cute.kernel
-    def kernel(memory: cute.Pointer):
-        aggregate = cutlass_coop.ThreadData(1, alignment=64)
+    def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        aggregate = cutlass_coop.ThreadData(items_per_thread, alignment=64)
         result = cutlass_coop.exclusive_sum(
             cutlass_coop.this_warp().group_by(8),
             dtype(1),
             valid_items=5,
             aggregate_output=aggregate,
         )
-        payload = cutlass_coop.ThreadData(1, dtype=dtype, values=[result])
+        payload = cutlass_coop.ThreadData(
+            items_per_thread, dtype=dtype, values=[result]
+        )
         total = cutlass_coop.sum(cutlass_coop.this_block(), payload)
         cute.make_tensor(memory, cute.make_layout(1))[0] = total + aggregate[0]
 
     @cute.jit
-    def launch(memory: cute.Pointer):
-        kernel(memory).launch(grid=1, block=(8, 4, 2))
+    def launch(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        kernel(memory, items_per_thread).launch(grid=1, block=(8, 4, 2))
 
     assert (
-        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(dtype)) is not None
+        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(dtype), 1)
+        is not None
     )
 
 
@@ -161,7 +166,9 @@ def test_invalid_controls(case, expected):
         elif cutlass.const_expr(case == "warp_array"):
             cutlass_coop.inclusive_sum(
                 group,
-                cutlass_coop.ThreadData(1, dtype=cutlass.Int32, values=[value]),
+                cutlass_coop.ThreadData(
+                    items_per_thread=1, dtype=cutlass.Int32, values=[value]
+                ),
             )
         elif cutlass.const_expr(case == "warp_storage"):
             cutlass_coop.exclusive_sum(
@@ -189,14 +196,16 @@ def test_invalid_controls(case, expected):
             )
         elif cutlass.const_expr(case == "aggregate_extent"):
             cutlass_coop.exclusive_sum(
-                group, value, aggregate_output=cutlass_coop.ThreadData(2)
+                group,
+                value,
+                aggregate_output=cutlass_coop.ThreadData(items_per_thread=2),
             )
         elif cutlass.const_expr(case == "aggregate_dtype"):
             cutlass_coop.exclusive_sum(
                 group,
                 value,
                 aggregate_output=cutlass_coop.ThreadData(
-                    1, dtype=cutlass.Float32
+                    items_per_thread=1, dtype=cutlass.Float32
                 ),
             )
         elif cutlass.const_expr(case == "aggregate_scalar"):

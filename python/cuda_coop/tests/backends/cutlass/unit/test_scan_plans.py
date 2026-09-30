@@ -194,7 +194,9 @@ def test_numpy_input_scalar(dtype):
 
 
 def test_numpy_payload_dtype_mismatch():
-    values = ThreadData(1, dtype=np.int32, values=[np.float32(3)])
+    values = ThreadData(
+        items_per_thread=1, dtype=np.int32, values=[np.float32(3)]
+    )
     with pytest.raises(TypeError, match="dtype does not match"):
         _scan.provider_scan(
             group=this_block(),
@@ -236,7 +238,12 @@ def test_failed_ffi_rolls_back(block, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "output", (object(), ThreadData(2), ThreadData(1, dtype=cutlass.Float32))
+    "output",
+    (
+        object(),
+        ThreadData(items_per_thread=2),
+        ThreadData(items_per_thread=1, dtype=cutlass.Float32),
+    ),
 )
 def test_aggregate_shape_and_dtype(output):
     with pytest.raises((TypeError, ValueError), match="aggregate_output"):
