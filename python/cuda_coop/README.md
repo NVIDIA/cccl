@@ -353,8 +353,10 @@ allocations reliably. A kernel using cooperative temporary storage must not
 also declare a zero-sized or runtime-sized `cuda.shared.array`. When
 cooperative backing becomes dynamic, user static shared arrays are also
 unsupported. Keep both user arrays and cooperative backing static, or move the
-user data out of shared memory. Storage-free operations do not add this
-restriction.
+user data out of shared memory. CUDAX Block, Cluster, and mapped-Warp
+reductions also allocate internal static shared memory, even without a
+`TempStorage` operand. They cannot coexist with user dynamic shared arrays
+or dynamic cooperative backing in these compiler releases.
 
 With `auto_sync=False`, a descriptor must originate from exactly one
 constructor site. Selecting between multiple manual-sync constructors is unsupported:

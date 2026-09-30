@@ -291,6 +291,8 @@ class CoopSinglePhaseRewrite(
         candidate_dead_factory_kw_vars: set[str] = set()
         if self._has_temp_storage_requirements():
             self._stage_temp_storage_backing()
+        elif self._provider_uses_static_shared_memory:
+            self._reject_conflicting_user_shared_arrays()
         for match_inst, match in self._matches.items():
             invocable, _ = self._materialize_invocable(match)
             self._record_invocable_specialization(invocable)

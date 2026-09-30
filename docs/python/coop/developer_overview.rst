@@ -670,7 +670,11 @@ the rewrite rejects user dynamic or runtime-sized shared allocations alongside
 cooperative backing, and user static shared allocations when cooperative
 backing becomes dynamic. It inspects user allocations after helper inlining,
 including aliases and implicit oversized cooperative scratch. Static/static
-combinations remain valid, and storage-free operations introduce no conflict.
+combinations remain valid. CUDAX Block, Cluster, and mapped-Warp reductions
+have internal static shared allocations despite having no scratch operand;
+the same guard rejects their coexistence with user dynamic shared arrays or
+dynamic cooperative backing.
+Their internal storage also counts toward the kernel's shared-memory limit.
 Diagnostics identify both allocations and suggest keeping them static within
 the device limit, moving the user buffer to global memory, or using separate
 kernels. Passing coexistence tests against a development compiler alone does
