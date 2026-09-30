@@ -47,6 +47,17 @@ def test_algorithm_identity_distinguishes_specializations():
         assert variant.symbol_mangling_inputs != base.symbol_mangling_inputs
 
 
+@pytest.mark.parametrize("value", (False, True))
+def test_algorithm_identity_distinguishes_boolean_and_integer_settings(value):
+    algorithm = _algorithm()
+    boolean = algorithm.specialize({"T": "int", "settings": {"flag": (value,)}})
+    integer = algorithm.specialize(
+        {"T": "int", "settings": {"flag": (int(value),)}}
+    )
+
+    assert len({boolean: "boolean", integer: "integer"}) == 2
+
+
 def test_algorithm_specialization_freezes_nested_semantic_containers():
     nested = {"values": [1], "modes": {"direct"}}
     specialization = _algorithm().specialize({"T": "int", "settings": nested})
@@ -75,6 +86,8 @@ def test_algorithm_specialization_rejects_container_cycles():
     ("left", "right"),
     [
         (ArgumentKind.STATIC, "static"),
+        (False, 0),
+        (True, 1),
         (0.0, -0.0),
         (1.0, 1),
         (float("nan"), -float("nan")),
