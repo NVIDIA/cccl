@@ -129,7 +129,7 @@ assert_type(
 def check_numba_scan_seeds(integer_seed: int, floating_seed: float) -> None:
     block = coop.this_block()
     warp = coop.this_warp()
-    values = coop.ThreadData(2, np.uint16)
+    values = coop.ThreadData(items_per_thread=2, dtype=np.uint16)
     assert_type(
         coop.exclusive_scan(block, values, initial_value=np.uint16(0)),
         coop.ThreadDataLike[np.uint16],
@@ -178,18 +178,18 @@ def check_numba_surface(
     logical_warp = warp.group_by(8)
     mapped_warps = block.group_by(2)
     cluster = coop.this_cluster()
-    byte_values = coop.ThreadData(1, np.int8)
-    values = coop.ThreadData(2, np.uint16, alignment=16)
-    ranks = coop.ThreadData(2, np.int32)
-    flags = coop.ThreadData(2, np.uint8)
+    byte_values = coop.ThreadData(items_per_thread=1, dtype=np.int8)
+    values = coop.ThreadData(items_per_thread=2, dtype=np.uint16, alignment=16)
+    ranks = coop.ThreadData(items_per_thread=2, dtype=np.int32)
+    flags = coop.ThreadData(items_per_thread=2, dtype=np.uint8)
     read_only_values = _ReadOnlyThreadData(np.uint16(1))
     read_only_ranks = _ReadOnlyThreadData(np.int32(0))
     read_only_flags = _ReadOnlyThreadData(np.uint8(1))
-    int32_aggregate = coop.ThreadData(1, np.int32)
-    uint16_aggregate = coop.ThreadData(1, np.uint16)
-    int32_prefix_state = coop.ThreadData(1, np.int32)
-    uint16_prefix_state = coop.ThreadData(1, np.uint16)
-    int64_prefix_state = coop.ThreadData(1, np.int64)
+    int32_aggregate = coop.ThreadData(items_per_thread=1, dtype=np.int32)
+    uint16_aggregate = coop.ThreadData(items_per_thread=1, dtype=np.uint16)
+    int32_prefix_state = coop.ThreadData(items_per_thread=1, dtype=np.int32)
+    uint16_prefix_state = coop.ThreadData(items_per_thread=1, dtype=np.uint16)
+    int64_prefix_state = coop.ThreadData(items_per_thread=1, dtype=np.int64)
     storage = coop.TempStorage(alignment=16, sharing="shared")
     portable_storage = portable_coop.TempStorage(sharing="shared")
 

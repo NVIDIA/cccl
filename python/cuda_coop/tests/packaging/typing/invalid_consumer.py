@@ -253,7 +253,7 @@ class BinaryPrefixFunctor:
         return left + right
 
 
-prefix_state = coop.ThreadData(1, np.int32)
+prefix_state = coop.ThreadData(items_per_thread=1, dtype=np.int32)
 stateful_prefix = coop.StatefulFunction(carry_prefix, np.int32)
 stateful_int64_state = coop.StatefulFunction(carry_int64_state, np.int64)
 stateful_float32_value = coop.StatefulFunction(carry_float32_value, np.int32)
@@ -539,7 +539,7 @@ coop.inclusive_sum(  # expected-error: [call-overload]
 coop.inclusive_sum(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
-    aggregate_output=coop.ThreadData(1, np.int32),
+    aggregate_output=coop.ThreadData(items_per_thread=1, dtype=np.int32),
     prefix_op=prefix_from_aggregate,
 )
 coop.exclusive_scan(  # expected-error: [call-overload]

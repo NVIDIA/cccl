@@ -158,7 +158,7 @@ state is authoritative.
    @cuda.jit
    def scan_two_tiles(source, output, final_state):
        thread = cuda.threadIdx.x
-       state = coop.ThreadData(items_per_thread=1)
+       state = coop.ThreadData(1)
        state[0] = 10
        for tile in range(2):
            index = tile * 128 + thread
