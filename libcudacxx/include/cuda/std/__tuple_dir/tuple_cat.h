@@ -110,8 +110,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Result, class _Staged, size_t... _Indices>
 [[nodiscard]] _CCCL_API constexpr _Result __tuple_cat_from_staged(__tuple_indices<_Indices...>, _Staged&& __staged)
 {
-  using ::cuda::std::get;
-  return _Result(get<_Indices>(::cuda::std::forward<_Staged>(__staged))...);
+  return _Result(::cuda::std::get<_Indices>(::cuda::std::forward<_Staged>(__staged))...);
 }
 
 template <class... _Tuples>
