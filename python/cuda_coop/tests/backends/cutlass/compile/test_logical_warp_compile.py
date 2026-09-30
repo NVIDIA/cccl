@@ -84,17 +84,22 @@ def test_exact_subgroup_scratch(width):
 @pytest.mark.parametrize(
     "api", (coop, cutlass_coop), ids=("common", "qualified")
 )
-def test_logical_warp_compile(width, algorithm, api):
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_logical_warp_compile(width, algorithm, api, items_per_thread):
     @cute.kernel
-    def kernel(source: cute.Pointer, destination: cute.Pointer):
+    def kernel(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
         group = api.this_warp().group_by(width)
-        payload = api.ThreadData(2, dtype=cutlass.Int32)
+        payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
         api.load(
             group,
             source,
             payload,
             algorithm=algorithm,
-            valid_items=2 * width - 1,
+            valid_items=items_per_thread * width - 1,
             oob_default=-13,
             offset=5,
         )
@@ -103,16 +108,24 @@ def test_logical_warp_compile(width, algorithm, api):
             destination,
             payload,
             algorithm=algorithm,
-            valid_items=2 * width - 1,
+            valid_items=items_per_thread * width - 1,
             offset=9,
         )
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer):
-        kernel(source, destination).launch(grid=1, block=(8, 4, 2))
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(source, destination, items_per_thread).launch(
+            grid=1, block=(8, 4, 2)
+        )
 
     assert (
-        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), _pointer())
+        cute.compile[(GPUArch("sm_80"),)](
+            launch, _pointer(), _pointer(), items_per_thread
+        )
         is not None
     )
 
@@ -120,19 +133,19 @@ def test_logical_warp_compile(width, algorithm, api):
 @pytest.mark.parametrize("width", _WIDTHS)
 def test_nonexhaustive_divisor_compile(width):
     @cute.kernel
-    def kernel(memory: cute.Pointer):
+    def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         cutlass_coop.load(
             cutlass_coop.this_warp().group_by(width, exhaustive=False),
             memory,
-            cutlass_coop.ThreadData(2),
+            cutlass_coop.ThreadData(items_per_thread),
             algorithm="transpose",
         )
 
     @cute.jit
-    def launch(memory: cute.Pointer):
-        kernel(memory).launch(grid=1, block=64)
+    def launch(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        kernel(memory, items_per_thread).launch(grid=1, block=64)
 
-    assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer()) is not None
+    assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), 2) is not None
 
 
 @pytest.mark.parametrize(
@@ -145,7 +158,7 @@ def test_explicit_storage_rejected(api, algorithm):
         api.load(
             api.this_warp().group_by(8),
             memory,
-            api.ThreadData(2),
+            api.ThreadData(items_per_thread=2),
             algorithm=algorithm,
             temp_storage=api.TempStorage(1024),
         )
@@ -177,7 +190,7 @@ def test_unsupported_mapping(case, api):
             group = api.this_warp().group_by(8).group_by(4)
         else:
             group = api.this_block().group_by(1)
-        api.load(group, memory, api.ThreadData(2))
+        api.load(group, memory, api.ThreadData(items_per_thread=2))
 
     @cute.jit
     def launch(memory: cute.Pointer):
@@ -201,7 +214,7 @@ def test_partial_physical_warp_fails():
         cutlass_coop.load(
             cutlass_coop.this_warp().group_by(8),
             memory,
-            cutlass_coop.ThreadData(2),
+            cutlass_coop.ThreadData(items_per_thread=2),
         )
 
     @cute.jit
@@ -218,7 +231,7 @@ def test_dynamic_dimensions_fail():
         cutlass_coop.load(
             cutlass_coop.this_warp().group_by(8),
             memory,
-            cutlass_coop.ThreadData(2),
+            cutlass_coop.ThreadData(items_per_thread=2),
         )
 
     @cute.jit
@@ -231,18 +244,18 @@ def test_dynamic_dimensions_fail():
 
 def test_extent_includes_last_group():
     @cute.kernel
-    def kernel(memory: cute.Pointer):
+    def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         inputs = cute.make_tensor(memory, cute.make_layout(128))
         cutlass_coop.load(
             cutlass_coop.this_warp().group_by(8),
             inputs,
-            cutlass_coop.ThreadData(2),
+            cutlass_coop.ThreadData(items_per_thread),
             offset=1,
         )
 
     @cute.jit
-    def launch(memory: cute.Pointer):
-        kernel(memory).launch(grid=1, block=(8, 4, 2))
+    def launch(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        kernel(memory, items_per_thread).launch(grid=1, block=(8, 4, 2))
 
     with pytest.raises(Exception, match="(?i)(extent|elements|size)"):
-        cute.compile[(GPUArch("sm_80"),)](launch, _pointer())
+        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), 2)
