@@ -282,8 +282,17 @@ public:
 
     if (!eg)
     {
+      // A deleter cannot throw: a failing destroy leaks the handle and is reported. The handle is
+      // value-initialized and stays null if instantiation throws; do not destroy it then.
       eg = {new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
-              cuda_safe_call(cudaGraphExecDestroy(*p));
+              if (*p)
+              {
+                ON_THROW(notify)
+                {
+                  cuda_try<cudaGraphExecDestroy>(*p);
+                };
+              }
+              delete p;
             }};
 
       dump_algorithm(gctx_graph);
@@ -341,8 +350,17 @@ public:
 
     if (!eg)
     {
+      // A deleter cannot throw: a failing destroy leaks the handle and is reported. The handle is
+      // value-initialized and stays null if instantiation throws; do not destroy it then.
       eg = {new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
-              cuda_safe_call(cudaGraphExecDestroy(*p));
+              if (*p)
+              {
+                ON_THROW(notify)
+                {
+                  cuda_try<cudaGraphExecDestroy>(*p);
+                };
+              }
+              delete p;
             }};
 
       dump_algorithm(gctx_graph);
