@@ -20,7 +20,8 @@ namespace
 namespace abi_detail = ::cuda::experimental::__nccl::__abi_detail;
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
-enum Foo_enum
+// Test an unscoped enum with a compiler-selected underlying type.
+enum Foo_enum // NOLINT(cppcoreguidelines-use-enum-class)
 {
 };
 

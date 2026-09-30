@@ -30,6 +30,7 @@
 CUB_NAMESPACE_BEGIN
 
 //! The tuning policy for all algorithms in @ref DeviceMerge.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct MergePolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
