@@ -110,6 +110,8 @@ void test_uninitialized(T value)
   STATIC_REQUIRE(sizeof(cub::Uninitialized<T>) == sizeof(T));
   STATIC_REQUIRE(alignof(cub::Uninitialized<T>) == alignof(T));
 
+  // u being uninitialized here is the point of the test
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   cub::Uninitialized<T> u;
   new (&u.Alias()) T(value);
   CHECK(cuda::std::memcmp(&u.Alias(), &value, sizeof(T)) == 0);

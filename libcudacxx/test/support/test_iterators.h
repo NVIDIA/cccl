@@ -879,7 +879,7 @@ struct ThrowingIterator
   using pointer           = const T*;
   using reference         = const T&;
 
-  enum ThrowingAction
+  enum class ThrowingAction
   {
     TAIncrement,
     TADecrement,
@@ -892,11 +892,11 @@ struct ThrowingIterator
       : begin_(nullptr)
       , end_(nullptr)
       , current_(nullptr)
-      , action_(TADereference)
+      , action_(ThrowingAction::TADereference)
       , index_(0)
   {}
   TEST_FUNC constexpr explicit ThrowingIterator(
-    const T* first, const T* last, int index = 0, ThrowingAction action = TADereference)
+    const T* first, const T* last, int index = 0, ThrowingAction action = ThrowingAction::TADereference)
       : begin_(first)
       , end_(last)
       , current_(first)
@@ -915,7 +915,7 @@ struct ThrowingIterator
   // NOLINTNEXTLINE(bugprone-unhandled-self-assignment)
   TEST_FUNC constexpr ThrowingIterator& operator=(const ThrowingIterator& rhs)
   {
-    if (action_ == TAAssignment && --index_ < 0)
+    if (action_ == ThrowingAction::TAAssignment && --index_ < 0)
     {
       assert(false);
     }
@@ -929,7 +929,7 @@ struct ThrowingIterator
 
   TEST_FUNC constexpr reference operator*() const
   {
-    if (action_ == TADereference && --index_ < 0)
+    if (action_ == ThrowingAction::TADereference && --index_ < 0)
     {
       assert(false);
     }
@@ -938,7 +938,7 @@ struct ThrowingIterator
 
   TEST_FUNC constexpr ThrowingIterator& operator++()
   {
-    if (action_ == TAIncrement && --index_ < 0)
+    if (action_ == ThrowingAction::TAIncrement && --index_ < 0)
     {
       assert(false);
     }
@@ -955,7 +955,7 @@ struct ThrowingIterator
 
   TEST_FUNC constexpr ThrowingIterator& operator--()
   {
-    if (action_ == TADecrement && --index_ < 0)
+    if (action_ == ThrowingAction::TADecrement && --index_ < 0)
     {
       assert(false);
     }
@@ -972,7 +972,7 @@ struct ThrowingIterator
 
   TEST_FUNC constexpr friend bool operator==(const ThrowingIterator& a, const ThrowingIterator& b)
   {
-    if (a.action_ == TAComparison && --a.index_ < 0)
+    if (a.action_ == ThrowingAction::TAComparison && --a.index_ < 0)
     {
       assert(false);
     }

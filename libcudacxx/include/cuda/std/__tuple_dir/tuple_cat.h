@@ -74,8 +74,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tuple, size_t... _Indices>
 [[nodiscard]] _CCCL_API constexpr auto __tuple_cat_impl(__tuple_indices<_Indices...>, _Tuple&& __tuple) noexcept
 {
-  using ::cuda::std::get;
-  return ::cuda::std::forward_as_tuple(get<_Indices>(::cuda::std::forward<_Tuple>(__tuple))...);
+  return ::cuda::std::forward_as_tuple(::cuda::std::get<_Indices>(::cuda::std::forward<_Tuple>(__tuple))...);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -87,7 +86,6 @@ template <class _Tuple1, class _Tuple2, size_t... _Indices1, size_t... _Indices2
   _Tuple2&& __tuple2,
   _Tuples&&... __tuples)
 {
-  using ::cuda::std::get;
   if constexpr (sizeof...(_Tuples) != 0)
   {
     using _TupleSize0 = __make_tuple_indices_t<sizeof...(_Indices1) + sizeof...(_Indices2)>;
@@ -95,15 +93,24 @@ template <class _Tuple1, class _Tuple2, size_t... _Indices1, size_t... _Indices2
     return ::cuda::std::__tuple_cat_impl(
       _TupleSize0{},
       _TupleSize1{},
-      ::cuda::std::forward_as_tuple(get<_Indices1>(::cuda::std::forward<_Tuple1>(__tuple1))...,
-                                    get<_Indices2>(::cuda::std::forward<_Tuple2>(__tuple2))...),
+      ::cuda::std::forward_as_tuple(::cuda::std::get<_Indices1>(::cuda::std::forward<_Tuple1>(__tuple1))...,
+                                    ::cuda::std::get<_Indices2>(::cuda::std::forward<_Tuple2>(__tuple2))...),
       ::cuda::std::forward<_Tuples>(__tuples)...);
   }
   else
   {
-    return ::cuda::std::forward_as_tuple(get<_Indices1>(::cuda::std::forward<_Tuple1>(__tuple1))...,
-                                         get<_Indices2>(::cuda::std::forward<_Tuple2>(__tuple2))...);
+    return ::cuda::std::forward_as_tuple(::cuda::std::get<_Indices1>(::cuda::std::forward<_Tuple1>(__tuple1))...,
+                                         ::cuda::std::get<_Indices2>(::cuda::std::forward<_Tuple2>(__tuple2))...);
   }
+}
+
+// Direct-initialize the result from staged elements. A one-element conversion from the staging
+// tuple itself would use the element constructor that accepts that tuple.
+_CCCL_EXEC_CHECK_DISABLE
+template <class _Result, class _Staged, size_t... _Indices>
+[[nodiscard]] _CCCL_API constexpr _Result __tuple_cat_from_staged(__tuple_indices<_Indices...>, _Staged&& __staged)
+{
+  return _Result(::cuda::std::get<_Indices>(::cuda::std::forward<_Staged>(__staged))...);
 }
 
 template <class... _Tuples>
@@ -113,20 +120,27 @@ _CCCL_TEMPLATE(class... _Tuples)
 _CCCL_REQUIRES(__all_tuple_like<_Tuples...>)
 [[nodiscard]] _CCCL_API constexpr __tuple_cat_return_t<_Tuples...> tuple_cat(_Tuples&&... __tuples)
 {
+  // [tuple.creation] Returns tuple<CTypes...>(celems...). Stage the forwarded elements, then
+  // direct-initialize the result from each element so explicit element constructors are usable.
+  using _Result = __tuple_cat_return_t<_Tuples...>;
   if constexpr (sizeof...(_Tuples) == 0)
   {
     return tuple<>{};
   }
   else if constexpr (sizeof...(_Tuples) <= 2)
   {
-    return ::cuda::std::__tuple_cat_impl(__make_tuple_indices_t<tuple_size<remove_reference_t<_Tuples>>::value>{}...,
-                                         ::cuda::std::forward<_Tuples>(__tuples)...);
+    return ::cuda::std::__tuple_cat_from_staged<_Result>(
+      __make_tuple_indices_t<tuple_size_v<_Result>>{},
+      ::cuda::std::__tuple_cat_impl(__make_tuple_indices_t<tuple_size<remove_reference_t<_Tuples>>::value>{}...,
+                                    ::cuda::std::forward<_Tuples>(__tuples)...));
   }
   else
   {
     using _TupleSize0 = __make_tuple_indices_t<tuple_size<remove_reference_t<__type_index_c<0, _Tuples...>>>::value>;
     using _TupleSize1 = __make_tuple_indices_t<tuple_size<remove_reference_t<__type_index_c<1, _Tuples...>>>::value>;
-    return ::cuda::std::__tuple_cat_impl(_TupleSize0{}, _TupleSize1{}, ::cuda::std::forward<_Tuples>(__tuples)...);
+    return ::cuda::std::__tuple_cat_from_staged<_Result>(
+      __make_tuple_indices_t<tuple_size_v<_Result>>{},
+      ::cuda::std::__tuple_cat_impl(_TupleSize0{}, _TupleSize1{}, ::cuda::std::forward<_Tuples>(__tuples)...));
   }
 }
 
