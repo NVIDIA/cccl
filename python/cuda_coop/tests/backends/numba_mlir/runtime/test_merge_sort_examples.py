@@ -25,29 +25,37 @@ def test_merge_sort_pairs_example():
 
     from cuda import coop
 
-    coop.register("numba-cuda-mlir")
-
     @cuda.jit
-    def order_tile(source, sorted_keys, original_positions):
+    def order_tile(source, sorted_keys, original_positions, items_per_thread):
         block = coop.this_block()
-        keys = coop.ThreadData(items_per_thread=2)
-        positions = coop.ThreadData(items_per_thread=2)
+        keys = coop.ThreadData(items_per_thread)
+        positions = coop.ThreadData(items_per_thread)
         coop.load(block, source, keys)
-        for item in range(2):
-            positions[item] = types.int32(cuda.threadIdx.x * 2 + item)
+        for item in range(items_per_thread):
+            positions[item] = types.int32(
+                cuda.threadIdx.x * items_per_thread + item
+            )
         ordered_keys, ordered_positions = coop.merge_sort_pairs(
             block, keys, positions
         )
         coop.store(block, sorted_keys, ordered_keys)
         coop.store(block, original_positions, ordered_positions)
 
-    values = np.random.default_rng(42).permutation(128).astype(np.int32) - 64
-    source = cuda.to_device(values)
-    sorted_keys = cuda.device_array_like(source)
-    original_positions = cuda.device_array_like(source)
-    order_tile[1, 64](source, sorted_keys, original_positions)
-    actual = sorted_keys.copy_to_host()
-    indices = original_positions.copy_to_host()
-    np.testing.assert_array_equal(actual, np.sort(values))
-    np.testing.assert_array_equal(actual, values[indices])
+    for items_per_thread in (1, 4):
+        values = (
+            np.random.default_rng(42)
+            .permutation(64 * items_per_thread)
+            .astype(np.int32)
+            - 64
+        )
+        source = cuda.to_device(values)
+        sorted_keys = cuda.device_array_like(source)
+        original_positions = cuda.device_array_like(source)
+        order_tile[1, 64](
+            source, sorted_keys, original_positions, items_per_thread
+        )
+        actual = sorted_keys.copy_to_host()
+        indices = original_positions.copy_to_host()
+        np.testing.assert_array_equal(actual, np.sort(values))
+        np.testing.assert_array_equal(actual, values[indices])
     # merge-sort-example-end

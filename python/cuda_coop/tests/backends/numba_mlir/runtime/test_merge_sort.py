@@ -35,6 +35,7 @@ def _run(
     scratch=False,
     block_dim=64,
     valid_count=None,
+    items_per_thread,
 ):
     api = numba_coop if qualified else coop
     dtype = np.dtype(dtype)
@@ -55,15 +56,16 @@ def _run(
         preserved_values,
         count,
         sentinel,
+        items_per_thread,
     ):
         thread = cuda.threadIdx.x + cuda.blockDim.x * (
             cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
         )
-        keys = api.ThreadData(3)
-        payload = api.ThreadData(3)
-        for item in range(3):
-            keys[item] = source[thread * 3 + item]
-            payload[item] = values[thread * 3 + item]
+        keys = api.ThreadData(items_per_thread)
+        payload = api.ThreadData(items_per_thread)
+        for item in range(items_per_thread):
+            keys[item] = source[thread * items_per_thread + item]
+            payload[item] = values[thread * items_per_thread + item]
         if group_kind == "block":
             group = api.this_block()
         elif group_kind == "warp":
@@ -100,8 +102,10 @@ def _run(
                 result, result_values = api.merge_sort_pairs(
                     group, keys, payload, descending=descending
                 )
-            for item in range(3):
-                associations[thread * 3 + item] = result_values[item]
+            for item in range(items_per_thread):
+                associations[thread * items_per_thread + item] = result_values[
+                    item
+                ]
         else:
             if partial:
                 result = api.merge_sort_keys(
@@ -113,13 +117,13 @@ def _run(
                 )
             else:
                 result = api.merge_sort_keys(group, keys, descending=descending)
-        for item in range(3):
-            output[thread * 3 + item] = result[item]
-            preserved[thread * 3 + item] = keys[item]
-            preserved_values[thread * 3 + item] = payload[item]
+        for item in range(items_per_thread):
+            output[thread * items_per_thread + item] = result[item]
+            preserved[thread * items_per_thread + item] = keys[item]
+            preserved_values[thread * items_per_thread + item] = payload[item]
 
     # Duplicate keys exercise associations without assuming stable tie ordering.
-    source = ((np.arange(192) * 17 + 9) % 47).astype(dtype)
+    source = ((np.arange(64 * items_per_thread) * 17 + 9) % 47).astype(dtype)
     if dtype.kind == "f":
         source = source / dtype.type(4) - dtype.type(6.125)
     elif dtype.kind == "i":
@@ -131,11 +135,11 @@ def _run(
     elif dtype == np.int64:
         source *= dtype.type(1 << 33)
     value_dtype = np.dtype(value_dtype)
-    values = np.arange(192).astype(value_dtype)
+    values = np.arange(64 * items_per_thread).astype(value_dtype)
     if value_dtype.kind == "f":
         values += value_dtype.type(0.25)
     elif value_dtype.kind == "i":
-        values = (np.arange(192) - 96).astype(value_dtype)
+        values = (np.arange(64 * items_per_thread) - 96).astype(value_dtype)
     if value_dtype == np.float64:
         values += value_dtype.type(2**-30)
     elif value_dtype == np.int64:
@@ -146,7 +150,11 @@ def _run(
     associations = np.zeros_like(values)
     preserved = np.zeros_like(source)
     preserved_values = np.zeros_like(values)
-    count = width * 3 - 2 if valid_count is None else valid_count
+    count = (
+        max(0, width * items_per_thread - 2)
+        if valid_count is None
+        else valid_count
+    )
     limit = np.finfo(dtype).max if dtype.kind == "f" else np.iinfo(dtype).max
     minimum = np.finfo(dtype).min if dtype.kind == "f" else np.iinfo(dtype).min
     sentinel = dtype.type(minimum if descending else limit)
@@ -159,11 +167,12 @@ def _run(
         preserved_values,
         np.int64(count),
         sentinel,
+        items_per_thread,
     )
     np.testing.assert_array_equal(preserved, source)
     np.testing.assert_array_equal(preserved_values, values)
-    for start in range(0, 192, width * 3):
-        size = count if partial else width * 3
+    for start in range(0, 64 * items_per_thread, width * items_per_thread):
+        size = count if partial else width * items_per_thread
         expected = np.sort(source[start : start + size])
         if descending or custom:
             expected = expected[::-1]
@@ -184,6 +193,7 @@ def _run(
             assert actual == original
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "dtype",
     [
@@ -200,46 +210,63 @@ def _run(
     ],
 )
 @pytest.mark.parametrize("pairs", [False, True])
-def test_numeric_payloads(dtype, pairs):
-    _run(dtype=dtype, pairs=pairs)
+def test_numeric_payloads(dtype, pairs, items_per_thread):
+    _run(dtype=dtype, pairs=pairs, items_per_thread=items_per_thread)
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("width", [1, 2, 4, 8, 16, 32])
 @pytest.mark.parametrize("pairs,partial", [(False, False), (True, True)])
-def test_independent_warp_groups(width, pairs, partial):
-    _run(width=width, pairs=pairs, partial=partial, descending=True)
+def test_independent_warp_groups(width, pairs, partial, items_per_thread):
+    _run(
+        width=width,
+        pairs=pairs,
+        partial=partial,
+        descending=True,
+        items_per_thread=items_per_thread,
+    )
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("width", [64, 8, 32])
 @pytest.mark.parametrize("valid_count", [0, 1])
-def test_partial_empty_and_single_item(width, valid_count):
-    _run(width=width, partial=True, valid_count=valid_count)
+def test_partial_empty_and_single_item(width, valid_count, items_per_thread):
+    _run(
+        width=width,
+        partial=True,
+        valid_count=valid_count,
+        items_per_thread=items_per_thread,
+    )
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("dtype", [np.int8, np.uint16, np.float32, np.float64])
-def test_partial_key_types(dtype):
-    _run(dtype=dtype, partial=True)
+def test_partial_key_types(dtype, items_per_thread):
+    _run(dtype=dtype, partial=True, items_per_thread=items_per_thread)
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 @pytest.mark.parametrize("typed", [False, True])
 @pytest.mark.parametrize("descending", [False, True])
 @pytest.mark.parametrize("pairs", [False, True])
 @pytest.mark.parametrize("qualified", [False, True])
-def test_static_infinite_sentinel(dtype, typed, descending, pairs, qualified):
+def test_static_infinite_sentinel(
+    dtype, typed, descending, pairs, qualified, items_per_thread
+):
     api = numba_coop if qualified else coop
     sentinel = -float("inf") if descending else float("inf")
     if typed:
         sentinel = dtype(sentinel)
-    count = 119
+    count = 64 * items_per_thread - 9
 
     @cuda.jit
-    def kernel(source, output, associations, preserved):
+    def kernel(source, output, associations, preserved, items_per_thread):
         thread = cuda.threadIdx.x
-        keys = api.ThreadData(2, dtype)
-        values = api.ThreadData(2, np.int64)
-        for item in range(2):
-            index = thread * 2 + item
+        keys = api.ThreadData(items_per_thread, dtype)
+        values = api.ThreadData(items_per_thread, np.int64)
+        for item in range(items_per_thread):
+            index = thread * items_per_thread + item
             keys[item] = source[index]
             values[item] = index
         if pairs:
@@ -251,8 +278,10 @@ def test_static_infinite_sentinel(dtype, typed, descending, pairs, qualified):
                 valid_items=count,
                 oob_default=sentinel,
             )
-            for item in range(2):
-                associations[thread * 2 + item] = result_values[item]
+            for item in range(items_per_thread):
+                associations[thread * items_per_thread + item] = result_values[
+                    item
+                ]
         else:
             result = api.merge_sort_keys(
                 api.this_block(),
@@ -261,16 +290,16 @@ def test_static_infinite_sentinel(dtype, typed, descending, pairs, qualified):
                 valid_items=count,
                 oob_default=sentinel,
             )
-        for item in range(2):
-            output[thread * 2 + item] = result[item]
-            preserved[thread * 2 + item] = keys[item]
+        for item in range(items_per_thread):
+            output[thread * items_per_thread + item] = result[item]
+            preserved[thread * items_per_thread + item] = keys[item]
 
-    source = (((np.arange(128) * 17) % 47) - 23).astype(dtype)
+    source = (((np.arange(64 * items_per_thread) * 17) % 47) - 23).astype(dtype)
     source[:2] = [np.finfo(dtype).min, np.finfo(dtype).max]
     output = np.empty_like(source)
-    associations = np.full(128, -1, dtype=np.int64)
+    associations = np.full(64 * items_per_thread, -1, dtype=np.int64)
     preserved = np.empty_like(source)
-    kernel[1, 64](source, output, associations, preserved)
+    kernel[1, 64](source, output, associations, preserved, items_per_thread)
     expected = np.sort(source[:count])
     if descending:
         expected = expected[::-1]
@@ -285,16 +314,29 @@ def test_static_infinite_sentinel(dtype, typed, descending, pairs, qualified):
         )
 
 
-def test_multidimensional_block_and_reused_scratch():
-    _run(block_dim=(8, 4, 2), scratch=True, descending=True)
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_multidimensional_block_and_reused_scratch(items_per_thread):
+    _run(
+        block_dim=(8, 4, 2),
+        scratch=True,
+        descending=True,
+        items_per_thread=items_per_thread,
+    )
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("width", [64, 8, 32])
-def test_qualified_custom_comparator(width):
-    _run(width=width, qualified=True, custom=True)
+def test_qualified_custom_comparator(width, items_per_thread):
+    _run(
+        width=width,
+        qualified=True,
+        custom=True,
+        items_per_thread=items_per_thread,
+    )
 
 
-def test_qualified_comparator_with_nested_device_helper():
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_qualified_comparator_with_nested_device_helper(items_per_thread):
     @cuda.jit(device=True)
     def less(left, right):
         return left < right
@@ -303,18 +345,20 @@ def test_qualified_comparator_with_nested_device_helper():
         return less(left, right)
 
     @cuda.jit
-    def kernel(source, observed):
+    def kernel(source, observed, items_per_thread):
         thread = cuda.threadIdx.x
-        keys = numba_coop.ThreadData(1)
-        keys[0] = source[thread]
+        keys = numba_coop.ThreadData(items_per_thread)
+        for item in range(items_per_thread):
+            keys[item] = source[thread * items_per_thread + item]
         result = numba_coop.merge_sort_keys(
             numba_coop.this_block(), keys, compare_op=compare
         )
-        observed[thread] = result[0]
+        for item in range(items_per_thread):
+            observed[thread * items_per_thread + item] = result[item]
 
-    source = ((np.arange(64, dtype=np.int32) * 7) % 41) - 20
+    source = ((np.arange(64 * items_per_thread, dtype=np.int32) * 7) % 41) - 20
     observed = np.full_like(source, -1)
-    kernel[1, 64](source, observed)
+    kernel[1, 64](source, observed, items_per_thread)
     np.testing.assert_array_equal(observed, np.sort(source))
 
 
@@ -360,7 +404,7 @@ from pathlib import Path
 assert Path(coop.__file__).resolve() == Path({str(Path(coop.__file__).resolve())!r})
 @cuda.jit
 def kernel(source, output, count):
-    keys = coop.ThreadData(2)
+    keys = coop.ThreadData(items_per_thread=2)
     thread = cuda.threadIdx.x
     for item in range(2):
         keys[item] = source[thread * 2 + item]
@@ -397,27 +441,42 @@ raise AssertionError('invalid count did not trap')
     ), output
 
 
-def test_static_partial_default_and_load_inference():
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_static_partial_default_and_load_inference(items_per_thread):
+    tile_items = 64 * items_per_thread
+    valid_count = tile_items - 3
+    sentinel = tile_items - 1
+
     @cuda.jit
-    def kernel(source, observed):
-        keys = coop.ThreadData(2)
+    def kernel(source, observed, items_per_thread):
+        keys = coop.ThreadData(items_per_thread)
         coop.load(coop.this_block(), source, keys)
         result = coop.merge_sort_keys(
-            coop.this_block(), keys, valid_items=125, oob_default=127
+            coop.this_block(),
+            keys,
+            valid_items=valid_count,
+            oob_default=sentinel,
         )
         coop.store(coop.this_block(), observed, result)
 
-    source = np.arange(128, dtype=np.int16)[::-1].copy()
+    source = np.arange(64 * items_per_thread, dtype=np.int16)[::-1].copy()
     observed = np.zeros_like(source)
-    kernel[1, 64](source, observed)
-    np.testing.assert_array_equal(observed[:125], np.sort(source[:125]))
+    kernel[1, 64](source, observed, items_per_thread)
+    np.testing.assert_array_equal(observed[:-3], np.sort(source[:-3]))
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("width", [64, 8, 32])
-def test_partial_full_capacity(width):
-    _run(width=width, partial=True, valid_count=width * 3)
+def test_partial_full_capacity(width, items_per_thread):
+    _run(
+        width=width,
+        partial=True,
+        valid_count=width * items_per_thread,
+        items_per_thread=items_per_thread,
+    )
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "value_dtype",
     [
@@ -433,5 +492,7 @@ def test_partial_full_capacity(width):
         np.float64,
     ],
 )
-def test_pair_value_types(value_dtype):
-    _run(value_dtype=value_dtype, partial=True)
+def test_pair_value_types(value_dtype, items_per_thread):
+    _run(
+        value_dtype=value_dtype, partial=True, items_per_thread=items_per_thread
+    )
