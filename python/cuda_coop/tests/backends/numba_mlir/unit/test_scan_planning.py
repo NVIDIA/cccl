@@ -11,10 +11,12 @@ inference from generated C++ compilation and numerical scan results.
 
 from __future__ import annotations
 
+import operator
 from enum import Enum
 from inspect import signature
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Literal, get_origin
 
 import numpy as np
 import pytest
@@ -209,6 +211,14 @@ def test_public_signatures_keep_common_surface_narrow_and_add_n6_callbacks():
     assert (package / "_stateful_function.py").is_file()
     assert numba_coop.StatefulFunction.__module__.endswith(
         "._stateful_function"
+    )
+    assert (
+        get_origin(numba_coop.ThreadGroup[Literal["warp"]])
+        is numba_coop.ThreadGroup
+    )
+    assert (
+        get_origin(numba_coop.StatefulFunction[np.int64, np.int32])
+        is numba_coop.StatefulFunction
     )
 
 
@@ -681,6 +691,9 @@ def test_private_scan_selector_validation_does_not_unwrap_value_objects():
         (" maximum ", "max"),
         ("multiply", "multiplies"),
         ("BIT-OR", "bit_or"),
+        (np.maximum, "max"),
+        (operator.add, "sum"),
+        (operator.mul, "multiplies"),
     ),
 )
 def test_shared_scan_operator_aliases_normalize_identically(
@@ -700,9 +713,14 @@ def test_shared_scan_operator_aliases_normalize_identically(
         return coop.inclusive_scan(coop.this_block(), value, scan_op=alias)
 
     func_ir, planner = _plan(kernel, arg_types=(types.int32,))
+    if api == "common" and callable(alias):
+        with pytest.raises(TypeError, match="scan_op must be a string"):
+            planner.run()
+        return
     assert planner.run()
     call = _provider_call(func_ir, _scan.block_scan_scalar)
-    assert _kwarg_value(func_ir, call, "scan_op") == canonical
+    expected = None if canonical == "sum" else canonical
+    assert _kwarg_value(func_ir, call, "scan_op") == expected
 
 
 @pytest.mark.parametrize(
@@ -949,7 +967,7 @@ def test_qualified_callback_plans_for_block_and_warp_but_common_rejects_it():
         )
 
     _, planner = _plan(common_kernel, arg_types=(types.int32,))
-    with pytest.raises(NotImplementedError, match="built-in operators only"):
+    with pytest.raises(TypeError, match="scan_op must be a string"):
         planner.run()
 
 
