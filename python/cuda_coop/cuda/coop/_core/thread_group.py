@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from functools import reduce
 from operator import mul
+from types import GenericAlias
 from typing import Any, TypeVar
 
 # Hierarchy levels identify the coordinate spaces used by group descriptors.
@@ -315,6 +316,8 @@ class ThreadGroup:
     rank, size, membership, and synchronization queries are not available
     in this API layer.
     """
+
+    __class_getitem__ = classmethod(GenericAlias)
 
     kind: str
     hierarchy: ThreadHierarchy = field(default_factory=ThreadHierarchy.current)

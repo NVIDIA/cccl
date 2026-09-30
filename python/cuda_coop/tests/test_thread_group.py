@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from typing import Literal, get_type_hints
+
 import pytest
 
 import cuda.coop._core.thread_group as _thread_group
@@ -12,6 +14,13 @@ from cuda.coop._core import (
     this_block,
     this_warp,
 )
+
+
+def test_thread_group_annotations_resolve_at_runtime():
+    def kernel(group: ThreadGroup[Literal["block"]]):
+        pass
+
+    assert get_type_hints(kernel)["group"] == ThreadGroup[Literal["block"]]
 
 
 def test_resolved_hierarchy_counts_threads_at_each_level():
