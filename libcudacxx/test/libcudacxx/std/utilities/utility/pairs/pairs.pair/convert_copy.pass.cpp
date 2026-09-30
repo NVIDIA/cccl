@@ -21,7 +21,7 @@
 using namespace ImplicitTypes; // Get implicitly archetypes
 
 template <class T1, class U1, bool CanCopy = true, bool CanConvert = CanCopy>
-TEST_FUNC void test_pair_const()
+TEST_FUNC constexpr void test_pair_const()
 {
   using P1  = cuda::std::pair<T1, int>;
   using P2  = cuda::std::pair<int, T1>;
@@ -150,12 +150,12 @@ TEST_FUNC constexpr bool test()
 
     test_pair_const<ConvertingType&, int, false>();
     test_pair_const<ExplicitTypes::ConvertingType&, int, false>();
-    // Unfortunately the below conversions are allowed and create dangling
-    // references.
-    // test_pair_const<ConvertingType&&, int>();
-    // test_pair_const<ConvertingType const&, int>();
-    // test_pair_const<ConvertingType const&&, int>();
-    // But these are not because the converting constructor is explicit.
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+    // Constructing a reference element from a temporary is deleted.
+    test_pair_const<ConvertingType&&, int, false>();
+    test_pair_const<ConvertingType const&, int, false>();
+    test_pair_const<ConvertingType const&&, int, false>();
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
     test_pair_const<ExplicitTypes::ConvertingType&&, int, false>();
     test_pair_const<ExplicitTypes::ConvertingType const&, int, false>();
     test_pair_const<ExplicitTypes::ConvertingType const&&, int, false>();

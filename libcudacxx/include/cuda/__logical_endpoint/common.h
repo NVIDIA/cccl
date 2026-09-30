@@ -26,6 +26,7 @@
 #  include <cuda/__device/attributes.h>
 #  include <cuda/__device/device_ref.h>
 #  include <cuda/__driver/driver_api.h>
+#  include <cuda/__export_mechanisms/export_mechanisms.h>
 #  include <cuda/__logical_endpoint/fwd.h>
 #  include <cuda/__memory_resource/shared_block_ptr.h>
 #  include <cuda/std/__cccl/unreachable.h>
@@ -378,6 +379,56 @@ private:
   friend class ::cuda::__detail::__logical_endpoint_owner_base;
 };
 
+//! @brief Host-side storage for a CUDA logical endpoint fabric IPC handle.
+//!
+//! The native handle storage is accompanied by endpoint metadata used to validate typed imports.
+class logical_endpoint_fabric_handle
+{
+  // If CUDA exposes endpoint metadata queries for imported handles in the future, those driver queries should become
+  // the source of truth.
+  template <class, ::cuda::__detail::__logical_endpoint_type>
+  friend class ::cuda::__detail::__logical_endpoint_owner_base;
+
+public:
+  using native_handle_type = ::CUlogicalEndpointFabricHandle;
+
+  //! @brief Creates an empty logical endpoint fabric handle wrapper.
+  _CCCL_HOST_API constexpr logical_endpoint_fabric_handle() noexcept {} // NOLINT(modernize-use-equals-default)
+
+  //! @brief Returns the native CUDA logical endpoint fabric handle.
+  //!
+  //! @return The native handle storage.
+  [[nodiscard]] _CCCL_HOST_API constexpr native_handle_type native_handle() const noexcept
+  {
+    return __handle_;
+  }
+
+private:
+  native_handle_type __handle_{};
+  ::cuda::__detail::__logical_endpoint_type __type_ = ::cuda::__detail::__logical_endpoint_type::__invalid;
+  ::cuda::std::uint64_t __size_{};
+  ::cuda::std::uint64_t __bind_alignment_{};
+
+  [[nodiscard]] _CCCL_HOST_API constexpr native_handle_type* __native_handle_pointer() noexcept
+  {
+    return &__handle_;
+  }
+
+  [[nodiscard]] _CCCL_HOST_API constexpr const native_handle_type* __native_handle_pointer() const noexcept
+  {
+    return &__handle_;
+  }
+
+  _CCCL_HOST_API constexpr logical_endpoint_fabric_handle(
+    ::cuda::__detail::__logical_endpoint_type __type,
+    ::cuda::std::uint64_t __size,
+    ::cuda::std::uint64_t __bind_alignment) noexcept
+      : __type_{__type}
+      , __size_{__size}
+      , __bind_alignment_{__bind_alignment}
+  {}
+};
+
 namespace __detail
 {
 template <class _EndpointAttribute>
@@ -399,6 +450,23 @@ template <class _EndpointAttribute>
       return false;
     }
   }
+
+#  if _CCCL_CTK_AT_LEAST(13, 4)
+  if (__ipc != logical_endpoint_ipc_handle_type::none)
+  {
+    if (::cuda::__driver::__version_below(13, 4))
+    {
+      return false;
+    }
+
+    const auto __supported_handle_types =
+      __device.attribute(::cuda::device_attributes::logical_endpoint_supported_handle_types);
+    if ((__supported_handle_types & ::cuda::std::to_underlying(__ipc)) != ::cuda::std::to_underlying(__ipc))
+    {
+      return false;
+    }
+  }
+#  endif // _CCCL_CTK_AT_LEAST(13, 4)
 
   if ((__flags & logical_endpoint_flag::counted_ops) != logical_endpoint_flag::none)
   {
@@ -650,6 +718,26 @@ protected:
     __ipc_handle_type_        = static_cast<logical_endpoint_ipc_handle_type>(__prop.ipcHandleTypes);
   }
 
+  _CCCL_HOST_API void __import_endpoint(logical_endpoint_id __id, const logical_endpoint_fabric_handle& __handle)
+  {
+    _CCCL_ASSERT(__id != ::cuda::invalid_logical_endpoint_id, "Cannot import a logical endpoint with an invalid ID");
+    if (__handle.__type_ != _Type)
+    {
+      _CCCL_THROW(::std::invalid_argument, "Logical endpoint handle type does not match the endpoint type");
+    }
+
+    constexpr auto __ipc = logical_endpoint_ipc_handle_type::fabric;
+    ::cuda::__driver::__logicalEndpointImport(
+      __id.native_handle(),
+      __handle.__native_handle_pointer(),
+      static_cast<::CUlogicalEndpointIpcHandleType>(::cuda::std::to_underlying(__ipc)));
+
+    static_cast<_Ref&>(*this) = _Ref{__id};
+    __size_                   = __handle.__size_;
+    __bind_alignment_         = __handle.__bind_alignment_;
+    __ipc_handle_type_        = __ipc;
+  }
+
   [[nodiscard]] _CCCL_HOST_API constexpr bool __is_engaged() const noexcept
   {
     return this->id() != ::cuda::invalid_logical_endpoint_id;
@@ -747,7 +835,7 @@ public:
     return {__id, ::cuda::std::nullopt};
   }
 
-  //! @brief Returns the endpoint size captured at creation.
+  //! @brief Returns the endpoint size captured at creation or import.
   //!
   //! @return The logical endpoint size in bytes.
   [[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::uint64_t size() const noexcept
@@ -755,12 +843,35 @@ public:
     return __size_;
   }
 
-  //! @brief Returns the bind alignment captured at creation.
+  //! @brief Returns the bind alignment captured at creation or import.
   //!
   //! @return The logical endpoint bind alignment in bytes.
   [[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::uint64_t bind_alignment() const noexcept
   {
     return __bind_alignment_;
+  }
+
+  //! @brief Exports the endpoint into a CUDA logical endpoint fabric IPC handle.
+  //!
+  //! Only owning endpoints can export because refs store only an ID and do not retain endpoint metadata used for typed
+  //! import validation.
+  //!
+  //! @return A logical endpoint fabric handle wrapper.
+  [[nodiscard]] _CCCL_HOST_API logical_endpoint_fabric_handle export_endpoint(fabric_handle_t) const
+  {
+    _CCCL_ASSERT(__is_engaged(), "Cannot export an empty logical endpoint");
+    if (__ipc_handle_type_ != logical_endpoint_ipc_handle_type::fabric)
+    {
+      _CCCL_THROW(::std::invalid_argument, "Cannot export a logical endpoint that was not created with fabric IPC");
+    }
+
+    constexpr auto __ipc = logical_endpoint_ipc_handle_type::fabric;
+    logical_endpoint_fabric_handle __handle{_Type, __size_, __bind_alignment_};
+    ::cuda::__driver::__logicalEndpointExport(
+      __handle.__native_handle_pointer(),
+      this->native_handle(),
+      static_cast<::CUlogicalEndpointIpcHandleType>(::cuda::std::to_underlying(__ipc)));
+    return __handle;
   }
 
 private:

@@ -27,7 +27,6 @@
 
 namespace logical_endpoint_test
 {
-inline constexpr int cuda_driver_version_13_3                  = 13030;
 inline constexpr cuda::std::uint64_t minimum_bytes             = 4096;
 inline constexpr auto ready_timeout                            = cuda::std::chrono::seconds{1};
 inline constexpr cuda::std::uint32_t payload_words             = 4;
@@ -55,12 +54,7 @@ struct support_result
 
 [[nodiscard]] inline const char* runtime_unsupported_reason(int minimum_device_count = 1)
 {
-  int driver_version = 0;
-  if (::cudaDriverGetVersion(&driver_version) != cudaSuccess)
-  {
-    return "CUDA driver version could not be queried";
-  }
-  if (driver_version < logical_endpoint_test::cuda_driver_version_13_3)
+  if (cuda::__driver::__version_below(13, 3))
   {
     return "logical endpoints require a CUDA 13.3 driver";
   }
