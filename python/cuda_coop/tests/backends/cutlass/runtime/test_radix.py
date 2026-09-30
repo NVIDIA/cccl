@@ -109,14 +109,14 @@ def _assert_bits(actual, expected):
     )
 
 
-def _check_result(result, source, dtype, items, scalar, alignment):
+def _check_result(result, source, dtype, items_per_thread, scalar, alignment):
     if scalar:
         assert isinstance(result, dtype)
     else:
         assert isinstance(result, cutlass_coop.ThreadData)
         assert result is not source
         assert result.dtype is dtype
-        assert len(result) == items
+        assert len(result) == items_per_thread
         assert result.alignment == alignment
 
 
@@ -137,7 +137,7 @@ def _run_sort(
     inferred=False,
     block=(8, 4, 2),
     blocks=2,
-    items=3,
+    items_per_thread=3,
     compile_options=(),
     reuse=False,
     sharing=None,
@@ -147,9 +147,9 @@ def _run_sort(
     chain=False,
 ):
     key_type, value_type = cutlass_dtype(dtype), cutlass_dtype(value_dtype)
-    items = 1 if scalar else items
+    items_per_thread = 1 if scalar else items_per_thread
     threads = int(np.prod(block))
-    tile, size = threads * items, blocks * threads * items
+    tile, size = threads * items_per_thread, blocks * threads * items_per_thread
     resolved_end = np.dtype(dtype).itemsize * 8 if end_bit is None else end_bit
     is_qualified = api is cutlass_coop
 
@@ -164,6 +164,7 @@ def _run_sort(
         dynamic_begin: control_type,
         dynamic_end: control_type,
         repeats: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + block[0] * (y + block[1] * z)
@@ -193,16 +194,20 @@ def _run_sort(
             values = payloads[offset + thread]
         else:
             keys = api.ThreadData(
-                items, dtype=None if inferred else key_type, alignment=alignment
+                items_per_thread,
+                dtype=None if inferred else key_type,
+                alignment=alignment,
             )
             values = api.ThreadData(
-                items,
+                items_per_thread,
                 dtype=None if inferred else value_type,
                 alignment=alignment,
             )
-            for item in cutlass.range_constexpr(items):
-                keys[item] = sources[offset + thread * items + item]
-                values[item] = payloads[offset + thread * items + item]
+            for item in cutlass.range_constexpr(items_per_thread):
+                keys[item] = sources[offset + thread * items_per_thread + item]
+                values[item] = payloads[
+                    offset + thread * items_per_thread + item
+                ]
         if cutlass.const_expr(readonly):
             key_input, value_input = _Readonly(keys), _Readonly(values)
         else:
@@ -292,10 +297,17 @@ def _run_sort(
                     )
                 if cutlass.const_expr(sharing is not None and not auto_sync):
                     storage.sync()
-        _check_result(result, keys, key_type, items, scalar, alignment)
+        _check_result(
+            result, keys, key_type, items_per_thread, scalar, alignment
+        )
         if cutlass.const_expr(pairs):
             _check_result(
-                result_values, values, value_type, items, scalar, alignment
+                result_values,
+                values,
+                value_type,
+                items_per_thread,
+                scalar,
+                alignment,
             )
         if cutlass.const_expr(scalar):
             outputs[offset + thread] = result
@@ -303,15 +315,19 @@ def _run_sort(
             keys_check[offset + thread] = keys
             values_check[offset + thread] = values
         else:
-            for item in cutlass.range_constexpr(items):
+            for item in cutlass.range_constexpr(items_per_thread):
                 if cutlass.const_expr(striped):
                     index = offset + item * threads + thread
                 else:
-                    index = offset + thread * items + item
+                    index = offset + thread * items_per_thread + item
                 outputs[index] = result[item]
                 associated[index] = result_values[item]
-                keys_check[offset + thread * items + item] = keys[item]
-                values_check[offset + thread * items + item] = values[item]
+                keys_check[offset + thread * items_per_thread + item] = keys[
+                    item
+                ]
+                values_check[offset + thread * items_per_thread + item] = (
+                    values[item]
+                )
 
     @cute.jit
     def launch(
@@ -324,6 +340,7 @@ def _run_sort(
         dynamic_begin: control_type,
         dynamic_end: control_type,
         repeats: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         kernel(
             source,
@@ -335,6 +352,7 @@ def _run_sort(
             dynamic_begin,
             dynamic_end,
             repeats,
+            items_per_thread,
         ).launch(grid=blocks, block=block)
 
     source = _keys(dtype, size)
@@ -367,9 +385,9 @@ def _run_sort(
             cutlass.Int32(3 if reuse else 1),
         )
         compiled = (
-            cute.compile[compile_options](launch, *args)
+            cute.compile[compile_options](launch, *args, items_per_thread)
             if compile_options
-            else cute.compile(launch, *args)
+            else cute.compile(launch, *args, items_per_thread)
         )
         compiled(*args)
     _assert_bits(preserved_keys, source)
@@ -403,15 +421,15 @@ def _run_rank(
     inferred=False,
     block=(8, 4, 2),
     blocks=2,
-    items=3,
+    items_per_thread=3,
     compile_options=(),
     reuse=False,
     chain=False,
 ):
     key_type = cutlass_dtype(dtype)
-    items = 1 if scalar else items
+    items_per_thread = 1 if scalar else items_per_thread
     threads = int(np.prod(block))
-    tile, size = threads * items, blocks * threads * items
+    tile, size = threads * items_per_thread, blocks * threads * items_per_thread
     bins = 1 << radix_bits
     prefix_items = max(1, (bins + threads - 1) // threads)
     prefix_tile = threads * prefix_items
@@ -424,6 +442,7 @@ def _run_rank(
         preserved: cute.Pointer,
         ordered: cute.Pointer,
         repeats: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + block[0] * (y + block[1] * z)
@@ -445,23 +464,28 @@ def _run_rank(
             keys = sources[offset + thread]
         else:
             keys = api.ThreadData(
-                items, dtype=None if inferred else key_type, alignment=64
+                items_per_thread,
+                dtype=None if inferred else key_type,
+                alignment=64,
             )
-            for item in cutlass.range_constexpr(items):
-                keys[item] = sources[offset + thread * items + item]
+            for item in cutlass.range_constexpr(items_per_thread):
+                keys[item] = sources[offset + thread * items_per_thread + item]
         if cutlass.const_expr(readonly):
             input_keys = _Readonly(keys)
         else:
             input_keys = keys
         if cutlass.const_expr(prefix):
             digit_prefix = api.ThreadData(
-                prefix_items, dtype=None if prefix_inferred else cutlass.Int32
+                items_per_thread=prefix_items,
+                dtype=None if prefix_inferred else cutlass.Int32,
             )
         if cutlass.const_expr(scalar):
             result = cutlass.Int32(0)
         else:
-            result = api.ThreadData(items, dtype=cutlass.Int32, alignment=64)
-            for item in cutlass.range_constexpr(items):
+            result = api.ThreadData(
+                items_per_thread, dtype=cutlass.Int32, alignment=64
+            )
+            for item in cutlass.range_constexpr(items_per_thread):
                 result[item] = cutlass.Int32(0)
         for iteration in range(repeats):
             if cutlass.const_expr(prefix):
@@ -486,7 +510,7 @@ def _run_rank(
                     prefixes[
                         block_index * prefix_tile + thread * prefix_items + item
                     ] = digit_prefix[item]
-        _check_result(result, keys, cutlass.Int32, items, scalar, 64)
+        _check_result(result, keys, cutlass.Int32, items_per_thread, scalar, 64)
         if cutlass.const_expr(chain):
             sorted_ranks = api.radix_sort_keys(group, result)
         if cutlass.const_expr(scalar):
@@ -495,13 +519,15 @@ def _run_rank(
             if cutlass.const_expr(chain):
                 ordered_out[offset + thread] = sorted_ranks
         else:
-            for item in cutlass.range_constexpr(items):
-                outputs[offset + thread * items + item] = result[item]
-                checks[offset + thread * items + item] = keys[item]
+            for item in cutlass.range_constexpr(items_per_thread):
+                outputs[offset + thread * items_per_thread + item] = result[
+                    item
+                ]
+                checks[offset + thread * items_per_thread + item] = keys[item]
                 if cutlass.const_expr(chain):
-                    ordered_out[offset + thread * items + item] = sorted_ranks[
-                        item
-                    ]
+                    ordered_out[offset + thread * items_per_thread + item] = (
+                        sorted_ranks[item]
+                    )
 
     @cute.jit
     def launch(
@@ -511,9 +537,16 @@ def _run_rank(
         preserved: cute.Pointer,
         ordered: cute.Pointer,
         repeats: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         kernel(
-            source, output, prefix_output, preserved, ordered, repeats
+            source,
+            output,
+            prefix_output,
+            preserved,
+            ordered,
+            repeats,
+            items_per_thread,
         ).launch(grid=blocks, block=block)
 
     source = _keys(dtype, size)
@@ -527,9 +560,9 @@ def _run_rank(
         ]
         args = (*pointers, cutlass.Int32(3 if reuse else 1))
         compiled = (
-            cute.compile[compile_options](launch, *args)
+            cute.compile[compile_options](launch, *args, items_per_thread)
             if compile_options
-            else cute.compile(launch, *args)
+            else cute.compile(launch, *args, items_per_thread)
         )
         compiled(*args)
     _assert_bits(preserved, source)
@@ -567,8 +600,14 @@ def _run_rank(
 @pytest.mark.parametrize("dtype", _INTEGER_KEYS)
 @pytest.mark.parametrize("descending", (False, True))
 @pytest.mark.parametrize("pairs", (False, True))
-def test_common_integral_sort(dtype, descending, pairs):
-    _run_sort(dtype=dtype, descending=descending, pairs=pairs)
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_common_integral_sort(dtype, descending, pairs, items_per_thread):
+    _run_sort(
+        dtype=dtype,
+        descending=descending,
+        pairs=pairs,
+        items_per_thread=items_per_thread,
+    )
 
 
 @pytest.mark.parametrize("dtype", (np.float32, np.float64))
@@ -645,9 +684,18 @@ def test_qualified_scalar_sort(dtype, pairs, descending):
 @pytest.mark.parametrize("dtype", _INTEGER_KEYS)
 @pytest.mark.parametrize("descending", (False, True))
 @pytest.mark.parametrize("sign_window", (False, True))
-def test_rank_stability_and_sign_window(dtype, descending, sign_window):
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_rank_stability_and_sign_window(
+    dtype, descending, sign_window, items_per_thread
+):
     begin = np.dtype(dtype).itemsize * 8 - 4 if sign_window else 0
-    _run_rank(dtype=dtype, descending=descending, begin_bit=begin, chain=True)
+    _run_rank(
+        dtype=dtype,
+        descending=descending,
+        begin_bit=begin,
+        chain=True,
+        items_per_thread=items_per_thread,
+    )
 
 
 @pytest.mark.parametrize(

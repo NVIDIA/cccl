@@ -139,15 +139,15 @@ def test_result_dtype_validated():
 
 
 def test_prefix_alias_rejected_before_snapshot():
-    keys = ThreadData(1, dtype=cutlass.Int32, values=[2])
+    keys = ThreadData(items_per_thread=1, dtype=cutlass.Int32, values=[2])
     with pytest.raises(ValueError, match="distinct"):
         radix_rank(this_block(), keys, exclusive_digit_prefix=keys)
 
 
 def test_failed_ffi_preserves_prefix_and_session(monkeypatch):
     request = _rank(prefix_items=1)
-    keys = ThreadData(3, dtype=cutlass.Int32, values=[3, 1, 2])
-    prefix = ThreadData(1, values=[-7])
+    keys = ThreadData(items_per_thread=3, dtype=cutlass.Int32, values=[3, 1, 2])
+    prefix = ThreadData(items_per_thread=1, values=[-7])
     saved, restored = object(), []
     monkeypatch.setattr(_state, "snapshot_active_session_state", lambda: saved)
     monkeypatch.setattr(_state, "restore_active_session_state", restored.append)
