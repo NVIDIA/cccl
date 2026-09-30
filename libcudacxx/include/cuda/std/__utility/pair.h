@@ -163,8 +163,8 @@ struct __pair_base<_T1, _T2, true>
   operator=(conditional_t<is_move_assignable_v<_T1> && is_move_assignable_v<_T2>, __pair_base, __nat>&& __p) noexcept(
     is_nothrow_move_assignable_v<_T1> && is_nothrow_move_assignable_v<_T2>)
   {
-    first  = static_cast<_T1&&>(__p.first);
-    second = static_cast<_T2&&>(__p.second);
+    first  = static_cast<_T1&&>(cuda::std::move(__p).first);
+    second = static_cast<_T2&&>(cuda::std::move(__p).second);
     return *this;
   }
 
@@ -443,7 +443,7 @@ public:
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(pair<_U1, _U2>&& __p) noexcept(
     is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
-      : __base(static_cast<_U1&&>(__p.first), static_cast<_U2&&>(__p.second))
+      : __base(static_cast<_U1&&>(cuda::std::move(__p).first), static_cast<_U2&&>(cuda::std::move(__p).second))
   {}
 
   template <class _U1,
@@ -453,7 +453,7 @@ public:
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr pair(pair<_U1, _U2>&& __p) noexcept(
     is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
-      : __base(static_cast<_U1&&>(__p.first), static_cast<_U2&&>(__p.second))
+      : __base(static_cast<_U1&&>(cuda::std::move(__p).first), static_cast<_U2&&>(cuda::std::move(__p).second))
   {}
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
@@ -471,7 +471,8 @@ public:
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(const pair<_U1, _U2>&& __p) noexcept(
     is_nothrow_constructible_v<_T1, const _U1> && is_nothrow_constructible_v<_T2, const _U2>)
-      : __base(static_cast<const _U1&&>(__p.first), static_cast<const _U2&&>(__p.second))
+      : __base(static_cast<const _U1&&>(cuda::std::move(__p).first),
+               static_cast<const _U2&&>(cuda::std::move(__p).second))
   {}
 
   // pair(const pair<U>&&) beats the copy constructor for a const rvalue. NVCC rejects copy-list-initialization when
@@ -484,7 +485,8 @@ public:
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr pair(const pair<_U1, _U2>&& __p) noexcept(
     is_nothrow_constructible_v<_T1, const _U1> && is_nothrow_constructible_v<_T2, const _U2>)
-      : __base(static_cast<const _U1&&>(__p.first), static_cast<const _U2&&>(__p.second))
+      : __base(static_cast<const _U1&&>(cuda::std::move(__p).first),
+               static_cast<const _U2&&>(cuda::std::move(__p).second))
   {}
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
