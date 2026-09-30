@@ -25,17 +25,20 @@ def test_histogram_accumulation_example():
 
     from cuda import coop
 
-    coop.register("numba-cuda-mlir")
-
     @cuda.jit
-    def histogram_tiles(source, tile_count, destination):
+    def histogram_tiles(source, tile_count, destination, items_per_thread):
         block = coop.this_block()
-        samples = coop.ThreadData(items_per_thread=2)
+        samples = coop.ThreadData(items_per_thread)
         total = coop.ThreadData(items_per_thread=2)
         for i in range(2):
             total[i] = np.int64(0)
         for tile in range(tile_count):
-            coop.load(block, source, samples, offset=tile * 128)
+            coop.load(
+                block,
+                source,
+                samples,
+                offset=tile * cuda.blockDim.x * items_per_thread,
+            )
             counts = coop.histogram(
                 block,
                 samples,
@@ -49,11 +52,12 @@ def test_histogram_accumulation_example():
             block, destination, total, algorithm="striped", valid_items=65
         )
 
-    source = (np.arange(3 * 128) % 65).astype(np.int32)
-    destination = np.empty(65, dtype=np.int64)
-    histogram_tiles[1, 64](source, 3, destination)
-    cuda.synchronize()
-    np.testing.assert_array_equal(
-        destination, np.bincount(source, minlength=65)
-    )
+    for items_per_thread in (1, 4):
+        source = (np.arange(3 * 64 * items_per_thread) % 65).astype(np.int32)
+        destination = np.empty(65, dtype=np.int64)
+        histogram_tiles[1, 64](source, 3, destination, items_per_thread)
+        cuda.synchronize()
+        np.testing.assert_array_equal(
+            destination, np.bincount(source, minlength=65)
+        )
     # histogram-accumulation-example-end

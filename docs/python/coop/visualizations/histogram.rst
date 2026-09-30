@@ -76,9 +76,10 @@ add corresponding returned counters in each thread. No parent object is
 needed: the accumulated state is the counter payload that the kernel owns.
 Choose a counter dtype wide enough for the total across all tiles.
 
-This tested example counts three complete 128-sample tiles into 65 bins.
-The kernel launches 64 threads. Each thread loads two samples and owns two
-striped bin counters, using int64 for the accumulated result.
+This tested example counts three complete tiles into 65 bins.
+The kernel launches 64 threads. Each thread loads ``items_per_thread``
+samples and owns two striped bin counters, using int64 for the accumulated
+result. The sample count and the number of counters per thread are independent.
 
 .. literalinclude:: ../../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_histogram_examples.py
    :language: python
