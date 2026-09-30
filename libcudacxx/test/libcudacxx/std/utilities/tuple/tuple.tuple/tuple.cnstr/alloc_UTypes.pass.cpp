@@ -39,7 +39,11 @@ struct DefaultCtorBlowsUp
 };
 
 struct DerivedFromAllocArgT : cuda::std::allocator_arg_t
-{};
+{ // allocator_arg_t has an explicit default constructor
+  TEST_FUNC constexpr DerivedFromAllocArgT()
+      : cuda::std::allocator_arg_t()
+  {}
+};
 
 struct Explicit
 {

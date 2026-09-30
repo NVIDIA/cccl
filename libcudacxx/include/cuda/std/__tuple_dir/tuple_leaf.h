@@ -120,19 +120,19 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API constexpr __tuple_leaf(integral_constant<int, 0>, const _Alloc&)
+  _CCCL_API constexpr __tuple_leaf(__select_uses_allocator_none, const _Alloc&)
       : __value_()
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API constexpr __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a)
+  _CCCL_API constexpr __tuple_leaf(__select_uses_allocator_arg, const _Alloc& __a)
       : __value_(allocator_arg_t(), __a)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API constexpr __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a)
+  _CCCL_API constexpr __tuple_leaf(__select_uses_allocator_last, const _Alloc& __a)
       : __value_(__a)
   {}
 
@@ -146,19 +146,19 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_none, const _Alloc&, _Tp&& __t)
       : __value_(::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_arg, const _Alloc& __a, _Tp&& __t)
       : __value_(allocator_arg_t(), __a, ::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_last, const _Alloc& __a, _Tp&& __t)
       : __value_(::cuda::std::forward<_Tp>(__t), __a)
   {}
 
@@ -220,7 +220,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_none, const _Alloc&, _Tp&& __t)
       : __value_(::cuda::std::forward<_Tp>(__t))
   {
     static_assert(__can_bind_reference<_Tp&&>,
@@ -294,18 +294,18 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API constexpr __tuple_leaf(integral_constant<int, 0>, const _Alloc&)
+  _CCCL_API constexpr __tuple_leaf(__select_uses_allocator_none, const _Alloc&)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API constexpr __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a)
+  _CCCL_API constexpr __tuple_leaf(__select_uses_allocator_arg, const _Alloc& __a)
       : _Hp(allocator_arg_t(), __a)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API constexpr __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a)
+  _CCCL_API constexpr __tuple_leaf(__select_uses_allocator_last, const _Alloc& __a)
       : _Hp(__a)
   {}
 
@@ -319,19 +319,19 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_none, const _Alloc&, _Tp&& __t)
       : _Hp(::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_arg, const _Alloc& __a, _Tp&& __t)
       : _Hp(allocator_arg_t(), __a, ::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_last, const _Alloc& __a, _Tp&& __t)
       : _Hp(::cuda::std::forward<_Tp>(__t), __a)
   {}
 
