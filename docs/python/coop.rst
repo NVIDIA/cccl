@@ -156,6 +156,11 @@ only the backend namespace, you can import it as ``coop`` instead. See the
 Configuration
 -------------
 
+With Numba-CUDA-MLIR 0.5.x, activating the ``cuda.coop`` backend disables
+the compiler's ``cache=True`` disk cache for all kernels in that process.
+Compiled kernels still have an in-memory cache. The provider cache controlled
+by ``CUDA_COOP_ENABLE_CACHE`` below is separate.
+
 Runtime environment variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -464,10 +469,10 @@ For group size ``G``, items per thread ``K``, thread rank ``t``, and item index
 ``t + i * G``. The payload has no runtime layout tag that corrects a mismatched
 Load/Store pair.
 
-Store consumes the arrangement associated with its selected algorithm. The
-transpose Store implementations copy the payload before calling CUB, so Store
-never modifies the caller's scalar or ``ThreadData`` value while CUB performs
-its in-place reordering.
+Store consumes the arrangement associated with its selected algorithm.
+Transpose Store algorithms may rearrange the input payload in place, following
+CUB's behavior. Reload or reinitialize the payload before using its previous
+arrangement again.
 
 
 Temporary storage
