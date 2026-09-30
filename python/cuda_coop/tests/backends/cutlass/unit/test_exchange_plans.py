@@ -168,7 +168,9 @@ def test_warp_scatter_profile(kind):
 @pytest.mark.parametrize("group", (this_block(), this_warp().group_by(8)))
 def test_failed_ffi_rollback(group, monkeypatch):
     request = _request(group)
-    payload = ThreadData(2, dtype=cutlass.Int32, values=[1, 2], alignment=64)
+    payload = ThreadData(
+        items_per_thread=2, dtype=cutlass.Int32, values=[1, 2], alignment=64
+    )
     snapshot = object()
     registered, restored, allocations = [], [], []
     monkeypatch.setattr(

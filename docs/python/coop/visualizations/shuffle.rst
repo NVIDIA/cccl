@@ -65,20 +65,20 @@ Using Shuffle in a kernel
 
 This common-API fragment works in either DSL with the
 :ref:`kernel-fragment setup <coop-visualization-kernels>`. Launch with
-128 threads and provide at least 256
+128 threads and provide at least ``128 * items_per_thread``
 source and destination elements per block.
 
 .. code-block:: python
 
    block = coop.this_block()
-   items = coop.ThreadData(items_per_thread=2)
-   offset = block_index * 256
+   items = coop.ThreadData(items_per_thread)
+   offset = block_index * 128 * items_per_thread
    coop.load(block, source, items, offset=offset)
    shifted = coop.shuffle(block, items, mode="up")
-   position = thread_rank * 2
-   if position > 0:
-       destination[offset + position] = shifted[0]
-   destination[offset + position + 1] = shifted[1]
+   for item in range(items_per_thread):
+       position = thread_rank * items_per_thread + item
+       if position > 0:
+           destination[offset + position] = shifted[item]
 
 Every thread calls Shuffle. The conditional guards only the write afterward,
 so the undefined first result is never consumed. The first element of each

@@ -39,37 +39,48 @@ _SCATTERS = (
 )
 
 
-def _layout(source, width, mode):
+def _layout(source, width, mode, items_per_thread=3):
     result = np.empty_like(source)
-    for first in range(0, source.size, width * _ITEMS):
+    for first in range(0, source.size, width * items_per_thread):
         for lane in range(width):
-            for item in range(_ITEMS):
+            for item in range(items_per_thread):
                 logical = (
-                    lane * _ITEMS + item
+                    lane * items_per_thread + item
                     if mode == "striped_to_blocked"
                     else item * width + lane
                 )
                 source_lane, source_item = (
                     (logical % width, logical // width)
                     if mode == "striped_to_blocked"
-                    else divmod(logical, _ITEMS)
+                    else divmod(logical, items_per_thread)
                 )
-                result[first + lane * _ITEMS + item] = source[
-                    first + source_lane * _ITEMS + source_item
+                result[first + lane * items_per_thread + item] = source[
+                    first + source_lane * items_per_thread + source_item
                 ]
     return result
 
 
 def _run_layout(
-    api, dtype, mode, scope, *, width=8, block=_BLOCK, time_slicing=False
+    api,
+    dtype,
+    mode,
+    scope,
+    *,
+    width=8,
+    block=_BLOCK,
+    time_slicing=False,
+    items_per_thread=3,
 ):
     value_type = cutlass_dtype(dtype)
     threads = int(np.prod(block))
-    size = threads * _ITEMS
+    size = threads * items_per_thread
 
     @cute.kernel
     def kernel(
-        source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        preserved: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + block[0] * (y + block[1] * z)
@@ -88,9 +99,11 @@ def _run_layout(
             group = api.this_warp()
         else:
             group = api.this_warp().group_by(width)
-        payload = api.ThreadData(_ITEMS, dtype=value_type, alignment=64)
-        for item in cutlass.range_constexpr(_ITEMS):
-            payload[item] = inputs[thread * _ITEMS + item]
+        payload = api.ThreadData(
+            items_per_thread, dtype=value_type, alignment=64
+        )
+        for item in cutlass.range_constexpr(items_per_thread):
+            payload[item] = inputs[thread * items_per_thread + item]
         if cutlass.const_expr(time_slicing):
             result = api.exchange(
                 group, payload, mode=mode, warp_time_slicing=True
@@ -98,15 +111,20 @@ def _run_layout(
         else:
             result = api.exchange(group, payload, mode=mode)
         assert result.alignment >= 64
-        for item in cutlass.range_constexpr(_ITEMS):
-            outputs[thread * _ITEMS + item] = result[item]
-            checks[thread * _ITEMS + item] = payload[item]
+        for item in cutlass.range_constexpr(items_per_thread):
+            outputs[thread * items_per_thread + item] = result[item]
+            checks[thread * items_per_thread + item] = payload[item]
 
     @cute.jit
     def launch(
-        source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        preserved: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, observed, preserved).launch(grid=1, block=block)
+        kernel(source, observed, preserved, items_per_thread).launch(
+            grid=1, block=block
+        )
 
     source = values_for(dtype, size, shift=17)
     observed = np.zeros_like(source)
@@ -119,13 +137,13 @@ def _run_layout(
         oracle_mode = mode.replace("warp_striped", "striped")
     else:
         oracle_mode = mode
-    expected = _layout(source, group_width, oracle_mode)
+    expected = _layout(source, group_width, oracle_mode, items_per_thread)
     with (
         device_array(source) as src,
         device_array(observed) as out,
         device_array(preserved) as check,
     ):
-        launch(src, out, check)
+        launch(src, out, check, items_per_thread)
     np.testing.assert_array_equal(observed, expected)
     np.testing.assert_array_equal(preserved, source)
 
@@ -134,8 +152,9 @@ def _run_layout(
 @pytest.mark.parametrize("dtype", NUMPY_DTYPES)
 @pytest.mark.parametrize("mode", _LAYOUTS)
 @pytest.mark.parametrize("scope", ("block", "warp", "logical"))
-def test_layout_types(api, dtype, mode, scope):
-    _run_layout(api, dtype, mode, scope)
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_layout_types(api, dtype, mode, scope, items_per_thread):
+    _run_layout(api, dtype, mode, scope, items_per_thread=items_per_thread)
 
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
@@ -187,6 +206,7 @@ def _run_scatter(
         preserved: cute.Pointer,
         ranks_out: cute.Pointer,
         flags_out: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + block[0] * (y + block[1] * z)
@@ -211,11 +231,11 @@ def _run_scatter(
         flag_checks = cute.recast_tensor(
             cute.make_tensor(flags_out, cute.make_layout(size)), flag_type
         )
-        payload = cutlass_coop.ThreadData(_ITEMS, dtype=value_type)
-        ranks = cutlass_coop.ThreadData(_ITEMS, dtype=rank_type)
-        flags = cutlass_coop.ThreadData(_ITEMS, dtype=flag_type)
-        for item in cutlass.range_constexpr(_ITEMS):
-            index = thread * _ITEMS + item
+        payload = cutlass_coop.ThreadData(items_per_thread, dtype=value_type)
+        ranks = cutlass_coop.ThreadData(items_per_thread, dtype=rank_type)
+        flags = cutlass_coop.ThreadData(items_per_thread, dtype=flag_type)
+        for item in cutlass.range_constexpr(items_per_thread):
+            index = thread * items_per_thread + item
             payload[item] = inputs[index]
             ranks[item] = rank_inputs[index]
             flags[item] = flag_inputs[index]
@@ -235,8 +255,8 @@ def _run_scatter(
                 ranks=ranks,
                 warp_time_slicing=time_slicing,
             )
-        for item in cutlass.range_constexpr(_ITEMS):
-            index = thread * _ITEMS + item
+        for item in cutlass.range_constexpr(items_per_thread):
+            index = thread * items_per_thread + item
             outputs[index] = result[item]
             checks[index] = payload[item]
             rank_checks[index] = ranks[item]
@@ -251,6 +271,7 @@ def _run_scatter(
         preserved: cute.Pointer,
         ranks_out: cute.Pointer,
         flags_out: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
         kernel(
             source,
@@ -260,6 +281,7 @@ def _run_scatter(
             preserved,
             ranks_out,
             flags_out,
+            items_per_thread,
         ).launch(grid=1, block=block)
 
     source = values_for(dtype, size, shift=23)
@@ -296,7 +318,7 @@ def _run_scatter(
         device_array(ranks_out) as rank_check,
         device_array(flags_out) as flag_check,
     ):
-        launch(src, rank, flag, out, check, rank_check, flag_check)
+        launch(src, rank, flag, out, check, rank_check, flag_check, _ITEMS)
     np.testing.assert_array_equal(observed[defined], expected[defined])
     np.testing.assert_array_equal(preserved, source)
     np.testing.assert_array_equal(ranks_out, ranks)
@@ -338,7 +360,10 @@ def test_scatter_partial_block(mode):
 def test_reuse_loop(api, width, divergent):
     @cute.kernel
     def kernel(
-        source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        iterations: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
@@ -354,23 +379,28 @@ def test_reuse_loop(api, width, divergent):
             else:
                 selected = (thread % 32) // width == 2
         if selected or not divergent:
-            payload = api.ThreadData(_ITEMS, dtype=cutlass.Int32)
-            for item in cutlass.range_constexpr(_ITEMS):
-                payload[item] = inputs[thread * _ITEMS + item]
+            payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
+            for item in cutlass.range_constexpr(items_per_thread):
+                payload[item] = inputs[thread * items_per_thread + item]
             for iteration in range(iterations):
                 payload = api.exchange(
                     group, payload, mode="blocked_to_striped"
                 )
-                for item in cutlass.range_constexpr(_ITEMS):
+                for item in cutlass.range_constexpr(items_per_thread):
                     payload[item] = payload[item] + iteration
-            for item in cutlass.range_constexpr(_ITEMS):
-                outputs[thread * _ITEMS + item] = payload[item]
+            for item in cutlass.range_constexpr(items_per_thread):
+                outputs[thread * items_per_thread + item] = payload[item]
 
     @cute.jit
     def launch(
-        source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        iterations: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, observed, iterations).launch(grid=1, block=_BLOCK)
+        kernel(source, observed, iterations, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     iterations = 5
     source = values_for(np.int32, _TILE, shift=37)
@@ -394,7 +424,7 @@ def test_reuse_loop(api, width, divergent):
                 first * _ITEMS : (first + width) * _ITEMS
             ]
     with device_array(source) as src, device_array(observed) as out:
-        launch(src, out, iterations)
+        launch(src, out, iterations, _ITEMS)
     np.testing.assert_array_equal(observed, expected)
 
 
@@ -407,7 +437,11 @@ def test_final_cubin(tmp_path, warp):
         )
 
     @cute.kernel
-    def kernel(source: cute.Pointer, observed: cute.Pointer):
+    def kernel(
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
         thread = cute.arch.thread_idx()[0]
         inputs = cute.make_tensor(source, cute.make_layout(_TILE))
         outputs = cute.make_tensor(observed, cute.make_layout(_TILE))
@@ -415,24 +449,30 @@ def test_final_cubin(tmp_path, warp):
             group = cutlass_coop.this_warp().group_by(8)
         else:
             group = cutlass_coop.this_block()
-        payload = cutlass_coop.ThreadData(_ITEMS, dtype=cutlass.Int32)
-        for item in cutlass.range_constexpr(_ITEMS):
-            payload[item] = inputs[thread * _ITEMS + item]
+        payload = cutlass_coop.ThreadData(items_per_thread, dtype=cutlass.Int32)
+        for item in cutlass.range_constexpr(items_per_thread):
+            payload[item] = inputs[thread * items_per_thread + item]
         result = cutlass_coop.exchange(
             group, payload, mode="blocked_to_striped"
         )
-        for item in cutlass.range_constexpr(_ITEMS):
-            outputs[thread * _ITEMS + item] = result[item]
+        for item in cutlass.range_constexpr(items_per_thread):
+            outputs[thread * items_per_thread + item] = result[item]
 
     @cute.jit
-    def launch(source: cute.Pointer, observed: cute.Pointer):
-        kernel(source, observed).launch(grid=1, block=_THREADS)
+    def launch(
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(source, observed, items_per_thread).launch(
+            grid=1, block=_THREADS
+        )
 
     source = values_for(np.int32, _TILE, shift=43)
     observed = np.zeros_like(source)
     with device_array(source) as src, device_array(observed) as out:
         compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](
-            launch, src, out
+            launch, src, out, _ITEMS
         )
         compiled(src, out)
     np.testing.assert_array_equal(

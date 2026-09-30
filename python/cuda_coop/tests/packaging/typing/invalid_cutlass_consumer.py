@@ -166,8 +166,8 @@ common.scan(  # expected-error: [call-overload]
     warp, scalar, mode="exclusive", initial_value=np.uint32(0)
 )
 
-ranks = cutlass_coop.ThreadData(2, np.int32)
-flags = cutlass_coop.ThreadData(2, np.uint8)
+ranks = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
+flags = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.uint8)
 cutlass_coop.exchange(block, scalar)  # expected-error: [call-overload]
 cutlass_coop.exchange(  # expected-error: [call-overload]
     block, values, mode="scatter_to_blocked"
@@ -204,7 +204,7 @@ cutlass_coop.exchange(  # expected-error: [call-overload]
     values,
     mode="scatter_to_striped_flagged",
     ranks=ranks,
-    valid_flags=cutlass_coop.ThreadData(2, np.bool_),
+    valid_flags=cutlass_coop.ThreadData(items_per_thread=2, dtype=np.bool_),
 )
 cutlass_coop.exchange(  # expected-error: [call-overload]
     block, values, temp_storage=cutlass_coop.TempStorage()

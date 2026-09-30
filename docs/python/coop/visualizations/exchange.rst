@@ -78,33 +78,34 @@ Using Exchange in a kernel
 
 This common-API fragment works in either DSL with the
 :ref:`kernel-fragment setup <coop-visualization-kernels>`. Launch with
-128 threads and provide at least 256
+128 threads and provide at least ``128 * items_per_thread``
 source and destination elements for each block.
 
 .. code-block:: python
 
    block = coop.this_block()
-   items = coop.ThreadData(items_per_thread=2)
-   offset = block_index * 256
+   items = coop.ThreadData(items_per_thread)
+   offset = block_index * 128 * items_per_thread
    coop.load(block, source, items, algorithm="striped", offset=offset)
    blocked = coop.exchange(block, items, mode="striped_to_blocked")
    coop.store(block, destination, blocked, algorithm="direct", offset=offset)
-   # blocked owns consecutive pairs; items retains striped ownership.
+   # blocked owns consecutive items; items retains striped ownership.
 
 To scatter in Numba, import ``cuda.coop.numba_mlir as numba_coop`` and use its
-qualified operation. With the same 128-thread, two-item launch, the
-following full-tile permutation writes every destination exactly once:
+qualified operation. With the same 128-thread launch, the following
+full-tile reversal writes every destination exactly once:
 
 .. code-block:: python
 
    block = coop.this_block()
-   items = coop.ThreadData(items_per_thread=2)
-   ranks = coop.ThreadData(items_per_thread=2)
-   offset = cuda.blockIdx.x * 256
+   items = coop.ThreadData(items_per_thread)
+   ranks = coop.ThreadData(items_per_thread)
+   tile_size = cuda.blockDim.x * items_per_thread
+   offset = cuda.blockIdx.x * tile_size
    coop.load(block, source, items, algorithm="direct", offset=offset)
-   for item in range(2):
-       position = cuda.threadIdx.x * 2 + item
-       ranks[item] = (5 * position) % 256
+   for item in range(items_per_thread):
+       position = cuda.threadIdx.x * items_per_thread + item
+       ranks[item] = tile_size - 1 - position
    striped = numba_coop.exchange(
        block, items, mode="scatter_to_striped", ranks=ranks
    )
