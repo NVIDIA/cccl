@@ -261,7 +261,7 @@ def check_cutlass_hierarchy_surface() -> None:
 
 def check_cutlass_reduce_surface(scalar: Uint32) -> None:
     block = cutlass_coop.this_block()
-    values = cutlass_coop.ThreadData(2, np.int32)
+    values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
     assert_type(cutlass_coop.reduce(block, values), np.int32)
     assert_type(cutlass_coop.sum(block, values), np.int32)
     assert_type(cutlass_coop.reduce(block, scalar, binary_op="max"), Uint32)

@@ -29,10 +29,10 @@ def _pointer(dtype=cutlass.Int32):
 @pytest.mark.parametrize("array", (False, True))
 def test_scalar_and_payload(api, algorithm, array):
     @cute.kernel
-    def kernel(memory: cute.Pointer):
+    def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         value = cutlass.Int32(cute.arch.thread_idx()[0])
         if cutlass.const_expr(array):
-            payload = api.ThreadData(2, dtype=cutlass.Int32)
+            payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
             payload[0] = value
             payload[1] = value
             value = payload
@@ -46,10 +46,10 @@ def test_scalar_and_payload(api, algorithm, array):
         cute.make_tensor(memory, cute.make_layout(1))[0] = result
 
     @cute.jit
-    def launch(memory: cute.Pointer):
-        kernel(memory).launch(grid=1, block=(8, 4, 2))
+    def launch(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        kernel(memory, items_per_thread).launch(grid=1, block=(8, 4, 2))
 
-    assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer()) is not None
+    assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), 2) is not None
 
 
 @pytest.mark.parametrize(
@@ -69,20 +69,23 @@ def test_scalar_and_payload(api, algorithm, array):
 )
 def test_typed_result_consumption(dtype):
     @cute.kernel
-    def kernel(memory: cute.Pointer):
+    def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         first = cutlass_coop.sum(cutlass_coop.this_block(), dtype(1))
-        payload = cutlass_coop.ThreadData(1, dtype=dtype, values=[first])
+        payload = cutlass_coop.ThreadData(
+            items_per_thread, dtype=dtype, values=[first]
+        )
         result = cutlass_coop.reduce(
             cutlass_coop.this_block(), payload, binary_op="max"
         )
         cute.make_tensor(memory, cute.make_layout(1))[0] = result
 
     @cute.jit
-    def launch(memory: cute.Pointer):
-        kernel(memory).launch(grid=1, block=32)
+    def launch(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        kernel(memory, items_per_thread).launch(grid=1, block=32)
 
     assert (
-        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(dtype)) is not None
+        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(dtype), 1)
+        is not None
     )
 
 
@@ -138,7 +141,9 @@ def test_invalid_controls(case, expected):
         elif cutlass.const_expr(case == "array_prefix"):
             cutlass_coop.sum(
                 group,
-                cutlass_coop.ThreadData(1, dtype=cutlass.Int32, values=[value]),
+                cutlass_coop.ThreadData(
+                    items_per_thread=1, dtype=cutlass.Int32, values=[value]
+                ),
                 broadcast=False,
                 valid_items=1,
             )
