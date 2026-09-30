@@ -30,10 +30,10 @@ def test_first_kernel():
     from cuda import coop
 
     @cuda.jit
-    def scan_tiles(source, destination, count):
+    def scan_tiles(source, destination, count, items_per_thread):
         block = coop.this_block()
-        items = coop.ThreadData(items_per_thread=2)
-        tile_size = cuda.blockDim.x * 2
+        items = coop.ThreadData(items_per_thread)
+        tile_size = cuda.blockDim.x * items_per_thread
         offset = cuda.blockIdx.x * tile_size
         valid = min(max(count - offset, 0), tile_size)
 
@@ -50,18 +50,22 @@ def test_first_kernel():
             block, destination, prefixes, offset=offset, valid_items=valid
         )
 
-    source = (np.arange(785) % 7).astype(np.int32)
-    d_source = cuda.to_device(source)
-    d_destination = cuda.device_array_like(d_source)
-    blocks = (source.size + 255) // 256
-    scan_tiles[blocks, 128](d_source, d_destination, source.size)
-    result = d_destination.copy_to_host()
+    for items_per_thread in (1, 4):
+        source = (np.arange(785) % 7).astype(np.int32)
+        d_source = cuda.to_device(source)
+        d_destination = cuda.device_array_like(d_source)
+        tile_size = 128 * items_per_thread
+        blocks = (source.size + tile_size - 1) // tile_size
+        scan_tiles[blocks, 128](
+            d_source, d_destination, source.size, items_per_thread
+        )
+        result = d_destination.copy_to_host()
 
-    expected = np.empty_like(source)
-    for start in range(0, source.size, 256):
-        tile = source[start : start + 256]
-        expected[start : start + tile.size] = np.cumsum(tile) - tile
-    np.testing.assert_array_equal(result, expected)
+        expected = np.empty_like(source)
+        for start in range(0, source.size, tile_size):
+            tile = source[start : start + tile_size]
+            expected[start : start + tile.size] = np.cumsum(tile) - tile
+        np.testing.assert_array_equal(result, expected)
     # coop-pg-first-kernel-end
 
 
@@ -126,19 +130,20 @@ def test_row_scan():
 def test_exchange():
     # coop-pg-exchange-begin
     @cuda.jit
-    def scan_striped_input(source, destination):
+    def scan_striped_input(source, destination, items_per_thread):
         block = coop.this_block()
-        items = coop.ThreadData(items_per_thread=2)
+        items = coop.ThreadData(items_per_thread)
         coop.load(block, source, items, algorithm="striped")
         blocked = coop.exchange(block, items, mode="striped_to_blocked")
         prefixes = coop.inclusive_sum(block, blocked)
         coop.store(block, destination, prefixes, algorithm="direct")
 
-    source = (np.arange(256) % 13).astype(np.int32)
-    destination = np.empty_like(source)
-    scan_striped_input[1, 128](source, destination)
-    cuda.synchronize()
-    np.testing.assert_array_equal(destination, np.cumsum(source))
+    for items_per_thread in (1, 4):
+        source = (np.arange(128 * items_per_thread) % 13).astype(np.int32)
+        destination = np.empty_like(source)
+        scan_striped_input[1, 128](source, destination, items_per_thread)
+        cuda.synchronize()
+        np.testing.assert_array_equal(destination, np.cumsum(source))
     # coop-pg-exchange-end
 
 
@@ -183,10 +188,10 @@ def test_warp_copy():
 def test_shared_scratch():
     # coop-pg-shared-scratch-begin
     @cuda.jit
-    def scan_with_shared_scratch(source, destination):
+    def scan_with_shared_scratch(source, destination, items_per_thread):
         block = coop.this_block()
         scratch = coop.TempStorage(auto_sync=True)
-        items = coop.ThreadData(items_per_thread=2)
+        items = coop.ThreadData(items_per_thread)
 
         coop.load(
             block, source, items, algorithm="transpose", temp_storage=scratch
@@ -200,11 +205,12 @@ def test_shared_scratch():
             temp_storage=scratch,
         )
 
-    source = (np.arange(256) % 7).astype(np.int32)
-    destination = np.empty_like(source)
-    scan_with_shared_scratch[1, 128](source, destination)
-    cuda.synchronize()
-    np.testing.assert_array_equal(destination, np.cumsum(source) - source)
+    for items_per_thread in (1, 4):
+        source = (np.arange(128 * items_per_thread) % 7).astype(np.int32)
+        destination = np.empty_like(source)
+        scan_with_shared_scratch[1, 128](source, destination, items_per_thread)
+        cuda.synchronize()
+        np.testing.assert_array_equal(destination, np.cumsum(source) - source)
     # coop-pg-shared-scratch-end
 
 
@@ -298,16 +304,21 @@ def test_custom_scan():
         return right
 
     @cuda.jit
-    def running_maximum(source, destination):
+    def running_maximum(source, destination, items_per_thread):
         block = numba_coop.this_block()
-        items = numba_coop.ThreadData(items_per_thread=2)
+        items = numba_coop.ThreadData(items_per_thread)
         numba_coop.load(block, source, items)
         result = numba_coop.inclusive_scan(block, items, scan_op=maximum)
         numba_coop.store(block, destination, result)
 
-    source = ((np.arange(256) * 17) % 113 - 51).astype(np.int32)
-    destination = np.empty_like(source)
-    running_maximum[1, 128](source, destination)
-    cuda.synchronize()
-    np.testing.assert_array_equal(destination, np.maximum.accumulate(source))
+    for items_per_thread in (1, 4):
+        source = ((np.arange(128 * items_per_thread) * 17) % 113 - 51).astype(
+            np.int32
+        )
+        destination = np.empty_like(source)
+        running_maximum[1, 128](source, destination, items_per_thread)
+        cuda.synchronize()
+        np.testing.assert_array_equal(
+            destination, np.maximum.accumulate(source)
+        )
     # coop-pg-custom-scan-end
