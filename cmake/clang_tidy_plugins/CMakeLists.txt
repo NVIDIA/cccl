@@ -255,3 +255,5 @@ function(cccl_create_clang_tidy_test plugin source)
   )
   _cccl_ensure_plugin_is_built_for_test("${target}" "${plugin}")
 endfunction()
+
+add_subdirectory(prefer_cuda_traits)
