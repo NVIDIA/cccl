@@ -54,9 +54,9 @@
     - cos(x)    : Cosine - dedicated fp32mp2
     - tan(x)    : Tangent - dedicated fp32mp2
     - sincos(x) : Simultaneous sine and cosine - dedicated fp32mp2
-    - sinpi(x)  : sin(pix) - placeholder (host: sin(x*pi))
-    - cospi(x)  : cos(pix) - placeholder (host: cos(x*pi))
-    - sincospi(x): Simultaneous sin(pix) and cos(pix) - placeholder
+    - sinpi(x)  : sin(pix) - dedicated fp32mp2
+    - cospi(x)  : cos(pix) - dedicated fp32mp2
+    - sincospi(x): Simultaneous sin(pix) and cos(pix) - dedicated fp32mp2
     - asin(x)   : Arcsine - dedicated fp32mp2
     - acos(x)   : Arccosine - dedicated fp32mp2
     - atan(x)   : Arctangent - dedicated fp32mp2
@@ -338,6 +338,13 @@
             both evaluated in fp32mp2 Horner form.
       sincos computes both kernels; sin/cos call sincos internally.
       Quadrant mapping via n mod 4 with sign/swap adjustment.
+
+    sinpi(x), cospi(x), sincospi(x) for fp32mp2:
+      The argument is already in units of pi, so reduction is an integer/fraction
+      split rather than a radian Payne-Hanek or Cody-Waite reduction.
+      x = n + f with |f| <= 1/2, then f is folded into [-1/4, 1/4] and multiplied
+      by a 3-piece pi. sin(r) and cos(r) reuse the sincos Taylor kernels.
+      sinpi and cospi call sincospi. fp64mp2 stays on the double-precision fallback.
 
     Placeholder functions:
     - Delegate to standard double-precision system functions

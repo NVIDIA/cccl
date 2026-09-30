@@ -270,6 +270,11 @@ TEST_DEVICE_FUNC void test_device(double tol)
     ::sincospi(x_val, &ref_sin, &ref_cos);
     assert(check(static_cast<double>(sinpi(MP2(x_val))), ref_sin, tol));
     assert(check(static_cast<double>(cospi(MP2(x_val))), ref_cos, tol));
+    MP2 __s;
+    MP2 __c;
+    sincospi(MP2(x_val), &__s, &__c);
+    assert(check(static_cast<double>(__s), ref_sin, tol));
+    assert(check(static_cast<double>(__c), ref_cos, tol));
   }
 
 #  undef CHECK_1A

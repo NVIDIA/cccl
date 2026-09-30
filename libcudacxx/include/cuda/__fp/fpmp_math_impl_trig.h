@@ -1217,27 +1217,27 @@ _CCCL_FPMP_MATH_DISPATCH_1A(acos)
 
 /*
  * ====================================================================
- * sinpi(x) - sin(pi * x)
+ * sinpi(x), cospi(x), sincospi(x) - sin(pi*x) and cos(pi*x)
  * ====================================================================
+ * fp32mp2 reduces x = n + f, |f| <= 1/2, by splitting the limb pair.
+ * f is folded into [-1/4, 1/4], scaled by pi, and evaluated with the
+ * sincos Taylor kernels. No radian argument reduction is involved.
+ * fp64mp2 remains a double-precision fallback.
  */
+
+_CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
+  const float __x_hi, const float __x_lo, float* __sin_hi, float* __sin_lo, float* __cos_hi, float* __cos_lo) noexcept;
 
 /*
  * --------------------------------------------------------------------
- * Sine of pi*x sinpi(x) (fp32mp2) - double fallback
+ * Sine of pi*x sinpi(x) (fp32mp2)
  * --------------------------------------------------------------------
- * The CUDA intrinsic on the device, sin(pi * x) on the host.
  */
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_sinpi(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using __mp2_t = fpmp2<float>;
-  double __xd   = static_cast<double>(__mp2_t(__x_hi, __x_lo));
-  double __r    = 0.0;
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (__r = ::sinpi(__xd);), (__r = ::cuda::std::sin(__xd * ::cuda::std::__numbers<double>::__pi());))
-  __mp2_t __result(__r);
-  *__res_hi = __result.hi();
-  *__res_lo = __result.lo();
+  float __c_hi, __c_lo;
+  __internal_fpmp2_sincospi(__x_hi, __x_lo, __res_hi, __res_lo, &__c_hi, &__c_lo);
 }
 
 /*
@@ -1265,20 +1265,14 @@ _CCCL_FPMP_MATH_DISPATCH_1A(sinpi)
 
 /*
  * --------------------------------------------------------------------
- * Cosine of pi*x cospi(x) (fp32mp2) - double fallback
+ * Cosine of pi*x cospi(x) (fp32mp2)
  * --------------------------------------------------------------------
  */
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_cospi(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
-  using __mp2_t = fpmp2<float>;
-  double __xd   = static_cast<double>(__mp2_t(__x_hi, __x_lo));
-  double __r    = 0.0;
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (__r = ::cospi(__xd);), (__r = ::cuda::std::cos(__xd * ::cuda::std::__numbers<double>::__pi());))
-  __mp2_t __result(__r);
-  *__res_hi = __result.hi();
-  *__res_lo = __result.lo();
+  float __s_hi, __s_lo;
+  __internal_fpmp2_sincospi(__x_hi, __x_lo, &__s_hi, &__s_lo, __res_hi, __res_lo);
 }
 
 /*
@@ -1305,27 +1299,173 @@ _CCCL_FPMP_MATH_DISPATCH_1A(cospi)
  */
 
 /*
+ * Split a float into a nearby integer and an exact residual in [-1/2, 1/2].
+ * The integer is returned mod 2; only its parity changes sin(pi*x) and cos(pi*x).
+ */
+_CCCL_FPMP_CORE_API int __internal_fpmp2_pi_limb(float __x, float* __f) noexcept
+{
+  const float __abs = (__x < 0.0f) ? -__x : __x;
+  if (__abs >= 0x1p24f)
+  {
+    *__f = 0.0f;
+    return 0;
+  }
+  if (__abs >= 0x1p23f)
+  {
+    const int __n = __fpmp_fp2int_rn(__x);
+    *__f          = 0.0f;
+    return __n & 1;
+  }
+
+  int __n          = __fpmp_fp2int_rn(__x);
+  const float __nf = __fpmp_int2fp_rn<float>(__n);
+  float __frac     = __x - __nf;
+  if (__frac > 0.5f)
+  {
+    ++__n;
+    __frac -= 1.0f;
+  }
+  else if (__frac < -0.5f)
+  {
+    --__n;
+    __frac += 1.0f;
+  }
+  *__f = __frac;
+  return __n & 1;
+}
+
+/*
  * --------------------------------------------------------------------
- * Sine and cosine of pi*x sincospi(x, &s, &c) (fp32mp2) - double fallback
+ * Sine and cosine of pi*x sincospi(x, &s, &c) (fp32mp2)
  * --------------------------------------------------------------------
+ * x = n + f, |f| <= 1/2. Fold f into [-1/4, 1/4] so pi*f is inside the
+ * Taylor kernels, then apply the cofunction identity and the sign (-1)^n.
  */
 _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
   const float __x_hi, const float __x_lo, float* __sin_hi, float* __sin_lo, float* __cos_hi, float* __cos_lo) noexcept
 {
-  using __mp2_t = fpmp2<float>;
-  double __xd   = static_cast<double>(__mp2_t(__x_hi, __x_lo));
-  double __sd;
-  double __cd;
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (::sincospi(__xd, &__sd, &__cd);), ({
-                      double __xpi = __xd * ::cuda::std::__numbers<double>::__pi();
-                      __sd         = ::cuda::std::sin(__xpi);
-                      __cd         = ::cuda::std::cos(__xpi);
-                    }))
-  __mp2_t __s(__sd), __c(__cd);
-  *__sin_hi = __s.hi();
-  *__sin_lo = __s.lo();
-  *__cos_hi = __c.hi();
-  *__cos_lo = __c.lo();
+  using __afloat = fp32mp2_high;
+
+  const float __abs_hi = (__x_hi < 0.0f) ? -__x_hi : __x_hi;
+  /* Mask the sign bit. Negating first would leave -0 (pattern 0x80000000) looking non-finite. */
+  if (((::cuda::std::bit_cast<uint32_t>(__x_hi) & 0x7FFFFFFFU) >= 0x7F800000U)
+      || ((::cuda::std::bit_cast<uint32_t>(__x_lo) & 0x7FFFFFFFU) >= 0x7F800000U))
+  {
+    const float __nan = __x_hi - __x_hi;
+    *__sin_hi         = __nan;
+    *__sin_lo         = 0.0f;
+    *__cos_hi         = __nan;
+    *__cos_lo         = 0.0f;
+    return;
+  }
+
+  int __odd;
+  float __f_hi;
+  float __f_lo;
+  if (__abs_hi < 0x1p23f)
+  {
+    int __n            = __fpmp_fp2int_rn(__x_hi);
+    const float __n_f  = __fpmp_int2fp_rn<float>(__n);
+    const float __e    = __x_hi - __n_f;
+    float __fl         = 0.0f;
+    float __fh         = __fpmp_two_sum(__e, __x_lo, &__fl);
+    if (__fh > 0.5f || (__fh == 0.5f && __fl > 0.0f))
+    {
+      ++__n;
+      float __err = 0.0f;
+      __fh        = __fpmp_two_sum(__fh, -1.0f, &__err);
+      __fl += __err;
+    }
+    else if (__fh < -0.5f || (__fh == -0.5f && __fl < 0.0f))
+    {
+      --__n;
+      float __err = 0.0f;
+      __fh        = __fpmp_two_sum(__fh, 1.0f, &__err);
+      __fl += __err;
+    }
+    __f_hi = __fpmp_two_sum(__fh, __fl, &__f_lo);
+    __odd  = __n & 1;
+  }
+  else
+  {
+    const int __odd_hi = (__abs_hi < 0x1p24f) ? (__fpmp_fp2int_rn(__x_hi) & 1) : 0;
+    float __lo_f        = 0.0f;
+    const int __odd_lo  = __internal_fpmp2_pi_limb(__x_lo, &__lo_f);
+    __odd               = __odd_hi ^ __odd_lo;
+    __f_hi              = __lo_f;
+    __f_lo              = 0.0f;
+  }
+
+  /* Fold into [-1/4, 1/4]. q == 1 uses sin=cos, cos=sin; q == 3 uses sin=-cos, cos=sin. */
+  int __q = 0;
+  if (__f_hi > 0.25f || (__f_hi == 0.25f && __f_lo > 0.0f))
+  {
+    __q         = 1;
+    float __err = 0.0f;
+    __f_hi      = __fpmp_two_sum(0.5f, -__f_hi, &__err);
+    __f_lo      = __err - __f_lo;
+  }
+  else if (__f_hi < -0.25f || (__f_hi == -0.25f && __f_lo < 0.0f))
+  {
+    __q         = 3;
+    float __err = 0.0f;
+    __f_hi      = __fpmp_two_sum(__f_hi, 0.5f, &__err);
+    __f_lo += __err;
+  }
+  {
+    const float __renorm = __fpmp_two_sum(__f_hi, __f_lo, &__f_lo);
+    __f_hi               = __renorm;
+  }
+
+  /* Same 3-piece pi/2 as the Cody-Waite reduction, doubled to pi (~70 bits).
+   * Multiplying a float by 2 is exact, so these are the Cody-Waite pieces. */
+  constexpr float __pi1 = 2.0f * 1.5707962512969971e+00f;
+  constexpr float __pi2 = 2.0f * 7.5497894158615964e-08f;
+  constexpr float __pi3 = 2.0f * 5.3903029534742384e-15f;
+
+  float __p_lo       = 0.0f;
+  const float __p_hi = __fpmp_two_mult_fma(__f_hi, __pi1, &__p_lo);
+  __afloat __angle(__p_hi, __p_lo);
+  float __q_lo = 0.0f;
+  const float __q_hi = __fpmp_two_mult_fma(__f_lo, __pi1, &__q_lo);
+  __angle            = __angle + __afloat(__q_hi, __q_lo);
+  __angle            = __angle + __afloat(__f_hi * __pi2);
+  __angle            = __angle + __afloat(__f_hi * __pi3);
+
+  float __s_hi, __s_lo, __c_hi, __c_lo;
+  __internal_fpmp2_sin_kernel(__angle.hi(), __angle.lo(), &__s_hi, &__s_lo);
+  __internal_fpmp2_cos_kernel(__angle.hi(), __angle.lo(), &__c_hi, &__c_lo);
+
+  if (__q == 1)
+  {
+    const float __t_hi = __s_hi;
+    const float __t_lo = __s_lo;
+    __s_hi             = __c_hi;
+    __s_lo             = __c_lo;
+    __c_hi             = __t_hi;
+    __c_lo             = __t_lo;
+  }
+  else if (__q == 3)
+  {
+    const float __t_hi = __s_hi;
+    const float __t_lo = __s_lo;
+    __s_hi             = -__c_hi;
+    __s_lo             = -__c_lo;
+    __c_hi             = __t_hi;
+    __c_lo             = __t_lo;
+  }
+  if (__odd != 0)
+  {
+    __s_hi = -__s_hi;
+    __s_lo = -__s_lo;
+    __c_hi = -__c_hi;
+    __c_lo = -__c_lo;
+  }
+
+  *__sin_hi = __s_hi;
+  *__sin_lo = __s_lo;
+  *__cos_hi = __c_hi;
+  *__cos_lo = __c_lo;
 }
 
 /*
