@@ -40,14 +40,14 @@ def _fixed_current_device(monkeypatch):
     )
 
 
-def _compile(kernel, *arg_types, block=(32, 1, 1)):
+def _compile(kernel, *arg_types, block=(32, 1, 1), cluster=None):
     return kernel._compile_launch_config_signature(
         types.void(*arg_types),
         (
             ("grid", (1, 1, 1)),
             ("block", block),
             ("sharedmem", 0),
-            ("cluster", None),
+            ("cluster", cluster),
         ),
     )
 
@@ -370,3 +370,97 @@ def test_implicit_oversized_storage_rejects_user_static_shared_allocation(
         ),
     ):
         _compile(kernel, types.int32[::1], types.int32[::1], block=(1024, 1, 1))
+
+
+@pytest.mark.parametrize("kind", ["block", "mapped_warps", "cluster"])
+@pytest.mark.parametrize("shape", [0, 128], ids=["dynamic", "static"])
+def test_cudax_reduce_shared_memory_coexistence(kind, shape):
+    @cuda.jit(device=True)
+    def allocate():
+        return cuda.shared.array(shape, types.int32)
+
+    @cuda.jit(chip="sm_90")
+    def kernel(source, destination):
+        tile = allocate()
+        thread = cuda.threadIdx.x
+        tile[thread] = source[thread]
+        cuda.syncthreads()
+        if kind == "block":
+            total = coop.sum(coop.this_block(), source[thread])
+        elif kind == "mapped_warps":
+            total = coop.sum(coop.this_block().group_by(2), source[thread])
+        else:
+            total = coop.sum(coop.this_cluster(), source[thread])
+        destination[thread] = tile[thread] + total
+
+    launch = {"block": (128, 1, 1)}
+    if kind == "cluster":
+        launch["cluster"] = (2, 1, 1)
+    if shape:
+        assert _compile(
+            kernel, types.int32[::1], types.int32[::1], **launch
+        ).metadata["ltoir"]
+    else:
+        with pytest.raises(
+            CoopSinglePhaseRewriteError,
+            match="CUDAX reduction.*static shared memory.*would alias",
+        ):
+            _compile(kernel, types.int32[::1], types.int32[::1], **launch)
+
+
+@pytest.mark.parametrize("kind", ["block", "mapped_warps"])
+def test_cudax_reduce_rejects_dynamic_cooperative_backing(monkeypatch, kind):
+    from cuda.coop.numba_mlir._compiler import _rewrite_storage
+
+    monkeypatch.setattr(
+        _rewrite_storage,
+        "_query_device_shared_memory_limits",
+        lambda: {
+            "max_default_shared_memory_per_block": 48 * 1024,
+            "max_optin_shared_memory_per_block": 96 * 1024,
+        },
+    )
+
+    @cuda.jit(chip="sm_90")
+    def kernel(source, destination):
+        scratch = coop.TempStorage(64 * 1024, auto_sync=True)
+        items = coop.ThreadData(2, types.int32)
+        coop.load(
+            coop.this_block(),
+            source,
+            items,
+            algorithm="transpose",
+            temp_storage=scratch,
+        )
+        if source[0] >= 0:
+            if kind == "block":
+                total = coop.sum(coop.this_block(), items[0])
+            else:
+                total = coop.sum(coop.this_block().group_by(2), items[0])
+            destination[cuda.threadIdx.x] = total
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="dynamic shared-memory backing.*CUDAX reduction.*would alias",
+    ):
+        _compile(kernel, types.int32[::1], types.int32[::1], block=(128, 1, 1))
+
+
+@pytest.mark.parametrize("kind", ["warp", "logical_warp", "mapped_query"])
+def test_shared_memory_free_group_providers_allow_user_dynamic_arrays(kind):
+    @cuda.jit(chip="sm_90")
+    def kernel(source, destination):
+        tile = cuda.shared.array(0, types.int32)
+        thread = cuda.threadIdx.x
+        tile[thread] = source[thread]
+        if kind == "mapped_query":
+            result = coop.this_block().group_by(2).rank()
+        elif kind == "logical_warp":
+            result = coop.sum(coop.this_warp().group_by(8), source[thread])
+        else:
+            result = coop.sum(coop.this_warp(), source[thread])
+        destination[thread] = tile[thread] + result
+
+    assert _compile(
+        kernel, types.int32[::1], types.int32[::1], block=(128, 1, 1)
+    ).metadata["ltoir"]

@@ -102,6 +102,7 @@ class _ProvenanceRewrite(Rewrite):
             _TempStorageRequirementSummary()
         )
         self._implicit_temp_storage_plan: _TempStoragePlan | None = None
+        self._provider_uses_static_shared_memory = False
         self._temp_storage_backing_var: ir.Var | None = None
         self._temp_storage_backing_emitted = False
         self._arg_type_map = self._build_arg_type_map()
