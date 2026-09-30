@@ -462,9 +462,10 @@ def test_qualified_callable_aliases_plan_as_builtin_cudax_operations(
     assert _kwarg_value(func_ir, call, "binary_op") == expected
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
 def test_reduce_infers_untyped_thread_data_symmetrically(
-    monkeypatch, qualified
+    monkeypatch, qualified, items_per_thread
 ):
     from numba_cuda_mlir import types
 
@@ -483,10 +484,10 @@ def test_reduce_infers_untyped_thread_data_symmetrically(
 
     monkeypatch.setattr(_group_reduce, "plan_group_primitive", capture_plan)
 
-    def kernel(value):
-        items = module.ThreadData(2)
-        items[0] = value
-        items[1] = value
+    def kernel(value, items_per_thread):
+        items = module.ThreadData(items_per_thread)
+        for item in range(items_per_thread):
+            items[item] = value
         return module.sum(
             module.this_block(),
             items,
@@ -494,11 +495,14 @@ def test_reduce_infers_untyped_thread_data_symmetrically(
             algorithm="raking",
         )
 
-    _, planner = _plan(kernel, arg_types=(types.int32,))
+    _, planner = _plan(
+        kernel,
+        arg_types=(types.int32, types.IntegerLiteral(items_per_thread)),
+    )
     assert planner.run()
     assert len(plans) == 1
     assert plans[0].call.operation.dtype == types.int32
-    assert plans[0].call.operation.items_per_thread == 2
+    assert plans[0].call.operation.items_per_thread == items_per_thread
 
 
 def test_extent_one_thread_data_preserves_array_abi_through_factory_boundary(
@@ -511,7 +515,7 @@ def test_extent_one_thread_data_preserves_array_abi_through_factory_boundary(
     from cuda.coop.numba_mlir._lowering import _reduce
 
     def kernel(value):
-        items = coop.ThreadData(1, dtype=types.int32)
+        items = coop.ThreadData(items_per_thread=1, dtype=types.int32)
         items[0] = value
         return coop.sum(
             coop.this_block(),

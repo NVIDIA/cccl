@@ -178,7 +178,7 @@ def sum(
 
     Examples
     --------
-    Sum an array in tiles of 256 elements using two values per thread. The last
+    Sum an array in tiles of ``128 * items_per_thread`` elements. The last
     tile is padded with zero; each block writes one partial sum.
 
     .. literalinclude::
