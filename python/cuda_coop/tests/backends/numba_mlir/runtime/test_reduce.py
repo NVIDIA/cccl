@@ -47,10 +47,38 @@ _CLUSTER_BLOCKS = 2
 _CLUSTER_BLOCK_THREADS = 32
 _HIERARCHY_RESULT_ROWS = 8
 _MAPPED_RESULT_ROWS = 2
+_INTEGER_DTYPES = (
+    np.int8,
+    np.uint8,
+    np.int16,
+    np.uint16,
+    np.int32,
+    np.uint32,
+    np.int64,
+    np.uint64,
+)
+_DTYPES = (*_INTEGER_DTYPES, np.float32, np.float64)
+
+
+def _dtype_values(dtype, size: int) -> np.ndarray:
+    indices = np.arange(size, dtype=np.int64)
+    if np.dtype(dtype).kind == "u":
+        values = (indices % 3 == 0).astype(dtype)
+    elif np.dtype(dtype).kind == "f":
+        values = ((indices % 5) - 2).astype(dtype) * dtype(0.25)
+    else:
+        values = ((indices % 3) - 1).astype(dtype)
+    if np.dtype(dtype).kind == "f":
+        if np.dtype(dtype).itemsize == 8:
+            values += dtype(2**-30)
+    elif np.dtype(dtype).itemsize > 1:
+        scale = {2: 257, 4: 65537, 8: 2**33 + 1}[np.dtype(dtype).itemsize]
+        values *= dtype(scale)
+    return values
 
 
 def _broadcast_grouped_sum(values: np.ndarray, width: int) -> np.ndarray:
-    totals = values.reshape(-1, width).sum(axis=1, dtype=np.int32)
+    totals = values.reshape(-1, width).sum(axis=1, dtype=values.dtype)
     return np.repeat(totals, width)
 
 
@@ -106,12 +134,13 @@ def _mapped_scalar_reductions(warps_per_group):
     return kernel
 
 
-def test_both_namespaces_cover_thread_warp_and_block_scalar_reductions():
-    source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 7) % 41) - 20
+@pytest.mark.parametrize("dtype", _DTYPES)
+def test_both_namespaces_cover_thread_warp_and_block_scalar_reductions(dtype):
+    source = _dtype_values(dtype, _BLOCK_THREADS)
     observed = np.full(
         _HIERARCHY_RESULT_ROWS * _BLOCK_THREADS,
-        -1,
-        dtype=np.int32,
+        127,
+        dtype=dtype,
     )
 
     _hierarchy_scalar_reductions[1, _BLOCK_THREADS](source, observed)
@@ -126,13 +155,13 @@ def test_both_namespaces_cover_thread_warp_and_block_scalar_reductions():
             _broadcast_grouped_sum(source, _LOGICAL_WARP_THREADS),
             np.full(
                 _BLOCK_THREADS,
-                source.sum(dtype=np.int32),
-                dtype=np.int32,
+                source.sum(dtype=dtype),
+                dtype=dtype,
             ),
             np.full(
                 _BLOCK_THREADS,
-                source.sum(dtype=np.int32),
-                dtype=np.int32,
+                source.sum(dtype=dtype),
+                dtype=dtype,
             ),
         )
     )
@@ -194,7 +223,7 @@ def test_nonexhaustive_mapped_reduce_guards_nonmembers_and_returns_normally():
 @cuda.jit
 def _mixed_thread_data_builtins(source, observed, preserved):
     thread = cuda.threadIdx.x
-    payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
+    payload = root_coop.ThreadData(_ITEMS_PER_THREAD)
     for item in range(_ITEMS_PER_THREAD):
         payload[item] = source[thread * _ITEMS_PER_THREAD + item]
 
@@ -221,13 +250,11 @@ def _mixed_thread_data_builtins(source, observed, preserved):
         preserved[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
 
-def test_consecutive_common_and_qualified_builtins_preserve_thread_data():
-    source = (
-        (np.arange(_BLOCK_THREADS * _ITEMS_PER_THREAD, dtype=np.int32) * 13)
-        % 251
-    ) - 117
-    observed = np.full(5 * _BLOCK_THREADS, -1, dtype=np.int32)
-    preserved = np.full_like(source, -1)
+@pytest.mark.parametrize("dtype", _INTEGER_DTYPES)
+def test_consecutive_common_and_qualified_builtins_preserve_thread_data(dtype):
+    source = _dtype_values(dtype, _BLOCK_THREADS * _ITEMS_PER_THREAD)
+    observed = np.full(5 * _BLOCK_THREADS, 127, dtype=dtype)
+    preserved = np.full_like(source, 127)
 
     _mixed_thread_data_builtins[1, _BLOCK_THREADS](source, observed, preserved)
 
@@ -235,24 +262,24 @@ def test_consecutive_common_and_qualified_builtins_preserve_thread_data():
         (
             np.full(
                 _BLOCK_THREADS,
-                source.sum(dtype=np.int32),
-                dtype=np.int32,
+                source.sum(dtype=dtype),
+                dtype=dtype,
             ),
-            np.full(_BLOCK_THREADS, source.max(), dtype=np.int32),
+            np.full(_BLOCK_THREADS, source.max(), dtype=dtype),
             np.full(
                 _BLOCK_THREADS,
-                np.bitwise_xor.reduce(source),
-                dtype=np.int32,
+                np.bitwise_xor.reduce(source, dtype=dtype),
+                dtype=dtype,
             ),
             np.full(
                 _BLOCK_THREADS,
-                np.bitwise_or.reduce(source),
-                dtype=np.int32,
+                np.bitwise_or.reduce(source, dtype=dtype),
+                dtype=dtype,
             ),
             np.full(
                 _BLOCK_THREADS,
                 source[:_BLOCK_THREADS].min(),
-                dtype=np.int32,
+                dtype=dtype,
             ),
         )
     )
@@ -263,7 +290,7 @@ def test_consecutive_common_and_qualified_builtins_preserve_thread_data():
 @cuda.jit
 def _qualified_local_array_root_sum(source, output, preserved):
     thread = cuda.threadIdx.x
-    payload = cuda.local.array(_ITEMS_PER_THREAD, dtype=types.int32)
+    payload = cuda.local.array(_ITEMS_PER_THREAD, dtype=source.dtype)
     for item in range(_ITEMS_PER_THREAD):
         payload[item] = source[thread * _ITEMS_PER_THREAD + item]
 
@@ -276,14 +303,11 @@ def _qualified_local_array_root_sum(source, output, preserved):
         preserved[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
 
-def test_qualified_local_array_reduction_returns_only_at_the_block_root():
-    source = np.arange(
-        1,
-        _BLOCK_THREADS * _ITEMS_PER_THREAD + 1,
-        dtype=np.int32,
-    )
-    output = np.full(1, -1, dtype=np.int32)
-    preserved = np.full_like(source, -1)
+@pytest.mark.parametrize("dtype", _DTYPES)
+def test_qualified_local_array_reduction_returns_only_at_the_block_root(dtype):
+    source = _dtype_values(dtype, _BLOCK_THREADS * _ITEMS_PER_THREAD)
+    output = np.full(1, 127, dtype=dtype)
+    preserved = np.full_like(source, 127)
 
     _qualified_local_array_root_sum[1, _BLOCK_THREADS](
         source,
@@ -291,7 +315,7 @@ def test_qualified_local_array_reduction_returns_only_at_the_block_root():
         preserved,
     )
 
-    assert output[0] == source.sum(dtype=np.int32)
+    assert output[0] == source.sum(dtype=dtype)
     np.testing.assert_array_equal(preserved, source)
 
 
@@ -370,14 +394,17 @@ def _cub_valid_prefixes(
         logical_output[thread // _LOGICAL_WARP_THREADS] = logical_total
 
 
-def test_cub_static_and_runtime_prefixes_reduce_the_first_group_members():
-    source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 11) % 101) - 47
-    block_output = np.full(1, -1, dtype=np.int32)
-    warp_output = np.full(_BLOCK_THREADS // _WARP_THREADS, -1, dtype=np.int32)
+@pytest.mark.parametrize("dtype", _DTYPES)
+def test_cub_static_and_runtime_prefixes_reduce_the_first_group_members(dtype):
+    source = _dtype_values(dtype, _BLOCK_THREADS)
+    if dtype is np.int32:
+        source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 11) % 101) - 47
+    block_output = np.full(1, 127, dtype=dtype)
+    warp_output = np.full(_BLOCK_THREADS // _WARP_THREADS, 127, dtype=dtype)
     logical_output = np.full(
         _BLOCK_THREADS // _LOGICAL_WARP_THREADS,
-        -1,
-        dtype=np.int32,
+        127,
+        dtype=dtype,
     )
 
     _cub_valid_prefixes[1, _BLOCK_THREADS](
@@ -389,20 +416,20 @@ def test_cub_static_and_runtime_prefixes_reduce_the_first_group_members():
         np.int64(_RUNTIME_LOGICAL_VALID),
     )
 
-    assert block_output[0] == source[:_STATIC_BLOCK_VALID].sum(dtype=np.int32)
+    assert block_output[0] == source[:_STATIC_BLOCK_VALID].sum(dtype=dtype)
     expected_warp = np.asarray(
         [
             values[:_RUNTIME_WARP_VALID].max()
             for values in source.reshape(-1, _WARP_THREADS)
         ],
-        dtype=np.int32,
+        dtype=dtype,
     )
     expected_logical = np.asarray(
         [
-            values[:_RUNTIME_LOGICAL_VALID].sum(dtype=np.int32)
+            values[:_RUNTIME_LOGICAL_VALID].sum(dtype=dtype)
             for values in source.reshape(-1, _LOGICAL_WARP_THREADS)
         ],
-        dtype=np.int32,
+        dtype=dtype,
     )
     np.testing.assert_array_equal(warp_output, expected_warp)
     np.testing.assert_array_equal(logical_output, expected_logical)
