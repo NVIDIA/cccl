@@ -49,53 +49,62 @@ def _compile(kernel, signature):
 @pytest.mark.parametrize(
     "dtype", [types.int32, types.uint32, types.int64, types.uint64]
 )
-def test_radix_compiles_and_preserves_result_dtype(operation, dtype):
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_radix_compiles_and_preserves_result_dtype(
+    operation, dtype, items_per_thread
+):
     @cuda.jit(chip="sm_90")
-    def kernel(source, destination, associated, begin, end):
+    def kernel(source, destination, associated, begin, end, items_per_thread):
         t = cuda.threadIdx.x
-        keys = coop.ThreadData(2, dtype=dtype)
-        keys[0] = source[t * 2]
-        keys[1] = source[t * 2 + 1]
+        keys = coop.ThreadData(items_per_thread, dtype=dtype)
+        for item in range(items_per_thread):
+            keys[item] = source[t * items_per_thread + item]
         if operation == "keys":
             result = coop.radix_sort_keys(
                 coop.this_block(), keys, begin_bit=begin, end_bit=end
             )
-            destination[t * 2] = result[0]
+            destination[t * items_per_thread] = result[0]
         elif operation == "pairs":
-            values = coop.ThreadData(2, dtype=types.float64)
-            values[0] = associated[t * 2]
-            values[1] = associated[t * 2 + 1]
+            values = coop.ThreadData(items_per_thread, dtype=types.float64)
+            for item in range(items_per_thread):
+                values[item] = associated[t * items_per_thread + item]
             result, payload = coop.radix_sort_pairs(
                 coop.this_block(),
                 keys,
                 values,
                 temp_storage=coop.TempStorage(auto_sync=True),
             )
-            destination[t * 2] = result[0]
-            associated[t * 2] = payload[0]
+            destination[t * items_per_thread] = result[0]
+            associated[t * items_per_thread] = payload[0]
         else:
             ranks = coop.radix_rank(coop.this_block(), keys)
             # Composition must use int32 rank dtype, even with uint64 keys.
             ranked = coop.radix_sort_keys(coop.this_block(), ranks)
-            destination[t * 2] = ranked[0]
+            destination[t * items_per_thread] = ranked[0]
 
     mlir = _compile(
         kernel,
         types.void(
-            dtype[::1], dtype[::1], types.float64[::1], types.int32, types.int32
+            dtype[::1],
+            dtype[::1],
+            types.float64[::1],
+            types.int32,
+            types.int32,
+            types.IntegerLiteral(items_per_thread),
         ),
     )
     assert "gpu.barrier" in mlir
 
 
-def test_qualified_prefix_and_float_striped_sort_compile():
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_qualified_prefix_and_float_striped_sort_compile(items_per_thread):
     @cuda.jit(chip="sm_90")
-    def kernel(source, ranks_out, prefixes, floating, output):
+    def kernel(source, ranks_out, prefixes, floating, output, items_per_thread):
         t = cuda.threadIdx.x
-        keys = numba_coop.ThreadData(2, dtype=types.int32)
-        keys[0] = source[t * 2]
-        keys[1] = source[t * 2 + 1]
-        prefix = numba_coop.ThreadData(2, dtype=types.int32)
+        keys = numba_coop.ThreadData(items_per_thread, dtype=types.int32)
+        for item in range(items_per_thread):
+            keys[item] = source[t * items_per_thread + item]
+        prefix = numba_coop.ThreadData(items_per_thread=2, dtype=types.int32)
         ranks = numba_coop.radix_rank(
             numba_coop.this_block(),
             keys,
@@ -104,6 +113,7 @@ def test_qualified_prefix_and_float_striped_sort_compile():
         )
         ranks_out[t] = ranks[0]
         prefixes[t] = prefix[0]
+        # Keep the local-array compatibility case at its fixed extent.
         local = cuda.local.array(2, dtype=types.float32)
         local[0] = floating[t * 2]
         local[1] = floating[t * 2 + 1]
@@ -123,6 +133,7 @@ def test_qualified_prefix_and_float_striped_sort_compile():
             types.int32[::1],
             types.float32[::1],
             types.float32[::1],
+            types.IntegerLiteral(items_per_thread),
         ),
     )
 
@@ -134,7 +145,8 @@ def test_invalid_radix_contracts_fail_before_device_code(failure):
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
         keys = coop.ThreadData(
-            2, dtype=types.float32 if failure == "float" else types.int32
+            items_per_thread=2,
+            dtype=types.float32 if failure == "float" else types.int32,
         )
         keys[0] = source[0]
         keys[1] = source[1]
@@ -145,12 +157,14 @@ def test_invalid_radix_contracts_fail_before_device_code(failure):
         elif failure == "bool":
             result = coop.radix_sort_keys(coop.this_block(), keys, descending=1)
         elif failure == "extent":
-            values = coop.ThreadData(3, dtype=types.int32)
+            values = coop.ThreadData(items_per_thread=3, dtype=types.int32)
             result, values = coop.radix_sort_pairs(
                 coop.this_block(), keys, values
             )
         elif failure == "prefix":
-            prefix = numba_coop.ThreadData(2, dtype=types.int32)
+            prefix = numba_coop.ThreadData(
+                items_per_thread=2, dtype=types.int32
+            )
             result = numba_coop.radix_rank(
                 numba_coop.this_block(), keys, exclusive_digit_prefix=prefix
             )
@@ -168,7 +182,7 @@ def test_invalid_radix_contracts_fail_before_device_code(failure):
 def test_unsigned_64_bit_runtime_controls_are_rejected():
     @cuda.jit(chip="sm_90")
     def kernel(source, destination, begin, end):
-        keys = coop.ThreadData(2, dtype=types.int32)
+        keys = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         keys[0] = source[0]
         keys[1] = source[1]
         result = coop.radix_sort_keys(
