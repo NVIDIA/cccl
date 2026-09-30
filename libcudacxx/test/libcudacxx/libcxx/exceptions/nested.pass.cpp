@@ -8,20 +8,22 @@
 //
 //===----------------------------------------------------------------------===//
 
-// std::rethrow_if_nested needs RTTI on the host; the harness disables it by default. Unsupported flags are
-// filtered per compiler.
-// ADDITIONAL_COMPILE_OPTIONS_HOST: -frtti --rtti /GR
+// std::rethrow_if_nested needs RTTI on the host and the harness disables it by default; the RTTI-enabling
+// flags are requested per host compiler (unsupported ones are filtered), and the cases that need RTTI are
+// also guarded, so the test still runs where the flag does not take.
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -frtti, --rtti, /GR
 
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/exception>
 #include <cuda/std/cassert>
 
 #include <nv/target>
 
 #include "test_macros.h"
 
-// This test checks that _CCCL_THROW_WITH_NESTED and _CCCL_RETHROW_IF_NESTED behave like
-// std::throw_with_nested and std::rethrow_if_nested on host, and that they compile in device code.
-// Device code is not ran, because it traps and CUDA is left in undefined state.
+// This test checks that the nested-exception macros behave like std::throw_with_nested and
+// std::rethrow_if_nested on host, and that they compile in device code. Device code is not ran, because it
+// traps and CUDA is left in undefined state.
 
 TEST_FUNC constexpr int low_value()
 {
@@ -38,7 +40,7 @@ struct Low
 {
   int value = low_value();
 
-  TEST_FUNC virtual ~Low() = default;
+  virtual ~Low() = default;
 
   [[nodiscard]] TEST_FUNC static const char* what() noexcept
   {
@@ -50,7 +52,7 @@ struct High
 {
   int value = high_value();
 
-  TEST_FUNC virtual ~High() = default;
+  virtual ~High() = default;
 
   [[nodiscard]] TEST_FUNC static const char* what() noexcept
   {
@@ -58,9 +60,102 @@ struct High
   }
 };
 
-TEST_FUNC void test()
+// The cause is reachable through std::nested_exception itself, which needs no RTTI: the thrown object
+// derives from both the user's type and std::nested_exception.
+TEST_FUNC void test_nesting_without_rtti()
 {
-  // 1. throwing with the active exception nested, then unwinding the chain
+  // 1. throwing with the active exception nested, then unwinding the chain through the base class
+  bool saw_nested = false;
+  bool saw_low    = false;
+  _CCCL_TRY
+  {
+    _CCCL_TRY
+    {
+      _CCCL_THROW(Low);
+    }
+    _CCCL_CATCH ([[maybe_unused]] const Low& e)
+    {
+      _CCCL_THROW_WITH_NESTED(High);
+    }
+    _CCCL_CATCH_ALL
+    {
+      assert(false);
+    }
+  }
+  _CCCL_CATCH ([[maybe_unused]] const ::std::nested_exception& ne)
+  {
+    saw_nested = true;
+    _CCCL_TRY
+    {
+      NV_IF_TARGET(NV_IS_HOST, (ne.rethrow_nested();))
+      assert(false); // a nested cause was present, so this must have thrown
+    }
+    _CCCL_CATCH (const Low& cause)
+    {
+      saw_low = true;
+      assert(cause.value == low_value());
+    }
+    _CCCL_CATCH_ALL
+    {
+      assert(false);
+    }
+  }
+  _CCCL_CATCH_ALL
+  {
+    assert(false);
+  }
+  NV_IF_TARGET(NV_IS_HOST, (assert(saw_nested); assert(saw_low);))
+
+  // 2. maybe-with-nested inside a handler nests too
+  saw_nested = false;
+  _CCCL_TRY
+  {
+    _CCCL_TRY
+    {
+      _CCCL_THROW(Low);
+    }
+    _CCCL_CATCH ([[maybe_unused]] const Low& e)
+    {
+      _CCCL_THROW_MAYBE_WITH_NESTED(High);
+    }
+    _CCCL_CATCH_ALL
+    {
+      assert(false);
+    }
+  }
+  _CCCL_CATCH ([[maybe_unused]] const ::std::nested_exception& ne)
+  {
+    saw_nested = true;
+  }
+  _CCCL_CATCH_ALL
+  {
+    assert(false);
+  }
+  NV_IF_TARGET(NV_IS_HOST, (assert(saw_nested);))
+
+  // 3. maybe-with-nested outside any handler is a plain throw: not a std::nested_exception
+  _CCCL_TRY
+  {
+    _CCCL_THROW_MAYBE_WITH_NESTED(High);
+  }
+  _CCCL_CATCH ([[maybe_unused]] const ::std::nested_exception& ne)
+  {
+    assert(false);
+  }
+  _CCCL_CATCH (const High& e)
+  {
+    assert(e.value == high_value());
+  }
+  _CCCL_CATCH_ALL
+  {
+    assert(false);
+  }
+}
+
+#ifndef _CCCL_NO_RTTI
+TEST_FUNC void test_rethrow_if_nested()
+{
+  // 4. rethrow-if-nested recovers the cause
   bool saw_high = false;
   bool saw_low  = false;
   _CCCL_TRY
@@ -103,7 +198,7 @@ TEST_FUNC void test()
   }
   NV_IF_TARGET(NV_IS_HOST, (assert(saw_high); assert(saw_low);))
 
-  // 2. rethrow-if-nested on an exception with no nested cause has no effect
+  // 5. rethrow-if-nested on an exception with no nested cause has no effect
   _CCCL_TRY
   {
     _CCCL_THROW(High);
@@ -118,54 +213,13 @@ TEST_FUNC void test()
     assert(false);
   }
 
-  // 3. rethrow-if-nested outside any handler, on a plain object: no effect
+  // 6. rethrow-if-nested outside any handler, on a plain object: no effect
   const Low plain{};
   _CCCL_RETHROW_IF_NESTED(plain);
   assert(plain.value == low_value());
 
-  // 4. maybe-with-nested inside a handler: the active exception is nested
-  saw_high = false;
-  saw_low  = false;
-  _CCCL_TRY
-  {
-    _CCCL_TRY
-    {
-      _CCCL_THROW(Low);
-    }
-    _CCCL_CATCH ([[maybe_unused]] const Low& e)
-    {
-      _CCCL_THROW_MAYBE_WITH_NESTED(High);
-    }
-    _CCCL_CATCH_ALL
-    {
-      assert(false);
-    }
-  }
-  _CCCL_CATCH (const High& e)
-  {
-    saw_high = true;
-    _CCCL_TRY
-    {
-      _CCCL_RETHROW_IF_NESTED(e);
-      assert(false);
-    }
-    _CCCL_CATCH ([[maybe_unused]] const Low& cause)
-    {
-      saw_low = true;
-    }
-    _CCCL_CATCH_ALL
-    {
-      assert(false);
-    }
-  }
-  _CCCL_CATCH_ALL
-  {
-    assert(false);
-  }
-  NV_IF_TARGET(NV_IS_HOST, (assert(saw_high); assert(saw_low);))
-
-  // 5. maybe-with-nested outside any handler: a plain throw, and rethrow-if-nested on the result is a
-  // no-op rather than the std::terminate a null nested cause would produce
+  // 7. rethrow-if-nested after maybe-with-nested outside a handler: a no-op, not the std::terminate that
+  // an empty nested cause would produce
   _CCCL_TRY
   {
     _CCCL_THROW_MAYBE_WITH_NESTED(High);
@@ -179,6 +233,15 @@ TEST_FUNC void test()
   {
     assert(false);
   }
+}
+#endif // !_CCCL_NO_RTTI
+
+TEST_FUNC void test()
+{
+  test_nesting_without_rtti();
+#ifndef _CCCL_NO_RTTI
+  test_rethrow_if_nested();
+#endif // !_CCCL_NO_RTTI
 }
 
 __global__ void test_kernel()
