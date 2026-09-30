@@ -728,3 +728,50 @@ def test_invalid_runtime_prefix_traps_in_an_isolated_context(
     )
     _hierarchy_scalar_reductions[1, _BLOCK_THREADS](source, observed)
     assert observed[6 * _BLOCK_THREADS] == source.sum(dtype=np.int32)
+
+
+@pytest.mark.parametrize("kind", ["block", "mapped_warps", "warp"])
+@pytest.mark.parametrize(
+    "shape", [0, _BLOCK_THREADS], ids=["dynamic", "static"]
+)
+def test_cudax_reduce_preserves_user_shared_data_or_rejects_alias(kind, shape):
+    from cuda.coop.numba_mlir._compiler._rewrite_support import (
+        CoopSinglePhaseRewriteError,
+    )
+
+    width = {"block": _BLOCK_THREADS, "mapped_warps": 64, "warp": 32}[kind]
+
+    @cuda.jit
+    def kernel(source, copied, totals):
+        tile = cuda.shared.array(shape, types.int32)
+        thread = cuda.threadIdx.x
+        tile[thread] = source[thread]
+        cuda.syncthreads()
+        if kind == "block":
+            total = root_coop.sum(root_coop.this_block(), source[thread])
+        elif kind == "mapped_warps":
+            total = root_coop.sum(
+                root_coop.this_block().group_by(2), source[thread]
+            )
+        else:
+            total = root_coop.sum(root_coop.this_warp(), source[thread])
+        cuda.syncthreads()
+        copied[thread] = tile[thread]
+        totals[thread] = total
+
+    source = np.arange(1, _BLOCK_THREADS + 1, dtype=np.int32)
+    copied = np.zeros_like(source)
+    totals = np.zeros_like(source)
+    shared_bytes = source.nbytes if shape == 0 else 0
+    if shape == 0 and kind != "warp":
+        with pytest.raises(
+            CoopSinglePhaseRewriteError,
+            match="CUDAX reduction.*static shared memory.*would alias",
+        ):
+            kernel[1, _BLOCK_THREADS, 0, shared_bytes](source, copied, totals)
+    else:
+        kernel[1, _BLOCK_THREADS, 0, shared_bytes](source, copied, totals)
+        np.testing.assert_array_equal(copied, source)
+        np.testing.assert_array_equal(
+            totals, _broadcast_grouped_sum(source, width)
+        )
