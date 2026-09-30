@@ -418,27 +418,27 @@ private:
     {
       const auto __size = size();
 
+      if (__send_count_bytes != (__type_size * __h_recv_counts[__root]))
+      {
+        _CCCL_THROW(::cuda::experimental::__nccl::nccl_error,
+                    ::cuda::experimental::__nccl::__ncclInvalidArgument,
+                    "Mismatched self-copy count in Gatherv");
+      }
+
       for (::cuda::std::int32_t __peer = 0; __peer < __size; ++__peer)
       {
         const auto __recv_count_bytes = __type_size * __h_recv_counts[__peer];
-        const auto __displs_bytes     = __type_size * __h_displs[__peer];
 
         if (__recv_count_bytes == 0)
         {
           continue;
         }
 
+        const auto __displs_bytes    = __type_size * __h_displs[__peer];
         auto* const __recv_ptr_bytes = __recvbuf_bytes + __displs_bytes;
 
         if (__peer == __root)
         {
-          if (__send_count_bytes != __recv_count_bytes)
-          {
-            _CCCL_THROW(::cuda::experimental::__nccl::nccl_error,
-                        ::cuda::experimental::__nccl::__ncclInvalidArgument,
-                        "Mismatched self-copy count in Gatherv");
-          }
-
           // Unclear whether CUDA driver also makes this optimization
           if (__sendbuf_bytes != __recv_ptr_bytes)
           {
