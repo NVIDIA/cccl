@@ -129,8 +129,7 @@ template <class... Devices>
   {
     const auto supported_handle_types =
       checked_device.attribute(cuda::device_attributes::memory_pool_supported_handle_types);
-    if ((supported_handle_types & cudaMemHandleTypeFabric)
-        == 0)
+    if ((supported_handle_types & cudaMemHandleTypeFabric) == 0)
     {
       return false;
     }
