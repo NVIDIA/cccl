@@ -24,22 +24,23 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__utility/pair.h>
-#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::set_ops
 {
 // One (biased) binary-search step for the upper bound (UpperBound) or lower bound of @p key. Larger @p shift biases the
 // probe toward @p begin (shift==1 is unbiased), which helps when the searched run is expected to be short.
-template <bool UpperBound, typename Offset, typename It, typename T, typename CompareOp>
+template <bool UpperBound, typename IntT, typename Offset, typename It, typename T, typename CompareOp>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 binary_search_iteration(It data, Offset& begin, Offset& end, T key, int shift, CompareOp compare_op)
 {
-  using wide_t     = ::cuda::std::common_type_t<Offset, ::cuda::std::uint64_t>;
-  const int scale  = (1 << shift) - 1;
-  const Offset mid = static_cast<Offset>((static_cast<wide_t>(begin) + scale * static_cast<wide_t>(end)) >> shift);
+  // scale is at most 511 (shift <= 9), so `scale * end` overflows a 32-bit Offset once end exceeds ~4.2M. The caller
+  // controls the arithmetic width through IntT (the type of the `levels` argument to balanced_path): the global
+  // partition kernel passes a 64-bit type so large indices are safe, while the per-tile path passes int, whose indices
+  // are bounded by the tile size and therefore never overflow -- keeping that hot path in fast 32-bit arithmetic.
+  const IntT scale = (IntT{1} << shift) - 1;
+  const Offset mid = static_cast<Offset>((begin + scale * end) >> shift);
   const T key2     = data[mid];
   const bool pred  = UpperBound ? !compare_op(key, key2) : compare_op(key2, key);
   if (pred)
@@ -63,39 +64,40 @@ template <bool UpperBound, typename Offset, typename T, typename It, typename Co
   Offset end   = count;
   while (begin < end)
   {
-    binary_search_iteration<UpperBound>(data, begin, end, key, 1, compare_op);
+    // shift == 1 means scale == 1, so int arithmetic never overflows here regardless of the index magnitude.
+    binary_search_iteration<UpperBound, int>(data, begin, end, key, 1, compare_op);
   }
   return begin;
 }
 
 // Binary search that first probes near @p begin for up to @p levels steps, accelerating runs that start near the front.
-template <bool UpperBound, typename Offset, typename T, typename It, typename CompareOp>
+template <bool UpperBound, typename IntT, typename Offset, typename T, typename It, typename CompareOp>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE Offset
-biased_binary_search(It data, Offset count, T key, int levels, CompareOp compare_op)
+biased_binary_search(It data, Offset count, T key, IntT levels, CompareOp compare_op)
 {
   Offset begin = 0;
   Offset end   = count;
 
   if (levels >= 4 && begin < end)
   {
-    binary_search_iteration<UpperBound>(data, begin, end, key, 9, compare_op);
+    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 9, compare_op);
   }
   if (levels >= 3 && begin < end)
   {
-    binary_search_iteration<UpperBound>(data, begin, end, key, 7, compare_op);
+    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 7, compare_op);
   }
   if (levels >= 2 && begin < end)
   {
-    binary_search_iteration<UpperBound>(data, begin, end, key, 5, compare_op);
+    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 5, compare_op);
   }
   if (levels >= 1 && begin < end)
   {
-    binary_search_iteration<UpperBound>(data, begin, end, key, 4, compare_op);
+    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 4, compare_op);
   }
 
   while (begin < end)
   {
-    binary_search_iteration<UpperBound>(data, begin, end, key, 1, compare_op);
+    binary_search_iteration<UpperBound, IntT>(data, begin, end, key, 1, compare_op);
   }
   return begin;
 }
@@ -103,9 +105,9 @@ biased_binary_search(It data, Offset count, T key, int levels, CompareOp compare
 //! Duplicate-aware merge path: intersects the diagonal @p diag while distributing runs of equal keys evenly between the
 //! inputs so set operations see consistent multiplicities. Returns (index into @p keys1, index into @p keys2); the
 //! latter may gain one (the "star") to break ties at an equal-run boundary.
-template <typename It1, typename It2, typename Offset, typename CompareOp>
+template <typename It1, typename It2, typename Offset, typename IntT, typename CompareOp>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::pair<Offset, Offset>
-balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset diag, int levels, CompareOp compare_op)
+balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset diag, IntT levels, CompareOp compare_op)
 {
   using key_t = it_value_t<It1>;
 

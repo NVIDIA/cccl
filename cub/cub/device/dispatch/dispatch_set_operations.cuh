@@ -36,8 +36,11 @@ namespace detail::set_ops
 {
 inline constexpr int init_kernel_threads      = 128;
 inline constexpr int partition_kernel_threads = 256;
-// Number of biased-search refinement levels used when balancing equal-key runs across the merge path.
-inline constexpr int balanced_path_levels = 4;
+// Number of biased-search refinement levels used when balancing equal-key runs across the merge path. This is a 64-bit
+// type on purpose: it is passed as the biased binary search's `IntT`, which types the `scale * end` product. The
+// partition kernel searches over global indices (which may exceed ~4.2M), so 64-bit arithmetic avoids overflow there;
+// the per-tile path passes a plain int (indices bounded by the tile size) to stay in fast 32-bit arithmetic.
+inline constexpr long long balanced_path_levels = 4;
 
 // Computes the duplicate-aware merge-path partition boundaries at every tile-sized diagonal. One thread per diagonal.
 template <typename KeysIt1, typename KeysIt2, typename Offset, typename CompareOp>
