@@ -27,6 +27,9 @@ def test_public_stubs_type_check_a_consumer(tmp_path):
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, destination)
     shutil.copyfile(package / "py.typed", stubs / "py.typed")
+    # Package markers keep an installed wheel from winning namespace lookup.
+    (stubs.parent / "__init__.pyi").touch()
+    (stubs / "_core" / "__init__.pyi").touch()
 
     consumer = tmp_path / "consumer.py"
     consumer.write_text(
