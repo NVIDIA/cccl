@@ -18,9 +18,9 @@ from cuda import coop
 
 # docs: start dump-direct
 @cuda.jit
-def copy_direct(source, destination):
+def copy_direct(source, destination, items_per_thread):
     block = coop.this_block()
-    items = coop.ThreadData(items_per_thread=2)
+    items = coop.ThreadData(items_per_thread)
     coop.load(
         block,
         source,
@@ -40,9 +40,9 @@ def copy_direct(source, destination):
 
 # docs: start dump-transpose
 @cuda.jit
-def copy_transpose(source, destination):
+def copy_transpose(source, destination, items_per_thread):
     block = coop.this_block()
-    items = coop.ThreadData(items_per_thread=2)
+    items = coop.ThreadData(items_per_thread)
     scratch = coop.TempStorage(auto_sync=True)
     coop.load(
         block,
@@ -74,7 +74,13 @@ def main():
         "direct": copy_direct,
         "transpose": copy_transpose,
     }[example]
-    kernel[1, 128](source, destination)
+    if example == "scan":
+        kernel[1, 128](source, destination)
+    else:
+        items_per_thread = 4
+        kernel[1, count // items_per_thread](
+            source, destination, items_per_thread
+        )
     cuda.synchronize()
     expected = source
     np.testing.assert_array_equal(destination, expected)
