@@ -39,11 +39,8 @@ struct structural_inplace_vector
 
   constexpr structural_inplace_vector() = default;
 
-  // A parameter pack rather than an initializer_list<T> constructor: older MSVC toolsets (< 19.44) fail to
-  // correctly constant-fold this type through CC dispatch's NTTP-based policy resolution when constructed from an
-  // initializer_list (observed as a worker_policy silently reading back as zero-initialized deep in agent
-  // instantiation, rather than a hard error at the actual fault). The pack is spliced directly into elems's
-  // mem-initializer, so there's no runtime loop involved.
+  // A parameter pack rather than an initializer_list<T> constructor: some MSVC toolsets fail to constant-fold this
+  // type through CC dispatch's NTTP-based policy resolution when constructed from an initializer_list.
   template <typename... Us>
   _CCCL_HOST_DEVICE_API constexpr structural_inplace_vector(Us... us)
       : elems{static_cast<T>(us)...}
