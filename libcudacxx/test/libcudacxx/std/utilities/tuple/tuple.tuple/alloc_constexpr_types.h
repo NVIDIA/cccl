@@ -117,29 +117,29 @@ struct throw_on_alloc_arg
 {
   using allocator_type = A1<int>;
 
-  throw_on_alloc_arg() noexcept {}
-  throw_on_alloc_arg(int) noexcept {}
-  throw_on_alloc_arg(float) noexcept {}
-  throw_on_alloc_arg(const throw_on_alloc_arg&) noexcept {}
-  throw_on_alloc_arg(throw_on_alloc_arg&&) noexcept {}
+  TEST_FUNC throw_on_alloc_arg() noexcept {}
+  TEST_FUNC throw_on_alloc_arg(int) noexcept {}
+  TEST_FUNC throw_on_alloc_arg(float) noexcept {}
+  TEST_FUNC throw_on_alloc_arg(const throw_on_alloc_arg&) noexcept {}
+  TEST_FUNC throw_on_alloc_arg(throw_on_alloc_arg&&) noexcept {}
 
-  throw_on_alloc_arg(cuda::std::allocator_arg_t, const A1<int>&)
+  TEST_FUNC throw_on_alloc_arg(cuda::std::allocator_arg_t, const A1<int>&)
   {
     TEST_THROW(1);
   }
-  throw_on_alloc_arg(cuda::std::allocator_arg_t, const A1<int>&, int)
+  TEST_FUNC throw_on_alloc_arg(cuda::std::allocator_arg_t, const A1<int>&, int)
   {
     TEST_THROW(1);
   }
-  throw_on_alloc_arg(cuda::std::allocator_arg_t, const A1<int>&, float)
+  TEST_FUNC throw_on_alloc_arg(cuda::std::allocator_arg_t, const A1<int>&, float)
   {
     TEST_THROW(1);
   }
-  throw_on_alloc_arg(cuda::std::allocator_arg_t, const A1<int>&, const throw_on_alloc_arg&)
+  TEST_FUNC throw_on_alloc_arg(cuda::std::allocator_arg_t, const A1<int>&, const throw_on_alloc_arg&)
   {
     TEST_THROW(1);
   }
-  throw_on_alloc_arg(cuda::std::allocator_arg_t, const A1<int>&, throw_on_alloc_arg&&)
+  TEST_FUNC throw_on_alloc_arg(cuda::std::allocator_arg_t, const A1<int>&, throw_on_alloc_arg&&)
   {
     TEST_THROW(1);
   }
@@ -149,29 +149,29 @@ struct throw_on_alloc_last
 {
   using allocator_type = A1<int>;
 
-  throw_on_alloc_last() noexcept {}
-  throw_on_alloc_last(int) noexcept {}
-  throw_on_alloc_last(float) noexcept {}
-  throw_on_alloc_last(const throw_on_alloc_last&) noexcept {}
-  throw_on_alloc_last(throw_on_alloc_last&&) noexcept {}
+  TEST_FUNC throw_on_alloc_last() noexcept {}
+  TEST_FUNC throw_on_alloc_last(int) noexcept {}
+  TEST_FUNC throw_on_alloc_last(float) noexcept {}
+  TEST_FUNC throw_on_alloc_last(const throw_on_alloc_last&) noexcept {}
+  TEST_FUNC throw_on_alloc_last(throw_on_alloc_last&&) noexcept {}
 
-  throw_on_alloc_last(const A1<int>&)
+  TEST_FUNC throw_on_alloc_last(const A1<int>&)
   {
     TEST_THROW(2);
   }
-  throw_on_alloc_last(int, const A1<int>&)
+  TEST_FUNC throw_on_alloc_last(int, const A1<int>&)
   {
     TEST_THROW(2);
   }
-  throw_on_alloc_last(float, const A1<int>&)
+  TEST_FUNC throw_on_alloc_last(float, const A1<int>&)
   {
     TEST_THROW(2);
   }
-  throw_on_alloc_last(const throw_on_alloc_last&, const A1<int>&)
+  TEST_FUNC throw_on_alloc_last(const throw_on_alloc_last&, const A1<int>&)
   {
     TEST_THROW(2);
   }
-  throw_on_alloc_last(throw_on_alloc_last&&, const A1<int>&)
+  TEST_FUNC throw_on_alloc_last(throw_on_alloc_last&&, const A1<int>&)
   {
     TEST_THROW(2);
   }

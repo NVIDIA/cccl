@@ -68,7 +68,7 @@ TEST_FUNC void test_primary_template()
 
     cuda::std::tuple t5(cuda::std::pair<int, char>(1, 'c'));
     static_assert(cuda::std::is_same_v<decltype(t5), cuda::std::tuple<int, char>>);
-    unused(t5);
+    unused(t1, t2, t3, t4, t5);
   }
   { // Testing (3)
     using T = ExplicitTestTypes::TestType;
@@ -76,11 +76,13 @@ TEST_FUNC void test_primary_template()
 
     cuda::std::tuple t1(T{});
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<T>>);
+    unused(t1);
 
 #if !TEST_COMPILER(GCC, <, 12) // GCC fails to deduct here, also with std::tuple
     const T v{};
     cuda::std::tuple t2(T{}, 101l, v);
     static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<T, long, T>>);
+    unused(t2);
 #endif // !TEST_COMPILER(GCC, <, 12)
   }
   { // Testing (4)
@@ -90,6 +92,7 @@ TEST_FUNC void test_primary_template()
 
     cuda::std::tuple t2(AT, A, 42, 0.0, x);
     static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<int, double, int>>);
+    unused(t1, t2);
   }
   { // Testing (5)
     using T = ExplicitTestTypes::TestType;
@@ -97,11 +100,13 @@ TEST_FUNC void test_primary_template()
 
     cuda::std::tuple t1(AT, A, T{});
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<T>>);
+    unused(t1);
 
 #if !TEST_COMPILER(GCC) // GCC has issues deducting this
     const T v{};
     cuda::std::tuple t2(AT, A, T{}, 101l, v);
     static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<T, long, T>>);
+    unused(t2);
 #endif // !TEST_COMPILER(GCC)
   }
   { // Testing (6)
@@ -123,8 +128,9 @@ TEST_FUNC void test_primary_template()
     cuda::std::tuple t4(AT, A, p4);
     static_assert(cuda::std::is_same_v<decltype(t4), cuda::std::tuple<int&, char>>);
 
-    [[maybe_unused]] cuda::std::tuple t5(AT, A, cuda::std::pair<int, char>(1, 'c'));
+    cuda::std::tuple t5(AT, A, cuda::std::pair<int, char>(1, 'c'));
     static_assert(cuda::std::is_same_v<decltype(t5), cuda::std::tuple<int, char>>);
+    unused(t1, t2, t3, t4, t5);
   }
   { // Testing (7)
     using Tup = cuda::std::tuple<int, decltype(nullptr)>;

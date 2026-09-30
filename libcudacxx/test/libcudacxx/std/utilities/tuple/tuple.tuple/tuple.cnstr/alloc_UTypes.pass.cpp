@@ -107,7 +107,7 @@ TEST_FUNC constexpr bool test()
   }
   {
     // A tag derived from allocator_arg_t still selects uses-allocator construction.
-    DerivedFromAllocArgT tag;
+    DerivedFromAllocArgT tag{};
     cuda::std::tuple<int, constexpr_alloc_arg, constexpr_alloc_last> t(tag, alloc, 1, 2, 3);
     assert(cuda::std::get<0>(t) == 1);
     assert(cuda::std::get<1>(t).value == 2);
