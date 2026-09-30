@@ -435,9 +435,10 @@ explicit element-type metadata. See :ref:`CUTLASS element-type inference
 
 .. _coop-faq-exclusive-storage:
 .. _why-use-sharing-exclusive-instead-of-omitting-storage:
+.. _why-use-tempstorage-sharing-exclusive:
 
-Why use ``TempStorage(sharing="exclusive")``?
------------------------------------------------
+Why use ``TempStorage`` with ``sharing="exclusive"``?
+-----------------------------------------------------
 
 Passing ``coop.TempStorage(sharing="exclusive")`` as ``temp_storage`` gives
 distinct call sites separate scratch slices. Omitting ``temp_storage`` lets
