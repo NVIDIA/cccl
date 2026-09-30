@@ -567,8 +567,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr bool __equal(const tuple<_UTypes...>& __other, __tuple_indices<_Indices...>) const
     noexcept(_Constraints::template __is_nothrow_equality_comparable_v<_UTypes...>)
   {
-    using ::cuda::std::get;
-    return ((get<_Indices>(*this) == get<_Indices>(__other)) && ...);
+    return ((::cuda::std::get<_Indices>(*this) == ::cuda::std::get<_Indices>(__other)) && ...);
   }
 
   // Not a friend function because MSVC has issues with nested namespaces and thrust::tuple
@@ -594,18 +593,17 @@ public:
   __tuple_less_than(const tuple<_UTypes...>& __other, __tuple_indices<_CurrentIndex, _Indices...>) const
     noexcept(_Constraints::template __is_nothrow_less_than_comparable_v<_UTypes...>)
   {
-    using ::cuda::std::get;
     if constexpr (sizeof...(_Indices) == 0)
     {
-      return get<_CurrentIndex>(*this) < get<_CurrentIndex>(__other);
+      return ::cuda::std::get<_CurrentIndex>(*this) < ::cuda::std::get<_CurrentIndex>(__other);
     }
     else
     {
-      if (get<_CurrentIndex>(*this) < get<_CurrentIndex>(__other))
+      if (::cuda::std::get<_CurrentIndex>(*this) < ::cuda::std::get<_CurrentIndex>(__other))
       {
         return true;
       }
-      if (get<_CurrentIndex>(__other) < get<_CurrentIndex>(*this))
+      if (::cuda::std::get<_CurrentIndex>(__other) < ::cuda::std::get<_CurrentIndex>(*this))
       {
         return false;
       }

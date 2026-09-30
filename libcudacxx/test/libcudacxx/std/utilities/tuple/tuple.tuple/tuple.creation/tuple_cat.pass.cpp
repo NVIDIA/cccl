@@ -29,6 +29,43 @@
 #include "MoveOnly.h"
 #include "test_macros.h"
 
+namespace tuple_cat_get_hijack
+{
+struct Element
+{
+  int value;
+  TEST_FUNC constexpr Element(int v)
+      : value(v)
+  {}
+};
+
+template <size_t>
+TEST_FUNC constexpr Element get(cuda::std::tuple<Element&>&&)
+{
+  return Element{99};
+}
+
+template <size_t>
+TEST_FUNC constexpr Element get(cuda::std::tuple<Element&, Element&>&&)
+{
+  return Element{101};
+}
+
+template <size_t>
+TEST_FUNC constexpr Element get(cuda::std::tuple<Element&, Element&, Element&>&&)
+{
+  return Element{103};
+}
+
+#if _CCCL_HAS_HOST_STD_LIB()
+template <size_t>
+TEST_FUNC constexpr Element get(std::tuple<Element>&)
+{
+  return Element{77};
+}
+#endif // _CCCL_HAS_HOST_STD_LIB()
+} // namespace tuple_cat_get_hijack
+
 TEST_FUNC constexpr bool test()
 {
   {
@@ -290,6 +327,33 @@ TEST_FUNC constexpr bool test()
                          const int&>>);
     unused(r);
   }
+  {
+    // Element-namespace get overloads for the staged reference tuple are not used.
+    using tuple_cat_get_hijack::Element;
+    cuda::std::tuple<Element> one(Element(7));
+    cuda::std::tuple<Element> one_result = cuda::std::tuple_cat(one);
+    assert(cuda::std::get<0>(one_result).value == 7);
+
+    cuda::std::tuple<Element, Element> two(Element(7), Element(8));
+    cuda::std::tuple<Element, Element> two_result = cuda::std::tuple_cat(two);
+    assert(cuda::std::get<0>(two_result).value == 7);
+    assert(cuda::std::get<1>(two_result).value == 8);
+
+    cuda::std::tuple<Element> third(Element(9));
+    cuda::std::tuple<Element, Element, Element> three_result =
+      cuda::std::tuple_cat(cuda::std::tuple<Element>(Element(7)), cuda::std::tuple<Element>(Element(8)), third);
+    assert(cuda::std::get<0>(three_result).value == 7);
+    assert(cuda::std::get<1>(three_result).value == 8);
+    assert(cuda::std::get<2>(three_result).value == 9);
+  }
+#if _CCCL_HAS_HOST_STD_LIB()
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 using tuple_cat_get_hijack::Element;
+                 std::tuple<Element> hijacked{Element{7}};
+                 cuda::std::tuple<Element> cat = cuda::std::tuple_cat(hijacked);
+                 assert(cuda::std::get<0>(cat).value == 7);
+               }))
+#endif // _CCCL_HAS_HOST_STD_LIB()
 
   return true;
 }
