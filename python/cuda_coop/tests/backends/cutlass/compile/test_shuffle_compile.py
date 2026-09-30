@@ -16,10 +16,15 @@ from cuda.coop.cutlass._compiler._types import ALL_PROVIDER_TYPES
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 
 
-def _compile(kernel, dtype=cutlass.Int32, block=(8, 3, 2)):
+def _compile(
+    kernel, dtype=cutlass.Int32, block=(8, 3, 2), items_per_thread=None
+):
     @cute.jit
     def launch(memory: cute.Pointer):
-        kernel(memory).launch(grid=1, block=block)
+        if cutlass.const_expr(items_per_thread is None):
+            kernel(memory).launch(grid=1, block=block)
+        else:
+            kernel(memory, items_per_thread).launch(grid=1, block=block)
 
     pointer = make_ptr(dtype, 0, cute.AddressSpace.gmem, assumed_align=16)
     return cute.compile[(GPUArch("sm_80"),)](launch, pointer)
@@ -27,13 +32,17 @@ def _compile(kernel, dtype=cutlass.Int32, block=(8, 3, 2)):
 
 @pytest.mark.parametrize("dtype", tuple(ALL_PROVIDER_TYPES))
 @pytest.mark.parametrize("mode", ("offset", "rotate", "up", "down"))
-def test_profiles(dtype, mode):
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_profiles(dtype, mode, items_per_thread):
     @cute.kernel
-    def kernel(memory: cute.Pointer):
+    def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         value = dtype(cute.arch.thread_idx()[0])
         if cutlass.const_expr(mode in ("up", "down")):
             payload = cutlass_coop.ThreadData(
-                2, dtype=dtype, values=[value, value], alignment=64
+                items_per_thread,
+                dtype=dtype,
+                values=[value] * items_per_thread,
+                alignment=64,
             )
             result = cutlass_coop.shuffle(
                 cutlass_coop.this_block(), payload, mode=mode
@@ -44,7 +53,9 @@ def test_profiles(dtype, mode):
             )
         cute.make_tensor(memory, cute.make_layout(1))[0] = result
 
-    assert _compile(kernel, dtype) is not None
+    assert (
+        _compile(kernel, dtype, items_per_thread=items_per_thread) is not None
+    )
 
 
 @pytest.mark.parametrize("mode", ("offset", "rotate"))
@@ -101,7 +112,7 @@ def test_invalid_profiles(case, pattern):
         group = cutlass_coop.this_block()
         value = cutlass.Int32(1)
         payload = cutlass_coop.ThreadData(
-            2, dtype=cutlass.Int32, values=[value, value]
+            items_per_thread=2, dtype=cutlass.Int32, values=[value, value]
         )
         if cutlass.const_expr(case == "warp"):
             cutlass_coop.shuffle(cutlass_coop.this_warp(), payload)

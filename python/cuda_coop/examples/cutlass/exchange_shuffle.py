@@ -15,8 +15,6 @@ from cuda.coop import cutlass as cutlass_coop
 
 _BLOCK = (8, 4, 2)
 _THREADS = 64
-_ITEMS = 3
-_BLOCK_TILE = _THREADS * _ITEMS
 
 
 def _check(result):
@@ -25,35 +23,46 @@ def _check(result):
     return result[1] if len(result) == 2 else result[1:]
 
 
-def run_example(api="common"):
+def run_example(api="common", items_per_thread=3):
     """Run Exchange and Shuffle and check their independent layout oracle."""
 
+    tile_size = _THREADS * items_per_thread
     if api not in {"common", "qualified"}:
         raise ValueError("api must be 'common' or 'qualified'")
     module = coop if api == "common" else cutlass_coop
 
     # docs: start cutlass-exchange-shuffle
     @cute.kernel
-    def rearrange(source: cute.Pointer, destination: cute.Pointer):
+    def rearrange(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
         group = module.this_block()
         thread = group.rank()
-        payload = module.ThreadData(items_per_thread=_ITEMS)
+        payload = module.ThreadData(items_per_thread)
         module.load(group, source, payload)
         striped = module.exchange(group, payload, mode="blocked_to_striped")
         shifted = module.shuffle(group, striped, mode="down")
         # Shuffle leaves one boundary undefined; initialize it before storing.
         if thread == _THREADS - 1:
-            shifted[_ITEMS - 1] = cutlass.Int32(0)
+            shifted[items_per_thread - 1] = cutlass.Int32(0)
         module.store(group, destination, shifted)
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer):
-        rearrange(source, destination).launch(grid=1, block=_BLOCK)
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        rearrange(source, destination, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     # docs: end cutlass-exchange-shuffle
 
-    source = np.arange(_BLOCK_TILE, dtype=np.int32)
-    destination = np.full(_BLOCK_TILE, -101, dtype=np.int32)
+    source = np.arange(tile_size, dtype=np.int32)
+    destination = np.full(tile_size, -101, dtype=np.int32)
     cutlass.cuda.initialize_cuda_context()
     src = _check(driver.cuMemAlloc(source.nbytes))
     try:
@@ -77,7 +86,7 @@ def run_example(api="common"):
                 cute.AddressSpace.gmem,
                 assumed_align=16,
             )
-            launch(src_pointer, dst_pointer)
+            launch(src_pointer, dst_pointer, items_per_thread)
             _check(driver.cuCtxSynchronize())
             _check(
                 driver.cuMemcpyDtoH(
@@ -88,7 +97,7 @@ def run_example(api="common"):
             _check(driver.cuMemFree(dst))
     finally:
         _check(driver.cuMemFree(src))
-    striped = source.reshape(_ITEMS, _THREADS).T.reshape(-1)
+    striped = source.reshape(items_per_thread, _THREADS).T.reshape(-1)
     expected = np.concatenate((striped[1:], np.zeros(1, dtype=np.int32)))
     np.testing.assert_array_equal(destination, expected)
     return destination

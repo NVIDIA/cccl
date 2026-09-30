@@ -496,9 +496,9 @@ def check_cutlass_scan_seeds(integer_seed: int, floating_seed: float) -> None:
 
 def check_cutlass_exchange_surface() -> None:
     block = cutlass_coop.this_block()
-    values = cutlass_coop.ThreadData(3, np.float32)
-    ranks = cutlass_coop.ThreadData(3, Int16)
-    flags = cutlass_coop.ThreadData(3, Uint64)
+    values = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.float32)
+    ranks = cutlass_coop.ThreadData(items_per_thread=3, dtype=Int16)
+    flags = cutlass_coop.ThreadData(items_per_thread=3, dtype=Uint64)
     for mode in (
         "striped_to_blocked",
         "blocked_to_striped",
@@ -576,7 +576,7 @@ def check_cutlass_exchange_surface() -> None:
             block,
             values,
             mode="scatter_to_blocked",
-            ranks=cutlass_coop.ThreadData(3, np.int8),
+            ranks=cutlass_coop.ThreadData(items_per_thread=3, dtype=np.int8),
         ),
         cutlass_coop.ThreadData[np.float32],
     )
@@ -584,7 +584,7 @@ def check_cutlass_exchange_surface() -> None:
 
 def check_cutlass_shuffle_surface(scalar: Uint32) -> None:
     block = cutlass_coop.this_block()
-    values = cutlass_coop.ThreadData(3, np.int32)
+    values = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.int32)
     assert_type(
         cutlass_coop.shuffle(block, values), cutlass_coop.ThreadData[np.int32]
     )

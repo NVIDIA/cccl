@@ -12,7 +12,8 @@ from tests.backends.cutlass.support import device_array
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
-def test_scatter_example():
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_scatter_example(items_per_thread):
     # qualified-scatter-example-begin
     import cutlass
     from cutlass import cute
@@ -20,29 +21,41 @@ def test_scatter_example():
     import cuda.coop.cutlass as cutlass_coop
 
     @cute.kernel
-    def reverse_tile(source: cute.Pointer, destination: cute.Pointer):
+    def reverse_tile(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
         block = cutlass_coop.this_block()
         thread = block.rank()
-        items = cutlass_coop.ThreadData(items_per_thread=2)
-        ranks = cutlass_coop.ThreadData(items_per_thread=2)
+        items = cutlass_coop.ThreadData(items_per_thread)
+        ranks = cutlass_coop.ThreadData(items_per_thread)
         cutlass_coop.load(block, source, items)
-        for item in cutlass.range_constexpr(2):
-            ranks[item] = cutlass.Int32(127 - (thread * 2 + item))
+        for item in cutlass.range_constexpr(items_per_thread):
+            ranks[item] = cutlass.Int32(
+                64 * items_per_thread - 1 - (thread * items_per_thread + item)
+            )
         reversed_items = cutlass_coop.exchange(
             block, items, mode="scatter_to_blocked", ranks=ranks
         )
         cutlass_coop.store(block, destination, reversed_items)
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer):
-        reverse_tile(source, destination).launch(grid=1, block=64)
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        reverse_tile(source, destination, items_per_thread).launch(
+            grid=1, block=64
+        )
 
     # qualified-scatter-example-end
 
-    values = np.arange(128, dtype=np.int32) * 3 - 200
+    values = np.arange(64 * items_per_thread, dtype=np.int32) * 3 - 200
     observed = np.zeros_like(values)
     with device_array(values) as source, device_array(observed) as destination:
-        launch(source, destination)
+        launch(source, destination, items_per_thread)
     np.testing.assert_array_equal(observed, values[::-1])
 
 
