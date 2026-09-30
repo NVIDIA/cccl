@@ -60,6 +60,51 @@ struct High
   }
 };
 
+// Names only the user's types, so it compiles everywhere the macros do, NVRTC included (no <exception>
+// there, hence no std::nested_exception to catch).
+TEST_FUNC void test_macros_compile_everywhere()
+{
+  // a. maybe-with-nested outside a handler is caught as the type thrown
+  _CCCL_TRY
+  {
+    _CCCL_THROW_MAYBE_WITH_NESTED(High);
+  }
+  _CCCL_CATCH (const High& e)
+  {
+    assert(e.value == high_value());
+  }
+  _CCCL_CATCH_ALL
+  {
+    assert(false);
+  }
+
+  // b. throw-with-nested inside a handler is caught as the type thrown
+  _CCCL_TRY
+  {
+    _CCCL_TRY
+    {
+      _CCCL_THROW(Low);
+    }
+    _CCCL_CATCH ([[maybe_unused]] const Low& e)
+    {
+      _CCCL_THROW_WITH_NESTED(High);
+    }
+    _CCCL_CATCH_ALL
+    {
+      assert(false);
+    }
+  }
+  _CCCL_CATCH (const High& e)
+  {
+    assert(e.value == high_value());
+  }
+  _CCCL_CATCH_ALL
+  {
+    assert(false);
+  }
+}
+
+#if _CCCL_HOSTED()
 // The cause is reachable through std::nested_exception itself, which needs no RTTI: the thrown object
 // derives from both the user's type and std::nested_exception.
 TEST_FUNC void test_nesting_without_rtti()
@@ -151,8 +196,9 @@ TEST_FUNC void test_nesting_without_rtti()
     assert(false);
   }
 }
+#endif // _CCCL_HOSTED()
 
-#ifndef _CCCL_NO_RTTI
+#if _CCCL_HOSTED() && !defined(_CCCL_NO_RTTI)
 TEST_FUNC void test_rethrow_if_nested()
 {
   // 4. rethrow-if-nested recovers the cause
@@ -234,14 +280,17 @@ TEST_FUNC void test_rethrow_if_nested()
     assert(false);
   }
 }
-#endif // !_CCCL_NO_RTTI
+#endif // _CCCL_HOSTED() && !_CCCL_NO_RTTI
 
 TEST_FUNC void test()
 {
+  test_macros_compile_everywhere();
+#if _CCCL_HOSTED()
   test_nesting_without_rtti();
-#ifndef _CCCL_NO_RTTI
+#  if !defined(_CCCL_NO_RTTI)
   test_rethrow_if_nested();
-#endif // !_CCCL_NO_RTTI
+#  endif // !_CCCL_NO_RTTI
+#endif // _CCCL_HOSTED()
 }
 
 __global__ void test_kernel()
