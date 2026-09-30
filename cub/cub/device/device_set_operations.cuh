@@ -31,7 +31,6 @@
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -43,7 +42,14 @@ CUB_NAMESPACE_BEGIN
 //!
 //! The result is written to an output sequence and its length -- which is data dependent -- is written to
 //! ``d_num_selected_out`` (following the same convention as :cpp:struct:`cub::DeviceSelect`). The semantics match the
-//! C++ standard library's ``std::set_*`` algorithms, including their handling of duplicate elements.
+//! C++ standard library's ``std::set_*`` algorithms, including their handling of duplicate elements: if a value occurs
+//! ``m`` times in the first input and ``n`` times in the second, the result contains it ``max(0, m - n)`` times for
+//! difference, ``min(m, n)`` times for intersection, ``|m - n|`` times for symmetric difference, and ``max(m, n)``
+//! times for union. Elements taken from the first input (all of difference/intersection, and the first ``m`` of a
+//! union/symmetric-difference run) preserve their input order, so equal keys are stable with respect to the inputs.
+//!
+//! The combined input size -- the sum of the two input sizes -- must be representable by the type used for the two
+//! input sizes.
 //! @endrst
 struct DeviceSetOps
 {

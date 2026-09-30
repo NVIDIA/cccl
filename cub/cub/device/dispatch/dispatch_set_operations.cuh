@@ -20,17 +20,15 @@
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
-#include <cub/util_type.cuh>
 #include <cub/util_vsmem.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/cmath>
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/pair.h>
 
 CUB_NAMESPACE_BEGIN
@@ -38,6 +36,8 @@ namespace detail::set_ops
 {
 inline constexpr int init_kernel_threads      = 128;
 inline constexpr int partition_kernel_threads = 256;
+// Number of biased-search refinement levels used when balancing equal-key runs across the merge path.
+inline constexpr int balanced_path_levels = 4;
 
 // Computes the duplicate-aware merge-path partition boundaries at every tile-sized diagonal. One thread per diagonal.
 template <typename KeysIt1, typename KeysIt2, typename Offset, typename CompareOp>
@@ -54,8 +54,9 @@ _CCCL_KERNEL_ATTRIBUTES void device_set_op_partition_kernel(
   const Offset partition_idx = static_cast<Offset>(blockDim.x) * blockIdx.x + threadIdx.x;
   if (partition_idx < num_partitions)
   {
-    const Offset diag         = (::cuda::std::min) (partition_idx * items_per_tile, num_keys1 + num_keys2);
-    partitions[partition_idx] = balanced_path(keys1, keys2, num_keys1, num_keys2, diag, 4, compare_op);
+    const Offset diag = ::cuda::std::min(partition_idx * items_per_tile, num_keys1 + num_keys2);
+    partitions[partition_idx] =
+      balanced_path(keys1, keys2, num_keys1, num_keys2, diag, balanced_path_levels, compare_op);
   }
 }
 
@@ -220,7 +221,7 @@ template <typename KeysIt1,
     // Initialize the tile state and zero the output count.
     {
       const int init_grid_size =
-        (::cuda::std::max) (1, static_cast<int>(::cuda::ceil_div(num_tiles, Offset{init_kernel_threads})));
+        ::cuda::std::max(1, static_cast<int>(::cuda::ceil_div(num_tiles, Offset{init_kernel_threads})));
       if (const auto error = CubDebug(
             THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
               .doit(detail::scan::DeviceCompactInitKernel<scan_tile_state_t, NumSelectedIteratorT>,

@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/block/block_merge_sort.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
@@ -25,7 +26,6 @@
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__utility/pair.h>
-#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -34,7 +34,7 @@ namespace detail::set_ops
 // One (biased) binary-search step for the upper bound (UpperBound) or lower bound of @p key. Larger @p shift biases the
 // probe toward @p begin (shift==1 is unbiased), which helps when the searched run is expected to be short.
 template <bool UpperBound, typename Offset, typename It, typename T, typename CompareOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
 binary_search_iteration(It data, Offset& begin, Offset& end, T key, int shift, CompareOp compare_op)
 {
   using wide_t     = ::cuda::std::common_type_t<Offset, ::cuda::std::uint64_t>;
@@ -52,42 +52,12 @@ binary_search_iteration(It data, Offset& begin, Offset& end, T key, int shift, C
   }
 }
 
-// Intersects the diagonal @p diag with the (lower- or upper-bound) merge path of two sorted sequences. Returns the
-// number of elements taken from the first sequence; the number taken from the second is @p diag minus the result.
-template <bool UpperBound, typename Offset, typename It1, typename It2, typename CompareOp>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Offset
-merge_path(It1 a, Offset a_count, It2 b, Offset b_count, Offset diag, CompareOp compare_op)
-{
-  using key_t = it_value_t<It1>;
-  // TODO(bgruber): CUB now uses unsigned offsets (via choose_offset_t), unlike the signed offsets of the Thrust
-  // implementation this was ported from. Compute begin without underflowing: the Thrust form
-  // max(Offset{0}, diag - b_count) wraps to a huge value for unsigned offsets when diag < b_count.
-  Offset begin = diag < b_count ? Offset{0} : diag - b_count;
-  Offset end   = (::cuda::std::min) (diag, a_count);
-  while (begin < end)
-  {
-    // FIXME(bgruber): `(begin + end) >> 1` can overflow for very large ranges; an overflow-safe MidPoint would be
-    // correct but changes the SASS, so we keep this form to match the original Thrust implementation.
-    const Offset mid  = (begin + end) >> 1;
-    const key_t a_key = a[mid];
-    const key_t b_key = b[diag - 1 - mid];
-    const bool pred   = UpperBound ? compare_op(a_key, b_key) : !compare_op(b_key, a_key);
-    if (pred)
-    {
-      begin = mid + 1;
-    }
-    else
-    {
-      end = mid;
-    }
-  }
-  return begin;
-}
-
 // Unbiased binary search returning the number of elements in [0, count) ordered before @p key (lower bound) or not
 // after @p key (upper bound).
+// TODO(bgruber): this can be replaced by cuda::std::lower_bound/upper_bound. But cuda::std::upper_bound has been
+// reported to be slow and the change may affect the generated code size, so it needs a follow-up investigation.
 template <bool UpperBound, typename Offset, typename T, typename It, typename CompareOp>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Offset binary_search(It data, Offset count, T key, CompareOp compare_op)
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE Offset binary_search(It data, Offset count, T key, CompareOp compare_op)
 {
   Offset begin = 0;
   Offset end   = count;
@@ -100,7 +70,7 @@ template <bool UpperBound, typename Offset, typename T, typename It, typename Co
 
 // Binary search that first probes near @p begin for up to @p levels steps, accelerating runs that start near the front.
 template <bool UpperBound, typename Offset, typename T, typename It, typename CompareOp>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Offset
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE Offset
 biased_binary_search(It data, Offset count, T key, int levels, CompareOp compare_op)
 {
   Offset begin = 0;
@@ -134,12 +104,12 @@ biased_binary_search(It data, Offset count, T key, int levels, CompareOp compare
 //! inputs so set operations see consistent multiplicities. Returns (index into @p keys1, index into @p keys2); the
 //! latter may gain one (the "star") to break ties at an equal-run boundary.
 template <typename It1, typename It2, typename Offset, typename CompareOp>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<Offset, Offset>
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::pair<Offset, Offset>
 balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset diag, int levels, CompareOp compare_op)
 {
   using key_t = it_value_t<It1>;
 
-  Offset index1 = merge_path<false>(keys1, num_keys1, keys2, num_keys2, diag, compare_op);
+  Offset index1 = MergePath(keys1, keys2, num_keys1, num_keys2, diag, compare_op);
   Offset index2 = diag - index1;
 
   bool star = false;
@@ -183,7 +153,7 @@ struct serial_set_intersection
 {
   // max_input_size <= 32
   template <typename T, typename CompareOp, int ItemsPerThread>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int operator()(
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE int operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
@@ -215,7 +185,7 @@ struct serial_set_intersection
 
       if ((a_begin < a_end) && (b_begin < b_end) && p_a == p_b)
       {
-        active_mask |= 1 << i;
+        active_mask |= 1u << i;
       }
 
       if (!p_b)
@@ -236,7 +206,7 @@ struct serial_set_symmetric_difference
 {
   // max_input_size <= 32
   template <typename T, typename CompareOp, int ItemsPerThread>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int operator()(
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE int operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
@@ -274,7 +244,7 @@ struct serial_set_symmetric_difference
 
       if (a_begin + b_begin < end && p_a != p_b)
       {
-        active_mask |= 1 << i;
+        active_mask |= 1u << i;
       }
 
       if (!p_b)
@@ -295,7 +265,7 @@ struct serial_set_difference
 {
   // max_input_size <= 32
   template <typename T, typename CompareOp, int ItemsPerThread>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int operator()(
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE int operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
@@ -334,7 +304,7 @@ struct serial_set_difference
 
       if (a_begin + b_begin < end && p_a)
       {
-        active_mask |= 1 << i;
+        active_mask |= 1u << i;
       }
 
       if (!p_b)
@@ -355,7 +325,7 @@ struct serial_set_union
 {
   // max_input_size <= 32
   template <typename T, typename CompareOp, int ItemsPerThread>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int operator()(
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE int operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
@@ -394,7 +364,7 @@ struct serial_set_union
 
       if (a_begin + b_begin < end)
       {
-        active_mask |= 1 << i;
+        active_mask |= 1u << i;
       }
 
       if (!p_b)
@@ -486,7 +456,7 @@ struct agent_set_op
   NumSelectedIteratorT output_count;
 
   template <bool IsFullTile, typename T, typename It1, typename It2>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   gmem_to_reg(T (&output)[items_per_thread], It1 input1, It2 input2, int count1, int count2)
   {
     if constexpr (IsFullTile)
@@ -521,7 +491,7 @@ struct agent_set_op
   }
 
   template <typename T, typename It>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[items_per_thread])
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[items_per_thread])
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < items_per_thread; ++item)
@@ -532,7 +502,7 @@ struct agent_set_op
   }
 
   template <typename OutputIt, typename T, typename SharedIt>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void scatter(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void scatter(
     OutputIt output,
     T (&input)[items_per_thread],
     SharedIt shared,
@@ -546,7 +516,7 @@ struct agent_set_op
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < items_per_thread; ++item)
     {
-      if (active_mask & (1 << item))
+      if (active_mask & (1u << item))
       {
         shared[local_scatter_idx++] = input[item];
       }
@@ -560,7 +530,7 @@ struct agent_set_op
   }
 
   template <bool IsLastTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int tile_idx)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void consume_tile(int tile_idx)
   {
     const ::cuda::std::pair<Offset, Offset> partition_beg = partitions[tile_idx + 0];
     const ::cuda::std::pair<Offset, Offset> partition_end = partitions[tile_idx + 1];
@@ -664,7 +634,7 @@ struct agent_set_op
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < items_per_thread; ++item)
       {
-        if (active_mask & (1 << item))
+        if (active_mask & (1u << item))
         {
           values_loc[item] = storage.load_storage.values_shared[indices[item]];
         }
@@ -686,7 +656,7 @@ struct agent_set_op
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()()
   {
     const int tile_idx  = static_cast<int>(blockIdx.x);
     const int num_tiles = static_cast<int>(gridDim.x);
