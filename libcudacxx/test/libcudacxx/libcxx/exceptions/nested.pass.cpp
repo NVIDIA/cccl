@@ -40,9 +40,9 @@ struct Low
 {
   int value = low_value();
 
-  virtual ~Low() = default;
-
-  [[nodiscard]] TEST_FUNC static const char* what() noexcept
+  // virtual so the type is polymorphic, as rethrow_if_nested requires; TEST_FUNC for NVRTC, where an unannotated
+  // member is a host function
+  [[nodiscard]] TEST_FUNC virtual const char* what() const noexcept
   {
     return "Low";
   }
@@ -52,9 +52,9 @@ struct High
 {
   int value = high_value();
 
-  virtual ~High() = default;
-
-  [[nodiscard]] TEST_FUNC static const char* what() noexcept
+  // virtual so the type is polymorphic, as rethrow_if_nested requires; TEST_FUNC for NVRTC, where an unannotated
+  // member is a host function
+  [[nodiscard]] TEST_FUNC virtual const char* what() const noexcept
   {
     return "High";
   }
@@ -132,8 +132,7 @@ TEST_FUNC void test_nesting_without_rtti()
     NV_IF_TARGET(NV_IS_HOST, (saw_nested = true;))
     _CCCL_TRY
     {
-      NV_IF_TARGET(NV_IS_HOST, (ne.rethrow_nested();))
-      assert(false); // a nested cause was present, so this must have thrown
+      NV_IF_TARGET(NV_IS_HOST, (ne.rethrow_nested();)) // [[noreturn]]: a nested cause was present
     }
     _CCCL_CATCH (const Low& cause)
     {
