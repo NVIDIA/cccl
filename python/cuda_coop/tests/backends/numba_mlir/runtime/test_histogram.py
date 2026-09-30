@@ -23,6 +23,7 @@ pytestmark = [
 ]
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("algorithm", ["atomic", "sort"])
 @pytest.mark.parametrize(
     "sample_dtype", [np.uint8, np.int32, np.uint32, np.int64, np.uint64]
@@ -31,13 +32,18 @@ pytestmark = [
     "counter_dtype", [np.int32, np.uint32, np.int64, np.uint64]
 )
 def test_histogram_counts_preservation_and_padding(
-    algorithm, sample_dtype, counter_dtype
+    algorithm, sample_dtype, counter_dtype, items_per_thread
 ):
     @cuda.jit
-    def kernel(source, destination, preserved):
+    def kernel(source, destination, preserved, items_per_thread):
         block = coop.this_block()
-        samples = coop.ThreadData(3)
-        coop.load(block, source, samples, offset=cuda.blockIdx.x * 192)
+        samples = coop.ThreadData(items_per_thread)
+        coop.load(
+            block,
+            source,
+            samples,
+            offset=cuda.blockIdx.x * cuda.blockDim.x * items_per_thread,
+        )
         counts = coop.histogram(
             block,
             samples,
@@ -53,18 +59,31 @@ def test_histogram_counts_preservation_and_padding(
             algorithm="striped",
             offset=cuda.blockIdx.x * 128,
         )
-        coop.store(block, preserved, samples, offset=cuda.blockIdx.x * 192)
+        coop.store(
+            block,
+            preserved,
+            samples,
+            offset=cuda.blockIdx.x * cuda.blockDim.x * items_per_thread,
+        )
 
-    source = ((np.arange(384) * 19) % 65).astype(sample_dtype)
-    source[:192] = 64  # Contention and an entirely different second block.
+    source = ((np.arange(2 * 64 * items_per_thread) * 19) % 65).astype(
+        sample_dtype
+    )
+    source[: 64 * items_per_thread] = (
+        64  # Contention and an entirely different second block.
+    )
     output = np.full(256, 99, dtype=counter_dtype)
     preserved = np.empty_like(source)
-    kernel[2, 64](source, output, preserved)
+    kernel[2, 64](source, output, preserved, items_per_thread)
     cuda.synchronize()
     for block in range(2):
         expected = np.zeros(128, dtype=counter_dtype)
         expected[:65] = np.bincount(
-            source[block * 192 : (block + 1) * 192].astype(np.int64),
+            source[
+                block * 64 * items_per_thread : (block + 1)
+                * 64
+                * items_per_thread
+            ].astype(np.int64),
             minlength=65,
         )
         np.testing.assert_array_equal(
@@ -73,17 +92,20 @@ def test_histogram_counts_preservation_and_padding(
     np.testing.assert_array_equal(preserved, source)
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("threads,bins", [(1, 1), (7, 13), (32, 1), (64, 128)])
 @pytest.mark.parametrize("algorithm", ["atomic", "sort"])
 @pytest.mark.parametrize("manual_sync", [False, True])
-def test_fresh_calls_reuse_storage(threads, bins, algorithm, manual_sync):
+def test_fresh_calls_reuse_storage(
+    threads, bins, algorithm, manual_sync, items_per_thread
+):
     bins_per_thread = (bins + threads - 1) // threads
     auto_sync = not manual_sync
 
     @cuda.jit
-    def kernel(source, destination):
+    def kernel(source, destination, items_per_thread):
         block = coop.this_block()
-        samples = coop.ThreadData(3, dtype=np.int32)
+        samples = coop.ThreadData(items_per_thread, dtype=np.int32)
         coop.load(block, source, samples)
         scratch = coop.TempStorage(auto_sync=auto_sync)
         first = coop.histogram(
@@ -112,9 +134,9 @@ def test_fresh_calls_reuse_storage(threads, bins, algorithm, manual_sync):
             block, destination, second, algorithm="striped", valid_items=bins
         )
 
-    source = (np.arange(threads * 3) % bins).astype(np.int32)
+    source = (np.arange(threads * items_per_thread) % bins).astype(np.int32)
     output = np.empty(bins, dtype=np.int32)
-    kernel[1, threads](source, output)
+    kernel[1, threads](source, output, items_per_thread)
     cuda.synchronize()
     np.testing.assert_array_equal(
         output, 2 * np.bincount(source, minlength=bins)
