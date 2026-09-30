@@ -128,7 +128,7 @@ def test_failed_storage_emission_restores_session(monkeypatch):
         raise RuntimeError("scratch emission failed")
 
     monkeypatch.setattr(_storage, "register_deferred_temp_storage_event", fail)
-    samples = ThreadData(2, dtype=cutlass.Int32, values=[3, 1])
+    samples = ThreadData(items_per_thread=2, dtype=cutlass.Int32, values=[3, 1])
     with pytest.raises(RuntimeError, match="scratch emission failed"):
         _histogram.provider_histogram(
             group=this_block(),
