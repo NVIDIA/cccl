@@ -9,19 +9,19 @@
 
 #include "cub_test_macros.h"
 
-template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, class T, class ActionT>
+template <int LogicalWarpThreads, int TotalWarps, class T, class ActionT>
 __global__ void warp_combine_scan_kernel(T* in, T* inclusive_out, T* exclusive_out, ActionT action)
 {
-  using warp_scan_t = cub::WarpScan<T, LOGICAL_WARP_THREADS>;
+  using warp_scan_t = cub::WarpScan<T, LogicalWarpThreads>;
   using storage_t   = typename warp_scan_t::TempStorage;
 
-  __shared__ storage_t storage[TOTAL_WARPS];
+  __shared__ storage_t storage[TotalWarps];
 
   const int tid =
     cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
   // Get warp index
-  const int warp_id = tid / LOGICAL_WARP_THREADS;
+  const int warp_id = tid / LogicalWarpThreads;
 
   T inc_out, exc_out;
   T thread_data = in[tid];
@@ -34,11 +34,11 @@ __global__ void warp_combine_scan_kernel(T* in, T* inclusive_out, T* exclusive_o
   exclusive_out[tid] = exc_out;
 }
 
-template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, class T, class ActionT>
+template <int LogicalWarpThreads, int TotalWarps, class T, class ActionT>
 void warp_combine_scan(
   c2h::device_vector<T>& in, c2h::device_vector<T>& inclusive_out, c2h::device_vector<T>& exclusive_out, ActionT action)
 {
-  warp_combine_scan_kernel<LOGICAL_WARP_THREADS, TOTAL_WARPS, T, ActionT><<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(
+  warp_combine_scan_kernel<LogicalWarpThreads, TotalWarps, T, ActionT><<<1, LogicalWarpThreads * TotalWarps>>>(
     thrust::raw_pointer_cast(in.data()),
     thrust::raw_pointer_cast(inclusive_out.data()),
     thrust::raw_pointer_cast(exclusive_out.data()),
@@ -48,19 +48,19 @@ void warp_combine_scan(
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
 
-template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, class T, class ActionT>
+template <int LogicalWarpThreads, int TotalWarps, class T, class ActionT>
 __global__ void warp_scan_kernel(T* in, T* out, ActionT action)
 {
-  using warp_scan_t = cub::WarpScan<T, LOGICAL_WARP_THREADS>;
+  using warp_scan_t = cub::WarpScan<T, LogicalWarpThreads>;
   using storage_t   = typename warp_scan_t::TempStorage;
 
-  __shared__ storage_t storage[TOTAL_WARPS];
+  __shared__ storage_t storage[TotalWarps];
 
   const int tid =
     cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
   // Get warp index
-  const int warp_id = tid / LOGICAL_WARP_THREADS;
+  const int warp_id = tid / LogicalWarpThreads;
 
   T thread_data = in[tid];
 
@@ -71,10 +71,10 @@ __global__ void warp_scan_kernel(T* in, T* out, ActionT action)
   out[tid] = thread_data;
 }
 
-template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, class T, class ActionT>
+template <int LogicalWarpThreads, int TotalWarps, class T, class ActionT>
 void warp_scan(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT action)
 {
-  warp_scan_kernel<LOGICAL_WARP_THREADS, TOTAL_WARPS, T, ActionT><<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(
+  warp_scan_kernel<LogicalWarpThreads, TotalWarps, T, ActionT><<<1, LogicalWarpThreads * TotalWarps>>>(
     thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), action);
 
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
@@ -110,8 +110,8 @@ struct sum_aggregate_op_t
   int m_target_thread_id;
   T* m_d_warp_aggregate;
 
-  template <int LOGICAL_WARP_THREADS>
-  __device__ void operator()(cub::WarpScan<T, LOGICAL_WARP_THREADS>& scan, T& thread_data) const
+  template <int LogicalWarpThreads>
+  __device__ void operator()(cub::WarpScan<T, LogicalWarpThreads>& scan, T& thread_data) const
   {
     T warp_aggregate{};
 
@@ -127,9 +127,9 @@ struct sum_aggregate_op_t
     const int tid =
       cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
-    if (tid % LOGICAL_WARP_THREADS == m_target_thread_id)
+    if (tid % LogicalWarpThreads == m_target_thread_id)
     {
-      m_d_warp_aggregate[tid / LOGICAL_WARP_THREADS] = warp_aggregate;
+      m_d_warp_aggregate[tid / LogicalWarpThreads] = warp_aggregate;
     }
   }
 };
@@ -157,8 +157,8 @@ struct min_aggregate_op_t
   int m_target_thread_id;
   T* m_d_warp_aggregate;
 
-  template <int LOGICAL_WARP_THREADS>
-  __device__ void operator()(cub::WarpScan<T, LOGICAL_WARP_THREADS>& scan, T& thread_data) const
+  template <int LogicalWarpThreads>
+  __device__ void operator()(cub::WarpScan<T, LogicalWarpThreads>& scan, T& thread_data) const
   {
     T warp_aggregate{};
 
@@ -174,9 +174,9 @@ struct min_aggregate_op_t
     const int tid =
       cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
-    if (tid % LOGICAL_WARP_THREADS == m_target_thread_id)
+    if (tid % LogicalWarpThreads == m_target_thread_id)
     {
-      m_d_warp_aggregate[tid / LOGICAL_WARP_THREADS] = warp_aggregate;
+      m_d_warp_aggregate[tid / LogicalWarpThreads] = warp_aggregate;
     }
   }
 };
@@ -206,8 +206,8 @@ struct min_init_value_aggregate_op_t
   T initial_value;
   T* m_d_warp_aggregate;
 
-  template <int LOGICAL_WARP_THREADS>
-  __device__ void operator()(cub::WarpScan<T, LOGICAL_WARP_THREADS>& scan, T& thread_data) const
+  template <int LogicalWarpThreads>
+  __device__ void operator()(cub::WarpScan<T, LogicalWarpThreads>& scan, T& thread_data) const
   {
     T warp_aggregate{};
 
@@ -223,9 +223,9 @@ struct min_init_value_aggregate_op_t
     const int tid =
       cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
-    if (tid % LOGICAL_WARP_THREADS == m_target_thread_id)
+    if (tid % LogicalWarpThreads == m_target_thread_id)
     {
-      m_d_warp_aggregate[tid / LOGICAL_WARP_THREADS] = warp_aggregate;
+      m_d_warp_aggregate[tid / LogicalWarpThreads] = warp_aggregate;
     }
   }
 };
@@ -319,13 +319,13 @@ using vec_types = c2h::type_list<
 
 using warp_combine_type = int;
 
-template <int logical_warp_threads>
+template <int LogicalWarpThreads>
 struct total_warps_t
 {
 private:
   static constexpr int max_warps      = 2;
-  static constexpr bool is_arch_warp  = (logical_warp_threads == cub::detail::warp_threads);
-  static constexpr bool is_pow_of_two = ((logical_warp_threads & (logical_warp_threads - 1)) == 0);
+  static constexpr bool is_arch_warp  = (LogicalWarpThreads == cub::detail::warp_threads);
+  static constexpr bool is_pow_of_two = ((LogicalWarpThreads & (LogicalWarpThreads - 1)) == 0);
   static constexpr int total_warps    = (is_arch_warp || is_pow_of_two) ? max_warps : 1;
 
 public:

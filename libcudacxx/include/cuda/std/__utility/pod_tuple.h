@@ -305,7 +305,9 @@ _CCCL_CONCEPT __nothrow_applicable = __detail::__nothrow_applicable_v<_Fn, _Tupl
 namespace __detail
 {
 template <size_t _Index, class _Value>
-_CCCL_TRIVIAL_API constexpr auto __get(__box<_Index, _Value>&& __b) noexcept -> _Value&&
+_CCCL_TRIVIAL_API constexpr auto
+__get(__box<_Index, _Value>&& __b) noexcept // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+  -> _Value&&
 {
   return static_cast<_Value&&>(__b.__value);
 }

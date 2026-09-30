@@ -253,8 +253,7 @@ private:
 
 public:
   /// \smemstorage{BlockMergeSort}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   BlockMergeSortStrategy() = delete;
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSortStrategy(unsigned int linear_tid)
