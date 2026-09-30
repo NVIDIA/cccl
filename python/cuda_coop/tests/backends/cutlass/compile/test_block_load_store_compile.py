@@ -30,22 +30,26 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
         " WARP-TRANSPOSE-TIMESLICED ",
     ),
 )
-def test_algorithm_selector_spellings(api, algorithm):
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_algorithm_selector_spellings(api, algorithm, items_per_thread):
     @cute.kernel
-    def kernel(memory: cute.Pointer):
+    def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         group = api.this_block()
-        payload = api.ThreadData(2, dtype=cutlass.Int32)
+        payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
         api.load(group, memory, payload, algorithm=algorithm)
         api.store(group, memory, payload, algorithm=algorithm)
 
     @cute.jit
-    def launch(memory: cute.Pointer):
-        kernel(memory).launch(grid=1, block=32)
+    def launch(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        kernel(memory, items_per_thread).launch(grid=1, block=32)
 
     pointer = make_ptr(
         cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16
     )
-    assert cute.compile[(GPUArch("sm_80"),)](launch, pointer) is not None
+    assert (
+        cute.compile[(GPUArch("sm_80"),)](launch, pointer, items_per_thread)
+        is not None
+    )
 
 
 @pytest.mark.parametrize(
