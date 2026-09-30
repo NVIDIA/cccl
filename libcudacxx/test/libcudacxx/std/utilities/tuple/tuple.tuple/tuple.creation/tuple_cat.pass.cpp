@@ -32,6 +32,9 @@
 TEST_FUNC constexpr bool test()
 {
   {
+    [[maybe_unused]] cuda::std::tuple<> t = cuda::std::tuple_cat<>();
+  }
+  {
     [[maybe_unused]] cuda::std::tuple<> t = cuda::std::tuple_cat();
   }
   {
