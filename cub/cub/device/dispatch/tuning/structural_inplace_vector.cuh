@@ -15,7 +15,6 @@
 
 #include <cuda/std/__cccl/assert.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/initializer_list>
 
 // MSVC toolsets below 14.44 fail to correctly constant-fold structural_inplace_vector's bounds checks when this type
 // is evaluated deep in CC dispatch's NTTP-based policy resolution, silently producing a zero-initialized element
@@ -47,20 +46,13 @@ struct structural_inplace_vector
   using iterator        = T*;
   using const_iterator  = const T*;
 
+  // Kept as an aggregate (no user-declared constructors): older MSVC toolsets (< 19.44) fail to correctly
+  // constant-fold this type through CC dispatch's NTTP-based policy resolution once it gains a user-declared
+  // constructor (observed as a worker_policy silently reading back as zero-initialized deep in agent instantiation,
+  // rather than a hard error at the actual fault). Callers list Capacity elements, using `{}` to pad unused slots,
+  // and set `count` explicitly -- see e.g. make_baseline_policy().
   T elems[Capacity]{};
   size_type count = 0;
-
-  constexpr structural_inplace_vector() = default;
-
-  _CCCL_HOST_DEVICE_API constexpr structural_inplace_vector(::cuda::std::initializer_list<T> ilist)
-      : count(ilist.size())
-  {
-    _CCCL_SIV_ASSERT(count <= Capacity, "structural_inplace_vector: initializer list exceeds capacity");
-    for (size_type i = 0; i < count; ++i)
-    {
-      elems[i] = ilist.begin()[i];
-    }
-  }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool empty() const noexcept
   {
