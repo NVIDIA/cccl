@@ -44,9 +44,38 @@ _RUNTIME_VALID_ITEMS = 5
 _PREFIX_TILE_COUNT = 4
 _PREFIX_INITIAL_STATE = 17
 _DYNAMIC_STORAGE_BYTES = 64 * 1024
+_DTYPES = (
+    np.int8,
+    np.uint8,
+    np.int16,
+    np.uint16,
+    np.int32,
+    np.uint32,
+    np.int64,
+    np.uint64,
+    np.float32,
+    np.float64,
+)
 
 
-def _exclusive_sum(values: np.ndarray, initial: int = 0) -> np.ndarray:
+def _dtype_values(dtype, size: int) -> np.ndarray:
+    indices = np.arange(size, dtype=np.int64)
+    if np.dtype(dtype).kind == "u":
+        values = (indices % 3 == 0).astype(dtype)
+    elif np.dtype(dtype).kind == "f":
+        values = ((indices % 5) - 2).astype(dtype) * dtype(0.25)
+    else:
+        values = ((indices % 3) - 1).astype(dtype)
+    if np.dtype(dtype).kind == "f":
+        if np.dtype(dtype).itemsize == 8:
+            values += dtype(2**-30)
+    elif np.dtype(dtype).itemsize > 1:
+        scale = {2: 257, 4: 65537, 8: 2**33 + 1}[np.dtype(dtype).itemsize]
+        values *= dtype(scale)
+    return values
+
+
+def _exclusive_sum(values: np.ndarray, initial: float = 0) -> np.ndarray:
     result = np.empty_like(values)
     result[0] = initial
     result[1:] = initial + np.cumsum(values[:-1], dtype=values.dtype)
@@ -80,11 +109,14 @@ def _five_scan_spellings(source, output, aggregates, initial):
     aggregates[thread] = aggregate[0]
 
 
-def test_all_five_spellings_preserve_mode_initial_and_aggregate_semantics():
-    source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 7) % 29) + 1
-    output = np.full(5 * _BLOCK_THREADS, -1, dtype=np.int32)
-    aggregates = np.full(_BLOCK_THREADS, -1, dtype=np.int32)
-    initial = np.int32(11)
+@pytest.mark.parametrize("dtype", _DTYPES)
+def test_all_five_spellings_preserve_mode_initial_and_aggregate_semantics(
+    dtype,
+):
+    source = _dtype_values(dtype, _BLOCK_THREADS)
+    output = np.full(5 * _BLOCK_THREADS, 127, dtype=dtype)
+    aggregates = np.full(_BLOCK_THREADS, 127, dtype=dtype)
+    initial = dtype(11.25 if np.dtype(dtype).kind == "f" else 11)
 
     _five_scan_spellings[1, _BLOCK_THREADS](source, output, aggregates, initial)
 
@@ -92,16 +124,16 @@ def test_all_five_spellings_preserve_mode_initial_and_aggregate_semantics():
     expected = np.stack(
         (
             expected_exclusive,
-            _exclusive_sum(source, int(initial)),
+            _exclusive_sum(source, initial.item()),
             np.maximum.accumulate(source),
             expected_exclusive,
-            np.cumsum(source, dtype=np.int32),
+            np.cumsum(source, dtype=dtype),
         )
     )
     np.testing.assert_array_equal(output.reshape(5, _BLOCK_THREADS), expected)
     np.testing.assert_array_equal(
         aggregates,
-        np.full(_BLOCK_THREADS, source.sum(dtype=np.int32), dtype=np.int32),
+        np.full(_BLOCK_THREADS, source.sum(dtype=dtype), dtype=dtype),
     )
 
 
@@ -128,16 +160,17 @@ def _thread_data_algorithm_kernel(algorithm: str):
 @pytest.mark.parametrize(
     "algorithm", ("raking", "raking_memoize", "warp_scans")
 )
-def test_block_algorithms_scan_thread_data_out_of_place(algorithm: str):
-    source = ((np.arange(_TILE_ITEMS, dtype=np.int32) * 5) % 37) - 11
-    output = np.full_like(source, -1)
-    preserved = np.full_like(source, -1)
+@pytest.mark.parametrize("dtype", _DTYPES)
+def test_block_algorithms_scan_thread_data_out_of_place(algorithm: str, dtype):
+    source = _dtype_values(dtype, _TILE_ITEMS)
+    output = np.full_like(source, 127)
+    preserved = np.full_like(source, 127)
 
     _thread_data_algorithm_kernel(algorithm)[1, _BLOCK_THREADS](
         source, output, preserved
     )
 
-    np.testing.assert_array_equal(output, np.cumsum(source, dtype=np.int32))
+    np.testing.assert_array_equal(output, np.cumsum(source, dtype=dtype))
     np.testing.assert_array_equal(preserved, source)
 
 
@@ -409,7 +442,7 @@ def _warp_scans(
     thread = cuda.threadIdx.x
     value = source[thread]
     logical_warp = numba_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
-    aggregate = numba_coop.ThreadData(1, dtype=types.int32)
+    aggregate = numba_coop.ThreadData(1)
 
     operator_output[thread] = numba_coop.inclusive_scan(
         numba_coop.this_warp(), value, scan_op=operator.add
@@ -426,12 +459,17 @@ def _warp_scans(
     aggregates[thread] = aggregate[0]
 
 
-def test_physical_and_logical_warp_forms_cover_alias_callback_and_valid_prefix():  # noqa: E501 - Preserve descriptive test name.
-    source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 13) % 47) + 1
-    operator_output = np.full_like(source, -1)
-    callback_output = np.full_like(source, -1)
-    partial = np.full_like(source, -1)
-    aggregates = np.full_like(source, -1)
+@pytest.mark.parametrize("dtype", _DTYPES)
+def test_physical_and_logical_warp_forms_cover_alias_callback_and_valid_prefix(
+    dtype,
+):
+    source = _dtype_values(dtype, _BLOCK_THREADS)
+    if dtype is np.int32:
+        source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 13) % 47) + 1
+    operator_output = np.full_like(source, 127)
+    callback_output = np.full_like(source, 127)
+    partial = np.full_like(source, 127)
+    aggregates = np.full_like(source, 127)
 
     _warp_scans[1, _BLOCK_THREADS](
         source,
@@ -446,7 +484,7 @@ def test_physical_and_logical_warp_forms_cover_alias_callback_and_valid_prefix()
         warp = source[start : start + _WARP_THREADS]
         np.testing.assert_array_equal(
             operator_output[start : start + _WARP_THREADS],
-            np.cumsum(warp, dtype=np.int32),
+            np.cumsum(warp, dtype=dtype),
         )
         np.testing.assert_array_equal(
             callback_output[start : start + _WARP_THREADS],
@@ -462,8 +500,8 @@ def test_physical_and_logical_warp_forms_cover_alias_callback_and_valid_prefix()
             aggregates[start : start + _LOGICAL_WARP_THREADS],
             np.full(
                 _LOGICAL_WARP_THREADS,
-                valid_values.sum(dtype=np.int32),
-                dtype=np.int32,
+                valid_values.sum(dtype=dtype),
+                dtype=dtype,
             ),
         )
 
