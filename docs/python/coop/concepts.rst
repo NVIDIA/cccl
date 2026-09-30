@@ -135,8 +135,9 @@ its input payload unchanged unless its contract says otherwise.
 Registering a backend
 ---------------------
 
-Call :func:`cuda.coop.register` on the host before compiling kernels to
-activate its compiler integration explicitly. For a Numba-CUDA-MLIR kernel:
+When you cannot ensure import order, call :func:`cuda.coop.register` on the
+host before compiling kernels to activate its compiler integration
+explicitly. For a Numba-CUDA-MLIR kernel:
 
 .. code-block:: python
 
@@ -250,13 +251,15 @@ or a reuse barrier.
 Per-thread payloads
 ^^^^^^^^^^^^^^^^^^^
 
-``coop.ThreadData(items_per_thread=K)`` describes a fixed-size payload of
-``K`` values owned by each thread. Leave the element type unspecified for
-normal use: Load infers it from its source, fills the payload in place, and
-returns ``None``. Other operations either consume that payload or return a new
-scalar or payload according to their contract. As in CUB, transpose Store
-algorithms may rearrange the input payload in place. Copy values before Store
-if they are needed later.
+``coop.ThreadData(items_per_thread)`` describes a fixed-size payload of
+``items_per_thread`` values owned by each thread. Pass that count as a kernel
+argument: Numba-CUDA-MLIR specializes it automatically; CuTe kernels and their
+launchers declare it as ``items_per_thread: cutlass.Constexpr``. Leave the
+element type unspecified for normal use: Load infers it from its source, fills
+the payload in place, and returns ``None``. Other operations either consume
+that payload or return a new scalar or payload according to their contract. As
+in CUB, transpose Store algorithms may rearrange the input payload in place.
+Copy values before Store if they are needed later.
 
 Supported payload dtypes are signed and unsigned 8-, 16-, 32-, and 64-bit
 integers and 32- and 64-bit floating-point values. An explicit alignment is a

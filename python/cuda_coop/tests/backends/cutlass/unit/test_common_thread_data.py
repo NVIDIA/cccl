@@ -47,4 +47,6 @@ def test_thread_data_rejects_invalid_alignment_before_dispatch(
 
     monkeypatch.setattr(api, "_backend_member", unexpected_dispatch)
     with pytest.raises(error, match=message):
-        api.ThreadData(4, np.float32, alignment=alignment)
+        api.ThreadData(
+            items_per_thread=4, dtype=np.float32, alignment=alignment
+        )

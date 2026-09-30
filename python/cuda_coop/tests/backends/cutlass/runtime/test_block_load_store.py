@@ -38,39 +38,58 @@ _TILE = _THREADS * _ITEMS
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("dtype", NUMPY_DTYPES)
 @pytest.mark.parametrize("operation", ("load", "store"))
-def test_direct_layout_matches_independent_oracle(api, dtype, operation):
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_direct_layout_matches_independent_oracle(
+    api, dtype, operation, items_per_thread
+):
     value_type = cutlass_dtype(dtype)
 
     @cute.kernel
-    def kernel(source: cute.Pointer, destination: cute.Pointer):
+    def kernel(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
         tx, ty, tz = cute.arch.thread_idx()
         thread = tx + _BLOCK[0] * (ty + _BLOCK[1] * tz)
         # CuTe's signless tensor construction needs an explicit unsigned view.
         inputs = cute.recast_tensor(
-            cute.make_tensor(source, cute.make_layout(_TILE)), value_type
+            cute.make_tensor(
+                source, cute.make_layout(_THREADS * items_per_thread)
+            ),
+            value_type,
         )
         outputs = cute.recast_tensor(
-            cute.make_tensor(destination, cute.make_layout(_TILE)), value_type
+            cute.make_tensor(
+                destination, cute.make_layout(_THREADS * items_per_thread)
+            ),
+            value_type,
         )
-        payload = api.ThreadData(_ITEMS, dtype=value_type)
+        payload = api.ThreadData(items_per_thread, dtype=value_type)
         if cutlass.const_expr(operation == "load"):
             returned = api.load(api.this_block(), inputs, payload)
             assert returned is None
-            for item in cutlass.range_constexpr(_ITEMS):
-                outputs[thread * _ITEMS + item] = payload[item]
+            for item in cutlass.range_constexpr(items_per_thread):
+                outputs[thread * items_per_thread + item] = payload[item]
         else:
-            for item in cutlass.range_constexpr(_ITEMS):
-                payload[item] = inputs[thread * _ITEMS + item]
+            for item in cutlass.range_constexpr(items_per_thread):
+                payload[item] = inputs[thread * items_per_thread + item]
             api.store(api.this_block(), outputs, payload)
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer):
-        kernel(source, destination).launch(grid=1, block=_BLOCK)
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(source, destination, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
-    source = values_for(dtype, _TILE, shift=13)
+    source = values_for(dtype, (_THREADS * items_per_thread), shift=13)
     destination = np.zeros_like(source)
     with device_array(source) as src, device_array(destination) as dst:
-        launch(src, dst)
+        launch(src, dst, items_per_thread)
     np.testing.assert_array_equal(destination, source)
 
 
@@ -85,9 +104,12 @@ def test_partial_load_valid_items_and_explicit_default(
 ):
     @cute.kernel
     def kernel(
-        source: cute.Pointer, destination: cute.Pointer, count: cutlass.Int32
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        count: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
-        payload = api.ThreadData(_ITEMS, dtype=cutlass.Int32)
+        payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
         if cutlass.const_expr(runtime_valid):
             api.load(
                 api.this_block(),
@@ -115,9 +137,14 @@ def test_partial_load_valid_items_and_explicit_default(
 
     @cute.jit
     def launch(
-        source: cute.Pointer, destination: cute.Pointer, count: cutlass.Int32
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        count: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, destination, count).launch(grid=1, block=_BLOCK)
+        kernel(source, destination, count, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.int32, _TILE + 3)
     destination = np.zeros(_TILE, dtype=np.int32)
@@ -126,7 +153,7 @@ def test_partial_load_valid_items_and_explicit_default(
         expected.fill(default)
     expected[:valid] = source[3 : 3 + valid]
     with device_array(source) as src, device_array(destination) as dst:
-        launch(src, dst, valid)
+        launch(src, dst, valid, _ITEMS)
     np.testing.assert_array_equal(destination, expected)
 
 
@@ -141,8 +168,9 @@ def test_partial_store_respects_runtime_offsets_and_tail(valid, runtime_valid):
         destination: cute.Pointer,
         count: cutlass.Int32,
         offset: cutlass.Int64,
+        items_per_thread: cutlass.Constexpr,
     ):
-        payload = coop.ThreadData(_ITEMS)
+        payload = coop.ThreadData(items_per_thread)
         coop.load(coop.this_block(), source, payload)
         if cutlass.const_expr(runtime_valid):
             coop.store(
@@ -167,15 +195,18 @@ def test_partial_store_respects_runtime_offsets_and_tail(valid, runtime_valid):
         destination: cute.Pointer,
         count: cutlass.Int32,
         offset: cutlass.Int64,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, destination, count, offset).launch(grid=1, block=_BLOCK)
+        kernel(source, destination, count, offset, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.int32, _TILE)
     destination = np.full(_TILE + 11, -101, dtype=np.int32)
     expected = destination.copy()
     expected[5 : 5 + valid] = source[:valid]
     with device_array(source) as src, device_array(destination) as dst:
-        launch(src, dst, valid, 5)
+        launch(src, dst, valid, 5, _ITEMS)
     np.testing.assert_array_equal(destination, expected)
 
 
@@ -187,8 +218,9 @@ def test_runtime_load_default_and_offset_change_between_launches():
         count: cutlass.Int32,
         default: cutlass.Int32,
         offset: cutlass.Int64,
+        items_per_thread: cutlass.Constexpr,
     ):
-        payload = coop.ThreadData(_ITEMS)
+        payload = coop.ThreadData(items_per_thread)
         coop.load(
             coop.this_block(),
             source,
@@ -206,10 +238,11 @@ def test_runtime_load_default_and_offset_change_between_launches():
         count: cutlass.Int32,
         default: cutlass.Int32,
         offset: cutlass.Int64,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, destination, count, default, offset).launch(
-            grid=1, block=_BLOCK
-        )
+        kernel(
+            source, destination, count, default, offset, items_per_thread
+        ).launch(grid=1, block=_BLOCK)
 
     source = values_for(np.int32, _TILE + 7)
     for count, default, offset in ((0, -17, 3), (27, -23, 5), (_TILE, -31, 7)):
@@ -217,7 +250,7 @@ def test_runtime_load_default_and_offset_change_between_launches():
         expected = np.full(_TILE, default, dtype=np.int32)
         expected[:count] = source[offset : offset + count]
         with device_array(source) as src, device_array(destination) as dst:
-            launch(src, dst, count, default, offset)
+            launch(src, dst, count, default, offset, _ITEMS)
         np.testing.assert_array_equal(destination, expected)
 
 
@@ -225,11 +258,11 @@ def test_runtime_load_default_and_offset_change_between_launches():
 @pytest.mark.parametrize("alignment", (1, 4, 16, 32))
 def test_scalar_store_and_payload_alignment(block, alignment):
     @cute.kernel
-    def kernel(destination: cute.Pointer):
+    def kernel(destination: cute.Pointer, items_per_thread: cutlass.Constexpr):
         tx, ty, tz = cute.arch.thread_idx()
         thread = tx + block[0] * (ty + block[1] * tz)
         payload = cutlass_coop.ThreadData(
-            1, dtype=cutlass.Int32, alignment=alignment
+            items_per_thread, dtype=cutlass.Int32, alignment=alignment
         )
         payload[0] = cutlass.Int32(thread * 3 + 1)
         cutlass_coop.store(cutlass_coop.this_block(), destination, payload)
@@ -248,13 +281,13 @@ def test_scalar_store_and_payload_alignment(block, alignment):
         )
 
     @cute.jit
-    def launch(destination: cute.Pointer):
-        kernel(destination).launch(grid=1, block=block)
+    def launch(destination: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        kernel(destination, items_per_thread).launch(grid=1, block=block)
 
     count = math.prod(block)
     destination = np.zeros(count * 3, dtype=np.int32)
     with device_array(destination) as dst:
-        launch(dst)
+        launch(dst, 1)
     np.testing.assert_array_equal(destination[:count], np.arange(count) * 3 + 1)
     np.testing.assert_array_equal(
         destination[count : 2 * count], np.arange(count) * 3 + 1
@@ -272,20 +305,30 @@ def test_final_cubin_eliminates_direct_providers_and_scratch(tmp_path):
         )
 
     @cute.kernel
-    def kernel(source: cute.Pointer, destination: cute.Pointer):
-        payload = coop.ThreadData(_ITEMS)
+    def kernel(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        payload = coop.ThreadData(items_per_thread)
         coop.load(coop.this_block(), source, payload)
         coop.store(coop.this_block(), destination, payload)
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer):
-        kernel(source, destination).launch(grid=1, block=_BLOCK)
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(source, destination, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.int32, _TILE)
     destination = np.zeros_like(source)
     with device_array(source) as src, device_array(destination) as dst:
         compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](
-            launch, src, dst
+            launch, src, dst, _ITEMS
         )
         compiled(src, dst)
     np.testing.assert_array_equal(destination, source)
@@ -308,11 +351,12 @@ def test_final_cubin_eliminates_direct_providers_and_scratch(tmp_path):
 
 
 @pytest.mark.parametrize("api", ("common", "qualified"))
-def test_executable_example(api):
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_executable_example(api, items_per_thread):
     path = PACKAGE_ROOT / "examples/cutlass/block_load_store.py"
     spec = importlib.util.spec_from_file_location(
         "cutlass_load_store_example", path
     )
     example = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(example)
-    example.run_example(api)
+    example.run_example(api, items_per_thread=items_per_thread)

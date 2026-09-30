@@ -107,10 +107,17 @@ def _load_kernel(algorithm: str, qualified: bool, numba_dtype=types.int32):
         selector = algorithm
 
         @cuda.jit
-        def kernel(source, observed, valid_items, source_offset, oob_default):
+        def kernel(
+            source,
+            observed,
+            valid_items,
+            source_offset,
+            oob_default,
+            items_per_thread,
+        ):
             thread = cuda.threadIdx.x
             payload = numba_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=numba_dtype,
             )
             numba_coop.load(
@@ -122,16 +129,23 @@ def _load_kernel(algorithm: str, qualified: bool, numba_dtype=types.int32):
                 oob_default=oob_default,
                 offset=source_offset,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+            for item in range(items_per_thread):
+                observed[thread * items_per_thread + item] = payload[item]
 
     else:
 
         @cuda.jit
-        def kernel(source, observed, valid_items, source_offset, oob_default):
+        def kernel(
+            source,
+            observed,
+            valid_items,
+            source_offset,
+            oob_default,
+            items_per_thread,
+        ):
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=numba_dtype,
             )
             root_coop.load(
@@ -143,8 +157,8 @@ def _load_kernel(algorithm: str, qualified: bool, numba_dtype=types.int32):
                 oob_default=oob_default,
                 offset=source_offset,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+            for item in range(items_per_thread):
+                observed[thread * items_per_thread + item] = payload[item]
 
     return kernel
 
@@ -155,14 +169,20 @@ def _store_kernel(algorithm: str, qualified: bool, numba_dtype=types.int32):
         selector = algorithm
 
         @cuda.jit
-        def kernel(source, destination, valid_items, destination_offset):
+        def kernel(
+            source,
+            destination,
+            valid_items,
+            destination_offset,
+            items_per_thread,
+        ):
             thread = cuda.threadIdx.x
             payload = numba_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=numba_dtype,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                payload[item] = source[thread * _ITEMS_PER_THREAD + item]
+            for item in range(items_per_thread):
+                payload[item] = source[thread * items_per_thread + item]
             numba_coop.store(
                 numba_coop.this_warp(),
                 destination,
@@ -175,14 +195,20 @@ def _store_kernel(algorithm: str, qualified: bool, numba_dtype=types.int32):
     else:
 
         @cuda.jit
-        def kernel(source, destination, valid_items, destination_offset):
+        def kernel(
+            source,
+            destination,
+            valid_items,
+            destination_offset,
+            items_per_thread,
+        ):
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=numba_dtype,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                payload[item] = source[thread * _ITEMS_PER_THREAD + item]
+            for item in range(items_per_thread):
+                payload[item] = source[thread * items_per_thread + item]
             root_coop.store(
                 root_coop.this_warp(),
                 destination,
@@ -207,10 +233,12 @@ def _direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
     if qualified:
 
         @cuda.jit
-        def kernel(load_source, store_source, observed, destination):
+        def kernel(
+            load_source, store_source, observed, destination, items_per_thread
+        ):
             thread = cuda.threadIdx.x
             load_payload = numba_coop.ThreadData(
-                _ITEMS_PER_THREAD, dtype=numba_dtype
+                items_per_thread, dtype=numba_dtype
             )
             numba_coop.load(
                 numba_coop.this_warp(),
@@ -219,11 +247,11 @@ def _direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
                 algorithm="direct",
             )
             payload = numba_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=numba_dtype,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                index = thread * _ITEMS_PER_THREAD + item
+            for item in range(items_per_thread):
+                index = thread * items_per_thread + item
                 observed[index] = load_payload[item]
                 payload[item] = store_source[index]
             numba_coop.store(
@@ -236,10 +264,12 @@ def _direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
     else:
 
         @cuda.jit
-        def kernel(load_source, store_source, observed, destination):
+        def kernel(
+            load_source, store_source, observed, destination, items_per_thread
+        ):
             thread = cuda.threadIdx.x
             load_payload = root_coop.ThreadData(
-                _ITEMS_PER_THREAD, dtype=numba_dtype
+                items_per_thread, dtype=numba_dtype
             )
             root_coop.load(
                 root_coop.this_warp(),
@@ -248,11 +278,11 @@ def _direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
                 algorithm="direct",
             )
             payload = root_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=numba_dtype,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                index = thread * _ITEMS_PER_THREAD + item
+            for item in range(items_per_thread):
+                index = thread * items_per_thread + item
                 observed[index] = load_payload[item]
                 payload[item] = store_source[index]
             root_coop.store(
@@ -265,38 +295,44 @@ def _direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
     return kernel
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize(("numpy_dtype", "numba_dtype"), _DTYPES)
 def test_direct_multi_item_load_store_matches_oracles_for_every_dtype(
-    qualified: bool,
-    numpy_dtype: np.dtype,
-    numba_dtype,
+    qualified: bool, numpy_dtype: np.dtype, numba_dtype, *, items_per_thread
 ) -> None:
-    load_source = _dtype_values(numpy_dtype, _BLOCK_ITEMS, shift=7)
-    store_source = _dtype_values(numpy_dtype, _BLOCK_ITEMS, shift=29)
+    load_source = _dtype_values(
+        numpy_dtype, (_BLOCK_THREADS * items_per_thread), shift=7
+    )
+    store_source = _dtype_values(
+        numpy_dtype, (_BLOCK_THREADS * items_per_thread), shift=29
+    )
     sentinel = _dtype_sentinel(numpy_dtype)
-    observed = np.full(_BLOCK_ITEMS, sentinel, dtype=numpy_dtype)
-    destination = np.full(_BLOCK_ITEMS, sentinel, dtype=numpy_dtype)
+    observed = np.full(
+        (_BLOCK_THREADS * items_per_thread), sentinel, dtype=numpy_dtype
+    )
+    destination = np.full(
+        (_BLOCK_THREADS * items_per_thread), sentinel, dtype=numpy_dtype
+    )
 
     _direct_dtype_load_store_kernel(numba_dtype, qualified)[1, _BLOCK_THREADS](
-        load_source,
-        store_source,
-        observed,
-        destination,
+        load_source, store_source, observed, destination, items_per_thread
     )
 
     np.testing.assert_array_equal(observed, load_source)
     np.testing.assert_array_equal(destination, store_source)
 
 
-def _tile_index(algorithm: str, lane: int, item: int) -> int:
+def _tile_index(
+    algorithm: str, lane: int, item: int, *, items_per_thread
+) -> int:
     """Map a lane's item to a blocked or striped index within its warp."""
 
     if algorithm == "striped":
         return lane + item * _WARP_THREADS
-    return lane * _ITEMS_PER_THREAD + item
+    return lane * items_per_thread + item
 
 
 def _expected_loaded_payload(
@@ -306,6 +342,7 @@ def _expected_loaded_payload(
     valid_items: int,
     offset: int,
     oob_default: int,
+    items_per_thread,
 ) -> np.ndarray:
     """Compute separate Load results for both physical warps.
 
@@ -314,16 +351,22 @@ def _expected_loaded_payload(
     Each warp applies the count independently; other slots use the default.
     """
 
-    expected = np.full(_BLOCK_ITEMS, oob_default, dtype=source.dtype)
+    expected = np.full(
+        (_BLOCK_THREADS * items_per_thread), oob_default, dtype=source.dtype
+    )
     for thread in range(_BLOCK_THREADS):
         warp = thread // _WARP_THREADS
         lane = thread % _WARP_THREADS
-        for item in range(_ITEMS_PER_THREAD):
-            payload_index = thread * _ITEMS_PER_THREAD + item
-            tile_index = _tile_index(algorithm, lane, item)
+        for item in range(items_per_thread):
+            payload_index = thread * items_per_thread + item
+            tile_index = _tile_index(
+                algorithm, lane, item, items_per_thread=items_per_thread
+            )
             if tile_index < valid_items:
                 expected[payload_index] = source[
-                    offset + warp * _WARP_TILE_ITEMS + tile_index
+                    offset
+                    + warp * (_WARP_THREADS * items_per_thread)
+                    + tile_index
                 ]
     return expected
 
@@ -335,6 +378,7 @@ def _expected_stored_payload(
     algorithm: str,
     valid_items: int,
     offset: int,
+    items_per_thread,
 ) -> np.ndarray:
     """Map per-thread Store inputs to each physical warp's destination tile.
 
@@ -347,16 +391,21 @@ def _expected_stored_payload(
     for thread in range(_BLOCK_THREADS):
         warp = thread // _WARP_THREADS
         lane = thread % _WARP_THREADS
-        for item in range(_ITEMS_PER_THREAD):
-            payload_index = thread * _ITEMS_PER_THREAD + item
-            tile_index = _tile_index(algorithm, lane, item)
+        for item in range(items_per_thread):
+            payload_index = thread * items_per_thread + item
+            tile_index = _tile_index(
+                algorithm, lane, item, items_per_thread=items_per_thread
+            )
             if tile_index < valid_items:
-                expected[offset + warp * _WARP_TILE_ITEMS + tile_index] = (
-                    source[payload_index]
-                )
+                expected[
+                    offset
+                    + warp * (_WARP_THREADS * items_per_thread)
+                    + tile_index
+                ] = source[payload_index]
     return expected
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "qualified", (False, True), ids=("common", "qualified")
 )
@@ -367,18 +416,20 @@ def _expected_stored_payload(
     ids=("zero", "partial", "full"),
 )
 def test_each_warp_load_algorithm_matches_an_independent_two_warp_oracle(
-    qualified: bool,
-    algorithm: str,
-    valid_items: int,
+    qualified: bool, algorithm: str, valid_items: int, *, items_per_thread
 ) -> None:
-    source = _values(_LOAD_OFFSET + _BLOCK_ITEMS + 3, shift=31)
-    observed = np.full(_BLOCK_ITEMS, 71, dtype=np.int32)
+    valid_items = min(valid_items, _WARP_THREADS * items_per_thread)
+    source = _values(
+        _LOAD_OFFSET + (_BLOCK_THREADS * items_per_thread) + 3, shift=31
+    )
+    observed = np.full((_BLOCK_THREADS * items_per_thread), 71, dtype=np.int32)
     expected = _expected_loaded_payload(
         source,
         algorithm=algorithm,
         valid_items=valid_items,
         offset=_LOAD_OFFSET,
         oob_default=-29,
+        items_per_thread=items_per_thread,
     )
 
     _load_kernel(algorithm, qualified)[1, _BLOCK_THREADS](
@@ -387,11 +438,13 @@ def test_each_warp_load_algorithm_matches_an_independent_two_warp_oracle(
         np.int32(valid_items),
         np.int64(_LOAD_OFFSET),
         np.int32(-29),
+        items_per_thread,
     )
 
     np.testing.assert_array_equal(observed, expected)
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "qualified", (False, True), ids=("common", "qualified")
 )
@@ -402,18 +455,22 @@ def test_each_warp_load_algorithm_matches_an_independent_two_warp_oracle(
     ids=("zero", "partial", "full"),
 )
 def test_each_warp_store_algorithm_masks_each_warp(
-    qualified: bool,
-    algorithm: str,
-    valid_items: int,
+    qualified: bool, algorithm: str, valid_items: int, *, items_per_thread
 ) -> None:
-    source = _values(_BLOCK_ITEMS, shift=43)
-    destination = np.full(_STORE_OFFSET + _BLOCK_ITEMS + 3, -41, dtype=np.int32)
+    valid_items = min(valid_items, _WARP_THREADS * items_per_thread)
+    source = _values((_BLOCK_THREADS * items_per_thread), shift=43)
+    destination = np.full(
+        _STORE_OFFSET + (_BLOCK_THREADS * items_per_thread) + 3,
+        -41,
+        dtype=np.int32,
+    )
     expected = _expected_stored_payload(
         source,
         destination,
         algorithm=algorithm,
         valid_items=valid_items,
         offset=_STORE_OFFSET,
+        items_per_thread=items_per_thread,
     )
 
     _store_kernel(algorithm, qualified)[1, _BLOCK_THREADS](
@@ -421,26 +478,36 @@ def test_each_warp_store_algorithm_masks_each_warp(
         destination,
         np.int32(valid_items),
         np.int64(_STORE_OFFSET),
+        items_per_thread,
     )
 
     np.testing.assert_array_equal(destination, expected)
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(("numpy_dtype", "numba_dtype"), _DTYPES)
 @pytest.mark.parametrize("algorithm", ("striped", "transpose"))
 def test_non_direct_partial_load_store_matches_dtype_oracles(
-    numpy_dtype, numba_dtype, algorithm
+    numpy_dtype, numba_dtype, algorithm, *, items_per_thread
 ):
-    valid_items = _WARP_TILE_ITEMS - 9
+    valid_items = (_WARP_THREADS * items_per_thread) - 9
     load_source = _dtype_values(
-        numpy_dtype, _LOAD_OFFSET + _BLOCK_ITEMS + 3, shift=31
+        numpy_dtype,
+        _LOAD_OFFSET + (_BLOCK_THREADS * items_per_thread) + 3,
+        shift=31,
     )
-    store_source = _dtype_values(numpy_dtype, _BLOCK_ITEMS, shift=43)
+    store_source = _dtype_values(
+        numpy_dtype, (_BLOCK_THREADS * items_per_thread), shift=43
+    )
     sentinel = _dtype_sentinel(numpy_dtype)
     default = numpy_dtype.type(3.25 if numpy_dtype.kind == "f" else 103)
-    observed = np.full(_BLOCK_ITEMS, sentinel, dtype=numpy_dtype)
+    observed = np.full(
+        (_BLOCK_THREADS * items_per_thread), sentinel, dtype=numpy_dtype
+    )
     destination = np.full(
-        _STORE_OFFSET + _BLOCK_ITEMS + 3, sentinel, dtype=numpy_dtype
+        _STORE_OFFSET + (_BLOCK_THREADS * items_per_thread) + 3,
+        sentinel,
+        dtype=numpy_dtype,
     )
     expected_load = _expected_loaded_payload(
         load_source,
@@ -448,6 +515,7 @@ def test_non_direct_partial_load_store_matches_dtype_oracles(
         valid_items=valid_items,
         offset=_LOAD_OFFSET,
         oob_default=default,
+        items_per_thread=items_per_thread,
     )
     expected_store = _expected_stored_payload(
         store_source,
@@ -455,6 +523,7 @@ def test_non_direct_partial_load_store_matches_dtype_oracles(
         algorithm=algorithm,
         valid_items=valid_items,
         offset=_STORE_OFFSET,
+        items_per_thread=items_per_thread,
     )
 
     _load_kernel(algorithm, False, numba_dtype)[1, _BLOCK_THREADS](
@@ -463,12 +532,14 @@ def test_non_direct_partial_load_store_matches_dtype_oracles(
         np.int32(valid_items),
         np.int64(_LOAD_OFFSET),
         default,
+        items_per_thread,
     )
     _store_kernel(algorithm, True, numba_dtype)[1, _BLOCK_THREADS](
         store_source,
         destination,
         np.int32(valid_items),
         np.int64(_STORE_OFFSET),
+        items_per_thread,
     )
 
     np.testing.assert_array_equal(observed, expected_load)
@@ -476,11 +547,11 @@ def test_non_direct_partial_load_store_matches_dtype_oracles(
 
 
 def _logical_tile_index(
-    algorithm: str, lane: int, item: int, width: int
+    algorithm: str, lane: int, item: int, width: int, *, items_per_thread
 ) -> int:
     if algorithm == "striped":
         return lane + item * width
-    return lane * _ITEMS_PER_THREAD + item
+    return lane * items_per_thread + item
 
 
 @cache
@@ -503,13 +574,14 @@ def _logical_load_store_kernel(algorithm: str, qualified: bool):
             destination,
             valid_by_group,
             offset_by_group,
+            items_per_thread,
         ):
             thread = cuda.threadIdx.x
             group_index = thread // _LOGICAL_WARP_THREADS
             offset = offset_by_group[group_index]
             group = numba_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
             payload = numba_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             numba_coop.load(
@@ -521,8 +593,8 @@ def _logical_load_store_kernel(algorithm: str, qualified: bool):
                 oob_default=types.int32(-127),
                 offset=offset,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                payload_index = thread * _ITEMS_PER_THREAD + item
+            for item in range(items_per_thread):
+                payload_index = thread * items_per_thread + item
                 observed[payload_index] = payload[item]
                 payload[item] = store_source[payload_index]
             numba_coop.store(
@@ -544,13 +616,14 @@ def _logical_load_store_kernel(algorithm: str, qualified: bool):
             destination,
             valid_by_group,
             offset_by_group,
+            items_per_thread,
         ):
             thread = cuda.threadIdx.x
             group_index = thread // _LOGICAL_WARP_THREADS
             offset = offset_by_group[group_index]
             group = root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
             payload = root_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             root_coop.load(
@@ -562,8 +635,8 @@ def _logical_load_store_kernel(algorithm: str, qualified: bool):
                 oob_default=types.int32(-127),
                 offset=offset,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                payload_index = thread * _ITEMS_PER_THREAD + item
+            for item in range(items_per_thread):
+                payload_index = thread * items_per_thread + item
                 observed[payload_index] = payload[item]
                 payload[item] = store_source[payload_index]
             root_coop.store(
@@ -578,42 +651,54 @@ def _logical_load_store_kernel(algorithm: str, qualified: bool):
     return kernel
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 def test_logical_warp_algorithms_use_independent_group_tiles(
-    qualified: bool,
-    algorithm: str,
+    qualified: bool, algorithm: str, *, items_per_thread
 ) -> None:
     offsets_by_group = np.array([0, 1, 3, 4, 6, 7, 9, 10], dtype=np.int64)
-    allocation_items = int(offsets_by_group.max()) + _BLOCK_ITEMS + 3
+    allocation_items = (
+        int(offsets_by_group.max()) + (_BLOCK_THREADS * items_per_thread) + 3
+    )
     load_source = _values(allocation_items, shift=47)
-    store_source = _values(_BLOCK_ITEMS, shift=53)
-    observed = np.full(_BLOCK_ITEMS, 19, dtype=np.int32)
+    store_source = _values((_BLOCK_THREADS * items_per_thread), shift=53)
+    observed = np.full((_BLOCK_THREADS * items_per_thread), 19, dtype=np.int32)
     destination = np.full(allocation_items, -31, dtype=np.int32)
     valid_by_group = np.array(
-        [0, 1, 5, _LOGICAL_TILE_ITEMS, 3, 11, 7, 15],
+        [0, 1, 5, (_LOGICAL_WARP_THREADS * items_per_thread), 3, 11, 7, 15],
         dtype=np.int32,
     )
-    expected_observed = np.full(_BLOCK_ITEMS, -127, dtype=np.int32)
+    np.minimum(
+        valid_by_group,
+        _LOGICAL_WARP_THREADS * items_per_thread,
+        out=valid_by_group,
+    )
+    expected_observed = np.full(
+        (_BLOCK_THREADS * items_per_thread), -127, dtype=np.int32
+    )
     expected_destination = destination.copy()
     for thread in range(_BLOCK_THREADS):
         group_index = thread // _LOGICAL_WARP_THREADS
         lane = thread % _LOGICAL_WARP_THREADS
         valid_items = valid_by_group[group_index]
         offset = offsets_by_group[group_index]
-        for item in range(_ITEMS_PER_THREAD):
-            payload_index = thread * _ITEMS_PER_THREAD + item
+        for item in range(items_per_thread):
+            payload_index = thread * items_per_thread + item
             tile_index = _logical_tile_index(
                 algorithm,
                 lane,
                 item,
                 _LOGICAL_WARP_THREADS,
+                items_per_thread=items_per_thread,
             )
             if tile_index < valid_items:
                 memory_index = (
-                    offset + group_index * _LOGICAL_TILE_ITEMS + tile_index
+                    offset
+                    + group_index * (_LOGICAL_WARP_THREADS * items_per_thread)
+                    + tile_index
                 )
                 expected_observed[payload_index] = load_source[memory_index]
                 expected_destination[memory_index] = store_source[payload_index]
@@ -625,6 +710,7 @@ def test_logical_warp_algorithms_use_independent_group_tiles(
         destination,
         valid_by_group,
         offsets_by_group,
+        items_per_thread,
     )
 
     np.testing.assert_array_equal(observed, expected_observed)
@@ -642,11 +728,11 @@ def _logical_partial_transpose_load_kernel(qualified: bool):
     if qualified:
 
         @cuda.jit
-        def kernel(source, observed, valid_by_group):
+        def kernel(source, observed, valid_by_group, items_per_thread):
             thread = cuda.threadIdx.x
             group_index = thread // _LOGICAL_WARP_THREADS
             payload = numba_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             numba_coop.load(
@@ -656,22 +742,19 @@ def _logical_partial_transpose_load_kernel(qualified: bool):
                 algorithm="transpose",
                 valid_items=valid_by_group[group_index],
             )
-            for item in range(_ITEMS_PER_THREAD):
+            for item in range(items_per_thread):
                 lane = thread % _LOGICAL_WARP_THREADS
-                if (
-                    lane * _ITEMS_PER_THREAD + item
-                    < valid_by_group[group_index]
-                ):
-                    observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+                if lane * items_per_thread + item < valid_by_group[group_index]:
+                    observed[thread * items_per_thread + item] = payload[item]
 
     else:
 
         @cuda.jit
-        def kernel(source, observed, valid_by_group):
+        def kernel(source, observed, valid_by_group, items_per_thread):
             thread = cuda.threadIdx.x
             group_index = thread // _LOGICAL_WARP_THREADS
             payload = root_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             root_coop.load(
@@ -681,46 +764,48 @@ def _logical_partial_transpose_load_kernel(qualified: bool):
                 algorithm="transpose",
                 valid_items=valid_by_group[group_index],
             )
-            for item in range(_ITEMS_PER_THREAD):
+            for item in range(items_per_thread):
                 lane = thread % _LOGICAL_WARP_THREADS
-                if (
-                    lane * _ITEMS_PER_THREAD + item
-                    < valid_by_group[group_index]
-                ):
-                    observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+                if lane * items_per_thread + item < valid_by_group[group_index]:
+                    observed[thread * items_per_thread + item] = payload[item]
 
     return kernel
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "qualified", (False, True), ids=("common", "qualified")
 )
 def test_logical_transpose_load_reads_valid_items_in_nonzero_groups(
-    qualified: bool,
+    qualified: bool, *, items_per_thread
 ) -> None:
-    source = _values(_BLOCK_ITEMS, shift=61)
-    observed = np.full(_BLOCK_ITEMS, 23, dtype=np.int32)
+    source = _values((_BLOCK_THREADS * items_per_thread), shift=61)
+    observed = np.full((_BLOCK_THREADS * items_per_thread), 23, dtype=np.int32)
     valid_by_group = np.array(
-        [0, 1, 5, _LOGICAL_TILE_ITEMS, 3, 11, 7, 15],
+        [0, 1, 5, (_LOGICAL_WARP_THREADS * items_per_thread), 3, 11, 7, 15],
         dtype=np.int32,
+    )
+    np.minimum(
+        valid_by_group,
+        _LOGICAL_WARP_THREADS * items_per_thread,
+        out=valid_by_group,
     )
     expected = observed.copy()
     for thread in range(_BLOCK_THREADS):
         group_index = thread // _LOGICAL_WARP_THREADS
         lane = thread % _LOGICAL_WARP_THREADS
         valid_items = valid_by_group[group_index]
-        for item in range(_ITEMS_PER_THREAD):
-            payload_index = thread * _ITEMS_PER_THREAD + item
-            tile_index = lane * _ITEMS_PER_THREAD + item
+        for item in range(items_per_thread):
+            payload_index = thread * items_per_thread + item
+            tile_index = lane * items_per_thread + item
             if tile_index < valid_items:
                 expected[payload_index] = source[
-                    group_index * _LOGICAL_TILE_ITEMS + tile_index
+                    group_index * (_LOGICAL_WARP_THREADS * items_per_thread)
+                    + tile_index
                 ]
 
     _logical_partial_transpose_load_kernel(qualified)[1, _BLOCK_THREADS](
-        source,
-        observed,
-        valid_by_group,
+        source, observed, valid_by_group, items_per_thread
     )
 
     np.testing.assert_array_equal(observed, expected)
@@ -731,10 +816,10 @@ def _logical_width_direct_kernel(width: int, qualified: bool):
     if qualified:
 
         @cuda.jit
-        def kernel(source, observed):
+        def kernel(source, observed, items_per_thread):
             thread = cuda.threadIdx.x
             payload = numba_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             numba_coop.load(
@@ -743,16 +828,16 @@ def _logical_width_direct_kernel(width: int, qualified: bool):
                 payload,
                 algorithm="direct",
             )
-            for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+            for item in range(items_per_thread):
+                observed[thread * items_per_thread + item] = payload[item]
 
     else:
 
         @cuda.jit
-        def kernel(source, observed):
+        def kernel(source, observed, items_per_thread):
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             root_coop.load(
@@ -761,26 +846,25 @@ def _logical_width_direct_kernel(width: int, qualified: bool):
                 payload,
                 algorithm="direct",
             )
-            for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+            for item in range(items_per_thread):
+                observed[thread * items_per_thread + item] = payload[item]
 
     return kernel
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
 def test_every_logical_warp_width_addresses_consecutive_tiles(
-    qualified: bool,
-    width: int,
+    qualified: bool, width: int, *, items_per_thread
 ) -> None:
-    source = _values(_BLOCK_ITEMS, shift=67)
-    observed = np.full(_BLOCK_ITEMS, -1, dtype=np.int32)
+    source = _values((_BLOCK_THREADS * items_per_thread), shift=67)
+    observed = np.full((_BLOCK_THREADS * items_per_thread), -1, dtype=np.int32)
 
     _logical_width_direct_kernel(width, qualified)[1, _BLOCK_THREADS](
-        source,
-        observed,
+        source, observed, items_per_thread
     )
 
     np.testing.assert_array_equal(observed, source)
@@ -791,11 +875,13 @@ def _logical_direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
     if qualified:
 
         @cuda.jit
-        def kernel(load_source, store_source, observed, destination):
+        def kernel(
+            load_source, store_source, observed, destination, items_per_thread
+        ):
             thread = cuda.threadIdx.x
             group = numba_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
             load_payload = numba_coop.ThreadData(
-                _ITEMS_PER_THREAD, dtype=numba_dtype
+                items_per_thread, dtype=numba_dtype
             )
             numba_coop.load(
                 group,
@@ -804,11 +890,11 @@ def _logical_direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
                 algorithm="direct",
             )
             payload = numba_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=numba_dtype,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                index = thread * _ITEMS_PER_THREAD + item
+            for item in range(items_per_thread):
+                index = thread * items_per_thread + item
                 observed[index] = load_payload[item]
                 payload[item] = store_source[index]
             numba_coop.store(
@@ -821,11 +907,13 @@ def _logical_direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
     else:
 
         @cuda.jit
-        def kernel(load_source, store_source, observed, destination):
+        def kernel(
+            load_source, store_source, observed, destination, items_per_thread
+        ):
             thread = cuda.threadIdx.x
             group = root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
             load_payload = root_coop.ThreadData(
-                _ITEMS_PER_THREAD, dtype=numba_dtype
+                items_per_thread, dtype=numba_dtype
             )
             root_coop.load(
                 group,
@@ -834,11 +922,11 @@ def _logical_direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
                 algorithm="direct",
             )
             payload = root_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=numba_dtype,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                index = thread * _ITEMS_PER_THREAD + item
+            for item in range(items_per_thread):
+                index = thread * items_per_thread + item
                 observed[index] = load_payload[item]
                 payload[item] = store_source[index]
             root_coop.store(
@@ -851,29 +939,31 @@ def _logical_direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
     return kernel
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize(("numpy_dtype", "numba_dtype"), _DTYPES)
 def test_logical_direct_load_store_matches_every_dtype_oracle(
-    qualified: bool,
-    numpy_dtype: np.dtype,
-    numba_dtype,
+    qualified: bool, numpy_dtype: np.dtype, numba_dtype, *, items_per_thread
 ) -> None:
-    load_source = _dtype_values(numpy_dtype, _BLOCK_ITEMS, shift=13)
-    store_source = _dtype_values(numpy_dtype, _BLOCK_ITEMS, shift=37)
+    load_source = _dtype_values(
+        numpy_dtype, (_BLOCK_THREADS * items_per_thread), shift=13
+    )
+    store_source = _dtype_values(
+        numpy_dtype, (_BLOCK_THREADS * items_per_thread), shift=37
+    )
     sentinel = _dtype_sentinel(numpy_dtype)
-    observed = np.full(_BLOCK_ITEMS, sentinel, dtype=numpy_dtype)
-    destination = np.full(_BLOCK_ITEMS, sentinel, dtype=numpy_dtype)
+    observed = np.full(
+        (_BLOCK_THREADS * items_per_thread), sentinel, dtype=numpy_dtype
+    )
+    destination = np.full(
+        (_BLOCK_THREADS * items_per_thread), sentinel, dtype=numpy_dtype
+    )
 
     _logical_direct_dtype_load_store_kernel(numba_dtype, qualified)[
         1, _BLOCK_THREADS
-    ](
-        load_source,
-        store_source,
-        observed,
-        destination,
-    )
+    ](load_source, store_source, observed, destination, items_per_thread)
 
     np.testing.assert_array_equal(observed, load_source)
     np.testing.assert_array_equal(destination, store_source)
@@ -893,10 +983,10 @@ def _partial_load_kernel(algorithm: str, qualified: bool):
         selector = algorithm
 
         @cuda.jit
-        def kernel(source, observed, valid_items):
+        def kernel(source, observed, valid_items, items_per_thread):
             thread = cuda.threadIdx.x
             payload = numba_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             numba_coop.load(
@@ -906,23 +996,23 @@ def _partial_load_kernel(algorithm: str, qualified: bool):
                 algorithm=selector,
                 valid_items=valid_items,
             )
-            for item in range(_ITEMS_PER_THREAD):
+            for item in range(items_per_thread):
                 lane = thread % _WARP_THREADS
                 tile_index = (
                     lane + item * _WARP_THREADS
                     if striped
-                    else lane * _ITEMS_PER_THREAD + item
+                    else lane * items_per_thread + item
                 )
                 if tile_index < valid_items:
-                    observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+                    observed[thread * items_per_thread + item] = payload[item]
 
     else:
 
         @cuda.jit
-        def kernel(source, observed, valid_items):
+        def kernel(source, observed, valid_items, items_per_thread):
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             root_coop.load(
@@ -932,46 +1022,46 @@ def _partial_load_kernel(algorithm: str, qualified: bool):
                 algorithm=algorithm,
                 valid_items=valid_items,
             )
-            for item in range(_ITEMS_PER_THREAD):
+            for item in range(items_per_thread):
                 lane = thread % _WARP_THREADS
                 tile_index = (
                     lane + item * _WARP_THREADS
                     if striped
-                    else lane * _ITEMS_PER_THREAD + item
+                    else lane * items_per_thread + item
                 )
                 if tile_index < valid_items:
-                    observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+                    observed[thread * items_per_thread + item] = payload[item]
 
     return kernel
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 def test_partial_load_reads_valid_items_for_each_layout_and_warp(
-    qualified: bool,
-    algorithm: str,
+    qualified: bool, algorithm: str, *, items_per_thread
 ) -> None:
-    valid_items = _WARP_TILE_ITEMS - 11
-    source = _values(_BLOCK_ITEMS, shift=59)
-    observed = np.full(_BLOCK_ITEMS, 71, dtype=np.int32)
+    valid_items = (_WARP_THREADS * items_per_thread) - 11
+    source = _values((_BLOCK_THREADS * items_per_thread), shift=59)
+    observed = np.full((_BLOCK_THREADS * items_per_thread), 71, dtype=np.int32)
     expected = observed.copy()
     for thread in range(_BLOCK_THREADS):
         warp = thread // _WARP_THREADS
         lane = thread % _WARP_THREADS
-        for item in range(_ITEMS_PER_THREAD):
-            payload_index = thread * _ITEMS_PER_THREAD + item
-            tile_index = _tile_index(algorithm, lane, item)
+        for item in range(items_per_thread):
+            payload_index = thread * items_per_thread + item
+            tile_index = _tile_index(
+                algorithm, lane, item, items_per_thread=items_per_thread
+            )
             if tile_index < valid_items:
                 expected[payload_index] = source[
-                    warp * _WARP_TILE_ITEMS + tile_index
+                    warp * (_WARP_THREADS * items_per_thread) + tile_index
                 ]
 
     _partial_load_kernel(algorithm, qualified)[1, _BLOCK_THREADS](
-        source,
-        observed,
-        np.int32(valid_items),
+        source, observed, np.int32(valid_items), items_per_thread
     )
 
     np.testing.assert_array_equal(observed, expected)
@@ -982,11 +1072,11 @@ def _per_warp_valid_items_kernel(qualified: bool):
     if qualified:
 
         @cuda.jit
-        def kernel(source, observed, valid_by_warp):
+        def kernel(source, observed, valid_by_warp, items_per_thread):
             thread = cuda.threadIdx.x
             warp = thread // _WARP_THREADS
             payload = numba_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             numba_coop.load(
@@ -997,17 +1087,17 @@ def _per_warp_valid_items_kernel(qualified: bool):
                 valid_items=valid_by_warp[warp],
                 oob_default=types.int32(-83),
             )
-            for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+            for item in range(items_per_thread):
+                observed[thread * items_per_thread + item] = payload[item]
 
     else:
 
         @cuda.jit
-        def kernel(source, observed, valid_by_warp):
+        def kernel(source, observed, valid_by_warp, items_per_thread):
             thread = cuda.threadIdx.x
             warp = thread // _WARP_THREADS
             payload = root_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             root_coop.load(
@@ -1018,32 +1108,33 @@ def _per_warp_valid_items_kernel(qualified: bool):
                 valid_items=valid_by_warp[warp],
                 oob_default=types.int32(-83),
             )
-            for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+            for item in range(items_per_thread):
+                observed[thread * items_per_thread + item] = payload[item]
 
     return kernel
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "qualified", (False, True), ids=("common", "qualified")
 )
 def test_runtime_valid_items_can_differ_between_physical_warps(
-    qualified: bool,
+    qualified: bool, *, items_per_thread
 ) -> None:
-    source = _values(_BLOCK_ITEMS, shift=71)
-    observed = np.full(_BLOCK_ITEMS, 17, dtype=np.int32)
-    valid_by_warp = np.array([13, _WARP_TILE_ITEMS - 5], dtype=np.int32)
-    expected = np.full(_BLOCK_ITEMS, -83, dtype=np.int32)
+    source = _values((_BLOCK_THREADS * items_per_thread), shift=71)
+    observed = np.full((_BLOCK_THREADS * items_per_thread), 17, dtype=np.int32)
+    valid_by_warp = np.array(
+        [13, (_WARP_THREADS * items_per_thread) - 5], dtype=np.int32
+    )
+    expected = np.full((_BLOCK_THREADS * items_per_thread), -83, dtype=np.int32)
     for warp, valid_items in enumerate(valid_by_warp):
-        begin = warp * _WARP_TILE_ITEMS
+        begin = warp * (_WARP_THREADS * items_per_thread)
         expected[begin : begin + valid_items] = source[
             begin : begin + valid_items
         ]
 
     _per_warp_valid_items_kernel(qualified)[1, _BLOCK_THREADS](
-        source,
-        observed,
-        valid_by_warp,
+        source, observed, valid_by_warp, items_per_thread
     )
 
     np.testing.assert_array_equal(observed, expected)
@@ -1054,12 +1145,12 @@ def _multidimensional_load_kernel(qualified: bool):
     if qualified:
 
         @cuda.jit
-        def kernel(source, observed):
+        def kernel(source, observed, items_per_thread):
             thread = cuda.threadIdx.x + cuda.blockDim.x * (
                 cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
             )
             payload = numba_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             numba_coop.load(
@@ -1068,18 +1159,18 @@ def _multidimensional_load_kernel(qualified: bool):
                 payload,
                 algorithm="direct",
             )
-            for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+            for item in range(items_per_thread):
+                observed[thread * items_per_thread + item] = payload[item]
 
     else:
 
         @cuda.jit
-        def kernel(source, observed):
+        def kernel(source, observed, items_per_thread):
             thread = cuda.threadIdx.x + cuda.blockDim.x * (
                 cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
             )
             payload = root_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             root_coop.load(
@@ -1088,12 +1179,13 @@ def _multidimensional_load_kernel(qualified: bool):
                 payload,
                 algorithm="direct",
             )
-            for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+            for item in range(items_per_thread):
+                observed[thread * items_per_thread + item] = payload[item]
 
     return kernel
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "qualified", (False, True), ids=("common", "qualified")
 )
@@ -1103,13 +1195,14 @@ def _multidimensional_load_kernel(qualified: bool):
     ids=("2d", "3d"),
 )
 def test_physical_warp_origin_uses_x_major_multidimensional_rank(
-    qualified: bool,
-    block_shape: tuple[int, ...],
+    qualified: bool, block_shape: tuple[int, ...], *, items_per_thread
 ) -> None:
-    source = _values(_BLOCK_ITEMS, shift=83)
-    observed = np.full(_BLOCK_ITEMS, -1, dtype=np.int32)
+    source = _values((_BLOCK_THREADS * items_per_thread), shift=83)
+    observed = np.full((_BLOCK_THREADS * items_per_thread), -1, dtype=np.int32)
 
-    _multidimensional_load_kernel(qualified)[1, block_shape](source, observed)
+    _multidimensional_load_kernel(qualified)[1, block_shape](
+        source, observed, items_per_thread
+    )
 
     np.testing.assert_array_equal(observed, source)
 
@@ -1119,12 +1212,12 @@ def _logical_multidimensional_load_kernel(qualified: bool):
     if qualified:
 
         @cuda.jit
-        def kernel(source, observed):
+        def kernel(source, observed, items_per_thread):
             thread = cuda.threadIdx.x + cuda.blockDim.x * (
                 cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
             )
             payload = numba_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             numba_coop.load(
@@ -1133,18 +1226,18 @@ def _logical_multidimensional_load_kernel(qualified: bool):
                 payload,
                 algorithm="direct",
             )
-            for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+            for item in range(items_per_thread):
+                observed[thread * items_per_thread + item] = payload[item]
 
     else:
 
         @cuda.jit
-        def kernel(source, observed):
+        def kernel(source, observed, items_per_thread):
             thread = cuda.threadIdx.x + cuda.blockDim.x * (
                 cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
             )
             payload = root_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             root_coop.load(
@@ -1153,24 +1246,24 @@ def _logical_multidimensional_load_kernel(qualified: bool):
                 payload,
                 algorithm="direct",
             )
-            for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+            for item in range(items_per_thread):
+                observed[thread * items_per_thread + item] = payload[item]
 
     return kernel
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "qualified", (False, True), ids=("common", "qualified")
 )
 def test_logical_warp_origin_uses_x_major_multidimensional_rank(
-    qualified: bool,
+    qualified: bool, *, items_per_thread
 ) -> None:
-    source = _values(_BLOCK_ITEMS, shift=79)
-    observed = np.full(_BLOCK_ITEMS, -1, dtype=np.int32)
+    source = _values((_BLOCK_THREADS * items_per_thread), shift=79)
+    observed = np.full((_BLOCK_THREADS * items_per_thread), -1, dtype=np.int32)
 
     _logical_multidimensional_load_kernel(qualified)[1, (8, 4, 2)](
-        source,
-        observed,
+        source, observed, items_per_thread
     )
 
     np.testing.assert_array_equal(observed, source)
@@ -1181,10 +1274,10 @@ def _static_control_load_kernel(qualified: bool):
     if qualified:
 
         @cuda.jit
-        def kernel(source, observed):
+        def kernel(source, observed, items_per_thread):
             thread = cuda.threadIdx.x
             payload = numba_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             numba_coop.load(
@@ -1192,20 +1285,20 @@ def _static_control_load_kernel(qualified: bool):
                 source,
                 payload,
                 algorithm="direct",
-                valid_items=_WARP_TILE_ITEMS - 7,
+                valid_items=(_WARP_THREADS * items_per_thread) - 7,
                 oob_default=-113,
                 offset=_LOAD_OFFSET,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+            for item in range(items_per_thread):
+                observed[thread * items_per_thread + item] = payload[item]
 
     else:
 
         @cuda.jit
-        def kernel(source, observed):
+        def kernel(source, observed, items_per_thread):
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             root_coop.load(
@@ -1213,34 +1306,41 @@ def _static_control_load_kernel(qualified: bool):
                 source,
                 payload,
                 algorithm="direct",
-                valid_items=_WARP_TILE_ITEMS - 7,
+                valid_items=(_WARP_THREADS * items_per_thread) - 7,
                 oob_default=-113,
                 offset=_LOAD_OFFSET,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+            for item in range(items_per_thread):
+                observed[thread * items_per_thread + item] = payload[item]
 
     return kernel
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "qualified", (False, True), ids=("common", "qualified")
 )
 def test_physical_warp_static_controls_share_runtime_addressing(
-    qualified: bool,
+    qualified: bool, *, items_per_thread
 ) -> None:
-    source = _values(_LOAD_OFFSET + _BLOCK_ITEMS, shift=89)
-    observed = np.full(_BLOCK_ITEMS, -1, dtype=np.int32)
-    expected = np.full(_BLOCK_ITEMS, -113, dtype=np.int32)
-    valid_items = _WARP_TILE_ITEMS - 7
+    source = _values(
+        _LOAD_OFFSET + (_BLOCK_THREADS * items_per_thread), shift=89
+    )
+    observed = np.full((_BLOCK_THREADS * items_per_thread), -1, dtype=np.int32)
+    expected = np.full(
+        (_BLOCK_THREADS * items_per_thread), -113, dtype=np.int32
+    )
+    valid_items = (_WARP_THREADS * items_per_thread) - 7
     for warp in range(2):
-        begin = warp * _WARP_TILE_ITEMS
+        begin = warp * (_WARP_THREADS * items_per_thread)
         source_begin = _LOAD_OFFSET + begin
         expected[begin : begin + valid_items] = source[
             source_begin : source_begin + valid_items
         ]
 
-    _static_control_load_kernel(qualified)[1, _BLOCK_THREADS](source, observed)
+    _static_control_load_kernel(qualified)[1, _BLOCK_THREADS](
+        source, observed, items_per_thread
+    )
 
     np.testing.assert_array_equal(observed, expected)
 
@@ -1353,14 +1453,20 @@ def _grid_stride_transpose_kernel(qualified: bool):
     if qualified:
 
         @cuda.jit
-        def kernel(source, destination):
+        def kernel(source, destination, items_per_thread):
             thread = cuda.threadIdx.x
             warp = thread // _WARP_THREADS
-            block_offset = cuda.blockIdx.x * _BLOCK_ITEMS
-            remaining = source.size - block_offset - warp * _WARP_TILE_ITEMS
-            valid_items = min(max(remaining, 0), _WARP_TILE_ITEMS)
+            block_offset = cuda.blockIdx.x * (_BLOCK_THREADS * items_per_thread)
+            remaining = (
+                source.size
+                - block_offset
+                - warp * (_WARP_THREADS * items_per_thread)
+            )
+            valid_items = min(
+                max(remaining, 0), (_WARP_THREADS * items_per_thread)
+            )
             payload = numba_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             numba_coop.load(
@@ -1383,14 +1489,20 @@ def _grid_stride_transpose_kernel(qualified: bool):
     else:
 
         @cuda.jit
-        def kernel(source, destination):
+        def kernel(source, destination, items_per_thread):
             thread = cuda.threadIdx.x
             warp = thread // _WARP_THREADS
-            block_offset = cuda.blockIdx.x * _BLOCK_ITEMS
-            remaining = source.size - block_offset - warp * _WARP_TILE_ITEMS
-            valid_items = min(max(remaining, 0), _WARP_TILE_ITEMS)
+            block_offset = cuda.blockIdx.x * (_BLOCK_THREADS * items_per_thread)
+            remaining = (
+                source.size
+                - block_offset
+                - warp * (_WARP_THREADS * items_per_thread)
+            )
+            valid_items = min(
+                max(remaining, 0), (_WARP_THREADS * items_per_thread)
+            )
             payload = root_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             root_coop.load(
@@ -1413,21 +1525,30 @@ def _grid_stride_transpose_kernel(qualified: bool):
     return kernel
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "qualified", (False, True), ids=("common", "qualified")
 )
 def test_grid_stride_tail_clamps_valid_items_per_physical_warp(
-    qualified: bool,
+    qualified: bool, *, items_per_thread
 ) -> None:
-    source = _values(_GRID_STRIDE_ITEMS, shift=103)
-    destination = np.full(_GRID_STRIDE_ITEMS, -1, dtype=np.int32)
+    source = _values((3 * (_BLOCK_THREADS * items_per_thread) - 17), shift=103)
+    destination = np.full(
+        (3 * (_BLOCK_THREADS * items_per_thread) - 17), -1, dtype=np.int32
+    )
 
     _grid_stride_transpose_kernel(qualified)[
-        _GRID_STRIDE_BLOCKS, _BLOCK_THREADS
-    ](
-        source,
-        destination,
-    )
+        (
+            (
+                3 * (_BLOCK_THREADS * items_per_thread)
+                - 17
+                + _BLOCK_THREADS * items_per_thread
+                - 1
+            )
+            // (_BLOCK_THREADS * items_per_thread)
+        ),
+        _BLOCK_THREADS,
+    ](source, destination, items_per_thread)
 
     np.testing.assert_array_equal(destination, source)
 
@@ -1443,17 +1564,21 @@ def _logical_grid_stride_transpose_kernel(qualified: bool):
     if qualified:
 
         @cuda.jit
-        def kernel(source, destination):
+        def kernel(source, destination, items_per_thread):
             thread = cuda.threadIdx.x
             group_index = thread // _LOGICAL_WARP_THREADS
-            block_offset = cuda.blockIdx.x * _BLOCK_ITEMS
+            block_offset = cuda.blockIdx.x * (_BLOCK_THREADS * items_per_thread)
             remaining = (
-                source.size - block_offset - group_index * _LOGICAL_TILE_ITEMS
+                source.size
+                - block_offset
+                - group_index * (_LOGICAL_WARP_THREADS * items_per_thread)
             )
-            valid_items = min(max(remaining, 0), _LOGICAL_TILE_ITEMS)
+            valid_items = min(
+                max(remaining, 0), (_LOGICAL_WARP_THREADS * items_per_thread)
+            )
             group = numba_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
             payload = numba_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             numba_coop.load(
@@ -1476,17 +1601,21 @@ def _logical_grid_stride_transpose_kernel(qualified: bool):
     else:
 
         @cuda.jit
-        def kernel(source, destination):
+        def kernel(source, destination, items_per_thread):
             thread = cuda.threadIdx.x
             group_index = thread // _LOGICAL_WARP_THREADS
-            block_offset = cuda.blockIdx.x * _BLOCK_ITEMS
+            block_offset = cuda.blockIdx.x * (_BLOCK_THREADS * items_per_thread)
             remaining = (
-                source.size - block_offset - group_index * _LOGICAL_TILE_ITEMS
+                source.size
+                - block_offset
+                - group_index * (_LOGICAL_WARP_THREADS * items_per_thread)
             )
-            valid_items = min(max(remaining, 0), _LOGICAL_TILE_ITEMS)
+            valid_items = min(
+                max(remaining, 0), (_LOGICAL_WARP_THREADS * items_per_thread)
+            )
             group = root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
             payload = root_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             root_coop.load(
@@ -1509,27 +1638,36 @@ def _logical_grid_stride_transpose_kernel(qualified: bool):
     return kernel
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "qualified", (False, True), ids=("common", "qualified")
 )
 def test_grid_stride_tail_clamps_valid_items_per_logical_warp(
-    qualified: bool,
+    qualified: bool, *, items_per_thread
 ) -> None:
-    source = _values(_GRID_STRIDE_ITEMS, shift=107)
-    destination = np.full(_GRID_STRIDE_ITEMS, -1, dtype=np.int32)
+    source = _values((3 * (_BLOCK_THREADS * items_per_thread) - 17), shift=107)
+    destination = np.full(
+        (3 * (_BLOCK_THREADS * items_per_thread) - 17), -1, dtype=np.int32
+    )
 
     _logical_grid_stride_transpose_kernel(qualified)[
-        _GRID_STRIDE_BLOCKS, _BLOCK_THREADS
-    ](
-        source,
-        destination,
-    )
+        (
+            (
+                3 * (_BLOCK_THREADS * items_per_thread)
+                - 17
+                + _BLOCK_THREADS * items_per_thread
+                - 1
+            )
+            // (_BLOCK_THREADS * items_per_thread)
+        ),
+        _BLOCK_THREADS,
+    ](source, destination, items_per_thread)
 
     np.testing.assert_array_equal(destination, source)
 
 
 def _run_divergent_warp_probe(
-    qualified: bool,
+    qualified: bool, *, items_per_thread
 ) -> subprocess.CompletedProcess[str]:
     """Run a one-warp primitive with a child-process timeout.
 
@@ -1569,28 +1707,28 @@ if actual_origin != expected_origin:
 
 _WARP_THREADS = {_WARP_THREADS}
 _BLOCK_THREADS = {_BLOCK_THREADS}
-_ITEMS_PER_THREAD = {_ITEMS_PER_THREAD}
+_ITEMS_PER_THREAD = {items_per_thread}
 
 @cuda.jit
-def kernel(source, observed):
+def kernel(source, observed, items_per_thread):
     thread = cuda.threadIdx.x
     warp = thread // _WARP_THREADS
     if warp == 0:
-        payload = {thread_data}(_ITEMS_PER_THREAD, dtype=types.int32)
+        payload = {thread_data}(items_per_thread, dtype=types.int32)
         {load}(
             {group},
             source,
             payload,
             algorithm={algorithm},
         )
-        for item in range(_ITEMS_PER_THREAD):
-            observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+        for item in range(items_per_thread):
+            observed[thread * items_per_thread + item] = payload[item]
 
 source = ((np.arange(_BLOCK_THREADS * _ITEMS_PER_THREAD, dtype=np.int64) * 3 + 97) % 211 - 101).astype(np.int32)
 observed = np.full_like(source, -37)
 expected = observed.copy()
 expected[: _WARP_THREADS * _ITEMS_PER_THREAD] = source[: _WARP_THREADS * _ITEMS_PER_THREAD]
-kernel[1, _BLOCK_THREADS](source, observed)
+kernel[1, _BLOCK_THREADS](source, observed, _ITEMS_PER_THREAD)
 cuda.synchronize()
 np.testing.assert_array_equal(observed, expected)
 """  # noqa: E501 - Preserve embedded source bytes.
@@ -1603,18 +1741,21 @@ np.testing.assert_array_equal(observed, expected)
     )
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "qualified", (False, True), ids=("common", "qualified")
 )
 def test_one_physical_warp_can_take_a_transpose_primitive_path(
-    qualified: bool,
+    qualified: bool, *, items_per_thread
 ) -> None:
-    result = _run_divergent_warp_probe(qualified)
+    result = _run_divergent_warp_probe(
+        qualified, items_per_thread=items_per_thread
+    )
     assert result.returncode == 0, result.stdout + result.stderr
 
 
 def _run_divergent_logical_warp_probe(
-    qualified: bool,
+    qualified: bool, *, items_per_thread
 ) -> subprocess.CompletedProcess[str]:
     """Probe a nonzero logical group in each physical warp with a timeout.
 
@@ -1654,22 +1795,22 @@ if actual_origin != expected_origin:
 _WARP_THREADS = {_WARP_THREADS}
 _LOGICAL_WARP_THREADS = {_LOGICAL_WARP_THREADS}
 _BLOCK_THREADS = {_BLOCK_THREADS}
-_ITEMS_PER_THREAD = {_ITEMS_PER_THREAD}
+_ITEMS_PER_THREAD = {items_per_thread}
 
 @cuda.jit
-def kernel(source, observed):
+def kernel(source, observed, items_per_thread):
     thread = cuda.threadIdx.x
     subgroup = (thread % _WARP_THREADS) // _LOGICAL_WARP_THREADS
     if subgroup == 2:
-        payload = {thread_data}(_ITEMS_PER_THREAD, dtype=types.int32)
+        payload = {thread_data}(items_per_thread, dtype=types.int32)
         {load}(
             {group},
             source,
             payload,
             algorithm={algorithm},
         )
-        for item in range(_ITEMS_PER_THREAD):
-            observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+        for item in range(items_per_thread):
+            observed[thread * items_per_thread + item] = payload[item]
 
 source = ((np.arange(_BLOCK_THREADS * _ITEMS_PER_THREAD, dtype=np.int64) * 3 + 113) % 211 - 101).astype(np.int32)
 observed = np.full_like(source, -37)
@@ -1680,7 +1821,7 @@ for warp in range(_BLOCK_THREADS // _WARP_THREADS):
     ) * _ITEMS_PER_THREAD
     end = begin + _LOGICAL_WARP_THREADS * _ITEMS_PER_THREAD
     expected[begin:end] = source[begin:end]
-kernel[1, _BLOCK_THREADS](source, observed)
+kernel[1, _BLOCK_THREADS](source, observed, _ITEMS_PER_THREAD)
 cuda.synchronize()
 np.testing.assert_array_equal(observed, expected)
 """  # noqa: E501 - Preserve embedded source bytes.
@@ -1693,13 +1834,16 @@ np.testing.assert_array_equal(observed, expected)
     )
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "qualified", (False, True), ids=("common", "qualified")
 )
 def test_one_logical_warp_per_physical_warp_can_diverge_at_transpose(
-    qualified: bool,
+    qualified: bool, *, items_per_thread
 ) -> None:
-    result = _run_divergent_logical_warp_probe(qualified)
+    result = _run_divergent_logical_warp_probe(
+        qualified, items_per_thread=items_per_thread
+    )
     assert result.returncode == 0, result.stdout + result.stderr
 
 
@@ -1708,6 +1852,7 @@ def _run_invalid_runtime_valid_items_probe(
     valid_items: int,
     *,
     logical_width: int | None = None,
+    items_per_thread,
 ) -> subprocess.CompletedProcess[str]:
     """Run an invalid per-group count in a disposable CUDA context.
 
@@ -1725,7 +1870,9 @@ def _run_invalid_runtime_valid_items_probe(
         textwrap.dedent(
             {
                 "load": f"""
-            payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
+            payload = root_coop.ThreadData(
+                items_per_thread=_ITEMS_PER_THREAD, dtype=types.int32
+            )
             root_coop.load(
                 {group},
                 source,
@@ -1734,7 +1881,9 @@ def _run_invalid_runtime_valid_items_probe(
             )
         """,
                 "store": f"""
-            payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
+            payload = root_coop.ThreadData(
+                items_per_thread=_ITEMS_PER_THREAD, dtype=types.int32
+            )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
             root_coop.store(
@@ -1766,7 +1915,7 @@ if actual_origin != expected_origin:
     )
 
 _THREADS = {_BLOCK_THREADS}
-_ITEMS_PER_THREAD = {_ITEMS_PER_THREAD}
+_ITEMS_PER_THREAD = {items_per_thread}
 
 @cuda.jit
 def kernel(source, destination, valid_items):
@@ -1791,6 +1940,7 @@ raise AssertionError("invalid valid_items did not trap")
     )
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("operation", ("load", "store"))
 @pytest.mark.parametrize(
     "valid_items",
@@ -1800,10 +1950,14 @@ raise AssertionError("invalid valid_items did not trap")
     ),
 )
 def test_runtime_valid_items_out_of_range_traps_in_an_isolated_context(
-    operation: str,
-    valid_items: int,
+    operation: str, valid_items: int, *, items_per_thread
 ) -> None:
-    result = _run_invalid_runtime_valid_items_probe(operation, valid_items)
+    valid_items = (
+        valid_items if valid_items < 0 else _WARP_THREADS * items_per_thread + 1
+    )
+    result = _run_invalid_runtime_valid_items_probe(
+        operation, valid_items, items_per_thread=items_per_thread
+    )
     output = result.stdout + result.stderr
 
     assert result.returncode != 0, output
@@ -1815,18 +1969,20 @@ def test_runtime_valid_items_out_of_range_traps_in_an_isolated_context(
         )
     ), output
 
-    source = _values(_BLOCK_ITEMS, shift=109)
-    observed = np.full(_BLOCK_ITEMS, -1, dtype=np.int32)
+    source = _values((_BLOCK_THREADS * items_per_thread), shift=109)
+    observed = np.full((_BLOCK_THREADS * items_per_thread), -1, dtype=np.int32)
     _load_kernel("direct", False)[1, _BLOCK_THREADS](
         source,
         observed,
-        np.int32(_WARP_TILE_ITEMS),
+        np.int32(_WARP_THREADS * items_per_thread),
         np.int64(0),
         np.int32(-1),
+        items_per_thread,
     )
     np.testing.assert_array_equal(observed, source)
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("operation", ("load", "store"))
 @pytest.mark.parametrize(
     "valid_items",
@@ -1836,13 +1992,18 @@ def test_runtime_valid_items_out_of_range_traps_in_an_isolated_context(
     ),
 )
 def test_logical_runtime_valid_items_out_of_range_traps_in_isolated_context(
-    operation: str,
-    valid_items: int,
+    operation: str, valid_items: int, *, items_per_thread
 ) -> None:
+    valid_items = (
+        valid_items
+        if valid_items < 0
+        else _LOGICAL_WARP_THREADS * items_per_thread + 1
+    )
     result = _run_invalid_runtime_valid_items_probe(
         operation,
         valid_items,
         logical_width=_LOGICAL_WARP_THREADS,
+        items_per_thread=items_per_thread,
     )
     output = result.stdout + result.stderr
 
