@@ -41,6 +41,7 @@
 #include <cuda/experimental/__stf/stream/interfaces/slice.cuh> // For implicit logical_data_untyped constructors
 #include <cuda/experimental/__stf/stream/interfaces/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/stream_task.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh> // for reserved::counter
 
 namespace cuda::experimental::stf
