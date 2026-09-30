@@ -1121,7 +1121,7 @@ struct RemembersConstructionLocation
 };
 
 // functor used to count if elements are constructed on device
-struct is_constructed_on_device
+struct IsConstructedOnDevice
 {
   _CCCL_HOST_DEVICE bool operator()(const RemembersConstructionLocation& x) const
   {
@@ -1143,7 +1143,7 @@ TEST_CASE("TestVectorEmplaceBackConstructsInTheRightLocation", "[vector]")
 
   const T* first = thrust::raw_pointer_cast(v_d.data());
   const int n_constructed_on_device =
-    thrust::count_if(thrust::device, first, first + v_d.size(), is_constructed_on_device{});
+    thrust::count_if(thrust::device, first, first + v_d.size(), IsConstructedOnDevice{});
   REQUIRE(n_constructed_on_device == 1);
 
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
@@ -1198,12 +1198,17 @@ TEST_CASE("TestVectorEmplaceBackReturnsReference", "[vector]")
 
 struct HasMultiArgumentCtor
 {
+  _CCCL_HOST_DEVICE HasMultiArgumentCtor()
+      : n0_(0)
+      , n1_(0)
+  {}
+
   _CCCL_HOST_DEVICE HasMultiArgumentCtor(int n0, int n1)
       : n0_(n0)
       , n1_(n1)
   {}
 
-  _CCCL_HOST_DEVICE int sum()
+  _CCCL_HOST_DEVICE int sum() const
   {
     return n0_ + n1_;
   }
@@ -1211,6 +1216,14 @@ struct HasMultiArgumentCtor
 private:
   int n0_;
   int n1_;
+};
+
+struct Sum
+{
+  _CCCL_HOST_DEVICE int operator()(const HasMultiArgumentCtor& x)
+  {
+    return x.sum();
+  }
 };
 
 TEST_CASE("TestVectorEmplaceWorksWithMultiArgumentCtor", "[vector]")
@@ -1225,7 +1238,9 @@ TEST_CASE("TestVectorEmplaceWorksWithMultiArgumentCtor", "[vector]")
   v_h.emplace_back(41, 42);
   v_u.emplace_back(41, 42);
 
-  assert(v_d[0].sum() == 41 + 42);
-  assert(v_h[0].sum() == 41 + 42);
-  assert(v_u[0].sum() == 41 + 42);
+  int sum_d = thrust::transform_reduce(thrust::device, v_d.begin(), v_d.end(), Sum{}, 0, ::cuda::std::plus<int>());
+
+  REQUIRE(sum_d == 41 + 42);
+  REQUIRE(v_h[0].sum() == 41 + 42);
+  REQUIRE(v_u[0].sum() == 41 + 42);
 }
