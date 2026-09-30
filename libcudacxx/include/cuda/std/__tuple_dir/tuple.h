@@ -783,20 +783,7 @@ _CCCL_API constexpr __pair_base<_T1, _T2, _IsRef>::__pair_base(
     , second(::cuda::std::forward<_Args2>(::cuda::std::get<_I2>(__second_args))...)
 {}
 
-// specialize cuda::std::tuple_size and cuda::std::tuple_element for std::tuple and cuda::std::tuple
-
-#if _CCCL_HAS_HOST_STD_LIB()
-template <class... _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<::std::tuple<_Tp...>> : integral_constant<size_t, sizeof...(_Tp)>
-{};
-
-template <size_t _Ip, class... _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::tuple<_Tp...>>
-{
-  static_assert(_Ip < sizeof...(_Tp), "Index out of bounds in cuda::std::tuple_element<> (std::tuple)");
-  using type _CCCL_NODEBUG = tuple_element_t<_Ip, __tuple_types<_Tp...>>;
-};
-#endif // _CCCL_HAS_HOST_STD_LIB()
+// specialize cuda::std::tuple_size and cuda::std::tuple_element for cuda::std::tuple
 
 template <class... _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<tuple<_Tp...>> : integral_constant<size_t, sizeof...(_Tp)>
