@@ -393,8 +393,9 @@ def test_representative_dtypes_compile_for_each_additional_algorithm(
     assert bundle
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, items_per_thread
 ) -> None:
     import numba_cuda_mlir.tools as numba_mlir_tools
     from numba_cuda_mlir import cuda as compiler_cuda
@@ -418,11 +419,11 @@ def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
     )
 
     @compiler_cuda.jit(chip="sm_90")
-    def storage_free(source, destination):
+    def storage_free(source, destination, items_per_thread):
         storage = coop.TempStorage(
             128 * 1024, alignment=16, sharing="exclusive", auto_sync=True
         )
-        payload = coop.ThreadData(4, dtype=types.int32)
+        payload = coop.ThreadData(items_per_thread, dtype=types.int32)
         coop.load(
             coop.this_block(),
             source,
@@ -439,8 +440,8 @@ def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
         )
 
     @compiler_cuda.jit(chip="sm_90")
-    def storage_bearing(source, destination):
-        payload = qualified_coop.ThreadData(2, dtype=types.int32)
+    def storage_bearing(source, destination, items_per_thread):
+        payload = qualified_coop.ThreadData(items_per_thread, dtype=types.int32)
         qualified_coop.load(
             qualified_coop.this_block(),
             source,
@@ -454,7 +455,11 @@ def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
             algorithm="warp_transpose_timesliced",
         )
 
-    signature = types.void(types.int32[::1], types.int32[::1])
+    signature = types.void(
+        types.int32[::1],
+        types.int32[::1],
+        types.IntegerLiteral(items_per_thread),
+    )
     launch_config_key = (
         ("grid", (1, 1, 1)),
         ("block", (64, 1, 1)),

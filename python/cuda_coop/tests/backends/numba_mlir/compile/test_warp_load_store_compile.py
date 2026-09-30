@@ -318,8 +318,9 @@ def test_logical_warp_widths_have_distinct_specializations_and_cache_keys(
     assert bundle
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_production_routes_compile_portable_and_qualified_warp_kernels(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, items_per_thread
 ) -> None:
     import cuda.coop.numba_mlir as qualified_coop
     from cuda import coop as root_coop
@@ -335,10 +336,11 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
             destination,
             valid_items,
             offset,
+            items_per_thread,
         ):
             thread = compiler_cuda.threadIdx.x
             load_payload = qualified_coop.ThreadData(
-                _ITEMS_PER_THREAD, dtype=types.int32
+                items_per_thread, dtype=types.int32
             )
             qualified_coop.load(
                 qualified_coop.this_warp(),
@@ -350,11 +352,11 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
                 offset=offset,
             )
             payload = qualified_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                index = thread * _ITEMS_PER_THREAD + item
+            for item in range(items_per_thread):
+                index = thread * items_per_thread + item
                 observed[index] = load_payload[item]
                 payload[item] = store_source[index]
             qualified_coop.store(
@@ -377,10 +379,11 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
             destination,
             valid_items,
             offset,
+            items_per_thread,
         ):
             thread = compiler_cuda.threadIdx.x
             load_payload = root_coop.ThreadData(
-                _ITEMS_PER_THREAD, dtype=types.int32
+                items_per_thread, dtype=types.int32
             )
             root_coop.load(
                 root_coop.this_warp(),
@@ -392,11 +395,11 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
                 offset=offset,
             )
             payload = root_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
-            for item in range(_ITEMS_PER_THREAD):
-                index = thread * _ITEMS_PER_THREAD + item
+            for item in range(items_per_thread):
+                index = thread * items_per_thread + item
                 observed[index] = load_payload[item]
                 payload[item] = store_source[index]
             root_coop.store(
@@ -426,6 +429,7 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
         types.int32[::1],
         types.int32,
         types.int64,
+        types.IntegerLiteral(items_per_thread),
     )
     launch_config_key = _production_launch_config_key()
     for qualified, algorithm, dispatcher in dispatchers:
@@ -447,8 +451,9 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
             assert ".shared" not in ptx
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_production_routes_compile_portable_and_qualified_logical_warp_kernels(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, items_per_thread
 ) -> None:
     import cuda.coop.numba_mlir as qualified_coop
     from cuda import coop as root_coop
@@ -457,10 +462,10 @@ def test_production_routes_compile_portable_and_qualified_logical_warp_kernels(
 
     def qualified_kernel(algorithm: str):
         @compiler_cuda.jit(chip="sm_90")
-        def kernel(source, destination, valid_items, offset):
+        def kernel(source, destination, valid_items, offset, items_per_thread):
             group = qualified_coop.this_warp().group_by(8)
             payload = qualified_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             qualified_coop.load(
@@ -485,10 +490,10 @@ def test_production_routes_compile_portable_and_qualified_logical_warp_kernels(
 
     def portable_kernel(algorithm: str):
         @compiler_cuda.jit(chip="sm_90")
-        def kernel(source, destination, valid_items, offset):
+        def kernel(source, destination, valid_items, offset, items_per_thread):
             group = root_coop.this_warp().group_by(8)
             payload = root_coop.ThreadData(
-                _ITEMS_PER_THREAD,
+                items_per_thread,
                 dtype=types.int32,
             )
             root_coop.load(
@@ -516,6 +521,7 @@ def test_production_routes_compile_portable_and_qualified_logical_warp_kernels(
         types.int32[::1],
         types.int32,
         types.int64,
+        types.IntegerLiteral(items_per_thread),
     )
     launch_config_key = _production_launch_config_key()
     for algorithm in ("direct", "transpose"):

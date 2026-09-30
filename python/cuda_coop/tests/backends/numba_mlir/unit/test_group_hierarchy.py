@@ -101,7 +101,7 @@ def test_standalone_collective_helper_is_rejected_without_requesting_launch(
 
     def device_helper(source):
         group = api.this_block()
-        output = api.ThreadData(1, dtype="int32")
+        output = api.ThreadData(items_per_thread=1, dtype="int32")
         return api.load(group, source, output)
 
     state = SimpleNamespace(
