@@ -29,8 +29,8 @@ def test_lengths_require_integer_dtype(dtype_name):
     dtype = getattr(types, dtype_name)
 
     def kernel():
-        values = coop.ThreadData(2, dtype=types.int32)
-        lengths = coop.ThreadData(2, dtype=dtype)
+        values = coop.ThreadData(items_per_thread=2, dtype=types.int32)
+        lengths = coop.ThreadData(items_per_thread=2, dtype=dtype)
         return coop.run_length_decode(
             coop.this_block(), values, lengths, decoded_items_per_thread=4
         )
@@ -46,8 +46,8 @@ def test_runtime_offsets_require_integer_dtype(dtype_name):
     from cuda import coop
 
     def kernel(offset):
-        values = coop.ThreadData(2, dtype=types.int32)
-        lengths = coop.ThreadData(2, dtype=types.int32)
+        values = coop.ThreadData(items_per_thread=2, dtype=types.int32)
+        lengths = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         return coop.run_length_decode(
             coop.this_block(),
             values,
@@ -66,8 +66,8 @@ def test_mismatched_run_payload_extents():
     from cuda import coop
 
     def kernel():
-        values = coop.ThreadData(2, dtype=types.int32)
-        lengths = coop.ThreadData(3, dtype=types.int32)
+        values = coop.ThreadData(items_per_thread=2, dtype=types.int32)
+        lengths = coop.ThreadData(items_per_thread=3, dtype=types.int32)
         return coop.run_length_decode(
             coop.this_block(), values, lengths, decoded_items_per_thread=4
         )
@@ -88,9 +88,9 @@ def test_auxiliary_output_shape_and_dtype(aux, extent, dtype):
     dtype = getattr(types, dtype)
 
     def kernel():
-        values = numba_coop.ThreadData(2, dtype=types.int32)
-        lengths = numba_coop.ThreadData(2, dtype=types.int32)
-        output = numba_coop.ThreadData(extent, dtype=dtype)
+        values = numba_coop.ThreadData(items_per_thread=2, dtype=types.int32)
+        lengths = numba_coop.ThreadData(items_per_thread=2, dtype=types.int32)
+        output = numba_coop.ThreadData(items_per_thread=extent, dtype=dtype)
         if aux == "total":
             return numba_coop.run_length_decode(
                 numba_coop.this_block(),
