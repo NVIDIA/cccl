@@ -73,7 +73,6 @@ Checks:
   - '-cppcoreguidelines-pro-type-vararg'
   # Unions are used far too much in CUB for this to be useful
   - '-cppcoreguidelines-pro-type-union-access'
-  - '-cppcoreguidelines-use-enum-class'
   # This does not understand the concept macros
   - '-cppcoreguidelines-missing-std-forward'
   # END REMOVE ME
