@@ -48,11 +48,11 @@ def _bit_counts(values):
     return Counter(row.tobytes() for row in values.reshape(-1, 1))
 
 
-def _check_result(result, source, dtype, items, alignment):
+def _check_result(result, source, dtype, items_per_thread, alignment):
     assert isinstance(result, cutlass_coop.ThreadData)
     assert result is not source
     assert result.dtype is dtype
-    assert len(result) == items
+    assert len(result) == items_per_thread
     assert result.alignment == alignment
 
 
@@ -68,7 +68,7 @@ def _run(
     controls="runtime",
     control_type=cutlass.Int64,
     threads=64,
-    items=2,
+    items_per_thread=2,
     blocks=2,
     readonly=False,
     inferred=False,
@@ -83,7 +83,7 @@ def _run(
     cases=None,
 ):
     key_type, value_type = cutlass_dtype(dtype), cutlass_dtype(value_dtype)
-    tile, size = threads * items, blocks * threads * items
+    tile, size = threads * items_per_thread, blocks * threads * items_per_thread
     topk = getattr(api, f"topk_{mode}_{'pairs' if pairs else 'keys'}")
     opposite = "max" if mode == "min" else "min"
     next_topk = getattr(api, f"topk_{opposite}_{'pairs' if pairs else 'keys'}")
@@ -105,6 +105,7 @@ def _run(
         selected_count: cutlass.Int64,
         output_count: cutlass.Int64,
         repeats: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         thread, _, _ = cute.arch.thread_idx()
         block_index, _, _ = cute.arch.block_idx()
@@ -129,14 +130,18 @@ def _run(
         )
         group = api.this_block()
         keys = api.ThreadData(
-            items, dtype=None if inferred else key_type, alignment=alignment
+            items_per_thread,
+            dtype=None if inferred else key_type,
+            alignment=alignment,
         )
         values = api.ThreadData(
-            items, dtype=None if inferred else value_type, alignment=alignment
+            items_per_thread,
+            dtype=None if inferred else value_type,
+            alignment=alignment,
         )
-        for item in cutlass.range_constexpr(items):
-            keys[item] = sources[offset + thread * items + item]
-            values[item] = payloads[offset + thread * items + item]
+        for item in cutlass.range_constexpr(items_per_thread):
+            keys[item] = sources[offset + thread * items_per_thread + item]
+            values[item] = payloads[offset + thread * items_per_thread + item]
         if cutlass.const_expr(readonly):
             key_input, value_input = _Readonly(keys), _Readonly(values)
         else:
@@ -201,11 +206,13 @@ def _run(
                     )
                 if cutlass.const_expr(sharing is not None and not auto_sync):
                     storage.sync()
-        _check_result(result, keys, key_type, items, alignment)
+        _check_result(result, keys, key_type, items_per_thread, alignment)
         if cutlass.const_expr(pairs):
-            _check_result(result_values, values, value_type, items, alignment)
-        for item in cutlass.range_constexpr(items):
-            index = thread * items + item
+            _check_result(
+                result_values, values, value_type, items_per_thread, alignment
+            )
+        for item in cutlass.range_constexpr(items_per_thread):
+            index = thread * items_per_thread + item
             if index < output_count:
                 outputs[offset + index] = result[item]
                 if cutlass.const_expr(pairs):
@@ -226,6 +233,7 @@ def _run(
         selected_count: cutlass.Int64,
         output_count: cutlass.Int64,
         repeats: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         kernel(
             source,
@@ -239,6 +247,7 @@ def _run(
             selected_count,
             output_count,
             repeats,
+            items_per_thread,
         ).launch(grid=blocks, block=threads)
 
     original = (
@@ -284,9 +293,11 @@ def _run(
             )
             if compiled is None:
                 compiled = (
-                    cute.compile[compile_options](launch, *args)
+                    cute.compile[compile_options](
+                        launch, *args, items_per_thread
+                    )
                     if compile_options
-                    else cute.compile(launch, *args)
+                    else cute.compile(launch, *args, items_per_thread)
                 )
             compiled(*args)
         _assert_bits(source, original)
@@ -336,18 +347,29 @@ def test_independent_pair_value_types(value_dtype):
 @pytest.mark.parametrize("api", (coop, cutlass_coop))
 @pytest.mark.parametrize("mode", ("min", "max"))
 @pytest.mark.parametrize("pairs", (False, True))
-def test_common_and_qualified_entrypoints(api, mode, pairs):
-    _run(api, mode=mode, pairs=pairs, valid_items=103)
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_common_and_qualified_entrypoints(api, mode, pairs, items_per_thread):
+    _run(
+        api,
+        mode=mode,
+        pairs=pairs,
+        valid_items=64 * items_per_thread - 25,
+        items_per_thread=items_per_thread,
+    )
 
 
-@pytest.mark.parametrize("threads,items", ((1, 3), (16, 1), (32, 4), (128, 2)))
+@pytest.mark.parametrize(
+    "threads,items_per_thread", ((1, 3), (16, 1), (32, 4), (128, 2))
+)
 @pytest.mark.parametrize("mode", ("min", "max"))
-def test_static_controls_block_sizes_and_chaining(threads, items, mode):
+def test_static_controls_block_sizes_and_chaining(
+    threads, items_per_thread, mode
+):
     _run(
         mode=mode,
         threads=threads,
-        items=items,
-        k=min(3, threads * items),
+        items_per_thread=items_per_thread,
+        k=min(3, threads * items_per_thread),
         controls="static",
         chain=True,
     )
