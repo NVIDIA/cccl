@@ -74,17 +74,20 @@ def _prefix(values, *, inclusive, operation="sum", seed=0):
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("dtype", NUMPY_DTYPES)
 @pytest.mark.parametrize(
-    "items", (0, 1, 2), ids=("scalar", "one-item", "payload")
+    "items_per_thread", (0, 1, 4), ids=("scalar", "one-item", "payload")
 )
-def test_spellings_types(api, dtype, items):
+def test_spellings_types(api, dtype, items_per_thread):
     value_type = cutlass_dtype(dtype)
-    extent = max(items, 1)
+    extent = max(items_per_thread, 1)
     size = _THREADS * extent
     functions = tuple(getattr(api, name) for name in _FORMS)
 
     @cute.kernel
     def kernel(
-        source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        preserved: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
@@ -97,33 +100,42 @@ def test_spellings_types(api, dtype, items):
         checks = cute.recast_tensor(
             cute.make_tensor(preserved, cute.make_layout(size)), value_type
         )
-        if cutlass.const_expr(items):
-            value = api.ThreadData(items, dtype=value_type, alignment=64)
-            for item in cutlass.range_constexpr(items):
-                value[item] = inputs[thread * items + item]
+        if cutlass.const_expr(items_per_thread):
+            value = api.ThreadData(
+                items_per_thread, dtype=value_type, alignment=64
+            )
+            for item in cutlass.range_constexpr(items_per_thread):
+                value[item] = inputs[thread * items_per_thread + item]
         else:
             value = inputs[thread]
         for case in cutlass.range_constexpr(5):
             result = functions[case](api.this_block(), value)
-            if cutlass.const_expr(items):
-                assert result.items_per_thread == items
+            if cutlass.const_expr(items_per_thread):
+                assert result.items_per_thread == items_per_thread
                 assert result.alignment >= 64
-                for item in cutlass.range_constexpr(items):
-                    outputs[case * size + thread * items + item] = result[item]
+                for item in cutlass.range_constexpr(items_per_thread):
+                    outputs[case * size + thread * items_per_thread + item] = (
+                        result[item]
+                    )
             else:
                 assert isinstance(result, value_type)
                 outputs[case * size + thread] = result
-        if cutlass.const_expr(items):
-            for item in cutlass.range_constexpr(items):
-                checks[thread * items + item] = value[item]
+        if cutlass.const_expr(items_per_thread):
+            for item in cutlass.range_constexpr(items_per_thread):
+                checks[thread * items_per_thread + item] = value[item]
         else:
             checks[thread] = value
 
     @cute.jit
     def launch(
-        source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        preserved: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, observed, preserved).launch(grid=1, block=_BLOCK)
+        kernel(source, observed, preserved, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = (np.arange(size) % 3).astype(dtype)
     if np.dtype(dtype).kind != "u":
@@ -141,7 +153,7 @@ def test_spellings_types(api, dtype, items):
         device_array(observed) as out,
         device_array(preserved) as check,
     ):
-        launch(src, out, check)
+        launch(src, out, check, items_per_thread)
     np.testing.assert_array_equal(observed.reshape(5, size), expected)
     np.testing.assert_array_equal(preserved, source)
 
@@ -191,21 +203,21 @@ def test_initial_type(api, dtype, runtime):
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("dtype", (np.int32, np.float32))
-@pytest.mark.parametrize("items", (0, 2), ids=("scalar", "payload"))
+@pytest.mark.parametrize("items_per_thread", (0, 2), ids=("scalar", "payload"))
 @pytest.mark.parametrize(
     "numpy_seed", (False, True), ids=("cute-seed", "numpy-seed")
 )
-def test_numpy_input(api, dtype, items, numpy_seed):
+def test_numpy_input(api, dtype, items_per_thread, numpy_seed):
     value_type = cutlass_dtype(dtype)
-    size = _THREADS * max(items, 1)
+    size = _THREADS * max(items_per_thread, 1)
 
     @cute.kernel
-    def kernel(observed: cute.Pointer):
+    def kernel(observed: cute.Pointer, items_per_thread: cutlass.Constexpr):
         thread = cute.arch.thread_idx()[0]
         outputs = cute.make_tensor(observed, cute.make_layout(size))
-        if cutlass.const_expr(items):
-            value = api.ThreadData(items, dtype=dtype)
-            for item in cutlass.range_constexpr(items):
+        if cutlass.const_expr(items_per_thread):
+            value = api.ThreadData(items_per_thread, dtype=dtype)
+            for item in cutlass.range_constexpr(items_per_thread):
                 value[item] = dtype(1)
         else:
             value = dtype(1)
@@ -220,19 +232,22 @@ def test_numpy_input(api, dtype, items, numpy_seed):
             result = api.exclusive_scan(
                 api.this_block(), value, initial_value=value_type(7)
             )
-        if cutlass.const_expr(items):
-            for item in cutlass.range_constexpr(items):
-                outputs[thread * items + item] = result[item]
+        if cutlass.const_expr(items_per_thread):
+            for item in cutlass.range_constexpr(items_per_thread):
+                outputs[thread * items_per_thread + item] = result[item]
         else:
             outputs[thread] = result
 
     @cute.jit
-    def launch(observed: cute.Pointer):
-        kernel(observed).launch(grid=1, block=_THREADS)
+    def launch(
+        observed: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(observed, items_per_thread).launch(grid=1, block=_THREADS)
 
     observed = np.zeros(size, dtype=dtype)
     with device_array(observed) as out:
-        launch(out)
+        launch(out, items_per_thread)
     np.testing.assert_array_equal(observed, np.arange(size, dtype=dtype) + 7)
 
 
@@ -247,13 +262,16 @@ def test_builtins(api, operation, inclusive):
 
     @cute.kernel
     def kernel(
-        source: cute.Pointer, observed: cute.Pointer, initial: cutlass.Int32
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        initial: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.make_tensor(source, cute.make_layout(size))
         outputs = cute.make_tensor(observed, cute.make_layout(size))
-        payload = api.ThreadData(2, dtype=cutlass.Int32)
+        payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
         for item in cutlass.range_constexpr(2):
             payload[item] = inputs[thread * 2 + item]
         if cutlass.const_expr(inclusive):
@@ -272,9 +290,14 @@ def test_builtins(api, operation, inclusive):
 
     @cute.jit
     def launch(
-        source: cute.Pointer, observed: cute.Pointer, initial: cutlass.Int32
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        initial: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, observed, initial).launch(grid=1, block=_BLOCK)
+        kernel(source, observed, initial, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.int32, size, shift=17)
     if operation == "multiplies":
@@ -282,7 +305,7 @@ def test_builtins(api, operation, inclusive):
         source[::7] = -1
     observed = np.zeros_like(source)
     with device_array(source) as src, device_array(observed) as out:
-        launch(src, out, seed)
+        launch(src, out, seed, 2)
     np.testing.assert_array_equal(
         observed,
         _prefix(source, inclusive=inclusive, operation=operation, seed=seed),
@@ -291,38 +314,46 @@ def test_builtins(api, operation, inclusive):
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
-@pytest.mark.parametrize("items", (0, 3), ids=("scalar", "payload"))
-def test_block_algorithm(api, algorithm, items):
-    extent = max(items, 1)
+@pytest.mark.parametrize("items_per_thread", (0, 3), ids=("scalar", "payload"))
+def test_block_algorithm(api, algorithm, items_per_thread):
+    extent = max(items_per_thread, 1)
     size = _THREADS * extent
 
     @cute.kernel
-    def kernel(source: cute.Pointer, observed: cute.Pointer):
+    def kernel(
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.make_tensor(source, cute.make_layout(size))
         outputs = cute.make_tensor(observed, cute.make_layout(size))
-        if cutlass.const_expr(items):
-            value = api.ThreadData(items, dtype=cutlass.Int32)
-            for item in cutlass.range_constexpr(items):
-                value[item] = inputs[thread * items + item]
+        if cutlass.const_expr(items_per_thread):
+            value = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
+            for item in cutlass.range_constexpr(items_per_thread):
+                value[item] = inputs[thread * items_per_thread + item]
         else:
             value = inputs[thread]
         result = api.inclusive_sum(api.this_block(), value, algorithm=algorithm)
-        if cutlass.const_expr(items):
-            for item in cutlass.range_constexpr(items):
-                outputs[thread * items + item] = result[item]
+        if cutlass.const_expr(items_per_thread):
+            for item in cutlass.range_constexpr(items_per_thread):
+                outputs[thread * items_per_thread + item] = result[item]
         else:
             outputs[thread] = result
 
     @cute.jit
-    def launch(source: cute.Pointer, observed: cute.Pointer):
-        kernel(source, observed).launch(grid=1, block=_BLOCK)
+    def launch(
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(source, observed, items_per_thread).launch(grid=1, block=_BLOCK)
 
     source = values_for(np.int32, size, shift=23)
     observed = np.zeros_like(source)
     with device_array(source) as src, device_array(observed) as out:
-        launch(src, out)
+        launch(src, out, items_per_thread)
     np.testing.assert_array_equal(observed, source.cumsum(dtype=np.int32))
 
 
@@ -396,13 +427,14 @@ def test_prefix_aggregate(width, form, runtime):
         aggregates: cute.Pointer,
         valid: cutlass.Int64,
         initial: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.make_tensor(source, cute.make_layout(_THREADS))
         outputs = cute.make_tensor(observed, cute.make_layout(_THREADS))
         totals = cute.make_tensor(aggregates, cute.make_layout(_THREADS))
-        aggregate = cutlass_coop.ThreadData(1, alignment=64)
+        aggregate = cutlass_coop.ThreadData(items_per_thread, alignment=64)
         group = cutlass_coop.this_warp().group_by(width)
         if cutlass.const_expr(runtime):
             valid_items = valid
@@ -434,10 +466,11 @@ def test_prefix_aggregate(width, form, runtime):
         aggregates: cute.Pointer,
         valid: cutlass.Int64,
         initial: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, observed, aggregates, valid, initial).launch(
-            grid=1, block=_BLOCK
-        )
+        kernel(
+            source, observed, aggregates, valid, initial, items_per_thread
+        ).launch(grid=1, block=_BLOCK)
 
     source = values_for(np.int32, _THREADS, shift=37)
     observed = np.full_like(source, -101)
@@ -455,7 +488,7 @@ def test_prefix_aggregate(width, form, runtime):
         device_array(observed) as out,
         device_array(aggregates) as agg,
     ):
-        launch(src, out, agg, count, seed)
+        launch(src, out, agg, count, seed, 1)
     np.testing.assert_array_equal(observed, expected)
     np.testing.assert_array_equal(aggregates, totals)
 
@@ -466,14 +499,19 @@ def test_block_aggregate(operation):
 
     @cute.kernel
     def kernel(
-        source: cute.Pointer, observed: cute.Pointer, aggregates: cute.Pointer
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        aggregates: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.make_tensor(source, cute.make_layout(_THREADS))
         outputs = cute.make_tensor(observed, cute.make_layout(_THREADS))
         totals = cute.make_tensor(aggregates, cute.make_layout(_THREADS))
-        aggregate = cutlass_coop.ThreadData(1, dtype=cutlass.Int32)
+        aggregate = cutlass_coop.ThreadData(
+            items_per_thread, dtype=cutlass.Int32
+        )
         outputs[thread] = cutlass_coop.exclusive_scan(
             cutlass_coop.this_block(),
             inputs[thread],
@@ -485,9 +523,14 @@ def test_block_aggregate(operation):
 
     @cute.jit
     def launch(
-        source: cute.Pointer, observed: cute.Pointer, aggregates: cute.Pointer
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        aggregates: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, observed, aggregates).launch(grid=1, block=_BLOCK)
+        kernel(source, observed, aggregates, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.int32, _THREADS, shift=41)
     if operation == "multiplies":
@@ -500,7 +543,7 @@ def test_block_aggregate(operation):
         device_array(observed) as out,
         device_array(aggregates) as agg,
     ):
-        launch(src, out, agg)
+        launch(src, out, agg, 1)
     np.testing.assert_array_equal(
         observed,
         _prefix(source, inclusive=False, operation=operation, seed=seed),
@@ -572,6 +615,7 @@ def test_register_aggregate(ssa):
         observed: cute.Pointer,
         aggregates: cute.Pointer,
         preserved: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
         thread = cute.arch.thread_idx()[0]
         inputs = cute.make_tensor(source, cute.make_layout(size))
@@ -585,7 +629,7 @@ def test_register_aggregate(ssa):
             value = fragment.load()
         else:
             value = fragment
-        aggregate = cutlass_coop.ThreadData(1)
+        aggregate = cutlass_coop.ThreadData(items_per_thread)
         result = cutlass_coop.exclusive_scan(
             cutlass_coop.this_block(),
             value,
@@ -603,10 +647,11 @@ def test_register_aggregate(ssa):
         observed: cute.Pointer,
         aggregates: cute.Pointer,
         preserved: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, observed, aggregates, preserved).launch(
-            grid=1, block=_THREADS
-        )
+        kernel(
+            source, observed, aggregates, preserved, items_per_thread
+        ).launch(grid=1, block=_THREADS)
 
     source = values_for(np.int32, size, shift=47)
     observed = np.zeros_like(source)
@@ -618,7 +663,7 @@ def test_register_aggregate(ssa):
         device_array(aggregates) as agg,
         device_array(preserved) as check,
     ):
-        launch(src, out, agg, check)
+        launch(src, out, agg, check, 1)
     np.testing.assert_array_equal(
         observed, _prefix(source, inclusive=False, seed=7)
     )
@@ -681,12 +726,13 @@ def test_final_cubin(tmp_path, warp):
 
 
 @pytest.mark.parametrize("api", ("common", "qualified"))
-def test_example(api):
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_example(api, items_per_thread):
     path = PACKAGE_ROOT / "examples/cutlass/scan.py"
     spec = importlib.util.spec_from_file_location("cutlass_scan_example", path)
     example = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(example)
-    example.run_example(api)
+    example.run_example(api, items_per_thread=items_per_thread)
 
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
