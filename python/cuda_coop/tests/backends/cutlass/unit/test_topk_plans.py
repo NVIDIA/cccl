@@ -148,7 +148,9 @@ def test_failed_storage_restores_session(monkeypatch):
         raise RuntimeError("TopK scratch emission failed")
 
     monkeypatch.setattr(_storage, "register_deferred_temp_storage_event", fail)
-    keys = cutlass_coop.ThreadData(2, dtype=cutlass.Int32, values=[3, 1])
+    keys = cutlass_coop.ThreadData(
+        items_per_thread=2, dtype=cutlass.Int32, values=[3, 1]
+    )
     with pytest.raises(RuntimeError, match="scratch emission failed"):
         _topk.provider_topk(
             group=this_block(),

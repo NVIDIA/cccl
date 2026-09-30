@@ -856,8 +856,8 @@ def check_cutlass_radix_surface(scalar: Float32, value: Int16) -> None:
 
 def check_cutlass_topk_surface() -> None:
     block = cutlass_coop.this_block()
-    keys = cutlass_coop.ThreadData(3, np.float32)
-    values = cutlass_coop.ThreadData(3, Int16)
+    keys = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.float32)
+    values = cutlass_coop.ThreadData(items_per_thread=3, dtype=Int16)
     storage = cutlass_coop.TempStorage(alignment=32)
     assert_type(
         cutlass_coop.topk_min_keys(block, keys, k=7),

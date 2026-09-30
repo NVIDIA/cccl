@@ -151,17 +151,20 @@ def test_provider_failure_retry(monkeypatch, tmp_path, failure):
     "api", (coop, cutlass_coop), ids=("common", "qualified")
 )
 def test_load_topk_sort_store_loop(api):
-    threads, items, tiles, selected = 32, 2, 4, 11
-    tile = threads * items
+    threads, items_per_thread, tiles, selected = 32, 2, 4, 11
+    tile = threads * items_per_thread
 
     @cute.kernel
     def kernel(
-        source: cute.Pointer, output: cute.Pointer, repeats: cutlass.Int32
+        source: cute.Pointer,
+        output: cute.Pointer,
+        repeats: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         scratch = api.TempStorage(alignment=128, auto_sync=True)
         group = api.this_block()
         for index in range(repeats):
-            data = api.ThreadData(items, dtype=cutlass.Int32)
+            data = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
             api.load(
                 group,
                 source,
@@ -192,16 +195,23 @@ def test_load_topk_sort_store_loop(api):
 
     @cute.jit
     def launch(
-        source: cute.Pointer, output: cute.Pointer, repeats: cutlass.Int32
+        source: cute.Pointer,
+        output: cute.Pointer,
+        repeats: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, output, repeats).launch(grid=1, block=threads)
+        kernel(source, output, repeats, items_per_thread).launch(
+            grid=1, block=threads
+        )
 
     source = np.random.default_rng(24).integers(
         -101, 102, size=tile * tiles, dtype=np.int32
     )
     observed = np.full_like(source, -999)
     with device_array(source) as src, device_array(observed) as out:
-        compiled = cute.compile(launch, src, out, cutlass.Int32(tiles))
+        compiled = cute.compile(
+            launch, src, out, cutlass.Int32(tiles), items_per_thread
+        )
         compiled(src, out, cutlass.Int32(tiles))
     for start in range(0, tile * tiles, tile):
         np.testing.assert_array_equal(

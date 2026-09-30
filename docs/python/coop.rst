@@ -284,8 +284,9 @@ compiler hooks and does not repair dispatcher context state.
 Registering a backend
 ---------------------
 
-Call :func:`cuda.coop.register` on the host before compiling kernels to
-activate its compiler integration explicitly. For a Numba-CUDA-MLIR kernel:
+When you cannot ensure import order, call :func:`cuda.coop.register` on the
+host before compiling kernels to activate its compiler integration
+explicitly. For a Numba-CUDA-MLIR kernel:
 
 .. code-block:: python
 
@@ -398,8 +399,11 @@ to skip a required participant or a reuse barrier.
 Per-thread payloads
 ^^^^^^^^^^^^^^^^^^^
 
-``coop.ThreadData(items_per_thread=K)`` describes a fixed-size payload of
-``K`` values owned by each thread. Leave the element type unspecified for
+``coop.ThreadData(items_per_thread)`` describes a fixed-size payload of
+``items_per_thread`` values owned by each thread. Pass that count as a kernel
+argument: Numba-CUDA-MLIR specializes it automatically; CuTe kernels and their
+launchers declare it as ``items_per_thread: cutlass.Constexpr``.
+Leave the element type unspecified for
 normal use: Load infers it from its source, fills the payload in place, and
 returns ``None``. Other operations either consume that payload or
 return a new scalar or payload according to their contract. As in CUB,

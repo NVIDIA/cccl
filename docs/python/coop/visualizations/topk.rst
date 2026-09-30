@@ -80,10 +80,10 @@ you need an ordered result. See :ref:`the TopK ordering FAQ
 Using TopK in a kernel
 ----------------------
 
-This Numba example selects eight largest keys from 93 valid inputs in a
-128-item tile. Each value is the key's original position. The kernel uses
-64 threads and two items per thread; the host verifies membership and
-pair association without depending on output order.
+This Numba example selects eight largest keys from a partial input tile.
+Each value is the key's original position. The kernel uses
+64 threads and an ``items_per_thread`` argument; the host verifies
+membership and pair association without depending on output order.
 
 .. literalinclude:: ../../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_topk_examples.py
    :language: python
@@ -97,7 +97,8 @@ Store's ``valid_items``. The result payloads retain the input extent, so
 their size alone does not tell you which slots are safe to read.
 
 The CuTe example below selects both minimum keys and maximum pairs. It uses
-64 threads, two items per thread, ``k=31``, and ``valid_items=93``. ``module``
+64 threads and defaults to two items per thread, ``k=31``, and
+``valid_items=93``. ``module``
 selects the common or CUTLASS-qualified API; the qualified path converts
 register payloads explicitly. :download:`Download the complete CuTe example
 <../../../../python/cuda_coop/examples/cutlass/topk.py>` for setup and the
