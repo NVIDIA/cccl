@@ -19,7 +19,9 @@ def register_cutlass() -> None:
 
 def check_cutlass_surface(source: object, destination: object) -> None:
     block = cutlass_coop.this_block()
-    values = cutlass_coop.ThreadData(2, np.int32, alignment=16)
+    values = cutlass_coop.ThreadData(
+        items_per_thread=2, dtype=np.int32, alignment=16
+    )
     assert_type(block, cutlass_coop.ThreadGroup[Literal["block"]])
     assert_type(values, cutlass_coop.ThreadData[np.int32])
     assert_type(values[0], np.int32)

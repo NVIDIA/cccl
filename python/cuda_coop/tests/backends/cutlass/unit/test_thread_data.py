@@ -25,6 +25,7 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
 @pytest.mark.parametrize("alignment", [None, 1, 16, 32, 64, 128])
 def test_payload_storage_and_copy(alignment):
+    # Keep coverage of the supported positional count and dtype arguments.
     data = ThreadData(np.int64(3), np.int32, alignment=alignment)
     data[0] = 4
     data[-1] = 8
@@ -55,7 +56,7 @@ def test_payload_storage_and_copy(alignment):
 )
 def test_extent_validation(extent, error):
     with pytest.raises(error, match="items_per_thread"):
-        ThreadData(extent)
+        ThreadData(items_per_thread=extent)
 
 
 @pytest.mark.parametrize(
@@ -70,11 +71,11 @@ def test_extent_validation(extent, error):
 )
 def test_alignment_validation(alignment, error):
     with pytest.raises(error, match="alignment"):
-        ThreadData(2, alignment=alignment)
+        ThreadData(items_per_thread=2, alignment=alignment)
 
 
 def test_payload_indices():
-    data = ThreadData(2)
+    data = ThreadData(items_per_thread=2)
     with pytest.raises(ValueError, match="initialized"):
         tuple(data)
     with pytest.raises(ValueError, match="initialized"):
@@ -88,14 +89,14 @@ def test_payload_indices():
         with pytest.raises(IndexError):
             data[index] = 1
     with pytest.raises(ValueError, match="values length"):
-        ThreadData(2, values=[1])
+        ThreadData(items_per_thread=2, values=[1])
 
 
 def test_common_root_restrictions_survive_copy():
     with _common_root_operation_scope("ThreadData"):
-        data = ThreadData(1, np.int16, alignment=64)
+        data = ThreadData(items_per_thread=1, dtype=np.int16, alignment=64)
         with pytest.raises(TypeError, match="dtypes"):
-            ThreadData(1, np.bool_)
+            ThreadData(items_per_thread=1, dtype=np.bool_)
     for cloned in (data, copy(data), deepcopy(data), data._new_uninitialized()):
         cloned[0] = np.int16(3)
         with pytest.raises(TypeError, match="dtypes"):
@@ -171,7 +172,12 @@ def test_cute_register_conversions_use_payload_dtype_and_alignment():
     with ir.Context(), ir.Location.unknown():
         module = ir.Module.create()
         with ir.InsertionPoint(module.body):
-            data = ThreadData(4, np.int32, values=[1, 3, 5, 7], alignment=128)
+            data = ThreadData(
+                items_per_thread=4,
+                dtype=np.int32,
+                values=[1, 3, 5, 7],
+                alignment=128,
+            )
             ssa = data.to_tensor_ssa(shape=(2, 2))
             assert ssa.dtype is Int32
             assert ssa.shape == (2, 2)
@@ -189,7 +195,7 @@ def test_cute_register_conversions_use_payload_dtype_and_alignment():
 
 def test_export_rejects_incomplete_or_inconsistent_payload():
     with pytest.raises(ValueError, match="initialized"):
-        ThreadData(2, Int32).to_tensor_ssa()
+        ThreadData(items_per_thread=2, dtype=Int32).to_tensor_ssa()
     with pytest.raises(ValueError, match="exactly"):
         ThreadData.from_values(1, 2, dtype=Int32).to_tensor_ssa(shape=(3,))
     with pytest.raises(ValueError, match="positive"):
@@ -210,7 +216,7 @@ def test_control_flow_roundtrip(dtype, inferred):
         module = ir.Module.create()
         with ir.InsertionPoint(module.body):
             data = ThreadData(
-                2,
+                items_per_thread=2,
                 dtype=None if inferred else dtype,
                 values=[dtype(3), dtype(5)],
                 alignment=128,
@@ -235,7 +241,7 @@ def test_control_flow_roundtrip(dtype, inferred):
 
 
 def test_control_flow_rejects_unset():
-    data = ThreadData(3, Int32, values=[1, _UNSET, 3])
+    data = ThreadData(items_per_thread=3, dtype=Int32, values=[1, _UNSET, 3])
     with pytest.raises(ValueError, match=r"missing index\(es\): 1"):
         data.__extract_mlir_values__()
     with pytest.raises(ValueError, match="one value per item"):
@@ -245,10 +251,14 @@ def test_control_flow_rejects_unset():
 @pytest.mark.parametrize("dtype", (None, Int32))
 def test_control_flow_checks_literals(dtype):
     with pytest.raises(ValueError, match="not representable"):
-        ThreadData(2, dtype, values=[1 << 40, 2]).__extract_mlir_values__()
+        ThreadData(
+            items_per_thread=2, dtype=dtype, values=[1 << 40, 2]
+        ).__extract_mlir_values__()
 
 
 def test_control_flow_checks_lane_types():
     Uint32 = import_module("cutlass.base_dsl.typing").Uint32
     with pytest.raises(TypeError, match="homogeneous"):
-        ThreadData(2, values=[Int32(1), Uint32(2)]).__extract_mlir_values__()
+        ThreadData(
+            items_per_thread=2, values=[Int32(1), Uint32(2)]
+        ).__extract_mlir_values__()
