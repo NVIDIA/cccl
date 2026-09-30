@@ -309,7 +309,7 @@ struct rethrow_t
   template <class _Fn>
   [[noreturn]] nullval operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const
   {
-    throw;
+    _CCCL_RETHROW;
   }
 };
 inline constexpr rethrow_t rethrow{};
@@ -456,7 +456,7 @@ struct as_expected_t
           {
             return _Raw{::cuda::std::unexpect, _E(*__exception)};
           }
-          throw; // nonstandard exception, no lossless construction rung: decline
+          _CCCL_RETHROW; // nonstandard exception, no lossless construction rung: decline
         }
         else
         {
@@ -506,19 +506,24 @@ struct when_t
         return;
       }
     }
-    throw; // decline: the guard does not apply
+    _CCCL_RETHROW; // decline: the guard does not apply
   }
 };
 
 /**
  * @brief Boundary translation: catches a `_From` (catch-clause rules: same or publicly
- * derived) and throws a `_To` -- constructed from the caught `_From` when such a constructor
- * exists, default-constructed otherwise. Anything that is not a `_From` declines untouched,
- * so `translate<low, high> | ...` ladders compose; a following arm sees the `_To`.
+ * derived) and throws a `_To` (a `std::exception` derivative) -- constructed from the caught
+ * `_From` when such a constructor exists, default-constructed otherwise. Anything that is not a `_From` declines
+ * untouched, so `translate<low, high> | ...` ladders compose; a following arm sees the `_To`.
  */
 template <class _From, class _To>
 struct translate_t
 {
+  // The target must be a std::exception: the rest of the algebra reports through what(), and so
+  // does _CCCL_THROW in a build without exceptions.
+  static_assert(::cuda::std::is_base_of_v<::std::exception, _To>,
+                "translate: the target type must derive from std::exception");
+
   using __exception_sink_tag = void;
 
   template <class _Fn>
@@ -531,12 +536,12 @@ struct translate_t
       {
         __throw_translated(*__from);
       }
-      throw; // decline: a std exception that is not a _From
+      _CCCL_RETHROW; // decline: a std exception that is not a _From
     }
     // A non-std exception: re-observe at _From.
     _CCCL_TRY
     {
-      throw;
+      _CCCL_RETHROW;
     }
     _CCCL_CATCH (const _From& __from)
     {
@@ -551,16 +556,16 @@ private:
   {
     if constexpr (::cuda::std::is_constructible_v<_To, const _From&>)
     {
-      throw _To(__from);
+      _CCCL_THROW(_To, __from);
     }
     else if constexpr (::cuda::std::is_base_of_v<::std::exception, _From>
                        && ::cuda::std::is_constructible_v<_To, const char*>)
     {
-      throw _To(__from.what()); // carry the message across the translation
+      _CCCL_THROW(_To, __from.what()); // carry the message across the translation
     }
     else if constexpr (::cuda::std::is_default_constructible_v<_To>)
     {
-      throw _To{};
+      _CCCL_THROW(_To);
     }
     else
     {
@@ -593,7 +598,7 @@ struct nest_t
   {
     _CCCL_TRY
     {
-      throw;
+      _CCCL_RETHROW;
     }
     _CCCL_CATCH_ALL
     {
@@ -654,7 +659,7 @@ struct backoff_t
   {
     if (__n_ == 0)
     {
-      throw;
+      _CCCL_RETHROW;
     }
 
     const auto __base = __initial_.count();
@@ -690,7 +695,7 @@ struct backoff_t
       {
         if (--__left == 0)
         {
-          throw;
+          _CCCL_RETHROW;
         }
         __state ^= __state << 13;
         __state ^= __state >> 7;
@@ -796,7 +801,7 @@ struct circuit_breaker_t
   {
     if (*__budget_ <= 0)
     {
-      throw circuit_open{};
+      _CCCL_THROW(circuit_open);
     }
   }
 
@@ -926,7 +931,7 @@ struct store_t
         // Typed store: exact dynamic type only; anything else declines by rethrowing.
         if (__e == nullptr || typeid(*__e) != typeid(_Held))
         {
-          throw;
+          _CCCL_RETHROW;
         }
         bool __stored = false;
         _CCCL_TRY
@@ -943,7 +948,7 @@ struct store_t
         }
         if (!__stored)
         {
-          throw;
+          _CCCL_RETHROW;
         }
       }
     }
@@ -1207,7 +1212,7 @@ struct __catch_only_t : __forwards_success<_P>
     // Slow path: a non-class target, or a non-std active exception -- re-observe.
     _CCCL_TRY
     {
-      throw;
+      _CCCL_RETHROW;
     }
     _CCCL_CATCH ([[maybe_unused]] const _E0& __match)
     {
@@ -1234,7 +1239,7 @@ struct __catch_only_t : __forwards_success<_P>
       // A matching non-std exception still reaches `_P` as a null pointer, per the funnel.
       return this->__p_(__exception, __loc, __fn);
     }
-    throw; // decline: no listed type claims the active exception
+    _CCCL_RETHROW; // decline: no listed type claims the active exception
   }
 };
 
@@ -1269,7 +1274,7 @@ struct __catch_exactly_t : __forwards_success<_P>
     {
       return this->__p_(__exception, __loc, __fn);
     }
-    throw; // decline: the active exception's dynamic type is not listed
+    _CCCL_RETHROW; // decline: the active exception's dynamic type is not listed
   }
 };
 
@@ -1467,7 +1472,7 @@ struct __policy_or : __composite_hooks<_L, _R>
     const auto __reobserve_right = [&]() -> _Raw {
       _CCCL_TRY
       {
-        throw;
+        _CCCL_RETHROW;
       }
       _CCCL_CATCH (const ::std::exception& __e)
       {
@@ -1533,7 +1538,7 @@ struct __policy_pow : __forwards_success<_P>
     using _Expr = decltype(__fn());
     if (__n_ == 0)
     {
-      throw; // empty fold: decline with the still-active exception
+      _CCCL_RETHROW; // empty fold: decline with the still-active exception
     }
 
     // Recurse inside the catch so the re-observed exception pointer stays alive for the
@@ -1554,11 +1559,11 @@ struct __policy_pow : __forwards_success<_P>
       {
         if (__left == 1)
         {
-          throw;
+          _CCCL_RETHROW;
         }
         _CCCL_TRY
         {
-          throw;
+          _CCCL_RETHROW;
         }
         _CCCL_CATCH (const ::std::exception& __e)
         {
@@ -1709,7 +1714,7 @@ _Expr __on_exception(_P& __policy,
 {
   if constexpr (!__has_exception_hook<_P, _Fn>)
   {
-    throw; // no element answered: let the exception propagate
+    _CCCL_RETHROW; // no element answered: let the exception propagate
   }
   else
   {
@@ -2010,7 +2015,7 @@ struct always_t
       // CURRENT exception, then let that exception continue onward.
       _CCCL_TRY
       {
-        throw;
+        _CCCL_RETHROW;
       }
       _CCCL_CATCH (const ::std::exception& __cur)
       {
@@ -2020,7 +2025,7 @@ struct always_t
       {
         static_cast<void>(__fin_(nullptr, __loc, __fn));
       }
-      throw;
+      _CCCL_RETHROW;
     }
   }
 
@@ -2350,7 +2355,7 @@ private:
     __msg.append(__stored.data(), __stored.size());
     __msg.append(" answer to ");
     __msg.append(__wanted.data(), __wanted.size());
-    throw ::std::logic_error(__msg);
+    _CCCL_THROW(::std::logic_error, __msg);
   }
 
   template <class _Int>

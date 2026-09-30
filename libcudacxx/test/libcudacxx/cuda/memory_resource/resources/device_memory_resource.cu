@@ -270,7 +270,7 @@ C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
 static void ensure_device_ptr(void* ptr)
 {
   CHECK(ptr != nullptr);
-  cudaPointerAttributes attributes;
+  cudaPointerAttributes attributes{};
   const cudaError_t status = cudaPointerGetAttributes(&attributes, ptr);
   CHECK(status == cudaSuccess);
   CHECK(attributes.type == cudaMemoryTypeDevice);
