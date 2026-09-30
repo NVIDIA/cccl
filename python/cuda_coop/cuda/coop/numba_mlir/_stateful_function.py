@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from types import GenericAlias
 from typing import Any
 
 from ._semantic import _normalize_numba_callable
@@ -49,6 +50,8 @@ class StatefulFunction:
     :cpp:struct:`cub::BlockScan`
         C++ Block Scan overloads accepting a block-prefix callback.
     """
+
+    __class_getitem__ = classmethod(GenericAlias)
 
     op: Any
     dtype: Any
