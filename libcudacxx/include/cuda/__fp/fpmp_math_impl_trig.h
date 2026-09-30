@@ -27,6 +27,7 @@
 */
 
 #include <cuda/__fp/fpmp_math_impl.h>
+#include <cuda/std/cmath> // NAN
 #include <cuda/std/numbers>
 // Sibling families whose kernels this family calls (exp10 is used by trig).
 #include <cuda/__fp/fpmp_math_impl_exp.h>
@@ -1352,15 +1353,17 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
   using __afloat = fp32mp2_high;
 
   const float __abs_hi = (__x_hi < 0.0f) ? -__x_hi : __x_hi;
-  /* Mask the sign bit. Negating first would leave -0 (pattern 0x80000000) looking non-finite. */
-  if (((::cuda::std::bit_cast<uint32_t>(__x_hi) & 0x7FFFFFFFU) >= 0x7F800000U)
-      || ((::cuda::std::bit_cast<uint32_t>(__x_lo) & 0x7FFFFFFFU) >= 0x7F800000U))
+  // A float is Inf or NaN when its magnitude bits are at least the all-ones exponent.
+  // Mask the sign bit rather than negating: -0 (0x80000000) would otherwise look non-finite.
+  constexpr uint32_t __magnitude_mask    = 0x7FFFFFFFU;
+  constexpr uint32_t __exponent_all_ones = 0x7F800000U;
+  if (((::cuda::std::bit_cast<uint32_t>(__x_hi) & __magnitude_mask) >= __exponent_all_ones)
+      || ((::cuda::std::bit_cast<uint32_t>(__x_lo) & __magnitude_mask) >= __exponent_all_ones))
   {
-    const float __nan = __x_hi - __x_hi;
-    *__sin_hi         = __nan;
-    *__sin_lo         = 0.0f;
-    *__cos_hi         = __nan;
-    *__cos_lo         = 0.0f;
+    *__sin_hi = NAN;
+    *__sin_lo = 0.0f;
+    *__cos_hi = NAN;
+    *__cos_lo = 0.0f;
     return;
   }
 
