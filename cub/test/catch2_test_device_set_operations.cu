@@ -17,10 +17,10 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSetOps::SetDifference, set_difference);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSetOps::SetIntersection, set_intersection);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSetOps::SetSymmetricDifference, set_symmetric_difference);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSetOps::SetUnion, set_union);
+DECLARE_LAUNCH_WRAPPER(cub::detail::DeviceSetOps::SetDifference, set_difference);
+DECLARE_LAUNCH_WRAPPER(cub::detail::DeviceSetOps::SetIntersection, set_intersection);
+DECLARE_LAUNCH_WRAPPER(cub::detail::DeviceSetOps::SetSymmetricDifference, set_symmetric_difference);
+DECLARE_LAUNCH_WRAPPER(cub::detail::DeviceSetOps::SetUnion, set_union);
 
 // Small key types stress the duplicate handling of the balanced merge path (many equal keys).
 using key_types = c2h::type_list<std::uint8_t, std::int16_t, std::uint32_t, double>;

@@ -20,7 +20,7 @@
 //   keys1   = {0, 2, 4, 5, 7}     values1 = {'a', 'b', 'c', 'd', 'e'}
 //   keys2   = {1, 2, 3, 5}        values2 = {'A', 'B', 'C', 'D'}
 
-CUB_TEST("cub::DeviceSetOps::SetDifference accepts an environment", "[set_ops][env]", CUB_SMALL)
+CUB_TEST("cub::detail::DeviceSetOps::SetDifference accepts an environment", "[set_ops][env]", CUB_SMALL)
 {
   // example-begin set-difference-env
   auto keys1        = thrust::device_vector<int>{0, 2, 4, 5, 7};
@@ -30,7 +30,7 @@ CUB_TEST("cub::DeviceSetOps::SetDifference accepts an environment", "[set_ops][e
 
   const cuda::stream stream{cuda::devices[0]};
 
-  auto error = cub::DeviceSetOps::SetDifference(
+  auto error = cub::detail::DeviceSetOps::SetDifference(
     keys1.begin(),
     static_cast<int>(keys1.size()),
     keys2.begin(),
@@ -41,7 +41,7 @@ CUB_TEST("cub::DeviceSetOps::SetDifference accepts an environment", "[set_ops][e
     cuda::stream_ref{stream});
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSetOps::SetDifference failed with status: " << error << '\n';
+    std::cerr << "cub::detail::DeviceSetOps::SetDifference failed with status: " << error << '\n';
   }
   stream.sync();
   result.resize(num_selected[0]);
@@ -54,7 +54,7 @@ CUB_TEST("cub::DeviceSetOps::SetDifference accepts an environment", "[set_ops][e
   REQUIRE(result == expected);
 }
 
-CUB_TEST("cub::DeviceSetOps::SetIntersection accepts an environment", "[set_ops][env]", CUB_SMALL)
+CUB_TEST("cub::detail::DeviceSetOps::SetIntersection accepts an environment", "[set_ops][env]", CUB_SMALL)
 {
   // example-begin set-intersection-env
   auto keys1        = thrust::device_vector<int>{0, 2, 4, 5, 7};
@@ -64,7 +64,7 @@ CUB_TEST("cub::DeviceSetOps::SetIntersection accepts an environment", "[set_ops]
 
   const cuda::stream stream{cuda::devices[0]};
 
-  auto error = cub::DeviceSetOps::SetIntersection(
+  auto error = cub::detail::DeviceSetOps::SetIntersection(
     keys1.begin(),
     static_cast<int>(keys1.size()),
     keys2.begin(),
@@ -75,7 +75,7 @@ CUB_TEST("cub::DeviceSetOps::SetIntersection accepts an environment", "[set_ops]
     cuda::stream_ref{stream});
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSetOps::SetIntersection failed with status: " << error << '\n';
+    std::cerr << "cub::detail::DeviceSetOps::SetIntersection failed with status: " << error << '\n';
   }
   stream.sync();
   result.resize(num_selected[0]);
@@ -88,7 +88,7 @@ CUB_TEST("cub::DeviceSetOps::SetIntersection accepts an environment", "[set_ops]
   REQUIRE(result == expected);
 }
 
-CUB_TEST("cub::DeviceSetOps::SetSymmetricDifference accepts an environment", "[set_ops][env]", CUB_SMALL)
+CUB_TEST("cub::detail::DeviceSetOps::SetSymmetricDifference accepts an environment", "[set_ops][env]", CUB_SMALL)
 {
   // example-begin set-symmetric-difference-env
   auto keys1        = thrust::device_vector<int>{0, 2, 4, 5, 7};
@@ -98,7 +98,7 @@ CUB_TEST("cub::DeviceSetOps::SetSymmetricDifference accepts an environment", "[s
 
   const cuda::stream stream{cuda::devices[0]};
 
-  auto error = cub::DeviceSetOps::SetSymmetricDifference(
+  auto error = cub::detail::DeviceSetOps::SetSymmetricDifference(
     keys1.begin(),
     static_cast<int>(keys1.size()),
     keys2.begin(),
@@ -109,7 +109,7 @@ CUB_TEST("cub::DeviceSetOps::SetSymmetricDifference accepts an environment", "[s
     cuda::stream_ref{stream});
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSetOps::SetSymmetricDifference failed with status: " << error << '\n';
+    std::cerr << "cub::detail::DeviceSetOps::SetSymmetricDifference failed with status: " << error << '\n';
   }
   stream.sync();
   result.resize(num_selected[0]);
@@ -122,7 +122,7 @@ CUB_TEST("cub::DeviceSetOps::SetSymmetricDifference accepts an environment", "[s
   REQUIRE(result == expected);
 }
 
-CUB_TEST("cub::DeviceSetOps::SetUnion accepts an environment", "[set_ops][env]", CUB_SMALL)
+CUB_TEST("cub::detail::DeviceSetOps::SetUnion accepts an environment", "[set_ops][env]", CUB_SMALL)
 {
   // example-begin set-union-env
   auto keys1        = thrust::device_vector<int>{0, 2, 4, 5, 7};
@@ -132,7 +132,7 @@ CUB_TEST("cub::DeviceSetOps::SetUnion accepts an environment", "[set_ops][env]",
 
   const cuda::stream stream{cuda::devices[0]};
 
-  auto error = cub::DeviceSetOps::SetUnion(
+  auto error = cub::detail::DeviceSetOps::SetUnion(
     keys1.begin(),
     static_cast<int>(keys1.size()),
     keys2.begin(),
@@ -143,7 +143,7 @@ CUB_TEST("cub::DeviceSetOps::SetUnion accepts an environment", "[set_ops][env]",
     cuda::stream_ref{stream});
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSetOps::SetUnion failed with status: " << error << '\n';
+    std::cerr << "cub::detail::DeviceSetOps::SetUnion failed with status: " << error << '\n';
   }
   stream.sync();
   result.resize(num_selected[0]);
@@ -156,7 +156,7 @@ CUB_TEST("cub::DeviceSetOps::SetUnion accepts an environment", "[set_ops][env]",
   REQUIRE(result == expected);
 }
 
-CUB_TEST("cub::DeviceSetOps::SetDifferencePairs accepts an environment", "[set_ops][env]", CUB_SMALL)
+CUB_TEST("cub::detail::DeviceSetOps::SetDifferencePairs accepts an environment", "[set_ops][env]", CUB_SMALL)
 {
   // example-begin set-difference-pairs-env
   auto keys1   = thrust::device_vector<int>{0, 2, 4, 5, 7};
@@ -170,7 +170,7 @@ CUB_TEST("cub::DeviceSetOps::SetDifferencePairs accepts an environment", "[set_o
 
   const cuda::stream stream{cuda::devices[0]};
 
-  auto error = cub::DeviceSetOps::SetDifferencePairs(
+  auto error = cub::detail::DeviceSetOps::SetDifferencePairs(
     keys1.begin(),
     values1.begin(),
     static_cast<int>(keys1.size()),
@@ -184,7 +184,7 @@ CUB_TEST("cub::DeviceSetOps::SetDifferencePairs accepts an environment", "[set_o
     cuda::stream_ref{stream});
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSetOps::SetDifferencePairs failed with status: " << error << '\n';
+    std::cerr << "cub::detail::DeviceSetOps::SetDifferencePairs failed with status: " << error << '\n';
   }
   stream.sync();
   result_keys.resize(num_selected[0]);
@@ -200,7 +200,7 @@ CUB_TEST("cub::DeviceSetOps::SetDifferencePairs accepts an environment", "[set_o
   REQUIRE(result_values == expected_values);
 }
 
-CUB_TEST("cub::DeviceSetOps::SetIntersectionPairs accepts an environment", "[set_ops][env]", CUB_SMALL)
+CUB_TEST("cub::detail::DeviceSetOps::SetIntersectionPairs accepts an environment", "[set_ops][env]", CUB_SMALL)
 {
   // example-begin set-intersection-pairs-env
   auto keys1   = thrust::device_vector<int>{0, 2, 4, 5, 7};
@@ -214,7 +214,7 @@ CUB_TEST("cub::DeviceSetOps::SetIntersectionPairs accepts an environment", "[set
 
   const cuda::stream stream{cuda::devices[0]};
 
-  auto error = cub::DeviceSetOps::SetIntersectionPairs(
+  auto error = cub::detail::DeviceSetOps::SetIntersectionPairs(
     keys1.begin(),
     values1.begin(),
     static_cast<int>(keys1.size()),
@@ -228,7 +228,7 @@ CUB_TEST("cub::DeviceSetOps::SetIntersectionPairs accepts an environment", "[set
     cuda::stream_ref{stream});
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSetOps::SetIntersectionPairs failed with status: " << error << '\n';
+    std::cerr << "cub::detail::DeviceSetOps::SetIntersectionPairs failed with status: " << error << '\n';
   }
   stream.sync();
   result_keys.resize(num_selected[0]);
@@ -244,7 +244,7 @@ CUB_TEST("cub::DeviceSetOps::SetIntersectionPairs accepts an environment", "[set
   REQUIRE(result_values == expected_values);
 }
 
-CUB_TEST("cub::DeviceSetOps::SetSymmetricDifferencePairs accepts an environment", "[set_ops][env]", CUB_SMALL)
+CUB_TEST("cub::detail::DeviceSetOps::SetSymmetricDifferencePairs accepts an environment", "[set_ops][env]", CUB_SMALL)
 {
   // example-begin set-symmetric-difference-pairs-env
   auto keys1   = thrust::device_vector<int>{0, 2, 4, 5, 7};
@@ -258,7 +258,7 @@ CUB_TEST("cub::DeviceSetOps::SetSymmetricDifferencePairs accepts an environment"
 
   const cuda::stream stream{cuda::devices[0]};
 
-  auto error = cub::DeviceSetOps::SetSymmetricDifferencePairs(
+  auto error = cub::detail::DeviceSetOps::SetSymmetricDifferencePairs(
     keys1.begin(),
     values1.begin(),
     static_cast<int>(keys1.size()),
@@ -272,7 +272,7 @@ CUB_TEST("cub::DeviceSetOps::SetSymmetricDifferencePairs accepts an environment"
     cuda::stream_ref{stream});
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSetOps::SetSymmetricDifferencePairs failed with status: " << error << '\n';
+    std::cerr << "cub::detail::DeviceSetOps::SetSymmetricDifferencePairs failed with status: " << error << '\n';
   }
   stream.sync();
   result_keys.resize(num_selected[0]);
@@ -288,7 +288,7 @@ CUB_TEST("cub::DeviceSetOps::SetSymmetricDifferencePairs accepts an environment"
   REQUIRE(result_values == expected_values);
 }
 
-CUB_TEST("cub::DeviceSetOps::SetUnionPairs accepts an environment", "[set_ops][env]", CUB_SMALL)
+CUB_TEST("cub::detail::DeviceSetOps::SetUnionPairs accepts an environment", "[set_ops][env]", CUB_SMALL)
 {
   // example-begin set-union-pairs-env
   auto keys1   = thrust::device_vector<int>{0, 2, 4, 5, 7};
@@ -302,7 +302,7 @@ CUB_TEST("cub::DeviceSetOps::SetUnionPairs accepts an environment", "[set_ops][e
 
   const cuda::stream stream{cuda::devices[0]};
 
-  auto error = cub::DeviceSetOps::SetUnionPairs(
+  auto error = cub::detail::DeviceSetOps::SetUnionPairs(
     keys1.begin(),
     values1.begin(),
     static_cast<int>(keys1.size()),
@@ -316,7 +316,7 @@ CUB_TEST("cub::DeviceSetOps::SetUnionPairs accepts an environment", "[set_ops][e
     cuda::stream_ref{stream});
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSetOps::SetUnionPairs failed with status: " << error << '\n';
+    std::cerr << "cub::detail::DeviceSetOps::SetUnionPairs failed with status: " << error << '\n';
   }
   stream.sync();
   result_keys.resize(num_selected[0]);

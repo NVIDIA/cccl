@@ -34,6 +34,13 @@
 
 CUB_NAMESPACE_BEGIN
 
+// TODO(bgruber): expose DeviceSetOps publicly (move it out of the detail namespace). It is kept internal for now
+// because the offset-type handling is not robust enough yet: choose_offset_t deduces the offset from a single size
+// type, which requires that type to be able to represent the sum of both input lengths -- a dangerous precondition to
+// place on users. Before exposing it, either hard-code a 64-bit offset type or derive the offset type more carefully
+// from the two input size types.
+namespace detail
+{
 //! @rst
 //! DeviceSetOps provides device-wide, parallel operations for computing set operations (difference, intersection,
 //! symmetric difference, union) over two *sorted* input sequences of keys (and optionally associated values). The
@@ -42,14 +49,7 @@ CUB_NAMESPACE_BEGIN
 //!
 //! The result is written to an output sequence and its length -- which is data dependent -- is written to
 //! ``d_num_selected_out`` (following the same convention as :cpp:struct:`cub::DeviceSelect`). The semantics match the
-//! C++ standard library's ``std::set_*`` algorithms, including their handling of duplicate elements: if a value occurs
-//! ``m`` times in the first input and ``n`` times in the second, the result contains it ``max(0, m - n)`` times for
-//! difference, ``min(m, n)`` times for intersection, ``|m - n|`` times for symmetric difference, and ``max(m, n)``
-//! times for union. Elements taken from the first input (all of difference/intersection, and the first ``m`` of a
-//! union/symmetric-difference run) preserve their input order, so equal keys are stable with respect to the inputs.
-//!
-//! The combined input size -- the sum of the two input sizes -- must be representable by the type used for the two
-//! input sizes.
+//! C++ standard library's ``std::set_*`` algorithms, including their handling of duplicate elements.
 //! @endrst
 struct DeviceSetOps
 {
@@ -235,6 +235,9 @@ private:
 public:
   //! Computes the set difference `keys1 \ keys2` of two sorted key sequences, writing the number of emitted keys to
   //! `d_num_selected_out`.
+  //!
+  //! @tparam NumKeysT
+  //!   Type of `num_keys1` and `num_keys2`. Their sum (the combined input size) must be representable by this type.
   template <typename KeyIteratorIn1,
             typename KeyIteratorIn2,
             typename KeyIteratorOut,
@@ -254,7 +257,7 @@ public:
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSetOps::SetDifference");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::detail::DeviceSetOps::SetDifference");
     using offset_t = detail::choose_offset_t<NumKeysT>;
     return set_op_keys<detail::set_ops::serial_set_difference>(
       d_temp_storage,
@@ -283,6 +286,9 @@ public:
   //!     :end-before: example-end set-difference-env
   //!
   //! @endrst
+  //!
+  //! @tparam NumKeysT
+  //!   Type of `num_keys1` and `num_keys2`. Their sum (the combined input size) must be representable by this type.
   template <
     typename KeyIteratorIn1,
     typename KeyIteratorIn2,
@@ -304,7 +310,7 @@ public:
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSetOps::SetDifference");
+    _CCCL_NVTX_RANGE_SCOPE("cub::detail::DeviceSetOps::SetDifference");
     using offset_t = detail::choose_offset_t<NumKeysT>;
     return set_op_keys_env<detail::set_ops::serial_set_difference>(
       d_keys_in1,
@@ -319,6 +325,9 @@ public:
 
   //! Computes the set intersection `keys1 ∩ keys2` of two sorted key sequences, writing the number of emitted keys to
   //! `d_num_selected_out`.
+  //!
+  //! @tparam NumKeysT
+  //!   Type of `num_keys1` and `num_keys2`. Their sum (the combined input size) must be representable by this type.
   template <typename KeyIteratorIn1,
             typename KeyIteratorIn2,
             typename KeyIteratorOut,
@@ -338,7 +347,7 @@ public:
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSetOps::SetIntersection");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::detail::DeviceSetOps::SetIntersection");
     using offset_t = detail::choose_offset_t<NumKeysT>;
     return set_op_keys<detail::set_ops::serial_set_intersection>(
       d_temp_storage,
@@ -367,6 +376,9 @@ public:
   //!     :end-before: example-end set-intersection-env
   //!
   //! @endrst
+  //!
+  //! @tparam NumKeysT
+  //!   Type of `num_keys1` and `num_keys2`. Their sum (the combined input size) must be representable by this type.
   template <
     typename KeyIteratorIn1,
     typename KeyIteratorIn2,
@@ -388,7 +400,7 @@ public:
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSetOps::SetIntersection");
+    _CCCL_NVTX_RANGE_SCOPE("cub::detail::DeviceSetOps::SetIntersection");
     using offset_t = detail::choose_offset_t<NumKeysT>;
     return set_op_keys_env<detail::set_ops::serial_set_intersection>(
       d_keys_in1,
@@ -403,6 +415,9 @@ public:
 
   //! Computes the set symmetric difference `keys1 △ keys2` of two sorted key sequences, writing the number of emitted
   //! keys to `d_num_selected_out`.
+  //!
+  //! @tparam NumKeysT
+  //!   Type of `num_keys1` and `num_keys2`. Their sum (the combined input size) must be representable by this type.
   template <typename KeyIteratorIn1,
             typename KeyIteratorIn2,
             typename KeyIteratorOut,
@@ -422,7 +437,7 @@ public:
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSetOps::SetSymmetricDifference");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::detail::DeviceSetOps::SetSymmetricDifference");
     using offset_t = detail::choose_offset_t<NumKeysT>;
     return set_op_keys<detail::set_ops::serial_set_symmetric_difference>(
       d_temp_storage,
@@ -451,6 +466,9 @@ public:
   //!     :end-before: example-end set-symmetric-difference-env
   //!
   //! @endrst
+  //!
+  //! @tparam NumKeysT
+  //!   Type of `num_keys1` and `num_keys2`. Their sum (the combined input size) must be representable by this type.
   template <
     typename KeyIteratorIn1,
     typename KeyIteratorIn2,
@@ -472,7 +490,7 @@ public:
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSetOps::SetSymmetricDifference");
+    _CCCL_NVTX_RANGE_SCOPE("cub::detail::DeviceSetOps::SetSymmetricDifference");
     using offset_t = detail::choose_offset_t<NumKeysT>;
     return set_op_keys_env<detail::set_ops::serial_set_symmetric_difference>(
       d_keys_in1,
@@ -487,6 +505,9 @@ public:
 
   //! Computes the set union `keys1 ∪ keys2` of two sorted key sequences, writing the number of emitted keys to
   //! `d_num_selected_out`.
+  //!
+  //! @tparam NumKeysT
+  //!   Type of `num_keys1` and `num_keys2`. Their sum (the combined input size) must be representable by this type.
   template <typename KeyIteratorIn1,
             typename KeyIteratorIn2,
             typename KeyIteratorOut,
@@ -506,7 +527,7 @@ public:
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSetOps::SetUnion");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::detail::DeviceSetOps::SetUnion");
     using offset_t = detail::choose_offset_t<NumKeysT>;
     return set_op_keys<detail::set_ops::serial_set_union>(
       d_temp_storage,
@@ -534,6 +555,9 @@ public:
   //!     :end-before: example-end set-union-env
   //!
   //! @endrst
+  //!
+  //! @tparam NumKeysT
+  //!   Type of `num_keys1` and `num_keys2`. Their sum (the combined input size) must be representable by this type.
   template <
     typename KeyIteratorIn1,
     typename KeyIteratorIn2,
@@ -555,7 +579,7 @@ public:
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSetOps::SetUnion");
+    _CCCL_NVTX_RANGE_SCOPE("cub::detail::DeviceSetOps::SetUnion");
     using offset_t = detail::choose_offset_t<NumKeysT>;
     return set_op_keys_env<detail::set_ops::serial_set_union>(
       d_keys_in1,
@@ -570,6 +594,9 @@ public:
 
   //! Key-value variant of @ref SetDifference. Keys present in the output are accompanied by the value from the first
   //! input sequence.
+  //!
+  //! @tparam NumPairsT
+  //!   Type of `num_pairs1` and `num_pairs2`. Their sum (the combined input size) must be representable by this type.
   template <typename KeyIteratorIn1,
             typename ValueIteratorIn1,
             typename KeyIteratorIn2,
@@ -595,7 +622,7 @@ public:
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSetOps::SetDifferencePairs");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::detail::DeviceSetOps::SetDifferencePairs");
     using offset_t = detail::choose_offset_t<NumPairsT>;
     return set_op_pairs<detail::set_ops::serial_set_difference>(
       d_temp_storage,
@@ -628,6 +655,9 @@ public:
   //!     :end-before: example-end set-difference-pairs-env
   //!
   //! @endrst
+  //!
+  //! @tparam NumPairsT
+  //!   Type of `num_pairs1` and `num_pairs2`. Their sum (the combined input size) must be representable by this type.
   template <
     typename KeyIteratorIn1,
     typename ValueIteratorIn1,
@@ -655,7 +685,7 @@ public:
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSetOps::SetDifferencePairs");
+    _CCCL_NVTX_RANGE_SCOPE("cub::detail::DeviceSetOps::SetDifferencePairs");
     using offset_t = detail::choose_offset_t<NumPairsT>;
     return set_op_pairs_env<detail::set_ops::serial_set_difference>(
       d_keys_in1,
@@ -673,6 +703,9 @@ public:
 
   //! Key-value variant of @ref SetIntersection. Keys present in the output are accompanied by the value from the first
   //! input sequence.
+  //!
+  //! @tparam NumPairsT
+  //!   Type of `num_pairs1` and `num_pairs2`. Their sum (the combined input size) must be representable by this type.
   template <typename KeyIteratorIn1,
             typename ValueIteratorIn1,
             typename KeyIteratorIn2,
@@ -698,7 +731,7 @@ public:
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSetOps::SetIntersectionPairs");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::detail::DeviceSetOps::SetIntersectionPairs");
     using offset_t = detail::choose_offset_t<NumPairsT>;
     return set_op_pairs<detail::set_ops::serial_set_intersection>(
       d_temp_storage,
@@ -730,6 +763,9 @@ public:
   //!     :end-before: example-end set-intersection-pairs-env
   //!
   //! @endrst
+  //!
+  //! @tparam NumPairsT
+  //!   Type of `num_pairs1` and `num_pairs2`. Their sum (the combined input size) must be representable by this type.
   template <
     typename KeyIteratorIn1,
     typename ValueIteratorIn1,
@@ -757,7 +793,7 @@ public:
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSetOps::SetIntersectionPairs");
+    _CCCL_NVTX_RANGE_SCOPE("cub::detail::DeviceSetOps::SetIntersectionPairs");
     using offset_t = detail::choose_offset_t<NumPairsT>;
     return set_op_pairs_env<detail::set_ops::serial_set_intersection>(
       d_keys_in1,
@@ -775,6 +811,9 @@ public:
 
   //! Key-value variant of @ref SetSymmetricDifference. Keys taken from the first input carry the value from the first
   //! input; keys taken from the second input carry the value from the second input.
+  //!
+  //! @tparam NumPairsT
+  //!   Type of `num_pairs1` and `num_pairs2`. Their sum (the combined input size) must be representable by this type.
   template <typename KeyIteratorIn1,
             typename ValueIteratorIn1,
             typename KeyIteratorIn2,
@@ -800,7 +839,7 @@ public:
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSetOps::SetSymmetricDifferencePairs");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::detail::DeviceSetOps::SetSymmetricDifferencePairs");
     using offset_t = detail::choose_offset_t<NumPairsT>;
     return set_op_pairs<detail::set_ops::serial_set_symmetric_difference>(
       d_temp_storage,
@@ -832,6 +871,9 @@ public:
   //!     :end-before: example-end set-symmetric-difference-pairs-env
   //!
   //! @endrst
+  //!
+  //! @tparam NumPairsT
+  //!   Type of `num_pairs1` and `num_pairs2`. Their sum (the combined input size) must be representable by this type.
   template <
     typename KeyIteratorIn1,
     typename ValueIteratorIn1,
@@ -859,7 +901,7 @@ public:
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSetOps::SetSymmetricDifferencePairs");
+    _CCCL_NVTX_RANGE_SCOPE("cub::detail::DeviceSetOps::SetSymmetricDifferencePairs");
     using offset_t = detail::choose_offset_t<NumPairsT>;
     return set_op_pairs_env<detail::set_ops::serial_set_symmetric_difference>(
       d_keys_in1,
@@ -876,6 +918,9 @@ public:
   }
 
   //! Key-value variant of @ref SetUnion. In case of a tie, the key and value are taken from the first input sequence.
+  //!
+  //! @tparam NumPairsT
+  //!   Type of `num_pairs1` and `num_pairs2`. Their sum (the combined input size) must be representable by this type.
   template <typename KeyIteratorIn1,
             typename ValueIteratorIn1,
             typename KeyIteratorIn2,
@@ -901,7 +946,7 @@ public:
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSetOps::SetUnionPairs");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::detail::DeviceSetOps::SetUnionPairs");
     using offset_t = detail::choose_offset_t<NumPairsT>;
     return set_op_pairs<detail::set_ops::serial_set_union>(
       d_temp_storage,
@@ -933,6 +978,9 @@ public:
   //!     :end-before: example-end set-union-pairs-env
   //!
   //! @endrst
+  //!
+  //! @tparam NumPairsT
+  //!   Type of `num_pairs1` and `num_pairs2`. Their sum (the combined input size) must be representable by this type.
   template <
     typename KeyIteratorIn1,
     typename ValueIteratorIn1,
@@ -960,7 +1008,7 @@ public:
     CompareOp compare_op = {},
     const EnvT& env      = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSetOps::SetUnionPairs");
+    _CCCL_NVTX_RANGE_SCOPE("cub::detail::DeviceSetOps::SetUnionPairs");
     using offset_t = detail::choose_offset_t<NumPairsT>;
     return set_op_pairs_env<detail::set_ops::serial_set_union>(
       d_keys_in1,
@@ -976,5 +1024,6 @@ public:
       env);
   }
 };
+} // namespace detail
 
 CUB_NAMESPACE_END

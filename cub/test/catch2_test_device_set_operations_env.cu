@@ -14,10 +14,10 @@ struct stream_registry_factory_t;
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_launch_helper.h"
 
-DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSetOps::SetDifference, set_difference);
-DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSetOps::SetIntersection, set_intersection);
-DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSetOps::SetSymmetricDifference, set_symmetric_difference);
-DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSetOps::SetUnion, set_union);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::detail::DeviceSetOps::SetDifference, set_difference);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::detail::DeviceSetOps::SetIntersection, set_intersection);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::detail::DeviceSetOps::SetSymmetricDifference, set_symmetric_difference);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::detail::DeviceSetOps::SetUnion, set_union);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -37,7 +37,7 @@ struct op_difference
   template <typename... Args>
   static cudaError_t api(Args&&... args)
   {
-    return cub::DeviceSetOps::SetDifference(::cuda::std::forward<Args>(args)...);
+    return cub::detail::DeviceSetOps::SetDifference(::cuda::std::forward<Args>(args)...);
   }
   template <typename It, typename Out, typename CompareOp>
   static void reference(It a1, It a2, It b1, It b2, Out out, CompareOp cmp)
@@ -55,7 +55,7 @@ struct op_intersection
   template <typename... Args>
   static cudaError_t api(Args&&... args)
   {
-    return cub::DeviceSetOps::SetIntersection(::cuda::std::forward<Args>(args)...);
+    return cub::detail::DeviceSetOps::SetIntersection(::cuda::std::forward<Args>(args)...);
   }
   template <typename It, typename Out, typename CompareOp>
   static void reference(It a1, It a2, It b1, It b2, Out out, CompareOp cmp)
@@ -73,7 +73,7 @@ struct op_symmetric_difference
   template <typename... Args>
   static cudaError_t api(Args&&... args)
   {
-    return cub::DeviceSetOps::SetSymmetricDifference(::cuda::std::forward<Args>(args)...);
+    return cub::detail::DeviceSetOps::SetSymmetricDifference(::cuda::std::forward<Args>(args)...);
   }
   template <typename It, typename Out, typename CompareOp>
   static void reference(It a1, It a2, It b1, It b2, Out out, CompareOp cmp)
@@ -91,7 +91,7 @@ struct op_union
   template <typename... Args>
   static cudaError_t api(Args&&... args)
   {
-    return cub::DeviceSetOps::SetUnion(::cuda::std::forward<Args>(args)...);
+    return cub::detail::DeviceSetOps::SetUnion(::cuda::std::forward<Args>(args)...);
   }
   template <typename It, typename Out, typename CompareOp>
   static void reference(It a1, It a2, It b1, It b2, Out out, CompareOp cmp)

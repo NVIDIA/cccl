@@ -24,7 +24,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-//! The tuning policy for all algorithms in @ref DeviceSetOps.
+//! The tuning policy for all algorithms in DeviceSetOps.
 struct SetOpsPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block

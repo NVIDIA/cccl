@@ -16,10 +16,10 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSetOps::SetDifferencePairs, set_difference_pairs);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSetOps::SetIntersectionPairs, set_intersection_pairs);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSetOps::SetSymmetricDifferencePairs, set_symmetric_difference_pairs);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSetOps::SetUnionPairs, set_union_pairs);
+DECLARE_LAUNCH_WRAPPER(cub::detail::DeviceSetOps::SetDifferencePairs, set_difference_pairs);
+DECLARE_LAUNCH_WRAPPER(cub::detail::DeviceSetOps::SetIntersectionPairs, set_intersection_pairs);
+DECLARE_LAUNCH_WRAPPER(cub::detail::DeviceSetOps::SetSymmetricDifferencePairs, set_symmetric_difference_pairs);
+DECLARE_LAUNCH_WRAPPER(cub::detail::DeviceSetOps::SetUnionPairs, set_union_pairs);
 
 // The output keys of a set operation on key-value pairs must equal the keys-only result, and each emitted value must be
 // the value associated with its key in whichever input it came from. We tag values as `key * 2 + source_bit`

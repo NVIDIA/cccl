@@ -38,15 +38,15 @@ namespace cuda_cub
 {
 namespace detail
 {
-// Named forwarders to the cub::DeviceSetOps APIs. They carry _CCCL_EXEC_CHECK_DISABLE, which the generic lambdas below
-// cannot: the cub APIs are __host__-only without CDP but are reached from the __host__ __device__ set_operations
-// helper.
-#  define THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER(NAME, CUB_FN)     \
-    _CCCL_EXEC_CHECK_DISABLE                                          \
-    template <typename... Args>                                       \
-    _CCCL_HOST_DEVICE cudaError_t NAME(Args&&... args)                \
-    {                                                                 \
-      return cub::DeviceSetOps::CUB_FN(static_cast<Args&&>(args)...); \
+// Named forwarders to the cub::detail::DeviceSetOps APIs. They carry _CCCL_EXEC_CHECK_DISABLE, which the generic
+// lambdas below cannot: the cub APIs are __host__-only without CDP but are reached from the __host__ __device__
+// set_operations helper.
+#  define THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER(NAME, CUB_FN)             \
+    _CCCL_EXEC_CHECK_DISABLE                                                  \
+    template <typename... Args>                                               \
+    _CCCL_HOST_DEVICE cudaError_t NAME(Args&&... args)                        \
+    {                                                                         \
+      return cub::detail::DeviceSetOps::CUB_FN(static_cast<Args&&>(args)...); \
     }
 
 THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER(cub_set_difference, SetDifference)
@@ -60,9 +60,9 @@ THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER(cub_set_union_pairs, SetUnionPairs)
 
 #  undef THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER
 
-// Runs the cub::DeviceSetOps algorithm selected by @p cub_device_api and returns the past-the-end output iterators.
-// Owns the shared temp-storage allocation, output-count read-back, and iterator advancement. The offset type is chosen
-// dynamically (32 vs 64 bit) from the input sizes via THRUST_DOUBLE_INDEX_TYPE_DISPATCH.
+// Runs the cub::detail::DeviceSetOps algorithm selected by @p cub_device_api and returns the past-the-end output
+// iterators. Owns the shared temp-storage allocation, output-count read-back, and iterator advancement. The offset type
+// is chosen dynamically (32 vs 64 bit) from the input sizes via THRUST_DOUBLE_INDEX_TYPE_DISPATCH.
 template <typename Derived,
           typename KeysIt1,
           typename KeysIt2,

@@ -14,10 +14,10 @@ struct stream_registry_factory_t;
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_launch_helper.h"
 
-DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSetOps::SetDifferencePairs, set_difference_pairs);
-DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSetOps::SetIntersectionPairs, set_intersection_pairs);
-DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSetOps::SetSymmetricDifferencePairs, set_symmetric_difference_pairs);
-DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSetOps::SetUnionPairs, set_union_pairs);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::detail::DeviceSetOps::SetDifferencePairs, set_difference_pairs);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::detail::DeviceSetOps::SetIntersectionPairs, set_intersection_pairs);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::detail::DeviceSetOps::SetSymmetricDifferencePairs, set_symmetric_difference_pairs);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::detail::DeviceSetOps::SetUnionPairs, set_union_pairs);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -38,7 +38,7 @@ struct op_difference
   template <typename... Args>
   static cudaError_t api(Args&&... args)
   {
-    return cub::DeviceSetOps::SetDifferencePairs(::cuda::std::forward<Args>(args)...);
+    return cub::detail::DeviceSetOps::SetDifferencePairs(::cuda::std::forward<Args>(args)...);
   }
   template <typename It, typename Out>
   static void reference(It a1, It a2, It b1, It b2, Out out)
@@ -57,7 +57,7 @@ struct op_intersection
   template <typename... Args>
   static cudaError_t api(Args&&... args)
   {
-    return cub::DeviceSetOps::SetIntersectionPairs(::cuda::std::forward<Args>(args)...);
+    return cub::detail::DeviceSetOps::SetIntersectionPairs(::cuda::std::forward<Args>(args)...);
   }
   template <typename It, typename Out>
   static void reference(It a1, It a2, It b1, It b2, Out out)
@@ -76,7 +76,7 @@ struct op_symmetric_difference
   template <typename... Args>
   static cudaError_t api(Args&&... args)
   {
-    return cub::DeviceSetOps::SetSymmetricDifferencePairs(::cuda::std::forward<Args>(args)...);
+    return cub::detail::DeviceSetOps::SetSymmetricDifferencePairs(::cuda::std::forward<Args>(args)...);
   }
   template <typename It, typename Out>
   static void reference(It a1, It a2, It b1, It b2, Out out)
@@ -95,7 +95,7 @@ struct op_union
   template <typename... Args>
   static cudaError_t api(Args&&... args)
   {
-    return cub::DeviceSetOps::SetUnionPairs(::cuda::std::forward<Args>(args)...);
+    return cub::detail::DeviceSetOps::SetUnionPairs(::cuda::std::forward<Args>(args)...);
   }
   template <typename It, typename Out>
   static void reference(It a1, It a2, It b1, It b2, Out out)
