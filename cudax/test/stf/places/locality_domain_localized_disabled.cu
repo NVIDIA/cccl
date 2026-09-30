@@ -28,10 +28,10 @@ using namespace cuda::experimental::stf;
 
 __global__ void scale(double a, slice<double> x)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
-  size_t n = x.extent(0);
+  const size_t n = x.extent(0);
   for (size_t ind = tid; ind < n; ind += nthreads)
   {
     x(ind) *= a;

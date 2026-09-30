@@ -16,7 +16,7 @@ struct plus_mod_10
 };
 
 template <class Vector>
-void TestReduceIntoSimple()
+void test_reduce_into_simple()
 {
   using T = typename Vector::value_type;
 
@@ -31,7 +31,7 @@ void TestReduceIntoSimple()
   thrust::reduce_into(i.begin(), i.end(), o.begin(), T(10));
   REQUIRE(o[0] == 12);
 }
-DECLARE_VECTOR_UNITTEST(TestReduceIntoSimple);
+DECLARE_VECTOR_UNITTEST(test_reduce_into_simple);
 
 template <typename InputIterator, typename OutputIterator>
 void reduce_into(my_system& system, InputIterator, InputIterator, OutputIterator output)
@@ -160,7 +160,7 @@ struct plus_mod3
 };
 
 template <typename Vector>
-void TestReduceIntoWithIndirection()
+void test_reduce_into_with_indirection()
 {
   // add numbers modulo 3 with external lookup table
   using T = typename Vector::value_type;
@@ -175,10 +175,10 @@ void TestReduceIntoWithIndirection()
 
   REQUIRE(result[0] == T(1));
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestReduceIntoWithIndirection);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_reduce_into_with_indirection);
 
 template <typename T>
-void TestReduceIntoCountingIterator()
+void test_reduce_into_counting_iterator()
 {
   size_t const n = 15 * sizeof(T);
 
@@ -197,4 +197,4 @@ void TestReduceIntoCountingIterator()
   // we use ASSERT_ALMOST_EQUAL because we're testing floating point types
   ASSERT_ALMOST_EQUAL(h_result, d_result);
 }
-DECLARE_GENERIC_UNITTEST(TestReduceIntoCountingIterator);
+DECLARE_GENERIC_UNITTEST(test_reduce_into_counting_iterator);
