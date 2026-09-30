@@ -27,6 +27,7 @@ pytestmark = [
 ]
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "selection,pairs,qualified,value_dtype",
     [
@@ -51,18 +52,27 @@ pytestmark = [
     ],
 )
 def test_topk_preserves_inputs_and_pairs(
-    selection, pairs, qualified, value_dtype
+    selection, pairs, qualified, value_dtype, items_per_thread
 ):
     api = numba_coop if qualified else coop
     topk = getattr(api, f"topk_{selection}_{'pairs' if pairs else 'keys'}")
 
     @cuda.jit
-    def kernel(source, payload, selected, associated, preserved, k, count):
+    def kernel(
+        source,
+        payload,
+        selected,
+        associated,
+        preserved,
+        k,
+        count,
+        items_per_thread,
+    ):
         block = api.this_block()
-        keys = api.ThreadData(2)
+        keys = api.ThreadData(items_per_thread)
         api.load(block, source, keys)
         if pairs:
-            values = api.ThreadData(2)
+            values = api.ThreadData(items_per_thread)
             api.load(block, payload, values)
             chosen, chosen_values = topk(
                 block, keys, values, k=k, valid_items=count
@@ -75,8 +85,11 @@ def test_topk_preserves_inputs_and_pairs(
         api.store(block, selected, chosen, valid_items=min(k, count))
         api.store(block, preserved, keys)
 
-    source = ((np.arange(128) * 17) % 131 - 64).astype(np.int32)
-    payload = np.arange(128, dtype=value_dtype)
+    tile_items = 64 * items_per_thread
+    source = (
+        (np.arange(tile_items) * 17) % tile_items - tile_items // 2
+    ).astype(np.int32)
+    payload = np.arange(64 * items_per_thread, dtype=value_dtype)
     if np.issubdtype(value_dtype, np.floating):
         payload = payload / value_dtype(4) - value_dtype(16.125)
     elif np.issubdtype(value_dtype, np.signedinteger):
@@ -90,9 +103,18 @@ def test_topk_preserves_inputs_and_pairs(
     selected = np.empty_like(source)
     preserved = np.empty_like(source)
     associated = np.empty_like(payload)
-    kernel[1, 64](source, payload, selected, associated, preserved, 17, 103)
+    kernel[1, 64](
+        source,
+        payload,
+        selected,
+        associated,
+        preserved,
+        17,
+        source.size - 25,
+        items_per_thread,
+    )
     cuda.synchronize()
-    order = np.argsort(source[:103])
+    order = np.argsort(source[: source.size - 25])
     order = order[:17] if selection == "min" else order[-17:]
     selected_order = np.argsort(selected[:17])
     np.testing.assert_array_equal(selected[:17][selected_order], source[order])
@@ -103,6 +125,7 @@ def test_topk_preserves_inputs_and_pairs(
         )
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "dtype",
     [
@@ -119,19 +142,19 @@ def test_topk_preserves_inputs_and_pairs(
     ],
 )
 @pytest.mark.parametrize("selection", ["min", "max"])
-def test_numeric_profile_and_partial_counts(dtype, selection):
+def test_numeric_profile_and_partial_counts(dtype, selection, items_per_thread):
     topk = getattr(coop, f"topk_{selection}_keys")
 
     @cuda.jit
-    def kernel(source, destination, k, count):
-        keys = coop.ThreadData(2, dtype=dtype)
+    def kernel(source, destination, k, count, items_per_thread):
+        keys = coop.ThreadData(items_per_thread, dtype=dtype)
         coop.load(coop.this_block(), source, keys)
         chosen = topk(coop.this_block(), keys, k=k, valid_items=count)
         coop.store(
             coop.this_block(), destination, chosen, valid_items=min(k, count)
         )
 
-    source = ((np.arange(128) * 17) % 127).astype(dtype)
+    source = ((np.arange(64 * items_per_thread) * 17) % 127).astype(dtype)
     if np.issubdtype(dtype, np.signedinteger) or np.issubdtype(
         dtype, np.floating
     ):
@@ -145,8 +168,17 @@ def test_numeric_profile_and_partial_counts(dtype, selection):
     elif dtype == np.int64:
         source *= dtype(1 << 33)
     output = np.empty_like(source)
-    for k, count in [(0, 128), (0, 0), (17, 0), (17, 7), (128, 128), (7, 91)]:
-        kernel[1, 64](source, output, np.int64(k), np.int64(count))
+    for k, count in [
+        (0, source.size),
+        (0, 0),
+        (17, 0),
+        (17, 7),
+        (source.size, source.size),
+        (7, source.size - 37),
+    ]:
+        kernel[1, 64](
+            source, output, np.int64(k), np.int64(count), items_per_thread
+        )
         cuda.synchronize()
         n = min(k, count)
         ordered = np.sort(source[:count])
@@ -154,17 +186,20 @@ def test_numeric_profile_and_partial_counts(dtype, selection):
         np.testing.assert_array_equal(np.sort(output[:n]), expected)
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("threads", [1, 16, 32, 128])
 @pytest.mark.parametrize("manual_sync", [False, True])
-def test_static_controls_and_reused_storage(threads, manual_sync):
-    keep = min(3, threads * 2)
+def test_static_controls_and_reused_storage(
+    threads, manual_sync, items_per_thread
+):
+    keep = min(3, threads * items_per_thread)
     auto_sync = not manual_sync
 
     @cuda.jit
-    def kernel(source, output):
+    def kernel(source, output, items_per_thread):
         scratch = coop.TempStorage(auto_sync=auto_sync)
         block = coop.this_block()
-        keys = coop.ThreadData(2)
+        keys = coop.ThreadData(items_per_thread)
         coop.load(block, source, keys)
         chosen = coop.topk_min_keys(block, keys, k=keep, temp_storage=scratch)
         if manual_sync:
@@ -176,9 +211,9 @@ def test_static_controls_and_reused_storage(threads, manual_sync):
             cuda.syncthreads()
         coop.store(block, output, chosen, valid_items=1)
 
-    source = np.arange(threads * 2, 0, -1, dtype=np.int32)
+    source = np.arange(threads * items_per_thread, 0, -1, dtype=np.int32)
     output = np.zeros_like(source)
-    kernel[1, threads](source, output)
+    kernel[1, threads](source, output, items_per_thread)
     cuda.synchronize()
     assert output[0] == keep
 
@@ -232,7 +267,7 @@ from cuda import coop
 assert Path(coop.__file__).resolve() == Path({str(Path(coop.__file__).resolve())!r})
 @cuda.jit
 def kernel(source, output, k, count):
-    keys = coop.ThreadData(2)
+    keys = coop.ThreadData(items_per_thread=2)
     coop.load(coop.this_block(),source,keys)
     chosen = coop.topk_min_keys(coop.this_block(),keys,k=k,valid_items=count)
     coop.store(coop.this_block(),output,chosen,valid_items=1)
@@ -260,7 +295,8 @@ else:
     assert "EXPECTED_TOPK_TRAP" in result.stdout
 
 
-def test_empty_prefix_with_cub_assertions(monkeypatch):
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_empty_prefix_with_cub_assertions(monkeypatch, items_per_thread):
     from cuda.coop.numba_mlir._compiler import _nvrtc
 
     compile_provider = _nvrtc.compile
@@ -273,17 +309,19 @@ def test_empty_prefix_with_cub_assertions(monkeypatch):
     monkeypatch.setattr(_nvrtc, "compile", with_assertions)
 
     @cuda.jit
-    def kernel(source, output, k, count):
-        keys = coop.ThreadData(3)
+    def kernel(source, output, k, count, items_per_thread):
+        keys = coop.ThreadData(items_per_thread)
         block = coop.this_block()
         coop.load(block, source, keys)
         selected = coop.topk_min_keys(block, keys, k=k, valid_items=count)
         coop.store(block, output, selected, valid_items=min(k, count))
 
-    source = np.arange(96, dtype=np.int32)
+    source = np.arange(32 * items_per_thread, dtype=np.int32)
     output = np.full_like(source, -1)
-    for k, count in ((0, 96), (0, 0), (17, 0)):
-        kernel[1, 32](source, output, np.int64(k), np.int64(count))
+    for k, count in ((0, source.size), (0, 0), (17, 0)):
+        kernel[1, 32](
+            source, output, np.int64(k), np.int64(count), items_per_thread
+        )
         cuda.synchronize()
         np.testing.assert_array_equal(output, -np.ones_like(source))
 
@@ -299,12 +337,12 @@ def test_chained_results_infer_dtype_from_indexed_writes(
     selected_count = min(3, keep)
 
     @cuda.jit
-    def kernel(source, positions, output, indices, preserved):
+    def kernel(source, positions, output, indices, preserved, items_per_thread):
         block = api.this_block()
-        keys = api.ThreadData(items)
-        values = api.ThreadData(items)
-        for item in range(items):
-            index = cuda.threadIdx.x * items + item
+        keys = api.ThreadData(items_per_thread)
+        values = api.ThreadData(items_per_thread)
+        for item in range(items_per_thread):
+            index = cuda.threadIdx.x * items_per_thread + item
             keys[item] = source[index]
             values[item] = positions[index]
         if pairs:
@@ -332,7 +370,7 @@ def test_chained_results_infer_dtype_from_indexed_writes(
     output = np.zeros_like(source)
     indices = np.zeros_like(positions)
     preserved = np.zeros_like(source)
-    kernel[1, threads](source, positions, output, indices, preserved)
+    kernel[1, threads](source, positions, output, indices, preserved, items)
     cuda.synchronize()
     np.testing.assert_array_equal(
         np.sort(output[:selected_count]),
