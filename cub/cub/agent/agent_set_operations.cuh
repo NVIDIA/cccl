@@ -163,7 +163,7 @@ struct serial_set_intersection
     int (&indices)[ItemsPerThread],
     CompareOp compare_op) const
   {
-    int active_mask = 0;
+    unsigned active_mask = 0;
 
     int a_begin     = keys1_beg;
     int b_begin     = keys2_beg;
@@ -197,7 +197,7 @@ struct serial_set_intersection
         b_key = keys[++b_begin];
       }
     }
-    return active_mask;
+    return static_cast<int>(active_mask);
   }
 };
 
@@ -216,7 +216,7 @@ struct serial_set_symmetric_difference
     int (&indices)[ItemsPerThread],
     CompareOp compare_op) const
   {
-    int active_mask = 0;
+    unsigned active_mask = 0;
 
     int a_begin     = keys1_beg;
     int b_begin     = keys2_beg;
@@ -256,7 +256,7 @@ struct serial_set_symmetric_difference
         b_key = keys[++b_begin];
       }
     }
-    return active_mask;
+    return static_cast<int>(active_mask);
   }
 };
 
@@ -275,7 +275,7 @@ struct serial_set_difference
     int (&indices)[ItemsPerThread],
     CompareOp compare_op) const
   {
-    int active_mask = 0;
+    unsigned active_mask = 0;
 
     int a_begin     = keys1_beg;
     int b_begin     = keys2_beg;
@@ -316,7 +316,7 @@ struct serial_set_difference
         b_key = keys[++b_begin];
       }
     }
-    return active_mask;
+    return static_cast<int>(active_mask);
   }
 };
 
@@ -335,7 +335,7 @@ struct serial_set_union
     int (&indices)[ItemsPerThread],
     CompareOp compare_op) const
   {
-    int active_mask = 0;
+    unsigned active_mask = 0;
 
     int a_begin     = keys1_beg;
     int b_begin     = keys2_beg;
@@ -376,7 +376,7 @@ struct serial_set_union
         b_key = keys[++b_begin];
       }
     }
-    return active_mask;
+    return static_cast<int>(active_mask);
   }
 };
 
