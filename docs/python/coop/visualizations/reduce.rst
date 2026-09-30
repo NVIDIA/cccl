@@ -71,15 +71,16 @@ and the integer bitwise operators.
 Using Reduce in a kernel
 ------------------------
 
-This fragment runs inside a Numba-CUDA-MLIR kernel with ``cuda`` imported from
+This fragment runs inside a Numba-CUDA-MLIR kernel that accepts
+``items_per_thread``. Import ``cuda`` from
 ``numba_cuda_mlir``, ``numpy as np``, and ``cuda.coop as coop``. Launch with
-128 threads and supply at least 256 input elements for each block.
+128 threads and supply at least ``128 * items_per_thread`` input elements for each block.
 
 .. code-block:: python
 
    block = coop.this_block()
-   values = coop.ThreadData(items_per_thread=2)
-   coop.load(block, source, values, offset=cuda.blockIdx.x * 256)
+   values = coop.ThreadData(items_per_thread)
+   coop.load(block, source, values, offset=cuda.blockIdx.x * 128 * items_per_thread)
    total = coop.sum(block, values, broadcast=False, algorithm="raking")
    if cuda.threadIdx.x == 0:
        output[cuda.blockIdx.x] = total
