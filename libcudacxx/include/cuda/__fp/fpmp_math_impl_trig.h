@@ -1304,13 +1304,18 @@ _CCCL_FPMP_MATH_DISPATCH_1A(cospi)
  */
 [[nodiscard]] _CCCL_FPMP_CORE_API int __internal_fpmp2_pi_limb(float __x, float* __f) noexcept
 {
+  // |x| >= 2^23: ulp >= 1, so a finite float is an integer and the fraction is 0.
+  // |x| >= 2^24: ulp >= 2, so it is an even integer and its parity is 0.
+  constexpr float __integral_threshold      = 0x1p23f;
+  constexpr float __even_integral_threshold = 0x1p24f;
+
   const float __abs = (__x < 0.0f) ? -__x : __x;
-  if (__abs >= 0x1p24f)
+  if (__abs >= __even_integral_threshold)
   {
     *__f = 0.0f;
     return 0;
   }
-  if (__abs >= 0x1p23f)
+  if (__abs >= __integral_threshold)
   {
     const int __n = __fpmp_fp2int_rn(__x);
     *__f          = 0.0f;
@@ -1362,7 +1367,10 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
   int __odd;
   float __f_hi;
   float __f_lo;
-  if (__abs_hi < 0x1p23f)
+  // Same thresholds as __internal_fpmp2_pi_limb: below 2^23 the high limb still has a fraction.
+  constexpr float __integral_threshold      = 0x1p23f;
+  constexpr float __even_integral_threshold = 0x1p24f;
+  if (__abs_hi < __integral_threshold)
   {
     int __n           = __fpmp_fp2int_rn(__x_hi);
     const float __n_f = __fpmp_int2fp_rn<float>(__n);
@@ -1388,7 +1396,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
   }
   else
   {
-    const int __odd_hi = (__abs_hi < 0x1p24f) ? (__fpmp_fp2int_rn(__x_hi) & 1) : 0;
+    const int __odd_hi = (__abs_hi < __even_integral_threshold) ? (__fpmp_fp2int_rn(__x_hi) & 1) : 0;
     float __lo_f       = 0.0f;
     const int __odd_lo = __internal_fpmp2_pi_limb(__x_lo, &__lo_f);
     __odd              = __odd_hi ^ __odd_lo;
