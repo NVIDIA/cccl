@@ -27,16 +27,21 @@ def _pointer(dtype=cutlass.Int32):
 )
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32, 64))
 @pytest.mark.parametrize("partial", (False, True))
-def test_groups_and_partial_pairs(api, width, partial):
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_groups_and_partial_pairs(api, width, partial, items_per_thread):
     @cute.kernel
-    def kernel(memory: cute.Pointer, count: cutlass.Int64):
+    def kernel(
+        memory: cute.Pointer,
+        count: cutlass.Int64,
+        items_per_thread: cutlass.Constexpr,
+    ):
         if cutlass.const_expr(width == 64):
             group = api.this_block()
         else:
             group = api.this_warp().group_by(width)
-        keys = api.ThreadData(3, dtype=cutlass.Int32)
-        values = api.ThreadData(3, dtype=cutlass.Float64)
-        for item in cutlass.range_constexpr(3):
+        keys = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
+        values = api.ThreadData(items_per_thread, dtype=cutlass.Float64)
+        for item in cutlass.range_constexpr(items_per_thread):
             keys[item] = cutlass.Int32(item + 1)
             values[item] = cutlass.Float64(item + 1)
         if cutlass.const_expr(partial):
@@ -50,11 +55,17 @@ def test_groups_and_partial_pairs(api, width, partial):
         ] + cutlass.Int32(payload[0])
 
     @cute.jit
-    def launch(memory: cute.Pointer, count: cutlass.Int64):
-        kernel(memory, count).launch(grid=1, block=(8, 4, 2))
+    def launch(
+        memory: cute.Pointer,
+        count: cutlass.Int64,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(memory, count, items_per_thread).launch(grid=1, block=(8, 4, 2))
 
     assert (
-        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), cutlass.Int64(1))
+        cute.compile[(GPUArch("sm_80"),)](
+            launch, _pointer(), cutlass.Int64(1), items_per_thread
+        )
         is not None
     )
 
@@ -62,8 +73,8 @@ def test_groups_and_partial_pairs(api, width, partial):
 @pytest.mark.parametrize("dtype", tuple(ALL_PROVIDER_TYPES))
 def test_inferred_key_type(dtype):
     @cute.kernel
-    def kernel(memory: cute.Pointer):
-        keys = coop.ThreadData(2)
+    def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        keys = coop.ThreadData(items_per_thread)
         keys[0] = dtype(2)
         keys[1] = dtype(1)
         result = coop.merge_sort_keys(coop.this_block(), keys)
@@ -71,18 +82,19 @@ def test_inferred_key_type(dtype):
         cute.make_tensor(memory, cute.make_layout(1))[0] = total
 
     @cute.jit
-    def launch(memory: cute.Pointer):
-        kernel(memory).launch(grid=1, block=32)
+    def launch(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        kernel(memory, items_per_thread).launch(grid=1, block=32)
 
     assert (
-        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(dtype)) is not None
+        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(dtype), 2)
+        is not None
     )
 
 
 def test_mixed_partial_group_bundle():
     @cute.kernel
-    def kernel(memory: cute.Pointer):
-        keys = coop.ThreadData(2, dtype=cutlass.Int32)
+    def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        keys = coop.ThreadData(items_per_thread, dtype=cutlass.Int32)
         keys[0] = cutlass.Int32(2)
         keys[1] = cutlass.Int32(1)
         first = coop.merge_sort_keys(
@@ -94,10 +106,10 @@ def test_mixed_partial_group_bundle():
         cute.make_tensor(memory, cute.make_layout(1))[0] = result[0]
 
     @cute.jit
-    def launch(memory: cute.Pointer):
-        kernel(memory).launch(grid=1, block=32)
+    def launch(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        kernel(memory, items_per_thread).launch(grid=1, block=32)
 
-    assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer()) is not None
+    assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), 2) is not None
 
 
 @pytest.mark.parametrize(
@@ -121,7 +133,7 @@ def test_invalid_profiles(case, message):
 
     @cute.kernel
     def kernel(memory: cute.Pointer, count: count_type):
-        keys = coop.ThreadData(2, dtype=cutlass.Int32)
+        keys = coop.ThreadData(items_per_thread=2, dtype=cutlass.Int32)
         keys[0], keys[1] = cutlass.Int32(2), cutlass.Int32(1)
         if cutlass.const_expr(case in {"count_u64", "count_float"}):
             result = coop.merge_sort_keys(
@@ -143,7 +155,7 @@ def test_invalid_profiles(case, message):
                 coop.this_warp(), keys, temp_storage=coop.TempStorage()
             )
         elif cutlass.const_expr(case == "extent"):
-            values = coop.ThreadData(1, dtype=cutlass.Int32)
+            values = coop.ThreadData(items_per_thread=1, dtype=cutlass.Int32)
             values[0] = cutlass.Int32(1)
             result, _result_values = coop.merge_sort_pairs(
                 coop.this_block(), keys, values
