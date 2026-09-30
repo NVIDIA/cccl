@@ -28,8 +28,12 @@ def test_dynamic_payload(dtype, api):
         return payload
 
     @cute.kernel
-    def kernel(memory: cute.Pointer, iterations: cutlass.Int32):
-        payload = api.ThreadData(2, dtype=dtype, alignment=64)
+    def kernel(
+        memory: cute.Pointer,
+        iterations: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        payload = api.ThreadData(items_per_thread, dtype=dtype, alignment=64)
         payload[0] = 1
         payload[1] = 3
         for iteration in range(iterations):
@@ -47,11 +51,15 @@ def test_dynamic_payload(dtype, api):
         output[1] = payload[1]
 
     @cute.jit
-    def launch(memory: cute.Pointer, iterations: cutlass.Int32):
-        kernel(memory, iterations).launch(grid=1, block=1)
+    def launch(
+        memory: cute.Pointer,
+        iterations: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(memory, iterations, items_per_thread).launch(grid=1, block=1)
 
     pointer = make_ptr(dtype, 0, cute.AddressSpace.gmem, assumed_align=16)
-    assert cute.compile[(GPUArch("sm_80"),)](launch, pointer, 3) is not None
+    assert cute.compile[(GPUArch("sm_80"),)](launch, pointer, 3, 2) is not None
 
 
 def test_tensor_ssa_conversion_across_regions():
