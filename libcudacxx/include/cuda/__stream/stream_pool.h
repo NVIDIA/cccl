@@ -23,18 +23,21 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__container/simple_vector.h>
 #  include <cuda/__device/device_ref.h>
 #  include <cuda/__device/logical_device_ref.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__stream/relaxed_capture_scope.h>
 #  include <cuda/__stream/stream.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__atomic/order.h>
 #  include <cuda/std/__atomic/platform.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__utility/exchange.h>
+#  include <cuda/std/__utility/move.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -117,13 +120,21 @@ public:
       : __device_{__device}
       , __priority_{__priority}
       , __size_{__size}
-      , __slots_{__size == 0 ? nullptr : new ::cudaStream_t[__size]()}
+      , __slots_{__size, ::cuda::no_init}
   {
     if (__size == 0)
     {
       _CCCL_THROW(::std::invalid_argument, "cuda::__stream_pool requires at least one stream");
     }
-    if (__mode == __stream_pool_creation::eager)
+    // No other thread can see the pool yet, so the slots are filled with plain stores.
+    if (__mode == __stream_pool_creation::lazy)
+    {
+      for (::cuda::std::size_t __i = 0; __i < __size; ++__i)
+      {
+        __slots_.emplace_back(nullptr);
+      }
+    }
+    else
     {
       _CCCL_TRY
       {
@@ -131,12 +142,12 @@ public:
         const __relaxed_capture_scope __relaxed{};
         for (::cuda::std::size_t __i = 0; __i < __size; ++__i)
         {
-          // No other thread can see the pool yet, so a plain store suffices.
-          __slots_[__i] = __create_stream().release();
+          __slots_.emplace_back(__create_stream().release());
         }
       }
       _CCCL_CATCH_ALL
       {
+        // Only the streams created so far have a slot; the storage is freed by the destructor of `__slots_`.
         __destroy_slots();
         _CCCL_RETHROW;
       }
@@ -163,7 +174,7 @@ public:
       : __device_{__other.__device_}
       , __priority_{__other.__priority_}
       , __size_{::cuda::std::exchange(__other.__size_, ::cuda::std::size_t{0})}
-      , __slots_{::cuda::std::exchange(__other.__slots_, nullptr)}
+      , __slots_{::cuda::std::move(__other.__slots_)}
       , __next_{::cuda::std::exchange(__other.__next_, ::cuda::std::size_t{0})}
   {}
 
@@ -186,7 +197,7 @@ public:
       __device_   = __other.__device_;
       __priority_ = __other.__priority_;
       __size_     = ::cuda::std::exchange(__other.__size_, ::cuda::std::size_t{0});
-      __slots_    = ::cuda::std::exchange(__other.__slots_, nullptr);
+      __slots_    = ::cuda::std::move(__other.__slots_);
       __next_     = ::cuda::std::exchange(__other.__next_, ::cuda::std::size_t{0});
     }
     return *this;
@@ -244,7 +255,7 @@ public:
   [[nodiscard]] _CCCL_HOST_API stream_ref operator[](::cuda::std::size_t __index) const
   {
     _CCCL_ASSERT(__index < __size_, "cuda::__stream_pool index out of range");
-    ::cudaStream_t* const __slot = &__slots_[__index];
+    ::cudaStream_t* const __slot = __slots_.data() + __index;
 
     // A slot changes exactly once, from empty to a stream that lives until the pool is destroyed, so a filled slot
     // is read with a single acquire load.
@@ -353,25 +364,19 @@ private:
       __atomic_compare_exchange_n)(__ptr, &__expected, __desired, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
   }
 
-  //! @brief Destroys every published stream and frees the slots
+  //! @brief Destroys every published stream
   //!
   //! Called from the destructor, from the move assignment, and from the constructor when eager creation fails
-  //! part-way.
+  //! part-way. The slots themselves are owned and freed by `__slots_`.
   _CCCL_HOST_API void __destroy_slots() noexcept
   {
-    if (__slots_ == nullptr)
+    for (const ::cudaStream_t __stream : __slots_)
     {
-      return;
-    }
-    for (::cuda::std::size_t __i = 0; __i < __size_; ++__i)
-    {
-      if (__slots_[__i] != nullptr)
+      if (__stream != nullptr)
       {
-        _CCCL_ASSERT_DRIVER_API(::cuda::__driver::__streamDestroyNoThrow, "Failed to destroy stream", __slots_[__i]);
+        _CCCL_ASSERT_DRIVER_API(::cuda::__driver::__streamDestroyNoThrow, "Failed to destroy stream", __stream);
       }
     }
-    delete[] __slots_;
-    __slots_ = nullptr;
   }
 
   //! @brief Creates one stream on the logical device of the pool
@@ -395,8 +400,9 @@ private:
   ::cuda::std::size_t __size_;
   //! `__size_` slots; an empty slot holds `nullptr`, a filled slot the stream that lives until the pool is destroyed.
   //! Only ever accessed through the atomic helpers above, except in the constructors, the move
-  //! assignment and `__destroy_slots()`, where no other thread can see the pool.
-  ::cudaStream_t* __slots_;
+  //! assignment and `__destroy_slots()`, where no other thread can see the pool. `mutable` because the getters are
+  //! `const` and fill empty slots through the atomic helpers.
+  mutable __simple_vector<::cudaStream_t> __slots_;
   //! The slot the next call to `next_stream()` returns, always below `__size_`; only ever accessed through the
   //! atomic helpers above.
   mutable ::cuda::std::size_t __next_{0};
