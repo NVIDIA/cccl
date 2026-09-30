@@ -46,7 +46,7 @@ def check_portable_surface(
     logical_warp = warp.group_by(8)
     mapped_warps = block.group_by(2)
     cluster = coop.this_cluster()
-    values = coop.ThreadData(2, np.int16, alignment=16)
+    values = coop.ThreadData(items_per_thread=2, dtype=np.int16, alignment=16)
     read_only_values = _ReadOnlyThreadData(np.int16(1))
     storage = coop.TempStorage(64, alignment=16, sharing="shared")
 

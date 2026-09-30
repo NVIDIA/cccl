@@ -123,8 +123,8 @@ compiler hooks and does not repair dispatcher context state.
 Registering a backend
 ---------------------
 
-Call :func:`cuda.coop.register` on the host before compiling kernels to
-select the backend explicitly:
+When you cannot ensure import order, call :func:`cuda.coop.register` on the
+host before compiling kernels to select the backend explicitly:
 
 .. code-block:: python
 
@@ -248,10 +248,10 @@ The common root and qualified backend expose matching entry points:
 
    from cuda import coop
 
-   # Inside a Numba-CUDA-MLIR kernel:
+   # Inside a Numba-CUDA-MLIR kernel with an items_per_thread argument:
    block = coop.this_block()
-   items = coop.ThreadData(items_per_thread=2)
-   tile_items = cuda.blockDim.x * 2
+   items = coop.ThreadData(items_per_thread)
+   tile_items = cuda.blockDim.x * items_per_thread
    tile_offset = cuda.blockIdx.x * tile_items
    valid_items = count - tile_offset
    if valid_items < 0:
@@ -357,8 +357,9 @@ divergent participation safe.
 Per-thread payloads
 -------------------
 
-``coop.ThreadData(items_per_thread=2)`` gives each participating thread a
-fixed-size payload of two items. Common and
+``coop.ThreadData(items_per_thread)`` gives each participating thread a
+fixed-size payload with that many items. Pass ``items_per_thread`` as a
+kernel argument; Numba-CUDA-MLIR specializes the kernel for its value. Common and
 qualified calls use the same inference rules: an untyped Load output infers
 its dtype from the source, and Store combines the destination dtype with
 payload writes. Load fills the supplied output in place and returns ``None``.
@@ -366,7 +367,7 @@ payload writes. Load fills the supplied output in place and returns ``None``.
 Both namespaces accept ``alignment`` as a compile-time positive power of two
 in bytes. It specifies minimum alignment when the compiler materializes
 payload storage; ``None`` lets the compiler choose. For example,
-``coop.ThreadData(items_per_thread=4, alignment=16)`` requests at least
+``coop.ThreadData(items_per_thread, alignment=16)`` requests at least
 16-byte alignment. The backend may use stronger alignment, including for
 requests smaller than its minimum allocation alignment. This option does not
 assert alignment of source or destination arrays passed to Load or Store.

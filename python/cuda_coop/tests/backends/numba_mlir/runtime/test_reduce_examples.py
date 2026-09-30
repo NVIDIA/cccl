@@ -63,10 +63,10 @@ def test_sum_example():
     from cuda import coop
 
     @cuda.jit
-    def sum_tiles(source, totals):
+    def sum_tiles(source, totals, items_per_thread):
         block = coop.this_block()
-        items = coop.ThreadData(items_per_thread=2)
-        tile_size = cuda.blockDim.x * 2
+        items = coop.ThreadData(items_per_thread)
+        tile_size = cuda.blockDim.x * items_per_thread
         offset = cuda.blockIdx.x * tile_size
         valid = min(max(source.size - offset, 0), tile_size)
         coop.load(
@@ -81,12 +81,19 @@ def test_sum_example():
         if cuda.threadIdx.x == 0:
             totals[cuda.blockIdx.x] = total
 
-    values = np.arange(300, dtype=np.int32) - 150
-    source = cuda.to_device(values)
-    totals = cuda.device_array(2, dtype=np.int32)
-    sum_tiles[2, 128](source, totals)
-    expected = np.array(
-        [values[:256].sum(), values[256:].sum()], dtype=np.int32
-    )
-    np.testing.assert_array_equal(totals.copy_to_host(), expected)
+    for items_per_thread in (1, 4):
+        values = np.arange(300, dtype=np.int32) - 150
+        source = cuda.to_device(values)
+        tile_size = 128 * items_per_thread
+        blocks = (values.size + tile_size - 1) // tile_size
+        totals = cuda.device_array(blocks, dtype=np.int32)
+        sum_tiles[blocks, 128](source, totals, items_per_thread)
+        expected = np.array(
+            [
+                values[start : start + tile_size].sum()
+                for start in range(0, values.size, tile_size)
+            ],
+            dtype=np.int32,
+        )
+        np.testing.assert_array_equal(totals.copy_to_host(), expected)
     # sum-example-end

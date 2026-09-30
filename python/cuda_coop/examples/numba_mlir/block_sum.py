@@ -10,28 +10,27 @@ from numba_cuda_mlir import cuda
 from cuda import coop
 
 _THREADS = 64
-_ITEMS_PER_THREAD = 2
-_TILE_ITEMS = _THREADS * _ITEMS_PER_THREAD
 
 
 @cuda.jit
-def block_sum(source, output):
+def block_sum(source, output, items_per_thread):
     """Reduce a full block tile and let only the block root store the result."""
 
     thread = cuda.threadIdx.x
-    values = coop.ThreadData(items_per_thread=_ITEMS_PER_THREAD)
-    for item in range(_ITEMS_PER_THREAD):
-        values[item] = source[thread * _ITEMS_PER_THREAD + item]
+    values = coop.ThreadData(items_per_thread)
+    for item in range(items_per_thread):
+        values[item] = source[thread * items_per_thread + item]
     total = coop.sum(coop.this_block(), values, broadcast=False)
     if thread == 0:
         output[0] = total
 
 
-def main() -> None:
-    source = np.arange(_TILE_ITEMS, dtype=np.int32)
+def main(items_per_thread: int = 4) -> None:
+    tile_items = _THREADS * items_per_thread
+    source = np.arange(tile_items, dtype=np.int32)
     output = np.zeros(1, dtype=np.int32)
 
-    block_sum[1, _THREADS](source, output)
+    block_sum[1, _THREADS](source, output, items_per_thread)
 
     expected = np.asarray([source.sum()], dtype=np.int32)
     np.testing.assert_array_equal(output, expected)

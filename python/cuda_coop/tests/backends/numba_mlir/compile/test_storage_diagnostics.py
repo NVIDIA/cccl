@@ -424,7 +424,7 @@ def test_cudax_reduce_rejects_dynamic_cooperative_backing(monkeypatch, kind):
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
         scratch = coop.TempStorage(64 * 1024, auto_sync=True)
-        items = coop.ThreadData(2, types.int32)
+        items = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         coop.load(
             coop.this_block(),
             source,
