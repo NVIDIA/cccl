@@ -95,11 +95,20 @@ _CCCL_END_NAMESPACE_CUDA_STD
     {                                                                                                             \
       NV_IF_ELSE_TARGET(NV_IS_HOST, (::std::throw_with_nested(_TYPE(__VA_ARGS__));), (::cuda::std::terminate();)) \
     } while (0)
-#  define _CCCL_RETHROW_IF_NESTED(...)                                                                 \
-    do                                                                                                 \
-    {                                                                                                  \
-      NV_IF_ELSE_TARGET(NV_IS_HOST, (::std::rethrow_if_nested(__VA_ARGS__);), ((void) (__VA_ARGS__);)) \
-    } while (0)
+// std::rethrow_if_nested finds the nested cause with a dynamic_cast, so it needs RTTI on the host; without it
+// the operand's cause could never be discovered, and a silent no-op would drop it. Fail with a message instead
+// of the standard library's dynamic_cast error.
+#  ifdef _CCCL_NO_RTTI
+#    define _CCCL_RETHROW_IF_NESTED(...)      \
+      static_assert(sizeof(__VA_ARGS__) == 0, \
+                    "_CCCL_RETHROW_IF_NESTED requires RTTI on the host (std::rethrow_if_nested uses dynamic_cast)")
+#  else // ^^^ _CCCL_NO_RTTI ^^^ / vvv RTTI vvv
+#    define _CCCL_RETHROW_IF_NESTED(...)                                                                 \
+      do                                                                                                 \
+      {                                                                                                  \
+        NV_IF_ELSE_TARGET(NV_IS_HOST, (::std::rethrow_if_nested(__VA_ARGS__);), ((void) (__VA_ARGS__);)) \
+      } while (0)
+#  endif // RTTI
 #  define _CCCL_THROW_MAYBE_WITH_NESTED(_TYPE, ...)                                                                    \
     do                                                                                                                 \
     {                                                                                                                  \

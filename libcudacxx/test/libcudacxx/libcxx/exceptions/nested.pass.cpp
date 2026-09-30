@@ -8,6 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// std::rethrow_if_nested needs RTTI on the host; the harness disables it by default. Unsupported flags are
+// filtered per compiler.
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -frtti --rtti /GR
+
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/cassert>
 
@@ -185,6 +189,8 @@ __global__ void test_kernel()
 
 int main(int, char**)
 {
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test();))
+#endif // TEST_HAS_EXCEPTIONS()
   return 0;
 }
