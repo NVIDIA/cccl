@@ -26,7 +26,7 @@ def test_reject_sample_dtype(dtype):
     from cuda import coop
 
     def kernel():
-        samples = coop.ThreadData(2, dtype=dtype)
+        samples = coop.ThreadData(items_per_thread=2, dtype=dtype)
         return coop.histogram(coop.this_block(), samples, bins=16)
 
     with pytest.raises(TypeError, match="samples dtype"):
@@ -38,7 +38,7 @@ def test_reject_counter_dtype(dtype):
     from cuda import coop
 
     def kernel():
-        samples = coop.ThreadData(2, dtype=np.int32)
+        samples = coop.ThreadData(items_per_thread=2, dtype=np.int32)
         return coop.histogram(
             coop.this_block(), samples, bins=16, counter_dtype=dtype
         )
@@ -54,7 +54,7 @@ def test_reject_invalid_capacity(bins, bins_per_thread):
     from cuda import coop
 
     def kernel():
-        samples = coop.ThreadData(2, dtype=np.int32)
+        samples = coop.ThreadData(items_per_thread=2, dtype=np.int32)
         return coop.histogram(
             coop.this_block(),
             samples,
@@ -73,7 +73,7 @@ def test_require_literal_bins():
     from cuda import coop
 
     def kernel(bins):
-        samples = coop.ThreadData(2, dtype=np.int32)
+        samples = coop.ThreadData(items_per_thread=2, dtype=np.int32)
         return coop.histogram(coop.this_block(), samples, bins=bins)
 
     with pytest.raises(ForceLiteralArg):
@@ -87,7 +87,7 @@ def test_reject_other_group_topologies(warp):
     group = coop.this_warp if warp else coop.this_block
 
     def kernel():
-        samples = coop.ThreadData(2, dtype=np.int32)
+        samples = coop.ThreadData(items_per_thread=2, dtype=np.int32)
         return coop.histogram(group(), samples, bins=16)
 
     with pytest.raises(

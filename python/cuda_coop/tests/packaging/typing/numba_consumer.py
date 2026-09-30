@@ -701,7 +701,7 @@ def check_neighbor_results() -> None:
 
 def check_histogram_surface() -> None:
     block = coop.this_block()
-    samples = coop.ThreadData(3, np.uint8)
+    samples = coop.ThreadData(items_per_thread=3, dtype=np.uint8)
     assert_type(
         coop.histogram(block, samples, bins=33), coop.ThreadDataLike[np.int32]
     )
