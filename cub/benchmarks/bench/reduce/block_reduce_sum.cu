@@ -89,8 +89,8 @@ void run_block_reduce(nvbench::state& state)
   }
   // Latency mode runs a single block so the chained reductions form one dependency chain, as in one DeviceReduce tile.
   const int grid_size = state.get_string("Mode") == "latency" ? 1 : max_blocks_per_SM * num_SMs;
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch&) {
-    kernel<<<grid_size, BlockSize>>>(action_t{});
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    kernel<<<grid_size, BlockSize, 0, launch.get_stream()>>>(action_t{});
   });
 }
 
