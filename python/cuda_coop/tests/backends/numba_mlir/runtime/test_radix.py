@@ -51,21 +51,58 @@ def _permutation(keys, begin, end, descending):
 
 
 @pytest.mark.parametrize(
-    "dtype", [np.int32, np.uint32, np.int64, np.uint64, np.float32, np.float64]
+    "dtype,descending,partial,value_dtype",
+    [
+        (dtype, descending, partial, np.float64)
+        for dtype in (
+            np.int32,
+            np.uint32,
+            np.int64,
+            np.uint64,
+            np.float32,
+            np.float64,
+        )
+        for descending in (False, True)
+        for partial in (False, True)
+    ]
+    + [
+        (np.int32, False, False, dtype)
+        for dtype in (
+            np.int8,
+            np.uint8,
+            np.int16,
+            np.uint16,
+            np.int32,
+            np.uint32,
+            np.int64,
+            np.uint64,
+            np.float32,
+        )
+    ],
 )
-@pytest.mark.parametrize("descending", [False, True])
-@pytest.mark.parametrize("partial", [False, True])
 def test_pairs_preserve_stability_association_and_inputs(
-    dtype, descending, partial
+    dtype, descending, partial, value_dtype
 ):
     compiler_dtype = getattr(types, np.dtype(dtype).name)
+    value_compiler_dtype = getattr(types, np.dtype(value_dtype).name)
     qualified = np.dtype(dtype).kind == "f"
     source = (
         (np.arange(_THREADS * _ITEMS, dtype=np.int64) * 17) % 43 - 21
     ).astype(dtype)
     if qualified:
         source[0:6] = [np.inf, -np.inf, -0.0, 0.0, -1.5, 1.5]
-    payload = np.arange(source.size, dtype=np.float64) + 0.25
+    if np.issubdtype(value_dtype, np.signedinteger):
+        payload = (np.arange(source.size) - 96).astype(value_dtype)
+    else:
+        payload = np.arange(source.size, dtype=value_dtype)
+    if np.issubdtype(value_dtype, np.floating):
+        payload += value_dtype(0.25)
+    if value_dtype == np.float64:
+        payload += value_dtype(2**-30)
+    elif value_dtype == np.int64:
+        payload *= value_dtype(1 << 33)
+    elif value_dtype == np.uint64:
+        payload += value_dtype(1 << 63)
     begin = 2 if partial else 0
     end = 6 if partial else source.dtype.itemsize * 8
 
@@ -75,7 +112,7 @@ def test_pairs_preserve_stability_association_and_inputs(
     ):
         t = cuda.threadIdx.x
         keys = coop.ThreadData(_ITEMS, dtype=compiler_dtype)
-        values = coop.ThreadData(_ITEMS, dtype=types.float64)
+        values = coop.ThreadData(_ITEMS, dtype=value_compiler_dtype)
         for i in range(_ITEMS):
             keys[i] = keys_in[t * _ITEMS + i]
             values[i] = values_in[t * _ITEMS + i]
