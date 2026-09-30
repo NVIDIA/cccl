@@ -723,7 +723,7 @@ extern "C" __device__ bool op(large_key_pair lhs, large_key_pair rhs) {
   pointer_t<item_t> output_values_it;
   pointer_t<int> output_num_selected_it(1);
 
-  cudaDeviceProp deviceProp;
+  cudaDeviceProp deviceProp{};
   cudaGetDeviceProperties(&deviceProp, 0);
 
   const int cc_major = deviceProp.major;
