@@ -14,12 +14,8 @@ from cuda.bindings import driver
 from cuda.coop import cutlass as cutlass_coop
 
 _BLOCK = (8, 4, 1)
-_ITEMS = 2
-_TILE = 64
 _LOAD_OFFSET = 3
 _STORE_OFFSET = 5
-_LOAD_VALID = 45
-_STORE_VALID = 53
 _DEFAULT = -7
 _SENTINEL = -101
 
@@ -30,25 +26,35 @@ def _check(result):
     return result[1] if len(result) == 2 else result[1:]
 
 
-def run_example(api="common"):
+def run_example(api="common", items_per_thread=2):
     """Run the partial copy and compare its complete output with a CPU
     oracle.
     """
 
+    tile_size = 32 * items_per_thread
+    load_valid_items = tile_size - 19
+    store_valid_items = tile_size - 11
     if api not in {"common", "qualified"}:
         raise ValueError("api must be 'common' or 'qualified'")
     module = coop if api == "common" else cutlass_coop
 
     # docs: start cutlass-block-load-store
     @cute.kernel
-    def block_copy(source: cute.Pointer, destination: cute.Pointer):
+    def block_copy(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        tile_size = 32 * items_per_thread
+        load_valid_items = tile_size - 19
+        store_valid_items = tile_size - 11
         block = module.this_block()
-        payload = module.ThreadData(items_per_thread=_ITEMS)
+        payload = module.ThreadData(items_per_thread)
         module.load(
             block,
             source,
             payload,
-            valid_items=_LOAD_VALID,
+            valid_items=load_valid_items,
             oob_default=_DEFAULT,
             offset=_LOAD_OFFSET,
         )
@@ -56,19 +62,27 @@ def run_example(api="common"):
             block,
             destination,
             payload,
-            valid_items=_STORE_VALID,
+            valid_items=store_valid_items,
             offset=_STORE_OFFSET,
         )
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer):
-        block_copy(source, destination).launch(grid=1, block=_BLOCK)
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        block_copy(source, destination, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     # docs: end cutlass-block-load-store
 
     cutlass.cuda.initialize_cuda_context()
-    source = np.arange(_TILE + _LOAD_OFFSET, dtype=np.int32)
-    destination = np.full(_TILE + _STORE_OFFSET + 3, _SENTINEL, dtype=np.int32)
+    source = np.arange(tile_size + _LOAD_OFFSET, dtype=np.int32)
+    destination = np.full(
+        tile_size + _STORE_OFFSET + 3, _SENTINEL, dtype=np.int32
+    )
     source_device = _check(driver.cuMemAlloc(source.nbytes))
     try:
         destination_device = _check(driver.cuMemAlloc(destination.nbytes))
@@ -97,7 +111,7 @@ def run_example(api="common"):
                 cute.AddressSpace.gmem,
                 assumed_align=16,
             )
-            launch(source_pointer, destination_pointer)
+            launch(source_pointer, destination_pointer, items_per_thread)
             _check(driver.cuCtxSynchronize())
             _check(
                 driver.cuMemcpyDtoH(
@@ -111,9 +125,9 @@ def run_example(api="common"):
     finally:
         _check(driver.cuMemFree(source_device))
     expected = np.full_like(destination, _SENTINEL)
-    expected[_STORE_OFFSET : _STORE_OFFSET + _STORE_VALID] = _DEFAULT
-    expected[_STORE_OFFSET : _STORE_OFFSET + _LOAD_VALID] = source[
-        _LOAD_OFFSET : _LOAD_OFFSET + _LOAD_VALID
+    expected[_STORE_OFFSET : _STORE_OFFSET + store_valid_items] = _DEFAULT
+    expected[_STORE_OFFSET : _STORE_OFFSET + load_valid_items] = source[
+        _LOAD_OFFSET : _LOAD_OFFSET + load_valid_items
     ]
     np.testing.assert_array_equal(destination, expected)
     return destination

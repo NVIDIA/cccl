@@ -31,23 +31,37 @@ _TILE = _THREADS * _ITEMS
 
 def _copy_launcher(api, *, nested=False):
     @cute.jit
-    def copy_tile(source: cute.Pointer, destination: cute.Pointer):
-        payload = api.ThreadData(_ITEMS)
+    def copy_tile(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        payload = api.ThreadData(items_per_thread)
         api.load(api.this_block(), source, payload)
         api.store(api.this_block(), destination, payload)
 
     @cute.kernel
-    def kernel(source: cute.Pointer, destination: cute.Pointer):
+    def kernel(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
         if cutlass.const_expr(nested):
-            copy_tile(source, destination)
+            copy_tile(source, destination, items_per_thread)
         else:
-            payload = api.ThreadData(_ITEMS)
+            payload = api.ThreadData(items_per_thread)
             api.load(api.this_block(), source, payload)
             api.store(api.this_block(), destination, payload)
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer):
-        kernel(source, destination).launch(grid=1, block=_THREADS)
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(source, destination, items_per_thread).launch(
+            grid=1, block=_THREADS
+        )
 
     return launch
 
@@ -59,7 +73,7 @@ def _exercise_copy(api_name, *, nested=False, repeats=1):
     for _ in range(repeats):
         destination = np.full(_TILE, -101, dtype=np.int32)
         with device_array(source) as src, device_array(destination) as dst:
-            compiled = cute.compile(launch, src, dst)
+            compiled = cute.compile(launch, src, dst, _ITEMS)
             assert get_current_env_manager() is None
             assert _backend_module_name() is None
             compiled(src, dst)
@@ -159,7 +173,7 @@ def test_failed_compilation_or_linking_can_retry(
         with monkeypatch.context() as patch:
             patch.setattr(_bundle, "compile_bundle_source", fail_bundle)
             with pytest.raises(Exception) as caught:
-                cute.compile(launch, src, dst)
+                cute.compile(launch, src, dst, _ITEMS)
         assert attempted
         if failure == "provider-compile":
             assert "injected provider compilation failure" in str(caught.value)
@@ -170,19 +184,21 @@ def test_failed_compilation_or_linking_can_retry(
             ), message
         assert get_current_env_manager() is None
         assert _backend_module_name() is None
-        compiled = cute.compile(launch, src, dst)
+        compiled = cute.compile(launch, src, dst, _ITEMS)
         compiled(src, dst)
     np.testing.assert_array_equal(destination, source)
 
 
-def test_failed_trace_after_registering_a_provider_can_retry():
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_failed_trace_after_registering_a_provider_can_retry(items_per_thread):
     @cute.kernel
     def kernel(
         source: cute.Pointer,
         destination: cute.Pointer,
         reject: cutlass.Constexpr,
+        items_per_thread: cutlass.Constexpr,
     ):
-        payload = coop.ThreadData(_ITEMS)
+        payload = coop.ThreadData(items_per_thread)
         coop.load(coop.this_block(), source, payload)
         if cutlass.const_expr(reject):
             raise ValueError("injected failure after provider registration")
@@ -193,17 +209,20 @@ def test_failed_trace_after_registering_a_provider_can_retry():
         source: cute.Pointer,
         destination: cute.Pointer,
         reject: cutlass.Constexpr,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, destination, reject).launch(grid=1, block=_THREADS)
+        kernel(source, destination, reject, items_per_thread).launch(
+            grid=1, block=_THREADS
+        )
 
-    source = values_for(np.int32, _TILE, shift=61)
-    destination = np.full(_TILE, -101, dtype=np.int32)
+    source = values_for(np.int32, _THREADS * items_per_thread, shift=61)
+    destination = np.full(_THREADS * items_per_thread, -101, dtype=np.int32)
     with device_array(source) as src, device_array(destination) as dst:
         with pytest.raises(ValueError, match="after provider registration"):
-            cute.compile(launch, src, dst, True)
+            cute.compile(launch, src, dst, True, items_per_thread)
         assert get_current_env_manager() is None
         assert _backend_module_name() is None
-        compiled = cute.compile(launch, src, dst, False)
+        compiled = cute.compile(launch, src, dst, False, items_per_thread)
         compiled(src, dst)
     np.testing.assert_array_equal(destination, source)
 
