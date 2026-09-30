@@ -42,7 +42,7 @@ Terms
       See :ref:`implementation families <coop-implementation-families>`.
 
    payload
-      The values contributed or received by one thread. ``ThreadData(items_per_thread=K)``
+      The values contributed or received by one thread. ``ThreadData(K)``
       describes a fixed-size payload of ``K`` items. Some operations also
       accept scalars or backend-specific arrays. See
       :ref:`thread data <coop-thread-data>`.

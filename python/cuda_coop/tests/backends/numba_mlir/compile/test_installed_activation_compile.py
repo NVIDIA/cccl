@@ -119,19 +119,22 @@ _COMPILE_PROBE = textwrap.dedent(
     cuda.get_current_device = lambda: fixed_device
 
     @cuda.jit(chip="sm_90")
-    def block_load(source, destination):
+    def block_load(source, destination, items_per_thread):
         thread = cuda.threadIdx.x
-        payload = coop.ThreadData(2)
+        payload = coop.ThreadData(items_per_thread)
         coop.load(
             coop.this_block(),
             source,
             payload,
             algorithm="direct",
         )
-        for item in range(2):
-            destination[thread * 2 + item] = payload[item]
+        for item in range(items_per_thread):
+            destination[thread * items_per_thread + item] = payload[item]
 
-    signature = types.void(types.int32[::1], types.int32[::1])
+    items_per_thread = int(os.environ["CUDA_COOP_TEST_ITEMS_PER_THREAD"])
+    signature = types.void(
+        types.int32[::1], types.int32[::1], types.IntegerLiteral(items_per_thread)
+    )
     launch_config_key = (
         ("grid", (1, 1, 1)),
         ("block", (32, 1, 1)),
@@ -164,9 +167,11 @@ _COMPILE_PROBE = textwrap.dedent(
 
 
 @pytest.mark.parametrize("import_order", _IMPORT_ORDERS)
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_installed_wheel_import_order_compiles_block_load(
     import_order: str,
     tmp_path: Path,
+    items_per_thread,
 ) -> None:
     try:
         distribution = importlib.metadata.distribution("cuda-coop")
@@ -184,6 +189,7 @@ def test_installed_wheel_import_order_compiles_block_load(
     environment["CUDA_VISIBLE_DEVICES"] = ""
     environment["CUDA_COOP_ENABLE_CACHE"] = "0"
     environment["CUDA_COOP_IMPORT_ORDER"] = import_order
+    environment["CUDA_COOP_TEST_ITEMS_PER_THREAD"] = str(items_per_thread)
     environment["CUDA_COOP_SOURCE_ROOT"] = str(_PACKAGE_ROOT)
     # Isolated mode must ignore this deliberate source-tree contamination.
     environment["PYTHONPATH"] = str(_PACKAGE_ROOT)
