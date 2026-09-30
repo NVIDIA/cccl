@@ -73,13 +73,14 @@ Using Reduce in a kernel
 
 This common-API fragment works in either DSL with the
 :ref:`kernel-fragment setup <coop-visualization-kernels>`. Launch with
-128 threads and supply at least 256 input elements for each block.
+128 threads and supply at least ``128 * items_per_thread`` input elements
+for each block.
 
 .. code-block:: python
 
    block = coop.this_block()
-   values = coop.ThreadData(items_per_thread=2)
-   coop.load(block, source, values, offset=block_index * 256)
+   values = coop.ThreadData(items_per_thread)
+   coop.load(block, source, values, offset=block_index * 128 * items_per_thread)
    total = coop.sum(block, values, broadcast=False, algorithm="raking")
    if thread_rank == 0:
        output[block_index] = total
