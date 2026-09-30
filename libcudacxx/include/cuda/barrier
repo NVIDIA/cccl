@@ -34,7 +34,11 @@
 #include <cuda/__memcpy_async/memcpy_async_tx.h>
 #include <cuda/__memory/address_space.h>
 #include <cuda/__memory/aligned_size.h>
-#include <cuda/ptx>
+#include <cuda/__ptx/instructions/cp_async_bulk.h>
+#include <cuda/__ptx/instructions/cp_async_bulk_commit_group.h>
+#include <cuda/__ptx/instructions/cp_async_bulk_tensor.h>
+#include <cuda/__ptx/instructions/cp_async_bulk_wait_group.h>
+#include <cuda/__ptx/instructions/fence.h>
 #include <cuda/std/barrier>
 
 // Forward-declare CUtensorMap for use in cp_async_bulk_tensor_* PTX wrapping
