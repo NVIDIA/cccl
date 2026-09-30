@@ -62,9 +62,10 @@ result contract, not its compiled instruction order.
 Using batched reduction in a kernel
 -----------------------------------
 
-This tested example sums three features across each physical warp. The
-input is laid out as 32 consecutive samples per warp, with three
-consecutive features per sample. Each warp writes three results.
+This tested example sums ``items_per_thread`` features across each physical
+warp. The input is laid out as 32 consecutive samples per warp, with
+``items_per_thread`` consecutive features per sample. Each warp writes one
+result per feature.
 
 .. code-block:: python
 
