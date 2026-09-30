@@ -1020,8 +1020,8 @@ def check_cutlass_histogram() -> None:
 
 def check_cutlass_run_length_surface(destination: CutlassTensorSample) -> None:
     block = cutlass_coop.this_block()
-    values = cutlass_coop.ThreadData(2, Int32)
-    lengths = cutlass_coop.ThreadData(2, Uint64)
+    values = cutlass_coop.ThreadData(items_per_thread=2, dtype=Int32)
+    lengths = cutlass_coop.ThreadData(items_per_thread=2, dtype=Uint64)
     storage = cutlass_coop.TempStorage()
     assert_type(
         cutlass_coop.run_length_decode(
