@@ -7,13 +7,13 @@
 #include <thrust/sequence.h>
 
 #include <cuda/__cmath/uabs.h>
-#include <cuda/devices>
 #include <cuda/std/__algorithm/max_element.h>
 #include <cuda/std/__algorithm/min_element.h>
 #include <cuda/std/execution>
 
 #include <cstdint>
 
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
@@ -290,47 +290,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", C
       REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
     };
 
-    int current_device;
-    error = cudaGetDevice(&current_device);
-    REQUIRE(error == cudaSuccess);
-
-    SECTION("DeviceReduce::ArgMax works with cudaStream_t")
-    {
-      const cuda::stream stream{cuda::devices[current_device]};
-      test_argmax(stream.get());
-    }
-
-    SECTION("DeviceReduce::ArgMax works with cuda::stream")
-    {
-      const cuda::stream stream{cuda::devices[current_device]};
-      test_argmax(stream);
-    }
-
-    SECTION("DeviceReduce::ArgMax works with cuda::stream_ref")
-    {
-      const cuda::stream stream{cuda::devices[current_device]};
-      const cuda::stream_ref stream_ref{stream};
-      test_argmax(stream_ref);
-    }
-
-    SECTION("DeviceReduce::ArgMax works with cuda::std::execution::env")
-    {
-      const cuda::std::execution::env env{};
-      test_argmax(env);
-    }
-
-    SECTION("DeviceReduce::ArgMax works with cuda::execution::gpu")
-    {
-      const auto policy = cuda::execution::gpu;
-      test_argmax(policy);
-    }
-
-    SECTION("DeviceReduce::ArgMax works with cuda::execution::gpu with stream")
-    {
-      const cuda::stream stream{cuda::devices[current_device]};
-      const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-      test_argmax(policy);
-    }
+    test_with_custom_streams(test_argmax);
   }
 
   SECTION("argmin")
@@ -399,47 +359,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", C
       REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
     };
 
-    int current_device;
-    error = cudaGetDevice(&current_device);
-    REQUIRE(error == cudaSuccess);
-
-    SECTION("DeviceReduce::ArgMin works with cudaStream_t")
-    {
-      const cuda::stream stream{cuda::devices[current_device]};
-      test_argmin(stream.get());
-    }
-
-    SECTION("DeviceReduce::ArgMin works with cuda::stream")
-    {
-      const cuda::stream stream{cuda::devices[current_device]};
-      test_argmin(stream);
-    }
-
-    SECTION("DeviceReduce::ArgMin works with cuda::stream_ref")
-    {
-      const cuda::stream stream{cuda::devices[current_device]};
-      const cuda::stream_ref stream_ref{stream};
-      test_argmin(stream_ref);
-    }
-
-    SECTION("DeviceReduce::ArgMin works with cuda::std::execution::env")
-    {
-      const cuda::std::execution::env env{};
-      test_argmin(env);
-    }
-
-    SECTION("DeviceReduce::ArgMin works with cuda::execution::gpu")
-    {
-      const auto policy = cuda::execution::gpu;
-      test_argmin(policy);
-    }
-
-    SECTION("DeviceReduce::ArgMin works with cuda::execution::gpu with stream")
-    {
-      const cuda::stream stream{cuda::devices[current_device]};
-      const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-      test_argmin(policy);
-    }
+    test_with_custom_streams(test_argmin);
   }
 
   SECTION("argmax deprecated interface")

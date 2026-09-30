@@ -39,14 +39,12 @@ def offset_dtype(request):
     return np.dtype(request.param)
 
 
-def test_segmented_reduce(input_array, offset_dtype, monkeypatch):
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_segmented_reduce(input_array, offset_dtype):
     "Test for all supported input types and for some offset types"
     # Disable SASS verification for this test (LDL instruction in SASS).
-    monkeypatch.setattr(
-        cuda.compute._cccl_interop,
-        "_check_sass",
-        False,
-    )
 
     def binary_op(a, b):
         return a + b
@@ -117,13 +115,11 @@ def test_segmented_reduce(input_array, offset_dtype, monkeypatch):
         np.testing.assert_array_equal(result, expected)
 
 
-def test_segmented_reduce_struct_type(monkeypatch):
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_segmented_reduce_struct_type():
     # Disable SASS verification for this test (LDL instruction in SASS).
-    monkeypatch.setattr(
-        cuda.compute._cccl_interop,
-        "_check_sass",
-        False,
-    )
 
     @gpu_struct
     class Pixel:
@@ -172,17 +168,15 @@ def test_segmented_reduce_struct_type(monkeypatch):
 
 
 @pytest.mark.large
-def test_large_num_segments_uniform_segment_sizes_nonuniform_input(monkeypatch):
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
     """
     This test verifies that segmented_reduce raises an error when
     num_segments exceeds 2^31-1.
     """
     # Disable SASS verification for this test (LDL instruction in SASS).
-    monkeypatch.setattr(
-        cuda.compute._cccl_interop,
-        "_check_sass",
-        False,
-    )
 
     def make_difference(idx: np.int64) -> np.uint8:
         p = np.uint8(7)
@@ -244,17 +238,15 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input(monkeypatch):
 
 
 @pytest.mark.large
-def test_large_num_segments_nonuniform_segment_sizes_uniform_input(monkeypatch):
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
     """
     This test verifies that segmented_reduce raises an error when
     num_segments exceeds 2^31-1.
     """
     # Disable SASS verification for this test (LDL instruction in SASS).
-    monkeypatch.setattr(
-        cuda.compute._cccl_interop,
-        "_check_sass",
-        False,
-    )
     input_it = ConstantIterator(np.int16(1))
 
     def offset_functor(m0: np.int64, p: np.int64):
@@ -315,13 +307,11 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input(monkeypatch):
         )
 
 
-def test_segmented_reduce_well_known_plus(monkeypatch):
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_segmented_reduce_well_known_plus():
     # Disable SASS verification for this test (LDL instruction in SASS).
-    monkeypatch.setattr(
-        cuda.compute._cccl_interop,
-        "_check_sass",
-        False,
-    )
     dtype = np.int32
     h_init = np.array([0], dtype=dtype)
 
@@ -348,13 +338,11 @@ def test_segmented_reduce_well_known_plus(monkeypatch):
     np.testing.assert_equal(d_output.copy_to_host(), expected)
 
 
-def test_segmented_reduce_well_known_maximum(monkeypatch):
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_segmented_reduce_well_known_maximum():
     # Disable SASS verification for this test (LDL instruction in SASS).
-    monkeypatch.setattr(
-        cuda.compute._cccl_interop,
-        "_check_sass",
-        False,
-    )
     dtype = np.int32
     h_init = np.array([-100], dtype=dtype)
 
@@ -381,13 +369,11 @@ def test_segmented_reduce_well_known_maximum(monkeypatch):
     np.testing.assert_equal(d_output.copy_to_host(), expected)
 
 
-def test_segmented_reduce_bool_maximum(monkeypatch):
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_segmented_reduce_bool_maximum():
     # Disable SASS verification for this test (LDL instruction in SASS).
-    monkeypatch.setattr(
-        cuda.compute._cccl_interop,
-        "_check_sass",
-        False,
-    )
     h_init = np.array([False], dtype=np.bool_)
 
     # Create segmented data: [False, True] | [False, False] | [True]
@@ -413,14 +399,12 @@ def test_segmented_reduce_bool_maximum(monkeypatch):
     np.testing.assert_equal(d_output.copy_to_host(), expected)
 
 
-def test_segmented_reduce_transform_output_iterator(floating_array, monkeypatch):
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_segmented_reduce_transform_output_iterator(floating_array):
     """Test segmented reduce with TransformOutputIterator."""
     # Disable SASS verification for this test (LDL instruction in SASS).
-    monkeypatch.setattr(
-        cuda.compute._cccl_interop,
-        "_check_sass",
-        False,
-    )
     dtype = floating_array.dtype
     h_init = np.array([0], dtype=dtype)
 
@@ -461,13 +445,11 @@ def test_segmented_reduce_transform_output_iterator(floating_array, monkeypatch)
     np.testing.assert_allclose(d_output.copy_to_host(), expected, atol=1e-6)
 
 
-def test_device_segmented_reduce_for_rowwise_sum(monkeypatch):
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_device_segmented_reduce_for_rowwise_sum():
     # Disable SASS verification for this test (LDL instruction in SASS).
-    monkeypatch.setattr(
-        cuda.compute._cccl_interop,
-        "_check_sass",
-        False,
-    )
 
     def add_op(a, b):
         return a + b
@@ -506,14 +488,12 @@ def test_device_segmented_reduce_for_rowwise_sum(monkeypatch):
     np.testing.assert_array_equal(d_output.copy_to_host(), expected)
 
 
-def test_segmented_reduce_with_lambda(monkeypatch):
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_segmented_reduce_with_lambda():
     """Test segmented_reduce with a lambda function as the reducer."""
     # Disable SASS verification for this test (LDL instruction in SASS).
-    monkeypatch.setattr(
-        cuda.compute._cccl_interop,
-        "_check_sass",
-        False,
-    )
     dtype = np.int32
     h_init = np.array([0], dtype=dtype)
 
@@ -549,17 +529,15 @@ def test_segmented_reduce_with_lambda(monkeypatch):
         512,  # large: block-level reduction path
     ],
 )
-def test_segmented_reduce_max_segment_size(max_seg_size, monkeypatch):
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_segmented_reduce_max_segment_size(max_seg_size):
     """Test that max_segment_size hint produces correct results with non-uniform segments.
 
     max_segment_size is a performance hint that selects an optimized kernel
     dispatch path. Segments vary in size from 1 to max_seg_size elements.
     """
-    monkeypatch.setattr(
-        cuda.compute._cccl_interop,
-        "_check_sass",
-        False,
-    )
     dtype = np.int32
     rng = np.random.default_rng()
     num_segments = 1024

@@ -135,11 +135,11 @@ _CCCL_CONCEPT __extension_of = __extension_of_v<_Derived, _Base>;
 //!
 //! interface
 //!
-template <template <class...> class _Interface, class... _Bases, size_t Size, size_t Align>
-struct __basic_interface<_Interface, __extends<_Bases...>, Size, Align>
+template <template <class...> class _Interface, class... _Bases, size_t _Size, size_t _Align>
+struct __basic_interface<_Interface, __extends<_Bases...>, _Size, _Align>
 {
-  static constexpr size_t size  = (::cuda::std::max) ({Size, _Bases::size...});
-  static constexpr size_t align = (::cuda::std::max) ({Align, _Bases::align...});
+  static constexpr size_t size  = (::cuda::std::max) ({_Size, _Bases::size...});
+  static constexpr size_t align = (::cuda::std::max) ({_Align, _Bases::align...});
 
   template <class... _Super>
   using __rebind _CCCL_NODEBUG = _Interface<_Super...>;
@@ -282,8 +282,8 @@ _CCCL_CONCEPT __has_overrides = ::cuda::std::_IsValidExpansion<__overrides_for_t
 //! not satisfied and why.
 template <class _Tp,
           class _Interface,
-          class UnsatisfiedInterface = ::cuda::std::__type<__unsatisfied_interface<_Interface, _Tp>>>
-_CCCL_CONCEPT __satisfies = __has_overrides<_Tp, UnsatisfiedInterface>;
+          class _UnsatisfiedInterface = ::cuda::std::__type<__unsatisfied_interface<_Interface, _Tp>>>
+_CCCL_CONCEPT __satisfies = __has_overrides<_Tp, _UnsatisfiedInterface>;
 
 //!
 //! __interface_of

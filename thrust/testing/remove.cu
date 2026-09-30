@@ -28,7 +28,7 @@ struct is_true
 };
 
 template <typename Vector>
-void TestRemoveSimple()
+void test_remove_simple()
 {
   using T = typename Vector::value_type;
 
@@ -36,13 +36,13 @@ void TestRemoveSimple()
 
   const typename Vector::iterator end = thrust::remove(data.begin(), data.end(), (T) 2);
 
-  ASSERT_EQUAL(end - data.begin(), 3);
+  REQUIRE(end - data.begin() == 3);
   data.resize(end - data.begin());
 
   Vector ref{1, 1, 3};
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestRemoveSimple);
+DECLARE_VECTOR_UNITTEST(test_remove_simple);
 
 template <typename ForwardIterator, typename T>
 ForwardIterator remove(my_system& system, ForwardIterator first, ForwardIterator, const T&)
@@ -51,16 +51,15 @@ ForwardIterator remove(my_system& system, ForwardIterator first, ForwardIterator
   return first;
 }
 
-void TestRemoveDispatchExplicit()
+TEST_CASE("TestRemoveDispatchExplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::remove(sys, vec.begin(), vec.end(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestRemoveDispatchExplicit);
 
 template <typename ForwardIterator, typename T>
 ForwardIterator remove(my_tag, ForwardIterator first, ForwardIterator, const T&)
@@ -69,18 +68,17 @@ ForwardIterator remove(my_tag, ForwardIterator first, ForwardIterator, const T&)
   return first;
 }
 
-void TestRemoveDispatchImplicit()
+TEST_CASE("TestRemoveDispatchImplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::remove(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestRemoveDispatchImplicit);
 
 template <typename Vector>
-void TestRemoveCopySimple()
+void test_remove_copy_simple()
 {
   using T = typename Vector::value_type;
 
@@ -90,13 +88,13 @@ void TestRemoveCopySimple()
 
   const typename Vector::iterator end = thrust::remove_copy(data.begin(), data.end(), result.begin(), (T) 2);
 
-  ASSERT_EQUAL(end - result.begin(), 3);
+  REQUIRE(end - result.begin() == 3);
   result.resize(end - result.begin());
 
   Vector ref{1, 1, 3};
-  ASSERT_EQUAL(result, ref);
+  REQUIRE(result == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestRemoveCopySimple);
+DECLARE_VECTOR_UNITTEST(test_remove_copy_simple);
 
 template <typename InputIterator, typename OutputIterator, typename T>
 OutputIterator remove_copy(my_system& system, InputIterator, InputIterator, OutputIterator result, const T&)
@@ -105,16 +103,15 @@ OutputIterator remove_copy(my_system& system, InputIterator, InputIterator, Outp
   return result;
 }
 
-void TestRemoveCopyDispatchExplicit()
+TEST_CASE("TestRemoveCopyDispatchExplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::remove_copy(sys, vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestRemoveCopyDispatchExplicit);
 
 template <typename InputIterator, typename OutputIterator, typename T>
 OutputIterator remove_copy(my_tag, InputIterator, InputIterator, OutputIterator result, const T&)
@@ -123,19 +120,18 @@ OutputIterator remove_copy(my_tag, InputIterator, InputIterator, OutputIterator 
   return result;
 }
 
-void TestRemoveCopyDispatchImplicit()
+TEST_CASE("TestRemoveCopyDispatchImplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::remove_copy(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestRemoveCopyDispatchImplicit);
 
 template <typename Vector>
-void TestRemoveIfSimple()
+void test_remove_if_simple()
 {
   using T = typename Vector::value_type;
 
@@ -143,13 +139,13 @@ void TestRemoveIfSimple()
 
   const typename Vector::iterator end = thrust::remove_if(data.begin(), data.end(), is_even<T>());
 
-  ASSERT_EQUAL(end - data.begin(), 3);
+  REQUIRE(end - data.begin() == 3);
   data.resize(end - data.begin());
 
   Vector ref{1, 1, 3};
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestRemoveIfSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_remove_if_simple);
 
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator remove_if(my_system& system, ForwardIterator first, ForwardIterator, Predicate)
@@ -158,16 +154,15 @@ ForwardIterator remove_if(my_system& system, ForwardIterator first, ForwardItera
   return first;
 }
 
-void TestRemoveIfDispatchExplicit()
+TEST_CASE("TestRemoveIfDispatchExplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::remove_if(sys, vec.begin(), vec.end(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestRemoveIfDispatchExplicit);
 
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator remove_if(my_tag, ForwardIterator first, ForwardIterator, Predicate)
@@ -176,18 +171,17 @@ ForwardIterator remove_if(my_tag, ForwardIterator first, ForwardIterator, Predic
   return first;
 }
 
-void TestRemoveIfDispatchImplicit()
+TEST_CASE("TestRemoveIfDispatchImplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::remove_if(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestRemoveIfDispatchImplicit);
 
 template <typename Vector>
-void TestRemoveIfStencilSimple()
+void test_remove_if_stencil_simple()
 {
   Vector data{1, 2, 1, 3, 2};
   Vector stencil{0, 1, 0, 0, 1};
@@ -195,13 +189,13 @@ void TestRemoveIfStencilSimple()
   const typename Vector::iterator end =
     thrust::remove_if(data.begin(), data.end(), stencil.begin(), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(end - data.begin(), 3);
+  REQUIRE(end - data.begin() == 3);
   data.resize(end - data.begin());
 
   Vector ref{1, 1, 3};
-  ASSERT_EQUAL(data, ref);
+  REQUIRE(data == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestRemoveIfStencilSimple);
+DECLARE_VECTOR_UNITTEST(test_remove_if_stencil_simple);
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator remove_if(my_system& system, ForwardIterator first, ForwardIterator, InputIterator, Predicate)
@@ -210,16 +204,15 @@ ForwardIterator remove_if(my_system& system, ForwardIterator first, ForwardItera
   return first;
 }
 
-void TestRemoveIfStencilDispatchExplicit()
+TEST_CASE("TestRemoveIfStencilDispatchExplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::remove_if(sys, vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestRemoveIfStencilDispatchExplicit);
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator remove_if(my_tag, ForwardIterator first, ForwardIterator, InputIterator, Predicate)
@@ -228,19 +221,18 @@ ForwardIterator remove_if(my_tag, ForwardIterator first, ForwardIterator, InputI
   return first;
 }
 
-void TestRemoveIfStencilDispatchImplicit()
+TEST_CASE("TestRemoveIfStencilDispatchImplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::remove_if(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestRemoveIfStencilDispatchImplicit);
 
 template <typename Vector>
-void TestRemoveCopyIfSimple()
+void test_remove_copy_if_simple()
 {
   using T = typename Vector::value_type;
 
@@ -250,13 +242,13 @@ void TestRemoveCopyIfSimple()
 
   const typename Vector::iterator end = thrust::remove_copy_if(data.begin(), data.end(), result.begin(), is_even<T>());
 
-  ASSERT_EQUAL(end - result.begin(), 3);
+  REQUIRE(end - result.begin() == 3);
   result.resize(end - result.begin());
 
   Vector ref{1, 1, 3};
-  ASSERT_EQUAL(result, ref);
+  REQUIRE(result == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestRemoveCopyIfSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_remove_copy_if_simple);
 
 template <typename InputIterator, typename OutputIterator, typename Predicate>
 InputIterator remove_copy_if(my_system& system, InputIterator first, InputIterator, OutputIterator, Predicate)
@@ -265,16 +257,15 @@ InputIterator remove_copy_if(my_system& system, InputIterator first, InputIterat
   return first;
 }
 
-void TestRemoveCopyIfDispatchExplicit()
+TEST_CASE("TestRemoveCopyIfDispatchExplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::remove_copy_if(sys, vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestRemoveCopyIfDispatchExplicit);
 
 template <typename InputIterator, typename OutputIterator, typename Predicate>
 InputIterator remove_copy_if(my_tag, InputIterator first, InputIterator, OutputIterator, Predicate)
@@ -283,19 +274,18 @@ InputIterator remove_copy_if(my_tag, InputIterator first, InputIterator, OutputI
   return first;
 }
 
-void TestRemoveCopyIfDispatchImplicit()
+TEST_CASE("TestRemoveCopyIfDispatchImplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
   thrust::remove_copy_if(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestRemoveCopyIfDispatchImplicit);
 
 template <typename Vector>
-void TestRemoveCopyIfStencilSimple()
+void test_remove_copy_if_stencil_simple()
 {
   Vector data{1, 2, 1, 3, 2};
   Vector stencil{0, 1, 0, 0, 1};
@@ -305,13 +295,13 @@ void TestRemoveCopyIfStencilSimple()
   const typename Vector::iterator end =
     thrust::remove_copy_if(data.begin(), data.end(), stencil.begin(), result.begin(), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(end - result.begin(), 3);
+  REQUIRE(end - result.begin() == 3);
   result.resize(end - result.begin());
 
   Vector ref{1, 1, 3};
-  ASSERT_EQUAL(result, ref);
+  REQUIRE(result == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestRemoveCopyIfStencilSimple);
+DECLARE_VECTOR_UNITTEST(test_remove_copy_if_stencil_simple);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
 OutputIterator
@@ -321,16 +311,15 @@ remove_copy_if(my_system& system, InputIterator1, InputIterator1, InputIterator2
   return result;
 }
 
-void TestRemoveCopyIfStencilDispatchExplicit()
+TEST_CASE("TestRemoveCopyIfStencilDispatchExplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::remove_copy_if(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestRemoveCopyIfStencilDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
 OutputIterator remove_copy_if(my_tag, InputIterator1, InputIterator1, InputIterator2, OutputIterator result, Predicate)
@@ -339,7 +328,7 @@ OutputIterator remove_copy_if(my_tag, InputIterator1, InputIterator1, InputItera
   return result;
 }
 
-void TestRemoveCopyIfStencilDispatchImplicit()
+TEST_CASE("TestRemoveCopyIfStencilDispatchImplicit", "[remove]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -350,12 +339,11 @@ void TestRemoveCopyIfStencilDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     0);
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestRemoveCopyIfStencilDispatchImplicit);
 
 template <typename T>
-void TestRemove(const size_t n)
+void test_remove(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -363,17 +351,17 @@ void TestRemove(const size_t n)
   const size_t h_size = thrust::remove(h_data.begin(), h_data.end(), T(0)) - h_data.begin();
   const size_t d_size = thrust::remove(d_data.begin(), d_data.end(), T(0)) - d_data.begin();
 
-  ASSERT_EQUAL(h_size, d_size);
+  REQUIRE(h_size == d_size);
 
   h_data.resize(h_size);
   d_data.resize(d_size);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
-DECLARE_VARIABLE_UNITTEST(TestRemove);
+DECLARE_VARIABLE_UNITTEST(test_remove);
 
 template <typename T>
-void TestRemoveIf(const size_t n)
+void test_remove_if(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -381,17 +369,17 @@ void TestRemoveIf(const size_t n)
   const size_t h_size = thrust::remove_if(h_data.begin(), h_data.end(), is_true<T>()) - h_data.begin();
   const size_t d_size = thrust::remove_if(d_data.begin(), d_data.end(), is_true<T>()) - d_data.begin();
 
-  ASSERT_EQUAL(h_size, d_size);
+  REQUIRE(h_size == d_size);
 
   h_data.resize(h_size);
   d_data.resize(d_size);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
-DECLARE_VARIABLE_UNITTEST(TestRemoveIf);
+DECLARE_VARIABLE_UNITTEST(test_remove_if);
 
 template <typename T>
-void TestRemoveIfStencil(const size_t n)
+void test_remove_if_stencil(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -404,17 +392,17 @@ void TestRemoveIfStencil(const size_t n)
   const size_t d_size =
     thrust::remove_if(d_data.begin(), d_data.end(), d_stencil.begin(), is_true<T>()) - d_data.begin();
 
-  ASSERT_EQUAL(h_size, d_size);
+  REQUIRE(h_size == d_size);
 
   h_data.resize(h_size);
   d_data.resize(d_size);
 
-  ASSERT_EQUAL(h_data, d_data);
+  REQUIRE(h_data == d_data);
 }
-DECLARE_VARIABLE_UNITTEST(TestRemoveIfStencil);
+DECLARE_VARIABLE_UNITTEST(test_remove_if_stencil);
 
 template <typename T>
-void TestRemoveCopy(const size_t n)
+void test_remove_copy(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -425,17 +413,17 @@ void TestRemoveCopy(const size_t n)
   const size_t h_size = thrust::remove_copy(h_data.begin(), h_data.end(), h_result.begin(), T(0)) - h_result.begin();
   const size_t d_size = thrust::remove_copy(d_data.begin(), d_data.end(), d_result.begin(), T(0)) - d_result.begin();
 
-  ASSERT_EQUAL(h_size, d_size);
+  REQUIRE(h_size == d_size);
 
   h_result.resize(h_size);
   d_result.resize(d_size);
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestRemoveCopy);
+DECLARE_VARIABLE_UNITTEST(test_remove_copy);
 
 template <typename T>
-void TestRemoveCopyToDiscardIterator(const size_t n)
+void test_remove_copy_to_discard_iterator(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -451,13 +439,13 @@ void TestRemoveCopyToDiscardIterator(const size_t n)
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(num_nonzeros));
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestRemoveCopyToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_remove_copy_to_discard_iterator);
 
 template <typename T>
-void TestRemoveCopyToDiscardIteratorZipped(const size_t n)
+void test_remove_copy_to_discard_iterator_zipped(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -488,14 +476,14 @@ void TestRemoveCopyToDiscardIteratorZipped(const size_t n)
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(num_nonzeros));
 
-  ASSERT_EQUAL(h_output, d_output);
-  ASSERT_EQUAL_QUIET(reference, cuda::std::get<1>(h_result.get_iterator_tuple()));
-  ASSERT_EQUAL_QUIET(reference, cuda::std::get<1>(d_result.get_iterator_tuple()));
+  REQUIRE(h_output == d_output);
+  REQUIRE(reference == cuda::std::get<1>(h_result.get_iterator_tuple()));
+  REQUIRE(reference == cuda::std::get<1>(d_result.get_iterator_tuple()));
 }
-DECLARE_VARIABLE_UNITTEST(TestRemoveCopyToDiscardIteratorZipped);
+DECLARE_VARIABLE_UNITTEST(test_remove_copy_to_discard_iterator_zipped);
 
 template <typename T>
-void TestRemoveCopyIf(const size_t n)
+void test_remove_copy_if(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -508,17 +496,17 @@ void TestRemoveCopyIf(const size_t n)
   const size_t d_size =
     thrust::remove_copy_if(d_data.begin(), d_data.end(), d_result.begin(), is_true<T>()) - d_result.begin();
 
-  ASSERT_EQUAL(h_size, d_size);
+  REQUIRE(h_size == d_size);
 
   h_result.resize(h_size);
   d_result.resize(d_size);
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestRemoveCopyIf);
+DECLARE_VARIABLE_UNITTEST(test_remove_copy_if);
 
 template <typename T>
-void TestRemoveCopyIfToDiscardIterator(const size_t n)
+void test_remove_copy_if_to_discard_iterator(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -533,13 +521,13 @@ void TestRemoveCopyIfToDiscardIterator(const size_t n)
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(num_false));
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestRemoveCopyIfToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_remove_copy_if_to_discard_iterator);
 
 template <typename T>
-void TestRemoveCopyIfStencil(const size_t n)
+void test_remove_copy_if_stencil(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -557,17 +545,17 @@ void TestRemoveCopyIfStencil(const size_t n)
     thrust::remove_copy_if(d_data.begin(), d_data.end(), d_stencil.begin(), d_result.begin(), is_true<T>())
     - d_result.begin();
 
-  ASSERT_EQUAL(h_size, d_size);
+  REQUIRE(h_size == d_size);
 
   h_result.resize(h_size);
   d_result.resize(d_size);
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestRemoveCopyIfStencil);
+DECLARE_VARIABLE_UNITTEST(test_remove_copy_if_stencil);
 
 template <typename T>
-void TestRemoveCopyIfStencilToDiscardIterator(const size_t n)
+void test_remove_copy_if_stencil_to_discard_iterator(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -585,7 +573,7 @@ void TestRemoveCopyIfStencilToDiscardIterator(const size_t n)
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(num_false));
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestRemoveCopyIfStencilToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_remove_copy_if_stencil_to_discard_iterator);

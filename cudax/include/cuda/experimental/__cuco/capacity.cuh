@@ -49,26 +49,34 @@ namespace cuda::experimental::cuco
 //! @tparam _BucketSize Number of slots per bucket
 //! @tparam _SizeType Size type
 //!
-//! @param __requested Requested capacity
+//! @param[in] __requested Requested capacity
 //!
 //! @return The smallest valid capacity that is greater than or equal to `__requested`
 template <class _ProbingScheme, int _BucketSize, class _SizeType>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _SizeType make_valid_capacity(_SizeType __requested)
 {
-  constexpr auto __stride = _SizeType{_ProbingScheme::cg_size * _BucketSize};
-  const auto __cycles     = ::cuda::ceil_div(::cuda::std::max(__requested, _SizeType{1}), __stride);
+  static_assert(_ProbingScheme::cg_size > 0);
+  static_assert(_BucketSize > 0);
+  static_assert(::cuda::std::numeric_limits<_SizeType>::is_integer);
+  static_assert(sizeof(_SizeType) <= sizeof(::cuda::std::uint64_t));
+
+  constexpr auto __stride = static_cast<::cuda::std::uint64_t>(_ProbingScheme::cg_size) * _BucketSize;
+  constexpr auto __max_cycles =
+    static_cast<::cuda::std::uint64_t>(::cuda::std::numeric_limits<_SizeType>::max()) / __stride;
+  const auto __requested_normalized = static_cast<::cuda::std::uint64_t>(::cuda::std::max(__requested, _SizeType{1}));
+  const auto __cycles               = ::cuda::ceil_div(__requested_normalized, __stride);
   _SizeType __capacity{};
   if constexpr (is_double_hashing_v<_ProbingScheme>)
   {
-    const auto __prime = detail::__next_prime(static_cast<::cuda::std::uint64_t>(__cycles));
-    if (::cuda::mul_overflow(__capacity, __prime, __stride))
+    const auto __prime = ::cuda::experimental::cuco::detail::__next_prime(__cycles, __max_cycles);
+    if (__prime == 0 || ::cuda::mul_overflow(__capacity, __prime, __stride))
     {
       _CCCL_THROW(::std::logic_error, "Invalid input capacity");
     }
   }
   else
   {
-    const auto __num_buckets = __cycles + _SizeType{__requested == 0};
+    const auto __num_buckets = __cycles + static_cast<::cuda::std::uint64_t>(__requested == 0);
     if (::cuda::mul_overflow(__capacity, __num_buckets, __stride))
     {
       _CCCL_THROW(::std::logic_error, "Invalid input capacity");
@@ -79,14 +87,18 @@ template <class _ProbingScheme, int _BucketSize, class _SizeType>
 
 //! @brief Rounds a requested capacity up to a valid capacity for a desired load factor.
 //!
+//! For load factors less than one, scaling uses double-precision arithmetic. Rounding can affect
+//! the resulting capacity for large requests. A scaled estimate outside the representable range
+//! of `_SizeType` is rejected even when exact arithmetic would produce a representable capacity.
+//!
 //! @tparam _ProbingScheme Probing scheme type
 //! @tparam _BucketSize Number of slots per bucket
 //! @tparam _SizeType Size type
 //!
-//! @param __requested Requested element count
-//! @param __load_factor Desired load factor in (0, 1]
+//! @param[in] __requested Requested element count
+//! @param[in] __load_factor Desired load factor in (0, 1]
 //!
-//! @return The smallest valid capacity that fits `__requested` elements at `__load_factor`
+//! @return The smallest valid capacity greater than or equal to the scaled estimate
 template <class _ProbingScheme, int _BucketSize, class _SizeType>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _SizeType make_valid_capacity(_SizeType __requested, double __load_factor)
 {
@@ -94,14 +106,24 @@ template <class _ProbingScheme, int _BucketSize, class _SizeType>
   {
     _CCCL_THROW(::std::logic_error, "Desired load factor must be in the range (0, 1]");
   }
+  if (__requested <= _SizeType{0} || __load_factor == 1.)
+  {
+    return ::cuda::experimental::cuco::make_valid_capacity<_ProbingScheme, _BucketSize>(__requested);
+  }
+
   const auto __scaled = ::cuda::std::ceil(static_cast<double>(__requested) / __load_factor);
-  if (__scaled > static_cast<double>(::cuda::std::numeric_limits<_SizeType>::max()))
+  // A 64-bit maximum rounds up to the next power of two when converted to double. Use an exactly
+  // representable exclusive bound so the floating-to-integer conversion cannot overflow.
+  constexpr auto __max             = ::cuda::std::numeric_limits<_SizeType>::max();
+  constexpr auto __half_bound      = __max / 2 + 1;
+  constexpr auto __exclusive_bound = static_cast<double>(__half_bound) * 2.;
+  if (__scaled >= __exclusive_bound)
   {
     _CCCL_THROW(::std::logic_error,
                 "Invalid load factor: requested capacity divided by load factor exceeds the maximum representable "
                 "value");
   }
-  return make_valid_capacity<_ProbingScheme, _BucketSize>(static_cast<_SizeType>(__scaled));
+  return ::cuda::experimental::cuco::make_valid_capacity<_ProbingScheme, _BucketSize>(static_cast<_SizeType>(__scaled));
 }
 
 //! @brief Returns whether `__capacity` is already a valid capacity for the given probing scheme and
@@ -111,13 +133,13 @@ template <class _ProbingScheme, int _BucketSize, class _SizeType>
 //! @tparam _BucketSize Number of slots per bucket
 //! @tparam _SizeType Size type
 //!
-//! @param __capacity Capacity to test
+//! @param[in] __capacity Capacity to test
 //!
 //! @return `true` if `__capacity` needs no rounding
 template <class _ProbingScheme, int _BucketSize, class _SizeType>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool is_valid_capacity(_SizeType __capacity)
 {
-  return make_valid_capacity<_ProbingScheme, _BucketSize>(__capacity) == __capacity;
+  return ::cuda::experimental::cuco::make_valid_capacity<_ProbingScheme, _BucketSize>(__capacity) == __capacity;
 }
 } // namespace cuda::experimental::cuco
 

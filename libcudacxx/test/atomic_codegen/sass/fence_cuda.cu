@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // clang-format off
-// %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope block=tsb,CTA,block:device=tsd,GPU,non_block:system=tss,SYS,non_block
+// %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope block=tsb,CTA,block:cluster=tsc,GPU,non_block:device=tsd,GPU,non_block:system=tss,SYS,non_block
 // %PARAM% ORDER,SASS_SEMANTIC,FILECHECK_PREFIX_MEMBAR,FILECHECK_PREFIX_ACQUIRE order acquire=moa,ALL,no_membar,acquire:release=more,ALL,membar,no_acquire:acq_rel=moar,ALL,membar,acquire:seq_cst=mosc,SC,membar,acquire
 // %FILECHECK% PREFIX_COMBINE non_block,acquire
 // %FILECHECK% PREFIX_COMBINE ptx,no_membar

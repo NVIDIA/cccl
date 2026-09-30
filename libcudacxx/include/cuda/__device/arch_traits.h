@@ -395,7 +395,7 @@ template <>
 template <>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr arch_traits_t arch_traits<arch_id::sm_100>() noexcept
 {
-  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_90);
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_100);
   __traits.max_shared_memory_per_multiprocessor = 228 * 1024;
   __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_threads_per_multiprocessor       = 2048;

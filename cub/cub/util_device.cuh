@@ -26,6 +26,7 @@
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__memory/is_valid_alignment.h>
+#include <cuda/std/__algorithm/find.h>
 #include <cuda/std/__concepts/regular.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__cstddef/types.h>
@@ -84,6 +85,7 @@ public:
   //! @p target_device
   SwitchDevice(const int target_device)
       : target_device_(target_device)
+      , original_device_(target_device)
   {
     CubDebug(cudaGetDevice(&original_device_));
     if (original_device_ != target_device_)
@@ -198,10 +200,10 @@ struct PerDeviceAttributeCache
     DeviceEntryReady
   };
 
-  struct DeviceEntry
+  struct DeviceEntry // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     ::std::atomic<DeviceEntryStatus> flag;
-    DevicePayload payload;
+    DevicePayload payload{};
   };
 
 private:
@@ -305,7 +307,7 @@ CUB_RUNTIME_FUNCTION cudaError_t PtxVersionUncached(int& ptx_version)
   cudaError_t result = cudaSuccess; // NOLINT(misc-const-correctness)
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     ({
-                      cudaFuncAttributes empty_kernel_attrs;
+                      cudaFuncAttributes empty_kernel_attrs{};
                       result      = CubDebug(cudaFuncGetAttributes(&empty_kernel_attrs, (const void*) empty_kernel));
                       ptx_version = empty_kernel_attrs.ptxVersion * 10;
                     }),
@@ -394,25 +396,29 @@ namespace detail
 template <class T = void>
 CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
 {
+  // When compiling with nvc++ in CUDA mode, we always use the minimum cc tuning for all architectures, because we don't
+  // implement nvc++-compatible arch dispatch on device.
+#  if _CCCL_CUDA_COMPILER(NVHPC)
+  cc = ::cuda::compute_capability{NV_TARGET_MINIMUM_SM_INTEGER};
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
   int ptx_version = 0;
   if (const auto error = PtxVersion<T>(ptx_version))
   {
     return error;
   }
   cc = ::cuda::compute_capability{ptx_version / 10};
-  return cudaSuccess;
-}
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
 
-//! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the given device.
-template <class T = void>
-_CCCL_HOST_API cudaError_t ptx_compute_cap(::cuda::compute_capability& cc, int device)
-{
-  int ptx_version = 0;
-  if (const auto error = PtxVersion<T>(ptx_version, device))
-  {
-    return error;
-  }
-  cc = ::cuda::compute_capability{ptx_version / 10};
+#  if _CCCL_CUDA_COMPILATION()
+  // PtxVersion() (via cudaFuncGetAttributes() and .ptxVersion) can report a virtual architecture that does not
+  // correspond to any architecture in __CUDA_ARCH_LIST__. This can happen if a user compiles with -rdc=true and links
+  // against a TU that is compiled for a lower architecture than the current TU. See
+  // https://github.com/NVIDIA/cccl/issues/11403 for details.
+  const auto& target_ccs = ::cuda::__target_compute_capabilities();
+  _CCCL_VERIFY(::cuda::std::find(target_ccs.begin(), target_ccs.end(), cc) != target_ccs.end(),
+               "The compute capability must be one of __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST");
+#  endif // _CCCL_CUDA_COMPILATION()
+
   return cudaSuccess;
 }
 } // namespace detail

@@ -38,7 +38,8 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__hss_sort
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
+namespace __detail::__hss_sort
 {
 template <class _Tp>
 struct _Bracket
@@ -110,7 +111,7 @@ template <class _Tp, class _Env, class _BinaryOp>
 class _HSSSorter
 {
 public:
-  using __resource_type _CCCL_NODEBUG = ::cuda::experimental::__detail::__resource_type_for<_Env>;
+  using __resource_type _CCCL_NODEBUG = ::cuda::experimental::mgmn::__detail::__resource_type_for<_Env>;
 
   // The size/capacity-aware device buffer type for element type `_Up`.
   template <class _Up>
@@ -254,7 +255,7 @@ private:
 public:
   template <class _Policy, class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
   _CCCL_HOST_API static void __execute(
-    const __result_policy_base<_Policy>&,
+    const ::cuda::experimental::__result_policy_base<_Policy>&,
     _CommRange&& __comms,
     _EnvRange&& __envs,
     _InputIterRange&& __input_iters,
@@ -263,7 +264,8 @@ public:
 };
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
-} // namespace cuda::experimental::__detail::__hss_sort
+} // namespace __detail::__hss_sort
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
 

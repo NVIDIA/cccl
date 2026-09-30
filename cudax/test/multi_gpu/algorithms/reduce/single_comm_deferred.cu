@@ -44,7 +44,7 @@ using count_type = cuda::std::int32_t;
 // join, since the assertion macros are not safe to fire concurrently.
 template <class Env, class T, class Op>
 void do_reduce_deferred_threaded(
-  cuda::std::span<cudax::nccl_communicator_ref> comms,
+  cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
   std::vector<Env>& envs,
   std::vector<cuda::device_buffer<T>>& in,
   std::vector<cuda::device_buffer<count_type>>& num_items,
@@ -59,7 +59,7 @@ void do_reduce_deferred_threaded(
   INFO("ident = " << ident);
 
   run_threaded(comms.size(), [&](cuda::std::size_t i) {
-    cudax::reduce(
+    cudax::mgmn::reduce(
       cudax::broadcasted,
       comms[i],
       envs[i],
@@ -116,7 +116,7 @@ MULTI_GPU_TEST("reduce single-comm deferred documentation example", c2h::type_li
 
     // The count is read on the device in stream order, so it need not be known on the host
     // when `reduce` is called.
-    cudax::reduce(
+    cudax::mgmn::reduce(
       cudax::broadcasted,
       communicator,
       env,

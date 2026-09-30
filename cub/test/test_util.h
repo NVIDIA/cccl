@@ -31,6 +31,7 @@
 #include <cstdio>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -47,14 +48,14 @@
 /**
  * Assert equals
  */
-#define AssertEquals(a, b)                                                                           \
+#define AssertEquals(a, b) /* NOLINT(readability-identifier-naming) */                               \
   if ((a) != (b))                                                                                    \
   {                                                                                                  \
     std::cerr << "\n" << __FILE__ << ": " << __LINE__ << ": AssertEquals(" #a ", " #b ") failed.\n"; \
     exit(1);                                                                                         \
   }
 
-#define AssertTrue(a)                                                                      \
+#define AssertTrue(a) /* NOLINT(readability-identifier-naming) */                          \
   if (!(a))                                                                                \
   {                                                                                        \
     std::cerr << "\n" << __FILE__ << ": " << __LINE__ << ": AssertTrue(" #a ") failed.\n"; \
@@ -73,10 +74,10 @@ struct CommandLineArgs
   std::vector<std::string> keys;
   std::vector<std::string> values;
   std::vector<std::string> args;
-  cudaDeviceProp deviceProp;
-  float device_giga_bandwidth;
-  std::size_t device_free_physmem;
-  std::size_t device_total_physmem;
+  cudaDeviceProp deviceProp{};
+  float device_giga_bandwidth{};
+  std::size_t device_free_physmem{};
+  std::size_t device_total_physmem{};
 
   /**
    * Constructor
@@ -673,6 +674,30 @@ inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 
   return os;
 }
+
+// NVHPC incorrectly identifies 128-bit integers as stream-insertable in Catch2's detection trait, but then fails to
+// select the global stream insertion overloads above. Explicit string makers bypass the faulty detection.
+template <>
+struct Catch::StringMaker<__uint128_t>
+{
+  static std::string convert(__uint128_t val)
+  {
+    std::ostringstream os;
+    ::operator<<(os, val);
+    return os.str();
+  }
+};
+
+template <>
+struct Catch::StringMaker<__int128_t>
+{
+  static std::string convert(__int128_t val)
+  {
+    std::ostringstream os;
+    ::operator<<(os, val);
+    return os.str();
+  }
+};
 #endif
 
 /******************************************************************************
@@ -1188,10 +1213,10 @@ int CompareDeviceResults(
   }
 
   // Allocate array on host
-  T* h_data = (T*) malloc(num_items * sizeof(T));
+  const std::unique_ptr<T[]> h_data(new T[num_items]);
 
   // Copy data back
-  cudaMemcpy(h_data, d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_data.get(), d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
 
   // Display data
   if (display_data)
@@ -1210,15 +1235,7 @@ int CompareDeviceResults(
   }
 
   // Check
-  const int retval = CompareResults(h_data, h_reference, num_items, verbose);
-
-  // Cleanup
-  if (h_data)
-  {
-    free(h_data);
-  }
-
-  return retval;
+  return CompareResults(h_data.get(), h_reference, num_items, verbose);
 }
 
 /**
@@ -1230,12 +1247,12 @@ int CompareDeviceDeviceResults(
   T* d_reference, T* d_data, std::size_t num_items, bool verbose = true, bool display_data = false)
 {
   // Allocate array on host
-  T* h_reference = (T*) malloc(num_items * sizeof(T));
-  T* h_data      = (T*) malloc(num_items * sizeof(T));
+  const std::unique_ptr<T[]> h_reference(new T[num_items]);
+  const std::unique_ptr<T[]> h_data(new T[num_items]);
 
   // Copy data back
-  cudaMemcpy(h_reference, d_reference, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
-  cudaMemcpy(h_data, d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_reference.get(), d_reference, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_data.get(), d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
 
   // Display data
   if (display_data)
@@ -1254,19 +1271,7 @@ int CompareDeviceDeviceResults(
   }
 
   // Check
-  int retval = CompareResults(h_data, h_reference, num_items, verbose);
-
-  // Cleanup
-  if (h_reference)
-  {
-    free(h_reference);
-  }
-  if (h_data)
-  {
-    free(h_data);
-  }
-
-  return retval;
+  return CompareResults(h_data.get(), h_reference.get(), num_items, verbose);
 }
 
 /**
@@ -1295,18 +1300,12 @@ template <typename T>
 void DisplayDeviceResults(T* d_data, std::size_t num_items)
 {
   // Allocate array on host
-  T* h_data = (T*) malloc(num_items * sizeof(T));
+  const std::unique_ptr<T[]> h_data(new T[num_items]);
 
   // Copy data back
-  cudaMemcpy(h_data, d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_data.get(), d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
 
-  DisplayResults(h_data, num_items);
-
-  // Cleanup
-  if (h_data)
-  {
-    free(h_data);
-  }
+  DisplayResults(h_data.get(), num_items);
 }
 
 /******************************************************************************
@@ -1405,8 +1404,8 @@ struct CpuTimer
 
 struct GpuTimer
 {
-  cudaEvent_t start;
-  cudaEvent_t stop;
+  cudaEvent_t start{};
+  cudaEvent_t stop{};
 
   GpuTimer()
   {
@@ -1439,10 +1438,10 @@ struct GpuTimer
   }
 };
 
-template <int ELEMENTS_PER_OBJECT_ = 128>
+template <int ElementsPerObjectParam = 128>
 struct HugeDataType
 {
-  static constexpr int ELEMENTS_PER_OBJECT = ELEMENTS_PER_OBJECT_;
+  static constexpr int ELEMENTS_PER_OBJECT = ElementsPerObjectParam;
 
   __device__ __host__ HugeDataType()
   {
@@ -1480,14 +1479,14 @@ struct HugeDataType
     return *this;
   }
 
-  int data[ELEMENTS_PER_OBJECT];
+  int data[ELEMENTS_PER_OBJECT]{};
 };
 
-template <int ELEMENTS_PER_OBJECT>
+template <int ElementsPerObject>
 inline __device__ __host__ bool
-operator==(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEMENTS_PER_OBJECT>& rhs)
+operator==(const HugeDataType<ElementsPerObject>& lhs, const HugeDataType<ElementsPerObject>& rhs)
 {
-  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ElementsPerObject; i++)
   {
     if (lhs.data[i] != rhs.data[i])
     {
@@ -1498,11 +1497,11 @@ operator==(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEM
   return true;
 }
 
-template <int ELEMENTS_PER_OBJECT>
+template <int ElementsPerObject>
 inline __device__ __host__ bool
-operator<(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEMENTS_PER_OBJECT>& rhs)
+operator<(const HugeDataType<ElementsPerObject>& lhs, const HugeDataType<ElementsPerObject>& rhs)
 {
-  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ElementsPerObject; i++)
   {
     if (lhs.data[i] < rhs.data[i])
     {
@@ -1513,10 +1512,10 @@ operator<(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEME
   return false;
 }
 
-template <typename DataType, int ELEMENTS_PER_OBJECT>
-__device__ __host__ bool operator!=(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const DataType& rhs)
+template <typename DataType, int ElementsPerObject>
+__device__ __host__ bool operator!=(const HugeDataType<ElementsPerObject>& lhs, const DataType& rhs)
 {
-  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ElementsPerObject; i++)
   {
     if (lhs.data[i] != rhs)
     {
@@ -1527,14 +1526,14 @@ __device__ __host__ bool operator!=(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs
   return false;
 }
 
-template <int ELEMENTS_PER_OBJECT>
-std::ostream& operator<<(std::ostream& os, const HugeDataType<ELEMENTS_PER_OBJECT>& val)
+template <int ElementsPerObject>
+std::ostream& operator<<(std::ostream& os, const HugeDataType<ElementsPerObject>& val)
 {
   os << '(';
-  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ElementsPerObject; i++)
   {
     os << CoutCast(val.data[i]);
-    if (i < ELEMENTS_PER_OBJECT - 1)
+    if (i < ElementsPerObject - 1)
     {
       os << ',';
     }

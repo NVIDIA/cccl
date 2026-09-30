@@ -23,6 +23,8 @@ Defined in header ``<cuda/barrier>``:
 The class template ``cuda::barrier`` is an extended form of `cuda::std::barrier <https://en.cppreference.com/w/cpp/thread/barrier>`_
 that takes an additional :ref:`cuda::thread_scope <libcudacxx-extended-api-memory-model-thread-scopes>` argument.
 
+``Scope`` shall not be ``cuda::thread_scope_cluster``.
+
 If ``!(scope == cuda::thread_block_scope && cuda::device::is_address_from(this, cuda::device::address_space::shared))``, then the semantics are the same as
 `cuda::std::barrier <https://en.cppreference.com/w/cpp/thread/barrier>`_, otherwise, see below.
 

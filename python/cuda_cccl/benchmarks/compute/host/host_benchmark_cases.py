@@ -121,7 +121,9 @@ def synchronize() -> None:
     cp.cuda.Device().synchronize()
 
 
-def _numba_cuda_skip_reason() -> str | None:
+def _numba_cuda_mlir_skip_reason() -> str | None:
+    # Gates the `*.python` cases below, which hand a plain Python callable to
+    # cuda.compute; JIT-compiling those is numba-cuda-mlir's job.
     try:
         import numba_cuda_mlir.cuda  # noqa: F401
     except Exception as exc:
@@ -129,7 +131,7 @@ def _numba_cuda_skip_reason() -> str | None:
     return None
 
 
-_NUMBA_CUDA_SKIP_REASON = _numba_cuda_skip_reason()
+_NUMBA_CUDA_MLIR_SKIP_REASON = _numba_cuda_mlir_skip_reason()
 
 
 def _raw_predicate_i32(name: str) -> RawOp:
@@ -1165,7 +1167,7 @@ CASES = [
         _oneshot_reduce,
         _twoshot_reduce,
         "temp_storage_bytes",
-        _NUMBA_CUDA_SKIP_REASON,
+        _NUMBA_CUDA_MLIR_SKIP_REASON,
     ),
     _make_case(
         "exclusive_scan.plus",
@@ -1190,7 +1192,7 @@ CASES = [
         _oneshot_scan,
         _twoshot_scan,
         "temp_storage_bytes",
-        _NUMBA_CUDA_SKIP_REASON,
+        _NUMBA_CUDA_MLIR_SKIP_REASON,
     ),
     _make_case(
         "segmented_reduce.plus",
@@ -1215,7 +1217,7 @@ CASES = [
         _oneshot_segmented_reduce,
         _twoshot_segmented_reduce,
         "temp_storage_bytes",
-        _NUMBA_CUDA_SKIP_REASON,
+        _NUMBA_CUDA_MLIR_SKIP_REASON,
     ),
     _make_case(
         "unary_transform.identity",
@@ -1240,7 +1242,7 @@ CASES = [
         _oneshot_unary_transform,
         _twoshot_unary_transform,
         "none",
-        _NUMBA_CUDA_SKIP_REASON,
+        _NUMBA_CUDA_MLIR_SKIP_REASON,
     ),
     _make_case(
         "binary_transform.plus",
@@ -1265,7 +1267,7 @@ CASES = [
         _oneshot_binary_transform,
         _twoshot_binary_transform,
         "none",
-        _NUMBA_CUDA_SKIP_REASON,
+        _NUMBA_CUDA_MLIR_SKIP_REASON,
     ),
     _make_case(
         "histogram_even",
@@ -1298,7 +1300,7 @@ CASES = [
         _oneshot_lower_bound,
         _twoshot_lower_bound,
         "none",
-        _NUMBA_CUDA_SKIP_REASON,
+        _NUMBA_CUDA_MLIR_SKIP_REASON,
     ),
     _make_case(
         "select.logical_not",
@@ -1326,7 +1328,7 @@ CASES = [
         _oneshot_select,
         _twoshot_select,
         "temp_storage_bytes",
-        _NUMBA_CUDA_SKIP_REASON,
+        _NUMBA_CUDA_MLIR_SKIP_REASON,
     ),
     _make_case(
         "three_way_partition.logical_not",
@@ -1363,7 +1365,7 @@ CASES = [
         _oneshot_three_way_partition,
         _twoshot_three_way_partition,
         "temp_storage_bytes",
-        _NUMBA_CUDA_SKIP_REASON,
+        _NUMBA_CUDA_MLIR_SKIP_REASON,
     ),
     _make_case(
         "unique_by_key.equal",
@@ -1388,7 +1390,7 @@ CASES = [
         _oneshot_unique_by_key,
         _twoshot_unique_by_key,
         "temp_storage_bytes",
-        _NUMBA_CUDA_SKIP_REASON,
+        _NUMBA_CUDA_MLIR_SKIP_REASON,
     ),
     _make_case(
         "merge_sort.less",
@@ -1413,7 +1415,7 @@ CASES = [
         _oneshot_merge_sort,
         _twoshot_merge_sort,
         "temp_storage_bytes",
-        _NUMBA_CUDA_SKIP_REASON,
+        _NUMBA_CUDA_MLIR_SKIP_REASON,
     ),
     _make_case(
         "radix_sort",

@@ -39,7 +39,7 @@ namespace
 // join, since the assertion macros are not safe to fire concurrently.
 template <class Env, class T, class Op>
 void do_segmented_reduce_threaded(
-  cuda::std::span<cudax::nccl_communicator_ref> comms,
+  cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
   std::vector<Env>& envs,
   std::vector<cuda::device_buffer<T>>& in,
   cuda::std::size_t num_segments,
@@ -58,7 +58,7 @@ void do_segmented_reduce_threaded(
   run_threaded(comms.size(), [&](cuda::std::size_t i) {
     // Segment `s` covers [begin_offsets[s], end_offsets[s]), so the end offsets are just the
     // begin offsets shifted by one.
-    cudax::segmented_reduce(
+    cudax::mgmn::segmented_reduce(
       cudax::broadcasted,
       comms[i],
       envs[i],
@@ -118,7 +118,7 @@ MULTI_GPU_TEST("segmented_reduce single-comm documentation example", c2h::type_l
     auto offsets = cuda::make_device_buffer<int>(stream, device, offset_values);
     auto output  = cuda::make_device_buffer<int>(stream, device, num_segments, cuda::no_init);
 
-    cudax::segmented_reduce(
+    cudax::mgmn::segmented_reduce(
       cudax::broadcasted,
       communicator,
       env,

@@ -103,6 +103,7 @@ __all__ = [
     "compile_to_ltoir",
     "infer_return_type",
     "refresh_contexts",
+    "global_compiler_lock",
 ]
 
 
@@ -299,7 +300,15 @@ def compile_to_llvm_ir(pyfunc, sig, abi_name: str, cc=None) -> str:
     # dispatcher performs on first use; see infer_return_type.
     refresh_contexts()
 
-    with _target_without_a_device(cc), _ctx.get_context():
+    # The backend holds global_compiler_lock only while it lowers Python to MLIR
+    # (compile_mlir, reached through _compile_only). The passes and the LLVM
+    # translation below run on the same shared MLIR context, and a compile on
+    # another thread can rework that context's state while they run; the pass
+    # manager then fails with "can't run 'builtin.module' pass manager on
+    # 'builtin.module' op". Hold the lock across the whole extraction, as the
+    # backend does for its own end-to-end compile. It is reentrant, so the
+    # nested acquisition inside compile_mlir is fine.
+    with global_compiler_lock, _target_without_a_device(cc), _ctx.get_context():
         cres = _compiler._compile_only(pyfunc, sig, target_options)
         module = cres.metadata["mlir_module"]
         PassManager.parse(get_base_pipeline()).run(module.operation)

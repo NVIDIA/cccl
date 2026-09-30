@@ -41,8 +41,7 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
 //! @brief Apply a transform operator to inputs distributed over a communicator.
 //!
 //! Applies `__op` to every element of each rank's input and writes the result to the
@@ -90,7 +89,7 @@ _CCCL_REQUIRES(__range_of_communicators<_CommRange> _CCCL_AND ::cuda::std::range
                    _CCCL_AND ::cuda::std::ranges::forward_range<_SizeTRange> _CCCL_AND
                      __detail::__range_of_random_access_iterators<_OutputIterRange>)
 _CCCL_HOST_API void transform(
-  [[maybe_unused]] const __result_policy_base<_Policy>& __policy,
+  [[maybe_unused]] const ::cuda::experimental::__result_policy_base<_Policy>& __policy,
   _CommRange&& __comms,
   _EnvRange&& __envs,
   _InputIterRange&& __input_iters,
@@ -99,12 +98,12 @@ _CCCL_HOST_API void transform(
   _TransformOp __op)
 {
   static_assert(::cuda::std::ranges::sized_range<_CommRange>);
-  static_assert(::cuda::std::same_as<_Policy, distributed_t>,
+  static_assert(::cuda::std::same_as<_Policy, ::cuda::experimental::distributed_t>,
                 "Only distributed results are currently supported. Please open an issue at "
                 "github.com/NVIDIA/cccl/issue requesting support for your specified policy.");
 
   using __properties =
-    ::cuda::experimental::__detail::__in_range_out_it_properties<_InputIterRange, _OutputIterRange, _EnvRange>;
+    ::cuda::experimental::mgmn::__detail::__in_range_out_it_properties<_InputIterRange, _OutputIterRange, _EnvRange>;
 
   // Could use ::cuda::std::invocable here, but it is overkill (compile-time wise). We know
   // that get_stream_t is a normal CPO and normally callable.
@@ -125,7 +124,7 @@ _CCCL_HOST_API void transform(
         ::cuda::std::projected<typename __properties::__input_iter_type, ::cuda::std::identity>>>,
     "The result of the transform operator must be writable through the output iterator");
 
-  _CCCL_NVTX_RANGE_SCOPE("cuda::experimental::transform");
+  _CCCL_NVTX_RANGE_SCOPE("cuda::mgmn::transform");
 
   for ([[maybe_unused]] auto&& [__comm, __env, __input_it, __num_items, __output_it] :
        ::cuda::std::ranges::views::zip(__comms, __envs, __input_iters, __num_items_range, __output_iters))
@@ -173,7 +172,7 @@ _CCCL_TEMPLATE(class _Policy, class _Comm, class _Env, class _InputIt, class _Si
 _CCCL_REQUIRES(__communicator<_Comm> _CCCL_AND ::cuda::std::random_access_iterator<_InputIt>
                  _CCCL_AND ::cuda::std::random_access_iterator<_OutputIt>)
 _CCCL_HOST_API void transform(
-  const __result_policy_base<_Policy>& __policy,
+  const ::cuda::experimental::__result_policy_base<_Policy>& __policy,
   _Comm&& __comm,
   _Env&& __env,
   _InputIt __input_iter,
@@ -181,7 +180,7 @@ _CCCL_HOST_API void transform(
   _OutputIt __output_iter,
   _TransformOp __op)
 {
-  ::cuda::experimental::transform(
+  ::cuda::experimental::mgmn::transform(
     __policy,
     ::cuda::std::span<::cuda::std::remove_reference_t<_Comm>, 1>{::cuda::std::addressof(__comm), 1},
     ::cuda::std::span<::cuda::std::remove_reference_t<_Env>, 1>{::cuda::std::addressof(__env), 1},
@@ -190,7 +189,7 @@ _CCCL_HOST_API void transform(
     ::cuda::std::span<_OutputIt, 1>{::cuda::std::addressof(__output_iter), 1},
     ::cuda::std::move(__op));
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
 

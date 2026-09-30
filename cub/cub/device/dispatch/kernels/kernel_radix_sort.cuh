@@ -43,7 +43,7 @@ namespace detail::radix_sort
  * @brief Upsweep digit-counting kernel entry point (multi-block).
  *        Computes privatized digit histograms, one per block.
  *
- * @tparam ALT_DIGIT_BITS
+ * @tparam AltDigitBits
  *   Whether or not to use the alternate (lower-bits) policy
  *
  * @tparam SortOrder
@@ -75,13 +75,13 @@ namespace detail::radix_sort
  *   Even-share descriptor for mapan equal number of tiles onto each thread block
  */
 template <typename PolicySelector,
-          bool ALT_DIGIT_BITS,
+          bool AltDigitBits,
           SortOrder Order,
           typename KeyT,
           typename OffsetT,
           typename DecomposerT = detail::identity_decomposer_t>
-__launch_bounds__(int(ALT_DIGIT_BITS ? current_policy<PolicySelector>().alt_upsweep.threads_per_block
-                                     : current_policy<PolicySelector>().upsweep.threads_per_block))
+__launch_bounds__(int(AltDigitBits ? current_policy<PolicySelector>().alt_upsweep.threads_per_block
+                                   : current_policy<PolicySelector>().upsweep.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortUpsweepKernel(
     const KeyT* const d_keys,
     OffsetT* const d_spine,
@@ -92,9 +92,9 @@ __launch_bounds__(int(ALT_DIGIT_BITS ? current_policy<PolicySelector>().alt_upsw
     const DecomposerT decomposer = {})
 {
   static constexpr RadixSortPolicy policy                       = current_policy<PolicySelector>();
-  static constexpr RadixSortUpsweepPolicy active_upsweep_policy = ALT_DIGIT_BITS ? policy.alt_upsweep : policy.upsweep;
+  static constexpr RadixSortUpsweepPolicy active_upsweep_policy = AltDigitBits ? policy.alt_upsweep : policy.upsweep;
   static constexpr RadixSortDownsweepPolicy active_downsweep_policy =
-    ALT_DIGIT_BITS ? policy.alt_downsweep : policy.downsweep;
+    AltDigitBits ? policy.alt_downsweep : policy.downsweep;
 
   static constexpr int TILE_ITEMS =
     ::cuda::std::max(active_upsweep_policy.threads_per_block * active_upsweep_policy.items_per_thread,
@@ -189,7 +189,7 @@ __launch_bounds__(current_policy<PolicySelector>().scan.lookback.threads_per_blo
  * @brief Downsweep pass kernel entry point (multi-block).
  *        Scatters keys (and values) into corresponding bins for the current digit place.
  *
- * @tparam ALT_DIGIT_BITS
+ * @tparam AltDigitBits
  *   Whether or not to use the alternate (lower-bits) policy
  *
  * @tparam SortOrder
@@ -233,14 +233,14 @@ __launch_bounds__(current_policy<PolicySelector>().scan.lookback.threads_per_blo
  *   Even-share descriptor for mapan equal number of tiles onto each thread block
  */
 template <typename PolicySelector,
-          bool ALT_DIGIT_BITS,
+          bool AltDigitBits,
           SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
           typename DecomposerT = detail::identity_decomposer_t>
-__launch_bounds__(int(ALT_DIGIT_BITS ? current_policy<PolicySelector>().alt_downsweep.threads_per_block
-                                     : current_policy<PolicySelector>().downsweep.threads_per_block))
+__launch_bounds__(int(AltDigitBits ? current_policy<PolicySelector>().alt_downsweep.threads_per_block
+                                   : current_policy<PolicySelector>().downsweep.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortDownsweepKernel(
     const KeyT* const d_keys_in,
     KeyT* const d_keys_out,
@@ -255,9 +255,9 @@ __launch_bounds__(int(ALT_DIGIT_BITS ? current_policy<PolicySelector>().alt_down
 {
   static constexpr RadixSortPolicy policy = current_policy<PolicySelector>();
 
-  static constexpr RadixSortUpsweepPolicy active_upsweep_policy = ALT_DIGIT_BITS ? policy.alt_upsweep : policy.upsweep;
+  static constexpr RadixSortUpsweepPolicy active_upsweep_policy = AltDigitBits ? policy.alt_upsweep : policy.upsweep;
   static constexpr RadixSortDownsweepPolicy active_downsweep_policy =
-    ALT_DIGIT_BITS ? policy.alt_downsweep : policy.downsweep;
+    AltDigitBits ? policy.alt_downsweep : policy.downsweep;
 
   static constexpr int TILE_ITEMS =
     ::cuda::std::max(active_upsweep_policy.threads_per_block * active_upsweep_policy.items_per_thread,

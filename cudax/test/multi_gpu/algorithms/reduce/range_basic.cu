@@ -33,7 +33,7 @@ namespace
 // Run the full reduction, wait for it to finish, and check that `reduce` left its argument ranges
 // untouched. This boilerplate is identical for every test regardless of how the inputs are shaped.
 template <class Env, class T, class Op>
-void do_reduce(cuda::std::span<cudax::nccl_communicator_ref> comms,
+void do_reduce(cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
                const std::vector<Env>& envs,
                std::vector<cuda::device_buffer<T>>& in,
                std::vector<cuda::device_buffer<T>>& out,
@@ -47,7 +47,7 @@ void do_reduce(cuda::std::span<cudax::nccl_communicator_ref> comms,
   INFO("init = " << init);
   INFO("ident = " << ident);
 
-  cudax::reduce(
+  cudax::mgmn::reduce(
     cudax::broadcasted,
     comms,
     envs,
@@ -96,7 +96,7 @@ MULTI_GPU_TEST("reduce documentation example", c2h::type_list<int>)
     outputs.emplace_back(cuda::make_device_buffer<int>(streams[i], device, 1, cuda::no_init));
   }
 
-  cudax::reduce(
+  cudax::mgmn::reduce(
     cudax::broadcasted,
     comms,
     // Passing streams as the environment directly

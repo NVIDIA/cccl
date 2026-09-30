@@ -560,6 +560,55 @@ public:
     __impl->find_if_async(__stream, __first, __last, __stencil, __pred, __output_begin, ref());
   }
 
+  // ===== For Each =====
+
+  //! @brief Applies `__callback_op` to a copy of every element whose key is equivalent to a key in
+  //! `[__first, __last)`.
+  //!
+  //! @note This function synchronizes the given stream. For asynchronous execution use `for_each_async`.
+  //! @note Keys in `[__first, __last)` that are not present in the map contribute no callback invocation.
+  //! @note The callback is invoked with a copy of the matching slot, so mutating its argument does
+  //! not modify the map.
+  //! @note The return value of `__callback_op`, if any, is ignored.
+  //! @note The order in which matches are visited is implementation-defined.
+  //!
+  //! @tparam _InputIt Device accessible input iterator
+  //! @tparam _CallbackOp Unary callable invocable with `value_type`
+  //!
+  //! @param __stream CUDA stream used for executing the kernels
+  //! @param __first Beginning of the sequence of keys
+  //! @param __last End of the sequence of keys
+  //! @param __callback_op Function to apply to every matching element
+  template <class _InputIt, class _CallbackOp>
+  _CCCL_HOST_API void
+  for_each(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _CallbackOp __callback_op) const
+  {
+    for_each_async(__stream, __first, __last, __callback_op);
+    __sync(__stream);
+  }
+
+  //! @brief Asynchronous version of `for_each`.
+  //!
+  //! @note Keys in `[__first, __last)` that are not present in the map contribute no callback invocation.
+  //! @note The callback is invoked with a copy of the matching slot, so mutating its argument does
+  //! not modify the map.
+  //! @note The return value of `__callback_op`, if any, is ignored.
+  //! @note The order in which matches are visited is implementation-defined.
+  //!
+  //! @tparam _InputIt Device accessible input iterator
+  //! @tparam _CallbackOp Unary callable invocable with `value_type`
+  //!
+  //! @param __stream CUDA stream used for executing the kernels
+  //! @param __first Beginning of the sequence of keys
+  //! @param __last End of the sequence of keys
+  //! @param __callback_op Function to apply to every matching element
+  template <class _InputIt, class _CallbackOp>
+  _CCCL_HOST_API void
+  for_each_async(::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _CallbackOp __callback_op) const
+  {
+    __impl->for_each_async(__stream, __first, __last, __callback_op, ref());
+  }
+
   // ===== Retrieve All =====
 
   //! @brief Retrieves all keys and their associated mapped values.

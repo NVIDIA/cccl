@@ -267,7 +267,7 @@ bool __atomic_compare_exchange(
   _Type volatile* __ptr, _Type* __expected, const _Type* __desired, bool, int __success_memorder, int __failure_memorder)
 {
   bool success = false;
-  switch (__stronger_order_msvc(__success_memorder, __failure_memorder))
+  switch (::cuda::std::__stronger_order_msvc(__success_memorder, __failure_memorder))
   {
     case __ATOMIC_RELEASE:
       _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER();

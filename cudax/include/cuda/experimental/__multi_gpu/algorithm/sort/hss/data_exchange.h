@@ -47,7 +47,8 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__hss_sort
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
+namespace __detail::__hss_sort
 {
 //! @brief Realizes finalized splitter `i` from its `[L, U]` bracket, as either a key or a rank.
 //!
@@ -202,13 +203,13 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_send_counts_and_offsets(
         __I_j.memory_resource(),
         2 * __comm_size,
         ::cuda::no_init,
-        ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
+        ::cuda::experimental::mgmn::__detail::__sanitize_buffer_env(*__env_it));
       auto& __offsets = __local_current_offsets->emplace_back(
         __I_j.stream(),
         __I_j.memory_resource(),
         __comm_size,
         ::cuda::no_init,
-        ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
+        ::cuda::experimental::mgmn::__detail::__sanitize_buffer_env(*__env_it));
 
       // A final round whose splitters all landed on an exact rank match narrows every sampling
       // interval to width zero, so it draws no samples and merges to zero probes. The probe set
@@ -355,7 +356,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__make_recv_buffers(
         __local_counts[__idx].memory_resource(),
         __total_recv,
         ::cuda::no_init,
-        ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
+        ::cuda::experimental::mgmn::__detail::__sanitize_buffer_env(*__env_it));
     }
   }
 
@@ -429,7 +430,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
       auto& __merged = __local_merged.emplace_back(
         __local_recvd[__idx].stream(),
         __local_recvd[__idx].memory_resource(),
-        ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
+        ::cuda::experimental::mgmn::__detail::__sanitize_buffer_env(*__env_it));
 
       __merge_k_way(
         *__env_it,
@@ -445,7 +446,8 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
-} // namespace cuda::experimental::__detail::__hss_sort
+} // namespace __detail::__hss_sort
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
 

@@ -43,7 +43,8 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__hss_sort
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
+namespace __detail::__hss_sort
 {
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
@@ -71,12 +72,12 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
 
       __all_local_sizes.emplace_back(::cuda::make_buffer<::cuda::std::uint64_t>(
         __stream,
-        ::cuda::experimental::__detail::__resource_from_env(*__env_it, __stream.__logical_device()),
+        ::cuda::experimental::mgmn::__detail::__resource_from_env(*__env_it, __stream.__logical_device()),
         __comm_size,
         // Technically, we only need to write this value at entry rank(), but that would
         // require a whole separate memcpy call which honestly does not seem worth it.
         static_cast<::cuda::std::uint64_t>(*__num_items_it),
-        ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it)));
+        ::cuda::experimental::mgmn::__detail::__sanitize_buffer_env(*__env_it)));
     }
   }
 
@@ -111,7 +112,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
         __all_local_sizes[__idx].memory_resource(),
         __comm_size,
         ::cuda::no_init,
-        ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
+        ::cuda::experimental::mgmn::__detail::__sanitize_buffer_env(*__env_it));
 
       __CUDAX_MULTI_GPU_DISPATCH(
         __offsets.stream(),
@@ -143,7 +144,8 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
-} // namespace cuda::experimental::__detail::__hss_sort
+} // namespace __detail::__hss_sort
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
 

@@ -22,6 +22,7 @@ _THREAD_SCOPE_NAMES = {
     0: "system",
     1: "device",
     2: "block",
+    3: "cluster",
     10: "thread",
 }
 

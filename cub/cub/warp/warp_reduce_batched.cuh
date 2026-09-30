@@ -137,8 +137,7 @@ private:
 
 public:
   //! \smemstorage{WarpReduceBatched}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -206,7 +205,8 @@ public:
     static_assert(max_out_per_thread == 1,
                   "For Batches > LogicalWarpThreads (or Batches == 0), use ReduceToStriped() or ReduceToBlocked()");
 
-    ::cuda::std::array<T, 1> output;
+    // ReduceToStriped supplies the output value.
+    ::cuda::std::array<T, 1> output; // NOLINT(cppcoreguidelines-pro-type-member-init)
     // ReduceToBlocked() and ReduceToStriped() do the same for max_out_per_thread == 1.
     ReduceToStriped(inputs, output, reduction_op);
     return output[0];

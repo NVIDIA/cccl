@@ -41,25 +41,25 @@ namespace
 
 C2H_TEST("nccl_communicator_ref typedefs", "[multi_gpu]")
 {
-  STATIC_REQUIRE(::cuda::std::is_same_v<cudax::nccl_communicator_ref::native_handle_type, ncclComm_t>);
+  STATIC_REQUIRE(::cuda::std::is_same_v<cudax::mgmn::nccl_communicator_ref::native_handle_type, ncclComm_t>);
   STATIC_REQUIRE(
-    ::cuda::std::is_same_v<cudax::nccl_communicator_ref::group_guard_type,
-                           decltype(::cuda::std::declval<const cudax::nccl_communicator_ref&>().group_guard())>);
+    ::cuda::std::is_same_v<cudax::mgmn::nccl_communicator_ref::group_guard_type,
+                           decltype(::cuda::std::declval<const cudax::mgmn::nccl_communicator_ref&>().group_guard())>);
 }
 
 C2H_TEST("nccl_communicator(s) not constructible from NCCL_COMM_NULL", "[multi_gpu]")
 {
   SECTION("ref")
   {
-    STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator_ref, decltype(NCCL_COMM_NULL)>);
-    STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator_ref, cuda::std::nullptr_t>);
+    STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::mgmn::nccl_communicator_ref, decltype(NCCL_COMM_NULL)>);
+    STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::mgmn::nccl_communicator_ref, cuda::std::nullptr_t>);
   }
 
   SECTION("owning")
   {
-    STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator, decltype(NCCL_COMM_NULL)>);
-    STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator, cuda::std::nullptr_t>);
-    STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::nccl_communicator, ncclComm_t>);
+    STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::mgmn::nccl_communicator, decltype(NCCL_COMM_NULL)>);
+    STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::mgmn::nccl_communicator, cuda::std::nullptr_t>);
+    STATIC_REQUIRE(!::cuda::std::is_constructible_v<cudax::mgmn::nccl_communicator, ncclComm_t>);
   }
 }
 
@@ -67,24 +67,24 @@ C2H_TEST("nccl_communicator basic", "[multi_gpu][nccl]")
 {
   SECTION("is move-only")
   {
-    STATIC_REQUIRE(!cuda::std::is_copy_constructible_v<cudax::nccl_communicator>);
-    STATIC_REQUIRE(!cuda::std::is_copy_assignable_v<cudax::nccl_communicator>);
-    STATIC_REQUIRE(cuda::std::is_move_constructible_v<cudax::nccl_communicator>);
-    STATIC_REQUIRE(cuda::std::is_nothrow_move_constructible_v<cudax::nccl_communicator>);
-    STATIC_REQUIRE(cuda::std::is_move_assignable_v<cudax::nccl_communicator>);
-    STATIC_REQUIRE(cuda::std::is_nothrow_move_assignable_v<cudax::nccl_communicator>);
+    STATIC_REQUIRE(!cuda::std::is_copy_constructible_v<cudax::mgmn::nccl_communicator>);
+    STATIC_REQUIRE(!cuda::std::is_copy_assignable_v<cudax::mgmn::nccl_communicator>);
+    STATIC_REQUIRE(cuda::std::is_move_constructible_v<cudax::mgmn::nccl_communicator>);
+    STATIC_REQUIRE(cuda::std::is_nothrow_move_constructible_v<cudax::mgmn::nccl_communicator>);
+    STATIC_REQUIRE(cuda::std::is_move_assignable_v<cudax::mgmn::nccl_communicator>);
+    STATIC_REQUIRE(cuda::std::is_nothrow_move_assignable_v<cudax::mgmn::nccl_communicator>);
   }
 
   SECTION("factory construction")
   {
     STATIC_REQUIRE(
-      cuda::std::is_same_v<decltype(cudax::nccl_communicator::from_native_handle(cuda::std::declval<ncclComm_t>())),
-                           cudax::nccl_communicator>);
+      cuda::std::is_same_v<decltype(cudax::mgmn::nccl_communicator::from_native_handle(cuda::std::declval<ncclComm_t>())),
+                           cudax::mgmn::nccl_communicator>);
 
     //! [nccl_communicator_construction]
     const ncclComm_t handle = make_nccl_communicator_handle();
 
-    auto comm = cuda::experimental::nccl_communicator::from_native_handle(handle);
+    auto comm = cudax::mgmn::nccl_communicator::from_native_handle(handle);
 
     // comm owns the handle now
     REQUIRE(comm.native_handle() == handle);
@@ -94,15 +94,15 @@ C2H_TEST("nccl_communicator basic", "[multi_gpu][nccl]")
   SECTION("factory construction with logical device")
   {
     STATIC_REQUIRE(
-      cuda::std::is_same_v<decltype(cudax::nccl_communicator::from_native_handle(
+      cuda::std::is_same_v<decltype(cudax::mgmn::nccl_communicator::from_native_handle(
                              cuda::std::declval<ncclComm_t>(), cuda::std::declval<cuda::__logical_device_ref>())),
-                           cudax::nccl_communicator>);
+                           cudax::mgmn::nccl_communicator>);
 
     //! [nccl_communicator_construction_with_logical_device]
     const ncclComm_t handle = make_nccl_communicator_handle();
     const auto device       = cuda::__logical_device{cuda::devices[0]};
 
-    auto comm = cudax::nccl_communicator::from_native_handle(handle, device);
+    auto comm = cudax::mgmn::nccl_communicator::from_native_handle(handle, device);
 
     REQUIRE(comm.native_handle() == handle);
     REQUIRE(comm.logical_device() == device);
@@ -111,10 +111,10 @@ C2H_TEST("nccl_communicator basic", "[multi_gpu][nccl]")
 
   SECTION("no_init construction")
   {
-    STATIC_REQUIRE(cuda::std::is_nothrow_constructible_v<cudax::nccl_communicator, cuda::no_init_t>);
+    STATIC_REQUIRE(cuda::std::is_nothrow_constructible_v<cudax::mgmn::nccl_communicator, cuda::no_init_t>);
 
     //! [nccl_communicator_no_init_construction]
-    const auto comm = cudax::nccl_communicator{cuda::no_init};
+    const auto comm = cudax::mgmn::nccl_communicator{cuda::no_init};
 
     REQUIRE(comm.native_handle() == ncclComm_t{NCCL_COMM_NULL});
     //! [nccl_communicator_no_init_construction]
@@ -128,7 +128,7 @@ C2H_TEST("nccl_communicator basic", "[multi_gpu][nccl]")
     //! [nccl_communicator_release]
     const ncclComm_t handle = make_nccl_communicator_handle();
 
-    auto comm = cuda::experimental::nccl_communicator::from_native_handle(handle);
+    auto comm = cudax::mgmn::nccl_communicator::from_native_handle(handle);
 
     const auto released_handle = comm.release();
 
@@ -138,7 +138,7 @@ C2H_TEST("nccl_communicator basic", "[multi_gpu][nccl]")
     //! [nccl_communicator_release]
 
     // so that we clean up properly
-    [[maybe_unused]] const auto _ = cudax::nccl_communicator::from_native_handle(handle);
+    [[maybe_unused]] const auto _ = cudax::mgmn::nccl_communicator::from_native_handle(handle);
   }
 
   SECTION("move construction")
@@ -146,8 +146,8 @@ C2H_TEST("nccl_communicator basic", "[multi_gpu][nccl]")
     //! [nccl_communicator_move_construction]
     const ncclComm_t handle = make_nccl_communicator_handle();
 
-    auto source      = cudax::nccl_communicator::from_native_handle(handle);
-    auto destination = cudax::nccl_communicator{cuda::std::move(source)};
+    auto source      = cudax::mgmn::nccl_communicator::from_native_handle(handle);
+    auto destination = cudax::mgmn::nccl_communicator{cuda::std::move(source)};
 
     // moved-from communicator is now invalid
     REQUIRE(source.native_handle() == ncclComm_t{NCCL_COMM_NULL});
@@ -158,8 +158,8 @@ C2H_TEST("nccl_communicator basic", "[multi_gpu][nccl]")
   SECTION("move assignment")
   {
     //! [nccl_communicator_move_assignment]
-    auto source      = cuda::experimental::nccl_communicator::from_native_handle(make_nccl_communicator_handle());
-    auto destination = cuda::experimental::nccl_communicator::from_native_handle(make_nccl_communicator_handle());
+    auto source      = cudax::mgmn::nccl_communicator::from_native_handle(make_nccl_communicator_handle());
+    auto destination = cudax::mgmn::nccl_communicator::from_native_handle(make_nccl_communicator_handle());
 
     // Save the native handle to verify that ownership is transferred.
     const auto handle = source.native_handle();
@@ -215,7 +215,7 @@ MULTI_GPU_TEST("nccl_communicator_ref basic", )
   {
     if (cuda::devices.size() > 1)
     {
-      REQUIRE_THROWS_WITH(cudax::nccl_communicator_ref(
+      REQUIRE_THROWS_WITH(cudax::mgmn::nccl_communicator_ref(
                             this->communicators()[0].native_handle(), cuda::__logical_device{cuda::devices[1]}),
                           "Inconsistent devices, NCCL communicator device and provided logical device do not match");
     }

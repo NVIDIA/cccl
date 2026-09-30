@@ -226,6 +226,21 @@ public:
     clear_async(__stream);
   }
 
+  //! @brief Copy-constructs an open addressing implementation.
+  _CCCL_HIDE_FROM_ABI __open_addressing_impl(const __open_addressing_impl&) = default;
+
+  //! @brief Move-constructs an open addressing implementation.
+  _CCCL_HIDE_FROM_ABI __open_addressing_impl(__open_addressing_impl&&) = default;
+
+  __open_addressing_impl& operator=(const __open_addressing_impl&) = delete;
+
+  //! @brief Move-assigns an open addressing implementation.
+  _CCCL_HIDE_FROM_ABI __open_addressing_impl& operator=(__open_addressing_impl&&) = default;
+
+  // NVCC requires a non-defaulted destructor to honor the host annotation. The slot buffer must
+  // be destroyed on the host. Explicitly default the other special members to preserve their behavior.
+  _CCCL_HOST_API ~__open_addressing_impl() {} // NOLINT(modernize-use-equals-default)
+
   //! @brief Fills all slots with the empty sentinel.
   _CCCL_HOST_API void clear(::cuda::stream_ref __stream)
   {
@@ -438,6 +453,39 @@ public:
       ::cuda::std::identity{},
       __output_begin,
       __container_ref);
+  }
+
+  //! @brief Asynchronously applies `__callback_op` to a copy of every slot matching each key in
+  //! `[__first, __last)`.
+  //!
+  //! @note The return value of `__callback_op`, if any, is ignored.
+  //!
+  //! @throws cuda_error if the query operation fails to launch
+  template <class _InputIt, class _CallbackOp, class _Ref>
+  _CCCL_HOST_API void for_each_async(
+    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _CallbackOp __callback_op, _Ref __container_ref)
+    const
+  {
+    const auto __num_keys = detail::__distance(__first, __last);
+    if (__num_keys == 0)
+    {
+      return;
+    }
+
+    if constexpr (__cg_size == 1)
+    {
+      __open_addressing::__for_each_fn __op{__first, __callback_op, __container_ref};
+      _CCCL_TRY_RUNTIME_API(CUB_NS_QUALIFIER::DeviceFor::Bulk, "cuco: failed to query keys", __num_keys, __op, __stream);
+    }
+    else
+    {
+      const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
+      const auto __config    = ::cuda::make_config(
+        ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
+      const auto& __kernel =
+        __open_addressing::__for_each_n<__cg_size, detail::__default_block_size, _InputIt, _CallbackOp, _Ref>;
+      ::cuda::launch(__stream, __config, __kernel, __first, __num_keys, __callback_op, __container_ref);
+    }
   }
 
   //! @brief Asynchronously regenerates the container without changing its capacity.

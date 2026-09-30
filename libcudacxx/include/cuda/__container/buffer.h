@@ -829,9 +829,23 @@ public:
 
 _CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
+//! @brief Convenience alias for @c cuda::buffer configured with @c cuda::mr::device_accessible.
+//! @rst
+//! Convenience alias for :ref:`cuda::buffer <libcudacxx-api-class-cuda-ns-buffer>`
+//! configured with the ``cuda::mr::device_accessible`` property. See
+//! :ref:`cuda::buffer <libcudacxx-api-class-cuda-ns-buffer>` for constructors,
+//! ownership, and member functions.
+//! @endrst
 template <class _Tp>
 using device_buffer = buffer<_Tp, ::cuda::mr::device_accessible>;
 
+//! @brief Convenience alias for @c cuda::buffer configured with @c cuda::mr::host_accessible.
+//! @rst
+//! Convenience alias for :ref:`cuda::buffer <libcudacxx-api-class-cuda-ns-buffer>`
+//! configured with the ``cuda::mr::host_accessible`` property. See
+//! :ref:`cuda::buffer <libcudacxx-api-class-cuda-ns-buffer>` for constructors,
+//! ownership, and member functions.
+//! @endrst
 template <class _Tp>
 using host_buffer = buffer<_Tp, ::cuda::mr::host_accessible>;
 
@@ -917,6 +931,7 @@ _CCCL_HOST_API void __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::st
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 
 // Require at least one explicit property on the source, so it doesn't look applicable for initializer list inputs
+#  ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates these with the documented default-property overloads
 _CCCL_TEMPLATE(class _Tp,
                class _FirstProperty,
                class... _RestProperties,
@@ -940,6 +955,7 @@ _CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
 
   return __res;
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a buffer by copying from \p __source, using the default properties of \p __mr
 //! @param __stream The stream used for allocation and copy.
@@ -980,6 +996,7 @@ _CCCL_HOST_API auto make_buffer(
 }
 #  endif // _CCCL_DOXYGEN_INVOKED
 
+#  ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates these with the documented default-property overloads
 // Empty buffer make function
 _CCCL_TEMPLATE(
   class _Tp, class _FirstProperty, class... _RestProperties, class _Resource, class _Env = ::cuda::std::execution::env<>)
@@ -991,6 +1008,7 @@ make_buffer(stream_ref __stream, _Resource&& __mr, const _Env& __env = {})
 {
   return buffer<_Tp, _FirstProperty, _RestProperties...>{__stream, ::cuda::std::forward<_Resource>(__mr), __env};
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates an empty buffer using the default properties of \p __mr
 //! @param __stream The stream used for allocation.
@@ -1013,6 +1031,7 @@ _CCCL_HOST_API auto make_buffer(stream_ref __stream, _Resource&& __mr, const _En
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
+#  ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates these with the documented default-property overloads
 // Size and value make function
 _CCCL_TEMPLATE(
   class _Tp, class _FirstProperty, class... _RestProperties, class _Resource, class _Env = ::cuda::std::execution::env<>)
@@ -1028,6 +1047,7 @@ _CCCL_HOST_API buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
     __stream, __res.__unwrapped_begin(), __size, __value);
   return __res;
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a buffer of \p __size elements initialized to \p __value, using the default properties of \p __mr
 //! @param __stream The stream used for allocation and initialization.
@@ -1057,6 +1077,7 @@ _CCCL_HOST_API auto make_buffer(
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 
+#  ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates these with the documented default-property overloads
 // Size with no initialization make function
 _CCCL_TEMPLATE(
   class _Tp, class _FirstProperty, class... _RestProperties, class _Resource, class _Env = ::cuda::std::execution::env<>)
@@ -1069,6 +1090,7 @@ make_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::no_ini
   return buffer<_Tp, _FirstProperty, _RestProperties...>{
     __stream, ::cuda::std::forward<_Resource>(__mr), __size, ::cuda::no_init, __env};
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a buffer of \p __size uninitialized elements, using the default properties of \p __mr
 //! @param __stream The stream used for allocation.
@@ -1091,6 +1113,7 @@ make_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::no_ini
 }
 #  endif // _CCCL_DOXYGEN_INVOKED
 
+#  ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates these with the documented default-property overloads
 // Iterator range make function
 _CCCL_TEMPLATE(class _Tp,
                class _FirstProperty,
@@ -1107,6 +1130,7 @@ make_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last, 
   return buffer<_Tp, _FirstProperty, _RestProperties...>{
     __stream, ::cuda::std::forward<_Resource>(__mr), __first, __last, __env};
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a buffer from the iterator range `[__first, __last)`, using the default properties of \p __mr
 //! @param __stream The stream used for allocation and copy.
@@ -1131,6 +1155,7 @@ make_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last, 
 }
 #  endif // _CCCL_DOXYGEN_INVOKED
 
+#  ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates these with the documented default-property overloads
 // Initializer list make function
 _CCCL_TEMPLATE(
   class _Tp, class _FirstProperty, class... _RestProperties, class _Resource, class _Env = ::cuda::std::execution::env<>)
@@ -1143,6 +1168,7 @@ make_buffer(stream_ref __stream, _Resource&& __mr, ::cuda::std::initializer_list
   return buffer<_Tp, _FirstProperty, _RestProperties...>{
     __stream, ::cuda::std::forward<_Resource>(__mr), __ilist, __env};
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a buffer from \p __ilist, using the default properties of \p __mr
 //! @param __stream The stream used for allocation and copy.
@@ -1165,6 +1191,7 @@ make_buffer(stream_ref __stream, _Resource&& __mr, ::cuda::std::initializer_list
 }
 #  endif // _CCCL_DOXYGEN_INVOKED
 
+#  ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates these with the documented default-property overloads
 // Range make function for ranges
 _CCCL_TEMPLATE(class _Tp,
                class _FirstProperty,
@@ -1181,6 +1208,7 @@ make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, const _Env&
   return buffer<_Tp, _FirstProperty, _RestProperties...>{
     __stream, ::cuda::std::forward<_Resource>(__mr), ::cuda::std::forward<_Range>(__range), __env};
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a buffer from \p __range, using the default properties of \p __mr
 //! @param __stream The stream used for allocation and copy.

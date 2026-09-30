@@ -45,7 +45,8 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__hss_sort
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
+namespace __detail::__hss_sort
 {
 //! @brief Derive per-peer send/recv counts and displacements for the rebalance exchange.
 //!
@@ -176,7 +177,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
         __exchange_results.__local_current_offsets[__idx].memory_resource(),
         __num_columns * __comm_size,
         ::cuda::no_init,
-        ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
+        ::cuda::experimental::mgmn::__detail::__sanitize_buffer_env(*__env_it));
 
       auto __out = ::cuda::std::make_tuple(
         __column(__counts, __send_counts_column).data(),
@@ -220,7 +221,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
         __counts.memory_resource(),
         *__num_items_it,
         ::cuda::no_init,
-        ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
+        ::cuda::experimental::mgmn::__detail::__sanitize_buffer_env(*__env_it));
     }
   }
 
@@ -268,7 +269,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
-} // namespace cuda::experimental::__detail::__hss_sort
+} // namespace __detail::__hss_sort
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
 

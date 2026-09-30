@@ -36,8 +36,9 @@ namespace
 // worker threads; every Catch2 assertion runs on the main thread after the join, since the
 // assertion macros are not safe to fire concurrently.
 template <class T, class Compare>
-void check_sort_case(
-  cuda::std::span<cudax::nccl_communicator_ref> comms, const std::vector<std::vector<T>>& host_inputs, Compare cmp)
+void check_sort_case(cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
+                     const std::vector<std::vector<T>>& host_inputs,
+                     Compare cmp)
 {
   REQUIRE(host_inputs.size() == comms.size());
 
@@ -47,7 +48,7 @@ void check_sort_case(
   auto device_vec     = sort_test_util::make_device_inputs(comms, environments, host_inputs);
 
   run_threaded(comms.size(), [&](cuda::std::size_t i) {
-    cudax::sort(cudax::distributed, comms[i], environments[i], device_vec[i].begin(), device_vec[i].size(), cmp);
+    cudax::mgmn::sort(cudax::distributed, comms[i], environments[i], device_vec[i].begin(), device_vec[i].size(), cmp);
   });
 
   sort_test_util::check_rank_sizes(comms, device_vec, host_inputs);
@@ -59,7 +60,7 @@ void check_sort_case(
 }
 
 template <class T>
-void check_sort_case_sections(cuda::std::span<cudax::nccl_communicator_ref> comms,
+void check_sort_case_sections(cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
                               const std::vector<std::vector<T>>& host_inputs)
 {
   SECTION("ascending comparator")
@@ -107,7 +108,7 @@ MULTI_GPU_TEST("sort single-comm documentation example", c2h::type_list<int>)
 
     auto input = cuda::make_device_buffer<int>(environment, device, {high, high - 1});
 
-    cudax::sort(cudax::distributed, communicator, environment, input.begin(), input.size());
+    cudax::mgmn::sort(cudax::distributed, communicator, environment, input.begin(), input.size());
 
     // The sort is in place and each rank keeps its original element count, so rank r ends up with
     // its two-element slice of the globally sorted sequence.
