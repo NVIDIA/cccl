@@ -97,9 +97,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 {
   using default_policy_selector_t = policy_selector_from_types<it_value_t<InputIteratorT>>;
   using policy_selector_t =
-    ::cuda::std::execution::__query_result_or_t<TuningEnvT, FindPolicy, default_policy_selector_t>;
+    ::cuda::std::execution::__query_result_or_t<TuningEnvT, FindIfPolicy, default_policy_selector_t>;
 #if _CCCL_HAS_CONCEPTS()
-  static_assert(find_policy_selector<PolicySelector>);
+  static_assert(find_policy_selector<policy_selector_t>);
 #endif // _CCCL_HAS_CONCEPTS()
 
   using output_t = it_value_t<OutputIteratorT>;
