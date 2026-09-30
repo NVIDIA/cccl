@@ -26,24 +26,27 @@ def test_scatter_example():
     import cuda.coop.numba_mlir as numba_coop
 
     @cuda.jit
-    def reverse_tile(source, destination):
+    def reverse_tile(source, destination, items_per_thread):
         block = numba_coop.this_block()
-        items = numba_coop.ThreadData(items_per_thread=2)
-        ranks = numba_coop.ThreadData(items_per_thread=2)
+        items = numba_coop.ThreadData(items_per_thread)
+        ranks = numba_coop.ThreadData(items_per_thread)
         numba_coop.load(block, source, items)
-        for item in range(2):
-            index = cuda.threadIdx.x * 2 + item
-            ranks[item] = types.int32(cuda.blockDim.x * 2 - 1 - index)
+        for item in range(items_per_thread):
+            index = cuda.threadIdx.x * items_per_thread + item
+            ranks[item] = types.int32(
+                cuda.blockDim.x * items_per_thread - 1 - index
+            )
         reversed_items = numba_coop.exchange(
             block, items, mode="scatter_to_blocked", ranks=ranks
         )
         numba_coop.store(block, destination, reversed_items)
 
-    values = np.arange(256, dtype=np.int32) * 3 - 200
-    source = cuda.to_device(values)
-    destination = cuda.device_array_like(source)
-    reverse_tile[1, 128](source, destination)
-    np.testing.assert_array_equal(destination.copy_to_host(), values[::-1])
+    for items_per_thread in (1, 4):
+        values = np.arange(128 * items_per_thread, dtype=np.int32) * 3 - 200
+        source = cuda.to_device(values)
+        destination = cuda.device_array_like(source)
+        reverse_tile[1, 128](source, destination, items_per_thread)
+        np.testing.assert_array_equal(destination.copy_to_host(), values[::-1])
     # scatter-example-end
 
 
