@@ -532,7 +532,7 @@ def carry_prefix(state, block_aggregate):
 running_prefix = coop.StatefulFunction(carry_prefix, types.int64)
 
 # Inside a kernel, before a loop over tiles:
-state = coop.ThreadData(items_per_thread=1)
+state = coop.ThreadData(1)
 state[0] = types.int64(0)
 scanned = coop.exclusive_sum(
     coop.this_block(),

@@ -584,7 +584,7 @@ def test_production_kernel_compile_consumes_prefix_descriptors() -> None:
     @cuda.jit(chip="sm_90")
     def kernel(source, destination, final_state):
         thread = cuda.threadIdx.x
-        state = coop.ThreadData(1, dtype=types.int64)
+        state = coop.ThreadData(items_per_thread=1, dtype=types.int64)
         state[0] = 11
         destination[thread] = coop.exclusive_sum(
             coop.this_block(),
