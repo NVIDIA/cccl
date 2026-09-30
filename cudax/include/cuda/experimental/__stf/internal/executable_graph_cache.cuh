@@ -26,6 +26,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh> // for ::std::hash<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>>
 #include <cuda/experimental/__stf/utility/pretty_print.cuh>
 #include <cuda/experimental/__stf/utility/source_location.cuh>

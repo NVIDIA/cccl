@@ -17,6 +17,7 @@
 
 #include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
 #include <cuda/experimental/__stf/internal/context.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <map>
 
