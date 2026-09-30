@@ -9,6 +9,7 @@ from enum import Enum
 from inspect import signature
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Literal, get_origin
 
 import numpy as np
 import pytest
@@ -184,6 +185,14 @@ def test_public_signatures_keep_portable_surface_narrow_and_add_n6_callbacks():
     assert not (package / "_scan_op.py").exists()
     assert (package / "_stateful_function.py").is_file()
     assert qualified.StatefulFunction.__module__.endswith("._stateful_function")
+    assert (
+        get_origin(qualified.ThreadGroup[Literal["warp"]])
+        is qualified.ThreadGroup
+    )
+    assert (
+        get_origin(qualified.StatefulFunction[np.int64, np.int32])
+        is qualified.StatefulFunction
+    )
 
 
 @pytest.mark.parametrize(
