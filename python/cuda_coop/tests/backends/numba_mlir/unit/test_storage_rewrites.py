@@ -57,11 +57,12 @@ def _restore_rewrite_registries():
                 del _operations._REWRITE_OPERATIONS[operation]
 
 
-def _rewrite(function):
+def _rewrite(function, *, arg_types=()):
     func_ir = run_frontend(function)
     typingctx = _TypingContext()
     state = SimpleNamespace(
         func_ir=func_ir,
+        args=arg_types,
         typingctx=typingctx,
         typemap={},
         calltypes={},
@@ -98,12 +99,17 @@ def _call_targets(func_ir):
     return targets
 
 
-def test_qualified_thread_data_lowers_to_a_compiler_array():
-    def kernel():
-        data = numba_coop.ThreadData(2, types.int32, alignment=16)
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_qualified_thread_data_lowers_to_a_compiler_array(items_per_thread):
+    def kernel(items_per_thread):
+        data = numba_coop.ThreadData(
+            items_per_thread, types.int32, alignment=16
+        )
         return data[0]
 
-    func_ir, typingctx = _rewrite(kernel)
+    func_ir, typingctx = _rewrite(
+        kernel, arg_types=(types.IntegerLiteral(items_per_thread),)
+    )
     targets = _call_targets(func_ir)
 
     assert cuda.local.array in targets
@@ -145,16 +151,21 @@ def test_thread_data_constructor_alias_can_feed_a_loop(module):
     assert _call_targets(func_ir).count(cuda.local.array) == 1
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "module", (common_coop, numba_coop), ids=("root", "qualified")
 )
-def test_thread_data_item_extent_is_a_compile_time_constant(module):
-    def kernel():
-        payload = module.ThreadData(3, types.int32)
+def test_thread_data_item_extent_is_a_compile_time_constant(
+    module, items_per_thread
+):
+    def kernel(items_per_thread):
+        payload = module.ThreadData(items_per_thread, types.int32)
         alias = payload
         return alias.items_per_thread
 
-    func_ir, _ = _rewrite(kernel)
+    func_ir, _ = _rewrite(
+        kernel, arg_types=(types.IntegerLiteral(items_per_thread),)
+    )
     assignments = [
         stmt
         for block in func_ir.blocks.values()
@@ -179,17 +190,17 @@ def test_thread_data_item_extent_is_a_compile_time_constant(module):
     assert result.op == "cast"
     extent = definitions[result.value.name]
     assert isinstance(extent, ir.Const)
-    assert extent.value == 3
+    assert extent.value == items_per_thread
 
 
 def test_thread_data_rejects_rebound_dtype_in_a_branch():
     def kernel(flag):
         if flag:
             dtype = np.int32
-            first = numba_coop.ThreadData(2, dtype)
+            first = numba_coop.ThreadData(items_per_thread=2, dtype=dtype)
             first[0] = 16777217
             dtype = np.float32
-            second = numba_coop.ThreadData(2, dtype)
+            second = numba_coop.ThreadData(items_per_thread=2, dtype=dtype)
             second[0] = 1.5
             return first[0] + second[0]
         return 0
@@ -203,9 +214,13 @@ def test_thread_data_rejects_rebound_alignment_in_a_loop():
         result = 0
         for _ in range(count):
             alignment = 64
-            first = numba_coop.ThreadData(2, types.int32, alignment=alignment)
+            first = numba_coop.ThreadData(
+                items_per_thread=2, dtype=types.int32, alignment=alignment
+            )
             alignment = 16
-            second = numba_coop.ThreadData(2, types.int32, alignment=alignment)
+            second = numba_coop.ThreadData(
+                items_per_thread=2, dtype=types.int32, alignment=alignment
+            )
             result += first[0] + second[0]
         return result
 
@@ -257,7 +272,9 @@ def test_native_local_array_item_extent_is_not_rewritten():
 
 def test_mixed_thread_data_item_extent_is_not_rewritten():
     def kernel(flag):
-        thread_data = numba_coop.ThreadData(3, types.int32)
+        thread_data = numba_coop.ThreadData(
+            items_per_thread=3, dtype=types.int32
+        )
         native = cuda.local.array(3, types.int32)
         payload = thread_data if flag else native
         return payload.items_per_thread
@@ -278,6 +295,7 @@ def test_mixed_thread_data_item_extent_is_not_rewritten():
     )
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "alignment",
     [None, 1, 2, 4, 8, 16, np.int64(32)],
@@ -285,16 +303,20 @@ def test_mixed_thread_data_item_extent_is_not_rewritten():
 @pytest.mark.parametrize(
     "module", (common_coop, numba_coop), ids=("root", "qualified")
 )
-def test_thread_data_rewrite_uses_alignment(alignment, module):
-    def kernel():
+def test_thread_data_rewrite_uses_alignment(
+    alignment, module, items_per_thread
+):
+    def kernel(items_per_thread):
         data = module.ThreadData(
-            2,
+            items_per_thread,
             types.int32,
             alignment=alignment,
         )
         return data[0]
 
-    func_ir, _ = _rewrite(kernel)
+    func_ir, _ = _rewrite(
+        kernel, arg_types=(types.IntegerLiteral(items_per_thread),)
+    )
 
     assert cuda.local.array in _call_targets(func_ir)
     definitions = {
@@ -319,6 +341,7 @@ def test_thread_data_rewrite_uses_alignment(alignment, module):
         assert definitions[alignment_refs[0].name].value == max(8, alignment)
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "module", (common_coop, numba_coop), ids=("root", "qualified")
 )
@@ -327,16 +350,26 @@ def test_thread_data_rewrite_uses_alignment(alignment, module):
     [(16, 32), (32, 16), (None, 32), (32, None)],
 )
 def test_merged_thread_data_preserves_minimum_alignment(
-    module, first_alignment, second_alignment
+    module, first_alignment, second_alignment, items_per_thread
 ):
-    def kernel(flag):
+    def kernel(flag, items_per_thread):
         if flag:
-            data = module.ThreadData(2, types.int32, alignment=first_alignment)
+            data = module.ThreadData(
+                items_per_thread, types.int32, alignment=first_alignment
+            )
         else:
-            data = module.ThreadData(2, types.int32, alignment=second_alignment)
+            data = module.ThreadData(
+                items_per_thread, types.int32, alignment=second_alignment
+            )
         return data[0]
 
-    func_ir, _ = _rewrite(kernel)
+    func_ir, _ = _rewrite(
+        kernel,
+        arg_types=(
+            types.boolean,
+            types.IntegerLiteral(items_per_thread),
+        ),
+    )
 
     assert _call_targets(func_ir).count(cuda.local.array) == 2
     definitions = {
@@ -388,7 +421,9 @@ def test_thread_data_rewrite_rejects_invalid_alignment(
     module, alignment, message
 ):
     def kernel():
-        return module.ThreadData(2, types.int32, alignment=alignment)
+        return module.ThreadData(
+            items_per_thread=2, dtype=types.int32, alignment=alignment
+        )
 
     with pytest.raises(CoopSinglePhaseRewriteError, match=message):
         _rewrite(kernel)
@@ -399,7 +434,9 @@ def test_thread_data_rewrite_rejects_invalid_alignment(
 )
 def test_thread_data_rewrite_rejects_dynamic_alignment(module):
     def kernel(alignment):
-        return module.ThreadData(2, types.int32, alignment=alignment)
+        return module.ThreadData(
+            items_per_thread=2, dtype=types.int32, alignment=alignment
+        )
 
     with pytest.raises(
         CoopSinglePhaseRewriteError, match="alignment must be a compile-time"
@@ -407,9 +444,10 @@ def test_thread_data_rewrite_rejects_dynamic_alignment(module):
         _rewrite(kernel)
 
 
-def test_whole_function_planner_reuses_the_foundation_rewrite():
-    def kernel():
-        return numba_coop.ThreadData(2, types.int32)
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_whole_function_planner_reuses_the_foundation_rewrite(items_per_thread):
+    def kernel(items_per_thread):
+        return numba_coop.ThreadData(items_per_thread, types.int32)
 
     func_ir = run_frontend(kernel)
     typingctx = _TypingContext()
@@ -419,6 +457,7 @@ def test_whole_function_planner_reuses_the_foundation_rewrite():
         typemap={},
         calltypes={},
         metadata={"targetoptions": {}},
+        args=(types.IntegerLiteral(items_per_thread),),
     )
 
     assert CoopWholeFunctionPlanner(state).run()
@@ -961,12 +1000,14 @@ def _resolved_calls(func_ir):
     return calls
 
 
-def _rewrite_with_fake_invocable(function, invocable, *, ssa=False):
+def _rewrite_with_fake_invocable(
+    function, invocable, *, ssa=False, arg_types=()
+):
     func_ir = _frontend(function, ssa=ssa)
     typingctx = _TypingContext()
     state = SimpleNamespace(
         func_ir=func_ir,
-        args=(),
+        args=arg_types,
         typingctx=typingctx,
         typemap={},
         calltypes={},
@@ -984,22 +1025,25 @@ def _rewrite_with_fake_invocable(function, invocable, *, ssa=False):
     return func_ir, rewrite
 
 
-def test_temp_storage_aliases_from_one_constructor_are_accepted():
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_temp_storage_aliases_from_one_constructor_are_accepted(
+    items_per_thread,
+):
     from cuda.coop.numba_mlir._lowering._load_store import load as provider_load
 
-    def kernel(source, choose_first):
+    def kernel(source, choose_first, items_per_thread):
         storage = numba_coop.TempStorage()
         if choose_first:
             selected = storage
         else:
             selected = storage
-        payload = numba_coop.ThreadData(2, types.int32)
+        payload = numba_coop.ThreadData(items_per_thread, types.int32)
         return provider_load(
             source,
             payload,
             dtype=types.int32,
             threads_per_block=32,
-            items_per_thread=2,
+            items_per_thread=items_per_thread,
             temp_storage=selected,
         )
 
@@ -1007,6 +1051,11 @@ def test_temp_storage_aliases_from_one_constructor_are_accepted():
         kernel,
         _FakeInvocable(),
         ssa=True,
+        arg_types=(
+            types.int32,
+            types.boolean,
+            types.IntegerLiteral(items_per_thread),
+        ),
     )
 
     assert any(
@@ -1535,7 +1584,7 @@ def test_mixed_temp_storage_primitive_and_escape_fails_before_compile():
 
     def kernel(source):
         storage = numba_coop.TempStorage()
-        payload = numba_coop.ThreadData(2, types.int32)
+        payload = numba_coop.ThreadData(items_per_thread=2, dtype=types.int32)
         provider_load(
             source,
             payload,
@@ -1575,21 +1624,31 @@ def test_mixed_temp_storage_primitive_and_escape_fails_before_compile():
         )
 
 
-def test_direct_provider_uses_no_implicit_storage_or_automatic_sync():
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_direct_provider_uses_no_implicit_storage_or_automatic_sync(
+    items_per_thread,
+):
     from cuda.coop.numba_mlir._lowering._load_store import load as provider_load
 
-    def kernel(source):
-        payload = numba_coop.ThreadData(2, types.int32)
+    def kernel(source, items_per_thread):
+        payload = numba_coop.ThreadData(items_per_thread, types.int32)
         return provider_load(
             source,
             payload,
             dtype=types.int32,
             threads_per_block=32,
-            items_per_thread=2,
+            items_per_thread=items_per_thread,
         )
 
     invocable = _FakeInvocable()
-    func_ir, rewrite = _rewrite_with_fake_invocable(kernel, invocable)
+    func_ir, rewrite = _rewrite_with_fake_invocable(
+        kernel,
+        invocable,
+        arg_types=(
+            types.int32,
+            types.IntegerLiteral(items_per_thread),
+        ),
+    )
     targets = _call_targets(func_ir)
 
     assert cuda.shared.array not in targets
@@ -1616,19 +1675,22 @@ def test_direct_provider_uses_no_implicit_storage_or_automatic_sync():
     assert len(invocable_calls[0].args) == 2
 
 
-def test_direct_provider_ignores_implicit_and_explicit_storage():
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_direct_provider_ignores_implicit_and_explicit_storage(
+    items_per_thread,
+):
     from cuda.coop.numba_mlir._lowering._load_store import load as provider_load
 
-    def kernel(source_a, source_b):
+    def kernel(source_a, source_b, items_per_thread):
         storage = numba_coop.TempStorage()
-        payload_a = numba_coop.ThreadData(2, types.int32)
-        payload_b = numba_coop.ThreadData(2, types.int32)
+        payload_a = numba_coop.ThreadData(items_per_thread, types.int32)
+        payload_b = numba_coop.ThreadData(items_per_thread, types.int32)
         provider_load(
             source_a,
             payload_a,
             dtype=types.int32,
             threads_per_block=32,
-            items_per_thread=2,
+            items_per_thread=items_per_thread,
             temp_storage=storage,
         )
         return provider_load(
@@ -1636,11 +1698,19 @@ def test_direct_provider_ignores_implicit_and_explicit_storage():
             payload_b,
             dtype=types.int32,
             threads_per_block=32,
-            items_per_thread=2,
+            items_per_thread=items_per_thread,
         )
 
     invocable = _FakeInvocable()
-    func_ir, rewrite = _rewrite_with_fake_invocable(kernel, invocable)
+    func_ir, rewrite = _rewrite_with_fake_invocable(
+        kernel,
+        invocable,
+        arg_types=(
+            types.int32,
+            types.int32,
+            types.IntegerLiteral(items_per_thread),
+        ),
+    )
     targets = _call_targets(func_ir)
 
     assert cuda.shared.array not in targets
@@ -1653,7 +1723,7 @@ def test_getitem_temp_storage_syntax_is_not_an_accepted_descriptor_use():
 
     def kernel(source):
         storage = numba_coop.TempStorage()
-        payload = numba_coop.ThreadData(2, types.int32)
+        payload = numba_coop.ThreadData(items_per_thread=2, dtype=types.int32)
         return provider_load[storage](
             source,
             payload,

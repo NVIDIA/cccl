@@ -37,7 +37,12 @@ Using the kernel fragments
 Each page identifies which integrations support its kernel fragments. They use
 ``from cuda import coop`` and ``import numpy as np``. Register the backend on the host before compiling;
 see :ref:`backend registration <coop-backend-registration>`. The fragments
-assume one-dimensional blocks and use these local index names:
+assume one-dimensional blocks and an ``items_per_thread`` kernel argument.
+Numba-CUDA-MLIR specializes that argument automatically. In CuTe, declare
+``items_per_thread: cutlass.Constexpr`` on both the kernel and its launcher
+and forward the value when launching. Use ``cutlass.range_constexpr`` in
+place of ``range`` for CuTe loops that index payloads. The fragments use
+these local index names:
 
 .. list-table:: DSL setup
    :header-rows: 1

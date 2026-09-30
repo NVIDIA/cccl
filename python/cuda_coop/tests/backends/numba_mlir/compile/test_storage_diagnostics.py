@@ -65,7 +65,7 @@ def test_load_return_cannot_be_used_as_a_store_payload(qualified, dtype):
 
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
-        payload = module.ThreadData(2, dtype)
+        payload = module.ThreadData(items_per_thread=2, dtype=dtype)
         result = module.load(module.this_block(), source, payload)
         module.store(module.this_block(), destination, result)
 
@@ -78,11 +78,11 @@ def test_rebound_explicit_dtype_is_not_replaced_by_write_inference():
     def kernel(destination):
         if destination[0] > 0:
             dtype = types.int32
-            first = numba_coop.ThreadData(2, dtype)
+            first = numba_coop.ThreadData(items_per_thread=2, dtype=dtype)
             first[0] = 16777217
             destination[0] = first[0]
             dtype = types.float32
-            second = numba_coop.ThreadData(2, dtype)
+            second = numba_coop.ThreadData(items_per_thread=2, dtype=dtype)
             second[0] = 1.5
             destination[1] = second[0]
 
@@ -103,7 +103,9 @@ def test_rebound_shared_shape_is_rejected_with_cooperative_storage():
             static = cuda.shared.array(size, types.int32)
             dynamic[cuda.threadIdx.x] = 1
             static[cuda.threadIdx.x] = 2
-            payload = numba_coop.ThreadData(2, types.int32)
+            payload = numba_coop.ThreadData(
+                items_per_thread=2, dtype=types.int32
+            )
             payload[0] = dynamic[cuda.threadIdx.x]
             payload[1] = static[cuda.threadIdx.x]
             numba_coop.store(
@@ -119,25 +121,31 @@ def test_rebound_shared_shape_is_rejected_with_cooperative_storage():
         _compile(kernel, types.int32[::1])
 
 
-def test_default_helper_accepts_descriptor_alias_chain():
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_default_helper_accepts_descriptor_alias_chain(items_per_thread):
     @cuda.jit(device=True)
-    def helper(source, storage):
-        payload = numba_coop.ThreadData(1, types.int32)
+    def helper(source, storage, items_per_thread):
+        payload = numba_coop.ThreadData(items_per_thread, dtype=types.int32)
         numba_coop.load(
             numba_coop.this_block(), source, payload, temp_storage=storage
         )
         return payload[0]
 
     @cuda.jit(chip="sm_90")
-    def kernel(source, destination):
+    def kernel(source, destination, items_per_thread):
         storage = numba_coop.TempStorage()
         alias = storage
         chained = alias
-        destination[cuda.threadIdx.x] = helper(source, chained)
+        destination[cuda.threadIdx.x] = helper(
+            source, chained, items_per_thread
+        )
 
-    assert _compile(kernel, types.int32[::1], types.int32[::1]).metadata[
-        "ltoir"
-    ]
+    assert _compile(
+        kernel,
+        types.int32[::1],
+        types.int32[::1],
+        types.IntegerLiteral(items_per_thread),
+    ).metadata["ltoir"]
 
 
 def test_none_alias_reports_descriptor_error_before_type_inference():
@@ -147,7 +155,7 @@ def test_none_alias_reports_descriptor_error_before_type_inference():
         storage = numba_coop.TempStorage()
         if source[0] > 0:
             storage = empty
-        payload = numba_coop.ThreadData(1, types.int32)
+        payload = numba_coop.ThreadData(items_per_thread=1, dtype=types.int32)
         numba_coop.load(
             numba_coop.this_block(), source, payload, temp_storage=storage
         )
@@ -184,7 +192,9 @@ def test_literal_unroll_cannot_determine_cooperative_payload_shape(
     def kernel(source, destination):
         for count in literal_unroll((1, 2)):
             if payload_kind == "thread_data":
-                payload = numba_coop.ThreadData(count, types.int32)
+                payload = numba_coop.ThreadData(
+                    items_per_thread=count, dtype=types.int32
+                )
             elif payload_kind == "local_array":
                 payload = cuda.local.array(count, types.int32)
             else:
@@ -282,7 +292,7 @@ def test_inlined_user_shared_allocation_is_checked_after_inlining(
         thread = cuda.threadIdx.x
         mine[thread] = source[thread]
         storage = numba_coop.TempStorage(size_in_bytes)
-        payload = numba_coop.ThreadData(1, types.int32)
+        payload = numba_coop.ThreadData(items_per_thread=1, dtype=types.int32)
         payload[0] = mine[thread]
         numba_coop.store(
             numba_coop.this_block(),
@@ -317,7 +327,9 @@ def test_literal_unroll_cannot_determine_cooperative_storage_or_partition(
             block = numba_coop.this_block()
             if argument == "storage":
                 storage = numba_coop.TempStorage(count)
-                payload = numba_coop.ThreadData(1, types.int32)
+                payload = numba_coop.ThreadData(
+                    items_per_thread=1, dtype=types.int32
+                )
                 payload[0] = source[cuda.threadIdx.x]
                 numba_coop.store(
                     block,
@@ -356,7 +368,7 @@ def test_implicit_oversized_storage_rejects_user_static_shared_allocation(
         mine = cuda.shared.array(1024, types.int32)
         thread = cuda.threadIdx.x
         mine[thread] = source[thread]
-        payload = numba_coop.ThreadData(16, types.int32)
+        payload = numba_coop.ThreadData(items_per_thread=16, dtype=types.int32)
         for item in range(16):
             payload[item] = mine[thread]
         numba_coop.store(
@@ -427,7 +439,7 @@ def test_cudax_reduce_rejects_dynamic_cooperative_backing(monkeypatch, kind):
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
         scratch = numba_coop.TempStorage(64 * 1024, auto_sync=True)
-        items = numba_coop.ThreadData(2, types.int32)
+        items = numba_coop.ThreadData(items_per_thread=2, dtype=types.int32)
         numba_coop.load(
             numba_coop.this_block(),
             source,
