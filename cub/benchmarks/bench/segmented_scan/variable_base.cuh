@@ -6,16 +6,13 @@
 #include <cub/device/device_segmented_scan.cuh>
 
 #include <thrust/device_vector.h>
-#include <thrust/fill.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/memory.h>
-#include <thrust/reduce.h>
 #include <thrust/scan.h>
-#include <thrust/shuffle.h>
 #include <thrust/tabulate.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/iterator>
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
 #include <cuda/std/random>
@@ -57,7 +54,7 @@ struct cumulative_to_offset
       return elements;
     }
 
-    const auto scaled_offset = static_cast<double>(elements) * cumulative_weights[index] * inverse_weight_sum;
+    const auto scaled_offset = static_cast<double>(elements) * cumulative_weights[index - 1] * inverse_weight_sum;
     return static_cast<OffsetT>(::cuda::std::floor(scaled_offset + 0.5));
   }
 };
@@ -66,16 +63,14 @@ template <typename OffsetT>
 [[nodiscard]] thrust::device_vector<OffsetT>
 generate_pareto_segment_offsets(OffsetT elements, OffsetT num_segments, double alpha, seed_type shuffle_seed)
 {
-  auto cumulative_weights = thrust::device_vector<double>(num_segments + 1, thrust::no_init);
-  const auto weights      = thrust::make_transform_iterator(
-    thrust::make_counting_iterator(::cuda::std::uint64_t{0}),
-    pareto_weight{static_cast<::cuda::std::uint64_t>(num_segments), alpha});
+  const auto count = static_cast<::cuda::std::uint64_t>(num_segments);
   ::cuda::std::philox4x32 rng(shuffle_seed);
-  thrust::shuffle_copy(weights, weights + num_segments, cumulative_weights.begin(), rng);
+  const auto weights = thrust::make_transform_iterator(
+    ::cuda::shuffle_iterator<::cuda::std::uint64_t>(count, rng), pareto_weight{count, alpha});
 
-  const auto weight_sum = thrust::reduce(cumulative_weights.begin(), cumulative_weights.end() - 1, 0.0);
-  thrust::exclusive_scan(cumulative_weights.begin(), cumulative_weights.end() - 1, cumulative_weights.begin());
-  thrust::fill_n(cumulative_weights.end() - 1, 1, weight_sum);
+  auto cumulative_weights = thrust::device_vector<double>(num_segments, thrust::no_init);
+  thrust::inclusive_scan(weights, weights + num_segments, cumulative_weights.begin());
+  const double weight_sum = cumulative_weights.back();
 
   auto offsets = thrust::device_vector<OffsetT>(num_segments + 1, thrust::no_init);
   thrust::tabulate(offsets.begin(),
