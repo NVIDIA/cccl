@@ -414,9 +414,12 @@ def test_load_store_infer_untyped_payloads_symmetrically(
     assert plans[0].call.operation.dtype == INT32
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
 @pytest.mark.parametrize("projection", ["alias", "tuple", "tuple-alias"])
-def test_inferred_load_dtype_follows_output_aliases(qualified, projection):
+def test_inferred_load_dtype_follows_output_aliases(
+    qualified, projection, items_per_thread
+):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as qualified_coop
@@ -426,8 +429,8 @@ def test_inferred_load_dtype_follows_output_aliases(qualified, projection):
 
     if projection == "alias":
 
-        def memory(source, flag):
-            payload = module.ThreadData(2)
+        def memory(source, flag, items_per_thread):
+            payload = module.ThreadData(items_per_thread)
             alias = payload
             if flag:
                 output = alias
@@ -441,8 +444,8 @@ def test_inferred_load_dtype_follows_output_aliases(qualified, projection):
 
     elif projection == "tuple":
 
-        def memory(source, flag):
-            payload = module.ThreadData(2)
+        def memory(source, flag, items_per_thread):
+            payload = module.ThreadData(items_per_thread)
             packed = (payload,)
             output = packed[0]
             module.load(module.this_block(), source, output)
@@ -453,8 +456,8 @@ def test_inferred_load_dtype_follows_output_aliases(qualified, projection):
 
     else:
 
-        def memory(source, flag):
-            payload = module.ThreadData(2)
+        def memory(source, flag, items_per_thread):
+            payload = module.ThreadData(items_per_thread)
             packed = (payload,)
             if flag:
                 alias = packed
@@ -468,7 +471,14 @@ def test_inferred_load_dtype_follows_output_aliases(qualified, projection):
             return module.inclusive_sum(module.this_block(), exchanged[0])
 
     array_type = types.Array(types.int32, 1, "C")
-    planner = _planner(memory, arg_types=(array_type, types.boolean))
+    planner = _planner(
+        memory,
+        arg_types=(
+            array_type,
+            types.boolean,
+            types.IntegerLiteral(items_per_thread),
+        ),
+    )
     assert planner.run()
     assert (
         planner.context.dtype(_assigned_var(planner.func_ir, "payload"))
@@ -489,8 +499,8 @@ def test_inferred_load_dtype_rejects_conflicting_alias_writes(qualified):
     module = qualified_coop if qualified else root_coop
 
     def memory(source, conflicting, flag):
-        payload = module.ThreadData(2)
-        other = module.ThreadData(2)
+        payload = module.ThreadData(items_per_thread=2)
+        other = module.ThreadData(items_per_thread=2)
         module.load(module.this_block(), source, payload)
         if flag:
             output = payload
@@ -516,7 +526,7 @@ def test_load_does_not_infer_dtype_for_an_earlier_exchange():
     )
 
     def memory(source):
-        payload = coop.ThreadData(2)
+        payload = coop.ThreadData(items_per_thread=2)
         exchanged = coop.exchange(
             coop.this_block(), payload, mode="blocked_to_striped"
         )
@@ -1152,7 +1162,10 @@ def test_untyped_store_infers_write_dtype_before_destination_fallback(
         planner.run()
 
 
-def test_scalar_scan_of_a_loaded_payload_element_plans_as_a_scalar(monkeypatch):
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_scalar_scan_of_a_loaded_payload_element_plans_as_a_scalar(
+    monkeypatch, items_per_thread
+):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as coop
@@ -1169,8 +1182,8 @@ def test_scalar_scan_of_a_loaded_payload_element_plans_as_a_scalar(monkeypatch):
 
     monkeypatch.setattr(_group_scan, "plan_group_primitive", capture_plan)
 
-    def kernel(source, output):
-        payload = coop.ThreadData(2, dtype=types.int32)
+    def kernel(source, output, items_per_thread):
+        payload = coop.ThreadData(items_per_thread, dtype=types.int32)
         coop.load(
             coop.this_block(),
             source,
@@ -1181,7 +1194,14 @@ def test_scalar_scan_of_a_loaded_payload_element_plans_as_a_scalar(monkeypatch):
         output[0] = coop.inclusive_sum(coop.this_block(), payload[0])
 
     array_type = types.Array(types.int32, 1, "C")
-    planner = _planner(kernel, arg_types=(array_type, array_type))
+    planner = _planner(
+        kernel,
+        arg_types=(
+            array_type,
+            array_type,
+            types.IntegerLiteral(items_per_thread),
+        ),
+    )
     assert planner.run()
 
     assert len(plans) == 1

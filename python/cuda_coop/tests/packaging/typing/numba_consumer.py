@@ -58,7 +58,7 @@ def _select_left_uint16(left: np.uint16, right: np.uint16) -> np.uint16:
 def check_numba_scan_seeds(integer_seed: int, floating_seed: float) -> None:
     block = coop.this_block()
     warp = coop.this_warp()
-    values = coop.ThreadData(2, np.uint16)
+    values = coop.ThreadData(items_per_thread=2, dtype=np.uint16)
     assert_type(
         coop.exclusive_scan(block, values, initial_value=np.uint16(0)),
         coop.ThreadDataLike[np.uint16],
@@ -114,8 +114,8 @@ def check_numba_surface(
     read_only_values = _ReadOnlyThreadData(np.uint16(1))
     read_only_ranks = _ReadOnlyThreadData(np.int32(0))
     read_only_flags = _ReadOnlyThreadData(np.uint8(1))
-    int32_aggregate = coop.ThreadData(1, np.int32)
-    uint16_aggregate = coop.ThreadData(1, np.uint16)
+    int32_aggregate = coop.ThreadData(items_per_thread=1, dtype=np.int32)
+    uint16_aggregate = coop.ThreadData(items_per_thread=1, dtype=np.uint16)
     storage = coop.TempStorage(alignment=16, sharing="shared")
     portable_storage = portable_coop.TempStorage(sharing="shared")
 

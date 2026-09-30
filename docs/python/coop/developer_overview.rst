@@ -736,17 +736,18 @@ With Load and Store connected, we can put a primitive between them:
 .. code-block:: python
 
    @cuda.jit
-   def scan_tile(source, destination):
+   def scan_tile(source, destination, items_per_thread):
        block = coop.this_block()
-       items = coop.ThreadData(items_per_thread=2)
+       items = coop.ThreadData(items_per_thread)
        coop.load(block, source, items)
        scanned = coop.exclusive_sum(block, items)
        coop.store(block, destination, scanned)
 
 
-   source = np.arange(256, dtype=np.int32)
+   items_per_thread = 2
+   source = np.arange(128 * items_per_thread, dtype=np.int32)
    destination = np.zeros_like(source)
-   scan_tile[1, 128](source, destination)
+   scan_tile[1, 128](source, destination, items_per_thread)
    cuda.synchronize()
 
    expected = np.zeros_like(source)
@@ -754,8 +755,9 @@ With Load and Store connected, we can put a primitive between them:
    np.testing.assert_array_equal(destination, expected)
 
 The blocked arrangement defines the scan order across the tile. The
-result is a new two-item payload for each thread. Block Scan uses CUB
-temporary storage even though this example's Load and Store do not.
+result is a new payload with ``items_per_thread`` values for each thread.
+Block Scan uses CUB temporary storage even though this example's Load and
+Store do not.
 
 The :doc:`Scan visualization <visualizations/scan>` shows the ordered
 prefixes and per-thread results for this operation.

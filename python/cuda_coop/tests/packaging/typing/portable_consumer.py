@@ -191,7 +191,7 @@ def check_portable_surface(
 def check_common_scan_seeds(integer_seed: int, floating_seed: float) -> None:
     block = coop.this_block()
     warp = coop.this_warp()
-    values = coop.ThreadData(2, np.int16)
+    values = coop.ThreadData(items_per_thread=2, dtype=np.int16)
     assert_type(
         coop.exclusive_scan(block, np.int32(4), initial_value=np.int32(0)),
         np.int32,

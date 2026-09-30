@@ -244,9 +244,10 @@ def inclusive_sum(
 
     Examples
     --------
-    Scan two values per thread with Numba-CUDA-MLIR. The Load, Scan, and
-    Store use the same blocked order, so the output is the prefix sum of
-    the source array. The original per-thread values remain available.
+    Scan a parameterized number of values per thread with Numba-CUDA-MLIR.
+    The Load, Scan, and Store use the same blocked order, so the output is
+    the prefix sum of the source array. The original per-thread values remain
+    available.
 
     .. literalinclude::
         ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_scan_examples.py

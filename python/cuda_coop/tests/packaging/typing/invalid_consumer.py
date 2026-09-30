@@ -339,7 +339,7 @@ portable.scan(  # expected-error: [call-overload]
 portable.inclusive_sum(  # expected-error: [call-overload]
     portable_block,
     np.int32(1),
-    aggregate_output=portable.ThreadData(1, np.int32),
+    aggregate_output=portable.ThreadData(items_per_thread=1, dtype=np.int32),
 )
 portable.inclusive_scan(  # expected-error: [call-overload]
     portable_block,
