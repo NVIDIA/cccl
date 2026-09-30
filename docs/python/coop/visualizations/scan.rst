@@ -79,16 +79,17 @@ aggregate.
 Using Scan in a kernel
 ----------------------
 
-This fragment runs inside a Numba-CUDA-MLIR kernel with ``cuda`` imported from
+This fragment runs inside a Numba-CUDA-MLIR kernel that accepts
+``items_per_thread``. Import ``cuda`` from
 ``numba_cuda_mlir``, ``numpy as np``, and ``cuda.coop as coop``. Launch with
-128 threads and provide at least 256 elements for each block. Each block
+128 threads and provide at least ``128 * items_per_thread`` elements for each block. Each block
 scans its own tile independently.
 
 .. code-block:: python
 
    block = coop.this_block()
-   values = coop.ThreadData(items_per_thread=2)
-   offset = cuda.blockIdx.x * 256
+   values = coop.ThreadData(items_per_thread)
+   offset = cuda.blockIdx.x * 128 * items_per_thread
    coop.load(block, source, values, offset=offset)
    prefixes = coop.inclusive_sum(block, values, algorithm="raking_memoize")
    coop.store(block, output, prefixes, offset=offset)
@@ -157,7 +158,7 @@ state is authoritative.
    @cuda.jit
    def scan_two_tiles(source, output, final_state):
        thread = cuda.threadIdx.x
-       state = coop.ThreadData(items_per_thread=1)
+       state = coop.ThreadData(1)
        state[0] = 10
        for tile in range(2):
            index = tile * 128 + thread

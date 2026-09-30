@@ -16,8 +16,8 @@ common.register("numba")  # expected-error: [arg-type]
 
 coop.TempStorage(64, 16)  # expected-error: [call-arg]
 common.TempStorage(64, 16)  # expected-error: [call-arg]
-values = coop.ThreadData(2, np.int32)
-common_values = common.ThreadData(2, np.int32)
+values = coop.ThreadData(items_per_thread=2, dtype=np.int32)
+common_values = common.ThreadData(items_per_thread=2, dtype=np.int32)
 common_block = common.this_block()
 common_block.rank_as(np.float32)  # expected-error: [arg-type]
 common_block.count_as(np.bool_)  # expected-error: [arg-type]
@@ -161,7 +161,7 @@ coop.exchange(  # expected-error: [call-overload]
     coop.this_warp(),
     values,
     mode="scatter_to_striped",
-    ranks=coop.ThreadData(2, np.int32),
+    ranks=coop.ThreadData(items_per_thread=2, dtype=np.int32),
 )
 coop.shuffle(  # expected-error: [call-overload]
     coop.this_block(),
@@ -173,8 +173,8 @@ coop.shuffle(  # expected-error: [call-overload]
     np.int32(1),
     mode="up",
 )
-floating_ranks = coop.ThreadData(2, np.float32)
-floating_flags = coop.ThreadData(2, np.float32)
+floating_ranks = coop.ThreadData(items_per_thread=2, dtype=np.float32)
+floating_flags = coop.ThreadData(items_per_thread=2, dtype=np.float32)
 coop.exchange(  # expected-error: [call-overload]
     coop.this_block(),
     values,
@@ -251,7 +251,7 @@ class BinaryPrefixFunctor:
         return left + right
 
 
-prefix_state = coop.ThreadData(1, np.int32)
+prefix_state = coop.ThreadData(items_per_thread=1, dtype=np.int32)
 stateful_prefix = coop.StatefulFunction(carry_prefix, np.int32)
 stateful_int64_state = coop.StatefulFunction(carry_int64_state, np.int64)
 stateful_float32_value = coop.StatefulFunction(carry_float32_value, np.int32)
@@ -420,7 +420,7 @@ common.scan(  # expected-error: [call-overload]
 common.inclusive_sum(  # expected-error: [call-overload]
     common_block,
     np.int32(1),
-    aggregate_output=common.ThreadData(1, np.int32),
+    aggregate_output=common.ThreadData(items_per_thread=1, dtype=np.int32),
 )
 common.inclusive_scan(  # expected-error: [call-overload]
     common_block,
@@ -537,7 +537,7 @@ coop.inclusive_sum(  # expected-error: [call-overload]
 coop.inclusive_sum(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
-    aggregate_output=coop.ThreadData(1, np.int32),
+    aggregate_output=coop.ThreadData(items_per_thread=1, dtype=np.int32),
     prefix_op=prefix_from_aggregate,
 )
 coop.exclusive_scan(  # expected-error: [call-overload]
@@ -613,8 +613,8 @@ coop.merge_sort_pairs(  # expected-error: [call-overload]
 )
 
 
-radix_keys = common.ThreadData(2, np.int32)
-radix_float = common.ThreadData(2, np.float32)
+radix_keys = common.ThreadData(items_per_thread=2, dtype=np.int32)
+radix_float = common.ThreadData(items_per_thread=2, dtype=np.float32)
 common.radix_sort_keys(
     common.this_warp(),  # expected-error: [arg-type]
     radix_keys,
@@ -693,10 +693,10 @@ coop.adjacent_difference(
 
 common.histogram(
     common.this_warp(),  # expected-error: [arg-type]
-    common.ThreadData(2, np.int32),
+    common.ThreadData(items_per_thread=2, dtype=np.int32),
     bins=32,
 )
-histogram_floats = common.ThreadData(2, np.float32)
+histogram_floats = common.ThreadData(items_per_thread=2, dtype=np.float32)
 common.histogram(
     common_block,
     histogram_floats,  # expected-error: [arg-type]
@@ -704,13 +704,13 @@ common.histogram(
 )
 common.histogram(
     common_block,
-    common.ThreadData(2, np.int32),
+    common.ThreadData(items_per_thread=2, dtype=np.int32),
     bins=32,
     counter_dtype=np.float32,  # expected-error: [arg-type]
 )
 coop.histogram(  # expected-error: [call-overload]
     qualified_block,
-    coop.ThreadData(2, np.int32),
+    coop.ThreadData(items_per_thread=2, dtype=np.int32),
     bins=32,
     algorithm="other",
 )

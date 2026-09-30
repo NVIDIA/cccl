@@ -32,10 +32,10 @@ def test_first_kernel():
     from cuda import coop
 
     @cuda.jit
-    def scan_tiles(source, destination, count):
+    def scan_tiles(source, destination, count, items_per_thread):
         block = coop.this_block()
-        items = coop.ThreadData(items_per_thread=2)
-        tile_size = cuda.blockDim.x * 2
+        items = coop.ThreadData(items_per_thread)
+        tile_size = cuda.blockDim.x * items_per_thread
         offset = cuda.blockIdx.x * tile_size
         valid = min(max(count - offset, 0), tile_size)
 
@@ -52,18 +52,22 @@ def test_first_kernel():
             block, destination, prefixes, offset=offset, valid_items=valid
         )
 
-    source = (np.arange(785) % 7).astype(np.int32)
-    d_source = cuda.to_device(source)
-    d_destination = cuda.device_array_like(d_source)
-    blocks = (source.size + 255) // 256
-    scan_tiles[blocks, 128](d_source, d_destination, source.size)
-    result = d_destination.copy_to_host()
+    for items_per_thread in (1, 4):
+        source = (np.arange(785) % 7).astype(np.int32)
+        d_source = cuda.to_device(source)
+        d_destination = cuda.device_array_like(d_source)
+        tile_size = 128 * items_per_thread
+        blocks = (source.size + tile_size - 1) // tile_size
+        scan_tiles[blocks, 128](
+            d_source, d_destination, source.size, items_per_thread
+        )
+        result = d_destination.copy_to_host()
 
-    expected = np.empty_like(source)
-    for start in range(0, source.size, 256):
-        tile = source[start : start + 256]
-        expected[start : start + tile.size] = np.cumsum(tile) - tile
-    np.testing.assert_array_equal(result, expected)
+        expected = np.empty_like(source)
+        for start in range(0, source.size, tile_size):
+            tile = source[start : start + tile_size]
+            expected[start : start + tile.size] = np.cumsum(tile) - tile
+        np.testing.assert_array_equal(result, expected)
     # coop-pg-first-kernel-end
 
 
@@ -128,31 +132,34 @@ def test_row_scan():
 def test_exchange():
     # coop-pg-exchange-begin
     @cuda.jit
-    def scan_striped_input(source, destination):
+    def scan_striped_input(source, destination, items_per_thread):
         block = coop.this_block()
-        items = coop.ThreadData(items_per_thread=2)
+        items = coop.ThreadData(items_per_thread)
         coop.load(block, source, items, algorithm="striped")
         blocked = coop.exchange(block, items, mode="striped_to_blocked")
         prefixes = coop.inclusive_sum(block, blocked)
         coop.store(block, destination, prefixes, algorithm="direct")
 
-    source = (np.arange(256) % 13).astype(np.int32)
-    destination = np.empty_like(source)
-    scan_striped_input[1, 128](source, destination)
-    cuda.synchronize()
-    np.testing.assert_array_equal(destination, np.cumsum(source))
+    for items_per_thread in (1, 4):
+        source = (np.arange(128 * items_per_thread) % 13).astype(np.int32)
+        destination = np.empty_like(source)
+        scan_striped_input[1, 128](source, destination, items_per_thread)
+        cuda.synchronize()
+        np.testing.assert_array_equal(destination, np.cumsum(source))
     # coop-pg-exchange-end
 
 
 def test_warp_copy():
     # coop-pg-warp-copy-begin
     @cuda.jit
-    def copy_warp_tiles(source, destination, count):
+    def copy_warp_tiles(source, destination, count, items_per_thread):
         group = coop.this_warp().group_by(8)
-        items = coop.ThreadData(items_per_thread=2)
-        block_origin = cuda.blockIdx.x * cuda.blockDim.x * 2
-        group_origin = (cuda.threadIdx.x // 8) * 16
-        valid = min(max(count - block_origin - group_origin, 0), 16)
+        items = coop.ThreadData(items_per_thread)
+        block_origin = cuda.blockIdx.x * cuda.blockDim.x * items_per_thread
+        group_origin = (cuda.threadIdx.x // 8) * 8 * items_per_thread
+        valid = min(
+            max(count - block_origin - group_origin, 0), 8 * items_per_thread
+        )
 
         coop.load(
             group,
@@ -166,21 +173,27 @@ def test_warp_copy():
             group, destination, items, offset=block_origin, valid_items=valid
         )
 
-    source = np.arange(531, dtype=np.int32)
-    destination = np.full_like(source, -1)
-    copy_warp_tiles[3, 128](source, destination, source.size)
-    cuda.synchronize()
-    np.testing.assert_array_equal(destination, source)
+    for items_per_thread in (1, 4):
+        source = np.arange(531, dtype=np.int32)
+        destination = np.full_like(source, -1)
+        blocks = (source.size + 128 * items_per_thread - 1) // (
+            128 * items_per_thread
+        )
+        copy_warp_tiles[blocks, 128](
+            source, destination, source.size, items_per_thread
+        )
+        cuda.synchronize()
+        np.testing.assert_array_equal(destination, source)
     # coop-pg-warp-copy-end
 
 
 def test_shared_scratch():
     # coop-pg-shared-scratch-begin
     @cuda.jit
-    def scan_with_shared_scratch(source, destination):
+    def scan_with_shared_scratch(source, destination, items_per_thread):
         block = coop.this_block()
         scratch = coop.TempStorage(auto_sync=True)
-        items = coop.ThreadData(items_per_thread=2)
+        items = coop.ThreadData(items_per_thread)
 
         coop.load(
             block, source, items, algorithm="transpose", temp_storage=scratch
@@ -194,23 +207,24 @@ def test_shared_scratch():
             temp_storage=scratch,
         )
 
-    source = (np.arange(256) % 7).astype(np.int32)
-    destination = np.empty_like(source)
-    scan_with_shared_scratch[1, 128](source, destination)
-    cuda.synchronize()
-    np.testing.assert_array_equal(destination, np.cumsum(source) - source)
+    for items_per_thread in (1, 4):
+        source = (np.arange(128 * items_per_thread) % 7).astype(np.int32)
+        destination = np.empty_like(source)
+        scan_with_shared_scratch[1, 128](source, destination, items_per_thread)
+        cuda.synchronize()
+        np.testing.assert_array_equal(destination, np.cumsum(source) - source)
     # coop-pg-shared-scratch-end
 
 
 def test_manual_scratch():
     # coop-pg-manual-scratch-begin
     @cuda.jit
-    def copy_tiles_with_manual_sync(source, destination):
+    def copy_tiles_with_manual_sync(source, destination, items_per_thread):
         block = coop.this_block()
         scratch = coop.TempStorage()
-        items = coop.ThreadData(items_per_thread=2)
+        items = coop.ThreadData(items_per_thread)
         for tile in range(2):
-            offset = tile * cuda.blockDim.x * 2
+            offset = tile * cuda.blockDim.x * items_per_thread
             coop.load(
                 block,
                 source,
@@ -230,27 +244,30 @@ def test_manual_scratch():
             )
             block.sync()
 
-    source = np.arange(512, dtype=np.int32)
-    destination = np.empty_like(source)
-    copy_tiles_with_manual_sync[1, 128](source, destination)
-    cuda.synchronize()
-    np.testing.assert_array_equal(destination, source)
-    # coop-pg-manual-scratch-end
+    for items_per_thread in (1, 4):
+        source = np.arange(2 * 128 * items_per_thread, dtype=np.int32)
+        destination = np.empty_like(source)
+        copy_tiles_with_manual_sync[1, 128](
+            source, destination, items_per_thread
+        )
+        cuda.synchronize()
+        np.testing.assert_array_equal(destination, source)
+        # coop-pg-manual-scratch-end
 
-    compiled = next(
-        iter(copy_tiles_with_manual_sync._launch_config_overloads.values())
-    )
-    # The descriptor adds no barriers to the explicit block.sync() calls.
-    assert compiled.metadata["mlir_module_str"].count("gpu.barrier") == 0
+        compiled = next(
+            iter(copy_tiles_with_manual_sync._launch_config_overloads.values())
+        )
+        # The descriptor adds no barriers to the explicit block.sync() calls.
+        assert compiled.metadata["mlir_module_str"].count("gpu.barrier") == 0
 
 
 def test_reduce():
     # coop-pg-reduce-begin
     @cuda.jit
-    def tile_sums(source, totals, count):
+    def tile_sums(source, totals, count, items_per_thread):
         block = coop.this_block()
-        items = coop.ThreadData(items_per_thread=2)
-        tile_size = cuda.blockDim.x * 2
+        items = coop.ThreadData(items_per_thread)
+        tile_size = cuda.blockDim.x * items_per_thread
         offset = cuda.blockIdx.x * tile_size
         valid = min(max(count - offset, 0), tile_size)
         coop.load(
@@ -265,15 +282,18 @@ def test_reduce():
         if block.rank() == 0:
             totals[cuda.blockIdx.x] = total
 
-    source = (np.arange(785) % 17).astype(np.int32)
-    totals = np.empty(4, dtype=np.int32)
-    tile_sums[4, 128](source, totals, source.size)
-    cuda.synchronize()
-    expected = [
-        source[start : start + 256].sum()
-        for start in range(0, source.size, 256)
-    ]
-    np.testing.assert_array_equal(totals, expected)
+    for items_per_thread in (1, 4):
+        source = (np.arange(785) % 17).astype(np.int32)
+        tile_size = 128 * items_per_thread
+        blocks = (source.size + tile_size - 1) // tile_size
+        totals = np.empty(blocks, dtype=np.int32)
+        tile_sums[blocks, 128](source, totals, source.size, items_per_thread)
+        cuda.synchronize()
+        expected = [
+            source[start : start + tile_size].sum()
+            for start in range(0, source.size, tile_size)
+        ]
+        np.testing.assert_array_equal(totals, expected)
     # coop-pg-reduce-end
 
 
@@ -286,18 +306,23 @@ def test_custom_scan():
         return right
 
     @cuda.jit
-    def running_maximum(source, destination):
+    def running_maximum(source, destination, items_per_thread):
         block = numba_coop.this_block()
-        items = numba_coop.ThreadData(items_per_thread=2)
+        items = numba_coop.ThreadData(items_per_thread)
         numba_coop.load(block, source, items)
         result = numba_coop.inclusive_scan(block, items, scan_op=maximum)
         numba_coop.store(block, destination, result)
 
-    source = ((np.arange(256) * 17) % 113 - 51).astype(np.int32)
-    destination = np.empty_like(source)
-    running_maximum[1, 128](source, destination)
-    cuda.synchronize()
-    np.testing.assert_array_equal(destination, np.maximum.accumulate(source))
+    for items_per_thread in (1, 4):
+        source = ((np.arange(128 * items_per_thread) * 17) % 113 - 51).astype(
+            np.int32
+        )
+        destination = np.empty_like(source)
+        running_maximum[1, 128](source, destination, items_per_thread)
+        cuda.synchronize()
+        np.testing.assert_array_equal(
+            destination, np.maximum.accumulate(source)
+        )
     # coop-pg-custom-scan-end
 
 

@@ -36,8 +36,9 @@ A first kernel: prefix sums within tiles
 
 A prefix sum gives each element the sum of the elements before it. For an
 exclusive sum of ``[3, 1, 4, 2]``, the result is ``[0, 3, 4, 8]``.
-The kernel below computes a separate exclusive sum for each tile of 256
-elements. Each block has 128 threads, with two elements per thread.
+The kernel below computes a separate exclusive sum for each tile of
+``128 * items_per_thread`` elements. Each block has 128 threads; the host
+passes the number of elements per thread to the kernel.
 
 .. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
    :language: python
@@ -352,9 +353,9 @@ Constructing a group or a ``ThreadData`` object does not synchronize threads.
 ``ThreadData``: the part of a tile owned by one thread
 ------------------------------------------------------
 
-``coop.ThreadData(items_per_thread=2)`` gives each thread two slots.
-With 128 threads, the group owns 256 values. Each thread
-indexes its own slots with ``items[0]`` and ``items[1]``. To move values
+``coop.ThreadData(items_per_thread)`` gives each thread that many slots.
+With 128 threads, the group owns ``128 * items_per_thread`` values. Each thread
+indexes its own slots with ``items[i]``. To move values
 between threads, use an operation such as Exchange, Shuffle, or Scan.
 
 :class:`~cuda.coop.ThreadDataLike` names the common payload interface used
@@ -363,8 +364,10 @@ writes. Use :func:`~cuda.coop.ThreadData` to construct a payload for the active
 compiler backend. Other payload representations require support from that
 backend.
 
-The item count must be a positive compile-time integer. You can use
-``items.items_per_thread`` as a loop bound:
+The item count must be a positive compile-time integer. Pass
+``items_per_thread`` as a kernel argument; the compiler specializes the
+kernel for each supplied value. You can also use ``items.items_per_thread``
+as a loop bound:
 
 .. code-block:: python
 
@@ -460,7 +463,7 @@ Increasing the item count increases the amount of live data per thread.
 
 The optional ``alignment`` keyword requests a minimum power-of-two alignment
 in bytes when the compiler materializes the payload. For example,
-``coop.ThreadData(items_per_thread=4, alignment=16)`` requests at least
+``coop.ThreadData(items_per_thread, alignment=16)`` requests at least
 16-byte alignment. The compiler may strengthen it. This setting applies
 to payload storage; alignment of the input and output arrays remains a
 separate property.
@@ -921,7 +924,7 @@ does not sort an array spanning several blocks.
 Follow keys and their associated values through the
 :doc:`Merge Sort visualization <visualizations/merge-sort>`.
 
-This example sorts 128 keys and carries their original positions through
+This example sorts a block tile and carries the keys' original positions through
 the same permutation:
 
 .. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_merge_sort_examples.py
