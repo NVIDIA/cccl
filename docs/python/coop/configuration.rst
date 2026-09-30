@@ -46,6 +46,11 @@ CCCL source checkout uses its matching headers. ``CUDA_COOP_CCCL_ROOT`` can
 select another source checkout or ``cuda-coop`` header bundle.
 
 
+With Numba-CUDA-MLIR 0.5.x, activating the ``cuda.coop`` backend disables
+the compiler's ``cache=True`` disk cache for all kernels in that process.
+Compiled kernels still have an in-memory cache. The provider cache controlled
+by ``CUDA_COOP_ENABLE_CACHE`` below is separate.
+
 Runtime environment variables
 -----------------------------
 
