@@ -67,16 +67,16 @@ Using Load in a kernel
 
 This common-API fragment works in either DSL with the
 :ref:`kernel-fragment setup <coop-visualization-kernels>`. Launch with
-128 threads and provide at least 256
+128 threads and provide at least ``128 * items_per_thread``
 source elements for each block.
 
 .. code-block:: python
 
    block = coop.this_block()
-   items = coop.ThreadData(items_per_thread=2)
-   offset = block_index * 256
+   items = coop.ThreadData(items_per_thread)
+   offset = block_index * 128 * items_per_thread
    coop.load(block, source, items, algorithm="transpose", offset=offset)
-   # Each thread now owns two consecutive values. Load returns None.
+   # Each thread owns items_per_thread consecutive values. Load returns None.
 
 For a partial final tile, supply ``valid_items`` and, when needed,
 ``oob_default``. See :func:`cuda.coop.load` for the full parameter contract

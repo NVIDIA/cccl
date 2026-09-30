@@ -271,9 +271,11 @@ It needs no command-line arguments. Its kernel and launcher are:
    :start-after: docs: start cutlass-debug-kernel
    :end-before: docs: end cutlass-debug-kernel
 
-The default ``algorithm`` is ``"direct"``. Each of the 128 threads copies
-two integers, so the complete tile contains 256 items. ``scratch`` is a
-descriptor: Direct Load and Store ignore it and allocate no shared memory.
+The default ``algorithm`` is ``"direct"`` and ``items_per_thread`` is ``2``.
+Each of the 128 threads copies two integers, so the default tile contains
+256 items. The kernel and launcher specialize the item-count argument with
+``cutlass.Constexpr``; pass ``--items-per-thread`` to change it. ``scratch``
+is a descriptor: Direct Load and Store ignore it and allocate no shared memory.
 The same descriptor will let us follow scratch reuse in the transpose pass.
 
 The complete example allocates device buffers with the CUDA Driver API,
@@ -286,7 +288,7 @@ It compiles the launcher once, then calls the resulting function twice:
    :end-before: docs: end cutlass-debug-launches
 
 Each iteration resets the device output to ``-1``, launches the copy,
-synchronizes, and checks all 256 values against NumPy. Here,
+synchronizes, and checks every value against NumPy. Here,
 ``cute.compile`` makes compilation an explicit step before either launch.
 The two calls to ``compiled`` reuse that kernel.
 
