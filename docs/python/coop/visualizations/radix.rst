@@ -162,8 +162,8 @@ including ties.
    :dedent: 4
 
 The CuTe example below covers sorting and ranking in the same kernel. It
-uses 64 threads with two items each, and ``module`` selects the common or
-CUTLASS-qualified API. Its qualified path also checks striped output and
+uses 64 threads and an ``items_per_thread`` argument, and ``module`` selects
+the common or CUTLASS-qualified API. Its qualified path also checks striped output and
 bin prefixes. :download:`Download the complete CuTe example
 <../../../../python/cuda_coop/examples/cutlass/radix.py>` for setup and host
 checks.
