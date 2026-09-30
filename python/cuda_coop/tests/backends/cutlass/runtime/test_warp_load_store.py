@@ -55,7 +55,10 @@ def test_group_local_load_counts_offsets_and_defaults(
 ):
     @cute.kernel
     def kernel(
-        source: cute.Pointer, observed: cute.Pointer, valid: cutlass.Int32
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        valid: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
@@ -63,7 +66,7 @@ def test_group_local_load_counts_offsets_and_defaults(
         count = valid - warp * 7
         if count < 0:
             count = cutlass.Int32(0)
-        payload = api.ThreadData(_ITEMS)
+        payload = api.ThreadData(items_per_thread)
         returned = api.load(
             api.this_warp(),
             source,
@@ -75,14 +78,19 @@ def test_group_local_load_counts_offsets_and_defaults(
         )
         assert returned is None
         outputs = cute.make_tensor(observed, cute.make_layout(_BLOCK_TILE))
-        for item in cutlass.range_constexpr(_ITEMS):
-            outputs[thread * _ITEMS + item] = payload[item]
+        for item in cutlass.range_constexpr(items_per_thread):
+            outputs[thread * items_per_thread + item] = payload[item]
 
     @cute.jit
     def launch(
-        source: cute.Pointer, observed: cute.Pointer, valid: cutlass.Int32
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        valid: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, observed, valid).launch(grid=1, block=_BLOCK)
+        kernel(source, observed, valid, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.int32, _BLOCK_TILE + 7, shift=11)
     observed = np.full(_BLOCK_TILE, 71, dtype=np.int32)
@@ -97,7 +105,7 @@ def test_group_local_load_counts_offsets_and_defaults(
                 source[origin + index] if index < count else -29 - warp
             )
     with device_array(source) as src, device_array(observed) as out:
-        launch(src, out, base_valid)
+        launch(src, out, base_valid, _ITEMS)
     np.testing.assert_array_equal(observed, expected)
 
 
@@ -114,6 +122,7 @@ def test_group_local_store_counts_and_offsets(api, algorithm, base_valid):
         source: cute.Pointer,
         destination: cute.Pointer,
         valid: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
@@ -122,9 +131,9 @@ def test_group_local_store_counts_and_offsets(api, algorithm, base_valid):
         if count < 0:
             count = cutlass.Int32(0)
         inputs = cute.make_tensor(source, cute.make_layout(_BLOCK_TILE))
-        payload = api.ThreadData(_ITEMS, dtype=cutlass.Int32)
-        for item in cutlass.range_constexpr(_ITEMS):
-            payload[item] = inputs[thread * _ITEMS + item]
+        payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
+        for item in cutlass.range_constexpr(items_per_thread):
+            payload[item] = inputs[thread * items_per_thread + item]
         api.store(
             api.this_warp(),
             destination,
@@ -139,8 +148,11 @@ def test_group_local_store_counts_and_offsets(api, algorithm, base_valid):
         source: cute.Pointer,
         destination: cute.Pointer,
         valid: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, destination, valid).launch(grid=1, block=_BLOCK)
+        kernel(source, destination, valid, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.int32, _BLOCK_TILE, shift=19)
     destination = np.full(_BLOCK_TILE + 15, -101, dtype=np.int32)
@@ -154,7 +166,7 @@ def test_group_local_store_counts_and_offsets(api, algorithm, base_valid):
             if index < count:
                 expected[origin + index] = source[thread * _ITEMS + item]
     with device_array(source) as src, device_array(destination) as dst:
-        launch(src, dst, base_valid)
+        launch(src, dst, base_valid, _ITEMS)
     np.testing.assert_array_equal(destination, expected)
 
 
@@ -162,38 +174,56 @@ def test_group_local_store_counts_and_offsets(api, algorithm, base_valid):
 @pytest.mark.parametrize("dtype", NUMPY_DTYPES)
 @pytest.mark.parametrize("operation", ("load", "store"))
 @pytest.mark.parametrize("algorithm", ("direct", "transpose"))
-def test_warp_layout_for_every_dtype(api, dtype, operation, algorithm):
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_warp_layout_for_every_dtype(
+    api, dtype, operation, algorithm, items_per_thread
+):
     value_type = cutlass_dtype(dtype)
 
     @cute.kernel
-    def kernel(source: cute.Pointer, destination: cute.Pointer):
+    def kernel(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.recast_tensor(
-            cute.make_tensor(source, cute.make_layout(_BLOCK_TILE)), value_type
-        )
-        outputs = cute.recast_tensor(
-            cute.make_tensor(destination, cute.make_layout(_BLOCK_TILE)),
+            cute.make_tensor(
+                source, cute.make_layout(_THREADS * items_per_thread)
+            ),
             value_type,
         )
-        payload = api.ThreadData(_ITEMS, dtype=value_type)
+        outputs = cute.recast_tensor(
+            cute.make_tensor(
+                destination, cute.make_layout(_THREADS * items_per_thread)
+            ),
+            value_type,
+        )
+        payload = api.ThreadData(items_per_thread, dtype=value_type)
         if cutlass.const_expr(operation == "load"):
             api.load(api.this_warp(), inputs, payload, algorithm=algorithm)
-            for item in cutlass.range_constexpr(_ITEMS):
-                outputs[thread * _ITEMS + item] = payload[item]
+            for item in cutlass.range_constexpr(items_per_thread):
+                outputs[thread * items_per_thread + item] = payload[item]
         else:
-            for item in cutlass.range_constexpr(_ITEMS):
-                payload[item] = inputs[thread * _ITEMS + item]
+            for item in cutlass.range_constexpr(items_per_thread):
+                payload[item] = inputs[thread * items_per_thread + item]
             api.store(api.this_warp(), outputs, payload, algorithm=algorithm)
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer):
-        kernel(source, destination).launch(grid=1, block=_BLOCK)
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(source, destination, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
-    source = values_for(dtype, _BLOCK_TILE, shift=29)
+    source = values_for(dtype, (_THREADS * items_per_thread), shift=29)
     destination = np.zeros_like(source)
     with device_array(source) as src, device_array(destination) as dst:
-        launch(src, dst)
+        launch(src, dst, items_per_thread)
     np.testing.assert_array_equal(destination, source)
 
 
@@ -211,11 +241,12 @@ def test_partial_transpose_loads_each_warps_valid_items_without_default(
         source: cute.Pointer,
         observed: cute.Pointer,
         count: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         outputs = cute.make_tensor(observed, cute.make_layout(_BLOCK_TILE))
-        payload = api.ThreadData(_ITEMS, dtype=cutlass.Int32)
+        payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
         if cutlass.const_expr(static_count):
             api.load(
                 api.this_warp(),
@@ -235,17 +266,20 @@ def test_partial_transpose_loads_each_warps_valid_items_without_default(
         selected_count = (
             valid if static_count else count - (thread // _WIDTH) * 13
         )
-        for item in cutlass.range_constexpr(_ITEMS):
-            if (thread % _WIDTH) * _ITEMS + item < selected_count:
-                outputs[thread * _ITEMS + item] = payload[item]
+        for item in cutlass.range_constexpr(items_per_thread):
+            if (thread % _WIDTH) * items_per_thread + item < selected_count:
+                outputs[thread * items_per_thread + item] = payload[item]
 
     @cute.jit
     def launch(
         source: cute.Pointer,
         observed: cute.Pointer,
         count: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, observed, count).launch(grid=1, block=_BLOCK)
+        kernel(source, observed, count, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.int32, _BLOCK_TILE)
     observed = np.full(_BLOCK_TILE, 71, dtype=np.int32)
@@ -255,7 +289,7 @@ def test_partial_transpose_loads_each_warps_valid_items_without_default(
         count = valid if static_count else valid - warp * 13
         expected[start : start + count] = source[start : start + count]
     with device_array(source) as src, device_array(observed) as out:
-        launch(src, out, valid)
+        launch(src, out, valid, _ITEMS)
     np.testing.assert_array_equal(observed, expected)
 
 
@@ -266,14 +300,17 @@ def test_partial_transpose_loads_each_warps_valid_items_without_default(
 def test_transpose_runtime_loop_and_whole_warp_divergence(api, divergent):
     @cute.kernel
     def kernel(
-        source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        tiles: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         warp = thread // _WIDTH
         if warp == 1 or not divergent:
             for tile in range(tiles):
-                payload = api.ThreadData(_ITEMS)
+                payload = api.ThreadData(items_per_thread)
                 api.load(
                     api.this_warp(),
                     source,
@@ -281,7 +318,7 @@ def test_transpose_runtime_loop_and_whole_warp_divergence(api, divergent):
                     algorithm="transpose",
                     offset=tile * _BLOCK_TILE,
                 )
-                for item in cutlass.range_constexpr(_ITEMS):
+                for item in cutlass.range_constexpr(items_per_thread):
                     payload[item] = payload[item] + cutlass.Int32(
                         tile + warp + 1
                     )
@@ -295,9 +332,14 @@ def test_transpose_runtime_loop_and_whole_warp_divergence(api, divergent):
 
     @cute.jit
     def launch(
-        source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        tiles: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, destination, tiles).launch(grid=1, block=_BLOCK)
+        kernel(source, destination, tiles, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     tiles = 8
     source = values_for(np.int32, tiles * _BLOCK_TILE, shift=43)
@@ -312,7 +354,7 @@ def test_transpose_runtime_loop_and_whole_warp_divergence(api, divergent):
                 source[start : start + _WARP_TILE] + tile + warp + 1
             )
     with device_array(source) as src, device_array(destination) as dst:
-        launch(src, dst, tiles)
+        launch(src, dst, tiles, _ITEMS)
     np.testing.assert_array_equal(destination, expected)
 
 
@@ -325,8 +367,12 @@ def test_final_warp_cubin_has_no_block_barrier(tmp_path, algorithm):
         )
 
     @cute.kernel
-    def kernel(source: cute.Pointer, destination: cute.Pointer):
-        payload = cutlass_coop.ThreadData(_ITEMS)
+    def kernel(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        payload = cutlass_coop.ThreadData(items_per_thread)
         cutlass_coop.load(
             cutlass_coop.this_warp(), source, payload, algorithm=algorithm
         )
@@ -335,14 +381,20 @@ def test_final_warp_cubin_has_no_block_barrier(tmp_path, algorithm):
         )
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer):
-        kernel(source, destination).launch(grid=1, block=_BLOCK)
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(source, destination, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.int32, _BLOCK_TILE, shift=59)
     destination = np.zeros_like(source)
     with device_array(source) as src, device_array(destination) as dst:
         compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](
-            launch, src, dst
+            launch, src, dst, _ITEMS
         )
         compiled(src, dst)
     np.testing.assert_array_equal(destination, source)
@@ -371,11 +423,12 @@ def test_final_warp_cubin_has_no_block_barrier(tmp_path, algorithm):
 
 
 @pytest.mark.parametrize("api", ("common", "qualified"))
-def test_warp_example(api):
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_warp_example(api, items_per_thread):
     path = PACKAGE_ROOT / "examples/cutlass/warp_load_store.py"
     spec = importlib.util.spec_from_file_location(
         "cutlass_warp_load_store_example", path
     )
     example = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(example)
-    example.run_example(api)
+    example.run_example(api, items_per_thread=items_per_thread)

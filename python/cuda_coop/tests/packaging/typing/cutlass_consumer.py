@@ -102,7 +102,7 @@ def check_cutlass_surface(source: object, destination: object) -> None:
 
 def check_cutlass_warp_surface(source: object, destination: object) -> None:
     warp = cutlass_coop.this_warp()
-    values = cutlass_coop.ThreadData(2, np.int32)
+    values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
     assert_type(warp, cutlass_coop.ThreadGroup[Literal["warp"]])
     assert_type(cutlass_coop.load(warp, source, values), None)
     assert_type(cutlass_coop.store(warp, destination, values), None)
