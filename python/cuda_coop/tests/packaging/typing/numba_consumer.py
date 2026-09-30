@@ -71,8 +71,8 @@ def check_numba_surface(
     logical_warp = warp.group_by(8)
     mapped_warps = block.group_by(2)
     cluster = coop.this_cluster()
-    byte_values = coop.ThreadData(1, np.int8)
-    values = coop.ThreadData(2, np.uint16, alignment=16)
+    byte_values = coop.ThreadData(items_per_thread=1, dtype=np.int8)
+    values = coop.ThreadData(items_per_thread=2, dtype=np.uint16, alignment=16)
     storage = coop.TempStorage(alignment=16, sharing="shared")
 
     assert_type(block, coop.ThreadGroup[Literal["block"]])
