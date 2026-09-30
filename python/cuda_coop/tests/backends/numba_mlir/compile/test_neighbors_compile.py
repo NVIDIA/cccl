@@ -107,21 +107,28 @@ def _compile(kernel, signature):
     )
 
 
-def test_production_partial_with_inferred_payload():
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_production_partial_with_inferred_payload(items_per_thread):
     @cuda.jit(chip="sm_90")
-    def kernel(source, output, count):
-        values = coop.ThreadData(3)
-        for i in range(3):
-            values[i] = source[cuda.threadIdx.x * 3 + i]
+    def kernel(source, output, count, items_per_thread):
+        values = coop.ThreadData(items_per_thread)
+        for i in range(items_per_thread):
+            values[i] = source[cuda.threadIdx.x * items_per_thread + i]
         differences = coop.adjacent_difference(
             coop.this_block(), values, valid_items=count
         )
         heads = coop.discontinuity(coop.this_block(), differences)
-        for i in range(3):
-            output[cuda.threadIdx.x * 3 + i] = heads[i]
+        for i in range(items_per_thread):
+            output[cuda.threadIdx.x * items_per_thread + i] = heads[i]
 
     result = _compile(
-        kernel, types.void(types.float64[::1], types.int32[::1], types.int64)
+        kernel,
+        types.void(
+            types.float64[::1],
+            types.int32[::1],
+            types.int64,
+            types.IntegerLiteral(items_per_thread),
+        ),
     )
     assert result.metadata["cubin"]
     assert "trap;" in next(iter(kernel.inspect_lto_ptx().values()))
@@ -146,7 +153,7 @@ def test_invalid_adjacent_options_rejected(options, match):
 
         @cuda.jit(chip="sm_90")
         def kernel(source):
-            values = coop.ThreadData(3, dtype=types.int32)
+            values = coop.ThreadData(items_per_thread=3, dtype=types.int32)
             coop.load(coop.this_block(), source, values)
             return coop.adjacent_difference(
                 coop.this_block(),
@@ -160,7 +167,7 @@ def test_invalid_adjacent_options_rejected(options, match):
 
         @cuda.jit(chip="sm_90")
         def kernel(source):
-            values = coop.ThreadData(3, dtype=types.int32)
+            values = coop.ThreadData(items_per_thread=3, dtype=types.int32)
             coop.load(coop.this_block(), source, values)
             return coop.adjacent_difference(
                 coop.this_block(), values, valid_items=count
@@ -169,7 +176,7 @@ def test_invalid_adjacent_options_rejected(options, match):
 
         @cuda.jit(chip="sm_90")
         def kernel(source):
-            values = coop.ThreadData(3, dtype=types.int32)
+            values = coop.ThreadData(items_per_thread=3, dtype=types.int32)
             coop.load(coop.this_block(), source, values)
             return coop.adjacent_difference(
                 coop.this_block(), values, tile_predecessor_item=1.5
