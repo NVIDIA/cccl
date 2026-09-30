@@ -273,10 +273,10 @@ use the same lowercase string selectors. Selectors are normalized to lowercase
 underscore-delimited strings. Enum and integer selectors, including ``0``, are
 rejected.
 
-Store consumes the arrangement associated with its selected algorithm. The
-transpose Store implementations copy the payload before calling CUB, so Store
-never modifies the caller's scalar or ``ThreadData`` value while CUB performs
-its in-place reordering.
+Store consumes the arrangement associated with its selected algorithm.
+Transpose Store algorithms may rearrange the input payload in place, following
+CUB's behavior. Reload or reinitialize the payload before using its previous
+arrangement again.
 
 
 Exchange semantics

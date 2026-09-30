@@ -804,7 +804,8 @@ the rewrite rejects user dynamic or runtime-sized shared allocations alongside
 cooperative backing, and user static shared allocations when cooperative
 backing becomes dynamic. It inspects user allocations after helper inlining,
 including aliases and implicit oversized cooperative scratch. Static/static
-combinations remain valid, and storage-free operations introduce no conflict.
+combinations remain valid. Reduce scratch participates in the same planner
+as other CUB operations, including when ``temp_storage`` is omitted.
 Diagnostics identify both allocations and suggest keeping them static within
 the device limit, moving the user buffer to global memory, or using separate
 kernels. Passing coexistence tests against a development compiler alone does

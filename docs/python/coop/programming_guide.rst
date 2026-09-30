@@ -425,8 +425,9 @@ The item count must be a positive compile-time integer. You can use
 
 Initialize every slot before reading it. Constructing ``ThreadData`` does
 not fill it with zeros. A full Load initializes the entire payload; a
-partial Load needs either an ``oob_default`` or previously initialized slots
-for the missing elements.
+partial Load leaves out-of-bounds slots unspecified unless ``oob_default`` is
+provided. Initialize those slots after the Load or supply ``oob_default``
+before reading them.
 
 .. _coop-data-layouts:
 
@@ -825,9 +826,10 @@ User static shared arrays may coexist with static cooperative backing, but are
 rejected when the cooperative backing becomes dynamic, including an implicit
 oversized allocation. These checks apply after helper inlining. Keep both
 allocations static within the device limit, use global memory for the user
-buffer, or separate the work into kernels. Storage-free operations do not
-create this conflict. The compatibility restrictions remain until a released
-compiler with the shared-memory fix has passed the coexistence tests.
+buffer, or separate the work into kernels. Reduce uses the same cooperative
+backing, including when ``temp_storage`` is omitted. The compatibility restrictions remain
+until a released compiler with the shared-memory fix has passed the coexistence
+tests.
 
 Extra shared memory can reduce resident blocks per multiprocessor. The
 default inferred allocation and unsized shared descriptor are sufficient
