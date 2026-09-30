@@ -12,15 +12,13 @@ from numba_cuda_mlir import cuda
 from cuda import coop
 
 THREADS = 32
-ITEMS_PER_THREAD = 2
-TILE_ITEMS = THREADS * ITEMS_PER_THREAD
 
 
 # docs: start numba-block-scan
 @cuda.jit
-def block_scan_kernel(values, prefixes):
+def block_scan_kernel(values, prefixes, items_per_thread):
     block = coop.this_block()
-    items = coop.ThreadData(items_per_thread=ITEMS_PER_THREAD)
+    items = coop.ThreadData(items_per_thread)
     coop.load(block, values, items)
     scanned = coop.exclusive_sum(block, items)
     coop.store(block, prefixes, scanned)
@@ -29,12 +27,13 @@ def block_scan_kernel(values, prefixes):
 # docs: end numba-block-scan
 
 
-def run_example() -> np.ndarray:
+def run_example(items_per_thread: int = 4) -> np.ndarray:
     """Run one tile and return its exclusive prefix sum."""
 
-    values = np.arange(1, TILE_ITEMS + 1, dtype=np.int32)
+    tile_items = THREADS * items_per_thread
+    values = np.arange(1, tile_items + 1, dtype=np.int32)
     prefixes = np.zeros_like(values)
-    block_scan_kernel[1, THREADS](values, prefixes)
+    block_scan_kernel[1, THREADS](values, prefixes, items_per_thread)
     cuda.synchronize()
 
     expected = np.zeros_like(values)
