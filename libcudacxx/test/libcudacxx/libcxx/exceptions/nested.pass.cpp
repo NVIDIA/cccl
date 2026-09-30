@@ -110,8 +110,8 @@ TEST_FUNC void test_macros_compile_everywhere()
 TEST_FUNC void test_nesting_without_rtti()
 {
   // 1. throwing with the active exception nested, then unwinding the chain through the base class
-  bool saw_nested = false;
-  bool saw_low    = false;
+  [[maybe_unused]] bool saw_nested = false;
+  [[maybe_unused]] bool saw_low    = false;
   _CCCL_TRY
   {
     _CCCL_TRY
@@ -129,7 +129,7 @@ TEST_FUNC void test_nesting_without_rtti()
   }
   _CCCL_CATCH ([[maybe_unused]] const ::std::nested_exception& ne)
   {
-    saw_nested = true;
+    NV_IF_TARGET(NV_IS_HOST, (saw_nested = true;))
     _CCCL_TRY
     {
       NV_IF_TARGET(NV_IS_HOST, (ne.rethrow_nested();))
@@ -137,7 +137,7 @@ TEST_FUNC void test_nesting_without_rtti()
     }
     _CCCL_CATCH (const Low& cause)
     {
-      saw_low = true;
+      NV_IF_TARGET(NV_IS_HOST, (saw_low = true;))
       assert(cause.value == low_value());
     }
     _CCCL_CATCH_ALL
@@ -170,7 +170,7 @@ TEST_FUNC void test_nesting_without_rtti()
   }
   _CCCL_CATCH ([[maybe_unused]] const ::std::nested_exception& ne)
   {
-    saw_nested = true;
+    NV_IF_TARGET(NV_IS_HOST, (saw_nested = true;))
   }
   _CCCL_CATCH_ALL
   {
@@ -202,8 +202,8 @@ TEST_FUNC void test_nesting_without_rtti()
 TEST_FUNC void test_rethrow_if_nested()
 {
   // 4. rethrow-if-nested recovers the cause
-  bool saw_high = false;
-  bool saw_low  = false;
+  [[maybe_unused]] bool saw_high = false;
+  [[maybe_unused]] bool saw_low  = false;
   _CCCL_TRY
   {
     _CCCL_TRY
@@ -221,7 +221,7 @@ TEST_FUNC void test_rethrow_if_nested()
   }
   _CCCL_CATCH (const High& e)
   {
-    saw_high = true;
+    NV_IF_TARGET(NV_IS_HOST, (saw_high = true;))
     assert(e.value == high_value());
     _CCCL_TRY
     {
@@ -230,7 +230,7 @@ TEST_FUNC void test_rethrow_if_nested()
     }
     _CCCL_CATCH (const Low& cause)
     {
-      saw_low = true;
+      NV_IF_TARGET(NV_IS_HOST, (saw_low = true;))
       assert(cause.value == low_value());
     }
     _CCCL_CATCH_ALL
