@@ -1,7 +1,7 @@
-# CCCL Review Guidelines
+# CCCL Review Checks
 
-Guidelines for reviewing CCCL changes, distilled from past regressions. Each guideline
-states what a human or AI reviewer should flag in a diff.
+Checks that should be performed when reviewing changes to CCCL. Some of them are distilled
+from past regressions. Each guideline states what a human or AI reviewer should flag in a diff.
 
 <!--
 Many of the rules here were derived, with AI assistance, from actual PRs that introduced
@@ -19,7 +19,7 @@ Each guideline is a section of the form:
 ```markdown
 ## <area>.<slug> (<severity>, <scope>)
 
-<!-- provenance:
+<!-- provenance (optional):
   #<introducing PR>→#<fixing PR> <short note>;
   review feedback on #<PR> (<link>) <short note>;
   ...
@@ -33,9 +33,10 @@ Each guideline is a section of the form:
 - `<severity>` — `critical` (must be addressed), `important` (not addressing requires a justification),
   or `suggestion` (worth considering, no action required).
 - `<scope>` — which files/diffs the rule applies to.
-- The provenance comment lists what the rule was distilled from: historical regressions
+- The provenance comment is optional. When the rule was distilled from a historical regression
   (introducing PR → fixing PR) or review feedback that prevented a defect from shipping
-  (link to the review comment); it is metadata for maintainers, not part of the rule.
+  (link to the review comment), list it there; it is metadata for maintainers, not part of the
+  rule. Omit the comment entirely for a rule that was not distilled from such a case.
 - Rules are grouped by area, in the order `build`, `correctness`, `api`, `abi`, `perf`,
   `test`, `infra`, `docs`.
 
@@ -97,8 +98,6 @@ result is widened. The author should either widen an operand before the operatio
 or, if the narrow result is intended, narrow the destination type so no widening occurs.
 
 ## correctness.pdl-restrict-aliasing (critical, CUDA kernels that call `_CCCL_PDL_GRID_DEPENDENCY_SYNC()` / `cudaGridDependencySynchronize()`)
-
-<!-- provenance: manually added -->
 
 Flag a kernel parameter marked both `const` and `_CCCL_RESTRICT` (or raw `__restrict`/`__restrict__`)
 whose pointee is read after a `_CCCL_PDL_GRID_DEPENDENCY_SYNC()`/`cudaGridDependencySynchronize()`
@@ -552,8 +551,6 @@ binary operators, large value types, and every architecture the change affects: 
 one workload can silently regress a different algorithm layered on top of the primitive.
 
 ## perf.vector-init-before-overwrite (suggestion, `thrust::host_vector`/`thrust::device_vector` and c2h's `host_vector`/`device_vector` construction anywhere in the diff)
-
-<!-- provenance: manually added -->
 
 Flag a sized `thrust`/`c2h` `host_vector`/`device_vector` construction (`vector(n)`, `vector(n, value)`)
 or `resize(n)` that doesn't use the `thrust::no_init` sentinel when the vector's content is never read

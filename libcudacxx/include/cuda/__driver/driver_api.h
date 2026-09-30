@@ -1100,6 +1100,32 @@ __logicalEndpointDestroyNoThrow(::CUlogicalEndpointId __le_id) noexcept // NOLIN
   return static_cast<::cudaError_t>(__driver_fn(__le_id));
 }
 
+_CCCL_HOST_API inline void
+__logicalEndpointExport(void* __handle, ::CUlogicalEndpointId __le_id, ::CUlogicalEndpointIpcHandleType __handle_type)
+{
+  if (::cuda::__driver::__version_below(13, 4))
+  {
+    _CCCL_THROW(
+      ::cuda::cuda_error, ::cudaErrorNotSupported, "Logical endpoint fabric IPC export requires a CUDA 13.4 driver");
+  }
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointExport, cuLogicalEndpointExport, 13, 4);
+  _CCCL_TRY_DRIVER_API(__driver_fn, "Failed to export a logical endpoint handle", __handle, __le_id, __handle_type);
+}
+
+_CCCL_HOST_API inline void __logicalEndpointImport(
+  ::CUlogicalEndpointId __le_id, const void* __handle, ::CUlogicalEndpointIpcHandleType __handle_type)
+{
+  if (::cuda::__driver::__version_below(13, 4))
+  {
+    _CCCL_THROW(
+      ::cuda::cuda_error, ::cudaErrorNotSupported, "Logical endpoint fabric IPC import requires a CUDA 13.4 driver");
+  }
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointImport, cuLogicalEndpointImport, 13, 4);
+  _CCCL_TRY_DRIVER_API(__driver_fn, "Failed to import a logical endpoint handle", __le_id, __handle, __handle_type);
+}
+
 [[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __logicalEndpointBindAddrNoThrow( // NOLINT(bugprone-exception-escape)
   ::CUlogicalEndpointId __le_id,
   ::CUdevice __device,
