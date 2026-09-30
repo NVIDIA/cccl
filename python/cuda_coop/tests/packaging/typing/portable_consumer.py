@@ -219,8 +219,8 @@ def check_common_scan_seeds(integer_seed: int, floating_seed: float) -> None:
 
 
 def check_merge_sort_surface() -> None:
-    keys = coop.ThreadData(3, np.int32)
-    values = coop.ThreadData(3, np.float64)
+    keys = coop.ThreadData(items_per_thread=3, dtype=np.int32)
+    values = coop.ThreadData(items_per_thread=3, dtype=np.float64)
     read_only_keys = _ReadOnlyThreadData(np.int32(1))
     read_only_values = _ReadOnlyThreadData(np.float64(1.0))
     assert_type(

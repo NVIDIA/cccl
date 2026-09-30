@@ -28,7 +28,7 @@ def test_invalid_static_counts(count):
     from cuda import coop
 
     def kernel():
-        keys = coop.ThreadData(2, types.int32)
+        keys = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         return coop.merge_sort_keys(
             coop.this_block(), keys, valid_items=count, oob_default=1000
         )
@@ -44,7 +44,7 @@ def test_invalid_runtime_counts(type_name):
     from cuda import coop
 
     def kernel(count):
-        keys = coop.ThreadData(2, types.int32)
+        keys = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         return coop.merge_sort_keys(
             coop.this_block(), keys, valid_items=count, oob_default=1000
         )
@@ -60,7 +60,7 @@ def test_invalid_sentinel(default):
     from cuda import coop
 
     def kernel():
-        keys = coop.ThreadData(2, types.int32)
+        keys = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         return coop.merge_sort_keys(
             coop.this_block(), keys, valid_items=2, oob_default=default
         )
@@ -69,10 +69,13 @@ def test_invalid_sentinel(default):
         _plan(kernel)
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("dtype_name", ["float32", "float64"])
 @pytest.mark.parametrize("typed", [False, True])
 @pytest.mark.parametrize("descending", [False, True])
-def test_static_infinite_sentinel(dtype_name, typed, descending):
+def test_static_infinite_sentinel(
+    dtype_name, typed, descending, items_per_thread
+):
     from numba_cuda_mlir import types
 
     from cuda import coop
@@ -82,8 +85,8 @@ def test_static_infinite_sentinel(dtype_name, typed, descending):
     if typed:
         default = np.dtype(dtype_name).type(default)
 
-    def kernel():
-        keys = coop.ThreadData(2, dtype)
+    def kernel(items_per_thread):
+        keys = coop.ThreadData(items_per_thread, dtype)
         return coop.merge_sort_keys(
             coop.this_block(),
             keys,
@@ -92,7 +95,7 @@ def test_static_infinite_sentinel(dtype_name, typed, descending):
             oob_default=default,
         )
 
-    _plan(kernel)
+    _plan(kernel, arg_types=(types.IntegerLiteral(items_per_thread),))
 
 
 @pytest.mark.parametrize(
@@ -114,7 +117,7 @@ def test_static_sentinel_retains_scalar_validation(dtype_name, default):
     dtype = getattr(types, dtype_name)
 
     def kernel():
-        keys = coop.ThreadData(2, dtype)
+        keys = coop.ThreadData(items_per_thread=2, dtype=dtype)
         return coop.merge_sort_keys(
             coop.this_block(), keys, valid_items=2, oob_default=default
         )
@@ -129,7 +132,7 @@ def test_runtime_sentinel_must_match_keys():
     from cuda import coop
 
     def kernel(sentinel):
-        keys = coop.ThreadData(2, types.int32)
+        keys = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         return coop.merge_sort_keys(
             coop.this_block(), keys, valid_items=2, oob_default=sentinel
         )
@@ -144,8 +147,8 @@ def test_pairs_require_equal_extents():
     from cuda import coop
 
     def kernel():
-        keys = coop.ThreadData(2, types.int32)
-        values = coop.ThreadData(3, types.float32)
+        keys = coop.ThreadData(items_per_thread=2, dtype=types.int32)
+        values = coop.ThreadData(items_per_thread=3, dtype=types.float32)
         return coop.merge_sort_pairs(coop.this_block(), keys, values)
 
     with pytest.raises(ValueError, match="matching.*extents"):
@@ -159,7 +162,7 @@ def test_descending_requires_static_bool(descending):
     from cuda import coop
 
     def kernel():
-        keys = coop.ThreadData(2, types.int32)
+        keys = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         return coop.merge_sort_keys(
             coop.this_block(), keys, descending=descending
         )
@@ -177,7 +180,7 @@ def test_custom_comparator_controls_order():
         return left < right
 
     def kernel():
-        keys = numba_coop.ThreadData(2, types.int32)
+        keys = numba_coop.ThreadData(items_per_thread=2, dtype=types.int32)
         return numba_coop.merge_sort_keys(
             numba_coop.this_block(), keys, descending=True, compare_op=compare
         )
@@ -192,7 +195,7 @@ def test_warp_cannot_use_caller_storage():
     from cuda import coop
 
     def kernel():
-        keys = coop.ThreadData(2, types.int32)
+        keys = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         storage = coop.TempStorage()
         return coop.merge_sort_keys(
             coop.this_warp(), keys, temp_storage=storage

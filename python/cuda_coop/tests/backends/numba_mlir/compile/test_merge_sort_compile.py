@@ -79,15 +79,16 @@ def test_numeric_keys_and_pairs_provider_bundle(namespace, partial):
     assert isinstance(ltoir, bytes) and ltoir
 
 
-def test_production_partial_pairs_with_dtype_inference():
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_production_partial_pairs_with_dtype_inference(items_per_thread):
     @cuda.jit(chip="sm_90")
-    def kernel(source, values, output, associations, count):
-        keys = coop.ThreadData(2)
-        payload = coop.ThreadData(2)
+    def kernel(source, values, output, associations, count, items_per_thread):
+        keys = coop.ThreadData(items_per_thread)
+        payload = coop.ThreadData(items_per_thread)
         thread = cuda.threadIdx.x
-        for item in range(2):
-            keys[item] = source[thread * 2 + item]
-            payload[item] = values[thread * 2 + item]
+        for item in range(items_per_thread):
+            keys[item] = source[thread * items_per_thread + item]
+            payload[item] = values[thread * items_per_thread + item]
         result, result_values = coop.merge_sort_pairs(
             coop.this_warp().group_by(8),
             keys,
@@ -95,9 +96,9 @@ def test_production_partial_pairs_with_dtype_inference():
             valid_items=count,
             oob_default=1000,
         )
-        for item in range(2):
-            output[thread * 2 + item] = result[item]
-            associations[thread * 2 + item] = result_values[item]
+        for item in range(items_per_thread):
+            output[thread * items_per_thread + item] = result[item]
+            associations[thread * items_per_thread + item] = result_values[item]
 
     signature = types.void(
         types.int32[::1],
@@ -105,6 +106,7 @@ def test_production_partial_pairs_with_dtype_inference():
         types.int32[::1],
         types.float64[::1],
         types.int64,
+        types.IntegerLiteral(items_per_thread),
     )
     result = kernel._compile_launch_config_signature(
         signature,
