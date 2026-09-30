@@ -34,8 +34,17 @@ Use these import conventions in each module:
 
 Regarding `coop.ThreadData` (including qualified APIs and import aliases):
 
-- In public examples, use the `items_per_thread=` kwarg explicitly:
-  `coop.ThreadData(items_per_thread=2)`.
+- Prefer an `items_per_thread` kernel parameter for the main per-thread
+  payload size, so callers can reuse the kernel with different item counts.
+  Carry it through host launchers and device helpers as needed. The value
+  must be known during compilation: Numba-CUDA-MLIR specializes the kernel
+  argument, and CUTLASS kernel and launcher parameters use
+  `items_per_thread: cutlass.Constexpr`.
+- When the argument is a variable named `items_per_thread`, prefer
+  `coop.ThreadData(items_per_thread)`. Otherwise, use the explicit
+  `items_per_thread=` kwarg, including for integer literals and expressions.
+- Keep fixed-size auxiliary payloads at the sizes required by their
+  operations; they need not match the kernel's main `items_per_thread`.
 - Omit the `dtype=` kwarg and positional dtype arguments from examples.
 - Infer the element type from supported producers or typed assignments,
   preserving intended widths. If inference fails, investigate or revise the
@@ -60,6 +69,12 @@ semantics than CUB provides.
 Tests should be geared toward testing the end-user primitives, not internal
 helper functions or supporting glue--that infrastructure is exercised and
 implicitly tested when doing primitive-level tests.
+
+Parametrize kernel tests over `items_per_thread` where the operation supports
+multiple item counts; prefer `pytest.mark.parametrize("items_per_thread", [1, 4])`
+as the default coverage. Derive input sizes, launch arguments, and expected
+results from that value. Preserve operation-specific constraints and focused
+coverage for literal constructor arguments and invalid inputs.
 
 Update the source of `literalinclude` snippets and run affected examples when
 changing them. Apply changes at the first owning PR and preserve them when doing
