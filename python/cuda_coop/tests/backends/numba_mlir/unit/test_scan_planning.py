@@ -398,26 +398,32 @@ def test_scan_planning_rejects_unsupported_payload_dtypes(dtype_name: str):
         planner.run()
 
 
-def test_block_thread_data_and_local_array_plan_out_of_place_with_storage():
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_block_thread_data_and_local_array_plan_out_of_place_with_storage(
+    items_per_thread,
+):
     from numba_cuda_mlir import cuda, types
 
     import cuda.coop.numba_mlir as coop
     from cuda.coop.numba_mlir._lowering import _scan
 
-    def thread_data_kernel(value):
-        items = coop.ThreadData(2, dtype=types.int32)
-        items[0] = value
-        items[1] = types.int32(value + 1)
+    def thread_data_kernel(value, items_per_thread):
+        items = coop.ThreadData(items_per_thread, dtype=types.int32)
+        for item in range(items_per_thread):
+            items[item] = types.int32(value + item)
         return coop.inclusive_sum(
             coop.this_block(), items, algorithm="raking_memoize"
         )
 
-    func_ir, planner = _plan(thread_data_kernel, arg_types=(types.int32,))
+    func_ir, planner = _plan(
+        thread_data_kernel,
+        arg_types=(types.int32, types.IntegerLiteral(items_per_thread)),
+    )
     assert planner.run()
     call = _provider_call(func_ir, _scan.block_scan_array)
     assert len(call.args) == 2
     assert call.args[0].name != call.args[1].name
-    assert _kwarg_value(func_ir, call, "items_per_thread") == 2
+    assert _kwarg_value(func_ir, call, "items_per_thread") == items_per_thread
     assert _kwarg_value(func_ir, call, "value_kind") == "array"
 
     def local_array_kernel(value):
@@ -445,11 +451,13 @@ def test_block_thread_data_and_local_array_plan_out_of_place_with_storage():
     }
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "qualified", (False, True), ids=("portable", "qualified")
 )
 def test_untyped_thread_data_scan_infers_writes_and_chains_into_store(
     qualified,
+    items_per_thread,
 ):
     from numba_cuda_mlir import types
 
@@ -459,22 +467,26 @@ def test_untyped_thread_data_scan_infers_writes_and_chains_into_store(
 
     coop = qualified_coop if qualified else portable_coop
 
-    def kernel(value, destination):
-        items = coop.ThreadData(2)
-        items[0] = value
-        items[1] = types.int32(value + 1)
+    def kernel(value, destination, items_per_thread):
+        items = coop.ThreadData(items_per_thread)
+        for item in range(items_per_thread):
+            items[item] = types.int32(value + item)
         scanned = coop.inclusive_sum(coop.this_block(), items)
         coop.store(coop.this_block(), destination, scanned)
         return scanned
 
     func_ir, planner = _plan(
         kernel,
-        arg_types=(types.int32, types.Array(types.int32, 1, "C")),
+        arg_types=(
+            types.int32,
+            types.Array(types.int32, 1, "C"),
+            types.IntegerLiteral(items_per_thread),
+        ),
     )
     assert planner.run()
     call = _provider_call(func_ir, _scan.block_scan_array)
     assert _kwarg_value(func_ir, call, "dtype") is types.int32
-    assert _kwarg_value(func_ir, call, "items_per_thread") == 2
+    assert _kwarg_value(func_ir, call, "items_per_thread") == items_per_thread
 
 
 def test_warp_planning_preserves_width_runtime_prefix_and_aggregate_position():
@@ -484,7 +496,7 @@ def test_warp_planning_preserves_width_runtime_prefix_and_aggregate_position():
     from cuda.coop.numba_mlir._lowering import _scan
 
     def kernel(value, valid_items):
-        aggregate = coop.ThreadData(1, dtype=types.int32)
+        aggregate = coop.ThreadData(items_per_thread=1, dtype=types.int32)
         return coop.inclusive_scan(
             coop.this_warp().group_by(8),
             value,
@@ -592,7 +604,7 @@ def test_invalid_scan_shapes_and_initials_fail_during_planning(
     elif case == "aggregate_extent":
 
         def kernel(value):
-            aggregate = coop.ThreadData(2, dtype=types.int32)
+            aggregate = coop.ThreadData(items_per_thread=2, dtype=types.int32)
             return coop.inclusive_sum(
                 coop.this_block(), value, aggregate_output=aggregate
             )
@@ -601,7 +613,7 @@ def test_invalid_scan_shapes_and_initials_fail_during_planning(
     elif case == "aggregate_dtype":
 
         def kernel(value):
-            aggregate = coop.ThreadData(1, dtype=types.float32)
+            aggregate = coop.ThreadData(items_per_thread=1, dtype=types.float32)
             return coop.inclusive_sum(
                 coop.this_block(), value, aggregate_output=aggregate
             )
@@ -616,7 +628,7 @@ def test_invalid_scan_shapes_and_initials_fail_during_planning(
     else:
 
         def kernel(value):
-            items = coop.ThreadData(2, dtype=types.int32)
+            items = coop.ThreadData(items_per_thread=2, dtype=types.int32)
             items[0] = value
             items[1] = value
             return coop.inclusive_sum(coop.this_warp(), items)
