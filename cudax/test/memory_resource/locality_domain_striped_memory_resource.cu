@@ -17,12 +17,16 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC) && _CCCL_CTK_AT_LEAST(13, 4)
 
 #  include <cuda/__driver/driver_api.h>
+#  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/std/type_traits>
+
+#  include <cuda/experimental/__driver/driver_api.cuh>
 
 #  include <stdexcept>
 #  include <string>
 
 #  include <cuda.h>
+#  include <cudaTypedefs.h>
 
 namespace
 {
@@ -41,6 +45,20 @@ struct test_env
   prop.location.localized.deviceId         = static_cast<unsigned char>(device.get());
   prop.location.localized.localityDomainId = static_cast<unsigned char>(domain);
   return prop;
+}
+
+[[nodiscard]] int pointer_get_locality_domain_ordinal(const void* ptr)
+{
+  static auto driver_fn = reinterpret_cast<::PFN_cuPointerGetAttribute_v4000>(
+    ::cuda::__driver::__get_driver_entry_point("cuPointerGetAttribute", 4, 0));
+  int ordinal{};
+  ::cuda::__driver::__call_driver_fn(
+    driver_fn,
+    "Failed to get locality domain ordinal of a pointer",
+    &ordinal,
+    ::CU_POINTER_ATTRIBUTE_LOCALITY_DOMAIN_ORDINAL,
+    reinterpret_cast<::CUdeviceptr>(ptr));
+  return ordinal;
 }
 
 [[nodiscard]] test_env make_test_env()
@@ -64,10 +82,7 @@ struct test_env
 
     const auto domain_count =
       ::cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT, cu_device);
-    if (domain_count <= 0)
-    {
-      SKIP("Locality domains are not supported");
-    }
+    REQUIRE(domain_count > 0);
 
     const auto prop = make_prop(device, 0);
     const auto stride =
@@ -77,7 +92,13 @@ struct test_env
   }
   catch (const ::cuda::cuda_error& error)
   {
-    SKIP("CUDA driver API prerequisite query failed: " << error.what());
+    const auto status = error.status();
+    if (status == ::cudaErrorInvalidValue || status == ::cudaErrorNotSupported
+        || status == ::cudaErrorCallRequiresNewerDriver || status == ::cudaErrorNoDevice)
+    {
+      SKIP("CUDA driver API prerequisite query failed: " << error.what());
+    }
+    throw;
   }
 
   return {::cuda::device_ref{0}, 1, 1};
@@ -148,9 +169,22 @@ C2H_CCCLRT_TEST("locality_domain_striped_memory_resource basic allocation", "[me
   REQUIRE(resource.allocate_sync(0) == nullptr);
   copy.deallocate_sync(nullptr, 0);
 
-  void* ptr = resource.allocate_sync(1);
+  const auto allocation_size = env.locality_domains > 1 ? env.stride * env.locality_domains : 1;
+  void* ptr                  = resource.allocate_sync(allocation_size);
   REQUIRE(ptr != nullptr);
-  copy.deallocate_sync(ptr, 1);
+
+  if (env.locality_domains > 1)
+  {
+    ::cuda::__ensure_current_context context_guard{env.device};
+    auto* base = static_cast<char*>(ptr);
+    for (::cuda::std::size_t domain = 0; domain < env.locality_domains; ++domain)
+    {
+      const auto ordinal = pointer_get_locality_domain_ordinal(base + domain * env.stride);
+      REQUIRE(ordinal == static_cast<int>(domain));
+    }
+  }
+
+  copy.deallocate_sync(ptr, allocation_size);
 }
 
 C2H_CCCLRT_TEST("locality_domain_striped_memory_resource rejects invalid alignment", "[memory_resource]")

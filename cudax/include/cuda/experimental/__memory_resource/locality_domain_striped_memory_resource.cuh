@@ -25,6 +25,7 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC) && _CCCL_CTK_AT_LEAST(13, 4)
 #  include <cuda/__device/device_ref.h>
+#  include <cuda/__device/physical_device.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/memory_resource_base.h>
@@ -81,6 +82,24 @@ struct __locality_domain_allocation
   ::std::vector<__locality_domain_mapping> __mappings_{};
 };
 
+_CCCL_HOST_API inline void
+__swap_locality_domain_allocation(__locality_domain_allocation& __lhs, __locality_domain_allocation& __rhs) noexcept
+{
+  const auto __ptr      = __lhs.__ptr_;
+  const auto __size     = __lhs.__size_;
+  const auto __reserved = __lhs.__reserved_;
+
+  __lhs.__ptr_      = __rhs.__ptr_;
+  __lhs.__size_     = __rhs.__size_;
+  __lhs.__reserved_ = __rhs.__reserved_;
+
+  __rhs.__ptr_      = __ptr;
+  __rhs.__size_     = __size;
+  __rhs.__reserved_ = __reserved;
+
+  __lhs.__mappings_.swap(__rhs.__mappings_);
+}
+
 _CCCL_HOST_API inline void __destroy_locality_domain_allocation(__locality_domain_allocation& __allocation) noexcept
 {
   for (auto& __mapping : __allocation.__mappings_)
@@ -111,6 +130,32 @@ _CCCL_HOST_API inline void __destroy_locality_domain_allocation(__locality_domai
   }
 }
 
+class __locality_domain_allocation_guard
+{
+  __locality_domain_allocation* __allocation_{};
+
+public:
+  _CCCL_HOST_API explicit __locality_domain_allocation_guard(__locality_domain_allocation& __allocation) noexcept
+      : __allocation_(&__allocation)
+  {}
+
+  __locality_domain_allocation_guard(const __locality_domain_allocation_guard&)            = delete;
+  __locality_domain_allocation_guard& operator=(const __locality_domain_allocation_guard&) = delete;
+
+  _CCCL_HOST_API ~__locality_domain_allocation_guard() noexcept
+  {
+    if (__allocation_ != nullptr)
+    {
+      ::cuda::experimental::__destroy_locality_domain_allocation(*__allocation_);
+    }
+  }
+
+  _CCCL_HOST_API void __release() noexcept
+  {
+    __allocation_ = nullptr;
+  }
+};
+
 [[nodiscard]] _CCCL_HOST_API constexpr bool __locality_domain_is_power_of_two(::cuda::std::size_t __value) noexcept
 {
   return __value != 0 && ((__value & (__value - 1)) == 0);
@@ -139,7 +184,6 @@ class __locality_domain_striped_memory_resource_state
   ::cuda::device_ref __device_;
   ::cuda::std::size_t __stride_{};
   ::cuda::std::size_t __granularity_{1};
-  ::cuda::std::size_t __domain_count_{};
   ::std::mutex __mutex_{};
   ::std::unordered_map<void*, __locality_domain_allocation> __allocations_{};
 
@@ -153,9 +197,15 @@ class __locality_domain_striped_memory_resource_state
     return __prop;
   }
 
-  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t __mapping_count(::cuda::std::size_t __size) const noexcept
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t __domain_count() const
   {
-    if (__domain_count_ == 1)
+    return __device_.__locality_domains().size();
+  }
+
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t __mapping_count(::cuda::std::size_t __size) const
+  {
+    const auto __num_domains = __domain_count();
+    if (__num_domains == 1)
     {
       return 1;
     }
@@ -164,9 +214,9 @@ class __locality_domain_striped_memory_resource_state
   }
 
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t
-  __chunk_size(::cuda::std::size_t __offset, ::cuda::std::size_t __size) const noexcept
+  __chunk_size(::cuda::std::size_t __offset, ::cuda::std::size_t __size) const
   {
-    if (__domain_count_ == 1)
+    if (__domain_count() == 1)
     {
       return __size;
     }
@@ -175,9 +225,10 @@ class __locality_domain_striped_memory_resource_state
     return __remaining < __stride_ ? __remaining : __stride_;
   }
 
-  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t __domain_for_offset(::cuda::std::size_t __offset) const noexcept
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t __domain_for_offset(::cuda::std::size_t __offset) const
   {
-    return __domain_count_ == 1 ? 0 : (__offset / __stride_) % __domain_count_;
+    const auto __num_domains = __domain_count();
+    return __num_domains == 1 ? 0 : (__offset / __stride_) % __num_domains;
   }
 
 public:
@@ -202,16 +253,7 @@ public:
                   "locality_domain_striped_memory_resource requires virtual memory management support");
     }
 
-    const auto __domain_count =
-      ::cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT, __cu_device);
-    if (__domain_count <= 0)
-    {
-      _CCCL_THROW(::cuda::cuda_error,
-                  ::cudaErrorNotSupported,
-                  "locality_domain_striped_memory_resource requires at least one locality domain");
-    }
-
-    __domain_count_ = static_cast<::cuda::std::size_t>(__domain_count);
+    static_cast<void>(__domain_count());
 
     const auto __prop = __allocation_prop(0);
     __granularity_ =
@@ -261,9 +303,10 @@ public:
     __allocation.__ptr_ =
       ::cuda::experimental::__driver::__memAddressReserve(__allocation.__size_, __reservation_alignment);
     __allocation.__reserved_ = true;
+    ::cuda::experimental::__locality_domain_allocation_guard __cleanup{__allocation};
 
-    // Experimental shortcut: no rollback if a later VMM step throws.
-    for (::cuda::std::size_t __offset = 0; __offset != __allocation.__size_;)
+    for (::cuda::std::size_t __offset = 0; __offset < __allocation.__size_;
+         __offset += __chunk_size(__offset, __allocation.__size_))
     {
       const auto __size      = __chunk_size(__offset, __allocation.__size_);
       const auto __domain_id = __domain_for_offset(__offset);
@@ -271,12 +314,11 @@ public:
       auto __handle          = ::cuda::experimental::__driver::__memCreate(__size, &__prop);
       const auto __ptr       = __allocation.__ptr_ + __offset;
 
+      __allocation.__mappings_.push_back({__ptr, __size, __handle, false, true});
       ::cuda::experimental::__driver::__memMap(__ptr, __size, __handle);
-      __allocation.__mappings_.push_back({__ptr, __size, __handle, true, true});
-      __offset += __size;
+      __allocation.__mappings_.back().__mapped_ = true;
     }
 
-    // Same tradeoff here if access setup or registry insertion throws.
     ::CUmemAccessDesc __access_desc{};
     __access_desc.location.type = ::CU_MEM_LOCATION_TYPE_DEVICE;
     __access_desc.location.id   = __device_.get();
@@ -286,14 +328,16 @@ public:
     void* __result = reinterpret_cast<void*>(__allocation.__ptr_);
     {
       ::std::lock_guard<::std::mutex> __lock(__mutex_);
-      auto __entry = __allocations_.emplace(__result, ::cuda::std::move(__allocation));
+      auto __entry = __allocations_.emplace(__result, ::cuda::experimental::__locality_domain_allocation{});
       if (!__entry.second)
       {
         _CCCL_THROW(::cuda::cuda_error,
                     ::cudaErrorInvalidValue,
                     "locality_domain_striped_memory_resource created a duplicate virtual address range");
       }
+      ::cuda::experimental::__swap_locality_domain_allocation(__entry.first->second, __allocation);
     }
+    __cleanup.__release();
 
     return __result;
   }
@@ -337,9 +381,9 @@ public:
     return __stride_;
   }
 
-  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t __locality_domain_count() const noexcept
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t __locality_domain_count() const
   {
-    return __domain_count_;
+    return __domain_count();
   }
 };
 
@@ -354,11 +398,6 @@ class locality_domain_striped_memory_resource
   ::cuda::mr::__shared_block_ptr<__locality_domain_striped_memory_resource_state> __state_;
 
 public:
-  //! @brief Constructs a resource for device 0 using the requested byte stride.
-  _CCCL_HOST_API explicit locality_domain_striped_memory_resource(::cuda::std::size_t __stride)
-      : locality_domain_striped_memory_resource(::cuda::device_ref{0}, __stride)
-  {}
-
   //! @brief Constructs a resource for `device` using the requested byte stride.
   _CCCL_HOST_API explicit locality_domain_striped_memory_resource(
     ::cuda::device_ref __device, ::cuda::std::size_t __stride)
@@ -392,7 +431,7 @@ public:
   }
 
   //! @brief Returns the number of locality domains used by this resource.
-  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t locality_domain_count() const noexcept
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t locality_domain_count() const
   {
     return __state_.__payload().__locality_domain_count();
   }
