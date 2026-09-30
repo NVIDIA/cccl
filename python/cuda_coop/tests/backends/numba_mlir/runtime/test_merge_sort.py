@@ -120,14 +120,36 @@ def _run(
 
     # Duplicate keys exercise associations without assuming stable tie ordering.
     source = ((np.arange(192) * 17 + 9) % 47).astype(dtype)
-    values = (np.arange(192) + 0.25).astype(value_dtype)
+    if dtype.kind == "f":
+        source = source / dtype.type(4) - dtype.type(6.125)
+    elif dtype.kind == "i":
+        source -= dtype.type(23)
+    else:
+        source += dtype.type(1 << (dtype.itemsize * 8 - 1))
+    if dtype == np.float64:
+        source += dtype.type(2**-30)
+    elif dtype == np.int64:
+        source *= dtype.type(1 << 33)
+    value_dtype = np.dtype(value_dtype)
+    values = np.arange(192).astype(value_dtype)
+    if value_dtype.kind == "f":
+        values += value_dtype.type(0.25)
+    elif value_dtype.kind == "i":
+        values = (np.arange(192) - 96).astype(value_dtype)
+    if value_dtype == np.float64:
+        values += value_dtype.type(2**-30)
+    elif value_dtype == np.int64:
+        values *= value_dtype.type(1 << 33)
+    elif value_dtype == np.uint64:
+        values += value_dtype.type(1 << 63)
     output = np.zeros_like(source)
     associations = np.zeros_like(values)
     preserved = np.zeros_like(source)
     preserved_values = np.zeros_like(values)
     count = width * 3 - 2 if valid_count is None else valid_count
     limit = np.finfo(dtype).max if dtype.kind == "f" else np.iinfo(dtype).max
-    sentinel = dtype.type(0 if descending else limit)
+    minimum = np.finfo(dtype).min if dtype.kind == "f" else np.iinfo(dtype).min
+    sentinel = dtype.type(minimum if descending else limit)
     kernel[1, block_dim](
         source,
         values,
@@ -396,6 +418,20 @@ def test_partial_full_capacity(width):
     _run(width=width, partial=True, valid_count=width * 3)
 
 
-@pytest.mark.parametrize("value_dtype", [np.int8, np.uint16, np.float32])
+@pytest.mark.parametrize(
+    "value_dtype",
+    [
+        np.int8,
+        np.uint8,
+        np.int16,
+        np.uint16,
+        np.int32,
+        np.uint32,
+        np.int64,
+        np.uint64,
+        np.float32,
+        np.float64,
+    ],
+)
 def test_pair_value_types(value_dtype):
     _run(value_dtype=value_dtype, partial=True)
