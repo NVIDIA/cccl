@@ -69,6 +69,9 @@ struct policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> SetOpsPolicy
   {
     // The number of items per thread is scaled from a nominal 4-byte budget by the key size.
+    // NOTE: this differs slightly from the original Thrust implementation, which rounded the scaled item count up
+    // ((nominal * 4 + key_size - 1) / key_size) whereas nominal_4B_items_to_items rounds down (nominal * 4 / key_size).
+    // They agree for 1/2/4-byte keys but differ for 8-byte keys (9 vs 10 items per thread), giving a different tiling.
     if (cc >= ::cuda::compute_capability{6, 0})
     {
       return SetOpsPolicy{512, nominal_4B_items_to_items(19, key_size), LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS};
