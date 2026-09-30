@@ -12,7 +12,8 @@ from tests.backends.cutlass.support import device_array
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
-def test_decode_example():
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_decode_example(items_per_thread):
     # example-begin
     import cutlass
     from cutlass import cute
@@ -24,13 +25,15 @@ def test_decode_example():
         window_pointer: cute.Pointer,
         stream_pointer: cute.Pointer,
         totals_pointer: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
         block = coop.this_block()
         rank = cutlass.Int32(block.rank())
-        values = coop.ThreadData(items_per_thread=1)
-        values[0] = rank + 10
-        lengths = coop.ThreadData(items_per_thread=1)
-        lengths[0] = cutlass.Uint32(2)
+        values = coop.ThreadData(items_per_thread)
+        lengths = coop.ThreadData(items_per_thread)
+        for item in cutlass.range_constexpr(items_per_thread):
+            values[item] = rank * items_per_thread + item + 10
+            lengths[item] = cutlass.Uint32(2)
         scratch = coop.TempStorage(auto_sync=True)
         window = coop.run_length_decode(
             block,
@@ -41,7 +44,9 @@ def test_decode_example():
             temp_storage=scratch,
         )
         coop.store(block, window_pointer, window)
-        destination = cute.make_tensor(stream_pointer, cute.make_layout(80))
+        destination = cute.make_tensor(
+            stream_pointer, cute.make_layout(64 * items_per_thread + 16)
+        )
         total = coop.run_length_decode_into(
             block,
             values,
@@ -59,27 +64,32 @@ def test_decode_example():
         window_pointer: cute.Pointer,
         stream_pointer: cute.Pointer,
         totals_pointer: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
-        decode_runs(window_pointer, stream_pointer, totals_pointer).launch(
+        decode_runs(
+            window_pointer, stream_pointer, totals_pointer, items_per_thread
+        ).launch(
             grid=1,
             block=32,
         )
 
     # example-end
-    expected = np.repeat(np.arange(10, 42, dtype=np.int32), 2)
+    expected = np.repeat(
+        np.arange(10, 10 + 32 * items_per_thread, dtype=np.int32), 2
+    )
     window = np.full(64, -1, dtype=np.int32)
-    stream = np.full(80, -1, dtype=np.int32)
+    stream = np.full(64 * items_per_thread + 16, -1, dtype=np.int32)
     totals = np.zeros(32, dtype=np.uint32)
     with (
         device_array(window) as win,
         device_array(stream) as dest,
         device_array(totals) as total,
     ):
-        launch(win, dest, total)
+        launch(win, dest, total, items_per_thread)
     np.testing.assert_array_equal(
-        window, np.concatenate((expected[3:], np.zeros(3, dtype=np.int32)))
+        window, np.concatenate((expected[3:], np.zeros(3, dtype=np.int32)))[:64]
     )
-    np.testing.assert_array_equal(stream[5:69], expected)
+    np.testing.assert_array_equal(stream[5 : 5 + len(expected)], expected)
     np.testing.assert_array_equal(stream[:5], -1)
-    np.testing.assert_array_equal(stream[69:], -1)
+    np.testing.assert_array_equal(stream[5 + len(expected) :], -1)
     np.testing.assert_array_equal(totals, len(expected))
