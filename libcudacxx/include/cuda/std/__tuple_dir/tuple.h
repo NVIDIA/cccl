@@ -648,19 +648,28 @@ template <>
 class _CCCL_TYPE_VISIBILITY_DEFAULT tuple<>
 {
 public:
-  _CCCL_HIDE_FROM_ABI constexpr tuple() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr tuple() noexcept                        = default;
+  _CCCL_HIDE_FROM_ABI constexpr tuple(const tuple&) noexcept            = default;
+  _CCCL_HIDE_FROM_ABI constexpr tuple(tuple&&) noexcept                 = default;
+  _CCCL_HIDE_FROM_ABI constexpr tuple& operator=(const tuple&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr tuple& operator=(tuple&&) noexcept      = default;
+
   template <class _Alloc>
   _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc&) noexcept
   {}
   template <class _Alloc>
   _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc&, const tuple&) noexcept
   {}
-  template <class _Up>
-  _CCCL_API constexpr tuple(array<_Up, 0>) noexcept
-  {}
   template <class _Alloc, class _Up>
   _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc&, array<_Up, 0>) noexcept
   {}
+  // Accepts volatile tuple<> as well as other empty tuple-likes, so it can hide the copy and move
+  // constructors. Those still win for non-volatile tuple<>.
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
+  template <class _UTuple, enable_if_t<__tuple_like_with_size<_UTuple, 0>, int> = 0>
+  _CCCL_API constexpr tuple(_UTuple&&) noexcept
+  {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class _UTuple,
             enable_if_t<!__is_cuda_std_tuple<remove_cvref_t<_UTuple>>, int> = 0,
@@ -772,6 +781,19 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES tuple(allocator_arg_t, _Alloc, tuple<_Tp...>) -
 template <class _T1, class _T2, bool _IsRef>
 template <class... _Args1, class... _Args2, size_t... _I1, size_t... _I2>
 _CCCL_API constexpr __pair_base<_T1, _T2, _IsRef>::__pair_base(
+  piecewise_construct_t,
+  tuple<_Args1...>& __first_args,
+  tuple<_Args2...>& __second_args,
+  __tuple_indices<_I1...>,
+  __tuple_indices<_I2...>)
+    : first(::cuda::std::forward<_Args1>(::cuda::std::get<_I1>(__first_args))...)
+    , second(::cuda::std::forward<_Args2>(::cuda::std::get<_I2>(__second_args))...)
+{}
+
+// __pair_base<T1, T2, true> is a partial specialization, so the primary definition above does not cover it.
+template <class _T1, class _T2>
+template <class... _Args1, class... _Args2, size_t... _I1, size_t... _I2>
+_CCCL_API constexpr __pair_base<_T1, _T2, true>::__pair_base(
   piecewise_construct_t,
   tuple<_Args1...>& __first_args,
   tuple<_Args2...>& __second_args,

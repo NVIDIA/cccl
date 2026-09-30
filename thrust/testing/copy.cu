@@ -449,11 +449,9 @@ TEST_CASE("TestCopyIfNonTrivial", "[copy]")
   {
     static constexpr size_t BufferAlign = alignof(object_with_non_trivial_ctor);
     static constexpr size_t BufferSize  = sizeof(object_with_non_trivial_ctor);
-    alignas(BufferAlign) std::array<unsigned char, BufferSize> buffer;
-
     // Fill buffer with 0s to prevent warnings about uninitialized reads while
     // ensure that the 'magic number' mechanism works as intended:
-    std::fill(buffer.begin(), buffer.end(), static_cast<unsigned char>(0));
+    alignas(BufferAlign) std::array<unsigned char, BufferSize> buffer{};
 
     object_with_non_trivial_ctor initialized;
     object_with_non_trivial_ctor* uninitialized = reinterpret_cast<object_with_non_trivial_ctor*>(buffer.data());
