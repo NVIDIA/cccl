@@ -417,8 +417,10 @@ Numba-CUDA-MLIR has these additional compiler constraints:
   exact byte count. Supported Numba-CUDA-MLIR releases do not reliably separate
   static and dynamic allocations: a scratch-using kernel must not also declare
   a zero-sized or runtime-sized `cuda.shared.array`. When cooperative backing
-  becomes dynamic, user static shared arrays are also unsupported. Storage-free
-  operations do not add these restrictions.
+  becomes dynamic, user static shared arrays are also unsupported. CUDAX Block,
+  Cluster, and mapped-Warp reductions allocate internal static shared memory
+  without a `TempStorage` operand. They cannot coexist with user dynamic shared
+  arrays or dynamic cooperative backing.
 - A descriptor with `auto_sync=False` must originate from one constructor site.
   Selecting between multiple manual-sync constructors is unsupported.
 - Cooperative calls in device helpers must be inlined into the kernel. Use
