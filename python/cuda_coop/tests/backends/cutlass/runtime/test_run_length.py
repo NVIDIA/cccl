@@ -47,7 +47,7 @@ def _run(
     control_type=cutlass.Uint64,
     static=False,
     threads=32,
-    runs=2,
+    items_per_thread=2,
     decoded=3,
     blocks=2,
     capacity=512,
@@ -64,7 +64,7 @@ def _run(
     dynamic_capacity=False,
 ):
     value_type, length_type = cutlass_dtype(dtype), cutlass_dtype(length_dtype)
-    run_tile, window = threads * runs, threads * decoded
+    run_tile, window = threads * items_per_thread, threads * decoded
     output_size = capacity if bulk else window
 
     @cute.kernel
@@ -78,6 +78,7 @@ def _run(
         dynamic_offset: control_type,
         dynamic_capacity_arg: cutlass.Int64,
         iterations: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         thread, _, _ = cute.arch.thread_idx()
         block, _, _ = cute.arch.block_idx()
@@ -107,11 +108,15 @@ def _run(
         )
         group = api.this_block()
         values = api.ThreadData(
-            runs, dtype=None if inferred else value_type, alignment=alignment
+            items_per_thread,
+            dtype=None if inferred else value_type,
+            alignment=alignment,
         )
-        lengths = api.ThreadData(runs, dtype=None if inferred else length_type)
-        for item in cutlass.range_constexpr(runs):
-            index = block * run_tile + thread * runs + item
+        lengths = api.ThreadData(
+            items_per_thread, dtype=None if inferred else length_type
+        )
+        for item in cutlass.range_constexpr(items_per_thread):
+            index = block * run_tile + thread * items_per_thread + item
             values[item] = sources[index]
             lengths[item] = counts_tensor[index]
         if cutlass.const_expr(readonly):
@@ -169,8 +174,8 @@ def _run(
                     ]
             if cutlass.const_expr(sharing is not None and not auto_sync):
                 storage.sync()
-        for item in cutlass.range_constexpr(runs):
-            index = block * run_tile + thread * runs + item
+        for item in cutlass.range_constexpr(items_per_thread):
+            index = block * run_tile + thread * items_per_thread + item
             values_check[index] = values[item]
             lengths_check[index] = lengths[item]
 
@@ -185,6 +190,7 @@ def _run(
         dynamic_offset: control_type,
         dynamic_capacity_arg: cutlass.Int64,
         iterations: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         kernel(
             source,
@@ -196,6 +202,7 @@ def _run(
             dynamic_offset,
             dynamic_capacity_arg,
             iterations,
+            items_per_thread,
         ).launch(grid=blocks, block=threads)
 
     source = values_for(dtype, blocks * run_tile)
@@ -236,7 +243,9 @@ def _run(
             cutlass.Int64(capacity),
             cutlass.Int32(repeats),
         )
-        compiled = cute.compile[compile_options](launch, *args)
+        compiled = cute.compile[compile_options](
+            launch, *args, items_per_thread
+        )
         compiled(*args)
     assert invalid is None, "invalid run lengths did not trap"
     np.testing.assert_array_equal(
@@ -278,8 +287,15 @@ def _run(
 )
 @pytest.mark.parametrize("bulk", (False, True))
 @pytest.mark.parametrize("static", (False, True))
-def test_entrypoints(api, bulk, static):
-    _run(api, bulk=bulk, static=static)
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_entrypoints(api, bulk, static, items_per_thread):
+    _run(
+        api,
+        bulk=bulk,
+        static=static,
+        items_per_thread=items_per_thread,
+        capacity=256 * items_per_thread,
+    )
 
 
 @pytest.mark.parametrize("bulk", (False, True))
@@ -333,6 +349,13 @@ def test_dynamic_capacity():
 
 
 @pytest.mark.parametrize("bulk", (False, True))
-@pytest.mark.parametrize("threads,runs,decoded", ((17, 1, 4), (64, 1, 1)))
-def test_block_and_window_extents(bulk, threads, runs, decoded):
-    _run(bulk=bulk, threads=threads, runs=runs, decoded=decoded)
+@pytest.mark.parametrize(
+    "threads,items_per_thread,decoded", ((17, 1, 4), (64, 1, 1))
+)
+def test_block_and_window_extents(bulk, threads, items_per_thread, decoded):
+    _run(
+        bulk=bulk,
+        threads=threads,
+        items_per_thread=items_per_thread,
+        decoded=decoded,
+    )
