@@ -934,6 +934,26 @@ using resource_ref = basic_resource_ref<_ResourceKind::_Asynchronous, _Propertie
 
 #  endif // _CCCL_DOXYGEN_INVOKED
 
+//! @brief Convenience alias for @c cuda::mr::resource_ref configured with @c cuda::mr::device_accessible.
+using device_resource_ref = resource_ref<::cuda::mr::device_accessible>;
+
+//! @brief Convenience alias for @c cuda::mr::resource_ref configured with @c cuda::mr::host_accessible.
+using host_resource_ref = resource_ref<::cuda::mr::host_accessible>;
+
+//! @brief Convenience alias for @c cuda::mr::resource_ref configured with @c cuda::mr::host_accessible and
+//! @c cuda::mr::device_accessible.
+using host_device_resource_ref = resource_ref<::cuda::mr::host_accessible, ::cuda::mr::device_accessible>;
+
+//! @brief Convenience alias for @c cuda::mr::any_resource configured with @c cuda::mr::device_accessible.
+using any_device_resource = any_resource<::cuda::mr::device_accessible>;
+
+//! @brief Convenience alias for @c cuda::mr::any_resource configured with @c cuda::mr::host_accessible.
+using any_host_resource = any_resource<::cuda::mr::host_accessible>;
+
+//! @brief Convenience alias for @c cuda::mr::any_resource configured with @c cuda::mr::host_accessible and
+//! @c cuda::mr::device_accessible.
+using any_host_device_resource = any_resource<::cuda::mr::host_accessible, ::cuda::mr::device_accessible>;
+
 template <class _Tp>
 inline constexpr bool __is_resource_ref = false;
 
