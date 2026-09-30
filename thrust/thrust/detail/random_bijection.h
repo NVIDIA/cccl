@@ -26,20 +26,14 @@ class feistel_bijection
 public:
   using index_type = std::uint64_t;
 
+  // The constructor loop initializes every key.
   template <class URBG>
-  _CCCL_HOST_DEVICE feistel_bijection(std::uint64_t m, URBG&& g)
+  _CCCL_HOST_DEVICE feistel_bijection(std::uint64_t m, URBG&& g) // NOLINT(cppcoreguidelines-pro-type-member-init)
+      : r_bits((total_bits(m) + 1) / 2)
+      , l_bits(total_bits(m) / 2)
+      , r_mask((std::uint64_t{1} << r_bits) - 1)
+      , l_mask((std::uint64_t{1} << l_bits) - 1)
   {
-    // Calculate number of bits needed to represent num_elements - 1
-    // Prevent zero
-    const uint64_t max_index  = (::cuda::std::max) (static_cast<uint64_t>(1), m) - 1;
-    const uint64_t total_bits = static_cast<uint64_t>((::cuda::std::max) (8, ::cuda::std::bit_width(max_index)));
-    // Half bits rounded down
-    l_bits = total_bits / 2;
-    l_mask = (1ull << l_bits) - 1;
-    // Half the bits rounded up
-    r_bits = total_bits - l_bits;
-    r_mask = (1ull << r_bits) - 1;
-
     thrust::uniform_int_distribution<std::uint32_t> dist; // NOLINT(misc-const-correctness)
     for (auto& k : key)
     {
@@ -77,6 +71,13 @@ public:
   }
 
 private:
+  _CCCL_HOST_DEVICE static constexpr std::uint64_t total_bits(std::uint64_t m)
+  {
+    // Clamp empty ranges to avoid unsigned underflow.
+    const auto max_index = (::cuda::std::max) (std::uint64_t{1}, m) - 1;
+    return static_cast<std::uint64_t>((::cuda::std::max) (8, ::cuda::std::bit_width(max_index)));
+  }
+
   static constexpr std::uint32_t num_rounds = 24;
   std::uint64_t r_bits;
   std::uint64_t l_bits;

@@ -138,8 +138,8 @@ public:
 
 private:
   result_type m_x[long_lag];
-  unsigned int m_k;
-  int m_carry;
+  unsigned int m_k{};
+  int m_carry{};
 
   friend struct thrust::random::detail::random_core_access;
 

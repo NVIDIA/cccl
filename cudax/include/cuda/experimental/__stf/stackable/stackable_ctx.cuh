@@ -173,6 +173,7 @@ public:
 
   void push(int ctx_offset, access_mode m, data_place where = data_place::invalid()) const
   {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     const_cast<stackable_logical_data*>(this)->push_at(ctx_offset, m, mv(where));
   }
 
@@ -305,7 +306,7 @@ public:
                        access_mode m,
                        const data_place& dplace_hint = data_place::invalid()) const
   {
-    auto& self = *const_cast<stackable_logical_data*>(this);
+    auto& self = *const_cast<stackable_logical_data*>(this); // NOLINT(cppcoreguidelines-pro-type-const-cast)
     auto lock  = self.mut_data().acquire_exclusive_lock();
 
     _CCCL_ASSERT(m != access_mode::none && m != access_mode::relaxed, "Unsupported access mode in nested context");
@@ -517,13 +518,15 @@ private:
       return ::std::unique_lock<::std::shared_mutex>(mutex);
     }
 
+  private:
+    friend class stackable_logical_data;
+
     stackable_ctx sctx;
     ::std::vector<::cuda::std::optional<data_node>> data_nodes;
     int data_root_offset = -1;
     ::std::string symbol;
     bool read_only = false;
 
-  private:
     mutable ::std::shared_mutex mutex;
   };
 
@@ -762,14 +765,11 @@ template <typename T, typename reduce_op, bool initialize>
 class stackable_task_dep
 {
 public:
-  using data_t      = T;
-  using dep_type    = T;
-  using op_and_init = ::std::pair<reduce_op, ::std::bool_constant<initialize>>;
-  using op_type     = reduce_op;
-  enum : bool
-  {
-    does_work = !::cuda::std::is_same_v<reduce_op, ::cuda::std::monostate>
-  };
+  using data_t                    = T;
+  using dep_type                  = T;
+  using op_and_init               = ::std::pair<reduce_op, ::std::bool_constant<initialize>>;
+  using op_type                   = reduce_op;
+  static constexpr bool does_work = !::cuda::std::is_same_v<reduce_op, ::cuda::std::monostate>;
 
   stackable_task_dep(stackable_logical_data<T> _d, access_mode _mode, data_place _dplace = data_place::affine())
       : d(mv(_d))
