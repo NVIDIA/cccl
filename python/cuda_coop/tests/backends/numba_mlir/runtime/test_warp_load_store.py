@@ -70,7 +70,14 @@ def _dtype_values(dtype: np.dtype, size: int, *, shift: int = 0) -> np.ndarray:
     values = (np.arange(size, dtype=np.int64) * 3 + shift) % 97
     if dtype.kind in {"i", "f"}:
         values = values - 48
-    return values.astype(dtype)
+    values = values.astype(dtype)
+    if dtype.kind == "f":
+        values *= dtype.type(0.25)
+        if dtype.itemsize == 8:
+            values += dtype.type(2**-30)
+    elif dtype.itemsize == 8:
+        values += np.where(values < 0, -(2**40), 2**40).astype(dtype)
+    return values
 
 
 def _dtype_sentinel(dtype: np.dtype) -> object:
@@ -78,7 +85,7 @@ def _dtype_sentinel(dtype: np.dtype) -> object:
 
 
 @cache
-def _load_kernel(algorithm: str, qualified: bool):
+def _load_kernel(algorithm: str, qualified: bool, numba_dtype=types.int32):
     if qualified:
         selector = algorithm
 
@@ -87,7 +94,7 @@ def _load_kernel(algorithm: str, qualified: bool):
             thread = cuda.threadIdx.x
             payload = numba_coop.ThreadData(
                 _ITEMS_PER_THREAD,
-                dtype=types.int32,
+                dtype=numba_dtype,
             )
             numba_coop.load(
                 numba_coop.this_warp(),
@@ -108,7 +115,7 @@ def _load_kernel(algorithm: str, qualified: bool):
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
                 _ITEMS_PER_THREAD,
-                dtype=types.int32,
+                dtype=numba_dtype,
             )
             root_coop.load(
                 root_coop.this_warp(),
@@ -126,7 +133,7 @@ def _load_kernel(algorithm: str, qualified: bool):
 
 
 @cache
-def _store_kernel(algorithm: str, qualified: bool):
+def _store_kernel(algorithm: str, qualified: bool, numba_dtype=types.int32):
     if qualified:
         selector = algorithm
 
@@ -135,7 +142,7 @@ def _store_kernel(algorithm: str, qualified: bool):
             thread = cuda.threadIdx.x
             payload = numba_coop.ThreadData(
                 _ITEMS_PER_THREAD,
-                dtype=types.int32,
+                dtype=numba_dtype,
             )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
@@ -155,7 +162,7 @@ def _store_kernel(algorithm: str, qualified: bool):
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
                 _ITEMS_PER_THREAD,
-                dtype=types.int32,
+                dtype=numba_dtype,
             )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
@@ -274,7 +281,7 @@ def _expected_loaded_payload(
     offset: int,
     oob_default: int,
 ) -> np.ndarray:
-    expected = np.full(_BLOCK_ITEMS, oob_default, dtype=np.int32)
+    expected = np.full(_BLOCK_ITEMS, oob_default, dtype=source.dtype)
     for thread in range(_BLOCK_THREADS):
         warp = thread // _WARP_THREADS
         lane = thread % _WARP_THREADS
@@ -377,6 +384,55 @@ def test_each_warp_store_algorithm_masks_each_warp(
     )
 
     np.testing.assert_array_equal(destination, expected)
+
+
+@pytest.mark.parametrize(("numpy_dtype", "numba_dtype"), _DTYPES)
+@pytest.mark.parametrize("algorithm", ("striped", "transpose"))
+def test_non_direct_partial_load_store_matches_dtype_oracles(
+    numpy_dtype, numba_dtype, algorithm
+):
+    valid_items = _WARP_TILE_ITEMS - 9
+    load_source = _dtype_values(
+        numpy_dtype, _LOAD_OFFSET + _BLOCK_ITEMS + 3, shift=31
+    )
+    store_source = _dtype_values(numpy_dtype, _BLOCK_ITEMS, shift=43)
+    sentinel = _dtype_sentinel(numpy_dtype)
+    default = numpy_dtype.type(3.25 if numpy_dtype.kind == "f" else 103)
+    observed = np.full(_BLOCK_ITEMS, sentinel, dtype=numpy_dtype)
+    destination = np.full(
+        _STORE_OFFSET + _BLOCK_ITEMS + 3, sentinel, dtype=numpy_dtype
+    )
+    expected_load = _expected_loaded_payload(
+        load_source,
+        algorithm=algorithm,
+        valid_items=valid_items,
+        offset=_LOAD_OFFSET,
+        oob_default=default,
+    )
+    expected_store = _expected_stored_payload(
+        store_source,
+        destination,
+        algorithm=algorithm,
+        valid_items=valid_items,
+        offset=_STORE_OFFSET,
+    )
+
+    _load_kernel(algorithm, False, numba_dtype)[1, _BLOCK_THREADS](
+        load_source,
+        observed,
+        np.int32(valid_items),
+        np.int64(_LOAD_OFFSET),
+        default,
+    )
+    _store_kernel(algorithm, True, numba_dtype)[1, _BLOCK_THREADS](
+        store_source,
+        destination,
+        np.int32(valid_items),
+        np.int64(_STORE_OFFSET),
+    )
+
+    np.testing.assert_array_equal(observed, expected_load)
+    np.testing.assert_array_equal(destination, expected_store)
 
 
 def _logical_tile_index(
