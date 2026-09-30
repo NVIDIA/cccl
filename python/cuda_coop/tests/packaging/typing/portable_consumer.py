@@ -268,8 +268,8 @@ def check_radix_surface() -> None:
 
 def check_topk_surface() -> None:
     block = coop.this_block()
-    keys = coop.ThreadData(3, np.int16)
-    values = coop.ThreadData(3, np.float64)
+    keys = coop.ThreadData(items_per_thread=3, dtype=np.int16)
+    values = coop.ThreadData(items_per_thread=3, dtype=np.float64)
     assert_type(
         coop.topk_min_keys(block, keys, k=7), coop.ThreadDataLike[np.int16]
     )

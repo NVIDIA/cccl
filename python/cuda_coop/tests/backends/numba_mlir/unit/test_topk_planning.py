@@ -32,12 +32,12 @@ def test_runtime_control_types_are_rejected(parameter, dtype_name):
     if parameter == "k":
 
         def kernel(value):
-            keys = coop.ThreadData(2, dtype=types.int32)
+            keys = coop.ThreadData(items_per_thread=2, dtype=types.int32)
             return coop.topk_min_keys(coop.this_block(), keys, k=value)
     else:
 
         def kernel(value):
-            keys = coop.ThreadData(2, dtype=types.int32)
+            keys = coop.ThreadData(items_per_thread=2, dtype=types.int32)
             return coop.topk_min_keys(
                 coop.this_block(), keys, k=1, valid_items=value
             )
@@ -55,7 +55,7 @@ def test_unsupported_key_types_are_rejected(dtype_name):
     dtype = getattr(types, dtype_name)
 
     def kernel():
-        keys = coop.ThreadData(2, dtype=dtype)
+        keys = coop.ThreadData(items_per_thread=2, dtype=dtype)
         return coop.topk_max_keys(coop.this_block(), keys, k=1)
 
     with pytest.raises(TypeError, match="dtype"):
@@ -68,8 +68,8 @@ def test_pair_extents_must_match():
     from cuda import coop
 
     def kernel():
-        keys = coop.ThreadData(2, dtype=types.int32)
-        values = coop.ThreadData(3, dtype=types.int32)
+        keys = coop.ThreadData(items_per_thread=2, dtype=types.int32)
+        values = coop.ThreadData(items_per_thread=3, dtype=types.int32)
         return coop.topk_min_pairs(coop.this_block(), keys, values, k=1)
 
     with pytest.raises(ValueError, match="matching extents"):
@@ -82,7 +82,7 @@ def test_warp_topk_is_rejected():
     from cuda import coop
 
     def kernel():
-        keys = coop.ThreadData(2, dtype=types.int32)
+        keys = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         return coop.topk_min_keys(coop.this_warp(), keys, k=1)
 
     with pytest.raises(
