@@ -106,8 +106,9 @@ offsets restart at zero for each run. Both outputs default to uint32;
 ``decoded_offset_dtype`` can select uint64. Fixed local arrays are also
 accepted. Shared window behavior follows the common API.
 
-This tested kernel uses two runs per thread and four decoded items per
-thread. Its two positive runs produce only three valid items after offset
+This tested kernel takes the input run count per thread as
+``items_per_thread`` and produces four decoded items per thread. Its two
+positive runs produce only three valid items after offset
 2. The remaining window slots show the defined zero and ``MAX`` fills.
 
 .. literalinclude:: ../../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_run_length_examples.py
