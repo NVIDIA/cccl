@@ -12,24 +12,28 @@ from cuda import coop  # First breakpoint: observe backend registration.
 
 
 @cuda.jit
-def copy_tile(source, destination):
+def copy_tile(source, destination, items_per_thread):
     block = coop.this_block()
-    items = coop.ThreadData(items_per_thread=2)
+    items = coop.ThreadData(items_per_thread)
     coop.load(block, source, items, algorithm="direct")
     coop.store(block, destination, items, algorithm="direct")
 
 
-def main():
-    source = np.arange(256, dtype=np.int32)
+def main(items_per_thread=2):
+    source = np.arange(128 * items_per_thread, dtype=np.int32)
     destination = np.zeros_like(source)
 
-    copy_tile[1, 128](source, destination)  # Compile, link, and launch.
+    copy_tile[1, 128](
+        source, destination, items_per_thread
+    )  # Compile, link, and launch.
     cuda.synchronize()
     np.testing.assert_array_equal(destination, source)
     print("First launch: copy verified")
 
     destination.fill(-1)
-    copy_tile[1, 128](source, destination)  # Reuse the compiled kernel.
+    copy_tile[1, 128](
+        source, destination, items_per_thread
+    )  # Reuse the compiled kernel.
     cuda.synchronize()
     np.testing.assert_array_equal(destination, source)
     print("Second launch: copy verified")

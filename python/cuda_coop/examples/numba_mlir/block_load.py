@@ -10,17 +10,15 @@ from numba_cuda_mlir import cuda
 from cuda import coop
 
 _THREADS = 32
-_ITEMS_PER_THREAD = 2
-_TILE_ITEMS = _THREADS * _ITEMS_PER_THREAD
 _SOURCE_OFFSET = 3
 
 
 @cuda.jit
-def block_load(source, observed, valid_items):
+def block_load(source, observed, valid_items, items_per_thread):
     """Load a tile; invalid payload slots receive a caller-selected default."""
 
     thread = cuda.threadIdx.x
-    payload = coop.ThreadData(items_per_thread=_ITEMS_PER_THREAD)
+    payload = coop.ThreadData(items_per_thread)
     coop.load(
         coop.this_block(),
         source,
@@ -30,18 +28,21 @@ def block_load(source, observed, valid_items):
         oob_default=-1,
         offset=_SOURCE_OFFSET,
     )
-    for item in range(_ITEMS_PER_THREAD):
-        observed[thread * _ITEMS_PER_THREAD + item] = payload[item]
+    for item in range(items_per_thread):
+        observed[thread * items_per_thread + item] = payload[item]
 
 
-def main() -> None:
-    valid_items = _TILE_ITEMS - 7
-    source = np.arange(_SOURCE_OFFSET + _TILE_ITEMS, dtype=np.int32)
-    observed = np.zeros(_TILE_ITEMS, dtype=np.int32)
+def main(items_per_thread: int = 4) -> None:
+    tile_items = _THREADS * items_per_thread
+    valid_items = tile_items - 7
+    source = np.arange(_SOURCE_OFFSET + tile_items, dtype=np.int32)
+    observed = np.zeros(tile_items, dtype=np.int32)
 
-    block_load[1, _THREADS](source, observed, np.int32(valid_items))
+    block_load[1, _THREADS](
+        source, observed, np.int32(valid_items), items_per_thread
+    )
 
-    expected = np.full(_TILE_ITEMS, -1, dtype=np.int32)
+    expected = np.full(tile_items, -1, dtype=np.int32)
     expected[:valid_items] = source[
         _SOURCE_OFFSET : _SOURCE_OFFSET + valid_items
     ]
