@@ -62,14 +62,15 @@ def _run(
     manual_sync=False,
     alignment=64,
     capacity=None,
+    items_per_thread=3,
     compile_options=(),
 ):
     value_type = cutlass_dtype(dtype)
     result_type = (
         value_type if operation == "adjacent_difference" else cutlass.Int32
     )
-    items, blocks = 3, 2
-    tile = int(np.prod(block)) * items
+    blocks = 2
+    tile = int(np.prod(block)) * items_per_thread
     size = blocks * tile
     predecessor = (
         7 if boundary and mode in {"left", "heads", "heads_and_tails"} else None
@@ -88,10 +89,11 @@ def _run(
         original: cute.Pointer,
         valid: cutlass.Int64,
         repeats: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + block[0] * (y + block[1] * z)
-        offset = cute.arch.block_idx()[0] * tile + thread * items
+        offset = cute.arch.block_idx()[0] * tile + thread * items_per_thread
         sources = cute.recast_tensor(
             cute.make_tensor(source, cute.make_layout(size)), value_type
         )
@@ -106,9 +108,11 @@ def _run(
         )
         group = api.this_block()
         values = api.ThreadData(
-            items, dtype=None if inferred else value_type, alignment=alignment
+            items_per_thread,
+            dtype=None if inferred else value_type,
+            alignment=alignment,
         )
-        for item in cutlass.range_constexpr(items):
+        for item in cutlass.range_constexpr(items_per_thread):
             values[item] = sources[offset + item]
         if cutlass.const_expr(payload == "readonly"):
             inputs = _Readonly(values)
@@ -125,9 +129,9 @@ def _run(
             )
         else:
             storage = None
-        first = api.ThreadData(items, dtype=result_type)
-        other = api.ThreadData(items, dtype=result_type)
-        for item in cutlass.range_constexpr(items):
+        first = api.ThreadData(items_per_thread, dtype=result_type)
+        other = api.ThreadData(items_per_thread, dtype=result_type)
+        for item in cutlass.range_constexpr(items_per_thread):
             first[item] = result_type(0)
             other[item] = result_type(0)
         for iteration in range(repeats):
@@ -161,7 +165,7 @@ def _run(
                 )
             if cutlass.const_expr(reuse and manual_sync):
                 storage.sync()
-        for item in cutlass.range_constexpr(items):
+        for item in cutlass.range_constexpr(items_per_thread):
             outputs[offset + item] = first[item]
             seconds[offset + item] = other[item]
             originals[offset + item] = values[item]
@@ -174,10 +178,11 @@ def _run(
         original: cute.Pointer,
         valid: cutlass.Int64,
         repeats: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, output, second, original, valid, repeats).launch(
-            grid=blocks, block=block
-        )
+        kernel(
+            source, output, second, original, valid, repeats, items_per_thread
+        ).launch(grid=blocks, block=block)
 
     source = np.repeat(values_for(dtype, (size + 3) // 4, shift=17), 4)[
         :size
@@ -201,9 +206,9 @@ def _run(
             cutlass.Int32(5 if reuse else 1),
         )
         compiled = (
-            cute.compile[compile_options](launch, *args)
+            cute.compile[compile_options](launch, *args, items_per_thread)
             if compile_options
-            else cute.compile(launch, *args)
+            else cute.compile(launch, *args, items_per_thread)
         )
         compiled(*args)
     np.testing.assert_array_equal(original, source)
@@ -267,8 +272,15 @@ def _run(
         ("discontinuity", "heads_and_tails"),
     ],
 )
-def test_numeric_results(api, dtype, operation, mode):
-    _run(api, dtype=dtype, operation=operation, mode=mode)
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_numeric_results(api, dtype, operation, mode, items_per_thread):
+    _run(
+        api,
+        dtype=dtype,
+        operation=operation,
+        mode=mode,
+        items_per_thread=items_per_thread,
+    )
 
 
 @pytest.mark.parametrize("mode", ("left", "right"))
@@ -387,7 +399,8 @@ def test_runtime_count_traps(count):
     ), output
 
 
-def test_documented_neighbor_composition():
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_documented_neighbor_composition(items_per_thread):
     # docs: start cutlass-neighbors
     @cute.kernel
     def compare_neighbors(
@@ -395,9 +408,10 @@ def test_documented_neighbor_composition():
         deltas: cute.Pointer,
         head_flags: cute.Pointer,
         tail_flags: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
         block = coop.this_block()
-        values = coop.ThreadData(items_per_thread=2)
+        values = coop.ThreadData(items_per_thread)
         coop.load(block, source, values)
         scratch = coop.TempStorage(alignment=16, auto_sync=True)
         differences = coop.adjacent_difference(
@@ -416,14 +430,15 @@ def test_documented_neighbor_composition():
         deltas: cute.Pointer,
         head_flags: cute.Pointer,
         tail_flags: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
-        compare_neighbors(source, deltas, head_flags, tail_flags).launch(
-            grid=1, block=128
-        )
+        compare_neighbors(
+            source, deltas, head_flags, tail_flags, items_per_thread
+        ).launch(grid=1, block=128)
 
     # docs: end cutlass-neighbors
 
-    source = (np.arange(256, dtype=np.int32) // 3) * 7
+    source = (np.arange(128 * items_per_thread, dtype=np.int32) // 3) * 7
     deltas, heads, tails = (np.zeros_like(source) for _ in range(3))
     with (
         device_array(source) as src,
@@ -431,7 +446,7 @@ def test_documented_neighbor_composition():
         device_array(heads) as head,
         device_array(tails) as tail,
     ):
-        launch(src, out, head, tail)
+        launch(src, out, head, tail, items_per_thread)
     expected = np.empty_like(source)
     expected[0], expected[1:] = source[0], np.diff(source)
     np.testing.assert_array_equal(deltas, expected)
