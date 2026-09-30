@@ -188,7 +188,7 @@ def test_public_modes_reject_non_plain_strings_before_provider(
     if operation == "exchange":
 
         def kernel(value):
-            items = coop.ThreadData(2, dtype=types.int32)
+            items = coop.ThreadData(items_per_thread=2, dtype=types.int32)
             items[0] = value
             items[1] = value
             return coop.exchange(coop.this_block(), items, mode=mode)
@@ -196,7 +196,7 @@ def test_public_modes_reject_non_plain_strings_before_provider(
     else:
 
         def kernel(value):
-            items = coop.ThreadData(2, dtype=types.int32)
+            items = coop.ThreadData(items_per_thread=2, dtype=types.int32)
             items[0] = value
             items[1] = value
             return coop.shuffle(coop.this_block(), items, mode=mode)
@@ -275,7 +275,7 @@ def test_qualified_array_shuffle_rejects_enum_and_impostor_distance(
     from cuda.coop.numba_mlir._compiler import _group_shuffle
 
     def shuffle(value):
-        items = coop.ThreadData(2, dtype=types.int32)
+        items = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         items[0] = value
         items[1] = value
         return coop.shuffle(coop.this_block(), items, distance=distance)
@@ -292,6 +292,7 @@ def test_qualified_array_shuffle_rejects_enum_and_impostor_distance(
         planner.run()
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     ("group_kind", "mode", "provider_name"),
     [
@@ -306,6 +307,7 @@ def test_exchange_selects_fixed_arity_provider(
     group_kind,
     mode,
     provider_name,
+    items_per_thread,
 ):
     from numba_cuda_mlir import types
 
@@ -322,16 +324,16 @@ def test_exchange_selects_fixed_arity_provider(
 
     if uses_flags:
 
-        def exchange(value):
-            items = coop.ThreadData(2, dtype=types.int32)
-            items[0] = value
-            items[1] = value
-            ranks = coop.ThreadData(2, dtype=types.int32)
-            ranks[0] = 0
-            ranks[1] = 1
-            flags = coop.ThreadData(2, dtype=types.uint8)
-            flags[0] = 1
-            flags[1] = 1
+        def exchange(value, items_per_thread):
+            items = coop.ThreadData(items_per_thread, dtype=types.int32)
+            for item in range(items_per_thread):
+                items[item] = value
+            ranks = coop.ThreadData(items_per_thread, dtype=types.int32)
+            for item in range(items_per_thread):
+                ranks[item] = item
+            flags = coop.ThreadData(items_per_thread, dtype=types.uint8)
+            for item in range(items_per_thread):
+                flags[item] = 1
             return coop.exchange(
                 group,
                 items,
@@ -342,24 +344,27 @@ def test_exchange_selects_fixed_arity_provider(
 
     elif uses_ranks:
 
-        def exchange(value):
-            items = coop.ThreadData(2, dtype=types.int32)
-            items[0] = value
-            items[1] = value
-            ranks = coop.ThreadData(2, dtype=types.int32)
-            ranks[0] = 0
-            ranks[1] = 1
+        def exchange(value, items_per_thread):
+            items = coop.ThreadData(items_per_thread, dtype=types.int32)
+            for item in range(items_per_thread):
+                items[item] = value
+            ranks = coop.ThreadData(items_per_thread, dtype=types.int32)
+            for item in range(items_per_thread):
+                ranks[item] = item
             return coop.exchange(group, items, mode=mode, ranks=ranks)
 
     else:
 
-        def exchange(value):
-            items = coop.ThreadData(2, dtype=types.int32)
-            items[0] = value
-            items[1] = value
+        def exchange(value, items_per_thread):
+            items = coop.ThreadData(items_per_thread, dtype=types.int32)
+            for item in range(items_per_thread):
+                items[item] = value
             return coop.exchange(group, items, mode=mode)
 
-    func_ir, planner = _plan(exchange, arg_types=(types.int32,))
+    func_ir, planner = _plan(
+        exchange,
+        arg_types=(types.int32, types.IntegerLiteral(items_per_thread)),
+    )
     assert planner.run()
     provider = getattr(_exchange, provider_name)
     call = _provider_call(func_ir, provider)
@@ -383,10 +388,10 @@ def test_warp_exchange_rejects_block_only_scatter_before_provider(
         group = group.group_by(logical_width)
 
     def exchange(value):
-        items = coop.ThreadData(2, dtype=types.int32)
+        items = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         items[0] = value
         items[1] = value
-        ranks = coop.ThreadData(2, dtype=types.int32)
+        ranks = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         ranks[0] = 0
         ranks[1] = 1
         return coop.exchange(
@@ -431,7 +436,7 @@ def test_exchange_rejects_invalid_ranks_before_provider(
     rank_type = getattr(types, rank_dtype)
 
     def exchange(value):
-        items = coop.ThreadData(2, dtype=types.int32)
+        items = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         items[0] = value
         items[1] = value
         ranks = coop.ThreadData(
@@ -479,10 +484,10 @@ def test_exchange_rejects_invalid_flags_before_provider(
     flag_type = getattr(types, flag_dtype)
 
     def exchange(value):
-        items = coop.ThreadData(2, dtype=types.int32)
+        items = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         items[0] = value
         items[1] = value
-        ranks = coop.ThreadData(2, dtype=types.int32)
+        ranks = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         ranks[0] = 0
         ranks[1] = 1
         flags = coop.ThreadData(items_per_thread, dtype=flag_type)
@@ -506,6 +511,7 @@ def test_exchange_rejects_invalid_flags_before_provider(
         planner.run()
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     ("kind", "mode", "provider_name", "runtime_distance"),
     [
@@ -520,6 +526,7 @@ def test_shuffle_selects_scalar_or_array_provider(
     mode,
     provider_name,
     runtime_distance,
+    items_per_thread,
 ):
     from numba_cuda_mlir import types
 
@@ -529,7 +536,7 @@ def test_shuffle_selects_scalar_or_array_provider(
     if kind == "scalar":
         if runtime_distance:
 
-            def shuffle(value, distance):
+            def shuffle(value, distance, items_per_thread):
                 return coop.shuffle(
                     coop.this_block(),
                     value,
@@ -539,7 +546,7 @@ def test_shuffle_selects_scalar_or_array_provider(
 
         else:
 
-            def shuffle(value, distance):
+            def shuffle(value, distance, items_per_thread):
                 del distance
                 return coop.shuffle(
                     coop.this_block(),
@@ -550,16 +557,20 @@ def test_shuffle_selects_scalar_or_array_provider(
 
     else:
 
-        def shuffle(value, distance):
+        def shuffle(value, distance, items_per_thread):
             del distance
-            items = coop.ThreadData(2, dtype=types.int32)
-            items[0] = value
-            items[1] = value
+            items = coop.ThreadData(items_per_thread, dtype=types.int32)
+            for item in range(items_per_thread):
+                items[item] = value
             return coop.shuffle(coop.this_block(), items, mode=mode)
 
     func_ir, planner = _plan(
         shuffle,
-        arg_types=(types.int32, types.int32),
+        arg_types=(
+            types.int32,
+            types.int32,
+            types.IntegerLiteral(items_per_thread),
+        ),
     )
     assert planner.run()
     provider = getattr(_shuffle, provider_name)
@@ -674,21 +685,24 @@ def test_shuffle_planner_rejects_invalid_runtime_distance_before_cast(
         planner.run()
 
 
-def test_planned_exchange_and_shuffle_calls_match_before_inference():
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_planned_exchange_and_shuffle_calls_match_before_inference(
+    items_per_thread,
+):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as coop
 
-    def flagged(value):
-        items = coop.ThreadData(2, dtype=types.int32)
-        items[0] = value
-        items[1] = value
-        ranks = coop.ThreadData(2, dtype=types.int32)
-        ranks[0] = 0
-        ranks[1] = 1
-        flags = coop.ThreadData(2, dtype=types.uint8)
-        flags[0] = 1
-        flags[1] = 1
+    def flagged(value, items_per_thread):
+        items = coop.ThreadData(items_per_thread, dtype=types.int32)
+        for item in range(items_per_thread):
+            items[item] = value
+        ranks = coop.ThreadData(items_per_thread, dtype=types.int32)
+        for item in range(items_per_thread):
+            ranks[item] = item
+        flags = coop.ThreadData(items_per_thread, dtype=types.uint8)
+        for item in range(items_per_thread):
+            flags[item] = 1
         return coop.exchange(
             coop.this_block(),
             items,
@@ -705,16 +719,16 @@ def test_planned_exchange_and_shuffle_calls_match_before_inference():
             distance=distance,
         )
 
-    def array(value):
-        items = coop.ThreadData(2, dtype=types.int32)
-        items[0] = value
-        items[1] = value
+    def array(value, items_per_thread):
+        items = coop.ThreadData(items_per_thread, dtype=types.int32)
+        for item in range(items_per_thread):
+            items[item] = value
         return coop.shuffle(coop.this_block(), items, mode="down")
 
     for function, arg_types in (
-        (flagged, (types.int32,)),
+        (flagged, (types.int32, types.IntegerLiteral(items_per_thread))),
         (scalar, (types.int32, types.int64)),
-        (array, (types.int32,)),
+        (array, (types.int32, types.IntegerLiteral(items_per_thread))),
     ):
         func_ir, planner = _plan(function, arg_types=arg_types)
         assert planner.run()
