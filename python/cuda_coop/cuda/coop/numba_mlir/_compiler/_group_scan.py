@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import inspect
 from dataclasses import replace
+from enum import Enum
 from typing import Any
 
 import numba_cuda_mlir.numba_cuda.types as numba_types
@@ -115,6 +116,7 @@ class _ScanPlanning:
 
     @staticmethod
     def _operator(
+        operation: str,
         scan_op: Any,
         *,
         dtype: Any,
@@ -125,23 +127,24 @@ class _ScanPlanning:
             validate_scan_operator_dtype,
         )
 
-        operation = normalize_scan_operation(scan_op)
+        if (
+            is_common_root
+            and scan_op is not None
+            and (not isinstance(scan_op, str) or isinstance(scan_op, Enum))
+        ):
+            raise TypeError(f"cuda.coop.{operation} scan_op must be a string")
+        canonical = normalize_scan_operation(scan_op)
         validate_scan_operator_dtype(scan_op, dtype)
-        if operation == "sum":
+        if canonical == "sum":
             return "sum", None
-        if operation is not None:
+        if canonical is not None:
             return (
-                operation,
+                canonical,
                 CxxOperator(
-                    cpp=_BUILTIN_OPERATOR_CPP[operation],
+                    cpp=_BUILTIN_OPERATOR_CPP[canonical],
                     dtype=Dependency("T"),
                     name="scan_op",
                 ),
-            )
-        if is_common_root:
-            raise NotImplementedError(
-                "common cuda.coop Scan supports built-in operators only; "
-                "use cuda.coop.numba_mlir for a stateless device callback"
             )
         return (
             "callback",
@@ -440,6 +443,7 @@ class _ScanPlanning:
             parameter="value",
         )
         operator_kind, scan_operator = self._operator(
+            operation,
             scan_op,
             dtype=dtype,
             is_common_root=is_common_root,
