@@ -29,16 +29,20 @@ def _compile(
     prefix=False,
 ):
     @cute.kernel
-    def kernel(memory: cute.Pointer, bound: cutlass.Int64):
+    def kernel(
+        memory: cute.Pointer,
+        bound: cutlass.Int64,
+        items_per_thread: cutlass.Constexpr,
+    ):
         values = cute.make_tensor(memory, cute.make_layout(1024))
-        keys = api.ThreadData(items, dtype=dtype)
-        payload = api.ThreadData(items)
-        for item in cutlass.range_constexpr(items):
+        keys = api.ThreadData(items_per_thread, dtype=dtype)
+        payload = api.ThreadData(items_per_thread)
+        for item in cutlass.range_constexpr(items_per_thread):
             keys[item] = dtype(item + 3)
             payload[item] = cutlass.Float64(item + 0.5)
         group = api.this_warp() if bad == "group" else api.this_block()
         if cutlass.const_expr(bad in {"register", "common-register"}):
-            keys = cute.make_rmem_tensor(items, dtype)
+            keys = cute.make_rmem_tensor(items_per_thread, dtype)
             keys.fill(dtype(3))
         if cutlass.const_expr(bad == "scalar-array"):
             keys = cutlass.Int32(3)
@@ -46,11 +50,15 @@ def _compile(
             output = None
             if cutlass.const_expr(prefix):
                 count = max(1, ((1 << radix_bits) + 63) // 64)
-                output = api.ThreadData(count, dtype=cutlass.Int32)
+                output = api.ThreadData(
+                    items_per_thread=count, dtype=cutlass.Int32
+                )
             if cutlass.const_expr(bad == "prefix-dtype"):
-                output = api.ThreadData(1, dtype=cutlass.Uint32)
+                output = api.ThreadData(
+                    items_per_thread=1, dtype=cutlass.Uint32
+                )
             if cutlass.const_expr(bad == "prefix-extent"):
-                output = api.ThreadData(7, dtype=cutlass.Int32)
+                output = api.ThreadData(items_per_thread=7, dtype=cutlass.Int32)
             if cutlass.const_expr(bad == "prefix-alias"):
                 output = keys
             result = (
@@ -83,15 +91,21 @@ def _compile(
                 result = api.radix_sort_keys(
                     group, keys, begin_bit=begin, end_bit=end
                 )
-        for item in cutlass.range_constexpr(items):
+        for item in cutlass.range_constexpr(items_per_thread):
             values[item] = cutlass.Int32(result[item])
 
     @cute.jit
-    def launch(memory: cute.Pointer, bound: cutlass.Int64):
-        kernel(memory, bound).launch(grid=1, block=block)
+    def launch(
+        memory: cute.Pointer,
+        bound: cutlass.Int64,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(memory, bound, items_per_thread).launch(grid=1, block=block)
 
     ptr = make_ptr(cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16)
-    return cute.compile[(GPUArch("sm_80"),)](launch, ptr, cutlass.Int64(0))
+    return cute.compile[(GPUArch("sm_80"),)](
+        launch, ptr, cutlass.Int64(0), items
+    )
 
 
 @pytest.mark.parametrize(
