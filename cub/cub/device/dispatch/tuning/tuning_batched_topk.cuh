@@ -16,7 +16,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
-#include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/device/dispatch/tuning/structural_inplace_vector.cuh>
 #include <cub/util_device.cuh>
 
 #include <cuda/__cmath/pow2.h>

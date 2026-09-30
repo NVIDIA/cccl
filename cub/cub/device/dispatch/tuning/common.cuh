@@ -26,78 +26,11 @@
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/array>
-#include <cuda/std/cstddef>
-#include <cuda/std/initializer_list>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-//! Like inplace_vector<T, N>, but structural, so we can pass it as part of NTTPs (e.g. tuning policies)
-template <typename T, ::cuda::std::size_t Capacity>
-struct structural_inplace_vector
-{
-  using value_type      = T;
-  using size_type       = ::cuda::std::size_t;
-  using const_reference = const T&;
-  using const_iterator  = const T*;
-
-  ::cuda::std::array<T, Capacity> elems{};
-  size_type count = 0;
-
-  _CCCL_HOST_DEVICE_API constexpr structural_inplace_vector(::cuda::std::initializer_list<T> ilist)
-  {
-    for (const auto& elem : ilist)
-    {
-      elems[count++] = elem;
-    }
-  }
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr size_type size() const noexcept
-  {
-    return count;
-  }
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_reference operator[](size_type pos) const noexcept
-  {
-    return elems[pos];
-  }
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_iterator begin() const noexcept
-  {
-    return elems.data();
-  }
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_iterator end() const noexcept
-  {
-    return elems.data() + count;
-  }
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
-  operator==(const structural_inplace_vector& lhs, const structural_inplace_vector& rhs)
-  {
-    if (lhs.count != rhs.count)
-    {
-      return false;
-    }
-    for (size_type i = 0; i < lhs.count; ++i)
-    {
-      if (lhs.elems[i] != rhs.elems[i])
-      {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
-  operator!=(const structural_inplace_vector& lhs, const structural_inplace_vector& rhs)
-  {
-    return !(lhs == rhs);
-  }
-};
-
 // copy of cccl_type_enum from cccl/c/types.h, which we cannot share, since CCCL.C's public interface does not depend on
 // libcu++
 enum class type_t
