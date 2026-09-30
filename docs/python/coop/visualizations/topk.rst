@@ -80,10 +80,10 @@ you need an ordered result. See :ref:`the TopK ordering FAQ
 Using TopK in a kernel
 ----------------------
 
-This tested example selects eight largest keys from 93 valid inputs in a
-128-item tile. Each value is the key's original position. The kernel uses
-64 threads and two items per thread; the host verifies membership and
-pair association without depending on output order.
+This tested example selects eight largest keys from a partial input tile.
+Each value is the key's original position. The kernel uses 64 threads and an
+``items_per_thread`` argument; the host verifies membership and pair
+association without depending on output order.
 
 .. literalinclude:: ../../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_topk_examples.py
    :language: python
