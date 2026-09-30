@@ -36,10 +36,13 @@ _DTYPES = [
 ]
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("dtype", _DTYPES)
 @pytest.mark.parametrize("direction", ["left", "right"])
-def test_adjacent_partial_boundaries_and_input_preservation(dtype, direction):
-    source = ((np.arange(90) * 7) % 17).astype(dtype)
+def test_adjacent_partial_boundaries_and_input_preservation(
+    dtype, direction, items_per_thread
+):
+    source = ((np.arange(30 * items_per_thread) * 7) % 17).astype(dtype)
     if np.issubdtype(dtype, np.floating):
         source = source / dtype(4) + dtype(0.125)
     elif np.issubdtype(dtype, np.signedinteger):
@@ -53,14 +56,14 @@ def test_adjacent_partial_boundaries_and_input_preservation(dtype, direction):
     compiler_dtype = getattr(types, source.dtype.name)
 
     @cuda.jit
-    def kernel(source, output, original, count):
+    def kernel(source, output, original, count, items_per_thread):
         block = coop.this_block()
-        values = coop.ThreadData(3)
+        values = coop.ThreadData(items_per_thread)
         thread = cuda.threadIdx.x + 5 * (
-            cuda.threadIdx.y + 3 * cuda.threadIdx.z
+            cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
         )
-        for i in range(3):
-            values[i] = source[thread * 3 + i]
+        for i in range(items_per_thread):
+            values[i] = source[thread * items_per_thread + i]
         if direction == "left":
             result = coop.adjacent_difference(
                 block,
@@ -73,11 +76,11 @@ def test_adjacent_partial_boundaries_and_input_preservation(dtype, direction):
             result = coop.adjacent_difference(
                 block, values, valid_items=count, direction="right"
             )
-        for i in range(3):
-            output[thread * 3 + i] = result[i]
-            original[thread * 3 + i] = values[i]
+        for i in range(items_per_thread):
+            output[thread * items_per_thread + i] = result[i]
+            original[thread * items_per_thread + i] = values[i]
 
-    for count in (0, 1, 2, 3, 4, 29, 89, 90):
+    for count in (0, 1, 2, 3, 4, 29, source.size - 1, source.size):
         expected = source.copy()
         if direction == "left":
             if count:
@@ -87,11 +90,14 @@ def test_adjacent_partial_boundaries_and_input_preservation(dtype, direction):
             expected[: count - 1] = source[: count - 1] - source[1:count]
         output = np.empty_like(source)
         original = np.empty_like(source)
-        kernel[1, (5, 3, 2)](source, output, original, np.int64(count))
+        kernel[1, (5, 3, 2)](
+            source, output, original, np.int64(count), items_per_thread
+        )
         np.testing.assert_array_equal(output, expected)
         np.testing.assert_array_equal(original, source)
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "dtype,mode,boundary",
     [
@@ -103,8 +109,10 @@ def test_adjacent_partial_boundaries_and_input_preservation(dtype, direction):
         or (mode == "heads_and_tails" and boundary)
     ],
 )
-def test_flags_boundaries_pair_results_and_chained_scan(dtype, mode, boundary):
-    source = (np.arange(96) // 5 % 7).astype(dtype)
+def test_flags_boundaries_pair_results_and_chained_scan(
+    dtype, mode, boundary, items_per_thread
+):
+    source = (np.arange(32 * items_per_thread) // 5 % 7).astype(dtype)
     source[31:35] = 9
     if np.issubdtype(dtype, np.floating):
         source /= dtype(4)
@@ -116,9 +124,11 @@ def test_flags_boundaries_pair_results_and_chained_scan(dtype, mode, boundary):
     compiler_dtype = getattr(types, source.dtype.name)
 
     @cuda.jit
-    def kernel(source, head_out, tail_out, prefix_out, original):
+    def kernel(
+        source, head_out, tail_out, prefix_out, original, items_per_thread
+    ):
         block = coop.this_block()
-        values = coop.ThreadData(3)
+        values = coop.ThreadData(items_per_thread)
         coop.load(block, source, values)
         if mode == "heads_and_tails":
             if boundary:
@@ -168,10 +178,12 @@ def test_flags_boundaries_pair_results_and_chained_scan(dtype, mode, boundary):
         source[:-1] != source[1:], int(source[-1] != 5) if boundary else 1
     ].astype(np.int32)
     head_out, tail_out, prefix_out = [
-        np.empty(96, dtype=np.int32) for _ in range(3)
+        np.empty(32 * items_per_thread, dtype=np.int32) for _ in range(3)
     ]
     original = np.empty_like(source)
-    kernel[1, 32](source, head_out, tail_out, prefix_out, original)
+    kernel[1, 32](
+        source, head_out, tail_out, prefix_out, original, items_per_thread
+    )
     if mode != "tails":
         np.testing.assert_array_equal(head_out, heads)
     if mode != "heads":
@@ -233,15 +245,16 @@ def test_qualified_custom_operators_and_shared_storage_reuse():
     np.testing.assert_array_equal(outputs[3], source)
 
 
-def test_multiblock_delta_example():
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_multiblock_delta_example(items_per_thread):
     # adjacent-difference-example-begin
     @cuda.jit
-    def delta_encode(source, output):
+    def delta_encode(source, output, items_per_thread):
         # Use distinct source/output arrays: another block needs the preceding
         # source tile's last value, so an in-place launch would race.
         block = coop.this_block()
-        base = cuda.blockIdx.x * 512
-        values = coop.ThreadData(items_per_thread=4)
+        base = cuda.blockIdx.x * cuda.blockDim.x * items_per_thread
+        values = coop.ThreadData(items_per_thread)
         coop.load(block, source, values, offset=base)
         previous = np.int32(0)
         if base > 0:
@@ -253,52 +266,61 @@ def test_multiblock_delta_example():
 
     # adjacent-difference-example-end
 
-    source = ((np.arange(1536) * 13) % 101).astype(np.int32)
+    source = ((np.arange(3 * 128 * items_per_thread) * 13) % 101).astype(
+        np.int32
+    )
     output = np.empty_like(source)
-    delta_encode[3, 128](source, output)
+    delta_encode[3, 128](source, output, items_per_thread)
     np.testing.assert_array_equal(output, np.diff(source, prepend=np.int32(0)))
 
 
-def test_tile_run_labels_example():
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_tile_run_labels_example(items_per_thread):
     # discontinuity-example-begin
     @cuda.jit
-    def label_runs_per_tile(keys, output):
-        # Full 512-item tiles; IDs restart at zero in each block.
+    def label_runs_per_tile(keys, output, items_per_thread):
+        # Full block tiles; IDs restart at zero in each block.
         block = coop.this_block()
-        base = cuda.blockIdx.x * 512
-        values = coop.ThreadData(items_per_thread=4)
+        base = cuda.blockIdx.x * cuda.blockDim.x * items_per_thread
+        values = coop.ThreadData(items_per_thread)
         coop.load(block, keys, values, offset=base)
         heads = coop.discontinuity(block, values, mode="heads")
         labels = coop.inclusive_sum(block, heads)
-        for i in range(4):
+        for i in range(items_per_thread):
             labels[i] -= 1
         coop.store(block, output, labels, offset=base)
 
     # discontinuity-example-end
 
-    source = (np.arange(1024) // 13).astype(np.int32)
+    source = (np.arange(2 * 128 * items_per_thread) // 13).astype(np.int32)
     output = np.empty_like(source)
-    label_runs_per_tile[2, 128](source, output)
-    for base in (0, 512):
-        tile = source[base : base + 512]
+    label_runs_per_tile[2, 128](source, output, items_per_thread)
+    for base in (0, 128 * items_per_thread):
+        tile = source[base : base + 128 * items_per_thread]
         expected = np.cumsum(np.r_[1, tile[1:] != tile[:-1]]) - 1
-        np.testing.assert_array_equal(output[base : base + 512], expected)
+        np.testing.assert_array_equal(
+            output[base : base + 128 * items_per_thread], expected
+        )
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("direction", ["left", "right"])
-def test_full_tile_default_boundary_and_chained_result(direction):
+def test_full_tile_default_boundary_and_chained_result(
+    direction, items_per_thread
+):
     @cuda.jit
-    def kernel(source, output):
+    def kernel(source, output, items_per_thread):
         block = coop.this_block()
-        values = coop.ThreadData(1)
-        values[0] = source[cuda.threadIdx.x]
+        values = coop.ThreadData(items_per_thread)
+        for item in range(items_per_thread):
+            values[item] = source[cuda.threadIdx.x * items_per_thread + item]
         first = coop.adjacent_difference(block, values, direction=direction)
         second = numba_coop.adjacent_difference(
             block, first, direction=direction
         )
         coop.store(block, output, second)
 
-    source = ((np.arange(65) * 13) % 29).astype(np.int32)
+    source = ((np.arange(65 * items_per_thread) * 13) % 29).astype(np.int32)
     expected = source.copy()
     for _ in range(2):
         original = expected.copy()
@@ -307,7 +329,7 @@ def test_full_tile_default_boundary_and_chained_result(direction):
         else:
             expected[:-1] = original[:-1] - original[1:]
     output = np.empty_like(source)
-    kernel[1, 65](source, output)
+    kernel[1, 65](source, output, items_per_thread)
     np.testing.assert_array_equal(output, expected)
 
 
@@ -325,7 +347,7 @@ from pathlib import Path
 assert Path(coop.__file__).resolve() == Path({str(Path(coop.__file__).resolve())!r})
 @cuda.jit
 def kernel(source, output, count):
-    values = coop.ThreadData(3)
+    values = coop.ThreadData(items_per_thread=3)
     coop.load(coop.this_block(), source, values)
     result = coop.adjacent_difference(coop.this_block(), values, valid_items=count)
     coop.store(coop.this_block(), output, result)
