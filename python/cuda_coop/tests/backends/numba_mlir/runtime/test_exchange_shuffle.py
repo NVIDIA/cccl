@@ -65,12 +65,45 @@ _TIME_SLICED_MODES = tuple(
     for mode in _BLOCK_MODES
     if mode not in {"scatter_to_striped_guarded", "scatter_to_striped_flagged"}
 )
+_DTYPES = (
+    np.int8,
+    np.uint8,
+    np.int16,
+    np.uint16,
+    np.int32,
+    np.uint32,
+    np.int64,
+    np.uint64,
+    np.float32,
+    np.float64,
+)
 
 
 def _values(size: int, *, shift: int = 0) -> np.ndarray:
     return ((np.arange(size, dtype=np.int64) * 17 + shift) % 997 - 491).astype(
         np.int32
     )
+
+
+def _dtype_values(dtype, size: int) -> np.ndarray:
+    """Make bounded values that expose unintended dtype narrowing.
+
+    Float64 values include a fraction lost in float32. Wide integers include
+    bits above the 32-bit range. Smaller integer inputs stay within their
+    dtype ranges, so overflow does not obscure the movement being checked.
+    """
+
+    values = (np.arange(size, dtype=np.int64) * 17) % 97
+    if np.dtype(dtype).kind != "u":
+        values -= 48
+    values = values.astype(dtype)
+    if np.dtype(dtype).kind == "f":
+        values *= dtype(0.25)
+        if np.dtype(dtype).itemsize == 8:
+            values += dtype(2**-30)
+    elif np.dtype(dtype).itemsize == 8:
+        values += np.where(values < 0, -(2**40), 2**40).astype(dtype)
+    return values
 
 
 def _structured_exchange_oracle(
@@ -211,6 +244,7 @@ def _structured_exchange_kernel(
     scope: str,
     mode: str,
     qualified: bool,
+    numba_dtype=types.int32,
 ):
     """Observe an Exchange result and its original payload separately.
 
@@ -225,7 +259,7 @@ def _structured_exchange_kernel(
             thread = cuda.threadIdx.x
             payload = qualified_coop.ThreadData(
                 _ITEMS_PER_THREAD,
-                dtype=types.int32,
+                dtype=numba_dtype,
             )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
@@ -246,7 +280,7 @@ def _structured_exchange_kernel(
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
                 _ITEMS_PER_THREAD,
-                dtype=types.int32,
+                dtype=numba_dtype,
             )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
@@ -267,7 +301,7 @@ def _structured_exchange_kernel(
             thread = cuda.threadIdx.x
             payload = qualified_coop.ThreadData(
                 _ITEMS_PER_THREAD,
-                dtype=types.int32,
+                dtype=numba_dtype,
             )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
@@ -288,7 +322,7 @@ def _structured_exchange_kernel(
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
                 _ITEMS_PER_THREAD,
-                dtype=types.int32,
+                dtype=numba_dtype,
             )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
@@ -309,7 +343,7 @@ def _structured_exchange_kernel(
             thread = cuda.threadIdx.x
             payload = qualified_coop.ThreadData(
                 _ITEMS_PER_THREAD,
-                dtype=types.int32,
+                dtype=numba_dtype,
             )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
@@ -330,7 +364,7 @@ def _structured_exchange_kernel(
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
                 _ITEMS_PER_THREAD,
-                dtype=types.int32,
+                dtype=numba_dtype,
             )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
@@ -384,6 +418,39 @@ def test_common_exchange_layouts_match_independent_oracles_and_preserve_input(
         observed,
         preserved,
     )
+
+    np.testing.assert_array_equal(observed, expected)
+    np.testing.assert_array_equal(preserved, source)
+
+
+@pytest.mark.parametrize("dtype", _DTYPES)
+@pytest.mark.parametrize(
+    ("scope", "group_width"),
+    (
+        ("block", _BLOCK_THREADS),
+        ("warp", _WARP_THREADS),
+        ("logical", _LOGICAL_WARP_THREADS),
+    ),
+)
+def test_exchange_preserves_each_dtype_across_group_scopes(
+    dtype, scope, group_width
+):
+    source = _dtype_values(dtype, _TILE_ITEMS)
+    observed = np.zeros_like(source)
+    preserved = np.zeros_like(source)
+    expected = _structured_exchange_oracle(
+        source,
+        group_width=group_width,
+        items_per_thread=_ITEMS_PER_THREAD,
+        mode="blocked_to_striped",
+    )
+
+    _structured_exchange_kernel(
+        scope,
+        "blocked_to_striped",
+        scope != "block",
+        getattr(types, np.dtype(dtype).name),
+    )[1, _BLOCK_THREADS](source, observed, preserved)
 
     np.testing.assert_array_equal(observed, expected)
     np.testing.assert_array_equal(preserved, source)
@@ -713,7 +780,7 @@ def test_warp_exchange_inverse_round_trip(width: int) -> None:
 
 
 @cache
-def _array_shuffle_kernel(mode: str, api: str):
+def _array_shuffle_kernel(mode: str, api: str, numba_dtype=types.int32):
     """Observe shifted values and preserve a copy of each input payload.
 
     The kernel copies every output slot. Callers compare only the defined
@@ -728,7 +795,7 @@ def _array_shuffle_kernel(mode: str, api: str):
             thread = cuda.threadIdx.x
             payload = root_coop.ThreadData(
                 _ITEMS_PER_THREAD,
-                dtype=types.int32,
+                dtype=numba_dtype,
             )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
@@ -749,7 +816,7 @@ def _array_shuffle_kernel(mode: str, api: str):
             thread = cuda.threadIdx.x
             payload = qualified_coop.ThreadData(
                 _ITEMS_PER_THREAD,
-                dtype=types.int32,
+                dtype=numba_dtype,
             )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
@@ -770,7 +837,7 @@ def _array_shuffle_kernel(mode: str, api: str):
             thread = cuda.threadIdx.x
             payload = cuda.local.array(
                 shape=_ITEMS_PER_THREAD,
-                dtype=types.int32,
+                dtype=numba_dtype,
             )
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
@@ -808,6 +875,25 @@ def test_array_shuffle_matches_a_flattened_oracle_and_preserves_input(
         observed,
         preserved,
     )
+
+    if mode == "up":
+        np.testing.assert_array_equal(observed[1:], source[:-1])
+    else:
+        np.testing.assert_array_equal(observed[:-1], source[1:])
+    np.testing.assert_array_equal(preserved, source)
+
+
+@pytest.mark.parametrize("dtype", _DTYPES)
+@pytest.mark.parametrize("mode", ("up", "down"))
+def test_array_shuffle_preserves_each_dtype(dtype, mode):
+    source = _dtype_values(dtype, _TILE_ITEMS)
+    observed = np.zeros_like(source)
+    preserved = np.zeros_like(source)
+    api = "common" if mode == "up" else "qualified-local-array"
+
+    _array_shuffle_kernel(mode, api, getattr(types, np.dtype(dtype).name))[
+        1, _BLOCK_THREADS
+    ](source, observed, preserved)
 
     if mode == "up":
         np.testing.assert_array_equal(observed[1:], source[:-1])
