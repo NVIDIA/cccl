@@ -41,11 +41,12 @@ struct structural_inplace_vector
   constexpr structural_inplace_vector() = default;
 
   _CCCL_HOST_DEVICE_API constexpr structural_inplace_vector(::cuda::std::initializer_list<T> ilist)
+      : count(ilist.size())
   {
-    _CCCL_ASSERT(ilist.size() <= Capacity, "structural_inplace_vector: initializer list exceeds capacity");
-    for (const auto& elem : ilist)
+    _CCCL_ASSERT(count <= Capacity, "structural_inplace_vector: initializer list exceeds capacity");
+    for (size_type i = 0; i < count; ++i)
     {
-      elems[count++] = elem;
+      elems[i] = ilist.begin()[i];
     }
   }
 
@@ -66,13 +67,11 @@ struct structural_inplace_vector
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr reference operator[](size_type pos) noexcept
   {
-    _CCCL_ASSERT(pos < count, "structural_inplace_vector::operator[]: index out of range");
     return elems[pos];
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_reference operator[](size_type pos) const noexcept
   {
-    _CCCL_ASSERT(pos < count, "structural_inplace_vector::operator[]: index out of range");
     return elems[pos];
   }
 
