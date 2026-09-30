@@ -11,7 +11,7 @@ void sequence(my_system& system, ForwardIterator, ForwardIterator)
   system.validate_dispatch();
 }
 
-void TestSequenceDispatchExplicit()
+TEST_CASE("TestSequenceDispatchExplicit", "[sequence]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -20,7 +20,6 @@ void TestSequenceDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSequenceDispatchExplicit);
 
 template <typename ForwardIterator>
 void sequence(my_tag, ForwardIterator first, ForwardIterator)
@@ -28,7 +27,7 @@ void sequence(my_tag, ForwardIterator first, ForwardIterator)
   *first = 13;
 }
 
-void TestSequenceDispatchImplicit()
+TEST_CASE("TestSequenceDispatchImplicit", "[sequence]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -36,10 +35,9 @@ void TestSequenceDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSequenceDispatchImplicit);
 
 template <class Vector>
-void TestSequenceSimple()
+void test_sequence_simple()
 {
   using value_type = typename Vector::value_type;
   Vector v(5);
@@ -59,10 +57,10 @@ void TestSequenceSimple()
   ref = {10, 12, 14, 16, 18};
   REQUIRE(v == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestSequenceSimple);
+DECLARE_VECTOR_UNITTEST(test_sequence_simple);
 
 template <typename T>
-void TestSequence(size_t n)
+void test_sequence(size_t n)
 {
   thrust::host_vector<T> h_data(n);
   thrust::device_vector<T> d_data(n);
@@ -87,10 +85,10 @@ void TestSequence(size_t n)
 
   REQUIRE(h_data == d_data);
 }
-DECLARE_VARIABLE_UNITTEST(TestSequence);
+DECLARE_VARIABLE_UNITTEST(test_sequence);
 
 template <typename T>
-void TestSequenceToDiscardIterator(size_t n)
+void test_sequence_to_discard_iterator(size_t n)
 {
   const thrust::host_vector<T> h_data(n);
   const thrust::device_vector<T> d_data(n);
@@ -102,14 +100,13 @@ void TestSequenceToDiscardIterator(size_t n)
 
   // nothing to check -- just make sure it compiles
 }
-DECLARE_VARIABLE_UNITTEST(TestSequenceToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_sequence_to_discard_iterator);
 
-void TestSequenceComplex()
+TEST_CASE("TestSequenceComplex", "[sequence]")
 {
   thrust::device_vector<thrust::complex<double>> m(64);
   thrust::sequence(m.begin(), m.end());
 }
-DECLARE_UNITTEST(TestSequenceComplex);
 
 // A class that does not accept conversion from size_t but can be multiplied by a scalar
 struct Vector
@@ -144,7 +141,7 @@ _CCCL_HOST_DEVICE Vector operator*(const Vector b, const std::size_t a)
   return Vector{static_cast<int>(a) * b.x, static_cast<int>(a) * b.y};
 }
 
-void TestSequenceNoSizeTConversion()
+TEST_CASE("TestSequenceNoSizeTConversion", "[sequence]")
 {
   thrust::device_vector<Vector> m(64);
   thrust::sequence(m.begin(), m.end(), ::Vector{0, 0}, ::Vector{1, 2});
@@ -156,4 +153,3 @@ void TestSequenceNoSizeTConversion()
     REQUIRE(static_cast<std::size_t>(v.y) == 2 * i);
   }
 }
-DECLARE_UNITTEST(TestSequenceNoSizeTConversion);

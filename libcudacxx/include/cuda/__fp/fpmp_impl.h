@@ -173,6 +173,9 @@ namespace cuda::experimental
 // whether it provides the type. ARM64 stays excluded, as in CCCL: no ARM64 toolchain
 // provides __float128 (aarch64 GCC does not even define __SIZEOF_FLOAT128__), and nvc++
 // there rejects the name outright - such hosts take the 128-bit long double path below.
+// GCC still provides the distinct IEC type _Float128 (including on x86, where
+// __fpmp_fp128 is __float128). fpmp2 converts to that spelling separately (see
+// fpmp.h) because GCC does not convert _Float128 to __fpmp_fp128 when they differ.
 */
 #ifndef _CCCL_FPMP_HAS_FLOAT128_TYPE
 #  if _CCCL_HAS_FLOAT128()
@@ -309,6 +312,36 @@ using __fpmp_fp128 = long double;
 #    error "_CCCL_FPMP_FP128_ENABLE=1 but this platform provides no 128-bit floating-point type"
 #  endif
 static_assert(sizeof(__fpmp_fp128) == 16, "__fpmp_fp128 must be a 128-bit floating-point type");
+#endif
+
+// IEC 60559 _Float128. GCC often treats this as a distinct binary128 type from
+// __fpmp_fp128 (__float128 on x86, long double on aarch64 IEEE-128) with no
+// implicit conversion. Declared when the compiler offers the type so fpmp2 can
+// convert to it without going through __fpmp_fp128; when the two types are
+// already the same, the extra members are SFINAE'd out.
+//
+// __FLT128_MANT_DIG__ alone does not answer the question: it describes the
+// format, and both GCC and Clang predefine it on x86 without accepting the
+// _Float128 *token* in C++. GCC 13 is the first release to spell the C23
+// interchange types in C++ (P1467). Godbolt gcc 16.2 x86: sizeof(_Float128)==16
+// and is_same with both long double and __float128 is false, so the extra
+// members are not redundant on that host. Clang still does not implement
+// P1467R9 (https://clang.llvm.org/cxx_status.html); llvm/llvm-project#78503
+// only covers float16_t / bfloat16_t, and #80195 remains open for C23
+// _Float128. Godbolt x86-64 clang 23.1 (-std=c++17 and c++23) rejects the
+// token. armv8-a clang accepts it as an alias of long double (is_same true,
+// __STDCPP_FLOAT128_T__ unset): from 12 with -std=c++17, from 17 with
+// -std=c++23 (16 with c++23 does not). Extra members would SFINAE out there,
+// so this gate stays GCC. __STDCPP_FLOAT128_T__ is the portable on-ramp if a
+// later Clang/libstdc++/libc++ provides a distinct type. Requiring GCC also
+// rules out NVRTC, NVHPC and MSVC. nvcc with a GCC 13 host parses _Float128
+// in both passes, which is what the aarch64 quad reductions need.
+#ifndef _CCCL_FPMP_HAS_IEC_FLOAT128
+#  if defined(__FLT128_MANT_DIG__) && (_CCCL_COMPILER(GCC, >=, 13) || defined(__STDCPP_FLOAT128_T__))
+#    define _CCCL_FPMP_HAS_IEC_FLOAT128 1
+#  else
+#    define _CCCL_FPMP_HAS_IEC_FLOAT128 0
+#  endif
 #endif
 
 /*

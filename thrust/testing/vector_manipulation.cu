@@ -5,7 +5,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestVectorManipulation(size_t n)
+void test_vector_manipulation(size_t n)
 {
   using Iterator = typename Vector::iterator;
   using T        = typename Vector::value_type;
@@ -44,7 +44,7 @@ void TestVectorManipulation(size_t n)
   // shrinking a vector should not invalidate iterators
   const Iterator first = vec1.begin();
   vec1.resize(10);
-  ASSERT_EQUAL_QUIET(first, vec1.begin());
+  REQUIRE(first == vec1.begin());
 
   vec1.resize(0);
   REQUIRE(vec1.size() == 0lu);
@@ -87,15 +87,15 @@ void TestVectorManipulation(size_t n)
 }
 
 template <typename T>
-void TestVectorManipulationHost(size_t n)
+void test_vector_manipulation_host(size_t n)
 {
-  TestVectorManipulation<thrust::host_vector<T>>(n);
+  test_vector_manipulation<thrust::host_vector<T>>(n);
 }
-DECLARE_VARIABLE_UNITTEST(TestVectorManipulationHost);
+DECLARE_VARIABLE_UNITTEST(test_vector_manipulation_host);
 
 template <typename T>
-void TestVectorManipulationDevice(size_t n)
+void test_vector_manipulation_device(size_t n)
 {
-  TestVectorManipulation<thrust::device_vector<T>>(n);
+  test_vector_manipulation<thrust::device_vector<T>>(n);
 }
-DECLARE_VARIABLE_UNITTEST(TestVectorManipulationDevice);
+DECLARE_VARIABLE_UNITTEST(test_vector_manipulation_device);

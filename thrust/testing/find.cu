@@ -8,7 +8,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestFindSimple()
+void test_find_simple()
 {
   Vector vec{1, 2, 3, 3, 5};
 
@@ -19,7 +19,7 @@ void TestFindSimple()
   REQUIRE(thrust::find(vec.begin(), vec.end(), 4) - vec.begin() == 5);
   REQUIRE(thrust::find(vec.begin(), vec.end(), 5) - vec.begin() == 4);
 }
-DECLARE_VECTOR_UNITTEST(TestFindSimple);
+DECLARE_VECTOR_UNITTEST(test_find_simple);
 
 template <typename InputIterator, typename T>
 InputIterator find(my_system& system, InputIterator first, InputIterator, const T&)
@@ -28,7 +28,7 @@ InputIterator find(my_system& system, InputIterator first, InputIterator, const 
   return first;
 }
 
-void TestFindDispatchExplicit()
+TEST_CASE("TestFindDispatchExplicit", "[find]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -37,7 +37,6 @@ void TestFindDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestFindDispatchExplicit);
 
 template <typename InputIterator, typename T>
 InputIterator find(my_tag, InputIterator first, InputIterator, const T&)
@@ -46,7 +45,7 @@ InputIterator find(my_tag, InputIterator first, InputIterator, const T&)
   return first;
 }
 
-void TestFindDispatchImplicit()
+TEST_CASE("TestFindDispatchImplicit", "[find]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -54,10 +53,9 @@ void TestFindDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestFindDispatchImplicit);
 
 template <class Vector>
-void TestFindIfSimple()
+void test_find_if_simple()
 {
   using T = typename Vector::value_type;
 
@@ -71,7 +69,7 @@ void TestFindIfSimple()
   REQUIRE(thrust::find_if(vec.begin(), vec.end(), _1 == T{4}) - vec.begin() == 5);
   REQUIRE(thrust::find_if(vec.begin(), vec.end(), _1 == T{5}) - vec.begin() == 4);
 }
-DECLARE_VECTOR_UNITTEST(TestFindIfSimple);
+DECLARE_VECTOR_UNITTEST(test_find_if_simple);
 
 template <typename InputIterator, typename Predicate>
 InputIterator find_if(my_system& system, InputIterator first, InputIterator, Predicate)
@@ -80,7 +78,7 @@ InputIterator find_if(my_system& system, InputIterator first, InputIterator, Pre
   return first;
 }
 
-void TestFindIfDispatchExplicit()
+TEST_CASE("TestFindIfDispatchExplicit", "[find]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -89,7 +87,6 @@ void TestFindIfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestFindIfDispatchExplicit);
 
 template <typename InputIterator, typename Predicate>
 InputIterator find_if(my_tag, InputIterator first, InputIterator, Predicate)
@@ -98,7 +95,7 @@ InputIterator find_if(my_tag, InputIterator first, InputIterator, Predicate)
   return first;
 }
 
-void TestFindIfDispatchImplicit()
+TEST_CASE("TestFindIfDispatchImplicit", "[find]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -106,10 +103,9 @@ void TestFindIfDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestFindIfDispatchImplicit);
 
 template <class Vector>
-void TestFindIfNotSimple()
+void test_find_if_not_simple()
 {
   using T = typename Vector::value_type;
 
@@ -123,7 +119,7 @@ void TestFindIfNotSimple()
   REQUIRE(4 == thrust::find_if_not(vec.begin(), vec.end(), _1 < T{4}) - vec.begin());
   REQUIRE(5 == thrust::find_if_not(vec.begin(), vec.end(), _1 < T{5}) - vec.begin());
 }
-DECLARE_VECTOR_UNITTEST(TestFindIfNotSimple);
+DECLARE_VECTOR_UNITTEST(test_find_if_not_simple);
 
 template <typename InputIterator, typename Predicate>
 InputIterator find_if_not(my_system& system, InputIterator first, InputIterator, Predicate)
@@ -132,7 +128,7 @@ InputIterator find_if_not(my_system& system, InputIterator first, InputIterator,
   return first;
 }
 
-void TestFindIfNotDispatchExplicit()
+TEST_CASE("TestFindIfNotDispatchExplicit", "[find]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -141,7 +137,6 @@ void TestFindIfNotDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestFindIfNotDispatchExplicit);
 
 template <typename InputIterator, typename Predicate>
 InputIterator find_if_not(my_tag, InputIterator first, InputIterator, Predicate)
@@ -150,7 +145,7 @@ InputIterator find_if_not(my_tag, InputIterator first, InputIterator, Predicate)
   return first;
 }
 
-void TestFindIfNotDispatchImplicit()
+TEST_CASE("TestFindIfNotDispatchImplicit", "[find]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -158,7 +153,6 @@ void TestFindIfNotDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestFindIfNotDispatchImplicit);
 
 template <typename T>
 struct TestFind
@@ -240,7 +234,7 @@ struct TestFindIfNot
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestFindIfNot, SignedIntegralTypes);
 
-void TestFindWithBigIndexesHelper(int magnitude)
+void test_find_with_big_indexes_helper(int magnitude)
 {
   const thrust::counting_iterator<long long> begin(1);
   const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
@@ -256,14 +250,13 @@ void TestFindWithBigIndexesHelper(int magnitude)
 }
 
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
-void TestFindWithBigIndexes()
+TEST_CASE("TestFindWithBigIndexes", "[find]")
 {
-  TestFindWithBigIndexesHelper(30);
-  TestFindWithBigIndexesHelper(31);
-  TestFindWithBigIndexesHelper(32);
-  TestFindWithBigIndexesHelper(33);
+  test_find_with_big_indexes_helper(30);
+  test_find_with_big_indexes_helper(31);
+  test_find_with_big_indexes_helper(32);
+  test_find_with_big_indexes_helper(33);
 }
-DECLARE_UNITTEST(TestFindWithBigIndexes);
 #endif // THRUST_FORCE_32_BIT_OFFSET_TYPE
 
 namespace
@@ -284,7 +277,7 @@ public:
 };
 } // namespace
 
-void TestFindAsymmetricEquality()
+TEST_CASE("TestFindAsymmetricEquality", "[find]")
 { // Regression test for NVIDIA/thrust#1229
   thrust::host_vector<int> v(1000);
   thrust::sequence(v.begin(), v.end());
@@ -293,4 +286,3 @@ void TestFindAsymmetricEquality()
   REQUIRE(*result == 333);
   REQUIRE(result - dv.begin() == 333);
 }
-DECLARE_UNITTEST(TestFindAsymmetricEquality);

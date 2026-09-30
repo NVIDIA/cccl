@@ -111,7 +111,27 @@ struct key_value
 
   friend std::ostream& operator<<(std::ostream& os, const key_value& kv)
   {
-    return os << "(" << kv.key << ", " << kv.value << ")";
+    // cast 1-byte integral (char) types so they print as numbers, not characters
+    // (clang-tidy bugprone-unintended-char-ostream-output)
+    os << "(";
+    if constexpr (::cuda::std::is_integral_v<key_type> && sizeof(key_type) == 1)
+    {
+      os << static_cast<int>(kv.key);
+    }
+    else
+    {
+      os << kv.key;
+    }
+    os << ", ";
+    if constexpr (::cuda::std::is_integral_v<value_type> && sizeof(value_type) == 1)
+    {
+      os << static_cast<int>(kv.value);
+    }
+    else
+    {
+      os << kv.value;
+    }
+    return os << ")";
   }
 
   key_type key;

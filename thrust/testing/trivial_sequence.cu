@@ -12,11 +12,11 @@ void test(Iterator first, Iterator last)
   thrust::detail::trivial_sequence<Iterator, System> ts(system, first, last);
   using ValueType = typename ::cuda::std::iterator_traits<Iterator>::value_type;
 
-  ASSERT_EQUAL_QUIET((ValueType) ts.begin()[0], ValueType(0, 11));
-  ASSERT_EQUAL_QUIET((ValueType) ts.begin()[1], ValueType(2, 11));
-  ASSERT_EQUAL_QUIET((ValueType) ts.begin()[2], ValueType(1, 13));
-  ASSERT_EQUAL_QUIET((ValueType) ts.begin()[3], ValueType(0, 10));
-  ASSERT_EQUAL_QUIET((ValueType) ts.begin()[4], ValueType(1, 12));
+  REQUIRE((ValueType) ts.begin()[0] == ValueType(0, 11));
+  REQUIRE((ValueType) ts.begin()[1] == ValueType(2, 11));
+  REQUIRE((ValueType) ts.begin()[2] == ValueType(1, 13));
+  REQUIRE((ValueType) ts.begin()[3] == ValueType(0, 10));
+  REQUIRE((ValueType) ts.begin()[4] == ValueType(1, 12));
 
   ts.begin()[0] = ValueType(0, 0);
   ts.begin()[1] = ValueType(0, 0);
@@ -31,7 +31,7 @@ void test(Iterator first, Iterator last)
 }
 
 template <class Vector>
-void TestTrivialSequence()
+void test_trivial_sequence()
 {
   Vector A{0, 2, 1, 0, 1};
   Vector B{11, 11, 13, 10, 12};
@@ -44,4 +44,4 @@ void TestTrivialSequence()
   Vector refB{11, 11, 13, 10, 12};
   REQUIRE(B == refB);
 }
-DECLARE_VECTOR_UNITTEST(TestTrivialSequence);
+DECLARE_VECTOR_UNITTEST(test_trivial_sequence);

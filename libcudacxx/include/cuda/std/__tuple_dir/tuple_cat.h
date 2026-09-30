@@ -38,26 +38,32 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class... _Types>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_cat_return_impl(__tuple_types<_Types...>) noexcept
-  -> __tuple_types<_Types...>
-{
-  return {};
-}
-
-template <class... _Types1, class... _Types2, class... _TupleTypes>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto
-__tuple_cat_return_impl(__tuple_types<_Types1...>, __tuple_types<_Types2...>, _TupleTypes... __tail) noexcept
-{
-  return ::cuda::std::__tuple_cat_return_impl(__tuple_types<_Types1..., _Types2...>{}, __tail...);
-}
+template <class... _TupleTypes>
+struct __concat_tuple_types;
 
 template <class... _Types>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL tuple<_Types...> __tuple_cat_return_type(__tuple_types<_Types...>) noexcept;
+struct __concat_tuple_types<__tuple_types<_Types...>>
+{
+  using type _CCCL_NODEBUG = tuple<_Types...>;
+};
+
+template <>
+struct __concat_tuple_types<>
+{
+  using type _CCCL_NODEBUG = tuple<>;
+};
+
+template <class... _TupleTypes>
+using __concat_tuple_types_t = typename __concat_tuple_types<_TupleTypes...>::type;
+
+template <class... _Types0, class... _Types1, class... _Tail>
+struct __concat_tuple_types<__tuple_types<_Types0...>, __tuple_types<_Types1...>, _Tail...>
+{
+  using type _CCCL_NODEBUG = __concat_tuple_types_t<__tuple_types<_Types0..., _Types1...>, _Tail...>;
+};
 
 template <class... _Tuples>
-using __tuple_cat_return_t = decltype(::cuda::std::__tuple_cat_return_type(
-  ::cuda::std::__tuple_cat_return_impl(__make_tuple_types_t<_Tuples>{}...)));
+using __tuple_cat_return_t = __concat_tuple_types_t<__make_tuple_types_t<_Tuples>...>;
 
 // clang-tidy incorrectly reports "'__t0' used after it was forwarded".
 // Each expansion forwards the tuple only to select get<I>'s cvref-qualified
@@ -68,8 +74,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tuple, size_t... _Indices>
 [[nodiscard]] _CCCL_API constexpr auto __tuple_cat_impl(__tuple_indices<_Indices...>, _Tuple&& __tuple) noexcept
 {
-  using ::cuda::std::get;
-  return ::cuda::std::forward_as_tuple(get<_Indices>(::cuda::std::forward<_Tuple>(__tuple))...);
+  return ::cuda::std::forward_as_tuple(::cuda::std::get<_Indices>(::cuda::std::forward<_Tuple>(__tuple))...);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -81,7 +86,6 @@ template <class _Tuple1, class _Tuple2, size_t... _Indices1, size_t... _Indices2
   _Tuple2&& __tuple2,
   _Tuples&&... __tuples)
 {
-  using ::cuda::std::get;
   if constexpr (sizeof...(_Tuples) != 0)
   {
     using _TupleSize0 = __make_tuple_indices_t<sizeof...(_Indices1) + sizeof...(_Indices2)>;
@@ -89,30 +93,29 @@ template <class _Tuple1, class _Tuple2, size_t... _Indices1, size_t... _Indices2
     return ::cuda::std::__tuple_cat_impl(
       _TupleSize0{},
       _TupleSize1{},
-      ::cuda::std::forward_as_tuple(get<_Indices1>(::cuda::std::forward<_Tuple1>(__tuple1))...,
-                                    get<_Indices2>(::cuda::std::forward<_Tuple2>(__tuple2))...),
+      ::cuda::std::forward_as_tuple(::cuda::std::get<_Indices1>(::cuda::std::forward<_Tuple1>(__tuple1))...,
+                                    ::cuda::std::get<_Indices2>(::cuda::std::forward<_Tuple2>(__tuple2))...),
       ::cuda::std::forward<_Tuples>(__tuples)...);
   }
   else
   {
-    return ::cuda::std::forward_as_tuple(get<_Indices1>(::cuda::std::forward<_Tuple1>(__tuple1))...,
-                                         get<_Indices2>(::cuda::std::forward<_Tuple2>(__tuple2))...);
+    return ::cuda::std::forward_as_tuple(::cuda::std::get<_Indices1>(::cuda::std::forward<_Tuple1>(__tuple1))...,
+                                         ::cuda::std::get<_Indices2>(::cuda::std::forward<_Tuple2>(__tuple2))...);
   }
 }
 
 template <class... _Tuples>
-_CCCL_CONCEPT __all_tuple_like = (__tuple_like<_Tuples> && ...);
-
-[[nodiscard]] _CCCL_API constexpr tuple<> tuple_cat()
-{
-  return tuple<>();
-}
+_CCCL_CONCEPT __all_tuple_like = (__tuple_like<_Tuples> && ... && true);
 
 _CCCL_TEMPLATE(class... _Tuples)
 _CCCL_REQUIRES(__all_tuple_like<_Tuples...>)
 [[nodiscard]] _CCCL_API constexpr __tuple_cat_return_t<_Tuples...> tuple_cat(_Tuples&&... __tuples)
 {
-  if constexpr (sizeof...(_Tuples) <= 2)
+  if constexpr (sizeof...(_Tuples) == 0)
+  {
+    return tuple<>{};
+  }
+  else if constexpr (sizeof...(_Tuples) <= 2)
   {
     return ::cuda::std::__tuple_cat_impl(__make_tuple_indices_t<tuple_size<remove_reference_t<_Tuples>>::value>{}...,
                                          ::cuda::std::forward<_Tuples>(__tuples)...);

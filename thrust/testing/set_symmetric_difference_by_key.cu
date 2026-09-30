@@ -26,7 +26,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_ke
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetSymmetricDifferenceByKeyDispatchExplicit()
+TEST_CASE("TestSetSymmetricDifferenceByKeyDispatchExplicit", "[set_symmetric_difference_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -36,7 +36,6 @@ void TestSetSymmetricDifferenceByKeyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceByKeyDispatchExplicit);
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -59,7 +58,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_ke
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetSymmetricDifferenceByKeyDispatchImplicit()
+TEST_CASE("TestSetSymmetricDifferenceByKeyDispatchImplicit", "[set_symmetric_difference_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -75,10 +74,9 @@ void TestSetSymmetricDifferenceByKeyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceByKeyDispatchImplicit);
 
 template <typename Vector>
-void TestSetSymmetricDifferenceByKeySimple()
+void test_set_symmetric_difference_by_key_simple()
 {
   using Iterator = typename Vector::iterator;
 
@@ -98,15 +96,15 @@ void TestSetSymmetricDifferenceByKeySimple()
     result_key.begin(),
     result_val.begin());
 
-  ASSERT_EQUAL_QUIET(result_key.end(), end.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), end.second);
+  REQUIRE(result_key.end() == end.first);
+  REQUIRE(result_val.end() == end.second);
   REQUIRE(ref_key == result_key);
   REQUIRE(ref_val == result_val);
 }
-DECLARE_VECTOR_UNITTEST(TestSetSymmetricDifferenceByKeySimple);
+DECLARE_VECTOR_UNITTEST(test_set_symmetric_difference_by_key_simple);
 
 template <typename T>
-void TestSetSymmetricDifferenceByKey(const size_t n)
+void test_set_symmetric_difference_by_key(const size_t n)
 {
   thrust::host_vector<T> random_keys = unittest::random_integers<unittest::int8_t>(n);
   thrust::host_vector<T> random_vals = unittest::random_integers<unittest::int8_t>(n);
@@ -172,10 +170,10 @@ void TestSetSymmetricDifferenceByKey(const size_t n)
     REQUIRE(h_result_vals == d_result_vals);
   }
 }
-DECLARE_VARIABLE_UNITTEST(TestSetSymmetricDifferenceByKey);
+DECLARE_VARIABLE_UNITTEST(test_set_symmetric_difference_by_key);
 
 template <typename T>
-void TestSetSymmetricDifferenceByKeyEquivalentRanges(const size_t n)
+void test_set_symmetric_difference_by_key_equivalent_ranges(const size_t n)
 {
   const thrust::host_vector<T> temp = unittest::random_integers<T>(n);
 
@@ -228,10 +226,10 @@ void TestSetSymmetricDifferenceByKeyEquivalentRanges(const size_t n)
   REQUIRE(h_result_key == d_result_key);
   REQUIRE(h_result_val == d_result_val);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetSymmetricDifferenceByKeyEquivalentRanges);
+DECLARE_VARIABLE_UNITTEST(test_set_symmetric_difference_by_key_equivalent_ranges);
 
 template <typename T>
-void TestSetSymmetricDifferenceByKeyMultiset(const size_t n)
+void test_set_symmetric_difference_by_key_multiset(const size_t n)
 {
   thrust::host_vector<T> vec = unittest::random_integers<int>(2 * n);
 
@@ -293,4 +291,4 @@ void TestSetSymmetricDifferenceByKeyMultiset(const size_t n)
   REQUIRE(h_result_key == d_result_key);
   REQUIRE(h_result_val == d_result_val);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetSymmetricDifferenceByKeyMultiset);
+DECLARE_VARIABLE_UNITTEST(test_set_symmetric_difference_by_key_multiset);

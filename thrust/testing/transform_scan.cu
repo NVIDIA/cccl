@@ -19,7 +19,7 @@ OutputIterator transform_inclusive_scan(
   return result;
 }
 
-void TestTransformInclusiveScanDispatchExplicit()
+TEST_CASE("TestTransformInclusiveScanDispatchExplicit", "[transform_scan]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -28,7 +28,6 @@ void TestTransformInclusiveScanDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestTransformInclusiveScanDispatchExplicit);
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
 OutputIterator transform_inclusive_scan(
@@ -38,7 +37,7 @@ OutputIterator transform_inclusive_scan(
   return result;
 }
 
-void TestTransformInclusiveScanInitDispatchExplicit()
+TEST_CASE("TestTransformInclusiveScanInitDispatchExplicit", "[transform_scan]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -47,7 +46,6 @@ void TestTransformInclusiveScanInitDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestTransformInclusiveScanInitDispatchExplicit);
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename AssociativeOperator>
 OutputIterator transform_inclusive_scan(
@@ -57,7 +55,7 @@ OutputIterator transform_inclusive_scan(
   return result;
 }
 
-void TestTransformInclusiveScanDispatchImplicit()
+TEST_CASE("TestTransformInclusiveScanDispatchImplicit", "[transform_scan]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -66,7 +64,6 @@ void TestTransformInclusiveScanDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestTransformInclusiveScanDispatchImplicit);
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
 OutputIterator transform_exclusive_scan(
@@ -76,7 +73,7 @@ OutputIterator transform_exclusive_scan(
   return result;
 }
 
-void TestTransformExclusiveScanDispatchExplicit()
+TEST_CASE("TestTransformExclusiveScanDispatchExplicit", "[transform_scan]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -85,7 +82,6 @@ void TestTransformExclusiveScanDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestTransformExclusiveScanDispatchExplicit);
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
 OutputIterator transform_exclusive_scan(
@@ -95,7 +91,7 @@ OutputIterator transform_exclusive_scan(
   return result;
 }
 
-void TestTransformExclusiveScanDispatchImplicit()
+TEST_CASE("TestTransformExclusiveScanDispatchImplicit", "[transform_scan]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -104,10 +100,9 @@ void TestTransformExclusiveScanDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestTransformExclusiveScanDispatchImplicit);
 
 template <class Vector>
-void TestTransformScanSimple()
+void test_transform_scan_simple()
 {
   using T = typename Vector::value_type;
 
@@ -182,7 +177,7 @@ void TestTransformScanSimple()
   REQUIRE(std::size_t(iter - input.begin()) == input.size());
   REQUIRE(input == result);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestTransformScanSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_transform_scan_simple);
 
 struct Record
 {
@@ -216,7 +211,7 @@ struct negate
   }
 };
 
-void TestTransformInclusiveScanDifferentTypes()
+TEST_CASE("TestTransformInclusiveScanDifferentTypes", "[transform_scan]")
 {
   typename thrust::host_vector<int>::iterator h_iter;
 
@@ -243,7 +238,6 @@ void TestTransformInclusiveScanDifferentTypes()
   REQUIRE(d_input == input_copy);
   REQUIRE(d_output == result);
 }
-DECLARE_UNITTEST(TestTransformInclusiveScanDifferentTypes);
 
 template <typename T>
 struct TestTransformScan
@@ -301,7 +295,7 @@ struct TestTransformScan
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformScan, IntegralTypes);
 
 template <class Vector>
-void TestTransformScanCountingIterator()
+void test_transform_scan_counting_iterator()
 {
   using T     = typename Vector::value_type;
   using space = typename thrust::iterator_system<typename Vector::iterator>::type;
@@ -315,7 +309,7 @@ void TestTransformScanCountingIterator()
   Vector ref{-1, -3, -6};
   REQUIRE(result == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestTransformScanCountingIterator);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_transform_scan_counting_iterator);
 
 template <typename T>
 struct TestTransformScanToDiscardIterator
@@ -332,8 +326,8 @@ struct TestTransformScanToDiscardIterator
 
     thrust::discard_iterator<> d_result = thrust::transform_inclusive_scan(
       d_input.begin(), d_input.end(), thrust::make_discard_iterator(), ::cuda::std::negate<T>(), ::cuda::std::plus<T>());
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE(reference == h_result);
+    REQUIRE(reference == d_result);
 
     h_result = thrust::transform_inclusive_scan(
       h_input.begin(),
@@ -367,8 +361,8 @@ struct TestTransformScanToDiscardIterator
       (T) 11,
       ::cuda::std::plus<T>());
 
-    ASSERT_EQUAL_QUIET(reference, h_result);
-    ASSERT_EQUAL_QUIET(reference, d_result);
+    REQUIRE(reference == h_result);
+    REQUIRE(reference == d_result);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformScanToDiscardIterator, IntegralTypes);
@@ -378,7 +372,7 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformScanToDiscardIterator, In
 // transform_inclusive_scan implementation was instantiated using a reference
 // type for the value_type.
 template <typename T>
-void TestValueCategoryDeduction()
+void test_value_category_deduction()
 {
   thrust::device_vector<T> vec;
 
@@ -403,7 +397,7 @@ void TestValueCategoryDeduction()
 
   REQUIRE((thrust::device_vector<T>{0, 5, 5, 5, 8, 8, 8, 8, 8, 8}) == vec);
 }
-DECLARE_GENERIC_UNITTEST(TestValueCategoryDeduction);
+DECLARE_GENERIC_UNITTEST(test_value_category_deduction);
 
 // User-defined Int type with poison default constructor
 struct TransformInt
@@ -436,7 +430,7 @@ struct TransformInt
 };
 
 // Test edge cases for parallel transform_scan with non-additive operations
-void TestTransformScanEdgeCases()
+TEST_CASE("TestTransformScanEdgeCases", "[transform_scan]")
 {
   // Test 1: Large array with transform_inclusive_scan, multiplies, and init
   {
@@ -539,4 +533,3 @@ void TestTransformScanEdgeCases()
     REQUIRE(d_output == expected);
   }
 }
-DECLARE_UNITTEST(TestTransformScanEdgeCases);

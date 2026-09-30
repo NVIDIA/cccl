@@ -8,12 +8,12 @@
 
 #include "cub_test_macros.h"
 
-template <int logical_warp_threads>
+template <int LogicalWarpThreads>
 struct total_warps_t
 {
 private:
   static constexpr unsigned int total_warps =
-    (::cuda::is_power_of_two(logical_warp_threads)) ? cub::detail::warp_threads / logical_warp_threads : 1;
+    (::cuda::is_power_of_two(LogicalWarpThreads)) ? cub::detail::warp_threads / LogicalWarpThreads : 1;
 
 public:
   static constexpr unsigned int value()
