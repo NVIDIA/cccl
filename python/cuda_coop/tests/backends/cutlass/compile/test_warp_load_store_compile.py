@@ -54,16 +54,21 @@ def test_exact_per_group_scratch():
 @pytest.mark.parametrize(
     "algorithm", ("direct", "striped", "vectorize", "transpose")
 )
-def test_physical_warp_compile(api, algorithm):
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_physical_warp_compile(api, algorithm, items_per_thread):
     @cute.kernel
-    def kernel(source: cute.Pointer, destination: cute.Pointer):
-        payload = api.ThreadData(2, dtype=cutlass.Int32)
+    def kernel(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
         api.load(
             api.this_warp(),
             source,
             payload,
             algorithm=algorithm,
-            valid_items=47,
+            valid_items=32 * items_per_thread - 17,
             oob_default=-13,
             offset=5,
         )
@@ -72,15 +77,23 @@ def test_physical_warp_compile(api, algorithm):
             destination,
             payload,
             algorithm=algorithm,
-            valid_items=47,
+            valid_items=32 * items_per_thread - 17,
             offset=9,
         )
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer):
-        kernel(source, destination).launch(grid=1, block=(8, 4, 2))
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(source, destination, items_per_thread).launch(
+            grid=1, block=(8, 4, 2)
+        )
 
-    result = cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), _pointer())
+    result = cute.compile[(GPUArch("sm_80"),)](
+        launch, _pointer(), _pointer(), items_per_thread
+    )
     assert result is not None
 
 
@@ -89,7 +102,9 @@ def test_incomplete_warps_fail(block):
     @cute.kernel
     def kernel(memory: cute.Pointer):
         cutlass_coop.load(
-            cutlass_coop.this_warp(), memory, cutlass_coop.ThreadData(2)
+            cutlass_coop.this_warp(),
+            memory,
+            cutlass_coop.ThreadData(items_per_thread=2),
         )
 
     @cute.jit
@@ -104,7 +119,9 @@ def test_dynamic_dimensions_fail():
     @cute.kernel
     def kernel(memory: cute.Pointer):
         cutlass_coop.load(
-            cutlass_coop.this_warp(), memory, cutlass_coop.ThreadData(2)
+            cutlass_coop.this_warp(),
+            memory,
+            cutlass_coop.ThreadData(items_per_thread=2),
         )
 
     @cute.jit
@@ -124,7 +141,7 @@ def test_block_algorithms_fail(algorithm):
         cutlass_coop.load(
             cutlass_coop.this_warp(),
             memory,
-            cutlass_coop.ThreadData(2),
+            cutlass_coop.ThreadData(items_per_thread=2),
             algorithm=algorithm,
         )
 
@@ -148,7 +165,7 @@ def test_warp_storage_descriptor_fails(api, algorithm):
         api.load(
             api.this_warp(),
             memory,
-            api.ThreadData(2),
+            api.ThreadData(items_per_thread=2),
             algorithm=algorithm,
             temp_storage=api.TempStorage(1024),
         )
@@ -164,36 +181,36 @@ def test_warp_storage_descriptor_fails(api, algorithm):
 @pytest.mark.parametrize("valid", (-1, 65, 128))
 def test_count_excludes_other_warps(valid):
     @cute.kernel
-    def kernel(memory: cute.Pointer):
+    def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         cutlass_coop.load(
             cutlass_coop.this_warp(),
             memory,
-            cutlass_coop.ThreadData(2),
+            cutlass_coop.ThreadData(items_per_thread),
             valid_items=valid,
         )
 
     @cute.jit
-    def launch(memory: cute.Pointer):
-        kernel(memory).launch(grid=1, block=64)
+    def launch(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        kernel(memory, items_per_thread).launch(grid=1, block=64)
 
     with pytest.raises(Exception, match="valid_items"):
-        cute.compile[(GPUArch("sm_80"),)](launch, _pointer())
+        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), 2)
 
 
 def test_extent_includes_second_warp():
     @cute.kernel
-    def kernel(memory: cute.Pointer):
+    def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         inputs = cute.make_tensor(memory, cute.make_layout(128))
         cutlass_coop.load(
             cutlass_coop.this_warp(),
             inputs,
-            cutlass_coop.ThreadData(2),
+            cutlass_coop.ThreadData(items_per_thread),
             offset=1,
         )
 
     @cute.jit
-    def launch(memory: cute.Pointer):
-        kernel(memory).launch(grid=1, block=64)
+    def launch(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        kernel(memory, items_per_thread).launch(grid=1, block=64)
 
     with pytest.raises(Exception, match="(?i)(extent|elements|size)"):
-        cute.compile[(GPUArch("sm_80"),)](launch, _pointer())
+        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), 2)
