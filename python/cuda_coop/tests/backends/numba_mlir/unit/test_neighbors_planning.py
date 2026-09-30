@@ -27,7 +27,7 @@ def test_runtime_count_requires_supported_integer(type_name):
     from cuda import coop
 
     def kernel(count):
-        values = coop.ThreadData(2, types.int32)
+        values = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         return coop.adjacent_difference(
             coop.this_block(), values, valid_items=count
         )
@@ -45,7 +45,7 @@ def test_runtime_boundary_dtype_must_match(operation):
     function = getattr(coop, operation)
 
     def kernel(boundary):
-        values = coop.ThreadData(2, types.float32)
+        values = coop.ThreadData(items_per_thread=2, dtype=types.float32)
         return function(
             coop.this_block(), values, tile_predecessor_item=boundary
         )
@@ -69,7 +69,7 @@ def test_reject_scalar_and_warp_inputs(operation):
         _plan(scalar)
 
     def warp():
-        values = numba_coop.ThreadData(2, types.int32)
+        values = numba_coop.ThreadData(items_per_thread=2, dtype=types.int32)
         return function(numba_coop.this_warp(), values)
 
     with pytest.raises(Exception, match="complete block"):
@@ -82,7 +82,7 @@ def test_mode_requests_literal_specialization():
     from cuda import coop
 
     def kernel(runtime_mode):
-        values = coop.ThreadData(2, types.int32)
+        values = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         return coop.discontinuity(coop.this_block(), values, mode=runtime_mode)
 
     from numba_cuda_mlir.numba_cuda.core.errors import ForceLiteralArg

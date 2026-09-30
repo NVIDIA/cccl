@@ -291,7 +291,7 @@ def check_topk_surface() -> None:
 
 def check_neighbor_results() -> None:
     block = coop.this_block()
-    values = coop.ThreadData(3, np.float64)
+    values = coop.ThreadData(items_per_thread=3, dtype=np.float64)
     assert_type(
         coop.adjacent_difference(block, values), coop.ThreadDataLike[np.float64]
     )
