@@ -54,38 +54,35 @@ using device_res      = test_resource<cuda::mr::device_accessible>;
 using host_res        = test_resource<cuda::mr::host_accessible>;
 using host_device_res = test_resource<cuda::mr::host_accessible, cuda::mr::device_accessible>;
 
-using cuda::std::is_constructible_v;
-using cuda::std::is_same_v;
+static_assert(cuda::std::is_same_v<cuda::mr::device_resource_ref, cuda::mr::resource_ref<cuda::mr::device_accessible>>);
+static_assert(cuda::std::is_same_v<cuda::mr::host_resource_ref, cuda::mr::resource_ref<cuda::mr::host_accessible>>);
+static_assert(cuda::std::is_same_v<cuda::mr::host_device_resource_ref,
+                                   cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>>);
+static_assert(cuda::std::is_same_v<cuda::mr::any_device_resource, cuda::mr::any_resource<cuda::mr::device_accessible>>);
+static_assert(cuda::std::is_same_v<cuda::mr::any_host_resource, cuda::mr::any_resource<cuda::mr::host_accessible>>);
+static_assert(cuda::std::is_same_v<cuda::mr::any_host_device_resource,
+                                   cuda::mr::any_resource<cuda::mr::host_accessible, cuda::mr::device_accessible>>);
 
-static_assert(is_same_v<cuda::mr::device_resource_ref, cuda::mr::resource_ref<cuda::mr::device_accessible>>);
-static_assert(is_same_v<cuda::mr::host_resource_ref, cuda::mr::resource_ref<cuda::mr::host_accessible>>);
-static_assert(is_same_v<cuda::mr::host_device_resource_ref,
-                        cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>>);
-static_assert(is_same_v<cuda::mr::any_device_resource, cuda::mr::any_resource<cuda::mr::device_accessible>>);
-static_assert(is_same_v<cuda::mr::any_host_resource, cuda::mr::any_resource<cuda::mr::host_accessible>>);
-static_assert(is_same_v<cuda::mr::any_host_device_resource,
-                        cuda::mr::any_resource<cuda::mr::host_accessible, cuda::mr::device_accessible>>);
+static_assert(cuda::std::is_constructible_v<cuda::mr::device_resource_ref, device_res&>);
+static_assert(!cuda::std::is_constructible_v<cuda::mr::device_resource_ref, host_res&>);
+static_assert(cuda::std::is_constructible_v<cuda::mr::host_resource_ref, host_res&>);
+static_assert(!cuda::std::is_constructible_v<cuda::mr::host_resource_ref, device_res&>);
+static_assert(cuda::std::is_constructible_v<cuda::mr::host_device_resource_ref, host_device_res&>);
+static_assert(!cuda::std::is_constructible_v<cuda::mr::host_device_resource_ref, device_res&>);
+static_assert(!cuda::std::is_constructible_v<cuda::mr::host_device_resource_ref, host_res&>);
 
-static_assert(is_constructible_v<cuda::mr::device_resource_ref, device_res&>);
-static_assert(!is_constructible_v<cuda::mr::device_resource_ref, host_res&>);
-static_assert(is_constructible_v<cuda::mr::host_resource_ref, host_res&>);
-static_assert(!is_constructible_v<cuda::mr::host_resource_ref, device_res&>);
-static_assert(is_constructible_v<cuda::mr::host_device_resource_ref, host_device_res&>);
-static_assert(!is_constructible_v<cuda::mr::host_device_resource_ref, device_res&>);
-static_assert(!is_constructible_v<cuda::mr::host_device_resource_ref, host_res&>);
+static_assert(cuda::std::is_constructible_v<cuda::mr::any_device_resource, device_res>);
+static_assert(!cuda::std::is_constructible_v<cuda::mr::any_device_resource, host_res>);
+static_assert(cuda::std::is_constructible_v<cuda::mr::any_host_resource, host_res>);
+static_assert(!cuda::std::is_constructible_v<cuda::mr::any_host_resource, device_res>);
+static_assert(cuda::std::is_constructible_v<cuda::mr::any_host_device_resource, host_device_res>);
+static_assert(!cuda::std::is_constructible_v<cuda::mr::any_host_device_resource, device_res>);
+static_assert(!cuda::std::is_constructible_v<cuda::mr::any_host_device_resource, host_res>);
 
-static_assert(is_constructible_v<cuda::mr::any_device_resource, device_res>);
-static_assert(!is_constructible_v<cuda::mr::any_device_resource, host_res>);
-static_assert(is_constructible_v<cuda::mr::any_host_resource, host_res>);
-static_assert(!is_constructible_v<cuda::mr::any_host_resource, device_res>);
-static_assert(is_constructible_v<cuda::mr::any_host_device_resource, host_device_res>);
-static_assert(!is_constructible_v<cuda::mr::any_host_device_resource, device_res>);
-static_assert(!is_constructible_v<cuda::mr::any_host_device_resource, host_res>);
-
-static_assert(is_constructible_v<cuda::mr::device_resource_ref, cuda::mr::host_device_resource_ref>);
-static_assert(is_constructible_v<cuda::mr::host_resource_ref, cuda::mr::host_device_resource_ref>);
-static_assert(is_constructible_v<cuda::mr::any_device_resource, cuda::mr::any_host_device_resource>);
-static_assert(is_constructible_v<cuda::mr::any_host_resource, cuda::mr::any_host_device_resource>);
+static_assert(cuda::std::is_constructible_v<cuda::mr::device_resource_ref, cuda::mr::host_device_resource_ref>);
+static_assert(cuda::std::is_constructible_v<cuda::mr::host_resource_ref, cuda::mr::host_device_resource_ref>);
+static_assert(cuda::std::is_constructible_v<cuda::mr::any_device_resource, cuda::mr::any_host_device_resource>);
+static_assert(cuda::std::is_constructible_v<cuda::mr::any_host_resource, cuda::mr::any_host_device_resource>);
 
 int main(int, char**)
 {
