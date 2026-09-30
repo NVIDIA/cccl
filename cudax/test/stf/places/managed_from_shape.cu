@@ -48,7 +48,7 @@ int main()
   int dev;
   cuda_safe_call(cudaGetDevice(&dev));
   assert(dev >= 0);
-  cudaDeviceProp prop;
+  cudaDeviceProp prop{};
   cuda_safe_call(cudaGetDeviceProperties(&prop, dev));
   if (!prop.concurrentManagedAccess)
   {
