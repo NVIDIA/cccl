@@ -41,7 +41,7 @@ def check_cutlass_surface(source: object, destination: object) -> None:
     cutlass_coop.store(block, destination, values, valid_items=31, offset=4)
     common_coop.load(common_coop.this_block(), source, values)
     common_coop.store(common_coop.this_block(), destination, values)
-    common_values = common_coop.ThreadData(2, np.int32)
+    common_values = common_coop.ThreadData(items_per_thread=2, dtype=np.int32)
     assert_type(cutlass_coop.load(block, source, common_values), None)
     assert_type(cutlass_coop.store(block, destination, common_values), None)
 
@@ -109,7 +109,7 @@ def check_cutlass_dynamic_memory_controls(
     signed: Int32, unsigned: Uint32
 ) -> None:
     block = cutlass_coop.this_block()
-    values = cutlass_coop.ThreadData(2, Float64)
+    values = cutlass_coop.ThreadData(items_per_thread=2, dtype=Float64)
     assert_type(
         cutlass_coop.load(
             block,
@@ -220,7 +220,7 @@ def check_cutlass_hierarchy_surface() -> None:
 
 def check_cutlass_reduce_surface(scalar: Uint32) -> None:
     block = cutlass_coop.this_block()
-    values = cutlass_coop.ThreadData(2, np.int32)
+    values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
     assert_type(cutlass_coop.reduce(block, values), np.int32)
     assert_type(cutlass_coop.sum(block, values), np.int32)
     assert_type(cutlass_coop.reduce(block, scalar, binary_op="max"), Uint32)

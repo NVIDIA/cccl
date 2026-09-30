@@ -15,8 +15,6 @@ from cuda.coop import cutlass as cutlass_coop
 
 _BLOCK = (8, 4, 2)
 _THREADS = 64
-_ITEMS = 2
-_BLOCK_TILE = _THREADS * _ITEMS
 
 
 def _check(result):
@@ -25,26 +23,32 @@ def _check(result):
     return result[1] if len(result) == 2 else result[1:]
 
 
-def run_example(api="common"):
+def run_example(api="common", items_per_thread=2):
     """Run built-in reductions and verify group results and root ownership."""
 
+    tile_size = _THREADS * items_per_thread
     if api not in {"common", "qualified"}:
         raise ValueError("api must be 'common' or 'qualified'")
     module = coop if api == "common" else cutlass_coop
 
     # docs: start cutlass-reduce
     @cute.kernel
-    def reduce_tiles(source: cute.Pointer, destination: cute.Pointer):
+    def reduce_tiles(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        tile_size = _THREADS * items_per_thread
         block = module.this_block()
         thread = block.rank()
         lanes = module.this_warp().group_by(8)
-        inputs = cute.make_tensor(source, cute.make_layout(_BLOCK_TILE))
+        inputs = cute.make_tensor(source, cute.make_layout(tile_size))
         outputs = cute.make_tensor(
             destination, cute.make_layout(2 * _THREADS + 1)
         )
-        payload = module.ThreadData(items_per_thread=_ITEMS)
-        for item in cutlass.range_constexpr(_ITEMS):
-            payload[item] = inputs[thread * _ITEMS + item]
+        payload = module.ThreadData(items_per_thread)
+        for item in cutlass.range_constexpr(items_per_thread):
+            payload[item] = inputs[thread * items_per_thread + item]
         # Full reductions broadcast a scalar to every member of the group.
         outputs[thread] = module.sum(block, payload)
         outputs[_THREADS + thread] = module.reduce(
@@ -57,12 +61,18 @@ def run_example(api="common"):
             outputs[2 * _THREADS] = prefix
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer):
-        reduce_tiles(source, destination).launch(grid=1, block=_BLOCK)
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        reduce_tiles(source, destination, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     # docs: end cutlass-reduce
 
-    source = np.arange(_BLOCK_TILE, dtype=np.int32)
+    source = np.arange(tile_size, dtype=np.int32)
     destination = np.full(2 * _THREADS + 1, -101, dtype=np.int32)
     cutlass.cuda.initialize_cuda_context()
     src = _check(driver.cuMemAlloc(source.nbytes))
@@ -87,7 +97,7 @@ def run_example(api="common"):
                 cute.AddressSpace.gmem,
                 assumed_align=16,
             )
-            launch(src_pointer, dst_pointer)
+            launch(src_pointer, dst_pointer, items_per_thread)
             _check(driver.cuCtxSynchronize())
             _check(
                 driver.cuMemcpyDtoH(
@@ -101,9 +111,13 @@ def run_example(api="common"):
     expected = np.concatenate(
         (
             np.full(_THREADS, source.sum(dtype=np.int32), dtype=np.int32),
-            np.repeat(source.reshape(-1, 8 * _ITEMS).max(axis=1), 8),
+            np.repeat(source.reshape(-1, 8 * items_per_thread).max(axis=1), 8),
             np.array(
-                [source[0 : 23 * _ITEMS : _ITEMS].sum(dtype=np.int32)],
+                [
+                    source[0 : 23 * items_per_thread : items_per_thread].sum(
+                        dtype=np.int32
+                    )
+                ],
                 dtype=np.int32,
             ),
         )
