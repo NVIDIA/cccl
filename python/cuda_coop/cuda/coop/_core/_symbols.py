@@ -106,11 +106,13 @@ def _container_state_token(
 def _semantic_token(value: Any, state: _TokenState) -> Any:
     if isinstance(value, Enum):
         return type(value).__module__, type(value).__qualname__, value.value
+    if isinstance(value, bool):
+        return "bool", value
     if isinstance(value, float):
         if math.isnan(value):
             return "float", "nan", struct.pack(">d", value).hex()
         return "float", value.hex()
-    if value is None or isinstance(value, (bool, int, str, bytes)):
+    if value is None or isinstance(value, (int, str, bytes)):
         return value
     if isinstance(value, ModuleType):
         return "module", value.__name__
