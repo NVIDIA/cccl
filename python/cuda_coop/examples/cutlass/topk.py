@@ -16,11 +16,7 @@ from cuda.bindings import driver
 from cuda.coop import cutlass as cutlass_coop
 
 _THREADS = 64
-_ITEMS = 2
-_TILE = _THREADS * _ITEMS
 _K = 31
-_VALID = 93
-_SELECTED = min(_K, _VALID)
 
 
 def _check(result):
@@ -29,10 +25,13 @@ def _check(result):
     return result[1] if len(result) == 2 else result[1:]
 
 
-def run_example(api="common"):
+def run_example(api="common", items_per_thread=2):
     """Check selected multisets and pair identity without assuming output
     order.
     """
+    tile_size = _THREADS * items_per_thread
+    valid_items = tile_size - 35
+    selected_items = min(_K, valid_items)
     if api not in {"common", "qualified"}:
         raise ValueError("api must be 'common' or 'qualified'")
     module = coop if api == "common" else cutlass_coop
@@ -46,13 +45,19 @@ def run_example(api="common"):
         selected_positions: cute.Pointer,
         original_keys: cute.Pointer,
         original_positions: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
+        tile_size = _THREADS * items_per_thread
+        valid_items = tile_size - 35
+        selected_items = min(_K, valid_items)
         block = module.this_block()
-        keys = module.ThreadData(items_per_thread=_ITEMS)
-        positions = module.ThreadData(items_per_thread=_ITEMS)
+        keys = module.ThreadData(items_per_thread)
+        positions = module.ThreadData(items_per_thread)
         module.load(block, source, keys)
-        for item in cutlass.range_constexpr(_ITEMS):
-            positions[item] = cutlass.Int32(block.rank()) * _ITEMS + item
+        for item in cutlass.range_constexpr(items_per_thread):
+            positions[item] = (
+                cutlass.Int32(block.rank()) * items_per_thread + item
+            )
         if cutlass.const_expr(api == "qualified"):
             input_keys = keys.to_register_tensor()
             input_positions = positions.to_tensor_ssa(dtype=cutlass.Int32)
@@ -64,7 +69,7 @@ def run_example(api="common"):
             block,
             input_keys,
             k=_K,
-            valid_items=_VALID,
+            valid_items=valid_items,
             temp_storage=scratch,
         )
         max_keys, max_positions = module.topk_max_pairs(
@@ -72,14 +77,27 @@ def run_example(api="common"):
             input_keys,
             input_positions,
             k=_K,
-            valid_items=_VALID,
+            valid_items=valid_items,
             temp_storage=scratch,
         )
         # Only min(k, valid_items) output positions are defined, in any order.
-        module.store(block, smallest, min_keys, valid_items=_SELECTED)
-        module.store(block, largest, max_keys, valid_items=_SELECTED)
         module.store(
-            block, selected_positions, max_positions, valid_items=_SELECTED
+            block,
+            smallest,
+            min_keys,
+            valid_items=selected_items,
+        )
+        module.store(
+            block,
+            largest,
+            max_keys,
+            valid_items=selected_items,
+        )
+        module.store(
+            block,
+            selected_positions,
+            max_positions,
+            valid_items=selected_items,
         )
         module.store(block, original_keys, keys)
         module.store(block, original_positions, positions)
@@ -92,6 +110,7 @@ def run_example(api="common"):
         selected_positions: cute.Pointer,
         original_keys: cute.Pointer,
         original_positions: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
         select_tile(
             source,
@@ -100,17 +119,20 @@ def run_example(api="common"):
             selected_positions,
             original_keys,
             original_positions,
+            items_per_thread,
         ).launch(grid=1, block=_THREADS)
 
     # docs: end cutlass-topk
 
     source = (
-        np.random.default_rng(42).integers(-1, 2, size=_TILE).astype(np.float32)
+        np.random.default_rng(42)
+        .integers(-1, 2, size=tile_size)
+        .astype(np.float32)
     )
     source[2::3] = 0.0
     source[1::5] = -0.0
     outputs = [
-        np.full(_TILE, -999, dtype=dtype)
+        np.full(tile_size, -999, dtype=dtype)
         for dtype in (np.float32, np.float32, np.int32, np.float32, np.int32)
     ]
     arrays = [source, *outputs]
@@ -138,7 +160,7 @@ def run_example(api="common"):
                     assumed_align=16,
                 )
             )
-        launch(*pointers)
+        launch(*pointers, items_per_thread)
         _check(driver.cuCtxSynchronize())
         for array, allocation in zip(outputs, allocations[1:]):
             _check(
@@ -146,30 +168,33 @@ def run_example(api="common"):
             )
 
     smallest, largest, positions, original_keys, original_positions = outputs
-    ordered = np.sort(source[:_VALID])
+    ordered = np.sort(source[:valid_items])
     np.testing.assert_array_equal(
-        np.sort(smallest[:_SELECTED]), ordered[:_SELECTED]
+        np.sort(smallest[:selected_items]),
+        ordered[:selected_items],
     )
     np.testing.assert_array_equal(
-        np.sort(largest[:_SELECTED]), ordered[-_SELECTED:]
+        np.sort(largest[:selected_items]),
+        ordered[-selected_items:],
     )
-    selected_ids = positions[:_SELECTED]
-    assert len(np.unique(selected_ids)) == _SELECTED
-    assert np.all((selected_ids >= 0) & (selected_ids < _VALID))
+    selected_ids = positions[:selected_items]
+    assert len(np.unique(selected_ids)) == selected_items
+    assert np.all((selected_ids >= 0) & (selected_ids < valid_items))
     # Preserve the source bits and association even when tied keys are signed
     # zeros.
     np.testing.assert_array_equal(
-        largest[:_SELECTED].view(np.uint32),
+        largest[:selected_items].view(np.uint32),
         source[selected_ids].view(np.uint32),
     )
     np.testing.assert_array_equal(
         original_keys.view(np.uint32), source.view(np.uint32)
     )
     np.testing.assert_array_equal(
-        original_positions, np.arange(_TILE, dtype=np.int32)
+        original_positions,
+        np.arange(tile_size, dtype=np.int32),
     )
     for output in outputs[:3]:
-        np.testing.assert_array_equal(output[_SELECTED:], -999)
+        np.testing.assert_array_equal(output[selected_items:], -999)
     return outputs
 
 
