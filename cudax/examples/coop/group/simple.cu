@@ -89,12 +89,12 @@ struct GroupsKernel
     // The root thread in group prints out result.
     if (cuda::gpu_thread.is_root_rank(block_group))
     {
-      printf(" Sum of all ranks 0..%d in block_group is %d (expected %d)\n\n",
+      printf(" Sum of all ranks 0..%u in block_group is %u (expected %u)\n\n",
              block_group_size - 1,
              output,
              expected_output);
 
-      printf(" Now creating %d groups, each of size 16 threads:\n\n", block_group_size / 16);
+      printf(" Now creating %u groups, each of size 16 threads:\n\n", block_group_size / 16);
     }
 
     // Wait for the root thread.
@@ -121,7 +121,7 @@ struct GroupsKernel
     // Each root thread prints out the result.
     if (cuda::gpu_thread.is_root_rank(half_warp))
     {
-      printf("   Sum of all ranks 0..15 in this half_warp group is %d (expected %d)\n", output, expected_output);
+      printf("   Sum of all ranks 0..15 in this half_warp group is %u (expected %u)\n", output, expected_output);
     }
   }
 };
