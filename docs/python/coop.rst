@@ -172,6 +172,11 @@ only the backend namespace, you can import it as ``coop`` instead. See the
 Configuration
 -------------
 
+With Numba-CUDA-MLIR 0.5.x, activating the ``cuda.coop`` backend disables
+the compiler's ``cache=True`` disk cache for all kernels in that process.
+Compiled kernels still have an in-memory cache. The provider cache controlled
+by ``CUDA_COOP_ENABLE_CACHE`` below is separate.
+
 Runtime environment variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -461,10 +466,10 @@ use the same lowercase string selectors. Selectors are normalized to lowercase
 underscore-delimited strings. Enum and integer selectors, including ``0``, are
 rejected.
 
-Store consumes the arrangement associated with its selected algorithm. The
-transpose Store implementations copy the payload before calling CUB, so Store
-never modifies the caller's scalar or ``ThreadData`` value while CUB performs
-its in-place reordering.
+Store consumes the arrangement associated with its selected algorithm.
+Transpose Store algorithms may rearrange the input payload in place, following
+CUB's behavior. Reload or reinitialize the payload before using its previous
+arrangement again.
 
 Exchange semantics
 ------------------
@@ -713,8 +718,10 @@ allocations reliably. A kernel using cooperative temporary storage must not
 also declare a zero-sized or runtime-sized ``cuda.shared.array``. When
 cooperative backing becomes dynamic, user static shared arrays are also
 unsupported. Keep both user arrays and cooperative backing static, or move the
-user data out of shared memory. Storage-free operations do not add this
-restriction.
+user data out of shared memory. CUDAX Block, Cluster, and mapped-Warp
+reductions also allocate internal static shared memory, even without a
+``TempStorage`` operand. They cannot coexist with user dynamic shared arrays
+or dynamic cooperative backing in these compiler releases.
 
 With ``auto_sync=False``, a descriptor must originate from exactly one
 constructor site. Selecting between multiple manual-sync constructors is an
