@@ -47,6 +47,12 @@ struct __concat_tuple_types<__tuple_types<_Types...>>
   using type _CCCL_NODEBUG = tuple<_Types...>;
 };
 
+template <>
+struct __concat_tuple_types<>
+{
+  using type _CCCL_NODEBUG = tuple<>;
+};
+
 template <class... _TupleTypes>
 using __concat_tuple_types_t = typename __concat_tuple_types<_TupleTypes...>::type;
 
@@ -101,18 +107,17 @@ template <class _Tuple1, class _Tuple2, size_t... _Indices1, size_t... _Indices2
 }
 
 template <class... _Tuples>
-_CCCL_CONCEPT __all_tuple_like = (__tuple_like<_Tuples> && ...);
-
-[[nodiscard]] _CCCL_API constexpr tuple<> tuple_cat()
-{
-  return tuple<>();
-}
+_CCCL_CONCEPT __all_tuple_like = (__tuple_like<_Tuples> && ... && true);
 
 _CCCL_TEMPLATE(class... _Tuples)
 _CCCL_REQUIRES(__all_tuple_like<_Tuples...>)
 [[nodiscard]] _CCCL_API constexpr __tuple_cat_return_t<_Tuples...> tuple_cat(_Tuples&&... __tuples)
 {
-  if constexpr (sizeof...(_Tuples) <= 2)
+  if constexpr (sizeof...(_Tuples) == 0)
+  {
+    return tuple<>{};
+  }
+  else if constexpr (sizeof...(_Tuples) <= 2)
   {
     return ::cuda::std::__tuple_cat_impl(__make_tuple_indices_t<tuple_size<remove_reference_t<_Tuples>>::value>{}...,
                                          ::cuda::std::forward<_Tuples>(__tuples)...);
