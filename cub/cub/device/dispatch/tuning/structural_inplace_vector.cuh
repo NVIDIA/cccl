@@ -14,9 +14,6 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/assert.h>
-#include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__host_stdlib/stdexcept>
-#include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/initializer_list>
 
@@ -35,7 +32,7 @@ struct structural_inplace_vector
   using iterator        = T*;
   using const_iterator  = const T*;
 
-  ::cuda::std::array<T, Capacity> elems{};
+  T elems[Capacity]{};
   size_type count = 0;
 
   constexpr structural_inplace_vector() = default;
@@ -68,40 +65,34 @@ struct structural_inplace_vector
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr reference at(size_type pos)
   {
-    if (pos >= count)
-    {
-      _CCCL_THROW(::std::out_of_range, "structural_inplace_vector::at");
-    }
+    _CCCL_VERIFY(pos < count, "structural_inplace_vector::at: index out of range");
     return elems[pos];
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_reference at(size_type pos) const
   {
-    if (pos >= count)
-    {
-      _CCCL_THROW(::std::out_of_range, "structural_inplace_vector::at");
-    }
+    _CCCL_VERIFY(pos < count, "structural_inplace_vector::at: index out of range");
     return elems[pos];
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr iterator begin() noexcept
   {
-    return elems.data();
+    return elems;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_iterator begin() const noexcept
   {
-    return elems.data();
+    return elems;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr iterator end() noexcept
   {
-    return elems.data() + count;
+    return elems + count;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_iterator end() const noexcept
   {
-    return elems.data() + count;
+    return elems + count;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
