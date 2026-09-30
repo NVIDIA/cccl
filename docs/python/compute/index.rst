@@ -357,7 +357,7 @@ the same cache key, even if defined at different source locations.
 Closure contents are recursively hashed:
 
 * **Scalars and host arrays** — hashed by value
-* **Device arrays** — hashed by pointer, shape, and dtype (not contents)
+* **Device arrays** — hashed by rank and dtype (not shape, pointer, or contents)
 * **Nested functions** — hashed by their own bytecode and closures
 
 Because device arrays captured in closures are hashed by pointer, changing the
