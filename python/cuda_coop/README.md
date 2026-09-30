@@ -513,9 +513,9 @@ from cuda import coop
 
 
 @cuda.jit
-def block_scan_kernel(values, prefixes):
+def block_scan_kernel(values, prefixes, items_per_thread):
     block = coop.this_block()
-    items = coop.ThreadData(items_per_thread=2)
+    items = coop.ThreadData(items_per_thread)
     coop.load(block, values, items)
     scanned = coop.exclusive_sum(block, items)
     coop.store(block, prefixes, scanned)

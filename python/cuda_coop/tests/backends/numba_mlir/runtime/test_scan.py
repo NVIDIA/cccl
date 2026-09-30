@@ -83,7 +83,7 @@ def _exclusive_sum(values: np.ndarray, initial: float = 0) -> np.ndarray:
 def _five_scan_spellings(source, output, aggregates, initial):
     thread = cuda.threadIdx.x
     value = source[thread]
-    aggregate = qualified_coop.ThreadData(1)
+    aggregate = qualified_coop.ThreadData(items_per_thread=1)
 
     output[0 * _BLOCK_THREADS + thread] = root_coop.scan(
         root_coop.this_block(), value
@@ -137,34 +137,37 @@ def test_all_five_spellings_preserve_mode_initial_and_aggregate_semantics(
 @cache
 def _thread_data_algorithm_kernel(algorithm: str):
     @cuda.jit
-    def kernel(source, output, preserved):
+    def kernel(source, output, preserved, items_per_thread):
         thread = cuda.threadIdx.x
-        value = root_coop.ThreadData(_ITEMS_PER_THREAD)
-        for item in range(_ITEMS_PER_THREAD):
-            index = thread * _ITEMS_PER_THREAD + item
+        value = root_coop.ThreadData(items_per_thread)
+        for item in range(items_per_thread):
+            index = thread * items_per_thread + item
             value[item] = source[index]
         scanned = root_coop.inclusive_sum(
             root_coop.this_block(), value, algorithm=algorithm
         )
         root_coop.store(root_coop.this_block(), output, scanned)
-        for item in range(_ITEMS_PER_THREAD):
-            index = thread * _ITEMS_PER_THREAD + item
+        for item in range(items_per_thread):
+            index = thread * items_per_thread + item
             preserved[index] = value[item]
 
     return kernel
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "algorithm", ("raking", "raking_memoize", "warp_scans")
 )
 @pytest.mark.parametrize("dtype", _DTYPES)
-def test_block_algorithms_scan_thread_data_out_of_place(algorithm: str, dtype):
-    source = _dtype_values(dtype, _TILE_ITEMS)
+def test_block_algorithms_scan_thread_data_out_of_place(
+    algorithm: str, dtype, *, items_per_thread
+):
+    source = _dtype_values(dtype, (_BLOCK_THREADS * items_per_thread))
     output = np.full_like(source, 127)
     preserved = np.full_like(source, 127)
 
     _thread_data_algorithm_kernel(algorithm)[1, _BLOCK_THREADS](
-        source, output, preserved
+        source, output, preserved, items_per_thread
     )
 
     np.testing.assert_array_equal(output, np.cumsum(source, dtype=dtype))
@@ -172,9 +175,9 @@ def test_block_algorithms_scan_thread_data_out_of_place(algorithm: str, dtype):
 
 
 @cuda.jit
-def _scan_one_element_of_a_loaded_tile(source, output):
+def _scan_one_element_of_a_loaded_tile(source, output, items_per_thread):
     thread = cuda.threadIdx.x
-    payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
+    payload = root_coop.ThreadData(items_per_thread, dtype=types.int32)
     root_coop.load(
         root_coop.this_block(),
         source,
@@ -185,48 +188,66 @@ def _scan_one_element_of_a_loaded_tile(source, output):
     output[thread] = root_coop.inclusive_sum(root_coop.this_block(), payload[0])
 
 
-def test_scalar_scan_accepts_an_element_of_a_loaded_payload():
-    source = ((np.arange(_TILE_ITEMS, dtype=np.int32) * 5) % 37) - 11
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_scalar_scan_accepts_an_element_of_a_loaded_payload(
+    *, items_per_thread
+):
+    source = (
+        (np.arange((_BLOCK_THREADS * items_per_thread), dtype=np.int32) * 5)
+        % 37
+    ) - 11
     output = np.full(_BLOCK_THREADS, -1, dtype=np.int32)
 
-    _scan_one_element_of_a_loaded_tile[1, _BLOCK_THREADS](source, output)
+    _scan_one_element_of_a_loaded_tile[1, _BLOCK_THREADS](
+        source, output, items_per_thread
+    )
 
     np.testing.assert_array_equal(
         output,
-        np.cumsum(source[::_ITEMS_PER_THREAD], dtype=np.int32),
+        np.cumsum(source[::items_per_thread], dtype=np.int32),
     )
 
 
-@cuda.jit
-def _local_array_numpy_scan(source, output, preserved, aggregates):
-    thread = cuda.threadIdx.x
-    value = cuda.local.array(_ITEMS_PER_THREAD, dtype=types.int32)
-    aggregate = cuda.local.array(1, dtype=types.int32)
-    for item in range(_ITEMS_PER_THREAD):
-        index = thread * _ITEMS_PER_THREAD + item
-        value[item] = source[index]
-    scanned = qualified_coop.inclusive_scan(
-        qualified_coop.this_block(),
-        value,
-        scan_op=np.maximum,
-        algorithm="raking_memoize",
-        aggregate_output=aggregate,
-    )
-    for item in range(_ITEMS_PER_THREAD):
-        index = thread * _ITEMS_PER_THREAD + item
-        output[index] = scanned[item]
-        preserved[index] = value[item]
-    aggregates[thread] = aggregate[0]
+@cache
+def _local_array_numpy_scan(array_items_per_thread):
+    @cuda.jit
+    def kernel(source, output, preserved, aggregates, items_per_thread):
+        thread = cuda.threadIdx.x
+        value = cuda.local.array(array_items_per_thread, dtype=types.int32)
+        aggregate = cuda.local.array(1, dtype=types.int32)
+        for item in range(items_per_thread):
+            index = thread * items_per_thread + item
+            value[item] = source[index]
+        scanned = qualified_coop.inclusive_scan(
+            qualified_coop.this_block(),
+            value,
+            scan_op=np.maximum,
+            algorithm="raking_memoize",
+            aggregate_output=aggregate,
+        )
+        for item in range(items_per_thread):
+            index = thread * items_per_thread + item
+            output[index] = scanned[item]
+            preserved[index] = value[item]
+        aggregates[thread] = aggregate[0]
+
+    return kernel
 
 
-def test_qualified_local_array_and_numpy_ufunc_preserve_input_and_aggregate():
-    source = ((np.arange(_TILE_ITEMS, dtype=np.int32) * 17) % 113) - 51
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_qualified_local_array_and_numpy_ufunc_preserve_input_and_aggregate(
+    *, items_per_thread
+):
+    source = (
+        (np.arange((_BLOCK_THREADS * items_per_thread), dtype=np.int32) * 17)
+        % 113
+    ) - 51
     output = np.full_like(source, -1)
     preserved = np.full_like(source, -1)
     aggregates = np.full(_BLOCK_THREADS, -1, dtype=np.int32)
 
-    _local_array_numpy_scan[1, _BLOCK_THREADS](
-        source, output, preserved, aggregates
+    _local_array_numpy_scan(items_per_thread)[1, _BLOCK_THREADS](
+        source, output, preserved, aggregates, items_per_thread
     )
 
     np.testing.assert_array_equal(output, np.maximum.accumulate(source))
@@ -269,7 +290,7 @@ def _warp_scans(
     thread = cuda.threadIdx.x
     value = source[thread]
     logical_warp = qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
-    aggregate = qualified_coop.ThreadData(1)
+    aggregate = qualified_coop.ThreadData(items_per_thread=1)
 
     operator_output[thread] = qualified_coop.inclusive_scan(
         qualified_coop.this_warp(), value, scan_op=operator.add
@@ -336,7 +357,7 @@ def test_physical_and_logical_warp_forms_cover_alias_callback_and_valid_prefix(
 @cuda.jit
 def _warp_scan_combined_runtime_abi(source, output, aggregates, initial, valid):
     thread = cuda.threadIdx.x
-    aggregate = qualified_coop.ThreadData(1, dtype=types.int32)
+    aggregate = qualified_coop.ThreadData(items_per_thread=1, dtype=types.int32)
     output[thread] = qualified_coop.exclusive_scan(
         qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
         source[thread],

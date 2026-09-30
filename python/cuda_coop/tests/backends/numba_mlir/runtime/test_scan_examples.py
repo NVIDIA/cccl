@@ -77,22 +77,23 @@ def test_inclusive_sum_example():
     from cuda import coop
 
     @cuda.jit
-    def sum_tile(source, destination, original):
+    def sum_tile(source, destination, original, items_per_thread):
         block = coop.this_block()
-        items = coop.ThreadData(items_per_thread=2)
+        items = coop.ThreadData(items_per_thread)
         coop.load(block, source, items)
         prefixes = coop.inclusive_sum(block, items, algorithm="raking_memoize")
         coop.store(block, destination, prefixes)
         coop.store(block, original, items)
 
-    values = (np.arange(128, dtype=np.int32) % 11) - 5
-    source = cuda.to_device(values)
-    destination = cuda.device_array_like(source)
-    original = cuda.device_array_like(source)
-    sum_tile[1, 64](source, destination, original)
-    expected = np.cumsum(values, dtype=np.int32)
-    np.testing.assert_array_equal(destination.copy_to_host(), expected)
-    np.testing.assert_array_equal(original.copy_to_host(), values)
+    for items_per_thread in (1, 4):
+        values = (np.arange(64 * items_per_thread, dtype=np.int32) % 11) - 5
+        source = cuda.to_device(values)
+        destination = cuda.device_array_like(source)
+        original = cuda.device_array_like(source)
+        sum_tile[1, 64](source, destination, original, items_per_thread)
+        expected = np.cumsum(values, dtype=np.int32)
+        np.testing.assert_array_equal(destination.copy_to_host(), expected)
+        np.testing.assert_array_equal(original.copy_to_host(), values)
     # inclusive-sum-example-end
 
 
