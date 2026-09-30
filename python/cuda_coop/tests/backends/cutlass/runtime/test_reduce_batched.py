@@ -26,7 +26,7 @@ def _run(
     *,
     api=coop,
     width=32,
-    batches=3,
+    items_per_thread=3,
     layout="striped",
     dtype=np.int32,
     op="sum",
@@ -36,29 +36,36 @@ def _run(
     compile_options=(),
 ):
     threads = int(np.prod(block))
-    output_count = (batches + width - 1) // width
+    output_count = (items_per_thread + width - 1) // width
     value_type = cutlass_dtype(dtype)
 
     @cute.kernel
     def kernel(
-        source: cute.Pointer, output: cute.Pointer, preserved: cute.Pointer
+        source: cute.Pointer,
+        output: cute.Pointer,
+        preserved: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
         block_group = api.this_block()
         warp = api.this_warp().group_by(width)
-        values = api.ThreadData(batches)
+        values = api.ThreadData(items_per_thread)
         source_tensor = cute.recast_tensor(
-            cute.make_tensor(source, cute.make_layout(threads * batches)),
+            cute.make_tensor(
+                source, cute.make_layout(threads * items_per_thread)
+            ),
             dtype=value_type,
         )
         preserved_tensor = cute.recast_tensor(
-            cute.make_tensor(preserved, cute.make_layout(threads * batches)),
+            cute.make_tensor(
+                preserved, cute.make_layout(threads * items_per_thread)
+            ),
             dtype=value_type,
         )
         api.load(block_group, source_tensor, values)
         thread = block_group.rank()
         output_tensor = cute.recast_tensor(
             cute.make_tensor(
-                output, cute.make_layout((threads // width) * batches)
+                output, cute.make_layout((threads // width) * items_per_thread)
             ),
             dtype=value_type,
         )
@@ -79,30 +86,37 @@ def _run(
                         batch = lane + item * width
                     else:
                         batch = lane * output_count + item
-                    if batch < batches:
-                        output_tensor[(thread // width) * batches + batch] = (
-                            result[item]
-                        )
+                    if batch < items_per_thread:
+                        output_tensor[
+                            (thread // width) * items_per_thread + batch
+                        ] = result[item]
         if cutlass.const_expr(payload_kind != "thread_data"):
             values = api.ThreadData.from_payload(values)
         api.store(block_group, preserved_tensor, values)
 
     @cute.jit
     def launch(
-        source: cute.Pointer, output: cute.Pointer, preserved: cute.Pointer
+        source: cute.Pointer,
+        output: cute.Pointer,
+        preserved: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, output, preserved).launch(grid=1, block=block)
+        kernel(source, output, preserved, items_per_thread).launch(
+            grid=1, block=block
+        )
 
     # Small positive integers keep products exact for the floating-point cases.
-    source = (np.arange(threads * batches) % 2 + 1).astype(dtype)
-    output = np.zeros((threads // width) * batches, dtype=dtype)
+    source = (np.arange(threads * items_per_thread) % 2 + 1).astype(dtype)
+    output = np.zeros((threads // width) * items_per_thread, dtype=dtype)
     preserved = np.zeros_like(source)
     with ExitStack() as stack:
         pointers = [
             stack.enter_context(device_array(x))
             for x in (source, output, preserved)
         ]
-        compiled = cute.compile[compile_options](launch, *pointers)
+        compiled = cute.compile[compile_options](
+            launch, *pointers, items_per_thread
+        )
         compiled(*pointers)
         compiled(*pointers)
     reducer = {
@@ -115,7 +129,9 @@ def _run(
         "bit_xor": np.bitwise_xor,
     }[op]
     expected = reducer.reduce(
-        source.reshape(threads // width, width, batches), axis=1, dtype=dtype
+        source.reshape(threads // width, width, items_per_thread),
+        axis=1,
+        dtype=dtype,
     )
     if divergent:
         expected[1:] = 0
@@ -128,22 +144,22 @@ def _run(
     "api", (coop, cutlass_coop), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
-@pytest.mark.parametrize("batches", (3, 33))
+@pytest.mark.parametrize("items_per_thread", (1, 4, 33))
 @pytest.mark.parametrize("layout", ("striped", "blocked"))
-def test_batch_layouts(api, width, batches, layout):
-    _run(api=api, width=width, batches=batches, layout=layout)
+def test_batch_layouts(api, width, items_per_thread, layout):
+    _run(api=api, width=width, items_per_thread=items_per_thread, layout=layout)
 
 
 @pytest.mark.parametrize("dtype", NUMPY_DTYPES)
 def test_numeric_types(dtype):
-    _run(dtype=dtype, batches=35, width=8)
+    _run(dtype=dtype, items_per_thread=35, width=8)
 
 
 @pytest.mark.parametrize(
     "op", ("sum", "multiplies", "min", "max", "bit_and", "bit_or", "bit_xor")
 )
 def test_builtin_operators(op):
-    _run(op=op, width=8, batches=9)
+    _run(op=op, width=8, items_per_thread=9)
 
 
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16))

@@ -112,7 +112,9 @@ def test_allocation_rollback(monkeypatch):
         raise RuntimeError("result allocation failed")
 
     monkeypatch.setattr(lowering, "_make_rmem_tensor", fail)
-    value = cutlass_coop.ThreadData(3, dtype=cutlass.Int32, values=[1, 2, 3])
+    value = cutlass_coop.ThreadData(
+        items_per_thread=3, dtype=cutlass.Int32, values=[1, 2, 3]
+    )
     with pytest.raises(RuntimeError, match="result allocation failed"):
         lowering.provider_reduce_batched(
             group=this_warp(),

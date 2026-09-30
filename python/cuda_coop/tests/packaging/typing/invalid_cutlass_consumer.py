@@ -29,7 +29,7 @@ def callback(left: Int32, right: Int32) -> Int32:
 
 
 scalar = Int32(1)
-values = cutlass_coop.ThreadData(2, np.int32)
+values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
 cutlass_coop.load(
     cutlass_coop.this_grid(),  # expected-error: [arg-type]
     object(),
@@ -135,7 +135,9 @@ common.exclusive_sum(  # expected-error: [call-overload]
     warp, scalar, valid_items=7
 )
 common.scan(  # expected-error: [call-overload]
-    block, scalar, aggregate_output=cutlass_coop.ThreadData(1, Int32)
+    block,
+    scalar,
+    aggregate_output=cutlass_coop.ThreadData(items_per_thread=1, dtype=Int32),
 )
 
 # Discard results so an assignment cannot constrain seed inference.
@@ -156,7 +158,7 @@ common.exclusive_scan(  # expected-error: [misc]
 )
 common.scan(  # expected-error: [call-overload]
     block,
-    cutlass_coop.ThreadData(2, Float32),
+    cutlass_coop.ThreadData(items_per_thread=2, dtype=Float32),
     mode="exclusive",
     initial_value=Float64(0),
 )
@@ -169,8 +171,8 @@ common.scan(  # expected-error: [call-overload]
     warp, scalar, mode="exclusive", initial_value=np.uint32(0)
 )
 
-ranks = cutlass_coop.ThreadData(2, np.int32)
-flags = cutlass_coop.ThreadData(2, np.uint8)
+ranks = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
+flags = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.uint8)
 cutlass_coop.exchange(block, scalar)  # expected-error: [call-overload]
 cutlass_coop.exchange(  # expected-error: [call-overload]
     block, values, mode="scatter_to_blocked"
@@ -207,7 +209,7 @@ cutlass_coop.exchange(  # expected-error: [call-overload]
     values,
     mode="scatter_to_striped_flagged",
     ranks=ranks,
-    valid_flags=cutlass_coop.ThreadData(2, np.bool_),
+    valid_flags=cutlass_coop.ThreadData(items_per_thread=2, dtype=np.bool_),
 )
 cutlass_coop.exchange(  # expected-error: [call-overload]
     block, values, temp_storage=cutlass_coop.TempStorage()
@@ -299,13 +301,13 @@ cutlass_coop.radix_sort_pairs(  # expected-error: [call-overload]
     block, values, scalar
 )
 cutlass_coop.radix_sort_keys(  # expected-error: [type-var]
-    block, cutlass_coop.ThreadData(2, np.int16)
+    block, cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int16)
 )
 cutlass_coop.radix_sort_keys(  # expected-error: [type-var]
-    block, cutlass_coop.ThreadData(2, np.complex64)
+    block, cutlass_coop.ThreadData(items_per_thread=2, dtype=np.complex64)
 )
 cutlass_coop.radix_rank(  # expected-error: [type-var]
-    block, cutlass_coop.ThreadData(2, np.float32)
+    block, cutlass_coop.ThreadData(items_per_thread=2, dtype=np.float32)
 )
 cutlass_coop.radix_rank(block, Float32(1))  # expected-error: [call-overload]
 cutlass_coop.radix_sort_keys(  # expected-error: [call-overload]
@@ -332,7 +334,9 @@ cutlass_coop.radix_rank(
     block,
     values,
     exclusive_digit_prefix=(
-        cutlass_coop.ThreadData(1, np.uint32)  # expected-error: [arg-type]
+        cutlass_coop.ThreadData(  # expected-error: [arg-type]
+            items_per_thread=1, dtype=np.uint32
+        )
     ),
 )
 cutlass_coop.radix_rank(  # expected-error: [call-overload]
@@ -366,7 +370,7 @@ cutlass_coop.radix_rank(  # expected-error: [call-overload]
     block, values, exclusive_digit_prefix=_ReadOnlyPrefix()
 )
 common.radix_sort_keys(  # expected-error: [type-var]
-    block, cutlass_coop.ThreadData(2, np.float32)
+    block, cutlass_coop.ThreadData(items_per_thread=2, dtype=np.float32)
 )
 
 cutlass_coop.topk_min_keys(warp, values, k=1)  # expected-error: [arg-type]
