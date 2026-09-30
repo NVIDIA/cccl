@@ -277,3 +277,4 @@ function(cccl_create_clang_tidy_test plugin source)
 endfunction()
 
 add_subdirectory(modernize_type_traits)
+add_subdirectory(prefer_cuda_traits)
