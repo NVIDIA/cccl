@@ -136,11 +136,11 @@ def test_rebound_explicit_dtype_is_not_replaced_by_write_inference():
     def kernel(destination):
         if destination[0] > 0:
             dtype = types.int32
-            first = coop.ThreadData(2, dtype)
+            first = numba_coop.ThreadData(2, dtype)
             first[0] = 16777217
             destination[0] = first[0]
             dtype = types.float32
-            second = coop.ThreadData(2, dtype)
+            second = numba_coop.ThreadData(2, dtype)
             second[0] = 1.5
             destination[1] = second[0]
 
@@ -161,11 +161,14 @@ def test_rebound_shared_shape_is_rejected_with_cooperative_storage():
             static = cuda.shared.array(size, types.int32)
             dynamic[cuda.threadIdx.x] = 1
             static[cuda.threadIdx.x] = 2
-            payload = coop.ThreadData(2, types.int32)
+            payload = numba_coop.ThreadData(2, types.int32)
             payload[0] = dynamic[cuda.threadIdx.x]
             payload[1] = static[cuda.threadIdx.x]
-            coop.store(
-                coop.this_block(), destination, payload, algorithm="transpose"
+            numba_coop.store(
+                numba_coop.this_block(),
+                destination,
+                payload,
+                algorithm="transpose",
             )
 
     with pytest.raises(
@@ -466,12 +469,12 @@ def test_reduce_shared_memory_coexistence(kind, shape):
         tile[thread] = source[thread]
         cuda.syncthreads()
         if kind == "block":
-            group = coop.this_block()
+            group = numba_coop.this_block()
         elif kind == "warp":
-            group = coop.this_warp()
+            group = numba_coop.this_warp()
         else:
-            group = coop.this_warp().group_by(8)
-        total = coop.sum(group, source[thread])
+            group = numba_coop.this_warp().group_by(8)
+        total = numba_coop.sum(group, source[thread])
         if group.rank() == 0:
             destination[thread] = tile[thread] + total
 
@@ -503,16 +506,18 @@ def test_reduce_uses_dynamic_cooperative_backing(monkeypatch):
 
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
-        scratch = coop.TempStorage(64 * 1024, auto_sync=True)
-        items = coop.ThreadData(2, types.int32)
-        coop.load(
-            coop.this_block(),
+        scratch = numba_coop.TempStorage(64 * 1024, auto_sync=True)
+        items = numba_coop.ThreadData(2, types.int32)
+        numba_coop.load(
+            numba_coop.this_block(),
             source,
             items,
             algorithm="transpose",
             temp_storage=scratch,
         )
-        total = coop.sum(coop.this_block(), items, temp_storage=scratch)
+        total = numba_coop.sum(
+            numba_coop.this_block(), items, temp_storage=scratch
+        )
         if cuda.threadIdx.x == 0:
             destination[0] = total
 
@@ -528,7 +533,7 @@ def test_group_query_allows_user_dynamic_arrays():
         tile = cuda.shared.array(0, types.int32)
         thread = cuda.threadIdx.x
         tile[thread] = source[thread]
-        result = coop.this_block().group_by(2).rank()
+        result = numba_coop.this_block().group_by(2).rank()
         destination[thread] = tile[thread] + result
 
     assert _compile(
