@@ -30,7 +30,18 @@ pytestmark = [
 @pytest.mark.parametrize("qualified", [False, True])
 @pytest.mark.parametrize(
     "value_dtype,length_dtype",
-    [(np.int8, np.uint16), (np.float32, np.int64), (np.float64, np.uint64)],
+    [
+        (np.int8, np.uint16),
+        (np.uint8, np.uint8),
+        (np.int16, np.int8),
+        (np.uint16, np.int16),
+        (np.int32, np.int32),
+        (np.uint32, np.uint32),
+        (np.int64, np.int64),
+        (np.uint64, np.uint64),
+        (np.float32, np.int64),
+        (np.float64, np.uint64),
+    ],
 )
 def test_windows_preserve_inputs_and_zero_invalid_slots(
     qualified, value_dtype, length_dtype
@@ -55,12 +66,23 @@ def test_windows_preserve_inputs_and_zero_invalid_slots(
         api.store(block, kept_values, run_values)
         api.store(block, kept_lengths, run_lengths)
 
-    values = np.arange(64, dtype=value_dtype) + 7
+    values = np.arange(64, dtype=value_dtype)
+    if np.issubdtype(value_dtype, np.floating):
+        values = values / value_dtype(4) - value_dtype(7.125)
+    elif np.issubdtype(value_dtype, np.signedinteger):
+        values -= value_dtype(31)
+    else:
+        values += value_dtype(1 << (np.dtype(value_dtype).itemsize * 8 - 1))
+    if value_dtype == np.float64:
+        values += value_dtype(2**-30)
+    elif value_dtype == np.int64:
+        values *= value_dtype(1 << 33)
     lengths = np.zeros(64, dtype=length_dtype)
     output = np.full(96, 99, dtype=value_dtype)
     kept_values = np.zeros_like(values)
     kept_lengths = np.zeros_like(lengths)
-    for prefix in ([], [3, 2], [1] * 64, [10, 200, 4]):
+    long_run = min(200, np.iinfo(length_dtype).max)
+    for prefix in ([], [3, 2], [1] * 64, [10, long_run, 4]):
         lengths[:] = 0
         lengths[: len(prefix)] = prefix
         decoded = np.repeat(values, lengths.astype(np.int64))
@@ -187,10 +209,30 @@ def test_uint64_decode_above_uint32_range_without_large_allocation(total_size):
     assert np.all(total == total_size)
 
 
-@pytest.mark.parametrize("qualified", [False, True])
-@pytest.mark.parametrize("threads", [32, 37])
+@pytest.mark.parametrize(
+    "qualified,threads,value_dtype",
+    [
+        (qualified, threads, np.int16)
+        for qualified in (False, True)
+        for threads in (32, 37)
+    ]
+    + [
+        (False, 32, dtype)
+        for dtype in (
+            np.int8,
+            np.uint8,
+            np.uint16,
+            np.int32,
+            np.uint32,
+            np.int64,
+            np.uint64,
+            np.float32,
+            np.float64,
+        )
+    ],
+)
 def test_bulk_multiple_windows_partial_final_window_and_empty(
-    qualified, threads
+    qualified, threads, value_dtype
 ):
     api = numba_coop if qualified else coop
 
@@ -233,13 +275,28 @@ def test_bulk_multiple_windows_partial_final_window_and_empty(
         if cuda.threadIdx.x == 0 and total != 0:
             output[start] = again[0]
 
-    values = np.arange(threads * 2, dtype=np.int16) + 7
+    values = np.arange(threads * 2, dtype=value_dtype)
+    if np.issubdtype(value_dtype, np.floating):
+        values = values / value_dtype(4) - value_dtype(7.125)
+    elif np.issubdtype(value_dtype, np.signedinteger):
+        values -= value_dtype(31)
+    else:
+        values += value_dtype(1 << (np.dtype(value_dtype).itemsize * 8 - 1))
+    if value_dtype == np.float64:
+        values += value_dtype(2**-30)
+    elif value_dtype == np.int64:
+        values *= value_dtype(1 << 33)
+    sentinel = (
+        np.iinfo(value_dtype).max
+        if np.issubdtype(value_dtype, np.unsignedinteger)
+        else -1
+    )
     lengths = np.zeros(threads * 2, dtype=np.uint32)
     for prefix in ([], [3, 2], [4] * (threads * 2), [1, 401, 3]):
         lengths[:] = 0
         lengths[: len(prefix)] = prefix
         expected = np.repeat(values, lengths)
-        output = np.full(len(expected) + 10, -1, dtype=np.int16)
+        output = np.full(len(expected) + 10, sentinel, dtype=value_dtype)
         relative = np.full(len(output), 9999, dtype=np.uint64)
         totals = np.empty(threads, dtype=np.uint64)
         kernel[1, threads](
@@ -247,8 +304,8 @@ def test_bulk_multiple_windows_partial_final_window_and_empty(
         )
         cuda.synchronize()
         np.testing.assert_array_equal(output[3 : 3 + len(expected)], expected)
-        assert np.all(output[:3] == -1) and np.all(
-            output[3 + len(expected) :] == -1
+        assert np.all(output[:3] == sentinel) and np.all(
+            output[3 + len(expected) :] == sentinel
         )
         assert np.all(totals == len(expected))
         if qualified:
