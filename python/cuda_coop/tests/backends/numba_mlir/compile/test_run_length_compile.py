@@ -20,7 +20,10 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 @pytest.mark.parametrize(
     "bulk,relative", [(False, True), (True, False), (True, True)]
 )
-def test_rld_production_compile_and_link(monkeypatch, bulk, relative):
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_rld_production_compile_and_link(
+    monkeypatch, bulk, relative, items_per_thread
+):
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == ""
     monkeypatch.setattr(
         _types.cuda,
@@ -34,11 +37,13 @@ def test_rld_production_compile_and_link(monkeypatch, bulk, relative):
     )
 
     @cuda.jit(chip="sm_90")
-    def kernel(source, counts, destination, relative_output, offset):
+    def kernel(
+        source, counts, destination, relative_output, offset, items_per_thread
+    ):
         block = numba_coop.this_block()
         storage = numba_coop.TempStorage()
-        values = numba_coop.ThreadData(2, dtype=types.float64)
-        lengths = numba_coop.ThreadData(2, dtype=types.uint64)
+        values = numba_coop.ThreadData(items_per_thread, dtype=types.float64)
+        lengths = numba_coop.ThreadData(items_per_thread, dtype=types.uint64)
         numba_coop.load(block, source, values)
         numba_coop.load(block, counts, lengths)
         if bulk:
@@ -66,8 +71,8 @@ def test_rld_production_compile_and_link(monkeypatch, bulk, relative):
                 )
             counts[cuda.threadIdx.x] = total
         else:
-            relative_items = numba_coop.ThreadData(4)
-            total = numba_coop.ThreadData(1)
+            relative_items = numba_coop.ThreadData(items_per_thread=4)
+            total = numba_coop.ThreadData(items_per_thread=1)
             decoded = numba_coop.run_length_decode(
                 block,
                 values,
@@ -92,6 +97,7 @@ def test_rld_production_compile_and_link(monkeypatch, bulk, relative):
         types.float64[::1],
         types.uint64[::1],
         types.uint64,
+        types.IntegerLiteral(items_per_thread),
     )
     launch = (
         ("grid", (1, 1, 1)),
@@ -132,8 +138,8 @@ def test_bulk_destination_requires_matching_writable_contiguous_array(
 
     @cuda.jit(chip="sm_90")
     def kernel(destination):
-        values = numba_coop.ThreadData(1, dtype=types.int32)
-        lengths = numba_coop.ThreadData(1, dtype=types.uint32)
+        values = numba_coop.ThreadData(items_per_thread=1, dtype=types.int32)
+        lengths = numba_coop.ThreadData(items_per_thread=1, dtype=types.uint32)
         values[0] = 7
         lengths[0] = 1
         numba_coop.run_length_decode_into(

@@ -728,10 +728,10 @@ def check_histogram_surface() -> None:
 
 def check_run_length_surface(destination: object, offsets: object) -> None:
     block = coop.this_block()
-    values = coop.ThreadData(2, np.float32)
-    lengths = coop.ThreadData(2, np.uint64)
-    total = coop.ThreadData(1, np.uint64)
-    relative = coop.ThreadData(4, np.uint64)
+    values = coop.ThreadData(items_per_thread=2, dtype=np.float32)
+    lengths = coop.ThreadData(items_per_thread=2, dtype=np.uint64)
+    total = coop.ThreadData(items_per_thread=1, dtype=np.uint64)
+    relative = coop.ThreadData(items_per_thread=4, dtype=np.uint64)
     assert_type(
         coop.run_length_decode(
             block,

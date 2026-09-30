@@ -26,10 +26,12 @@ def test_run_length_window_example():
     import cuda.coop.numba_mlir as numba_coop
 
     @cuda.jit
-    def decode_window(values, lengths, output, offsets, totals):
+    def decode_window(
+        values, lengths, output, offsets, totals, items_per_thread
+    ):
         block = numba_coop.this_block()
-        runs = numba_coop.ThreadData(items_per_thread=2)
-        sizes = numba_coop.ThreadData(items_per_thread=2)
+        runs = numba_coop.ThreadData(items_per_thread)
+        sizes = numba_coop.ThreadData(items_per_thread)
         numba_coop.load(block, values, runs)
         numba_coop.load(block, lengths, sizes)
         relative = numba_coop.ThreadData(items_per_thread=4)
@@ -47,21 +49,24 @@ def test_run_length_window_example():
         numba_coop.store(block, offsets, relative)
         totals[cuda.threadIdx.x] = total[0]
 
-    # Two real runs, followed by zero-length padding for the block tile.
-    values = np.zeros(256, dtype=np.int32)
-    lengths = np.zeros(256, dtype=np.uint32)
-    values[:2] = [7, 9]
-    lengths[:2] = [3, 2]
-    output = np.empty(512, dtype=np.int32)
-    offsets = np.empty(512, dtype=np.uint32)
-    totals = np.empty(128, dtype=np.uint32)
-    decode_window[1, 128](values, lengths, output, offsets, totals)
-    cuda.synchronize()
-    np.testing.assert_array_equal(output[:3], [7, 9, 9])
-    np.testing.assert_array_equal(offsets[:3], [2, 0, 1])
-    assert np.all(totals == 5)
-    assert np.all(output[3:] == 0)
-    assert np.all(offsets[3:] == np.iinfo(np.uint32).max)
+    for items_per_thread in (1, 4):
+        # Two real runs, followed by zero-length padding for the block tile.
+        values = np.zeros(128 * items_per_thread, dtype=np.int32)
+        lengths = np.zeros(128 * items_per_thread, dtype=np.uint32)
+        values[:2] = [7, 9]
+        lengths[:2] = [3, 2]
+        output = np.empty(512, dtype=np.int32)
+        offsets = np.empty(512, dtype=np.uint32)
+        totals = np.empty(128, dtype=np.uint32)
+        decode_window[1, 128](
+            values, lengths, output, offsets, totals, items_per_thread
+        )
+        cuda.synchronize()
+        np.testing.assert_array_equal(output[:3], [7, 9, 9])
+        np.testing.assert_array_equal(offsets[:3], [2, 0, 1])
+        assert np.all(totals == 5)
+        assert np.all(output[3:] == 0)
+        assert np.all(offsets[3:] == np.iinfo(np.uint32).max)
     # run-length-window-example-end
 
 
@@ -72,13 +77,11 @@ def test_run_length_bulk_example():
 
     from cuda import coop
 
-    coop.register("numba-cuda-mlir")
-
     @cuda.jit
-    def decode_all(values, lengths, output, totals):
+    def decode_all(values, lengths, output, totals, items_per_thread):
         block = coop.this_block()
-        runs = coop.ThreadData(items_per_thread=2)
-        sizes = coop.ThreadData(items_per_thread=2)
+        runs = coop.ThreadData(items_per_thread)
+        sizes = coop.ThreadData(items_per_thread)
         coop.load(block, values, runs)
         coop.load(block, lengths, sizes)
         # CUB prepares the run table once for all internal windows.
@@ -92,17 +95,22 @@ def test_run_length_bulk_example():
         )
         totals[cuda.threadIdx.x] = total
 
-    values = np.zeros(256, dtype=np.int32)
-    lengths = np.zeros(256, dtype=np.uint32)
-    values[:3] = [7, 9, 2]
-    lengths[:3] = [3, 1100, 2]  # Three windows; the final window is partial.
-    output = np.full(1110, -1, dtype=np.int32)
-    totals = np.empty(128, dtype=np.uint32)
-    decode_all[1, 128](values, lengths, output, totals)
-    cuda.synchronize()
-    np.testing.assert_array_equal(
-        output[3:1108], np.repeat(values[:3], lengths[:3])
-    )
-    assert np.all(totals == 1105)
-    assert np.all(output[:3] == -1) and np.all(output[1108:] == -1)
+    for items_per_thread in (1, 4):
+        values = np.zeros(128 * items_per_thread, dtype=np.int32)
+        lengths = np.zeros(128 * items_per_thread, dtype=np.uint32)
+        values[:3] = [7, 9, 2]
+        lengths[:3] = [
+            3,
+            1100,
+            2,
+        ]  # Three windows; the final window is partial.
+        output = np.full(1110, -1, dtype=np.int32)
+        totals = np.empty(128, dtype=np.uint32)
+        decode_all[1, 128](values, lengths, output, totals, items_per_thread)
+        cuda.synchronize()
+        np.testing.assert_array_equal(
+            output[3:1108], np.repeat(values[:3], lengths[:3])
+        )
+        assert np.all(totals == 1105)
+        assert np.all(output[:3] == -1) and np.all(output[1108:] == -1)
     # run-length-bulk-example-end
