@@ -25,6 +25,7 @@
 #  include <cuda/std/__compare/synth_three_way.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
+#include <cuda/std/__concepts/different_from.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/unwrap_ref.h>
 #include <cuda/std/__fwd/get.h>
@@ -56,6 +57,7 @@
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/make_const_lvalue_ref.h>
@@ -161,8 +163,8 @@ struct __pair_base<_T1, _T2, true>
   operator=(conditional_t<is_move_assignable_v<_T1> && is_move_assignable_v<_T2>, __pair_base, __nat>&& __p) noexcept(
     is_nothrow_move_assignable_v<_T1> && is_nothrow_move_assignable_v<_T2>)
   {
-    first  = ::cuda::std::move(__p.first);
-    second = ::cuda::std::move(__p.second);
+    first  = static_cast<_T1&&>(cuda::std::move(__p).first);
+    second = static_cast<_T2&&>(cuda::std::move(__p).second);
     return *this;
   }
 
@@ -221,17 +223,13 @@ private:
     // NOLINTEND(bugprone-branch-clone)
   }
 
+  // CUDA 12.0/MSVC rejects a static constexpr variable template member during dependent pair
+  // instantiations. An alias to bool_constant is not a static data member.
   template <class _UPair>
-  static constexpr bool __disambiguate_pair_like =
-    // Disambiguate other constructors
-    // [pairs#pair]-42.1 different-from<P, pair> is true
-    !is_same_v<pair, remove_cvref_t<_UPair>>
-    // [pairs#pair]-15.1 remove_cvref_t<P> is not a specialization of ranges::subrange,
-    // [pairs#pair]-42.2 remove_cvref_t<P> is not a specialization of ranges::subrange
-    && !__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UPair>>
-    // [pairs#pair]-13 template<pair-like P>
-    // [pairs#pair]-42 template<pair-like P>
-    && __pair_like<_UPair>;
+  using __disambiguate_pair_like =
+    bool_constant<!is_same_v<pair, remove_cvref_t<_UPair>> // [pairs#pair]-42.1 different-from<P, pair> is true
+                  && !__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UPair>> // [pairs#pair]-15.1, [pairs#pair]-42.2
+                  && __pair_like<_UPair>>; // [pairs#pair]-13, [pairs#pair]-42 template<pair-like P>
 
 #if _CCCL_COMPILER(GCC, <, 8)
   // GCC7 substitutes the later default template arguments of the pair-like constructors even if
@@ -258,6 +256,60 @@ private:
   template <size_t _Index, class _UPair>
   using __get_t = decltype(::cuda::std::get<_Index>(::cuda::std::declval<_UPair>()));
 #endif // !_CCCL_COMPILER(GCC, <, 8)
+
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class _Tp, class... _Args>
+  [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool __piecewise_reference_from_temporary_pack() noexcept
+  {
+    // The builtin is only valid for a reference element. Instantiating it for a value element
+    // removes the constructor during overload resolution.
+    if constexpr (sizeof...(_Args) == 1 && is_reference_v<_Tp>)
+    {
+      // Piecewise construction forwards each tuple element as Args&&, so check that
+      // category. Checking Args as a prvalue would incorrectly reject direct binding to
+      // a same-type value element such as tuple<int> into const int& or int&&.
+      return reference_constructs_from_temporary_v<_Tp, _Args&&...>;
+    }
+    else
+    {
+      return false;
+    }
+  }
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+
+  // The two packs are deduced from the tag pointers. A single function template cannot be given both packs as
+  // explicit template arguments.
+  template <class... _Args1, class... _Args2>
+  [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL __select_constructor
+  __select_piecewise_constructible(__tuple_types<_Args1...>, __tuple_types<_Args2...>) noexcept
+  {
+    // NOLINTBEGIN(bugprone-branch-clone)
+    if constexpr (!is_constructible_v<_T1, _Args1...>)
+    { // [pairs#pair]-18.1: is_constructible_v<T1, Args1...> is true
+      return __select_constructor::__invalid;
+    }
+    else if constexpr (!is_constructible_v<_T2, _Args2...>)
+    { // [pairs#pair]-18.2: is_constructible_v<T2, Args2...> is true
+      return __select_constructor::__invalid;
+    }
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+    else if constexpr (pair::__piecewise_reference_from_temporary_pack<_T1, _Args1...>()
+                       || pair::__piecewise_reference_from_temporary_pack<_T2, _Args2...>())
+    { // [pairs#pair] note 2: defined as deleted if a reference member would bind to a temporary
+      return __select_constructor::__deleted;
+    }
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+    else
+    {
+      return __select_constructor::__implicit;
+    }
+    // NOLINTEND(bugprone-branch-clone)
+  }
+
+  // MSVC cannot parse a default template argument that calls a function with two packs.
+  template <class _TupleTypes0, class _TupleTypes1>
+  using _PiecewiseConstructible =
+    _ConstructorConstraint<pair::__select_piecewise_constructible(_TupleTypes0{}, _TupleTypes1{})>;
 
   using __base = __pair_base<_T1, _T2>;
 
@@ -333,8 +385,12 @@ public:
       : __base(__p.first, __p.second)
   {}
 
+  // pair(pair<U>&) beats the copy constructor for a non-const lvalue. NVCC rejects copy-list-initialization when that
+  // better match is explicit, instead of using the implicit copy constructor. Exclude only this explicit overload.
+  // The implicit overload stays unconstrained: a same-type reference element, such as NonCopyable&&, is converted.
   template <class _U1,
             class _U2,
+            enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<_U1&, _U2&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr pair(pair<_U1, _U2>& __p) noexcept(
@@ -352,6 +408,7 @@ public:
 
   template <class _U1,
             class _U2,
+            enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<const _U1&, const _U2&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(const pair<_U1, _U2>& __p) noexcept(
@@ -361,6 +418,7 @@ public:
 
   template <class _U1,
             class _U2,
+            enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<const _U1&, const _U2&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr pair(const pair<_U1, _U2>& __p) noexcept(
@@ -371,6 +429,7 @@ public:
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
   template <class _U1,
             class _U2,
+            enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<const _U1&, const _U2&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__is_deleted, int> = 0>
   constexpr pair(const pair<_U1, _U2>&) = delete;
@@ -378,25 +437,28 @@ public:
 
   template <class _U1,
             class _U2,
+            enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<_U1&&, _U2&&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(pair<_U1, _U2>&& __p) noexcept(
     is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
-      : __base(::cuda::std::move(__p.first), ::cuda::std::move(__p.second))
+      : __base(static_cast<_U1&&>(cuda::std::move(__p).first), static_cast<_U2&&>(cuda::std::move(__p).second))
   {}
 
   template <class _U1,
             class _U2,
+            enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<_U1&&, _U2&&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr pair(pair<_U1, _U2>&& __p) noexcept(
     is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
-      : __base(::cuda::std::move(__p.first), ::cuda::std::move(__p.second))
+      : __base(static_cast<_U1&&>(cuda::std::move(__p).first), static_cast<_U2&&>(cuda::std::move(__p).second))
   {}
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
   template <class _U1,
             class _U2,
+            enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<_U1&&, _U2&&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__is_deleted, int> = 0>
   constexpr pair(pair<_U1, _U2>&&) = delete;
@@ -408,16 +470,22 @@ public:
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(const pair<_U1, _U2>&& __p) noexcept(
     is_nothrow_constructible_v<_T1, const _U1> && is_nothrow_constructible_v<_T2, const _U2>)
-      : __base(::cuda::std::move(__p.first), ::cuda::std::move(__p.second))
+      : __base(static_cast<const _U1&&>(cuda::std::move(__p).first),
+               static_cast<const _U2&&>(cuda::std::move(__p).second))
   {}
 
+  // pair(const pair<U>&&) beats the copy constructor for a const rvalue. NVCC rejects copy-list-initialization when
+  // that better match is explicit, instead of using the implicit copy constructor. Exclude only this explicit overload.
+  // The implicit overload stays unconstrained: a same-type reference element, such as NonCopyable&&, is converted.
   template <class _U1,
             class _U2,
+            enable_if_t<__different_from<pair, pair<_U1, _U2>>, int> = 0,
             __select_constructor _Constraints = pair::__select_variadic_constructible<const _U1&&, const _U2&&>(),
             enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr pair(const pair<_U1, _U2>&& __p) noexcept(
     is_nothrow_constructible_v<_T1, const _U1> && is_nothrow_constructible_v<_T2, const _U2>)
-      : __base(::cuda::std::move(__p.first), ::cuda::std::move(__p.second))
+      : __base(static_cast<const _U1&&>(cuda::std::move(__p).first),
+               static_cast<const _U2&&>(cuda::std::move(__p).second))
   {}
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
@@ -432,7 +500,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <
     class _UPair,
-    enable_if_t<__disambiguate_pair_like<_UPair>, int> = 0,
+    enable_if_t<__disambiguate_pair_like<_UPair>::value, int> = 0,
     __select_constructor _Constraints = pair::__select_variadic_constructible<__get_t<0, _UPair>, __get_t<1, _UPair>>(),
     enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(_UPair&& __p) noexcept(
@@ -450,7 +518,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <
     class _UPair,
-    enable_if_t<__disambiguate_pair_like<_UPair>, int> = 0,
+    enable_if_t<__disambiguate_pair_like<_UPair>::value, int> = 0,
     __select_constructor _Constraints = pair::__select_variadic_constructible<__get_t<0, _UPair>, __get_t<1, _UPair>>(),
     enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr pair(_UPair&& __p) noexcept(
@@ -462,14 +530,18 @@ public:
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
   template <
     class _UPair,
-    enable_if_t<__disambiguate_pair_like<_UPair>, int> = 0,
+    enable_if_t<__disambiguate_pair_like<_UPair>::value, int> = 0,
     __select_constructor _Constraints = pair::__select_variadic_constructible<__get_t<0, _UPair>, __get_t<1, _UPair>>(),
     enable_if_t<_ConstructorConstraint<_Constraints>::__is_deleted, int> = 0>
   _CCCL_API constexpr pair(_UPair&&) = delete;
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
   // NOLINTEND(bugprone-forwarding-reference-overload)
 
-  template <class... _Args1, class... _Args2>
+  // NOTE: GCC7 fails to instantiate __select_piecewise_constructible without the explicit pair::
+  template <class... _Args1,
+            class... _Args2,
+            class _Constraints = _PiecewiseConstructible<__tuple_types<_Args1...>, __tuple_types<_Args2...>>,
+            enable_if_t<_Constraints::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(piecewise_construct_t __pc,
                            tuple<_Args1...> __first_args,
                            tuple<_Args2...> __second_args) noexcept((is_nothrow_constructible_v<_T1, _Args1...>
@@ -480,6 +552,14 @@ public:
                __make_tuple_indices_t<sizeof...(_Args1)>(),
                __make_tuple_indices_t<sizeof...(_Args2)>())
   {}
+
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class... _Args1,
+            class... _Args2,
+            class _Constraints = _PiecewiseConstructible<__tuple_types<_Args1...>, __tuple_types<_Args2...>>,
+            enable_if_t<_Constraints::__is_deleted, int> = 0>
+  constexpr pair(piecewise_construct_t, tuple<_Args1...>, tuple<_Args2...>) = delete;
+#endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
   // assignments
   _CCCL_HIDE_FROM_ABI pair& operator=(const pair&) = default;
@@ -517,8 +597,8 @@ public:
   operator=(pair<_U1, _U2>&& __p) noexcept( // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     is_nothrow_assignable_v<_T1&, _U1> && is_nothrow_assignable_v<_T2&, _U2>)
   {
-    this->first  = ::cuda::std::forward<_U1>(__p.first);
-    this->second = ::cuda::std::forward<_U2>(__p.second);
+    this->first  = static_cast<_U1&&>(__p.first);
+    this->second = static_cast<_U2&&>(__p.second);
     return *this;
   }
 
@@ -530,8 +610,8 @@ public:
   operator=(pair<_U1, _U2>&& __p) const // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     noexcept(is_nothrow_assignable_v<const _T1&, _U1> && is_nothrow_assignable_v<const _T2&, _U2>)
   {
-    this->first  = ::cuda::std::forward<_U1>(__p.first);
-    this->second = ::cuda::std::forward<_U2>(__p.second);
+    this->first  = static_cast<_U1&&>(__p.first);
+    this->second = static_cast<_U2&&>(__p.second);
     return *this;
   }
 
@@ -540,7 +620,7 @@ public:
   // NOLINTBEGIN(bugprone-use-after-move)
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UPair,
-            enable_if_t<__disambiguate_pair_like<_UPair>, int>          = 0,
+            enable_if_t<__disambiguate_pair_like<_UPair>::value, int>   = 0,
             enable_if_t<is_assignable_v<_T1&, __get_t<0, _UPair>>, int> = 0,
             enable_if_t<is_assignable_v<_T2&, __get_t<1, _UPair>>, int> = 0>
   _CCCL_API constexpr pair& operator=(_UPair&& __p) noexcept(
@@ -553,7 +633,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UPair,
-            enable_if_t<__disambiguate_pair_like<_UPair>, int>                = 0,
+            enable_if_t<__disambiguate_pair_like<_UPair>::value, int>         = 0,
             enable_if_t<is_assignable_v<const _T1&, __get_t<0, _UPair>>, int> = 0,
             enable_if_t<is_assignable_v<const _T2&, __get_t<1, _UPair>>, int> = 0>
   _CCCL_API constexpr const pair& operator=(_UPair&& __p) const
