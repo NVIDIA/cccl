@@ -35,42 +35,55 @@ _BLOCK_TILE = _THREADS * _ITEMS
 @pytest.mark.parametrize("width", _WIDTHS)
 @pytest.mark.parametrize("algorithm", ("direct", "transpose"))
 @pytest.mark.parametrize("operation", ("load", "store"))
-def test_width_layout(api, width, algorithm, operation):
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_width_layout(api, width, algorithm, operation, items_per_thread):
     @cute.kernel
-    def kernel(source: cute.Pointer, destination: cute.Pointer):
+    def kernel(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
-        inputs = cute.make_tensor(source, cute.make_layout(_BLOCK_TILE + 3))
+        inputs = cute.make_tensor(
+            source, cute.make_layout((_THREADS * items_per_thread) + 3)
+        )
         outputs = cute.make_tensor(
-            destination, cute.make_layout(_BLOCK_TILE + 3)
+            destination, cute.make_layout((_THREADS * items_per_thread) + 3)
         )
         group = api.this_warp().group_by(width)
-        payload = api.ThreadData(_ITEMS, dtype=cutlass.Int32)
+        payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
         if cutlass.const_expr(operation == "load"):
             returned = api.load(
                 group, inputs, payload, algorithm=algorithm, offset=3
             )
             assert returned is None
-            for item in cutlass.range_constexpr(_ITEMS):
-                outputs[thread * _ITEMS + item] = payload[item]
+            for item in cutlass.range_constexpr(items_per_thread):
+                outputs[thread * items_per_thread + item] = payload[item]
         else:
-            for item in cutlass.range_constexpr(_ITEMS):
-                payload[item] = inputs[thread * _ITEMS + item]
+            for item in cutlass.range_constexpr(items_per_thread):
+                payload[item] = inputs[thread * items_per_thread + item]
             api.store(group, outputs, payload, algorithm=algorithm, offset=3)
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer):
-        kernel(source, destination).launch(grid=1, block=_BLOCK)
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(source, destination, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
-    source = values_for(np.int32, _BLOCK_TILE + 3, shift=31)
+    source = values_for(np.int32, (_THREADS * items_per_thread) + 3, shift=31)
     destination = np.full_like(source, -101)
     expected = destination.copy()
     if operation == "load":
-        expected[:_BLOCK_TILE] = source[3:]
+        expected[: (_THREADS * items_per_thread)] = source[3:]
     else:
-        expected[3:] = source[:_BLOCK_TILE]
+        expected[3:] = source[: (_THREADS * items_per_thread)]
     with device_array(source) as src, device_array(destination) as dst:
-        launch(src, dst)
+        launch(src, dst, items_per_thread)
     np.testing.assert_array_equal(destination, expected)
 
 
@@ -91,6 +104,7 @@ def test_group_controls(api, algorithm, exhaustive):
         destination: cute.Pointer,
         counts: cute.Pointer,
         offsets: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
@@ -100,7 +114,7 @@ def test_group_controls(api, algorithm, exhaustive):
         seeds = cute.make_tensor(initial, cute.make_layout(_BLOCK_TILE))
         results = cute.make_tensor(observed, cute.make_layout(_BLOCK_TILE))
         group = api.this_warp().group_by(width, exhaustive=exhaustive)
-        loaded = api.ThreadData(_ITEMS)
+        loaded = api.ThreadData(items_per_thread)
         api.load(
             group,
             source,
@@ -110,10 +124,10 @@ def test_group_controls(api, algorithm, exhaustive):
             oob_default=cutlass.Int32(-200 - index),
             offset=offset,
         )
-        stored = api.ThreadData(_ITEMS, dtype=cutlass.Int32)
-        for item in cutlass.range_constexpr(_ITEMS):
-            results[thread * _ITEMS + item] = loaded[item]
-            stored[item] = seeds[thread * _ITEMS + item]
+        stored = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
+        for item in cutlass.range_constexpr(items_per_thread):
+            results[thread * items_per_thread + item] = loaded[item]
+            stored[item] = seeds[thread * items_per_thread + item]
         api.store(
             group,
             destination,
@@ -131,10 +145,17 @@ def test_group_controls(api, algorithm, exhaustive):
         destination: cute.Pointer,
         counts: cute.Pointer,
         offsets: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, initial, observed, destination, counts, offsets).launch(
-            grid=1, block=_BLOCK
-        )
+        kernel(
+            source,
+            initial,
+            observed,
+            destination,
+            counts,
+            offsets,
+            items_per_thread,
+        ).launch(grid=1, block=_BLOCK)
 
     source = values_for(np.int32, allocation, shift=41)
     initial = values_for(np.int32, _BLOCK_TILE, shift=59)
@@ -167,7 +188,7 @@ def test_group_controls(api, algorithm, exhaustive):
         device_array(counts) as count,
         device_array(offsets) as offset,
     ):
-        launch(src, seed, out, dst, count, offset)
+        launch(src, seed, out, dst, count, offset, _ITEMS)
     np.testing.assert_array_equal(observed, expected_load)
     np.testing.assert_array_equal(destination, expected_store)
 
@@ -183,13 +204,14 @@ def test_partial_transpose_loads_valid_items_without_default(api, width):
         source: cute.Pointer,
         observed: cute.Pointer,
         counts: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         index = thread // width
         valid = cute.make_tensor(counts, cute.make_layout(groups))[index]
         outputs = cute.make_tensor(observed, cute.make_layout(_BLOCK_TILE))
-        payload = api.ThreadData(_ITEMS, dtype=cutlass.Int32)
+        payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
         api.load(
             api.this_warp().group_by(width),
             source,
@@ -197,17 +219,20 @@ def test_partial_transpose_loads_valid_items_without_default(api, width):
             algorithm="transpose",
             valid_items=valid,
         )
-        for item in cutlass.range_constexpr(_ITEMS):
-            if (thread % width) * _ITEMS + item < valid:
-                outputs[thread * _ITEMS + item] = payload[item]
+        for item in cutlass.range_constexpr(items_per_thread):
+            if (thread % width) * items_per_thread + item < valid:
+                outputs[thread * items_per_thread + item] = payload[item]
 
     @cute.jit
     def launch(
         source: cute.Pointer,
         observed: cute.Pointer,
         counts: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, observed, counts).launch(grid=1, block=_BLOCK)
+        kernel(source, observed, counts, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.int32, _BLOCK_TILE, shift=73)
     observed = np.full(_BLOCK_TILE, 71, dtype=np.int32)
@@ -223,7 +248,7 @@ def test_partial_transpose_loads_valid_items_without_default(api, width):
         device_array(observed) as out,
         device_array(counts) as count,
     ):
-        launch(src, out, count)
+        launch(src, out, count, _ITEMS)
     np.testing.assert_array_equal(observed, expected)
 
 
@@ -235,7 +260,10 @@ def test_partial_transpose_loads_valid_items_without_default(api, width):
 def test_transpose_loop(api, width, divergent):
     @cute.kernel
     def kernel(
-        source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        tiles: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
@@ -247,7 +275,7 @@ def test_transpose_loop(api, width, divergent):
         if selected or not divergent:
             group = api.this_warp().group_by(width)
             for tile in range(tiles):
-                payload = api.ThreadData(_ITEMS)
+                payload = api.ThreadData(items_per_thread)
                 api.load(
                     group,
                     source,
@@ -255,7 +283,7 @@ def test_transpose_loop(api, width, divergent):
                     algorithm="transpose",
                     offset=tile * _BLOCK_TILE,
                 )
-                for item in cutlass.range_constexpr(_ITEMS):
+                for item in cutlass.range_constexpr(items_per_thread):
                     payload[item] = payload[item] + cutlass.Int32(
                         tile + group_index + 1
                     )
@@ -269,9 +297,14 @@ def test_transpose_loop(api, width, divergent):
 
     @cute.jit
     def launch(
-        source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        tiles: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, destination, tiles).launch(grid=1, block=_BLOCK)
+        kernel(source, destination, tiles, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     tiles = 8
     source = values_for(np.int32, tiles * _BLOCK_TILE, shift=83)
@@ -288,7 +321,7 @@ def test_transpose_loop(api, width, divergent):
                 source[start : start + group_tile] + tile + group + 1
             )
     with device_array(source) as src, device_array(destination) as dst:
-        launch(src, dst, tiles)
+        launch(src, dst, tiles, _ITEMS)
     np.testing.assert_array_equal(destination, expected)
 
 
@@ -305,21 +338,31 @@ def test_final_cubin(tmp_path, width, algorithm):
         )
 
     @cute.kernel
-    def kernel(source: cute.Pointer, destination: cute.Pointer):
+    def kernel(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
         group = cutlass_coop.this_warp().group_by(width)
-        payload = cutlass_coop.ThreadData(_ITEMS)
+        payload = cutlass_coop.ThreadData(items_per_thread)
         cutlass_coop.load(group, source, payload, algorithm=algorithm)
         cutlass_coop.store(group, destination, payload, algorithm=algorithm)
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer):
-        kernel(source, destination).launch(grid=1, block=_BLOCK)
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(source, destination, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.int32, _BLOCK_TILE, shift=89)
     destination = np.zeros_like(source)
     with device_array(source) as src, device_array(destination) as dst:
         compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](
-            launch, src, dst
+            launch, src, dst, _ITEMS
         )
         compiled(src, dst)
     np.testing.assert_array_equal(destination, source)
@@ -350,11 +393,12 @@ def test_final_cubin(tmp_path, width, algorithm):
 
 
 @pytest.mark.parametrize("api", ("common", "qualified"))
-def test_example(api):
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_example(api, items_per_thread):
     path = PACKAGE_ROOT / "examples/cutlass/logical_warp_load_store.py"
     spec = importlib.util.spec_from_file_location(
         "cutlass_logical_warp_example", path
     )
     example = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(example)
-    example.run_example(api)
+    example.run_example(api, items_per_thread=items_per_thread)
