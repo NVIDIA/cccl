@@ -384,13 +384,11 @@ CUDA doesn't support exceptions in device code, however, sometimes we need to wr
 .. note::
 
   ``_CCCL_THROW`` requires to include the ``<stdexcept>`` header, regardless exceptions are enabled or not.
-  The nested-exception macros are host-only library calls underneath. On device the throwing forms terminate like
-  ``_CCCL_THROW`` and ``_CCCL_RETHROW_IF_NESTED`` has no effect, since no exception can be nested there; without
-  exceptions the throwing forms report and terminate like ``_CCCL_THROW`` and ``_CCCL_RETHROW_IF_NESTED`` has no
-  effect. Prefer ``_CCCL_THROW_MAYBE_WITH_NESTED`` where the code may run outside a handler: ``std::throw_with_nested``
-  called with no active exception stores an empty cause, and rethrowing that cause later calls ``std::terminate``.
-  ``_CCCL_RETHROW_IF_NESTED`` needs RTTI on the host (``std::rethrow_if_nested`` finds the cause with a
-  ``dynamic_cast``); in a build without RTTI it is a ``static_assert`` failure with that message.
+  The nested-exception macros are host-only library calls underneath; on device, and in a build without exceptions,
+  they terminate like ``_CCCL_THROW`` and ``_CCCL_RETHROW``. Prefer ``_CCCL_THROW_MAYBE_WITH_NESTED`` where the code
+  may run outside a handler: ``std::throw_with_nested`` called with no active exception stores an empty cause, and
+  rethrowing that cause later calls ``std::terminate``. ``_CCCL_RETHROW_IF_NESTED`` needs RTTI on the host, since
+  ``std::rethrow_if_nested`` finds the cause with a ``dynamic_cast``.
 
 Example:
 

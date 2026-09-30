@@ -87,28 +87,16 @@ _CCCL_END_NAMESPACE_CUDA_STD
     } while (0)
 #  define _CCCL_RETHROW throw
 
-// std::throw_with_nested and std::rethrow_if_nested are host-only library functions. Device code has no
-// exceptions, so no exception is ever nested there: throwing terminates, as _CCCL_THROW does, and
-// rethrow-if-nested is correctly a no-op.
 #  define _CCCL_THROW_WITH_NESTED(_TYPE, ...)                                                                     \
     do                                                                                                            \
     {                                                                                                             \
       NV_IF_ELSE_TARGET(NV_IS_HOST, (::std::throw_with_nested(_TYPE(__VA_ARGS__));), (::cuda::std::terminate();)) \
     } while (0)
-// std::rethrow_if_nested finds the nested cause with a dynamic_cast, so it needs RTTI on the host; without it
-// the operand's cause could never be discovered, and a silent no-op would drop it. Fail with a message instead
-// of the standard library's dynamic_cast error.
-#  ifdef _CCCL_NO_RTTI
-#    define _CCCL_RETHROW_IF_NESTED(...)      \
-      static_assert(sizeof(__VA_ARGS__) == 0, \
-                    "_CCCL_RETHROW_IF_NESTED requires RTTI on the host (std::rethrow_if_nested uses dynamic_cast)")
-#  else // ^^^ _CCCL_NO_RTTI ^^^ / vvv RTTI vvv
-#    define _CCCL_RETHROW_IF_NESTED(...)                                                                 \
-      do                                                                                                 \
-      {                                                                                                  \
-        NV_IF_ELSE_TARGET(NV_IS_HOST, (::std::rethrow_if_nested(__VA_ARGS__);), ((void) (__VA_ARGS__);)) \
-      } while (0)
-#  endif // RTTI
+#  define _CCCL_RETHROW_IF_NESTED(...)                                                                     \
+    do                                                                                                     \
+    {                                                                                                      \
+      NV_IF_ELSE_TARGET(NV_IS_HOST, (::std::rethrow_if_nested(__VA_ARGS__);), (::cuda::std::terminate();)) \
+    } while (0)
 #  define _CCCL_THROW_MAYBE_WITH_NESTED(_TYPE, ...)                                                                    \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -160,14 +148,11 @@ _CCCL_END_NAMESPACE_CUDA_STD
         ::cuda::std::terminate();                                                                                  \
       } while (0)
 #  endif // !_CCCL_HOSTJIT()
-#  define _CCCL_RETHROW                             ::cuda::std::terminate()
+#  define _CCCL_RETHROW ::cuda::std::terminate()
 
-// Without exceptions there is no active exception to nest, so throwing with a nested cause reports and
-// terminates exactly like _CCCL_THROW, and no exception can carry a nested cause, so rethrow-if-nested is
-// a no-op (the operand is still evaluated, as std::rethrow_if_nested would).
 #  define _CCCL_THROW_WITH_NESTED(_TYPE, ...)       _CCCL_THROW(_TYPE, __VA_ARGS__)
 #  define _CCCL_THROW_MAYBE_WITH_NESTED(_TYPE, ...) _CCCL_THROW(_TYPE, __VA_ARGS__)
-#  define _CCCL_RETHROW_IF_NESTED(...)              ((void) (__VA_ARGS__))
+#  define _CCCL_RETHROW_IF_NESTED(...)              ::cuda::std::terminate()
 #endif // ^^^ no exceptions ^^^
 
 #include <cuda/std/__cccl/epilogue.h>
