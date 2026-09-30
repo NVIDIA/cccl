@@ -280,7 +280,9 @@ private:
   {
     // We cast away const-ness, but will *not* write to these arrays. ``DispatchRadixSort::Dispatch`` will allocate
     // temporary storage and create a new double-buffer internally when the ``is_overwrite_ok`` flag is not set.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
     return radix_sort_with_decomposer<Order>(
       d_temp_storage,
@@ -433,7 +435,9 @@ public:
     // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
     return select_tuning_and_dispatch<SortOrder::Ascending>(
@@ -543,7 +547,9 @@ public:
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -1795,7 +1801,9 @@ public:
     // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
     return select_tuning_and_dispatch<SortOrder::Descending>(
@@ -1905,7 +1913,9 @@ public:
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -3051,6 +3061,7 @@ public:
     // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     // Null value type
     DoubleBuffer<NullType> d_values;
@@ -3147,6 +3158,7 @@ public:
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
@@ -4228,6 +4240,7 @@ public:
     // create a new double-buffer internally when the ``is_overwrite_ok`` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
@@ -4323,6 +4336,7 @@ public:
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 

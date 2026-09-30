@@ -12,6 +12,7 @@
 
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
@@ -37,9 +38,8 @@ struct bfloat16_t
 
   /// Constructor from __nv_bfloat16
   __host__ __device__ __forceinline__ explicit bfloat16_t(const __nv_bfloat16& other)
-  {
-    __x = reinterpret_cast<const uint16_t&>(other);
-  }
+      : __x(reinterpret_cast<const uint16_t&>(other))
+  {}
 
   /// Constructor from integer
   __host__ __device__ __forceinline__ explicit bfloat16_t(int a)
@@ -84,13 +84,7 @@ struct bfloat16_t
     }
     else
     {
-      union
-      {
-        uint32_t U32;
-        float F32;
-      };
-
-      F32                          = a;
+      const auto U32               = ::cuda::std::bit_cast<uint32_t>(a);
       const uint32_t rounding_bias = ((U32 >> 16) & 1) + UINT32_C(0x7FFF);
       ir                           = static_cast<uint16_t>((U32 + rounding_bias) >> 16);
     }
@@ -141,6 +135,12 @@ struct bfloat16_t
   __host__ __device__ __forceinline__ bfloat16_t operator*(const bfloat16_t& other) const
   {
     return bfloat16_t(static_cast<float>(*this) * static_cast<float>(other));
+  }
+
+  /// Divide
+  __host__ __device__ __forceinline__ bfloat16_t operator/(const bfloat16_t& other) const
+  {
+    return bfloat16_t(static_cast<float>(*this) / static_cast<float>(other));
   }
 
   /// Add
