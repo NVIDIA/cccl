@@ -863,8 +863,12 @@ def test_stateful_transform_no_recompile_when_captured_array_length_changes():
     d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
 
     def make_op(lut):
+        # References len(lut), not just lut[x], so the assertions below only
+        # pass if the reused wrapper reads the *new* length at call time
+        # rather than retaining whatever length was baked in when it (or an
+        # earlier build sharing its cache key) was first compiled.
         def op(x):
-            return lut[x]
+            return lut[x] + len(lut)
 
         return op
 
@@ -883,12 +887,16 @@ def test_stateful_transform_no_recompile_when_captured_array_length_changes():
     build_short(
         d_in=d_in, d_out=d_out, op=op_adapter_short, num_items=h_in.size, stream=None
     )
-    np.testing.assert_array_equal(d_out.copy_to_host(), lut_short.copy_to_host()[h_in])
+    np.testing.assert_array_equal(
+        d_out.copy_to_host(), lut_short.copy_to_host()[h_in] + len(lut_short)
+    )
 
     build_long(
         d_in=d_in, d_out=d_out, op=op_adapter_long, num_items=h_in.size, stream=None
     )
-    np.testing.assert_array_equal(d_out.copy_to_host(), lut_long.copy_to_host()[h_in])
+    np.testing.assert_array_equal(
+        d_out.copy_to_host(), lut_long.copy_to_host()[h_in] + len(lut_long)
+    )
 
 
 def test_stateful_transform_recompiles_when_captured_array_dtype_changes():

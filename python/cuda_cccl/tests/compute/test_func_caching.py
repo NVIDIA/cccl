@@ -191,6 +191,26 @@ def test_func_caching_with_global_np_ufunc():
     assert CachableFunction(func1) != CachableFunction(func2)
 
 
+class _RankedProxyArray(ProxyArray):
+    """A ProxyArray with a caller-chosen shape.
+
+    ProxyArray itself always reports a fixed rank-1 shape, so it alone can't
+    exercise the "different rank" half of the dtype-and-rank cache key.
+    """
+
+    __slots__ = ("_shape",)
+
+    def __init__(self, dtype, shape):
+        super().__init__(dtype)
+        self._shape = tuple(shape)
+
+    @property
+    def __cuda_array_interface__(self):
+        cai = super().__cuda_array_interface__
+        cai["shape"] = self._shape
+        return cai
+
+
 def test_make_hashable_device_array_keys_on_dtype_and_rank_only():
     # Regression test for gh-11407: a device array's build-cache key must
     # depend only on dtype and rank (ndim), not on the concrete shape or
@@ -205,6 +225,9 @@ def test_make_hashable_device_array_keys_on_dtype_and_rank_only():
 
     c = ProxyArray(np.int32)
     assert _make_hashable(a) != _make_hashable(c)
+
+    d = _RankedProxyArray(np.int64, (1, 1))
+    assert _make_hashable(a) != _make_hashable(d)
 
 
 def test_func_caching_with_device_array_closure_ignores_shape():
