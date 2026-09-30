@@ -567,8 +567,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr bool __equal(const tuple<_UTypes...>& __other, __tuple_indices<_Indices...>) const
     noexcept(_Constraints::template __is_nothrow_equality_comparable_v<_UTypes...>)
   {
-    using ::cuda::std::get;
-    return ((get<_Indices>(*this) == get<_Indices>(__other)) && ...);
+    return ((::cuda::std::get<_Indices>(*this) == ::cuda::std::get<_Indices>(__other)) && ...);
   }
 
   // Not a friend function because MSVC has issues with nested namespaces and thrust::tuple
@@ -594,18 +593,17 @@ public:
   __tuple_less_than(const tuple<_UTypes...>& __other, __tuple_indices<_CurrentIndex, _Indices...>) const
     noexcept(_Constraints::template __is_nothrow_less_than_comparable_v<_UTypes...>)
   {
-    using ::cuda::std::get;
     if constexpr (sizeof...(_Indices) == 0)
     {
-      return get<_CurrentIndex>(*this) < get<_CurrentIndex>(__other);
+      return ::cuda::std::get<_CurrentIndex>(*this) < ::cuda::std::get<_CurrentIndex>(__other);
     }
     else
     {
-      if (get<_CurrentIndex>(*this) < get<_CurrentIndex>(__other))
+      if (::cuda::std::get<_CurrentIndex>(*this) < ::cuda::std::get<_CurrentIndex>(__other))
       {
         return true;
       }
-      if (get<_CurrentIndex>(__other) < get<_CurrentIndex>(*this))
+      if (::cuda::std::get<_CurrentIndex>(__other) < ::cuda::std::get<_CurrentIndex>(*this))
       {
         return false;
       }
@@ -650,19 +648,28 @@ template <>
 class _CCCL_TYPE_VISIBILITY_DEFAULT tuple<>
 {
 public:
-  _CCCL_HIDE_FROM_ABI constexpr tuple() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr tuple() noexcept                        = default;
+  _CCCL_HIDE_FROM_ABI constexpr tuple(const tuple&) noexcept            = default;
+  _CCCL_HIDE_FROM_ABI constexpr tuple(tuple&&) noexcept                 = default;
+  _CCCL_HIDE_FROM_ABI constexpr tuple& operator=(const tuple&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr tuple& operator=(tuple&&) noexcept      = default;
+
   template <class _Alloc>
   _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc&) noexcept
   {}
   template <class _Alloc>
   _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc&, const tuple&) noexcept
   {}
-  template <class _Up>
-  _CCCL_API constexpr tuple(array<_Up, 0>) noexcept
-  {}
   template <class _Alloc, class _Up>
   _CCCL_API constexpr tuple(allocator_arg_t, const _Alloc&, array<_Up, 0>) noexcept
   {}
+  // Accepts volatile tuple<> as well as other empty tuple-likes, so it can hide the copy and move
+  // constructors. Those still win for non-volatile tuple<>.
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
+  template <class _UTuple, enable_if_t<__tuple_like_with_size<_UTuple, 0>, int> = 0>
+  _CCCL_API constexpr tuple(_UTuple&&) noexcept
+  {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   template <class _UTuple,
             enable_if_t<!__is_cuda_std_tuple<remove_cvref_t<_UTuple>>, int> = 0,
@@ -783,20 +790,7 @@ _CCCL_API constexpr __pair_base<_T1, _T2, _IsRef>::__pair_base(
     , second(::cuda::std::forward<_Args2>(::cuda::std::get<_I2>(__second_args))...)
 {}
 
-// specialize cuda::std::tuple_size and cuda::std::tuple_element for std::tuple and cuda::std::tuple
-
-#if _CCCL_HAS_HOST_STD_LIB()
-template <class... _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<::std::tuple<_Tp...>> : integral_constant<size_t, sizeof...(_Tp)>
-{};
-
-template <size_t _Ip, class... _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::tuple<_Tp...>>
-{
-  static_assert(_Ip < sizeof...(_Tp), "Index out of bounds in cuda::std::tuple_element<> (std::tuple)");
-  using type _CCCL_NODEBUG = tuple_element_t<_Ip, __tuple_types<_Tp...>>;
-};
-#endif // _CCCL_HAS_HOST_STD_LIB()
+// specialize cuda::std::tuple_size and cuda::std::tuple_element for cuda::std::tuple
 
 template <class... _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<tuple<_Tp...>> : integral_constant<size_t, sizeof...(_Tp)>

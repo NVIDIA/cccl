@@ -237,13 +237,14 @@ private:
   // GCC7 substitutes the later default template arguments of the pair-like constructors even if
   // __disambiguate_pair_like already failed, so guard the call to get behind an if constexpr. This cannot be done with
   // an alias template, because that would always instantiate the decltype.
+  _CCCL_EXEC_CHECK_DISABLE
   template <size_t _Index, class _UPair>
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL decltype(auto)
   __get_type([[maybe_unused]] _UPair&& __pair) noexcept
   {
     if constexpr (__pair_like<_UPair>)
     {
-      return ::cuda::std::__adl_get<_Index>(::cuda::std::forward<_UPair>(__pair));
+      return ::cuda::std::get<_Index>(::cuda::std::forward<_UPair>(__pair));
     }
     else
     {
@@ -255,7 +256,7 @@ private:
   using __get_t = decltype(pair::__get_type<_Index>(::cuda::std::declval<_UPair>()));
 #else // ^^^ _CCCL_COMPILER(GCC, <, 8) ^^^ / vvv !_CCCL_COMPILER(GCC, <, 8) vvv
   template <size_t _Index, class _UPair>
-  using __get_t = decltype(::cuda::std::__adl_get<_Index>(::cuda::std::declval<_UPair>()));
+  using __get_t = decltype(::cuda::std::get<_Index>(::cuda::std::declval<_UPair>()));
 #endif // !_CCCL_COMPILER(GCC, <, 8)
 
   using __base = __pair_base<_T1, _T2>;
@@ -437,11 +438,11 @@ public:
   _CCCL_API constexpr pair(_UPair&& __p) noexcept(
     is_nothrow_constructible_v<_T1, __get_t<0, _UPair>> && is_nothrow_constructible_v<_T2, __get_t<1, _UPair>>)
       : __base(
-          // __adl_get() specifically will only move the sub-object, it's therefore OK to
+          // get() specifically will only move the sub-object, it's therefore OK to
           // "move" the outer pair twice
           // NOLINTBEGIN(bugprone-use-after-move)
-          ::cuda::std::__adl_get<0>(::cuda::std::forward<_UPair>(__p)),
-          ::cuda::std::__adl_get<1>(::cuda::std::forward<_UPair>(__p))
+          ::cuda::std::get<0>(::cuda::std::forward<_UPair>(__p)),
+          ::cuda::std::get<1>(::cuda::std::forward<_UPair>(__p))
           // NOLINTEND(bugprone-use-after-move)
         )
   {}
@@ -454,8 +455,8 @@ public:
     enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_explicitly, int> = 0>
   _CCCL_API explicit constexpr pair(_UPair&& __p) noexcept(
     is_nothrow_constructible_v<_T1, __get_t<0, _UPair>> && is_nothrow_constructible_v<_T2, __get_t<1, _UPair>>)
-      : __base(::cuda::std::__adl_get<0>(::cuda::std::forward<_UPair>(__p)),
-               ::cuda::std::__adl_get<1>(::cuda::std::forward<_UPair>(__p)))
+      : __base(::cuda::std::get<0>(::cuda::std::forward<_UPair>(__p)),
+               ::cuda::std::get<1>(::cuda::std::forward<_UPair>(__p)))
   {}
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
@@ -545,9 +546,8 @@ public:
   _CCCL_API constexpr pair& operator=(_UPair&& __p) noexcept(
     is_nothrow_assignable_v<_T1&, __get_t<0, _UPair>> && is_nothrow_assignable_v<_T2&, __get_t<1, _UPair>>)
   {
-    using ::cuda::std::get;
-    this->first  = get<0>(::cuda::std::forward<_UPair>(__p));
-    this->second = get<1>(::cuda::std::forward<_UPair>(__p));
+    this->first  = ::cuda::std::get<0>(::cuda::std::forward<_UPair>(__p));
+    this->second = ::cuda::std::get<1>(::cuda::std::forward<_UPair>(__p));
     return *this;
   }
 
@@ -560,9 +560,8 @@ public:
     noexcept(is_nothrow_assignable_v<const _T1&, __get_t<0, _UPair>>
              && is_nothrow_assignable_v<const _T2&, __get_t<1, _UPair>>)
   {
-    using ::cuda::std::get;
-    this->first  = get<0>(::cuda::std::forward<_UPair>(__p));
-    this->second = get<1>(::cuda::std::forward<_UPair>(__p));
+    this->first  = ::cuda::std::get<0>(::cuda::std::forward<_UPair>(__p));
+    this->second = ::cuda::std::get<1>(::cuda::std::forward<_UPair>(__p));
     return *this;
   }
   // NOLINTEND(bugprone-use-after-move)
@@ -835,29 +834,7 @@ template <class _T1, class _T2>
   return ::cuda::std::__get_pair<1>::get(::cuda::std::move(__p));
 }
 
-// specialize cuda::std::tuple_size and cuda::std::tuple_element for std::pair and cuda::std::pair
-
-#if _CCCL_HAS_HOST_STD_LIB()
-template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<::std::pair<_Tp, _Up>> : integral_constant<size_t, 2>
-{};
-
-template <size_t _Ip, class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::pair<_Tp, _Up>>
-{
-  static_assert(_Ip < 2, "Index out of bounds in cuda::std::tuple_element<std::pair<_Tp, _Up>>");
-};
-template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<0, ::std::pair<_Tp, _Up>>
-{
-  using type _CCCL_NODEBUG = _Tp;
-};
-template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<1, ::std::pair<_Tp, _Up>>
-{
-  using type _CCCL_NODEBUG = _Up;
-};
-#endif // _CCCL_HAS_HOST_STD_LIB()
+// specialize cuda::std::tuple_size and cuda::std::tuple_element for cuda::std::pair
 
 template <class _Tp, class _Up>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<pair<_Tp, _Up>> : integral_constant<size_t, 2>
