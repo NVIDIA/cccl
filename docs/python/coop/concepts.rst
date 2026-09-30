@@ -291,10 +291,10 @@ For group size ``G``, items per thread ``K``, thread rank ``t``, and item index
 ``t + i * G``. The payload has no runtime layout tag that corrects a mismatched
 Load/Store pair.
 
-Store consumes the arrangement associated with its selected algorithm. The
-transpose Store implementations copy the payload before calling CUB, so Store
-never modifies the caller's scalar or ``ThreadData`` value while CUB performs
-its in-place reordering.
+Store consumes the arrangement associated with its selected algorithm.
+Transpose Store algorithms may rearrange the input payload in place, following
+CUB's behavior. Reload or reinitialize the payload before using its previous
+arrangement again.
 
 
 Temporary storage
