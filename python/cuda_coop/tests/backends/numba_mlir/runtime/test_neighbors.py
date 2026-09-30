@@ -40,6 +40,16 @@ _DTYPES = [
 @pytest.mark.parametrize("direction", ["left", "right"])
 def test_adjacent_partial_boundaries_and_input_preservation(dtype, direction):
     source = ((np.arange(90) * 7) % 17).astype(dtype)
+    if np.issubdtype(dtype, np.floating):
+        source = source / dtype(4) + dtype(0.125)
+    elif np.issubdtype(dtype, np.signedinteger):
+        source -= dtype(8)
+    else:
+        source += dtype(1 << (np.dtype(dtype).itemsize * 8 - 1))
+    if dtype == np.float64:
+        source += dtype(2**-30)
+    elif dtype == np.int64:
+        source *= dtype(1 << 33)
     compiler_dtype = getattr(types, source.dtype.name)
 
     @cuda.jit
@@ -82,12 +92,26 @@ def test_adjacent_partial_boundaries_and_input_preservation(dtype, direction):
         np.testing.assert_array_equal(original, source)
 
 
-@pytest.mark.parametrize("mode", ["heads", "tails", "heads_and_tails"])
-@pytest.mark.parametrize("boundary", [False, True])
-@pytest.mark.parametrize("dtype", [np.int16, np.uint64, np.float32, np.float64])
+@pytest.mark.parametrize(
+    "dtype,mode,boundary",
+    [
+        (dtype, mode, boundary)
+        for dtype in _DTYPES
+        for mode in ("heads", "tails", "heads_and_tails")
+        for boundary in (False, True)
+        if dtype in (np.int16, np.uint64, np.float32, np.float64)
+        or (mode == "heads_and_tails" and boundary)
+    ],
+)
 def test_flags_boundaries_pair_results_and_chained_scan(dtype, mode, boundary):
     source = (np.arange(96) // 5 % 7).astype(dtype)
     source[31:35] = 9
+    if np.issubdtype(dtype, np.floating):
+        source /= dtype(4)
+    if dtype == np.float64:
+        source += dtype(2**-30)
+    elif dtype in (np.int64, np.uint64):
+        source *= dtype(1 << 33)
     # Both modes treat comparison operands in increasing input-index order.
     compiler_dtype = getattr(types, source.dtype.name)
 
