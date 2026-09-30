@@ -128,7 +128,7 @@ def check_cutlass_warp_surface(source: object, destination: object) -> None:
 def check_cutlass_logical_warp_surface(
     source: object, destination: object
 ) -> None:
-    values = cutlass_coop.ThreadData(2, np.int32)
+    values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
     for width in (1, 2, 4, 8, 16, 32):
         group = cutlass_coop.this_warp().group_by(width)
         assert_type(
