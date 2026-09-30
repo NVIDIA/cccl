@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/agent/agent_scan.cuh>
 #include <cub/detail/iket_support.cuh>
 #include <cub/detail/warpspeed/allocators/smem_allocator.cuh>
 #include <cub/detail/warpspeed/look_ahead.cuh>
@@ -50,8 +51,9 @@ namespace __scan_detail = CUB_NS_QUALIFIER::detail::scan;
 _CCCL_IKET_CREATE_PUSH_POP_RANGE(Prologue);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadReduce);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadScanStore);
-_CCCL_IKET_CREATE_START_END_RANGE(SquadLoad);
-_CCCL_IKET_CREATE_START_END_RANGE(SquadSched);
+_CCCL_IKET_CREATE_START_END_RANGE(SquadLoadAndNextIdx);
+// _CCCL_IKET_CREATE_PUSH_POP_RANGE(Load); // Already declared in cub/agent/agent_scan.cuh, can't declare again
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(NextIdx);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadLookahead);
 _CCCL_IKET_CREATE_PUSH_POP_RANGE(GetNextIdx);
 _CCCL_IKET_CREATE_PUSH_POP_RANGE(ReduceThreadWarp);
@@ -63,8 +65,8 @@ _CCCL_IKET_CREATE_PUSH_POP_RANGE(ThreadScan);
 
 _CCCL_HOST_DEVICE_API constexpr int num_total_threads(const ScanLookaheadPolicy& policy)
 {
-  const auto num_total_warps = 2 * policy.reduce_and_scan_warps + 1 /*num_load_warps*/
-                             + 1 /*num_sched_warps*/ + 1 /*num_lookahead_warps*/;
+  const auto num_total_warps =
+    2 * policy.reduce_and_scan_warps + 1 /*num_load_and_sched_warps*/ + 1 /*num_lookahead_warps*/;
   return num_total_warps * warp_threads;
 }
 
@@ -115,14 +117,12 @@ allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& sm
 
   constexpr auto policy = current_policy<PolicySelector>().lookahead;
 
-  const int num_block_idx_stages =
-    policy.block_idx_stages > 0 ? policy.block_idx_stages : ::cuda::std::max(1, numStages + policy.block_idx_stages);
   const int num_aggr_exclusive_cta_stages =
     policy.lookahead_stages > 0 ? policy.lookahead_stages : ::cuda::std::max(1, numStages + policy.lookahead_stages);
 
   ScanResourcesT res = {
     warpspeed::SmemResource<in_out_t>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
-    warpspeed::SmemResource<uint4>(syncHandler, smemAllocator, warpspeed::Stages{num_block_idx_stages}),
+    warpspeed::SmemResource<uint4>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
     warpspeed::SmemResource<AccumT>(syncHandler, smemAllocator, warpspeed::Stages{num_aggr_exclusive_cta_stages}),
     warpspeed::SmemResource<thread_and_warp_aggr_t>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
   };
@@ -276,18 +276,16 @@ template <typename PolicySelector,
           bool StableReductionOrder = false>
 struct lookahead_scan_closure
 {
-  static constexpr ScanLookaheadPolicy policy          = current_policy<PolicySelector>().lookahead;
-  static constexpr warpspeed::SquadDesc squadReduce    = squad_reduce(policy);
-  static constexpr warpspeed::SquadDesc squadScanStore = squad_scan_store(policy);
-  static constexpr warpspeed::SquadDesc squadLoad      = squad_load(policy);
-  static constexpr warpspeed::SquadDesc squadSched     = squad_sched(policy);
-  static constexpr warpspeed::SquadDesc squadLookahead = squad_lookahead(policy);
+  static constexpr ScanLookaheadPolicy policy               = current_policy<PolicySelector>().lookahead;
+  static constexpr warpspeed::SquadDesc squadReduce         = squad_reduce(policy);
+  static constexpr warpspeed::SquadDesc squadScanStore      = squad_scan_store(policy);
+  static constexpr warpspeed::SquadDesc squadLoadAndNextIdx = squad_load_and_next_idx(policy);
+  static constexpr warpspeed::SquadDesc squadLookahead      = squad_lookahead(policy);
 
-  static constexpr ::cuda::std::array<warpspeed::SquadDesc, 5> scanSquads = {
+  static constexpr ::cuda::std::array<warpspeed::SquadDesc, 4> scanSquads = {
     squad_reduce(policy),
     squad_scan_store(policy),
-    squad_load(policy),
-    squad_sched(policy),
+    squad_load_and_next_idx(policy),
     squad_lookahead(policy),
   };
 
@@ -802,13 +800,6 @@ struct lookahead_scan_closure
       // We need to handle the first and the last -partial- tile differently
       const bool is_first_tile = idxTile == 0;
 
-      if (squad == squadSched)
-      {
-        _CCCL_IKET_RANGE_START(SquadSched);
-        load_next_tile_index(squad, phaseNextBlockIdxW);
-        _CCCL_IKET_RANGE_END(SquadSched);
-      }
-
       const ::cuda::std::size_t idxTileBase = idxTile * ::cuda::std::size_t(tile_size);
       _CCCL_ASSERT(idxTileBase < params.numElem, "");
       const int valid_items =
@@ -817,11 +808,21 @@ struct lookahead_scan_closure
       const warpspeed::CpAsyncOobInfo loadInfo =
         warpspeed::prepareCpAsyncOob(const_cast<InputT*>(params.ptrIn) + idxTileBase, valid_items);
 
-      if (squad == squadLoad)
+      // Async loading and async tile index stealing are very lightweight, so one squad is enough to do both
+      // slice is intentional, see SquadDesc::operator==()
+      if (squad == squadLoadAndNextIdx) // NOLINT(cppcoreguidelines-slicing)
       {
-        _CCCL_IKET_RANGE_START(SquadLoad);
+        _CCCL_IKET_RANGE_START(SquadLoadAndNextIdx);
+
+        _CCCL_IKET_RANGE_PUSH(Load);
         load_current_tile(squad, phaseInOutW, loadInfo);
-        _CCCL_IKET_RANGE_END(SquadLoad);
+        _CCCL_IKET_RANGE_POP();
+
+        _CCCL_IKET_RANGE_PUSH(NextIdx);
+        load_next_tile_index(squad, phaseNextBlockIdxW);
+        _CCCL_IKET_RANGE_POP();
+
+        _CCCL_IKET_RANGE_END(SquadLoadAndNextIdx);
       }
 
       _CCCL_IKET_RANGE_PUSH(GetNextIdx);
@@ -839,7 +840,8 @@ struct lookahead_scan_closure
       }();
       _CCCL_IKET_RANGE_POP();
 
-      if (squad == squadReduce)
+      // slice is intentional, see SquadDesc::operator==()
+      if (squad == squadReduce) // NOLINT(cppcoreguidelines-slicing)
       {
         _CCCL_IKET_RANGE_START(SquadReduce);
         reduce_tile(
@@ -855,14 +857,16 @@ struct lookahead_scan_closure
         _CCCL_IKET_RANGE_END(SquadReduce);
       }
 
-      if (squad == squadLookahead)
+      // slice is intentional, see SquadDesc::operator==()
+      if (squad == squadLookahead) // NOLINT(cppcoreguidelines-slicing)
       {
         _CCCL_IKET_RANGE_START(SquadLookahead);
         lookahead(squad, phaseAggrExclusiveCtaW, is_first_tile, idxTilePrev, AggrExclusiveCtaPrev, idxTile, numTiles);
         _CCCL_IKET_RANGE_END(SquadLookahead);
       }
 
-      if (squad == squadScanStore)
+      // slice is intentional, see SquadDesc::operator==()
+      if (squad == squadScanStore) // NOLINT(cppcoreguidelines-slicing)
       {
         static_assert(tile_size % squadScanStore.threadCount() == 0);
         _CCCL_IKET_RANGE_START(SquadScanStore);
@@ -905,7 +909,8 @@ struct lookahead_scan_closure
     }
 
     // epilogue: after the load squad finished, we can start ramping up the next kernel
-    if (squad == squadLoad)
+    // slice is intentional, see SquadDesc::operator==()
+    if (squad == squadLoadAndNextIdx) // NOLINT(cppcoreguidelines-slicing)
     {
       _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
     }
