@@ -28,6 +28,35 @@ def test_validate_and_get_stream_caches_handle_by_identity():
     assert stream.calls == 1
 
 
+def test_validate_and_get_stream_revalidates_closed_stream():
+    class ClosableStream(_CountingStream):
+        def __init__(self, handle):
+            super().__init__(handle)
+            self.is_closed = False
+
+        def close(self):
+            self.is_closed = True
+
+        def __cuda_stream__(self):
+            self.calls += 1
+            if self.is_closed:
+                raise RuntimeError("stream is closed")
+            return (0, self.handle)
+
+    stream = ClosableStream(123)
+
+    assert protocols.validate_and_get_stream(stream) == 123
+    assert protocols.validate_and_get_stream(stream) == 123
+    assert stream.calls == 1
+
+    stream.close()
+    with pytest.raises(RuntimeError, match="stream is closed"):
+        protocols.validate_and_get_stream(stream)
+
+    assert stream.calls == 2
+    assert id(stream) not in protocols._STREAM_HANDLE_CACHE
+
+
 def test_validate_and_get_stream_does_not_confuse_equal_objects():
     class EqualStream(_CountingStream):
         def __eq__(self, other):

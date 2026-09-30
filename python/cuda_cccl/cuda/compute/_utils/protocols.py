@@ -35,10 +35,19 @@ _STREAM_HANDLE_CACHE: dict[int, tuple[weakref.ReferenceType[object], int]] = {}
 
 
 def _get_cached_stream_handle(stream: object) -> Optional[int]:
-    entry = _STREAM_HANDLE_CACHE.get(id(stream))
-    if entry is not None and entry[0]() is stream:
-        return entry[1]
-    return None
+    stream_id = id(stream)
+    entry = _STREAM_HANDLE_CACHE.get(stream_id)
+    if entry is None or entry[0]() is not stream:
+        return None
+
+    # cuda.core.Stream keeps its object identity after close(), but its native
+    # handle is no longer valid and __cuda_stream__() rejects the object. Do
+    # not let a previously cached handle bypass that validation path.
+    if getattr(stream, "is_closed", False):
+        _STREAM_HANDLE_CACHE.pop(stream_id, None)
+        return None
+
+    return entry[1]
 
 
 def _cache_stream_handle(stream: object, handle: int) -> None:
