@@ -27,10 +27,10 @@ def test_load_example():
     from cuda import coop
 
     @cuda.jit
-    def copy_tiles(source, destination):
+    def copy_tiles(source, destination, items_per_thread):
         block = coop.this_block()
-        items = coop.ThreadData(items_per_thread=2)
-        tile_size = cuda.blockDim.x * 2
+        items = coop.ThreadData(items_per_thread)
+        tile_size = cuda.blockDim.x * items_per_thread
         offset = cuda.blockIdx.x * tile_size
         valid = min(max(source.size - offset, 0), tile_size)
         coop.load(
@@ -49,10 +49,12 @@ def test_load_example():
             offset=offset,
         )
 
-    expected = np.arange(1000, dtype=np.int32)
-    source = cuda.to_device(expected)
-    destination = cuda.device_array_like(source)
-    blocks = (expected.size + 255) // 256
-    copy_tiles[blocks, 128](source, destination)
-    np.testing.assert_array_equal(destination.copy_to_host(), expected)
+    for items_per_thread in (1, 4):
+        expected = np.arange(1000, dtype=np.int32)
+        source = cuda.to_device(expected)
+        destination = cuda.device_array_like(source)
+        tile_size = 128 * items_per_thread
+        blocks = (expected.size + tile_size - 1) // tile_size
+        copy_tiles[blocks, 128](source, destination, items_per_thread)
+        np.testing.assert_array_equal(destination.copy_to_host(), expected)
     # example-end

@@ -25,12 +25,14 @@ pytestmark = [
 def test_warp_copy():
     # coop-pg-warp-copy-begin
     @cuda.jit
-    def copy_warp_tiles(source, destination, count):
+    def copy_warp_tiles(source, destination, count, items_per_thread):
         group = coop.this_warp().group_by(8)
-        items = coop.ThreadData(items_per_thread=2)
-        block_origin = cuda.blockIdx.x * cuda.blockDim.x * 2
-        group_origin = (cuda.threadIdx.x // 8) * 16
-        valid = min(max(count - block_origin - group_origin, 0), 16)
+        items = coop.ThreadData(items_per_thread)
+        block_origin = cuda.blockIdx.x * cuda.blockDim.x * items_per_thread
+        group_origin = (cuda.threadIdx.x // 8) * 8 * items_per_thread
+        valid = min(
+            max(count - block_origin - group_origin, 0), 8 * items_per_thread
+        )
 
         coop.load(
             group,
@@ -44,9 +46,15 @@ def test_warp_copy():
             group, destination, items, offset=block_origin, valid_items=valid
         )
 
-    source = np.arange(531, dtype=np.int32)
-    destination = np.full_like(source, -1)
-    copy_warp_tiles[3, 128](source, destination, source.size)
-    cuda.synchronize()
-    np.testing.assert_array_equal(destination, source)
+    for items_per_thread in (1, 4):
+        source = np.arange(531, dtype=np.int32)
+        destination = np.full_like(source, -1)
+        blocks = (source.size + 128 * items_per_thread - 1) // (
+            128 * items_per_thread
+        )
+        copy_warp_tiles[blocks, 128](
+            source, destination, source.size, items_per_thread
+        )
+        cuda.synchronize()
+        np.testing.assert_array_equal(destination, source)
     # coop-pg-warp-copy-end

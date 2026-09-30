@@ -36,16 +36,17 @@ threads, with two items per thread:
 
 
    @cuda.jit
-   def copy_tile(source, destination):
+   def copy_tile(source, destination, items_per_thread):
        block = coop.this_block()
-       items = coop.ThreadData(items_per_thread=2)
+       items = coop.ThreadData(items_per_thread)
        coop.load(block, source, items, algorithm="direct")
        coop.store(block, destination, items, algorithm="direct")
 
 
-   source = np.arange(256, dtype=np.int32)
+   items_per_thread = 2
+   source = np.arange(128 * items_per_thread, dtype=np.int32)
    destination = np.zeros_like(source)
-   copy_tile[1, 128](source, destination)
+   copy_tile[1, 128](source, destination, items_per_thread)
    cuda.synchronize()
    np.testing.assert_array_equal(destination, source)
 
@@ -56,8 +57,9 @@ sees device pointers in either case.
 Each thread owns a separate ``items`` payload. With the direct algorithm,
 thread 0 gets elements 0 and 1, thread 1 gets elements 2 and 3, and so on.
 The Load fills that payload; the Store writes it back. This is a *blocked*
-arrangement of the tile. ``ThreadData(items_per_thread=2)`` describes two values per thread,
-not two values shared by the block.
+arrangement of the tile. ``ThreadData(items_per_thread)`` describes that
+many values per thread, not values shared by the block. Numba-CUDA-MLIR
+specializes the kernel for the ``items_per_thread`` argument.
 
 The :doc:`Load <visualizations/load>` and :doc:`Store <visualizations/store>`
 visualizations show this ownership pattern and the exchanges used by other
@@ -334,7 +336,7 @@ type inference, and some comes from the configured launch:
      - Load's typed source array
      - Infer the C++ element type and check the destination type.
    * - Items per thread
-     - ``ThreadData(items_per_thread=2)``
+     - ``ThreadData(items_per_thread)`` with a launch argument of ``2``
      - Instantiate a fixed array extent of two.
    * - Algorithm
      - ``algorithm="direct"``
@@ -518,11 +520,12 @@ bytes when the compiler materializes payload storage. It does not assert
 alignment of the source or destination arrays passed to Load and Store.
 
 The dtype can also come from the surrounding operation. In this kernel
-fragment, the Load's source establishes the dtype:
+fragment, ``items_per_thread`` is a kernel argument and the Load's source
+establishes the dtype:
 
 .. code-block:: python
 
-   items = coop.ThreadData(items_per_thread=2)
+   items = coop.ThreadData(items_per_thread)
    coop.load(block, source, items)
    coop.store(block, destination, items)
 
@@ -530,9 +533,10 @@ The planner propagates the dtype from ``source`` to ``items``. A later Store can
 specify a dtype. Load fills ``items`` in place and returns ``None``.
 
 Layout describes which logical tile elements each thread owns. A striped
-Load gives thread ``t`` elements ``t`` and ``t + block_size``. A blocked
-Load gives it ``2 * t`` and ``2 * t + 1``. The ``transpose`` algorithm uses
-striped memory transactions internally and fills the payload in blocked order;
+Load gives thread ``t`` elements ``t + i * block_size``. A blocked
+Load gives it ``items_per_thread * t + i`` for each local index ``i``.
+The ``transpose`` algorithm uses striped memory transactions internally
+and fills the payload in blocked order;
 ``striped`` exposes the striped payload to the caller. The caller must
 choose Load and Store algorithms that agree on that arrangement.
 
@@ -586,9 +590,9 @@ A block operation can expose that reuse choice through ``TempStorage``:
 
 .. code-block:: python
 
-   # Inside a kernel; source and destination each contain one full tile.
+   # Inside a kernel with an items_per_thread argument and one full tile.
    scratch = coop.TempStorage(auto_sync=True)
-   items = coop.ThreadData(items_per_thread=2)
+   items = coop.ThreadData(items_per_thread)
    coop.load(block, source, items,
              algorithm="transpose", temp_storage=scratch)
    coop.store(block, destination, items,
@@ -714,8 +718,10 @@ command-line arguments:
    :language: python
    :start-at: # Import the kernel DSL
 
-All 128 threads copy two integers each. The second launch uses the same
-argument types and block shape so you can observe compilation reuse.
+By default, all 128 threads copy two integers each. ``main`` accepts an
+``items_per_thread`` argument and forwards it to both kernel launches.
+The second launch uses the same argument types, item count, and block
+shape so you can observe compilation reuse.
 Both launches check the result. Warnings about a small grid and host-array
 copies are expected for this small example.
 
@@ -812,7 +818,7 @@ For a compact confirmation, stop on ``invalid = tuple(...)`` inside
 rewrite cooperative calls when it compiles a kernel.
 
 Disable these import breakpoints. Set a breakpoint on the first
-``copy_tile[1, 128](source, destination)`` in the example and continue.
+``copy_tile[1, 128](source, destination, items_per_thread)`` in the example and continue.
 At this point, check ``coop.__file__`` in Debug Console. It should point
 inside the checkout you opened. The ``@cuda.jit`` decorator has made a
 dispatcher; this first launch will trigger compilation for its arguments.
@@ -1004,7 +1010,7 @@ Finish the launch and observe reuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Disable the compiler breakpoints and set a breakpoint on the second
-``copy_tile[1, 128](source, destination)`` in the example. Continue.
+``copy_tile[1, 128](source, destination, items_per_thread)`` in the example. Continue.
 The first launch has completed and its assertion has passed. Inspect
 ``source[:8]`` and ``destination[:8]`` in the example's ``main`` frame:
 ``source`` starts at 0, while ``destination`` contains the ``-1`` values
@@ -1028,9 +1034,9 @@ set the two additional storage breakpoints listed below:
 .. code-block:: python
 
    @cuda.jit
-   def copy_tile(source, destination):
+   def copy_tile(source, destination, items_per_thread):
        block = coop.this_block()
-       items = coop.ThreadData(items_per_thread=2)
+       items = coop.ThreadData(items_per_thread)
        scratch = coop.TempStorage(auto_sync=True)
        coop.load(
            block, source, items, algorithm="transpose", temp_storage=scratch

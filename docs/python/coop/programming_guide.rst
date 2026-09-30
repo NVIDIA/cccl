@@ -176,9 +176,9 @@ Constructing a group or a ``ThreadData`` object does not synchronize threads.
 ``ThreadData``: the part of a tile owned by one thread
 ------------------------------------------------------
 
-``coop.ThreadData(items_per_thread=2)`` gives each thread two slots.
-With 128 threads, the group owns 256 values. Each thread
-indexes its own slots with ``items[0]`` and ``items[1]``. Each thread accesses only its own slots.
+``coop.ThreadData(items_per_thread)`` gives each thread that many slots.
+With 128 threads, the group owns ``128 * items_per_thread`` values. Each thread
+indexes its own slots with ``items[i]``. Each thread accesses only its own slots.
 
 :class:`~cuda.coop.ThreadDataLike` names the common payload interface used
 in API signatures. It describes the item count, dtype, and indexed reads and
@@ -186,8 +186,10 @@ writes. Use :func:`~cuda.coop.ThreadData` to construct a payload for the active
 compiler backend. Other payload representations require support from that
 backend.
 
-The item count must be a positive compile-time integer. You can use
-``items.items_per_thread`` as a loop bound:
+The item count must be a positive compile-time integer. Pass
+``items_per_thread`` as a kernel argument; the compiler specializes the
+kernel for each supplied value. You can also use ``items.items_per_thread``
+as a loop bound:
 
 .. code-block:: python
 
@@ -276,7 +278,7 @@ Increasing the item count increases the amount of live data per thread.
 
 The optional ``alignment`` keyword requests a minimum power-of-two alignment
 in bytes when the compiler materializes the payload. For example,
-``coop.ThreadData(items_per_thread=4, alignment=16)`` requests at least
+``coop.ThreadData(items_per_thread, alignment=16)`` requests at least
 16-byte alignment. The compiler may strengthen it. This setting applies
 to payload storage; alignment of the input and output arrays remains a
 separate property.

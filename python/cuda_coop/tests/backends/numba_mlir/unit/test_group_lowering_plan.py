@@ -161,9 +161,11 @@ def test_group_planner_marks_only_explicit_static_scalar_provenance_static():
     assert different.kind is BindingKind.RUNTIME
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
 def test_runtime_arithmetic_controls_share_planning_and_rewrite_paths(
     qualified,
+    items_per_thread,
 ):
     from numba_cuda_mlir import cuda, types
 
@@ -174,12 +176,12 @@ def test_runtime_arithmetic_controls_share_planning_and_rewrite_paths(
 
     module = qualified_coop if qualified else root_coop
 
-    def memory(source, control):
+    def memory(source, control, items_per_thread):
         index = cuda.threadIdx.x
         valid = control + index
         default = source[index]
         offset = np.int64(control)
-        output = module.ThreadData(2, dtype=types.int32)
+        output = module.ThreadData(items_per_thread, dtype=types.int32)
         return module.load(
             module.this_block(),
             source,
@@ -191,12 +193,16 @@ def test_runtime_arithmetic_controls_share_planning_and_rewrite_paths(
 
     array_type = types.Array(types.int32, 1, "C")
     arg_types = (array_type, types.int32)
-    planner = _planner(memory, arg_types=arg_types, block=(32, 1, 1))
+    planner = _planner(
+        memory,
+        arg_types=(*arg_types, types.IntegerLiteral(items_per_thread)),
+        block=(32, 1, 1),
+    )
     assert planner.run()
 
     state = SimpleNamespace(
         func_ir=planner.func_ir,
-        args=arg_types,
+        args=(*arg_types, types.IntegerLiteral(items_per_thread)),
         typingctx=SimpleNamespace(refresh=lambda: None),
         typemap={},
         calltypes={},
@@ -220,7 +226,10 @@ def test_runtime_arithmetic_controls_share_planning_and_rewrite_paths(
     assert rewrite._resolve_var_dtype(match.runtime_args[4]) == types.int64
 
 
-def test_direct_load_provider_is_selected_from_complete_core_plan(monkeypatch):
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_direct_load_provider_is_selected_from_complete_core_plan(
+    monkeypatch, items_per_thread
+):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as coop
@@ -246,13 +255,13 @@ def test_direct_load_provider_is_selected_from_complete_core_plan(monkeypatch):
         capture_plan,
     )
 
-    def memory_with_storage(source):
+    def memory_with_storage(source, items_per_thread):
         storage = coop.TempStorage(
             256,
             alignment=16,
             sharing="exclusive",
         )
-        output = coop.ThreadData(2, dtype=types.int32)
+        output = coop.ThreadData(items_per_thread, dtype=types.int32)
         return coop.load(
             coop.this_block(),
             source,
@@ -262,8 +271,8 @@ def test_direct_load_provider_is_selected_from_complete_core_plan(monkeypatch):
             temp_storage=storage,
         )
 
-    def memory_without_storage(source):
-        output = coop.ThreadData(2, dtype=types.int32)
+    def memory_without_storage(source, items_per_thread):
+        output = coop.ThreadData(items_per_thread, dtype=types.int32)
         return coop.load(
             coop.this_block(),
             source,
@@ -274,16 +283,20 @@ def test_direct_load_provider_is_selected_from_complete_core_plan(monkeypatch):
 
     array_type = types.Array(types.int32, 1, "C")
     for memory in (memory_with_storage, memory_without_storage):
-        planner = _planner(memory, arg_types=(array_type,))
+        planner = _planner(
+            memory,
+            arg_types=(array_type, types.IntegerLiteral(items_per_thread)),
+        )
         assert planner.run()
     assert len(plans) == 2
 
     plan = plans[0]
     implicit_plan = plans[1]
-    assert plan == implicit_plan
     assert plan.call.operation == implicit_plan.call.operation
-    assert plan.semantic_key == implicit_plan.semantic_key
-    assert plan.artifact_key == implicit_plan.artifact_key
+    assert plan.target == implicit_plan.target
+    assert plan.participation == implicit_plan.participation
+    assert plan.temp_storage == implicit_plan.temp_storage
+    assert plan.synchronization == implicit_plan.synchronization
     assert plan.target is GroupLoweringTarget.CUB_BLOCK
     assert plan.unsupported is None
     assert plan.artifact_key is not None
@@ -322,19 +335,21 @@ def test_direct_load_provider_is_selected_from_complete_core_plan(monkeypatch):
     )
     semantics = plan.call.operation
     assert semantics.dtype == types.int32
-    assert semantics.items_per_thread == 2
+    assert semantics.items_per_thread == items_per_thread
     assert semantics.valid_items.kind is BindingKind.STATIC
     assert semantics.valid_items.value == 31
     assert semantics.oob_default.kind is BindingKind.STATIC
     assert semantics.oob_default.value == -1
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
 @pytest.mark.parametrize("operation", ["load", "store"])
 def test_load_store_infer_untyped_payloads_symmetrically(
     monkeypatch,
     qualified,
     operation,
+    items_per_thread,
 ):
     from numba_cuda_mlir import types
 
@@ -355,8 +370,8 @@ def test_load_store_infer_untyped_payloads_symmetrically(
 
     if operation == "load":
 
-        def memory(source, destination):
-            output = module.ThreadData(2)
+        def memory(source, destination, items_per_thread):
+            output = module.ThreadData(items_per_thread)
             return module.load(
                 module.this_block(),
                 source,
@@ -366,10 +381,10 @@ def test_load_store_infer_untyped_payloads_symmetrically(
 
     else:
 
-        def memory(source, destination):
-            output = module.ThreadData(2)
-            output[0] = source[0]
-            output[1] = source[1]
+        def memory(source, destination, items_per_thread):
+            output = module.ThreadData(items_per_thread)
+            for item in range(items_per_thread):
+                output[item] = source[item]
             module.store(
                 module.this_block(),
                 destination,
@@ -378,7 +393,14 @@ def test_load_store_infer_untyped_payloads_symmetrically(
             )
 
     array_type = types.Array(types.int32, 1, "C")
-    assert _planner(memory, arg_types=(array_type, array_type)).run()
+    assert _planner(
+        memory,
+        arg_types=(
+            array_type,
+            array_type,
+            types.IntegerLiteral(items_per_thread),
+        ),
+    ).run()
 
     assert len(plans) == 1
     assert plans[0].call.operation.dtype == types.int32
@@ -423,7 +445,7 @@ def test_group_plan_rejects_incompatible_provider_metadata(
     )
 
     def memory(source):
-        output = coop.ThreadData(2, dtype=types.int32)
+        output = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         return coop.load(coop.this_block(), source, output)
 
     array_type = types.Array(types.int32, 1, "C")
@@ -546,7 +568,10 @@ def test_group_plan_rejects_declared_sync_for_implementation_owned_no_sync(
         GroupPlanningContext._validate_provider_contract(plan, object())
 
 
-def test_logical_warp_plan_selects_typed_cub_provider(monkeypatch):
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_logical_warp_plan_selects_typed_cub_provider(
+    monkeypatch, items_per_thread
+):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as coop
@@ -567,12 +592,15 @@ def test_logical_warp_plan_selects_typed_cub_provider(monkeypatch):
         capture_plan,
     )
 
-    def memory(source):
-        output = coop.ThreadData(2, dtype=types.int32)
+    def memory(source, items_per_thread):
+        output = coop.ThreadData(items_per_thread, dtype=types.int32)
         return coop.load(coop.this_warp().group_by(8), source, output)
 
     array_type = types.Array(types.int32, 1, "C")
-    planner = _planner(memory, arg_types=(array_type,))
+    planner = _planner(
+        memory,
+        arg_types=(array_type, types.IntegerLiteral(items_per_thread)),
+    )
     assert planner.run()
 
     assert len(plans) == 1
@@ -600,7 +628,7 @@ def test_static_oob_default_rejects_before_provider_selection(
     from cuda.coop.numba_mlir._compiler import _group_load_store
 
     def memory(source):
-        output = coop.ThreadData(2, dtype=types.int32)
+        output = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         return coop.load(
             coop.this_block(),
             source,
@@ -640,7 +668,7 @@ def test_runtime_oob_default_rejects_before_provider_selection(
     from cuda.coop.numba_mlir._compiler import _group_load_store
 
     def memory(source, oob_default):
-        output = coop.ThreadData(2, dtype=types.int32)
+        output = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         return coop.load(
             coop.this_block(),
             source,
@@ -668,6 +696,7 @@ def test_runtime_oob_default_rejects_before_provider_selection(
         _planner(memory, arg_types=(array_type, value_type)).run()
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
 @pytest.mark.parametrize("operation", ["load", "store"])
 @pytest.mark.parametrize(
@@ -679,6 +708,7 @@ def test_equivalent_dtype_spellings_are_canonicalized_before_planning(
     qualified,
     operation,
     dtype_spelling,
+    items_per_thread,
 ):
     from numba_cuda_mlir import types
 
@@ -707,18 +737,21 @@ def test_equivalent_dtype_spellings_are_canonicalized_before_planning(
 
     if operation == "load":
 
-        def memory(memory):
-            payload = module.ThreadData(2, dtype=dtype)
+        def memory(memory, items_per_thread):
+            payload = module.ThreadData(items_per_thread, dtype=dtype)
             return module.load(module.this_block(), memory, payload)
 
     else:
 
-        def memory(memory):
-            payload = module.ThreadData(2, dtype=dtype)
+        def memory(memory, items_per_thread):
+            payload = module.ThreadData(items_per_thread, dtype=dtype)
             module.store(module.this_block(), memory, payload)
 
     array_type = types.Array(types.int32, 1, "C")
-    planner = _planner(memory, arg_types=(array_type,))
+    planner = _planner(
+        memory,
+        arg_types=(array_type, types.IntegerLiteral(items_per_thread)),
+    )
     assert planner.run()
     assert len(plans) == 1
     assert plans[0].call.operation.dtype == types.int32
@@ -738,12 +771,14 @@ _STATIC_DEFAULT_DTYPES = (
 )
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
 @pytest.mark.parametrize(("dtype_name", "numpy_dtype"), _STATIC_DEFAULT_DTYPES)
 def test_static_oob_default_boundaries_use_the_load_payload_dtype(
     qualified,
     dtype_name,
     numpy_dtype,
+    items_per_thread,
 ):
     from numba_cuda_mlir import types
 
@@ -761,8 +796,10 @@ def test_static_oob_default_boundaries_use_the_load_payload_dtype(
 
     for oob_default in boundaries:
 
-        def memory(source):
-            output = module.ThreadData(2, dtype=getattr(types, dtype_name))
+        def memory(source, items_per_thread):
+            output = module.ThreadData(
+                items_per_thread, dtype=getattr(types, dtype_name)
+            )
             return module.load(
                 module.this_block(),
                 source,
@@ -772,7 +809,10 @@ def test_static_oob_default_boundaries_use_the_load_payload_dtype(
             )
 
         array_type = types.Array(getattr(types, dtype_name), 1, "C")
-        assert _planner(memory, arg_types=(array_type,)).run()
+        assert _planner(
+            memory,
+            arg_types=(array_type, types.IntegerLiteral(items_per_thread)),
+        ).run()
 
 
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
@@ -799,7 +839,7 @@ def test_untyped_store_infers_write_dtype_before_destination_fallback(
     module = qualified_coop if qualified else root_coop
 
     def memory(destination, value):
-        payload = module.ThreadData(2)
+        payload = module.ThreadData(items_per_thread=2)
         payload[0] = value
         payload[1] = value
         module.store(module.this_block(), destination, payload)
