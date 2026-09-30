@@ -182,6 +182,58 @@ def test_thread_data_item_extent_is_a_compile_time_constant(module):
     assert extent.value == 3
 
 
+def test_thread_data_rejects_rebound_dtype_in_a_branch():
+    def kernel(flag):
+        if flag:
+            dtype = np.int32
+            first = coop.ThreadData(2, dtype)
+            first[0] = 16777217
+            dtype = np.float32
+            second = coop.ThreadData(2, dtype)
+            second[0] = 1.5
+            return first[0] + second[0]
+        return 0
+
+    with pytest.raises(CoopSinglePhaseRewriteError, match="dtype must resolve"):
+        _rewrite(kernel)
+
+
+def test_thread_data_rejects_rebound_alignment_in_a_loop():
+    def kernel(count):
+        result = 0
+        for _ in range(count):
+            alignment = 64
+            first = coop.ThreadData(2, types.int32, alignment=alignment)
+            alignment = 16
+            second = coop.ThreadData(2, types.int32, alignment=alignment)
+            result += first[0] + second[0]
+        return result
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError, match="alignment must be a compile-time"
+    ):
+        _rewrite(kernel)
+
+
+def test_rebound_shared_array_shape_cannot_hide_dynamic_allocation():
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    def kernel(value, count):
+        for _ in range(count):
+            size = 0
+            dynamic = cuda.shared.array(size, types.int32)
+            size = 32
+            static = cuda.shared.array(size, types.int32)
+            dynamic[0] = value
+            static[0] = value
+            value = provider(dynamic[0] + static[0])
+        return value
+
+    with pytest.raises(CoopSinglePhaseRewriteError, match="would alias"):
+        _rewrite_registered_provider(kernel)
+
+
 def test_native_local_array_item_extent_is_not_rewritten():
     def kernel():
         payload = cuda.local.array(3, types.int32)

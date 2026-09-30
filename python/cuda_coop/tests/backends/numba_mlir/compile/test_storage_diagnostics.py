@@ -73,6 +73,49 @@ def test_load_return_cannot_be_used_as_a_store_payload(qualified, dtype):
         _compile(kernel, types.int32[::1], types.int32[::1])
 
 
+def test_rebound_explicit_dtype_is_not_replaced_by_write_inference():
+    @cuda.jit(chip="sm_90")
+    def kernel(destination):
+        if destination[0] > 0:
+            dtype = types.int32
+            first = coop.ThreadData(2, dtype)
+            first[0] = 16777217
+            destination[0] = first[0]
+            dtype = types.float32
+            second = coop.ThreadData(2, dtype)
+            second[0] = 1.5
+            destination[1] = second[0]
+
+    with pytest.raises(
+        (CoopSinglePhaseRewriteError, TypingError),
+        match="dtype must resolve",
+    ):
+        _compile(kernel, types.int32[::1])
+
+
+def test_rebound_shared_shape_is_rejected_with_cooperative_storage():
+    @cuda.jit(chip="sm_90")
+    def kernel(destination):
+        for _ in range(2):
+            size = 0
+            dynamic = cuda.shared.array(size, types.int32)
+            size = 32
+            static = cuda.shared.array(size, types.int32)
+            dynamic[cuda.threadIdx.x] = 1
+            static[cuda.threadIdx.x] = 2
+            payload = coop.ThreadData(2, types.int32)
+            payload[0] = dynamic[cuda.threadIdx.x]
+            payload[1] = static[cuda.threadIdx.x]
+            coop.store(
+                coop.this_block(), destination, payload, algorithm="transpose"
+            )
+
+    with pytest.raises(
+        (CoopSinglePhaseRewriteError, TypingError), match="would alias"
+    ):
+        _compile(kernel, types.int32[::1])
+
+
 def test_default_helper_accepts_descriptor_alias_chain():
     @cuda.jit(device=True)
     def helper(source, storage):

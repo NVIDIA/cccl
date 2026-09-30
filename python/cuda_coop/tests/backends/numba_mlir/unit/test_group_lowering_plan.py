@@ -137,12 +137,12 @@ def test_group_planner_marks_only_explicit_static_scalar_provenance_static():
     planner = _GroupCallPlanner(
         SimpleNamespace(
             func_ir=func_ir,
-            args=(types.IntegerLiteral(np.int32(1)),),
+            args=(types.IntegerLiteral(1),),
         ),
         {"block": (32, 1, 1), "grid": (1, 1, 1), "cluster": None},
     )
     expected_static = {
-        "literal": np.int32(1),
+        "literal": np.int64(1),
         "constant": 5,
         "global_value": np.int32(3),
         "free_value": np.int32(4),
