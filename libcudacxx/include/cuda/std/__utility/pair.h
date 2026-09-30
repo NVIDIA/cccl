@@ -307,6 +307,11 @@ private:
     // NOLINTEND(bugprone-branch-clone)
   }
 
+  // MSVC cannot parse a default template argument that calls a function with two packs.
+  template <class _TupleTypes0, class _TupleTypes1>
+  using _PiecewiseConstructible =
+    _ConstructorConstraint<pair::__select_piecewise_constructible(_TupleTypes0{}, _TupleTypes1{})>;
+
   using __base = __pair_base<_T1, _T2>;
 
 public:
@@ -534,9 +539,8 @@ public:
   // NOTE: GCC7 fails to instantiate __select_piecewise_constructible without the explicit pair::
   template <class... _Args1,
             class... _Args2,
-            __select_constructor _Constraints =
-              pair::__select_piecewise_constructible(__tuple_types<_Args1...>{}, __tuple_types<_Args2...>{}),
-            enable_if_t<_ConstructorConstraint<_Constraints>::__can_construct_implicitly, int> = 0>
+            class _Constraints = _PiecewiseConstructible<__tuple_types<_Args1...>, __tuple_types<_Args2...>>,
+            enable_if_t<_Constraints::__can_construct_implicitly, int> = 0>
   _CCCL_API constexpr pair(piecewise_construct_t __pc,
                            tuple<_Args1...> __first_args,
                            tuple<_Args2...> __second_args) noexcept((is_nothrow_constructible_v<_T1, _Args1...>
@@ -551,9 +555,8 @@ public:
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
   template <class... _Args1,
             class... _Args2,
-            __select_constructor _Constraints =
-              pair::__select_piecewise_constructible(__tuple_types<_Args1...>{}, __tuple_types<_Args2...>{}),
-            enable_if_t<_ConstructorConstraint<_Constraints>::__is_deleted, int> = 0>
+            class _Constraints = _PiecewiseConstructible<__tuple_types<_Args1...>, __tuple_types<_Args2...>>,
+            enable_if_t<_Constraints::__is_deleted, int> = 0>
   constexpr pair(piecewise_construct_t, tuple<_Args1...>, tuple<_Args2...>) = delete;
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
