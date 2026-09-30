@@ -16,8 +16,6 @@ from cuda.bindings import driver
 from cuda.coop import cutlass as cutlass_coop
 
 _BLOCK = (8, 4, 2)
-_ITEMS = 2
-_TILE = 64 * _ITEMS
 _BINS = 16
 
 
@@ -27,10 +25,11 @@ def _check(result):
     return result[1] if len(result) == 2 else result[1:]
 
 
-def run_example(api="common"):
+def run_example(api="common", items_per_thread=2):
     """Check stable digit order, inverse ranks, prefixes, and input
     preservation.
     """
+    tile_size = 64 * items_per_thread
     if api not in {"common", "qualified"}:
         raise ValueError("api must be 'common' or 'qualified'")
     module = coop if api == "common" else cutlass_coop
@@ -45,13 +44,16 @@ def run_example(api="common"):
         ranks_out: cute.Pointer,
         prefixes_out: cute.Pointer,
         original_keys: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
         block = module.this_block()
-        keys = module.ThreadData(items_per_thread=_ITEMS)
-        positions = module.ThreadData(items_per_thread=_ITEMS)
+        keys = module.ThreadData(items_per_thread)
+        positions = module.ThreadData(items_per_thread)
         module.load(block, source, keys)
-        for item in cutlass.range_constexpr(_ITEMS):
-            positions[item] = cutlass.Int32(block.rank()) * _ITEMS + item
+        for item in cutlass.range_constexpr(items_per_thread):
+            positions[item] = (
+                cutlass.Int32(block.rank()) * items_per_thread + item
+            )
         scratch = module.TempStorage(alignment=32, auto_sync=True)
         ordered = module.radix_sort_keys(block, keys, temp_storage=scratch)
         module.store(block, full_keys, ordered)
@@ -113,6 +115,7 @@ def run_example(api="common"):
         ranks_out: cute.Pointer,
         prefixes_out: cute.Pointer,
         original_keys: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
         order_tile(
             source,
@@ -122,16 +125,17 @@ def run_example(api="common"):
             ranks_out,
             prefixes_out,
             original_keys,
+            items_per_thread,
         ).launch(grid=1, block=_BLOCK)
 
     # docs: end cutlass-radix
 
     source = (
         np.random.default_rng(42)
-        .integers(0, 1 << 32, size=_TILE, dtype=np.uint32)
+        .integers(0, 1 << 32, size=tile_size, dtype=np.uint32)
         .view(np.int32)
     )
-    outputs = [np.full(_TILE, -999, dtype=np.int32) for _ in range(6)]
+    outputs = [np.full(tile_size, -999, dtype=np.int32) for _ in range(6)]
     outputs[4] = np.full(_BINS, -999, dtype=np.int32)
     arrays = [source, *outputs]
     cutlass.cuda.initialize_cuda_context()
@@ -155,7 +159,7 @@ def run_example(api="common"):
                     assumed_align=16,
                 )
             )
-        launch(*pointers)
+        launch(*pointers, items_per_thread)
         _check(driver.cuCtxSynchronize())
         for array, allocation in zip(outputs, allocations[1:]):
             _check(
@@ -166,8 +170,8 @@ def run_example(api="common"):
     # Signed radix keys invert the sign bit before selecting the digit.
     digit = (source.view(np.uint32) ^ np.uint32(1 << 31)) >> np.uint32(28)
     order = np.argsort(-digit.astype(np.int32), kind="stable")
-    expected_ranks = np.empty(_TILE, dtype=np.int32)
-    expected_ranks[order] = np.arange(_TILE, dtype=np.int32)
+    expected_ranks = np.empty(tile_size, dtype=np.int32)
+    expected_ranks[order] = np.arange(tile_size, dtype=np.int32)
     np.testing.assert_array_equal(full_keys, np.sort(source))
     np.testing.assert_array_equal(digit_keys, source[order])
     np.testing.assert_array_equal(positions, order)

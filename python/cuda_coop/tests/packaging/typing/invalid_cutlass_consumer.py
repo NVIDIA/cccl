@@ -296,13 +296,13 @@ cutlass_coop.radix_sort_pairs(  # expected-error: [call-overload]
     block, values, scalar
 )
 cutlass_coop.radix_sort_keys(  # expected-error: [type-var]
-    block, cutlass_coop.ThreadData(2, np.int16)
+    block, cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int16)
 )
 cutlass_coop.radix_sort_keys(  # expected-error: [type-var]
-    block, cutlass_coop.ThreadData(2, np.complex64)
+    block, cutlass_coop.ThreadData(items_per_thread=2, dtype=np.complex64)
 )
 cutlass_coop.radix_rank(  # expected-error: [type-var]
-    block, cutlass_coop.ThreadData(2, np.float32)
+    block, cutlass_coop.ThreadData(items_per_thread=2, dtype=np.float32)
 )
 cutlass_coop.radix_rank(block, Float32(1))  # expected-error: [call-overload]
 cutlass_coop.radix_sort_keys(  # expected-error: [call-overload]
@@ -329,7 +329,9 @@ cutlass_coop.radix_rank(
     block,
     values,
     exclusive_digit_prefix=(
-        cutlass_coop.ThreadData(1, np.uint32)  # expected-error: [arg-type]
+        cutlass_coop.ThreadData(  # expected-error: [arg-type]
+            items_per_thread=1, dtype=np.uint32
+        )
     ),
 )
 cutlass_coop.radix_rank(  # expected-error: [call-overload]
@@ -363,5 +365,5 @@ cutlass_coop.radix_rank(  # expected-error: [call-overload]
     block, values, exclusive_digit_prefix=_ReadOnlyPrefix()
 )
 common.radix_sort_keys(  # expected-error: [type-var]
-    block, cutlass_coop.ThreadData(2, np.float32)
+    block, cutlass_coop.ThreadData(items_per_thread=2, dtype=np.float32)
 )
