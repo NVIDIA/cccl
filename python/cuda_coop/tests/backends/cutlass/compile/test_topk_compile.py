@@ -32,10 +32,14 @@ def _compile(
     operation = getattr(api, f"topk_{mode}_{'pairs' if pairs else 'keys'}")
 
     @cute.kernel
-    def kernel(memory: cute.Pointer, count: cutlass.Int64):
-        keys = api.ThreadData(2, dtype=dtype)
+    def kernel(
+        memory: cute.Pointer,
+        count: cutlass.Int64,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        keys = api.ThreadData(items_per_thread, dtype=dtype)
         values = api.ThreadData(
-            1 if bad == "extent" else 2, dtype=cutlass.Float64
+            items_per_thread=1 if bad == "extent" else 2, dtype=cutlass.Float64
         )
         keys[0], keys[1] = dtype(7), dtype(3)
         for item in cutlass.range_constexpr(values.items_per_thread):
@@ -64,13 +68,19 @@ def _compile(
         output[0] = cutlass.Int32(result[0])
 
     @cute.jit
-    def launch(memory: cute.Pointer, count: cutlass.Int64):
-        kernel(memory, count).launch(grid=1, block=block)
+    def launch(
+        memory: cute.Pointer,
+        count: cutlass.Int64,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(memory, count, items_per_thread).launch(grid=1, block=block)
 
     pointer = make_ptr(
         cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16
     )
-    return cute.compile[(GPUArch("sm_80"),)](launch, pointer, cutlass.Int64(17))
+    return cute.compile[(GPUArch("sm_80"),)](
+        launch, pointer, cutlass.Int64(17), 2
+    )
 
 
 @pytest.mark.parametrize(
