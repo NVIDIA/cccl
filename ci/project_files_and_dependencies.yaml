@@ -23,7 +23,7 @@
 # Layout:
 #   project_key:          mapping from project key to configuration
 #     name:               display name used in logs/reports
-#     matrix_project:     project name to use for matrix generation. If not provided,
+#     matrix_project:     project name to use in the output lists. If not provided,
 #                           the project is considered internal-only and will not be listed
 #                           in the FULL_BUILD or LITE_BUILD outputs.
 #     lite_dependencies:  Add the current project to the `lite` matrix if any of these
@@ -221,15 +221,32 @@ projects:
     full_dependencies: []
     include_regexes: ["nvrtcc/"]
 
-  # These files must trigger third-party tests without adding CCCL matrix jobs.
-  third_party:
-    name: "Third-party Tests"
+  # Third-party jobs consume these output names directly; they have no matrix jobs.
+  matx:
+    name: "MatX"
+    matrix_project: "matx"
+    lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
+    full_dependencies: []
     include_regexes:
       - '\.github/workflows/build-matx\.yml'
-      - '\.github/workflows/build-pytorch\.yml'
-      - '\.github/workflows/build-rapids\.yml'
       - 'ci/matx/'
+
+  pytorch:
+    name: "PyTorch"
+    matrix_project: "pytorch"
+    lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
+    full_dependencies: []
+    include_regexes:
+      - '\.github/workflows/build-pytorch\.yml'
       - 'ci/pytorch/'
+
+  rapids:
+    name: "RAPIDS"
+    matrix_project: "rapids"
+    lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
+    full_dependencies: []
+    include_regexes:
+      - '\.github/workflows/build-rapids\.yml'
       - 'ci/rapids/'
 
   # This is a dummy project, and only really serves to encode dependencies. Any time any

@@ -1,0 +1,2 @@
+cub/test/catch2_test_block_reduce.cu
+thrust/testing/reduce.cu
