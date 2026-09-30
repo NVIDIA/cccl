@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script parses the CI matrix.yaml file and generates a devcontainer.json file for each unique combination of
 # CUDA version, compiler name/version, and Ubuntu version. The devcontainer.json files are written to the
@@ -31,15 +31,25 @@ update_devcontainer() {
     local compiler_version="$8"
     local devcontainer_version="$9"
     local internal="${10}"
+    local tidy_ext="${11:-false}"
 
-    local cuda_suffix=""
+    local suffix=""
+    # Use += on the suffix here to handle potential future devcontainers that contain both
+    # the extra cuda libs as well as the LLVM libs for clang-tidy.
+    #
+    # Currently there is no such container, so the later launch stage will error out with
+    # no-such-file when it tries to load the container file, so perhaps we should error
+    # out with A Very Useful Error Message here (or in options parsing) instead.
     if $cuda_ext; then
-        local cuda_suffix="ext"
+        suffix+="ext"
+    fi
+    if $tidy_ext; then
+        suffix+="tidy"
     fi
 
     # NVHPC SDK comes with its own bundled toolkit
-    local toolkit_name="-cuda${cuda_version}${cuda_suffix}"
-    if [ $compiler_name == "nvhpc" ]; then
+    local toolkit_name="-cuda${cuda_version}${suffix}"
+    if [[ "$compiler_name" == "nvhpc" ]]; then
         toolkit_name=""
     fi
 
@@ -47,7 +57,7 @@ update_devcontainer() {
     local INTERNAL_ROOT="gitlab-master.nvidia.com:5005/cccl/cccl-devcontainers:cpp-"
 
     img=$IMAGE_ROOT
-    if [ "$internal" == "true" ]; then
+    if [[ "$internal" == "true" ]]; then
         img=$INTERNAL_ROOT
     fi;
 
@@ -63,13 +73,13 @@ update_devcontainer() {
        --arg container_name "\${localEnv:USER:anon}-\${localWorkspaceFolderBasename}-${name}" \
        '.image = $image |
         .name = $name |
-        .runArgs = ["--init", "--name", $container_name] |
+        .runArgs = ["--init", "--name", $container_name, "--ulimit", "nofile=500000"] |
         .containerEnv.DEVCONTAINER_NAME = $name |
         .containerEnv.CCCL_BUILD_INFIX = $name |
         .containerEnv.CCCL_CUDA_VERSION = $cuda_version |
         .containerEnv.CCCL_CUDA_EXTENDED = $cuda_ext |
         .containerEnv.CCCL_HOST_COMPILER = $compiler_name |
-        .containerEnv.CCCL_HOST_COMPILER_VERSION = $compiler_version '\
+        .containerEnv.CCCL_HOST_COMPILER_VERSION = $compiler_version' \
        "$input_file" > "$output_file"
 }
 
@@ -78,13 +88,23 @@ make_name() {
     local cuda_ext="$2"
     local compiler_name="$3"
     local compiler_version="$4"
+    local tidy_ext="${5:-false}"
 
-    local cuda_suffix=""
+    local suffix=""
+    # Use += on the suffix here to handle potential future devcontainers that contain both
+    # the extra cuda libs as well as the LLVM libs for clang-tidy.
+    #
+    # Currently there is no such container, so the later launch stage will error out with
+    # no-such-file when it tries to load the container file, so perhaps we should error
+    # out with A Very Useful Error Message here (or in options parsing above) instead.
     if $cuda_ext; then
-        local cuda_suffix="ext"
+        suffix+="ext"
+    fi
+    if $tidy_ext; then
+        suffix+="tidy"
     fi
 
-    echo "cuda${cuda_version}${cuda_suffix}-${compiler_name}${compiler_version}"
+    echo "cuda${cuda_version}${suffix}-${compiler_name}${compiler_version}"
 }
 
 CLEAN=false
@@ -111,43 +131,55 @@ MATRIX_FILE="../ci/matrix.yaml"
 COMPUTE_MATRIX="../.github/actions/workflow-build/build-workflow.py"
 
 # Enable verbose mode if requested
-if [ "$VERBOSE" = true ]; then
+if [[ "$VERBOSE" = true ]]; then
     set -x
-    cat ${MATRIX_FILE}
+    cat "${MATRIX_FILE}"
 fi
 
 # Read matrix.yaml and convert it to json
-matrix_json=$(python3 ${COMPUTE_MATRIX} ${MATRIX_FILE} --devcontainer-info)
+matrix_json=$(python3 "${COMPUTE_MATRIX}" "${MATRIX_FILE}" --devcontainer-info)
 
-if [ "$VERBOSE" = true ]; then
+if [[ "$VERBOSE" = true ]]; then
     echo "$matrix_json"
 fi
 
 # Get the devcontainer image version and define image tag root
-readonly DEVCONTAINER_VERSION=$(echo "$matrix_json" | jq -r '.devcontainer_version')
+DEVCONTAINER_VERSION=$(echo "$matrix_json" | jq -r '.devcontainer_version')
+readonly DEVCONTAINER_VERSION
 
 # Internal image compiler versions:
-readonly CUDA99_GCC_VERSION=$( echo "$matrix_json" | jq -r '.cuda99_gcc_version')
-readonly CUDA99_LLVM_VERSION=$(echo "$matrix_json" | jq -r '.cuda99_clang_version')
+CUDA99_GCC_VERSION=$( echo "$matrix_json" | jq -r '.cuda99_gcc_version')
+readonly CUDA99_GCC_VERSION
+CUDA99_LLVM_VERSION=$(echo "$matrix_json" | jq -r '.cuda99_clang_version')
+readonly CUDA99_LLVM_VERSION
 
 # Get unique combinations of cuda version, compiler name/version, and Ubuntu version
-readonly combinations=$(echo "$matrix_json" | jq -c '.combinations[]')
+combinations=$(echo "$matrix_json" | jq -c '.combinations[]')
+readonly combinations
 
 # Update the base devcontainer with the default values
 # The root devcontainer.json file is used as the default container as well as a template for all
 # other devcontainer.json files by replacing the `image:` field with the appropriate image name
 readonly base_devcontainer_file="./devcontainer.json"
-readonly NEWEST_GCC_CUDA_ENTRY=$(echo "$combinations" | jq -rs '[.[] | select(.compiler_name == "gcc")] | sort_by((.cuda | tonumber), (.compiler_version | tonumber)) | .[-1]')
-readonly NEWEST_LLVM_CUDA_ENTRY=$(echo "$combinations" | jq -rs '[.[] | select(.compiler_name == "llvm")] | sort_by((.cuda | tonumber), (.compiler_version | tonumber)) | .[-1]')
-readonly DEFAULT_CUDA=$(echo "$NEWEST_GCC_CUDA_ENTRY" | jq -r '.cuda')
+NEWEST_GCC_CUDA_ENTRY=$(echo "$combinations" | jq -rs '[.[] | select(.compiler_name == "gcc")] | sort_by((.cuda | split(".") | map(tonumber)), (.compiler_version | tonumber)) | .[-1]')
+readonly NEWEST_GCC_CUDA_ENTRY
+NEWEST_LLVM_CUDA_ENTRY=$(echo "$combinations" | jq -rs '[.[] | select(.compiler_name == "llvm")] | sort_by((.cuda | split(".") | map(tonumber)), (.compiler_version | tonumber)) | .[-1]')
+# shellcheck disable=SC2034
+readonly NEWEST_LLVM_CUDA_ENTRY
+DEFAULT_CUDA=$(echo "$NEWEST_GCC_CUDA_ENTRY" | jq -r '.cuda')
+readonly DEFAULT_CUDA
 readonly DEFAULT_CUDA_EXT=false
-readonly DEFAULT_COMPILER_NAME=$(echo "$NEWEST_GCC_CUDA_ENTRY" | jq -r '.compiler_name')
-readonly DEFAULT_COMPILER_EXE=$(echo "$NEWEST_GCC_CUDA_ENTRY" | jq -r '.compiler_exe')
-readonly DEFAULT_COMPILER_VERSION=$(echo "$NEWEST_GCC_CUDA_ENTRY" | jq -r '.compiler_version')
-readonly DEFAULT_NAME=$(make_name "$DEFAULT_CUDA" "$DEFAULT_CUDA_EXT" "$DEFAULT_COMPILER_NAME" "$DEFAULT_COMPILER_VERSION")
+DEFAULT_COMPILER_NAME=$(echo "$NEWEST_GCC_CUDA_ENTRY" | jq -r '.compiler_name')
+readonly DEFAULT_COMPILER_NAME
+DEFAULT_COMPILER_EXE=$(echo "$NEWEST_GCC_CUDA_ENTRY" | jq -r '.compiler_exe')
+readonly DEFAULT_COMPILER_EXE
+DEFAULT_COMPILER_VERSION=$(echo "$NEWEST_GCC_CUDA_ENTRY" | jq -r '.compiler_version')
+readonly DEFAULT_COMPILER_VERSION
+DEFAULT_NAME=$(make_name "$DEFAULT_CUDA" "$DEFAULT_CUDA_EXT" "$DEFAULT_COMPILER_NAME" "$DEFAULT_COMPILER_VERSION")
+readonly DEFAULT_NAME
 
-update_devcontainer ${base_devcontainer_file} "./temp_devcontainer.json" "$DEFAULT_NAME" "$DEFAULT_CUDA" "$DEFAULT_CUDA_EXT" "$DEFAULT_COMPILER_NAME" "$DEFAULT_COMPILER_EXE" "$DEFAULT_COMPILER_VERSION" "$DEVCONTAINER_VERSION" "false"
-mv "./temp_devcontainer.json" ${base_devcontainer_file}
+update_devcontainer "${base_devcontainer_file}" "./temp_devcontainer.json" "$DEFAULT_NAME" "$DEFAULT_CUDA" "$DEFAULT_CUDA_EXT" "$DEFAULT_COMPILER_NAME" "$DEFAULT_COMPILER_EXE" "$DEFAULT_COMPILER_VERSION" "$DEVCONTAINER_VERSION" "false"
+mv "./temp_devcontainer.json" "${base_devcontainer_file}"
 
 # Create an array to keep track of valid subdirectory names
 valid_subdirs=()
@@ -166,11 +198,10 @@ make_compiler_entry() {
     local compiler_version="$2"
     local compiler_exe="$3"
     local cuda_version="$4"
-    local cuda_ext="$5"
-    local internal="${6:-false}"
+    local internal="${5:-false}"
     echo "{
         \"cuda\": \"$cuda_version\",
-        \"cuda_ext\": $cuda_ext,
+        \"ext\": [],
         \"compiler_name\": \"$compiler_name\",
         \"compiler_exe\": \"$compiler_exe\",
         \"compiler_version\": \"$compiler_version\",
@@ -178,26 +209,31 @@ make_compiler_entry() {
     }" | jq -c '.'
 }
 
-readonly cuda99_8_gcc=$( make_compiler_entry "gcc"  "$CUDA99_GCC_VERSION"  "gcc"   "99.8" "false" "true")
-readonly cuda99_9_gcc=$( make_compiler_entry "gcc"  "$CUDA99_GCC_VERSION"  "gcc"   "99.9" "false" "true")
-readonly cuda99_8_llvm=$(make_compiler_entry "llvm" "$CUDA99_LLVM_VERSION" "clang" "99.8" "false" "true")
-readonly cuda99_9_llvm=$(make_compiler_entry "llvm" "$CUDA99_LLVM_VERSION" "clang" "99.9" "false" "true")
+cuda99_8_gcc=$( make_compiler_entry "gcc"  "$CUDA99_GCC_VERSION"  "gcc"   "99.8" "true")
+readonly cuda99_8_gcc
+cuda99_9_gcc=$( make_compiler_entry "gcc"  "$CUDA99_GCC_VERSION"  "gcc"   "99.9" "true")
+readonly cuda99_9_gcc
+cuda99_8_llvm=$(make_compiler_entry "llvm" "$CUDA99_LLVM_VERSION" "clang" "99.8" "true")
+readonly cuda99_8_llvm
+cuda99_9_llvm=$(make_compiler_entry "llvm" "$CUDA99_LLVM_VERSION" "clang" "99.9" "true")
+readonly cuda99_9_llvm
 
 readonly all_comb="$combinations $cuda99_9_gcc $cuda99_8_gcc $cuda99_9_llvm $cuda99_8_llvm"
 # For each unique combination
 for combination in $all_comb; do
     cuda_version=$(echo "$combination" | jq -r '.cuda')
-    cuda_ext=$(echo "$combination" | jq -r '.cuda_ext')
+    cuda_ext=$(echo "$combination" | jq -r '.ext | index("cuda") != null')
+    tidy_ext=$(echo "$combination" | jq -r '.ext | index("tidy") != null')
     compiler_name=$(echo "$combination" | jq -r '.compiler_name')
     compiler_exe=$(echo "$combination" | jq -r '.compiler_exe')
     compiler_version=$(echo "$combination" | jq -r '.compiler_version')
     internal=$(echo "$combination" | jq -r '.internal')
 
-    name=$(make_name "$cuda_version" "$cuda_ext" "$compiler_name" "$compiler_version")
+    name=$(make_name "$cuda_version" "$cuda_ext" "$compiler_name" "$compiler_version" "$tidy_ext")
     mkdir -p "$name"
     new_devcontainer_file="$name/devcontainer.json"
 
-    update_devcontainer "$base_devcontainer_file" "$new_devcontainer_file" "$name" "$cuda_version" "$cuda_ext" "$compiler_name" "$compiler_exe" "$compiler_version" "$DEVCONTAINER_VERSION" "$internal"
+    update_devcontainer "$base_devcontainer_file" "$new_devcontainer_file" "$name" "$cuda_version" "$cuda_ext" "$compiler_name" "$compiler_exe" "$compiler_version" "$DEVCONTAINER_VERSION" "$internal" "$tidy_ext"
     echo "Created $new_devcontainer_file"
 
     # Add the subdirectory name to the valid_subdirs array
@@ -205,9 +241,9 @@ for combination in $all_comb; do
 done
 
 # Clean up stale subdirectories and devcontainer.json files
-if [ "$CLEAN" = true ]; then
+if [[ "$CLEAN" = true ]]; then
     for subdir in ./*; do
-        if [ -d "$subdir" ] && [[ ! " ${valid_subdirs[@]} " =~ " ${subdir#./} " ]]; then
+        if [[ -d "$subdir" ]] && [[ " ${valid_subdirs[*]} " != *" ${subdir#./} "* ]]; then
             echo "Removing stale subdirectory: $subdir"
             rm -r "$subdir"
         fi

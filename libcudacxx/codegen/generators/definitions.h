@@ -11,12 +11,11 @@
 #ifndef DEFINITIONS_H
 #define DEFINITIONS_H
 
+#include <format>
 #include <map>
 #include <string>
 #include <type_traits>
 #include <vector>
-
-#include <fmt/format.h>
 
 enum class Mmio
 {
@@ -36,8 +35,8 @@ inline std::string mmio(Mmio m)
 inline std::string mmio_tag(Mmio m)
 {
   static const char* mmio_map[]{
-    "__atomic_cuda_mmio_disable",
-    "__atomic_cuda_mmio_enable",
+    "__cuda_atomic_mmio_disable",
+    "__cuda_atomic_mmio_enable",
   };
   return mmio_map[std::underlying_type_t<Mmio>(m)];
 }
@@ -76,10 +75,10 @@ inline std::string operand_proxy_type(Operand op, size_t sz)
   }
   else if (op == Operand::Signed)
   {
-    return fmt::format("int{}_t", sz);
+    return std::format("int{}_t", sz);
   }
   // Binary and unsigned can be the same proxy_type
-  return fmt::format("uint{}_t", sz);
+  return std::format("uint{}_t", sz);
 }
 
 inline std::string constraints(Operand op, size_t sz)
@@ -108,7 +107,7 @@ inline std::string constraints(Operand op, size_t sz)
               }},
   };
 
-  if (sz == 16)
+  if (sz <= 16)
   {
     return {"h"};
   }
@@ -144,12 +143,24 @@ inline std::string semantic(Semantic sem)
 inline std::string semantic_tag(Semantic sem)
 {
   static std::map sem_map = {
-    std::pair{Semantic::Relaxed, "__atomic_cuda_relaxed"},
-    std::pair{Semantic::Release, "__atomic_cuda_release"},
-    std::pair{Semantic::Acquire, "__atomic_cuda_acquire"},
-    std::pair{Semantic::Acq_Rel, "__atomic_cuda_acq_rel"},
-    std::pair{Semantic::Seq_Cst, "__atomic_cuda_seq_cst"},
-    std::pair{Semantic::Volatile, "__atomic_cuda_volatile"},
+    std::pair{Semantic::Relaxed, "__cuda_atomic_order_relaxed"},
+    std::pair{Semantic::Release, "__cuda_atomic_order_release"},
+    std::pair{Semantic::Acquire, "__cuda_atomic_order_acquire"},
+    std::pair{Semantic::Acq_Rel, "__cuda_atomic_order_acq_rel"},
+    std::pair{Semantic::Seq_Cst, "__cuda_atomic_order_seq_cst"},
+    std::pair{Semantic::Volatile, "__cuda_atomic_order_volatile"},
+  };
+  return sem_map[sem];
+}
+
+inline std::string ptx_semantic_tag(Semantic sem)
+{
+  static std::map sem_map = {
+    std::pair{Semantic::Relaxed, "__cuda_atomic_ptx_order_relaxed"},
+    std::pair{Semantic::Release, "__cuda_atomic_ptx_order_release"},
+    std::pair{Semantic::Acquire, "__cuda_atomic_ptx_order_acquire"},
+    std::pair{Semantic::Acq_Rel, "__cuda_atomic_ptx_order_acq_rel"},
+    std::pair{Semantic::Volatile, "__cuda_atomic_order_volatile"},
   };
   return sem_map[sem];
 }

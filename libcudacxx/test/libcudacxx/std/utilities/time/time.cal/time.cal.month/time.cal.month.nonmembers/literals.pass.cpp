@@ -28,7 +28,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   static_assert(cuda::std::is_same_v<const cuda::std::chrono::month, decltype(cuda::std::chrono::January)>);
   static_assert(cuda::std::is_same_v<const cuda::std::chrono::month, decltype(cuda::std::chrono::February)>);

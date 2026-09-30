@@ -1,18 +1,5 @@
-/*
- *  Copyright 2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief A type used by the pooling resource adaptors to fine-tune their
@@ -34,6 +21,7 @@
 #include <thrust/detail/config/memory_resource.h>
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/cstddef>
 
 THRUST_NAMESPACE_BEGIN
@@ -111,7 +99,10 @@ struct pool_options
     {
       return false;
     }
-    if (alignment != 0 && !::cuda::is_power_of_two(alignment))
+
+    // Forcing the alignment to be always valid would be a breaking change, because if the user didn't set the
+    // alignment, this method would return false. So, we still accept 0.
+    if (!::cuda::__is_valid_alignment(alignment) && alignment != 0)
     {
       return false;
     }

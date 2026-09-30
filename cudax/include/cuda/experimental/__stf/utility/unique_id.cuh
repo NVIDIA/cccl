@@ -11,6 +11,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -37,7 +38,7 @@ class unique_id
 public:
   unique_id() = default;
   constexpr unique_id(unique_id&& other) noexcept
-      : _value(::std::exchange(other._value, -1))
+      : _value(::cuda::std::exchange(other._value, -1))
   {
     assert(_value >= 0 && "Reading a dead unique_id is not allowed.");
   }
@@ -55,7 +56,7 @@ public:
   constexpr unique_id& operator=(unique_id&& rhs)
   {
     assert(rhs._value >= 0 && "Reading a dead uniwue_id is not allowed.");
-    _value = ::std::exchange(rhs._value, -1);
+    _value = ::cuda::std::exchange(rhs._value, -1);
     return *this;
   }
 

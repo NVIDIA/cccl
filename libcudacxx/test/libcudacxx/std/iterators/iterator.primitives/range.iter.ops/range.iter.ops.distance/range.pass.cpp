@@ -20,16 +20,16 @@
 #include "test_macros.h"
 
 template <class It, class Sent>
-__host__ __device__ constexpr void test_ordinary()
+TEST_FUNC constexpr void test_ordinary()
 {
   struct R
   {
     mutable int a[3] = {1, 2, 3};
-    __host__ __device__ constexpr It begin() const
+    TEST_FUNC constexpr It begin() const
     {
       return It(a);
     }
-    __host__ __device__ constexpr Sent end() const
+    TEST_FUNC constexpr Sent end() const
     {
       return Sent(It(a + 3));
     }
@@ -43,7 +43,7 @@ __host__ __device__ constexpr void test_ordinary()
     cuda::std::is_same_v<decltype(cuda::std::ranges::distance(r)), cuda::std::ranges::range_difference_t<R>>);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     using R = int[3];

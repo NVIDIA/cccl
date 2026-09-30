@@ -107,7 +107,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Predicate>
 _CCCL_API constexpr _ForwardIterator partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
-  using _IterCategory = typename iterator_traits<_ForwardIterator>::iterator_category;
+  using _IterCategory = __iterator_traits_category_or_concept_t<_ForwardIterator>;
   auto __result       = ::cuda::std::__partition<_ClassicAlgPolicy>(
     ::cuda::std::move(__first), ::cuda::std::move(__last), __pred, _IterCategory());
   return __result.first;

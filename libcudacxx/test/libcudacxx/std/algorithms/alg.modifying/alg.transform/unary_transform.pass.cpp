@@ -20,13 +20,16 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-constexpr __host__ __device__ int plusOne(const int v) noexcept
+struct plusOne
 {
-  return v + 1;
-}
+  TEST_FUNC constexpr int operator()(const int v) const noexcept
+  {
+    return v + 1;
+  }
+};
 
 template <class InIter, class OutIter>
-constexpr __host__ __device__ void test()
+constexpr TEST_FUNC void test()
 {
   {
     constexpr int N           = 4;
@@ -34,7 +37,7 @@ constexpr __host__ __device__ void test()
     constexpr int expected[N] = {2, 4, 7, 8};
     int ib[N + 1]             = {0, 0, 0, 0, 0};
 
-    OutIter r = cuda::std::transform(InIter(ia), InIter(ia + N), OutIter(ib), plusOne);
+    OutIter r = cuda::std::transform(InIter(ia), InIter(ia + N), OutIter(ib), plusOne{});
     assert(base(r) == ib + N);
     for (int i = 0; i < N; ++i)
     {
@@ -48,7 +51,7 @@ constexpr __host__ __device__ void test()
   }
 }
 
-constexpr __host__ __device__ bool test()
+constexpr TEST_FUNC bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
   test<cpp17_input_iterator<const int*>, cpp17_input_iterator<int*>>();
@@ -91,7 +94,7 @@ constexpr __host__ __device__ bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

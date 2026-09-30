@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "cub/detail/temporary_storage.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using num_storage_slots = c2h::enum_type_list<int, 1, 4, 42>;
 
@@ -28,14 +28,14 @@ std::size_t get_actual_zero()
   return get_temporary_storage_size(sizes);
 }
 
-C2H_TEST("Test empty storage", "[temporary_storage_layout]", num_storage_slots)
+CUB_TEST("Test empty storage", "[temporary_storage_layout]", CUB_SMALL, num_storage_slots)
 {
   constexpr auto storage_slots = c2h::get<0, TestType>::value;
   cub::detail::temporary_storage::layout<storage_slots> temporary_storage;
   CHECK(temporary_storage.get_size() == get_actual_zero());
 }
 
-C2H_TEST("Test partially filled storage", "[temporary_storage_layout]", num_storage_slots)
+CUB_TEST("Test partially filled storage", "[temporary_storage_layout]", CUB_SMALL, num_storage_slots)
 {
   constexpr auto storage_slots             = c2h::get<0, TestType>::value;
   using target_type                        = std::uint64_t;
@@ -61,7 +61,7 @@ C2H_TEST("Test partially filled storage", "[temporary_storage_layout]", num_stor
 
   const std::size_t temp_storage_bytes = temporary_storage.get_size();
 
-  std::unique_ptr<std::uint8_t[]> temp_storage(new std::uint8_t[temp_storage_bytes]);
+  const std::unique_ptr<std::uint8_t[]> temp_storage(new std::uint8_t[temp_storage_bytes]);
 
   temporary_storage.map_to_buffer(temp_storage.get(), temp_storage_bytes);
 
@@ -80,7 +80,7 @@ C2H_TEST("Test partially filled storage", "[temporary_storage_layout]", num_stor
   }
 }
 
-C2H_TEST("Test grow", "[temporary_storage_layout]", num_storage_slots)
+CUB_TEST("Test grow", "[temporary_storage_layout]", CUB_SMALL, num_storage_slots)
 {
   constexpr auto StorageSlots                  = c2h::get<0, TestType>::value;
   using target_type                            = std::uint64_t;
@@ -108,7 +108,7 @@ C2H_TEST("Test grow", "[temporary_storage_layout]", num_storage_slots)
   CHECK(preset_layout.get_size() == postset_layout.get_size());
 
   const std::size_t tmp_storage_bytes = preset_layout.get_size();
-  std::unique_ptr<std::uint8_t[]> temp_storage(new std::uint8_t[tmp_storage_bytes]);
+  const std::unique_ptr<std::uint8_t[]> temp_storage(new std::uint8_t[tmp_storage_bytes]);
 
   preset_layout.map_to_buffer(temp_storage.get(), tmp_storage_bytes);
   postset_layout.map_to_buffer(temp_storage.get(), tmp_storage_bytes);
@@ -119,7 +119,7 @@ C2H_TEST("Test grow", "[temporary_storage_layout]", num_storage_slots)
   }
 }
 
-C2H_TEST("Test double grow", "[temporary_storage_layout]", num_storage_slots)
+CUB_TEST("Test double grow", "[temporary_storage_layout]", CUB_SMALL, num_storage_slots)
 {
   constexpr auto storage_slots                 = c2h::get<0, TestType>::value;
   using target_type                            = std::uint64_t;
@@ -147,7 +147,7 @@ C2H_TEST("Test double grow", "[temporary_storage_layout]", num_storage_slots)
   CHECK(preset_layout.get_size() == postset_layout.get_size());
 
   const std::size_t tmp_storage_bytes = preset_layout.get_size();
-  std::unique_ptr<std::uint8_t[]> temp_storage(new std::uint8_t[tmp_storage_bytes]);
+  const std::unique_ptr<std::uint8_t[]> temp_storage(new std::uint8_t[tmp_storage_bytes]);
 
   preset_layout.map_to_buffer(temp_storage.get(), tmp_storage_bytes);
   postset_layout.map_to_buffer(temp_storage.get(), tmp_storage_bytes);

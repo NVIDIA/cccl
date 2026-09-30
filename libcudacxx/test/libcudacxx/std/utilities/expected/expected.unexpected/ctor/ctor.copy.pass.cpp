@@ -17,12 +17,12 @@
 struct Error
 {
   int i;
-  __host__ __device__ constexpr Error(int ii)
+  TEST_FUNC constexpr Error(int ii)
       : i(ii)
   {}
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   const cuda::std::unexpected<Error> unex(5);
   auto unex2 = unex;
@@ -33,6 +33,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

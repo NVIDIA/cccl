@@ -1,87 +1,57 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Callable
 
-import numba
+from __future__ import annotations
 
-from .. import _bindings
+from .. import _bindings, types
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_key
-from .._cccl_interop import call_build, set_cccl_iterator_state
-from .._utils import protocols
+from .._caching import cache_build_results, cache_with_registered_key_functions
+from .._cccl_interop import set_cccl_iterator_state
+from .._serialization import BUILD_RESULTS, ITER, OP, Serializable
 from .._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._iterators import IteratorBase
-from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike
+from ..op import OpAdapter, make_op_adapter
+from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
-def _make_cache_key(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase,
-    d_out_keys: DeviceArrayLike | IteratorBase,
-    d_out_items: DeviceArrayLike | IteratorBase,
-    d_out_num_selected: DeviceArrayLike,
-    op: OpAdapter,
-):
-    d_in_keys_key = (
-        d_in_keys.kind
-        if isinstance(d_in_keys, IteratorBase)
-        else protocols.get_dtype(d_in_keys)
-    )
-    d_in_items_key = (
-        d_in_items.kind
-        if isinstance(d_in_items, IteratorBase)
-        else protocols.get_dtype(d_in_items)
-    )
-    d_out_keys_key = (
-        d_out_keys.kind
-        if isinstance(d_out_keys, IteratorBase)
-        else protocols.get_dtype(d_out_keys)
-    )
-    d_out_items_key = (
-        d_out_items.kind
-        if isinstance(d_out_items, IteratorBase)
-        else protocols.get_dtype(d_out_items)
-    )
-    d_out_num_selected_key = protocols.get_dtype(d_out_num_selected)
-
-    return (
-        d_in_keys_key,
-        d_in_items_key,
-        d_out_keys_key,
-        d_out_items_key,
-        d_out_num_selected_key,
-        op.get_cache_key(),
-    )
-
-
-class _UniqueByKey:
+class _UniqueByKey(Serializable):
     __slots__ = [
-        "build_result",
+        "_bound_build_result",
+        "build_results",
+        "loaded_build_result",
         "d_in_keys_cccl",
         "d_in_items_cccl",
         "d_out_keys_cccl",
         "d_out_items_cccl",
         "d_out_num_selected_cccl",
-        "op",
         "op_cccl",
     ]
 
+    __serialization_schema__ = (
+        ("d_in_keys_cccl", ITER),
+        ("d_in_items_cccl", ITER),
+        ("d_out_keys_cccl", ITER),
+        ("d_out_items_cccl", ITER),
+        ("d_out_num_selected_cccl", ITER),
+        ("op_cccl", OP),
+        ("build_results", BUILD_RESULTS(_bindings.DeviceUniqueByKeyBuildResult)),
+    )
+
     def __init__(
         self,
-        d_in_keys: DeviceArrayLike | IteratorBase,
-        d_in_items: DeviceArrayLike | IteratorBase,
-        d_out_keys: DeviceArrayLike | IteratorBase,
-        d_out_items: DeviceArrayLike | IteratorBase,
+        d_in_keys: DeviceArrayLike | IteratorT,
+        d_in_items: DeviceArrayLike | IteratorT,
+        d_out_keys: DeviceArrayLike | IteratorT,
+        d_out_items: DeviceArrayLike | IteratorT,
         d_out_num_selected: DeviceArrayLike,
         op: OpAdapter,
+        compute_capability=None,
     ):
         self.d_in_keys_cccl = cccl.to_cccl_input_iter(d_in_keys)
         self.d_in_items_cccl = cccl.to_cccl_input_iter(d_in_items)
@@ -91,34 +61,56 @@ class _UniqueByKey:
 
         # Compile the op - unique_by_key expects bool return (comparison)
         value_type = cccl.get_value_type(d_in_keys)
-        self.op_cccl = op.compile((value_type, value_type), numba.types.uint8)
+        self.op_cccl = op.compile((value_type, value_type), types.uint8)
 
-        self.build_result = call_build(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceUniqueByKeyBuildResult,
-            self.d_in_keys_cccl,
-            self.d_in_items_cccl,
-            self.d_out_keys_cccl,
-            self.d_out_items_cccl,
-            self.d_out_num_selected_cccl,
-            self.op_cccl,
+            d_in_keys,
+            d_in_items,
+            d_out_keys,
+            d_out_items,
+            d_out_num_selected,
+            op,
+            compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
+                _bindings.DeviceUniqueByKeyBuildResult,
+                self.d_in_keys_cccl,
+                self.d_in_items_cccl,
+                self.d_out_keys_cccl,
+                self.d_out_items_cccl,
+                self.d_out_num_selected_cccl,
+                self.op_cccl,
+                compute_capability=compute_capability,
+            ),
         )
 
     def __call__(
         self,
+        *,
         temp_storage,
-        d_in_keys: DeviceArrayLike | IteratorBase,
-        d_in_items: DeviceArrayLike | IteratorBase,
-        d_out_keys: DeviceArrayLike | IteratorBase,
-        d_out_items: DeviceArrayLike | IteratorBase,
+        d_in_keys: DeviceArrayLike | IteratorT,
+        d_in_items: DeviceArrayLike | IteratorT,
+        d_out_keys: DeviceArrayLike | IteratorT,
+        d_out_items: DeviceArrayLike | IteratorT,
         d_out_num_selected: DeviceArrayLike,
+        op: Operator,
         num_items: int,
         stream=None,
     ):
+        # Select (and lazily load) the build result for the current device.
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
+
         set_cccl_iterator_state(self.d_in_keys_cccl, d_in_keys)
         set_cccl_iterator_state(self.d_in_items_cccl, d_in_items)
         set_cccl_iterator_state(self.d_out_keys_cccl, d_out_keys)
         set_cccl_iterator_state(self.d_out_items_cccl, d_out_items)
         set_cccl_iterator_state(self.d_out_num_selected_cccl, d_out_num_selected)
+
+        # Update op state for stateful ops
+        op_adapter = make_op_adapter(op)
+        self.op_cccl.state = op_adapter.get_state()
 
         stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:
@@ -130,7 +122,7 @@ class _UniqueByKey:
             # TODO: switch to use gpumemoryview once it's ready
             d_temp_storage = get_data_pointer(temp_storage)
 
-        temp_storage_bytes = self.build_result.compute(
+        temp_storage_bytes = self.loaded_build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_keys_cccl,
@@ -145,28 +137,16 @@ class _UniqueByKey:
         return temp_storage_bytes
 
 
-@cache_with_key(_make_cache_key)
-def _make_unique_by_key_cached(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase,
-    d_out_keys: DeviceArrayLike | IteratorBase,
-    d_out_items: DeviceArrayLike | IteratorBase,
-    d_out_num_selected: DeviceArrayLike,
-    op: OpAdapter,
-):
-    """Internal cached factory for _UniqueByKey."""
-    return _UniqueByKey(
-        d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, op
-    )
-
-
+@cache_with_registered_key_functions
 def make_unique_by_key(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase,
-    d_out_keys: DeviceArrayLike | IteratorBase,
-    d_out_items: DeviceArrayLike | IteratorBase,
+    *,
+    d_in_keys: DeviceArrayLike | IteratorT,
+    d_in_items: DeviceArrayLike | IteratorT,
+    d_out_keys: DeviceArrayLike | IteratorT,
+    d_out_items: DeviceArrayLike | IteratorT,
     d_out_num_selected: DeviceArrayLike,
-    op: Callable | OpKind,
+    op: Operator,
+    compute_capability=None,
 ):
     """Implements a device-wide unique by key operation using ``d_in_keys`` and the comparison operator ``op``. Only the first key and its value from each run is selected and the total number of items selected is also reported.
 
@@ -185,28 +165,35 @@ def make_unique_by_key(
         d_out_items: Device array or iterator to store each outputted key's item
         d_out_num_selected: Device array to store how many items were selected
         op: Callable or OpKind representing the equality operator
+        compute_capability: Compute capability, or list of capabilities, to
+            build for ahead of time. Accepts a packed int (e.g. ``90``), a
+            ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
+            thereof. When ``None`` (the default), the current device's
+            architecture is used.
 
     Returns:
         A callable object that can be used to perform unique by key
     """
     op_adapter = make_op_adapter(op)
-    return _make_unique_by_key_cached(
+    return _UniqueByKey(
         d_in_keys,
         d_in_items,
         d_out_keys,
         d_out_items,
         d_out_num_selected,
         op_adapter,
+        compute_capability=compute_capability,
     )
 
 
 def unique_by_key(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase,
-    d_out_keys: DeviceArrayLike | IteratorBase,
-    d_out_items: DeviceArrayLike | IteratorBase,
+    *,
+    d_in_keys: DeviceArrayLike | IteratorT,
+    d_in_items: DeviceArrayLike | IteratorT,
+    d_out_keys: DeviceArrayLike | IteratorT,
+    d_out_items: DeviceArrayLike | IteratorT,
     d_out_num_selected: DeviceArrayLike,
-    op: Callable | OpKind,
+    op: Operator,
     num_items: int,
     stream=None,
 ):
@@ -234,26 +221,33 @@ def unique_by_key(
         stream: CUDA stream for the operation (optional)
     """
     uniquer = make_unique_by_key(
-        d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, op
+        d_in_keys=d_in_keys,
+        d_in_items=d_in_items,
+        d_out_keys=d_out_keys,
+        d_out_items=d_out_items,
+        d_out_num_selected=d_out_num_selected,
+        op=op,
     )
     tmp_storage_bytes = uniquer(
-        None,
-        d_in_keys,
-        d_in_items,
-        d_out_keys,
-        d_out_items,
-        d_out_num_selected,
-        num_items,
-        stream,
+        temp_storage=None,
+        d_in_keys=d_in_keys,
+        d_in_items=d_in_items,
+        d_out_keys=d_out_keys,
+        d_out_items=d_out_items,
+        d_out_num_selected=d_out_num_selected,
+        op=op,
+        num_items=num_items,
+        stream=stream,
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     uniquer(
-        tmp_storage,
-        d_in_keys,
-        d_in_items,
-        d_out_keys,
-        d_out_items,
-        d_out_num_selected,
-        num_items,
-        stream,
+        temp_storage=tmp_storage,
+        d_in_keys=d_in_keys,
+        d_in_items=d_in_items,
+        d_out_keys=d_out_keys,
+        d_out_items=d_out_items,
+        d_out_num_selected=d_out_num_selected,
+        op=op,
+        num_items=num_items,
+        stream=stream,
     )

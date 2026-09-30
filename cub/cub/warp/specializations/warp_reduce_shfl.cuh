@@ -23,16 +23,13 @@
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
+#include <cub/warp/specializations/warp_redux.cuh>
 
 #include <cuda/__cmath/pow2.h>
-#include <cuda/__functional/maximum.h>
-#include <cuda/__functional/minimum.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>
 
 #include <nv/target>
@@ -41,43 +38,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-template <typename T, typename ReductionOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE T reduce_op_sync(T input, const uint32_t mask, ReductionOp)
-{
-  static_assert(::cuda::std::is_integral_v<T>, "T must be an integral type");
-  static_assert(sizeof(T) <= sizeof(unsigned), "T must be less than or equal to unsigned");
-  using promoted_t = ::cuda::std::conditional_t<::cuda::std::is_unsigned_v<T>, unsigned, int>;
-  if constexpr (is_cuda_maximum_v<ReductionOp, T>)
-  {
-    return static_cast<T>(__reduce_max_sync(mask, static_cast<promoted_t>(input)));
-  }
-  else if constexpr (is_cuda_minimum_v<ReductionOp, T>)
-  {
-    return static_cast<T>(__reduce_min_sync(mask, static_cast<promoted_t>(input)));
-  }
-  else if constexpr (is_cuda_std_plus_v<ReductionOp, T>)
-  {
-    return static_cast<T>(__reduce_add_sync(mask, static_cast<promoted_t>(input)));
-  }
-  else if constexpr (is_cuda_std_bit_and_v<ReductionOp, T>)
-  {
-    return static_cast<T>(__reduce_and_sync(mask, static_cast<promoted_t>(input)));
-  }
-  else if constexpr (is_cuda_std_bit_or_v<ReductionOp, T>)
-  {
-    return static_cast<T>(__reduce_or_sync(mask, static_cast<promoted_t>(input)));
-  }
-  else if constexpr (is_cuda_std_bit_xor_v<ReductionOp, T>)
-  {
-    return static_cast<T>(__reduce_xor_sync(mask, static_cast<promoted_t>(input)));
-  }
-  else
-  {
-    _CCCL_UNREACHABLE();
-    return T{};
-  }
-}
-
 /**
  * @brief WarpReduceShfl provides SHFL-based variants of parallel reduction of items partitioned
  *        across a CUDA thread warp.
@@ -85,29 +45,29 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T reduce_op_sync(T input, const uint32_t mask, Re
  * @tparam T
  *   Data type being reduced
  *
- * @tparam LOGICAL_WARP_THREADS
+ * @tparam LogicalWarpThreads
  *   Number of threads per logical warp (must be a power-of-two)
  */
-template <typename T, int LOGICAL_WARP_THREADS>
+template <typename T, int LogicalWarpThreads>
 struct WarpReduceShfl
 {
-  static_assert(::cuda::is_power_of_two(LOGICAL_WARP_THREADS), "LOGICAL_WARP_THREADS must be a power of two");
+  static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
 
   //---------------------------------------------------------------------
   // Constants and type definitions
   //---------------------------------------------------------------------
 
   /// Whether the logical warp size and the PTX warp size coincide
-  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads);
+  static constexpr bool IS_ARCH_WARP = (LogicalWarpThreads == warp_threads);
 
   /// The number of warp reduction steps
-  static constexpr int STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE;
+  static constexpr int STEPS = Log2<LogicalWarpThreads>::VALUE;
 
   /// Number of logical warps in a PTX warp
-  static constexpr int LOGICAL_WARPS = warp_threads / LOGICAL_WARP_THREADS;
+  static constexpr int LOGICAL_WARPS = warp_threads / LogicalWarpThreads;
 
   /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-  static constexpr unsigned SHFL_C = (warp_threads - LOGICAL_WARP_THREADS) << 8;
+  static constexpr unsigned SHFL_C = (warp_threads - LogicalWarpThreads) << 8;
 
   /// Shared memory storage layout type
   using TempStorage = NullType;
@@ -132,12 +92,12 @@ struct WarpReduceShfl
   /// Constructor
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceShfl(TempStorage& /*temp_storage*/)
       : lane_id(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
-      , warp_id(IS_ARCH_WARP ? 0 : (lane_id / LOGICAL_WARP_THREADS))
-      , member_mask(WarpMask<LOGICAL_WARP_THREADS>(warp_id))
+      , warp_id(IS_ARCH_WARP ? 0 : (lane_id / LogicalWarpThreads))
+      , member_mask(WarpMask<LogicalWarpThreads>(warp_id))
   {
     if (!IS_ARCH_WARP)
     {
-      lane_id = lane_id % LOGICAL_WARP_THREADS;
+      lane_id = lane_id % LogicalWarpThreads;
     }
   }
 
@@ -164,7 +124,7 @@ struct WarpReduceShfl
   ReduceStep(unsigned int input, ::cuda::std::plus<> /*reduction_op*/, int last_lane, int offset)
   {
     unsigned int output;
-    int shfl_c = last_lane | SHFL_C; // Shuffle control (mask and last_lane)
+    const int shfl_c = last_lane | SHFL_C; // Shuffle control (mask and last_lane)
 
     // Use predicate set from SHFL to guard against invalid peers
     asm volatile(
@@ -200,7 +160,7 @@ struct WarpReduceShfl
   ReduceStep(float input, ::cuda::std::plus<> /*reduction_op*/, int last_lane, int offset)
   {
     float output;
-    int shfl_c = last_lane | SHFL_C; // Shuffle control (mask and last_lane)
+    const int shfl_c = last_lane | SHFL_C; // Shuffle control (mask and last_lane)
 
     // Use predicate set from SHFL to guard against invalid peers
     asm volatile(
@@ -313,7 +273,7 @@ struct WarpReduceShfl
   ReduceStep(double input, ::cuda::std::plus<> /*reduction_op*/, int last_lane, int offset)
   {
     double output;
-    int shfl_c = last_lane | SHFL_C; // Shuffle control (mask and last_lane)
+    const int shfl_c = last_lane | SHFL_C; // Shuffle control (mask and last_lane)
 
     // Use predicate set from SHFL to guard against invalid peers
     asm volatile(
@@ -360,7 +320,7 @@ struct WarpReduceShfl
   {
     KeyValuePair<KeyT, ValueT> output;
 
-    KeyT other_key = ShuffleDown<LOGICAL_WARP_THREADS>(input.key, offset, last_lane, member_mask);
+    KeyT other_key = ShuffleDown<LogicalWarpThreads>(input.key, offset, last_lane, member_mask);
 
     output.key   = input.key;
     output.value = ReduceStep(input.value, ::cuda::std::plus<>{}, last_lane, offset);
@@ -396,6 +356,8 @@ struct WarpReduceShfl
     int last_lane,
     int offset)
   {
+    // The reduction supplies both output fields.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     KeyValuePair<OffsetT, ValueT> output;
 
     output.value = ReduceStep(input.value, ::cuda::std::plus<>{}, last_lane, offset);
@@ -424,12 +386,12 @@ struct WarpReduceShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  template <typename _Tp, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp ReduceStep(_Tp input, ReductionOp reduction_op, int last_lane, int offset)
+  template <typename Tp, typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE Tp ReduceStep(Tp input, ReductionOp reduction_op, int last_lane, int offset)
   {
-    _Tp output = input;
+    Tp output = input;
 
-    _Tp temp = ShuffleDown<LOGICAL_WARP_THREADS>(output, offset, last_lane, member_mask);
+    Tp temp = ShuffleDown<LogicalWarpThreads>(output, offset, last_lane, member_mask);
 
     // Perform reduction op if valid
     if (offset + lane_id <= last_lane)
@@ -484,7 +446,7 @@ struct WarpReduceShfl
   /**
    * @brief Reduction
    *
-   * @tparam ALL_LANES_VALID
+   * @tparam AllValidLanes
    *   Whether all lanes in each warp are contributing a valid fold of items
    *
    * @param[in] input
@@ -496,27 +458,34 @@ struct WarpReduceShfl
    * @param[in] reduction_op
    *   Binary reduction operator
    */
-  template <bool ALL_LANES_VALID, typename ReductionOp>
+  template <bool AllValidLanes, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int valid_items, ReductionOp reduction_op)
   {
     // Dispatch to more efficient intrinsics when applicable
-    if constexpr (ALL_LANES_VALID && ::cuda::std::is_integral_v<T> && sizeof(T) <= sizeof(unsigned)
-                  && (is_cuda_minimum_maximum_v<ReductionOp, T> || is_cuda_std_plus_v<ReductionOp, T>
-                      || is_cuda_std_bitwise_v<ReductionOp, T>) )
+    constexpr bool has_identity = ::cuda::has_identity_element_v<ReductionOp, T>;
+    const int last_lane         = (AllValidLanes) ? LogicalWarpThreads - 1 : valid_items - 1;
+    T reduce_value              = input;
+
+    if constexpr (IS_ARCH_WARP && (AllValidLanes || has_identity) && is_warp_redux_op_supported<ReductionOp, T>)
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_80, (return reduce_op_sync(input, member_mask, reduction_op);))
+      if constexpr (!AllValidLanes)
+      {
+        reduce_value = lane_id <= last_lane ? input : ::cuda::identity_element<ReductionOp, T>();
+      }
+      if (const auto output = cub::detail::warp_redux(reduce_value, member_mask, reduction_op))
+      {
+        return *output;
+      }
     }
-    T output = input;
     // Template-iterate reduction steps
-    const int last_lane = (ALL_LANES_VALID) ? LOGICAL_WARP_THREADS - 1 : valid_items - 1;
-    ReduceStep(output, reduction_op, last_lane, constant_v<0>);
-    return output;
+    ReduceStep(reduce_value, reduction_op, last_lane, constant_v<0>);
+    return reduce_value;
   }
 
   /**
    * @brief Segmented reduction
    *
-   * @tparam HEAD_SEGMENTED
+   * @tparam HeadSegmented
    *   Whether flags indicate a segment-head or a segment-tail
    *
    * @param[in] input
@@ -528,14 +497,14 @@ struct WarpReduceShfl
    * @param[in] reduction_op
    *   Binary reduction operator
    */
-  template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
+  template <bool HeadSegmented, typename FlagT, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op)
   {
     // Get the start flags for each thread in the warp.
     unsigned warp_flags = __ballot_sync(member_mask, flag);
 
     // Convert to tail-segmented
-    if (HEAD_SEGMENTED)
+    if (HeadSegmented)
     {
       warp_flags >>= 1;
     }
@@ -546,14 +515,14 @@ struct WarpReduceShfl
     // Mask of physical lanes outside the logical warp and convert to logical lanemask
     if (!IS_ARCH_WARP)
     {
-      warp_flags = (warp_flags & member_mask) >> (warp_id * LOGICAL_WARP_THREADS);
+      warp_flags = (warp_flags & member_mask) >> (warp_id * LogicalWarpThreads);
     }
 
     // Mask in the last lane of logical warp
-    warp_flags |= 1u << (LOGICAL_WARP_THREADS - 1);
+    warp_flags |= 1u << (LogicalWarpThreads - 1);
 
     // Find the next set flag
-    int last_lane = ::cuda::std::countr_zero(warp_flags);
+    const int last_lane = ::cuda::std::countr_zero(warp_flags);
 
     T output = input;
     // Template-iterate reduction steps

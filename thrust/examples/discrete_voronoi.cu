@@ -3,7 +3,8 @@
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/random.h>
-#include <thrust/tuple.h>
+
+#include <cuda/std/tuple>
 
 #include <cmath>
 #include <fstream>
@@ -36,7 +37,7 @@ struct voronoi_site_selector
   {}
 
   // To decide I have to change my current Voronoi site
-  __host__ __device__ int minVoro(int x_i, int y_i, int p, int q)
+  __host__ __device__ int min_voro(int x_i, int y_i, int p, int q)
   {
     if (q == m * n)
     {
@@ -44,14 +45,14 @@ struct voronoi_site_selector
     }
 
     // coordinates of points p and q
-    int y_q = q / m;
-    int x_q = q - y_q * m;
-    int y_p = p / m;
-    int x_p = p - y_p * m;
+    const int y_q = q / m;
+    const int x_q = q - y_q * m;
+    const int y_p = p / m;
+    const int x_p = p - y_p * m;
 
     // squared distances
-    int d_iq = (x_i - x_q) * (x_i - x_q) + (y_i - y_q) * (y_i - y_q);
-    int d_ip = (x_i - x_p) * (x_i - x_p) + (y_i - y_p) * (y_i - y_p);
+    const int d_iq = (x_i - x_q) * (x_i - x_q) + (y_i - y_q) * (y_i - y_q);
+    const int d_ip = (x_i - x_p) * (x_i - x_p) + (y_i - y_p) * (y_i - y_p);
 
     if (d_iq < d_ip)
     {
@@ -68,49 +69,49 @@ struct voronoi_site_selector
   __host__ __device__ int operator()(const Tuple& t)
   {
     // Current point and site
-    int i = thrust::get<9>(t);
-    int v = thrust::get<0>(t);
+    const int i = cuda::std::get<9>(t);
+    int v       = cuda::std::get<0>(t);
 
     // Current point coordinates
-    int y = i / m;
-    int x = i - y * m;
+    const int y = i / m;
+    const int x = i - y * m;
 
     if (x >= k)
     {
-      v = minVoro(x, y, v, thrust::get<3>(t));
+      v = min_voro(x, y, v, cuda::std::get<3>(t));
 
       if (y >= k)
       {
-        v = minVoro(x, y, v, thrust::get<8>(t));
+        v = min_voro(x, y, v, cuda::std::get<8>(t));
       }
 
       if (y + k < n)
       {
-        v = minVoro(x, y, v, thrust::get<7>(t));
+        v = min_voro(x, y, v, cuda::std::get<7>(t));
       }
     }
 
     if (x + k < m)
     {
-      v = minVoro(x, y, v, thrust::get<1>(t));
+      v = min_voro(x, y, v, cuda::std::get<1>(t));
 
       if (y >= k)
       {
-        v = minVoro(x, y, v, thrust::get<6>(t));
+        v = min_voro(x, y, v, cuda::std::get<6>(t));
       }
       if (y + k < n)
       {
-        v = minVoro(x, y, v, thrust::get<5>(t));
+        v = min_voro(x, y, v, cuda::std::get<5>(t));
       }
     }
 
     if (y >= k)
     {
-      v = minVoro(x, y, v, thrust::get<4>(t));
+      v = min_voro(x, y, v, cuda::std::get<4>(t));
     }
     if (y + k < n)
     {
-      v = minVoro(x, y, v, thrust::get<2>(t));
+      v = min_voro(x, y, v, cuda::std::get<2>(t));
     }
 
     // global return
@@ -141,8 +142,8 @@ void generate_random_sites(thrust::host_vector<int>& t, int Nb, int m, int n)
 
   for (int k = 0; k < Nb; k++)
   {
-    int index = dist(rng);
-    t[index]  = index + 1;
+    const int index = dist(rng);
+    t[index]        = index + 1;
   }
 }
 
@@ -161,7 +162,7 @@ void vector_to_pgm(thrust::host_vector<int>& t, int m, int n, const char* out)
     return (71 * in_value) % 253;
   };
 
-  for (int value : t)
+  for (const int value : t)
   {
     f << to_grey_level(value) << " ";
   }
@@ -177,59 +178,59 @@ void jfa(thrust::device_vector<int>& in, thrust::device_vector<int>& out, unsign
     thrust::make_zip_iterator(
       in.begin(),
       in.begin() + k,
-      in.begin() + m * k,
+      in.begin() + m * k, // NOLINT(bugprone-misplaced-widening-cast)
       in.begin() - k,
-      in.begin() - m * k,
-      in.begin() + k + m * k,
-      in.begin() + k - m * k,
-      in.begin() - k + m * k,
-      in.begin() - k - m * k,
+      in.begin() - m * k, // NOLINT(bugprone-misplaced-widening-cast)
+      in.begin() + k + m * k, // NOLINT(bugprone-misplaced-widening-cast)
+      in.begin() + k - m * k, // NOLINT(bugprone-misplaced-widening-cast)
+      in.begin() - k + m * k, // NOLINT(bugprone-misplaced-widening-cast)
+      in.begin() - k - m * k, // NOLINT(bugprone-misplaced-widening-cast)
       thrust::counting_iterator<int>(0)),
     thrust::make_zip_iterator(
       in.begin(),
       in.begin() + k,
-      in.begin() + m * k,
+      in.begin() + m * k, // NOLINT(bugprone-misplaced-widening-cast)
       in.begin() - k,
-      in.begin() - m * k,
-      in.begin() + k + m * k,
-      in.begin() + k - m * k,
-      in.begin() - k + m * k,
-      in.begin() - k - m * k,
+      in.begin() - m * k, // NOLINT(bugprone-misplaced-widening-cast)
+      in.begin() + k + m * k, // NOLINT(bugprone-misplaced-widening-cast)
+      in.begin() + k - m * k, // NOLINT(bugprone-misplaced-widening-cast)
+      in.begin() - k + m * k, // NOLINT(bugprone-misplaced-widening-cast)
+      in.begin() - k - m * k, // NOLINT(bugprone-misplaced-widening-cast)
       thrust::counting_iterator<int>(0))
-      + n * m,
+      + n * m, // NOLINT(bugprone-misplaced-widening-cast)
     out.begin(),
-    voronoi_site_selector(m, n, k));
+    voronoi_site_selector(m, n, static_cast<int>(k)));
 }
 /********************************************/
 
 void display_time(timer& t)
 {
-  std::cout << "  ( " << 1e3 * t.elapsed() << "ms )" << std::endl;
+  std::cout << "  ( " << 1e3 * t.elapsed() << "ms )" << '\n';
 }
 
 int main()
 {
-  int m = 2048; // number of rows
-  int n = 2048; // number of columns
-  int s = 1000; // number of sites
+  const int m = 2048; // number of rows
+  const int n = 2048; // number of columns
+  const int s = 1000; // number of sites
 
   timer t;
 
   // Host vector to encode a 2D image
-  std::cout << "[Initialize " << m << "x" << n << " Image]" << std::endl;
+  std::cout << "[Initialize " << m << "x" << n << " Image]" << '\n';
   t.restart();
   thrust::host_vector<int> seeds_host(m * n, m * n);
   generate_random_sites(seeds_host, s, m, n);
   display_time(t);
 
-  std::cout << "[Copy to Device]" << std::endl;
+  std::cout << "[Copy to Device]" << '\n';
   t.restart();
   thrust::device_vector<int> seeds = seeds_host;
   thrust::device_vector<int> temp(seeds);
   display_time(t);
 
   // JFA+1  : before entering the log(n) loop, we perform a jump with k=1
-  std::cout << "[JFA stepping]" << std::endl;
+  std::cout << "[JFA stepping]" << '\n';
   t.restart();
   jfa(seeds, temp, 1, m, n);
   seeds.swap(temp);
@@ -242,14 +243,14 @@ int main()
   }
 
   display_time(t);
-  std::cout << "  ( " << seeds.size() / (1e6 * t.elapsed()) << " MPixel/s ) " << std::endl;
+  std::cout << "  ( " << static_cast<double>(seeds.size()) / (1e6 * t.elapsed()) << " MPixel/s ) " << '\n';
 
-  std::cout << "[Device to Host Copy]" << std::endl;
+  std::cout << "[Device to Host Copy]" << '\n';
   t.restart();
   seeds_host = seeds;
   display_time(t);
 
-  std::cout << "[PGM Export]" << std::endl;
+  std::cout << "[PGM Export]" << '\n';
   t.restart();
   vector_to_pgm(seeds_host, m, n, "discrete_voronoi.pgm");
   display_time(t);

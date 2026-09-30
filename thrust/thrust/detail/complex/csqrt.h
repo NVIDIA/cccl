@@ -1,19 +1,6 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *  Copyright 2013 Filipe RNC Maia
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation
+// SPDX-FileCopyrightText: Copyright (c) 2013, Filipe RNC Maia
+// SPDX-License-Identifier: Apache-2.0
 
 /*-
  * Copyright (c) 2007 David Schultz <das@FreeBSD.ORG>
@@ -67,9 +54,14 @@ namespace detail::complex
 {
 using thrust::complex;
 
+// `b - b` and `(b - b) / (b - b)` are deliberate IEEE-754 idioms, not redundant
+// expressions: the former yields +0.0 for a finite b and propagates a NaN, and the latter
+// is 0/0, which produces a NaN and raises the invalid flag. C99 Annex G specifies the
+// complex functions in these terms.
+// NOLINTBEGIN(misc-redundant-expression)
 _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
 {
-  complex<double> result;
+  complex<double> result{};
   double a, b;
   double t;
   int scale;
@@ -144,7 +136,7 @@ _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
   else
   {
     t      = ::cuda::std::sqrt((-a + ::cuda::std::hypot(a, b)) * 0.5);
-    result = complex<double>(fabs(b) / (2 * t), ::cuda::std::copysign(t, b));
+    result = complex<double>(::cuda::std::fabs(b) / (2 * t), ::cuda::std::copysign(t, b));
   }
 
   /* Rescale. */
@@ -161,6 +153,7 @@ _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
     return (result);
   }
 }
+// NOLINTEND(misc-redundant-expression)
 } // namespace detail::complex
 
 template <typename ValueType>

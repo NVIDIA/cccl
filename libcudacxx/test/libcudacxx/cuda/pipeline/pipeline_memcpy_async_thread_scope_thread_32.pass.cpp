@@ -18,6 +18,9 @@
 // XFAIL: clang-18 && !nvcc
 // XFAIL: clang-19 && !nvcc
 
+// UNSUPPORTED: force-tile
+// error: asm statement unsupported in tile mode
+
 #include "pipeline_memcpy_async_thread_scope_thread.h"
 
 int main(int argc, char** argv)

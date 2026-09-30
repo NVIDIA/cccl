@@ -55,8 +55,8 @@ struct IterBase
   using pointer           = int*;
   using reference         = int&;
 
-  __host__ __device__ reference operator*() const;
-  __host__ __device__ pointer operator->() const;
+  TEST_FUNC reference operator*() const;
+  TEST_FUNC pointer operator->() const;
 };
 
 template <class T>
@@ -78,11 +78,11 @@ concept HasSpaceship = requires(T t) { t <=> t; };
 
 struct NoEqualityCompIter : IterBase
 {
-  __host__ __device__ bool operator!=(NoEqualityCompIter) const;
-  __host__ __device__ bool operator<(NoEqualityCompIter) const;
-  __host__ __device__ bool operator>(NoEqualityCompIter) const;
-  __host__ __device__ bool operator<=(NoEqualityCompIter) const;
-  __host__ __device__ bool operator>=(NoEqualityCompIter) const;
+  TEST_FUNC bool operator!=(NoEqualityCompIter) const;
+  TEST_FUNC bool operator<(NoEqualityCompIter) const;
+  TEST_FUNC bool operator>(NoEqualityCompIter) const;
+  TEST_FUNC bool operator<=(NoEqualityCompIter) const;
+  TEST_FUNC bool operator>=(NoEqualityCompIter) const;
 };
 
 static_assert(HasEqual<cuda::std::reverse_iterator<int*>>);
@@ -93,7 +93,7 @@ static_assert(HasLessOrEqual<cuda::std::reverse_iterator<NoEqualityCompIter>>);
 static_assert(HasGreater<cuda::std::reverse_iterator<NoEqualityCompIter>>);
 static_assert(HasGreaterOrEqual<cuda::std::reverse_iterator<NoEqualityCompIter>>);
 
-__host__ __device__ void Foo()
+TEST_FUNC void Foo()
 {
   cuda::std::reverse_iterator<NoEqualityCompIter> i;
   unused(i);
@@ -103,10 +103,10 @@ __host__ __device__ void Foo()
 
 struct NoInequalityCompIter : IterBase
 {
-  __host__ __device__ bool operator<(NoInequalityCompIter) const;
-  __host__ __device__ bool operator>(NoInequalityCompIter) const;
-  __host__ __device__ bool operator<=(NoInequalityCompIter) const;
-  __host__ __device__ bool operator>=(NoInequalityCompIter) const;
+  TEST_FUNC bool operator<(NoInequalityCompIter) const;
+  TEST_FUNC bool operator>(NoInequalityCompIter) const;
+  TEST_FUNC bool operator<=(NoInequalityCompIter) const;
+  TEST_FUNC bool operator>=(NoInequalityCompIter) const;
 };
 
 static_assert(HasNotEqual<cuda::std::reverse_iterator<int*>>);
@@ -121,11 +121,11 @@ static_assert(HasGreaterOrEqual<cuda::std::reverse_iterator<NoInequalityCompIter
 
 struct NoGreaterCompIter : IterBase
 {
-  __host__ __device__ bool operator==(NoGreaterCompIter) const;
-  __host__ __device__ bool operator!=(NoGreaterCompIter) const;
-  __host__ __device__ bool operator<(NoGreaterCompIter) const;
-  __host__ __device__ bool operator<=(NoGreaterCompIter) const;
-  __host__ __device__ bool operator>=(NoGreaterCompIter) const;
+  TEST_FUNC bool operator==(NoGreaterCompIter) const;
+  TEST_FUNC bool operator!=(NoGreaterCompIter) const;
+  TEST_FUNC bool operator<(NoGreaterCompIter) const;
+  TEST_FUNC bool operator<=(NoGreaterCompIter) const;
+  TEST_FUNC bool operator>=(NoGreaterCompIter) const;
 };
 
 static_assert(HasLess<cuda::std::reverse_iterator<int*>>);
@@ -140,11 +140,11 @@ static_assert(HasGreaterOrEqual<cuda::std::reverse_iterator<NoGreaterCompIter>>)
 
 struct NoLessCompIter : IterBase
 {
-  __host__ __device__ bool operator==(NoLessCompIter) const;
-  __host__ __device__ bool operator!=(NoLessCompIter) const;
-  __host__ __device__ bool operator>(NoLessCompIter) const;
-  __host__ __device__ bool operator<=(NoLessCompIter) const;
-  __host__ __device__ bool operator>=(NoLessCompIter) const;
+  TEST_FUNC bool operator==(NoLessCompIter) const;
+  TEST_FUNC bool operator!=(NoLessCompIter) const;
+  TEST_FUNC bool operator>(NoLessCompIter) const;
+  TEST_FUNC bool operator<=(NoLessCompIter) const;
+  TEST_FUNC bool operator>=(NoLessCompIter) const;
 };
 
 static_assert(HasGreater<cuda::std::reverse_iterator<int*>>);
@@ -159,11 +159,11 @@ static_assert(HasGreaterOrEqual<cuda::std::reverse_iterator<NoLessCompIter>>);
 
 struct NoGreaterOrEqualCompIter : IterBase
 {
-  __host__ __device__ bool operator==(NoGreaterOrEqualCompIter) const;
-  __host__ __device__ bool operator!=(NoGreaterOrEqualCompIter) const;
-  __host__ __device__ bool operator<(NoGreaterOrEqualCompIter) const;
-  __host__ __device__ bool operator>(NoGreaterOrEqualCompIter) const;
-  __host__ __device__ bool operator<=(NoGreaterOrEqualCompIter) const;
+  TEST_FUNC bool operator==(NoGreaterOrEqualCompIter) const;
+  TEST_FUNC bool operator!=(NoGreaterOrEqualCompIter) const;
+  TEST_FUNC bool operator<(NoGreaterOrEqualCompIter) const;
+  TEST_FUNC bool operator>(NoGreaterOrEqualCompIter) const;
+  TEST_FUNC bool operator<=(NoGreaterOrEqualCompIter) const;
 };
 
 static_assert(HasLessOrEqual<cuda::std::reverse_iterator<int*>>);
@@ -178,11 +178,11 @@ static_assert(HasGreaterOrEqual<cuda::std::reverse_iterator<NoGreaterOrEqualComp
 
 struct NoLessOrEqualCompIter : IterBase
 {
-  __host__ __device__ bool operator==(NoLessOrEqualCompIter) const;
-  __host__ __device__ bool operator!=(NoLessOrEqualCompIter) const;
-  __host__ __device__ bool operator<(NoLessOrEqualCompIter) const;
-  __host__ __device__ bool operator>(NoLessOrEqualCompIter) const;
-  __host__ __device__ bool operator>=(NoLessOrEqualCompIter) const;
+  TEST_FUNC bool operator==(NoLessOrEqualCompIter) const;
+  TEST_FUNC bool operator!=(NoLessOrEqualCompIter) const;
+  TEST_FUNC bool operator<(NoLessOrEqualCompIter) const;
+  TEST_FUNC bool operator>(NoLessOrEqualCompIter) const;
+  TEST_FUNC bool operator>=(NoLessOrEqualCompIter) const;
 };
 
 static_assert(HasGreaterOrEqual<cuda::std::reverse_iterator<int*>>);

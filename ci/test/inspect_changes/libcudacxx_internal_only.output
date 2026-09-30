@@ -1,2 +1,2 @@
-FULL_BUILD=libcudacxx
+FULL_BUILD=libcudacxx tidy
 LITE_BUILD=packaging

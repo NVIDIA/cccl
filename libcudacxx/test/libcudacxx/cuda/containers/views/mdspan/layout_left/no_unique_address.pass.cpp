@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class Mapping>
-__host__ __device__ void test(Mapping map, size_t expected_size)
+TEST_FUNC void test(Mapping map, size_t expected_size)
 {
   assert(map.extents().extent(0) == 42);
   assert(map.extents().extent(1) == 1337);

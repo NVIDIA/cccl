@@ -42,7 +42,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES NonStandard
 };
 
 template <class T, class U>
-__host__ __device__ constexpr void test_is_pointer_interconvertible_base_of(bool expected)
+TEST_FUNC constexpr void test_is_pointer_interconvertible_base_of(bool expected)
 {
 #if defined(_CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_BASE_OF)
   assert((cuda::std::is_pointer_interconvertible_base_of<T, U>::value == expected));
@@ -81,7 +81,7 @@ __host__ __device__ constexpr void test_is_pointer_interconvertible_base_of(bool
 #endif // _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_BASE_OF
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // 1. Structs have pointer-interconvertible
   test_is_pointer_interconvertible_base_of<BaseA, BaseA>(true);

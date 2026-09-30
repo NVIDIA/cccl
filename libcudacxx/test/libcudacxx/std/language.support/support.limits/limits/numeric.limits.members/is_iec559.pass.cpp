@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <class T, bool expected>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::numeric_limits<T>::is_iec559 == expected, "is_iec559 test 1");
   static_assert(cuda::std::numeric_limits<const T>::is_iec559 == expected, "is_iec559 test 2");
@@ -33,9 +33,9 @@ int main(int, char**)
   test<signed char, false>();
   test<unsigned char, false>();
   test<wchar_t, false>();
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
   test<char8_t, false>();
-#endif
+#endif // _CCCL_HAS_CHAR8_T()
   test<char16_t, false>();
   test<char32_t, false>();
   test<short, false>();

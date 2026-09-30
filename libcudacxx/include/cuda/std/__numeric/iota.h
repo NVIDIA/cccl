@@ -26,6 +26,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Tp>
 _CCCL_API constexpr void iota(_ForwardIterator __first, _ForwardIterator __last, _Tp __value_)
 {

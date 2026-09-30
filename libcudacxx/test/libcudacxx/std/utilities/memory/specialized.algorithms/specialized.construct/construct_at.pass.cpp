@@ -14,8 +14,8 @@
 // template <class T, class ...Args>
 // constexpr T* construct_at(T* location, Args&& ...args);
 
-// #include <cuda/std/memory>
 #include <cuda/std/cassert>
+#include <cuda/std/cstddef>
 #include <cuda/std/memory>
 
 #include "test_iterators.h"
@@ -25,18 +25,18 @@ TEST_DIAG_SUPPRESS_MSVC(4244) // conversion possible loss of data
 
 struct Foo
 {
-  __host__ __device__ constexpr Foo() {}
-  __host__ __device__ constexpr Foo(int a, char b, double c)
+  TEST_FUNC constexpr Foo() {}
+  TEST_FUNC constexpr Foo(int a, char b, double c)
       : a_(a)
       , b_(b)
       , c_(c)
   {}
-  __host__ __device__ constexpr Foo(int a, char b, double c, int* count)
+  TEST_FUNC constexpr Foo(int a, char b, double c, int* count)
       : Foo(a, b, c)
   {
     *count += 1;
   }
-  __host__ __device__ constexpr bool operator==(Foo const& other) const
+  TEST_FUNC constexpr bool operator==(Foo const& other) const
   {
     return a_ == other.a_ && b_ == other.b_ && c_ == other.c_;
   }
@@ -50,17 +50,17 @@ private:
 struct Counted
 {
   int& count_;
-  __host__ __device__ constexpr Counted(int& count)
+  TEST_FUNC constexpr Counted(int& count)
       : count_(count)
   {
     ++count;
   }
-  __host__ __device__ constexpr Counted(Counted const& that)
+  TEST_FUNC constexpr Counted(Counted const& that)
       : count_(that.count_)
   {
     ++count_;
   }
-  __host__ __device__ constexpr ~Counted()
+  TEST_FUNC constexpr ~Counted()
   {
     --count_;
   }
@@ -85,7 +85,7 @@ struct NotAssignable
 constexpr bool move_assignment_called = false;
 struct Always_false
 {
-  __host__ __device__ constexpr Always_false(const bool val) noexcept
+  TEST_FUNC constexpr Always_false(const bool val) noexcept
   {
     assert(val);
   }
@@ -95,11 +95,11 @@ struct Dest
 {
   struct tag
   {};
-  __host__ __device__ constexpr Dest(tag) {}
+  TEST_FUNC constexpr Dest(tag) {}
 };
 struct ConvertibleToDest
 {
-  __host__ __device__ constexpr operator Dest() const noexcept
+  TEST_FUNC constexpr operator Dest() const noexcept
   {
     return Dest{Dest::tag{}};
   }
@@ -111,7 +111,7 @@ struct WithSpecialMoveAssignment
   WithSpecialMoveAssignment(const WithSpecialMoveAssignment&)            = default;
   WithSpecialMoveAssignment(WithSpecialMoveAssignment&&)                 = default;
   WithSpecialMoveAssignment& operator=(const WithSpecialMoveAssignment&) = default;
-  __host__ __device__ constexpr WithSpecialMoveAssignment& operator=(WithSpecialMoveAssignment&&) noexcept
+  TEST_FUNC constexpr WithSpecialMoveAssignment& operator=(WithSpecialMoveAssignment&&) noexcept
   {
     Always_false invalid{move_assignment_called};
     unused(invalid);
@@ -120,7 +120,7 @@ struct WithSpecialMoveAssignment
 };
 static_assert(cuda::std::is_trivially_constructible_v<WithSpecialMoveAssignment>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     int i    = 99;
@@ -219,32 +219,29 @@ __host__ __device__ constexpr bool test()
 }
 
 template <class... Args, class = decltype(cuda::std::construct_at(cuda::std::declval<Args>()...))>
-__host__ __device__ constexpr bool can_construct_at(Args&&...)
-{
-  return true;
-}
+TEST_FUNC constexpr auto can_construct_at_impl(Args&&...) -> cuda::std::true_type;
 
 template <class... Args>
-__host__ __device__ constexpr bool can_construct_at(...)
-{
-  return false;
-}
+TEST_FUNC constexpr auto can_construct_at_impl(...) -> cuda::std::false_type;
+
+template <class... Args>
+inline constexpr bool can_construct_at = decltype(can_construct_at_impl(cuda::std::declval<Args>()...))::value;
 
 // Check that SFINAE works.
-static_assert(can_construct_at((int*) nullptr, 42));
-static_assert(can_construct_at((Foo*) nullptr, 1, '2', 3.0));
-static_assert(!can_construct_at((Foo*) nullptr, 1, '2'));
-static_assert(!can_construct_at((Foo*) nullptr, 1, '2', 3.0, 4));
-static_assert(!can_construct_at(nullptr, 1, '2', 3.0));
-static_assert(!can_construct_at((int*) nullptr, 1, '2', 3.0));
+static_assert(can_construct_at<int*, int>);
+static_assert(can_construct_at<Foo*, int, char, double>);
+static_assert(!can_construct_at<Foo*, int, char>);
+static_assert(!can_construct_at<Foo*, int, char, double, int>);
+static_assert(!can_construct_at<void*, int, char, double>);
+static_assert(!can_construct_at<int*, int, char, double>);
 #if 0 // We do not support ranges yet
-static_assert(!can_construct_at(contiguous_iterator<Foo*>(), 1, '2', 3.0));
+static_assert(!can_construct_at<contiguous_iterator<Foo*>, int, char, double>);
 #endif
 // Can't construct function pointers.
 
 #if !TEST_COMPILER(MSVC) // nvbug 4075886
-static_assert(!can_construct_at((int (*)()) nullptr));
-static_assert(!can_construct_at((int (*)()) nullptr, nullptr));
+static_assert(!can_construct_at<int (*)()>);
+static_assert(!can_construct_at<int (*)(), cuda::std::nullptr_t>);
 #endif // TEST_COMPILER(MSVC)
 
 int main(int, char**)

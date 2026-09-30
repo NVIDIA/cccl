@@ -13,8 +13,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
+#include <cub/detail/type_traits.cuh> // implicit_prom_t
 
+#include <cuda/__cmath/fast_modulo_division.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__utility/integer_sequence.h>
@@ -29,7 +30,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code (even if there are no branche
 
 // Compute the submdspan size of a given rank
 template <typename IndexType, size_t... Extents>
-[[nodiscard]] _CCCL_API constexpr ::cuda::std::make_unsigned_t<IndexType>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::make_unsigned_t<IndexType>
 size_range(const ::cuda::std::extents<IndexType, Extents...>& ext, int start, int end)
 {
   _CCCL_ASSERT(start >= 0 && end <= static_cast<int>(ext.rank()), "invalid start or end");
@@ -44,16 +45,16 @@ size_range(const ::cuda::std::extents<IndexType, Extents...>& ext, int start, in
 _CCCL_DIAG_POP // MSVC(4702)
 
   template <typename IndexType, size_t... Extents>
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::make_unsigned_t<IndexType>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::make_unsigned_t<IndexType>
   size(const ::cuda::std::extents<IndexType, Extents...>& ext)
 {
   return cub::detail::size_range(ext, 0, static_cast<int>(ext.rank()));
 }
 
 template <bool IsLayoutRight, int Position, typename IndexType, size_t... E>
-[[nodiscard]] _CCCL_API auto sub_size_fast_div_mod_impl(const ::cuda::std::extents<IndexType, E...>& ext)
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto sub_size_fast_mod_div_impl(const ::cuda::std::extents<IndexType, E...>& ext)
 {
-  using fast_mod_div_t = fast_div_mod<IndexType>;
+  using fast_mod_div_t = ::cuda::fast_mod_div<::cuda::std::make_unsigned_t<implicit_prom_t<IndexType>>>;
   constexpr auto start = IsLayoutRight ? Position + 1 : 0;
   constexpr auto end   = IsLayoutRight ? sizeof...(E) : Position;
   return fast_mod_div_t(cub::detail::size_range(ext, start, end));
@@ -61,27 +62,27 @@ template <bool IsLayoutRight, int Position, typename IndexType, size_t... E>
 
 // precompute modulo/division for each submdspan size (by rank)
 template <bool IsLayoutRight, typename IndexType, size_t... E, size_t... Positions>
-[[nodiscard]] _CCCL_API auto
-sub_sizes_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Positions...> = {})
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto
+sub_sizes_fast_mod_div(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Positions...> = {})
 {
-  using fast_mod_div_t = fast_div_mod<IndexType>;
+  using fast_mod_div_t = ::cuda::fast_mod_div<::cuda::std::make_unsigned_t<implicit_prom_t<IndexType>>>;
   using array_t        = ::cuda::std::array<fast_mod_div_t, sizeof...(Positions)>;
-  return array_t{cub::detail::sub_size_fast_div_mod_impl<IsLayoutRight, Positions>(ext)...};
+  return array_t{cub::detail::sub_size_fast_mod_div_impl<IsLayoutRight, Positions>(ext)...};
 }
 
 // precompute modulo/division for each mdspan extent
 template <typename IndexType, size_t... E, size_t... Positions>
-[[nodiscard]] _CCCL_API auto
-extents_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Positions...> = {})
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto
+extents_fast_mod_div(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Positions...> = {})
 {
-  using fast_mod_div_t = fast_div_mod<IndexType>;
+  using fast_mod_div_t = ::cuda::fast_mod_div<::cuda::std::make_unsigned_t<implicit_prom_t<IndexType>>>;
   using array_t        = ::cuda::std::array<fast_mod_div_t, sizeof...(Positions)>;
   return array_t{fast_mod_div_t(ext.extent(Positions))...};
 }
 
 // GCC <= 9 constexpr workaround: Extent must be passed as type only, even const Extent& doesn't work
 template <typename Extents>
-[[nodiscard]] _CCCL_API constexpr bool are_extents_in_range_static(int start, int end)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool are_extents_in_range_static(int start, int end)
 {
   for (auto i = start; i < end; i++)
   {
@@ -94,7 +95,8 @@ template <typename Extents>
 }
 
 template <typename MappingTypeLhs, typename MappingTypeRhs>
-[[nodiscard]] _CCCL_API bool have_same_strides(const MappingTypeLhs& mapping_lhs, const MappingTypeRhs& mapping_rhs)
+[[nodiscard]] _CCCL_HOST_DEVICE_API bool
+have_same_strides(const MappingTypeLhs& mapping_lhs, const MappingTypeRhs& mapping_rhs)
 {
   auto extents_lhs = mapping_lhs.extents();
   auto extents_rhs = mapping_rhs.extents();

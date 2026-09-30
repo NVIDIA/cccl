@@ -2,52 +2,57 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 #include <cuda/std/complex>
+#include <cuda/std/cstddef>
+#include <cuda/type_traits>
 
-#include <c2h/generators.h>
-#include <c2h/vector.h>
+#include <c2h/generator_common.h>
 
 #if C2H_HAS_CURAND
-#  include <curand.h>
+// nvcc 13.0 on Windows emits warnings regarding unrecognized #pragma in device code.
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(20199)
+#  include <curand_kernel.h>
+_CCCL_END_NV_DIAG_SUPPRESS()
 #else
-#  include <thrust/random.h>
+#  include <cuda/std/random>
 #endif
 
 namespace c2h::detail
 {
-class generator_t
+// draws a single uniform float in (0, 1] from an independent stream per index, so many indices can be drawn
+// concurrently without any shared state
+struct index_to_random_uniform
 {
-public:
-  generator_t()
+  unsigned long long m_seed;
+
+  __device__ float operator()(std::size_t i) const
   {
 #if C2H_HAS_CURAND
-    curandCreateGenerator(&m_gen, CURAND_RNG_PSEUDO_DEFAULT);
-#endif
-  }
-
-  ~generator_t()
-  {
-#if C2H_HAS_CURAND
-    curandDestroyGenerator(m_gen);
-#endif
-  }
-
-  // sets the seed and resizes the distribution vector, fills it by calling generate(), and returns a pointer the start
-  // of the data
-  float* prepare_random_generator(seed_t seed, std::size_t num_items);
-
-  // re-fills the currently held distribution vector with new random values
-  void generate();
-
-private:
-#if C2H_HAS_CURAND
-  curandGenerator_t m_gen;
+    curandStatePhilox4_32_10_t state;
+    curand_init(m_seed, i, 0, &state);
+    return curand_uniform(&state);
 #else
-  thrust::default_random_engine m_re;
-#endif
-  c2h::device_vector<float> m_distribution;
+    cuda::std::philox4x32 engine(static_cast<cuda::std::philox4x32::result_type>(m_seed ^ (m_seed >> 32)));
+    engine.set_counter(
+      {0,
+       0,
+       static_cast<cuda::std::philox4x32::result_type>(i >> 32),
+       static_cast<cuda::std::philox4x32::result_type>(i)});
+    return cuda::std::uniform_real_distribution<float>{0.0f, 1.0f}(engine);
+#endif // C2H_HAS_CURAND
+  }
 };
 
-inline generator_t generator;
+template <typename Op>
+struct index_to_transformed_random_uniform
+{
+  unsigned long long m_seed;
+  Op m_op;
+
+  __device__ auto operator()(std::size_t i)
+  {
+    return m_op(index_to_random_uniform{m_seed}(i));
+  }
+};
 
 template <typename T, bool = ::cuda::is_floating_point_v<T>>
 struct random_to_item_t

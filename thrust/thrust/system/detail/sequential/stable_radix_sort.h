@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2021 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -35,6 +22,7 @@
 #include <thrust/scatter.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
+#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -120,14 +108,9 @@ struct RadixEncoder<float>
 {
   _CCCL_HOST_DEVICE std::uint32_t operator()(float x) const
   {
-    union
-    {
-      float f;
-      std::uint32_t i;
-    } u;
-    u.f                = x;
-    std::uint32_t mask = -static_cast<std::int32_t>(u.i >> 31) | (static_cast<std::uint32_t>(1) << 31);
-    return u.i ^ mask;
+    const auto bits    = ::cuda::std::bit_cast<std::uint32_t>(x);
+    std::uint32_t mask = -static_cast<std::int32_t>(bits >> 31) | (static_cast<std::uint32_t>(1) << 31);
+    return bits ^ mask;
   }
 };
 
@@ -136,14 +119,9 @@ struct RadixEncoder<double>
 {
   _CCCL_HOST_DEVICE std::uint64_t operator()(double x) const
   {
-    union
-    {
-      double f;
-      std::uint64_t i;
-    } u;
-    u.f                = x;
-    std::uint64_t mask = -static_cast<std::int64_t>(u.i >> 63) | (static_cast<std::uint64_t>(1) << 63);
-    return u.i ^ mask;
+    const auto bits    = ::cuda::std::bit_cast<std::uint64_t>(x);
+    std::uint64_t mask = -static_cast<std::int64_t>(bits >> 63) | (static_cast<std::uint64_t>(1) << 63);
+    return bits ^ mask;
   }
 };
 
@@ -151,10 +129,10 @@ struct RadixEncoder<double>
 template <unsigned int RadixBits, typename KeyType>
 struct bucket_functor
 {
-  using Encoder                    = RadixEncoder<KeyType>;
-  using EncodedType                = decltype(::cuda::std::declval<Encoder>()(::cuda::std::declval<KeyType>()));
-  using result_type                = size_t;
-  static const EncodedType BitMask = static_cast<EncodedType>((1 << RadixBits) - 1);
+  using Encoder                     = RadixEncoder<KeyType>;
+  using EncodedType                 = decltype(::cuda::std::declval<Encoder>()(::cuda::std::declval<KeyType>()));
+  using result_type                 = size_t;
+  static const EncodedType bit_mask = static_cast<EncodedType>((1 << RadixBits) - 1);
 
   Encoder encode;
   EncodedType bit_shift;
@@ -171,7 +149,7 @@ struct bucket_functor
     const EncodedType x = encode(key);
 
     // note that we mutate the histogram here
-    return histogram[(x >> bit_shift) & BitMask]++;
+    return histogram[(x >> bit_shift) & bit_mask]++;
   }
 };
 
@@ -252,7 +230,7 @@ _CCCL_HOST_DEVICE void radix_sort(
 
   const EncodedType BitMask = static_cast<EncodedType>((1 << RadixBits) - 1);
 
-  Encoder encode;
+  const Encoder encode;
 
   // storage for histograms
   size_t histograms[NumHistograms][HistogramSize] = {{0}};
@@ -270,7 +248,7 @@ _CCCL_HOST_DEVICE void radix_sort(
 
     for (unsigned int j = 0; j < NumHistograms; j++)
     {
-      const auto BitShift = static_cast<EncodedType>(RadixBits * j);
+      const auto BitShift = static_cast<EncodedType>(RadixBits * j); // NOLINT(bugprone-misplaced-widening-cast)
       histograms[j][(x >> BitShift) & BitMask]++;
     }
   }
@@ -282,7 +260,7 @@ _CCCL_HOST_DEVICE void radix_sort(
 
     for (unsigned int j = 0; j < HistogramSize; j++)
     {
-      size_t bin = histograms[i][j];
+      const size_t bin = histograms[i][j];
 
       if (bin == N)
       {
@@ -298,7 +276,7 @@ _CCCL_HOST_DEVICE void radix_sort(
   // shuffle keys and (optionally) values
   for (unsigned int i = 0; i < NumHistograms; i++)
   {
-    const EncodedType BitShift = static_cast<EncodedType>(RadixBits * i);
+    const EncodedType BitShift = static_cast<EncodedType>(RadixBits * i); // NOLINT(bugprone-misplaced-widening-cast)
 
     if (!skip_shuffle[i])
     {
@@ -357,7 +335,8 @@ struct radix_sort_dispatcher<1>
     RandomAccessIterator2 keys2,
     const size_t N)
   {
-    radix_sort_detail::radix_sort<8, false>(exec, keys1, keys2, static_cast<int*>(0), static_cast<int*>(0), N);
+    radix_sort_detail::radix_sort<8, false>(
+      exec, keys1, keys2, static_cast<int*>(nullptr), static_cast<int*>(nullptr), N);
   }
 
   template <typename DerivedPolicy,
@@ -395,11 +374,13 @@ struct radix_sort_dispatcher<2>
 #endif
     if (condition)
     {
-      radix_sort_detail::radix_sort<8, false>(exec, keys1, keys2, static_cast<int*>(0), static_cast<int*>(0), N);
+      radix_sort_detail::radix_sort<8, false>(
+        exec, keys1, keys2, static_cast<int*>(nullptr), static_cast<int*>(nullptr), N);
     }
     else
     {
-      radix_sort_detail::radix_sort<16, false>(exec, keys1, keys2, static_cast<int*>(0), static_cast<int*>(0), N);
+      radix_sort_detail::radix_sort<16, false>(
+        exec, keys1, keys2, static_cast<int*>(nullptr), static_cast<int*>(nullptr), N);
     }
   }
 
@@ -445,11 +426,13 @@ struct radix_sort_dispatcher<4>
   {
     if (N < (1 << 22))
     {
-      radix_sort_detail::radix_sort<8, false>(exec, keys1, keys2, static_cast<int*>(0), static_cast<int*>(0), N);
+      radix_sort_detail::radix_sort<8, false>(
+        exec, keys1, keys2, static_cast<int*>(nullptr), static_cast<int*>(nullptr), N);
     }
     else
     {
-      radix_sort_detail::radix_sort<4, false>(exec, keys1, keys2, static_cast<int*>(0), static_cast<int*>(0), N);
+      radix_sort_detail::radix_sort<4, false>(
+        exec, keys1, keys2, static_cast<int*>(nullptr), static_cast<int*>(nullptr), N);
     }
   }
 
@@ -489,11 +472,13 @@ struct radix_sort_dispatcher<8>
   {
     if (N < (1 << 21))
     {
-      radix_sort_detail::radix_sort<8, false>(exec, keys1, keys2, static_cast<int*>(0), static_cast<int*>(0), N);
+      radix_sort_detail::radix_sort<8, false>(
+        exec, keys1, keys2, static_cast<int*>(nullptr), static_cast<int*>(nullptr), N);
     }
     else
     {
-      radix_sort_detail::radix_sort<4, false>(exec, keys1, keys2, static_cast<int*>(0), static_cast<int*>(0), N);
+      radix_sort_detail::radix_sort<4, false>(
+        exec, keys1, keys2, static_cast<int*>(nullptr), static_cast<int*>(nullptr), N);
     }
   }
 
@@ -556,7 +541,7 @@ _CCCL_HOST_DEVICE void stable_radix_sort(
 {
   using KeyType = thrust::detail::it_value_t<RandomAccessIterator>;
 
-  size_t N = last - first;
+  const size_t N = last - first;
 
   thrust::detail::temporary_array<KeyType, DerivedPolicy> temp(exec, N);
 
@@ -573,7 +558,7 @@ _CCCL_HOST_DEVICE void stable_radix_sort_by_key(
   using KeyType   = thrust::detail::it_value_t<RandomAccessIterator1>;
   using ValueType = thrust::detail::it_value_t<RandomAccessIterator2>;
 
-  size_t N = last1 - first1;
+  const size_t N = last1 - first1;
 
   thrust::detail::temporary_array<KeyType, DerivedPolicy> temp1(exec, N);
   thrust::detail::temporary_array<ValueType, DerivedPolicy> temp2(exec, N);

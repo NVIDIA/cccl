@@ -18,7 +18,12 @@
 
 #include <thrust/detail/type_deduction.h>
 
-#include <cuda/functional>
+#include <cuda/__functional/address_stability.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
@@ -32,18 +37,18 @@ THRUST_NAMESPACE_BEGIN
  *  \{
  */
 
-/*! \p zip_function is a function object that allows the easy use of N-ary
- *  function objects with \p zip_iterators without redefining them to take a
- *  \p tuple instead of N arguments.
+/*! \p zip_function adapts a callable that takes N arguments into a unary
+ *  function object that takes a tuple of N elements. It unpacks the tuple and
+ *  passes its elements as separate arguments to the underlying callable.
  *
- *  This means that if a functor that takes 2 arguments which could be used with
- *  the \p transform function and \p device_iterators can be extended to take 3
- *  arguments and \p zip_iterators without rewriting the functor in terms of
- *  \p tuple.
+ *  This is useful with \p zip_iterator, which combines N iterators and returns
+ *  a tuple of their references when dereferenced. Using \p zip_function lets
+ *  an algorithm such as \p transform apply an existing N-argument callable to
+ *  that tuple without rewriting the callable to extract the tuple elements.
  *
  *  The \p make_zip_function convenience function is provided to avoid having
  *  to explicitly define the type of the functor when creating a \p zip_function,
- *  whic is especially helpful when using lambdas as the functor.
+ *  which is especially helpful when using lambdas as the functor.
  *
  *  \code
  *  #include <thrust/iterator/zip_iterator.h>
@@ -53,7 +58,7 @@ THRUST_NAMESPACE_BEGIN
  *
  *  struct SumTuple {
  *    float operator()(auto tup) const {
- *      return thrust::get<0>(tup) + thrust::get<1>(tup) + thrust::get<2>(tup);
+ *      return cuda::std::get<0>(tup) + cuda::std::get<1>(tup) + ::cuda::std::get<2>(tup);
  *    }
  *  };
  *  struct SumArgs {
@@ -92,32 +97,62 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see make_zip_function
  *  \see zip_iterator
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename Function>
 class zip_function
 {
+  template <class Function2, class Tuple>
+  static constexpr bool is_nothrow_invocable =
+    noexcept(::cuda::std::apply(::cuda::std::declval<Function2>(), ::cuda::std::declval<Tuple>()));
+
 public:
   //! Default constructs the contained function object.
   zip_function() = default;
 
-  _CCCL_HOST_DEVICE zip_function(Function func)
+  _CCCL_API zip_function(Function func)
       : func(::cuda::std::move(func))
   {}
 
-  template <typename Tuple>
-  _CCCL_HOST_DEVICE decltype(auto) operator()(Tuple&& args) const
+  //! @brief Applies a tuple to the stored functor
+  //! @param args The tuple of arguments to be passed
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class Tuple)
+  _CCCL_REQUIRES((::cuda::std::__can_apply<const Function&, Tuple>) )
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator()(Tuple&& args) const
+    noexcept(is_nothrow_invocable<const Function&, Tuple>)
+  {
+    return ::cuda::std::apply(func, ::cuda::std::forward<Tuple>(args));
+  }
+
+  //! @overload
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class Tuple)
+  _CCCL_REQUIRES((::cuda::std::__can_apply<Function&, Tuple>) )
+  [[nodiscard]] _CCCL_API constexpr decltype(auto)
+  operator()(Tuple&& args) noexcept(is_nothrow_invocable<Function&, Tuple>)
   {
     return ::cuda::std::apply(func, ::cuda::std::forward<Tuple>(args));
   }
 
   //! Returns a reference to the underlying function.
-  _CCCL_HOST_DEVICE Function& underlying_function() const
+  _CCCL_API Function& underlying_function() const
+  {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+    return const_cast<Function&>(func);
+  }
+
+  //! @overload
+  _CCCL_API Function& underlying_function()
   {
     return func;
   }
 
 private:
-  mutable Function func;
+  Function func;
 };
 
 /*! \p make_zip_function creates a \p zip_function from a function object.
@@ -126,9 +161,13 @@ private:
  *  \return A \p zip_function that takes a N-tuple.
  *
  *  \see zip_function
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename Function>
-_CCCL_HOST_DEVICE zip_function<::cuda::std::decay_t<Function>> make_zip_function(Function&& fun)
+_CCCL_API zip_function<::cuda::std::decay_t<Function>> make_zip_function(Function&& fun)
 {
   using func_t = ::cuda::std::decay_t<Function>;
   return zip_function<func_t>(THRUST_FWD(fun));
@@ -138,6 +177,10 @@ _CCCL_HOST_DEVICE zip_function<::cuda::std::decay_t<Function>> make_zip_function
  */
 
 /*! \} // end function_objects
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 
 THRUST_NAMESPACE_END

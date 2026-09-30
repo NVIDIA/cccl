@@ -25,19 +25,20 @@
 
 #include <thrust/iterator/iterator_facade.h>
 
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/remove_cv.h>
 
 #include <nv/target>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
-
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
 /**
  * @brief A random-access input wrapper for dereferencing array values through texture cache.
  *        Uses newer Kepler-style texture objects.
+ *
+ * Deprecated [Since 3.3]
  *
  * @par Overview
  * - TexObjInputIterator wraps a native device pointer of type <tt>ValueType*</tt>. References
@@ -81,6 +82,11 @@ CUB_NAMESPACE_BEGIN
  *
  * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
+ *
+ * @rst
+ * .. versionadded:: 2.2.0
+ *    First appears in CUDA Toolkit 12.3.
+ * @endrst
  */
 template <typename T, typename OffsetT = ptrdiff_t>
 class TexObjInputIterator
@@ -113,22 +119,19 @@ private:
   using TextureWord = typename UnitWord<T>::TextureWord;
 
   // Number of texture words per T
+  // NOLINTNEXTLINE(bugprone-sizeof-expression)
   static constexpr int TEXTURE_MULTIPLE = sizeof(T) / sizeof(TextureWord);
 
 private:
-  T* ptr;
-  difference_type tex_offset;
-  cudaTextureObject_t tex_obj;
+  T* ptr{nullptr};
+  difference_type tex_offset{0};
+  cudaTextureObject_t tex_obj{0};
 
 public:
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TexObjInputIterator()
-      : ptr(nullptr)
-      , tex_offset(0)
-      , tex_obj(0)
-  {}
+  _CCCL_FORCEINLINE TexObjInputIterator() = default;
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   /**
    * @brief Use this iterator to bind @p ptr with a texture reference
    *
@@ -147,11 +150,9 @@ public:
     this->ptr        = const_cast<::cuda::std::remove_cv_t<QualifiedT>*>(ptr);
     this->tex_offset = static_cast<difference_type>(tex_offset);
 
-    cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<TextureWord>();
-    cudaResourceDesc res_desc;
-    cudaTextureDesc tex_desc;
-    memset(&res_desc, 0, sizeof(cudaResourceDesc));
-    memset(&tex_desc, 0, sizeof(cudaTextureDesc));
+    const cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<TextureWord>();
+    cudaResourceDesc res_desc{};
+    cudaTextureDesc tex_desc{};
     res_desc.resType                = cudaResourceTypeLinear;
     res_desc.res.linear.devPtr      = this->ptr;
     res_desc.res.linear.desc        = channel_desc;
@@ -165,7 +166,7 @@ public:
   {
     return CubDebug(cudaDestroyTextureObject(tex_obj));
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
   /// Postfix increment
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
@@ -185,7 +186,7 @@ public:
   /// Indirection
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
   {
-    NV_IF_TARGET(NV_IS_HOST, (return ptr[tex_offset];), (return this->device_deref();));
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (return ptr[tex_offset];), (return this->device_deref();));
   }
 
   /// Addition
@@ -236,7 +237,7 @@ public:
   template <typename Distance>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
   {
-    self_type offset = (*this) + n;
+    const self_type offset = (*this) + n;
     return *offset;
   }
 
@@ -258,7 +259,7 @@ public:
     return ((ptr != rhs.ptr) || (tex_offset != rhs.tex_offset) || (tex_obj != rhs.tex_obj));
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   /// ostream operator
   friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr)
   {
@@ -266,7 +267,7 @@ public:
        << " )";
     return os;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 private:
   // This is hoisted out of operator* because #pragma can't be used inside of
@@ -289,5 +290,9 @@ private:
     return *reinterpret_cast<T*>(words);
   }
 };
+} // namespace detail
+
+template <typename T, typename OffsetT = ptrdiff_t>
+using TexObjInputIterator CCCL_DEPRECATED = detail::TexObjInputIterator<T, OffsetT>;
 
 CUB_NAMESPACE_END

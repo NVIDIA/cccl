@@ -25,7 +25,7 @@ int main(int, char**)
   static_assert(noexcept(cuda::std::is_constant_evaluated()));
 
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(cuda::std::is_constant_evaluated(), "");
+  static_assert(cuda::std::is_constant_evaluated());
 #endif
 
   bool p = cuda::std::is_constant_evaluated();

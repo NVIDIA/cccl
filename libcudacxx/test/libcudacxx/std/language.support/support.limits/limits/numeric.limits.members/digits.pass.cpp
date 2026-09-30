@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <class T, int expected>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::numeric_limits<T>::digits == expected, "digits test 1");
   static_assert(cuda::std::numeric_limits<const T>::digits == expected, "digits test 2");
@@ -34,9 +34,9 @@ int main(int, char**)
   test<signed char, 7>();
   test<unsigned char, 8>();
   test<wchar_t, cuda::std::numeric_limits<wchar_t>::is_signed ? sizeof(wchar_t) * 8 - 1 : sizeof(wchar_t) * 8>();
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
   test<char8_t, 8>();
-#endif
+#endif // _CCCL_HAS_CHAR8_T()
   test<char16_t, 16>();
   test<char32_t, 32>();
   test<short, 15>();

@@ -17,6 +17,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -26,7 +28,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017) \
+#if __has_include(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017) \
                       && !defined(CCCL_DISABLE_NVTX)                                             \
                       && !defined(NVTX_DISABLE)
 #  include <nvtx3/nvToolsExt.h>
@@ -45,13 +47,13 @@ class nvtx_range
 public:
   explicit nvtx_range(const char* message)
   {
-#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017) \
+#if __has_include(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017) \
                       && !defined(CCCL_DISABLE_NVTX)                                             \
                       && !defined(NVTX_DISABLE)
     nvtxRangePushA(message);
 #endif
-    static_assert(::std::is_move_constructible_v<nvtx_range>, "nvtx_range must be move constructible");
-    static_assert(::std::is_move_assignable_v<nvtx_range>, "nvtx_range must be move assignable");
+    static_assert(::cuda::std::is_move_constructible_v<nvtx_range>, "nvtx_range must be move constructible");
+    static_assert(::cuda::std::is_move_assignable_v<nvtx_range>, "nvtx_range must be move assignable");
   }
 
   // Noncopyable to avoid multiple pops
@@ -60,7 +62,7 @@ public:
 
   // Move constructor
   nvtx_range(nvtx_range&& other) noexcept
-      : active(::std::exchange(other.active, false))
+      : active(::cuda::std::exchange(other.active, false))
   {}
 
   // Move assignment
@@ -69,7 +71,7 @@ public:
     if (this != &other)
     {
       end(); // Ensure the current range is properly closed
-      active = std::exchange(other.active, false);
+      active = ::cuda::std::exchange(other.active, false);
     }
     return *this;
   }
@@ -83,7 +85,7 @@ public:
     }
     active = false;
 
-#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017) \
+#if __has_include(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017) \
                       && !defined(CCCL_DISABLE_NVTX)                                             \
                       && !defined(NVTX_DISABLE)
     nvtxRangePop();

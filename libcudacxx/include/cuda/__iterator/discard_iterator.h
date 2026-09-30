@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/iterator.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/default_sentinel.h>
 #include <cuda/std/__iterator/iterator_traits.h>
@@ -183,29 +184,29 @@ public:
   //! @brief Returns the distance between two @c discard_iterator's
   //! @param __lhs The left @c discard_iterator
   //! @param __rhs The right @c discard_iterator
-  //! @return __rhs.__index_ - __lhs.__index_
+  //! @return __lhs.__index_ - __rhs.__index_
   [[nodiscard]] _CCCL_API friend constexpr difference_type
   operator-(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
-    return __rhs.__index_ - __lhs.__index_;
-  }
-
-  //! @brief Returns the distance between a @c default_sentinel and a @c discard_iterator
-  //! @param __lhs The @c discard_iterator
-  //! @return -__lhs.__index_
-  [[nodiscard]] _CCCL_API friend constexpr difference_type
-  operator-(const discard_iterator& __lhs, ::cuda::std::default_sentinel_t) noexcept
-  {
-    return static_cast<difference_type>(-__lhs.__index_);
+    return __lhs.__index_ - __rhs.__index_;
   }
 
   //! @brief Returns the distance between a @c discard_iterator and a @c default_sentinel
+  //! @param __lhs The @c discard_iterator
+  //! @return __lhs.__index_
+  [[nodiscard]] _CCCL_API friend constexpr difference_type
+  operator-(const discard_iterator& __lhs, ::cuda::std::default_sentinel_t) noexcept
+  {
+    return static_cast<difference_type>(__lhs.__index_);
+  }
+
+  //! @brief Returns the distance between a @c default_sentinel and a @c discard_iterator
   //! @param __rhs The @c discard_iterator
-  //! @return __rhs.__index_
+  //! @return -__rhs.__index_
   [[nodiscard]] _CCCL_API friend constexpr difference_type
   operator-(::cuda::std::default_sentinel_t, const discard_iterator& __rhs) noexcept
   {
-    return static_cast<difference_type>(__rhs.__index_);
+    return static_cast<difference_type>(-__rhs.__index_);
   }
 
   //! @brief Decrements the index of the @c discard_iterator by a number of elements

@@ -14,23 +14,24 @@
 #include <cuda/std/ranges>
 
 #include "test_iterators.h"
+#include "test_macros.h"
 
 struct View : cuda::std::ranges::view_base
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
 struct Range
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
 struct BorrowableRange
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 template <>
 inline constexpr bool cuda::std::ranges::enable_borrowed_range<BorrowableRange> = true;
@@ -60,14 +61,14 @@ static_assert(cuda::std::is_same_v<cuda::std::views::all_t<const BorrowableRange
 // Otherwise, returns owning_view<T>
 static_assert(cuda::std::is_same_v<cuda::std::views::all_t<Range>, cuda::std::ranges::owning_view<Range>>);
 static_assert(cuda::std::is_same_v<cuda::std::views::all_t<Range&&>, cuda::std::ranges::owning_view<Range>>);
-static_assert(!HasAllT<const Range>, "");
-static_assert(!HasAllT<const Range&&>, "");
+static_assert(!HasAllT<const Range>);
+static_assert(!HasAllT<const Range&&>);
 static_assert(
   cuda::std::is_same_v<cuda::std::views::all_t<BorrowableRange>, cuda::std::ranges::owning_view<BorrowableRange>>);
 static_assert(
   cuda::std::is_same_v<cuda::std::views::all_t<BorrowableRange&&>, cuda::std::ranges::owning_view<BorrowableRange>>);
-static_assert(!HasAllT<const BorrowableRange>, "");
-static_assert(!HasAllT<const BorrowableRange&&>, "");
+static_assert(!HasAllT<const BorrowableRange>);
+static_assert(!HasAllT<const BorrowableRange&&>);
 
 int main(int, char**)
 {

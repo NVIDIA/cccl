@@ -1,19 +1,6 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *  Copyright 2013 Filipe RNC Maia
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation
+// SPDX-FileCopyrightText: Copyright (c) 2013, Filipe RNC Maia
+// SPDX-License-Identifier: Apache-2.0
 
 /*-
  * Copyright (c) 2005 Bruce D. Evans and Steven G. Kargl
@@ -65,6 +52,10 @@ namespace detail::complex
 {
 using thrust::complex;
 
+// `y - y` is a deliberate IEEE-754 idiom, not a redundant expression: it yields +0.0 for a
+// finite y and propagates a NaN or raises invalid for an infinite y. C99 Annex G specifies
+// the complex functions in these terms.
+// NOLINTBEGIN(misc-redundant-expression)
 _CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
 {
   double x, y, h;
@@ -102,7 +93,7 @@ _CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
     else if (ix < 0x4096bbaa)
     {
       /* x < 1455: scale to avoid overflow */
-      complex<double> z_ = ldexp_cexp(complex<double>(::cuda::std::fabs(x), y), -1);
+      const complex<double> z_ = ldexp_cexp(complex<double>(::cuda::std::fabs(x), y), -1);
       return (complex<double>(z_.real() * ::cuda::std::copysign(1.0, x), z_.imag()));
     }
     else
@@ -188,6 +179,7 @@ _CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
    */
   return (complex<double>((x * x) * (y - y), (x + x) * (y - y)));
 }
+// NOLINTEND(misc-redundant-expression)
 
 _CCCL_HOST_DEVICE inline complex<double> csin(complex<double> z)
 {

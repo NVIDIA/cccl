@@ -28,18 +28,18 @@ struct almost_string
 {
   const char* ptr;
 
-  __host__ __device__ almost_string(const char* ptr)
+  TEST_FUNC almost_string(const char* ptr)
       : ptr(ptr)
   {}
 
-  __host__ __device__ friend bool operator==(const almost_string& lhs, const almost_string& rhs)
+  TEST_FUNC friend bool operator==(const almost_string& lhs, const almost_string& rhs)
   {
     return lhs.ptr == rhs.ptr;
   }
 };
 
 template <typename ReturnType>
-__host__ __device__ void test_call_operator_forwarding()
+TEST_FUNC void test_call_operator_forwarding()
 {
   using Fn = ForwardingCallObject;
   Fn obj{};

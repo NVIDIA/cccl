@@ -21,61 +21,61 @@ struct SomeIntComparable
   using difference_type = int;
 
   SomeInt value_;
-  __host__ __device__ constexpr SomeIntComparable()
+  TEST_FUNC constexpr SomeIntComparable()
       : value_(SomeInt(10))
   {}
 
-  __host__ __device__ friend constexpr bool operator==(SomeIntComparable lhs, SomeIntComparable rhs)
+  TEST_FUNC friend constexpr bool operator==(SomeIntComparable lhs, SomeIntComparable rhs)
   {
     return lhs.value_ == rhs.value_;
   }
-  __host__ __device__ friend constexpr bool operator==(SomeIntComparable lhs, SomeInt rhs)
+  TEST_FUNC friend constexpr bool operator==(SomeIntComparable lhs, SomeInt rhs)
   {
     return lhs.value_ == rhs;
   }
-  __host__ __device__ friend constexpr bool operator==(SomeInt lhs, SomeIntComparable rhs)
+  TEST_FUNC friend constexpr bool operator==(SomeInt lhs, SomeIntComparable rhs)
   {
     return lhs == rhs.value_;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator!=(SomeIntComparable lhs, SomeIntComparable rhs)
+  TEST_FUNC friend constexpr bool operator!=(SomeIntComparable lhs, SomeIntComparable rhs)
   {
     return lhs.value_ != rhs.value_;
   }
-  __host__ __device__ friend constexpr bool operator!=(SomeIntComparable lhs, SomeInt rhs)
+  TEST_FUNC friend constexpr bool operator!=(SomeIntComparable lhs, SomeInt rhs)
   {
     return lhs.value_ != rhs;
   }
-  __host__ __device__ friend constexpr bool operator!=(SomeInt lhs, SomeIntComparable rhs)
+  TEST_FUNC friend constexpr bool operator!=(SomeInt lhs, SomeIntComparable rhs)
   {
     return lhs != rhs.value_;
   }
 #endif // TEST_STD_VER < 2020
 
-  __host__ __device__ friend constexpr difference_type operator-(SomeIntComparable lhs, SomeIntComparable rhs)
+  TEST_FUNC friend constexpr difference_type operator-(SomeIntComparable lhs, SomeIntComparable rhs)
   {
     return lhs.value_ - rhs.value_;
   }
 
-  __host__ __device__ constexpr SomeIntComparable& operator++()
+  TEST_FUNC constexpr SomeIntComparable& operator++()
   {
     ++value_;
     return *this;
   }
-  __host__ __device__ constexpr SomeIntComparable operator++(int)
+  TEST_FUNC constexpr SomeIntComparable operator++(int)
   {
     auto tmp = *this;
     ++value_;
     return tmp;
   }
-  __host__ __device__ constexpr SomeIntComparable operator--()
+  TEST_FUNC constexpr SomeIntComparable operator--()
   {
     --value_;
     return *this;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     cuda::std::ranges::iota_view<SomeInt> io(SomeInt(42));
@@ -100,7 +100,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

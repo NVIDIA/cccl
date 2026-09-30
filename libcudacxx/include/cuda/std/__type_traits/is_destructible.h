@@ -84,7 +84,7 @@ template <class _Tp, bool>
 struct __destructible_false;
 
 template <class _Tp>
-struct __destructible_false<_Tp, false> : public __destructible_imp<_Tp, is_reference<_Tp>::value>
+struct __destructible_false<_Tp, false> : public __destructible_imp<_Tp, is_reference_v<_Tp>>
 {};
 
 template <class _Tp>
@@ -92,7 +92,7 @@ struct __destructible_false<_Tp, true> : public false_type
 {};
 
 template <class _Tp>
-struct is_destructible : public __destructible_false<_Tp, is_function<_Tp>::value>
+struct is_destructible : public __destructible_false<_Tp, is_function_v<_Tp>>
 {};
 
 template <class _Tp>

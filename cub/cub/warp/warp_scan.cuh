@@ -51,7 +51,7 @@ CUB_NAMESPACE_BEGIN
 //! * Supports non-commutative scan operators
 //! * Supports "logical" warps smaller than the physical warp size
 //!   (e.g., a logical warp of 8 threads)
-//! * The number of entrant threads must be an multiple of ``LOGICAL_WARP_THREADS``
+//! * The number of entrant threads must be an multiple of ``LogicalWarpThreads``
 //!
 //! Performance Considerations
 //! ++++++++++++++++++++++++++
@@ -62,7 +62,7 @@ CUB_NAMESPACE_BEGIN
 //! * Computation is slightly more efficient (i.e., having lower instruction overhead) for:
 //!
 //!   * Summation (**vs.** generic scan)
-//!   * The architecture's warp size is a whole multiple of ``LOGICAL_WARP_THREADS``
+//!   * The architecture's warp size is a whole multiple of ``LogicalWarpThreads``
 //!
 //! Simple Examples
 //! ++++++++++++++++++++++++++
@@ -131,12 +131,12 @@ CUB_NAMESPACE_BEGIN
 //! @tparam T
 //!   The scan input/output element type
 //!
-//! @tparam LOGICAL_WARP_THREADS
+//! @tparam LogicalWarpThreads
 //!   **[optional]** The number of threads per "logical" warp (may be less than the number of
 //!   hardware warp threads). Default is the warp size associated with the CUDA Compute Capability
 //!   targeted by the compiler (e.g., 32 threads for SM20).
 //!
-template <typename T, int LOGICAL_WARP_THREADS = detail::warp_threads>
+template <typename T, int LogicalWarpThreads = detail::warp_threads>
 class WarpScan
 {
 private:
@@ -145,18 +145,18 @@ private:
    ******************************************************************************/
 
   /// Whether the logical warp size and the PTX warp size coincide
-  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == detail::warp_threads);
+  static constexpr bool IS_ARCH_WARP = (LogicalWarpThreads == detail::warp_threads);
 
   /// Whether the logical warp size is a power-of-two
-  static constexpr bool IS_POW_OF_TWO = ((LOGICAL_WARP_THREADS & (LOGICAL_WARP_THREADS - 1)) == 0);
+  static constexpr bool IS_POW_OF_TWO = ((LogicalWarpThreads & (LogicalWarpThreads - 1)) == 0);
 
   /// Whether the data type is an integer (which has fully-associative addition)
   static constexpr bool IS_INTEGER = cuda::std::is_integral_v<T>;
 
   /// Internal specialization.
-  /// Use SHFL-based scan if LOGICAL_WARP_THREADS is a power-of-two
+  /// Use SHFL-based scan if LogicalWarpThreads is a power-of-two
   using InternalWarpScan = ::cuda::std::
-    _If<IS_POW_OF_TWO, detail::WarpScanShfl<T, LOGICAL_WARP_THREADS>, detail::WarpScanSmem<T, LOGICAL_WARP_THREADS>>;
+    _If<IS_POW_OF_TWO, detail::WarpScanShfl<T, LogicalWarpThreads>, detail::WarpScanSmem<T, LogicalWarpThreads>>;
 
   /// Shared memory storage layout type for WarpScan
   using _TempStorage = typename InternalWarpScan::TempStorage;
@@ -175,8 +175,7 @@ private:
 
 public:
   /// @smemstorage{WarpScan}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -188,15 +187,18 @@ public:
   //!   Reference to memory allocation having layout type TempStorage
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpScan(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS)
+      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads)
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Inclusive prefix sums
   //! @{
 
   //! @rst
   //! Computes an inclusive prefix sum across the calling warp.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -244,6 +246,9 @@ public:
   //! @rst
   //! Computes an inclusive prefix sum across the calling warp.
   //! Also provides every thread with the warp-wide ``warp_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -293,13 +298,16 @@ public:
     InclusiveScan(input, inclusive_output, ::cuda::std::plus<>{}, warp_aggregate);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Exclusive prefix sums
   //! @{
 
   //! @rst
   //! Computes an exclusive prefix sum across the calling warp. The value of 0 is applied as the
   //! initial value, and is assigned to ``exclusive_output`` in *lane*\ :sub:`0`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @identityzero
   //! * @smemwarpreuse
@@ -350,6 +358,9 @@ public:
   //! Computes an exclusive prefix sum across the calling warp. The value of 0 is applied as the
   //! initial value, and is assigned to ``exclusive_output`` in *lane*\ :sub:`0`.
   //! Also provides every thread with the warp-wide ``warp_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @identityzero
   //! * @smemwarpreuse
@@ -403,13 +414,16 @@ public:
     ExclusiveScan(input, exclusive_output, initial_value, ::cuda::std::plus<>{}, warp_aggregate);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Inclusive prefix scans
   //! @{
 
   //! @rst
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -466,6 +480,9 @@ public:
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @smemwarpreuse
   //!
   //! Snippet
@@ -518,6 +535,9 @@ public:
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp. Also provides every thread with the warp-wide ``warp_aggregate`` of
   //! all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -580,6 +600,9 @@ public:
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp. Also provides every thread with the warp-wide ``warp_aggregate`` of
   //! all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -907,7 +930,7 @@ public:
 
 #endif // _CCCL_DOXYGEN_INVOKED  // Do not document partial inclusive scans
 
-  //! @}  end member group
+  //! @}
   //! @name Exclusive prefix scans
   //! @{
 
@@ -915,6 +938,9 @@ public:
   //! Computes an exclusive prefix scan using the specified binary scan functor across the
   //! calling warp. Because no initial value is supplied, the ``output`` computed for
   //! *lane*\ :sub:`0` is undefined.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -977,6 +1003,9 @@ public:
   //! Computes an exclusive prefix scan using the specified binary scan functor across the
   //! calling warp.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @smemwarpreuse
   //!
   //! Snippet
@@ -1033,6 +1062,8 @@ public:
   {
     InternalWarpScan internal(temp_storage);
 
+    // InclusiveScan fills the output before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     T inclusive_output;
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
@@ -1045,6 +1076,9 @@ public:
   //! calling warp. Because no initial value is supplied, the ``output`` computed for
   //! *lane*\ :sub:`0` is undefined. Also provides every thread with the warp-wide
   //! ``warp_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -1116,6 +1150,9 @@ public:
   //! Computes an exclusive prefix scan using the specified binary scan functor across the
   //! calling warp. Also provides every thread with the warp-wide ``warp_aggregate`` of
   //! all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -1259,7 +1296,8 @@ public:
   {
     InternalWarpScan internal(temp_storage);
 
-    T inclusive_output;
+    // InclusiveScanPartial supplies the scan result for valid lanes.
+    T inclusive_output; // NOLINT(cppcoreguidelines-pro-type-member-init)
     internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
 
     internal.UpdatePartial(input, inclusive_output, exclusive_output, scan_op, valid_items);
@@ -1500,7 +1538,7 @@ public:
 
 #endif // _CCCL_DOXYGEN_INVOKED  // Do not document partial exclusive scans
 
-  //! @}  end member group
+  //! @}
   //! @name Combination (inclusive & exclusive) prefix scans
   //! @{
 
@@ -1508,6 +1546,9 @@ public:
   //! Computes both inclusive and exclusive prefix scans using the specified binary scan functor
   //! across the calling warp. Because no initial value is supplied, the ``exclusive_output``
   //! computed for *lane*\ :sub:`0` is undefined.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -1576,6 +1617,9 @@ public:
   //! @rst
   //! Computes both inclusive and exclusive prefix scans using the specified binary scan functor
   //! across the calling warp.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -1806,12 +1850,15 @@ public:
 
 #endif // _CCCL_DOXYGEN_INVOKED  // Do not document partial combined scans
 
-  //! @}  end member group
+  //! @}
   //! @name Data exchange
   //! @{
 
   //! @rst
   //! Broadcast the value ``input`` from *lane*\ :sub:`src_lane` to all lanes in the warp
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -1857,7 +1904,7 @@ public:
     return InternalWarpScan(temp_storage).Broadcast(input, src_lane);
   }
 
-  //@}  end member group
+  //@}
 };
 
 CUB_NAMESPACE_END

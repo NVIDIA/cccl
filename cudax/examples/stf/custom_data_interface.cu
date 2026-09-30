@@ -15,6 +15,8 @@
  *
  */
 
+#include <cuda/std/array>
+
 #include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
@@ -93,12 +95,12 @@ public:
     return m * n;
   }
 
-  using coords_t = ::std::tuple<size_t, size_t>;
+  using coords_t = ::cuda::std::array<size_t, 2>;
 
   // This transforms a tuple of (shape, 1D index) into a coordinate
   _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
   {
-    return coords_t(index % m, index / m);
+    return {index % m, index / m};
   }
 
   size_t m;
@@ -151,7 +153,7 @@ public:
     const matrix<T>& src_instance = this->instance(src_instance_id);
     const matrix<T>& dst_instance = this->instance(dst_instance_id);
 
-    size_t sz = src_instance.m * src_instance.n * sizeof(T);
+    const size_t sz = src_instance.m * src_instance.n * sizeof(T);
 
     cuda_safe_call(cudaMemcpyAsync((void*) dst_instance.base, (void*) src_instance.base, sz, kind, stream));
   }
@@ -169,7 +171,7 @@ public:
     cudaStream_t stream) override
   {
     matrix<T>& instance = this->instance(instance_id);
-    size_t sz           = instance.m * instance.n * sizeof(T);
+    const size_t sz     = instance.m * instance.n * sizeof(T);
 
     T* base_ptr;
 
@@ -185,7 +187,7 @@ public:
     }
 
     // By filling a positive number, we notify that the allocation was successful
-    s = sz;
+    s = static_cast<::std::ptrdiff_t>(sz);
 
     instance.base = base_ptr;
   }
@@ -198,7 +200,7 @@ public:
     void* /*unused*/,
     cudaStream_t stream) override
   {
-    matrix<T>& instance = this->instance(instance_id);
+    const matrix<T>& instance = this->instance(instance_id);
     if (memory_node.is_host())
     {
       // Fallback to a synchronous method as there is no asynchronous host deallocation API
@@ -219,7 +221,7 @@ public:
   /// registered memory too. Otherwise, copy methods need to be synchronous.
   bool pin_host_memory(instance_id_t instance_id) override
   {
-    matrix<T>& instance = this->instance(instance_id);
+    const matrix<T>& instance = this->instance(instance_id);
     if (!instance.base)
     {
       return false;
@@ -233,7 +235,7 @@ public:
   /// Unregister memory pinned by pin_host_memory
   void unpin_host_memory(instance_id_t instance_id) override
   {
-    matrix<T>& instance = this->instance(instance_id);
+    const matrix<T>& instance = this->instance(instance_id);
     unpin_memory(instance.base);
   }
 };
@@ -267,11 +269,11 @@ struct cuda::experimental::stf::hash<matrix<T>>
 template <typename T>
 __global__ void kernel(matrix<T> M)
 {
-  int tid_x      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads_x = gridDim.x * blockDim.x;
+  const int tid_x      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads_x = static_cast<int>(gridDim.x * blockDim.x);
 
-  int tid_y      = blockIdx.y * blockDim.y + threadIdx.y;
-  int nthreads_y = gridDim.y * blockDim.y;
+  const int tid_y      = static_cast<int>(blockIdx.y * blockDim.y + threadIdx.y);
+  const int nthreads_y = static_cast<int>(gridDim.y * blockDim.y);
 
   for (int x = tid_x; x < M.m; x += nthreads_x)
   {
@@ -297,7 +299,7 @@ int main()
   {
     for (size_t i = 0; i < m; i++)
     {
-      M(i, j) = 17 * i + 23 * j;
+      M(i, j) = static_cast<int>(17 * i + 23 * j);
     }
   }
 

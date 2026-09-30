@@ -27,6 +27,8 @@
 #define _CCCL_HAS_BACKEND_OMP()  0
 #define _CCCL_HAS_BACKEND_TBB()  0
 
+#define _CCCL_HAS_PSTL_BACKEND() (_CCCL_HAS_BACKEND_CUDA() || _CCCL_HAS_BACKEND_OMP() || _CCCL_HAS_BACKEND_TBB())
+
 #include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD___INTERNAL_PSTL_CONFIG_H

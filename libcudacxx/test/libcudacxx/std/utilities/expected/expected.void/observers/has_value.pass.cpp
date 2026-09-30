@@ -27,12 +27,12 @@ constexpr bool HasValueNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval
 
 struct Foo
 {};
-static_assert(!HasValueNoexcept<Foo>, "");
+static_assert(!HasValueNoexcept<Foo>);
 
-static_assert(HasValueNoexcept<cuda::std::expected<int, int>>, "");
-static_assert(HasValueNoexcept<const cuda::std::expected<int, int>>, "");
+static_assert(HasValueNoexcept<cuda::std::expected<int, int>>);
+static_assert(HasValueNoexcept<const cuda::std::expected<int, int>>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // has_value
   {
@@ -53,7 +53,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
   return 0;
 }

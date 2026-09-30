@@ -20,7 +20,13 @@ def is_even(x):
 
 
 # Execute select
-select(d_in, d_out, d_num_selected, is_even, len(d_in))
+select(
+    d_in=d_in,
+    d_out=d_out,
+    d_num_selected_out=d_num_selected,
+    cond=is_even,
+    num_items=len(d_in),
+)
 
 # Get results
 num_selected = int(d_num_selected[0])

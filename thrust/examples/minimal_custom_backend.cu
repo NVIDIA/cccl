@@ -30,7 +30,7 @@ template <typename Iterator, typename Function>
 Iterator for_each(my_system, Iterator first, Iterator last, Function f)
 {
   // output a message
-  std::cout << "Hello, world from for_each(my_system)!" << std::endl;
+  std::cout << "Hello, world from for_each(my_system)!" << '\n';
 
   // to call the normal device version of for_each, pass thrust::device as the first parameter.
   return thrust::for_each(thrust::device, first, last, f);
@@ -41,7 +41,7 @@ int main()
   thrust::device_vector<int> vec(1);
 
   // create an instance of our system
-  my_system sys;
+  my_system sys; // NOLINT(misc-const-correctness)
 
   // To invoke our version of for_each, pass sys as the first parameter
   thrust::for_each(sys, vec.begin(), vec.end(), cuda::std::negate{});

@@ -11,6 +11,13 @@
 
 #include <cub/config.cuh>
 
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/util_allocator.cuh> is not supported when compiling with NVRTC, which supports device code only. You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -22,11 +29,11 @@
 #include <cub/util_debug.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <map>
-#include <mutex>
-#include <set>
+#include <cuda/std/__host_stdlib/math.h>
+#include <cuda/std/__host_stdlib/mutex>
 
-#include <math.h>
+#include <map>
+#include <set>
 
 CUB_NAMESPACE_BEGIN
 
@@ -34,8 +41,11 @@ CUB_NAMESPACE_BEGIN
  * CachingDeviceAllocator (host use)
  ******************************************************************************/
 
+// TODO: remove in CCCL 4.0
 /**
  * @brief A simple caching allocator for device memory allocations.
+ *
+ * Deprecated [Since 3.6]
  *
  * @par Overview
  * The allocator is thread-safe and stream-safe and is capable of managing cached
@@ -73,7 +83,9 @@ CUB_NAMESPACE_BEGIN
  * and sets a maximum of 6,291,455 cached bytes per device
  *
  */
-struct CachingDeviceAllocator
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+struct CCCL_DEPRECATED_BECAUSE("cub::CachingDeviceAllocator is deprecated; use cuda::device_memory_pool or "
+                               "cuda::device_default_memory_pool instead.") CachingDeviceAllocator
 {
   //---------------------------------------------------------------------
   // Constants
@@ -124,8 +136,8 @@ struct CachingDeviceAllocator
         , bytes(0)
         , bin(INVALID_BIN)
         , device(device)
-        , associated_stream(0)
-        , ready_event(0)
+        , associated_stream(nullptr)
+        , ready_event(nullptr)
     {}
 
     // Constructor (suitable for searching maps for a range of suitable blocks, given a device)
@@ -134,8 +146,8 @@ struct CachingDeviceAllocator
         , bytes(0)
         , bin(INVALID_BIN)
         , device(device)
-        , associated_stream(0)
-        , ready_event(0)
+        , associated_stream(nullptr)
+        , ready_event(nullptr)
     {}
 
     // Comparison functor for comparing device pointers
@@ -298,9 +310,6 @@ struct CachingDeviceAllocator
    * @param skip_cleanup
    *   Whether or not to skip a call to @p FreeAllCached() when the destructor is called (default
    *   is to deallocate)
-   *
-   * @param debug
-   *   Whether or not to print (de)allocation events to stdout (default is no stderr output)
    */
   CachingDeviceAllocator(
     unsigned int bin_growth,
@@ -391,7 +400,7 @@ struct CachingDeviceAllocator
    * @param[in] active_stream
    *   The stream to be associated with this allocation
    */
-  cudaError_t DeviceAllocate(int device, void** d_ptr, size_t bytes, cudaStream_t active_stream = 0)
+  cudaError_t DeviceAllocate(int device, void** d_ptr, size_t bytes, cudaStream_t active_stream = nullptr)
   {
     *d_ptr                = nullptr;
     int entrypoint_device = INVALID_DEVICE_ORDINAL;
@@ -527,7 +536,7 @@ struct CachingDeviceAllocator
         mutex.lock();
 
         // Iterate the range of free blocks on the same device
-        BlockDescriptor free_key(device);
+        const BlockDescriptor free_key(device);
         CachedBlocks::iterator block_itr = cached_blocks.lower_bound(free_key);
 
         while ((block_itr != cached_blocks.end()) && (block_itr->device == device))
@@ -651,7 +660,7 @@ struct CachingDeviceAllocator
    * @param[in] active_stream
    *   The stream to be associated with this allocation
    */
-  cudaError_t DeviceAllocate(void** d_ptr, size_t bytes, cudaStream_t active_stream = 0)
+  cudaError_t DeviceAllocate(void** d_ptr, size_t bytes, cudaStream_t active_stream = nullptr)
   {
     return DeviceAllocate(INVALID_DEVICE_ORDINAL, d_ptr, bytes, active_stream);
   }
@@ -686,7 +695,7 @@ struct CachingDeviceAllocator
     // Find corresponding block descriptor
     bool recached = false;
     BlockDescriptor search_key(d_ptr, device);
-    BusyBlocks::iterator block_itr = live_blocks.find(search_key);
+    const BusyBlocks::iterator block_itr = live_blocks.find(search_key);
     if (block_itr != live_blocks.end())
     {
       // Remove from live blocks
@@ -814,7 +823,7 @@ struct CachingDeviceAllocator
     while (!cached_blocks.empty())
     {
       // Get first block
-      CachedBlocks::iterator begin = cached_blocks.begin();
+      const CachedBlocks::iterator begin = cached_blocks.begin();
 
       // Get entry-point device ordinal if necessary
       if (entrypoint_device == INVALID_DEVICE_ORDINAL)
@@ -893,5 +902,6 @@ struct CachingDeviceAllocator
     }
   }
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 CUB_NAMESPACE_END

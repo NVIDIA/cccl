@@ -1,19 +1,6 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *  Copyright 2013 Filipe RNC Maia
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation
+// SPDX-FileCopyrightText: Copyright (c) 2013, Filipe RNC Maia
+// SPDX-License-Identifier: Apache-2.0
 
 /*
  * ====================================================
@@ -59,7 +46,7 @@ _CCCL_HOST_DEVICE inline void get_float_word(int32_t& i, float d)
 {
   ieee_float_shape_type gf_u;
   gf_u.value = (d);
-  (i)        = gf_u.word;
+  (i)        = static_cast<int32_t>(gf_u.word);
 }
 
 _CCCL_HOST_DEVICE inline void set_float_word(float& d, uint32_t i)
@@ -122,8 +109,8 @@ _CCCL_HOST_DEVICE inline void extract_words(int32_t& ix0, int32_t& ix1, double d
 {
   ieee_double_shape_type ew_u;
   ew_u.value = (d);
-  (ix0)      = ew_u.parts.msw;
-  (ix1)      = ew_u.parts.lsw;
+  (ix0)      = static_cast<int32_t>(ew_u.parts.msw);
+  (ix1)      = static_cast<int32_t>(ew_u.parts.lsw);
 }
 } // namespace detail::complex
 

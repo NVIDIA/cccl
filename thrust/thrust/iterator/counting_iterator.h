@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/iterator/counting_iterator.h
  *  \brief An iterator which returns an increasing incrementable value
@@ -44,7 +31,6 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/iterator/strided_iterator.h>
 
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -54,6 +40,18 @@
 #include <cuda/std/cstddef>
 
 THRUST_NAMESPACE_BEGIN
+
+template <typename T>
+struct __runtime_value
+{
+  T value;
+};
+
+template <auto Value>
+struct __compile_time_value
+{
+  static constexpr decltype(Value) value = Value;
+};
 
 template <typename Incrementable, typename System, typename Traversal, typename Difference, typename StrideHolder>
 class counting_iterator;
@@ -89,7 +87,7 @@ struct make_counting_iterator_base
                      difference>;
 };
 
-using unit_stride = compile_time_value<1>;
+using unit_stride = __compile_time_value<1>;
 } // namespace detail
 
 //! \addtogroup iterators
@@ -162,6 +160,10 @@ using unit_stride = compile_time_value<1>;
 //! \endcode
 //!
 //! \see make_counting_iterator
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
+ */
 template <typename Incrementable,
           typename System       = use_default,
           typename Traversal    = use_default,
@@ -175,6 +177,8 @@ class _CCCL_DECLSPEC_EMPTY_BASES counting_iterator
   using super_t =
     typename detail::make_counting_iterator_base<Incrementable, System, Traversal, Difference, StrideHolder>::type;
   friend class iterator_core_access;
+  template <typename, typename, typename, typename, typename>
+  friend class counting_iterator;
 
 public:
   using reference       = typename super_t::reference;
@@ -197,6 +201,7 @@ public:
   _CCCL_HOST_DEVICE
   counting_iterator(counting_iterator<Incrementable, OtherSystem, Traversal, Difference, StrideHolder> const& rhs)
       : super_t(rhs.base())
+      , StrideHolder(static_cast<const StrideHolder&>(rhs))
   {}
 
   //! This \c explicit constructor copies the value of an \c Incrementable into a new \p counting_iterator's \c
@@ -316,7 +321,7 @@ inline _CCCL_HOST_DEVICE counting_iterator<Incrementable> make_counting_iterator
 template <typename Incrementable, typename Stride>
 _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x, Stride stride)
 {
-  return counting_iterator<Incrementable, use_default, random_access_traversal_tag, use_default, runtime_value<Stride>>(
+  return counting_iterator<Incrementable, use_default, random_access_traversal_tag, use_default, __runtime_value<Stride>>(
     x, {stride});
 }
 
@@ -328,7 +333,7 @@ _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x)
                            use_default,
                            random_access_traversal_tag,
                            use_default,
-                           compile_time_value<Stride>>(x, {});
+                           __compile_time_value<Stride>>(x, {});
 }
 #endif // _CCCL_DOXYGEN_INVOKED
 

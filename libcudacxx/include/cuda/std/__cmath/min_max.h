@@ -46,6 +46,18 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_floating_point_v<_Tp>)
 [[nodiscard]] _CCCL_API _Tp __with_builtin_fmax(_Tp __x, _Tp __y) noexcept
 {
+#  if _CCCL_COMPILER(CLANG) && _CCCL_HOST_ARCH(ARM64) && _CCCL_HOST_COMPILATION()
+  // Clang lowers fmax to AArch64 fmaxnm, which returns quite NaN for signaling NaNs,
+  // See https://github.com/llvm/llvm-project/issues/176624
+  if (::cuda::std::isnan(__x))
+  {
+    return __y;
+  }
+  if (::cuda::std::isnan(__y))
+  {
+    return __x;
+  }
+#  endif // _CCCL_COMPILER(CLANG) && _CCCL_HOST_ARCH(ARM64) && _CCCL_HOST_COMPILATION()
   if constexpr (is_same_v<_Tp, float>)
   {
     return __builtin_fmaxf(__x, __y);
@@ -72,6 +84,8 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr conditional_t<is_integral_v<_Tp>, double, _Tp> fmax(_Tp __x, _Tp __y) noexcept
 {
 #if _CCCL_HAS_NVFP16()
+  // The half and bfloat16 branches can become identical under some CUDA Toolkit versions.
+  // NOLINTBEGIN(bugprone-branch-clone)
   if constexpr (is_same_v<_Tp, ::__half>)
   {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
@@ -82,6 +96,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
                       (return ::__float2half(::cuda::std::fmax(::__half2float(__x), ::__half2float(__y)));))
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
   }
+  // NOLINTEND(bugprone-branch-clone)
   else
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
@@ -110,10 +125,9 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
         {
           NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fmax(__x, __y);))
         }
-        else
 #endif // _CCCL_HAS_FLOAT128()
 #if _CCCL_USE_BUILTIN_FMAX()
-          if constexpr (is_floating_point_v<_Tp>)
+        if constexpr (is_floating_point_v<_Tp>)
         {
 // GCC builtins do not treat NaN properly
 #  if _CCCL_COMPILER(GCC)
@@ -170,6 +184,18 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_floating_point_v<_Tp>)
 [[nodiscard]] _CCCL_API _Tp __with_builtin_fmin(_Tp __x, _Tp __y) noexcept
 {
+#  if _CCCL_COMPILER(CLANG) && _CCCL_HOST_ARCH(ARM64) && _CCCL_HOST_COMPILATION()
+  // Clang lowers fmin to AArch64 fminnm, which returns quite NaN for signaling NaNs,
+  // See https://github.com/llvm/llvm-project/issues/176624
+  if (::cuda::std::isnan(__x))
+  {
+    return __y;
+  }
+  if (::cuda::std::isnan(__y))
+  {
+    return __x;
+  }
+#  endif // _CCCL_COMPILER(CLANG) && _CCCL_HOST_ARCH(ARM64) && _CCCL_HOST_COMPILATION()
   if constexpr (is_same_v<_Tp, float>)
   {
     return __builtin_fminf(__x, __y);
@@ -196,6 +222,8 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr conditional_t<is_integral_v<_Tp>, double, _Tp> fmin(_Tp __x, _Tp __y) noexcept
 {
 #if _CCCL_HAS_NVFP16()
+  // The half and bfloat16 branches can become identical under some CUDA Toolkit versions.
+  // NOLINTBEGIN(bugprone-branch-clone)
   if constexpr (is_same_v<_Tp, ::__half>)
   {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
@@ -206,6 +234,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
                       (return ::__float2half(::cuda::std::fmin(::__half2float(__x), ::__half2float(__y)));))
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
   }
+  // NOLINTEND(bugprone-branch-clone)
   else
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()

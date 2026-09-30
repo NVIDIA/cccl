@@ -23,15 +23,15 @@ struct InputOrOutputArchetype
 
   int* ptr;
 
-  __host__ __device__ constexpr int operator*() const
+  TEST_FUNC constexpr int operator*() const
   {
     return *ptr;
   }
-  __host__ __device__ constexpr void operator++(int)
+  TEST_FUNC constexpr void operator++(int)
   {
     ++ptr;
   }
-  __host__ __device__ constexpr InputOrOutputArchetype& operator++()
+  TEST_FUNC constexpr InputOrOutputArchetype& operator++()
   {
     ++ptr;
     return *this;
@@ -44,15 +44,15 @@ struct NonConstDeref
 
   int* ptr;
 
-  __host__ __device__ constexpr int operator*()
+  TEST_FUNC constexpr int operator*()
   {
     return *ptr;
   }
-  __host__ __device__ constexpr void operator++(int)
+  TEST_FUNC constexpr void operator++(int)
   {
     ++ptr;
   }
-  __host__ __device__ constexpr NonConstDeref& operator++()
+  TEST_FUNC constexpr NonConstDeref& operator++()
   {
     ++ptr;
     return *this;
@@ -70,7 +70,7 @@ template <class Iter>
 inline constexpr bool IsDereferenceable<Iter, cuda::std::void_t<decltype(*cuda::std::declval<Iter&>())>> = true;
 #endif // TEST_STD_VER <= 2017
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 

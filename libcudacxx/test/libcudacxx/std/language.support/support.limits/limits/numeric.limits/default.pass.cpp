@@ -6,6 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
+
 // test numeric_limits
 
 // The default numeric_limits<T> template shall have all members, but with
@@ -16,15 +18,21 @@
 
 #include "test_macros.h"
 
+// numeric_limits::has_denorm and numeric_limits::has_denorm_loss have been deprecated since C++23
+#if _CCCL_STD_VER >= 2023
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+#endif // _CCCL_STD_VER >= 2023
+
 struct A
 {
-  __host__ __device__ A(int i = 0)
+  TEST_FUNC A(int i = 0)
       : data_(i)
   {}
   int data_;
 };
 
-__host__ __device__ bool operator==(const A& x, const A& y)
+TEST_FUNC bool operator==(const A& x, const A& y)
 {
   return x.data_ == y.data_;
 }

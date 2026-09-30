@@ -26,13 +26,13 @@
 template <class T>
 struct A
 {
-  typedef T value_type;
+  using value_type = T;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 A(int& called)
+  TEST_FUNC TEST_CONSTEXPR_CXX20 A(int& called)
       : called_(called)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 void deallocate(value_type* p, cuda::std::size_t n) noexcept
+  TEST_FUNC TEST_CONSTEXPR_CXX20 void deallocate(value_type* p, cuda::std::size_t n) noexcept
   {
     assert(p == &storage);
     assert(n == 10);
@@ -44,7 +44,7 @@ struct A
   value_type storage;
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     int called = 0;
@@ -53,8 +53,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     assert(called == 1);
   }
   {
-    int called = 0;
-    typedef A<IncompleteHolder*> Alloc;
+    int called  = 0;
+    using Alloc = A<IncompleteHolder*>;
     Alloc a(called);
     cuda::std::allocator_traits<Alloc>::deallocate(a, &a.storage, 10);
     assert(called == 1);

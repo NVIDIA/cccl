@@ -27,12 +27,16 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(is_fundamental)
+#  define _CCCL_BUILTIN_IS_FUNDAMENTAL(...) __is_fundamental(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_fundamental)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_FUNDAMENTAL) && !defined(_LIBCUDACXX_USE_IS_FUNDAMENTAL_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_FUNDAMENTAL)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental : public bool_constant<_CCCL_BUILTIN_IS_FUNDAMENTAL(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental : bool_constant<_CCCL_BUILTIN_IS_FUNDAMENTAL(_Tp)>
 {};
 
 template <class _Tp>
@@ -44,7 +48,7 @@ template <class _Tp>
 inline constexpr bool is_fundamental_v = is_void_v<_Tp> || is_null_pointer_v<_Tp> || is_arithmetic_v<_Tp>;
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental : public bool_constant<is_fundamental_v<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental : bool_constant<is_fundamental_v<_Tp>>
 {};
 
 #endif // !_CCCL_BUILTIN_IS_FUNDAMENTAL

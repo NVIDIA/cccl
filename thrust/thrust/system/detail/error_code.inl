@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -51,12 +38,11 @@ error_code ::error_code(ErrorCodeEnum e
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
                         ,
-                        ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value>*
+                        ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value, int>
 #endif // !_CCCL_COMPILER(MSVC)
-)
-{
-  *this = make_error_code(e);
-} // end error_code::error_code()
+                        )
+    : error_code(make_error_code(e))
+{} // end error_code::error_code()
 
 void error_code ::assign(int val, const error_category& cat)
 {
@@ -64,6 +50,8 @@ void error_code ::assign(int val, const error_category& cat)
   m_cat = &cat;
 } // end error_code::assign()
 
+// The enable_if_t below is error_code& after substitution, as the MSVC branch spells out.
+// NOLINTBEGIN(misc-unconventional-assign-operator)
 template <typename ErrorCodeEnum>
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
@@ -76,6 +64,7 @@ error_code ::operator=(ErrorCodeEnum e)
   *this = make_error_code(e);
   return *this;
 } // end error_code::operator=()
+// NOLINTEND(misc-unconventional-assign-operator)
 
 void error_code ::clear()
 {
@@ -121,8 +110,8 @@ bool operator<(const error_code& lhs, const error_code& rhs)
   return result;
 } // end operator==()
 
-template <typename charT, typename traits>
-std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& os, const error_code& ec)
+template <typename CharT, typename Traits>
+std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const error_code& ec)
 {
   return os << ec.category().name() << ':' << ec.value();
 } // end operator<<()

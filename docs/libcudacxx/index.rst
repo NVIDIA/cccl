@@ -1,7 +1,7 @@
 .. _libcudacxx-module:
 
 libcu++
-=======
+========
 
 .. toctree::
    :hidden:
@@ -9,11 +9,11 @@ libcu++
 
    Overview <self>
    setup
-   releases
    standard_api
    extended_api
    runtime
    ptx_api
+   tile
    API reference <api/index>
 
 ``libcu++`` (``libcudacxx``) provides fundamental, idiomatic C++ abstractions that aim to make the lives of CUDA C++
@@ -27,8 +27,8 @@ Specifically, ``libcu++`` provides:
 C++ Standard Library Features
 -----------------------------
 
-If you are a C++ developer, then you know the C++ Standard Library (`sometimes referred to as “The
-STL” <https://stackoverflow.com/questions/5205491/whats-the-difference-between-stl-and-c-standard-library>`_)
+If you are a C++ developer, then you know the C++ Standard Library (`sometimes referred to as "The
+STL" <https://stackoverflow.com/questions/5205491/whats-the-difference-between-stl-and-c-standard-library>`_)
 as what comes along with your compiler and provides things like ``std::string`` or ``std::vector`` or ``std::atomic``.
 It provides the fundamental abstractions that C++ developers need to build high quality applications and libraries.
 
@@ -67,7 +67,7 @@ learning curve of learning CUDA. However, there are many aspects of writing high
 be expressed through purely Standard conforming APIs. For these cases, libcu++ also provides *extensions* of Standard
 Library utilities.
 
-For example, libcu++ extends ``atomic<T>`` and other synchronization primitives with the notion of a “thread scope”
+For example, libcu++ extends ``atomic<T>`` and other synchronization primitives with the notion of a "thread scope"
 that controls the strength of the memory fence.
 
 To use utilities that are extensions to Standard Library features, drop the ``std``:
@@ -82,14 +82,15 @@ See the :ref:`Extended API <libcudacxx-extended-api>` section for more informati
 Fundamental CUDA-specific Abstractions
 --------------------------------------
 
-Some abstractions that libcu++ provide have no equivalent in the C++ Standard Library, but are otherwise abstractions
-fundamental to the CUDA C++ programming model.
+Some abstractions that libcu++ provides have no equivalent in the C++ Standard Library, but are fundamental to the CUDA
+C++ programming model. They include CUDA-specific vocabulary types, device-side APIs for certain hardware features, and
+abstractions for the CUDA Runtime APIs.
 
 For example, :ref:`cuda::memcpy_async <libcudacxx-extended-api-asynchronous-operations-memcpy-async>` is a vital abstraction
 for asynchronous data movement between global and shared memory. This abstracts hardware features such as ``LDGSTS`` on
 Ampere, and the Tensor Memory Accelerator (TMA) on Hopper.
 
-See the :ref:`Extended API <libcudacxx-extended-api>` section for more information.
+See the :ref:`Extended API <libcudacxx-extended-api>` and :ref:`Runtime API <libcudacxx-runtime-api>` sections for more information.
 
 Summary: ``std::``, ``cuda::`` and ``cuda::std::``
 --------------------------------------------------
@@ -134,16 +135,3 @@ Conformance
 
 libcu++ aims to be a conforming implementation of the C++ Standard, `ISO/IEC IS 14882 <https://eel.is/c++draft>`_,
 Clause 16 through 32.
-
-ABI Evolution
--------------
-
-libcu++ does not maintain long-term ABI stability. Promising long-term ABI stability would prevent us from fixing
-mistakes and providing best in class performance. So, we make no such promises.
-
-Every major CUDA Toolkit release, the ABI will be broken. The life cycle of an ABI version is approximately one year.
-Long-term support for an ABI version ends after approximately two years. Please see the
-:ref:`versioning section <libcudacxx-releases-versioning>` for more details.
-
-We recommend that you always recompile your code and dependencies with the latest NVIDIA SDKs and use the latest
-NVIDIA C++ Standard Library ABI. `Live at head <https://www.youtube.com/watch?v=tISy7EJQPzI&t=1032s>`_.

@@ -1,0 +1,34 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_FPMP
+#define _CUDA_FPMP
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+// Core multi-precision types and operations (constructors, conversions,
+// arithmetic and comparison operators, sqrt, rsqrt, fma).
+//
+// The large set of transcendental math functions (exp, log, trig, pow, ...)
+// lives in a separate umbrella header, <cuda/fpmp_math>, so translation units
+// that only need the core type do not pay its compile-time cost.
+#include <cuda/__fp/fpmp.h>
+// cuda::std::numeric_limits<> specialization for the fpmp2 types.
+#include <cuda/__fp/fpmp_limits.h>
+
+#endif // _CUDA_FPMP

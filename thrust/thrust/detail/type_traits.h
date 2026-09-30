@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2022 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2022, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file type_traits.h
  *  \brief Temporarily define some type traits
@@ -49,8 +36,8 @@ class device_reference;
 namespace detail
 {
 /// helper classes [4.3].
-template <typename T, T v>
-using integral_constant = ::cuda::std::integral_constant<T, v>;
+template <typename T, T V>
+using integral_constant = ::cuda::std::integral_constant<T, V>;
 using true_type         = ::cuda::std::true_type;
 using false_type        = ::cuda::std::false_type;
 
@@ -100,11 +87,11 @@ struct lazy_enable_if<true, T>
   using type = typename T::type;
 };
 
-template <bool condition, typename T = void>
-struct disable_if : ::cuda::std::enable_if<!condition, T>
+template <bool Condition, typename T = void>
+struct disable_if : ::cuda::std::enable_if<!Condition, T>
 {};
-template <bool condition, typename T>
-struct lazy_disable_if : lazy_enable_if<!condition, T>
+template <bool Condition, typename T>
+struct lazy_disable_if : lazy_enable_if<!Condition, T>
 {};
 
 template <typename T1, typename T2, typename T = void>
@@ -113,10 +100,6 @@ using enable_if_convertible_t = ::cuda::std::enable_if_t<::cuda::std::is_convert
 template <typename T1, typename T2, typename T = void>
 struct disable_if_convertible : disable_if<::cuda::std::is_convertible<T1, T2>::value, T>
 {};
-
-template <typename T>
-struct is_numeric : ::cuda::std::_And<::cuda::std::is_convertible<int, T>, ::cuda::std::is_convertible<T, int>>
-{}; // end is_numeric
 
 struct largest_available_float
 {

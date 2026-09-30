@@ -14,7 +14,9 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/type_traits>
 
-__host__ __device__ constexpr bool test()
+#include "test_macros.h"
+
+TEST_FUNC constexpr bool test()
 {
   // 1. Test signature.
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::__is_specific_arch(cuda::arch_id{}))>);
@@ -34,12 +36,14 @@ __host__ __device__ constexpr bool test()
   assert(!cuda::__is_specific_arch(cuda::arch_id::sm_90));
   assert(!cuda::__is_specific_arch(cuda::arch_id::sm_100));
   assert(!cuda::__is_specific_arch(cuda::arch_id::sm_103));
+  assert(!cuda::__is_specific_arch(cuda::arch_id::sm_107));
   assert(!cuda::__is_specific_arch(cuda::arch_id::sm_110));
   assert(!cuda::__is_specific_arch(cuda::arch_id::sm_120));
   assert(!cuda::__is_specific_arch(cuda::arch_id::sm_121));
   assert(cuda::__is_specific_arch(cuda::arch_id::sm_90a));
   assert(cuda::__is_specific_arch(cuda::arch_id::sm_100a));
   assert(cuda::__is_specific_arch(cuda::arch_id::sm_103a));
+  assert(cuda::__is_specific_arch(cuda::arch_id::sm_107a));
   assert(cuda::__is_specific_arch(cuda::arch_id::sm_110a));
   assert(cuda::__is_specific_arch(cuda::arch_id::sm_120a));
   assert(cuda::__is_specific_arch(cuda::arch_id::sm_121a));

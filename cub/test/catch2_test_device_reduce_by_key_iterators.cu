@@ -11,7 +11,7 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
@@ -22,7 +22,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
 using custom_t           = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
 using iterator_type_list = c2h::type_list<type_triple<custom_t>, type_triple<std::int64_t, std::int64_t, custom_t>>;
 
-C2H_TEST("Device reduce-by-key works with iterators", "[by_key][reduce][device]", iterator_type_list)
+CUB_TEST("Device reduce-by-key works with iterators", "[by_key][reduce][device]", CUB_SMALL, iterator_type_list)
 {
   using params   = params_t<TestType>;
   using value_t  = typename params::item_t;
@@ -48,7 +48,7 @@ C2H_TEST("Device reduce-by-key works with iterators", "[by_key][reduce][device]"
   INFO("Test seg_size_range: [" << std::get<0>(seg_size_range) << ", " << std::get<1>(seg_size_range) << "]");
 
   // Generate input segments
-  c2h::device_vector<offset_t> segment_offsets = c2h::gen_uniform_offsets<offset_t>(
+  const c2h::device_vector<offset_t> segment_offsets = c2h::gen_uniform_offsets<offset_t>(
     C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
 
   // Get array of keys from segment offsets
@@ -68,7 +68,7 @@ C2H_TEST("Device reduce-by-key works with iterators", "[by_key][reduce][device]"
   using accum_t = cuda::std::__accumulator_t<op_t, value_t, output_t>;
   c2h::host_vector<output_t> expected_result(num_segments);
   compute_segmented_problem_reference(value_it, segment_offsets, op_t{}, accum_t{}, expected_result.begin());
-  c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
+  const c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
 
   // Run test
   c2h::device_vector<offset_t> num_unique_keys(1);

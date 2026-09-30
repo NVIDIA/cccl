@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -30,21 +17,21 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random::detail
 {
-template <typename T, T a, T c, T m, bool = (m == 0)>
+template <typename T, T A, T C, T M, bool = (M == 0)>
 struct static_mod
 {
-  static const T q = m / a;
-  static const T r = m % a;
+  static const T q = M / A;
+  static const T r = M % A;
 
   _CCCL_HOST_DEVICE T operator()(T x) const
   {
-    if constexpr (a == 1)
+    if constexpr (A == 1)
     {
-      x %= m;
+      x %= M;
     }
     else
     {
-      T t1 = a * (x % q);
+      T t1 = A * (x % q);
       T t2 = r * (x / q);
       if (t1 >= t2)
       {
@@ -52,20 +39,20 @@ struct static_mod
       }
       else
       {
-        x = m - t2 + t1;
+        x = M - t2 + t1;
       }
     }
 
-    if constexpr (c != 0)
+    if constexpr (C != 0)
     {
-      const T d = m - x;
-      if (d > c)
+      const T d = M - x;
+      if (d > C)
       {
-        x += c;
+        x += C;
       }
       else
       {
-        x = c - d;
+        x = C - d;
       }
     }
 
@@ -74,19 +61,19 @@ struct static_mod
 }; // end static_mod
 
 // Rely on machine overflow handling
-template <typename T, T a, T c, T m>
-struct static_mod<T, a, c, m, true>
+template <typename T, T A, T C, T M>
+struct static_mod<T, A, C, M, true>
 {
   _CCCL_HOST_DEVICE T operator()(T x) const
   {
-    return a * x + c;
+    return A * x + C;
   }
 }; // end static_mod
 
-template <typename T, T a, T c, T m>
+template <typename T, T A, T C, T M>
 _CCCL_HOST_DEVICE T mod(T x)
 {
-  static_mod<T, a, c, m> f;
+  const static_mod<T, A, C, M> f;
   return f(x);
 } // end static_mod
 } // namespace random::detail

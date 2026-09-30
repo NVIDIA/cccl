@@ -15,17 +15,17 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_move_constructible()
+TEST_FUNC void test_is_move_constructible()
 {
-  static_assert(cuda::std::is_move_constructible<T>::value, "");
-  static_assert(cuda::std::is_move_constructible_v<T>, "");
+  static_assert(cuda::std::is_move_constructible<T>::value);
+  static_assert(cuda::std::is_move_constructible_v<T>);
 }
 
 template <class T>
-__host__ __device__ void test_is_not_move_constructible()
+TEST_FUNC void test_is_not_move_constructible()
 {
-  static_assert(!cuda::std::is_move_constructible<T>::value, "");
-  static_assert(!cuda::std::is_move_constructible_v<T>, "");
+  static_assert(!cuda::std::is_move_constructible<T>::value);
+  static_assert(!cuda::std::is_move_constructible_v<T>);
 }
 
 class Empty
@@ -34,7 +34,7 @@ class Empty
 class NotEmpty
 {
 public:
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -48,17 +48,17 @@ struct bit_zero
 class Abstract
 {
 public:
-  __host__ __device__ virtual ~Abstract() = 0;
+  TEST_FUNC virtual ~Abstract() = 0;
 };
 
 struct A
 {
-  __host__ __device__ A(const A&);
+  TEST_FUNC A(const A&);
 };
 
 struct B
 {
-  __host__ __device__ B(B&&);
+  TEST_FUNC B(B&&);
 };
 
 int main(int, char**)

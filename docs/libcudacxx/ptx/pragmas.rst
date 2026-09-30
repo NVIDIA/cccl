@@ -6,7 +6,7 @@ PTX Pragmas
 .. toctree::
    :maxdepth: 1
 
-   pragma/enable_smem_spilling
+   pragmas/enable_smem_spilling
 
 .. list-table:: `.pragma Strings <https://docs.nvidia.com/cuda/parallel-thread-execution/#descriptions-pragma-strings>`__
    :widths: 50 50

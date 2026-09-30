@@ -1,5 +1,4 @@
 #include <thrust/execution_policy.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/reduce.h>
 
 #include <cuda/stream>
@@ -41,7 +40,7 @@ struct stream_wrapper_ref
 };
 
 template <typename Wrapper, typename ExecutionPolicy>
-void TestOnStream(ExecutionPolicy policy)
+void test_on_stream(ExecutionPolicy policy)
 {
   using Vector = thrust::device_vector<int>;
 
@@ -57,31 +56,27 @@ void TestOnStream(ExecutionPolicy policy)
 
   auto streampolicy = policy.on(wrapper);
 
-  ASSERT_EQUAL(thrust::reduce(streampolicy, v.begin(), v.end()), 2);
+  REQUIRE(thrust::reduce(streampolicy, v.begin(), v.end()) == 2);
 
   cudaStreamDestroy(s);
 }
 
-void TestCudartStreamSync()
+TEST_CASE("TestCudartStreamSync", "[stream_wrapper]")
 {
-  TestOnStream<stream_wrapper>(thrust::cuda::par);
+  test_on_stream<stream_wrapper>(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestCudartStreamSync);
 
-void TestCudartStreamNoSync()
+TEST_CASE("TestCudartStreamNoSync", "[stream_wrapper]")
 {
-  TestOnStream<stream_wrapper>(thrust::cuda::par_nosync);
+  test_on_stream<stream_wrapper>(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestCudartStreamNoSync);
 
-void TestCudaStreamRefSync()
+TEST_CASE("TestCudaStreamRefSync", "[stream_wrapper]")
 {
-  TestOnStream<stream_wrapper_ref>(thrust::cuda::par);
+  test_on_stream<stream_wrapper_ref>(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestCudaStreamRefSync);
 
-void TestCudaStreamRefNoSync()
+TEST_CASE("TestCudaStreamRefNoSync", "[stream_wrapper]")
 {
-  TestOnStream<stream_wrapper_ref>(thrust::cuda::par_nosync);
+  test_on_stream<stream_wrapper_ref>(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestCudaStreamRefNoSync);

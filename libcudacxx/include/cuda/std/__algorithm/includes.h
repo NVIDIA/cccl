@@ -57,8 +57,7 @@ template <class _InputIterator1, class _InputIterator2, class _Compare>
 [[nodiscard]] _CCCL_API constexpr bool includes(
   _InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2, _Compare __comp)
 {
-  static_assert(__is_callable<_Compare, decltype(*__first1), decltype(*__first2)>::value,
-                "Comparator has to be callable");
+  static_assert(__is_callable_v<_Compare, decltype(*__first1), decltype(*__first2)>, "Comparator has to be callable");
 
   return ::cuda::std::__includes(
     ::cuda::std::move(__first1),

@@ -18,78 +18,80 @@
 TEST_DIAG_SUPPRESS_CLANG("-Wdelete-non-virtual-dtor")
 
 template <class T>
-__host__ __device__ void test_is_nothrow_destructible()
+TEST_FUNC void test_is_nothrow_destructible()
 {
-  static_assert(cuda::std::is_nothrow_destructible<T>::value, "");
-  static_assert(cuda::std::is_nothrow_destructible<const T>::value, "");
-  static_assert(cuda::std::is_nothrow_destructible<volatile T>::value, "");
-  static_assert(cuda::std::is_nothrow_destructible<const volatile T>::value, "");
-  static_assert(cuda::std::is_nothrow_destructible_v<T>, "");
-  static_assert(cuda::std::is_nothrow_destructible_v<const T>, "");
-  static_assert(cuda::std::is_nothrow_destructible_v<volatile T>, "");
-  static_assert(cuda::std::is_nothrow_destructible_v<const volatile T>, "");
+  static_assert(cuda::std::is_nothrow_destructible<T>::value);
+  static_assert(cuda::std::is_nothrow_destructible<const T>::value);
+  static_assert(cuda::std::is_nothrow_destructible<volatile T>::value);
+  static_assert(cuda::std::is_nothrow_destructible<const volatile T>::value);
+  static_assert(cuda::std::is_nothrow_destructible_v<T>);
+  static_assert(cuda::std::is_nothrow_destructible_v<const T>);
+  static_assert(cuda::std::is_nothrow_destructible_v<volatile T>);
+  static_assert(cuda::std::is_nothrow_destructible_v<const volatile T>);
 }
 
 template <class T>
-__host__ __device__ void test_is_not_nothrow_destructible()
+TEST_FUNC void test_is_not_nothrow_destructible()
 {
-  static_assert(!cuda::std::is_nothrow_destructible<T>::value, "");
-  static_assert(!cuda::std::is_nothrow_destructible<const T>::value, "");
-  static_assert(!cuda::std::is_nothrow_destructible<volatile T>::value, "");
-  static_assert(!cuda::std::is_nothrow_destructible<const volatile T>::value, "");
-  static_assert(!cuda::std::is_nothrow_destructible_v<T>, "");
-  static_assert(!cuda::std::is_nothrow_destructible_v<const T>, "");
-  static_assert(!cuda::std::is_nothrow_destructible_v<volatile T>, "");
-  static_assert(!cuda::std::is_nothrow_destructible_v<const volatile T>, "");
+  static_assert(!cuda::std::is_nothrow_destructible<T>::value);
+  static_assert(!cuda::std::is_nothrow_destructible<const T>::value);
+  static_assert(!cuda::std::is_nothrow_destructible<volatile T>::value);
+  static_assert(!cuda::std::is_nothrow_destructible<const volatile T>::value);
+  static_assert(!cuda::std::is_nothrow_destructible_v<T>);
+  static_assert(!cuda::std::is_nothrow_destructible_v<const T>);
+  static_assert(!cuda::std::is_nothrow_destructible_v<volatile T>);
+  static_assert(!cuda::std::is_nothrow_destructible_v<const volatile T>);
 }
 
 struct PublicDestructor
 {
 public:
-  __host__ __device__ ~PublicDestructor() {}
+  TEST_FUNC ~PublicDestructor() {}
 };
 struct ProtectedDestructor
 {
 protected:
-  __host__ __device__ ~ProtectedDestructor() {}
+  TEST_FUNC ~ProtectedDestructor() {}
 };
 struct PrivateDestructor
 {
 private:
-  __host__ __device__ ~PrivateDestructor() {}
+  TEST_FUNC ~PrivateDestructor() {}
 };
 
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
 struct VirtualPublicDestructor
 {
 public:
-  __host__ __device__ virtual ~VirtualPublicDestructor() {}
+  TEST_FUNC virtual ~VirtualPublicDestructor() {}
 };
 struct VirtualProtectedDestructor
 {
 protected:
-  __host__ __device__ virtual ~VirtualProtectedDestructor() {}
+  TEST_FUNC virtual ~VirtualProtectedDestructor() {}
 };
 struct VirtualPrivateDestructor
 {
 private:
-  __host__ __device__ virtual ~VirtualPrivateDestructor() {}
+  TEST_FUNC virtual ~VirtualPrivateDestructor() {}
 };
 
 struct PurePublicDestructor
 {
 public:
-  __host__ __device__ virtual ~PurePublicDestructor() = 0;
+  TEST_FUNC virtual ~PurePublicDestructor() = 0;
 };
 struct PureProtectedDestructor
 {
 protected:
-  __host__ __device__ virtual ~PureProtectedDestructor() = 0;
+  TEST_FUNC virtual ~PureProtectedDestructor() = 0;
 };
 struct PurePrivateDestructor
 {
 private:
-  __host__ __device__ virtual ~PurePrivateDestructor() = 0;
+  TEST_FUNC virtual ~PurePrivateDestructor() = 0;
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 class Empty
 {};
@@ -102,10 +104,12 @@ struct bit_zero
   int : 0;
 };
 
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
 class Abstract
 {
-  __host__ __device__ virtual void foo() = 0;
+  TEST_FUNC virtual void foo() = 0;
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 int main(int, char**)
 {
@@ -122,20 +126,24 @@ int main(int, char**)
 
   // requires noexcept. These are all destructible.
   test_is_nothrow_destructible<PublicDestructor>();
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
   test_is_nothrow_destructible<VirtualPublicDestructor>();
   test_is_nothrow_destructible<PurePublicDestructor>();
-  test_is_nothrow_destructible<bit_zero>();
   test_is_nothrow_destructible<Abstract>();
+#endif // !_CCCL_TILE_COMPILATION()
+  test_is_nothrow_destructible<bit_zero>();
   test_is_nothrow_destructible<Empty>();
   test_is_nothrow_destructible<Union>();
 
   // requires access control
   test_is_not_nothrow_destructible<ProtectedDestructor>();
   test_is_not_nothrow_destructible<PrivateDestructor>();
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
   test_is_not_nothrow_destructible<VirtualProtectedDestructor>();
   test_is_not_nothrow_destructible<VirtualPrivateDestructor>();
   test_is_not_nothrow_destructible<PureProtectedDestructor>();
   test_is_not_nothrow_destructible<PurePrivateDestructor>();
+#endif // !_CCCL_TILE_COMPILATION()
 
   return 0;
 }

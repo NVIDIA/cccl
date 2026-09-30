@@ -20,20 +20,20 @@
 TEST_NV_DIAG_SUPPRESS(23) // integer constant is too large
 
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ void test_fp_zero(cuda::std::__fp_storage_t<Fmt> expected)
+TEST_FUNC void test_fp_zero(cuda::std::__fp_storage_t<Fmt> expected)
 {
   assert(cuda::std::__fp_zero<Fmt>() == expected);
   static_assert(((void) cuda::std::__fp_zero<Fmt>(), true));
 }
 
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ void test_fp_zero()
+TEST_FUNC void test_fp_zero()
 {}
 
 template <class T,
           auto fmt                                                                  = cuda::std::__fp_format_of_v<T>,
           cuda::std::enable_if_t<fmt != cuda::std::__fp_format::__fp8_nv_e8m0, int> = 0>
-__host__ __device__ void test_fp_zero()
+TEST_FUNC void test_fp_zero()
 {
   assert(cuda::std::__fp_get_storage(cuda::std::__fp_zero<T>()) == cuda::std::__fp_zero<fmt>());
   static_assert(((void) cuda::std::__fp_zero<T>(), true));
@@ -42,10 +42,10 @@ __host__ __device__ void test_fp_zero()
 template <class T,
           auto fmt                                                                  = cuda::std::__fp_format_of_v<T>,
           cuda::std::enable_if_t<fmt == cuda::std::__fp_format::__fp8_nv_e8m0, int> = 0>
-__host__ __device__ void test_fp_zero()
+TEST_FUNC void test_fp_zero()
 {}
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   using namespace test_integer_literals;
 

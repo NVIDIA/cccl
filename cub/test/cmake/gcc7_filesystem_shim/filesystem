@@ -1,0 +1,54 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
+
+// Minimal std::filesystem stand-in for GCC 7, which does not ship
+// <filesystem> (it arrived in GCC 8). This header shadows the standard
+// header for the rapids-cmake resource-spec detector only, providing
+// exactly what that tool uses: std::filesystem::current_path().string().
+// Linux-only by design. Remove when GCC 7 support is dropped.
+
+#pragma once
+
+#include <cstdlib>
+#include <string>
+#include <utility>
+
+#include <unistd.h>
+
+namespace std
+{
+namespace filesystem
+{
+
+class path
+{
+public:
+  explicit path(std::string value)
+      : value_(std::move(value))
+  {}
+
+  const std::string& string() const
+  {
+    return value_;
+  }
+
+private:
+  std::string value_;
+};
+
+inline path current_path()
+{
+  // Linux getcwd() allocates a buffer as big as necessary when given a null
+  // pointer and a size of zero. The caller frees the returned buffer.
+  char* cwd = ::getcwd(nullptr, 0);
+  if (cwd == nullptr)
+  {
+    return path(std::string());
+  }
+  std::string result(cwd);
+  std::free(cwd);
+  return path(std::move(result));
+}
+
+} // namespace filesystem
+} // namespace std

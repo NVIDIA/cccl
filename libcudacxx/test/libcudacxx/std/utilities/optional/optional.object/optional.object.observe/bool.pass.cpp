@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   {
     using O = cuda::std::optional<T>;
@@ -31,16 +31,14 @@ __host__ __device__ constexpr void test()
     assert(opt);
 
     static_assert(noexcept(bool(opt)));
-    static_assert(!cuda::std::is_convertible<O, bool>::value, "");
+    static_assert(!cuda::std::is_convertible<O, bool>::value);
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   test<int&>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   return true;
 }
@@ -48,7 +46,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

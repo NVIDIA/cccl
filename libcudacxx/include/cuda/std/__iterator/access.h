@@ -32,19 +32,22 @@ namespace __begin
 struct __fn
 {
   template <class _Tp, size_t _Np>
-  _CCCL_API constexpr _Tp* operator()(_Tp (&__array)[_Np]) const noexcept
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp (&__array)[_Np]) noexcept -> _Tp*
   {
     return __array;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(_Cp& __c) const noexcept(noexcept(__c.begin())) -> decltype(__c.begin())
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Cp& __c) noexcept(noexcept(__c.begin())) -> decltype(__c.begin())
   {
     return __c.begin();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(__c.begin())) -> decltype(__c.begin())
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Cp& __c) noexcept(noexcept(__c.begin()))
+    -> decltype(__c.begin())
   {
     return __c.begin();
   }
@@ -61,19 +64,22 @@ namespace __end
 struct __fn
 {
   template <class _Tp, size_t _Np>
-  _CCCL_API constexpr _Tp* operator()(_Tp (&__array)[_Np]) const noexcept
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp (&__array)[_Np]) noexcept -> _Tp*
   {
     return __array + _Np;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(_Cp& __c) const noexcept(noexcept(__c.end())) -> decltype(__c.end())
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Cp& __c) noexcept(noexcept(__c.end())) -> decltype(__c.end())
   {
     return __c.end();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(__c.end())) -> decltype(__c.end())
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Cp& __c) noexcept(noexcept(__c.end()))
+    -> decltype(__c.end())
   {
     return __c.end();
   }
@@ -90,7 +96,7 @@ namespace __cbegin
 struct __fn
 {
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::begin(__c)))
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Cp& __c) noexcept(noexcept(::cuda::std::begin(__c)))
     -> decltype(::cuda::std::begin(__c))
   {
     return ::cuda::std::begin(__c);
@@ -108,7 +114,7 @@ namespace __cend
 struct __fn
 {
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::end(__c)))
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Cp& __c) noexcept(noexcept(::cuda::std::end(__c)))
     -> decltype(::cuda::std::end(__c))
   {
     return ::cuda::std::end(__c);

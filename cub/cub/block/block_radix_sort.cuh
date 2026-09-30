@@ -125,51 +125,27 @@ CUB_NAMESPACE_BEGIN
 //! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
 //! where each thread owns 4 consecutive items.
 //!
-//! .. tab-set-code::
+//! .. code-block:: c++
 //!
-//!    .. code-block:: c++
+//!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
 //!
-//!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+//!    __global__ void kernel(...)
+//!    {
+//!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer items each
+//!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
 //!
-//!        __global__ void kernel(...)
-//!        {
-//!            // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer items each
-//!            using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
+//!        // Allocate shared memory for BlockRadixSort
+//!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
 //!
-//!            // Allocate shared memory for BlockRadixSort
-//!            __shared__ typename BlockRadixSort::TempStorage temp_storage;
+//!        // Obtain a segment of consecutive items that are blocked across threads
+//!        int thread_keys[4];
+//!        ...
 //!
-//!            // Obtain a segment of consecutive items that are blocked across threads
-//!            int thread_keys[4];
-//!            ...
+//!        // Collectively sort the keys
+//!        BlockRadixSort(temp_storage).Sort(thread_keys);
 //!
-//!            // Collectively sort the keys
-//!            BlockRadixSort(temp_storage).Sort(thread_keys);
-//!
-//!            ...
-//!
-//!    .. code-block:: python
-//!
-//!        from cuda import coop
-//!        from pynvjitlink import patch
-//!        patch.patch_numba_linker(lto=True)
-//!
-//!        # Specialize radix sort for a 1D block of 128 threads owning 4 integer items each
-//!        block_radix_sort = coop.block.radix_sort_keys(numba.int32, 128, 4)
-//!        temp_storage_bytes = block_radix_sort.temp_storage_bytes
-//!
-//!        @cuda.jit(link=block_radix_sort.files)
-//!        def kernel():
-//!            Allocate shared memory for radix sort
-//!            temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype='uint8')
-//!
-//!            # Obtain a segment of consecutive items that are blocked across threads
-//!            thread_keys = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
-//!            # ...
-//!
-//!            // Collectively sort the keys
-//!            block_radix_sort(temp_storage, thread_keys)
-//!            # ...
+//!        ...
+//!    }
 //!
 //! Suppose the set of input ``thread_keys`` across the block of threads is
 //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
@@ -344,12 +320,12 @@ private:
   }
 
   /// ExchangeValues (specialized for keys-only sort)
-  template <bool IS_BLOCKED>
+  template <bool IsBlocked>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExchangeValues(
     ValueT (& /*values*/)[ItemsPerThread],
     int (& /*ranks*/)[ItemsPerThread],
     ::cuda::std::true_type /*is_keys_only*/,
-    ::cuda::std::bool_constant<IS_BLOCKED> /*is_blocked*/)
+    ::cuda::std::bool_constant<IsBlocked> /*is_blocked*/)
   {}
 
   /**
@@ -372,15 +348,19 @@ private:
    *
    * @param is_keys_only
    *   Tag whether is keys-only sort
+   *
+   * @param decomposer
+   *   Callable object responsible for decomposing a key into a tuple of references to its
+   *   constituent arithmetic types
    */
-  template <bool DESCENDING, bool KEYS_ONLY, class DecomposerT = detail::identity_decomposer_t>
+  template <bool DESCENDING, bool KeysOnly, class DecomposerT = detail::identity_decomposer_t>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SortBlocked(
     KeyT (&keys)[ItemsPerThread],
     ValueT (&values)[ItemsPerThread],
     int begin_bit,
     int end_bit,
     ::cuda::std::bool_constant<DESCENDING> is_descending,
-    ::cuda::std::bool_constant<KEYS_ONLY> is_keys_only,
+    ::cuda::std::bool_constant<KeysOnly> is_keys_only,
     DecomposerT decomposer = {})
   {
     bit_ordered_type(&unsigned_keys)[ItemsPerThread] = reinterpret_cast<bit_ordered_type(&)[ItemsPerThread]>(keys);
@@ -394,7 +374,7 @@ private:
     // Radix sorting passes
     while (true)
     {
-      int pass_bits = ::cuda::std::min(RadixBits, end_bit - begin_bit);
+      const int pass_bits = ::cuda::std::min(RadixBits, end_bit - begin_bit);
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(begin_bit, pass_bits, decomposer);
 
@@ -452,14 +432,14 @@ public:
    * @param is_keys_only
    *   Tag whether is keys-only sort
    */
-  template <bool DESCENDING, bool KEYS_ONLY, class DecomposerT = detail::identity_decomposer_t>
+  template <bool DESCENDING, bool KeysOnly, class DecomposerT = detail::identity_decomposer_t>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SortBlockedToStriped(
     KeyT (&keys)[ItemsPerThread],
     ValueT (&values)[ItemsPerThread],
     int begin_bit,
     int end_bit,
     ::cuda::std::bool_constant<DESCENDING> is_descending,
-    ::cuda::std::bool_constant<KEYS_ONLY> is_keys_only,
+    ::cuda::std::bool_constant<KeysOnly> is_keys_only,
     DecomposerT decomposer = {})
   {
     bit_ordered_type(&unsigned_keys)[ItemsPerThread] = reinterpret_cast<bit_ordered_type(&)[ItemsPerThread]>(keys);
@@ -473,7 +453,7 @@ public:
     // Radix sorting passes
     while (true)
     {
-      int pass_bits = ::cuda::std::min(RadixBits, end_bit - begin_bit);
+      const int pass_bits = ::cuda::std::min(RadixBits, end_bit - begin_bit);
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(begin_bit, pass_bits, decomposer);
 
@@ -517,13 +497,17 @@ public:
 #endif // _CCCL_DOXYGEN_INVOKED
 
   /// @smemstorage{BlockRadixSort}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
 
   //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixSort()
       : temp_storage(PrivateStorage())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
@@ -531,6 +515,11 @@ public:
 
   /**
    * @brief Collective constructor using the specified memory allocation as temporary storage.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
@@ -540,13 +529,16 @@ public:
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @} end member group
+  //! @}
   //! @name Sorting (blocked arrangements)
   //! @{
 
   //! @rst
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @granularity
   //! - @smemreuse
@@ -603,6 +595,9 @@ public:
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @granularity
   //! * @smemreuse
   //!
@@ -635,7 +630,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -671,6 +666,9 @@ public:
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @granularity
   //! * @smemreuse
   //!
@@ -703,7 +701,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -718,8 +716,7 @@ public:
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
-    !::cuda::std::is_convertible_v<DecomposerT, int>>
-  Sort(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer)
+    !::cuda::std::is_convertible_v<DecomposerT, int>> Sort(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer)
   {
     Sort(keys, decomposer, 0, detail::radix::traits_t<KeyT>::default_end_bit(decomposer));
   }
@@ -727,6 +724,9 @@ public:
   //! @rst
   //! Performs an ascending block-wide radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>`
   //! of keys and values.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
@@ -793,6 +793,9 @@ public:
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
   //!   with a temporary value array that enumerates the key indices. The reordered indices
@@ -830,7 +833,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -867,6 +870,9 @@ public:
   //! @rst
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
@@ -905,7 +911,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -932,6 +938,9 @@ public:
   //! @rst
   //! Performs a descending block-wide radix sort over a :ref:`blocked arrangement <flexible-data-arrangement>`
   //! of keys.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @granularity
   //! - @smemreuse
@@ -989,6 +998,9 @@ public:
   //! Performs a descending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @granularity
   //! * @smemreuse
   //!
@@ -1021,7 +1033,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -1057,6 +1069,9 @@ public:
   //! Performs a descending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @granularity
   //! * @smemreuse
   //!
@@ -1089,7 +1104,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -1122,6 +1137,9 @@ public:
   //! @rst
   //! Performs a descending block-wide radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>`
   //! of keys and values.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
@@ -1186,6 +1204,9 @@ public:
   //! Performs a descending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
   //!   with a temporary value array that enumerates the key indices. The reordered indices
@@ -1223,7 +1244,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -1260,6 +1281,9 @@ public:
   //! @rst
   //! Performs a descending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
@@ -1298,7 +1322,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -1329,13 +1353,16 @@ public:
       decomposer);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Sorting (blocked arrangement -> striped arrangement)
   //! @{
 
   //! @rst
   //! Performs an ascending radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>` of keys,
   //! leaving them in a :ref:`striped arrangement <flexible-data-arrangement>`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @granularity
   //! - @smemreuse
@@ -1395,6 +1422,9 @@ public:
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @granularity
   //! * @smemreuse
   //!
@@ -1427,7 +1457,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -1464,6 +1494,9 @@ public:
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @granularity
   //! * @smemreuse
   //!
@@ -1496,7 +1529,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -1529,6 +1562,9 @@ public:
   //! @rst
   //! Performs an ascending radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>` of keys and
   //! values, leaving them in a :ref:`striped arrangement <flexible-data-arrangement>`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
@@ -1595,6 +1631,9 @@ public:
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @granularity
   //! * @smemreuse
   //!
@@ -1627,7 +1666,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -1666,6 +1705,9 @@ public:
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @granularity
   //! * @smemreuse
   //!
@@ -1698,7 +1740,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -1732,6 +1774,9 @@ public:
   //! @rst
   //! Performs a descending radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>`
   //! of keys, leaving them in a :ref:`striped arrangement <flexible-data-arrangement>`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @granularity
   //! - @smemreuse
@@ -1790,6 +1835,9 @@ public:
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @granularity
   //! * @smemreuse
   //!
@@ -1822,7 +1870,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -1859,6 +1907,9 @@ public:
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @granularity
   //! * @smemreuse
   //!
@@ -1891,7 +1942,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -1924,6 +1975,9 @@ public:
   //! @rst
   //! Performs a descending radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>`
   //! of keys and values, leaving them in a :ref:`striped arrangement <flexible-data-arrangement>`
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
@@ -1989,6 +2043,9 @@ public:
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @granularity
   //! * @smemreuse
   //!
@@ -2021,7 +2078,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -2060,6 +2117,9 @@ public:
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @granularity
   //! * @smemreuse
   //!
@@ -2092,7 +2152,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -2123,7 +2183,7 @@ public:
       decomposer);
   }
 
-  //@}  end member group
+  //@}
 };
 
 CUB_NAMESPACE_END

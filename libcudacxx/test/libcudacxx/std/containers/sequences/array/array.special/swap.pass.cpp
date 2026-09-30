@@ -19,30 +19,30 @@
 
 struct NonSwappable
 {
-  __host__ __device__ constexpr NonSwappable() {}
+  TEST_FUNC constexpr NonSwappable() {}
 
 private:
-  __host__ __device__ NonSwappable(NonSwappable const&);
-  __host__ __device__ NonSwappable& operator=(NonSwappable const&);
+  TEST_FUNC NonSwappable(NonSwappable const&);
+  TEST_FUNC NonSwappable& operator=(NonSwappable const&);
 };
 
 template <class Tp>
-decltype(swap(cuda::std::declval<Tp>(), cuda::std::declval<Tp>())) __host__ __device__ can_swap_imp(int);
+decltype(swap(cuda::std::declval<Tp>(), cuda::std::declval<Tp>())) TEST_FUNC can_swap_imp(int);
 
 template <class Tp>
-cuda::std::false_type __host__ __device__ can_swap_imp(...);
+cuda::std::false_type TEST_FUNC can_swap_imp(...);
 
 template <class Tp>
 struct can_swap : cuda::std::is_same<decltype(can_swap_imp<Tp>(0)), void>
 {};
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   {
-    typedef double T;
-    typedef cuda::std::array<T, 3> C;
-    C c1 = {1, 2, 3.5};
-    C c2 = {4, 5, 6.5};
+    using T = double;
+    using C = cuda::std::array<T, 3>;
+    C c1    = {1, 2, 3.5};
+    C c2    = {4, 5, 6.5};
     swap(c1, c2);
     assert(c1.size() == 3);
     assert(c1[0] == 4);
@@ -54,29 +54,29 @@ __host__ __device__ constexpr bool tests()
     assert(c2[2] == 3.5);
   }
   {
-    typedef double T;
-    typedef cuda::std::array<T, 0> C;
-    C c1 = {};
-    C c2 = {};
+    using T = double;
+    using C = cuda::std::array<T, 0>;
+    C c1    = {};
+    C c2    = {};
     swap(c1, c2);
     assert(c1.size() == 0);
     assert(c2.size() == 0);
   }
   {
-    typedef NonSwappable T;
-    typedef cuda::std::array<T, 0> C0;
-    static_assert(can_swap<C0&>::value, "");
+    using T  = NonSwappable;
+    using C0 = cuda::std::array<T, 0>;
+    static_assert(can_swap<C0&>::value);
     C0 l = {};
     C0 r = {};
     swap(l, r);
-    static_assert(noexcept(swap(l, r)), "");
+    static_assert(noexcept(swap(l, r)));
   }
   {
     // NonSwappable is still considered swappable in C++03 because there
     // is no access control SFINAE.
-    typedef NonSwappable T;
-    typedef cuda::std::array<T, 42> C1;
-    static_assert(!can_swap<C1&>::value, "");
+    using T  = NonSwappable;
+    using C1 = cuda::std::array<T, 42>;
+    static_assert(!can_swap<C1&>::value);
   }
 
   return true;
@@ -85,6 +85,6 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
   return 0;
 }

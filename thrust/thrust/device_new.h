@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file device_new.h
  *  \brief Constructs new elements in device memory
@@ -56,6 +43,10 @@ THRUST_NAMESPACE_BEGIN
  *  \return p, casted to <tt>T</tt>'s type.
  *
  *  \see device_ptr
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 device_ptr<T> device_new(device_ptr<void> p, const size_t n = 1)
@@ -81,6 +72,10 @@ device_ptr<T> device_new(device_ptr<void> p, const size_t n = 1)
  *
  *  \see device_ptr
  *  \see fill
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 device_ptr<T> device_new(device_ptr<void> p, const T& exemplar, const size_t n = 1)
@@ -98,6 +93,10 @@ device_ptr<T> device_new(device_ptr<void> p, const T& exemplar, const size_t n =
  *
  *  \param n The number of objects to allocate. Defaults to \c 1.
  *  \return A \p device_ptr to the newly allocated region of device memory.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 device_ptr<T> device_new(const size_t n = 1)

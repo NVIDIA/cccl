@@ -14,7 +14,7 @@
 
 int main(int, char**)
 {
-  typedef cuda::std::enable_if_t<false> A;
+  using A = cuda::std::enable_if_t<false>;
 
   return 0;
 }

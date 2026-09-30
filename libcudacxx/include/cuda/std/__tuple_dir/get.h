@@ -57,8 +57,8 @@ template <size_t _Ip, class... _Tp>
 
 namespace __find_detail
 {
-static constexpr size_t __not_found = ~size_t(0);
-static constexpr size_t __ambiguous = __not_found - 1;
+inline constexpr size_t __not_found = ~size_t(0);
+inline constexpr size_t __ambiguous = __not_found - 1;
 
 [[nodiscard]] _CCCL_API constexpr size_t __find_idx_return(size_t __curr_i, size_t __res, bool __matches) noexcept
 {

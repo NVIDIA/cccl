@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -56,6 +43,8 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, std::si
 
   // XXX should use a hypothetical thrust::static_pointer_cast here
   void* raw_ptr = static_cast<void*>(
+    // Allocation dispatch transfers ownership to the caller.
+    // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
     thrust::raw_pointer_cast(malloc(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), n)));
 
   return pointer<void, DerivedPolicy>(raw_ptr);
@@ -80,6 +69,8 @@ _CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedP
 {
   using thrust::system::detail::generic::free;
 
+  // Release caller-owned storage through the selected backend.
+  // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
   free(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), ptr);
 }
 

@@ -34,7 +34,7 @@ public:
       : first(first)
       , last(last)
   {}
-  __host__ __device__ ~range_view() {}
+  ~range_view() = default;
 
   __host__ __device__ difference_type size() const
   {
@@ -176,14 +176,13 @@ struct f1
 int main()
 {
   using std::cout;
-  using std::endl;
 
   // initialize host arrays
   float x[4] = {1.0, 1.0, 1.0, 1.0};
   float y[4] = {1.0, 2.0, 3.0, 4.0};
   float z[4] = {0.0};
 
-  thrust::device_vector<float> X(x, x + 4);
+  const thrust::device_vector<float> X(x, x + 4);
   thrust::device_vector<float> Y(y, y + 4);
   thrust::device_vector<float> Z(z, z + 4);
 
@@ -203,7 +202,7 @@ int main()
   // to ensure that range view was mapped to this vector
   for (std::size_t i = 0, n = Z.size(); i < n; ++i)
   {
-    cout << "z[" << i << "]= " << Z[i] << endl;
+    cout << "z[" << i << "]= " << Z[i] << '\n';
   }
 
   return 0;

@@ -26,9 +26,9 @@
 #  include <cuda/std/__chrono/duration.h>
 #  include <cuda/std/__chrono/time_point.h>
 
-#  if !_CCCL_COMPILER(NVRTC)
+#  if _CCCL_HOSTED()
 #    include <chrono>
-#  endif // !_CCCL_COMPILER(NVRTC)
+#  endif // _CCCL_HOSTED()
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -45,7 +45,7 @@ public:
   using time_point                = ::cuda::std::chrono::time_point<steady_clock, duration>;
   static constexpr bool is_steady = true;
 
-  [[nodiscard]] _CCCL_API static time_point now() noexcept;
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static time_point now() noexcept;
 };
 } // namespace chrono
 

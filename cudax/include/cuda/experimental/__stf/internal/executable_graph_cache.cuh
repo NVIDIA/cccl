@@ -42,25 +42,36 @@ namespace reserved
 inline bool try_updating_executable_graph(cudaGraphExec_t exec_graph, cudaGraph_t graph)
 {
   cudaGraphExecUpdateResultInfo resultInfo;
-  cudaGraphExecUpdate(exec_graph, graph, &resultInfo);
-
-  // Be sure to "erase" the last error
-  cudaError_t res = cudaGetLastError();
-
-  return (res == cudaSuccess);
+  const cudaError_t res = cudaGraphExecUpdate(exec_graph, graph, &resultInfo);
+  if (res != cudaSuccess)
+  {
+    // A failed update is expected (the caller falls back to instantiation):
+    // consume the sticky error state so it is not misattributed to a later,
+    // unrelated call. Reading cudaGetLastError() INSTEAD of the return value
+    // would have the converse bug: an earlier unrelated failure would make a
+    // successful update look failed.
+    cudaGetLastError();
+  }
+  return res == cudaSuccess;
 }
 
 // Instantiate a CUDA graph
 inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
 {
-  // Custom deleter specifically for cudaGraphExec_t
-  auto cudaGraphExecDeleter = [](cudaGraphExec_t* pGraphExec) {
-    cudaGraphExecDestroy(*pGraphExec);
-  };
+  // The handle stays null if instantiation throws below: the deleter must
+  // not destroy it in that case, or the abort would mask the real error.
+  ::std::shared_ptr<cudaGraphExec_t> res{new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
+                                           if (*p)
+                                           {
+                                             cuda_safe_call(cudaGraphExecDestroy(*p));
+                                           }
+                                           delete p;
+                                         }};
 
-  ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t, cudaGraphExecDeleter);
-
-  cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, 0));
+  // Automatically free graph-owned async allocations between launches. This
+  // lets graphs containing cudaMallocAsync / cudaMemAllocNode allocations be
+  // relaunched even when the corresponding free is outside the captured graph.
+  *res = cuda_try<cudaGraphInstantiateWithFlags>(g, cudaGraphInstantiateFlagAutoFreeOnLaunch);
 
   return res;
 }
@@ -100,8 +111,7 @@ public:
       cache_size_limit = atol(str) * 1024 * 1024;
     }
 
-    int ndevices;
-    cuda_safe_call(cudaGetDeviceCount(&ndevices));
+    const int ndevices = cuda_try<cudaGetDeviceCount>();
 
     // One individual cache per device (TODO per execution place at some point
     // if we consider green contexts or multi-gpu graphs ?)
@@ -150,8 +160,8 @@ public:
 
   // Check if there is a matching entry (and update it if necessary)
   // the returned bool indicate is this is a cache hit (true = cache hit, false = cache miss)
-  ::cuda::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool>
-  query(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraph_t> g)
+  // The graph g is only used during this call (for update or instantiate); it is never stored.
+  ::cuda::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool> query(size_t nnodes, size_t nedges, cudaGraph_t g)
   {
     int dev_id = cuda_try<cudaGetDevice>();
     _CCCL_ASSERT(dev_id < int(cached_graphs.size()), "invalid device id value");
@@ -160,7 +170,7 @@ public:
     for (auto it = range.first; it != range.second; ++it)
     {
       auto& e = it->second;
-      if (reserved::try_updating_executable_graph(*e.exec_g, *g))
+      if (reserved::try_updating_executable_graph(*e.exec_g, g))
       {
         // update the last use index for the LRU algorithm
         e.lru_refresh();
@@ -181,7 +191,7 @@ public:
       reclaim(dev_id, total_cache_footprint[dev_id] + footprint - cache_size_limit);
     }
 
-    auto exec_g = reserved::graph_instantiate(*g);
+    auto exec_g = reserved::graph_instantiate(g);
 
     // If we maintain a cache, store the executable graph
     if (cache_size_limit != 0)

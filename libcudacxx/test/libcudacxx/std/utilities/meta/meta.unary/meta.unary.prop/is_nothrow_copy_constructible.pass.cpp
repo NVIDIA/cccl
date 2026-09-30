@@ -15,25 +15,25 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_nothrow_copy_constructible()
+TEST_FUNC void test_is_nothrow_copy_constructible()
 {
-  static_assert(cuda::std::is_nothrow_copy_constructible<T>::value, "");
-  static_assert(cuda::std::is_nothrow_copy_constructible<const T>::value, "");
-  static_assert(cuda::std::is_nothrow_copy_constructible_v<T>, "");
-  static_assert(cuda::std::is_nothrow_copy_constructible_v<const T>, "");
+  static_assert(cuda::std::is_nothrow_copy_constructible<T>::value);
+  static_assert(cuda::std::is_nothrow_copy_constructible<const T>::value);
+  static_assert(cuda::std::is_nothrow_copy_constructible_v<T>);
+  static_assert(cuda::std::is_nothrow_copy_constructible_v<const T>);
 }
 
 template <class T>
-__host__ __device__ void test_has_not_nothrow_copy_constructor()
+TEST_FUNC void test_has_not_nothrow_copy_constructor()
 {
-  static_assert(!cuda::std::is_nothrow_copy_constructible<T>::value, "");
-  static_assert(!cuda::std::is_nothrow_copy_constructible<const T>::value, "");
-  static_assert(!cuda::std::is_nothrow_copy_constructible<volatile T>::value, "");
-  static_assert(!cuda::std::is_nothrow_copy_constructible<const volatile T>::value, "");
-  static_assert(!cuda::std::is_nothrow_copy_constructible_v<T>, "");
-  static_assert(!cuda::std::is_nothrow_copy_constructible_v<const T>, "");
-  static_assert(!cuda::std::is_nothrow_copy_constructible_v<volatile T>, "");
-  static_assert(!cuda::std::is_nothrow_copy_constructible_v<const volatile T>, "");
+  static_assert(!cuda::std::is_nothrow_copy_constructible<T>::value);
+  static_assert(!cuda::std::is_nothrow_copy_constructible<const T>::value);
+  static_assert(!cuda::std::is_nothrow_copy_constructible<volatile T>::value);
+  static_assert(!cuda::std::is_nothrow_copy_constructible<const volatile T>::value);
+  static_assert(!cuda::std::is_nothrow_copy_constructible_v<T>);
+  static_assert(!cuda::std::is_nothrow_copy_constructible_v<const T>);
+  static_assert(!cuda::std::is_nothrow_copy_constructible_v<volatile T>);
+  static_assert(!cuda::std::is_nothrow_copy_constructible_v<const volatile T>);
 }
 
 class Empty
@@ -49,7 +49,7 @@ struct bit_zero
 
 struct A
 {
-  __host__ __device__ A(const A&);
+  TEST_FUNC A(const A&);
 };
 
 int main(int, char**)

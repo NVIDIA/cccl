@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <cuda::std::size_t N>
-__host__ __device__ constexpr void test_any()
+TEST_FUNC constexpr void test_any()
 {
   cuda::std::bitset<N> v;
   v.reset();
@@ -32,7 +32,7 @@ __host__ __device__ constexpr void test_any()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_any<0>();
   test_any<1>();
@@ -50,7 +50,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

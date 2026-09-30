@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/random.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/integral.h>
@@ -37,17 +38,21 @@ class __feistel_bijection
 private:
   static constexpr uint32_t __num_rounds = 24;
 
-  uint64_t __right_side_bits{};
-  uint64_t __left_side_bits{};
-  uint64_t __right_side_mask{};
-  uint64_t __left_side_mask{};
-  uint32_t __keys[__num_rounds] = {};
+  uint64_t __R_bits_{};
+  uint64_t __L_bits_{};
+  uint64_t __R_mask_{};
+  uint64_t __L_mask_{};
+  uint32_t __keys_[__num_rounds] = {};
 
-  struct __decomposed
-  {
-    uint32_t __low;
-    uint32_t __high;
-  };
+  struct __from_total_bits_tag
+  {};
+
+  _CCCL_HOST_DEVICE_API constexpr __feistel_bijection(uint64_t __total_bits, __from_total_bits_tag) noexcept
+      : __R_bits_{(__total_bits + 1) / 2}
+      , __L_bits_{__total_bits / 2}
+      , __R_mask_{(uint64_t{1} << __R_bits_) - 1}
+      , __L_mask_{(uint64_t{1} << __L_bits_) - 1}
+  {}
 
 public:
   using index_type = uint64_t;
@@ -55,46 +60,45 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr __feistel_bijection() noexcept = default;
 
   template <class _RNG>
-  _CCCL_API __feistel_bijection(uint64_t __num_elements, _RNG&& __gen)
+  _CCCL_HOST_DEVICE_API __feistel_bijection(uint64_t __num_elements, _RNG&& __gen)
+      : __feistel_bijection(
+          static_cast<uint64_t>(::cuda::std::max(
+            8, ::cuda::std::bit_width(::cuda::std::max(static_cast<uint64_t>(1), __num_elements) - 1))),
+          __from_total_bits_tag{})
   {
-    const uint64_t __total_bits = (::cuda::std::max) (uint64_t{4}, ::cuda::std::bit_ceil(__num_elements));
-
-    // Half bits rounded down
-    __left_side_bits = __total_bits / 2;
-    __left_side_mask = (1ull << __left_side_bits) - 1;
-    // Half the bits rounded up
-    __right_side_bits = __total_bits - __left_side_bits;
-    __right_side_mask = (1ull << __right_side_bits) - 1;
-
-    ::cuda::std::uniform_int_distribution<uint32_t> dist{};
+    ::cuda::std::uniform_int_distribution<uint32_t> __dist{}; // NOLINT(misc-const-correctness)
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (uint32_t i = 0; i < __num_rounds; i++)
+    for (auto& __key : __keys_)
     {
-      __keys[i] = dist(__gen);
+      __key = __dist(__gen);
     }
   }
 
-  [[nodiscard]] _CCCL_API constexpr uint64_t size() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr uint64_t size() const noexcept
   {
-    return 1ull << (__left_side_bits + __right_side_bits);
+    return 1ull << (__L_bits_ + __R_bits_);
   }
 
-  [[nodiscard]] _CCCL_API constexpr uint64_t operator()(const uint64_t __val) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr uint64_t operator()(const uint64_t __val) const noexcept
   {
-    __decomposed __state = {static_cast<uint32_t>(__val >> __right_side_bits),
-                            static_cast<uint32_t>(__val & __right_side_mask)};
-    for (uint32_t i = 0; i < __num_rounds; i++)
+    // Mitchell, Rory, et al. "Bandwidth-optimal random shuffling for GPUs." ACM Transactions on Parallel Computing 9.1
+    // (2022): 1-20.
+    uint32_t __L = static_cast<uint32_t>(__val >> __R_bits_);
+    uint32_t __R = static_cast<uint32_t>(__val & __R_mask_);
+    for (const auto __key : __keys_)
     {
       constexpr uint64_t __m0  = 0xD2B74407B1CE6E93;
-      const uint64_t __product = __m0 * __state.__high;
-      const uint32_t __high    = static_cast<uint32_t>(__product >> 32);
-      uint32_t __low           = static_cast<uint32_t>(__product);
-      __low                    = (__low << (__right_side_bits - __left_side_bits)) | __state.__low >> __left_side_bits;
-      __state.__high           = ((__high ^ __keys[i]) ^ __state.__low) & __left_side_mask;
-      __state.__low            = __low & __right_side_mask;
+      const uint64_t __product = __m0 * __L;
+      const uint32_t __F_k     = (__product >> 32) ^ __key;
+      const uint32_t __B_k     = static_cast<uint32_t>(__product);
+      const uint32_t __L_prime = __F_k ^ __R;
+
+      const uint32_t __R_prime = (__B_k << (__R_bits_ - __L_bits_)) | __R >> __L_bits_;
+      __L                      = __L_prime & __L_mask_;
+      __R                      = __R_prime & __R_mask_;
     }
     // Combine the left and right sides together to get result
-    return (static_cast<uint64_t>(__state.__high) << __right_side_bits) | static_cast<uint64_t>(__state.__low);
+    return (static_cast<uint64_t>(__L) << __R_bits_) | static_cast<uint64_t>(__R);
   }
 };
 

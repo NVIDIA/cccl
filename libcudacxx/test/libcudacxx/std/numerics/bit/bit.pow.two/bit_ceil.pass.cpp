@@ -34,7 +34,7 @@ enum class E2 : unsigned char
 };
 
 template <typename T>
-__host__ __device__ constexpr bool constexpr_test()
+TEST_FUNC constexpr bool constexpr_test()
 {
   return cuda::std::bit_ceil(T(0)) == T(1) && cuda::std::bit_ceil(T(1)) == T(1) && cuda::std::bit_ceil(T(2)) == T(2)
       && cuda::std::bit_ceil(T(3)) == T(4) && cuda::std::bit_ceil(T(4)) == T(4) && cuda::std::bit_ceil(T(5)) == T(8)
@@ -43,7 +43,7 @@ __host__ __device__ constexpr bool constexpr_test()
 }
 
 template <typename T>
-__host__ __device__ void runtime_test()
+TEST_FUNC void runtime_test()
 {
   static_assert(cuda::std::is_same_v<T, decltype(cuda::std::bit_ceil(T(0)))>);
   static_assert(noexcept(cuda::std::bit_ceil(T(0))));
@@ -62,22 +62,22 @@ __host__ __device__ void runtime_test()
 
 int main(int, char**)
 {
-  static_assert(constexpr_test<unsigned char>(), "");
-  static_assert(constexpr_test<unsigned short>(), "");
-  static_assert(constexpr_test<unsigned>(), "");
-  static_assert(constexpr_test<unsigned long>(), "");
-  static_assert(constexpr_test<unsigned long long>(), "");
+  static_assert(constexpr_test<unsigned char>());
+  static_assert(constexpr_test<unsigned short>());
+  static_assert(constexpr_test<unsigned>());
+  static_assert(constexpr_test<unsigned long>());
+  static_assert(constexpr_test<unsigned long long>());
 
-  static_assert(constexpr_test<uint8_t>(), "");
-  static_assert(constexpr_test<uint16_t>(), "");
-  static_assert(constexpr_test<uint32_t>(), "");
-  static_assert(constexpr_test<uint64_t>(), "");
-  static_assert(constexpr_test<size_t>(), "");
-  static_assert(constexpr_test<uintmax_t>(), "");
-  static_assert(constexpr_test<uintptr_t>(), "");
+  static_assert(constexpr_test<uint8_t>());
+  static_assert(constexpr_test<uint16_t>());
+  static_assert(constexpr_test<uint32_t>());
+  static_assert(constexpr_test<uint64_t>());
+  static_assert(constexpr_test<size_t>());
+  static_assert(constexpr_test<uintmax_t>());
+  static_assert(constexpr_test<uintptr_t>());
 
 #if _CCCL_HAS_INT128()
-  static_assert(constexpr_test<__uint128_t>(), "");
+  static_assert(constexpr_test<__uint128_t>());
 #endif // _CCCL_HAS_INT128()
 
   runtime_test<unsigned char>();

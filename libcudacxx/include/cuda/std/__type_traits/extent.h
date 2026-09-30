@@ -26,12 +26,16 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(array_extent)
+#  define _CCCL_BUILTIN_ARRAY_EXTENT(...) __array_extent(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(array_extent)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_ARRAY_EXTENT) && !defined(_LIBCUDACXX_USE_ARRAY_EXTENT_FALLBACK)
+#if defined(_CCCL_BUILTIN_ARRAY_EXTENT)
 
-template <class _Tp, size_t _Dim = 0>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT extent : integral_constant<size_t, _CCCL_BUILTIN_ARRAY_EXTENT(_Tp, _Dim)>
+template <class _Tp, size_t _Ip = 0>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT extent : integral_constant<size_t, _CCCL_BUILTIN_ARRAY_EXTENT(_Tp, _Ip)>
 {};
 
 template <class _Tp, unsigned _Ip = 0>
@@ -40,24 +44,19 @@ inline constexpr size_t extent_v = _CCCL_BUILTIN_ARRAY_EXTENT(_Tp, _Ip);
 #else // ^^^ _CCCL_BUILTIN_ARRAY_EXTENT ^^^ / vvv !_CCCL_BUILTIN_ARRAY_EXTENT vvv
 
 template <class _Tp, unsigned _Ip = 0>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT extent : public integral_constant<size_t, 0>
-{};
+inline constexpr size_t extent_v = 0;
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT extent<_Tp[], 0> : public integral_constant<size_t, 0>
-{};
+inline constexpr size_t extent_v<_Tp[], 0> = 0;
 template <class _Tp, unsigned _Ip>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT extent<_Tp[], _Ip> : public integral_constant<size_t, extent<_Tp, _Ip - 1>::value>
-{};
+inline constexpr size_t extent_v<_Tp[], _Ip> = extent_v<_Tp, _Ip - 1>;
 template <class _Tp, size_t _Np>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT extent<_Tp[_Np], 0> : public integral_constant<size_t, _Np>
-{};
+inline constexpr size_t extent_v<_Tp[_Np], 0> = _Np;
 template <class _Tp, size_t _Np, unsigned _Ip>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-extent<_Tp[_Np], _Ip> : public integral_constant<size_t, extent<_Tp, _Ip - 1>::value>
-{};
+inline constexpr size_t extent_v<_Tp[_Np], _Ip> = extent_v<_Tp, _Ip - 1>;
 
 template <class _Tp, unsigned _Ip = 0>
-inline constexpr size_t extent_v = extent<_Tp, _Ip>::value;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT extent : integral_constant<size_t, extent_v<_Tp, _Ip>>
+{};
 
 #endif // !_CCCL_BUILTIN_ARRAY_EXTENT
 

@@ -60,6 +60,12 @@ C2H_TEST("Call each driver api", "[utility]")
   CCCLRT_REQUIRE(driver::__primaryCtxReleaseNoThrow(0) == cudaSuccess);
   CCCLRT_REQUIRE(driver::__primaryCtxReleaseNoThrow(0) == cudaSuccess);
 
+  // Try a third release in case curand retained the primary ctx as well
+  if (driver::__isPrimaryCtxActive(0))
+  {
+    CCCLRT_REQUIRE(driver::__primaryCtxReleaseNoThrow(0) == cudaSuccess);
+  }
+
   CCCLRT_REQUIRE(!driver::__isPrimaryCtxActive(0));
 
   // Confirm cudart can recover

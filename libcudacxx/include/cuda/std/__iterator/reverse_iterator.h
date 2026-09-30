@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/unwrap_iter.h>
+#include <cuda/std/__fwd/iterator.h>
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/compare_three_way_result.h>
 #  include <cuda/std/__compare/three_way_comparable.h>
@@ -70,9 +71,19 @@ inline constexpr bool __noexcept_rev_iter_iter_swap<_Iter, _Iter2, enable_if_t<i
   is_nothrow_copy_constructible_v<_Iter> && is_nothrow_copy_constructible_v<_Iter2>
   && noexcept(::cuda::std::ranges::iter_swap(--declval<_Iter&>(), --declval<_Iter2&>()));
 
+// MSVC has issues with `is_nothrow_convertible_v` sometimes, so do the noexcept expression
+template <class _Iter, class _Iter2, class = void>
+inline constexpr bool __noexcept_rev_iter_convertible = false;
+
+template <class _Iter, class _Iter2>
+inline constexpr bool
+  __noexcept_rev_iter_convertible<_Iter, _Iter2, enable_if_t<is_convertible_v<_Iter const&, _Iter2>>> =
+    noexcept(_Iter2(::cuda::std::declval<const _Iter&>()));
+
 _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 template <class _Iter>
 class _CCCL_TYPE_VISIBILITY_DEFAULT reverse_iterator
 {
@@ -83,15 +94,14 @@ private:
 #endif // _CCCL_STD_VER > 2017
 
 protected:
-  _Iter current;
+  // The standard requires protected access.
+  _Iter current; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
 public:
   using iterator_type = _Iter;
 
   using iterator_category =
-    _If<__has_random_access_traversal<_Iter>,
-        random_access_iterator_tag,
-        typename iterator_traits<_Iter>::iterator_category>;
+    _If<__has_random_access_traversal<_Iter>, random_access_iterator_tag, __iterator_traits_category_or_concept_t<_Iter>>;
   using pointer          = typename iterator_traits<_Iter>::pointer;
   using iterator_concept = _If<random_access_iterator<_Iter>, random_access_iterator_tag, bidirectional_iterator_tag>;
   using value_type       = iter_value_t<_Iter>;
@@ -114,7 +124,7 @@ public:
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES((!is_same_v<_Up, _Iter>) _CCCL_AND is_convertible_v<_Up const&, _Iter>)
   _CCCL_API constexpr reverse_iterator(const reverse_iterator<_Up>& __u) noexcept(
-    is_nothrow_convertible_v<_Up const&, _Iter>)
+    __noexcept_rev_iter_convertible<_Up, _Iter>)
       : current(__u.base())
   {}
 
@@ -138,8 +148,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr reference operator*() const
   {
-    _Iter __tmp = current;
-    return *--__tmp;
+    return *::cuda::std::prev(current);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -354,8 +363,8 @@ struct __unwrap_reverse_iter_impl
   }
 };
 
-template <class _Iter, bool __b>
-struct __unwrap_iter_impl<reverse_iterator<reverse_iterator<_Iter>>, __b>
+template <class _Iter, bool _Bp>
+struct __unwrap_iter_impl<reverse_iterator<reverse_iterator<_Iter>>, _Bp>
     : __unwrap_reverse_iter_impl<reverse_iterator, reverse_iterator, _Iter>
 {};
 

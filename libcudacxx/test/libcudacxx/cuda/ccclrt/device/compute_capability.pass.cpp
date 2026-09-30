@@ -8,11 +8,18 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
+
 #include <cuda/devices>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
-__device__ void test_current()
+#include "test_macros.h"
+
+TEST_DEVICE_FUNC void test_current()
 {
   // 1. Test cuda::device::current_compute_capability() signature.
   static_assert(cuda::std::is_same_v<cuda::compute_capability, decltype(cuda::device::current_compute_capability())>);
@@ -58,6 +65,8 @@ __device__ void test_current()
     (assert(cc == cuda::compute_capability{100}); return;),
     NV_IS_EXACTLY_SM_103,
     (assert(cc == cuda::compute_capability{103}); return;),
+    NV_IS_EXACTLY_SM_107,
+    (assert(cc == cuda::compute_capability{107}); return;),
     NV_IS_EXACTLY_SM_110,
     (assert(cc == cuda::compute_capability{110}); return;),
     NV_IS_EXACTLY_SM_120,
@@ -69,7 +78,7 @@ __device__ void test_current()
   )
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // 1. Test default constructor.
   {
@@ -138,22 +147,34 @@ __host__ __device__ constexpr bool test()
     assert(cc.get() == 100);
   }
 
-  // 8. Test major().
+  // 8. Test major_cap().
   {
+    static_assert(cuda::std::is_same_v<int, decltype(cuda::compute_capability{}.major_cap())>);
+    static_assert(noexcept(cuda::compute_capability{}.major_cap()));
+
+    const cuda::compute_capability cc{cuda::arch_id::sm_100};
+    assert(cc.major_cap() == 10);
+
+    // Test deprecated major().
     static_assert(cuda::std::is_same_v<int, decltype(cuda::compute_capability{}.major())>);
     static_assert(noexcept(cuda::compute_capability{}.major()));
 
-    const cuda::compute_capability cc{cuda::arch_id::sm_100};
-    assert(cc.major() == 10);
+    assert(cc.major() == cc.major_cap());
   }
 
-  // 9. Test minor().
+  // 9. Test minor_cap().
   {
+    static_assert(cuda::std::is_same_v<int, decltype(cuda::compute_capability{}.minor_cap())>);
+    static_assert(noexcept(cuda::compute_capability{}.minor_cap()));
+
+    const cuda::compute_capability cc{cuda::arch_id::sm_89};
+    assert(cc.minor_cap() == 9);
+
+    // Test deprecated minor().
     static_assert(cuda::std::is_same_v<int, decltype(cuda::compute_capability{}.minor())>);
     static_assert(noexcept(cuda::compute_capability{}.minor()));
 
-    const cuda::compute_capability cc{cuda::arch_id::sm_89};
-    assert(cc.minor() == 9);
+    assert(cc.minor() == cc.minor_cap());
   }
 
   // 10. operator int()
@@ -216,6 +237,14 @@ __host__ __device__ constexpr bool test()
     assert(cc2 >= cc2);
     assert(!(cc2 > cc1));
   }
+
+  // 12. Test that cuda::compute_capability is a structural type.
+#if _CCCL_STD_VER >= 2020
+  {
+    [[maybe_unused]] constexpr auto val =
+      cuda::std::integral_constant<cuda::compute_capability, cuda::compute_capability{100}>{};
+  }
+#endif // _CCCL_STD_VER >= 2020
 
   return true;
 }

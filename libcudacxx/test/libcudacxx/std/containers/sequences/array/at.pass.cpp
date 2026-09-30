@@ -20,11 +20,11 @@
 #  include <stdexcept>
 #endif // TEST_HAS_EXCEPTIONS()
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   {
-    typedef double T;
-    typedef cuda::std::array<T, 3> C;
+    using T                  = double;
+    using C                  = cuda::std::array<T, 3>;
     C c                      = {1, 2, 3.5};
     typename C::reference r1 = c.at(0);
     assert(r1 == 1);
@@ -103,6 +103,7 @@ void test_exceptions()
     }
   }
 
+#  if !_CCCL_TILE_COMPILATION() // error: Internal Compiler Error: "call to unknown tile builtin function!"
   {
     cuda::std::array<int, 0> array = {};
 
@@ -120,6 +121,7 @@ void test_exceptions()
       assert(false);
     }
   }
+#  endif // !_CCCL_TILE_COMPILATION()
 }
 #endif // TEST_HAS_EXCEPTIONS()
 
@@ -130,6 +132,6 @@ int main(int, char**)
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // TEST_HAS_EXCEPTIONS()
 
-  static_assert(tests(), "");
+  static_assert(tests());
   return 0;
 }

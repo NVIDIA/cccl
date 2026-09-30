@@ -16,6 +16,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/limits>
+#include <cuda/std/optional>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -73,10 +75,9 @@ public:
     {
       const int dev = device_ordinal(this->place);
       assert(dev >= 0);
-      cudaDeviceProp prop;
-      cuda_safe_call(cudaGetDeviceProperties(&prop, dev));
+      const cudaDeviceProp prop = cuda_try<cudaGetDeviceProperties>(dev);
 
-      size_t max_mem = prop.totalGlobalMem;
+      const size_t max_mem = prop.totalGlobalMem;
 
       // We cap the memory at a certain fraction of total memory
       if (getenv("USER_ALLOC_POOLS_MEM_CAP"))
@@ -96,7 +97,7 @@ public:
     }
 
     ::std::ptrdiff_t sz = nentries * block_size;
-    base                = root_allocator.allocate(ctx, place, sz, prereqs);
+    base                = root_allocator.allocate(ctx, this->place, sz, prereqs);
     assert(sz > 0);
     assert(base);
 
@@ -234,18 +235,20 @@ private:
 struct pooled_allocator_config
 {
   // Maximum number of allocations per data place
-  ::std::optional<size_t> max_entries_per_place;
+  ::cuda::std::optional<size_t> max_entries_per_place;
 
   // Maximum amount of memory allocated per data place (as a ratio with the
   // total amount of memory)
-  ::std::optional<double> max_ratio;
+  ::cuda::std::optional<double> max_ratio;
 
   // Maximum number of bytes allocated per data place
-  ::std::optional<size_t> max_footprint_per_place;
+  ::cuda::std::optional<size_t> max_footprint_per_place;
 
   size_t get_max_entries_per_place() const
   {
-    return max_entries_per_place.has_value() ? max_entries_per_place.value() : ::std::numeric_limits<size_t>::max();
+    return max_entries_per_place.has_value()
+           ? max_entries_per_place.value()
+           : ::cuda::std::numeric_limits<size_t>::max();
   }
 
   double get_max_ratio() const
@@ -405,7 +408,7 @@ private:
 
 private:
   pooled_allocator_config config = {
-    .max_entries_per_place = 1024, .max_ratio = 0.2, .max_footprint_per_place = ::std::nullopt};
+    .max_entries_per_place = 1024, .max_ratio = 0.2, .max_footprint_per_place = ::cuda::std::nullopt};
 };
 } // end namespace reserved
 
@@ -447,8 +450,9 @@ public:
   }
 
   void deallocate(
-    backend_ctx_untyped&, const data_place& memory_node, event_list& prereqs, void* ptr, size_t block_size) override
+    backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t block_size) override
   {
+    (void) ctx;
     pool_set.release_pool_entry(memory_node, block_size, prereqs, ptr);
   }
 
@@ -498,9 +502,10 @@ public:
     return res;
   }
 
-  void
-  deallocate(backend_ctx_untyped&, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
+  void deallocate(
+    backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
+    (void) ctx;
     EXPECT(sz <= block_size);
     pool_set.release_pool_entry(memory_node, block_size, prereqs, ptr);
   }

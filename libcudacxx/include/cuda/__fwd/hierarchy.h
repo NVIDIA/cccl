@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -27,6 +27,8 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
+
+using dimensions_index_type = unsigned;
 
 // hierarchy level
 
@@ -52,15 +54,47 @@ inline constexpr bool __is_native_hierarchy_level_v =
 // hierarchy
 
 template <class _BottomUnit, class... _Levels>
-struct hierarchy_dimensions;
+class hierarchy;
 
 template <class _Tp>
 inline constexpr bool __is_hierarchy_v = false;
 template <class _BottomUnit, class... _Levels>
-inline constexpr bool __is_hierarchy_v<hierarchy_dimensions<_BottomUnit, _Levels...>> = true;
+inline constexpr bool __is_hierarchy_v<hierarchy<_BottomUnit, _Levels...>> = true;
 
 template <typename... _Levels>
-struct allowed_levels;
+struct __allowed_levels;
+
+struct __hierarchy_level_desc_base
+{};
+template <class _Level, class _Exts>
+class hierarchy_level_desc;
+
+template <class _Tp>
+inline constexpr bool __is_hierarchy_level_desc_v = ::cuda::std::is_base_of_v<__hierarchy_level_desc_base, _Tp>;
+
+template <class _Unit, class _Level>
+struct __extents_query_native;
+
+template <class _Unit, class _Level>
+struct __extents_query;
+
+template <class _Unit, class _Level>
+struct __count_query_native;
+
+template <class _Unit, class _Level>
+struct __count_query;
+
+template <class _Unit, class _Level>
+struct __index_query_native;
+
+template <class _Unit, class _Level>
+struct __index_query;
+
+template <class _Unit, class _Level>
+struct __rank_query_native;
+
+template <class _Unit, class _Level>
+struct __rank_query;
 
 _CCCL_END_NAMESPACE_CUDA
 

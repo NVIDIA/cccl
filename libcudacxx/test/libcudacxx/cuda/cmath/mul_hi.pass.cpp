@@ -20,7 +20,7 @@
 _CCCL_DIAG_SUPPRESS_NVCC(23)
 
 template <typename T>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   static_assert(cuda::std::is_same_v<T, decltype(cuda::mul_hi(T{}, T{}))>);
   static_assert(noexcept(cuda::mul_hi(T{}, T{})));
@@ -126,7 +126,7 @@ __host__ __device__ constexpr void test_type()
 #endif // _CCCL_HAS_INT128()
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_type<unsigned char>();
   test_type<unsigned short>();

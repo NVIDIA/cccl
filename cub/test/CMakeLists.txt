@@ -1,9 +1,3 @@
-option(
-  CUB_ENABLE_LAUNCH_VARIANTS
-  "Enable CUB launch variants (lid_1 and lid_2)"
-  ON
-)
-
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   if (CUB_ENABLE_RDC_TESTS)
     if ("${CMAKE_VERSION}" VERSION_LESS 3.27.5)
@@ -20,6 +14,27 @@ endif()
 cccl_get_c2h()
 cccl_get_cudatoolkit()
 cccl_get_nvtx()
+
+cccl_get_rapids_test()
+rapids_test_init()
+
+# GCC 7 does not ship <filesystem> (it arrived in GCC 8), which the
+# rapids-cmake resource-spec detector includes. Shadow the header with a
+# minimal local shim on that compiler. Remove when GCC 7 support ends.
+if (
+  TARGET generate_ctest_json
+  AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
+  AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0
+)
+  target_include_directories(
+    generate_ctest_json
+    BEFORE
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/gcc7_filesystem_shim"
+  )
+endif()
+
+set(CCCL_TEST_GPU_PERCENT_SMALL 15)
+set(CCCL_TEST_GPU_PERCENT_LARGE 100)
 
 set(build_nvrtc_tests ON)
 if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
@@ -68,6 +83,43 @@ function(_cub_is_fail_test result_var test_src)
   endif()
 endfunction()
 
+## _cub_has_large_tests
+#
+# If the test source declares a CUB_LARGE test, `result_var` will be set to
+# TRUE.
+function(_cub_has_large_tests result_var test_src)
+  file(READ "${CMAKE_CURRENT_SOURCE_DIR}/${test_src}" test_source)
+  string(FIND "${test_source}" "CUB_LARGE" cub_large_test)
+  if (cub_large_test EQUAL -1)
+    set(${result_var} FALSE PARENT_SCOPE)
+  else()
+    set(${result_var} TRUE PARENT_SCOPE)
+  endif()
+endfunction()
+
+## _cub_validate_non_catch2_memory_class
+#
+# Require a non-Catch2 runtime test to declare exactly one GPU memory class.
+function(_cub_validate_non_catch2_memory_class test_src)
+  file(READ "${CMAKE_CURRENT_SOURCE_DIR}/${test_src}" test_source)
+  string(
+    REGEX MATCHALL
+    "CUB_TEST_MEMORY_CLASS\\([ \t\r\n]*(CUB_SMALL|CUB_LARGE)[ \t\r\n]*\\)"
+    memory_class_declarations
+    "${test_source}"
+  )
+  list(LENGTH memory_class_declarations memory_class_count)
+
+  if (NOT memory_class_count EQUAL 1)
+    message(
+      FATAL_ERROR
+      "${test_src} must declare exactly one of "
+      "CUB_TEST_MEMORY_CLASS(CUB_SMALL) or "
+      "CUB_TEST_MEMORY_CLASS(CUB_LARGE); found ${memory_class_count}."
+    )
+  endif()
+endfunction()
+
 ## _cub_launcher_requires_rdc
 #
 # If given launcher id corresponds to a CDP launcher, set `out_var` to 1.
@@ -101,6 +153,7 @@ function(
   launcher_id
 )
   _cub_is_catch2_test(is_catch2_test "${test_src}")
+  _cub_has_large_tests(has_large_tests "${test_src}")
   _cub_launcher_requires_rdc(cdp_val "${launcher_id}")
 
   # The actual name of the test's target:
@@ -147,21 +200,47 @@ function(
     )
     target_include_directories(${test_target} PUBLIC "${CUB_SOURCE_DIR}/test")
 
-    add_test(
+    rapids_test_add(
       NAME ${test_target}
       # gersemi: off
       COMMAND
         "${CMAKE_COMMAND}"
            "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
            "-DTEST=$<TARGET_FILE:${test_target}>"
+           "-DARGS=[small-mem]"
+           "-DALLOW_RUNNING_NO_TESTS=ON"
            "-DTYPE=Catch2"
            -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
       # gersemi: on
+      GPUS 1
+      PERCENT ${CCCL_TEST_GPU_PERCENT_SMALL}
     )
     set_tests_properties(
       ${test_target}
       PROPERTIES SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST"
     )
+
+    if (has_large_tests)
+      rapids_test_add(
+        NAME ${test_target}.large
+        # gersemi: off
+        COMMAND
+          "${CMAKE_COMMAND}"
+             "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
+             "-DTEST=$<TARGET_FILE:${test_target}>"
+             "-DARGS=[large-mem]"
+             "-DALLOW_RUNNING_NO_TESTS=ON"
+             "-DTYPE=Catch2"
+             -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
+        # gersemi: on
+        GPUS 1
+        PERCENT ${CCCL_TEST_GPU_PERCENT_LARGE}
+      )
+      set_tests_properties(
+        ${test_target}.large
+        PROPERTIES SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST"
+      )
+    endif()
 
     if ("${test_target}" MATCHES "nvrtc")
       configure_file(
@@ -172,10 +251,31 @@ function(
         ${test_target}
         PRIVATE "${CMAKE_CURRENT_BINARY_DIR}"
       )
+      # NVRTC's frontend recurses deeply while parsing the block-level primitives compiled by this
+      # test and overflows MSVC's 1 MiB default stack, see NVIDIA/cccl#9612. Give the main thread the
+      # 8 MiB that Linux provides by default, which is the size libnvcc's frontend worker uses for the
+      # same reason, see c/parallel.v2/src/hostjit/libnvcc/compiler.cpp.
+      if (MSVC)
+        target_link_options(${test_target} PRIVATE "/STACK:8388608") # 8 MiB
+      endif()
     endif()
 
     if ("${test_src}" MATCHES "test_iterator\\.cu$")
       target_compile_options(${test_target} PRIVATE -ftemplate-depth=1000) # for handling large type lists
+    endif()
+
+    if (
+      CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH
+      AND "${test_src}" MATCHES "test_device_transform_tile\\.cu$"
+    )
+      target_compile_options(
+        ${test_target}
+        PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--enable-tile>
+      )
+      target_compile_definitions(
+        ${test_target}
+        PRIVATE _CCCL_ENABLE_EXPERIMENTAL_TILE_TRANSFORM_DISPATCH
+      )
     endif()
 
     # enable lambdas for all API examples
@@ -186,7 +286,12 @@ function(
       )
     endif()
 
-    if ("${test_src}" MATCHES "test_device_segmented_scan_api\\.cu$")
+    if (
+      "${test_src}" MATCHES "test_device_segmented_scan_api\\.cu$"
+      OR "${test_src}" MATCHES "test_device_find_env_api\\.cu$"
+      OR "${test_src}" MATCHES "test_device_partition_env_api\\.cu$"
+      OR "${test_src}" MATCHES "test_device_select_env_api\\.cu$"
+    )
       if (
         "Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}"
         AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13
@@ -203,11 +308,27 @@ function(
       endif()
     endif()
   else() # Not catch2:
-    cccl_add_executable(
-      ${test_target}
-      SOURCES "${test_src}"
-      NO_METATARGETS # Added manually for non-fail tests
-    )
+    _cub_is_fail_test(is_fail_test "${test_src}")
+
+    if (NOT is_fail_test)
+      _cub_validate_non_catch2_memory_class("${test_src}")
+    endif()
+
+    if (is_fail_test)
+      cccl_add_executable(
+        ${test_target}
+        SOURCES "${test_src}"
+        NO_CLANG_TIDY
+        NO_METATARGETS
+      )
+    else()
+      cccl_add_executable(
+        ${test_target}
+        SOURCES "${test_src}"
+        METATARGET_PATH ${metatarget_path}
+      )
+    endif()
+
     target_link_libraries(
       ${test_target}
       PRIVATE #
@@ -215,13 +336,29 @@ function(
         cccl.c2h
     )
     target_include_directories(${test_target} PRIVATE "${CUB_SOURCE_DIR}/test")
-    target_compile_definitions(${test_target} PRIVATE CUB_DEBUG_SYNC)
 
     if ("${test_target}" MATCHES "nvtx_in_usercode")
       target_link_libraries(${test_target} PRIVATE nvtx3-cpp)
     endif()
 
-    _cub_is_fail_test(is_fail_test "${test_src}")
+    if (
+      "${test_src}" MATCHES "test_future_arch\\.cu$"
+      AND "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
+      AND "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_GREATER_EQUAL "13.0.0"
+      AND NOT "$ENV{CCCL_TEST_MODE}" MATCHES "^compute-sanitizer"
+    )
+      # In future arch test, we replace __CUDA_ARCH__ and __CUDA_ARCH_LIST__ with our own values. However, nvcc
+      # preincludes <cuda_runtime.h> header, already working with __CUDA_ARCH__. So, we define the <cuda_runtime.h>'s
+      # include guard macro so we can modify the values before including the header inside the source file.
+      target_compile_definitions(${test_target} PRIVATE __CUDA_RUNTIME_H__)
+
+      # Force only 1 architecture to be compiled. It must be the newest supported architecture.
+      set_target_properties(
+        ${test_target}
+        PROPERTIES CUDA_ARCHITECTURES "121-virtual"
+      )
+    endif()
+
     if (is_fail_test)
       cccl_add_xfail_compile_target_test(
         ${test_target}
@@ -230,9 +367,12 @@ function(
         ERROR_NUMBER_TARGET_NAME_REGEX "\\.err_([0-9]+)"
       )
     else()
-      cccl_ensure_metatargets(${test_target} METATARGET_PATH ${metatarget_path})
-
-      add_test(
+      if (has_large_tests)
+        set(_cub_gpu_percent ${CCCL_TEST_GPU_PERCENT_LARGE})
+      else()
+        set(_cub_gpu_percent ${CCCL_TEST_GPU_PERCENT_SMALL})
+      endif()
+      rapids_test_add(
         NAME ${test_target}
         # gersemi: off
         COMMAND
@@ -241,6 +381,8 @@ function(
             "-DTEST=$<TARGET_FILE:${test_target}>"
             -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
         # gersemi: on
+        GPUS 1
+        PERCENT ${_cub_gpu_percent}
       )
       set_tests_properties(
         ${test_target}
@@ -249,8 +391,38 @@ function(
     endif()
   endif() # Not catch2 test
 
+  # Disable build caching for compile tests
+  set_tests_properties(${test_target} PROPERTIES ENVIRONMENT SCCACHE_NO_CACHE=1)
+
   # Ensure that we test with assertions enabled
   target_compile_definitions(${test_target} PRIVATE CCCL_ENABLE_ASSERTIONS)
+
+  # The unsupported-arch xfail test omits the CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT define its siblings use, so it
+  # keeps the strict compile-time diagnostic. Its two %PARAM% variants pin their own arch lists (independent of the
+  # preset) so the diagnostic fires regardless: `arch_0` a single pre-SM90 arch (89-virtual, the highest without cluster
+  # support), and `arch_1` a mixed list adding a cluster-capable 90-virtual to show the diagnostic fires when *any*
+  # targeted arch is unsupported.
+  if ("${test_target}" MATCHES "batched_topk_unsupported_arch_fail\\.arch_0$")
+    set_target_properties(
+      ${test_target}
+      PROPERTIES CUDA_ARCHITECTURES "89-virtual"
+    )
+  elseif (
+    "${test_target}" MATCHES "batched_topk_unsupported_arch_fail\\.arch_1$"
+  )
+    set_target_properties(
+      ${test_target}
+      PROPERTIES CUDA_ARCHITECTURES "89-virtual;90-virtual"
+    )
+  endif()
+
+  # Disable clang-cuda >= 22 warnings regarding failed loop unrolling.
+  if (
+    "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang"
+    AND "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_GREATER_EQUAL "22.0.0"
+  )
+    target_compile_options(${test_target} PRIVATE "-Wno-pass-failed")
+  endif()
 endfunction()
 
 # Sets out_var to launch id if the label contains launch variants
@@ -269,6 +441,22 @@ function(_cub_launcher_id out_var label)
   string(REGEX MATCH "lid_([0-9]+)" MATCH_RESULT "${label}")
   if (MATCH_RESULT)
     set(${out_var} ${CMAKE_MATCH_1} PARENT_SCOPE)
+  else()
+    set(${out_var} 0 PARENT_SCOPE)
+  endif()
+endfunction()
+
+## _cub_launch_id_enabled
+#
+# Sets out_var to 1 if the given launcher id is enabled by the corresponding
+# CUB_ENABLE_LAUNCH_* option.
+function(_cub_launch_id_enabled out_var launcher_id)
+  if ("${launcher_id}" STREQUAL "0")
+    set(${out_var} ${CUB_ENABLE_LAUNCH_HOST_LAUNCHER} PARENT_SCOPE)
+  elseif ("${launcher_id}" STREQUAL "1")
+    set(${out_var} ${CUB_ENABLE_LAUNCH_DEVICE_LAUNCHER} PARENT_SCOPE)
+  elseif ("${launcher_id}" STREQUAL "2")
+    set(${out_var} ${CUB_ENABLE_LAUNCH_GRAPH_LAUNCHER} PARENT_SCOPE)
   else()
     set(${out_var} 0 PARENT_SCOPE)
   endif()
@@ -349,12 +537,14 @@ foreach (test_src IN LISTS test_srcs)
 
       if (${explicit_launcher})
         set(launcher_id "${explicit_launcher_id}")
+        _cub_launch_id_enabled(launch_enabled "${launcher_id}")
       else()
         if (${CUB_FORCE_RDC})
           set(launcher_id 1)
         else()
           set(launcher_id 0)
         endif()
+        set(launch_enabled "${CUB_ENABLE_LAUNCH_NO_LAUNCHER}")
       endif()
 
       _cub_launcher_requires_rdc(cdp_val "${launcher_id}")
@@ -363,7 +553,7 @@ foreach (test_src IN LISTS test_srcs)
         continue()
       endif()
 
-      if (NOT launcher_id EQUAL 0 AND NOT CUB_ENABLE_LAUNCH_VARIANTS)
+      if (NOT launch_enabled)
         continue()
       endif()
 
@@ -383,4 +573,5 @@ foreach (test_src IN LISTS test_srcs)
 endforeach() # Source file
 
 add_subdirectory(cmake)
-add_subdirectory(ptx-json)
+add_subdirectory(cubin-check)
+add_subdirectory(logging)

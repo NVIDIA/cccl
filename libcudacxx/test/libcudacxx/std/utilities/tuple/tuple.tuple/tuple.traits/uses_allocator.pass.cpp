@@ -25,19 +25,19 @@ int main(int, char**)
 {
   {
     using T = cuda::std::tuple<>;
-    static_assert((cuda::std::is_base_of<cuda::std::true_type, cuda::std::uses_allocator<T, A>>::value), "");
+    static_assert((cuda::std::is_base_of<cuda::std::true_type, cuda::std::uses_allocator<T, A>>::value));
   }
   {
     using T = cuda::std::tuple<int>;
-    static_assert((cuda::std::is_base_of<cuda::std::true_type, cuda::std::uses_allocator<T, A>>::value), "");
+    static_assert((cuda::std::is_base_of<cuda::std::true_type, cuda::std::uses_allocator<T, A>>::value));
   }
   {
     using T = cuda::std::tuple<char, int>;
-    static_assert((cuda::std::is_base_of<cuda::std::true_type, cuda::std::uses_allocator<T, A>>::value), "");
+    static_assert((cuda::std::is_base_of<cuda::std::true_type, cuda::std::uses_allocator<T, A>>::value));
   }
   {
     using T = cuda::std::tuple<double&, char, int>;
-    static_assert((cuda::std::is_base_of<cuda::std::true_type, cuda::std::uses_allocator<T, A>>::value), "");
+    static_assert((cuda::std::is_base_of<cuda::std::true_type, cuda::std::uses_allocator<T, A>>::value));
   }
 
   return 0;

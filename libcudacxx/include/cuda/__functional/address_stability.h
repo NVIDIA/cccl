@@ -20,6 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__functional/always_true_false.h>
+#include <cuda/__fwd/iterator.h>
 #include <cuda/std/__functional/not_fn.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__functional/ranges_operations.h>
@@ -33,26 +35,26 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-//! Trait telling whether a function object type F does not rely on the memory addresses of its arguments. The nested
+//! Trait telling whether a function object type _Fn does not rely on the memory addresses of its arguments. The nested
 //! value is true when the addresses of the arguments do not matter and arguments can be provided from arbitrary copies
 //! of the respective sources. This trait can be specialized for custom function objects types.
 //! @see proclaim_copyable_arguments
-template <typename F, typename SFINAE = void>
+template <typename _Fn, typename _Sfinae = void>
 struct proclaims_copyable_arguments : ::cuda::std::false_type
 {};
 
-template <typename F, typename... Args>
-inline constexpr bool proclaims_copyable_arguments_v = proclaims_copyable_arguments<F, Args...>::value;
+template <typename _Fn, typename... _Args>
+inline constexpr bool proclaims_copyable_arguments_v = proclaims_copyable_arguments<_Fn, _Args...>::value;
 
 // Wrapper for a callable to mark it as permitting copied arguments
-template <typename F>
-struct __callable_permitting_copied_arguments : F
+template <typename _Fn>
+struct __callable_permitting_copied_arguments : _Fn
 {
-  using F::operator();
+  using _Fn::operator();
 };
 
-template <typename F>
-struct proclaims_copyable_arguments<__callable_permitting_copied_arguments<F>> : ::cuda::std::true_type
+template <typename _Fn>
+struct proclaims_copyable_arguments<__callable_permitting_copied_arguments<_Fn>> : ::cuda::std::true_type
 {};
 
 //! Creates a new function object from an existing one, which is marked as permitting its arguments to be copies of
@@ -60,17 +62,27 @@ struct proclaims_copyable_arguments<__callable_permitting_copied_arguments<F>> :
 //! object. Some algorithms, like thrust::transform, can benefit from this information and choose a more efficient
 //! implementation.
 //! @see proclaims_copyable_arguments
-template <typename F>
-[[nodiscard]] _CCCL_API constexpr auto proclaim_copyable_arguments(F&& f)
-  -> __callable_permitting_copied_arguments<::cuda::std::decay_t<F>>
+template <typename _Fn>
+[[nodiscard]] _CCCL_API constexpr auto proclaim_copyable_arguments(_Fn&& f)
 {
-  return {::cuda::std::forward<F>(f)};
+  if constexpr (proclaims_copyable_arguments_v<_Fn>)
+  { // If _Fn is already marked then we do not need to wrap it
+    return f;
+  }
+  else
+  {
+    return __callable_permitting_copied_arguments<::cuda::std::decay_t<_Fn>>{::cuda::std::forward<_Fn>(f)};
+  }
 }
 
 // Specializations for libcu++ function objects are provided here to not pull this include into `<cuda/std/...>` headers
 
 template <typename _Fn>
 struct proclaims_copyable_arguments<::cuda::std::__not_fn_t<_Fn>> : proclaims_copyable_arguments<_Fn>
+{};
+
+template <typename _Fn>
+struct proclaims_copyable_arguments<zip_function<_Fn>> : proclaims_copyable_arguments<_Fn>
 {};
 
 template <typename _Tp>
@@ -123,6 +135,14 @@ _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(::cuda::std::ranges::greater)
 _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(::cuda::std::ranges::greater_equal)
 
 #undef _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS
+
+// always_true and always_false never inspect the addresses of their arguments
+template <>
+struct proclaims_copyable_arguments<::cuda::always_true> : ::cuda::std::true_type
+{};
+template <>
+struct proclaims_copyable_arguments<::cuda::always_false> : ::cuda::std::true_type
+{};
 
 _CCCL_END_NAMESPACE_CUDA
 

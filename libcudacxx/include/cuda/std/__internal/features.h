@@ -24,12 +24,6 @@
 #define _LIBCUDACXX_HAS_MONOTONIC_CLOCK()       0
 #define _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()    0
 
-#if _CCCL_CUDA_COMPILATION() || __cpp_aligned_new < 201606
-#  define _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() 0
-#else
-#  define _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() 1
-#endif // !_CCCL_CUDA_COMPILATION() && __cpp_aligned_new >= 201606
-
 // We need `is_constant_evaluated` for clang and gcc. MSVC also needs extensive rework
 #if !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
 #  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 0
@@ -80,13 +74,13 @@
 
 // We can only expose constexpr allocations if the compiler supports it
 // For now disable constexpr allocation support until we can actually use
-#if 0 && defined(__cpp_constexpr_dynamic_alloc) && defined(__cpp_lib_constexpr_dynamic_alloc) && _CCCL_STD_VER >= 2020 \
-  && !_CCCL_COMPILER(NVRTC)
+#if 0 && __cpp_constexpr_dynamic_alloc >= 201907L && __cpp_lib_constexpr_dynamic_alloc >= 201907L \
+  && _CCCL_STD_VER >= 2020 && !_CCCL_COMPILER(NVRTC)
 #  define _CCCL_HAS_CONSTEXPR_ALLOCATION
 #  define _CCCL_CONSTEXPR_CXX20_ALLOCATION constexpr
-#else // ^^^ __cpp_constexpr_dynamic_alloc ^^^ / vvv !__cpp_constexpr_dynamic_alloc vvv
+#else // ^^^ has constexpr allocations ^^^ / vvv no constexpr allocations vvv
 #  define _CCCL_CONSTEXPR_CXX20_ALLOCATION
-#endif
+#endif // ^^^ no constexpr allocations ^^^
 
 // Enable removed C++17 features
 #if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES)
@@ -100,5 +94,54 @@
 #  define _CCCL_DIAGNOSE_WARNING(_COND, _MSG)
 #  define _CCCL_DIAGNOSE_ERROR(_COND, _MSG)
 #endif
+
+#define _CCCL_HAS_SIMD_F32X2_INTRINSICS() \
+  (_CCCL_CUDACC_AT_LEAST(12, 8) && _CCCL_HAS_CTK() && !_CCCL_CUDA_COMPILER(CLANG))
+#define _CCCL_HAS_SIMD_F32X2_PTX() (__cccl_ptx_isa >= 860ULL)
+#define _CCCL_HAS_SIMD_F32X2()                                                                   \
+  ((_CCCL_HAS_SIMD_F32X2_INTRINSICS() || _CCCL_HAS_SIMD_F32X2_PTX()) && _CCCL_CUDA_COMPILATION() \
+   && !_CCCL_TILE_COMPILATION())
+
+// nvcc >= 12.8 already optimizes 16-bit X2 min/max operations to SIMD instructions
+#define _CCCL_HAS_SIMD_16BIT_MIN_MAX_COMPILER_OPTIMIZATION() _CCCL_CUDA_COMPILER(NVCC, >=, 12, 8)
+
+#define _CCCL_HAS_SIMD_8BIT_INTRINSICS() 0 // TODO(fbusato): CTK 13.2 produces non-optimal code for 8-bit SIMD instrs.
+#define _CCCL_HAS_SIMD_8BIT_PTX()        (__cccl_ptx_isa >= 920ULL)
+#define _CCCL_HAS_SIMD_8BIT()                                                                  \
+  ((_CCCL_HAS_SIMD_8BIT_PTX() || _CCCL_HAS_SIMD_8BIT_INTRINSICS()) && _CCCL_CUDA_COMPILATION() \
+   && !_CCCL_TILE_COMPILATION())
+
+// TODO(fbusato): CTK 13.4 produces non-optimal code for SIMD SAT intrinsics
+#define _CCCL_HAS_SIMD_SAT_INTRINSICS() 0
+#define _CCCL_HAS_SIMD_SAT_PTX()        (__cccl_ptx_isa >= 920ULL)
+#define _CCCL_HAS_SIMD_SAT()                                                                 \
+  ((_CCCL_HAS_SIMD_SAT_PTX() || _CCCL_HAS_SIMD_SAT_INTRINSICS()) && _CCCL_CUDA_COMPILATION() \
+   && !_CCCL_TILE_COMPILATION())
+
+// TODO(fbusato): CTK 13.4 produces non-optimal code for SIMD VABSDIFF intrinsics
+#define _CCCL_HAS_SIMD_VABSDIFF_INTRINSICS() 0
+#define _CCCL_HAS_SIMD_VABSDIFF_PTX()        (__cccl_ptx_isa >= 700ULL)
+#define _CCCL_HAS_SIMD_VABSDIFF()                                                                      \
+  ((_CCCL_HAS_SIMD_VABSDIFF_PTX() || _CCCL_HAS_SIMD_VABSDIFF_INTRINSICS()) && _CCCL_CUDA_COMPILATION() \
+   && !_CCCL_TILE_COMPILATION())
+
+// _dp4a/__dp2a were introduced in CUDA 8
+#define _CCCL_HAS_SIMD_IDOT_INTRINSICS() _CCCL_HAS_CTK()
+#define _CCCL_HAS_SIMD_IDOT_PTX()        (__cccl_ptx_isa >= 700ULL)
+#define _CCCL_HAS_SIMD_IDOT()                                                                  \
+  ((_CCCL_HAS_SIMD_IDOT_INTRINSICS() || _CCCL_HAS_SIMD_IDOT_PTX()) && _CCCL_CUDA_COMPILATION() \
+   && !_CCCL_TILE_COMPILATION())
+
+#define _CCCL_HAS_SIMD_MIN_MAX_RELU() (_CCCL_HAS_CTK() && _CCCL_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION())
+#define _CCCL_HAS_SIMD_ADD_MIN_MAX()  (_CCCL_HAS_CTK() && _CCCL_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION())
+
+// Third party libraries
+
+#if (__has_include(<dlpack/dlpack.h>) || __has_include(<dlpack.h>)) && \
+     !_CCCL_COMPILER(NVRTC) && !defined(CCCL_DISABLE_DLPACK)
+#  define _CCCL_HAS_DLPACK() 1
+#else // ^^^ has dlpack ^^^ / vvv no dlpack vvv
+#  define _CCCL_HAS_DLPACK() 0
+#endif // ^^^ no dlpack ^^^
 
 #endif // _CUDA_STD___INTERNAL_FEATURES_H

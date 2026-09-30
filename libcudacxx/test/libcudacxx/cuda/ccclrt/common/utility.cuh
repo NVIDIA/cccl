@@ -22,7 +22,9 @@
 
 #include <new> // IWYU pragma: keep (needed for placement new)
 
-__device__ inline void ccclrt_require_impl(
+#include "test_macros.h"
+
+TEST_DEVICE_FUNC inline void ccclrt_require_impl(
   bool condition, const char* condition_text, const char* filename, unsigned int linenum, const char* funcname)
 {
   if (!condition)
@@ -43,10 +45,15 @@ __device__ inline void ccclrt_require_impl(
   }
 }
 
-namespace
-{
 namespace test
 {
+template <typename T1, typename T2>
+T1& assign(T1& t1, T2&& t2)
+{
+  t1 = ::cuda::std::forward<T2>(t2);
+  return t1;
+}
+
 struct _malloc_pinned
 {
 private:
@@ -55,13 +62,13 @@ private:
 public:
   explicit _malloc_pinned(std::size_t size)
   {
-    cuda::__ensure_current_context guard(cuda::device_ref{0});
-    _CCCL_TRY_CUDA_API(::cudaMallocHost, "failed to allocate pinned memory", &pv, size);
+    const cuda::__ensure_current_context guard(cuda::device_ref{0});
+    _CCCL_TRY_RUNTIME_API(::cudaMallocHost, "failed to allocate pinned memory", &pv, size);
   }
 
   ~_malloc_pinned()
   {
-    cuda::__ensure_current_context guard(cuda::device_ref{0});
+    const cuda::__ensure_current_context guard(cuda::device_ref{0});
     [[maybe_unused]] auto status = ::cudaFreeHost(pv);
   }
 
@@ -112,7 +119,7 @@ public:
 template <int N>
 struct assign_n
 {
-  __device__ constexpr void operator()(int* pi) const noexcept
+  TEST_DEVICE_FUNC constexpr void operator()(int* pi) const noexcept
   {
     *pi = N;
   }
@@ -121,7 +128,7 @@ struct assign_n
 template <int N>
 struct verify_n
 {
-  __device__ void operator()(int* pi) const noexcept
+  TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
   {
     // TODO: fix clang CUDA require macro
     // CCCLRT_REQUIRE(*pi == N);
@@ -134,35 +141,36 @@ using verify_42 = verify_n<42>;
 
 struct atomic_add_one
 {
-  __device__ void operator()(int* pi) const noexcept
+  TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
   {
-    cuda::atomic_ref atomic_pi(*pi);
+    const cuda::atomic_ref atomic_pi(*pi);
     atomic_pi.fetch_add(1);
   }
 };
 
 struct atomic_sub_one
 {
-  __device__ void operator()(int* pi) const noexcept
+  TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
   {
-    cuda::atomic_ref atomic_pi(*pi);
+    const cuda::atomic_ref atomic_pi(*pi);
     atomic_pi.fetch_sub(1);
   }
 };
 
 struct spin_until_80
 {
-  __device__ void operator()(int* pi) const noexcept
+  TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
   {
-    cuda::atomic_ref atomic_pi(*pi);
+    const cuda::atomic_ref atomic_pi(*pi);
     while (atomic_pi.load() != 80)
-      ;
+    {
+    }
   }
 };
 
 struct empty_kernel
 {
-  __device__ void operator()() const noexcept {}
+  TEST_DEVICE_FUNC void operator()() const noexcept {}
 };
 
 template <class Fn, class... Args>
@@ -174,10 +182,9 @@ static __global__ void kernel_launcher(Fn fn, Args... args)
 template <class Fn, class... Args>
 void launch_kernel_single_thread(cuda::stream_ref stream, Fn fn, Args... args)
 {
-  cuda::__ensure_current_context guard(stream);
+  const cuda::__ensure_current_context guard(stream);
   kernel_launcher<<<1, 1, 0, stream.get()>>>(fn, args...);
   assert(cudaGetLastError() == cudaSuccess);
 }
 } // namespace test
-} // namespace
 #endif // __COMMON_UTILITY_H__

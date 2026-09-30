@@ -30,20 +30,20 @@
 #include "test_macros.h"
 
 template <bool implicit, class To, class From, cuda::std::enable_if_t<implicit, int> = 0>
-__host__ __device__ constexpr void test_implicit_conversion(From src)
+TEST_FUNC constexpr void test_implicit_conversion(From src)
 {
   To dest_implicit = src;
   assert(dest_implicit == src);
 }
 
 template <bool implicit, class To, class From, cuda::std::enable_if_t<!implicit, int> = 0>
-__host__ __device__ constexpr void test_implicit_conversion(From src)
+TEST_FUNC constexpr void test_implicit_conversion(From src)
 {
   assert((!cuda::std::is_convertible_v<From, To>) );
 }
 
 template <class FromExt, cuda::std::enable_if_t<(FromExt::rank() > 0), int> = 0>
-__host__ __device__ constexpr auto get_strides(FromExt src_exts)
+TEST_FUNC constexpr auto get_strides(FromExt src_exts)
 {
   cuda::std::array<typename FromExt::index_type, FromExt::rank()> strides{};
   strides[0] = 1;
@@ -55,13 +55,13 @@ __host__ __device__ constexpr auto get_strides(FromExt src_exts)
 }
 
 template <class FromExt, cuda::std::enable_if_t<(FromExt::rank() == 0), int> = 0>
-__host__ __device__ constexpr auto get_strides(FromExt)
+TEST_FUNC constexpr auto get_strides(FromExt)
 {
   return cuda::std::array<typename FromExt::index_type, FromExt::rank()>{};
 }
 
 template <bool implicit, class ToExt, class FromExt>
-__host__ __device__ constexpr void test_conversion(FromExt src_exts)
+TEST_FUNC constexpr void test_conversion(FromExt src_exts)
 {
   using To           = cuda::std::layout_left::mapping<ToExt>;
   using From         = cuda::std::layout_stride::mapping<FromExt>;
@@ -75,7 +75,7 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
 }
 
 template <class T1, class T2>
-__host__ __device__ constexpr void test_conversion()
+TEST_FUNC constexpr void test_conversion()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
@@ -101,26 +101,26 @@ using lr_mapping_t = typename cuda::std::layout_right::template mapping<cuda::st
 template <class IdxT, size_t... Extents>
 using ls_mapping_t = typename cuda::std::layout_stride::template mapping<cuda::std::extents<IdxT, Extents...>>;
 
-__host__ __device__ constexpr void test_rank_mismatch()
+TEST_FUNC constexpr void test_rank_mismatch()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
-  static_assert(!cuda::std::is_constructible<lr_mapping_t<int, D>, ls_mapping_t<int>>::value, "");
-  static_assert(!cuda::std::is_constructible<lr_mapping_t<int>, ls_mapping_t<int, D, D>>::value, "");
-  static_assert(!cuda::std::is_constructible<lr_mapping_t<int, D>, ls_mapping_t<int, D, D>>::value, "");
-  static_assert(!cuda::std::is_constructible<lr_mapping_t<int, D, D, D>, ls_mapping_t<int, D, D>>::value, "");
+  static_assert(!cuda::std::is_constructible<lr_mapping_t<int, D>, ls_mapping_t<int>>::value);
+  static_assert(!cuda::std::is_constructible<lr_mapping_t<int>, ls_mapping_t<int, D, D>>::value);
+  static_assert(!cuda::std::is_constructible<lr_mapping_t<int, D>, ls_mapping_t<int, D, D>>::value);
+  static_assert(!cuda::std::is_constructible<lr_mapping_t<int, D, D, D>, ls_mapping_t<int, D, D>>::value);
 }
 
-__host__ __device__ constexpr void test_static_extent_mismatch()
+TEST_FUNC constexpr void test_static_extent_mismatch()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
-  static_assert(!cuda::std::is_constructible<lr_mapping_t<int, D, 5>, ls_mapping_t<int, D, 4>>::value, "");
-  static_assert(!cuda::std::is_constructible<lr_mapping_t<int, 5>, ls_mapping_t<int, 4>>::value, "");
-  static_assert(!cuda::std::is_constructible<lr_mapping_t<int, 5, D>, ls_mapping_t<int, 4, D>>::value, "");
+  static_assert(!cuda::std::is_constructible<lr_mapping_t<int, D, 5>, ls_mapping_t<int, D, 4>>::value);
+  static_assert(!cuda::std::is_constructible<lr_mapping_t<int, 5>, ls_mapping_t<int, 4>>::value);
+  static_assert(!cuda::std::is_constructible<lr_mapping_t<int, 5, D>, ls_mapping_t<int, 4, D>>::value);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_conversion<int, int>();
   test_conversion<int, size_t>();
@@ -134,6 +134,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

@@ -41,7 +41,7 @@ The function ``cuda::div_overflow`` performs integer division of ``lhs`` by ``rh
 
 **Constraints**
 
-- ``Result``, ``Lhs``, and ``Rhs`` must be integer types.
+- ``Result``, ``Lhs``, and ``Rhs`` must be `integer types <https://eel.is/c++draft/basic.fundamental#1>`_.
 
 **Notes**
 

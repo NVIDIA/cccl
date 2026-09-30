@@ -25,6 +25,7 @@
 #include <cuda/std/__concepts/assignable.h>
 #include <cuda/std/__concepts/common_reference_with.h>
 #include <cuda/std/__concepts/constructible.h>
+#include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/equality_comparable.h>
@@ -45,6 +46,7 @@
 #include <cuda/std/__type_traits/add_pointer.h>
 #include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/conjunction.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -79,12 +81,12 @@ using iter_common_reference_t = common_reference_t<iter_reference_t<_Tp>, iter_v
 // [iterator.concept.writable]
 template <class _Out, class _Tp>
 concept indirectly_writable = requires(_Out&& __o, _Tp&& __t) {
-  *__o                       = static_cast<_Tp &&>(__t); // not required to be equality-preserving
-  *static_cast<_Out &&>(__o) = static_cast<_Tp &&>(__t); // not required to be equality-preserving
-  const_cast<const iter_reference_t<_Out> &&>(*__o) = static_cast<_Tp &&>(__t); // not required to be
-                                                                                // equality-preserving
-  const_cast<const iter_reference_t<_Out> &&>(*static_cast<_Out &&>(__o)) =
-    static_cast<_Tp &&>(__t); // not required to be equality-preserving
+  *__o                                             = static_cast<_Tp&&>(__t); // not required to be equality-preserving
+  *static_cast<_Out&&>(__o)                        = static_cast<_Tp&&>(__t); // not required to be equality-preserving
+  const_cast<const iter_reference_t<_Out>&&>(*__o) = static_cast<_Tp&&>(__t); // not required to be
+                                                                              // equality-preserving
+  const_cast<const iter_reference_t<_Out>&&>(*static_cast<_Out&&>(__o)) =
+    static_cast<_Tp&&>(__t); // not required to be equality-preserving
 };
 
 // [iterator.concept.winc]
@@ -114,7 +116,7 @@ concept incrementable = regular<_Ip> && weakly_incrementable<_Ip> && requires(_I
 // [iterator.concept.iterator]
 template <class _Ip>
 concept input_or_output_iterator = requires(_Ip __i) {
-  { *__i } -> __can_reference;
+  { *__i } -> __referenceable;
 } && weakly_incrementable<_Ip>;
 
 // [iterator.concept.sentinel]
@@ -142,7 +144,7 @@ concept input_iterator = input_or_output_iterator<_Ip> && indirectly_readable<_I
 template <class _Ip, class _Tp>
 concept output_iterator =
   input_or_output_iterator<_Ip> && indirectly_writable<_Ip, _Tp> && requires(_Ip __it, _Tp&& __t) {
-    *__it++ = static_cast<_Tp &&>(__t); // not required to be equality-preserving
+    *__it++ = static_cast<_Tp&&>(__t); // not required to be equality-preserving
   };
 
 // [iterator.concept.forward]
@@ -284,6 +286,42 @@ concept indirectly_copyable_storable =
 // Note: indirectly_swappable is located in iter_swap.h to prevent a dependency cycle
 // (both iter_swap and indirectly_swappable require indirectly_readable).
 
+// Extension of indirectly_unary_invocable to binary operators
+template <class _Fp, class _It1, class _It2>
+concept __indirectly_binary_invocable =
+  indirectly_readable<_It1> && indirectly_readable<_It2> && copy_constructible<_Fp>
+  && invocable<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>
+  && invocable<_Fp&, iter_value_t<_It1>&, iter_reference_t<_It2>>
+  && invocable<_Fp&, iter_reference_t<_It1>, iter_value_t<_It2>&>
+  && invocable<_Fp&, iter_reference_t<_It1>, iter_reference_t<_It2>>
+  && invocable<_Fp&, iter_common_reference_t<_It1>, iter_common_reference_t<_It2>>
+  && common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                           invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_reference_t<_It2>>>
+  && common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                           invoke_result_t<_Fp&, iter_reference_t<_It1>, iter_value_t<_It2>&>>
+  && common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                           invoke_result_t<_Fp&, iter_reference_t<_It1>, iter_reference_t<_It2>>>
+  && common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                           invoke_result_t<_Fp&, iter_common_reference_t<_It1>, iter_common_reference_t<_It2>>>;
+
+// Extension of indirectly_regular_unary_invocable to binary operators
+template <class _Fp, class _It1, class _It2>
+concept __indirectly_regular_binary_invocable =
+  indirectly_readable<_It1> && indirectly_readable<_It2> && copy_constructible<_Fp>
+  && regular_invocable<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>
+  && regular_invocable<_Fp&, iter_value_t<_It1>&, iter_reference_t<_It2>>
+  && regular_invocable<_Fp&, iter_reference_t<_It1>, iter_value_t<_It2>&>
+  && regular_invocable<_Fp&, iter_reference_t<_It1>, iter_reference_t<_It2>>
+  && regular_invocable<_Fp&, iter_common_reference_t<_It1>, iter_common_reference_t<_It2>>
+  && common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                           invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_reference_t<_It2>>>
+  && common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                           invoke_result_t<_Fp&, iter_reference_t<_It1>, iter_value_t<_It2>&>>
+  && common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                           invoke_result_t<_Fp&, iter_reference_t<_It1>, iter_reference_t<_It2>>>
+  && common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                           invoke_result_t<_Fp&, iter_common_reference_t<_It1>, iter_common_reference_t<_It2>>>;
+
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 // [iterator.concept.readable]
@@ -337,19 +375,18 @@ _CCCL_CONCEPT weakly_incrementable = _CCCL_FRAGMENT(__weakly_incrementable_, _Ip
 
 // [iterator.concept.inc]
 template <class _Ip>
-_CCCL_CONCEPT_FRAGMENT(
-  __incrementable_,
-  requires(_Ip __i)(
-    requires(regular<_Ip>), requires(weakly_incrementable<_Ip>), requires(same_as<_Ip, decltype(__i++)>)));
-
-template <class _Ip>
-_CCCL_CONCEPT incrementable = _CCCL_FRAGMENT(__incrementable_, _Ip);
+_CCCL_CONCEPT incrementable = _CCCL_REQUIRES_EXPR((_Ip), _Ip __i)(
+  requires(regular<_Ip>),
+  requires(weakly_incrementable<_Ip>),
+  // Requirement is unevaluated, not sure why clang-tidy complains
+  // NOLINTNEXTLINE(bugprone-pointer-arithmetic-on-polymorphic-object)
+  requires(same_as<_Ip, decltype(__i++)>));
 
 // [iterator.concept.iterator]
 template <class _Ip>
 _CCCL_CONCEPT_FRAGMENT(
   __input_or_output_iterator_,
-  requires(_Ip __i)(requires(weakly_incrementable<_Ip>), requires(__can_reference<decltype(*__i)>)));
+  requires(_Ip __i)(requires(weakly_incrementable<_Ip>), requires(__referenceable<decltype(*__i)>)));
 
 template <class _Ip>
 _CCCL_CONCEPT input_or_output_iterator = _CCCL_FRAGMENT(__input_or_output_iterator_, _Ip);
@@ -624,6 +661,44 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _In, class _Out>
 _CCCL_CONCEPT indirectly_copyable_storable = _CCCL_FRAGMENT(__indirectly_copyable_storable_, _In, _Out);
 
+template <class _Fp, class _It1, class _It2>
+_CCCL_CONCEPT __indirectly_binary_invocable = _CCCL_REQUIRES_EXPR((_Fp, _It1, _It2))(
+  requires(indirectly_readable<_It1>),
+  requires(indirectly_readable<_It2>),
+  requires(copy_constructible<_Fp>),
+  requires(invocable<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>),
+  requires(invocable<_Fp&, iter_value_t<_It1>&, iter_reference_t<_It2>>),
+  requires(invocable<_Fp&, iter_reference_t<_It1>, iter_value_t<_It2>&>),
+  requires(invocable<_Fp&, iter_reference_t<_It1>, iter_reference_t<_It2>>),
+  requires(invocable<_Fp&, iter_common_reference_t<_It1>, iter_common_reference_t<_It2>>),
+  requires(common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                                 invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_reference_t<_It2>>>),
+  requires(common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                                 invoke_result_t<_Fp&, iter_reference_t<_It1>, iter_value_t<_It2>&>>),
+  requires(common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                                 invoke_result_t<_Fp&, iter_reference_t<_It1>, iter_reference_t<_It2>>>),
+  requires(common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                                 invoke_result_t<_Fp&, iter_common_reference_t<_It1>, iter_common_reference_t<_It2>>>));
+
+template <class _Fp, class _It1, class _It2>
+_CCCL_CONCEPT __indirectly_regular_binary_invocable = _CCCL_REQUIRES_EXPR((_Fp, _It1, _It2))(
+  requires(indirectly_readable<_It1>),
+  requires(indirectly_readable<_It2>),
+  requires(copy_constructible<_Fp>),
+  requires(regular_invocable<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>),
+  requires(regular_invocable<_Fp&, iter_value_t<_It1>&, iter_reference_t<_It2>>),
+  requires(regular_invocable<_Fp&, iter_reference_t<_It1>, iter_value_t<_It2>&>),
+  requires(regular_invocable<_Fp&, iter_reference_t<_It1>, iter_reference_t<_It2>>),
+  requires(regular_invocable<_Fp&, iter_common_reference_t<_It1>, iter_common_reference_t<_It2>>),
+  requires(common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                                 invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_reference_t<_It2>>>),
+  requires(common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                                 invoke_result_t<_Fp&, iter_reference_t<_It1>, iter_value_t<_It2>&>>),
+  requires(common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                                 invoke_result_t<_Fp&, iter_reference_t<_It1>, iter_reference_t<_It2>>>),
+  requires(common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It1>&, iter_value_t<_It2>&>,
+                                 invoke_result_t<_Fp&, iter_common_reference_t<_It1>, iter_common_reference_t<_It2>>>));
+
 template <class _Ip, class = void>
 inline constexpr bool __has_iter_category = false;
 
@@ -637,6 +712,26 @@ template <class _Ip>
 inline constexpr bool __has_iter_concept<_Ip, void_t<typename _Ip::iterator_concept>> = true;
 
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
+
+template <class _Fn, class _Tp, class _Iter, class _Up>
+_CCCL_CONCEPT __indirectly_binary_reducible_impl = _CCCL_REQUIRES_EXPR((_Fn, _Tp, _Iter, _Up), )(
+  requires(movable<_Tp>),
+  requires(movable<_Up>),
+  requires(convertible_to<_Tp, _Up>),
+  requires(invocable<_Fn&, _Up, iter_reference_t<_Iter>>),
+  requires(assignable_from<_Up&, invoke_result_t<_Fn&, _Up, iter_reference_t<_Iter>>>));
+
+// Similar to __indirectly_binary_invokable. Asserts that for a given operator, type, and
+// iterator triple, that a general reduction is well formed, so _Fn(_Fn(_Tp, *_Iter), *_Iter)
+// etc is sane.
+template <class _Fn, class _Tp, class _Iter>
+_CCCL_CONCEPT __indirectly_binary_reducible = _CCCL_REQUIRES_EXPR((_Fn, _Tp, _Iter), )(
+  requires(copy_constructible<_Fn>),
+  requires(indirectly_readable<_Iter>),
+  requires(invocable<_Fn&, _Tp, iter_reference_t<_Iter>>),
+  requires(__invoke_constructible<_Fn&, _Tp, iter_reference_t<_Iter>>),
+  requires(
+    __indirectly_binary_reducible_impl<_Fn, _Tp, _Iter, decay_t<invoke_result_t<_Fn&, _Tp, iter_reference_t<_Iter>>>>));
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

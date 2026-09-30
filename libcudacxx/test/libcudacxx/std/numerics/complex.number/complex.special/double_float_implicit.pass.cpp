@@ -31,8 +31,8 @@ int main(int, char**)
   {
     constexpr cuda::std::complex<float> cd(2.5, 3.5);
     constexpr cuda::std::complex<double> cf = cd;
-    static_assert(cf.real() == cd.real(), "");
-    static_assert(cf.imag() == cd.imag(), "");
+    static_assert(cf.real() == cd.real());
+    static_assert(cf.imag() == cd.imag());
   }
 
   return 0;

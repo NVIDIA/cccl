@@ -280,6 +280,10 @@ function(cccl_add_xfail_compile_target_test target_name)
     PROPERTIES FIXTURES_CLEANUP ${target_name}.clean
   )
 
+  # These tests invoke the build tool on the shared build tree. Serialize
+  # them so parallel ctest runs do not race on generator metadata.
+  set_tests_properties(${test_name} PROPERTIES RESOURCE_LOCK cccl_build_tree)
+
   if (regex)
     set_tests_properties(
       ${test_name}

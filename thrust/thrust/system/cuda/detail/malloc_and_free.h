@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -61,7 +48,7 @@ inline cub::CachingDeviceAllocator& get_allocator()
 template <typename DerivedPolicy>
 _CCCL_HOST_DEVICE void* malloc(execution_policy<DerivedPolicy>&, std::size_t n)
 {
-  void* result = 0;
+  void* result = nullptr;
 
   // need to repeat a lot of code here because we can't use #if inside of the
   // NV_IF_TARGET macro.
@@ -80,7 +67,7 @@ _CCCL_HOST_DEVICE void* malloc(execution_policy<DerivedPolicy>&, std::size_t n)
 #else // not __CUB_CACHING_MALLOC
   NV_IF_TARGET(
     NV_IS_HOST,
-    (cudaError_t status = cudaMalloc(&result, n);
+    (const cudaError_t status = cudaMalloc(&result, n);
 
      if (status != cudaSuccess) {
        cudaGetLastError(); // Clear global CUDA error state.
@@ -109,7 +96,7 @@ _CCCL_HOST_DEVICE void free(execution_policy<DerivedPolicy>&, Pointer ptr)
       thrust::free(thrust::seq, ptr);));
 #else // not __CUB_CACHING_MALLOC
   NV_IF_TARGET(NV_IS_HOST,
-               (cudaError_t status = cudaFree(thrust::raw_pointer_cast(ptr));
+               (const cudaError_t status = cudaFree(thrust::raw_pointer_cast(ptr));
                 cuda_cub::throw_on_error(status, "device free failed");),
                ( // NV_IS_DEVICE
                  thrust::free(thrust::seq, ptr);));

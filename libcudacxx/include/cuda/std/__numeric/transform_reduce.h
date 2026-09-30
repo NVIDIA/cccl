@@ -30,6 +30,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _Tp, class _BinaryOp, class _UnaryOp>
 [[nodiscard]] _CCCL_API constexpr _Tp
 transform_reduce(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOp __b, _UnaryOp __u)
@@ -57,6 +58,7 @@ template <class _InputIterator1, class _InputIterator2, class _Tp, class _Binary
   return __init;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator1, class _InputIterator2, class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp
 transform_reduce(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _Tp __init)

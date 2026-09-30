@@ -24,13 +24,13 @@
 #include "variant_test_helpers.h"
 
 // See https://llvm.org/PR31916
-__host__ __device__ void test_caller_accepts_nonconst()
+TEST_FUNC void test_caller_accepts_nonconst()
 {
   struct A
   {};
   struct Visitor
   {
-    __host__ __device__ void operator()(A&) {}
+    TEST_FUNC void operator()(A&) {}
   };
   cuda::std::variant<A> v;
   cuda::std::visit(Visitor{}, v);

@@ -32,9 +32,9 @@ int main(int, char**)
   static_assert(noexcept(cuda::std::declval<const month_weekday_last>().ok()));
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::declval<const month_weekday_last>().ok())>);
 
-  static_assert(!month_weekday_last{month{}, lastTuesday}.ok(), ""); // Bad month
-  static_assert(!month_weekday_last{January, weekday_last{weekday{12}}}.ok(), ""); // Bad month
-  static_assert(month_weekday_last{January, lastTuesday}.ok(), ""); // Both OK
+  static_assert(!month_weekday_last{month{}, lastTuesday}.ok()); // Bad month
+  static_assert(!month_weekday_last{January, weekday_last{weekday{12}}}.ok()); // Bad month
+  static_assert(month_weekday_last{January, lastTuesday}.ok()); // Both OK
 
   for (unsigned i = 0; i <= 50; ++i)
   {

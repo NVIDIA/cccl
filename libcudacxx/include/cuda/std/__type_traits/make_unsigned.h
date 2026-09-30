@@ -32,14 +32,29 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(make_unsigned)
+#  define _CCCL_BUILTIN_MAKE_UNSIGNED(...) __make_unsigned(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(make_unsigned)
+
+// __make_unsigned doesn't work with clang < 20 or clang + nvcc
+#if _CCCL_COMPILER(CLANG, <, 20) || (_CCCL_COMPILER(CLANG) && _CCCL_CUDA_COMPILER(NVCC))
+#  undef _CCCL_BUILTIN_MAKE_UNSIGNED
+#endif // _CCCL_COMPILER(CLANG, <, 20) || (_CCCL_COMPILER(CLANG) && _CCCL_CUDA_COMPILER(NVCC))
+
+// nvrtc doesn't handle enums properly, see nvbug 5554624
+#if _CCCL_COMPILER(NVRTC, <, 13, 3)
+#  undef _CCCL_BUILTIN_MAKE_UNSIGNED
+#endif // _CCCL_COMPILER(NVRTC, <, 13, 3)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_MAKE_UNSIGNED) && !defined(_LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK)
+#if defined(_CCCL_BUILTIN_MAKE_UNSIGNED)
 
 template <class _Tp>
-using make_unsigned_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_MAKE_UNSIGNED(_Tp);
+using make_unsigned_t _CCCL_NODEBUG = _CCCL_BUILTIN_MAKE_UNSIGNED(_Tp);
 
-#else
+#else // ^^^ _CCCL_BUILTIN_MAKE_UNSIGNED ^^^ / vvv !_CCCL_BUILTIN_MAKE_UNSIGNED vvv
+
 using __unsigned_types =
   __type_list<unsigned char,
               unsigned short,
@@ -125,24 +140,24 @@ struct __make_unsigned_impl<__uint128_t, true>
 #  endif // _CCCL_HAS_INT128()
 
 template <class _Tp>
-using make_unsigned_t _CCCL_NODEBUG_ALIAS = __copy_cvref_t<_Tp, typename __make_unsigned_impl<remove_cv_t<_Tp>>::type>;
+using make_unsigned_t _CCCL_NODEBUG = __copy_cvref_t<_Tp, typename __make_unsigned_impl<remove_cv_t<_Tp>>::type>;
 
-#endif // defined(_CCCL_BUILTIN_MAKE_UNSIGNED) && !defined(_LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK)
+#endif // ^^^ !_CCCL_BUILTIN_MAKE_UNSIGNED ^^^
 
 template <class _Tp>
 struct make_unsigned
 {
-  using type _CCCL_NODEBUG_ALIAS = make_unsigned_t<_Tp>;
+  using type _CCCL_NODEBUG = make_unsigned_t<_Tp>;
 };
 
 template <class _Tp>
-_CCCL_API constexpr make_unsigned_t<_Tp> __to_unsigned_like(_Tp __x) noexcept
+[[nodiscard]] _CCCL_API constexpr make_unsigned_t<_Tp> __to_unsigned_like(_Tp __x) noexcept
 {
   return static_cast<make_unsigned_t<_Tp>>(__x);
 }
 
 template <class _Tp, class _Up>
-using __copy_unsigned_t _CCCL_NODEBUG_ALIAS = conditional_t<is_unsigned_v<_Tp>, make_unsigned_t<_Up>, _Up>;
+using __copy_unsigned_t _CCCL_NODEBUG = conditional_t<is_unsigned_v<_Tp>, make_unsigned_t<_Up>, _Up>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

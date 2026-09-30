@@ -7,13 +7,15 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
+#include <cuda/std/mdspan>
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
+#include "cub_test_macros.h"
 #include "thread_reduce/catch2_test_thread_reduce_helper.cuh"
-#include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
 #include <c2h/generators.h>
+#include <c2h/operator.cuh>
 
 constexpr int max_size  = 16;
 constexpr int num_seeds = 3;
@@ -50,7 +52,7 @@ template <int NumItems, typename T, typename ScanOperator>
 __global__ void thread_scan_exclusive_partial_kernel_array(
   const T* d_in, T* d_out, ScanOperator scan_operator, int valid_items, T prefix, bool apply_prefix)
 {
-  cuda::std::array<T, NumItems> thread_data;
+  cuda::std::array<T, NumItems> thread_data{};
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < NumItems; ++i)
@@ -85,8 +87,6 @@ __global__ void thread_scan_exclusive_partial_kernel_span(
   }
 }
 
-#if _CCCL_STD_VER >= 2023
-
 template <int NumItems, typename T, typename ScanOperator>
 __global__ void thread_scan_exclusive_partial_kernel_mdspan(
   const T* d_in, T* d_out, ScanOperator scan_operator, int valid_items, T prefix, bool apply_prefix)
@@ -107,8 +107,6 @@ __global__ void thread_scan_exclusive_partial_kernel_mdspan(
     d_out[i] = thread_data[i];
   }
 }
-
-#endif // _CCCL_STD_VER >= 2023
 
 /***********************************************************************************************************************
  * Type list definition
@@ -143,8 +141,9 @@ using items_per_thread_list = c2h::enum_type_list<int, 1, 3, max_size - 1, max_s
  * Test cases
  **********************************************************************************************************************/
 
-C2H_TEST("ThreadScanExclusive Integral Type Tests",
+CUB_TEST("ThreadScanExclusive Integral Type Tests",
          "[scan][thread]",
+         CUB_SMALL,
          integral_type_list,
          cub_operator_integral_list,
          items_per_thread_list)
@@ -158,7 +157,7 @@ C2H_TEST("ThreadScanExclusive Integral Type Tests",
   using dist_param                 = dist_interval<value_t, op_t, num_items, accum_t, output_t>;
   using filler_dist_param          = dist_interval<accum_t, op_t, num_items, accum_t, output_t>;
   constexpr auto scan_op           = op_t{};
-  constexpr auto operator_identity = cub_operator_to_identity<accum_t, op_t>::value();
+  constexpr auto operator_identity = cuda::identity_element<op_t, accum_t>();
   const int valid_items            = GENERATE_COPY(
     take(1, random(2, cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, cuda::std::numeric_limits<int>::max())),
@@ -172,7 +171,7 @@ C2H_TEST("ThreadScanExclusive Integral Type Tests",
   c2h::device_vector<value_t> d_in(num_items, thrust::no_init);
   c2h::device_vector<output_t> d_out(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<value_t> h_in = d_in;
+  const c2h::host_vector<value_t> h_in = d_in;
   c2h::host_vector<output_t> reference_result(num_items, static_cast<output_t>(filler));
 
   compute_exclusive_scan_reference(
@@ -200,8 +199,9 @@ C2H_TEST("ThreadScanExclusive Integral Type Tests",
   REQUIRE(reference_result == d_out);
 }
 
-C2H_TEST("ThreadScanExclusive Floating-Point Type Tests",
+CUB_TEST("ThreadScanExclusive Floating-Point Type Tests",
          "[scan][thread]",
+         CUB_SMALL,
          fp_type_list,
          cub_operator_fp_list,
          items_per_thread_list)
@@ -215,7 +215,7 @@ C2H_TEST("ThreadScanExclusive Floating-Point Type Tests",
   using dist_param             = dist_interval<value_t, op_t, num_items, accum_t, output_t>;
   using filler_dist_param      = dist_interval<accum_t, op_t, num_items, accum_t, output_t>;
   constexpr auto scan_op       = op_t{};
-  const auto operator_identity = cub_operator_to_identity<accum_t, op_t>::value();
+  const auto operator_identity = cuda::identity_element<op_t, accum_t>();
   const int valid_items        = GENERATE_COPY(
     take(1, random(2, cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, cuda::std::numeric_limits<int>::max())),
@@ -229,7 +229,7 @@ C2H_TEST("ThreadScanExclusive Floating-Point Type Tests",
   c2h::device_vector<value_t> d_in(num_items, thrust::no_init);
   c2h::device_vector<value_t> d_out(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<value_t> h_in = d_in;
+  const c2h::host_vector<value_t> h_in = d_in;
   c2h::host_vector<value_t> reference_result(num_items, filler);
 
   compute_exclusive_scan_reference(
@@ -259,8 +259,9 @@ C2H_TEST("ThreadScanExclusive Floating-Point Type Tests",
 
 #if TEST_HALF_T() || TEST_BF_T()
 
-C2H_TEST("ThreadScanExclusive Narrow PrecisionType Tests",
+CUB_TEST("ThreadScanExclusive Narrow PrecisionType Tests",
          "[scan][thread][narrow]",
+         CUB_SMALL,
          narrow_precision_type_list,
          cub_operator_fp_list,
          items_per_thread_list)
@@ -274,7 +275,7 @@ C2H_TEST("ThreadScanExclusive Narrow PrecisionType Tests",
   using dist_param             = dist_interval<value_t, op_t, num_items, accum_t, output_t>;
   using filler_dist_param      = dist_interval<accum_t, op_t, num_items, accum_t, output_t>;
   constexpr auto scan_op       = unwrap_op(std::true_type{}, op_t{});
-  const auto operator_identity = cub_operator_to_identity<accum_t, op_t>::value();
+  const auto operator_identity = identity_v<op_t, accum_t>;
   const int valid_items        = GENERATE_COPY(
     take(1, random(2, cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, cuda::std::numeric_limits<int>::max())),
@@ -291,7 +292,7 @@ C2H_TEST("ThreadScanExclusive Narrow PrecisionType Tests",
   c2h::device_vector<value_t> d_in(num_items, thrust::no_init);
   c2h::device_vector<output_t> d_out(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<value_t> h_in = d_in;
+  const c2h::host_vector<value_t> h_in = d_in;
   c2h::host_vector<output_t> reference_result(num_items, filler);
 
   compute_exclusive_scan_reference(
@@ -321,14 +322,14 @@ C2H_TEST("ThreadScanExclusive Narrow PrecisionType Tests",
 
 #endif // TEST_HALF_T() || TEST_BF_T()
 
-C2H_TEST("ThreadScanExclusive Container Tests", "[scan][thread]")
+CUB_TEST("ThreadScanExclusive Container Tests", "[scan][thread]", CUB_SMALL)
 {
   c2h::device_vector<int> d_in(max_size, thrust::no_init);
   c2h::device_vector<int> d_out(max_size, thrust::no_init);
   using dist_param = dist_interval<int, cuda::std::plus<>, max_size>;
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<int> h_in = d_in;
-  const int valid_items      = GENERATE_COPY(
+  const c2h::host_vector<int> h_in = d_in;
+  const int valid_items            = GENERATE_COPY(
     take(1, random(2, max_size - 2)),
     take(1, random(max_size + 2, cuda::std::numeric_limits<int>::max())),
     values({1, max_size - 1, max_size, max_size + 1}));
@@ -360,7 +361,6 @@ C2H_TEST("ThreadScanExclusive Container Tests", "[scan][thread]")
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(reference_result == d_out);
 
-#if _CCCL_STD_VER >= 2023
   thrust::fill(d_out.begin(), d_out.end(), 0);
   thread_scan_exclusive_partial_kernel_mdspan<max_size><<<1, 1>>>(
     thrust::raw_pointer_cast(d_in.data()),
@@ -372,10 +372,9 @@ C2H_TEST("ThreadScanExclusive Container Tests", "[scan][thread]")
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(reference_result == d_out);
-#endif // _CCCL_STD_VER >= 2023
 }
 
-C2H_TEST("ThreadScanExclusive Invalid Test", "[scan][thread]")
+CUB_TEST("ThreadScanExclusive Invalid Test", "[scan][thread]", CUB_SMALL)
 {
   const auto in_it = cuda::make_transform_iterator(
     thrust::make_zip_iterator(cuda::counting_iterator<segment::offset_t>{1},

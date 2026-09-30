@@ -8,72 +8,50 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/__execution/tune.h>
+#include <cuda/execution.tune.h>
 
-struct get_reduce_tuning_query_t
-{};
+#include "test_macros.h"
 
-template <class Derived>
-struct reduce_tuning
+struct reduce_policy
 {
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const get_reduce_tuning_query_t&) const noexcept -> Derived
+  int threads_per_block;
+};
+
+template <int ThreadsPerBlock, class T>
+struct reduce_policy_selector
+{
+  TEST_FUNC constexpr auto operator()(cuda::compute_capability) const -> reduce_policy
   {
-    return static_cast<const Derived&>(*this);
+    return {ThreadsPerBlock / sizeof(T)};
   }
 };
 
-template <int BlockThreads>
-struct reduce : reduce_tuning<reduce<BlockThreads>>
+struct scan_policy
 {
-  template <class T>
-  struct type
-  {
-    struct max_policy
-    {
-      struct reduce_policy
-      {
-        static constexpr int block_threads = BlockThreads / sizeof(T);
-      };
-    };
-  };
+  int threads_per_block = 1;
 };
 
-struct get_scan_tuning_query_t
-{};
-
-struct scan_tuning
+struct scan_policy_selector
 {
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const get_scan_tuning_query_t&) const noexcept
+  TEST_FUNC constexpr auto operator()(cuda::compute_capability) const -> scan_policy
   {
-    return *this;
+    return {};
   }
-
-  struct type
-  {
-    struct max_policy
-    {
-      struct reduce_policy
-      {
-        static constexpr int block_threads = 1;
-      };
-    };
-  };
 };
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
-  constexpr int nominal_block_threads = 256;
-  constexpr int block_threads         = nominal_block_threads / sizeof(int);
+  constexpr int nominal_threads_per_block = 256;
+  constexpr int threads_per_block         = nominal_threads_per_block / sizeof(int);
 
-  using env_t           = decltype(cuda::execution::__tune(reduce<nominal_block_threads>{}, scan_tuning{}));
+  using env_t =
+    decltype(cuda::execution::tune(reduce_policy_selector<nominal_threads_per_block, int>{}, scan_policy_selector{}));
   using tuning_t        = cuda::std::execution::__query_result_t<env_t, cuda::execution::__get_tuning_t>;
-  using reduce_tuning_t = cuda::std::execution::__query_result_t<tuning_t, get_reduce_tuning_query_t>;
-  using scan_tuning_t   = cuda::std::execution::__query_result_t<tuning_t, get_scan_tuning_query_t>;
-  using reduce_policy_t = reduce_tuning_t::type<int>;
-  using scan_policy_t   = scan_tuning_t::type;
+  using reduce_policy_t = cuda::std::execution::__query_result_t<tuning_t, reduce_policy>;
+  using scan_policy_t   = cuda::std::execution::__query_result_t<tuning_t, scan_policy>;
 
-  static_assert(reduce_policy_t::max_policy::reduce_policy::block_threads == block_threads);
-  static_assert(scan_policy_t::max_policy::reduce_policy::block_threads == 1);
+  static_assert(reduce_policy_t{}(cuda::compute_capability{7, 5}).threads_per_block == threads_per_block);
+  static_assert(scan_policy_t{}(cuda::compute_capability{7, 5}).threads_per_block == 1);
 }
 
 int main(int, char**)

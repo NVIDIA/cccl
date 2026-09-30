@@ -24,11 +24,11 @@
 
 #if _CCCL_HAS_EXCEPTIONS()
 
-#  ifdef __cpp_lib_variant
+#  if __cpp_lib_variant >= 201606L
 #    include <variant>
-#  else // ^^^ __cpp_lib_variant ^^^ / vvv !__cpp_lib_variant vvv
+#  else // ^^^ __cpp_lib_variant >= 201606L ^^^ / vvv __cpp_lib_variant < 201606L vvv
 #    include <exception>
-#  endif // !__cpp_lib_variant
+#  endif // ^^^ __cpp_lib_variant < 201606L ^^^
 #endif // _CCCL_HAS_EXCEPTIONS()
 
 #include <cuda/std/__cccl/prologue.h>
@@ -37,11 +37,11 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_NOVERSION
 
-#  ifdef __cpp_lib_variant
+#  if __cpp_lib_variant >= 201606L
 
 using ::std::bad_variant_access;
 
-#  else // ^^^ __cpp_lib_variant ^^^ / vvv !__cpp_lib_variant vvv
+#  else // ^^^ __cpp_lib_variant >= 201606L ^^^ / vvv __cpp_lib_variant < 201606L vvv
 class _CCCL_TYPE_VISIBILITY_DEFAULT bad_variant_access : public ::std::exception
 {
 public:
@@ -50,7 +50,7 @@ public:
     return "bad access to cuda::std::variant";
   }
 };
-#  endif // !__cpp_lib_variant
+#  endif // ^^^ __cpp_lib_variant < 201606L ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD_NOVERSION
 

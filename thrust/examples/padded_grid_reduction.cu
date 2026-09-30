@@ -2,15 +2,14 @@
 #include <thrust/extrema.h>
 #include <thrust/functional.h>
 #include <thrust/host_vector.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
 
+#include <cfloat>
 #include <cmath>
 #include <iomanip>
-
-#include <float.h>
+#include <iostream>
 
 // This example computes the minimum and maximum values
 // over a padded grid.  The padded values are not considered
@@ -22,20 +21,20 @@
 template <typename IndexType, typename ValueType>
 struct transform_tuple
 {
-  using InputTuple  = typename thrust::tuple<IndexType, ValueType>;
-  using OutputTuple = typename thrust::tuple<bool, ValueType, ValueType>;
+  using InputTuple  = typename cuda::std::tuple<IndexType, ValueType>;
+  using OutputTuple = typename cuda::std::tuple<bool, ValueType, ValueType>;
 
-  IndexType n, N;
+  IndexType n, n_padded;
 
-  transform_tuple(IndexType n, IndexType N)
+  transform_tuple(IndexType n, IndexType n_padded)
       : n(n)
-      , N(N)
+      , n_padded(n_padded)
   {}
 
   __host__ __device__ OutputTuple operator()(const InputTuple& t) const
   {
-    bool is_valid = (thrust::get<0>(t) % N) < n;
-    return OutputTuple(is_valid, thrust::get<1>(t), thrust::get<1>(t));
+    const bool is_valid = (cuda::std::get<0>(t) % n_padded) < n;
+    return OutputTuple(is_valid, cuda::std::get<1>(t), cuda::std::get<1>(t));
   }
 };
 
@@ -44,80 +43,78 @@ struct transform_tuple
 template <typename IndexType, typename ValueType>
 struct reduce_tuple
 {
-  using Tuple = typename thrust::tuple<bool, ValueType, ValueType>;
+  using Tuple = typename cuda::std::tuple<bool, ValueType, ValueType>;
 
   __host__ __device__ Tuple operator()(const Tuple& t0, const Tuple& t1) const
   {
-    if (thrust::get<0>(t0) && thrust::get<0>(t1)) // both valid
+    if (cuda::std::get<0>(t0) && cuda::std::get<0>(t1)) // both valid
     {
-      return Tuple(
-        true, thrust::min(thrust::get<1>(t0), thrust::get<1>(t1)), thrust::max(thrust::get<2>(t0), thrust::get<2>(t1)));
+      return Tuple(true,
+                   thrust::min(cuda::std::get<1>(t0), cuda::std::get<1>(t1)),
+                   thrust::max(cuda::std::get<2>(t0), cuda::std::get<2>(t1)));
     }
-    else if (thrust::get<0>(t0))
+    else if (cuda::std::get<0>(t0))
     {
       return t0;
     }
-    else if (thrust::get<0>(t1))
-    {
-      return t1;
-    }
     else
     {
-      return t1; // if neither is valid then it doesn't matter what we return
+      return t1; // if t0 is not valid, return t1 whether it is valid or not
     }
   }
 };
 
 int main()
 {
-  int M = 10; // number of rows
-  int n = 11; // number of columns excluding padding
-  int N = 16; // number of columns including padding
+  const int M        = 10; // number of rows
+  const int n        = 11; // number of columns excluding padding
+  const int n_padded = 16; // number of columns including padding
 
   thrust::default_random_engine rng(12345);
   thrust::uniform_real_distribution<float> dist(0.0f, 1.0f);
 
-  thrust::device_vector<float> data(M * N, -1);
+  thrust::device_vector<float> data(M * n_padded, -1);
 
   // initialize valid values in grid
   for (int i = 0; i < M; i++)
   {
     for (int j = 0; j < n; j++)
     {
-      data[i * N + j] = dist(rng);
+      data[static_cast<std::size_t>(i) * n_padded + j] = dist(rng);
     }
   }
 
   // print full grid
-  std::cout << "padded grid" << std::endl;
+  std::cout << "padded grid" << '\n';
   std::cout << std::fixed << std::setprecision(4);
   for (int i = 0; i < M; i++)
   {
     std::cout << " ";
-    for (int j = 0; j < N; j++)
+    for (int j = 0; j < n_padded; j++)
     {
-      std::cout << data[i * N + j] << " ";
+      std::cout << data[(static_cast<std::size_t>(i) * n_padded) + j] << " ";
     }
     std::cout << "\n";
   }
   std::cout << "\n";
 
   // compute min & max over valid region of the 2d grid
-  using result_type = thrust::tuple<bool, float, float>;
+  using result_type = cuda::std::tuple<bool, float, float>;
 
   result_type init(true, FLT_MAX, -FLT_MAX); // initial value
-  transform_tuple<int, float> unary_op(n, N); // transformation operator
-  reduce_tuple<int, float> binary_op; // reduction operator
+  const transform_tuple<int, float> unary_op(n, n_padded); // transformation operator
+  const reduce_tuple<int, float> binary_op; // reduction operator
 
   result_type result = thrust::transform_reduce(
     thrust::make_zip_iterator(thrust::counting_iterator<int>(0), data.begin()),
-    thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<int>(0), data.begin())) + data.size(),
+    thrust::make_zip_iterator(cuda::std::tuple(thrust::counting_iterator<int>(0), data.begin()))
+      + static_cast<std::ptrdiff_t>(data.size()),
     unary_op,
     init,
     binary_op);
 
-  std::cout << "minimum value: " << thrust::get<1>(result) << std::endl;
-  std::cout << "maximum value: " << thrust::get<2>(result) << std::endl;
+  std::cout << "minimum value: " << cuda::std::get<1>(result) << '\n';
+  std::cout << "maximum value: " << cuda::std::get<2>(result) << '\n';
 
   return 0;
 }

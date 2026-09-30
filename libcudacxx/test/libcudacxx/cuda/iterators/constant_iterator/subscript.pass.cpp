@@ -17,7 +17,7 @@
 #include "types.h"
 
 template <class T>
-__host__ __device__ constexpr void test(T value)
+TEST_FUNC constexpr void test(T value)
 {
   {
     cuda::constant_iterator iter{value, 42};
@@ -27,7 +27,7 @@ __host__ __device__ constexpr void test(T value)
     }
 
     static_assert(noexcept(iter[42]));
-    static_assert(cuda::std::is_same_v<decltype(iter[42]), const T&>);
+    static_assert(cuda::std::is_same_v<decltype(iter[42]), T>);
   }
 
   {
@@ -37,11 +37,11 @@ __host__ __device__ constexpr void test(T value)
       assert(iter[i] == value);
     }
     static_assert(noexcept(iter[42]));
-    static_assert(cuda::std::is_same_v<decltype(iter[42]), const T&>);
+    static_assert(cuda::std::is_same_v<decltype(iter[42]), T>);
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test(42);
   test(NotDefaultConstructible{42});
@@ -52,7 +52,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

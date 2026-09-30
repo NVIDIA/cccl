@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -79,7 +66,7 @@ struct bsf
   {
     RandomAccessIterator iter = thrust::system::detail::generic::scalar::lower_bound(begin, end, value, comp);
 
-    thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+    const thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
     return iter != end && !wrapped_comp(value, *iter);
   }
@@ -104,7 +91,7 @@ struct binary_search_functor
   template <typename Tuple>
   _CCCL_HOST_DEVICE void operator()(Tuple t)
   {
-    thrust::get<1>(t) = func(begin, end, thrust::get<0>(t), comp);
+    ::cuda::std::get<1>(t) = func(begin, end, ::cuda::std::get<0>(t), comp);
   }
 }; // binary_search_functor
 
@@ -157,7 +144,8 @@ _CCCL_HOST_DEVICE OutputType binary_search(
 
   { // copy value to device
     using value_in_system_t = typename thrust::iterator_system<const T*>::type;
-    value_in_system_t value_in_system;
+    // thrust systems must be mutable
+    value_in_system_t value_in_system; // NOLINT(misc-const-correctness)
     using thrust::system::detail::generic::select_system;
     thrust::copy_n(select_system(thrust::detail::derived_cast(thrust::detail::strip_const(value_in_system)),
                                  thrust::detail::derived_cast(thrust::detail::strip_const(exec))),
@@ -173,7 +161,8 @@ _CCCL_HOST_DEVICE OutputType binary_search(
   OutputType output;
   { // copy result to host and return
     using result_out_system_t = typename thrust::iterator_system<OutputType*>::type;
-    result_out_system_t result_out_system;
+    // thrust systems must be mutable
+    result_out_system_t result_out_system; // NOLINT(misc-const-correctness)
     using thrust::system::detail::generic::select_system;
     thrust::copy_n(select_system(thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
                                  thrust::detail::derived_cast(thrust::detail::strip_const(result_out_system))),
@@ -194,7 +183,6 @@ template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE ForwardIterator
 lower_bound(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator begin, ForwardIterator end, const T& value)
 {
-  namespace p = thrust::placeholders;
   return thrust::lower_bound(exec, begin, end, value, ::cuda::std::less<>{});
 }
 
@@ -215,7 +203,6 @@ template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE ForwardIterator
 upper_bound(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator begin, ForwardIterator end, const T& value)
 {
-  namespace p = thrust::placeholders;
   return thrust::upper_bound(exec, begin, end, value, ::cuda::std::less<>{});
 }
 
@@ -263,7 +250,6 @@ _CCCL_HOST_DEVICE OutputIterator lower_bound(
   InputIterator values_end,
   OutputIterator output)
 {
-  namespace p = thrust::placeholders;
   return thrust::lower_bound(exec, begin, end, values_begin, values_end, output, ::cuda::std::less<>{});
 }
 
@@ -293,7 +279,6 @@ _CCCL_HOST_DEVICE OutputIterator upper_bound(
   InputIterator values_end,
   OutputIterator output)
 {
-  namespace p = thrust::placeholders;
   return thrust::upper_bound(exec, begin, end, values_begin, values_end, output, ::cuda::std::less<>{});
 }
 
@@ -323,7 +308,6 @@ _CCCL_HOST_DEVICE OutputIterator binary_search(
   InputIterator values_end,
   OutputIterator output)
 {
-  namespace p = thrust::placeholders;
   return thrust::binary_search(exec, begin, end, values_begin, values_end, output, ::cuda::std::less<>{});
 }
 

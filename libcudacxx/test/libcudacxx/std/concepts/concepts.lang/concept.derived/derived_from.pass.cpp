@@ -13,6 +13,8 @@
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 using cuda::std::derived_from;
 
 struct Base1
@@ -35,355 +37,355 @@ struct Derived5 : Derived4
 {};
 
 template <typename From, typename To>
-__host__ __device__ constexpr void CheckNotDerivedFromPointer()
+TEST_FUNC constexpr void CheckNotDerivedFromPointer()
 {
   { // From as pointer
-    static_assert(!derived_from<From*, To>, "");
-    static_assert(!derived_from<From*, const To>, "");
-    static_assert(!derived_from<From*, volatile To>, "");
-    static_assert(!derived_from<From*, const volatile To>, "");
+    static_assert(!derived_from<From*, To>);
+    static_assert(!derived_from<From*, const To>);
+    static_assert(!derived_from<From*, volatile To>);
+    static_assert(!derived_from<From*, const volatile To>);
 
     if constexpr (!cuda::std::same_as<To, void>)
     {
-      static_assert(!derived_from<From*, To&>, "");
-      static_assert(!derived_from<From*, const To&>, "");
-      static_assert(!derived_from<From*, volatile To&>, "");
-      static_assert(!derived_from<From*, const volatile To&>, "");
+      static_assert(!derived_from<From*, To&>);
+      static_assert(!derived_from<From*, const To&>);
+      static_assert(!derived_from<From*, volatile To&>);
+      static_assert(!derived_from<From*, const volatile To&>);
 
-      static_assert(!derived_from<From*, To&&>, "");
-      static_assert(!derived_from<From*, const To&&>, "");
-      static_assert(!derived_from<From*, volatile To&&>, "");
-      static_assert(!derived_from<From*, const volatile To&&>, "");
+      static_assert(!derived_from<From*, To&&>);
+      static_assert(!derived_from<From*, const To&&>);
+      static_assert(!derived_from<From*, volatile To&&>);
+      static_assert(!derived_from<From*, const volatile To&&>);
 
-      static_assert(!derived_from<const From*, To&>, "");
-      static_assert(!derived_from<const From*, const To&>, "");
-      static_assert(!derived_from<const From*, volatile To&>, "");
-      static_assert(!derived_from<const From*, const volatile To&>, "");
+      static_assert(!derived_from<const From*, To&>);
+      static_assert(!derived_from<const From*, const To&>);
+      static_assert(!derived_from<const From*, volatile To&>);
+      static_assert(!derived_from<const From*, const volatile To&>);
 
-      static_assert(!derived_from<const From*, To&&>, "");
-      static_assert(!derived_from<const From*, const To&&>, "");
-      static_assert(!derived_from<const From*, volatile To&&>, "");
-      static_assert(!derived_from<const From*, const volatile To&&>, "");
+      static_assert(!derived_from<const From*, To&&>);
+      static_assert(!derived_from<const From*, const To&&>);
+      static_assert(!derived_from<const From*, volatile To&&>);
+      static_assert(!derived_from<const From*, const volatile To&&>);
 
-      static_assert(!derived_from<volatile From*, To&>, "");
-      static_assert(!derived_from<volatile From*, const To&>, "");
-      static_assert(!derived_from<volatile From*, volatile To&>, "");
-      static_assert(!derived_from<volatile From*, const volatile To&>, "");
+      static_assert(!derived_from<volatile From*, To&>);
+      static_assert(!derived_from<volatile From*, const To&>);
+      static_assert(!derived_from<volatile From*, volatile To&>);
+      static_assert(!derived_from<volatile From*, const volatile To&>);
 
-      static_assert(!derived_from<volatile From*, To&&>, "");
-      static_assert(!derived_from<volatile From*, const To&&>, "");
-      static_assert(!derived_from<volatile From*, volatile To&&>, "");
-      static_assert(!derived_from<volatile From*, const volatile To&&>, "");
+      static_assert(!derived_from<volatile From*, To&&>);
+      static_assert(!derived_from<volatile From*, const To&&>);
+      static_assert(!derived_from<volatile From*, volatile To&&>);
+      static_assert(!derived_from<volatile From*, const volatile To&&>);
 
-      static_assert(!derived_from<const volatile From*, To&>, "");
-      static_assert(!derived_from<const volatile From*, const To&>, "");
-      static_assert(!derived_from<const volatile From*, volatile To&>, "");
-      static_assert(!derived_from<const volatile From*, const volatile To&>, "");
+      static_assert(!derived_from<const volatile From*, To&>);
+      static_assert(!derived_from<const volatile From*, const To&>);
+      static_assert(!derived_from<const volatile From*, volatile To&>);
+      static_assert(!derived_from<const volatile From*, const volatile To&>);
 
-      static_assert(!derived_from<const volatile From*, To&&>, "");
-      static_assert(!derived_from<const volatile From*, const To&&>, "");
-      static_assert(!derived_from<const volatile From*, volatile To&&>, "");
-      static_assert(!derived_from<const volatile From*, const volatile To&&>, "");
+      static_assert(!derived_from<const volatile From*, To&&>);
+      static_assert(!derived_from<const volatile From*, const To&&>);
+      static_assert(!derived_from<const volatile From*, volatile To&&>);
+      static_assert(!derived_from<const volatile From*, const volatile To&&>);
     }
   }
   { // To as pointer
-    static_assert(!derived_from<From, To*>, "");
-    static_assert(!derived_from<From, const To*>, "");
-    static_assert(!derived_from<From, volatile To*>, "");
-    static_assert(!derived_from<From, const volatile To*>, "");
+    static_assert(!derived_from<From, To*>);
+    static_assert(!derived_from<From, const To*>);
+    static_assert(!derived_from<From, volatile To*>);
+    static_assert(!derived_from<From, const volatile To*>);
 
     if constexpr (!cuda::std::same_as<From, void>)
     {
-      static_assert(!derived_from<From&, To*>, "");
-      static_assert(!derived_from<From&, const To*>, "");
-      static_assert(!derived_from<From&, volatile To*>, "");
-      static_assert(!derived_from<From&, const volatile To*>, "");
+      static_assert(!derived_from<From&, To*>);
+      static_assert(!derived_from<From&, const To*>);
+      static_assert(!derived_from<From&, volatile To*>);
+      static_assert(!derived_from<From&, const volatile To*>);
 
-      static_assert(!derived_from<From&&, To*>, "");
-      static_assert(!derived_from<From&&, const To*>, "");
-      static_assert(!derived_from<From&&, volatile To*>, "");
-      static_assert(!derived_from<From&&, const volatile To*>, "");
+      static_assert(!derived_from<From&&, To*>);
+      static_assert(!derived_from<From&&, const To*>);
+      static_assert(!derived_from<From&&, volatile To*>);
+      static_assert(!derived_from<From&&, const volatile To*>);
 
-      static_assert(!derived_from<const From&, To*>, "");
-      static_assert(!derived_from<const From&, const To*>, "");
-      static_assert(!derived_from<const From&, volatile To*>, "");
-      static_assert(!derived_from<const From&, const volatile To*>, "");
+      static_assert(!derived_from<const From&, To*>);
+      static_assert(!derived_from<const From&, const To*>);
+      static_assert(!derived_from<const From&, volatile To*>);
+      static_assert(!derived_from<const From&, const volatile To*>);
 
-      static_assert(!derived_from<const From&&, To*>, "");
-      static_assert(!derived_from<const From&&, const To*>, "");
-      static_assert(!derived_from<const From&&, volatile To*>, "");
-      static_assert(!derived_from<const From&&, const volatile To*>, "");
+      static_assert(!derived_from<const From&&, To*>);
+      static_assert(!derived_from<const From&&, const To*>);
+      static_assert(!derived_from<const From&&, volatile To*>);
+      static_assert(!derived_from<const From&&, const volatile To*>);
 
-      static_assert(!derived_from<volatile From&, To*>, "");
-      static_assert(!derived_from<volatile From&, const To*>, "");
-      static_assert(!derived_from<volatile From&, volatile To*>, "");
-      static_assert(!derived_from<volatile From&, const volatile To*>, "");
+      static_assert(!derived_from<volatile From&, To*>);
+      static_assert(!derived_from<volatile From&, const To*>);
+      static_assert(!derived_from<volatile From&, volatile To*>);
+      static_assert(!derived_from<volatile From&, const volatile To*>);
 
-      static_assert(!derived_from<volatile From&&, To*>, "");
-      static_assert(!derived_from<volatile From&&, const To*>, "");
-      static_assert(!derived_from<volatile From&&, volatile To*>, "");
-      static_assert(!derived_from<volatile From&&, const volatile To*>, "");
+      static_assert(!derived_from<volatile From&&, To*>);
+      static_assert(!derived_from<volatile From&&, const To*>);
+      static_assert(!derived_from<volatile From&&, volatile To*>);
+      static_assert(!derived_from<volatile From&&, const volatile To*>);
 
-      static_assert(!derived_from<const volatile From&, To*>, "");
-      static_assert(!derived_from<const volatile From&, const To*>, "");
-      static_assert(!derived_from<const volatile From&, volatile To*>, "");
-      static_assert(!derived_from<const volatile From&, const volatile To*>, "");
+      static_assert(!derived_from<const volatile From&, To*>);
+      static_assert(!derived_from<const volatile From&, const To*>);
+      static_assert(!derived_from<const volatile From&, volatile To*>);
+      static_assert(!derived_from<const volatile From&, const volatile To*>);
 
-      static_assert(!derived_from<const volatile From&&, To*>, "");
-      static_assert(!derived_from<const volatile From&&, const To*>, "");
-      static_assert(!derived_from<const volatile From&&, volatile To*>, "");
-      static_assert(!derived_from<const volatile From&&, const volatile To*>, "");
+      static_assert(!derived_from<const volatile From&&, To*>);
+      static_assert(!derived_from<const volatile From&&, const To*>);
+      static_assert(!derived_from<const volatile From&&, volatile To*>);
+      static_assert(!derived_from<const volatile From&&, const volatile To*>);
     }
   }
   { // Both as pointers
-    static_assert(!derived_from<From*, To*>, "");
-    static_assert(!derived_from<From*, const To*>, "");
-    static_assert(!derived_from<From*, volatile To*>, "");
-    static_assert(!derived_from<From*, const volatile To*>, "");
+    static_assert(!derived_from<From*, To*>);
+    static_assert(!derived_from<From*, const To*>);
+    static_assert(!derived_from<From*, volatile To*>);
+    static_assert(!derived_from<From*, const volatile To*>);
 
-    static_assert(!derived_from<const From*, To*>, "");
-    static_assert(!derived_from<const From*, const To*>, "");
-    static_assert(!derived_from<const From*, volatile To*>, "");
-    static_assert(!derived_from<const From*, const volatile To*>, "");
+    static_assert(!derived_from<const From*, To*>);
+    static_assert(!derived_from<const From*, const To*>);
+    static_assert(!derived_from<const From*, volatile To*>);
+    static_assert(!derived_from<const From*, const volatile To*>);
 
-    static_assert(!derived_from<volatile From*, To*>, "");
-    static_assert(!derived_from<volatile From*, const To*>, "");
-    static_assert(!derived_from<volatile From*, volatile To*>, "");
-    static_assert(!derived_from<volatile From*, const volatile To*>, "");
+    static_assert(!derived_from<volatile From*, To*>);
+    static_assert(!derived_from<volatile From*, const To*>);
+    static_assert(!derived_from<volatile From*, volatile To*>);
+    static_assert(!derived_from<volatile From*, const volatile To*>);
 
-    static_assert(!derived_from<const volatile From*, To*>, "");
-    static_assert(!derived_from<const volatile From*, const To*>, "");
-    static_assert(!derived_from<const volatile From*, volatile To*>, "");
-    static_assert(!derived_from<const volatile From*, const volatile To*>, "");
+    static_assert(!derived_from<const volatile From*, To*>);
+    static_assert(!derived_from<const volatile From*, const To*>);
+    static_assert(!derived_from<const volatile From*, volatile To*>);
+    static_assert(!derived_from<const volatile From*, const volatile To*>);
   }
 
 #if TEST_STD_VER > 2017
   // From as the return type of a pointer-to-function
   if constexpr (!cuda::std::is_array_v<From>)
   {
-    static_assert(!derived_from<From (*)(), To>, "");
-    static_assert(!derived_from<From (*)(int), To>, "");
+    static_assert(!derived_from<From (*)(), To>);
+    static_assert(!derived_from<From (*)(int), To>);
   }
 
   // To as the return type of a pointer-to-function
   if constexpr (!cuda::std::is_array_v<To>)
   {
-    static_assert(!derived_from<From, To (*)()>, "");
-    static_assert(!derived_from<From, To (*)(double)>, "");
+    static_assert(!derived_from<From, To (*)()>);
+    static_assert(!derived_from<From, To (*)(double)>);
   }
 
   // Both as the return type of a pointer-to-function
   if constexpr (!cuda::std::is_array_v<From> && !cuda::std::is_array_v<To>)
   {
-    static_assert(!derived_from<From (*)(), To (*)()>, "");
-    static_assert(!derived_from<From (*)(int), To (*)(double)>, "");
+    static_assert(!derived_from<From (*)(), To (*)()>);
+    static_assert(!derived_from<From (*)(int), To (*)(double)>);
   }
   { // pointer-to-member
     if constexpr (cuda::std::is_class_v<From> && !cuda::std::same_as<To, void>)
     {
-      static_assert(!derived_from<To From::*, To>, "");
+      static_assert(!derived_from<To From::*, To>);
     }
 
     if constexpr (cuda::std::is_class_v<To> && !cuda::std::same_as<From, void>)
     {
-      static_assert(!derived_from<From To::*, From>, "");
+      static_assert(!derived_from<From To::*, From>);
     }
   }
   { // pointer-to-member-functions
     if constexpr (cuda::std::is_class_v<From>)
     {
-      static_assert(!derived_from<From (From::*)(), To>, "");
+      static_assert(!derived_from<From (From::*)(), To>);
     }
 
     if constexpr (cuda::std::is_class_v<To>)
     {
-      static_assert(!derived_from<To (To::*)(), From>, "");
+      static_assert(!derived_from<To (To::*)(), From>);
     }
   }
 #endif
 }
 
 template <typename From, typename To>
-__host__ __device__ constexpr void CheckNotDerivedFromReference()
+TEST_FUNC constexpr void CheckNotDerivedFromReference()
 {
   if constexpr (!cuda::std::same_as<To, void>)
   {
-    static_assert(!derived_from<From, To&>, "");
-    static_assert(!derived_from<From, const To&>, "");
-    static_assert(!derived_from<From, volatile To&>, "");
-    static_assert(!derived_from<From, const volatile To&>, "");
+    static_assert(!derived_from<From, To&>);
+    static_assert(!derived_from<From, const To&>);
+    static_assert(!derived_from<From, volatile To&>);
+    static_assert(!derived_from<From, const volatile To&>);
 
-    static_assert(!derived_from<From, To&&>, "");
-    static_assert(!derived_from<From, const To&&>, "");
-    static_assert(!derived_from<From, volatile To&&>, "");
-    static_assert(!derived_from<From, const volatile To&&>, "");
+    static_assert(!derived_from<From, To&&>);
+    static_assert(!derived_from<From, const To&&>);
+    static_assert(!derived_from<From, volatile To&&>);
+    static_assert(!derived_from<From, const volatile To&&>);
   }
 
   if constexpr (!cuda::std::same_as<From, void>)
   {
-    static_assert(!derived_from<From&, To>, "");
-    static_assert(!derived_from<From&, To>, "");
-    static_assert(!derived_from<From&, To>, "");
-    static_assert(!derived_from<From&, To>, "");
+    static_assert(!derived_from<From&, To>);
+    static_assert(!derived_from<From&, To>);
+    static_assert(!derived_from<From&, To>);
+    static_assert(!derived_from<From&, To>);
 
-    static_assert(!derived_from<From&&, To>, "");
-    static_assert(!derived_from<From&&, To>, "");
-    static_assert(!derived_from<From&&, To>, "");
-    static_assert(!derived_from<From&&, To>, "");
+    static_assert(!derived_from<From&&, To>);
+    static_assert(!derived_from<From&&, To>);
+    static_assert(!derived_from<From&&, To>);
+    static_assert(!derived_from<From&&, To>);
   }
 
   // From as lvalue references
   if constexpr (!cuda::std::same_as<From, void> && !cuda::std::same_as<To, void>)
   {
-    static_assert(!derived_from<From&, To&>, "");
-    static_assert(!derived_from<From&, const To&>, "");
-    static_assert(!derived_from<From&, volatile To&>, "");
-    static_assert(!derived_from<From&, const volatile To&>, "");
+    static_assert(!derived_from<From&, To&>);
+    static_assert(!derived_from<From&, const To&>);
+    static_assert(!derived_from<From&, volatile To&>);
+    static_assert(!derived_from<From&, const volatile To&>);
 
-    static_assert(!derived_from<From&, To&&>, "");
-    static_assert(!derived_from<From&, const To&&>, "");
-    static_assert(!derived_from<From&, volatile To&&>, "");
-    static_assert(!derived_from<From&, const volatile To&&>, "");
+    static_assert(!derived_from<From&, To&&>);
+    static_assert(!derived_from<From&, const To&&>);
+    static_assert(!derived_from<From&, volatile To&&>);
+    static_assert(!derived_from<From&, const volatile To&&>);
 
-    static_assert(!derived_from<const From&, To&>, "");
-    static_assert(!derived_from<const From&, const To&>, "");
-    static_assert(!derived_from<const From&, volatile To&>, "");
-    static_assert(!derived_from<const From&, const volatile To&>, "");
+    static_assert(!derived_from<const From&, To&>);
+    static_assert(!derived_from<const From&, const To&>);
+    static_assert(!derived_from<const From&, volatile To&>);
+    static_assert(!derived_from<const From&, const volatile To&>);
 
-    static_assert(!derived_from<const From&, To&&>, "");
-    static_assert(!derived_from<const From&, const To&&>, "");
-    static_assert(!derived_from<const From&, volatile To&&>, "");
-    static_assert(!derived_from<const From&, const volatile To&&>, "");
+    static_assert(!derived_from<const From&, To&&>);
+    static_assert(!derived_from<const From&, const To&&>);
+    static_assert(!derived_from<const From&, volatile To&&>);
+    static_assert(!derived_from<const From&, const volatile To&&>);
 
-    static_assert(!derived_from<volatile From&, To&>, "");
-    static_assert(!derived_from<volatile From&, const To&>, "");
-    static_assert(!derived_from<volatile From&, volatile To&>, "");
-    static_assert(!derived_from<volatile From&, const volatile To&>, "");
+    static_assert(!derived_from<volatile From&, To&>);
+    static_assert(!derived_from<volatile From&, const To&>);
+    static_assert(!derived_from<volatile From&, volatile To&>);
+    static_assert(!derived_from<volatile From&, const volatile To&>);
 
-    static_assert(!derived_from<volatile From&, To&&>, "");
-    static_assert(!derived_from<volatile From&, const To&&>, "");
-    static_assert(!derived_from<volatile From&, volatile To&&>, "");
-    static_assert(!derived_from<volatile From&, const volatile To&&>, "");
+    static_assert(!derived_from<volatile From&, To&&>);
+    static_assert(!derived_from<volatile From&, const To&&>);
+    static_assert(!derived_from<volatile From&, volatile To&&>);
+    static_assert(!derived_from<volatile From&, const volatile To&&>);
 
-    static_assert(!derived_from<const volatile From&, To&>, "");
-    static_assert(!derived_from<const volatile From&, const To&>, "");
-    static_assert(!derived_from<const volatile From&, volatile To&>, "");
-    static_assert(!derived_from<const volatile From&, const volatile To&>, "");
+    static_assert(!derived_from<const volatile From&, To&>);
+    static_assert(!derived_from<const volatile From&, const To&>);
+    static_assert(!derived_from<const volatile From&, volatile To&>);
+    static_assert(!derived_from<const volatile From&, const volatile To&>);
 
-    static_assert(!derived_from<const volatile From&, To&&>, "");
-    static_assert(!derived_from<const volatile From&, const To&&>, "");
-    static_assert(!derived_from<const volatile From&, volatile To&&>, "");
-    static_assert(!derived_from<const volatile From&, const volatile To&&>, "");
+    static_assert(!derived_from<const volatile From&, To&&>);
+    static_assert(!derived_from<const volatile From&, const To&&>);
+    static_assert(!derived_from<const volatile From&, volatile To&&>);
+    static_assert(!derived_from<const volatile From&, const volatile To&&>);
 
     // From as rvalue references
-    static_assert(!derived_from<From&&, To&>, "");
-    static_assert(!derived_from<From&&, const To&>, "");
-    static_assert(!derived_from<From&&, volatile To&>, "");
-    static_assert(!derived_from<From&&, const volatile To&>, "");
+    static_assert(!derived_from<From&&, To&>);
+    static_assert(!derived_from<From&&, const To&>);
+    static_assert(!derived_from<From&&, volatile To&>);
+    static_assert(!derived_from<From&&, const volatile To&>);
 
-    static_assert(!derived_from<From&&, To&&>, "");
-    static_assert(!derived_from<From&&, const To&&>, "");
-    static_assert(!derived_from<From&&, volatile To&&>, "");
-    static_assert(!derived_from<From&&, const volatile To&&>, "");
+    static_assert(!derived_from<From&&, To&&>);
+    static_assert(!derived_from<From&&, const To&&>);
+    static_assert(!derived_from<From&&, volatile To&&>);
+    static_assert(!derived_from<From&&, const volatile To&&>);
 
-    static_assert(!derived_from<const From&&, To&>, "");
-    static_assert(!derived_from<const From&&, const To&>, "");
-    static_assert(!derived_from<const From&&, volatile To&>, "");
-    static_assert(!derived_from<const From&&, const volatile To&>, "");
+    static_assert(!derived_from<const From&&, To&>);
+    static_assert(!derived_from<const From&&, const To&>);
+    static_assert(!derived_from<const From&&, volatile To&>);
+    static_assert(!derived_from<const From&&, const volatile To&>);
 
-    static_assert(!derived_from<const From&&, To&&>, "");
-    static_assert(!derived_from<const From&&, const To&&>, "");
-    static_assert(!derived_from<const From&&, volatile To&&>, "");
-    static_assert(!derived_from<const From&&, const volatile To&&>, "");
+    static_assert(!derived_from<const From&&, To&&>);
+    static_assert(!derived_from<const From&&, const To&&>);
+    static_assert(!derived_from<const From&&, volatile To&&>);
+    static_assert(!derived_from<const From&&, const volatile To&&>);
 
-    static_assert(!derived_from<volatile From&&, To&>, "");
-    static_assert(!derived_from<volatile From&&, const To&>, "");
-    static_assert(!derived_from<volatile From&&, volatile To&>, "");
-    static_assert(!derived_from<volatile From&&, const volatile To&>, "");
+    static_assert(!derived_from<volatile From&&, To&>);
+    static_assert(!derived_from<volatile From&&, const To&>);
+    static_assert(!derived_from<volatile From&&, volatile To&>);
+    static_assert(!derived_from<volatile From&&, const volatile To&>);
 
-    static_assert(!derived_from<volatile From&&, To&&>, "");
-    static_assert(!derived_from<volatile From&&, const To&&>, "");
-    static_assert(!derived_from<volatile From&&, volatile To&&>, "");
-    static_assert(!derived_from<volatile From&&, const volatile To&&>, "");
+    static_assert(!derived_from<volatile From&&, To&&>);
+    static_assert(!derived_from<volatile From&&, const To&&>);
+    static_assert(!derived_from<volatile From&&, volatile To&&>);
+    static_assert(!derived_from<volatile From&&, const volatile To&&>);
 
-    static_assert(!derived_from<const volatile From&&, To&>, "");
-    static_assert(!derived_from<const volatile From&&, const To&>, "");
-    static_assert(!derived_from<const volatile From&&, volatile To&>, "");
-    static_assert(!derived_from<const volatile From&&, const volatile To&>, "");
+    static_assert(!derived_from<const volatile From&&, To&>);
+    static_assert(!derived_from<const volatile From&&, const To&>);
+    static_assert(!derived_from<const volatile From&&, volatile To&>);
+    static_assert(!derived_from<const volatile From&&, const volatile To&>);
 
-    static_assert(!derived_from<const volatile From&&, To&&>, "");
-    static_assert(!derived_from<const volatile From&&, const To&&>, "");
-    static_assert(!derived_from<const volatile From&&, volatile To&&>, "");
-    static_assert(!derived_from<const volatile From&&, const volatile To&&>, "");
+    static_assert(!derived_from<const volatile From&&, To&&>);
+    static_assert(!derived_from<const volatile From&&, const To&&>);
+    static_assert(!derived_from<const volatile From&&, volatile To&&>);
+    static_assert(!derived_from<const volatile From&&, const volatile To&&>);
   }
 
 #if TEST_STD_VER > 2017
   // From as the return type of a reference-to-function
   if constexpr (!cuda::std::is_array_v<From>)
   {
-    static_assert(!derived_from<From (&)(), To>, "");
-    static_assert(!derived_from<From (&)(int), To>, "");
+    static_assert(!derived_from<From (&)(), To>);
+    static_assert(!derived_from<From (&)(int), To>);
   }
   // To as the return type of a reference-to-function
   if constexpr (!cuda::std::is_array_v<To>)
   {
-    static_assert(!derived_from<From, To (&)()>, "");
-    static_assert(!derived_from<From, To (&)(double)>, "");
+    static_assert(!derived_from<From, To (&)()>);
+    static_assert(!derived_from<From, To (&)(double)>);
   }
   // Both as the return type of a reference-to-function
   if constexpr (!cuda::std::is_array_v<From> && !cuda::std::is_array_v<To>)
   {
-    static_assert(!derived_from<From (&)(), To (&)()>, "");
-    static_assert(!derived_from<From (&)(int), To (&)(double)>, "");
+    static_assert(!derived_from<From (&)(), To (&)()>);
+    static_assert(!derived_from<From (&)(int), To (&)(double)>);
   }
 #endif // TEST_STD_VER > 2017
 }
 
 template <typename From, typename To>
-__host__ __device__ constexpr void CheckDerivedFrom()
+TEST_FUNC constexpr void CheckDerivedFrom()
 {
-  static_assert(derived_from<From, To>, "");
+  static_assert(derived_from<From, To>);
 
-  static_assert(derived_from<From, const To>, "");
-  static_assert(derived_from<From, volatile To>, "");
-  static_assert(derived_from<From, const volatile To>, "");
+  static_assert(derived_from<From, const To>);
+  static_assert(derived_from<From, volatile To>);
+  static_assert(derived_from<From, const volatile To>);
 
-  static_assert(derived_from<const From, const To>, "");
-  static_assert(derived_from<const From, volatile To>, "");
-  static_assert(derived_from<const From, const volatile To>, "");
+  static_assert(derived_from<const From, const To>);
+  static_assert(derived_from<const From, volatile To>);
+  static_assert(derived_from<const From, const volatile To>);
 
-  static_assert(derived_from<volatile From, const To>, "");
-  static_assert(derived_from<volatile From, volatile To>, "");
-  static_assert(derived_from<volatile From, const volatile To>, "");
+  static_assert(derived_from<volatile From, const To>);
+  static_assert(derived_from<volatile From, volatile To>);
+  static_assert(derived_from<volatile From, const volatile To>);
 
-  static_assert(derived_from<const volatile From, const To>, "");
-  static_assert(derived_from<const volatile From, volatile To>, "");
-  static_assert(derived_from<const volatile From, const volatile To>, "");
+  static_assert(derived_from<const volatile From, const To>);
+  static_assert(derived_from<const volatile From, volatile To>);
+  static_assert(derived_from<const volatile From, const volatile To>);
 
   CheckNotDerivedFromPointer<From, To>();
   CheckNotDerivedFromReference<From, To>();
 }
 
 template <typename From, typename To>
-__host__ __device__ constexpr void CheckNotDerivedFrom()
+TEST_FUNC constexpr void CheckNotDerivedFrom()
 {
-  static_assert(!derived_from<From, To>, "");
+  static_assert(!derived_from<From, To>);
 
-  static_assert(!derived_from<From, const To>, "");
-  static_assert(!derived_from<From, volatile To>, "");
-  static_assert(!derived_from<From, const volatile To>, "");
+  static_assert(!derived_from<From, const To>);
+  static_assert(!derived_from<From, volatile To>);
+  static_assert(!derived_from<From, const volatile To>);
 
-  static_assert(!derived_from<const From, const To>, "");
-  static_assert(!derived_from<const From, volatile To>, "");
-  static_assert(!derived_from<const From, const volatile To>, "");
+  static_assert(!derived_from<const From, const To>);
+  static_assert(!derived_from<const From, volatile To>);
+  static_assert(!derived_from<const From, const volatile To>);
 
-  static_assert(!derived_from<volatile From, const To>, "");
-  static_assert(!derived_from<volatile From, volatile To>, "");
-  static_assert(!derived_from<volatile From, const volatile To>, "");
+  static_assert(!derived_from<volatile From, const To>);
+  static_assert(!derived_from<volatile From, volatile To>);
+  static_assert(!derived_from<volatile From, const volatile To>);
 
-  static_assert(!derived_from<const volatile From, const To>, "");
-  static_assert(!derived_from<const volatile From, volatile To>, "");
-  static_assert(!derived_from<const volatile From, const volatile To>, "");
+  static_assert(!derived_from<const volatile From, const To>);
+  static_assert(!derived_from<const volatile From, volatile To>);
+  static_assert(!derived_from<const volatile From, const volatile To>);
 
   CheckNotDerivedFromPointer<From, To>();
   CheckNotDerivedFromReference<From, To>();

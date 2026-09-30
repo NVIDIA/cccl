@@ -22,8 +22,9 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter1, class Iter2>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   int ia[]          = {1, 2, 3, 4};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -38,7 +39,8 @@ __host__ __device__ constexpr void test()
   assert(cuda::std::lexicographical_compare(Iter1(ib + 1), Iter1(ib + 3), Iter2(ia), Iter2(ia + sa), c));
 }
 
-__host__ __device__ constexpr bool test()
+_CCCL_EXEC_CHECK_DISABLE
+TEST_FUNC constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>>();
   test<cpp17_input_iterator<const int*>, forward_iterator<const int*>>();
@@ -70,13 +72,20 @@ __host__ __device__ constexpr bool test()
   test<const int*, random_access_iterator<const int*>>();
   test<const int*, const int*>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>, host_only_iterator<const int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>, device_only_iterator<const int*>>();))
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
+
   return true;
 }
 
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

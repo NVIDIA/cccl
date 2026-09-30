@@ -7,6 +7,12 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: indirect call is unsupported in tile code
+
+// UNSUPPORTED: enable-tile
+// BUGBUG: codegen error
+
 // <functional>
 
 // reference_wrapper
@@ -26,20 +32,20 @@
 
 TEST_GLOBAL_VARIABLE int count = 0;
 
-__host__ __device__ void f_void_0()
+TEST_HOST_DEVICE_FUNC void f_void_0()
 {
   ++count;
 }
 
 struct A_void_0
 {
-  __host__ __device__ void operator()()
+  TEST_HOST_DEVICE_FUNC void operator()()
   {
     ++count;
   }
 };
 
-__host__ __device__ void test_void_0()
+TEST_HOST_DEVICE_FUNC void test_void_0()
 {
   int save_count = count;
   // function
@@ -49,6 +55,7 @@ __host__ __device__ void test_void_0()
     assert(count == save_count + 1);
     save_count = count;
   }
+#if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   // function pointer
   {
     void (*fp)() = f_void_0;
@@ -57,6 +64,7 @@ __host__ __device__ void test_void_0()
     assert(count == save_count + 1);
     save_count = count;
   }
+#endif // !_CCCL_TILE_COMPILATION()
   // functor
   {
     A_void_0 a0;

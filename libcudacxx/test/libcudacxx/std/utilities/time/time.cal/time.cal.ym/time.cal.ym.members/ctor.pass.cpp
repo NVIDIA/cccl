@@ -34,19 +34,19 @@ int main(int, char**)
   static_assert(noexcept(year_month{year{1}, month{1}}));
 
   constexpr year_month ym0{};
-  static_assert(ym0.year() == year{}, "");
-  static_assert(ym0.month() == month{}, "");
-  static_assert(!ym0.ok(), "");
+  static_assert(ym0.year() == year{});
+  static_assert(ym0.month() == month{});
+  static_assert(!ym0.ok());
 
   constexpr year_month ym1{year{2018}, cuda::std::chrono::January};
-  static_assert(ym1.year() == year{2018}, "");
-  static_assert(ym1.month() == cuda::std::chrono::January, "");
-  static_assert(ym1.ok(), "");
+  static_assert(ym1.year() == year{2018});
+  static_assert(ym1.month() == cuda::std::chrono::January);
+  static_assert(ym1.ok());
 
   constexpr year_month ym2{year{2018}, month{}};
-  static_assert(ym2.year() == year{2018}, "");
-  static_assert(ym2.month() == month{}, "");
-  static_assert(!ym2.ok(), "");
+  static_assert(ym2.year() == year{2018});
+  static_assert(ym2.month() == month{});
+  static_assert(!ym2.ok());
 
   return 0;
 }

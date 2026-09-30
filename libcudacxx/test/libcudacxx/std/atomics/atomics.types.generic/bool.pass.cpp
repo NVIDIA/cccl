@@ -5,9 +5,12 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/std/atomic>
 
@@ -49,7 +52,7 @@
 //     T operator=(T);
 // };
 //
-// typedef atomic<bool> atomic_bool;
+// using atomic_bool = atomic<bool>;
 
 #include <cuda/atomic>
 #include <cuda/std/atomic>
@@ -66,7 +69,7 @@
 template <template <cuda::thread_scope> class Atomic,
           cuda::thread_scope Scope,
           template <typename, typename> class Selector>
-__host__ __device__ __noinline__ void do_test()
+TEST_HOST_DEVICE_FUNC __noinline__ void do_test()
 {
   {
     Selector<volatile Atomic<Scope>, constructor_initializer> sel;
@@ -210,13 +213,21 @@ __host__ __device__ __noinline__ void do_test()
 #if TEST_STD_VER > 2017
   NV_DISPATCH_TARGET(
     NV_IS_HOST,
-    (typedef Atomic<Scope> A; alignas(alignof(A)) char storage[sizeof(A)] = {1}; A& zero = *new (storage) A();
-     assert(zero == false);
-     zero.~A();),
+    ({
+      using A                                     = Atomic<Scope>;
+      alignas(alignof(A)) char storage[sizeof(A)] = {1};
+      A& zero                                     = *new (storage) A();
+      assert(zero == false);
+      zero.~A();
+    }),
     NV_PROVIDES_SM_70,
-    (typedef Atomic<Scope> A; alignas(alignof(A)) char storage[sizeof(A)] = {1}; A& zero = *new (storage) A();
-     assert(zero == false);
-     zero.~A();))
+    ({
+      using A                                     = Atomic<Scope>;
+      alignas(alignof(A)) char storage[sizeof(A)] = {1};
+      A& zero                                     = *new (storage) A();
+      assert(zero == false);
+      zero.~A();
+    }))
 #endif // TEST_STD_VER > 2017
 }
 
@@ -233,11 +244,13 @@ int main(int, char**)
     (do_test<cuda_std_atomic, cuda::thread_scope_system, local_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_system, local_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_device, local_memory_selector>();
+     do_test<cuda_atomic, cuda::thread_scope_cluster, local_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_block, local_memory_selector>();),
     NV_PROVIDES_SM_70,
     (do_test<cuda_std_atomic, cuda::thread_scope_system, local_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_system, local_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_device, local_memory_selector>();
+     do_test<cuda_atomic, cuda::thread_scope_cluster, local_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_block, local_memory_selector>();))
 
   NV_IF_TARGET(
@@ -245,11 +258,13 @@ int main(int, char**)
     (do_test<cuda_std_atomic, cuda::thread_scope_system, shared_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_system, shared_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_device, shared_memory_selector>();
+     do_test<cuda_atomic, cuda::thread_scope_cluster, shared_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_block, shared_memory_selector>();
 
      do_test<cuda_std_atomic, cuda::thread_scope_system, global_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_system, global_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_device, global_memory_selector>();
+     do_test<cuda_atomic, cuda::thread_scope_cluster, global_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_block, global_memory_selector>();))
 
   return 0;

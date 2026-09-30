@@ -22,7 +22,10 @@
 
 #include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/prev.h>
 #include <cuda/std/__memory/pointer_traits.h>
@@ -32,6 +35,7 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_class.h>
 #include <cuda/std/__type_traits/is_reference.h>
+#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__utility/declval.h>
 
@@ -60,13 +64,13 @@ class view_interface
 {
   _CCCL_API constexpr _Derived& __derived() noexcept
   {
-    static_assert(sizeof(_Derived) && derived_from<_Derived, view_interface> && view<_Derived>, "");
+    static_assert(sizeof(_Derived) && derived_from<_Derived, view_interface> && view<_Derived>);
     return static_cast<_Derived&>(*this);
   }
 
   _CCCL_API constexpr _Derived const& __derived() const noexcept
   {
-    static_assert(sizeof(_Derived) && derived_from<_Derived, view_interface> && view<_Derived>, "");
+    static_assert(sizeof(_Derived) && derived_from<_Derived, view_interface> && view<_Derived>);
     return static_cast<_Derived const&>(*this);
   }
 
@@ -172,6 +176,42 @@ public:
   _CCCL_REQUIRES(random_access_range<_RARange>)
   _CCCL_API constexpr decltype(auto) operator[](range_difference_t<_RARange> __index) const
   {
+    return ::cuda::std::ranges::begin(__derived())[__index];
+  }
+
+  _CCCL_TEMPLATE(class _RARange = _Derived)
+  _CCCL_REQUIRES(random_access_range<_RARange> _CCCL_AND sized_range<_RARange>)
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) at(range_difference_t<_RARange> __index)
+  {
+    if (__index >= ::cuda::std::ranges::distance(__derived()))
+    {
+      _CCCL_THROW(::std::out_of_range, "cuda::std::ranges::view_interface::at: out of bounds access");
+    }
+    if constexpr (is_signed_v<range_difference_t<_RARange>>)
+    {
+      if (__index < 0)
+      {
+        _CCCL_THROW(::std::out_of_range, "cuda::std::ranges::view_interface::at: out of bounds access");
+      }
+    }
+    return ::cuda::std::ranges::begin(__derived())[__index];
+  }
+
+  _CCCL_TEMPLATE(class _RARange = const _Derived)
+  _CCCL_REQUIRES(random_access_range<_RARange> _CCCL_AND sized_range<_RARange>)
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) at(range_difference_t<_RARange> __index) const
+  {
+    if (__index >= ::cuda::std::ranges::distance(__derived()))
+    {
+      _CCCL_THROW(::std::out_of_range, "cuda::std::ranges::view_interface::at: out of bounds access");
+    }
+    if constexpr (is_signed_v<range_difference_t<_RARange>>)
+    {
+      if (__index < 0)
+      {
+        _CCCL_THROW(::std::out_of_range, "cuda::std::ranges::view_interface::at: out of bounds access");
+      }
+    }
     return ::cuda::std::ranges::begin(__derived())[__index];
   }
 };

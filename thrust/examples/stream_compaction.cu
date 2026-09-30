@@ -4,8 +4,9 @@
 #include <thrust/remove.h>
 #include <thrust/sequence.h>
 
+#include <cuda/std/iterator>
+
 #include <iostream>
-#include <iterator>
 #include <string>
 
 // this functor returns true if the argument is odd, and false otherwise
@@ -21,7 +22,7 @@ struct is_odd
 template <typename Iterator>
 void print_range(const std::string& name, Iterator first, Iterator last)
 {
-  using T = typename std::iterator_traits<Iterator>::value_type;
+  using T = cuda::std::iter_value_t<Iterator>;
 
   std::cout << name << ": ";
   thrust::copy(first, last, std::ostream_iterator<T>(std::cout, " "));
@@ -31,7 +32,7 @@ void print_range(const std::string& name, Iterator first, Iterator last)
 int main()
 {
   // input size
-  size_t N = 10;
+  const size_t N = 10;
 
   // define some types
   using Vector   = thrust::device_vector<int>;
@@ -49,13 +50,13 @@ int main()
   Vector output(values.size());
 
   // copy odd numbers to separate array
-  Iterator output_end = thrust::copy_if(values.begin(), values.end(), output.begin(), is_odd<int>());
+  const Iterator output_end = thrust::copy_if(values.begin(), values.end(), output.begin(), is_odd<int>());
 
   print_range("output", output.begin(), output_end);
 
   // another approach is to count the number of values that will
   // be copied, and allocate an array of the right size
-  size_t N_odd = thrust::count_if(values.begin(), values.end(), is_odd<int>());
+  const size_t N_odd = thrust::count_if(values.begin(), values.end(), is_odd<int>());
 
   Vector small_output(N_odd);
 
@@ -64,7 +65,7 @@ int main()
   print_range("small_output", small_output.begin(), small_output.end());
 
   // we can also compact sequences with the remove functions, which do the opposite of copy
-  Iterator values_end = thrust::remove_if(values.begin(), values.end(), is_odd<int>());
+  const Iterator values_end = thrust::remove_if(values.begin(), values.end(), is_odd<int>());
 
   // since the values after values_end are garbage, we'll resize the vector
   values.resize(values_end - values.begin());

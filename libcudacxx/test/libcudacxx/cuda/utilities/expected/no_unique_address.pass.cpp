@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class Value, class Error>
-__host__ __device__ void
+TEST_FUNC void
 test(cuda::std::expected<Value, Error> with_value, cuda::std::expected<Value, Error> with_error, size_t expected_size)
 {
   assert(with_value.value() == 42);
@@ -34,12 +34,12 @@ template <int Expected>
 struct empty
 {
   constexpr empty() = default;
-  __host__ __device__ constexpr empty(const int val) noexcept
+  TEST_FUNC constexpr empty(const int val) noexcept
   {
     assert(val == Expected);
   }
 
-  __host__ __device__ friend constexpr bool operator==(const empty&, int val)
+  TEST_FUNC friend constexpr bool operator==(const empty&, int val)
   {
     return val == Expected;
   }

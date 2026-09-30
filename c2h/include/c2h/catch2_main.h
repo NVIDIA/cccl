@@ -5,8 +5,6 @@
 
 #include <thrust/detail/config/device_system.h>
 
-#include <iostream>
-
 //! @file
 //! This file includes a custom Catch2 main function. When CMake is configured to build each test as a separate
 //! executable, this header is included into each test. On the other hand, when all the tests are compiled into a single

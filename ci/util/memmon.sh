@@ -49,8 +49,10 @@ ensure_absolute_log() {
   case "$log_file" in
     /*) return ;;
     *)
-      local dir="$(cd "$(dirname "$log_file")" && pwd)"
-      local base="$(basename "$log_file")"
+      local dir
+      dir="$(cd "$(dirname "$log_file")" && pwd)"
+      local base
+      base="$(basename "$log_file")"
       log_file="$dir/$base"
       ;;
   esac
@@ -118,7 +120,8 @@ extract_target() {
 start_memmon() {
   # Check if already running
   if [[ -f "$pid_file" ]]; then
-    local existing_pid="$(<"$pid_file")"
+    local existing_pid
+    existing_pid="$(<"$pid_file")"
     if kill -0 "$existing_pid" 2>/dev/null; then
       error "already running (pid $existing_pid)"
     fi
@@ -142,7 +145,8 @@ stop_memmon() {
   if [[ ! -f "$pid_file" ]]; then
     error "not running"
   fi
-  local running_pid="$(<"$pid_file")"
+  local running_pid
+  running_pid="$(<"$pid_file")"
   if ! kill -0 "$running_pid" 2>/dev/null; then
     rm -f "$pid_file"
     error "not running"
@@ -179,8 +183,10 @@ monitor_mem() {
 
   ensure_absolute_log
 
-  local log_threshold_kib="$(to_kib "$log_threshold")"
-  local print_threshold_kib="$(to_kib "$print_threshold")"
+  local log_threshold_kib
+  log_threshold_kib="$(to_kib "$log_threshold")"
+  local print_threshold_kib
+  print_threshold_kib="$(to_kib "$print_threshold")"
 
   local running=true
 
@@ -192,12 +198,14 @@ monitor_mem() {
       if [[ ${#MEMMON_MAX_RSS[@]} -eq 0 ]]; then
         printf "No processes exceeded %s GB\n" "$(format_threshold "$log_threshold")"
       else
-        local tmp="$(mktemp)"
+        local tmp
+        tmp="$(mktemp)"
         for pid in "${!MEMMON_MAX_RSS[@]}"; do
           printf "%s\t%s\t%s\t%s\n" "${MEMMON_MAX_RSS[$pid]}" "$pid" "${MEMMON_TARGET[$pid]}" "${MEMMON_CMD[$pid]}" >>"$tmp"
         done
         sort -nr -k1,1 "$tmp" | while IFS=$'\t' read -r peak pid target cmd; do
-          local mem_gib="$(format_gib "$peak")"
+          local mem_gib
+          mem_gib="$(format_gib "$peak")"
           printf "%s GB | %s | %s | %s\n" "$mem_gib" "$pid" "$target" "$cmd"
         done
         rm -f "$tmp"
@@ -222,7 +230,8 @@ monitor_mem() {
           MEMMON_CMD[$pid]=$(get_cmdline "$pid")
           MEMMON_TARGET[$pid]=$(extract_target "${MEMMON_CMD[$pid]}")
           if (( rss >= print_threshold_kib )); then
-            local mem_gib="$(format_gib "$rss")"
+            local mem_gib
+            mem_gib="$(format_gib "$rss")"
             printf 'memmon: %s GB | %s | %s | %s\n' "$mem_gib" "$pid" "${MEMMON_TARGET[$pid]}" "${MEMMON_CMD[$pid]}"
           fi
         fi

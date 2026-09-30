@@ -28,6 +28,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator1, class _InputIterator2, class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp
 inner_product(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _Tp __init)
@@ -39,6 +40,7 @@ inner_product(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2
   return __init;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator1, class _InputIterator2, class _Tp, class _BinaryOperation1, class _BinaryOperation2>
 [[nodiscard]] _CCCL_API constexpr _Tp inner_product(
   _InputIterator1 __first1,

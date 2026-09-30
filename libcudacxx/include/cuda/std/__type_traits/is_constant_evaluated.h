@@ -22,6 +22,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// _CCCL_BUILTIN_IS_CONSTANT_EVALUATED is checked in <cuda/std/__cccl/builtins.h>
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API constexpr bool is_constant_evaluated() noexcept

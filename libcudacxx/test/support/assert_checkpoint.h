@@ -38,7 +38,7 @@ struct Checkpoint
     {
       s << " '" << msg << "'";
     }
-    s << std::endl;
+    s << '\n';
   }
 };
 
@@ -76,7 +76,7 @@ inline void checkpointSignalHandler(int signal)
 
 inline bool initCheckpointHandler()
 {
-  typedef void (*HandlerT)(int);
+  using HandlerT     = void (*)(int);
   static bool isInit = false;
   if (isInit)
   {

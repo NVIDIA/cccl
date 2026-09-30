@@ -22,7 +22,7 @@ template <class Iter>
 _CCCL_CONCEPT can_subscript = _CCCL_REQUIRES_EXPR((Iter), Iter i)((i[0]));
 
 template <class Iter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   if constexpr (cuda::std::random_access_iterator<Iter>)
   {
@@ -91,7 +91,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<cpp17_input_iterator<int*>>();
   test<random_access_iterator<int*>>();
@@ -118,7 +118,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

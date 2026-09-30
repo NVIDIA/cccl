@@ -22,15 +22,12 @@
 #endif // no system header
 
 #include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/promote.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <math.h>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -670,7 +667,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 _CCCL_API inline __promote_t<_A1, _A2> nextafter(_A1 __x, _A2 __y) noexcept
 {
   using __result_type = __promote_t<_A1, _A2>;
-  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>), "");
+  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>) );
   return ::cuda::std::nextafter(static_cast<__result_type>(__x), static_cast<__result_type>(__y));
 }
 
@@ -805,14 +802,14 @@ _CCCL_API inline double nexttoward(_Integer __x, long double __y) noexcept
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half rint(__half __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __half rint(__half __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hrint(__x);), (return __float2half(::cuda::std::rint(__half2float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 rint(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 rint(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (return ::hrint(__x);), (return __float2bfloat16(::cuda::std::rint(__bfloat162float(__x)));))
@@ -956,14 +953,14 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half trunc(__half __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __half trunc(__half __x) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::htrunc(__x);), (return __float2half(::cuda::std::trunc(__half2float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 trunc(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 trunc(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (return ::htrunc(__x);), (return __float2bfloat16(::cuda::std::trunc(__bfloat162float(__x)));))

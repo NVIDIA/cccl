@@ -10,6 +10,7 @@
 #include <cuda/__launch/host_launch.h>
 #include <cuda/__stream/stream.h>
 #include <cuda/atomic>
+#include <cuda/devices>
 #include <cuda/memory>
 
 #include <cooperative_groups.h>
@@ -19,7 +20,8 @@ void block_stream(cuda::stream_ref stream, cuda::atomic<int>& atomic)
 {
   auto block_lambda = [&]() {
     while (atomic != 1)
-      ;
+    {
+    }
   };
   cuda::host_launch(stream, block_lambda);
 }
@@ -30,6 +32,21 @@ void unblock_and_wait_stream(cuda::stream_ref stream, cuda::atomic<int>& atomic)
   atomic = 1;
   stream.sync();
   atomic = 0;
+}
+
+bool ordinary_function_run_proof = false;
+
+template <class Ret, class... Args>
+Ret ordinary_function(Args...)
+{
+  ordinary_function_run_proof = true;
+  return (Ret) 0;
+}
+
+[[nodiscard]] int nodiscard_ordinary_function()
+{
+  ordinary_function_run_proof = true;
+  return 0;
 }
 
 void launch_local_lambda(cuda::stream_ref stream, int& set, int set_to)
@@ -108,12 +125,54 @@ private:
 
 C2H_CCCLRT_TEST("Host launch", "")
 {
-  cuda::device_ref device{0};
+  const cuda::device_ref device{0};
   device.init();
 
+  const cuda::stream stream{device};
+
+  SECTION("Ordinary function without arguments returning void")
+  {
+    CCCLRT_REQUIRE(ordinary_function_run_proof == false);
+
+    cuda::host_launch(stream, ordinary_function<void>);
+
+    stream.sync();
+    CCCLRT_REQUIRE(ordinary_function_run_proof == true);
+    ordinary_function_run_proof = false;
+  }
+  SECTION("Ordinary function without arguments returning int")
+  {
+    CCCLRT_REQUIRE(ordinary_function_run_proof == false);
+
+    cuda::host_launch(stream, ordinary_function<int>);
+
+    stream.sync();
+    CCCLRT_REQUIRE(ordinary_function_run_proof == true);
+    ordinary_function_run_proof = false;
+  }
+  SECTION("Ordinary function with arguments returning void")
+  {
+    CCCLRT_REQUIRE(ordinary_function_run_proof == false);
+
+    cuda::host_launch(stream, ordinary_function<int, char, double>, 'c', 1.0);
+
+    stream.sync();
+    CCCLRT_REQUIRE(ordinary_function_run_proof == true);
+    ordinary_function_run_proof = false;
+  }
+  SECTION("Nodiscard ordinary function")
+  {
+    CCCLRT_REQUIRE(ordinary_function_run_proof == false);
+
+    cuda::host_launch(stream, nodiscard_ordinary_function);
+
+    stream.sync();
+    CCCLRT_REQUIRE(ordinary_function_run_proof == true);
+    ordinary_function_run_proof = false;
+  }
+
   cuda::atomic<int> atomic = 0;
-  cuda::stream stream{device};
-  int i = 0;
+  int i                    = 0;
 
   auto set_lambda = [&](int set) {
     i = set;
@@ -159,7 +218,7 @@ C2H_CCCLRT_TEST("Host launch", "")
 
   SECTION("Confirm no const added to the callable")
   {
-    lambda_wrapper wrapped_lambda([&]() {
+    lambda_wrapper wrapped_lambda([&]() { // NOLINT(misc-const-correctness)
       i = 21;
     });
 
@@ -222,4 +281,28 @@ C2H_CCCLRT_TEST("Host launch", "")
     cuda::host_launch(stream, MoveOnlyCallable::make(), MoveOnlyArg::make());
     stream.sync();
   }
+}
+
+C2H_CCCLRT_TEST("Host launch uses the stream device when current device differs", "[launch][multi_gpu]")
+{
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  const cuda::device_ref current_device{0};
+  const cuda::device_ref explicit_device{1};
+
+  const cuda::stream stream{explicit_device};
+  int value = 0;
+
+  {
+    const cuda::__ensure_current_context guard(current_device);
+    cuda::host_launch(stream, [&value]() {
+      value = 42;
+    });
+  }
+
+  stream.sync();
+  CCCLRT_REQUIRE(value == 42);
 }

@@ -19,7 +19,7 @@
 #include "types.h"
 
 template <class T>
-__host__ __device__ constexpr void test(T value)
+TEST_FUNC constexpr void test(T value)
 {
   cuda::constant_iterator iter1{value, 1337};
   cuda::constant_iterator iter2{value, 1337};
@@ -38,7 +38,7 @@ __host__ __device__ constexpr void test(T value)
   static_assert(cuda::std::same_as<cuda::std::remove_reference_t<decltype(++iter2)>, decltype(iter2++)>);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test(42);
   test(NotDefaultConstructible{42});
@@ -49,7 +49,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

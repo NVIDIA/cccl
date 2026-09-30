@@ -17,8 +17,10 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include "test_macros.h"
+
 template <class T>
-__host__ __device__ constexpr void test_real_and_imag()
+TEST_FUNC constexpr void test_real_and_imag()
 {
   using C = cuda::complex<T>;
 
@@ -56,7 +58,7 @@ __host__ __device__ constexpr void test_real_and_imag()
 }
 
 template <class T>
-__host__ __device__ void test_real_and_imag_volatile()
+TEST_FUNC void test_real_and_imag_volatile()
 {
   using C = cuda::complex<T>;
 
@@ -93,7 +95,7 @@ __host__ __device__ void test_real_and_imag_volatile()
   assert(c2.imag() == T(4));
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_real_and_imag<float>();
   test_real_and_imag<double>();
@@ -125,7 +127,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ void test_volatile()
+TEST_FUNC void test_volatile()
 {
   test_real_and_imag_volatile<float>();
   test_real_and_imag_volatile<double>();

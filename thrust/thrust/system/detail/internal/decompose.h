@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -68,7 +55,7 @@ public:
   using range_type = index_range<index_type>;
 
   _CCCL_HOST_DEVICE uniform_decomposition(index_type N, index_type granularity, index_type max_intervals)
-      : m_N(N)
+      : m_n(N)
       , m_intervals((N + granularity - 1) / granularity)
       , m_threshold(0)
       , m_small_interval(granularity)
@@ -87,14 +74,14 @@ public:
   {
     if (i < m_threshold)
     {
-      index_type begin = m_large_interval * i;
-      index_type end   = begin + m_large_interval;
+      const index_type begin = m_large_interval * i;
+      const index_type end   = begin + m_large_interval;
       return range_type(begin, end);
     }
     else
     {
-      index_type begin = m_large_interval * m_threshold + m_small_interval * (i - m_threshold);
-      index_type end   = (begin + m_small_interval < m_N) ? begin + m_small_interval : m_N;
+      const index_type begin = m_large_interval * m_threshold + m_small_interval * (i - m_threshold);
+      const index_type end   = (begin + m_small_interval < m_n) ? begin + m_small_interval : m_n;
       return range_type(begin, end);
     }
   }
@@ -105,7 +92,7 @@ public:
   }
 
 private:
-  index_type m_N;
+  index_type m_n;
   index_type m_intervals;
   index_type m_threshold;
   index_type m_small_interval;

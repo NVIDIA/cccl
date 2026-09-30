@@ -4,6 +4,8 @@
 #include <thrust/device_vector.h>
 #include <thrust/uninitialized_copy.h>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
+
 #include <nvbench_helper.cuh>
 
 template <typename T>
@@ -37,6 +39,7 @@ struct no_copy
   {}
 
   // the user-defined copy constructor prevents the type from being trivially copyable
+  // NOLINTNEXTLINE(modernize-use-equals-default)
   _CCCL_HOST_DEVICE no_copy(const no_copy& nt)
       : a(nt.a)
   {}
@@ -44,7 +47,7 @@ struct no_copy
 
 static_assert(::cuda::std::is_trivially_default_constructible_v<no_copy>);
 static_assert(!::cuda::std::is_trivially_copyable_v<no_copy>); // as required by the C++ standard
-static_assert(!thrust::is_trivially_relocatable_v<no_copy>); // thrust uses this check internally
+static_assert(!::cuda::is_trivially_copyable_v<no_copy>); // thrust uses this check internally
 
 // Requires use of placement new
 struct no_construct
@@ -54,7 +57,7 @@ struct no_construct
 
 static_assert(!::cuda::std::is_trivially_default_constructible_v<no_construct>);
 static_assert(::cuda::std::is_trivially_copyable_v<no_construct>); // as required by the C++ standard
-static_assert(thrust::is_trivially_relocatable_v<no_construct>); // thrust uses this check internally
+static_assert(::cuda::is_trivially_copyable_v<no_construct>); // thrust uses this check internally
 
 using types =
   nvbench::type_list<nvbench::uint8_t, nvbench::uint16_t, nvbench::uint32_t, nvbench::uint64_t, no_copy, no_construct>;

@@ -15,31 +15,32 @@
 #include <cuda/std/ranges>
 
 #include "test_iterators.h"
+#include "test_macros.h"
 #include "test_range.h"
 
-static_assert(cuda::std::ranges::input_range<test_range<cpp17_input_iterator>>, "");
-static_assert(cuda::std::ranges::input_range<test_range<cpp17_input_iterator> const>, "");
+static_assert(cuda::std::ranges::input_range<test_range<cpp17_input_iterator>>);
+static_assert(cuda::std::ranges::input_range<test_range<cpp17_input_iterator> const>);
 
-static_assert(cuda::std::ranges::input_range<test_range<cpp20_input_iterator>>, "");
-static_assert(cuda::std::ranges::input_range<test_range<cpp20_input_iterator> const>, "");
+static_assert(cuda::std::ranges::input_range<test_range<cpp20_input_iterator>>);
+static_assert(cuda::std::ranges::input_range<test_range<cpp20_input_iterator> const>);
 
-static_assert(cuda::std::ranges::input_range<test_non_const_range<cpp17_input_iterator>>, "");
-static_assert(cuda::std::ranges::input_range<test_non_const_range<cpp20_input_iterator>>, "");
+static_assert(cuda::std::ranges::input_range<test_non_const_range<cpp17_input_iterator>>);
+static_assert(cuda::std::ranges::input_range<test_non_const_range<cpp20_input_iterator>>);
 
-static_assert(!cuda::std::ranges::input_range<test_non_const_range<cpp17_input_iterator> const>, "");
-static_assert(!cuda::std::ranges::input_range<test_non_const_range<cpp20_input_iterator> const>, "");
+static_assert(!cuda::std::ranges::input_range<test_non_const_range<cpp17_input_iterator> const>);
+static_assert(!cuda::std::ranges::input_range<test_non_const_range<cpp20_input_iterator> const>);
 
-static_assert(cuda::std::ranges::input_range<test_common_range<forward_iterator>>, "");
-static_assert(!cuda::std::ranges::input_range<test_common_range<cpp20_input_iterator>>, "");
+static_assert(cuda::std::ranges::input_range<test_common_range<forward_iterator>>);
+static_assert(!cuda::std::ranges::input_range<test_common_range<cpp20_input_iterator>>);
 
-static_assert(cuda::std::ranges::input_range<test_common_range<forward_iterator> const>, "");
-static_assert(!cuda::std::ranges::input_range<test_common_range<cpp20_input_iterator> const>, "");
+static_assert(cuda::std::ranges::input_range<test_common_range<forward_iterator> const>);
+static_assert(!cuda::std::ranges::input_range<test_common_range<cpp20_input_iterator> const>);
 
-static_assert(cuda::std::ranges::input_range<test_non_const_common_range<forward_iterator>>, "");
-static_assert(!cuda::std::ranges::input_range<test_non_const_common_range<cpp20_input_iterator>>, "");
+static_assert(cuda::std::ranges::input_range<test_non_const_common_range<forward_iterator>>);
+static_assert(!cuda::std::ranges::input_range<test_non_const_common_range<cpp20_input_iterator>>);
 
-static_assert(!cuda::std::ranges::input_range<test_non_const_common_range<forward_iterator> const>, "");
-static_assert(!cuda::std::ranges::input_range<test_non_const_common_range<cpp20_input_iterator> const>, "");
+static_assert(!cuda::std::ranges::input_range<test_non_const_common_range<forward_iterator> const>);
+static_assert(!cuda::std::ranges::input_range<test_non_const_common_range<cpp20_input_iterator> const>);
 
 #if TEST_STD_VER > 2017
 // Test ADL-proofing.
@@ -50,19 +51,19 @@ struct Holder
   T t;
 };
 
-static_assert(!cuda::std::ranges::input_range<Holder<Incomplete>*>, "");
-static_assert(!cuda::std::ranges::input_range<Holder<Incomplete>*&>, "");
-static_assert(!cuda::std::ranges::input_range<Holder<Incomplete>*&&>, "");
-static_assert(!cuda::std::ranges::input_range<Holder<Incomplete>* const>, "");
-static_assert(!cuda::std::ranges::input_range<Holder<Incomplete>* const&>, "");
-static_assert(!cuda::std::ranges::input_range<Holder<Incomplete>* const&&>, "");
+static_assert(!cuda::std::ranges::input_range<Holder<Incomplete>*>);
+static_assert(!cuda::std::ranges::input_range<Holder<Incomplete>*&>);
+static_assert(!cuda::std::ranges::input_range<Holder<Incomplete>*&&>);
+static_assert(!cuda::std::ranges::input_range<Holder<Incomplete>* const>);
+static_assert(!cuda::std::ranges::input_range<Holder<Incomplete>* const&>);
+static_assert(!cuda::std::ranges::input_range<Holder<Incomplete>* const&&>);
 
-static_assert(cuda::std::ranges::input_range<Holder<Incomplete>* [10]>, "");
-static_assert(cuda::std::ranges::input_range<Holder<Incomplete>* (&) [10]>, "");
-static_assert(cuda::std::ranges::input_range<Holder<Incomplete>* (&&) [10]>, "");
-static_assert(cuda::std::ranges::input_range<Holder<Incomplete>* const[10]>, "");
-static_assert(cuda::std::ranges::input_range<Holder<Incomplete>* const (&)[10]>, "");
-static_assert(cuda::std::ranges::input_range<Holder<Incomplete>* const (&&)[10]>, "");
+static_assert(cuda::std::ranges::input_range<Holder<Incomplete>* [10]>);
+static_assert(cuda::std::ranges::input_range<Holder<Incomplete>* (&) [10]>);
+static_assert(cuda::std::ranges::input_range<Holder<Incomplete>* (&&) [10]>);
+static_assert(cuda::std::ranges::input_range<Holder<Incomplete>* const[10]>);
+static_assert(cuda::std::ranges::input_range<Holder<Incomplete>* const (&)[10]>);
+static_assert(cuda::std::ranges::input_range<Holder<Incomplete>* const (&&)[10]>);
 #endif
 
 int main(int, char**)

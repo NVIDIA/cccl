@@ -18,7 +18,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   {
     using Iter = cuda::strided_iterator<int*, int>;

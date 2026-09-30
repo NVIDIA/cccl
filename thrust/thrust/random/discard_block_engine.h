@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file discard_block_engine.h
  *  \brief A random number engine which adapts a base engine and produces
@@ -33,9 +20,9 @@
 
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/cstdint>
-
-#include <iostream>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -50,14 +37,14 @@ namespace random
  *  \brief A \p discard_block_engine adapts an existing base random number engine and produces
  *         random values by discarding some of the values returned by its base engine.
  *         Each cycle of the compound engine begins by returning \c r values successively produced
- *         by the base engine and ends by discarding <tt>p-r</tt> such values. The engine's state
+ *         by the base engine and ends by discarding <tt>P-R</tt> such values. The engine's state
  *         is the state of its base engine followed by the number of calls to <tt>operator()</tt>
  *         that have occurred since the beginning of the current cycle.
  *
  *  \tparam Engine The type of the base random number engine to adapt.
- *  \tparam p The discard cycle length.
- *  \tparam r The number of values to return of the base engine. Because <tt>p-r</tt> will be
- *            discarded, <tt>r <= p</tt>.
+ *  \tparam P The discard cycle length.
+ *  \tparam R The number of values to return of the base engine. Because <tt>P-R</tt> will be
+ *            discarded, <tt>R <= P</tt>.
  *
  *  The following code snippet shows an example of using a \p discard_block_engine instance:
  *
@@ -73,13 +60,13 @@ namespace random
  *    thrust::discard_block_engine<thrust::minstd_rand, 13, 10> rng;
  *
  *    // print a random number to standard output
- *    std::cout << rng() << std::endl;
+ *    std::cout << rng() << '\n';
  *
  *    return 0;
  *  }
  *  \endcode
  */
-template <typename Engine, size_t p, size_t r>
+template <typename Engine, size_t P, size_t R>
 class discard_block_engine
 {
 public:
@@ -99,11 +86,11 @@ public:
 
   /*! The length of the production cycle.
    */
-  static const size_t block_size = p;
+  static const size_t block_size = P;
 
   /*! The number of used numbers per production cycle.
    */
-  static const size_t used_block = r;
+  static const size_t used_block = R;
 
   /*! The smallest value this \p discard_block_engine may potentially produce.
    */
@@ -151,7 +138,7 @@ public:
   /*! This member function produces a new random value and updates this \p discard_block_engine's state.
    *  \return A new random number.
    */
-  _CCCL_HOST_DEVICE result_type operator()(void);
+  _CCCL_HOST_DEVICE result_type operator()();
 
   /*! This member function advances this \p discard_block_engine's state a given number of times
    *  and discards the results.
@@ -195,36 +182,36 @@ private:
  *  \param rhs The second \p discard_block_engine to test.
  *  \return \c true if \p lhs is equal to \p rhs; \c false, otherwise.
  */
-template <typename Engine, size_t p, size_t r>
+template <typename Engine, size_t P, size_t R>
 _CCCL_HOST_DEVICE bool
-operator==(const discard_block_engine<Engine, p, r>& lhs, const discard_block_engine<Engine, p, r>& rhs);
+operator==(const discard_block_engine<Engine, P, R>& lhs, const discard_block_engine<Engine, P, R>& rhs);
 
 /*! This function checks two \p discard_block_engines for inequality.
  *  \param lhs The first \p discard_block_engine to test.
  *  \param rhs The second \p discard_block_engine to test.
  *  \return \c true if \p lhs is not equal to \p rhs; \c false, otherwise.
  */
-template <typename Engine, size_t p, size_t r>
+template <typename Engine, size_t P, size_t R>
 _CCCL_HOST_DEVICE bool
-operator!=(const discard_block_engine<Engine, p, r>& lhs, const discard_block_engine<Engine, p, r>& rhs);
+operator!=(const discard_block_engine<Engine, P, R>& lhs, const discard_block_engine<Engine, P, R>& rhs);
 
 /*! This function streams a discard_block_engine to a \p std::basic_ostream.
  *  \param os The \p basic_ostream to stream out to.
  *  \param e The \p discard_block_engine to stream out.
  *  \return \p os
  */
-template <typename Engine, size_t p, size_t r, typename CharT, typename Traits>
+template <typename Engine, size_t P, size_t R, typename CharT, typename Traits>
 std::basic_ostream<CharT, Traits>&
-operator<<(std::basic_ostream<CharT, Traits>& os, const discard_block_engine<Engine, p, r>& e);
+operator<<(std::basic_ostream<CharT, Traits>& os, const discard_block_engine<Engine, P, R>& e);
 
 /*! This function streams a discard_block_engine in from a std::basic_istream.
  *  \param is The \p basic_istream to stream from.
  *  \param e The \p discard_block_engine to stream in.
  *  \return \p is
  */
-template <typename Engine, size_t p, size_t r, typename CharT, typename Traits>
+template <typename Engine, size_t P, size_t R, typename CharT, typename Traits>
 std::basic_istream<CharT, Traits>&
-operator>>(std::basic_istream<CharT, Traits>& is, discard_block_engine<Engine, p, r>& e);
+operator>>(std::basic_istream<CharT, Traits>& is, discard_block_engine<Engine, P, R>& e);
 
 /*! \} // end random_number_engine_adaptors
  */

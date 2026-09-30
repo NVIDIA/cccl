@@ -35,7 +35,7 @@ _CCCL_GLOBAL_CONSTANT invalid_stream_t invalid_stream{};
 
 [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE ::cudaStream_t __invalid_stream() noexcept
 {
-  return reinterpret_cast<::cudaStream_t>(~0ull);
+  return reinterpret_cast<::cudaStream_t>(~0ull); // NOLINT(performance-no-int-to-ptr)
 }
 
 _CCCL_END_NAMESPACE_CUDA

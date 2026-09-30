@@ -3,12 +3,9 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#undef NDEBUG
 #include <cub/device/device_scan.cuh>
 
-#include <cassert>
-
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <class ScanTileStateT>
 __global__ void init_kernel(ScanTileStateT tile_state, int blocks_in_grid)
@@ -68,8 +65,8 @@ __global__ void decoupled_look_back_kernel(cub::ScanTileState<MessageT> tile_sta
     }
     __syncthreads();
 
-    assert(tile_data[tile_idx] == prefix.GetInclusivePrefix());
-    assert(tile_aggregate == prefix.GetBlockAggregate());
+    REQUIRE_DEVICE(tile_data[tile_idx] == prefix.GetInclusivePrefix());
+    REQUIRE_DEVICE(tile_aggregate == prefix.GetBlockAggregate());
   }
 }
 
@@ -96,7 +93,8 @@ c2h::host_vector<MessageT> compute_reference(const c2h::device_vector<MessageT>&
   return reference;
 }
 
-C2H_TEST("Decoupled look-back works with various message types", "[decoupled look-back][device]", message_types)
+CUB_TEST(
+  "Decoupled look-back works with various message types", "[decoupled look-back][device]", CUB_SMALL, message_types)
 {
   using message_t         = typename c2h::get<0, TestType>;
   using scan_tile_state_t = cub::ScanTileState<message_t>;
@@ -109,7 +107,7 @@ C2H_TEST("Decoupled look-back works with various message types", "[decoupled loo
   message_t* d_tile_data = thrust::raw_pointer_cast(tile_data.data());
 
   c2h::gen(C2H_SEED(2), tile_data);
-  c2h::host_vector<message_t> reference = compute_reference(tile_data);
+  const c2h::host_vector<message_t> reference = compute_reference(tile_data);
 
   // Query temporary storage requirements
   std::size_t temp_storage_bytes{};
@@ -121,7 +119,7 @@ C2H_TEST("Decoupled look-back works with various message types", "[decoupled loo
 
   // Initialize temporary storage
   scan_tile_state_t tile_status;
-  cudaError_t status = tile_status.Init(num_tiles, d_temp_storage, temp_storage_bytes);
+  const cudaError_t status = tile_status.Init(num_tiles, d_temp_storage, temp_storage_bytes);
   REQUIRE(status == cudaSuccess);
 
   constexpr unsigned int threads_in_init_block = 256;

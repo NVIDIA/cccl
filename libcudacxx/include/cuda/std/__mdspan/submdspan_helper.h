@@ -30,6 +30,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 #include <cuda/std/tuple>
@@ -69,7 +70,7 @@ struct strided_slice
 };
 
 template <class _OffsetType, class _ExtentType, class _StrideType>
-_CCCL_HOST_DEVICE strided_slice(_OffsetType, _ExtentType, _StrideType)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES strided_slice(_OffsetType, _ExtentType, _StrideType)
   -> strided_slice<_OffsetType, _ExtentType, _StrideType>;
 
 template <typename>
@@ -112,15 +113,22 @@ template <class _IndexType, class _From>
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <size_t _Index, class... _Slices>
 [[nodiscard]] _CCCL_API constexpr decltype(auto) __get_slice_at(_Slices&&... __slices) noexcept
 {
+#if _CCCL_COMPILER(MSVC)
+  tuple<_Slices...> __tuple{::cuda::std::forward<_Slices>(__slices)...};
+  return ::cuda::std::get<_Index>(::cuda::std::move(__tuple));
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
   return ::cuda::std::get<_Index>(::cuda::std::forward_as_tuple(::cuda::std::forward<_Slices>(__slices)...));
+#endif // !_CCCL_COMPILER(MSVC)
 }
 
 template <size_t _Index, class... _Slices>
-using __get_slice_type = tuple_element_t<_Index, __tuple_types<_Slices...>>;
+using __get_slice_type = __type_at_c<_Index, __type_list<_Slices...>>;
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _IndexType, size_t _Index, class... _Slices>
 [[nodiscard]] _CCCL_API constexpr _IndexType __first_extent_from_slice(_Slices... __slices) noexcept
 {
@@ -149,6 +157,7 @@ template <class _IndexType, size_t _Index, class... _Slices>
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <size_t _Index, class _Extents, class... _Slices>
 [[nodiscard]] _CCCL_API constexpr typename _Extents::index_type
 __last_extent_from_slice(const _Extents& __src, _Slices... __slices) noexcept

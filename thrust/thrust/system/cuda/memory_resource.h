@@ -1,18 +1,5 @@
-/*
- *  Copyright 2018-2020 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2018-2020, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file cuda/memory_resource.h
  *  \brief Memory resources for the CUDA system.
@@ -37,9 +24,11 @@
 #include <thrust/system/cuda/pointer.h>
 #include <thrust/system/detail/bad_alloc.h>
 
+#include <cuda/std/__memory/pointer_traits.h>
+
 THRUST_NAMESPACE_BEGIN
 
-namespace system::cuda
+namespace system::cuda // NOLINT(modernize-concat-nested-namespaces)
 {
 //! \cond
 namespace detail
@@ -51,10 +40,11 @@ template <allocation_fn Alloc, deallocation_fn Dealloc, typename Pointer>
 class cuda_memory_resource final : public mr::memory_resource<Pointer>
 {
 public:
-  Pointer do_allocate(std::size_t bytes, [[maybe_unused]] std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  Pointer do_allocate(std::size_t bytes, // NOLINT(google-default-arguments)
+                      [[maybe_unused]] std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     void* ret;
-    cudaError_t status = Alloc(&ret, bytes);
+    const cudaError_t status = Alloc(&ret, bytes);
 
     if (status != cudaSuccess)
     {
@@ -69,18 +59,18 @@ public:
   {
     // We skip error checking here, we shouldn't throw in deallocate in case this is called in a destructor or after
     // main exits and CUDA calls can start returning errors about CUDA being cleaned up.
-    [[maybe_unused]] auto status = Dealloc(thrust::detail::pointer_traits<Pointer>::get(p));
+    [[maybe_unused]] auto status = Dealloc(::cuda::std::to_address(p));
   }
 };
 
-inline cudaError_t CUDARTAPI cudaMallocManaged(void** ptr, std::size_t bytes)
+inline cudaError_t CUDARTAPI cuda_malloc_managed(void** ptr, std::size_t bytes)
 {
   return ::cudaMallocManaged(ptr, bytes, cudaMemAttachGlobal);
 }
 
 using device_memory_resource = detail::cuda_memory_resource<cudaMalloc, cudaFree, thrust::cuda::pointer<void>>;
 using managed_memory_resource =
-  detail::cuda_memory_resource<detail::cudaMallocManaged, cudaFree, thrust::cuda::universal_pointer<void>>;
+  detail::cuda_memory_resource<detail::cuda_malloc_managed, cudaFree, thrust::cuda::universal_pointer<void>>;
 using pinned_memory_resource =
   detail::cuda_memory_resource<cudaMallocHost, cudaFreeHost, thrust::cuda::universal_host_pinned_pointer<void>>;
 } // namespace detail

@@ -2,10 +2,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-/**
- * @file cub::AgentReduceByKey implements a stateful abstraction of CUDA thread
- *       blocks for participating in device-wide reduce-value-by-key.
- */
+//! @file
+//! cub::detail::reduce_by_key::AgentReduceByKey implements a stateful abstraction of CUDA thread blocks for
+//! participating in device-wide reduce-value-by-key.
 
 #pragma once
 
@@ -26,6 +25,7 @@
 #include <cub/block/block_store.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
@@ -36,49 +36,20 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
-/**
- * @brief Parameterizable tuning policy type for AgentReduceByKey
- *
- * @tparam BlockThreads
- *   Threads per thread block
- *
- * @tparam ItemsPerThread
- *   Items per thread (per tile of input)
- *
- * @tparam LoadAlgorithm
- *   The BlockLoad algorithm to use
- *
- * @tparam LoadModifier
- *   Cache load modifier for reading input elements
- *
- * @tparam ScanAlgorithm
- *   The BlockScan algorithm to use
- *
- * @tparam DelayConstructorT
- *   Implementation detail, do not specify directly, requirements on the
- *   content of this type are subject to breaking change.
- */
-template <int BlockThreads,
+namespace detail
+{
+template <int ThreadsPerBlock,
           int ItemsPerThread,
           BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadModifier,
           BlockScanAlgorithm ScanAlgorithm,
           typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
-struct AgentReduceByKeyPolicy
+struct agent_reduce_by_key_policy
 {
-  ///< Threads per thread block
-  static constexpr int BLOCK_THREADS = BlockThreads;
-
-  ///< Items per thread (per tile of input)
-  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
-
-  ///< The BlockLoad algorithm to use
+  static constexpr int BLOCK_THREADS                 = ThreadsPerBlock;
+  static constexpr int ITEMS_PER_THREAD              = ItemsPerThread;
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
-
-  ///< Cache load modifier for reading input elements
-  static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
-
-  ///< The BlockScan algorithm to use
+  static constexpr CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 
   struct detail
@@ -86,12 +57,23 @@ struct AgentReduceByKeyPolicy
     using delay_constructor_t = DelayConstructorT;
   };
 };
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock,
+          int ItemsPerThread,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          BlockScanAlgorithm ScanAlgorithm,
+          typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
+using AgentReduceByKeyPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey") = detail::
+  agent_reduce_by_key_policy<ThreadsPerBlock, ItemsPerThread, LoadAlgorithm, LoadModifier, ScanAlgorithm, DelayConstructorT>;
 
 /******************************************************************************
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail::reduce
+namespace detail::reduce_by_key
 {
 /**
  * @brief AgentReduceByKey implements a stateful abstraction of CUDA thread
@@ -167,17 +149,16 @@ struct AgentReduceByKey
   using ScanTileStateT = ReduceByKeyScanTileState<AccumT, OffsetT>;
 
   // Guarded inequality functor
-  template <typename _EqualityOpT>
   struct GuardedInequalityWrapper
   {
     /// Wrapped equality operator
-    _EqualityOpT op;
+    EqualityOpT op;
 
     /// Items remaining
     int num_remaining;
 
     /// Constructor
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GuardedInequalityWrapper(_EqualityOpT op, int num_remaining)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GuardedInequalityWrapper(EqualityOpT op, int num_remaining)
         : op(op)
         , num_remaining(num_remaining)
     {}
@@ -201,11 +182,6 @@ struct AgentReduceByKey
   static constexpr int ITEMS_PER_THREAD  = AgentReduceByKeyPolicyT::ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS        = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr int TWO_PHASE_SCATTER = (ITEMS_PER_THREAD > 1);
-
-  // Whether or not the scan operation has a zero-valued identity value (true
-  // if we're performing addition on a primitive type)
-  static constexpr int HAS_IDENTITY_ZERO =
-    (::cuda::std::is_same_v<ReductionOpT, ::cuda::std::plus<>>) && (is_primitive<AccumT>::value);
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
   // for keys Wrap the native input pointer with
@@ -286,8 +262,7 @@ struct AgentReduceByKey
   };
 
   // Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per-thread fields
@@ -452,11 +427,11 @@ struct AgentReduceByKey
 
     __syncthreads();
 
-    for (int item = threadIdx.x; item < num_tile_segments; item += BLOCK_THREADS)
+    for (int item = static_cast<int>(threadIdx.x); item < num_tile_segments; item += BLOCK_THREADS)
     {
-      KeyValuePairT pair                                = temp_storage.raw_exchange.Alias()[item];
-      d_unique_out[num_tile_segments_prefix + item]     = pair.key;
-      d_aggregates_out[num_tile_segments_prefix + item] = pair.value;
+      const KeyValuePairT pair                          = temp_storage.raw_exchange.Alias()[item];
+      d_unique_out[num_tile_segments_prefix + item]     = pair.key; // NOLINT(bugprone-misplaced-widening-cast)
+      d_aggregates_out[num_tile_segments_prefix + item] = pair.value; // NOLINT(bugprone-misplaced-widening-cast)
     }
   }
 
@@ -489,7 +464,7 @@ struct AgentReduceByKey
   /**
    * @brief Process a tile of input (dynamic chained scan)
    *
-   * @tparam IS_LAST_TILE
+   * @tparam IsLastTile
    *   Whether the current tile is the last tile
    *
    * @param num_remaining
@@ -504,7 +479,7 @@ struct AgentReduceByKey
    * @param tile_state
    *   Global tile state descriptor
    */
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ConsumeTile(OffsetT num_remaining, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state)
   {
@@ -530,7 +505,7 @@ struct AgentReduceByKey
     KeyValuePairT scatter_items[ITEMS_PER_THREAD];
 
     // Load keys
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + tile_offset, keys, num_remaining);
     }
@@ -561,7 +536,7 @@ struct AgentReduceByKey
     __syncthreads();
 
     // Load values
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + tile_offset, values, num_remaining);
     }
@@ -573,16 +548,16 @@ struct AgentReduceByKey
     __syncthreads();
 
     // Initialize head-flags and shuffle up the previous keys
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       // Use custom flag operator to additionally flag the first out-of-bounds item
-      GuardedInequalityWrapper<EqualityOpT> flag_op(equality_op, num_remaining);
+      const GuardedInequalityWrapper flag_op(equality_op, num_remaining);
       BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity)
         .FlagHeads(head_flags, keys, prev_keys, flag_op, tile_predecessor);
     }
     else
     {
-      InequalityWrapper<EqualityOpT> flag_op(equality_op);
+      const InequalityWrapper<EqualityOpT> flag_op(equality_op);
       BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity)
         .FlagHeads(head_flags, keys, prev_keys, flag_op, tile_predecessor);
     }
@@ -654,7 +629,7 @@ struct AgentReduceByKey
       }
 
       // Update tile status if there are successor tiles
-      if ((!IS_LAST_TILE) && (threadIdx.x == 0))
+      if ((!IsLastTile) && (threadIdx.x == 0))
       {
         tile_state.SetInclusive(0, block_aggregate);
       }
@@ -689,7 +664,7 @@ struct AgentReduceByKey
     Scatter(scatter_items, head_flags, segment_indices, num_tile_segments, num_segments_prefix);
 
     // Last thread in last tile will output final count (and last pair, if necessary)
-    if ((IS_LAST_TILE) && (threadIdx.x == BLOCK_THREADS - 1))
+    if ((IsLastTile) && (threadIdx.x == BLOCK_THREADS - 1))
     {
       OffsetT num_segments = num_segments_prefix + num_tile_segments;
 
@@ -755,7 +730,7 @@ struct AgentReduceByKey
     // block
 
     // Current tile index
-    int tile_idx = start_tile + blockIdx.x;
+    const int tile_idx = static_cast<int>(start_tile + blockIdx.x);
 
     // Global offset for the current tile
     OffsetT tile_offset = OffsetT(TILE_ITEMS) * tile_idx;
@@ -775,6 +750,6 @@ struct AgentReduceByKey
     }
   }
 };
-} // namespace detail::reduce
+} // namespace detail::reduce_by_key
 
 CUB_NAMESPACE_END

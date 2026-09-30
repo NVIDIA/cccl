@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/experimental/__stf/places/exec/green_context.cuh>
+#include <cuda/experimental/__places/exec/green_context.cuh>
 #include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
@@ -17,10 +17,10 @@ using namespace cuda::experimental::stf;
 #if _CCCL_CTK_AT_LEAST(12, 4)
 __global__ void axpy(double a, slice<const double> x, slice<double> y)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
-  size_t n = x.extent(0);
+  const size_t n = x.extent(0);
   for (int ind = tid; ind < n; ind += nthreads)
   {
     y(ind) += a * x(ind);
@@ -64,8 +64,8 @@ int main()
 
   stream_ctx ctx;
 
-  int NITER   = 8;
-  const int n = 16 * 1024 * 1024;
+  const int NITER = 8;
+  const int n     = 16 * 1024 * 1024;
 
   std::vector<double> X(n);
   std::vector<double> Y(n);
@@ -79,7 +79,7 @@ int main()
   auto handle_X = ctx.logical_data(make_slice(&X[0], n));
   auto handle_Y = ctx.logical_data(make_slice(&Y[0], n));
 
-  std::vector<exec_place> places;
+  std::vector<exec_place> exec_places;
 
   // The green_context_helper class automates the creation of green context views
   std::vector<green_context_helper> gc(ndevs);
@@ -91,11 +91,11 @@ int main()
     auto cnt    = g_ctx.get_count();
     for (size_t i = 0; i < cnt; i++)
     {
-      places.push_back(exec_place::green_ctx(g_ctx.get_view(i)));
+      exec_places.push_back(exec_place::green_ctx(g_ctx.get_view(i)));
     }
   }
 
-  auto where = make_grid(places);
+  auto where = make_grid(exec_places);
 
   for (int iter = 0; iter < NITER; iter++)
   {

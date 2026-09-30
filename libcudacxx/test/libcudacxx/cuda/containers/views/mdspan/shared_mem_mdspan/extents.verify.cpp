@@ -19,7 +19,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ void not_extents()
+TEST_FUNC void not_extents()
 {
   // expected-error-re@*:* {{{{(static_assert|static assertion)}} failed {{.*}}mdspan: Extents template parameter must
   // be a specialization of extents.}}

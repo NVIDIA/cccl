@@ -17,7 +17,7 @@
 #include "types.h"
 
 template <class Stride>
-__host__ __device__ constexpr void test(Stride stride)
+TEST_FUNC constexpr void test(Stride stride)
 {
   {
     cuda::strided_iterator<int*, Stride> iter;
@@ -30,7 +30,7 @@ __host__ __device__ constexpr void test(Stride stride)
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test(0);
   test(Stride<2>{});
@@ -41,7 +41,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

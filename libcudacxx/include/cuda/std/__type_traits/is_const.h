@@ -24,12 +24,16 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(is_const)
+#  define _CCCL_BUILTIN_IS_CONST(...) __is_const(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_const)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_CONST) && !defined(_LIBCUDACXX_USE_IS_CONST_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_CONST)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_const : public bool_constant<_CCCL_BUILTIN_IS_CONST(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_const : bool_constant<_CCCL_BUILTIN_IS_CONST(_Tp)>
 {};
 
 template <class _Tp>

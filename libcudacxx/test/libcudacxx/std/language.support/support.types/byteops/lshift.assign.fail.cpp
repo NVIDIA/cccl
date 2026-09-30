@@ -15,7 +15,7 @@
 // This function shall not participate in overload resolution unless
 //   is_integral_v<IntegerType> is true.
 
-__host__ __device__ constexpr cuda::std::byte test(cuda::std::byte b)
+TEST_FUNC constexpr cuda::std::byte test(cuda::std::byte b)
 {
   return b <<= 2.0;
 }

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -45,16 +32,16 @@ U const& operator,(U const&, void_exp_result<T>);
 template <typename T, typename U>
 U& operator,(U&, void_exp_result<T>);
 
-template <typename src_type, typename dest_type>
+template <typename SrcType, typename DestType>
 struct clone_constness
 {
-  using type = dest_type;
+  using type = DestType;
 };
 
-template <typename src_type, typename dest_type>
-struct clone_constness<const src_type, dest_type>
+template <typename SrcType, typename DestType>
+struct clone_constness<const SrcType, DestType>
 {
-  using type = const dest_type;
+  using type = const DestType;
 };
 } // namespace detail::is_call_possible_detail
 THRUST_NAMESPACE_END
@@ -96,7 +83,7 @@ THRUST_NAMESPACE_END
       static no deduce(no);                                                                                            \
     };                                                                                                                 \
                                                                                                                        \
-    template <bool has_the_member_of_interest, typename F>                                                             \
+    template <bool HasTheMemberOfInterest, typename F>                                                                 \
     struct impl                                                                                                        \
     {                                                                                                                  \
       static const bool value = false;                                                                                 \

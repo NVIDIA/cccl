@@ -14,11 +14,11 @@
 #include "test_macros.h"
 
 template <template <class> class CompareTemplate>
-__host__ __device__ void do_pointer_comparison_test()
+TEST_FUNC void do_pointer_comparison_test()
 {
-  typedef CompareTemplate<int*> Compare;
-  typedef CompareTemplate<cuda::std::uintptr_t> UIntCompare;
-  typedef CompareTemplate<void> VoidCompare;
+  using Compare     = CompareTemplate<int*>;
+  using UIntCompare = CompareTemplate<cuda::std::uintptr_t>;
+  using VoidCompare = CompareTemplate<void>;
 
   Compare comp;
   UIntCompare ucomp;
@@ -41,7 +41,7 @@ __host__ __device__ void do_pointer_comparison_test()
 }
 
 template <class Comp>
-__host__ __device__ void do_pointer_comparison_test(Comp comp)
+TEST_FUNC void do_pointer_comparison_test(Comp comp)
 {
   struct
   {

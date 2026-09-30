@@ -27,26 +27,26 @@
 
 struct AssignableFromMoveOnly
 {
-  __host__ __device__ constexpr AssignableFromMoveOnly(int i)
+  TEST_FUNC constexpr AssignableFromMoveOnly(int i)
       : data(i)
   {}
-  __host__ __device__ constexpr AssignableFromMoveOnly()
+  TEST_FUNC constexpr AssignableFromMoveOnly()
       : data(0)
   {}
   int data;
-  __host__ __device__ constexpr AssignableFromMoveOnly& operator=(MoveOnly const& m)
+  TEST_FUNC constexpr AssignableFromMoveOnly& operator=(MoveOnly const& m)
   {
     data = m.get();
     return *this;
   }
-  __host__ __device__ constexpr bool operator==(AssignableFromMoveOnly const& rhs) const
+  TEST_FUNC constexpr bool operator==(AssignableFromMoveOnly const& rhs) const
   {
     return data == rhs.data;
   }
 };
 
 template <class InIter, class OutIter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   const int ia[]    = {0};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -113,7 +113,7 @@ __host__ __device__ constexpr void test()
   assert(ji[2] == 2);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_input_iterator<int*>>();
   test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
@@ -162,7 +162,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

@@ -10,6 +10,9 @@
 // UNSUPPORTED: nvrtc, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
+// UNSUPPORTED: force-tile
+// error: asm statement unsupported in tile mode
+
 #include <cuda/atomic>
 #include <cuda/std/cassert>
 

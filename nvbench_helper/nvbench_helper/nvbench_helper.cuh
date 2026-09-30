@@ -12,18 +12,18 @@
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#  include <cuda/memory_resource>
+#  include <cuda/std/execution>
+#  include <cuda/stream>
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+
 #include <map>
 #include <stdexcept>
 
 #include <nvbench/nvbench.cuh>
 
-#if defined(_MSC_VER)
-#  define NVBENCH_HELPER_HAS_I128 0
-#else
-#  define NVBENCH_HELPER_HAS_I128 1
-#endif
-
-#if NVBENCH_HELPER_HAS_I128
+#if _CCCL_HAS_INT128()
 using int128_t  = __int128_t;
 using uint128_t = __uint128_t;
 
@@ -31,7 +31,8 @@ NVBENCH_DECLARE_TYPE_STRINGS(int128_t, "I128", "int128_t");
 NVBENCH_DECLARE_TYPE_STRINGS(uint128_t, "U128", "uint128_t");
 #endif
 
-using complex = cuda::std::complex<float>;
+using complex32 = cuda::std::complex<float>;
+using complex64 = cuda::std::complex<double>;
 
 #if _CCCL_HAS_NVFP16()
 NVBENCH_DECLARE_TYPE_STRINGS(__half, "F16", "half");
@@ -41,16 +42,16 @@ NVBENCH_DECLARE_TYPE_STRINGS(cuda::std::complex<__half>, "C16", "complex_half");
 NVBENCH_DECLARE_TYPE_STRINGS(__nv_bfloat16, "BF16", "bfloat16");
 NVBENCH_DECLARE_TYPE_STRINGS(cuda::std::complex<__nv_bfloat16>, "CB16", "complex_bfloat16");
 #endif
-NVBENCH_DECLARE_TYPE_STRINGS(complex, "C32", "complex32");
-NVBENCH_DECLARE_TYPE_STRINGS(cuda::std::complex<double>, "C64", "complex64");
+NVBENCH_DECLARE_TYPE_STRINGS(complex32, "C32", "complex32");
+NVBENCH_DECLARE_TYPE_STRINGS(complex64, "C64", "complex64");
 
-NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::false_type, "false", "false_type");
-NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::true_type, "true", "true_type");
-NVBENCH_DECLARE_TYPE_STRINGS(cub::ArgMin, "ArgMin", "cub::ArgMin");
-NVBENCH_DECLARE_TYPE_STRINGS(cub::ArgMax, "ArgMax", "cub::ArgMax");
+NVBENCH_DECLARE_TYPE_STRINGS(cuda::std::false_type, "false", "false_type");
+NVBENCH_DECLARE_TYPE_STRINGS(cuda::std::true_type, "true", "true_type");
+NVBENCH_DECLARE_TYPE_STRINGS(cub::detail::arg_min, "arg_min", "cub::detail::arg_min");
+NVBENCH_DECLARE_TYPE_STRINGS(cub::detail::arg_max, "arg_max", "cub::detail::arg_max");
 
 template <typename T, T I>
-struct nvbench::type_strings<::cuda::std::integral_constant<T, I>>
+struct nvbench::type_strings<cuda::std::integral_constant<T, I>>
 {
   static std::string input_string()
   {
@@ -89,7 +90,7 @@ using integral_types    = nvbench::type_list<TUNE_T>;
 using fundamental_types = nvbench::type_list<TUNE_T>;
 using all_types         = nvbench::type_list<TUNE_T>;
 #else
-// keep those lists in sync with the documentation in tuning.rst
+// keep those lists in sync with the documentation in tuning_infra.rst
 using integral_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t>;
 
 using fundamental_types =
@@ -97,7 +98,7 @@ using fundamental_types =
                      int16_t,
                      int32_t,
                      int64_t,
-#  if NVBENCH_HELPER_HAS_I128
+#  if _CCCL_HAS_INT128()
                      int128_t,
 #  endif
                      float,
@@ -108,12 +109,12 @@ using all_types =
                      int16_t,
                      int32_t,
                      int64_t,
-#  if NVBENCH_HELPER_HAS_I128
+#  if _CCCL_HAS_INT128()
                      int128_t,
 #  endif
                      float,
                      double,
-                     complex>;
+                     complex32>;
 #endif
 
 template <class T>
@@ -175,7 +176,7 @@ NVBENCH_DECLARE_TYPE_STRINGS(bit_entropy, "BE", "bit entropy");
     case bit_entropy::_0_201:
       return 0.201;
     case bit_entropy::_0_000:
-      return 0.0;
+      [[fallthrough]];
     default:
       return 0.0;
   }
@@ -217,11 +218,11 @@ template <typename T>
 {
   if (at == 1.0)
   {
-    return ::cuda::std::numeric_limits<T>::max();
+    return cuda::std::numeric_limits<T>::max();
   }
-  const auto min_val = static_cast<double>(::cuda::std::numeric_limits<T>::lowest());
-  const auto max_val = static_cast<double>(::cuda::std::numeric_limits<T>::max());
-  return static_cast<T>(::cuda::std::lerp(min_val, max_val, at));
+  const auto min_val = static_cast<double>(cuda::std::numeric_limits<T>::lowest());
+  const auto max_val = static_cast<double>(cuda::std::numeric_limits<T>::max());
+  return static_cast<T>(cuda::std::lerp(min_val, max_val, at));
 }
 
 namespace detail
@@ -256,8 +257,6 @@ void gen_power_law_segment_offsets_host(seed_t seed, cuda::std::span<T> segment_
 template <typename T>
 void gen_power_law_segment_offsets_device(seed_t seed, cuda::std::span<T> segment_offsets, std::size_t elements);
 
-namespace
-{
 struct generator_base_t
 {
   seed_t m_seed{};
@@ -268,7 +267,7 @@ struct generator_base_t
   thrust::device_vector<T> generate(T min, T max)
   {
     thrust::device_vector<T> vec(m_elements);
-    cuda::std::span<T> span(thrust::raw_pointer_cast(vec.data()), m_elements);
+    const cuda::std::span<T> span(thrust::raw_pointer_cast(vec.data()), m_elements);
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
     gen_device(m_seed, span, m_entropy, min, max);
 #else
@@ -282,8 +281,8 @@ struct generator_base_t
 template <class T>
 struct vector_generator_t : generator_base_t
 {
-  const T m_min{::cuda::std::numeric_limits<T>::min()};
-  const T m_max{::cuda::std::numeric_limits<T>::max()};
+  const T m_min{cuda::std::numeric_limits<T>::min()};
+  const T m_max{cuda::std::numeric_limits<T>::max()};
 
   operator thrust::device_vector<T>()
   {
@@ -297,17 +296,16 @@ struct vector_generator_t<void> : generator_base_t
   template <typename T>
   operator thrust::device_vector<T>()
   {
-    return generator_base_t::generate(::cuda::std::numeric_limits<T>::min(), ::cuda::std::numeric_limits<T>::max());
+    return generator_base_t::generate(cuda::std::numeric_limits<T>::min(), cuda::std::numeric_limits<T>::max());
   }
 
   // This overload is needed because numeric limits is not specialized for complex, making
   // the min and max values for complex equal zero.
-  operator thrust::device_vector<complex>()
+  template <typename T>
+  operator thrust::device_vector<cuda::std::complex<T>>()
   {
-    const complex min = complex{
-      ::cuda::std::numeric_limits<complex::value_type>::min(), ::cuda::std::numeric_limits<complex::value_type>::min()};
-    const complex max = complex{
-      ::cuda::std::numeric_limits<complex::value_type>::max(), ::cuda::std::numeric_limits<complex::value_type>::max()};
+    const auto min = cuda::std::complex<T>{cuda::std::numeric_limits<T>::min(), cuda::std::numeric_limits<T>::min()};
+    const auto max = cuda::std::complex<T>{cuda::std::numeric_limits<T>::max(), cuda::std::numeric_limits<T>::max()};
 
     return generator_base_t::generate(min, max);
   }
@@ -324,7 +322,7 @@ struct uniform_key_segments_generator_t
   operator thrust::device_vector<KeyT>()
   {
     thrust::device_vector<KeyT> keys_vec(m_total_elements);
-    cuda::std::span<KeyT> keys(thrust::raw_pointer_cast(keys_vec.data()), keys_vec.size());
+    const cuda::std::span<KeyT> keys(thrust::raw_pointer_cast(keys_vec.data()), keys_vec.size());
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
     gen_uniform_key_segments_device(m_seed, keys, m_min_segment_size, m_max_segment_size);
 #else
@@ -346,7 +344,7 @@ struct uniform_segment_offsets_generator_t
   operator thrust::device_vector<OffsetT>()
   {
     thrust::device_vector<OffsetT> offsets_vec(m_total_elements + 2);
-    cuda::std::span<OffsetT> offsets(thrust::raw_pointer_cast(offsets_vec.data()), offsets_vec.size());
+    const cuda::std::span<OffsetT> offsets(thrust::raw_pointer_cast(offsets_vec.data()), offsets_vec.size());
     const std::size_t offsets_size =
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
       gen_uniform_segment_offsets_device(m_seed, offsets, m_min_segment_size, m_max_segment_size);
@@ -370,7 +368,7 @@ struct power_law_segment_offsets_generator_t
   operator thrust::device_vector<OffsetT>()
   {
     thrust::device_vector<OffsetT> offsets_vec(m_segments + 1);
-    cuda::std::span<OffsetT> offsets(thrust::raw_pointer_cast(offsets_vec.data()), offsets_vec.size());
+    const cuda::std::span<OffsetT> offsets(thrust::raw_pointer_cast(offsets_vec.data()), offsets_vec.size());
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
     gen_power_law_segment_offsets_device(m_seed, offsets, m_elements);
 #else
@@ -429,8 +427,8 @@ struct gen_t
   vector_generator_t<T> operator()(
     std::size_t elements,
     bit_entropy entropy = bit_entropy::_1_000,
-    T min               = ::cuda::std::numeric_limits<T>::min,
-    T max               = ::cuda::std::numeric_limits<T>::max()) const
+    T min               = cuda::std::numeric_limits<T>::min,
+    T max               = cuda::std::numeric_limits<T>::max()) const
   {
     return {{seed_t{}, elements, entropy}, min, max};
   }
@@ -438,7 +436,6 @@ struct gen_t
   gen_uniform_t uniform{};
   gen_power_law_t power_law{};
 };
-} // namespace
 } // namespace detail
 
 inline detail::gen_t generate;
@@ -457,7 +454,8 @@ struct less_t
     return lhs < rhs;
   }
 
-  __host__ __device__ inline bool operator()(const complex& lhs, const complex& rhs) const
+  template <typename T>
+  __host__ __device__ inline bool operator()(const cuda::std::complex<T>& lhs, const cuda::std::complex<T>& rhs) const
   {
     double magnitude_0 = cuda::std::abs(lhs);
     double magnitude_1 = cuda::std::abs(rhs);
@@ -473,25 +471,25 @@ struct less_t
       // (close to the maximum representable value for a double), it is possible that
       // the magnitude computation can result in positive infinity:
       // ```cpp
-      // const double large_number = ::cuda::std::numeric_limits<double>::max() / 2;
+      // const double large_number = cuda::std::numeric_limits<double>::max() / 2;
       // std::complex<double> z(large_number, large_number);
       // std::abs(z) == inf;
       // ```
       // Dividing both components by a constant before computing the magnitude prevents overflow.
-      const complex::value_type scaler = 0.5;
+      const T scaler = 0.5;
 
       magnitude_0 = cuda::std::abs(lhs * scaler);
       magnitude_1 = cuda::std::abs(rhs * scaler);
     }
 
-    const complex::value_type difference = cuda::std::abs(magnitude_0 - magnitude_1);
-    const complex::value_type threshold  = ::cuda::std::numeric_limits<complex::value_type>::epsilon() * 2;
+    const T difference = cuda::std::abs(magnitude_0 - magnitude_1);
+    const T threshold  = cuda::std::numeric_limits<T>::epsilon() * 2;
 
     if (difference < threshold)
     {
       // Triangles with the same magnitude are sorted by their phase angle.
-      const complex::value_type phase_angle_0 = cuda::std::arg(lhs);
-      const complex::value_type phase_angle_1 = cuda::std::arg(rhs);
+      const T phase_angle_0 = cuda::std::arg(lhs);
+      const T phase_angle_1 = cuda::std::arg(rhs);
 
       return phase_angle_0 < phase_angle_1;
     }
@@ -505,11 +503,25 @@ struct less_t
 struct max_t
 {
   template <typename DataType>
-  __host__ __device__ DataType operator()(const DataType& lhs, const DataType& rhs)
+  __host__ __device__ DataType operator()(const DataType& lhs, const DataType& rhs) const
   {
-    less_t less{};
+    const less_t less{};
     return less(lhs, rhs) ? rhs : lhs;
   }
+
+#if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
+  __host__ __device__ __half operator()(__half lhs, __half rhs) const
+  {
+    return static_cast<float>(lhs) < static_cast<float>(rhs) ? rhs : lhs;
+  }
+#endif // _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
+
+#if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
+  __host__ __device__ __nv_bfloat16 operator()(__nv_bfloat16 lhs, __nv_bfloat16 rhs) const
+  {
+    return static_cast<float>(lhs) < static_cast<float>(rhs) ? rhs : lhs;
+  }
+#endif // _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
 };
 
 template <class T>
@@ -525,12 +537,10 @@ struct less_then_t
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 template <typename T>
-struct proclaims_copyable_arguments<less_then_t<T>> : ::cuda::std::true_type
+struct proclaims_copyable_arguments<less_then_t<T>> : cuda::std::true_type
 {};
 _CCCL_END_NAMESPACE_CUDA
 
-namespace
-{
 struct caching_allocator_t
 {
   using value_type = char;
@@ -543,6 +553,15 @@ struct caching_allocator_t
 
   char* allocate(std::ptrdiff_t num_bytes)
   {
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+    if (first_async_stream != cuda::invalid_stream)
+    {
+      // there was already an async allocate
+      throw std::runtime_error("caching_allocator_t is not intended to be used asynchronously and synchronously at the "
+                               "same time");
+    }
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+
     value_type* result{};
     auto free_block = free_blocks.find(num_bytes);
 
@@ -560,18 +579,85 @@ struct caching_allocator_t
     return result;
   }
 
-  void deallocate(char* ptr, size_t)
+  void deallocate(char* ptr, size_t, [[maybe_unused]] bool check_stream = true)
   {
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+    if (check_stream && first_async_stream != cuda::invalid_stream)
+    {
+      // there was already an async allocate
+      throw std::runtime_error("caching_allocator_t is not intended to be used asynchronously and synchronously at the "
+                               "same time");
+    }
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+
     auto iter = allocated_blocks.find(ptr);
     if (iter == allocated_blocks.end())
     {
       throw std::runtime_error("Memory was not allocated by this allocator");
     }
 
-    std::ptrdiff_t num_bytes = iter->second;
+    const std::ptrdiff_t num_bytes = iter->second;
     allocated_blocks.erase(iter);
     free_blocks.insert(std::make_pair(num_bytes, ptr));
   }
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  void* allocate_sync(size_t num_bytes, size_t)
+  {
+    return allocate(static_cast<std::ptrdiff_t>(num_bytes));
+  }
+
+  void deallocate_sync(void* ptr, size_t num_bytes, size_t)
+  {
+    deallocate(static_cast<char*>(ptr), num_bytes);
+  }
+
+  void* allocate(cuda::stream_ref __stream, size_t num_bytes, size_t)
+  {
+    if (first_async_stream == cuda::invalid_stream)
+    {
+      first_async_stream = __stream;
+    }
+    else if (first_async_stream != __stream)
+    {
+      throw std::runtime_error("caching_allocator_t is not intended to be used asynchronously from multiple streams");
+    }
+
+    value_type* result{};
+    auto free_block = free_blocks.find(static_cast<std::ptrdiff_t>(num_bytes));
+
+    if (free_block != free_blocks.end())
+    {
+      result = free_block->second;
+      free_blocks.erase(free_block);
+    }
+    else
+    {
+      const cudaError_t status = cudaMallocAsync(&result, num_bytes, __stream.get());
+      if (cudaSuccess != status)
+      {
+        throw std::runtime_error(std::string("Failed to allocate device memory: ") + cudaGetErrorString(status));
+      }
+      // NOTE: We can avoid a `__stream.sync()` here because `allocate` is only ever called asynchronously with a stream
+      // So it is fine that the memory is only valid in stream order
+    }
+
+    allocated_blocks.insert(std::make_pair(result, num_bytes));
+    return result;
+  }
+
+  void deallocate(cuda::stream_ref __stream, void* ptr, size_t num_bytes, size_t)
+  {
+    if (first_async_stream != __stream)
+    {
+      throw std::runtime_error("caching_allocator_t is not intended to be used asynchronously from multiple streams");
+    }
+
+    // there is no need to sync the stream here and we can just insert the allocation into the free list, because the
+    // next allocation can only be done from the same stream again.
+    deallocate(static_cast<char*>(ptr), num_bytes, false);
+  }
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
 private:
   using free_blocks_type      = std::multimap<std::ptrdiff_t, char*>;
@@ -579,6 +665,10 @@ private:
 
   free_blocks_type free_blocks;
   allocated_blocks_type allocated_blocks;
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  cuda::stream_ref first_async_stream{cuda::invalid_stream}; // just to detect wrong usage patterns
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
   void free_all()
   {
@@ -616,29 +706,63 @@ private:
     delete[] ptr;
 #endif
   }
+
+  friend bool operator==(const caching_allocator_t& lhs, const caching_allocator_t& rhs)
+  {
+    return lhs.free_blocks == rhs.free_blocks && lhs.allocated_blocks == rhs.allocated_blocks;
+  }
+
+  friend bool operator!=(const caching_allocator_t& lhs, const caching_allocator_t& rhs)
+  {
+    return lhs.free_blocks == rhs.free_blocks && lhs.allocated_blocks == rhs.allocated_blocks;
+  }
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  friend constexpr void get_property(const caching_allocator_t&, cuda::mr::device_accessible) noexcept {}
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 };
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-auto policy(caching_allocator_t& alloc)
+inline auto policy(caching_allocator_t& alloc)
 {
   return thrust::cuda::par(alloc);
 }
+inline auto cuda_policy(caching_allocator_t& alloc)
+{
+  return cuda::execution::gpu.with(cuda::mr::get_memory_resource, alloc);
+}
 #else
-auto policy(caching_allocator_t&)
+inline auto policy(caching_allocator_t&)
 {
   return thrust::device;
 }
 #endif
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-auto policy(caching_allocator_t& alloc, nvbench::launch& launch)
+inline auto policy(caching_allocator_t& alloc, nvbench::launch& launch)
 {
   return thrust::cuda::par(alloc).on(launch.get_stream());
 }
+inline auto cuda_policy(caching_allocator_t& alloc, nvbench::launch& launch)
+{
+  return cuda::execution::gpu.with(cuda::mr::get_memory_resource, alloc)
+    .with(cuda::get_stream, launch.get_stream().get_stream());
+}
 #else
-auto policy(caching_allocator_t&, nvbench::launch&)
+inline auto policy(caching_allocator_t&, nvbench::launch&)
 {
   return thrust::device;
 }
 #endif
-} // namespace
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+// Returns an environment for benchmarking using alloc as MR, launch's stream, and any additional envs passed in.
+template <typename... MoreEnvs>
+auto cub_bench_env(caching_allocator_t& alloc, nvbench::launch& launch, MoreEnvs... envs)
+{
+  return cuda::std::execution::env{
+    cuda::stream_ref{launch.get_stream().get_stream()},
+    cuda::std::execution::prop{cuda::mr::get_memory_resource, cuda::mr::resource_ref<>{alloc}},
+    envs...};
+}
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA

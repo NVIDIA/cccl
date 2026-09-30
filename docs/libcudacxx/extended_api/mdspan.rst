@@ -7,9 +7,13 @@ Mdspan
    :hidden:
    :maxdepth: 1
 
+   mdspan/copy
    mdspan/host_device_accessor
+   mdspan/layout_stride_relaxed
    mdspan/restrict_accessor
    mdspan/shared_memory_accessor
+   mdspan/mdspan_to_dlpack
+   mdspan/dlpack_to_mdspan
 
 .. list-table::
    :widths: 25 45 30 30
@@ -20,8 +24,18 @@ Mdspan
      - **CCCL Availability**
      - **CUDA Toolkit Availability**
 
+   * - :ref:`asynchronous device mdspan copy <libcudacxx-extended-api-mdspan-copy>`
+     - Asynchronously copy elements between device mdspans
+     - CCCL 3.6.0
+     - CUDA 13.6
+
    * - :ref:`host/device/managed mdspan and accessor <libcudacxx-extended-api-mdspan-host-device-accessor>`
      - CUDA memory space ``mdspan`` and accessors
+     - CCCL 3.0.0
+     - CUDA 13.0
+
+   * - :ref:`layout_stride_relaxed <libcudacxx-extended-api-mdspan-layout-stride-relaxed>`
+     - Layout mapping policy with negative/zero strides and offset support
      - CCCL 3.0.0
      - CUDA 13.0
 
@@ -32,5 +46,15 @@ Mdspan
 
    * - :ref:`shared_memory mdspan and accessor <libcudacxx-extended-api-mdspan-shared-memory-accessor>`
      - ``mdspan`` and accessor for CUDA shared memory
+     - CCCL 3.3.0
+     - CUDA 13.3
+
+   * - :ref:`mdspan to dlpack <libcudacxx-extended-api-mdspan-mdspan-to-dlpack>`
+     - Convert a ``mdspan`` to a ``DLTensor``
+     - CCCL 3.2.0
+     - CUDA 13.2
+
+   * - :ref:`dlpack to mdspan <libcudacxx-extended-api-mdspan-dlpack-to-mdspan>`
+     - Convert a ``DLTensor`` to a ``mdspan``
      - CCCL 3.2.0
      - CUDA 13.2

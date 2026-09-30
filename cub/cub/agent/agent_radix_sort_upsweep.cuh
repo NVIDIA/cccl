@@ -29,11 +29,8 @@
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-#  include <cub/agent/agent_radix_sort_histogram.cuh>
-#endif
-
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/__utility/static_for.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 
@@ -43,10 +40,12 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
+namespace detail
+{
 /**
  * @brief Parameterizable tuning policy type for AgentRadixSortUpsweep
  *
- * @tparam NominalBlockThreads4B
+ * @tparam NominalThreadsPerBlock4B
  *   Threads per thread block
  *
  * @tparam NominalItemsPerThread4B
@@ -61,13 +60,13 @@ CUB_NAMESPACE_BEGIN
  * @tparam RadixBits
  *   The number of radix bits, i.e., log2(bins)
  */
-template <int NominalBlockThreads4B,
+template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
           CacheLoadModifier LoadModifier,
           int RadixBits,
-          typename ScalingType = detail::RegBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
-struct AgentRadixSortUpsweepPolicy : ScalingType
+          typename ScalingType = detail::RegBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
+struct agent_radix_sort_upsweep_policy : ScalingType
 {
   /// The number of radix bits, i.e., log2(bins)
   static constexpr int RADIX_BITS = RadixBits;
@@ -75,25 +74,23 @@ struct AgentRadixSortUpsweepPolicy : ScalingType
   /// Cache load modifier for reading keys
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
+} // namespace detail
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-namespace detail::radix_sort_runtime_policies
-{
-// Only define this when needed.
-// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
-// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
-// version is always defined, and that's the only one needed for regular CUB operations.
-//
-// TODO: enable this unconditionally once concepts are always available
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  RadixSortUpsweepAgentPolicy,
-  (GenericAgentPolicy, RadixSortExclusiveSumAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (RADIX_BITS, RadixBits, int),
-  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier))
-} // namespace detail::radix_sort_runtime_policies
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+//! Deprecated [Since 3.5]
+template <int NominalThreadsPerBlock4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          CacheLoadModifier LoadModifier,
+          int RadixBits,
+          typename ScalingType = detail::RegBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, ComputeT>>
+using AgentRadixSortUpsweepPolicy
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRadixSort") = detail::agent_radix_sort_upsweep_policy<
+    NominalThreadsPerBlock4B,
+    NominalItemsPerThread4B,
+    ComputeT,
+    LoadModifier,
+    RadixBits,
+    ScalingType>;
 
 /******************************************************************************
  * Thread block abstractions
@@ -184,8 +181,7 @@ struct AgentRadixSortUpsweep
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Thread fields (aggregate state bundle)
@@ -206,35 +202,6 @@ struct AgentRadixSortUpsweep
   DecomposerT decomposer;
 
   //---------------------------------------------------------------------
-  // Helper structure for templated iteration
-  //---------------------------------------------------------------------
-
-  // Iterate
-  template <int COUNT, int MAX>
-  struct Iterate
-  {
-    // BucketKeys
-    static _CCCL_DEVICE _CCCL_FORCEINLINE void
-    BucketKeys(AgentRadixSortUpsweep& cta, bit_ordered_type keys[KEYS_PER_THREAD])
-    {
-      cta.Bucket(keys[COUNT]);
-
-      // Next
-      Iterate<COUNT + 1, MAX>::BucketKeys(cta, keys);
-    }
-  };
-
-  // Terminate
-  template <int MAX>
-  struct Iterate<MAX, MAX>
-  {
-    // BucketKeys
-    static _CCCL_DEVICE _CCCL_FORCEINLINE void
-    BucketKeys(AgentRadixSortUpsweep& /*cta*/, bit_ordered_type /*keys*/[KEYS_PER_THREAD])
-    {}
-  };
-
-  //---------------------------------------------------------------------
   // Utility methods
   //---------------------------------------------------------------------
   _CCCL_DEVICE _CCCL_FORCEINLINE digit_extractor_t digit_extractor()
@@ -248,16 +215,19 @@ struct AgentRadixSortUpsweep
   _CCCL_DEVICE _CCCL_FORCEINLINE void Bucket(bit_ordered_type key)
   {
     // Perform transform op
+    // `Digit()` takes a mutable reference for the decomposer overload.
+    // NOLINTNEXTLINE(misc-const-correctness)
     bit_ordered_type converted_key = bit_ordered_conversion::to_bit_ordered(decomposer, key);
 
     // Extract current digit bits
-    uint32_t digit = digit_extractor().Digit(converted_key);
+    const uint32_t digit = digit_extractor().Digit(converted_key);
 
     // Get sub-counter offset
-    uint32_t sub_counter = digit & (PACKING_RATIO - 1);
+    const uint32_t sub_counter = digit & (PACKING_RATIO - 1);
 
     // Get row offset
-    uint32_t row_offset = digit >> LOG_PACKING_RATIO;
+    const uint32_t row_offset = digit >> LOG_PACKING_RATIO;
+    _CCCL_ASSERT(row_offset < COUNTER_LANES, "");
 
     // Increment counter
     temp_storage.thread_counters[row_offset][threadIdx.x][sub_counter]++;
@@ -297,8 +267,8 @@ struct AgentRadixSortUpsweep
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void UnpackDigitCounts()
   {
-    unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
-    unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
+    const unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
+    const unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int LANE = 0; LANE < LANES_PER_WARP; LANE++)
@@ -334,7 +304,9 @@ struct AgentRadixSortUpsweep
     __syncthreads();
 
     // Bucket tile of keys
-    Iterate<0, KEYS_PER_THREAD>::BucketKeys(*this, keys);
+    cuda::static_for<KEYS_PER_THREAD>([&](auto ic) {
+      Bucket(keys[ic]);
+    });
   }
 
   /**
@@ -346,7 +318,7 @@ struct AgentRadixSortUpsweep
     for (OffsetT offset = threadIdx.x; offset < block_end - block_offset; offset += BLOCK_THREADS)
     {
       // Load and bucket key
-      bit_ordered_type key = d_keys_in[block_offset + offset];
+      const bit_ordered_type key = d_keys_in[block_offset + offset];
       Bucket(key);
     }
   }
@@ -415,25 +387,25 @@ struct AgentRadixSortUpsweep
   /**
    * Extract counts (saving them to the external array)
    */
-  template <bool IS_DESCENDING>
+  template <bool IsDescending>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExtractCounts(OffsetT* counters, int bin_stride = 1, int bin_offset = 0)
   {
-    unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
-    unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
+    const unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
+    const unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
 
     // Place unpacked digit counters in shared memory
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int LANE = 0; LANE < LANES_PER_WARP; LANE++)
     {
-      int counter_lane = (LANE * WARPS) + warp_id;
+      const int counter_lane = (LANE * WARPS) + warp_id;
       if (counter_lane < COUNTER_LANES)
       {
-        int digit_row = counter_lane << LOG_PACKING_RATIO;
+        const int digit_row = counter_lane << LOG_PACKING_RATIO;
 
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int UNPACKED_COUNTER = 0; UNPACKED_COUNTER < PACKING_RATIO; UNPACKED_COUNTER++)
         {
-          int bin_idx = digit_row + UNPACKED_COUNTER;
+          const int bin_idx = digit_row + UNPACKED_COUNTER;
 
           temp_storage.block_counters[warp_tid][bin_idx] = local_counts[LANE][UNPACKED_COUNTER];
         }
@@ -449,7 +421,7 @@ struct AgentRadixSortUpsweep
     for (int BIN_BASE = RADIX_DIGITS % BLOCK_THREADS; (BIN_BASE + BLOCK_THREADS) <= RADIX_DIGITS;
          BIN_BASE += BLOCK_THREADS)
     {
-      int bin_idx       = BIN_BASE + threadIdx.x;
+      int bin_idx       = static_cast<int>(BIN_BASE + threadIdx.x);
       OffsetT bin_count = 0;
 
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -458,7 +430,7 @@ struct AgentRadixSortUpsweep
         bin_count += temp_storage.block_counters[i][bin_idx];
       }
 
-      if (IS_DESCENDING)
+      if (IsDescending)
       {
         bin_idx = RADIX_DIGITS - bin_idx - 1;
       }
@@ -469,7 +441,7 @@ struct AgentRadixSortUpsweep
     // Remainder
     if ((RADIX_DIGITS % BLOCK_THREADS != 0) && (threadIdx.x < RADIX_DIGITS))
     {
-      int bin_idx       = threadIdx.x;
+      int bin_idx       = static_cast<int>(threadIdx.x);
       OffsetT bin_count = 0;
 
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -478,7 +450,7 @@ struct AgentRadixSortUpsweep
         bin_count += temp_storage.block_counters[i][bin_idx];
       }
 
-      if (IS_DESCENDING)
+      if (IsDescending)
       {
         bin_idx = RADIX_DIGITS - bin_idx - 1;
       }
@@ -492,28 +464,28 @@ struct AgentRadixSortUpsweep
    *
    * @param[out] bin_count
    *   The exclusive prefix sum for the digits
-   *   [(threadIdx.x * BINS_TRACKED_PER_THREAD) ... (threadIdx.x * BINS_TRACKED_PER_THREAD) + BINS_TRACKED_PER_THREAD -
+   *   [(threadIdx.x * BinsTrackedPerThread) ... (threadIdx.x * BinsTrackedPerThread) + BinsTrackedPerThread -
    * 1]
    */
-  template <int BINS_TRACKED_PER_THREAD>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExtractCounts(OffsetT (&bin_count)[BINS_TRACKED_PER_THREAD])
+  template <int BinsTrackedPerThread>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ExtractCounts(OffsetT (&bin_count)[BinsTrackedPerThread])
   {
-    unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
-    unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
+    const unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
+    const unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
 
     // Place unpacked digit counters in shared memory
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int LANE = 0; LANE < LANES_PER_WARP; LANE++)
     {
-      int counter_lane = (LANE * WARPS) + warp_id;
+      const int counter_lane = (LANE * WARPS) + warp_id;
       if (counter_lane < COUNTER_LANES)
       {
-        int digit_row = counter_lane << LOG_PACKING_RATIO;
+        const int digit_row = counter_lane << LOG_PACKING_RATIO;
 
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int UNPACKED_COUNTER = 0; UNPACKED_COUNTER < PACKING_RATIO; UNPACKED_COUNTER++)
         {
-          int bin_idx = digit_row + UNPACKED_COUNTER;
+          const int bin_idx = digit_row + UNPACKED_COUNTER;
 
           temp_storage.block_counters[warp_tid][bin_idx] = local_counts[LANE][UNPACKED_COUNTER];
         }
@@ -524,9 +496,9 @@ struct AgentRadixSortUpsweep
 
     // Rake-reduce bin_count reductions
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
+    for (int track = 0; track < BinsTrackedPerThread; ++track)
     {
-      int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+      const int bin_idx = (threadIdx.x * BinsTrackedPerThread) + track;
 
       if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {

@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__fwd/zip_iterator.h>
+#include <cuda/__fwd/iterator.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
@@ -77,17 +77,17 @@ public:
   //! @param __tuple The tuple of arguments to be passed
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tuple)
-  _CCCL_REQUIRES(::cuda::std::__can_apply<const _Fn&, _Tuple>)
+  _CCCL_REQUIRES((::cuda::std::__can_apply<const _Fn&, _Tuple>) )
   [[nodiscard]] _CCCL_API constexpr decltype(auto) operator()(_Tuple&& __tuple) const
     noexcept(__is_nothrow_invocable<const _Fn&, _Tuple>)
   {
     return ::cuda::std::apply(__fun_, ::cuda::std::forward<_Tuple>(__tuple));
   }
 
-  //! @brief Applies a tuple to the stored functor
+  //! @overload
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tuple)
-  _CCCL_REQUIRES(::cuda::std::__can_apply<_Fn&, _Tuple>)
+  _CCCL_REQUIRES((::cuda::std::__can_apply<_Fn&, _Tuple>) )
   [[nodiscard]] _CCCL_API constexpr decltype(auto)
   operator()(_Tuple&& __tuple) noexcept(__is_nothrow_invocable<_Fn&, _Tuple>)
   {
@@ -104,6 +104,15 @@ public:
     return __fun_;
   }
 };
+
+//! @brief Creates a @c zip_function from a function
+//! @tparam _Fn The functor to wrap
+//! @relates zip_iterator
+template <class _Fn>
+_CCCL_API constexpr zip_function<::cuda::std::decay_t<_Fn>> make_zip_function(_Fn&& __fun)
+{
+  return zip_function<::cuda::std::decay_t<_Fn>>{::cuda::std::forward<_Fn>(__fun)};
+}
 
 //! @}
 

@@ -20,13 +20,13 @@
 #include "test_macros.h"
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_integral<T>::value, int> = 0>
-__host__ __device__ constexpr int make_expected_max_exponent10()
+TEST_FUNC constexpr int make_expected_max_exponent10()
 {
   return 0;
 }
 
 template <class T, int expected = make_expected_max_exponent10<T>()>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::numeric_limits<T>::max_exponent10 == expected, "max_exponent10 test 1");
   static_assert(cuda::std::numeric_limits<const T>::max_exponent10 == expected, "max_exponent10 test 2");
@@ -41,9 +41,9 @@ int main(int, char**)
   test<signed char>();
   test<unsigned char>();
   test<wchar_t>();
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
   test<char8_t>();
-#endif
+#endif // _CCCL_HAS_CHAR8_T()
   test<char16_t>();
   test<char32_t>();
   test<short>();

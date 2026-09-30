@@ -36,8 +36,8 @@ struct host_write_first_op
   template <typename IndexT, typename T>
   _CCCL_HOST void operator()(IndexT index, T val)
   {
-    // val is a thrust::tuple(value, input_index). Only write out the value part.
-    out[index] = thrust::get<0>(val);
+    // val is a cuda::std::tuple(value, input_index). Only write out the value part.
+    out[index] = cuda::std::get<0>(val);
   }
 };
 
@@ -49,8 +49,8 @@ struct device_write_first_op
   template <typename IndexT, typename T>
   _CCCL_DEVICE void operator()(IndexT index, T val)
   {
-    // val is a thrust::tuple(value, input_index). Only write out the value part.
-    out[index] = thrust::get<0>(val);
+    // val is a cuda::std::tuple(value, input_index). Only write out the value part.
+    out[index] = cuda::std::get<0>(val);
   }
 };
 
@@ -59,10 +59,10 @@ struct select_op
   std::size_t select_every_nth;
 
   template <typename T, typename IndexT>
-  _CCCL_HOST_DEVICE bool operator()(thrust::tuple<T, IndexT> key_index_pair)
+  _CCCL_HOST_DEVICE bool operator()(cuda::std::tuple<T, IndexT> key_index_pair)
   {
     // Select every n-th item
-    return (thrust::get<1>(key_index_pair) % select_every_nth == 0);
+    return (cuda::std::get<1>(key_index_pair) % select_every_nth == 0);
   }
 };
 
@@ -79,7 +79,7 @@ struct index_to_gather_index_op
 };
 
 // ensure that we properly support thrust::tabulate_output_iterator from cuda::std
-void TestTabulateOutputIteratorTraits()
+TEST_CASE("TestTabulateOutputIteratorTraits", "[tabulate_output_iterator]")
 {
   using base_it = thrust::host_vector<int>::iterator;
   using Op      = host_write_op<base_it>;
@@ -108,10 +108,9 @@ void TestTabulateOutputIteratorTraits()
   static_assert(!cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
-DECLARE_UNITTEST(TestTabulateOutputIteratorTraits);
 
 template <class Vector>
-void TestTabulateOutputIterator()
+void test_tabulate_output_iterator()
 {
   using T     = typename Vector::value_type;
   using it_t  = typename Vector::iterator;
@@ -127,7 +126,7 @@ void TestTabulateOutputIterator()
                                                  device_write_first_op<it_t>>::type;
 
   // Construct tabulate_output_iterator
-  op_t op{output.begin()};
+  const op_t op{output.begin()};
   auto tabulate_out_it = thrust::make_tabulate_output_iterator(op);
 
   // Prepare input
@@ -148,31 +147,29 @@ void TestTabulateOutputIterator()
     thrust::make_transform_iterator(thrust::make_counting_iterator(0), index_to_gather_index_op{select_every_nth});
   thrust::gather(gather_index_it, gather_index_it + expected_num_selected, input.cbegin(), expected_output.begin());
 
-  ASSERT_EQUAL(expected_num_selected, num_selected);
-  ASSERT_EQUAL(output, expected_output);
+  REQUIRE(expected_num_selected == num_selected);
+  REQUIRE(output == expected_output);
 }
-DECLARE_VECTOR_UNITTEST(TestTabulateOutputIterator);
+DECLARE_VECTOR_UNITTEST(test_tabulate_output_iterator);
 
-void TestTabulateOutputIterator()
+TEST_CASE("TestTabulateOutputIteratorSubscript", "[tabulate_output_iterator]")
 {
   using vector_t = thrust::host_vector<int>;
   using vec_it_t = typename vector_t::iterator;
   using op_t     = host_write_op<vec_it_t>;
 
   vector_t out(4, 42);
-  thrust::tabulate_output_iterator<op_t> tabulate_out_it{op_t{out.begin()}};
+  thrust::tabulate_output_iterator<op_t> tabulate_out_it{op_t{out.begin()}}; // NOLINT(misc-const-correctness)
 
   tabulate_out_it[1] = 2;
   vector_t ref{42, 2, 42, 42};
-  ASSERT_EQUAL(out, ref);
+  REQUIRE(out == ref);
 
   tabulate_out_it[3] = 0;
   ref                = {42, 2, 42, 0};
-  ASSERT_EQUAL(out, ref);
+  REQUIRE(out == ref);
 
   tabulate_out_it[1] = 4;
   ref                = {42, 4, 42, 0};
-  ASSERT_EQUAL(out, ref);
+  REQUIRE(out == ref);
 }
-
-DECLARE_UNITTEST(TestTabulateOutputIterator);

@@ -175,8 +175,7 @@ private:
   uint32_t linear_tid;
 
 public:
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // CONSTRUCTOR
@@ -185,6 +184,11 @@ public:
   //! @brief Constructor specialised for user-provided temporary storage, initializing using the runs' lengths.
   //!        The algorithm's temporary storage may not be repurposed between the constructor call and subsequent
   //!        `RunLengthDecode` calls.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   template <typename RunLengthT, typename TotalDecodedSizeT>
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRunLengthDecode(
     TempStorage& temp_storage,
@@ -200,6 +204,11 @@ public:
   //! @brief Constructor specialised for user-provided temporary storage, initializing using the runs' offsets.
   //!        The algorithm's temporary storage may not be repurposed between the constructor call and subsequent
   //!        `RunLengthDecode` calls.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   template <typename UserRunOffsetT>
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRunLengthDecode(
     TempStorage& temp_storage, ItemT (&run_values)[RunsPerThread], UserRunOffsetT (&run_offsets)[RunsPerThread])
@@ -211,6 +220,11 @@ public:
 
   /**
    * \brief Constructor specialised for static temporary storage, initializing using the runs' lengths.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    */
   template <typename RunLengthT, typename TotalDecodedSizeT>
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRunLengthDecode(
@@ -223,6 +237,11 @@ public:
 
   /**
    * \brief Constructor specialised for static temporary storage, initializing using the runs' offsets.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    */
   template <typename UserRunOffsetT>
   _CCCL_DEVICE _CCCL_FORCEINLINE
@@ -236,7 +255,7 @@ public:
 private:
   /**
    * @brief Returns the offset of the first value within @p input which compares greater than
-   * @p val. This version takes @p MAX_NUM_ITEMS, an upper bound of the array size, which will
+   * @p val. This version takes @p MaxNumItems, an upper bound of the array size, which will
    * be used to determine the number of binary search iterations at compile time.
    *
    * @param[in] input
@@ -248,14 +267,14 @@ private:
    * @param[in] val
    *   Search key
    */
-  template <int MAX_NUM_ITEMS, typename InputIteratorT, typename OffsetT, typename T>
+  template <int MaxNumItems, typename InputIteratorT, typename OffsetT, typename T>
   _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT StaticUpperBound(InputIteratorT input, OffsetT num_items, T val)
   {
     OffsetT lower_bound = 0;
     OffsetT upper_bound = num_items;
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i <= Log2<MAX_NUM_ITEMS>::VALUE; i++)
+    for (int i = 0; i <= Log2<MaxNumItems>::VALUE; i++)
     {
       OffsetT mid = cub::MidPoint<OffsetT>(lower_bound, upper_bound);
       mid         = (::cuda::std::min) (mid, num_items - 1);
@@ -327,6 +346,11 @@ public:
    * decoded array of `3, 3, 1, 4, 4, 4` with the relative offsets of `0, 1, 0, 0, 1, 2`.
    * \smemreuse
    *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
+   *
    * \param[out] decoded_items The run-length decoded items to be returned in a blocked arrangement
    * \param[out] item_offsets The run-length decoded items' relative offset within the run they belong to
    * \param[in] from_decoded_offset If invoked with from_decoded_offset that is larger than total_decoded_size results
@@ -390,6 +414,11 @@ public:
    * the buffer are returned. Subsequent calls to `RunLengthDecode` adjusting `from_decoded_offset` can be
    * used to retrieve the remaining run-length decoded items. Calling __syncthreads() between any two calls to
    * `RunLengthDecode` is not required.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * \param[out] decoded_items The run-length decoded items to be returned in a blocked arrangement
    * \param[in] from_decoded_offset If invoked with from_decoded_offset that is larger than total_decoded_size results

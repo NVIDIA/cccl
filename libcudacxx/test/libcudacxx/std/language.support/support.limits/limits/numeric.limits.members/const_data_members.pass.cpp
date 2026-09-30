@@ -8,10 +8,17 @@
 
 // ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
 // ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/limits>
 
 #include "test_macros.h"
+
+// numeric_limits::has_denorm and numeric_limits::has_denorm_loss have been deprecated since C++23
+#if _CCCL_STD_VER >= 2023
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+#endif // _CCCL_STD_VER >= 2023
 
 /*
 <limits>:
@@ -42,11 +49,11 @@
 */
 
 template <class T>
-__host__ __device__ void test(T)
+TEST_FUNC void test(T)
 {}
 
 template <class T>
-__host__ __device__ void test_type_helper()
+TEST_FUNC void test_type_helper()
 {
   test(cuda::std::numeric_limits<T>::is_specialized);
   test(cuda::std::numeric_limits<T>::digits);
@@ -74,7 +81,7 @@ __host__ __device__ void test_type_helper()
 }
 
 template <class T>
-__host__ __device__ void test_type()
+TEST_FUNC void test_type()
 {
   test_type_helper<T>();
   test_type_helper<const T>();
@@ -92,9 +99,9 @@ int main(int, char**)
   test_type<signed char>();
   test_type<unsigned char>();
   test_type<wchar_t>();
-#if TEST_STD_VER >= 2020 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
   test_type<char8_t>();
-#endif // TEST_STD_VER >= 2020 && defined(__cpp_char8_t)
+#endif // _CCCL_HAS_CHAR8_T()
   test_type<char16_t>();
   test_type<char32_t>();
   test_type<short>();

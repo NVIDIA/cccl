@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 // friend constexpr iterator operator+(iterator i, difference_type n)
 //   requires advanceable<W>;
 // friend constexpr iterator operator+(difference_type n, iterator i)
@@ -19,7 +22,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   cuda::shuffle_iterator iter1{fake_bijection{}, 1};
   cuda::shuffle_iterator iter2{fake_bijection{}, 1};

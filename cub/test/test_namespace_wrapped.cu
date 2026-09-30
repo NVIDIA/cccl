@@ -1,3 +1,5 @@
+#define CCCL_IGNORE_DEPRECATED_API
+
 // Wrap thrust and cub in different enclosing namespaces
 // (In practice, you probably want these to be the same, in which case just
 // set THRUST_CUB_WRAPPED_NAMESPACE to set both).
@@ -17,7 +19,10 @@
 #include <cstdint>
 #include <cstdlib>
 
+#include "cub_non_catch2_test_memory.h"
 #include "test_util.h"
+
+CUB_TEST_MEMORY_CLASS(CUB_SMALL);
 
 // Test that we can use a few common utilities and algorithms from wrapped
 // Thrust/CUB namespaces at runtime. More extensive testing is performed by the

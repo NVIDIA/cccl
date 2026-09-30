@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -103,12 +90,12 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_
 {
   using difference_type = thrust::detail::it_difference_t<InputIterator1>;
 
-  difference_type n = ::cuda::std::distance(keys_first, keys_last);
+  const difference_type n = ::cuda::std::distance(keys_first, keys_last);
 
-  thrust::detail::head_flags<InputIterator1, BinaryPredicate> stencil(keys_first, keys_last, binary_pred);
+  const thrust::detail::head_flags<InputIterator1, BinaryPredicate> stencil(keys_first, keys_last, binary_pred);
 
   using namespace thrust::placeholders;
-  thrust::zip_iterator<thrust::tuple<OutputIterator1, OutputIterator2>> result = thrust::copy_if(
+  const thrust::zip_iterator<::cuda::std::tuple<OutputIterator1, OutputIterator2>> result = thrust::copy_if(
     exec,
     thrust::make_zip_iterator(keys_first, values_first),
     thrust::make_zip_iterator(keys_first, values_first) + n,
@@ -116,7 +103,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_
     thrust::make_zip_iterator(keys_output, values_output),
     _1);
 
-  difference_type output_size = result - thrust::make_zip_iterator(keys_output, values_output);
+  const difference_type output_size = result - thrust::make_zip_iterator(keys_output, values_output);
 
   return ::cuda::std::make_pair(keys_output + output_size, values_output + output_size);
 } // end unique_by_key_copy()

@@ -7,7 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-//
+
+// UNSUPPORTED: force-tile
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-90
 
@@ -29,7 +32,7 @@ TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 static_assert(false, "Insufficient CUDA Compute Capability: cuda::device::memcpy_async_tx is not available.");
 #endif // __CUDA_MINIMUM_ARCH__
 
-__device__ alignas(16) int gmem_x[2048];
+[[maybe_unused]] alignas(16) TEST_GLOBAL_VARIABLE int gmem_x[2048];
 
 int main(int, char**)
 {

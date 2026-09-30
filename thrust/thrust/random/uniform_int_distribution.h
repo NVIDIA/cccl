@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file uniform_int_distribution.h
  *  \brief A uniform distribution of integer-valued numbers
@@ -31,10 +18,10 @@
 #endif // no system header
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/limits>
-
-#include <iostream>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -67,23 +54,23 @@ namespace random
  *    thrust::uniform_int_distribution<int> dist(-7,13);
  *
  *    // write a random number from the range [-7,13] to standard output
- *    std::cout << dist(rng) << std::endl;
+ *    std::cout << dist(rng) << '\n';
  *
  *    // write the range of the distribution, just in case we forgot
- *    std::cout << dist.min() << std::endl;
+ *    std::cout << dist.min() << '\n';
  *
  *    // -7 is printed
  *
- *    std::cout << dist.max() << std::endl;
+ *    std::cout << dist.max() << '\n';
  *
  *    // 13 is printed
  *
  *    // write the parameters of the distribution (which happen to be the bounds) to standard output
- *    std::cout << dist.a() << std::endl;
+ *    std::cout << dist.a() << '\n';
  *
  *    // -7 is printed
  *
- *    std::cout << dist.b() << std::endl;
+ *    std::cout << dist.b() << '\n';
  *
  *    // 13 is printed
  *

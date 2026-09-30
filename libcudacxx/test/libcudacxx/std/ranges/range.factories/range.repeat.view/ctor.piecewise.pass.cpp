@@ -20,6 +20,8 @@
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
 
+#include "test_macros.h"
+
 struct C
 {};
 
@@ -34,11 +36,11 @@ struct A
   int y = 222;
 
   constexpr A() = default;
-  __host__ __device__ constexpr A(B b)
+  TEST_FUNC constexpr A(B b)
       : x(b.v)
       , y(b.v + 1)
   {}
-  __host__ __device__ constexpr A(int _x, int _y)
+  TEST_FUNC constexpr A(int _x, int _y)
       : x(_x)
       , y(_y)
   {}
@@ -89,7 +91,7 @@ static_assert(!cuda::std::constructible_from<cuda::std::ranges::repeat_view<A>,
                                              cuda::std::tuple<B>,
                                              cuda::std::tuple<int>>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     cuda::std::ranges::repeat_view<A, int> rv(cuda::std::piecewise_construct, cuda::std::tuple{}, cuda::std::tuple{3});

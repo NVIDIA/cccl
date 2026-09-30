@@ -19,7 +19,7 @@
 template <class T>
 _CCCL_CONCEPT SizeInvocable = _CCCL_REQUIRES_EXPR((T), T t)(((void) t.size()));
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     cuda::std::ranges::transform_view transformView(MoveOnlyView{}, PlusOne{});
@@ -42,7 +42,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

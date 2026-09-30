@@ -12,7 +12,7 @@
 // template <class Alloc>
 // struct allocator_traits
 // {
-//     typedef typename Alloc::value_type value_type;
+//     using value_type = typename Alloc::value_type;
 //     ...
 // };
 
@@ -24,12 +24,12 @@
 template <class T>
 struct A
 {
-  typedef T value_type;
+  using value_type = T;
 };
 
 int main(int, char**)
 {
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char>>::value_type, char>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char>>::value_type, char>::value));
 
   return 0;
 }

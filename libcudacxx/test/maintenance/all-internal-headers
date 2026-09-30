@@ -2,7 +2,7 @@
 
 #this creates a set of tests, that ensures, that all internal headers can be build independently
 
-set -e
+set -euo pipefail
 
 internal_headers=$(find ../../include -path "*cuda/std/__*/*" -not -path "*/__cuda/*")
 
@@ -15,7 +15,7 @@ do
     test_name=${test_name%.h}.pass.cpp
 
     mkdir -p -- "${test_name%/*}"
-    cat > $test_name << EOL
+    cat > "$test_name" << EOL
 //===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,

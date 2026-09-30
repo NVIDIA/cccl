@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <typename D, typename Ds>
-__host__ __device__ constexpr bool testConstexpr(D d1)
+TEST_FUNC constexpr bool testConstexpr(D d1)
 {
   if (static_cast<int>((d1).year()) != 1)
   {
@@ -67,7 +67,7 @@ int main(int, char**)
   static_assert(
     cuda::std::is_same_v<year_month&, decltype(cuda::std::declval<year_month&>() -= cuda::std::declval<years>())>);
 
-  static_assert(testConstexpr<year_month, years>(year_month{year{1}, month{1}}), "");
+  static_assert(testConstexpr<year_month, years>(year_month{year{1}, month{1}}));
 
   for (int i = 1000; i <= 1010; ++i)
   {

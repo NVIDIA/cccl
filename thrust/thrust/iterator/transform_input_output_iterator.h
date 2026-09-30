@@ -1,18 +1,5 @@
-/*
- *  Copyright 2020 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2020, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 //! \file thrust/iterator/transform_input_output_iterator.h
 //! \brief An iterator which adapts another iterator by applying transform functions when reading and writing
@@ -64,6 +51,9 @@ public:
     return input_function(*io);
   }
 
+  // Read-write proxy: assignment transforms x and forwards it to the wrapped iterator.
+  // Returning by value keeps the proxy usable in a chained `*it = a = b` expression.
+  // NOLINTBEGIN(misc-unconventional-assign-operator)
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T>
   _CCCL_HOST_DEVICE transform_input_output_iterator_proxy operator=(const T& x)
@@ -78,6 +68,7 @@ public:
     *io = output_function(x);
     return *this;
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
 private:
   Iterator io;

@@ -33,15 +33,15 @@ list(FILTER libcudacxx_srcs EXCLUDE REGEX "^include/cuda/std/detail/libcxx/")
 # their C++ standard library implementations.
 #
 # The following headers should be used instead:
-# <algorithm> -> <cuda/std/__cccl/algorithm_wrapper.h>
-# <memory>    -> <cuda/std/__cccl/memory_wrapper.h>
-# <numeric>   -> <cuda/std/__cccl/numeric_wrapper.h>
+# <algorithm> -> <cuda/std/__host_stdlib/algorithm>
+# <memory>    -> <cuda/std/__host_stdlib/memory>
+# <numeric>   -> <cuda/std/__host_stdlib/numeric>
 #
 set(
   stdpar_header_exclusions
-  include/cuda/std/__cccl/algorithm_wrapper.h
-  include/cuda/std/__cccl/memory_wrapper.h
-  include/cuda/std/__cccl/numeric_wrapper.h
+  include/cuda/std/__host_stdlib/algorithm
+  include/cuda/std/__host_stdlib/memory
+  include/cuda/std/__host_stdlib/numeric
 )
 
 set(algorithm_regex "#[ \t]*include[ \t]+<algorithm>")
@@ -82,21 +82,21 @@ foreach (src ${libcudacxx_srcs})
 
     if (NOT algorithm_count EQUAL 0)
       message(
-        "'${src}' includes the <algorithm> header. Replace with <cuda/std/__cccl/algorithm_wrapper.h>."
+        "'${src}' includes the <algorithm> header. Replace with <cuda/std/__host_stdlib/algorithm>."
       )
       set(found_errors 1)
     endif()
 
     if (NOT memory_count EQUAL 0)
       message(
-        "'${src}' includes the <memory> header. Replace with <cuda/std/__cccl/memory_wrapper.h>."
+        "'${src}' includes the <memory> header. Replace with <cuda/std/__host_stdlib/memory>."
       )
       set(found_errors 1)
     endif()
 
     if (NOT numeric_count EQUAL 0)
       message(
-        "'${src}' includes the <numeric> header. Replace with <cuda/std/__cccl/numeric_wrapper.h>."
+        "'${src}' includes the <numeric> header. Replace with <cuda/std/__host_stdlib/numeric>."
       )
       set(found_errors 1)
     endif()

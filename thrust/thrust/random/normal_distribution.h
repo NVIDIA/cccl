@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file normal_distribution.h
  *  \brief A normal (Gaussian) distribution of real-valued numbers.
@@ -32,9 +19,9 @@
 #include <thrust/random/detail/normal_distribution_base.h>
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__utility/pair.h>
-
-#include <iostream>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -68,15 +55,15 @@ namespace random
  *    thrust::random::normal_distribution<float> dist(2.0f, 3.5f);
  *
  *    // write a random number to standard output
- *    std::cout << dist(rng) << std::endl;
+ *    std::cout << dist(rng) << '\n';
  *
  *    // write the mean of the distribution, just in case we forgot
- *    std::cout << dist.mean() << std::endl;
+ *    std::cout << dist.mean() << '\n';
  *
  *    // 2.0 is printed
  *
  *    // and the standard deviation
- *    std::cout << dist.stddev() << std::endl;
+ *    std::cout << dist.stddev() << '\n';
  *
  *    // 3.5 is printed
  *

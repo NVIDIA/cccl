@@ -27,7 +27,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_MSVC(5246)
 
 template <class T, template <class, size_t> class Range>
-__host__ __device__ constexpr void test_ranges()
+TEST_FUNC constexpr void test_ranges()
 {
   { // inplace_vector<T, 0>::assign_range with an empty input
     cuda::std::inplace_vector<T, 0> vec{};
@@ -64,7 +64,7 @@ __host__ __device__ constexpr void test_ranges()
 }
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   { // inplace_vector<T, 0>::assign(count, const T&)
     cuda::std::inplace_vector<T, 0> vec{};
@@ -223,7 +223,7 @@ __host__ __device__ constexpr void test()
   test_ranges<T, cuda::std::array>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<Trivial>();
@@ -242,8 +242,8 @@ __host__ __device__ constexpr bool test()
 template <template <class, size_t> class Range>
 void test_exceptions()
 { // assign_range throws std::bad_alloc
-  constexpr size_t capacity = 4;
-  using inplace_vector      = cuda::std::inplace_vector<int, 4>; // NVCC complains about invalid second argument...
+  [[maybe_unused]] constexpr size_t capacity = 4;
+  using inplace_vector = cuda::std::inplace_vector<int, 4>; // NVCC complains about invalid second argument...
   try
   {
     [[maybe_unused]] inplace_vector too_small{};
@@ -260,8 +260,8 @@ void test_exceptions()
 
 void test_exceptions()
 { // assign throws std::bad_alloc
-  constexpr size_t capacity = 4;
-  using inplace_vector      = cuda::std::inplace_vector<int, capacity>;
+  [[maybe_unused]] constexpr size_t capacity = 4;
+  using inplace_vector                       = cuda::std::inplace_vector<int, capacity>;
   [[maybe_unused]] inplace_vector too_small{};
   [[maybe_unused]] const cuda::std::array<int, 7> input{0, 1, 2, 3, 4, 5, 6};
 
@@ -325,7 +325,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
 #if TEST_HAS_EXCEPTIONS()

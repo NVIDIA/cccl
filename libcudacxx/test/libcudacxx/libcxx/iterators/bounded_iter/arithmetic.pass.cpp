@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <class Iter>
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   int array[] = {40, 41, 42, 43, 44};
   int* b      = array + 0;
@@ -102,11 +102,11 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests<int*>();
-  static_assert(tests<int*>(), "");
+  static_assert(tests<int*>());
 
 #if TEST_STD_VER > 2017
   tests<contiguous_iterator<int*>>();
-  static_assert(tests<contiguous_iterator<int*>>(), "");
+  static_assert(tests<contiguous_iterator<int*>>());
 #endif // TEST_STD_VER > 2017
 
   return 0;

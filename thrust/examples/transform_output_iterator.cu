@@ -11,18 +11,18 @@ struct Functor
   template <class Tuple>
   __host__ __device__ float operator()(const Tuple& tuple) const
   {
-    const float x = thrust::get<0>(tuple);
-    const float y = thrust::get<1>(tuple);
+    const float x = cuda::std::get<0>(tuple);
+    const float y = cuda::std::get<1>(tuple);
     return x * y * 2.0f / 3.0f;
   }
 };
 
 int main()
 {
-  thrust::host_vector<float> u{4, 3, 2, 1};
-  thrust::host_vector<float> v{-1, 1, 1, -1};
-  thrust::host_vector<int> idx{3, 0, 1};
-  thrust::host_vector<float> w{0, 0, 0};
+  const thrust::host_vector<float> u{4, 3, 2, 1};
+  const thrust::host_vector<float> v{-1, 1, 1, -1};
+  const thrust::host_vector<int> idx{3, 0, 1};
+  const thrust::host_vector<float> w{0, 0, 0};
 
   thrust::device_vector<float> U(u);
   thrust::device_vector<float> V(v);

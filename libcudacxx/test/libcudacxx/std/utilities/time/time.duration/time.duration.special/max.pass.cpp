@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <class D>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   static_assert(noexcept(cuda::std::chrono::duration_values<typename D::rep>::max()));
 
@@ -32,7 +32,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<cuda::std::chrono::duration<int>>();
   test<cuda::std::chrono::duration<Rep>>();

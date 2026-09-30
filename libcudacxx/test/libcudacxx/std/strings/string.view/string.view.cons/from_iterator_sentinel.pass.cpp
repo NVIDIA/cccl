@@ -21,7 +21,7 @@
 #include "test_iterators.h"
 
 template <class It, class Sentinel, class CharT>
-__host__ __device__ constexpr void test_from_iter_sentinel(cuda::std::basic_string_view<CharT> val)
+TEST_FUNC constexpr void test_from_iter_sentinel(cuda::std::basic_string_view<CharT> val)
 {
   auto sv = cuda::std::basic_string_view<CharT>(It(val.data()), Sentinel(It(val.data() + val.size())));
   assert(sv.data() == val.data());
@@ -29,7 +29,7 @@ __host__ __device__ constexpr void test_from_iter_sentinel(cuda::std::basic_stri
 }
 
 template <class CharT>
-__host__ __device__ constexpr void test_from_iter_sentinel()
+TEST_FUNC constexpr void test_from_iter_sentinel()
 {
   const cuda::std::basic_string_view<CharT> val = TEST_STRLIT(CharT, "test");
   test_from_iter_sentinel<CharT*, CharT*>(val);
@@ -51,7 +51,7 @@ __host__ __device__ constexpr void test_from_iter_sentinel()
   static_assert(cuda::std::is_constructible_v<SV, contiguous_iterator<CharT*>, contiguous_iterator<CharT*>>);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_from_iter_sentinel<char>();
 #if _CCCL_HAS_CHAR8_T()

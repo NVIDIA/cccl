@@ -6,17 +6,21 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 //
 // REQUIRES: long_tests
+
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <random>
 
 // template<class IntType = int>
 // class poisson_distribution
 
-#include <cuda/std/__random_>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
+#include <cuda/std/random>
 
 #include "random_utilities/test_distribution.h"
 #include "test_macros.h"
@@ -26,7 +30,7 @@ struct poisson_cdf
 {
   using P = typename cuda::std::poisson_distribution<T>::param_type;
 
-  __host__ __device__ double operator()(cuda::std::uint64_t x, const P& p) const
+  TEST_HOST_DEVICE_FUNC double operator()(cuda::std::uint64_t x, const P& p) const
   {
     double sum  = 0;
     double mean = p.mean();
@@ -44,7 +48,7 @@ struct poisson_cdf
 };
 
 template <class T>
-__host__ __device__ void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   [[maybe_unused]] const bool test_constexpr = false;
   using D                                    = cuda::std::poisson_distribution<T>;

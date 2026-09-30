@@ -31,6 +31,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <thread_scope _Sco, class _CompletionF = ::cuda::std::__empty_completion>
 class barrier;
 
+template <class _Tp>
+inline constexpr bool __is_cuda_barrier_v = false;
+template <thread_scope _Sco, class _ComplFn>
+inline constexpr bool __is_cuda_barrier_v<barrier<_Sco, _ComplFn>> = true;
+
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>

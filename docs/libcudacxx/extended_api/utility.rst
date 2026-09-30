@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-utility:
 
 Utility
-=======
+========
 
 .. toctree::
    :hidden:

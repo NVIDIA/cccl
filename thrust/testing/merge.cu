@@ -9,7 +9,7 @@
 #include <unittest/unittest.h>
 
 template <typename Vector>
-void TestMergeSimple()
+void test_merge_simple()
 {
   const Vector a{0, 2, 4}, b{0, 3, 3, 4};
   const Vector ref{0, 0, 2, 3, 3, 4, 4};
@@ -17,10 +17,10 @@ void TestMergeSimple()
   Vector result(7);
   const auto end = thrust::merge(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
-  ASSERT_EQUAL(ref, result);
+  REQUIRE(result.end() == end);
+  REQUIRE(ref == result);
 }
-DECLARE_VECTOR_UNITTEST(TestMergeSimple);
+DECLARE_VECTOR_UNITTEST(test_merge_simple);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator
@@ -30,16 +30,15 @@ merge(my_system& system, InputIterator1, InputIterator1, InputIterator2, InputIt
   return result;
 }
 
-void TestMergeDispatchExplicit()
+TEST_CASE("TestMergeDispatchExplicit", "[merge]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::merge(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestMergeDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator merge(my_tag, InputIterator1, InputIterator1, InputIterator2, InputIterator2, OutputIterator result)
@@ -48,7 +47,7 @@ OutputIterator merge(my_tag, InputIterator1, InputIterator1, InputIterator2, Inp
   return result;
 }
 
-void TestMergeDispatchImplicit()
+TEST_CASE("TestMergeDispatchImplicit", "[merge]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -58,12 +57,11 @@ void TestMergeDispatchImplicit()
                 thrust::retag<my_tag>(vec.begin()),
                 thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestMergeDispatchImplicit);
 
 template <typename T>
-void TestMerge(size_t n)
+void test_merge(size_t n)
 {
   const size_t sizes[]   = {0, 1, n / 2, n, n + 1, 2 * n};
   const size_t num_sizes = sizeof(sizes) / sizeof(size_t);
@@ -80,10 +78,8 @@ void TestMerge(size_t n)
   const thrust::device_vector<T> d_a = h_a;
   const thrust::device_vector<T> d_b = h_b;
 
-  for (size_t i = 0; i < num_sizes; i++)
+  for (const auto size : sizes)
   {
-    const size_t size = sizes[i];
-
     thrust::host_vector<T> h_result(n + size);
     thrust::device_vector<T> d_result(n + size);
 
@@ -93,13 +89,13 @@ void TestMerge(size_t n)
     h_result.resize(h_end - h_result.begin());
     d_result.resize(d_end - d_result.begin());
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 }
-DECLARE_VARIABLE_UNITTEST(TestMerge);
+DECLARE_VARIABLE_UNITTEST(test_merge);
 
 template <typename T>
-void TestMergeToDiscardIterator(size_t n)
+void test_merge_to_discard_iterator(size_t n)
 {
   thrust::host_vector<T> h_a = unittest::random_integers<T>(n);
   thrust::host_vector<T> h_b = unittest::random_integers<T>(n);
@@ -113,15 +109,15 @@ void TestMergeToDiscardIterator(size_t n)
   const auto h_result = thrust::merge(h_a.begin(), h_a.end(), h_b.begin(), h_b.end(), thrust::make_discard_iterator());
   const auto d_result = thrust::merge(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), thrust::make_discard_iterator());
 
-  thrust::discard_iterator<> reference(2 * n);
+  const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestMergeToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_merge_to_discard_iterator);
 
 template <typename T>
-void TestMergeDescending(size_t n)
+void test_merge_descending(size_t n)
 {
   thrust::host_vector<T> h_a = unittest::random_integers<T>(n);
   thrust::host_vector<T> h_b = unittest::random_integers<T>(n);
@@ -140,8 +136,8 @@ void TestMergeDescending(size_t n)
   const auto d_end =
     thrust::merge(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), d_result.begin(), ::cuda::std::greater<T>());
 
-  ASSERT_EQUAL(h_result, d_result);
-  ASSERT_EQUAL(h_end == h_result.end(), true);
-  ASSERT_EQUAL(d_end == d_result.end(), true);
+  REQUIRE(h_result == d_result);
+  REQUIRE(h_end == h_result.end());
+  REQUIRE(d_end == d_result.end());
 }
-DECLARE_VARIABLE_UNITTEST(TestMergeDescending);
+DECLARE_VARIABLE_UNITTEST(test_merge_descending);

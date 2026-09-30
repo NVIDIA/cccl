@@ -21,21 +21,21 @@
 TEST_NV_DIAG_SUPPRESS(23) // integer constant is too large
 
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ void test_fp_max(cuda::std::__fp_storage_t<Fmt> expected)
+TEST_FUNC void test_fp_max(cuda::std::__fp_storage_t<Fmt> expected)
 {
   assert(cuda::std::__fp_max<Fmt>() == expected);
   static_assert(((void) cuda::std::__fp_max<Fmt>(), true));
 }
 
 template <class T>
-__host__ __device__ void test_fp_max()
+TEST_FUNC void test_fp_max()
 {
   constexpr auto fmt = cuda::std::__fp_format_of_v<T>;
   assert(cuda::std::__fp_get_storage(cuda::std::__fp_max<T>()) == cuda::std::__fp_max<fmt>());
   static_assert(((void) cuda::std::__fp_max<T>(), true));
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   using namespace test_integer_literals;
 

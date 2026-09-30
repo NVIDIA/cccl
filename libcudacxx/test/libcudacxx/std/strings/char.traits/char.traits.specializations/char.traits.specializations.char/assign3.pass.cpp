@@ -10,7 +10,9 @@
 #include <cuda/std/__string_>
 #include <cuda/std/cassert>
 
-__host__ __device__ constexpr bool test()
+#include "test_macros.h"
+
+TEST_FUNC constexpr bool test()
 {
   char s2[3] = {0};
   assert(cuda::std::char_traits<char>::assign(s2, 3, char(5)) == s2);

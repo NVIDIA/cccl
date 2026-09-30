@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILATION() || _CCCL_HAS_INCLUDE(<cuda_runtime_api.h>)
+#if _CCCL_CUDA_COMPILATION() || __has_include(<cuda_runtime_api.h>)
 #  define _CCCL_HAS_CTK() 1
 #else // ^^^ has cuda toolkit ^^^ / vvv no cuda toolkit vvv
 #  define _CCCL_HAS_CTK() 0

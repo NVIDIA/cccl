@@ -49,6 +49,7 @@ auto& get_cache()
   return fixture<merge_sort_build_cache_t, Tag>::get_or_create().get_value();
 }
 
+template <bool DisableSassCheck = false>
 struct merge_sort_build
 {
   template <typename... Rest>
@@ -64,6 +65,11 @@ struct merge_sort_build
   {
     return cccl_device_merge_sort_build(build_ptr, input_keys, input_items, output_keys, output_items, op, rest...);
   }
+
+  static constexpr bool should_check_sass(int)
+  {
+    return !DisableSassCheck;
+  }
 };
 
 struct merge_sort_run
@@ -75,7 +81,7 @@ struct merge_sort_run
   }
 };
 
-template <typename BuildCache = merge_sort_build_cache_t, typename KeyT = std::string>
+template <bool DisableSassCheck = false, typename BuildCache = merge_sort_build_cache_t, typename KeyT = std::string>
 void merge_sort(
   cccl_iterator_t input_keys,
   cccl_iterator_t input_items,
@@ -86,7 +92,7 @@ void merge_sort(
   std::optional<BuildCache>& cache,
   const std::optional<KeyT>& lookup_key)
 {
-  AlgorithmExecute<BuildResultT, merge_sort_build, merge_sort_cleanup, merge_sort_run, BuildCache, KeyT>(
+  AlgorithmExecute<BuildResultT, merge_sort_build<DisableSassCheck>, merge_sort_cleanup, merge_sort_run, BuildCache, KeyT>(
     cache, lookup_key, input_keys, input_items, output_keys, output_items, num_items, op);
 }
 
@@ -101,9 +107,9 @@ C2H_TEST("DeviceMergeSort::SortKeys works", "[merge_sort]", key_types)
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
-  operation_t op                   = make_operation("op", get_merge_sort_op(get_type_info<key_t>().type));
-  std::vector<key_t> input_keys    = make_shuffled_sequence<key_t>(num_items);
-  std::vector<key_t> expected_keys = input_keys;
+  operation_t op                      = make_operation("op", get_merge_sort_op(get_type_info<key_t>().type));
+  const std::vector<key_t> input_keys = make_shuffled_sequence<key_t>(num_items);
+  std::vector<key_t> expected_keys    = input_keys;
 
   pointer_t<key_t> input_keys_it(input_keys);
   pointer_t<key_t> input_items_it;
@@ -124,9 +130,9 @@ C2H_TEST("DeviceMergeSort::SortKeys works with well-known predicate", "[merge_so
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
-  cccl_op_t op                     = make_well_known_less_binary_predicate();
-  std::vector<key_t> input_keys    = make_shuffled_sequence<key_t>(num_items);
-  std::vector<key_t> expected_keys = input_keys;
+  const cccl_op_t op                  = make_well_known_less_binary_predicate();
+  const std::vector<key_t> input_keys = make_shuffled_sequence<key_t>(num_items);
+  std::vector<key_t> expected_keys    = input_keys;
 
   pointer_t<key_t> input_keys_it(input_keys);
   pointer_t<key_t> input_items_it;
@@ -147,9 +153,9 @@ C2H_TEST("DeviceMergeSort::SortKeysCopy works", "[merge_sort]", key_types)
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
-  operation_t op                = make_operation("op", get_merge_sort_op(get_type_info<key_t>().type));
-  std::vector<key_t> input_keys = make_shuffled_sequence<key_t>(num_items);
-  std::vector<key_t> output_keys(num_items);
+  operation_t op                      = make_operation("op", get_merge_sort_op(get_type_info<key_t>().type));
+  const std::vector<key_t> input_keys = make_shuffled_sequence<key_t>(num_items);
+  const std::vector<key_t> output_keys(num_items);
   std::vector<key_t> expected_keys = input_keys;
 
   pointer_t<key_t> input_keys_it(input_keys);
@@ -187,7 +193,7 @@ C2H_TEST("DeviceMergeSort::SortPairs works", "[merge_sort]", key_types)
   auto& build_cache    = get_cache<DeviceMergeSort_SortPairs_Fixture_Tag>();
   const auto& test_key = make_key<key_t, item_t>();
 
-  merge_sort(input_keys_it, input_items_it, input_keys_it, input_items_it, num_items, op, build_cache, test_key);
+  merge_sort<true>(input_keys_it, input_items_it, input_keys_it, input_items_it, num_items, op, build_cache, test_key);
 
   std::sort(expected_keys.begin(), expected_keys.end());
   std::sort(expected_items.begin(), expected_items.end());
@@ -208,8 +214,8 @@ C2H_TEST("DeviceMergeSort::SortPairsCopy works ", "[merge_sort]", key_types)
   std::transform(input_keys.begin(), input_keys.end(), input_items.begin(), [](key_t key) {
     return static_cast<item_t>(key);
   });
-  std::vector<key_t> output_keys(num_items);
-  std::vector<item_t> output_items(num_items);
+  const std::vector<key_t> output_keys(num_items);
+  const std::vector<item_t> output_items(num_items);
   std::vector<key_t> expected_keys   = input_keys;
   std::vector<item_t> expected_items = input_items;
 
@@ -221,7 +227,7 @@ C2H_TEST("DeviceMergeSort::SortPairsCopy works ", "[merge_sort]", key_types)
   auto& build_cache    = get_cache<DeviceMergeSort_SortPairs_Fixture_Tag>();
   const auto& test_key = make_key<key_t, item_t>();
 
-  merge_sort(input_keys_it, input_items_it, output_keys_it, output_items_it, num_items, op, build_cache, test_key);
+  merge_sort<true>(input_keys_it, input_items_it, output_keys_it, output_items_it, num_items, op, build_cache, test_key);
 
   std::sort(expected_keys.begin(), expected_keys.end());
   std::sort(expected_items.begin(), expected_items.end());
@@ -246,7 +252,7 @@ C2H_TEST("DeviceMergeSort:SortPairsCopy works with custom types", "[merge_sort]"
 {
   const size_t num_items      = GENERATE_COPY(take(2, random(1, 100000)), values({5, 10000, 100000}));
   operation_t op              = make_operation("op",
-                                  R"(struct key_pair { short a; size_t b; };
+                                               R"(struct key_pair { short a; size_t b; };
 extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
   key_pair* lhs = static_cast<key_pair*>(lhs_ptr);
   key_pair* rhs = static_cast<key_pair*>(rhs_ptr);
@@ -302,7 +308,7 @@ C2H_TEST("DeviceMergeSort:SortPairsCopy works with custom types with well-known 
 {
   const size_t num_items      = GENERATE_COPY(take(2, random(1, 100000)), values({5, 10000, 100000}));
   operation_t op_state        = make_operation("op",
-                                        R"(struct key_pair { short a; size_t b; };
+                                               R"(struct key_pair { short a; size_t b; };
 extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
   key_pair* lhs = static_cast<key_pair*>(lhs_ptr);
   key_pair* rhs = static_cast<key_pair*>(rhs_ptr);
@@ -364,8 +370,8 @@ C2H_TEST("DeviceMergeSort::SortKeys works with input iterators", "[merge_sort]")
   operation_t op = make_operation("op", get_merge_sort_op(get_type_info<T>().type));
   iterator_t<T, random_access_iterator_state_t<T>> input_keys_it =
     make_random_access_iterator<T>(iterator_kind::INPUT, "int");
-  std::vector<T> input_keys    = make_shuffled_sequence<T>(num_items);
-  std::vector<T> expected_keys = input_keys;
+  const std::vector<T> input_keys = make_shuffled_sequence<T>(num_items);
+  std::vector<T> expected_keys    = input_keys;
 
   pointer_t<T> input_keys_ptr(input_keys);
   input_keys_it.state.data = input_keys_ptr.ptr;
@@ -512,7 +518,7 @@ C2H_TEST("MergeSort works with C++ source operations", "[merge_sort]")
   const std::size_t num_items = GENERATE(42, 1337, 42000);
 
   // Create operation from C++ source instead of LTO-IR
-  std::string cpp_source = R"(
+  const std::string cpp_source = R"(
     extern "C" __device__ void op(void* lhs, void* rhs, void* result) {
       int* ilhs = (int*)lhs;
       int* irhs = (int*)rhs;
@@ -523,7 +529,7 @@ C2H_TEST("MergeSort works with C++ source operations", "[merge_sort]")
 
   operation_t op = make_cpp_operation("op", cpp_source);
 
-  std::vector<key_t> input_keys = make_shuffled_sequence<key_t>(num_items);
+  const std::vector<key_t> input_keys = make_shuffled_sequence<key_t>(num_items);
   pointer_t<key_t> input_keys_ptr(input_keys);
   pointer_t<key_t> output_keys_ptr(num_items);
 
@@ -532,7 +538,7 @@ C2H_TEST("MergeSort works with C++ source operations", "[merge_sort]")
   pointer_t<int> output_items_ptr;
 
   // Test key including flag that this uses C++ source
-  std::optional<std::string> test_key = std::format("cpp_source_test_{}_{}", num_items, typeid(key_t).name());
+  const std::optional<std::string> test_key = std::format("cpp_source_test_{}_{}", num_items, typeid(key_t).name());
 
   auto& cache = fixture<merge_sort_build_cache_t, DeviceMergeSort_SortKeys_Fixture_Tag>::get_or_create().get_value();
   std::optional<merge_sort_build_cache_t> cache_opt = cache;
@@ -552,7 +558,7 @@ C2H_TEST("MergeSort works with C++ source operations using custom headers", "[me
   const std::size_t num_items = GENERATE(42, 1337, 42000);
 
   // Create operation from C++ source that uses the identity function from header
-  std::string cpp_source = R"(
+  const std::string cpp_source = R"(
     #include "test_identity.h"
     extern "C" __device__ void op(void* lhs, void* rhs, void* result) {
       int* ilhs = (int*)lhs;
@@ -566,7 +572,7 @@ C2H_TEST("MergeSort works with C++ source operations using custom headers", "[me
 
   operation_t op = make_cpp_operation("op", cpp_source);
 
-  std::vector<key_t> input_keys = make_shuffled_sequence<key_t>(num_items);
+  const std::vector<key_t> input_keys = make_shuffled_sequence<key_t>(num_items);
   pointer_t<key_t> input_keys_ptr(input_keys);
   pointer_t<key_t> output_keys_ptr(num_items);
 
@@ -575,16 +581,12 @@ C2H_TEST("MergeSort works with C++ source operations using custom headers", "[me
   pointer_t<int> output_items_ptr;
 
   // Test _ex version with custom build configuration
-  cccl_build_config config;
-  const char* extra_flags[]      = {"-DTEST_IDENTITY_ENABLED"};
-  const char* extra_dirs[]       = {TEST_INCLUDE_PATH};
-  config.extra_compile_flags     = extra_flags;
-  config.num_extra_compile_flags = 1;
-  config.extra_include_dirs      = extra_dirs;
-  config.num_extra_include_dirs  = 1;
+  const char* extra_flags[] = {"-DTEST_IDENTITY_ENABLED"};
+  const char* extra_dirs[]  = {TEST_INCLUDE_PATH};
+  cccl_build_config config  = make_build_config(extra_flags, 1, extra_dirs, 1);
 
   // Build with _ex version
-  cccl_device_merge_sort_build_result_t build;
+  cccl_device_merge_sort_build_result_t build{};
   const auto& build_info = BuildInformation<>::init();
   REQUIRE(
     CUDA_SUCCESS
@@ -619,7 +621,7 @@ C2H_TEST("MergeSort works with C++ source operations using custom headers", "[me
       num_items,
       op,
       CU_STREAM_LEGACY));
-  pointer_t<char> temp_storage(temp_storage_bytes);
+  const pointer_t<char> temp_storage(temp_storage_bytes);
   d_temp_storage = static_cast<void*>(temp_storage.ptr);
   REQUIRE(
     CUDA_SUCCESS
@@ -682,7 +684,7 @@ extern "C" __device__ bool op(large_key_pair lhs, large_key_pair rhs) {
   const char* libcudacxx_path = TEST_LIBCUDACXX_PATH;
   const char* ctk_path        = TEST_CTK_PATH;
 
-  cccl_device_merge_sort_build_result_t build;
+  cccl_device_merge_sort_build_result_t build{};
   REQUIRE(
     CUDA_ERROR_UNKNOWN
     == cccl_device_merge_sort_build(
@@ -700,3 +702,119 @@ extern "C" __device__ bool op(large_key_pair lhs, large_key_pair rhs) {
       ctk_path));
 }
  */
+
+#ifndef CCCL_C_PARALLEL_V2
+C2H_TEST("MergeSort build result has serialization metadata populated", "[merge_sort][serialization]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  const cccl_op_t op = make_well_known_binary_operation();
+  pointer_t<T> keys_in(1);
+  pointer_t<T> items_in(1);
+  pointer_t<T> keys_out(1);
+  pointer_t<T> items_out(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_merge_sort_build(
+      &build,
+      keys_in,
+      items_in,
+      keys_out,
+      items_out,
+      op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  CHECK(build.payload_size > 0);
+  CHECK(build.runtime_policy != nullptr);
+  CHECK(build.runtime_policy_size > 0);
+  REQUIRE(build.block_sort_kernel_lowered_name != nullptr);
+  CHECK(build.block_sort_kernel_lowered_name[0] != '\0');
+  REQUIRE(build.partition_kernel_lowered_name != nullptr);
+  CHECK(build.partition_kernel_lowered_name[0] != '\0');
+  REQUIRE(build.merge_kernel_lowered_name != nullptr);
+  CHECK(build.merge_kernel_lowered_name[0] != '\0');
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_merge_sort_cleanup(&build));
+}
+
+C2H_TEST("MergeSort compile/load round-trip", "[merge_sort][serialization]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  const cccl_op_t op = make_well_known_less_binary_predicate();
+  pointer_t<T> dummy_keys_in(1);
+  pointer_t<T> dummy_items_in(1);
+  pointer_t<T> dummy_keys_out(1);
+  pointer_t<T> dummy_items_out(1);
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_merge_sort_compile(
+      &build,
+      dummy_keys_in,
+      dummy_items_in,
+      dummy_keys_out,
+      dummy_items_out,
+      op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  REQUIRE(build.payload_size > 0);
+  REQUIRE(build.block_sort_kernel_lowered_name != nullptr);
+  REQUIRE(build.partition_kernel_lowered_name != nullptr);
+  REQUIRE(build.merge_kernel_lowered_name != nullptr);
+  CHECK(build.library == nullptr);
+  CHECK(build.block_sort_kernel == nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_merge_sort_load(&build));
+  REQUIRE(build.library != nullptr);
+  CHECK(build.block_sort_kernel != nullptr);
+  CHECK(build.partition_kernel != nullptr);
+  CHECK(build.merge_kernel != nullptr);
+
+  constexpr std::size_t n    = 16;
+  const std::vector<T> input = generate<T>(n);
+  pointer_t<T> keys_in(input);
+  pointer_t<T> items_in(input);
+  pointer_t<T> keys_out(n);
+  pointer_t<T> items_out(n);
+  CUstream null_stream      = nullptr;
+  size_t temp_storage_bytes = 0;
+
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_merge_sort(
+            build, nullptr, &temp_storage_bytes, keys_in, items_in, keys_out, items_out, n, op, null_stream));
+  const pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_merge_sort(
+            build, temp_storage.ptr, &temp_storage_bytes, keys_in, items_in, keys_out, items_out, n, op, null_stream));
+
+  std::vector<T> expected(input);
+  std::sort(expected.begin(), expected.end());
+  REQUIRE(expected == std::vector<T>(keys_out));
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_merge_sort_cleanup(&build));
+}
+#endif // CCCL_C_PARALLEL_V2

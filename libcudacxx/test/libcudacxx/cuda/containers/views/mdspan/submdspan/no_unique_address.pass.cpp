@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <size_t ExpectedSize, class OffsetType, class ExtentType, class StrideType>
-__host__ __device__ void test(cuda::std::strided_slice<OffsetType, ExtentType, StrideType> slice, size_t expected_size)
+TEST_FUNC void test(cuda::std::strided_slice<OffsetType, ExtentType, StrideType> slice, size_t expected_size)
 {
   using strided_slice = cuda::std::strided_slice<OffsetType, ExtentType, StrideType>;
   assert(slice.offset == 42);

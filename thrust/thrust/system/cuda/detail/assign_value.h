@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -35,13 +22,17 @@
 
 #  include <nv/target>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
+_CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
+
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 namespace detail
 {
 template <typename T, typename U>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void assign_value_kernel(T* dst, const U* src)
+_CCCL_KERNEL_ATTRIBUTES void assign_value_kernel(T* dst, const U* src)
 {
   *dst = *src;
 }
@@ -52,7 +43,8 @@ _CCCL_HOST_DEVICE void assign_value(execution_policy<DerivedPolicy>& exec, Point
 {
   using V1 = thrust::detail::it_value_t<Pointer1>;
   using V2 = thrust::detail::it_value_t<Pointer2>;
-  // Because of https://docs.nvidia.com/cuda/cuda-c-programming-guide/#cuda-arch point 2., if a call from a __host__
+  // Because of https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#cuda-arch
+  // point 2., if a call from a __host__
   // __device__ function leads to the template instantiation of a __global__ function, then this instantiation needs to
   // happen regardless of whether __CUDA_ARCH__ is defined. Therefore, we make the host path visible outside the
   // NV_IF_TARGET switch. See also NVBug 881631.
@@ -120,5 +112,9 @@ _CCCL_HOST_DEVICE void assign_value(cross_system<System1, System2>& systems, Poi
                (*thrust::raw_pointer_cast(dst) = *thrust::raw_pointer_cast(src);));
 }
 } // namespace cuda_cub
+
 THRUST_NAMESPACE_END
+
+_CCCL_DIAG_POP
+
 #endif // _CCCL_CUDA_COMPILATION()

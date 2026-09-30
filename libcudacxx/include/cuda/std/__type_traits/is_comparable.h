@@ -30,6 +30,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4389) // '==': signed/unsigned mismatch
 _CCCL_DIAG_SUPPRESS_MSVC(4018) // '<': signed/unsigned mismatch
+_CCCL_DIAG_SUPPRESS_MSVC(4244) // '==': conversion from 'const double' to 'int', possible loss of data
 
 template <class _Tp, class _Up, class = void>
 inline constexpr bool __is_cpp17_equality_comparable_v = false;

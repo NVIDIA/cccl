@@ -1,17 +1,18 @@
 #include <thrust/detail/config.h>
 
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/remove.h>
 #include <thrust/sort.h>
 #include <thrust/transform.h>
 #include <thrust/zip_function.h>
 
+#include <cuda/std/type_traits>
+
 #include <iostream>
 
 #include <unittest/unittest.h>
-
-using namespace unittest;
 
 struct SumThree
 {
@@ -23,7 +24,7 @@ struct SumThreeTuple
 {
   template <typename Tuple>
   _CCCL_HOST_DEVICE auto operator()(Tuple x) const
-    THRUST_DECLTYPE_RETURNS(thrust::get<0>(x) + thrust::get<1>(x) + thrust::get<2>(x))
+    THRUST_DECLTYPE_RETURNS(cuda::std::get<0>(x) + cuda::std::get<1>(x) + cuda::std::get<2>(x))
 }; // end SumThreeTuple
 
 template <typename T>
@@ -31,61 +32,145 @@ struct TestZipFunctionCtor
 {
   void operator()()
   {
-    ASSERT_EQUAL(thrust::zip_function<SumThree>()(thrust::make_tuple(1, 2, 3)), SumThree{}(1, 2, 3));
-    ASSERT_EQUAL(thrust::zip_function<SumThree>(SumThree{})(thrust::make_tuple(1, 2, 3)), SumThree{}(1, 2, 3));
-#ifdef __cpp_deduction_guides
-    ASSERT_EQUAL(thrust::zip_function(SumThree{})(thrust::make_tuple(1, 2, 3)), SumThree{}(1, 2, 3));
-#endif // __cpp_deduction_guides
+    REQUIRE(thrust::zip_function<SumThree>()(cuda::std::tuple(1, 2, 3)) == SumThree{}(1, 2, 3));
+    REQUIRE(thrust::zip_function<SumThree>(SumThree{})(cuda::std::tuple(1, 2, 3)) == SumThree{}(1, 2, 3));
+    REQUIRE(thrust::zip_function(SumThree{})(cuda::std::tuple(1, 2, 3)) == SumThree{}(1, 2, 3));
   }
 };
-SimpleUnitTest<TestZipFunctionCtor, type_list<int>> TestZipFunctionCtorInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipFunctionCtor, unittest::type_list<int>);
+
+// Const and non-const overloads are distinguishable by their result and exception specification.
+struct ZipConstOnly
+{
+  _CCCL_HOST_DEVICE int operator()(int x, int y) const noexcept
+  {
+    return x + y;
+  }
+};
+
+struct ZipMutableOnly
+{
+  _CCCL_HOST_DEVICE int operator()(int x, int y) noexcept
+  {
+    return x + y;
+  }
+};
+
+struct ZipMixed
+{
+  _CCCL_HOST_DEVICE int operator()(int x, int y) const noexcept
+  {
+    return x + y;
+  }
+
+  _CCCL_HOST_DEVICE int operator()(int x, int y)
+  {
+    return x + y + 1;
+  }
+};
+
+template <typename T>
+struct TestZipFunctionConstness
+{
+  void operator()()
+  {
+    cuda::std::tuple<int, int> args{1, 2};
+    thrust::host_vector<int> first{1};
+    thrust::host_vector<int> second{2};
+    auto zipped            = thrust::make_zip_iterator(first.begin(), second.begin());
+    using zipped_reference = decltype(*zipped);
+
+    {
+      using zip_t = thrust::zip_function<ZipConstOnly>;
+      zip_t fn{};
+      const zip_t& cfn = fn;
+      static_assert(cuda::std::is_invocable_v<zip_t&, decltype(args)&>);
+      static_assert(cuda::std::is_invocable_v<const zip_t&, decltype(args)&>);
+      static_assert(cuda::std::is_nothrow_invocable_v<zip_t&, decltype(args)&>);
+      static_assert(cuda::std::is_nothrow_invocable_v<const zip_t&, decltype(args)&>);
+      static_assert(cuda::std::is_invocable_v<zip_t&, zipped_reference>);
+      static_assert(cuda::std::is_invocable_v<const zip_t&, zipped_reference>);
+      static_assert(cuda::std::is_nothrow_invocable_v<zip_t&, zipped_reference>);
+      static_assert(cuda::std::is_nothrow_invocable_v<const zip_t&, zipped_reference>);
+      REQUIRE(fn(args) == 3);
+      REQUIRE(cfn(args) == 3);
+      REQUIRE(fn(*zipped) == 3);
+      REQUIRE(cfn(*zipped) == 3);
+    }
+    {
+      using zip_t = thrust::zip_function<ZipMutableOnly>;
+      zip_t fn{};
+      static_assert(cuda::std::is_invocable_v<zip_t&, decltype(args)&>);
+      static_assert(!cuda::std::is_invocable_v<const zip_t&, decltype(args)&>);
+      static_assert(cuda::std::is_nothrow_invocable_v<zip_t&, decltype(args)&>);
+      static_assert(cuda::std::is_invocable_v<zip_t&, zipped_reference>);
+      static_assert(!cuda::std::is_invocable_v<const zip_t&, zipped_reference>);
+      static_assert(cuda::std::is_nothrow_invocable_v<zip_t&, zipped_reference>);
+      REQUIRE(fn(args) == 3);
+      REQUIRE(fn(*zipped) == 3);
+    }
+    {
+      using zip_t = thrust::zip_function<ZipMixed>;
+      zip_t fn{};
+      const zip_t& cfn = fn;
+      static_assert(!cuda::std::is_nothrow_invocable_v<zip_t&, decltype(args)&>);
+      static_assert(cuda::std::is_nothrow_invocable_v<const zip_t&, decltype(args)&>);
+      static_assert(!cuda::std::is_nothrow_invocable_v<zip_t&, zipped_reference>);
+      static_assert(cuda::std::is_nothrow_invocable_v<const zip_t&, zipped_reference>);
+      // A non-const zip_function selects the non-const functor. A const one cannot.
+      REQUIRE(fn(args) == 4);
+      REQUIRE(cfn(args) == 3);
+      REQUIRE(fn(*zipped) == 4);
+      REQUIRE(cfn(*zipped) == 3);
+    }
+  }
+};
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipFunctionConstness, unittest::type_list<int>);
 
 template <typename T>
 struct TestZipFunctionTransform
 {
   void operator()(const size_t n)
   {
-    using namespace thrust;
+    thrust::host_vector<T> h_data0 = unittest::random_samples<T>(n);
+    thrust::host_vector<T> h_data1 = unittest::random_samples<T>(n);
+    thrust::host_vector<T> h_data2 = unittest::random_samples<T>(n);
 
-    host_vector<T> h_data0 = unittest::random_samples<T>(n);
-    host_vector<T> h_data1 = unittest::random_samples<T>(n);
-    host_vector<T> h_data2 = unittest::random_samples<T>(n);
+    thrust::device_vector<T> d_data0 = h_data0;
+    thrust::device_vector<T> d_data1 = h_data1;
+    thrust::device_vector<T> d_data2 = h_data2;
 
-    device_vector<T> d_data0 = h_data0;
-    device_vector<T> d_data1 = h_data1;
-    device_vector<T> d_data2 = h_data2;
-
-    host_vector<T> h_result_tuple(n);
-    host_vector<T> h_result_zip(n);
-    device_vector<T> d_result_zip(n);
+    thrust::host_vector<T> h_result_tuple(n);
+    thrust::host_vector<T> h_result_zip(n);
+    thrust::device_vector<T> d_result_zip(n);
 
     // Tuple base case
 
-    thrust::transform(make_zip_iterator(h_data0.begin(), h_data1.begin(), h_data2.begin()),
-                      make_zip_iterator(h_data0.end(), h_data1.end(), h_data2.end()),
+    thrust::transform(thrust::make_zip_iterator(h_data0.begin(), h_data1.begin(), h_data2.begin()),
+                      thrust::make_zip_iterator(h_data0.end(), h_data1.end(), h_data2.end()),
                       h_result_tuple.begin(),
                       SumThreeTuple{});
     // Zip Function
-    thrust::transform(make_zip_iterator(h_data0.begin(), h_data1.begin(), h_data2.begin()),
-                      make_zip_iterator(h_data0.end(), h_data1.end(), h_data2.end()),
+    thrust::transform(thrust::make_zip_iterator(h_data0.begin(), h_data1.begin(), h_data2.begin()),
+                      thrust::make_zip_iterator(h_data0.end(), h_data1.end(), h_data2.end()),
                       h_result_zip.begin(),
-                      make_zip_function(SumThree{}));
-    thrust::transform(make_zip_iterator(d_data0.begin(), d_data1.begin(), d_data2.begin()),
-                      make_zip_iterator(d_data0.end(), d_data1.end(), d_data2.end()),
+                      thrust::make_zip_function(SumThree{}));
+    thrust::transform(thrust::make_zip_iterator(d_data0.begin(), d_data1.begin(), d_data2.begin()),
+                      thrust::make_zip_iterator(d_data0.end(), d_data1.end(), d_data2.end()),
                       d_result_zip.begin(),
-                      make_zip_function(SumThree{}));
+                      thrust::make_zip_function(SumThree{}));
 
-    ASSERT_EQUAL(h_result_tuple, h_result_zip);
-    ASSERT_EQUAL(h_result_tuple, d_result_zip);
+    REQUIRE(h_result_tuple == h_result_zip);
+    REQUIRE(h_result_tuple == d_result_zip);
   }
 };
-VariableUnitTest<TestZipFunctionTransform, ThirtyTwoBitTypes> TestZipFunctionTransformInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipFunctionTransform, ThirtyTwoBitTypes);
 
 struct RemovePred
 {
-  _CCCL_HOST_DEVICE bool operator()(const thrust::tuple<uint32_t, uint32_t>& ele1, const float&)
+  _CCCL_HOST_DEVICE bool operator()(const cuda::std::tuple<unittest::uint32_t, unittest::uint32_t>& ele1, const float&)
   {
-    return thrust::get<0>(ele1) == thrust::get<1>(ele1);
+    return cuda::std::get<0>(ele1) == cuda::std::get<1>(ele1);
   }
 };
 template <typename T>
@@ -93,35 +178,38 @@ struct TestZipFunctionMixed
 {
   void operator()()
   {
-    thrust::device_vector<uint32_t> vecA{0, 0, 2, 0};
-    thrust::device_vector<uint32_t> vecB{0, 2, 2, 2};
+    thrust::device_vector<unittest::uint32_t> vecA{0, 0, 2, 0};
+    thrust::device_vector<unittest::uint32_t> vecB{0, 2, 2, 2};
     thrust::device_vector<float> vecC{88.0f, 88.0f, 89.0f, 89.0f};
-    thrust::device_vector<float> expected{88.0f, 89.0f};
+    const thrust::device_vector<float> expected{88.0f, 89.0f};
 
     auto inputKeyItBegin =
       thrust::make_zip_iterator(thrust::make_zip_iterator(vecA.begin(), vecB.begin()), vecC.begin());
-    auto endIt =
-      thrust::remove_if(inputKeyItBegin, inputKeyItBegin + vecA.size(), thrust::make_zip_function(RemovePred{}));
+    auto endIt = thrust::remove_if(
+      inputKeyItBegin,
+      inputKeyItBegin + static_cast<std::ptrdiff_t>(vecA.size()),
+      thrust::make_zip_function(RemovePred{}));
     auto numEle = endIt - inputKeyItBegin;
     vecA.resize(numEle);
     vecB.resize(numEle);
     vecC.resize(numEle);
 
-    ASSERT_EQUAL(numEle, 2);
-    ASSERT_EQUAL(vecC, expected);
+    REQUIRE(numEle == 2);
+    REQUIRE(vecC == expected);
   }
 };
-SimpleUnitTest<TestZipFunctionMixed, type_list<int, float>> TestZipFunctionMixedInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipFunctionMixed, unittest::type_list<int, float>);
 
 struct NestedFunctionCall
 {
   _CCCL_HOST_DEVICE bool
-  operator()(const thrust::tuple<uint32_t, thrust::tuple<thrust::tuple<int, int>, thrust::tuple<int, int>>>& idAndPt)
+  operator()(const cuda::std::tuple<unittest::uint32_t,
+                                    cuda::std::tuple<cuda::std::tuple<int, int>, cuda::std::tuple<int, int>>>& idAndPt)
   {
-    thrust::tuple<thrust::tuple<int, int>, thrust::tuple<int, int>> ele1 = thrust::get<1>(idAndPt);
-    thrust::tuple<int, int> p1                                           = thrust::get<0>(ele1);
-    thrust::tuple<int, int> p2                                           = thrust::get<1>(ele1);
-    return thrust::get<0>(p1) == thrust::get<0>(p2) || thrust::get<1>(p1) == thrust::get<1>(p2);
+    cuda::std::tuple<cuda::std::tuple<int, int>, cuda::std::tuple<int, int>> ele1 = cuda::std::get<1>(idAndPt);
+    cuda::std::tuple<int, int> p1                                                 = cuda::std::get<0>(ele1);
+    cuda::std::tuple<int, int> p2                                                 = cuda::std::get<1>(ele1);
+    return cuda::std::get<0>(p1) == cuda::std::get<0>(p2) || cuda::std::get<1>(p1) == cuda::std::get<1>(p2);
   }
 };
 
@@ -132,9 +220,9 @@ struct TestNestedZipFunction
   {
     thrust::device_vector<int> PX{0, 1, 2, 3};
     thrust::device_vector<int> PY{0, 1, 2, 2};
-    thrust::device_vector<uint32_t> SS{0, 1, 2};
-    thrust::device_vector<uint32_t> ST{1, 2, 3};
-    thrust::device_vector<float> vecC{88.0f, 88.0f, 89.0f, 89.0f};
+    thrust::device_vector<unittest::uint32_t> SS{0, 1, 2};
+    thrust::device_vector<unittest::uint32_t> ST{1, 2, 3};
+    const thrust::device_vector<float> vecC{88.0f, 88.0f, 89.0f, 89.0f};
 
     auto segIt = thrust::make_zip_iterator(
       thrust::make_zip_iterator(thrust::make_permutation_iterator(PX.begin(), SS.begin()),
@@ -144,19 +232,20 @@ struct TestNestedZipFunction
     auto idAndSegIt = thrust::make_zip_iterator(thrust::make_counting_iterator(0u), segIt);
 
     thrust::device_vector<bool> isMH{false, false, false};
-    thrust::device_vector<bool> expected{false, false, true};
-    thrust::transform(idAndSegIt, idAndSegIt + SS.size(), isMH.begin(), NestedFunctionCall{});
-    ASSERT_EQUAL(isMH, expected);
+    const thrust::device_vector<bool> expected{false, false, true};
+    thrust::transform(
+      idAndSegIt, idAndSegIt + static_cast<std::ptrdiff_t>(SS.size()), isMH.begin(), NestedFunctionCall{});
+    REQUIRE(isMH == expected);
   }
 };
-SimpleUnitTest<TestNestedZipFunction, type_list<int, float>> TestNestedZipFunctionInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestNestedZipFunction, unittest::type_list<int, float>);
 
 struct SortPred
 {
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool
-  operator()(const thrust::tuple<thrust::tuple<int, int>, int>& a, const thrust::tuple<thrust::tuple<int, int>, int>& b)
+  _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(const cuda::std::tuple<cuda::std::tuple<int, int>, int>& a,
+                                                 const cuda::std::tuple<cuda::std::tuple<int, int>, int>& b)
   {
-    return thrust::get<1>(a) < thrust::get<1>(b);
+    return cuda::std::get<1>(a) < cuda::std::get<1>(b);
   }
 };
 template <typename T>
@@ -171,7 +260,7 @@ struct TestNestedZipFunction2
 
     auto tupleIt       = thrust::make_zip_iterator(cuda::std::begin(A), cuda::std::begin(B));
     auto nestedTupleIt = thrust::make_zip_iterator(tupleIt, cuda::std::begin(C));
-    thrust::sort(nestedTupleIt, nestedTupleIt + n, SortPred{});
+    thrust::sort(nestedTupleIt, nestedTupleIt + static_cast<std::ptrdiff_t>(n), SortPred{});
   }
 };
-SimpleUnitTest<TestNestedZipFunction2, type_list<int, float>> TestNestedZipFunctionInstance2;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestNestedZipFunction2, unittest::type_list<int, float>);

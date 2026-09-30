@@ -41,7 +41,7 @@ The sum of each block is then reduced to a single value using an atomic add via 
 
 It then shows how the same reduction can be done using Thrust's `reduce` algorithm and compares the results.
 
-[Try it live on Godbolt!](https://godbolt.org/z/3KaWz3Msf)
+[Try it live on Godbolt!](https://godbolt.org/z/hraxq8rdn)
 
 ```cpp
 #include <thrust/execution_policy.h>
@@ -51,6 +51,7 @@ It then shows how the same reduction can be done using Thrust's `reduce` algorit
 #include <cuda/cmath>
 #include <cuda/std/span>
 #include <cstdio>
+#include <iostream>
 
 template <int block_size>
 __global__ void reduce(cuda::std::span<int const> data, cuda::std::span<int> result) {
@@ -88,7 +89,7 @@ int main() {
 
   auto const err = cudaDeviceSynchronize();
   if (err != cudaSuccess) {
-    std::cout << "Error: " << cudaGetErrorString(err) << std::endl;
+    std::cout << "Error: " << cudaGetErrorString(err) << '\n';
     return -1;
   }
 
@@ -282,7 +283,7 @@ but at least the most recent host compiler of any supported older CUDA Toolkit.
 We may retain support of additional compilers and will accept corresponding patches from the community with reasonable fixes.
 But we will not invest significant time in triaging or fixing issues for older compilers.
 
-In the spirit of "You only support what you test", see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/ci-overview.md) for more information on exactly what we test.
+In the spirit of "You only support what you test", see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/docs/infrastructure/ci/references/ci_overview.rst) for more information on exactly what we test.
 
 ### GPU Architectures
 
@@ -314,7 +315,7 @@ For each CUDA version, builds are completed against all supported host compilers
 
 The testing strategy and matrix are constantly evolving.
 The matrix defined in the [`ci/matrix.yaml`](ci/matrix.yaml) file is the definitive source of truth.
-For more information about our CI pipeline, see [here](ci-overview.md).
+For more information about our CI pipeline, see [here](docs/infrastructure/ci/references/ci_overview.rst).
 
 ## Versioning
 
@@ -453,6 +454,7 @@ The deprecation period will depend on the impact of the change, but will usually
 
 | CCCL version | CTK version |
 |--------------|-------------|
+| 3.2          | 13.2        |
 | 3.1          | 13.1        |
 | 3.0          | 13.0        |
 | 2.8          | 12.9        |
@@ -475,7 +477,7 @@ CTKs before 12.4 shipped Thrust, CUB and libcudacxx as individual libraries.
 
 ## CI Pipeline Overview
 
-For a detailed overview of the CI pipeline, see [ci-overview.md](ci-overview.md).
+For a detailed overview of the CI pipeline, see [CI overview](docs/infrastructure/ci/references/ci_overview.rst).
 
 ## Related Projects
 
@@ -493,8 +495,11 @@ Does your project use CCCL? [Open a PR to add your project to this list!](https:
 - [cuDF](https://github.com/rapidsai/cudf) - Algorithms and file readers for ETL data analytics
 - [cuGraph](https://github.com/rapidsai/cugraph) - Algorithms for graph analytics
 - [cuML](https://github.com/rapidsai/cuml) - Machine learning algorithms and primitives
+- [cuOpt](https://github.com/NVIDIA/cuopt) - Accelerated decision optimization
 - [CuPy](https://cupy.dev) - NumPy & SciPy for GPU
 - [cuSOLVER](https://developer.nvidia.com/cusolver) - Dense and sparse linear solvers
+- [CUSP](https://github.com/cusplibrary/cusplibrary) - Sparse matrix operations, iterative methods, and algebraic multigrid
+- [cuVS](https://github.com/rapidsai/cuvs) - Approximate clustering and vector search
 - [GooFit](https://github.com/GooFit/GooFit) - Library for maximum-likelihood fits
 - [HeavyDB](https://github.com/heavyai/heavydb) - SQL database engine
 - [HOOMD](https://github.com/glotzerlab/hoomd-blue) - Monte Carlo and molecular dynamics simulations
@@ -503,12 +508,16 @@ Does your project use CCCL? [Open a PR to add your project to this list!](https:
 - [Hypre](https://github.com/hypre-space/hypre) - Multigrid linear solvers
 - [LightSeq](https://github.com/bytedance/lightseq) - Training and inference for sequence processing and generation
 - [MatX](https://github.com/NVIDIA/matx) - Numerical computing library using expression templates to provide efficient, Python-like syntax
+- [Parrot](https://github.com/NVlabs/parrot) - Array fusion GPU library
 - [PyTorch](https://github.com/pytorch/pytorch) - Tensor and neural network computations
 - [Qiskit](https://github.com/Qiskit/qiskit-aer) - High performance simulator for quantum circuits
 - [QUDA](https://github.com/lattice/quda) - Lattice quantum chromodynamics (QCD) computations
 - [RAFT](https://github.com/rapidsai/raft) - Algorithms and primitives for machine learning
+- [SGLang](https://github.com/sgl-project/sglang) - LLM serving framework
 - [TensorFlow](https://github.com/tensorflow/tensorflow) - End-to-end platform for machine learning
 - [TensorRT](https://github.com/NVIDIA/TensorRT) - Deep learning inference
+- [TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM) - Optimized LLM inference
 - [tsne-cuda](https://github.com/CannyLab/tsne-cuda) - Stochastic Neighborhood Embedding library
 - [Visualization Toolkit (VTK)](https://gitlab.kitware.com/vtk/vtk) - Rendering and visualization library
+- [vLLM](https://github.com/vllm-project/vllm) - LLM inference and serving
 - [XGBoost](https://github.com/dmlc/xgboost) - Gradient boosting machine learning algorithms

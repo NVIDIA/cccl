@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: clocks are not supported in tile mode
+
 // <cuda/std/chrono>
 
 // high_resolution_clock
@@ -17,7 +20,7 @@
 
 int main(int, char**)
 {
-  typedef cuda::std::chrono::high_resolution_clock C;
+  using C          = cuda::std::chrono::high_resolution_clock;
   C::time_point t1 = C::now();
   assert(t1.time_since_epoch().count() != 0);
   assert(C::time_point::min() < t1);

@@ -1,3 +1,13 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
 #include <cuda/std/cassert>
 
 #include "literal.h"
@@ -9,7 +19,7 @@ _CCCL_DIAG_SUPPRESS_NVCC(23)
 
 using namespace test_integer_literals;
 
-__host__ __device__ constexpr void test_binary()
+TEST_FUNC constexpr void test_binary()
 {
   assert(0b0_i128 == 0b0);
   assert(0b1_i128 == 0b1);
@@ -26,7 +36,7 @@ __host__ __device__ constexpr void test_binary()
   assert(0B1 == 0b1);
 }
 
-__host__ __device__ constexpr void test_octal()
+TEST_FUNC constexpr void test_octal()
 {
   assert(00_i128 == 00);
   assert(01_i128 == 01);
@@ -43,7 +53,7 @@ __host__ __device__ constexpr void test_octal()
   assert(-01'777'777'777'777'777'777'777'375_i128 == -(__int128_t{~0ull} << 9) - 0'375);
 }
 
-__host__ __device__ constexpr void test_decimal()
+TEST_FUNC constexpr void test_decimal()
 {
   assert(0_i128 == 0);
   assert(1_i128 == 1);
@@ -60,7 +70,7 @@ __host__ __device__ constexpr void test_decimal()
   assert(-12'345'678'901'234'567'890_i128 == -__int128_t{12'345'678'901'234'567'890ull});
 }
 
-__host__ __device__ constexpr void test_hexadecimal()
+TEST_FUNC constexpr void test_hexadecimal()
 {
   assert(0x0_i128 == 0x0);
   assert(0x1_i128 == 0x1);
@@ -83,7 +93,7 @@ __host__ __device__ constexpr void test_hexadecimal()
   assert(0Xabcdef_i128 == 0xABCDEF);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_binary();
   test_octal();

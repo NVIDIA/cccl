@@ -10,7 +10,7 @@
 
 #include <cuda/std/cmath>
 
-#include <cuda/experimental/__stf/places/loop_dispatch.cuh>
+#include <cuda/experimental/__stf/internal/loop_dispatch.cuh>
 #include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;

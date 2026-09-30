@@ -4,7 +4,6 @@ project(nvbench_helper LANGUAGES CXX CUDA)
 
 include(CMakeDependentOption)
 
-cccl_get_catch2()
 cccl_get_cub()
 cccl_get_cudatoolkit()
 cccl_get_libcudacxx()
@@ -12,7 +11,7 @@ cccl_get_nvbench()
 cccl_get_thrust()
 
 add_library(cccl.nvbench_helper OBJECT nvbench_helper/nvbench_helper.cu)
-cccl_configure_target(cccl.nvbench_helper DIALECT 17)
+cccl_configure_target(cccl.nvbench_helper)
 target_link_libraries(
   cccl.nvbench_helper
   PUBLIC
@@ -31,6 +30,18 @@ target_include_directories(
   PUBLIC "${CMAKE_CURRENT_LIST_DIR}/nvbench_helper"
 )
 
+# Old NVCC incorrectly infers the host device annotation of std::map::map() which calls a non-host device member
+if (CUDAToolkit_VERSION VERSION_LESS "12.5.0")
+  target_compile_options(cccl.nvbench_helper PUBLIC -diag-suppress 20011)
+endif()
+
+if (CCCL_ENABLE_TILE)
+  target_compile_options(
+    cccl.nvbench_helper
+    PUBLIC "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--enable-tile>"
+  )
+endif()
+
 # Don't enable tests when pulled in as an internal dependency.
 # Require CCCL_ENABLE_NVBENCH_HELPER to be explicitly enabled.
 cmake_dependent_option(
@@ -43,6 +54,7 @@ cmake_dependent_option(
 mark_as_advanced(nvbench_helper_ENABLE_TESTING)
 
 if (nvbench_helper_ENABLE_TESTING)
+  cccl_get_catch2()
   cccl_get_boost()
 
   thrust_create_target(cccl.nvbench_helper.test.Thrust.cpp.cuda DEVICE CUDA)
@@ -50,15 +62,17 @@ if (nvbench_helper_ENABLE_TESTING)
 
   function(add_nvbench_helper_test device_system)
     set(nvbench_helper_test_target nvbench_helper.test.${device_system})
-    add_executable(
+    cccl_add_executable(
       ${nvbench_helper_test_target}
-      test/gen_seed.cu
-      test/gen_range.cu
-      test/gen_entropy.cu
-      test/gen_uniform_distribution.cu
-      test/gen_power_law_distribution.cu
+      ADD_CTEST
+      NO_METATARGETS
+      SOURCES
+        test/gen_seed.cu
+        test/gen_range.cu
+        test/gen_entropy.cu
+        test/gen_uniform_distribution.cu
+        test/gen_power_law_distribution.cu
     )
-    cccl_configure_target(${nvbench_helper_test_target} DIALECT 17)
     target_link_libraries(
       ${nvbench_helper_test_target}
       PRIVATE
@@ -67,11 +81,6 @@ if (nvbench_helper_ENABLE_TESTING)
         cccl.nvbench_helper.test.Thrust.cpp.${device_system}
         Catch2::Catch2WithMain
         Boost::math
-    )
-
-    add_test(
-      NAME ${nvbench_helper_test_target}
-      COMMAND ${nvbench_helper_test_target}
     )
   endfunction()
 

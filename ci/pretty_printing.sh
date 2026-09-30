@@ -4,7 +4,7 @@ ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 function print_var_values() {
     # Iterate through the arguments
     for var_name in "$@"; do
-        if [ -z "$var_name" ]; then
+        if [[ -z "$var_name" ]]; then
             echo "Usage: print_var_values <variable_name1> <variable_name2> ..."
             return 1
         fi
@@ -24,7 +24,7 @@ function begin_group() {
     local name="${1:-}"
     local color="${2:-$blue}"
 
-    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
         echo -e "::group::\e[${color}m${name}\e[0m"
     else
         echo -e "\e[${color}m================== ${name} ======================\e[0m"
@@ -42,14 +42,14 @@ function end_group() {
     local red="31"
     local blue="34"
 
-    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
         echo "::endgroup::"
 
-        if [ "$build_status" -ne 0 ]; then
+        if [[ "$build_status" -ne 0 ]]; then
             echo -e "::error::\e[${red}m ${name} - Failed (⬆️ click above for full log ⬆️)\e[0m"
         fi
     else
-        if [ "$build_status" -ne 0 ]; then
+        if [[ "$build_status" -ne 0 ]]; then
             echo -e "\e[${red}m================== End ${name} - Failed${duration:+ - Duration: ${duration}s} ==================\e[0m"
         else
             echo -e "\e[${blue}m================== End ${name} - Success${duration:+ - Duration: ${duration}s} ==================\n\e[0m"
@@ -71,21 +71,23 @@ function run_command() {
     echo "Working directory: $(pwd)"
     echo "Running command: ${command[*]}"
     set +e
-    local start_time=$(date +%s)
+    local start_time
+    start_time=$(date +%s)
     # If RUN_COMMAND_RETRY_PARAMS is set to "<retries> <sleep_time>", use retry.sh to run the command:
-    if [[ -n "${RUN_COMMAND_RETRY_PARAMS:-}" ]]; then
+    if [[ -v RUN_COMMAND_RETRY_PARAMS && "${#RUN_COMMAND_RETRY_PARAMS[@]}" -eq 2 ]]; then
         status=0
-        "$ci_dir/util/retry.sh" $RUN_COMMAND_RETRY_PARAMS "${command[@]}" || status=$?
+        "$ci_dir/util/retry.sh" "${RUN_COMMAND_RETRY_PARAMS[@]}" "${command[@]}" || status=$?
     else
         status=0
         "${command[@]}" || status=$?
     fi
-    local end_time=$(date +%s)
+    local end_time
+    end_time=$(date +%s)
     set -e
     local duration=$((end_time - start_time))
-    end_group "$group_name" $status $duration
+    end_group "$group_name" "$status" "$duration"
     command_durations["$group_name"]=$duration
-    return $status
+    return "$status"
 }
 
 function string_width() {
@@ -99,13 +101,14 @@ function print_time_summary() {
 
     # Find the longest group name for formatting
     for group in "${!command_durations[@]}"; do
-        local group_length=$(echo "$group" | awk '{print length}')
-        if [ "$group_length" -gt "$max_length" ]; then
+        local group_length
+        group_length=$(echo "$group" | awk '{print length}')
+        if [[ "$group_length" -gt "$max_length" ]]; then
             max_length=$group_length
         fi
     done
 
-    if [ "$max_length" -eq 0 ]; then
+    if [[ "$max_length" -eq 0 ]]; then
         return
     fi
 

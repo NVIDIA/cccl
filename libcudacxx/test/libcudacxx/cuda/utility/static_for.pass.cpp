@@ -24,7 +24,7 @@ struct Op
   int count     = 0;
 
   template <typename Index>
-  __host__ __device__ constexpr void operator()(Index index)
+  TEST_FUNC constexpr void operator()(Index index)
   {
     static_assert(cuda::std::is_same_v<ExpectedType, decltype(index())>);
     [[maybe_unused]] constexpr auto value = index(); // compile-time evaluation
@@ -38,7 +38,7 @@ struct Op
 struct OpArgs
 {
   template <typename Index>
-  __host__ __device__ constexpr void operator()(Index index, int, int, int)
+  TEST_FUNC constexpr void operator()(Index index, int, int, int)
   {
     [[maybe_unused]] constexpr auto value = index(); // compile-time evaluation
   }
@@ -47,7 +47,7 @@ struct OpArgs
 struct Op2D
 {
   template <typename Index>
-  __host__ __device__ constexpr void operator()(Index index)
+  TEST_FUNC constexpr void operator()(Index index)
   {
     using index_t = typename Index::value_type;
     if constexpr (index > 0)
@@ -61,7 +61,7 @@ struct Op2D
 struct OpThrowing
 {
   template <class Idx>
-  __host__ __device__ constexpr void operator()(Idx) noexcept(false)
+  TEST_FUNC constexpr void operator()(Idx) noexcept(false)
   {}
 };
 
@@ -69,13 +69,13 @@ template <class IdxType>
 struct OpThrowingIdx1
 {
   template <class Idx>
-  __host__ __device__ constexpr void operator()(Idx) noexcept
+  TEST_FUNC constexpr void operator()(Idx) noexcept
   {}
-  __host__ __device__ constexpr void operator()(cuda::std::integral_constant<IdxType, IdxType{1}>) noexcept(false) {}
+  TEST_FUNC constexpr void operator()(cuda::std::integral_constant<IdxType, IdxType{1}>) noexcept(false) {}
 };
 
 template <typename T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   cuda::static_for<T{10}>(Op<T>{0, 1, 10});
   cuda::static_for<T{10}>(OpArgs{}, 1, 2, 3);
@@ -143,7 +143,7 @@ __host__ __device__ constexpr void test()
 #endif // !_CCCL_COMPILER(GCC, <, 9) && !(_CCCL_COMPILER(MSVC, <, 19, 42) && _CCCL_STD_VER == 2017)
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<short>();
   test<int>();

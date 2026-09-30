@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: dynamic allocations are not supported in tile mode
+
 // <memory>
 
 // allocator:
@@ -24,49 +27,35 @@
 
 TEST_DIAG_SUPPRESS_MSVC(4324) // structure was padded due to alignment specifier
 
-#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-static const bool UsingAlignedNew = true;
-#else
-static const bool UsingAlignedNew = false;
-#endif
-
-#ifdef __STDCPP_DEFAULT_NEW_ALIGNMENT__
-TEST_GLOBAL_VARIABLE const cuda::std::size_t MaxAligned = __STDCPP_DEFAULT_NEW_ALIGNMENT__;
-#else
-TEST_GLOBAL_VARIABLE const cuda::std::size_t MaxAligned = cuda::std::alignment_of<cuda::std::max_align_t>::value;
-#endif
-
-TEST_GLOBAL_VARIABLE const cuda::std::size_t OverAligned = MaxAligned * 2;
-
 TEST_GLOBAL_VARIABLE int AlignedType_constructed = 0;
 
 template <cuda::std::size_t Align>
 struct alignas(Align) AlignedType
 {
   char data;
-  __host__ __device__ AlignedType()
+  TEST_HOST_DEVICE_FUNC AlignedType()
   {
     ++AlignedType_constructed;
   }
-  __host__ __device__ AlignedType(AlignedType const&)
+  TEST_HOST_DEVICE_FUNC AlignedType(AlignedType const&)
   {
     ++AlignedType_constructed;
   }
-  __host__ __device__ ~AlignedType()
+  TEST_HOST_DEVICE_FUNC ~AlignedType()
   {
     --AlignedType_constructed;
   }
 };
 
 template <cuda::std::size_t Align>
-__host__ __device__ void test_aligned()
+TEST_HOST_DEVICE_FUNC void test_aligned()
 {
-  typedef AlignedType<Align> T;
+  using T                 = AlignedType<Align>;
   AlignedType_constructed = 0;
   globalMemCounter.reset();
   cuda::std::allocator<T> a;
-  const bool IsOverAlignedType = Align > MaxAligned;
-  const bool ExpectAligned     = IsOverAlignedType && UsingAlignedNew;
+  const bool IsOverAlignedType = Align > __STDCPP_DEFAULT_NEW_ALIGNMENT__;
+  const bool ExpectAligned     = IsOverAlignedType;
   {
     assert(globalMemCounter.checkOutstandingNewEq(0));
     assert(AlignedType_constructed == 0);
@@ -96,9 +85,9 @@ __host__ __device__ void test_aligned()
 
 #if TEST_STD_VER >= 2020
 template <cuda::std::size_t Align>
-__host__ __device__ constexpr bool test_aligned_constexpr()
+TEST_HOST_DEVICE_FUNC constexpr bool test_aligned_constexpr()
 {
-  typedef AlignedType<Align> T;
+  using T = AlignedType<Align>;
   cuda::std::allocator<T> a;
   T* ap = a.allocate(3);
   a.deallocate(ap, 3);
@@ -114,9 +103,9 @@ int main(int, char**)
   test_aligned<4>();
   test_aligned<8>();
   test_aligned<16>();
-  test_aligned<MaxAligned>();
-  test_aligned<OverAligned>();
-  test_aligned<OverAligned * 2>();
+  test_aligned<__STDCPP_DEFAULT_NEW_ALIGNMENT__>();
+  test_aligned<__STDCPP_DEFAULT_NEW_ALIGNMENT__ * 2>();
+  test_aligned<__STDCPP_DEFAULT_NEW_ALIGNMENT__ * 4>();
 
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
   static_assert(test_aligned_constexpr<1>());
@@ -124,9 +113,9 @@ int main(int, char**)
   static_assert(test_aligned_constexpr<4>());
   static_assert(test_aligned_constexpr<8>());
   static_assert(test_aligned_constexpr<16>());
-  static_assert(test_aligned_constexpr<MaxAligned>());
-  static_assert(test_aligned_constexpr<OverAligned>());
-  static_assert(test_aligned_constexpr<OverAligned * 2>());
+  static_assert(test_aligned_constexpr<__STDCPP_DEFAULT_NEW_ALIGNMENT__>());
+  static_assert(test_aligned_constexpr<__STDCPP_DEFAULT_NEW_ALIGNMENT__ * 2>());
+  static_assert(test_aligned_constexpr<__STDCPP_DEFAULT_NEW_ALIGNMENT__ * 4>());
 #endif // _CCCL_HAS_CONSTEXPR_ALLOCATION
 
   return 0;

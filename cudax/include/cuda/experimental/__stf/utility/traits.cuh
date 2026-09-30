@@ -16,6 +16,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -26,6 +28,7 @@
 #endif // no system header
 
 #include <cuda/std/__utility/exception_guard.h>
+#include <cuda/std/__utility/typeid.h>
 #include <cuda/std/mdspan>
 
 #include <cuda/experimental/__stf/utility/core.cuh>
@@ -37,62 +40,19 @@
 
 namespace cuda::experimental::stf
 {
-namespace reserved
-{
-// We use this function as a detector for what __PRETTY_FUNCTION__ looks like
-template <typename T>
-constexpr ::std::string_view type_name_IMPL()
-{
-#if _CCCL_COMPILER(MSVC)
-  return __FUNCSIG__;
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-  return __PRETTY_FUNCTION__;
-#endif // !_CCCL_COMPILER(MSVC)
-}
-
-// Length of prefix and suffix in __PRETTY_FUNCTION__ when used with `type_name`.
-inline constexpr ::std::pair<size_t, size_t> type_name_affixes = [] {
-  const auto p      = type_name_IMPL<double>();
-  const auto target = ::std::string_view("double");
-  const auto len    = target.size();
-  // Simulate p.find() by hand because clang can't do it.
-  size_t i = target.npos;
-  for (std::size_t start = 0; start <= p.size() - len; ++start)
-  {
-    if (p.substr(start, len) == target)
-    {
-      i = start; // Found the substring, set i to the starting position
-      break; // Exit loop after finding the first match
-    }
-  }
-  auto j = p.size() - i - len;
-  return ::std::pair{i, j};
-}();
-
-template <class T>
-constexpr ::std::string_view type_name_impl()
-{
-#if _CCCL_COMPILER(MSVC)
-  constexpr ::std::string_view p = __FUNCSIG__;
-  // MSVC does not provide constexpr methods so we make this utility much simpler and return __FUNCSIG__ directly
-  return p;
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-  ::std::string_view p = __PRETTY_FUNCTION__;
-  return p.substr(type_name_affixes.first, p.size() - type_name_affixes.first - type_name_affixes.second);
-#endif // !_CCCL_COMPILER(MSVC)
-}
-} // namespace reserved
-
 /**
  * @brief Yields a string form of type name. Exact spelling not guaranteed (e.g. `type_name<int*>` may be `"int*"`,
  * `"int *"` etc).
  *
+ * Thin wrapper around `cuda::std::__pretty_nameof<T>()` returning ``std::string_view``.
+ *
  * @tparam T The type to show.
  *
- * @snippet unittest.h type_name
+ * @snippet unittest.cuh type_name
  */
 template <class T>
-inline constexpr ::std::string_view type_name = reserved::type_name_impl<T>();
+inline const ::std::string_view type_name{
+  ::cuda::std::__pretty_nameof<T>().data(), ::cuda::std::__pretty_nameof<T>().size()};
 
 /**
  * @brief Converts each element in `t` to a new value by calling `f`, then returns a tuple collecting the values thus
@@ -109,6 +69,9 @@ inline constexpr ::std::string_view type_name = reserved::type_name_impl<T>();
 template <typename Tuple, typename Fun>
 constexpr auto tuple2tuple(const Tuple& t, Fun&& f)
 {
+  // Host-only by construction (::std::apply, ::std::tuple), so this forwards with the host stdlib.
+  // The __host__ __device__ ::cuda::std::forward crashes nvcc 12.0's front end in this lambda when
+  // the host compiler is clang.
   return ::std::apply(
     [&](auto&&... x) {
       return ::std::tuple(f(::std::forward<decltype(x)>(x))...);
@@ -129,69 +92,6 @@ class print_type_name_and_fail
 {
   static_assert(::std::integral_constant<T*, nullptr>::value, "Type name is: ");
 };
-
-namespace reserved
-{
-/**
- * @brief A singleton template class implementing the Meyers Singleton design pattern.
- *
- * @tparam T The type of the singleton object.
- *
- * It uses the "Construct On First Use Idiom" to prevent issues related to
- * the static initialization order fiasco.
- *
- * Usage rules:
- * - The default constructor of `T` should be protected.
- * - The destructor of `T` should be protected.
- * - The copy and move constructors of `T` should be disabled (implicit if you follow the rules above).
- *
- * Example usage:
- * ```cpp
- * class my_singleton : public meyers_singleton<my_singleton> {
- * protected:
- *   my_singleton() = default;
- *   ~my_singleton() = default;
- * };
- * ```
- */
-template <class T>
-class meyers_singleton
-{
-protected:
-  template <class U>
-  struct wrapper
-  {
-    using type = U;
-  };
-  friend typename wrapper<T>::type;
-
-  meyers_singleton()                        = default;
-  ~meyers_singleton()                       = default;
-  meyers_singleton(const meyers_singleton&) = delete;
-  meyers_singleton(meyers_singleton&&)      = delete;
-
-public:
-  /**
-   * @brief Provides access to the single instance of the class.
-   *
-   * @return T& A reference to the singleton instance.
-   *
-   * If the instance hasn't been created yet, this function will create it.
-   */
-  static T& instance()
-  {
-    static_assert(!::std::is_default_constructible_v<T>,
-                  "Make the default constructor of your Meyers singleton protected.");
-    static_assert(!::std::is_destructible_v<T>, "Make the destructor of your Meyers singleton protected.");
-    static_assert(!::std::is_copy_constructible_v<T>, "Disable the copy constructor of your Meyers singleton.");
-    static_assert(!::std::is_move_constructible_v<T>, "Disable the move constructor of your Meyers singleton.");
-    struct U : T
-    {};
-    static U instance;
-    return instance;
-  }
-};
-} // end namespace reserved
 
 /**
  * @brief Converts an array-like object (such as an `std::array`) to an `std::tuple`.
@@ -238,7 +138,7 @@ template <typename T, size_t n>
 using array_tuple = decltype(to_tuple(::std::array<T, n>{}));
 
 // Mini-unittest
-static_assert(::std::is_same_v<array_tuple<size_t, 3>, ::std::tuple<size_t, size_t, size_t>>);
+static_assert(::cuda::std::is_same_v<array_tuple<size_t, 3>, ::std::tuple<size_t, size_t, size_t>>);
 
 namespace reserved
 {
@@ -308,15 +208,15 @@ template <typename T, size_t N>
 template <typename T, typename P0, typename... P>
 T only_convertible(P0&& p0, [[maybe_unused]] P&&... p)
 {
-  if constexpr (::std::is_convertible_v<P0, T>)
+  if constexpr (::cuda::std::is_convertible_v<P0, T>)
   {
-    static_assert(!(::std::is_convertible_v<P, T> || ...), "Duplicate argument type found");
-    return ::std::forward<P0>(p0);
+    static_assert(!(::cuda::std::is_convertible_v<P, T> || ...), "Duplicate argument type found");
+    return ::cuda::std::forward<P0>(p0);
   }
   else
   {
     // Ignore current head and recurse to tail
-    return only_convertible<T>(::std::forward<P>(p)...);
+    return only_convertible<T>(::cuda::std::forward<P>(p)...);
   }
 }
 
@@ -353,7 +253,7 @@ auto all_convertible(P&&... p)
 {
   // We use a union here to prevent the compiler from calling the destructor of the array.
   // All construction/destruction will be done manually for efficiency purposes.
-  static constexpr size_t size = (::std::is_convertible_v<P, T> + ...);
+  static constexpr size_t size = (::cuda::std::is_convertible_v<P, T> + ...);
   unsigned char buffer[size * sizeof(T)];
   auto& result = *reinterpret_cast<::std::array<T, size>*>(&buffer[0]);
   size_t i     = 0; // marks the already-constructed portion of the array
@@ -368,13 +268,13 @@ auto all_convertible(P&&... p)
   auto __guard = ::cuda::std::__make_exception_guard(rollback);
   each_in_pack(
     [&](auto&& e) {
-      if constexpr (::std::is_convertible_v<decltype(e), T>)
+      if constexpr (::cuda::std::is_convertible_v<decltype(e), T>)
       {
-        new (result.data() + i) T(::std::forward<decltype(e)>(e));
+        new (result.data() + i) T(::cuda::std::forward<decltype(e)>(e));
         ++i;
       }
     },
-    ::std::forward<P>(p)...);
+    ::cuda::std::forward<P>(p)...);
   __guard.__complete();
   return mv(result);
 }
@@ -396,13 +296,13 @@ namespace reserved
 template <typename T, typename... P>
 T only_convertible_or([[maybe_unused]] T default_v, [[maybe_unused]] P&&... p)
 {
-  if constexpr (!(::std::is_convertible_v<P, T> || ...))
+  if constexpr (!(::cuda::std::is_convertible_v<P, T> || ...))
   {
     return default_v;
   }
   else
   {
-    return only_convertible<T>(::std::forward<P>(p)...);
+    return only_convertible<T>(::cuda::std::forward<P>(p)...);
   }
 }
 
@@ -414,7 +314,7 @@ struct check_initialization
 {
   /* Yields the number of types in `Ts` to which `T` can be converted. */
   template <typename T>
-  static constexpr int count_convertibilty = (::std::is_convertible_v<T, DataTypes> + ... + 0);
+  static constexpr int count_convertibilty = (::cuda::std::is_convertible_v<T, DataTypes> + ... + 0);
 
   template <typename... ArgTypes>
   static constexpr void from()
@@ -557,7 +457,7 @@ template <typename F, typename Tuple>
 inline constexpr bool is_applicable_v = false;
 
 template <typename F, typename... Args>
-inline constexpr bool is_applicable_v<F, ::std::tuple<Args...>> = ::std::is_invocable_v<F, Args...>;
+inline constexpr bool is_applicable_v<F, ::std::tuple<Args...>> = ::cuda::std::is_invocable_v<F, Args...>;
 
 /**
  * @brief A compile-time boolean that checks if a type supports streaming with std::ostream <<.
@@ -571,7 +471,9 @@ struct has_ostream_operator : ::std::false_type
 {};
 
 template <typename T>
-struct has_ostream_operator<T, decltype(void(::std::declval<::std::ostream&>() << ::std::declval<const T&>()), void())>
+struct has_ostream_operator<
+  T,
+  decltype(void(::cuda::std::declval<::std::ostream&>() << ::cuda::std::declval<const T&>()), void())>
     : ::std::true_type
 {};
 } // end namespace reserved

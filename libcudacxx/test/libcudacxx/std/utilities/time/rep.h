@@ -19,28 +19,28 @@ class Rep
   int data_;
 
 public:
-  __host__ __device__ constexpr Rep()
+  TEST_FUNC constexpr Rep()
       : data_(-1)
   {}
-  __host__ __device__ explicit constexpr Rep(int i)
+  TEST_FUNC explicit constexpr Rep(int i)
       : data_(i)
   {}
 
-  __host__ __device__ bool constexpr operator==(int i) const
+  TEST_FUNC bool constexpr operator==(int i) const
   {
     return data_ == i;
   }
-  __host__ __device__ bool constexpr operator==(const Rep& r) const
+  TEST_FUNC bool constexpr operator==(const Rep& r) const
   {
     return data_ == r.data_;
   }
 
-  __host__ __device__ Rep& operator*=(Rep x)
+  TEST_FUNC Rep& operator*=(Rep x)
   {
     data_ *= x.data_;
     return *this;
   }
-  __host__ __device__ Rep& operator/=(Rep x)
+  TEST_FUNC Rep& operator/=(Rep x)
   {
     data_ /= x.data_;
     return *this;
@@ -59,8 +59,8 @@ struct NotARep
 // object.
 struct RepConstConvertibleLWG3050
 {
-  __host__ __device__ operator long() = delete;
-  __host__ __device__ operator long() const
+  TEST_FUNC operator long() = delete;
+  TEST_FUNC operator long() const
   {
     return 2;
   }
@@ -81,51 +81,44 @@ struct cuda::std::common_type<int, RepConstConvertibleLWG3050>
 
 // Multiplication is commutative, division is not.
 template <class Rep, class Period>
-__host__ __device__ cuda::std::chrono::duration<Rep, Period>
-operator*(cuda::std::chrono::duration<Rep, Period> d, NotARep)
+TEST_FUNC cuda::std::chrono::duration<Rep, Period> operator*(cuda::std::chrono::duration<Rep, Period> d, NotARep)
 {
   return d;
 }
 
 template <class Rep, class Period>
-__host__ __device__ cuda::std::chrono::duration<Rep, Period>
-operator*(NotARep, cuda::std::chrono::duration<Rep, Period> d)
+TEST_FUNC cuda::std::chrono::duration<Rep, Period> operator*(NotARep, cuda::std::chrono::duration<Rep, Period> d)
 {
   return d;
 }
 
 template <class Rep, class Period>
-__host__ __device__ cuda::std::chrono::duration<Rep, Period>
-operator/(cuda::std::chrono::duration<Rep, Period> d, NotARep)
+TEST_FUNC cuda::std::chrono::duration<Rep, Period> operator/(cuda::std::chrono::duration<Rep, Period> d, NotARep)
 {
   return d;
 }
 
 template <class Rep, class Period>
-__host__ __device__ cuda::std::chrono::duration<Rep, Period>
-operator%(cuda::std::chrono::duration<Rep, Period> d, NotARep)
+TEST_FUNC cuda::std::chrono::duration<Rep, Period> operator%(cuda::std::chrono::duration<Rep, Period> d, NotARep)
 {
   return d;
 }
 
 // op= is not commutative.
 template <class Rep, class Period>
-__host__ __device__ cuda::std::chrono::duration<Rep, Period>&
-operator*=(cuda::std::chrono::duration<Rep, Period>& d, NotARep)
+TEST_FUNC cuda::std::chrono::duration<Rep, Period>& operator*=(cuda::std::chrono::duration<Rep, Period>& d, NotARep)
 {
   return d;
 }
 
 template <class Rep, class Period>
-__host__ __device__ cuda::std::chrono::duration<Rep, Period>&
-operator/=(cuda::std::chrono::duration<Rep, Period>& d, NotARep)
+TEST_FUNC cuda::std::chrono::duration<Rep, Period>& operator/=(cuda::std::chrono::duration<Rep, Period>& d, NotARep)
 {
   return d;
 }
 
 template <class Rep, class Period>
-__host__ __device__ cuda::std::chrono::duration<Rep, Period>&
-operator%=(cuda::std::chrono::duration<Rep, Period>& d, NotARep)
+TEST_FUNC cuda::std::chrono::duration<Rep, Period>& operator%=(cuda::std::chrono::duration<Rep, Period>& d, NotARep)
 {
   return d;
 }

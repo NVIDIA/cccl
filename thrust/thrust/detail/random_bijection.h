@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2025 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2025, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 //! \file random_bijection.h
 //! \brief An implementation of a bijective function for use in shuffling
@@ -23,6 +10,8 @@
 
 #include <thrust/random.h>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__bit/integral.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__utility/forward.h>
@@ -34,91 +23,66 @@ namespace detail
 //! \brief A Feistel cipher for operating on power of two sized problems
 class feistel_bijection
 {
-  struct round_state
-  {
-    std::uint32_t left;
-    std::uint32_t right;
-  };
-
 public:
   using index_type = std::uint64_t;
 
+  // The constructor loop initializes every key.
   template <class URBG>
-  _CCCL_HOST_DEVICE feistel_bijection(std::uint64_t m, URBG&& g)
+  _CCCL_HOST_DEVICE feistel_bijection(std::uint64_t m, URBG&& g) // NOLINT(cppcoreguidelines-pro-type-member-init)
+      : r_bits((total_bits(m) + 1) / 2)
+      , l_bits(total_bits(m) / 2)
+      , r_mask((std::uint64_t{1} << r_bits) - 1)
+      , l_mask((std::uint64_t{1} << l_bits) - 1)
   {
-    std::uint64_t total_bits = get_cipher_bits(m);
-    // Half bits rounded down
-    left_side_bits = total_bits / 2;
-    left_side_mask = (1ull << left_side_bits) - 1;
-    // Half the bits rounded up
-    right_side_bits = total_bits - left_side_bits;
-    right_side_mask = (1ull << right_side_bits) - 1;
-
-    thrust::uniform_int_distribution<std::uint32_t> dist;
-    for (std::uint32_t i = 0; i < num_rounds; i++)
+    thrust::uniform_int_distribution<std::uint32_t> dist; // NOLINT(misc-const-correctness)
+    for (auto& k : key)
     {
-      key[i] = dist(g);
+      k = dist(g);
     }
-  }
-
-  _CCCL_HOST_DEVICE std::uint64_t nearest_power_of_two() const
-  {
-    return 1ull << (left_side_bits + right_side_bits);
   }
 
   _CCCL_HOST_DEVICE std::uint64_t size() const
   {
-    return nearest_power_of_two();
+    return 1ull << (l_bits + r_bits);
   }
 
   _CCCL_HOST_DEVICE std::uint64_t operator()(const std::uint64_t val) const
   {
-    std::uint32_t state[2] = {static_cast<std::uint32_t>(val >> right_side_bits),
-                              static_cast<std::uint32_t>(val & right_side_mask)};
-    for (std::uint32_t i = 0; i < num_rounds; i++)
+    // Unfortunately this is duplicated with libcudacxx/include/cuda/__random/feistel_bijection.h
+    // We cannot use the above because thrust PRNG generators incorrectly implement URBG requirements.
+    // Mitchell, Rory, et al. "Bandwidth-optimal random shuffling for GPUs." ACM Transactions on Parallel Computing 9.1
+    // (2022): 1-20.
+    uint32_t L = static_cast<uint32_t>(val >> r_bits);
+    uint32_t R = static_cast<uint32_t>(val & r_mask);
+    for (const auto k : key)
     {
-      std::uint32_t hi, lo;
-      constexpr std::uint64_t M0 = UINT64_C(0xD2B74407B1CE6E93);
-      mulhilo(M0, state[0], hi, lo);
-      lo       = (lo << (right_side_bits - left_side_bits)) | state[1] >> left_side_bits;
-      state[0] = ((hi ^ key[i]) ^ state[1]) & left_side_mask;
-      state[1] = lo & right_side_mask;
+      constexpr uint64_t m0  = 0xD2B74407B1CE6E93;
+      const uint64_t product = m0 * L;
+      const uint32_t F_k     = (product >> 32) ^ k;
+      const uint32_t B_k     = static_cast<uint32_t>(product);
+      const uint32_t L_prime = F_k ^ R;
+
+      const uint32_t R_prime = (B_k << (r_bits - l_bits)) | R >> l_bits;
+      L                      = L_prime & l_mask;
+      R                      = R_prime & r_mask;
     }
     // Combine the left and right sides together to get result
-    return (static_cast<std::uint64_t>(state[0]) << right_side_bits) | static_cast<std::uint64_t>(state[1]);
+    return (static_cast<uint64_t>(L) << r_bits) | static_cast<uint64_t>(R);
   }
 
 private:
-  // Perform 64 bit multiplication and save result in two 32 bit int
-  static _CCCL_HOST_DEVICE void mulhilo(std::uint64_t a, std::uint64_t b, std::uint32_t& hi, std::uint32_t& lo)
+  _CCCL_HOST_DEVICE static constexpr std::uint64_t total_bits(std::uint64_t m)
   {
-    std::uint64_t product = a * b;
-    hi                    = static_cast<std::uint32_t>(product >> 32);
-    lo                    = static_cast<std::uint32_t>(product);
-  }
-
-  // Find the nearest power of two
-  static _CCCL_HOST_DEVICE std::uint64_t get_cipher_bits(std::uint64_t m)
-  {
-    if (m <= 16)
-    {
-      return 4;
-    }
-    std::uint64_t i = 0;
-    m--;
-    while (m != 0)
-    {
-      i++;
-      m >>= 1;
-    }
-    return i;
+    // Clamp empty ranges to avoid unsigned underflow.
+    const auto max_index = (::cuda::std::max) (std::uint64_t{1}, m) - 1;
+    return static_cast<std::uint64_t>((::cuda::std::max) (8, ::cuda::std::bit_width(max_index)));
   }
 
   static constexpr std::uint32_t num_rounds = 24;
-  std::uint64_t right_side_bits;
-  std::uint64_t left_side_bits;
-  std::uint64_t right_side_mask;
-  std::uint64_t left_side_mask;
+  std::uint64_t r_bits;
+  std::uint64_t l_bits;
+  std::uint64_t r_mask;
+  std::uint64_t l_mask;
   std::uint32_t key[num_rounds];
 };
 
@@ -153,7 +117,6 @@ public:
     auto upcast_i = static_cast<typename Bijection::index_type>(i);
     auto upcast_n = static_cast<typename Bijection::index_type>(n);
 
-    // If i < n Iterating a bijection like this will always terminate.
     // If i >= n, then this may loop forever.
     if (upcast_i >= upcast_n)
     { // Avoid infinite loop.

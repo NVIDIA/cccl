@@ -18,7 +18,7 @@
 #include <cuda/std/span>
 
 template <class T, size_t extent>
-__host__ __device__ cuda::std::span<T, extent> createImplicitSpan(T* ptr, size_t len)
+TEST_FUNC cuda::std::span<T, extent> createImplicitSpan(T* ptr, size_t len)
 {
   return {ptr, len}; // expected-error {{chosen constructor is explicit in copy-initialization}}
 }

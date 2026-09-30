@@ -53,7 +53,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 //
 //    template <class Iterator, class Size, class OutputIterator>
 //    Iterator uninitialized_copy_n(Iterator iter, Size n, OutputIterator out) {
-//        typedef typename iterator_traits<Iterator>::value_type value_type;
+//        using value_type = typename iterator_traits<Iterator>::value_type;
 //        __exception_guard guard([start=out, &out] {
 //            ::cuda::std::destroy(start, out);
 //        });
@@ -112,9 +112,9 @@ template <class _Rollback>
 struct __exception_guard_noexceptions
 {
   __exception_guard_noexceptions() = delete;
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS explicit __exception_guard_noexceptions(_Rollback) {}
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG explicit __exception_guard_noexceptions(_Rollback) {}
 
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS __exception_guard_noexceptions(
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG __exception_guard_noexceptions(
     __exception_guard_noexceptions&& __other) noexcept(is_nothrow_move_constructible_v<_Rollback>)
       : __completed_(__other.__completed_)
   {
@@ -125,12 +125,12 @@ struct __exception_guard_noexceptions
   __exception_guard_noexceptions& operator=(__exception_guard_noexceptions const&) = delete;
   __exception_guard_noexceptions& operator=(__exception_guard_noexceptions&&)      = delete;
 
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS void __complete() noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG void __complete() noexcept
   {
     __completed_ = true;
   }
 
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS ~__exception_guard_noexceptions()
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG ~__exception_guard_noexceptions()
   {
     _CCCL_ASSERT(__completed_, "__exception_guard not completed with exceptions disabled");
   }

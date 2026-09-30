@@ -41,11 +41,11 @@ int main(int, char**)
   static_assert(noexcept(year_month_weekday_last{year{1}, month{1}, weekday_last{Tuesday}}));
 
   constexpr year_month_weekday_last ym1{year{2019}, January, weekday_last{Tuesday}};
-  static_assert(ym1.year() == year{2019}, "");
-  static_assert(ym1.month() == January, "");
-  static_assert(ym1.weekday() == Tuesday, "");
-  static_assert(ym1.weekday_last() == weekday_last{Tuesday}, "");
-  static_assert(ym1.ok(), "");
+  static_assert(ym1.year() == year{2019});
+  static_assert(ym1.month() == January);
+  static_assert(ym1.weekday() == Tuesday);
+  static_assert(ym1.weekday_last() == weekday_last{Tuesday});
+  static_assert(ym1.ok());
 
   return 0;
 }

@@ -4,6 +4,8 @@
 #include <thrust/host_vector.h>
 #include <thrust/transform_reduce.h>
 
+#include <cuda/std/iterator>
+
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -23,33 +25,33 @@ struct summary_stats_data
   T min;
   T max;
   T mean;
-  T M2;
-  T M3;
-  T M4;
+  T m2;
+  T m3;
+  T m4;
 
   // initialize to the identity element
   void initialize()
   {
-    n = mean = M2 = M3 = M4 = 0;
+    n = mean = m2 = m3 = m4 = 0;
     min                     = std::numeric_limits<T>::max();
     max                     = std::numeric_limits<T>::min();
   }
 
   T variance()
   {
-    return M2 / (n - 1);
+    return m2 / (n - 1);
   }
   T variance_n()
   {
-    return M2 / n;
+    return m2 / n;
   }
   T skewness()
   {
-    return std::sqrt(n) * M3 / std::pow(M2, (T) 1.5);
+    return std::sqrt(n) * m3 / std::pow(m2, (T) 1.5);
   }
   T kurtosis()
   {
-    return n * M4 / (M2 * M2);
+    return n * m4 / (m2 * m2);
   }
 };
 
@@ -60,14 +62,14 @@ struct summary_stats_unary_op
 {
   __host__ __device__ summary_stats_data<T> operator()(const T& x) const
   {
-    summary_stats_data<T> result;
+    summary_stats_data<T> result{};
     result.n    = 1;
     result.min  = x;
     result.max  = x;
     result.mean = x;
-    result.M2   = 0;
-    result.M3   = 0;
-    result.M4   = 0;
+    result.m2   = 0;
+    result.m3   = 0;
+    result.m4   = 0;
 
     return result;
   }
@@ -83,7 +85,7 @@ struct summary_stats_binary_op
   __host__ __device__ summary_stats_data<T>
   operator()(const summary_stats_data<T>& x, const summary_stats_data<T>& y) const
   {
-    summary_stats_data<T> result;
+    summary_stats_data<T> result{};
 
     // precompute some common subexpressions
     T n  = x.n + y.n;
@@ -102,17 +104,17 @@ struct summary_stats_binary_op
 
     result.mean = x.mean + delta * y.n / n;
 
-    result.M2 = x.M2 + y.M2;
-    result.M2 += delta2 * x.n * y.n / n;
+    result.m2 = x.m2 + y.m2;
+    result.m2 += delta2 * x.n * y.n / n;
 
-    result.M3 = x.M3 + y.M3;
-    result.M3 += delta3 * x.n * y.n * (x.n - y.n) / n2;
-    result.M3 += (T) 3.0 * delta * (x.n * y.M2 - y.n * x.M2) / n;
+    result.m3 = x.m3 + y.m3;
+    result.m3 += delta3 * x.n * y.n * (x.n - y.n) / n2;
+    result.m3 += (T) 3.0 * delta * (x.n * y.m2 - y.n * x.m2) / n;
 
-    result.M4 = x.M4 + y.M4;
-    result.M4 += delta4 * x.n * y.n * (x.n * x.n - x.n * y.n + y.n * y.n) / n3;
-    result.M4 += (T) 6.0 * delta2 * (x.n * x.n * y.M2 + y.n * y.n * x.M2) / n2;
-    result.M4 += (T) 4.0 * delta * (x.n * y.M3 - y.n * x.M3) / n;
+    result.m4 = x.m4 + y.m4;
+    result.m4 += delta4 * x.n * y.n * (x.n * x.n - x.n * y.n + y.n * y.n) / n3;
+    result.m4 += (T) 6.0 * delta2 * (x.n * x.n * y.m2 + y.n * y.n * x.m2) / n2;
+    result.m4 += (T) 4.0 * delta * (x.n * y.m3 - y.n * x.m3) / n;
 
     return result;
   }
@@ -121,7 +123,7 @@ struct summary_stats_binary_op
 template <typename Iterator>
 void print_range(const std::string& name, Iterator first, Iterator last)
 {
-  using T = typename std::iterator_traits<Iterator>::value_type;
+  using T = cuda::std::iter_value_t<Iterator>;
 
   std::cout << name << ": ";
   thrust::copy(first, last, std::ostream_iterator<T>(std::cout, " "));
@@ -133,32 +135,32 @@ int main()
   using T = float;
 
   // initialize host array
-  thrust::host_vector<T> h_x{4, 7, 13, 16};
+  const thrust::host_vector<T> h_x{4, 7, 13, 16};
 
   // transfer to device
   thrust::device_vector<T> d_x(h_x);
 
   // setup arguments
-  summary_stats_unary_op<T> unary_op;
-  summary_stats_binary_op<T> binary_op;
-  summary_stats_data<T> init;
+  const summary_stats_unary_op<T> unary_op;
+  const summary_stats_binary_op<T> binary_op;
+  summary_stats_data<T> init{};
 
   init.initialize();
 
   // compute summary statistics
   summary_stats_data<T> result = thrust::transform_reduce(d_x.begin(), d_x.end(), unary_op, init, binary_op);
 
-  std::cout << "******Summary Statistics Example*****" << std::endl;
+  std::cout << "******Summary Statistics Example*****" << '\n';
   print_range("The data", d_x.begin(), d_x.end());
 
-  std::cout << "Count              : " << result.n << std::endl;
-  std::cout << "Minimum            : " << result.min << std::endl;
-  std::cout << "Maximum            : " << result.max << std::endl;
-  std::cout << "Mean               : " << result.mean << std::endl;
-  std::cout << "Variance           : " << result.variance() << std::endl;
-  std::cout << "Standard Deviation : " << std::sqrt(result.variance_n()) << std::endl;
-  std::cout << "Skewness           : " << result.skewness() << std::endl;
-  std::cout << "Kurtosis           : " << result.kurtosis() << std::endl;
+  std::cout << "Count              : " << result.n << '\n';
+  std::cout << "Minimum            : " << result.min << '\n';
+  std::cout << "Maximum            : " << result.max << '\n';
+  std::cout << "Mean               : " << result.mean << '\n';
+  std::cout << "Variance           : " << result.variance() << '\n';
+  std::cout << "Standard Deviation : " << std::sqrt(result.variance_n()) << '\n';
+  std::cout << "Skewness           : " << result.skewness() << '\n';
+  std::cout << "Kurtosis           : " << result.kurtosis() << '\n';
 
   return 0;
 }

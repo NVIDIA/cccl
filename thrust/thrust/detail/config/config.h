@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file config.h
  *  \brief Defines platform configuration.
@@ -22,6 +9,21 @@
 
 // For _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <cuda/__cccl_config> // IWYU pragma: export
+
+// Note: Checks must happen before marking this header and its includes as system
+// headers, otherwise GCC and Clang silently drop diagnostics, including
+// explicit `#pragma GCC warning` originating from system headers.
+
+#ifndef CCCL_IGNORE_DEPRECATED_COMPILER
+#  if _CCCL_COMPILER(GCC, <, 7)
+_CCCL_WARNING("Thrust requires at least GCC 7.0. Define CCCL_IGNORE_DEPRECATED_COMPILER to suppress this message.")
+#  elif _CCCL_COMPILER(CLANG, <, 7)
+_CCCL_WARNING("Thrust requires at least Clang 7.0. Define CCCL_IGNORE_DEPRECATED_COMPILER to suppress this message.")
+#  elif _CCCL_COMPILER(MSVC, <, 19, 10)
+_CCCL_WARNING("Thrust requires at least MSVC 2019(19.20 / 16.0 / 14.20). Define CCCL_IGNORE_DEPRECATED_COMPILER to "
+              "suppress this message.")
+#  endif
+#endif // CCCL_IGNORE_DEPRECATED_COMPILER
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

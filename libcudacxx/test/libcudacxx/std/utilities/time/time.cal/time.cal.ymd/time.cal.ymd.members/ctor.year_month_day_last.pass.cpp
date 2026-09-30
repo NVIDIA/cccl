@@ -40,30 +40,30 @@ int main(int, char**)
     constexpr year_month_day_last ymdl{year{2019}, month_day_last{month{1}}};
     constexpr year_month_day ymd{ymdl};
 
-    static_assert(ymd.year() == year{2019}, "");
-    static_assert(ymd.month() == month{1}, "");
-    static_assert(ymd.day() == day{31}, "");
-    static_assert(ymd.ok(), "");
+    static_assert(ymd.year() == year{2019});
+    static_assert(ymd.month() == month{1});
+    static_assert(ymd.day() == day{31});
+    static_assert(ymd.ok());
   }
 
   {
     constexpr year_month_day_last ymdl{year{1970}, month_day_last{month{4}}};
     constexpr year_month_day ymd{ymdl};
 
-    static_assert(ymd.year() == year{1970}, "");
-    static_assert(ymd.month() == month{4}, "");
-    static_assert(ymd.day() == day{30}, "");
-    static_assert(ymd.ok(), "");
+    static_assert(ymd.year() == year{1970});
+    static_assert(ymd.month() == month{4});
+    static_assert(ymd.day() == day{30});
+    static_assert(ymd.ok());
   }
 
   {
     constexpr year_month_day_last ymdl{year{2000}, month_day_last{month{2}}};
     constexpr year_month_day ymd{ymdl};
 
-    static_assert(ymd.year() == year{2000}, "");
-    static_assert(ymd.month() == month{2}, "");
-    static_assert(ymd.day() == day{29}, "");
-    static_assert(ymd.ok(), "");
+    static_assert(ymd.year() == year{2000});
+    static_assert(ymd.month() == month{2});
+    static_assert(ymd.day() == day{29});
+    static_assert(ymd.ok());
   }
 
   { // Feb 1900 was NOT a leap year.

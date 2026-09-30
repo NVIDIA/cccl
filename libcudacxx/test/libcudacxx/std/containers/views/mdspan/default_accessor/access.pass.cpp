@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test_access()
+TEST_FUNC constexpr void test_access()
 {
   ElementPool<cuda::std::remove_const_t<T>, 10> data;
   T* ptr = data.get_ptr();
@@ -29,13 +29,13 @@ __host__ __device__ constexpr void test_access()
   for (int i = 0; i < 10; i++)
   {
     static_assert(
-      cuda::std::is_same<decltype(acc.access(ptr, i)), typename cuda::std::default_accessor<T>::reference>::value, "");
+      cuda::std::is_same<decltype(acc.access(ptr, i)), typename cuda::std::default_accessor<T>::reference>::value);
     static_assert(noexcept(acc.access(ptr, i)));
     assert(&acc.access(ptr, i) == ptr + i);
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_access<int>();
   test_access<const int>();
@@ -47,7 +47,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

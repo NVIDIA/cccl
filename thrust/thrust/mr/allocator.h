@@ -1,18 +1,5 @@
-/*
- *  Copyright 2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief Allocator types usable with \ref memory_resources "Memory Resources".
@@ -33,10 +20,11 @@
 #include <thrust/detail/config.h>
 
 #include <thrust/detail/config/memory_resource.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/mr/polymorphic_adaptor.h>
 #include <thrust/mr/validator.h>
 
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
@@ -66,24 +54,24 @@ public:
   /*! The value type allocated by this allocator. Equivalent to \p T. */
   using value_type = T;
   /*! The pointer type allocated by this allocator. Equivaled to the pointer type of \p MR rebound to \p T. */
-  using pointer = typename thrust::detail::pointer_traits<void_pointer>::template rebind<T>::other;
+  using pointer = typename ::cuda::std::pointer_traits<void_pointer>::template rebind<T>;
   /*! The pointer to const type. Equivalent to a pointer type of \p MR rebound to <tt>const T</tt>. */
-  using const_pointer = typename thrust::detail::pointer_traits<void_pointer>::template rebind<const T>::other;
+  using const_pointer = typename ::cuda::std::pointer_traits<void_pointer>::template rebind<const T>;
   /*! The reference to the type allocated by this allocator. Supports smart references. */
-  using reference = typename thrust::detail::pointer_traits<pointer>::reference;
+  using reference = typename ::cuda::std::iterator_traits<pointer>::reference;
   /*! The const reference to the type allocated by this allocator. Supports smart references. */
-  using const_reference = typename thrust::detail::pointer_traits<const_pointer>::reference;
+  using const_reference = typename ::cuda::std::iterator_traits<const_pointer>::reference;
   /*! The size type of this allocator. Always \p std::size_t. */
   using size_type = std::size_t;
   /*! The difference type between pointers allocated by this allocator. */
-  using difference_type = typename thrust::detail::pointer_traits<pointer>::difference_type;
+  using difference_type = typename ::cuda::std::pointer_traits<pointer>::difference_type;
 
   /*! Specifies that the allocator shall be propagated on container copy assignment. */
-  using propagate_on_container_copy_assignment = detail::true_type;
+  using propagate_on_container_copy_assignment = ::cuda::std::true_type;
   /*! Specifies that the allocator shall be propagated on container move assignment. */
-  using propagate_on_container_move_assignment = detail::true_type;
+  using propagate_on_container_move_assignment = ::cuda::std::true_type;
   /*! Specifies that the allocator shall be propagated on container swap. */
-  using propagate_on_container_swap = detail::true_type;
+  using propagate_on_container_swap = ::cuda::std::true_type;
 
   /*! The \p rebind metafunction provides the type of an \p allocator instantiated with another type.
    *
@@ -102,9 +90,12 @@ public:
    *  \return the maximum value of \p std::size_t, divided by the size of \p T.
    */
   _CCCL_EXEC_CHECK_DISABLE
+  template <class SizeType = size_type>
   _CCCL_HOST_DEVICE size_type max_size() const
   {
-    return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T);
+    // Workaround for cudafe++ < 13.1 + gcc < 13 replacing `numeric_limits<size_t>` with
+    // `numeric_limits<conditional<is_void_v<void>, __common_type2_imp<uint64_t, uint64_t>::type, void>::type>`
+    return (::cuda::std::numeric_limits<SizeType>::max)() / sizeof(T);
   }
 
   /*! Constructor.
@@ -136,7 +127,7 @@ public:
    *  \param p pointer returned by a previous call to \p allocate
    *  \param n number of elements, passed as an argument to the \p allocate call that produced \p p
    */
-  _CCCL_HOST void deallocate(pointer p, size_type n) noexcept
+  _CCCL_HOST void deallocate(pointer p, size_type n) noexcept // NOLINT(bugprone-exception-escape)
   {
     return mem_res->do_deallocate(p, n * sizeof(T), alignof(T));
   }
@@ -218,7 +209,7 @@ public:
   stateless_resource_allocator& operator=(const stateless_resource_allocator&) = default;
 
   /*! Destructor. */
-  _CCCL_HOST_DEVICE ~stateless_resource_allocator() {}
+  ~stateless_resource_allocator() = default;
 };
 
 /*! \} // allocators

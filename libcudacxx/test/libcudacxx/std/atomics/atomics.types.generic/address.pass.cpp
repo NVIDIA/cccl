@@ -5,10 +5,13 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 //  ... test case crashes clang.
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/std/atomic>
 
@@ -82,9 +85,9 @@
 #include "cuda_space_selector.h"
 
 template <class A, class T, template <typename, typename> class Selector>
-__host__ __device__ void do_test()
+TEST_HOST_DEVICE_FUNC void do_test()
 {
-  typedef typename cuda::std::remove_pointer<T>::type X;
+  using X = typename cuda::std::remove_pointer<T>::type;
   Selector<A, constructor_initializer> sel;
   A& obj                   = *sel.construct(T(0));
   [[maybe_unused]] bool b0 = obj.is_lock_free();
@@ -133,7 +136,7 @@ __host__ __device__ void do_test()
 }
 
 template <class A, class T, template <typename, typename> class Selector>
-__host__ __device__ void do_test_std()
+TEST_HOST_DEVICE_FUNC void do_test_std()
 {
   Selector<A, constructor_initializer> sel;
   A& obj = *sel.construct(nullptr);
@@ -146,14 +149,14 @@ __host__ __device__ void do_test_std()
 }
 
 template <class A, class T, template <typename, typename> class Selector>
-__host__ __device__ void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   do_test<A, T, Selector>();
   do_test<volatile A, T, Selector>();
 }
 
 template <class A, class T, template <typename, typename> class Selector>
-__host__ __device__ void test_std()
+TEST_HOST_DEVICE_FUNC void test_std()
 {
   do_test_std<A, T, Selector>();
   do_test_std<volatile A, T, Selector>();
@@ -166,11 +169,13 @@ int main(int, char**)
     (test_std<cuda::std::atomic<int*>, int*, local_memory_selector>();
      test<cuda::atomic<int*, cuda::thread_scope_system>, int*, local_memory_selector>();
      test<cuda::atomic<int*, cuda::thread_scope_device>, int*, local_memory_selector>();
+     test<cuda::atomic<int*, cuda::thread_scope_cluster>, int*, local_memory_selector>();
      test<cuda::atomic<int*, cuda::thread_scope_block>, int*, local_memory_selector>();),
     NV_PROVIDES_SM_70,
     (test_std<cuda::std::atomic<int*>, int*, local_memory_selector>();
      test<cuda::atomic<int*, cuda::thread_scope_system>, int*, local_memory_selector>();
      test<cuda::atomic<int*, cuda::thread_scope_device>, int*, local_memory_selector>();
+     test<cuda::atomic<int*, cuda::thread_scope_cluster>, int*, local_memory_selector>();
      test<cuda::atomic<int*, cuda::thread_scope_block>, int*, local_memory_selector>();))
 
   NV_IF_TARGET(
@@ -178,16 +183,18 @@ int main(int, char**)
     (test_std<cuda::std::atomic<int*>, int*, shared_memory_selector>();
      test<cuda::atomic<int*, cuda::thread_scope_system>, int*, shared_memory_selector>();
      test<cuda::atomic<int*, cuda::thread_scope_device>, int*, shared_memory_selector>();
+     test<cuda::atomic<int*, cuda::thread_scope_cluster>, int*, shared_memory_selector>();
      test<cuda::atomic<int*, cuda::thread_scope_block>, int*, shared_memory_selector>();
 
      // note: this _should_ be test_std, but for some reason that's resulting in an
-     // unspecified launch failure, and I'm unsure what function is not __device__
+     // unspecified launch failure, and I'm unsure what function is not TEST_DEVICE_FUNC
      // and causes that to happen
      // the only difference is whether atomic_init is done or not, and that
      // _seems_ to be appropriately tested by the atomic_init test for cuda::std::
      test<cuda::std::atomic<int*>, int*, global_memory_selector>();
      test<cuda::atomic<int*, cuda::thread_scope_system>, int*, global_memory_selector>();
      test<cuda::atomic<int*, cuda::thread_scope_device>, int*, global_memory_selector>();
+     test<cuda::atomic<int*, cuda::thread_scope_cluster>, int*, global_memory_selector>();
      test<cuda::atomic<int*, cuda::thread_scope_block>, int*, global_memory_selector>();))
 
   return 0;

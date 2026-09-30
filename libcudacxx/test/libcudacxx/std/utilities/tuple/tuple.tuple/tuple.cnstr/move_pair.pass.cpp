@@ -11,33 +11,38 @@
 // template <class... Types> class tuple;
 
 // template <class U1, class U2> tuple(pair<U1, U2>&& u);
+// In tile mode virtual functions are unsupported
 
 #include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
+#include "MoveOnly.h"
 #include "test_macros.h"
 
+#if !_CCCL_TILE_COMPILATION()
 struct B
 {
   int id_;
 
-  __host__ __device__ explicit B(int i)
+  TEST_HOST_DEVICE_FUNC explicit B(int i)
       : id_(i)
   {}
 
-  __host__ __device__ virtual ~B() {}
+  TEST_HOST_DEVICE_FUNC virtual ~B() {}
 };
 
 struct D : B
 {
-  __host__ __device__ explicit D(int i)
+  TEST_HOST_DEVICE_FUNC explicit D(int i)
       : B(i)
   {}
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 int main(int, char**)
 {
+#if !_CCCL_TILE_COMPILATION()
   {
     using T0 = cuda::std::pair<long, cuda::std::unique_ptr<D>>;
     using T1 = cuda::std::tuple<long long, cuda::std::unique_ptr<B>>;
@@ -46,6 +51,15 @@ int main(int, char**)
     assert(cuda::std::get<0>(t1) == 2);
     assert(cuda::std::get<1>(t1)->id_ == 3);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
+  {
+    using T0 = cuda::std::pair<long, MoveOnly>;
+    using T1 = cuda::std::tuple<long long, MoveOnly>;
+    T0 t0(2, MoveOnly(3));
+    T1 t1 = cuda::std::move(t0);
+    assert(cuda::std::get<0>(t1) == 2);
+    assert(cuda::std::get<1>(t1) == 3);
+  }
   return 0;
 }

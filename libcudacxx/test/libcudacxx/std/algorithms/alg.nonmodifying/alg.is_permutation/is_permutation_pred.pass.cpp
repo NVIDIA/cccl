@@ -23,22 +23,22 @@
 
 struct S
 {
-  __host__ __device__ constexpr S(int i)
+  TEST_FUNC constexpr S(int i)
       : i_(i)
   {}
-  __host__ __device__ constexpr bool operator==(const S& other) = delete;
+  TEST_FUNC constexpr bool operator==(const S& other) = delete;
   int i_;
 };
 
 struct eq
 {
-  __host__ __device__ constexpr bool operator()(const S& a, const S& b)
+  TEST_FUNC constexpr bool operator()(const S& a, const S& b)
   {
     return a.i_ == b.i_;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     const int ia[]    = {0};
@@ -891,7 +891,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

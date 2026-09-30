@@ -13,8 +13,8 @@
 
 // Test nested types
 
-// typedef Rep rep;
-// typedef Period period;
+// using rep    = Rep;
+// using period = Period;
 
 #include <cuda/std/chrono>
 #include <cuda/std/ratio>

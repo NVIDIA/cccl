@@ -18,7 +18,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::tabulate_output_iterator iter1{basic_functor{}, 42};
   const auto iter2 = iter1 + 1;
@@ -55,7 +55,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

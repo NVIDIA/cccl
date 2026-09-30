@@ -20,24 +20,6 @@
 #include "MoveOnly.h"
 #include "test_macros.h"
 
-struct B
-{
-  int id_;
-
-  __device__ __host__ explicit B(int i = 0)
-      : id_(i)
-  {}
-
-  __device__ __host__ virtual ~B() {}
-};
-
-struct D : B
-{
-  __device__ __host__ explicit D(int i)
-      : B(i)
-  {}
-};
-
 int main(int, char**)
 {
   {

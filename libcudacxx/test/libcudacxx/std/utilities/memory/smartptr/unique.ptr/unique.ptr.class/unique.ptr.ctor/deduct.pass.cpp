@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
 // <memory>
 
 // unique_ptr
@@ -25,7 +28,7 @@
 
 struct Deleter
 {
-  __host__ __device__ void operator()(int* p) const
+  TEST_HOST_DEVICE_FUNC void operator()(int* p) const
   {
     delete p;
   }

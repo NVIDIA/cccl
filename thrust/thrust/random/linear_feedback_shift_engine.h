@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file linear_feedback_shift_engine.h
  *  \brief A linear feedback shift pseudorandom number generator.
@@ -41,9 +28,9 @@
 #include <thrust/random/detail/linear_feedback_shift_engine_wordmask.h>
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/cstddef> // for size_t
-
-#include <iostream>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -59,14 +46,14 @@ namespace random
  *         generation algorithm.
  *
  *  \tparam UIntType The type of unsigned integer to produce.
- *  \tparam w The word size of the produced values (<tt>w <= sizeof(UIntType)</tt>).
- *  \tparam k The k parameter of Tausworthe's 1965 algorithm.
- *  \tparam q The q exponent of Tausworthe's 1965 algorithm.
- *  \tparam s The step size of Tausworthe's 1965 algorithm.
+ *  \tparam W The word size of the produced values (<tt>W <= sizeof(UIntType)</tt>).
+ *  \tparam K The K parameter of Tausworthe's 1965 algorithm.
+ *  \tparam Q The Q exponent of Tausworthe's 1965 algorithm.
+ *  \tparam S The step size of Tausworthe's 1965 algorithm.
  *
  *  \note linear_feedback_shift_engine is based on the Boost Template Library's linear_feedback_shift.
  */
-template <typename UIntType, size_t w, size_t k, size_t q, size_t s>
+template <typename UIntType, size_t W, size_t K, size_t Q, size_t S>
 class linear_feedback_shift_engine
 {
 public:
@@ -81,25 +68,25 @@ public:
 
   /*! The word size of the produced values.
    */
-  static const size_t word_size = w;
+  static const size_t word_size = W;
 
   /*! A constant used in the generation algorithm.
    */
-  static const size_t exponent1 = k;
+  static const size_t exponent1 = K;
 
   /*! A constant used in the generation algorithm.
    */
-  static const size_t exponent2 = q;
+  static const size_t exponent2 = Q;
 
   /*! The step size used in the generation algorithm.
    */
-  static const size_t step_size = s;
+  static const size_t step_size = S;
 
   /*! \cond
    */
 
 private:
-  static const result_type wordmask = detail::linear_feedback_shift_engine_wordmask<result_type, w>::value;
+  static const result_type wordmask = detail::linear_feedback_shift_engine_wordmask<result_type, W>::value;
   /*! \endcond
    */
 
@@ -137,7 +124,7 @@ public:
   /*! This member function produces a new random value and updates this \p linear_feedback_shift_engine's state.
    *  \return A new random number.
    */
-  _CCCL_HOST_DEVICE result_type operator()(void);
+  _CCCL_HOST_DEVICE result_type operator()();
 
   /*! This member function advances this \p linear_feedback_shift_engine's state a given number of times
    *  and discards the results.
@@ -172,36 +159,36 @@ private:
  *  \param rhs The second \p linear_feedback_shift_engine to test.
  *  \return \c true if \p lhs is equal to \p rhs; \c false, otherwise.
  */
-template <typename UIntType_, size_t w_, size_t k_, size_t q_, size_t s_>
-_CCCL_HOST_DEVICE bool operator==(const linear_feedback_shift_engine<UIntType_, w_, k_, q_, s_>& lhs,
-                                  const linear_feedback_shift_engine<UIntType_, w_, k_, q_, s_>& rhs);
+template <typename UIntType, size_t W, size_t K, size_t Q, size_t S>
+_CCCL_HOST_DEVICE bool operator==(const linear_feedback_shift_engine<UIntType, W, K, Q, S>& lhs,
+                                  const linear_feedback_shift_engine<UIntType, W, K, Q, S>& rhs);
 
 /*! This function checks two \p linear_feedback_shift_engines for inequality.
  *  \param lhs The first \p linear_feedback_shift_engine to test.
  *  \param rhs The second \p linear_feedback_shift_engine to test.
  *  \return \c true if \p lhs is not equal to \p rhs; \c false, otherwise.
  */
-template <typename UIntType_, size_t w_, size_t k_, size_t q_, size_t s_>
-_CCCL_HOST_DEVICE bool operator!=(const linear_feedback_shift_engine<UIntType_, w_, k_, q_, s_>& lhs,
-                                  const linear_feedback_shift_engine<UIntType_, w_, k_, q_, s_>& rhs);
+template <typename UIntType, size_t W, size_t K, size_t Q, size_t S>
+_CCCL_HOST_DEVICE bool operator!=(const linear_feedback_shift_engine<UIntType, W, K, Q, S>& lhs,
+                                  const linear_feedback_shift_engine<UIntType, W, K, Q, S>& rhs);
 
 /*! This function streams a linear_feedback_shift_engine to a \p std::basic_ostream.
  *  \param os The \p basic_ostream to stream out to.
  *  \param e The \p linear_feedback_shift_engine to stream out.
  *  \return \p os
  */
-template <typename UIntType_, size_t w_, size_t k_, size_t q_, size_t s_, typename CharT, typename Traits>
+template <typename UIntType, size_t W, size_t K, size_t Q, size_t S, typename CharT, typename Traits>
 std::basic_ostream<CharT, Traits>&
-operator<<(std::basic_ostream<CharT, Traits>& os, const linear_feedback_shift_engine<UIntType_, w_, k_, q_, s_>& e);
+operator<<(std::basic_ostream<CharT, Traits>& os, const linear_feedback_shift_engine<UIntType, W, K, Q, S>& e);
 
 /*! This function streams a linear_feedback_shift_engine in from a std::basic_istream.
  *  \param is The \p basic_istream to stream from.
  *  \param e The \p linear_feedback_shift_engine to stream in.
  *  \return \p is
  */
-template <typename UIntType_, size_t w_, size_t k_, size_t q_, size_t s_, typename CharT, typename Traits>
+template <typename UIntType, size_t W, size_t K, size_t Q, size_t S, typename CharT, typename Traits>
 std::basic_istream<CharT, Traits>&
-operator>>(std::basic_istream<CharT, Traits>& is, linear_feedback_shift_engine<UIntType_, w_, k_, q_, s_>& e);
+operator>>(std::basic_istream<CharT, Traits>& is, linear_feedback_shift_engine<UIntType, W, K, Q, S>& e);
 
 /*! \} // end random_number_engine_templates
  */

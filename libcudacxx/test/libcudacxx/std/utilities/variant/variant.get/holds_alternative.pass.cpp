@@ -23,13 +23,13 @@ int main(int, char**)
   {
     using V = cuda::std::variant<int>;
     constexpr V v;
-    static_assert(cuda::std::holds_alternative<int>(v), "");
+    static_assert(cuda::std::holds_alternative<int>(v));
   }
   {
     using V = cuda::std::variant<int, long>;
     constexpr V v;
-    static_assert(cuda::std::holds_alternative<int>(v), "");
-    static_assert(!cuda::std::holds_alternative<long>(v), "");
+    static_assert(cuda::std::holds_alternative<int>(v));
+    static_assert(!cuda::std::holds_alternative<long>(v));
   }
   { // noexcept test
     using V = cuda::std::variant<int>;

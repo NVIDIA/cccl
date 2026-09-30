@@ -10,9 +10,12 @@
 // NVRTC does not do host side testing
 // UNSUPPORTED: nvrtc
 
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
+
 #include "utils.h"
 
-__device__ __host__ static void fails_from_host()
+TEST_HOST_DEVICE_FUNC static void fails_from_host()
 {
   int a;
   __nv_associate_access_property(&a, uint64_t{0});

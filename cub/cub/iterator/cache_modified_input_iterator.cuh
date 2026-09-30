@@ -22,16 +22,14 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/iterator/iterator_facade.h>
+#include <thrust/type_traits/is_contiguous_iterator.h>
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__utility/declval.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -78,6 +76,11 @@ CUB_NAMESPACE_BEGIN
  *
  * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
+ *
+ * @rst
+ * .. versionadded:: 2.2.0
+ *    First appears in CUDA Toolkit 12.3.
+ * @endrst
  */
 template <CacheLoadModifier MODIFIER, typename ValueType, typename OffsetT = ptrdiff_t>
 class CacheModifiedInputIterator
@@ -87,6 +90,8 @@ public:
 
   /// My own type
   using self_type = CacheModifiedInputIterator;
+
+  static constexpr CacheLoadModifier __modifier = MODIFIER;
 
   /// Type to express the result of subtracting one iterator from another
   using difference_type = OffsetT;
@@ -100,13 +105,13 @@ public:
   /// The type of a reference to an element the iterator can point to
   using reference = ValueType;
 
-#if _CCCL_COMPILER(NVRTC)
+#if _CCCL_FREESTANDING()
   using iterator_category = ::cuda::std::random_access_iterator_tag;
-#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
+#else // ^^^ _CCCL_FREESTANDING() ^^^ // vvv _CCCL_HOSTED() vvv
   using iterator_category =
     THRUST_NS_QUALIFIER::detail::iterator_facade_category_t<THRUST_NS_QUALIFIER::device_system_tag,
                                                             THRUST_NS_QUALIFIER::random_access_traversal_tag>;
-#endif // _CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 public:
   /// Wrapped native pointer
@@ -203,23 +208,29 @@ public:
   }
 
   /// ostream operator
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const self_type& /*itr*/)
   {
     return os;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 namespace detail
 {
+template <typename Iterator>
+inline constexpr bool is_CacheModifiedInputIterator = false;
+
+template <CacheLoadModifier MODIFIER, typename ValueType, typename OffsetT>
+inline constexpr bool is_CacheModifiedInputIterator<CacheModifiedInputIterator<MODIFIER, ValueType, OffsetT>> = true;
+
 template <CacheLoadModifier LoadModifier, typename Iterator>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterator it)
 {
-  if constexpr (::cuda::std::contiguous_iterator<Iterator>)
+  if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<Iterator>)
   {
     return CacheModifiedInputIterator<LoadModifier, it_value_t<Iterator>, it_difference_t<Iterator>>{
-      THRUST_NS_QUALIFIER::raw_pointer_cast(&*it)};
+      ::cuda::std::to_address(it)};
   }
   else
   {

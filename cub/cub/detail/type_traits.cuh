@@ -73,7 +73,7 @@ inline constexpr bool is_fixed_size_random_access_range_v<::cuda::std::span<T, N
 
 template <typename T, typename E, typename L, typename A>
 inline constexpr bool is_fixed_size_random_access_range_v<::cuda::std::mdspan<T, E, L, A>> =
-  E::rank == 1 && E::rank_dynamic() == 0;
+  E::rank() == 1 && E::rank_dynamic() == 0;
 
 /***********************************************************************************************************************
  * static_size: a type trait that returns the number of elements in an Array-like type
@@ -94,7 +94,7 @@ inline constexpr int static_size_v<::cuda::std::span<T, N>> =
 
 template <typename T, typename E, typename L, typename A>
 inline constexpr int static_size_v<::cuda::std::mdspan<T, E, L, A>> =
-  ::cuda::std::enable_if_t<E::rank == 1 && E::rank_dynamic() == 0, int>{E::static_extent(0)};
+  ::cuda::std::enable_if_t<E::rank() == 1 && E::rank_dynamic() == 0, int>{E::static_extent(0)};
 
 template <typename T>
 using implicit_prom_t = decltype(+T{});

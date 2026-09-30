@@ -22,7 +22,7 @@
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 
 template <typename Barrier>
-inline __device__ void mbarrier_complete_tx(Barrier& b, int transaction_count)
+inline TEST_DEVICE_FUNC void mbarrier_complete_tx(Barrier& b, int transaction_count)
 {
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90,
@@ -42,7 +42,7 @@ inline __device__ void mbarrier_complete_tx(Barrier& b, int transaction_count)
 }
 
 template <bool split_arrive_and_expect>
-__device__ void thread(cuda::barrier<cuda::thread_scope_block>& b, int arrives_per_thread)
+TEST_DEVICE_FUNC void thread(cuda::barrier<cuda::thread_scope_block>& b, int arrives_per_thread)
 {
   constexpr int tx_count = 1;
   typename cuda::barrier<cuda::thread_scope_block>::arrival_token tok;
@@ -64,7 +64,7 @@ __device__ void thread(cuda::barrier<cuda::thread_scope_block>& b, int arrives_p
 }
 
 template <bool split_arrive_and_expect>
-__device__ void test()
+TEST_DEVICE_FUNC void test()
 {
   NV_DISPATCH_TARGET(
     NV_IS_DEVICE,

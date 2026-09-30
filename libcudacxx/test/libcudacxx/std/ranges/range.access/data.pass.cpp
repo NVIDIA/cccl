@@ -25,53 +25,53 @@ struct Incomplete;
 
 #if !TEST_COMPILER(MSVC, <, 19, 23)
 // old MSVC has a bug where it doesn't properly handle rvalue arrays
-static_assert(!cuda::std::is_invocable_v<RangeDataT, int[1]>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, int (&&)[1]>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, int[1]>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, int (&&)[1]>, "");
+static_assert(!cuda::std::is_invocable_v<RangeDataT, int[1]>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, int (&&)[1]>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, int[1]>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, int (&&)[1]>);
 #endif // !TEST_COMPILER(MSVC, <, 19, 23)
 
-static_assert(!cuda::std::is_invocable_v<RangeDataT, Incomplete[]>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, Incomplete (&&)[2]>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, Incomplete (&&)[2][2]>, "");
-static_assert(cuda::std::is_invocable_v<RangeDataT, int (&)[1]>, "");
+static_assert(!cuda::std::is_invocable_v<RangeDataT, Incomplete[]>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, Incomplete (&&)[2]>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, Incomplete (&&)[2][2]>);
+static_assert(cuda::std::is_invocable_v<RangeDataT, int (&)[1]>);
 
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, Incomplete[]>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, Incomplete (&&)[2]>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, Incomplete (&&)[2][2]>, "");
-static_assert(cuda::std::is_invocable_v<RangeCDataT, int (&)[1]>, "");
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, Incomplete[]>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, Incomplete (&&)[2]>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, Incomplete (&&)[2][2]>);
+static_assert(cuda::std::is_invocable_v<RangeCDataT, int (&)[1]>);
 
 struct DataMember
 {
   int x;
-  __host__ __device__ constexpr const int* data() const
+  TEST_FUNC constexpr const int* data() const
   {
     return &x;
   }
 };
-static_assert(cuda::std::is_invocable_v<RangeDataT, DataMember&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, DataMember&&>, "");
-static_assert(cuda::std::is_invocable_v<RangeDataT, DataMember const&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, DataMember const&&>, "");
-static_assert(cuda::std::is_invocable_v<RangeCDataT, DataMember&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, DataMember&&>, "");
-static_assert(cuda::std::is_invocable_v<RangeCDataT, DataMember const&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, DataMember const&&>, "");
+static_assert(cuda::std::is_invocable_v<RangeDataT, DataMember&>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, DataMember&&>);
+static_assert(cuda::std::is_invocable_v<RangeDataT, DataMember const&>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, DataMember const&&>);
+static_assert(cuda::std::is_invocable_v<RangeCDataT, DataMember&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, DataMember&&>);
+static_assert(cuda::std::is_invocable_v<RangeCDataT, DataMember const&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, DataMember const&&>);
 
 struct D
 {
-  __host__ __device__ char*& data();
-  __host__ __device__ short*& data() const;
+  TEST_FUNC char*& data();
+  TEST_FUNC short*& data() const;
 };
 
 struct NC
 {
-  __host__ __device__ char* begin() const;
-  __host__ __device__ char* end() const;
-  __host__ __device__ int* data();
+  TEST_FUNC char* begin() const;
+  TEST_FUNC char* end() const;
+  TEST_FUNC int* data();
 };
 
-__host__ __device__ constexpr bool testReturnTypes()
+TEST_FUNC constexpr bool testReturnTypes()
 {
   {
     int* x[2] = {};
@@ -87,60 +87,60 @@ __host__ __device__ constexpr bool testReturnTypes()
   }
   {
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(cuda::std::declval<D&>())), char*>);
-    static_assert(!cuda::std::is_invocable_v<RangeDataT, D&&>, "");
+    static_assert(!cuda::std::is_invocable_v<RangeDataT, D&&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(cuda::std::declval<const D&>())), short*>);
-    static_assert(!cuda::std::is_invocable_v<RangeDataT, const D&&>, "");
+    static_assert(!cuda::std::is_invocable_v<RangeDataT, const D&&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(cuda::std::declval<D&>())), short*>);
-    static_assert(!cuda::std::is_invocable_v<RangeCDataT, D&&>, "");
+    static_assert(!cuda::std::is_invocable_v<RangeCDataT, D&&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(cuda::std::declval<const D&>())), short*>);
-    static_assert(!cuda::std::is_invocable_v<RangeCDataT, const D&&>, "");
+    static_assert(!cuda::std::is_invocable_v<RangeCDataT, const D&&>);
   }
   {
-    static_assert(!cuda::std::ranges::contiguous_range<NC>, "");
-    static_assert(cuda::std::ranges::contiguous_range<const NC>, "");
+    static_assert(!cuda::std::ranges::contiguous_range<NC>);
+    static_assert(cuda::std::ranges::contiguous_range<const NC>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(cuda::std::declval<NC&>())), int*>);
-    static_assert(!cuda::std::is_invocable_v<RangeDataT, NC&&>, "");
+    static_assert(!cuda::std::is_invocable_v<RangeDataT, NC&&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(cuda::std::declval<const NC&>())), char*>);
-    static_assert(!cuda::std::is_invocable_v<RangeDataT, const NC&&>, "");
+    static_assert(!cuda::std::is_invocable_v<RangeDataT, const NC&&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(cuda::std::declval<NC&>())), char*>);
-    static_assert(!cuda::std::is_invocable_v<RangeCDataT, NC&&>, "");
+    static_assert(!cuda::std::is_invocable_v<RangeCDataT, NC&&>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(cuda::std::declval<const NC&>())), char*>);
-    static_assert(!cuda::std::is_invocable_v<RangeCDataT, const NC&&>, "");
+    static_assert(!cuda::std::is_invocable_v<RangeCDataT, const NC&&>);
   }
   return true;
 }
 
 struct VoidDataMember
 {
-  __host__ __device__ void* data() const;
+  TEST_FUNC void* data() const;
 };
-static_assert(!cuda::std::is_invocable_v<RangeDataT, VoidDataMember const&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, VoidDataMember const&>, "");
+static_assert(!cuda::std::is_invocable_v<RangeDataT, VoidDataMember const&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, VoidDataMember const&>);
 
 struct Empty
 {};
 struct EmptyDataMember
 {
-  __host__ __device__ Empty data() const;
+  TEST_FUNC Empty data() const;
 };
-static_assert(!cuda::std::is_invocable_v<RangeDataT, EmptyDataMember const&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, EmptyDataMember const&>, "");
+static_assert(!cuda::std::is_invocable_v<RangeDataT, EmptyDataMember const&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, EmptyDataMember const&>);
 
 struct PtrConvertibleDataMember
 {
   struct Ptr
   {
-    __host__ __device__ operator int*() const;
+    TEST_FUNC operator int*() const;
   };
-  __host__ __device__ Ptr data() const;
+  TEST_FUNC Ptr data() const;
 };
-static_assert(!cuda::std::is_invocable_v<RangeDataT, PtrConvertibleDataMember const&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, PtrConvertibleDataMember const&>, "");
+static_assert(!cuda::std::is_invocable_v<RangeDataT, PtrConvertibleDataMember const&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, PtrConvertibleDataMember const&>);
 
 struct NonConstDataMember
 {
   int x;
-  __host__ __device__ constexpr int* data()
+  TEST_FUNC constexpr int* data()
   {
     return &x;
   }
@@ -148,7 +148,7 @@ struct NonConstDataMember
 
 struct EnabledBorrowingDataMember
 {
-  __host__ __device__ constexpr const int* data()
+  TEST_FUNC constexpr const int* data()
   {
     return &globalBuff[0];
   }
@@ -163,14 +163,14 @@ inline constexpr bool enable_borrowed_range<EnabledBorrowingDataMember> = true;
 struct DataMemberAndBegin
 {
   int x;
-  __host__ __device__ constexpr const int* data() const
+  TEST_FUNC constexpr const int* data() const
   {
     return &x;
   }
-  __host__ __device__ const int* begin() const;
+  TEST_FUNC const int* begin() const;
 };
 
-__host__ __device__ constexpr bool testDataMember()
+TEST_FUNC constexpr bool testDataMember()
 {
   DataMember a{};
   assert(cuda::std::ranges::data(a) == &a.x);
@@ -178,11 +178,11 @@ __host__ __device__ constexpr bool testDataMember()
 
   NonConstDataMember b{};
   assert(cuda::std::ranges::data(b) == &b.x);
-  static_assert(!cuda::std::is_invocable_v<RangeCDataT, decltype((b))>, "");
+  static_assert(!cuda::std::is_invocable_v<RangeCDataT, decltype((b))>);
 
   EnabledBorrowingDataMember c{};
   assert(cuda::std::ranges::data(cuda::std::move(c)) == &globalBuff[0]);
-  static_assert(!cuda::std::is_invocable_v<RangeCDataT, decltype(cuda::std::move(c))>, "");
+  static_assert(!cuda::std::is_invocable_v<RangeCDataT, decltype(cuda::std::move(c))>);
 
   DataMemberAndBegin d{};
   assert(cuda::std::ranges::data(d) == &d.x);
@@ -197,84 +197,84 @@ struct BeginMemberContiguousIterator
 {
   int buff[8];
 
-  __host__ __device__ constexpr ContiguousIter begin() const
+  TEST_FUNC constexpr ContiguousIter begin() const
   {
     return ContiguousIter(buff);
   }
 };
-static_assert(cuda::std::is_invocable_v<RangeDataT, BeginMemberContiguousIterator&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberContiguousIterator&&>, "");
-static_assert(cuda::std::is_invocable_v<RangeDataT, BeginMemberContiguousIterator const&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberContiguousIterator const&&>, "");
-static_assert(cuda::std::is_invocable_v<RangeCDataT, BeginMemberContiguousIterator&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberContiguousIterator&&>, "");
-static_assert(cuda::std::is_invocable_v<RangeCDataT, BeginMemberContiguousIterator const&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberContiguousIterator const&&>, "");
+static_assert(cuda::std::is_invocable_v<RangeDataT, BeginMemberContiguousIterator&>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberContiguousIterator&&>);
+static_assert(cuda::std::is_invocable_v<RangeDataT, BeginMemberContiguousIterator const&>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberContiguousIterator const&&>);
+static_assert(cuda::std::is_invocable_v<RangeCDataT, BeginMemberContiguousIterator&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberContiguousIterator&&>);
+static_assert(cuda::std::is_invocable_v<RangeCDataT, BeginMemberContiguousIterator const&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberContiguousIterator const&&>);
 
 struct BeginMemberRandomAccess
 {
   int buff[8];
 
-  __host__ __device__ random_access_iterator<const int*> begin() const;
+  TEST_FUNC random_access_iterator<const int*> begin() const;
 };
-static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberRandomAccess&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberRandomAccess&&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, const BeginMemberRandomAccess&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, const BeginMemberRandomAccess&&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberRandomAccess&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberRandomAccess&&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, const BeginMemberRandomAccess&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, const BeginMemberRandomAccess&&>, "");
+static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberRandomAccess&>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberRandomAccess&&>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, const BeginMemberRandomAccess&>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, const BeginMemberRandomAccess&&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberRandomAccess&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberRandomAccess&&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, const BeginMemberRandomAccess&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, const BeginMemberRandomAccess&&>);
 
 struct BeginFriendContiguousIterator
 {
   int buff[8];
 
-  __host__ __device__ friend constexpr ContiguousIter begin(const BeginFriendContiguousIterator& iter)
+  TEST_FUNC friend constexpr ContiguousIter begin(const BeginFriendContiguousIterator& iter)
   {
     return ContiguousIter(iter.buff);
   }
 };
-static_assert(cuda::std::is_invocable_v<RangeDataT, BeginMemberContiguousIterator&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberContiguousIterator&&>, "");
-static_assert(cuda::std::is_invocable_v<RangeDataT, BeginMemberContiguousIterator const&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberContiguousIterator const&&>, "");
-static_assert(cuda::std::is_invocable_v<RangeCDataT, BeginMemberContiguousIterator&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberContiguousIterator&&>, "");
-static_assert(cuda::std::is_invocable_v<RangeCDataT, BeginMemberContiguousIterator const&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberContiguousIterator const&&>, "");
+static_assert(cuda::std::is_invocable_v<RangeDataT, BeginMemberContiguousIterator&>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberContiguousIterator&&>);
+static_assert(cuda::std::is_invocable_v<RangeDataT, BeginMemberContiguousIterator const&>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberContiguousIterator const&&>);
+static_assert(cuda::std::is_invocable_v<RangeCDataT, BeginMemberContiguousIterator&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberContiguousIterator&&>);
+static_assert(cuda::std::is_invocable_v<RangeCDataT, BeginMemberContiguousIterator const&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberContiguousIterator const&&>);
 
 struct BeginFriendRandomAccess
 {
-  __host__ __device__ friend random_access_iterator<const int*> begin(const BeginFriendRandomAccess iter);
+  TEST_FUNC friend random_access_iterator<const int*> begin(const BeginFriendRandomAccess iter);
 };
-static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginFriendRandomAccess&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginFriendRandomAccess&&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, const BeginFriendRandomAccess&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, const BeginFriendRandomAccess&&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginFriendRandomAccess&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginFriendRandomAccess&&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, const BeginFriendRandomAccess&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, const BeginFriendRandomAccess&&>, "");
+static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginFriendRandomAccess&>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginFriendRandomAccess&&>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, const BeginFriendRandomAccess&>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, const BeginFriendRandomAccess&&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginFriendRandomAccess&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginFriendRandomAccess&&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, const BeginFriendRandomAccess&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, const BeginFriendRandomAccess&&>);
 
 struct BeginMemberRvalue
 {
   int buff[8];
 
-  __host__ __device__ ContiguousIter begin() &&;
+  TEST_FUNC ContiguousIter begin() &&;
 };
-static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberRvalue&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberRvalue&&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberRvalue const&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberRvalue const&&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberRvalue&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberRvalue&&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberRvalue const&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberRvalue const&&>, "");
+static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberRvalue&>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberRvalue&&>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberRvalue const&>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberRvalue const&&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberRvalue&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberRvalue&&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberRvalue const&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberRvalue const&&>);
 
 struct BeginMemberBorrowingEnabled
 {
-  __host__ __device__ constexpr contiguous_iterator<const int*> begin()
+  TEST_FUNC constexpr contiguous_iterator<const int*> begin()
   {
     return contiguous_iterator<const int*>{&globalBuff[1]};
   }
@@ -286,16 +286,16 @@ template <>
 inline constexpr bool enable_borrowed_range<BeginMemberBorrowingEnabled> = true;
 }
 
-static_assert(cuda::std::is_invocable_v<RangeDataT, BeginMemberBorrowingEnabled&>, "");
-static_assert(cuda::std::is_invocable_v<RangeDataT, BeginMemberBorrowingEnabled&&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberBorrowingEnabled const&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberBorrowingEnabled const&&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberBorrowingEnabled&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberBorrowingEnabled&&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberBorrowingEnabled const&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberBorrowingEnabled const&&>, "");
+static_assert(cuda::std::is_invocable_v<RangeDataT, BeginMemberBorrowingEnabled&>);
+static_assert(cuda::std::is_invocable_v<RangeDataT, BeginMemberBorrowingEnabled&&>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberBorrowingEnabled const&>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, BeginMemberBorrowingEnabled const&&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberBorrowingEnabled&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberBorrowingEnabled&&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberBorrowingEnabled const&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, BeginMemberBorrowingEnabled const&&>);
 
-__host__ __device__ constexpr bool testViaRangesBegin()
+TEST_FUNC constexpr bool testViaRangesBegin()
 {
   int arr[2] = {};
   assert(cuda::std::ranges::data(arr) == arr + 0);
@@ -311,7 +311,7 @@ __host__ __device__ constexpr bool testViaRangesBegin()
 
   BeginMemberBorrowingEnabled c{};
   assert(cuda::std::ranges::data(cuda::std::move(c)) == &globalBuff[1]);
-  static_assert(!cuda::std::is_invocable_v<RangeCDataT, decltype(cuda::std::move(c))>, "");
+  static_assert(!cuda::std::is_invocable_v<RangeCDataT, decltype(cuda::std::move(c))>);
 
   return true;
 }
@@ -324,31 +324,31 @@ struct Holder
 {
   T t;
 };
-static_assert(!cuda::std::is_invocable_v<RangeDataT, Holder<Incomplete>*>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, Holder<Incomplete>*&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, Holder<Incomplete>*>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, Holder<Incomplete>*&>, "");
+static_assert(!cuda::std::is_invocable_v<RangeDataT, Holder<Incomplete>*>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, Holder<Incomplete>*&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, Holder<Incomplete>*>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, Holder<Incomplete>*&>);
 #endif // TEST_STD_VER >= 2020
 
 struct RandomButNotContiguous
 {
-  __host__ __device__ random_access_iterator<int*> begin() const;
-  __host__ __device__ random_access_iterator<int*> end() const;
+  TEST_FUNC random_access_iterator<int*> begin() const;
+  TEST_FUNC random_access_iterator<int*> end() const;
 };
-static_assert(!cuda::std::is_invocable_v<RangeDataT, RandomButNotContiguous>, "");
-static_assert(!cuda::std::is_invocable_v<RangeDataT, RandomButNotContiguous&>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, RandomButNotContiguous>, "");
-static_assert(!cuda::std::is_invocable_v<RangeCDataT, RandomButNotContiguous&>, "");
+static_assert(!cuda::std::is_invocable_v<RangeDataT, RandomButNotContiguous>);
+static_assert(!cuda::std::is_invocable_v<RangeDataT, RandomButNotContiguous&>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, RandomButNotContiguous>);
+static_assert(!cuda::std::is_invocable_v<RangeCDataT, RandomButNotContiguous&>);
 
 int main(int, char**)
 {
-  static_assert(testReturnTypes(), "");
+  static_assert(testReturnTypes());
 
   testDataMember();
-  static_assert(testDataMember(), "");
+  static_assert(testDataMember());
 
   testViaRangesBegin();
-  static_assert(testViaRangesBegin(), "");
+  static_assert(testViaRangesBegin());
 
   return 0;
 }

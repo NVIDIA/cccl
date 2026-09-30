@@ -8,8 +8,6 @@
 #  include <cub/thread/thread_reduce.cuh>
 #  include <cub/util_macro.cuh>
 
-#  include <thrust/iterator/constant_iterator.h>
-
 #  include <cuda/functional>
 #  include <cuda/std/functional>
 #  include <cuda/std/limits>
@@ -20,7 +18,7 @@
 #  include <limits>
 #  include <numeric>
 
-#  include "c2h/catch2_test_helper.h"
+#  include "../cub_test_macros.h"
 #  include "c2h/extended_types.h"
 #  include "c2h/generators.h"
 #  include <catch2/matchers/catch_matchers_floating_point.hpp>
@@ -85,49 +83,6 @@ template <typename T, typename Operator>
 using cub_operator_to_std_t = typename cub_operator_to_std<T, Operator>::type;
 
 /***********************************************************************************************************************
- * CUB operator to identity
- **********************************************************************************************************************/
-
-template <typename T, typename Operator, typename = void>
-struct cub_operator_to_identity;
-
-template <typename T>
-struct cub_operator_to_identity<T, cuda::std::plus<>>
-{
-  static constexpr T value()
-  {
-    return T{};
-  }
-};
-
-template <typename T>
-struct cub_operator_to_identity<T, cuda::std::multiplies<>>
-{
-  static constexpr T value()
-  {
-    return T{1};
-  }
-};
-
-template <typename T>
-struct cub_operator_to_identity<T, cuda::std::bit_xor<>>
-{
-  static constexpr T value()
-  {
-    return T{0};
-  }
-};
-
-template <typename T>
-struct cub_operator_to_identity<T, cuda::minimum<>>
-{
-  static constexpr T value()
-  {
-    return ::std::numeric_limits<T>::max();
-  }
-};
-
-/***********************************************************************************************************************
  * Type list definition
  **********************************************************************************************************************/
 
@@ -183,12 +138,14 @@ void run_thread_reduce_kernel(
 
 constexpr int size = 16;
 
-C2H_TEST("ThreadReduce Integral Type Tests", "[reduce][thread]", integral_type_list, cub_operator_integral_list)
+CUB_TEST(
+  "ThreadReduce Integral Type Tests", "[reduce][thread]", CUB_SMALL, integral_type_list, cub_operator_integral_list)
 {
   using value_t                    = c2h::get<0, TestType>;
-  constexpr auto reduce_op         = c2h::get<1, TestType>{};
-  constexpr auto std_reduce_op     = cub_operator_to_std_t<value_t, c2h::get<1, TestType>>{};
-  constexpr auto operator_identity = cub_operator_to_identity<value_t, c2h::get<1, TestType>>::value();
+  using op_t                       = c2h::get<1, TestType>;
+  constexpr auto reduce_op         = op_t{};
+  constexpr auto std_reduce_op     = cub_operator_to_std_t<value_t, op_t>{};
+  constexpr auto operator_identity = cuda::identity_element<op_t, value_t>();
   CAPTURE(c2h::type_name<value_t>(), size, c2h::type_name<decltype(reduce_op)>());
   c2h::device_vector<value_t> d_in(size);
   c2h::device_vector<value_t> d_out(1);
@@ -199,12 +156,13 @@ C2H_TEST("ThreadReduce Integral Type Tests", "[reduce][thread]", integral_type_l
   verify_results(reference_result, c2h::host_vector<value_t>(d_out)[0]);
 }
 
-C2H_TEST("ThreadReduce Floating-Point Type Tests", "[reduce][thread]", fp_type_list, cub_operator_fp_list)
+CUB_TEST("ThreadReduce Floating-Point Type Tests", "[reduce][thread]", CUB_SMALL, fp_type_list, cub_operator_fp_list)
 {
   using value_t                = c2h::get<0, TestType>;
-  constexpr auto reduce_op     = c2h::get<1, TestType>{};
-  constexpr auto std_reduce_op = cub_operator_to_std_t<value_t, c2h::get<1, TestType>>{};
-  const auto operator_identity = cub_operator_to_identity<value_t, c2h::get<1, TestType>>::value();
+  using op_t                   = c2h::get<1, TestType>;
+  constexpr auto reduce_op     = op_t{};
+  constexpr auto std_reduce_op = cub_operator_to_std_t<value_t, op_t>{};
+  const auto operator_identity = cuda::identity_element<op_t, value_t>();
   CAPTURE(c2h::type_name<value_t>(), size, c2h::type_name<decltype(reduce_op)>());
   c2h::device_vector<value_t> d_in(size);
   c2h::device_vector<value_t> d_out(1);
@@ -217,15 +175,17 @@ C2H_TEST("ThreadReduce Floating-Point Type Tests", "[reduce][thread]", fp_type_l
 
 #  if TEST_HALF_T() || TEST_BF_T()
 
-C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
+CUB_TEST("ThreadReduce Narrow PrecisionType Tests",
          "[reduce][thread][narrow]",
+         CUB_SMALL,
          narrow_precision_type_list,
          cub_operator_fp_list)
 {
   using value_t                = c2h::get<0, TestType>;
-  constexpr auto reduce_op     = c2h::get<1, TestType>{};
-  constexpr auto std_reduce_op = cub_operator_to_std_t<float, c2h::get<1, TestType>>{};
-  const auto operator_identity = cub_operator_to_identity<float, c2h::get<1, TestType>>::value();
+  using op_t                   = c2h::get<1, TestType>;
+  constexpr auto reduce_op     = op_t{};
+  constexpr auto std_reduce_op = cub_operator_to_std_t<float, op_t>{};
+  const auto operator_identity = cuda::identity_element<op_t, float>();
   c2h::device_vector<value_t> d_in(size);
   c2h::device_vector<value_t> d_out(1);
   c2h::gen(C2H_SEED(1), d_in, value_t{1.0f}, value_t{2.0f});
@@ -241,8 +201,8 @@ C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
 
 #else
 
-#  include "c2h/catch2_test_helper.h"
+#  include "../cub_test_macros.h"
 
-C2H_TEST("ThreadReduce Empty Test", "[reduce][thread][empty]") {}
+CUB_TEST("ThreadReduce Empty Test", "[reduce][thread][empty]", CUB_SMALL) {}
 
 #endif // CCCL_CHECK_SASS

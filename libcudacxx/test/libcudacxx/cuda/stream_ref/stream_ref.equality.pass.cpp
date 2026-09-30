@@ -13,12 +13,14 @@
 #include <cuda/std/cassert>
 #include <cuda/stream>
 
-__host__ __device__ void test()
+#include "test_macros.h"
+
+TEST_FUNC void test()
 {
   cuda::stream_ref left{reinterpret_cast<cudaStream_t>(42)};
   cuda::stream_ref right{reinterpret_cast<cudaStream_t>(1337)};
-  static_assert(noexcept(left == right), "");
-  static_assert(noexcept(left != right), "");
+  static_assert(noexcept(left == right));
+  static_assert(noexcept(left != right));
 
   assert(left == left);
   assert(left != right);

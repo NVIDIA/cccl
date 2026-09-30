@@ -467,6 +467,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadScanInclusivePartial(
   }
 }
 
-//@}  end member group
+//@}
 } // namespace detail
 CUB_NAMESPACE_END

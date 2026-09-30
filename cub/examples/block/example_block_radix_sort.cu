@@ -18,9 +18,8 @@
 #include <cub/block/block_store.cuh>
 
 #include <algorithm>
+#include <cstdio>
 #include <iostream>
-
-#include <stdio.h>
 
 #include "../../test/test_util.h"
 
@@ -50,21 +49,21 @@ bool g_uniform_keys;
  * Simple kernel for performing a block-wide sorting over integers
  */
 template <typename Key,
-          int BLOCK_THREADS,
-          int ITEMS_PER_THREAD>
-__launch_bounds__(BLOCK_THREADS) __global__
+          int BlockThreads,
+          int ItemsPerThread>
+__launch_bounds__(BlockThreads) __global__
   void BlockSortKernel(Key* d_in, // Tile of input
                        Key* d_out, // Tile of output
                        clock_t* d_elapsed) // Elapsed cycle count of block scan
 {
-  static constexpr int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int TILE_SIZE = BlockThreads * ItemsPerThread;
 
   // Specialize BlockLoad type for our thread block (uses warp-striped loads for coalescing, then transposes in shared
   // memory to a blocked arrangement)
-  using BlockLoadT = BlockLoad<Key, BLOCK_THREADS, ITEMS_PER_THREAD, BLOCK_LOAD_WARP_TRANSPOSE>;
+  using BlockLoadT = BlockLoad<Key, BlockThreads, ItemsPerThread, BLOCK_LOAD_WARP_TRANSPOSE>;
 
   // Specialize BlockRadixSort type for our thread block
-  using BlockRadixSortT = BlockRadixSort<Key, BLOCK_THREADS, ITEMS_PER_THREAD>;
+  using BlockRadixSortT = BlockRadixSort<Key, BlockThreads, ItemsPerThread>;
 
   // Shared memory
   __shared__ union TempStorage
@@ -74,10 +73,10 @@ __launch_bounds__(BLOCK_THREADS) __global__
   } temp_storage;
 
   // Per-thread tile items
-  Key items[ITEMS_PER_THREAD];
+  Key items[ItemsPerThread];
 
   // Our current block's offset
-  int block_offset = blockIdx.x * TILE_SIZE;
+  const int block_offset = blockIdx.x * TILE_SIZE;
 
   // Load items into a blocked arrangement
   BlockLoadT(temp_storage.load).Load(d_in + block_offset, items);
@@ -86,16 +85,16 @@ __launch_bounds__(BLOCK_THREADS) __global__
   __syncthreads();
 
   // Start cycle timer
-  clock_t start = clock();
+  const clock_t start = clock();
 
   // Sort keys
   BlockRadixSortT(temp_storage.sort).SortBlockedToStriped(items);
 
   // Stop cycle timer
-  clock_t stop = clock();
+  const clock_t stop = clock();
 
   // Store output in striped fashion
-  StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items);
+  StoreDirectStriped<BlockThreads>(threadIdx.x, d_out + block_offset, items);
 
   // Store elapsed clocks
   if (threadIdx.x == 0)
@@ -134,10 +133,10 @@ void Initialize(Key* h_in, Key* h_reference, int num_items, int tile_size)
 /**
  * Test BlockScan
  */
-template <typename Key, int BLOCK_THREADS, int ITEMS_PER_THREAD>
+template <typename Key, int BlockThreads, int ItemsPerThread>
 void Test()
 {
-  constexpr int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;
+  constexpr int TILE_SIZE = BlockThreads * ItemsPerThread;
 
   // Allocate host arrays
   Key* h_in          = new Key[TILE_SIZE * g_grid_size];
@@ -153,7 +152,7 @@ void Test()
   clock_t* d_elapsed = nullptr;
   CubDebugExit(cudaMalloc((void**) &d_in, sizeof(Key) * TILE_SIZE * g_grid_size));
   CubDebugExit(cudaMalloc((void**) &d_out, sizeof(Key) * TILE_SIZE * g_grid_size));
-  CubDebugExit(cudaMalloc((void**) &d_elapsed, sizeof(clock_t) * g_grid_size));
+  CubDebugExit(cudaMalloc(reinterpret_cast<void**>(&d_elapsed), sizeof(clock_t) * g_grid_size));
 
   // Display input problem data
   if (g_verbose)
@@ -161,14 +160,14 @@ void Test()
     printf("Input data: ");
     for (int i = 0; i < TILE_SIZE; i++)
     {
-      std::cout << h_in[i] << ", ";
+      std::cout << h_in[i] << ", "; // NOLINT(bugprone-unintended-char-ostream-output)
     }
     printf("\n\n");
   }
 
   // Kernel props
   int max_sm_occupancy;
-  CubDebugExit(MaxSmOccupancy(max_sm_occupancy, BlockSortKernel<Key, BLOCK_THREADS, ITEMS_PER_THREAD>, BLOCK_THREADS));
+  CubDebugExit(MaxSmOccupancy(max_sm_occupancy, BlockSortKernel<Key, BlockThreads, ItemsPerThread>, BlockThreads));
 
   // Copy problem to device
   CubDebugExit(cudaMemcpy(d_in, h_in, sizeof(Key) * TILE_SIZE * g_grid_size, cudaMemcpyHostToDevice));
@@ -178,13 +177,13 @@ void Test()
     TILE_SIZE * g_grid_size,
     g_timing_iterations,
     g_grid_size,
-    BLOCK_THREADS,
-    ITEMS_PER_THREAD,
+    BlockThreads,
+    ItemsPerThread,
     max_sm_occupancy);
   fflush(stdout);
 
   // Run kernel once to prime caches and check result
-  BlockSortKernel<Key, BLOCK_THREADS, ITEMS_PER_THREAD><<<g_grid_size, BLOCK_THREADS>>>(d_in, d_out, d_elapsed);
+  BlockSortKernel<Key, BlockThreads, ItemsPerThread><<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
 
   // Check for kernel errors and STDIO from the kernel, if any
   CubDebugExit(cudaPeekAtLastError());
@@ -192,7 +191,7 @@ void Test()
 
   // Check results
   printf("\tOutput items: ");
-  int compare = CompareDeviceResults(h_reference, d_out, TILE_SIZE, g_verbose, g_verbose);
+  const int compare = CompareDeviceResults(h_reference, d_out, TILE_SIZE, g_verbose, g_verbose);
   printf("%s\n", compare ? "FAIL" : "PASS");
   AssertEquals(0, compare);
   fflush(stdout);
@@ -207,7 +206,7 @@ void Test()
     timer.Start();
 
     // Run kernel
-    BlockSortKernel<Key, BLOCK_THREADS, ITEMS_PER_THREAD><<<g_grid_size, BLOCK_THREADS>>>(d_in, d_out, d_elapsed);
+    BlockSortKernel<Key, BlockThreads, ItemsPerThread><<<g_grid_size, BlockThreads>>>(d_in, d_out, d_elapsed);
 
     timer.Stop();
     elapsed_millis += timer.ElapsedMillis();
@@ -224,10 +223,10 @@ void Test()
   CubDebugExit(cudaDeviceSynchronize());
 
   // Display timing results
-  float avg_millis           = elapsed_millis / g_timing_iterations;
-  float avg_items_per_sec    = float(TILE_SIZE * g_grid_size) / avg_millis / 1000.0f;
-  double avg_clocks          = double(elapsed_clocks) / g_timing_iterations / g_grid_size;
-  double avg_clocks_per_item = avg_clocks / TILE_SIZE;
+  const float avg_millis           = elapsed_millis / static_cast<float>(g_timing_iterations);
+  const float avg_items_per_sec    = float(TILE_SIZE * g_grid_size) / avg_millis / 1000.0f;
+  const double avg_clocks          = double(elapsed_clocks) / g_timing_iterations / g_grid_size;
+  const double avg_clocks_per_item = avg_clocks / TILE_SIZE;
 
   printf("\tAverage BlockRadixSort::SortBlocked clocks: %.3f\n", avg_clocks);
   printf("\tAverage BlockRadixSort::SortBlocked clocks per item: %.3f\n", avg_clocks_per_item);

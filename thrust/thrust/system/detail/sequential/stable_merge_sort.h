@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2021 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -191,7 +178,7 @@ _CCCL_HOST_DEVICE void iterative_stable_merge_sort(
   using value_type      = thrust::detail::it_value_t<RandomAccessIterator>;
   using difference_type = thrust::detail::it_difference_t<RandomAccessIterator>;
 
-  difference_type n = last - first;
+  const difference_type n = last - first;
 
   thrust::detail::temporary_array<value_type, DerivedPolicy> temp(exec, n);
 
@@ -236,7 +223,7 @@ _CCCL_HOST_DEVICE void iterative_stable_merge_sort_by_key(
   using value_type2     = thrust::detail::it_value_t<RandomAccessIterator2>;
   using difference_type = thrust::detail::it_difference_t<RandomAccessIterator1>;
 
-  difference_type n = keys_last - keys_first;
+  const difference_type n = keys_last - keys_first;
 
   thrust::detail::temporary_array<value_type1, DerivedPolicy> keys_temp(exec, n);
   thrust::detail::temporary_array<value_type2, DerivedPolicy> values_temp(exec, n);

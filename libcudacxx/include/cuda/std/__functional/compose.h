@@ -34,7 +34,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 struct __compose_op
 {
   template <class _Fn1, class _Fn2, class... _Args>
-  _CCCL_API constexpr auto operator()(_Fn1&& __f1, _Fn2&& __f2, _Args&&... __args) const noexcept(noexcept(
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Fn1&& __f1, _Fn2&& __f2, _Args&&... __args) noexcept(noexcept(
     ::cuda::std::invoke(::cuda::std::forward<_Fn1>(__f1),
                         ::cuda::std::invoke(::cuda::std::forward<_Fn2>(__f2), ::cuda::std::forward<_Args>(__args)...))))
     -> decltype(::cuda::std::invoke(

@@ -28,6 +28,7 @@
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
@@ -106,17 +107,30 @@ struct ArgMin
 
 namespace detail
 {
-/// @brief Arg max functor (keeps the value and offset of the first occurrence
-///        of the larger item)
-struct arg_max
+// Uses a user-defined less-than comparator to return the minimum of an index/value pair. Compares values first, and
+// indices when the values are equal.
+template <typename ValueLessThen = ::cuda::std::less<>>
+struct arg_reduce_op : ValueLessThen
 {
-  /// Boolean max operator, preferring the item having the smaller offset in
-  /// case of ties
   template <typename T, typename OffsetT>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<OffsetT, T>
   operator()(const ::cuda::std::pair<OffsetT, T>& a, const ::cuda::std::pair<OffsetT, T>& b) const
   {
-    if ((b.second > a.second) || ((a.second == b.second) && (b.first < a.first)))
+    const auto& less = static_cast<const ValueLessThen&>(*this);
+    if (less(b.second, a.second) || (!less(a.second, b.second) && b.first < a.first))
+    {
+      return b;
+    }
+
+    return a;
+  }
+
+  template <typename T, typename OffsetT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair<OffsetT, T>
+  operator()(const KeyValuePair<OffsetT, T>& a, const KeyValuePair<OffsetT, T>& b) const
+  {
+    const auto& less = static_cast<const ValueLessThen&>(*this);
+    if (less(b.value, a.value) || (!less(a.value, b.value) && b.key < a.key))
     {
       return b;
     }
@@ -125,24 +139,70 @@ struct arg_max
   }
 };
 
-/// @brief Arg min functor (keeps the value and offset of the first occurrence
-///        of the smallest item)
-struct arg_min
-{
-  /// Boolean min operator, preferring the item having the smaller offset in
-  /// case of ties
-  template <typename T, typename OffsetT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<OffsetT, T>
-  operator()(const ::cuda::std::pair<OffsetT, T>& a, const ::cuda::std::pair<OffsetT, T>& b) const
-  {
-    if ((b.second < a.second) || ((a.second == b.second) && (b.first < a.first)))
-    {
-      return b;
-    }
+template <typename ValueLessThen>
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES arg_reduce_op(ValueLessThen) -> arg_reduce_op<ValueLessThen>;
 
-    return a;
+/// @brief Arg min functor (keeps the value and offset of the first occurrence of the smallest item)
+using arg_min = arg_reduce_op<::cuda::std::less<>>;
+
+//! @brief Binary functor swapping the arguments to ``operator()`` before forwarding to an inner functor
+template <typename Predicate>
+struct swap_args : Predicate
+{
+  template <typename T, typename U>
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE decltype(auto) operator()(T&& t, U&& u) const
+  {
+    return Predicate::operator()(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t));
   }
 };
+
+template <typename Predicate>
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES swap_args(Predicate) -> swap_args<Predicate>;
+
+/// @brief Arg max functor (keeps the value and offset of the first occurrence of the larger item)
+using arg_max = arg_reduce_op<swap_args<::cuda::std::less<>>>;
+
+template <typename T, typename IndexT>
+// Reduction inputs supply all fields while preserving triviality.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+struct argminmax_accum_t
+{
+  T min_value;
+  T max_value;
+  IndexT min_index;
+  IndexT max_index;
+};
+
+//! @brief Reduction operator for ArgMinMax: selects the first minimum (smallest index on tie) and, if LastMax is true,
+//! the last maximum (largest index on tie), otherwise the first maximum.
+template <typename CompareOpT = ::cuda::std::less<>, bool LastMax = false>
+struct arg_minmax_reduce_op : CompareOpT
+{
+  template <typename T, typename IndexT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE argminmax_accum_t<T, IndexT>
+  operator()(const argminmax_accum_t<T, IndexT>& a, const argminmax_accum_t<T, IndexT>& b) const
+  {
+    const auto& less = static_cast<const CompareOpT&>(*this);
+    auto result      = a;
+    // first minimum: strictly smaller wins; ties keep the smaller index
+    if (less(b.min_value, a.min_value) || (!less(a.min_value, b.min_value) && b.min_index < a.min_index))
+    {
+      result.min_value = b.min_value;
+      result.min_index = b.min_index;
+    }
+    // maximum: strictly greater wins; ties keep the smaller index (first max) or larger index (last max)
+    const bool b_wins_tie = LastMax ? b.max_index > a.max_index : b.max_index < a.max_index;
+    if (less(a.max_value, b.max_value) || (!less(b.max_value, a.max_value) && b_wins_tie))
+    {
+      result.max_value = b.max_value;
+      result.max_index = b.max_index;
+    }
+    return result;
+  }
+};
+
+template <typename CompareOpT>
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES arg_minmax_reduce_op(CompareOpT) -> arg_minmax_reduce_op<CompareOpT>;
 
 template <typename ScanOpT>
 struct ScanBySegmentOp
@@ -151,7 +211,7 @@ struct ScanBySegmentOp
   ScanOpT op;
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanBySegmentOp() {}
+  _CCCL_FORCEINLINE ScanBySegmentOp() = default;
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanBySegmentOp(ScanOpT op)
@@ -173,6 +233,8 @@ struct ScanBySegmentOp
   template <typename KeyValuePairT>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePairT operator()(const KeyValuePairT& first, const KeyValuePairT& second)
   {
+    // Both branches assign key and value before returning.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     KeyValuePairT retval;
     retval.key = first.key | second.key;
 #ifdef _NVHPC_CUDA // WAR bug on nvc++
@@ -235,7 +297,7 @@ struct CastOp
   template <typename A>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE B operator()(A&& a) const
   {
-    return (B) a;
+    return (B)::cuda::std::forward<A>(a);
   }
 };
 
@@ -257,10 +319,7 @@ public:
   template <typename T>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T operator()(const T& a, const T& b)
   {
-    T _a(a);
-    T _b(b);
-
-    return scan_op(_b, _a);
+    return scan_op(b, a);
   }
 };
 
@@ -288,7 +347,7 @@ struct ReduceBySegmentOp
   ReductionOpT op;
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceBySegmentOp() {}
+  _CCCL_FORCEINLINE ReduceBySegmentOp() = default;
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceBySegmentOp(ReductionOpT op)
@@ -310,6 +369,8 @@ struct ReduceBySegmentOp
   template <typename KeyValuePairT>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePairT operator()(const KeyValuePairT& first, const KeyValuePairT& second)
   {
+    // Both branches assign key and value before returning.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     KeyValuePairT retval;
     retval.key = first.key + second.key;
 #ifdef _NVHPC_CUDA // WAR bug on nvc++
@@ -349,7 +410,7 @@ struct ReduceByKeyOp
   ReductionOpT op;
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceByKeyOp() {}
+  _CCCL_FORCEINLINE ReduceByKeyOp() = default;
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceByKeyOp(ReductionOpT op)
@@ -579,84 +640,6 @@ template <typename Operator>
     return op;
   }
 }
-
-//----------------------------------------------------------------------------------------------------------------------
-// Identity
-
-template <typename Op, typename T = void>
-inline constexpr T identity_v;
-
-template <typename T>
-inline constexpr T identity_v<::cuda::minimum<>, T> = ::cuda::std::numeric_limits<T>::max();
-
-template <typename T>
-inline constexpr T identity_v<::cuda::minimum<T>, T> = ::cuda::std::numeric_limits<T>::max();
-
-template <typename T>
-inline constexpr T identity_v<::cuda::minimum<T>, void> = ::cuda::std::numeric_limits<T>::max();
-
-template <typename T>
-inline constexpr T identity_v<::cuda::maximum<>, T> = ::cuda::std::numeric_limits<T>::lowest();
-
-template <typename T>
-inline constexpr T identity_v<::cuda::maximum<T>, T> = ::cuda::std::numeric_limits<T>::lowest();
-
-template <typename T>
-inline constexpr T identity_v<::cuda::maximum<T>, void> = ::cuda::std::numeric_limits<T>::lowest();
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::plus<T>, T> = T{};
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::plus<>, T> = T{};
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::plus<T>, void> = T{};
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::bit_and<>, T> = static_cast<T>(~T{});
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::bit_and<T>, T> = static_cast<T>(~T{});
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::bit_and<T>, void> = static_cast<T>(~T{});
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::bit_or<>, T> = T{};
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::bit_or<T>, T> = T{};
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::bit_or<T>, void> = T{};
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::bit_xor<>, T> = T{};
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::bit_xor<T>, T> = T{};
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::bit_xor<T>, void> = T{};
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::logical_and<>, T> = true;
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::logical_and<T>, T> = true;
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::logical_and<T>, void> = true;
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::logical_or<>, T> = false;
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::logical_or<T>, T> = false;
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::logical_or<T>, void> = false;
 } // namespace detail
 
 #endif // !_CCCL_DOXYGEN_INVOKED

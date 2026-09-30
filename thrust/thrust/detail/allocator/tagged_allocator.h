@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -42,10 +29,10 @@ class tagged_allocator<void, Tag, Pointer>
 {
 public:
   using value_type      = void;
-  using pointer         = typename thrust::detail::pointer_traits<Pointer>::template rebind<void>::other;
-  using const_pointer   = typename thrust::detail::pointer_traits<Pointer>::template rebind<const void>::other;
+  using pointer         = typename ::cuda::std::pointer_traits<Pointer>::template rebind<void>;
+  using const_pointer   = typename ::cuda::std::pointer_traits<Pointer>::template rebind<const void>;
   using size_type       = std::size_t;
-  using difference_type = typename thrust::detail::pointer_traits<Pointer>::difference_type;
+  using difference_type = typename ::cuda::std::pointer_traits<Pointer>::difference_type;
   using system_type     = Tag;
 
   template <typename U>
@@ -60,12 +47,12 @@ class tagged_allocator
 {
 public:
   using value_type      = T;
-  using pointer         = typename thrust::detail::pointer_traits<Pointer>::template rebind<T>::other;
-  using const_pointer   = typename thrust::detail::pointer_traits<Pointer>::template rebind<const T>::other;
+  using pointer         = typename ::cuda::std::pointer_traits<Pointer>::template rebind<T>;
+  using const_pointer   = typename ::cuda::std::pointer_traits<Pointer>::template rebind<const T>;
   using reference       = thrust::detail::it_reference_t<pointer>;
   using const_reference = thrust::detail::it_reference_t<const_pointer>;
   using size_type       = std::size_t;
-  using difference_type = typename thrust::detail::pointer_traits<pointer>::difference_type;
+  using difference_type = typename ::cuda::std::pointer_traits<pointer>::difference_type;
   using system_type     = Tag;
 
   template <typename U>
@@ -94,9 +81,12 @@ public:
     return &x;
   }
 
+  // Workaround for cudafe++ < 13.1 + gcc < 13 replacing `numeric_limits<size_t>` with
+  // `numeric_limits<conditional<is_void_v<void>, __common_type2_imp<uint64_t, uint64_t>::type, void>::type>`
+  template <class SizeType = size_type>
   size_type max_size() const
   {
-    return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T);
+    return (::cuda::std::numeric_limits<SizeType>::max)() / sizeof(T);
   }
 
   _CCCL_HOST_DEVICE friend bool operator==(const tagged_allocator&, const tagged_allocator&)

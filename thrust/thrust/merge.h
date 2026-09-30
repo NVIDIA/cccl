@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file merge.h
  *  \brief Merging sorted ranges
@@ -105,6 +92,10 @@ THRUST_NAMESPACE_BEGIN
  *  \see \p set_union
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator merge(
@@ -170,6 +161,10 @@ _CCCL_HOST_DEVICE OutputIterator merge(
  *  \see \p set_union
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator
@@ -235,6 +230,10 @@ merge(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputI
  *  \see https://en.cppreference.com/w/cpp/algorithm/merge
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -301,6 +300,10 @@ _CCCL_HOST_DEVICE OutputIterator merge(
  *  \see https://en.cppreference.com/w/cpp/algorithm/merge
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename StrictWeakCompare>
 OutputIterator
@@ -399,6 +402,10 @@ merge(InputIterator1 first1,
  *  \see merge
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -497,6 +504,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_k
  *  \see merge
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,
@@ -601,6 +612,10 @@ template <typename InputIterator1,
  *  \see merge
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -699,6 +714,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_k
  *  \see merge
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,

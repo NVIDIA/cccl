@@ -24,7 +24,7 @@ template <class T>
 _CCCL_CONCEPT MinusInvocable =
   _CCCL_REQUIRES_EXPR((T), cuda::std::ranges::iota_view<T, IntSentinelWith<T>> io)(io.end() - io.begin());
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 
@@ -58,7 +58,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

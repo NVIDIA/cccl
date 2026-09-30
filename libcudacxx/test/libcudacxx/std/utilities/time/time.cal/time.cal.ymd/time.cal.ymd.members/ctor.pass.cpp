@@ -40,16 +40,16 @@ int main(int, char**)
   constexpr month January = cuda::std::chrono::January;
 
   constexpr year_month_day ym0{};
-  static_assert(ym0.year() == year{}, "");
-  static_assert(ym0.month() == month{}, "");
-  static_assert(ym0.day() == day{}, "");
-  static_assert(!ym0.ok(), "");
+  static_assert(ym0.year() == year{});
+  static_assert(ym0.month() == month{});
+  static_assert(ym0.day() == day{});
+  static_assert(!ym0.ok());
 
   constexpr year_month_day ym1{year{2019}, January, day{12}};
-  static_assert(ym1.year() == year{2019}, "");
-  static_assert(ym1.month() == January, "");
-  static_assert(ym1.day() == day{12}, "");
-  static_assert(ym1.ok(), "");
+  static_assert(ym1.year() == year{2019});
+  static_assert(ym1.month() == January);
+  static_assert(ym1.day() == day{12});
+  static_assert(ym1.ok());
 
   return 0;
 }

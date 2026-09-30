@@ -5,8 +5,6 @@
 
 #include <cub/util_type.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-
 #include <cuda/std/type_traits>
 
 #include <c2h/catch2_test_helper.h>
@@ -43,6 +41,15 @@ struct multiply_n
   __host__ __device__ T operator()(T x)
   {
     return x * multiplier;
+  }
+};
+
+template <typename T>
+struct eq_mod3_t
+{
+  __host__ __device__ bool operator()(const T& a, const T& b) const
+  {
+    return (a % 3) == (b % 3);
   }
 };
 

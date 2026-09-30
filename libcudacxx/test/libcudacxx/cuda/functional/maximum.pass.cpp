@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <typename OpT, typename T, typename U, typename Result>
-__host__ __device__ constexpr void test_op(const T lhs, const U rhs, const Result expected)
+TEST_FUNC constexpr void test_op(const T lhs, const U rhs, const Result expected)
 {
   if constexpr (!cuda::std::__is_extended_floating_point_v<T> && !cuda::std::__is_extended_floating_point_v<U>)
   {
@@ -26,7 +26,7 @@ __host__ __device__ constexpr void test_op(const T lhs, const U rhs, const Resul
 }
 
 template <typename T, typename U, typename Result>
-__host__ __device__ constexpr void test(const T lhs, const U rhs, const Result expected)
+TEST_FUNC constexpr void test(const T lhs, const U rhs, const Result expected)
 {
   if constexpr (cuda::std::is_same_v<T, U> && cuda::std::is_same_v<Result, T>)
   {
@@ -39,7 +39,7 @@ __host__ __device__ constexpr void test(const T lhs, const U rhs, const Result e
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int, int, int>(0, 1, 1);
   test<int, int, int>(1, 0, 1);
@@ -58,7 +58,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ bool runtime_test()
+TEST_FUNC bool runtime_test()
 {
 #if _LIBCUDACXX_HAS_NVFP16()
   test<__half, __half, __half>(__half(1.0f), __half(2.0f), __half(2.0f));

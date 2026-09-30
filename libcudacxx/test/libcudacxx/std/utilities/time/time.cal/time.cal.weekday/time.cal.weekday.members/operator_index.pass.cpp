@@ -33,8 +33,8 @@ int main(int, char**)
   static_assert(noexcept(cuda::std::declval<weekday>()[cuda::std::chrono::last]));
   static_assert(cuda::std::is_same_v<weekday_last, decltype(cuda::std::declval<weekday>()[cuda::std::chrono::last])>);
 
-  static_assert(Sunday[2].weekday() == Sunday, "");
-  static_assert(Sunday[2].index() == 2, "");
+  static_assert(Sunday[2].weekday() == Sunday);
+  static_assert(Sunday[2].index() == 2);
 
   for (unsigned i = 0; i <= 6; ++i)
   {

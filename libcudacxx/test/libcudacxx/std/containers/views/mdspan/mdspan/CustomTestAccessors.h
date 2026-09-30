@@ -30,7 +30,7 @@ struct no_default_ctor_handle
 {
   T* ptr;
   no_default_ctor_handle() = delete;
-  __host__ __device__ constexpr no_default_ctor_handle(T* ptr_)
+  TEST_FUNC constexpr no_default_ctor_handle(T* ptr_)
       : ptr(ptr_)
   {}
 };
@@ -40,14 +40,14 @@ template <class T>
 struct not_const_convertible_handle
 {
   T* ptr;
-  __host__ __device__ constexpr not_const_convertible_handle()
+  TEST_FUNC constexpr not_const_convertible_handle()
       : ptr(nullptr)
   {}
-  __host__ __device__ constexpr not_const_convertible_handle(T* ptr_)
+  TEST_FUNC constexpr not_const_convertible_handle(T* ptr_)
       : ptr(ptr_)
   {}
 
-  __host__ __device__ constexpr T& operator[](size_t i) const
+  TEST_FUNC constexpr T& operator[](size_t i) const
   {
     return ptr[i];
   }
@@ -62,49 +62,67 @@ struct move_counted_handle
   constexpr move_counted_handle()                           = default;
   constexpr move_counted_handle(const move_counted_handle&) = default;
   template <class OtherT, cuda::std::enable_if_t<cuda::std::is_constructible<T*, OtherT*>::value, int> = 0>
-  __host__ __device__ constexpr move_counted_handle(const move_counted_handle<OtherT>& other)
+  TEST_FUNC constexpr move_counted_handle(const move_counted_handle<OtherT>& other)
       : ptr(other.ptr){};
 
-  __host__ __device__ constexpr move_counted_handle(move_counted_handle&& other)
+  TEST_FUNC constexpr move_counted_handle(move_counted_handle&& other)
       : ptr(other.ptr)
   {
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
     if (!cuda::std::__cccl_default_is_constant_evaluated())
     {
       move_counted_handle_c++;
     }
+#endif // !_CCCL_TILE_COMPILATION()
   }
 
   constexpr move_counted_handle& operator=(const move_counted_handle&) = default;
 
-  __host__ __device__ constexpr move_counted_handle(T* ptr_)
+  TEST_FUNC constexpr move_counted_handle(T* ptr_)
       : ptr(ptr_)
   {}
 
-  __host__ __device__ constexpr T& operator[](size_t i) const
+  TEST_FUNC constexpr T& operator[](size_t i) const
   {
     return ptr[i];
   }
 
-  __host__ __device__ static constexpr int& move_counter() noexcept
+  TEST_FUNC static constexpr void reset() noexcept
   {
-    return move_counted_handle_c;
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
+    if (!cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      move_counted_handle_c = 0;
+    }
+#endif // !_CCCL_TILE_COMPILATION()
+  }
+
+  TEST_FUNC static constexpr bool valid() noexcept
+  {
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
+    if (!cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      return move_counted_handle_c == 1;
+    }
+    else
+#endif // !_CCCL_TILE_COMPILATION()
+    {
+      return true;
+    }
   }
 };
 
 template <class MDS,
           class H,
           cuda::std::enable_if_t<cuda::std::is_same<H, move_counted_handle<typename MDS::element_type>>::value, int> = 0>
-__host__ __device__ constexpr void test_move_counter()
+TEST_FUNC constexpr void test_move_counter()
 {
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
-  {
-    assert((H::move_counter() == 1));
-  }
+  assert(H::valid());
 }
 template <class MDS,
           class H,
           cuda::std::enable_if_t<!cuda::std::is_same<H, move_counted_handle<typename MDS::element_type>>::value, int> = 0>
-__host__ __device__ constexpr void test_move_counter()
+TEST_FUNC constexpr void test_move_counter()
 {}
 
 // non-default constructible accessor with a bunch of different data handles
@@ -117,32 +135,32 @@ struct checked_accessor
   using reference        = ElementType&;
   using data_handle_type = move_counted_handle<ElementType>;
 
-  __host__ __device__ constexpr checked_accessor(size_t N_)
+  TEST_FUNC constexpr checked_accessor(size_t N_)
       : N(N_)
   {}
 
   _CCCL_TEMPLATE(class OtherElementType)
   _CCCL_REQUIRES((!cuda::std::is_same_v<OtherElementType, element_type>)
                    _CCCL_AND cuda::std::is_convertible_v<OtherElementType (*)[], element_type (*)[]>)
-  __host__ __device__ explicit constexpr checked_accessor(const checked_accessor<OtherElementType>& other) noexcept
+  TEST_FUNC explicit constexpr checked_accessor(const checked_accessor<OtherElementType>& other) noexcept
   {
     N = other.N;
   }
 
-  __host__ __device__ constexpr reference access(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr reference access(data_handle_type p, size_t i) const noexcept
   {
     assert(i < N);
     return p[i];
   }
-  __host__ __device__ constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept
   {
     assert(i < N);
     return data_handle_type(p.ptr + i);
   }
 };
 
-static_assert(cuda::std::is_constructible<checked_accessor<const int>, const checked_accessor<int>&>::value, "");
-static_assert(!cuda::std::is_convertible<const checked_accessor<int>&, checked_accessor<const int>>::value, "");
+static_assert(cuda::std::is_constructible<checked_accessor<const int>, const checked_accessor<int>&>::value);
+static_assert(!cuda::std::is_convertible<const checked_accessor<int>&, checked_accessor<const int>>::value);
 
 template <>
 struct checked_accessor<double>
@@ -153,23 +171,23 @@ struct checked_accessor<double>
   using reference        = double&;
   using data_handle_type = no_default_ctor_handle<double>;
 
-  __host__ __device__ constexpr checked_accessor(size_t N_)
+  TEST_FUNC constexpr checked_accessor(size_t N_)
       : N(N_)
   {}
 
   template <class OtherElementType,
             cuda::std::enable_if_t<cuda::std::is_convertible<OtherElementType (*)[], element_type (*)[]>::value, int> = 0>
-  __host__ __device__ constexpr checked_accessor(checked_accessor<OtherElementType>&& other) noexcept
+  TEST_FUNC constexpr checked_accessor(checked_accessor<OtherElementType>&& other) noexcept
   {
     N = other.N;
   }
 
-  __host__ __device__ constexpr reference access(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr reference access(data_handle_type p, size_t i) const noexcept
   {
     assert(i < N);
     return p.ptr[i];
   }
-  __host__ __device__ constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept
   {
     assert(i < N);
     return p.ptr + i;
@@ -189,16 +207,16 @@ struct checked_accessor<unsigned>
   constexpr checked_accessor(const checked_accessor&) noexcept            = default;
   constexpr checked_accessor& operator=(const checked_accessor&) noexcept = default;
 
-  __host__ __device__ constexpr checked_accessor(size_t N_)
+  TEST_FUNC constexpr checked_accessor(size_t N_)
       : N(N_)
   {}
 
-  __host__ __device__ constexpr reference access(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr reference access(data_handle_type p, size_t i) const noexcept
   {
     assert(i < N);
     return p[i];
   }
-  __host__ __device__ constexpr auto offset(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr auto offset(data_handle_type p, size_t i) const noexcept
   {
     assert(i < N);
     return p.ptr + i;
@@ -217,26 +235,26 @@ struct checked_accessor<const unsigned>
   constexpr checked_accessor(const checked_accessor&) noexcept            = default;
   constexpr checked_accessor& operator=(const checked_accessor&) noexcept = default;
 
-  __host__ __device__ constexpr checked_accessor(size_t N_)
+  TEST_FUNC constexpr checked_accessor(size_t N_)
       : N(N_)
   {}
 
   template <class OtherACC, cuda::std::enable_if_t<!cuda::std::is_const<OtherACC>::value, int> = 0>
-  __host__ __device__ constexpr checked_accessor(OtherACC&& acc)
+  TEST_FUNC constexpr checked_accessor(OtherACC&& acc)
       : N(acc.N)
   {}
 
   template <class OtherACC, cuda::std::enable_if_t<cuda::std::is_const<OtherACC>::value, int> = 0>
-  __host__ __device__ constexpr explicit checked_accessor(OtherACC&& acc)
+  TEST_FUNC constexpr explicit checked_accessor(OtherACC&& acc)
       : N(acc.N)
   {}
 
-  __host__ __device__ constexpr reference access(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr reference access(data_handle_type p, size_t i) const noexcept
   {
     assert(i < N);
     return p[i];
   }
-  __host__ __device__ constexpr auto offset(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr auto offset(data_handle_type p, size_t i) const noexcept
   {
     assert(i < N);
     return p.ptr + i;
@@ -256,20 +274,20 @@ struct checked_accessor<const float>
   constexpr checked_accessor(const checked_accessor&) noexcept            = default;
   constexpr checked_accessor& operator=(const checked_accessor&) noexcept = default;
 
-  __host__ __device__ constexpr checked_accessor(size_t N_)
+  TEST_FUNC constexpr checked_accessor(size_t N_)
       : N(N_)
   {}
 
-  __host__ __device__ constexpr checked_accessor(checked_accessor<float>&& acc)
+  TEST_FUNC constexpr checked_accessor(checked_accessor<float>&& acc)
       : N(acc.N)
   {}
 
-  __host__ __device__ constexpr reference access(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr reference access(data_handle_type p, size_t i) const noexcept
   {
     assert(i < N);
     return p[i];
   }
-  __host__ __device__ constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept
   {
     assert(i < N);
     return data_handle_type(p.ptr + i);
@@ -288,21 +306,21 @@ struct checked_accessor<const double>
   constexpr checked_accessor()                                            = default;
   constexpr checked_accessor& operator=(const checked_accessor&) noexcept = default;
 
-  __host__ __device__ constexpr checked_accessor(size_t N_)
+  TEST_FUNC constexpr checked_accessor(size_t N_)
       : N(N_)
   {}
 
   // Explicitly not defaulted to make it not noexcept
-  __host__ __device__ constexpr checked_accessor(const checked_accessor& acc) noexcept(false)
+  TEST_FUNC constexpr checked_accessor(const checked_accessor& acc) noexcept(false)
       : N(acc.N)
   {}
 
-  __host__ __device__ constexpr reference access(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr reference access(data_handle_type p, size_t i) const noexcept
   {
     assert(i < N);
     return p[i];
   }
-  __host__ __device__ constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept
   {
     assert(i < N);
     return data_handle_type(p.ptr + i);
@@ -328,21 +346,21 @@ struct conv_test_accessor_nc
   constexpr conv_test_accessor_nc(const conv_test_accessor_nc&) = default;
 
   template <bool b1, bool b2, bool b3, bool b4, bool conv_nc2 = conv_nc, cuda::std::enable_if_t<conv_nc2, int> = 0>
-  __host__ __device__ constexpr operator conv_test_accessor_c<T, b1, b2, b3, b4>()
+  TEST_FUNC constexpr operator conv_test_accessor_c<T, b1, b2, b3, b4>()
   {
     return conv_test_accessor_c<T, b1, b2, b3, b4>{};
   }
   template <bool b1, bool b2, bool b3, bool b4, bool conv_c2 = conv_c, cuda::std::enable_if_t<conv_c2, int> = 0>
-  __host__ __device__ constexpr operator conv_test_accessor_c<T, b1, b2, b3, b4>() const
+  TEST_FUNC constexpr operator conv_test_accessor_c<T, b1, b2, b3, b4>() const
   {
     return conv_test_accessor_c<T, b1, b2, b3, b4>{};
   }
 
-  __host__ __device__ constexpr reference access(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr reference access(data_handle_type p, size_t i) const noexcept
   {
     return p[i];
   }
-  __host__ __device__ constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept
   {
     return p + i;
   }
@@ -360,27 +378,27 @@ struct conv_test_accessor_c
   constexpr conv_test_accessor_c(const conv_test_accessor_c&) = default;
 
   template <bool b1, bool b2, bool ctor_c2 = ctor_c, cuda::std::enable_if_t<ctor_c2, int> = 0>
-  __host__ __device__ constexpr conv_test_accessor_c(const conv_test_accessor_nc<T, b1, b2>&)
+  TEST_FUNC constexpr conv_test_accessor_c(const conv_test_accessor_nc<T, b1, b2>&)
   {}
   template <bool b1, bool b2, bool ctor_mv2 = ctor_mv, cuda::std::enable_if_t<ctor_mv2, int> = 0>
-  __host__ __device__ constexpr conv_test_accessor_c(conv_test_accessor_nc<T, b1, b2>&&)
+  TEST_FUNC constexpr conv_test_accessor_c(conv_test_accessor_nc<T, b1, b2>&&)
   {}
   template <bool b1, bool b2, bool assign_c2 = assign_c, cuda::std::enable_if_t<assign_c2, int> = 0>
-  __host__ __device__ constexpr conv_test_accessor_c& operator=(const conv_test_accessor_nc<T, b1, b2>&)
+  TEST_FUNC constexpr conv_test_accessor_c& operator=(const conv_test_accessor_nc<T, b1, b2>&)
   {
     return {};
   }
   template <bool b1, bool b2, bool assign_mv2 = assign_mv, cuda::std::enable_if_t<assign_mv2, int> = 0>
-  __host__ __device__ constexpr conv_test_accessor_c& operator=(conv_test_accessor_nc<T, b1, b2>&&)
+  TEST_FUNC constexpr conv_test_accessor_c& operator=(conv_test_accessor_nc<T, b1, b2>&&)
   {
     return {};
   }
 
-  __host__ __device__ constexpr reference access(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr reference access(data_handle_type p, size_t i) const noexcept
   {
     return p[i];
   }
-  __host__ __device__ constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept
   {
     return p + i;
   }
@@ -398,18 +416,18 @@ struct convertible_accessor_but_not_handle
   constexpr convertible_accessor_but_not_handle() = default;
   template <class OtherElementType,
             cuda::std::enable_if_t<cuda::std::is_convertible<OtherElementType (*)[], element_type (*)[]>::value, int> = 0>
-  __host__ __device__ explicit constexpr convertible_accessor_but_not_handle(
+  TEST_FUNC explicit constexpr convertible_accessor_but_not_handle(
     const convertible_accessor_but_not_handle<OtherElementType>& other) noexcept
   {
     N = other.N;
   }
 
-  __host__ __device__ constexpr reference access(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr reference access(data_handle_type p, size_t i) const noexcept
   {
     assert(i < N);
     return p[i];
   }
-  __host__ __device__ constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept
+  TEST_FUNC constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept
   {
     assert(i < N);
     return data_handle_type(p.ptr + i);

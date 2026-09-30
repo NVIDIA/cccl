@@ -21,43 +21,43 @@ struct alloc_first
 
   int data_;
 
-  __host__ __device__ alloc_first()
+  TEST_FUNC alloc_first()
       : data_(0)
   {}
-  __host__ __device__ alloc_first(int d)
+  TEST_FUNC alloc_first(int d)
       : data_(d)
   {}
-  __host__ __device__ alloc_first(cuda::std::allocator_arg_t, const A1<int>& a)
+  TEST_FUNC alloc_first(cuda::std::allocator_arg_t, const A1<int>& a)
       : data_(0)
   {
     assert(a.id() == 5);
     allocator_constructed() = true;
   }
 
-  __host__ __device__ alloc_first(cuda::std::allocator_arg_t, const A1<int>& a, int d)
+  TEST_FUNC alloc_first(cuda::std::allocator_arg_t, const A1<int>& a, int d)
       : data_(d)
   {
     assert(a.id() == 5);
     allocator_constructed() = true;
   }
 
-  __host__ __device__ alloc_first(cuda::std::allocator_arg_t, const A1<int>& a, const alloc_first& d)
+  TEST_FUNC alloc_first(cuda::std::allocator_arg_t, const A1<int>& a, const alloc_first& d)
       : data_(d.data_)
   {
     assert(a.id() == 5);
     allocator_constructed() = true;
   }
 
-  __host__ __device__ ~alloc_first()
+  TEST_FUNC ~alloc_first()
   {
     data_ = -1;
   }
 
-  __host__ __device__ friend bool operator==(const alloc_first& x, const alloc_first& y)
+  TEST_FUNC friend bool operator==(const alloc_first& x, const alloc_first& y)
   {
     return x.data_ == y.data_;
   }
-  __host__ __device__ friend bool operator<(const alloc_first& x, const alloc_first& y)
+  TEST_FUNC friend bool operator<(const alloc_first& x, const alloc_first& y)
   {
     return x.data_ < y.data_;
   }

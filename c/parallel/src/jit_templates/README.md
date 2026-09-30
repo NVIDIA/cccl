@@ -55,6 +55,9 @@ void func(/*..., */ cccl_iterator_t input_it /*, ...*/) {
             // `get_specialization` performs rudimentary type checking; if you pass the wrong type of an argument here
             // (one that doesn't match the types expected by the template), this call to `get_specialization` will fail to
             // compile.
+            //
+            // If different arguments require different storage types (e.g. input vs output CCCL_STORAGE), wrap them in
+            // tagged_arg<StorageT, T> so parameter_mapping can select the correct storage type per argument.
             input_t
         );
 
@@ -73,6 +76,10 @@ void func(/*..., */ cccl_iterator_t input_it /*, ...*/) {
 
 An argument mapping is a type, usable as a template argument, which carries the `cccl_*` values that are the
 arguments to the invocation of `get_specialization` in a format that will work in device code compiled with NVRTC.
+
+If different runtime arguments require different storage types, wrap the runtime argument in
+`tagged_arg<StorageT, T>` (defined in `traits.h`). This allows `parameter_mapping` to select the correct storage type
+per argument.
 
 Below is the contents of the `cccl_type_info` mapping header with annotations:
 
@@ -162,6 +169,8 @@ A template traits type must provide:
    given arguments. The poster child for the use of this feature is the iterator JIT templates, where, if the kind of
    the iterator is determined to be a pointer, a simple pointer name is returned (instead of generating a specialization
    name of the template).
+   Note: if callers wrap runtime arguments in `tagged_arg`, traits that want to participate in `special` handling
+   should provide matching overloads.
 
 #### Archetypes
 
@@ -179,6 +188,9 @@ than names of JIT template traits, and the c.parallel argument types) that is en
 information provided by template traits and archetypes; performs basic type checks; and returns the final type name,
 plus any auxiliary code necessary to compile it. See the example at the beginning of this document for an explanation of
 its various parameters and the return values.
+
+`get_specialization` will call `Traits::special(...)` when that call is well-formed for the provided runtime arguments,
+including tagged arguments.
 
 ### CMake
 

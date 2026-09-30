@@ -22,7 +22,7 @@
 
 struct PredMod3
 {
-  __host__ __device__ constexpr bool operator()(int i) const noexcept
+  TEST_FUNC constexpr bool operator()(int i) const noexcept
   {
     return i % 3 == 0;
   }
@@ -30,14 +30,15 @@ struct PredMod3
 
 struct PredEqual6
 {
-  __host__ __device__ constexpr bool operator()(int i) const noexcept
+  TEST_FUNC constexpr bool operator()(int i) const noexcept
   {
     return i == 6;
   }
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class InIter, class OutIter>
-constexpr __host__ __device__ void test()
+constexpr TEST_FUNC void test()
 {
   {
     constexpr unsigned N = 1000;
@@ -75,7 +76,8 @@ constexpr __host__ __device__ void test()
   }
 }
 
-constexpr __host__ __device__ bool test()
+_CCCL_EXEC_CHECK_DISABLE
+TEST_FUNC constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
   test<cpp17_input_iterator<const int*>, cpp17_input_iterator<int*>>();
@@ -112,13 +114,20 @@ constexpr __host__ __device__ bool test()
   test<const int*, random_access_iterator<int*>>();
   test<const int*, int*>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<const int*, host_only_iterator<int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
+  NV_IF_TARGET(NV_IS_DEVICE, (test<const int*, device_only_iterator<int*>>();))
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
+
   return true;
 }
 
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

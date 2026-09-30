@@ -13,7 +13,7 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/span>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/utility.h>
 #include <catch2_test_launch_helper.h>
 
@@ -121,7 +121,7 @@ auto build_static_extents(IndexType, cuda::std::index_sequence<Dimensions...>)
   return {};
 }
 
-C2H_TEST("DeviceFor::ForEachInExtents static", "[ForEachInExtents][static][device]", index_types, dimensions)
+CUB_TEST("DeviceFor::ForEachInExtents static", "[ForEachInExtents][static][device]", CUB_SMALL, index_types, dimensions)
 {
   using index_type    = c2h::get<0, TestType>;
   using dims          = c2h::get<1, TestType>;
@@ -135,32 +135,28 @@ C2H_TEST("DeviceFor::ForEachInExtents static", "[ForEachInExtents][static][devic
   CAPTURE(c2h::type_name<index_type>());
 
   device_for_each_in_extents(ext, store_op_t{d_output_raw});
-  c2h::host_vector<data_t> h_output_gpu = d_output;
+  const c2h::host_vector<data_t> h_output_gpu = d_output;
   fill_linear(h_output, ext);
-// MSVC error: C3546: '...': there are no parameter packs available to expand in
-//             make_tuple_types.h:__make_tuple_types_flat
-#if !_CCCL_COMPILER(MSVC)
   REQUIRE(h_output == h_output_gpu);
-#endif // !_CCCL_COMPILER(MSVC)
 }
 
-C2H_TEST("DeviceFor::ForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][device]", index_types_dynamic)
+CUB_TEST("DeviceFor::ForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][device]", CUB_SMALL, index_types_dynamic)
 {
-  constexpr int rank = 3;
-  using index_type   = c2h::get<0, TestType>;
-  using data_t       = cuda::std::array<index_type, rank>;
-  using store_op_t   = LinearStore<index_type, rank>;
-  auto X             = GENERATE_COPY(take(3, random(2, 10)));
-  auto Y             = GENERATE_COPY(take(3, random(2, 10)));
-  auto Z             = GENERATE_COPY(take(3, random(2, 10)));
-  cuda::std::dextents<index_type, 3> ext{X, Y, Z};
+  [[maybe_unused]] constexpr int rank = 3;
+  using index_type                    = c2h::get<0, TestType>;
+  using data_t                        = cuda::std::array<index_type, rank>;
+  using store_op_t                    = LinearStore<index_type, rank>;
+  auto X                              = GENERATE_COPY(take(3, random(2, 10)));
+  auto Y                              = GENERATE_COPY(take(3, random(2, 10)));
+  auto Z                              = GENERATE_COPY(take(3, random(2, 10)));
+  const cuda::std::dextents<index_type, 3> ext{X, Y, Z};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
   c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
   auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
   CAPTURE(c2h::type_name<index_type>(), X, Y, Z);
 
   device_for_each_in_extents(ext, store_op_t{d_output_raw});
-  c2h::host_vector<data_t> h_output_gpu = d_output;
+  const c2h::host_vector<data_t> h_output_gpu = d_output;
   fill_linear(h_output, ext);
 #if !_CCCL_COMPILER(MSVC)
   REQUIRE(h_output == h_output_gpu);
@@ -181,7 +177,7 @@ struct incrementer_t
   }
 };
 
-C2H_TEST("DeviceFor::ForEachInExtents works", "[ForEachInExtents]")
+CUB_TEST("DeviceFor::ForEachInExtents works", "[ForEachInExtents]", CUB_SMALL)
 {
   constexpr int max_items  = 5000000;
   constexpr int min_items  = 1;

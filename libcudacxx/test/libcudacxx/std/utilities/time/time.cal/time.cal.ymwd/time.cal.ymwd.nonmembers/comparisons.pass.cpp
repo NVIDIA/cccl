@@ -37,50 +37,42 @@ int main(int, char**)
 
   static_assert(testEquality(year_month_weekday{year{1234}, January, weekday_indexed{Tuesday, 1}},
                              year_month_weekday{year{1234}, January, weekday_indexed{Tuesday, 1}},
-                             true),
-                "");
+                             true));
 
   //  different day
   static_assert(testEquality(year_month_weekday{year{1234}, January, weekday_indexed{Tuesday, 1}},
                              year_month_weekday{year{1234}, January, weekday_indexed{Tuesday, 2}},
-                             false),
-                "");
+                             false));
 
   //  different month
   static_assert(testEquality(year_month_weekday{year{1234}, January, weekday_indexed{Tuesday, 1}},
                              year_month_weekday{year{1234}, February, weekday_indexed{Tuesday, 1}},
-                             false),
-                "");
+                             false));
 
   //  different year
   static_assert(testEquality(year_month_weekday{year{1234}, January, weekday_indexed{Tuesday, 1}},
                              year_month_weekday{year{1235}, January, weekday_indexed{Tuesday, 1}},
-                             false),
-                "");
+                             false));
 
   //  different month and day
   static_assert(testEquality(year_month_weekday{year{1234}, January, weekday_indexed{Tuesday, 1}},
                              year_month_weekday{year{1234}, February, weekday_indexed{Tuesday, 2}},
-                             false),
-                "");
+                             false));
 
   //  different year and month
   static_assert(testEquality(year_month_weekday{year{1234}, February, weekday_indexed{Tuesday, 1}},
                              year_month_weekday{year{1235}, January, weekday_indexed{Tuesday, 1}},
-                             false),
-                "");
+                             false));
 
   //  different year and day
   static_assert(testEquality(year_month_weekday{year{1234}, January, weekday_indexed{Tuesday, 2}},
                              year_month_weekday{year{1235}, January, weekday_indexed{Tuesday, 1}},
-                             false),
-                "");
+                             false));
 
   //  different year, month and day
   static_assert(testEquality(year_month_weekday{year{1234}, February, weekday_indexed{Tuesday, 2}},
                              year_month_weekday{year{1235}, January, weekday_indexed{Tuesday, 1}},
-                             false),
-                "");
+                             false));
 
   //  same year, different days
   for (unsigned i = 1; i < 28; ++i)

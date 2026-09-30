@@ -40,7 +40,7 @@ int main()
   auto row_idx_begin = thrust::make_transform_iterator(flat_idx, [=] __host__ __device__(int flat) {
     return flat / cols;
   });
-  auto row_idx_end   = row_idx_begin + M.size();
+  auto row_idx_end   = row_idx_begin + static_cast<std::ptrdiff_t>(M.size());
 
   // Sum each row, storing the result in a new vector.
   thrust::universal_vector<int> sums(rows);

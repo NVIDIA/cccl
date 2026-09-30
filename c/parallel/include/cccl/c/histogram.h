@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #pragma once
+// NOLINTBEGIN(modernize-use-using)
 
 #ifndef CCCL_C_EXPERIMENTAL
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
@@ -26,8 +27,9 @@ CCCL_C_EXTERN_C_BEGIN
 typedef struct cccl_device_histogram_build_result_t
 {
   int cc;
-  void* cubin;
-  size_t cubin_size;
+  void* payload;
+  size_t payload_size;
+  cccl_payload_kind_t payload_kind;
   CUlibrary library;
   cccl_type_info counter_type;
   cccl_type_info level_type;
@@ -37,6 +39,9 @@ typedef struct cccl_device_histogram_build_result_t
   CUkernel init_kernel;
   CUkernel sweep_kernel;
   void* runtime_policy;
+  size_t runtime_policy_size;
+  char* init_kernel_lowered_name;
+  char* sweep_kernel_lowered_name;
 } cccl_device_histogram_build_result_t;
 
 CCCL_C_API CUresult cccl_device_histogram_build(
@@ -46,7 +51,7 @@ CCCL_C_API CUresult cccl_device_histogram_build(
   cccl_iterator_t d_samples,
   int num_output_levels_val,
   cccl_iterator_t d_output_histograms,
-  cccl_value_t lower_level,
+  cccl_type_info level_type,
   int64_t num_rows,
   int64_t row_stride_samples,
   bool is_evenly_segmented,
@@ -65,7 +70,7 @@ CCCL_C_API CUresult cccl_device_histogram_build_ex(
   cccl_iterator_t d_samples,
   int num_output_levels_val,
   cccl_iterator_t d_output_histograms,
-  cccl_value_t lower_level,
+  cccl_type_info level_type,
   int64_t num_rows,
   int64_t row_stride_samples,
   bool is_evenly_segmented,
@@ -76,6 +81,27 @@ CCCL_C_API CUresult cccl_device_histogram_build_ex(
   const char* libcudacxx_path,
   const char* ctk_path,
   cccl_build_config* config);
+
+CCCL_C_API CUresult cccl_device_histogram_compile(
+  cccl_device_histogram_build_result_t* build,
+  int num_channels,
+  int num_active_channels,
+  cccl_iterator_t d_samples,
+  int num_output_levels_val,
+  cccl_iterator_t d_output_histograms,
+  cccl_type_info level_type,
+  int64_t num_rows,
+  int64_t row_stride_samples,
+  bool is_evenly_segmented,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
+
+CCCL_C_API CUresult cccl_device_histogram_load(cccl_device_histogram_build_result_t* build);
 
 CCCL_C_API CUresult cccl_device_histogram_even(
   cccl_device_histogram_build_result_t build,
@@ -91,6 +117,24 @@ CCCL_C_API CUresult cccl_device_histogram_even(
   int64_t row_stride_samples,
   CUstream stream);
 
+CCCL_C_API CUresult cccl_device_histogram_link_ltoir(
+  cccl_device_histogram_build_result_t* build, const void** input_blobs, const size_t* input_sizes, size_t num_inputs);
+
+// Serializes a populated build_result into a self-describing byte buffer.
+// On success *out_buf points to a heap allocation that the caller must free
+// with cccl_serialization_buffer_free, and *out_size holds its length. The build_result
+// itself is not modified. CUlibrary/CUkernel handles are not serialized.
+CCCL_C_API CUresult
+cccl_device_histogram_serialize(const cccl_device_histogram_build_result_t* build, void** out_buf, size_t* out_size);
+
+// Reconstructs a build_result from a buffer produced by cccl_device_histogram_serialize.
+// On success build is populated as if by compile(); CUlibrary/CUkernel handles
+// remain null until cccl_device_histogram_load is called. On failure build is
+// left unchanged and a non-success CUresult is returned.
+CCCL_C_API CUresult
+cccl_device_histogram_deserialize(cccl_device_histogram_build_result_t* build, const void* buf, size_t size);
+
 CCCL_C_API CUresult cccl_device_histogram_cleanup(cccl_device_histogram_build_result_t* bld_ptr);
 
 CCCL_C_EXTERN_C_END
+// NOLINTEND(modernize-use-using)

@@ -33,7 +33,8 @@
  * of the programming guide with some additions like error checking.
  */
 
-#include <stdio.h>
+#include <cstdio>
+#include <random>
 
 // For the CUDA runtime routines (prefixed with "cuda_")
 #include <cuda/std/span>
@@ -57,7 +58,7 @@ using cudax::out;
  */
 __global__ void vectorAdd(cudax::span<const float> A, cudax::span<const float> B, cudax::span<float> C)
 {
-  int i = blockDim.x * blockIdx.x + threadIdx.x;
+  const int i = static_cast<int>(blockDim.x * blockIdx.x + threadIdx.x);
 
   if (i < A.size())
   {
@@ -68,14 +69,14 @@ __global__ void vectorAdd(cudax::span<const float> A, cudax::span<const float> B
 /**
  * Host main routine
  */
-int main(void)
+int main()
 try
 {
   // A CUDA stream on which to execute the vector addition kernel
-  cudax::stream stream(cuda::devices[0]);
+  const cudax::stream stream(cuda::devices[0]);
 
   // Print the vector length to be used, and compute its size
-  int numElements = 50000;
+  const int numElements = 50000;
   printf("[Vector addition of %d elements]\n", numElements);
 
   // Allocate the host vectors
@@ -84,10 +85,12 @@ try
   cudax::vector<float> C(numElements); // output
 
   // Initialize the host input vectors
+  std::mt19937 gen{std::random_device{}()};
+  std::uniform_real_distribution<float> dist{0.0f, 1.0f};
   for (int i = 0; i < numElements; ++i)
   {
-    A[i] = rand() / (float) RAND_MAX;
-    B[i] = rand() / (float) RAND_MAX;
+    A[i] = dist(gen);
+    B[i] = dist(gen);
   }
 
   // Define the kernel launch parameters
@@ -95,8 +98,7 @@ try
   auto config                   = cuda::distribute<threadsPerBlock>(numElements);
 
   // Launch the vectorAdd kernel
-  printf(
-    "CUDA kernel launch with %d blocks of %d threads\n", config.dims.count(cuda::block, cuda::grid), threadsPerBlock);
+  printf("CUDA kernel launch with %zu blocks of %d threads\n", cuda::block.count(cuda::grid, config), threadsPerBlock);
   cudax::launch(stream, config, vectorAdd, in(A), in(B), out(C));
 
   printf("waiting for the stream to finish\n");

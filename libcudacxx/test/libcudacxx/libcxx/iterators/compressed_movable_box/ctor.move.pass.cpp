@@ -23,7 +23,7 @@ template <class... T>
 using box = cuda::std::__compressed_movable_box<T...>;
 
 template <class T>
-__host__ __device__ constexpr void test(const int expected)
+TEST_FUNC constexpr void test(const int expected)
 {
   constexpr bool is_nothrow = cuda::std::is_nothrow_move_constructible_v<T>;
   { // single item
@@ -46,7 +46,7 @@ __host__ __device__ constexpr void test(const int expected)
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   using cuda::std::__compressed_box_choose;
   using cuda::std::__compressed_box_move_construct_available;

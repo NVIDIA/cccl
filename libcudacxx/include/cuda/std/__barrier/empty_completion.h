@@ -27,7 +27,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct __empty_completion
 {
-  _CCCL_API constexpr void operator()() noexcept {}
+  _CCCL_HOST_DEVICE_API constexpr void operator()() noexcept {}
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD

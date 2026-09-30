@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/iterator/iterator_facade.h
  *  \brief A class which exposes a public interface for iterators
@@ -473,13 +460,11 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline
-  _CCCL_HOST_DEVICE
-  // XXX it might be nice to implement this at some point
-  // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
-  bool
-  operator==(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
-             iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
+inline _CCCL_HOST_DEVICE
+// XXX it might be nice to implement this at some point
+// typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
+bool operator==(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
+                iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
   return iterator_core_access ::equal(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
 }
@@ -496,13 +481,11 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline
-  _CCCL_HOST_DEVICE
-  // XXX it might be nice to implement this at some point
-  // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
-  bool
-  operator!=(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
-             iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
+inline _CCCL_HOST_DEVICE
+// XXX it might be nice to implement this at some point
+// typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
+bool operator!=(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
+                iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
   return !iterator_core_access ::equal(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
 }
@@ -519,13 +502,11 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline
-  _CCCL_HOST_DEVICE
-  // XXX it might be nice to implement this at some point
-  // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
-  bool
-  operator<(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
-            iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
+inline _CCCL_HOST_DEVICE
+// XXX it might be nice to implement this at some point
+// typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
+bool operator<(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
+               iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
   return 0
        > iterator_core_access ::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
@@ -543,13 +524,11 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline
-  _CCCL_HOST_DEVICE
-  // XXX it might be nice to implement this at some point
-  // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
-  bool
-  operator>(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
-            iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
+inline _CCCL_HOST_DEVICE
+// XXX it might be nice to implement this at some point
+// typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
+bool operator>(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
+               iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
   return 0
        < iterator_core_access ::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
@@ -567,13 +546,11 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline
-  _CCCL_HOST_DEVICE
-  // XXX it might be nice to implement this at some point
-  // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
-  bool
-  operator<=(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
-             iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
+inline _CCCL_HOST_DEVICE
+// XXX it might be nice to implement this at some point
+// typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
+bool operator<=(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
+                iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
   return 0
       >= iterator_core_access ::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
@@ -591,13 +568,11 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline
-  _CCCL_HOST_DEVICE
-  // XXX it might be nice to implement this at some point
-  // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
-  bool
-  operator>=(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
-             iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
+inline _CCCL_HOST_DEVICE
+// XXX it might be nice to implement this at some point
+// typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
+bool operator>=(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
+                iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
   return 0
       <= iterator_core_access ::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));

@@ -30,10 +30,10 @@
 int main(int, char**)
 {
   // Use a builtin type so we don't get ADL lookup.
-  typedef double T[17][29];
+  using T = double[17][29];
   {
-    static_assert(cuda::std::is_nothrow_swappable_v<T>, "");
-    static_assert(cuda::std::is_swappable_v<T>, "");
+    static_assert(cuda::std::is_nothrow_swappable_v<T>);
+    static_assert(cuda::std::is_swappable_v<T>);
   }
   {
     T t1 = {};

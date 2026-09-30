@@ -14,8 +14,7 @@
 //   ForwardIterator for_each_n(ExecutionPolicy&& exec, ForwardIterator first, Size n,
 //                              Function f);
 
-#include <cuda/std/__algorithm_>
-#include <cuda/std/__pstl/for_each_n.h>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_execution_policies.h"
@@ -51,7 +50,7 @@ struct Test
   }
 };
 
-__host__ void test()
+void test()
 {
   types::for_each(types::forward_iterator_list<int*>{}, TestIteratorWithPolicies<Test>{});
 }

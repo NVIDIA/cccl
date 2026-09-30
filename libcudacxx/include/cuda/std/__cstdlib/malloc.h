@@ -25,9 +25,9 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__cstring/memset.h>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <cstdlib>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <nv/target>
 
@@ -39,15 +39,17 @@ using ::free;
 using ::malloc;
 
 #if _CCCL_CUDA_COMPILATION()
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __calloc_device(size_t __n, size_t __size) noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline void* __calloc_device(size_t __n, size_t __size) noexcept
 {
   void* __ptr{};
 
-  const size_t __nbytes = __n * __size;
-
+  // check for overflow through a hypothetical larger integer
+  // TODO (miscco): use `mul_overflow` once implemented
   if (::cuda::mul_hi(__n, __size) == 0)
   {
-    __ptr = ::cuda::std::malloc(__nbytes);
+    const size_t __nbytes = __n * __size;
+    // calloc transfers ownership to its caller.
+    __ptr = ::cuda::std::malloc(__nbytes); // NOLINT(cppcoreguidelines-no-malloc)
     if (__ptr != nullptr)
     {
       ::cuda::std::memset(__ptr, 0, __nbytes);
@@ -58,9 +60,11 @@ using ::malloc;
 }
 #endif // _CCCL_CUDA_COMPILATION()
 
-[[nodiscard]] _CCCL_API inline void* calloc(size_t __n, size_t __size) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline void* calloc(size_t __n, size_t __size) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::calloc(__n, __size);), (return ::cuda::std::__calloc_device(__n, __size);))
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (return ::calloc(__n, __size);), // NOLINT(cppcoreguidelines-no-malloc)
+                    (return ::cuda::std::__calloc_device(__n, __size);))
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

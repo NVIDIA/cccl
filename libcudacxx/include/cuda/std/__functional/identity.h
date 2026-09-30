@@ -35,7 +35,7 @@ inline constexpr bool __is_identity_v = false;
 struct identity
 {
   template <class _Tp>
-  [[nodiscard]] _CCCL_API constexpr _Tp&& operator()(_Tp&& __t) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept -> _Tp&&
   {
     return ::cuda::std::forward<_Tp>(__t);
   }

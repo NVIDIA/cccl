@@ -38,7 +38,7 @@ static bool skip_host_exec(bool (* /* filter */)(const cudaDeviceProp&))
 static bool skip_device_exec(bool (*filter)(const cudaDeviceProp&))
 {
   cudaDeviceProp props;
-  CUDART(cudaGetDeviceProperties(&props, 0));
+  REQUIRE_CUDART(cudaGetDeviceProperties(&props, 0));
   return filter(props);
 }
 
@@ -70,7 +70,7 @@ void test_host_dev(const Dims& dims, const Lambda& lambda, const Filters&... fil
     config.blockDim = dims.extents(cuda::gpu_thread, cuda::block);
     config.gridDim  = dims.extents(cuda::block, cuda::grid);
 
-    if constexpr (cuda::has_level_v<cuda::cluster_level, decltype(dims)>)
+    if constexpr (Dims::has_level(cluster))
     {
       dim3 cluster_dims                            = dims.extents(cuda::block, cuda::cluster);
       config.attrs[config.numAttrs].id             = cudaLaunchAttributeClusterDimension;
@@ -83,8 +83,8 @@ void test_host_dev(const Dims& dims, const Lambda& lambda, const Filters&... fil
     }
 
     // device testing
-    CUDART(cudaLaunchKernelEx(&config, lambda_launcher<Dims, Lambda>, dims, lambda));
-    CUDART(cudaDeviceSynchronize());
+    REQUIRE_CUDART(cudaLaunchKernelEx(&config, lambda_launcher<Dims, Lambda>, dims, lambda));
+    REQUIRE_CUDART(cudaDeviceSynchronize());
   }
 }
 

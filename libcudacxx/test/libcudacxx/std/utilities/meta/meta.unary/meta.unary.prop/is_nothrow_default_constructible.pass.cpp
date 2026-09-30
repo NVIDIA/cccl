@@ -15,29 +15,29 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_nothrow_default_constructible()
+TEST_FUNC void test_is_nothrow_default_constructible()
 {
-  static_assert(cuda::std::is_nothrow_default_constructible<T>::value, "");
-  static_assert(cuda::std::is_nothrow_default_constructible<const T>::value, "");
-  static_assert(cuda::std::is_nothrow_default_constructible<volatile T>::value, "");
-  static_assert(cuda::std::is_nothrow_default_constructible<const volatile T>::value, "");
-  static_assert(cuda::std::is_nothrow_default_constructible_v<T>, "");
-  static_assert(cuda::std::is_nothrow_default_constructible_v<const T>, "");
-  static_assert(cuda::std::is_nothrow_default_constructible_v<volatile T>, "");
-  static_assert(cuda::std::is_nothrow_default_constructible_v<const volatile T>, "");
+  static_assert(cuda::std::is_nothrow_default_constructible<T>::value);
+  static_assert(cuda::std::is_nothrow_default_constructible<const T>::value);
+  static_assert(cuda::std::is_nothrow_default_constructible<volatile T>::value);
+  static_assert(cuda::std::is_nothrow_default_constructible<const volatile T>::value);
+  static_assert(cuda::std::is_nothrow_default_constructible_v<T>);
+  static_assert(cuda::std::is_nothrow_default_constructible_v<const T>);
+  static_assert(cuda::std::is_nothrow_default_constructible_v<volatile T>);
+  static_assert(cuda::std::is_nothrow_default_constructible_v<const volatile T>);
 }
 
 template <class T>
-__host__ __device__ void test_has_not_nothrow_default_constructor()
+TEST_FUNC void test_has_not_nothrow_default_constructor()
 {
-  static_assert(!cuda::std::is_nothrow_default_constructible<T>::value, "");
-  static_assert(!cuda::std::is_nothrow_default_constructible<const T>::value, "");
-  static_assert(!cuda::std::is_nothrow_default_constructible<volatile T>::value, "");
-  static_assert(!cuda::std::is_nothrow_default_constructible<const volatile T>::value, "");
-  static_assert(!cuda::std::is_nothrow_default_constructible_v<T>, "");
-  static_assert(!cuda::std::is_nothrow_default_constructible_v<const T>, "");
-  static_assert(!cuda::std::is_nothrow_default_constructible_v<volatile T>, "");
-  static_assert(!cuda::std::is_nothrow_default_constructible_v<const volatile T>, "");
+  static_assert(!cuda::std::is_nothrow_default_constructible<T>::value);
+  static_assert(!cuda::std::is_nothrow_default_constructible<const T>::value);
+  static_assert(!cuda::std::is_nothrow_default_constructible<volatile T>::value);
+  static_assert(!cuda::std::is_nothrow_default_constructible<const volatile T>::value);
+  static_assert(!cuda::std::is_nothrow_default_constructible_v<T>);
+  static_assert(!cuda::std::is_nothrow_default_constructible_v<const T>);
+  static_assert(!cuda::std::is_nothrow_default_constructible_v<volatile T>);
+  static_assert(!cuda::std::is_nothrow_default_constructible_v<const volatile T>);
 }
 
 class Empty
@@ -53,13 +53,13 @@ struct bit_zero
 
 struct A
 {
-  __host__ __device__ A();
+  TEST_FUNC A();
 };
 
 struct DThrows
 {
-  __host__ __device__ DThrows() noexcept(true) {}
-  __host__ __device__ ~DThrows() noexcept(false) {}
+  TEST_FUNC DThrows() noexcept(true) {}
+  TEST_FUNC ~DThrows() noexcept(false) {}
 };
 
 int main(int, char**)

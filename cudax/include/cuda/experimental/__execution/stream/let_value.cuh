@@ -35,7 +35,7 @@ template <>
 struct stream_domain::__apply_t<let_value_t>
 {
   template <class _Sndr, class _Env>
-  _CCCL_API auto operator()(_Sndr __sndr, const _Env& __env) const
+  _CCCL_HOST_DEVICE_API auto operator()(_Sndr __sndr, const _Env& __env) const
   {
     static_assert(::cuda::std::__always_false_v<_Sndr>,
                   "The CUDA stream scheduler does not yet support the `let_value`, `let_error`, and `let_stopped` "
@@ -47,7 +47,7 @@ template <>
 struct stream_domain::__apply_t<let_error_t>
 {
   template <class _Sndr, class _Env>
-  _CCCL_API auto operator()(_Sndr __sndr, const _Env& __env) const
+  _CCCL_HOST_DEVICE_API auto operator()(_Sndr __sndr, const _Env& __env) const
   {
     static_assert(::cuda::std::__always_false_v<_Sndr>,
                   "The CUDA stream scheduler does not yet support the `let_value`, `let_error`, and `let_stopped` "
@@ -59,7 +59,7 @@ template <>
 struct stream_domain::__apply_t<let_stopped_t>
 {
   template <class _Sndr, class _Env>
-  _CCCL_API auto operator()(_Sndr __sndr, const _Env& __env) const
+  _CCCL_HOST_DEVICE_API auto operator()(_Sndr __sndr, const _Env& __env) const
   {
     static_assert(::cuda::std::__always_false_v<_Sndr>,
                   "The CUDA stream scheduler does not yet support the `let_value`, `let_error`, and `let_stopped` "

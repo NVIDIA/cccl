@@ -39,9 +39,10 @@ class barrier<thread_scope_thread, ::cuda::std::__empty_completion> : private ba
 public:
   using __base::__base;
 
-  _CCCL_API inline friend void init(barrier* __b,
-                                    ::cuda::std::ptrdiff_t __expected,
-                                    ::cuda::std::__empty_completion __completion = ::cuda::std::__empty_completion())
+  _CCCL_HOST_DEVICE_API inline friend void
+  init(barrier* __b,
+       ::cuda::std::ptrdiff_t __expected,
+       ::cuda::std::__empty_completion __completion = ::cuda::std::__empty_completion())
   {
     init(static_cast<__base*>(__b), __expected, __completion);
   }

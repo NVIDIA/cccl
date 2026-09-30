@@ -19,10 +19,11 @@
 #include <cuda/std/limits>
 
 #include "common.h"
+#include "cuda_fp_types.h"
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test(T expected)
+TEST_FUNC void test(T expected)
 {
   assert(float_eq(cuda::std::numeric_limits<T>::epsilon(), expected));
   assert(float_eq(cuda::std::numeric_limits<const T>::epsilon(), expected));
@@ -37,9 +38,9 @@ int main(int, char**)
   test<signed char>(0);
   test<unsigned char>(0);
   test<wchar_t>(0);
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
   test<char8_t>(0);
-#endif
+#endif // _CCCL_HAS_CHAR8_T()
   test<char16_t>(0);
   test<char32_t>(0);
   test<short>(0);

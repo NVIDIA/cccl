@@ -21,11 +21,11 @@ struct uninitialized_allocator : thrust::device_allocator<T>
   // marked __host__ __device__, but the current Thrust device_allocator
   // can only be constructed and destroyed on the host; therefore, we
   // define these as host only
-  __host__ uninitialized_allocator() {}
+  __host__ uninitialized_allocator() {} // NOLINT(modernize-use-equals-default)
   __host__ uninitialized_allocator(const uninitialized_allocator& other)
       : thrust::device_allocator<T>(other)
   {}
-  __host__ ~uninitialized_allocator() {}
+  __host__ ~uninitialized_allocator() {} // NOLINT(modernize-use-equals-default)
 
   uninitialized_allocator& operator=(const uninitialized_allocator&) = default;
 

@@ -20,7 +20,7 @@
 #if !TEST_CUDA_COMPILER(NVCC, <, 12, 9) || TEST_STD_VER == 2017 // nvbug4460443
 struct A
 {
-  __host__ __device__ explicit A(int);
+  TEST_FUNC explicit A(int);
 };
 // no implicit conversion
 static_assert(
@@ -29,7 +29,7 @@ static_assert(
 
 struct B
 {
-  __host__ __device__ B(int);
+  TEST_FUNC B(int);
 };
 // implicit conversion
 static_assert(
@@ -44,7 +44,7 @@ static_assert(cuda::std::is_constructible_v<cuda::std::ranges::in_fun_result<B, 
 #if !TEST_CUDA_COMPILER(NVCC, <, 12, 9) || TEST_STD_VER == 2017 // nvbug4460443
 struct C
 {
-  __host__ __device__ C(int&);
+  TEST_FUNC C(int&);
 };
 static_assert(
   !cuda::std::is_constructible_v<cuda::std::ranges::in_fun_result<C, C>, cuda::std::ranges::in_fun_result<int, int>&>);
@@ -79,13 +79,13 @@ static_assert(!cuda::std::is_convertible_v<cuda::std::ranges::in_fun_result<int,
 template <class T>
 struct ConvertibleFrom
 {
-  __host__ __device__ constexpr ConvertibleFrom(T c)
+  TEST_FUNC constexpr ConvertibleFrom(T c)
       : content{c}
   {}
   T content;
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     cuda::std::ranges::in_fun_result<int, double> res{10, 0.};

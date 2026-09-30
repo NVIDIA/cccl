@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
-// SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 //! @file
@@ -28,9 +28,9 @@
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
 #include <cub/warp/specializations/warp_reduce_smem.cuh>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
-#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -62,6 +62,21 @@ CUB_NAMESPACE_BEGIN
 //!
 //!   - Summation (**vs.** generic reduction)
 //!   - The architecture's warp size is a whole multiple of ``LogicalWarpThreads``
+//!
+//! Hardware Warp Redux Optimizations
+//! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//!
+//! For full 32-thread logical warps, ``WarpReduce`` uses PTX ``redux.sync`` instructions for the following operator and
+//! type combinations when the target architecture supports them:
+//!
+//! - On SM80 and later:
+//!
+//!   - ``cuda::std::plus``, ``cuda::minimum``, and ``cuda::maximum`` for integral types up to 32 bits.
+//!   - ``cuda::std::bit_and``, ``cuda::std::bit_or``, and ``cuda::std::bit_xor`` for integral types of any size.
+//!
+//! - On SM100f and later in the same architecture family:
+//!
+//!   - ``cuda::minimum`` and ``cuda::maximum`` for ``float``, ``__half``, and ``__nv_bfloat16``.
 //!
 //! Simple Examples
 //! +++++++++++++++
@@ -134,7 +149,7 @@ class WarpReduce
                 "LogicalWarpThreads must be in the range [1, 32]");
 
   static constexpr bool is_full_warp    = (LogicalWarpThreads == detail::warp_threads);
-  static constexpr bool is_power_of_two = ::cuda::std::has_single_bit(uint32_t{LogicalWarpThreads});
+  static constexpr bool is_power_of_two = ::cuda::is_power_of_two(LogicalWarpThreads);
 
 public:
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -155,8 +170,7 @@ private:
 
 public:
   /// \smemstorage{WarpReduce}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -171,13 +185,16 @@ public:
       : temp_storage{temp_storage.Alias()}
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Summation reductions
   //! @{
 
   //! @rst
   //! Computes a warp-wide sum in the calling warp.
   //! The output is valid in warp *lane*\ :sub:`0`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!
@@ -258,6 +275,9 @@ public:
   //! All threads across the calling warp must agree on the same value for ``valid_items``.
   //! Otherwise the result is undefined.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -321,6 +341,9 @@ public:
   //! The sum of each segment is returned to the first lane in that segment
   //! (which always includes *lane*\ :sub:`0`).
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -376,6 +399,9 @@ public:
   //! The sum of each segment is returned to the first lane in that segment
   //! (which always includes *lane*\ :sub:`0`).
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -425,7 +451,7 @@ public:
     return TailSegmentedReduce(input, tail_flag, ::cuda::std::plus<>{});
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Generic reductions
   //! @{
 
@@ -434,6 +460,9 @@ public:
   //! functor. The output is valid in warp *lane*\ :sub:`0`.
   //!
   //! Supports non-commutative reduction operators
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!
@@ -489,7 +518,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(const InputType& input, ReductionOp reduction_op)
   {
     auto thread_reduction = cub::ThreadReduce(input, reduction_op);
-    return WarpReduce<T, LogicalWarpThreads>::Reduce(thread_reduction, LogicalWarpThreads, reduction_op);
+    return WarpReduce<T, LogicalWarpThreads>::Reduce(thread_reduction, reduction_op);
   }
   //! @rst
   //! Computes a partially-full warp-wide reduction in the calling warp using the specified binary
@@ -499,6 +528,9 @@ public:
   //! Otherwise the result is undefined.
   //!
   //! Supports non-commutative reduction operators
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!
@@ -560,6 +592,9 @@ public:
   //!
   //! Supports non-commutative reduction operators
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -619,6 +654,9 @@ public:
   //!
   //! Supports non-commutative reduction operators
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -671,7 +709,7 @@ public:
     return InternalWarpReduce{temp_storage}.template SegmentedReduce<false>(input, tail_flag, reduction_op);
   }
 
-  //! @}  end member group
+  //! @}
 };
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -684,19 +722,18 @@ private:
 public:
   struct InternalWarpReduce
   {
-    struct TempStorage : Uninitialized<_TempStorage>
-    {};
+    using TempStorage = Uninitialized<_TempStorage>;
 
     _CCCL_DEVICE _CCCL_FORCEINLINE InternalWarpReduce(TempStorage& /*temp_storage */) {}
 
-    template <bool ALL_LANES_VALID, typename ReductionOp>
+    template <bool AllLanesValid, typename ReductionOp>
     [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
     Reduce(T input, int /* valid_items */, ReductionOp /* reduction_op */)
     {
       return input;
     }
 
-    template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
+    template <bool HeadSegmented, typename FlagT, typename ReductionOp>
     [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
     SegmentedReduce(T input, FlagT /* flag */, ReductionOp /* reduction_op */)
     {
@@ -706,7 +743,7 @@ public:
 
   using TempStorage = typename InternalWarpReduce::TempStorage;
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage& /*temp_storage */) {}
+  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage& /*temp_storage */) {}
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
   {

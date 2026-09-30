@@ -52,29 +52,30 @@ struct __fn : __range_adaptor_closure<__fn>
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::ranges::view<decay_t<_Tp>>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Tp>(__t))))
-      -> decltype(_LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Tp>(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Tp>(__t))))
+    -> decltype(_LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Tp>(__t)))
   {
     return _LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Tp>(__t));
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__to_ref_view<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::ref_view{::cuda::std::forward<_Tp>(__t)}))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(
+    noexcept(::cuda::std::ranges::ref_view{::cuda::std::forward<_Tp>(__t)}))
   {
     return ::cuda::std::ranges::ref_view{::cuda::std::forward<_Tp>(__t)};
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__to_owning_view<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::owning_view{::cuda::std::forward<_Tp>(__t)}))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(
+    noexcept(::cuda::std::ranges::owning_view{::cuda::std::forward<_Tp>(__t)}))
   {
     return ::cuda::std::ranges::owning_view{::cuda::std::forward<_Tp>(__t)};
   }
 };
+
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo

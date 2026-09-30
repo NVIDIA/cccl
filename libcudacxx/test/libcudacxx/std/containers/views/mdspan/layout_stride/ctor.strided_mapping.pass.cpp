@@ -45,7 +45,7 @@
 template <class FromL,
           class FromExt,
           cuda::std::enable_if_t<cuda::std::is_same<FromL, cuda::std::layout_stride>::value, int> = 0>
-__host__ __device__ constexpr auto get_strides(FromExt src_exts)
+TEST_FUNC constexpr auto get_strides(FromExt src_exts)
 {
   using From = typename FromL::template mapping<FromExt>;
 
@@ -62,14 +62,14 @@ __host__ __device__ constexpr auto get_strides(FromExt src_exts)
 template <class FromL,
           class FromExt,
           cuda::std::enable_if_t<!cuda::std::is_same<FromL, cuda::std::layout_stride>::value, int> = 0>
-__host__ __device__ constexpr auto get_strides(FromExt src_exts)
+TEST_FUNC constexpr auto get_strides(FromExt src_exts)
 {
   using From = typename FromL::template mapping<FromExt>;
   return From(src_exts);
 }
 
 template <bool implicit, class FromL, class ToExt, class FromExt, cuda::std::enable_if_t<implicit, int> = 0>
-__host__ __device__ constexpr void test_conversion(FromExt src_exts)
+TEST_FUNC constexpr void test_conversion(FromExt src_exts)
 {
   using To   = cuda::std::layout_stride::mapping<ToExt>;
   using From = typename FromL::template mapping<FromExt>;
@@ -84,7 +84,7 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
 }
 
 template <bool implicit, class FromL, class ToExt, class FromExt, cuda::std::enable_if_t<!implicit, int> = 0>
-__host__ __device__ constexpr void test_conversion(FromExt src_exts)
+TEST_FUNC constexpr void test_conversion(FromExt src_exts)
 {
   using To   = cuda::std::layout_stride::mapping<ToExt>;
   using From = typename FromL::template mapping<FromExt>;
@@ -97,15 +97,16 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
 }
 
 template <class FromL, class T1, class T2>
-__host__ __device__ constexpr void test_conversion()
+TEST_FUNC constexpr void test_conversion()
 {
-  constexpr size_t D             = cuda::std::dynamic_extent;
-  constexpr bool idx_convertible = static_cast<size_t>(cuda::std::numeric_limits<T1>::max())
-                                >= static_cast<size_t>(cuda::std::numeric_limits<T2>::max());
-  constexpr bool l_convertible =
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr bool idx_convertible =
+    static_cast<size_t>(cuda::std::numeric_limits<T1>::max())
+    >= static_cast<size_t>(cuda::std::numeric_limits<T2>::max());
+  [[maybe_unused]] constexpr bool l_convertible =
     cuda::std::is_same_v<FromL, cuda::std::layout_right> || cuda::std::is_same_v<FromL, cuda::std::layout_left>
     || cuda::std::is_same_v<FromL, cuda::std::layout_stride>;
-  constexpr bool idx_l_convertible = idx_convertible && l_convertible;
+  [[maybe_unused]] constexpr bool idx_l_convertible = idx_convertible && l_convertible;
 
   // clang-format off
   // adding extents convertibility expectation
@@ -133,63 +134,63 @@ template <class FromL, class IdxT, size_t... Extents>
 using FromM = typename FromL::template mapping<cuda::std::extents<IdxT, Extents...>>;
 
 template <class FromL, cuda::std::enable_if_t<!cuda::std::is_same_v<FromL, always_convertible_layout>, int> = 0>
-__host__ __device__ constexpr void test_no_implicit_conversion()
+TEST_FUNC constexpr void test_no_implicit_conversion()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   // Sanity check that one static to dynamic conversion works
-  static_assert(cuda::std::is_constructible<ToM<int, D>, FromM<FromL, int, 5>>::value, "");
-  static_assert(cuda::std::is_convertible<FromM<FromL, int, 5>, ToM<int, D>>::value, "");
+  static_assert(cuda::std::is_constructible<ToM<int, D>, FromM<FromL, int, 5>>::value);
+  static_assert(cuda::std::is_convertible<FromM<FromL, int, 5>, ToM<int, D>>::value);
 
   // Check that dynamic to static conversion only works explicitly
-  static_assert(cuda::std::is_constructible<ToM<int, 5>, FromM<FromL, int, D>>::value, "");
-  static_assert(!cuda::std::is_convertible<FromM<FromL, int, D>, ToM<int, 5>>::value, "");
+  static_assert(cuda::std::is_constructible<ToM<int, 5>, FromM<FromL, int, D>>::value);
+  static_assert(!cuda::std::is_convertible<FromM<FromL, int, D>, ToM<int, 5>>::value);
 
   // Sanity check that one static to dynamic conversion works
-  static_assert(cuda::std::is_constructible<ToM<int, D, 7>, FromM<FromL, int, 5, 7>>::value, "");
-  static_assert(cuda::std::is_convertible<FromM<FromL, int, 5, 7>, ToM<int, D, 7>>::value, "");
+  static_assert(cuda::std::is_constructible<ToM<int, D, 7>, FromM<FromL, int, 5, 7>>::value);
+  static_assert(cuda::std::is_convertible<FromM<FromL, int, 5, 7>, ToM<int, D, 7>>::value);
 
   // Check that dynamic to static conversion only works explicitly
-  static_assert(cuda::std::is_constructible<ToM<int, 5, 7>, FromM<FromL, int, D, 7>>::value, "");
-  static_assert(!cuda::std::is_convertible<FromM<FromL, int, D, 7>, ToM<int, 5, 7>>::value, "");
+  static_assert(cuda::std::is_constructible<ToM<int, 5, 7>, FromM<FromL, int, D, 7>>::value);
+  static_assert(!cuda::std::is_convertible<FromM<FromL, int, D, 7>, ToM<int, 5, 7>>::value);
 
   // Sanity check that smaller index_type to larger index_type conversion works
-  static_assert(cuda::std::is_constructible<ToM<size_t, 5>, FromM<FromL, int, 5>>::value, "");
-  static_assert(cuda::std::is_convertible<FromM<FromL, int, 5>, ToM<size_t, 5>>::value, "");
+  static_assert(cuda::std::is_constructible<ToM<size_t, 5>, FromM<FromL, int, 5>>::value);
+  static_assert(cuda::std::is_convertible<FromM<FromL, int, 5>, ToM<size_t, 5>>::value);
 
   // Check that larger index_type to smaller index_type conversion works explicitly only
-  static_assert(cuda::std::is_constructible<ToM<int, 5>, FromM<FromL, size_t, 5>>::value, "");
-  static_assert(!cuda::std::is_convertible<FromM<FromL, size_t, 5>, ToM<int, 5>>::value, "");
+  static_assert(cuda::std::is_constructible<ToM<int, 5>, FromM<FromL, size_t, 5>>::value);
+  static_assert(!cuda::std::is_convertible<FromM<FromL, size_t, 5>, ToM<int, 5>>::value);
 }
 
 // the implicit convertibility test doesn't apply to non cuda::std::layouts
 template <class FromL, cuda::std::enable_if_t<cuda::std::is_same_v<FromL, always_convertible_layout>, int> = 0>
-__host__ __device__ constexpr void test_no_implicit_conversion()
+TEST_FUNC constexpr void test_no_implicit_conversion()
 {}
 
 template <class FromL>
-__host__ __device__ constexpr void test_rank_mismatch()
+TEST_FUNC constexpr void test_rank_mismatch()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
-  static_assert(!cuda::std::is_constructible<ToM<int, D>, FromM<FromL, int>>::value, "");
-  static_assert(!cuda::std::is_constructible<ToM<int>, FromM<FromL, int, D, D>>::value, "");
-  static_assert(!cuda::std::is_constructible<ToM<int, D>, FromM<FromL, int, D, D>>::value, "");
-  static_assert(!cuda::std::is_constructible<ToM<int, D, D, D>, FromM<FromL, int, D, D>>::value, "");
+  static_assert(!cuda::std::is_constructible<ToM<int, D>, FromM<FromL, int>>::value);
+  static_assert(!cuda::std::is_constructible<ToM<int>, FromM<FromL, int, D, D>>::value);
+  static_assert(!cuda::std::is_constructible<ToM<int, D>, FromM<FromL, int, D, D>>::value);
+  static_assert(!cuda::std::is_constructible<ToM<int, D, D, D>, FromM<FromL, int, D, D>>::value);
 }
 
 template <class FromL>
-__host__ __device__ constexpr void test_static_extent_mismatch()
+TEST_FUNC constexpr void test_static_extent_mismatch()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
-  static_assert(!cuda::std::is_constructible<ToM<int, D, 5>, FromM<FromL, int, D, 4>>::value, "");
-  static_assert(!cuda::std::is_constructible<ToM<int, 5>, FromM<FromL, int, 4>>::value, "");
-  static_assert(!cuda::std::is_constructible<ToM<int, 5, D>, FromM<FromL, int, 4, D>>::value, "");
+  static_assert(!cuda::std::is_constructible<ToM<int, D, 5>, FromM<FromL, int, D, 4>>::value);
+  static_assert(!cuda::std::is_constructible<ToM<int, 5>, FromM<FromL, int, 4>>::value);
+  static_assert(!cuda::std::is_constructible<ToM<int, 5, D>, FromM<FromL, int, 4, D>>::value);
 }
 
 template <class FromL>
-__host__ __device__ constexpr void test_layout()
+TEST_FUNC constexpr void test_layout()
 {
   test_conversion<FromL, int, int>();
   test_conversion<FromL, int, size_t>();
@@ -200,7 +201,7 @@ __host__ __device__ constexpr void test_layout()
   test_static_extent_mismatch<FromL>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_layout<cuda::std::layout_right>();
   test_layout<cuda::std::layout_left>();
@@ -212,6 +213,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

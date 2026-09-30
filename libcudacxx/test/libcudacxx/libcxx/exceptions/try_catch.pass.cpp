@@ -13,10 +13,12 @@
 
 #include <nv/target>
 
+#include "test_macros.h"
+
 // This test checks whether catching/throwing exceptions works correctly on host and whether it compiles in device code.
 // Device code is not ran, because it traps and CUDA is left in undefined state.
 
-__host__ __device__ constexpr int exception_value()
+TEST_FUNC constexpr int exception_value()
 {
   return 42;
 }
@@ -25,7 +27,7 @@ struct ExceptionBase
 {
   int value = exception_value();
 
-  [[nodiscard]] __host__ __device__ static const char* what() noexcept
+  [[nodiscard]] TEST_FUNC static const char* what() noexcept
   {
     return "ExceptionBase";
   }
@@ -45,12 +47,12 @@ struct HostException
 #endif // !_CCCL_COMPILER(NVRTC)
 };
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   // 1. test catch by value
   _CCCL_TRY
   {
-    _CCCL_THROW(Exception());
+    _CCCL_THROW(Exception);
   }
   _CCCL_CATCH (Exception e)
   {
@@ -70,7 +72,7 @@ __host__ __device__ void test()
   // 2. test catch by lvalue reference
   _CCCL_TRY
   {
-    _CCCL_THROW(Exception());
+    _CCCL_THROW(Exception);
   }
   _CCCL_CATCH (Exception & e)
   {
@@ -90,7 +92,7 @@ __host__ __device__ void test()
   // 3. test catch by const lvalue reference
   _CCCL_TRY
   {
-    _CCCL_THROW(Exception());
+    _CCCL_THROW(Exception);
   }
   _CCCL_CATCH (const Exception& e)
   {
@@ -112,7 +114,7 @@ __host__ __device__ void test()
   {
     _CCCL_TRY
     {
-      _CCCL_THROW(Exception());
+      _CCCL_THROW(Exception);
     }
     _CCCL_CATCH (Exception e)
     {
@@ -147,7 +149,7 @@ __host__ __device__ void test()
   // 5. test throwing host-only exceptions
   _CCCL_TRY
   {
-    _CCCL_THROW(HostException());
+    _CCCL_THROW(HostException);
   }
   _CCCL_CATCH (const HostException& e)
   {

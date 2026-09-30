@@ -121,7 +121,7 @@ private:
   }
 
   /// Specialization for when FlagOp has third index param
-  template <typename FlagOp, bool HAS_PARAM = BinaryOpHasIdxParam<T, FlagOp>::value>
+  template <typename FlagOp, bool HasParam = BinaryOpHasIdxParam<T, FlagOp>::value>
   struct ApplyOp
   {
     // Apply flag operator
@@ -160,19 +160,19 @@ private:
      * @param[in] flag_op
      *   Binary boolean flag predicate
      */
-    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    template <int ItemsPerThread, typename FlagT, typename FlagOp>
     static _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeads(
       int linear_tid,
-      FlagT (&flags)[ITEMS_PER_THREAD],
-      T (&input)[ITEMS_PER_THREAD],
-      T (&preds)[ITEMS_PER_THREAD],
+      FlagT (&flags)[ItemsPerThread],
+      T (&input)[ItemsPerThread],
+      T (&preds)[ItemsPerThread],
       FlagOp flag_op)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 1; i < ITEMS_PER_THREAD; ++i)
+      for (int i = 1; i < ItemsPerThread; ++i)
       {
         preds[i] = input[i - 1];
-        flags[i] = ApplyOp<FlagOp>::FlagT(flag_op, preds[i], input[i], (linear_tid * ITEMS_PER_THREAD) + i);
+        flags[i] = ApplyOp<FlagOp>::FlagT(flag_op, preds[i], input[i], (linear_tid * ItemsPerThread) + i);
       }
     }
 
@@ -188,14 +188,14 @@ private:
      * @param[in] flag_op
      *   Binary boolean flag predicate
      */
-    template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+    template <int ItemsPerThread, typename FlagT, typename FlagOp>
     static _CCCL_DEVICE _CCCL_FORCEINLINE void
-    FlagTails(int linear_tid, FlagT (&flags)[ITEMS_PER_THREAD], T (&input)[ITEMS_PER_THREAD], FlagOp flag_op)
+    FlagTails(int linear_tid, FlagT (&flags)[ItemsPerThread], T (&input)[ItemsPerThread], FlagOp flag_op)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < ITEMS_PER_THREAD - 1; ++i)
+      for (int i = 0; i < ItemsPerThread - 1; ++i)
       {
-        flags[i] = ApplyOp<FlagOp>::FlagT(flag_op, input[i], input[i + 1], (linear_tid * ITEMS_PER_THREAD) + i + 1);
+        flags[i] = ApplyOp<FlagOp>::FlagT(flag_op, input[i], input[i + 1], (linear_tid * ItemsPerThread) + i + 1);
       }
     }
   };
@@ -212,8 +212,7 @@ private:
 
 public:
   /// @smemstorage{BlockDiscontinuity}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -221,6 +220,11 @@ public:
   /**
    * @brief Collective constructor using a private static allocation of shared memory as temporary
    *        storage.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockDiscontinuity()
       : temp_storage(PrivateStorage())
@@ -230,6 +234,11 @@ public:
   /**
    * @brief Collective constructor using the specified memory allocation as temporary storage.
    *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
+   *
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
    */
@@ -238,7 +247,7 @@ public:
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @} end member group
+  //! @}
   //! @name Head flag operations
   //! @{
 
@@ -257,12 +266,12 @@ public:
    * @param[in] flag_op
    *   Binary boolean flag predicate
    */
-  template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeads(
-    FlagT (&head_flags)[ITEMS_PER_THREAD], T (&input)[ITEMS_PER_THREAD], T (&preds)[ITEMS_PER_THREAD], FlagOp flag_op)
+  template <int ItemsPerThread, typename FlagT, typename FlagOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  FlagHeads(FlagT (&head_flags)[ItemsPerThread], T (&input)[ItemsPerThread], T (&preds)[ItemsPerThread], FlagOp flag_op)
   {
     // Share last item
-    temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
+    temp_storage.last_items[linear_tid] = input[ItemsPerThread - 1];
 
     __syncthreads();
 
@@ -274,7 +283,7 @@ public:
     else
     {
       preds[0]      = temp_storage.last_items[linear_tid - 1];
-      head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ITEMS_PER_THREAD);
+      head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ItemsPerThread);
     }
 
     // Set head_flags for remaining items
@@ -298,16 +307,16 @@ public:
    *   <b>[<em>thread</em><sub>0</sub> only]</b> Item with which to compare the first tile item
    *   (<tt>input<sub>0</sub></tt> from <em>thread</em><sub>0</sub>).
    */
-  template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+  template <int ItemsPerThread, typename FlagT, typename FlagOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeads(
-    FlagT (&head_flags)[ITEMS_PER_THREAD],
-    T (&input)[ITEMS_PER_THREAD],
-    T (&preds)[ITEMS_PER_THREAD],
+    FlagT (&head_flags)[ItemsPerThread],
+    T (&input)[ItemsPerThread],
+    T (&preds)[ItemsPerThread],
     FlagOp flag_op,
     T tile_predecessor_item)
   {
     // Share last item
-    temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
+    temp_storage.last_items[linear_tid] = input[ItemsPerThread - 1];
 
     __syncthreads();
 
@@ -315,7 +324,7 @@ public:
     preds[0] = (linear_tid == 0) ? tile_predecessor_item : // First thread
                  temp_storage.last_items[linear_tid - 1];
 
-    head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ITEMS_PER_THREAD);
+    head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ItemsPerThread);
 
     // Set head_flags for remaining items
     Iterate::FlagHeads(linear_tid, head_flags, input, preds, flag_op);
@@ -326,6 +335,9 @@ public:
   //! @rst
   //! Sets head flags indicating discontinuities between items partitioned across the thread
   //! block, for which the first item has no reference and is always flagged.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The flag ``head_flags[i]`` is set for item ``input[i]`` when ``flag_op(previous-item, input[i])`` returns
   //!   ``true`` (where ``previous-item`` is either the preceding item in the same thread or the last item in
@@ -369,7 +381,7 @@ public:
   //! ``{ [1,0,1,0], [0,0,0,0], [1,1,0,0], [0,1,0,0], ... }``.
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread
   //!
   //! @tparam FlagT
@@ -390,16 +402,19 @@ public:
   //!
   //! @param[in] flag_op
   //!   Binary boolean flag predicate
-  template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+  template <int ItemsPerThread, typename FlagT, typename FlagOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  FlagHeads(FlagT (&head_flags)[ITEMS_PER_THREAD], T (&input)[ITEMS_PER_THREAD], FlagOp flag_op)
+  FlagHeads(FlagT (&head_flags)[ItemsPerThread], T (&input)[ItemsPerThread], FlagOp flag_op)
   {
-    T preds[ITEMS_PER_THREAD];
+    T preds[ItemsPerThread];
     FlagHeads(head_flags, input, preds, flag_op);
   }
 
   //! @rst
   //! Sets head flags indicating discontinuities between items partitioned across the thread block.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The flag ``head_flags[i]`` is set for item ``input[i]`` when ``flag_op(previous-item, input[i])``
   //!   returns ``true`` (where ``previous-item`` is either the preceding item in the same thread or the last item
@@ -448,7 +463,7 @@ public:
   //! threads will be ``{ [0,0,1,0], [0,0,0,0], [1,1,0,0], [0,1,0,0], ... }``.
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam FlagT
@@ -474,15 +489,15 @@ public:
   //!   @rst
   //!   *thread*\ :sub:`0` only item with which to compare the first tile item (``input[0]`` from *thread*\ :sub:`0`).
   //!   @endrst
-  template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeads(
-    FlagT (&head_flags)[ITEMS_PER_THREAD], T (&input)[ITEMS_PER_THREAD], FlagOp flag_op, T tile_predecessor_item)
+  template <int ItemsPerThread, typename FlagT, typename FlagOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  FlagHeads(FlagT (&head_flags)[ItemsPerThread], T (&input)[ItemsPerThread], FlagOp flag_op, T tile_predecessor_item)
   {
-    T preds[ITEMS_PER_THREAD];
+    T preds[ItemsPerThread];
     FlagHeads(head_flags, input, preds, flag_op, tile_predecessor_item);
   }
 
-  //! @} end member group
+  //! @}
   //! @name Tail flag operations
   //! @{
 
@@ -490,11 +505,14 @@ public:
   //! Sets tail flags indicating discontinuities between items partitioned across the thread
   //! block, for which the last item has no reference and is always flagged.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The flag ``tail_flags[i]`` is set for item ``input[i]`` when
   //!   ``flag_op(input[i], next-item)``
   //!   returns ``true`` (where `next-item` is either the next item
   //!   in the same thread or the first item in the next thread).
-  //! - For *thread*\ :sub:`BLOCK_THREADS - 1`, item ``input[ITEMS_PER_THREAD - 1]`` is always flagged.
+  //! - For *thread*\ :sub:`BLOCK_THREADS - 1`, item ``input[ItemsPerThread - 1]`` is always flagged.
   //! - @blocked
   //! - @granularity
   //! - @smemreuse
@@ -533,7 +551,7 @@ public:
   //! ``{ [0,1,0,0], [0,0,0,1], [1,0,0,...], ..., [1,0,0,1] }``.
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam FlagT
@@ -554,9 +572,9 @@ public:
   //!
   //! @param[in] flag_op
   //!   Binary boolean flag predicate
-  template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+  template <int ItemsPerThread, typename FlagT, typename FlagOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  FlagTails(FlagT (&tail_flags)[ITEMS_PER_THREAD], T (&input)[ITEMS_PER_THREAD], FlagOp flag_op)
+  FlagTails(FlagT (&tail_flags)[ItemsPerThread], T (&input)[ItemsPerThread], FlagOp flag_op)
   {
     // Share first item
     temp_storage.first_items[linear_tid] = input[0];
@@ -564,13 +582,13 @@ public:
     __syncthreads();
 
     // Set flag for last thread-item
-    tail_flags[ITEMS_PER_THREAD - 1] =
+    tail_flags[ItemsPerThread - 1] =
       (linear_tid == BLOCK_THREADS - 1) ? 1 : // Last thread
         ApplyOp<FlagOp>::FlagT(
           flag_op,
-          input[ITEMS_PER_THREAD - 1],
+          input[ItemsPerThread - 1],
           temp_storage.first_items[linear_tid + 1],
-          (linear_tid * ITEMS_PER_THREAD) + ITEMS_PER_THREAD);
+          (linear_tid * ItemsPerThread) + ItemsPerThread);
 
     // Set tail_flags for remaining items
     Iterate::FlagTails(linear_tid, tail_flags, input, flag_op);
@@ -579,10 +597,13 @@ public:
   //! @rst
   //! Sets tail flags indicating discontinuities between items partitioned across the thread block.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The flag ``tail_flags[i]`` is set for item ``input[i]`` when ``flag_op(input[i], next-item)``
   //!   returns ``true`` (where ``next-item`` is either the next item in the same thread or the first item in
   //!   the next thread).
-  //! - For *thread*\ :sub:`BLOCK_THREADS - 1`, item ``input[ITEMS_PER_THREAD - 1]`` is compared against
+  //! - For *thread*\ :sub:`BLOCK_THREADS - 1`, item ``input[ItemsPerThread - 1]`` is compared against
   //!   ``tile_successor_item``.
   //! - @blocked
   //! - @granularity
@@ -627,7 +648,7 @@ public:
   //! threads will be ``{ [0,1,0,0], [0,0,0,1], [1,0,0,...], ..., [1,0,0,0] }``.
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam FlagT
@@ -652,12 +673,12 @@ public:
   //! @param[in] tile_successor_item
   //!   @rst
   //!   *thread*\ :sub:`BLOCK_THREADS - 1` only item with which to
-  //!   compare the last tile item (``input[ITEMS_PER_THREAD - 1]`` from
+  //!   compare the last tile item (``input[ItemsPerThread - 1]`` from
   //!   *thread*\ :sub:`BLOCK_THREADS - 1`).
   //!   @endrst
-  template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+  template <int ItemsPerThread, typename FlagT, typename FlagOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  FlagTails(FlagT (&tail_flags)[ITEMS_PER_THREAD], T (&input)[ITEMS_PER_THREAD], FlagOp flag_op, T tile_successor_item)
+  FlagTails(FlagT (&tail_flags)[ItemsPerThread], T (&input)[ItemsPerThread], FlagOp flag_op, T tile_successor_item)
   {
     // Share first item
     temp_storage.first_items[linear_tid] = input[0];
@@ -668,19 +689,22 @@ public:
     T successor_item = (linear_tid == BLOCK_THREADS - 1) ? tile_successor_item : // Last thread
                          temp_storage.first_items[linear_tid + 1];
 
-    tail_flags[ITEMS_PER_THREAD - 1] = ApplyOp<FlagOp>::FlagT(
-      flag_op, input[ITEMS_PER_THREAD - 1], successor_item, (linear_tid * ITEMS_PER_THREAD) + ITEMS_PER_THREAD);
+    tail_flags[ItemsPerThread - 1] = ApplyOp<FlagOp>::FlagT(
+      flag_op, input[ItemsPerThread - 1], successor_item, (linear_tid * ItemsPerThread) + ItemsPerThread);
 
     // Set tail_flags for remaining items
     Iterate::FlagTails(linear_tid, tail_flags, input, flag_op);
   }
 
-  //! @} end member group
+  //! @}
   //! @name Head & tail flag operations
   //! @{
 
   //! @rst
   //! Sets both head and tail flags indicating discontinuities between items partitioned across the thread block.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The flag ``head_flags[i]`` is set for item ``input[i]`` when ``flag_op(previous-item, input[i])`` returns
   //!   ``true`` (where ``previous-item`` is either the preceding item in the same thread or the last item in
@@ -689,7 +713,7 @@ public:
   //! - The flag ``tail_flags[i]`` is set for item ``input[i]`` when ``flag_op(input[i], next-item)``
   //!   returns ``true`` (where next-item is either the next item in the same thread or the first item in
   //!   the next thread).
-  //! - For *thread*\ :sub:`BLOCK_THREADS - 1`, item ``input[ITEMS_PER_THREAD - 1]`` is always flagged.
+  //! - For *thread*\ :sub:`BLOCK_THREADS - 1`, item ``input[ItemsPerThread - 1]`` is always flagged.
   //! - @blocked
   //! - @granularity
   //! - @smemreuse
@@ -732,7 +756,7 @@ public:
   //! ``{ [0,1,0,0], [0,0,0,1], [1,0,0,...], ..., [1,0,0,1] }``.
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam FlagT
@@ -756,20 +780,17 @@ public:
   //!
   //! @param[in] flag_op
   //!   Binary boolean flag predicate
-  template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+  template <int ItemsPerThread, typename FlagT, typename FlagOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeadsAndTails(
-    FlagT (&head_flags)[ITEMS_PER_THREAD],
-    FlagT (&tail_flags)[ITEMS_PER_THREAD],
-    T (&input)[ITEMS_PER_THREAD],
-    FlagOp flag_op)
+    FlagT (&head_flags)[ItemsPerThread], FlagT (&tail_flags)[ItemsPerThread], T (&input)[ItemsPerThread], FlagOp flag_op)
   {
     // Share first and last items
     temp_storage.first_items[linear_tid] = input[0];
-    temp_storage.last_items[linear_tid]  = input[ITEMS_PER_THREAD - 1];
+    temp_storage.last_items[linear_tid]  = input[ItemsPerThread - 1];
 
     __syncthreads();
 
-    T preds[ITEMS_PER_THREAD];
+    T preds[ItemsPerThread];
 
     // Set flag for first thread-item
     if (linear_tid == 0)
@@ -779,17 +800,17 @@ public:
     else
     {
       preds[0]      = temp_storage.last_items[linear_tid - 1];
-      head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ITEMS_PER_THREAD);
+      head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ItemsPerThread);
     }
 
     // Set flag for last thread-item
-    tail_flags[ITEMS_PER_THREAD - 1] =
+    tail_flags[ItemsPerThread - 1] =
       (linear_tid == BLOCK_THREADS - 1) ? 1 : // Last thread
         ApplyOp<FlagOp>::FlagT(
           flag_op,
-          input[ITEMS_PER_THREAD - 1],
+          input[ItemsPerThread - 1],
           temp_storage.first_items[linear_tid + 1],
-          (linear_tid * ITEMS_PER_THREAD) + ITEMS_PER_THREAD);
+          (linear_tid * ItemsPerThread) + ItemsPerThread);
 
     // Set head_flags for remaining items
     Iterate::FlagHeads(linear_tid, head_flags, input, preds, flag_op);
@@ -801,13 +822,16 @@ public:
   //! @rst
   //! Sets both head and tail flags indicating discontinuities between items partitioned across the thread block.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The flag ``head_flags[i]`` is set for item ``input[i]`` when
   //!   ``flag_op(previous-item, input[i])`` returns ``true`` (where ``previous-item`` is either the preceding item
   //!   in the same thread or the last item in the previous thread).
   //! - For *thread*\ :sub:`0`, item ``input[0]`` is always flagged.
   //! - The flag ``tail_flags[i]`` is set for item ``input[i]`` when ``flag_op(input[i], next-item)`` returns ``true``
   //!   (where ``next-item`` is either the next item in the same thread or the first item in the next thread).
-  //! - For *thread*\ :sub:`BLOCK_THREADS - 1`, item ``input[ITEMS_PER_THREAD - 1]`` is compared
+  //! - For *thread*\ :sub:`BLOCK_THREADS - 1`, item ``input[ItemsPerThread - 1]`` is compared
   //!   against ``tile_predecessor_item``.
   //! - @blocked
   //! - @granularity
@@ -856,7 +880,7 @@ public:
   //! ``{ [0,1,0,0], [0,0,0,1], [1,0,0,...], ..., [1,0,0,0] }``.
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam FlagT
@@ -878,7 +902,7 @@ public:
   //! @param[in] tile_successor_item
   //!   @rst
   //!   *thread*\ :sub:`BLOCK_THREADS - 1` only item with which to compare
-  //!   the last tile item (``input[ITEMS_PER_THREAD - 1]`` from
+  //!   the last tile item (``input[ItemsPerThread - 1]`` from
   //!   *thread*\ :sub:`BLOCK_THREADS - 1`).
   //!   @endrst
   //!
@@ -887,21 +911,21 @@ public:
   //!
   //! @param[in] flag_op
   //!   Binary boolean flag predicate
-  template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+  template <int ItemsPerThread, typename FlagT, typename FlagOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeadsAndTails(
-    FlagT (&head_flags)[ITEMS_PER_THREAD],
-    FlagT (&tail_flags)[ITEMS_PER_THREAD],
+    FlagT (&head_flags)[ItemsPerThread],
+    FlagT (&tail_flags)[ItemsPerThread],
     T tile_successor_item,
-    T (&input)[ITEMS_PER_THREAD],
+    T (&input)[ItemsPerThread],
     FlagOp flag_op)
   {
     // Share first and last items
     temp_storage.first_items[linear_tid] = input[0];
-    temp_storage.last_items[linear_tid]  = input[ITEMS_PER_THREAD - 1];
+    temp_storage.last_items[linear_tid]  = input[ItemsPerThread - 1];
 
     __syncthreads();
 
-    T preds[ITEMS_PER_THREAD];
+    T preds[ItemsPerThread];
 
     // Set flag for first thread-item
     if (linear_tid == 0)
@@ -911,15 +935,15 @@ public:
     else
     {
       preds[0]      = temp_storage.last_items[linear_tid - 1];
-      head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ITEMS_PER_THREAD);
+      head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ItemsPerThread);
     }
 
     // Set flag for last thread-item
     T successor_item = (linear_tid == BLOCK_THREADS - 1) ? tile_successor_item : // Last thread
                          temp_storage.first_items[linear_tid + 1];
 
-    tail_flags[ITEMS_PER_THREAD - 1] = ApplyOp<FlagOp>::FlagT(
-      flag_op, input[ITEMS_PER_THREAD - 1], successor_item, (linear_tid * ITEMS_PER_THREAD) + ITEMS_PER_THREAD);
+    tail_flags[ItemsPerThread - 1] = ApplyOp<FlagOp>::FlagT(
+      flag_op, input[ItemsPerThread - 1], successor_item, (linear_tid * ItemsPerThread) + ItemsPerThread);
 
     // Set head_flags for remaining items
     Iterate::FlagHeads(linear_tid, head_flags, input, preds, flag_op);
@@ -931,6 +955,9 @@ public:
   //! @rst
   //! Sets both head and tail flags indicating discontinuities between items partitioned across the thread block.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The flag ``head_flags[i]`` is set for item ``input[i]`` when ``flag_op(previous-item, input[i])``
   //!   returns ``true`` (where ``previous-item`` is either the preceding item in the same thread or the last item
   //!   in the previous thread).
@@ -939,7 +966,7 @@ public:
   //!   ``flag_op(input[i], next-item)`` returns ``true`` (where ``next-item`` is either the next item
   //!   in the same thread or the first item in the next thread).
   //! - For *thread*\ :sub:`BLOCK_THREADS - 1`, item
-  //!   ``input[ITEMS_PER_THREAD - 1]`` is always flagged.
+  //!   ``input[ItemsPerThread - 1]`` is always flagged.
   //! - @blocked
   //! - @granularity
   //! - @smemreuse
@@ -991,7 +1018,7 @@ public:
   //! in those threads will be ``{ [0,1,0,0], [0,0,0,1], [1,0,0,...], ..., [1,0,0,1] }``.
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam FlagT
@@ -1020,36 +1047,36 @@ public:
   //!
   //! @param[in] flag_op
   //!   Binary boolean flag predicate
-  template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+  template <int ItemsPerThread, typename FlagT, typename FlagOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeadsAndTails(
-    FlagT (&head_flags)[ITEMS_PER_THREAD],
+    FlagT (&head_flags)[ItemsPerThread],
     T tile_predecessor_item,
-    FlagT (&tail_flags)[ITEMS_PER_THREAD],
-    T (&input)[ITEMS_PER_THREAD],
+    FlagT (&tail_flags)[ItemsPerThread],
+    T (&input)[ItemsPerThread],
     FlagOp flag_op)
   {
     // Share first and last items
     temp_storage.first_items[linear_tid] = input[0];
-    temp_storage.last_items[linear_tid]  = input[ITEMS_PER_THREAD - 1];
+    temp_storage.last_items[linear_tid]  = input[ItemsPerThread - 1];
 
     __syncthreads();
 
-    T preds[ITEMS_PER_THREAD];
+    T preds[ItemsPerThread];
 
     // Set flag for first thread-item
     preds[0] = (linear_tid == 0) ? tile_predecessor_item : // First thread
                  temp_storage.last_items[linear_tid - 1];
 
-    head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ITEMS_PER_THREAD);
+    head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ItemsPerThread);
 
     // Set flag for last thread-item
-    tail_flags[ITEMS_PER_THREAD - 1] =
+    tail_flags[ItemsPerThread - 1] =
       (linear_tid == BLOCK_THREADS - 1) ? 1 : // Last thread
         ApplyOp<FlagOp>::FlagT(
           flag_op,
-          input[ITEMS_PER_THREAD - 1],
+          input[ItemsPerThread - 1],
           temp_storage.first_items[linear_tid + 1],
-          (linear_tid * ITEMS_PER_THREAD) + ITEMS_PER_THREAD);
+          (linear_tid * ItemsPerThread) + ItemsPerThread);
 
     // Set head_flags for remaining items
     Iterate::FlagHeads(linear_tid, head_flags, input, preds, flag_op);
@@ -1061,6 +1088,9 @@ public:
   //! @rst
   //! Sets both head and tail flags indicating discontinuities between items partitioned across the thread block.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The flag ``head_flags[i]`` is set for item ``input[i]`` when ``flag_op(previous-item, input[i])``
   //!   returns ``true`` (where ``previous-item`` is either the preceding item in the same thread or the last item in
   //!   the previous thread).
@@ -1068,7 +1098,7 @@ public:
   //! - The flag ``tail_flags[i]`` is set for item ``input[i]`` when ``flag_op(input[i], next-item)``
   //!   returns ``true`` (where ``next-item`` is either the next item in the same thread or the first item in
   //!   the next thread).
-  //! - For *thread*\ :sub:`BLOCK_THREADS - 1`, item ``input[ITEMS_PER_THREAD - 1]`` is compared
+  //! - For *thread*\ :sub:`BLOCK_THREADS - 1`, item ``input[ItemsPerThread - 1]`` is compared
   //!   against ``tile_successor_item``.
   //! - @blocked
   //! - @granularity
@@ -1122,7 +1152,7 @@ public:
   //! ``{ [0,1,0,0], [0,0,0,1], [1,0,0,...], ..., [1,0,0,0] }``.
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam FlagT
@@ -1149,7 +1179,7 @@ public:
   //! @param[in] tile_successor_item
   //!   @rst
   //!   *thread*\ :sub:`BLOCK_THREADS - 1` only item with which to compare the last tile item
-  //!   (``input[ITEMS_PER_THREAD - 1]`` from *thread*\ :sub:`BLOCK_THREADS - 1`).
+  //!   (``input[ItemsPerThread - 1]`` from *thread*\ :sub:`BLOCK_THREADS - 1`).
   //!   @endrst
   //!
   //! @param[in] input
@@ -1157,35 +1187,35 @@ public:
   //!
   //! @param[in] flag_op
   //!   Binary boolean flag predicate
-  template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+  template <int ItemsPerThread, typename FlagT, typename FlagOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeadsAndTails(
-    FlagT (&head_flags)[ITEMS_PER_THREAD],
+    FlagT (&head_flags)[ItemsPerThread],
     T tile_predecessor_item,
-    FlagT (&tail_flags)[ITEMS_PER_THREAD],
+    FlagT (&tail_flags)[ItemsPerThread],
     T tile_successor_item,
-    T (&input)[ITEMS_PER_THREAD],
+    T (&input)[ItemsPerThread],
     FlagOp flag_op)
   {
     // Share first and last items
     temp_storage.first_items[linear_tid] = input[0];
-    temp_storage.last_items[linear_tid]  = input[ITEMS_PER_THREAD - 1];
+    temp_storage.last_items[linear_tid]  = input[ItemsPerThread - 1];
 
     __syncthreads();
 
-    T preds[ITEMS_PER_THREAD];
+    T preds[ItemsPerThread];
 
     // Set flag for first thread-item
     preds[0] = (linear_tid == 0) ? tile_predecessor_item : // First thread
                  temp_storage.last_items[linear_tid - 1];
 
-    head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ITEMS_PER_THREAD);
+    head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ItemsPerThread);
 
     // Set flag for last thread-item
     T successor_item = (linear_tid == BLOCK_THREADS - 1) ? tile_successor_item : // Last thread
                          temp_storage.first_items[linear_tid + 1];
 
-    tail_flags[ITEMS_PER_THREAD - 1] = ApplyOp<FlagOp>::FlagT(
-      flag_op, input[ITEMS_PER_THREAD - 1], successor_item, (linear_tid * ITEMS_PER_THREAD) + ITEMS_PER_THREAD);
+    tail_flags[ItemsPerThread - 1] = ApplyOp<FlagOp>::FlagT(
+      flag_op, input[ItemsPerThread - 1], successor_item, (linear_tid * ItemsPerThread) + ItemsPerThread);
 
     // Set head_flags for remaining items
     Iterate::FlagHeads(linear_tid, head_flags, input, preds, flag_op);
@@ -1194,7 +1224,7 @@ public:
     Iterate::FlagTails(linear_tid, tail_flags, input, flag_op);
   }
 
-  //! @} end member group
+  //! @}
 };
 
 CUB_NAMESPACE_END

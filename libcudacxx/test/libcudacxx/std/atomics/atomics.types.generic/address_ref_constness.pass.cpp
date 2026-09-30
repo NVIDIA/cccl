@@ -5,10 +5,13 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 //  ... test case crashes clang.
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/std/atomic>
 
@@ -82,9 +85,9 @@
 #include "cuda_space_selector.h"
 
 template <class A, class T, template <typename, typename> class Selector>
-__host__ __device__ void do_test()
+TEST_HOST_DEVICE_FUNC void do_test()
 {
-  typedef typename cuda::std::remove_pointer<T>::type X;
+  using X = typename cuda::std::remove_pointer<T>::type;
   Selector<T, constructor_initializer> sel;
   T& val = *sel.construct(T(0));
   A obj(val);
@@ -124,7 +127,7 @@ __host__ __device__ void do_test()
 }
 
 template <class A, class T, template <typename, typename> class Selector>
-__host__ __device__ void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   do_test<A, T, Selector>();
 }
@@ -136,11 +139,13 @@ int main(int, char**)
     (test<const cuda::std::atomic_ref<int*>, int*, local_memory_selector>();
      test<const cuda::atomic_ref<int*, cuda::thread_scope_system>, int*, local_memory_selector>();
      test<const cuda::atomic_ref<int*, cuda::thread_scope_device>, int*, local_memory_selector>();
+     test<const cuda::atomic_ref<int*, cuda::thread_scope_cluster>, int*, local_memory_selector>();
      test<const cuda::atomic_ref<int*, cuda::thread_scope_block>, int*, local_memory_selector>();),
     NV_PROVIDES_SM_70,
     (test<const cuda::std::atomic_ref<int*>, int*, local_memory_selector>();
      test<const cuda::atomic_ref<int*, cuda::thread_scope_system>, int*, local_memory_selector>();
      test<const cuda::atomic_ref<int*, cuda::thread_scope_device>, int*, local_memory_selector>();
+     test<const cuda::atomic_ref<int*, cuda::thread_scope_cluster>, int*, local_memory_selector>();
      test<const cuda::atomic_ref<int*, cuda::thread_scope_block>, int*, local_memory_selector>();))
 
   NV_IF_TARGET(
@@ -148,11 +153,13 @@ int main(int, char**)
     (test<const cuda::std::atomic_ref<int*>, int*, shared_memory_selector>();
      test<const cuda::atomic_ref<int*, cuda::thread_scope_system>, int*, shared_memory_selector>();
      test<const cuda::atomic_ref<int*, cuda::thread_scope_device>, int*, shared_memory_selector>();
+     test<const cuda::atomic_ref<int*, cuda::thread_scope_cluster>, int*, shared_memory_selector>();
      test<const cuda::atomic_ref<int*, cuda::thread_scope_block>, int*, shared_memory_selector>();
 
      test<const cuda::std::atomic_ref<int*>, int*, global_memory_selector>();
      test<const cuda::atomic_ref<int*, cuda::thread_scope_system>, int*, global_memory_selector>();
      test<const cuda::atomic_ref<int*, cuda::thread_scope_device>, int*, global_memory_selector>();
+     test<const cuda::atomic_ref<int*, cuda::thread_scope_cluster>, int*, global_memory_selector>();
      test<const cuda::atomic_ref<int*, cuda::thread_scope_block>, int*, global_memory_selector>();))
 
   return 0;

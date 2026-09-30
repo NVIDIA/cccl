@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file binary_search.h
  *  \brief Sequential implementation of binary search algorithms.
@@ -50,7 +37,7 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
   StrictWeakOrdering comp)
 {
   // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
   using difference_type = thrust::detail::it_difference_t<ForwardIterator>;
 
@@ -58,8 +45,8 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
 
   while (len > 0)
   {
-    difference_type half   = len >> 1;
-    ForwardIterator middle = first;
+    const difference_type half = len >> 1;
+    ForwardIterator middle     = first;
 
     ::cuda::std::advance(middle, half);
 
@@ -88,7 +75,7 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
   StrictWeakOrdering comp)
 {
   // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
   using difference_type = thrust::detail::it_difference_t<ForwardIterator>;
 
@@ -96,8 +83,8 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
 
   while (len > 0)
   {
-    difference_type half   = len >> 1;
-    ForwardIterator middle = first;
+    const difference_type half = len >> 1;
+    ForwardIterator middle     = first;
 
     ::cuda::std::advance(middle, half);
 
@@ -128,7 +115,7 @@ _CCCL_HOST_DEVICE bool binary_search(
   ForwardIterator iter = sequential::lower_bound(exec, first, last, val, comp);
 
   // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
   return iter != last && !wrapped_comp(val, *iter);
 }

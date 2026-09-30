@@ -76,7 +76,7 @@ Unlike the corresponding CUDA intrinsic functions ``__isGlobal()``, ``__isShared
 
 - When available, the built-in functions (``__isGlobal()``, ``__isShared()``, ``__isConstant()``, ``__isLocal()``, ``__isGridConstant()``, or ``__isClusterShared()``) are used to determine the address space.
 - If the memory space of the input pointer matches the requested address space,
-the function marks the pointer as belonging to that address space. For example, a subsequent store to a generic address that maps to shared memory emits an ``STS`` SASS instruction rather than the generic ``ST`` instruction.
+  the function marks the pointer as belonging to that address space. For example, a subsequent store to a generic address that maps to shared memory emits an ``STS`` SASS instruction rather than the generic ``ST`` instruction.
 
 Example
 -------

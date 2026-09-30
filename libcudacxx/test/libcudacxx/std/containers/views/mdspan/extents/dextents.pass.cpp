@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <class IndexType>
-__host__ __device__ void test_alias_template_dextents()
+TEST_FUNC void test_alias_template_dextents()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   static_assert(cuda::std::is_same_v<cuda::std::dextents<IndexType, 0>, cuda::std::extents<IndexType>>);

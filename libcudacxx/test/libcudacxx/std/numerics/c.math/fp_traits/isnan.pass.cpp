@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
+
 // <cmath>
 
 // clang-format off
@@ -21,8 +23,14 @@
 
 #include "test_macros.h"
 
+// numeric_limits::has_denorm has been deprecated since C++23
+#if _CCCL_STD_VER >= 2023
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+#endif // _CCCL_STD_VER >= 2023
+
 template <class T>
-__host__ __device__ constexpr void test_isnan(const T pos, bool expected)
+TEST_FUNC constexpr void test_isnan(const T pos, bool expected)
 {
   assert(cuda::std::isnan(pos) == expected);
 
@@ -49,7 +57,7 @@ __host__ __device__ constexpr void test_isnan(const T pos, bool expected)
 }
 
 template <class T>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::isnan(T{}))>);
 
@@ -84,7 +92,7 @@ __host__ __device__ constexpr void test_type()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_type<float>();
   test_type<double>();

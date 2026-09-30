@@ -135,8 +135,8 @@ class __alloc_func<_Fp, _Ap, _Rp(_ArgTypes...)>
   __compressed_pair<_Fp, _Ap> __f_;
 
 public:
-  using _Target _CCCL_NODEBUG_ALIAS = _Fp;
-  using _Alloc _CCCL_NODEBUG_ALIAS  = _Ap;
+  using _Target _CCCL_NODEBUG = _Fp;
+  using _Alloc _CCCL_NODEBUG  = _Ap;
 
   _CCCL_API inline const _Target& __target() const
   {
@@ -206,7 +206,7 @@ class __default_alloc_func<_Fp, _Rp(_ArgTypes...)>
   _Fp __f_;
 
 public:
-  using _Target _CCCL_NODEBUG_ALIAS = _Fp;
+  using _Target _CCCL_NODEBUG = _Fp;
 
   _CCCL_API inline const _Target& __target() const
   {
@@ -1055,7 +1055,7 @@ public:
 };
 
 template <class _Rp, class... _Ap>
-function(_Rp (*)(_Ap...)) -> function<_Rp(_Ap...)>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES function(_Rp (*)(_Ap...)) -> function<_Rp(_Ap...)>;
 
 template <class _Fp>
 struct __strip_signature;
@@ -1145,7 +1145,7 @@ struct __strip_signature<_Rp (_Gp::*)(_Ap...) const volatile & noexcept>
 };
 
 template <class _Fp, class _Stripped = typename __strip_signature<decltype(&_Fp::operator())>::type>
-function(_Fp) -> function<_Stripped>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES function(_Fp) -> function<_Stripped>;
 
 template <class _Rp, class... _ArgTypes>
 function<_Rp(_ArgTypes...)>::function(const function& __f)

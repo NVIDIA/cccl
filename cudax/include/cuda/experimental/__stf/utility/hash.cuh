@@ -17,6 +17,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -57,7 +59,7 @@ struct has_std_hash : ::std::false_type
  * @tparam E The type to check for std::hash definition.
  */
 template <typename E>
-struct has_std_hash<E, ::std::void_t<decltype(::std::declval<::std::hash<E>>()(::std::declval<E>()))>>
+struct has_std_hash<E, ::cuda::std::void_t<decltype(::cuda::std::declval<::std::hash<E>>()(::cuda::std::declval<E>()))>>
     : ::std::true_type
 {};
 
@@ -218,7 +220,8 @@ struct has_cudastf_hash : ::std::false_type
 template <typename E>
 struct has_cudastf_hash<
   E,
-  ::std::void_t<decltype(::std::declval<::cuda::experimental::stf::hash<E>>()(::std::declval<E>()))>> : ::std::true_type
+  ::cuda::std::void_t<decltype(::cuda::std::declval<::cuda::experimental::stf::hash<E>>()(::cuda::std::declval<E>()))>>
+    : ::std::true_type
 {};
 
 /**

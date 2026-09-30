@@ -226,8 +226,8 @@ template <class T, size_t ID>
 class CountingAllocator
 {
 public:
-  typedef T value_type;
-  typedef T* pointer;
+  using value_type = T;
+  using pointer    = T*;
 
   template <class U>
   struct rebind
@@ -309,9 +309,9 @@ template <size_t ID>
 class CountingAllocator<void, ID>
 {
 public:
-  typedef void* pointer;
-  typedef const void* const_pointer;
-  typedef void value_type;
+  using pointer       = void*;
+  using const_pointer = const void*;
+  using value_type    = void;
 
   template <class U>
   struct rebind
@@ -380,8 +380,8 @@ template <class T>
 class MinAlignedAllocator
 {
 public:
-  typedef T value_type;
-  typedef T* pointer;
+  using value_type = T;
+  using pointer    = T*;
 
   MinAlignedAllocator() = delete;
 
@@ -508,9 +508,9 @@ template <class T>
 class NullAllocator
 {
 public:
-  typedef T value_type;
-  typedef T* pointer;
-  NullAllocator() = delete;
+  using value_type = T;
+  using pointer    = T*;
+  NullAllocator()  = delete;
   explicit NullAllocator(AllocController& PP)
       : P(&PP)
   {}

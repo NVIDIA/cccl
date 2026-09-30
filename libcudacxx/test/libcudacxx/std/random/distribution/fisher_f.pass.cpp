@@ -6,17 +6,21 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 //
 // REQUIRES: long_tests
+
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <random>
 
 // template<class RealType = double>
 // class fisher_f_distribution
 
-#include <cuda/std/__random_>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
+#include <cuda/std/random>
 
 #include "random_utilities/stats_functions.h"
 #include "random_utilities/test_distribution.h"
@@ -27,7 +31,7 @@ struct fisher_f_cdf
 {
   using P = typename cuda::std::fisher_f_distribution<T>::param_type;
 
-  __host__ __device__ double operator()(double x, const P& p) const
+  TEST_HOST_DEVICE_FUNC double operator()(double x, const P& p) const
   {
     // CDF: F(x; m, n) = I_{mx/(mx+n)}(m/2, n/2)
     // where I is the regularized incomplete beta function
@@ -43,7 +47,7 @@ struct fisher_f_cdf
 };
 
 template <class T>
-__host__ __device__ void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   [[maybe_unused]] const bool test_constexpr = false;
   using D                                    = cuda::std::fisher_f_distribution<T>;

@@ -24,7 +24,7 @@ using Range = cuda::std::ranges::subrange<It, sentinel_wrapper<It>>;
 template <class Val = int>
 struct Pred
 {
-  __host__ __device__ bool operator()(const Val&) const;
+  TEST_FUNC bool operator()(const Val&) const;
 };
 
 template <class V, class Pred>

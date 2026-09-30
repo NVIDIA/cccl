@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file linear_congruential_engine.h
  *  \brief A linear congruential pseudorandom number engine.
@@ -32,9 +19,9 @@
 #include <thrust/random/detail/linear_congruential_engine_discard.h>
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/cstdint>
-
-#include <iostream>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -49,12 +36,12 @@ namespace random
  *  \brief A \p linear_congruential_engine random number engine produces unsigned integer
  *         random numbers using a linear congruential random number generation algorithm.
  *
- *         The generation algorithm has the form <tt>x_i = (a * x_{i-1} + c) mod m</tt>.
+ *         The generation algorithm has the form <tt>x_i = (A * x_{i-1} + C) mod M</tt>.
  *
  *  \tparam UIntType The type of unsigned integer to produce.
- *  \tparam a The multiplier used in the generation algorithm.
- *  \tparam c The increment used in the generation algorithm.
- *  \tparam m The modulus used in the generation algorithm.
+ *  \tparam A The multiplier used in the generation algorithm.
+ *  \tparam C The increment used in the generation algorithm.
+ *  \tparam M The modulus used in the generation algorithm.
  *
  *  \note Inexperienced users should not use this class template directly.  Instead, use
  *  \p minstd_rand or \p minstd_rand0.
@@ -71,7 +58,7 @@ namespace random
  *    thrust::minstd_rand rng1;
  *
  *    // output some random values to cout
- *    std::cout << rng1() << std::endl;
+ *    std::cout << rng1() << '\n';
  *
  *    // a random value is printed
  *
@@ -82,13 +69,13 @@ namespace random
  *    rng2.discard(13);
  *
  *    // stream the object to an iostream
- *    std::cout << rng2 << std::endl;
+ *    std::cout << rng2 << '\n';
  *
  *    // rng2's current state is printed
  *
  *    // print the minimum and maximum values that minstd_rand can produce
- *    std::cout << thrust::minstd_rand::min << std::endl;
- *    std::cout << thrust::minstd_rand::max << std::endl;
+ *    std::cout << thrust::minstd_rand::min << '\n';
+ *    std::cout << thrust::minstd_rand::max << '\n';
  *
  *    // the range of minstd_rand is printed
  *
@@ -96,7 +83,7 @@ namespace random
  *    thrust::minstd_rand rng3 = rng2;
  *
  *    // compare rng2 and rng3
- *    std::cout << (rng2 == rng3) << std::endl;
+ *    std::cout << (rng2 == rng3) << '\n';
  *
  *    // 1 is printed
  *
@@ -104,7 +91,7 @@ namespace random
  *    rng2.seed(7);
  *
  *    // compare rng2 and rng3
- *    std::cout << (rng2 == rng3) << std::endl;
+ *    std::cout << (rng2 == rng3) << '\n';
  *
  *    // 0 is printed
  *
@@ -116,7 +103,7 @@ namespace random
  *  \see thrust::random::minstd_rand
  *  \see thrust::random::minstd_rand0
  */
-template <typename UIntType, UIntType a, UIntType c, UIntType m>
+template <typename UIntType, UIntType A, UIntType C, UIntType M>
 class linear_congruential_engine
 {
 public:
@@ -131,27 +118,27 @@ public:
 
   /*! The multiplier used in the generation algorithm.
    */
-  static const result_type multiplier = a;
+  static const result_type multiplier = A;
 
   /*! The increment used in the generation algorithm.
    */
-  static const result_type increment = c;
+  static const result_type increment = C;
 
   /*! The modulus used in the generation algorithm.
    */
-  static const result_type modulus = m;
+  static const result_type modulus = M;
 
   /*! The smallest value this \p linear_congruential_engine may potentially produce.
    */
 #ifndef _CCCL_DOXYGEN_INVOKED // Doxygen breaks on the ternary :shrug:
-  static const result_type min = c == 0u ? 1u : 0u;
+  static const result_type min = C == 0u ? 1u : 0u;
 #else
   static const result_type min = 0u;
 #endif // _CCCL_DOXYGEN_INVOKED
 
   /*! The largest value this \p linear_congruential_engine may potentially produce.
    */
-  static const result_type max = m - 1u;
+  static const result_type max = M - 1u;
 
   /*! The default seed of this \p linear_congruential_engine.
    */
@@ -178,7 +165,7 @@ public:
   /*! This member function produces a new random value and updates this \p linear_congruential_engine's state.
    *  \return A new random number.
    */
-  _CCCL_HOST_DEVICE result_type operator()(void);
+  _CCCL_HOST_DEVICE result_type operator()();
 
   /*! This member function advances this \p linear_congruential_engine's state a given number of times
    *  and discards the results.
@@ -217,36 +204,36 @@ private:
  *  \param rhs The second \p linear_congruential_engine to test.
  *  \return \c true if \p lhs is equal to \p rhs; \c false, otherwise.
  */
-template <typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_>
-_CCCL_HOST_DEVICE bool operator==(const linear_congruential_engine<UIntType_, a_, c_, m_>& lhs,
-                                  const linear_congruential_engine<UIntType_, a_, c_, m_>& rhs);
+template <typename UIntType, UIntType A, UIntType C, UIntType M>
+_CCCL_HOST_DEVICE bool operator==(const linear_congruential_engine<UIntType, A, C, M>& lhs,
+                                  const linear_congruential_engine<UIntType, A, C, M>& rhs);
 
 /*! This function checks two \p linear_congruential_engines for inequality.
  *  \param lhs The first \p linear_congruential_engine to test.
  *  \param rhs The second \p linear_congruential_engine to test.
  *  \return \c true if \p lhs is not equal to \p rhs; \c false, otherwise.
  */
-template <typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_>
-_CCCL_HOST_DEVICE bool operator!=(const linear_congruential_engine<UIntType_, a_, c_, m_>& lhs,
-                                  const linear_congruential_engine<UIntType_, a_, c_, m_>& rhs);
+template <typename UIntType, UIntType A, UIntType C, UIntType M>
+_CCCL_HOST_DEVICE bool operator!=(const linear_congruential_engine<UIntType, A, C, M>& lhs,
+                                  const linear_congruential_engine<UIntType, A, C, M>& rhs);
 
 /*! This function streams a linear_congruential_engine to a \p std::basic_ostream.
  *  \param os The \p basic_ostream to stream out to.
  *  \param e The \p linear_congruential_engine to stream out.
  *  \return \p os
  */
-template <typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_, typename CharT, typename Traits>
+template <typename UIntType, UIntType A, UIntType C, UIntType M, typename CharT, typename Traits>
 std::basic_ostream<CharT, Traits>&
-operator<<(std::basic_ostream<CharT, Traits>& os, const linear_congruential_engine<UIntType_, a_, c_, m_>& e);
+operator<<(std::basic_ostream<CharT, Traits>& os, const linear_congruential_engine<UIntType, A, C, M>& e);
 
 /*! This function streams a linear_congruential_engine in from a std::basic_istream.
  *  \param is The \p basic_istream to stream from.
  *  \param e The \p linear_congruential_engine to stream in.
  *  \return \p is
  */
-template <typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_, typename CharT, typename Traits>
+template <typename UIntType, UIntType A, UIntType C, UIntType M, typename CharT, typename Traits>
 std::basic_istream<CharT, Traits>&
-operator>>(std::basic_istream<CharT, Traits>& is, linear_congruential_engine<UIntType_, a_, c_, m_>& e);
+operator>>(std::basic_istream<CharT, Traits>& is, linear_congruential_engine<UIntType, A, C, M>& e);
 
 /*! \} // random_number_engine_templates
  */

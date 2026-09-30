@@ -3,11 +3,11 @@
 
 #include <cub/device/device_copy.cuh>
 
-#include <thrust/for_each.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/tabulate.h>
+
+#include <cuda/iterator>
 
 #include <c2h/bfloat16.cuh>
 #include <c2h/custom_type.h>
@@ -18,89 +18,8 @@
 #include <c2h/half.cuh>
 #include <c2h/vector.h>
 
-#if C2H_HAS_CURAND
-#  include <curand.h>
-#else
-#  include <thrust/random.h>
-#endif
-
 namespace c2h::detail
 {
-#if !C2H_HAS_CURAND
-struct i_to_rnd_t
-{
-  __host__ __device__ i_to_rnd_t(thrust::default_random_engine engine)
-      : m_engine(engine)
-  {}
-
-  thrust::default_random_engine m_engine{};
-
-  template <typename IndexType>
-  __host__ __device__ float operator()(IndexType n)
-  {
-    m_engine.discard(n);
-    return thrust::uniform_real_distribution<float>{0.0f, 1.0f}(m_engine);
-  }
-};
-#endif // !C2H_HAS_CURAND
-
-void generator_t::generate()
-{
-#if C2H_HAS_CURAND
-  curandGenerateUniform(m_gen, thrust::raw_pointer_cast(m_distribution.data()), m_distribution.size());
-#else
-  thrust::tabulate(device_policy, m_distribution.begin(), m_distribution.end(), i_to_rnd_t{m_re});
-  m_re.discard(m_distribution.size());
-#endif
-}
-
-float* generator_t::prepare_random_generator(seed_t seed, std::size_t num_items)
-{
-  m_distribution.resize(num_items);
-
-#if C2H_HAS_CURAND
-  curandSetPseudoRandomGeneratorSeed(m_gen, seed.get());
-#else
-  m_re.seed(seed.get());
-#endif
-
-  generate();
-
-  return thrust::raw_pointer_cast(m_distribution.data());
-}
-
-struct random_to_custom_t
-{
-  static constexpr std::size_t m_max_key = std::numeric_limits<std::size_t>::max();
-
-  __device__ void operator()(std::size_t idx) const
-  {
-    auto out = reinterpret_cast<custom_type_state_t*>(m_out + idx * m_element_size);
-    out->key = static_cast<std::size_t>(static_cast<float>(m_max_key) * m_in[idx * 2 + 0]);
-    out->val = static_cast<std::size_t>(static_cast<float>(m_max_key) * m_in[idx * 2 + 1]);
-  }
-
-  float* m_in{};
-  char* m_out{};
-  std::size_t m_element_size{};
-};
-
-void gen_custom_type_state(
-  seed_t seed,
-  char* d_out,
-  custom_type_state_t /* min */,
-  custom_type_state_t /* max */,
-  std::size_t elements,
-  std::size_t element_size)
-{
-  // FIXME(bgruber): implement min/max handling for custom_type_state_t
-  float* d_in = generator.prepare_random_generator(seed, elements * 2);
-  thrust::for_each(device_policy,
-                   thrust::counting_iterator<std::size_t>{0},
-                   thrust::counting_iterator<std::size_t>{elements},
-                   random_to_custom_t{d_in, d_out, element_size});
-}
-
 template <typename T>
 struct spaced_out_it_op
 {
@@ -134,24 +53,51 @@ struct offset_to_iterator_t
   }
 };
 
+struct random_to_custom_t
+{
+  custom_type_state_t m_min;
+  custom_type_state_t m_max;
+  unsigned long long m_seed;
+
+  __device__ custom_type_state_t operator()(std::size_t idx) const
+  {
+    custom_type_state_t out{};
+    out.key = random_to_item_t<std::size_t>(m_min.key, m_max.key)(index_to_random_uniform{m_seed}(idx * 2 + 0));
+    out.val = random_to_item_t<std::size_t>(m_min.val, m_max.val)(index_to_random_uniform{m_seed}(idx * 2 + 1));
+    return out;
+  }
+};
+
+void gen_custom_type_state(
+  seed_t seed,
+  char* d_out,
+  const custom_type_state_t& min,
+  const custom_type_state_t& max,
+  std::size_t elements,
+  std::size_t element_size)
+{
+  auto out_it = offset_to_iterator_t<custom_type_state_t>{d_out, element_size}(std::size_t{0});
+  thrust::tabulate(device_policy, out_it, out_it + elements, random_to_custom_t{min, max, seed.get()});
+}
+
 template <class T>
 struct repeat_index_t
 {
-  __host__ __device__ __forceinline__ thrust::constant_iterator<T> operator()(std::size_t i)
+  __host__ __device__ __forceinline__ cuda::constant_iterator<T> operator()(std::size_t i)
   {
-    return thrust::constant_iterator<T>(static_cast<T>(i));
+    return cuda::constant_iterator<T>(static_cast<T>(i));
   }
 };
 
 template <>
 struct repeat_index_t<custom_type_state_t>
 {
-  __host__ __device__ __forceinline__ thrust::constant_iterator<custom_type_state_t> operator()(std::size_t i)
+  __host__ __device__ __forceinline__ cuda::constant_iterator<custom_type_state_t> operator()(std::size_t i)
   {
     custom_type_state_t item{};
     item.key = i;
     item.val = i;
-    return thrust::constant_iterator<custom_type_state_t>(item);
+    return cuda::constant_iterator<custom_type_state_t>(item);
   }
 };
 

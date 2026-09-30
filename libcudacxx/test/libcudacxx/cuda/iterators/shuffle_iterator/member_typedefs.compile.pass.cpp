@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 // Test iterator category and iterator concepts.
 
 #include <cuda/iterator>
@@ -18,7 +21,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   {
     using Iter = cuda::shuffle_iterator<char, fake_bijection<>>;

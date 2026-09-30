@@ -336,7 +336,7 @@ C2H_TEST("Scan works with integral types with well-known operations", "[scan][we
   using T = c2h::get<0, TestType>;
 
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
-  cccl_op_t op                = make_well_known_binary_operation();
+  const cccl_op_t op          = make_well_known_binary_operation();
   const std::vector<T> input  = generate<T>(num_items);
   const std::vector<T> output(num_items, 0);
   pointer_t<T> input_ptr(input);
@@ -355,6 +355,39 @@ C2H_TEST("Scan works with integral types with well-known operations", "[scan][we
     REQUIRE(expected == std::vector<T>(output_ptr));
   }
 }
+
+#if _CCCL_HAS_NVBF16()
+// Regression test for NVIDIA/cccl#11448: the well-known plus operation on bfloat16 takes CUB's SIMD thread
+// reduction, whose packed bfloat16 intrinsics NVRTC 12.x miscompiles on aarch64 hosts unless scan makes cuda_bf16.h
+// provide its own definitions.
+struct Scan_BFloat16_WellKnown_Fixture_Tag;
+C2H_TEST("Scan works with bfloat16 with well-known operations", "[scan][well_known]")
+{
+  using T = __nv_bfloat16;
+
+  // Keep every prefix sum below 256: bfloat16 has only 8 significand bits, so larger integers are not exact.
+  const std::size_t num_items = GENERATE(10, 42, 200);
+  const bool inclusive        = GENERATE(false, true);
+  const cccl_op_t op          = make_well_known_binary_operation();
+  const std::vector<T> input(num_items, T{1});
+  const std::vector<T> output(num_items, T{0});
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(output);
+  value_t<T> init{T{0}};
+
+  auto& build_cache    = get_cache<Scan_BFloat16_WellKnown_Fixture_Tag>();
+  const auto& test_key = make_scan_key<T>(inclusive, cccl_init_kind_t::CCCL_VALUE_INIT);
+
+  scan(input_ptr, output_ptr, num_items, op, init, inclusive, build_cache, test_key);
+
+  const std::vector<T> result(output_ptr);
+  for (std::size_t i = 0; i < num_items; ++i)
+  {
+    const float expected = static_cast<float>(inclusive ? i + 1 : i);
+    REQUIRE(float{result[i]} == expected);
+  }
+}
+#endif // _CCCL_HAS_NVBF16()
 
 struct InclusiveScan_IntegralTypes_Fixture_Tag;
 C2H_TEST("Inclusive Scan works with integral types", "[scan]", integral_types)
@@ -399,7 +432,7 @@ C2H_TEST("Scan works with custom types", "[scan]")
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
   operation_t op              = make_operation("op",
-                                  R"(struct pair { short a; size_t b; };
+                                               R"(struct pair { short a; size_t b; };
 extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {
   pair* lhs = static_cast<pair*>(lhs_ptr);
   pair* rhs = static_cast<pair*>(rhs_ptr);
@@ -409,7 +442,7 @@ extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {
   const std::vector<short> a  = generate<short>(num_items);
   const std::vector<size_t> b = generate<size_t>(num_items);
   std::vector<pair> input(num_items);
-  std::vector<pair> output(num_items);
+  const std::vector<pair> output(num_items);
   for (std::size_t i = 0; i < num_items; ++i)
   {
     input[i] = pair{a[i], b[i]};
@@ -439,7 +472,7 @@ C2H_TEST("Scan works with custom types with well-known operations", "[scan][well
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
   operation_t op_state        = make_operation("op",
-                                        R"(struct pair { short a; size_t b; };
+                                               R"(struct pair { short a; size_t b; };
 extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {
   pair* lhs = static_cast<pair*>(lhs_ptr);
   pair* rhs = static_cast<pair*>(rhs_ptr);
@@ -451,7 +484,7 @@ extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {
   const std::vector<short> a  = generate<short>(num_items);
   const std::vector<size_t> b = generate<size_t>(num_items);
   std::vector<pair> input(num_items);
-  std::vector<pair> output(num_items);
+  const std::vector<pair> output(num_items);
   for (std::size_t i = 0; i < num_items; ++i)
   {
     input[i] = pair{a[i], b[i]};
@@ -511,7 +544,7 @@ C2H_TEST("Scan works with output iterators", "[scan]")
     make_random_access_iterator<int>(iterator_kind::OUTPUT, "int", "out", " * 2");
   const std::vector<int> input = generate<int>(num_items);
   pointer_t<int> input_it(input);
-  pointer_t<int> inner_output_it(num_items);
+  const pointer_t<int> inner_output_it(num_items);
   output_it.state.data = inner_output_it.ptr;
   value_t<int> init{42};
 
@@ -540,7 +573,7 @@ C2H_TEST("Scan works with reverse input iterators", "[scan]")
   iterator_t<int, random_access_iterator_state_t<int>> input_it =
     make_reverse_iterator<int>(iterator_kind::INPUT, "int");
   std::vector<int> input = generate<int>(num_items);
-  pointer_t<int> input_ptr(input);
+  const pointer_t<int> input_ptr(input);
   input_it.state.data = input_ptr.ptr + num_items - 1;
   pointer_t<int> output_it(num_items);
   value_t<int> init{42};
@@ -567,7 +600,7 @@ C2H_TEST("Scan works with reverse output iterators", "[scan]")
     make_reverse_iterator<int>(iterator_kind::OUTPUT, "int", "out");
   const std::vector<int> input = generate<int>(num_items);
   pointer_t<int> input_it(input);
-  pointer_t<int> inner_output_it(num_items);
+  const pointer_t<int> inner_output_it(num_items);
   output_it.state.data = inner_output_it.ptr + num_items - 1;
   value_t<int> init{42};
 
@@ -594,7 +627,7 @@ C2H_TEST("Scan works with input and output iterators", "[scan]")
   input_it.state.value                                     = 1;
   iterator_t<int, random_access_iterator_state_t<int>> output_it =
     make_random_access_iterator<int>(iterator_kind::OUTPUT, "int", "out", " * 2");
-  pointer_t<int> inner_output_it(num_items);
+  const pointer_t<int> inner_output_it(num_items);
   output_it.state.data = inner_output_it.ptr;
   value_t<int> init{42};
 
@@ -621,7 +654,7 @@ C2H_TEST("Scan works with C++ source operations", "[scan]")
   const std::size_t num_items = GENERATE(42, 1337, 42000);
 
   // Create operation from C++ source instead of LTO-IR
-  std::string cpp_source = R"(
+  const std::string cpp_source = R"(
     extern "C" __device__ void op(void* a, void* b, void* out) {
       int* ia = (int*)a;
       int* ib = (int*)b;
@@ -638,7 +671,7 @@ C2H_TEST("Scan works with C++ source operations", "[scan]")
   value_t<T> init{T{42}};
 
   // Test key including flag that this uses C++ source
-  std::optional<std::string> test_key = std::format("cpp_source_test_{}_{}", num_items, typeid(T).name());
+  const std::optional<std::string> test_key = std::format("cpp_source_test_{}_{}", num_items, typeid(T).name());
 
   auto& cache                                 = get_cache<integral_types>();
   std::optional<scan_build_cache_t> cache_opt = cache;
@@ -689,7 +722,7 @@ C2H_TEST("Scan works with C++ source operations using custom headers", "[scan]")
   const std::size_t num_items = GENERATE(42, 1337, 42000);
 
   // Create operation from C++ source that uses the identity function from header
-  std::string cpp_source = R"(
+  const std::string cpp_source = R"(
     #include "test_identity.h"
     extern "C" __device__ void op(void* a, void* b, void* out) {
       int* ia = (int*)a;
@@ -709,16 +742,12 @@ C2H_TEST("Scan works with C++ source operations using custom headers", "[scan]")
   value_t<T> init{T{42}};
 
   // Test _ex version with custom build configuration
-  cccl_build_config config;
-  const char* extra_flags[]      = {"-DTEST_IDENTITY_ENABLED"};
-  const char* extra_dirs[]       = {TEST_INCLUDE_PATH};
-  config.extra_compile_flags     = extra_flags;
-  config.num_extra_compile_flags = 1;
-  config.extra_include_dirs      = extra_dirs;
-  config.num_extra_include_dirs  = 1;
+  const char* extra_flags[] = {"-DTEST_IDENTITY_ENABLED"};
+  const char* extra_dirs[]  = {TEST_INCLUDE_PATH};
+  cccl_build_config config  = make_build_config(extra_flags, 1, extra_dirs, 1);
 
   // Build with _ex version
-  cccl_device_scan_build_result_t build;
+  cccl_device_scan_build_result_t build{};
   const auto& build_info = BuildInformation<>::init();
   REQUIRE(
     CUDA_SUCCESS
@@ -744,7 +773,7 @@ C2H_TEST("Scan works with C++ source operations using custom headers", "[scan]")
   REQUIRE(CUDA_SUCCESS
           == cccl_device_inclusive_scan(
             build, d_temp_storage, &temp_storage_bytes, input_ptr, output_ptr, num_items, op, init, CU_STREAM_LEGACY));
-  pointer_t<char> temp_storage(temp_storage_bytes);
+  const pointer_t<char> temp_storage(temp_storage_bytes);
   d_temp_storage = static_cast<void*>(temp_storage.ptr);
   REQUIRE(CUDA_SUCCESS
           == cccl_device_inclusive_scan(
@@ -773,7 +802,7 @@ C2H_TEST("Scan works with future init value", "[scan]")
   const std::vector<T> output(num_items, 0);
   pointer_t<T> input_ptr(input);
   pointer_t<T> output_ptr(output);
-  T init{42};
+  const T init{42};
   pointer_t<T> init_ptr(std::vector<T>{init});
 
   auto& build_cache    = get_cache<Scan_FutureInitValue_Fixture_Tag>();
@@ -813,3 +842,196 @@ C2H_TEST("Scan works with no init value", "[scan]")
     REQUIRE(expected == std::vector<T>(output_ptr));
   }
 }
+
+#ifndef CCCL_C_PARALLEL_V2
+C2H_TEST("Scan build result has serialization metadata populated", "[scan][serialization]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  const cccl_op_t op = make_well_known_binary_operation();
+  pointer_t<T> in(1);
+  pointer_t<T> out(1);
+  value_t<T> init{T{0}};
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_scan_build(
+      &build,
+      in,
+      out,
+      op,
+      static_cast<cccl_value_t>(init).type,
+      /*force_inclusive=*/false,
+      CCCL_VALUE_INIT,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  CHECK(build.cc == build_info.get_cc_major() * 10 + build_info.get_cc_minor());
+  CHECK((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  CHECK(build.payload_size > 0);
+  CHECK(build.runtime_policy != nullptr);
+  CHECK(build.runtime_policy_size > 0);
+  REQUIRE(build.init_kernel_lowered_name != nullptr);
+  CHECK(build.init_kernel_lowered_name[0] != '\0');
+  REQUIRE(build.scan_kernel_lowered_name != nullptr);
+  CHECK(build.scan_kernel_lowered_name[0] != '\0');
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
+}
+
+C2H_TEST("Scan compile/load round-trip", "[scan][serialization]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  const cccl_op_t op = make_well_known_binary_operation();
+  pointer_t<T> dummy_in(1);
+  pointer_t<T> dummy_out(1);
+  value_t<T> init{T{0}};
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_scan_compile(
+      &build,
+      dummy_in,
+      dummy_out,
+      op,
+      static_cast<cccl_value_t>(init).type,
+      /*force_inclusive=*/false,
+      CCCL_VALUE_INIT,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  REQUIRE(build.payload_size > 0);
+  REQUIRE(build.init_kernel_lowered_name != nullptr);
+  REQUIRE(build.scan_kernel_lowered_name != nullptr);
+  CHECK(build.library == nullptr);
+  CHECK(build.init_kernel == nullptr);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_scan_load(&build));
+  REQUIRE(build.library != nullptr);
+  CHECK(build.init_kernel != nullptr);
+  CHECK(build.scan_kernel != nullptr);
+
+  constexpr std::size_t n    = 16;
+  const std::vector<T> input = generate<T>(n);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(n);
+  CUstream null_stream      = nullptr;
+  size_t temp_storage_bytes = 0;
+
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_exclusive_scan(
+            build, nullptr, &temp_storage_bytes, input_ptr, output_ptr, n, op, init, null_stream));
+  const pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_exclusive_scan(
+            build, temp_storage.ptr, &temp_storage_bytes, input_ptr, output_ptr, n, op, init, null_stream));
+
+  std::vector<T> expected(n);
+  std::exclusive_scan(input.begin(), input.end(), expected.begin(), T{0});
+  REQUIRE(expected == std::vector<T>(output_ptr));
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
+}
+
+C2H_TEST("Scan link_ltoir round-trip", "[scan][serialization]")
+{
+  using T = int32_t;
+
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  // Kernel-only compile: op has a name but no LTOIR (code_size == 0).
+  cccl_op_t op_ko{};
+  op_ko.type      = CCCL_STATELESS;
+  op_ko.name      = "op";
+  op_ko.code      = nullptr;
+  op_ko.code_size = 0;
+  op_ko.code_type = CCCL_OP_LTOIR;
+
+  pointer_t<T> dummy_in(1);
+  pointer_t<T> dummy_out(1);
+  value_t<T> init{T{0}};
+  const cccl_type_info accum_ti = get_type_info<T>();
+
+  BuildResultT build{};
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_scan_compile(
+      &build,
+      dummy_in,
+      dummy_out,
+      op_ko,
+      accum_ti,
+      /*force_inclusive=*/false,
+      CCCL_VALUE_INIT,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      nullptr));
+
+  // After kernel-only compile: kernel_ltoir is populated, cubin is not.
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_LTOIR));
+  REQUIRE(build.payload_size > 0);
+  CHECK((build.payload_kind != CCCL_PAYLOAD_CUBIN));
+  CHECK(build.library == nullptr);
+
+  // Compile the operator LTOIR separately.
+  operation_t op_full  = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const void* op_blob  = op_full.code.data();
+  const size_t op_size = op_full.code.size();
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_scan_link_ltoir(&build, &op_blob, &op_size, 1));
+  REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
+  REQUIRE(build.library == nullptr);
+  REQUIRE(CUDA_SUCCESS == cccl_device_scan_load(&build));
+  REQUIRE(build.library != nullptr);
+  CHECK((build.payload_kind != CCCL_PAYLOAD_LTOIR));
+
+  constexpr std::size_t n    = 16;
+  const std::vector<T> input = generate<T>(n);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(n);
+  CUstream null_stream      = nullptr;
+  size_t temp_storage_bytes = 0;
+
+  const cccl_op_t op_run    = op_full;
+  const cccl_value_t init_v = init;
+
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_exclusive_scan(
+            build, nullptr, &temp_storage_bytes, input_ptr, output_ptr, n, op_run, init_v, null_stream));
+
+  const pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_exclusive_scan(
+            build, temp_storage.ptr, &temp_storage_bytes, input_ptr, output_ptr, n, op_run, init_v, null_stream));
+
+  std::vector<T> expected(n);
+  std::exclusive_scan(input.begin(), input.end(), expected.begin(), T{0});
+  REQUIRE(expected == std::vector<T>(output_ptr));
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
+}
+#endif // CCCL_C_PARALLEL_V2

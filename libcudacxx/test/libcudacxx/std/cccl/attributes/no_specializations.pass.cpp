@@ -10,6 +10,8 @@
 
 #include <cuda/std/__cccl/attributes.h>
 
+#include "test_macros.h"
+
 #if _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS()
 
 // 1. Attribute applied to a template class
@@ -28,7 +30,7 @@ _CCCL_NO_SPECIALIZATIONS inline constexpr bool variable = false;
 // 3. Attribute applied to a template function
 
 template <class T>
-_CCCL_NO_SPECIALIZATIONS __host__ __device__ T function()
+_CCCL_NO_SPECIALIZATIONS TEST_FUNC T function()
 {
   return T{0};
 }

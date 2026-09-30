@@ -50,7 +50,7 @@ struct stream : stream_ref
       : stream_ref(::cuda::__invalid_stream())
   {
     [[maybe_unused]] __ensure_current_device __dev_setter(__dev);
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       ::cudaStreamCreateWithPriority, "Failed to create a stream", &__stream, cudaStreamNonBlocking, __priority);
   }
 
@@ -63,7 +63,7 @@ struct stream : stream_ref
       : stream_ref(::cuda::__invalid_stream())
   {
     [[maybe_unused]] __ensure_current_device __dev_setter(__dev);
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       ::cudaStreamCreateWithPriority, "Failed to create a stream", &__stream, cudaStreamNonBlocking, __priority);
   }
 
@@ -88,14 +88,13 @@ struct stream : stream_ref
 
   //! Destroy the `stream` object
   //!
-  //! @note If the stream fails to be destroyed, the error is silently ignored.
+  //! @note If the stream fails to be destroyed, the error is silently ignored or an assertion is triggered when
+  //! enabled.
   ~stream()
   {
     if (__stream != ::cuda::__invalid_stream())
     {
-      // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
-      // Alternative would be to store the device and push/pop here
-      [[maybe_unused]] auto status = ::cuda::__driver::__streamDestroyNoThrow(__stream);
+      _CCCL_ASSERT_DRIVER_API(::cuda::__driver::__streamDestroyNoThrow, "Failed to destroy stream", __stream);
     }
   }
 
