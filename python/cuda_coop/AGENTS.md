@@ -1,9 +1,22 @@
 # `cuda.coop` agent guidance
 
-Apply this guidance to package code, documentation, API docstrings, runnable
-examples, and test snippets included in documentation.
+Apply this guidance to package code, tests, documentation, API docstrings, and
+runnable examples.
 
 Write the API/project name as `cuda.coop` and the distribution as `cuda-coop`.
+
+Use these import conventions in each module:
+
+- Import the common API with `from cuda import coop` and use
+  `coop.<primitive>` in DSL kernels.
+- If the module does not need the common API, import its qualified API as
+  `coop`: `import cuda.coop.numba_mlir as coop` or
+  `import cuda.coop.cutlass as coop`. Use `coop.<primitive>` in kernels.
+- When the module needs both common and qualified APIs, keep
+  `from cuda import coop` for the common API. Use
+  `import cuda.coop.numba_mlir as numba_coop` and/or
+  `import cuda.coop.cutlass as cutlass_coop` for the qualified APIs, and use
+  their respective aliases in kernels.
 
 Regarding `coop.ThreadData` (including qualified APIs and import aliases):
 
