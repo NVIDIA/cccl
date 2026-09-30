@@ -37,14 +37,17 @@ _ITEMS = 3
 _TILE = _THREADS * _ITEMS
 
 
-def _run_array(api, dtype, mode, *, block=_BLOCK):
+def _run_array(api, dtype, mode, *, block=_BLOCK, items_per_thread=3):
     value_type = cutlass_dtype(dtype)
     threads = int(np.prod(block))
-    size = threads * _ITEMS
+    size = threads * items_per_thread
 
     @cute.kernel
     def kernel(
-        source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        preserved: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + block[0] * (y + block[1] * z)
@@ -57,28 +60,35 @@ def _run_array(api, dtype, mode, *, block=_BLOCK):
         checks = cute.recast_tensor(
             cute.make_tensor(preserved, cute.make_layout(size)), value_type
         )
-        payload = api.ThreadData(_ITEMS, dtype=value_type, alignment=64)
-        for item in cutlass.range_constexpr(_ITEMS):
-            payload[item] = inputs[thread * _ITEMS + item]
+        payload = api.ThreadData(
+            items_per_thread, dtype=value_type, alignment=64
+        )
+        for item in cutlass.range_constexpr(items_per_thread):
+            payload[item] = inputs[thread * items_per_thread + item]
         result = api.shuffle(api.this_block(), payload, mode=mode)
         assert result.alignment >= 64
         if cutlass.const_expr(mode == "down"):
             if thread == threads - 1:
-                result[_ITEMS - 1] = value_type(0)
+                result[items_per_thread - 1] = value_type(0)
         else:
             if thread == 0:
                 result[0] = value_type(0)
         assert result.dtype is value_type
         assert result.alignment >= 64
-        for item in cutlass.range_constexpr(_ITEMS):
-            outputs[thread * _ITEMS + item] = result[item]
-            checks[thread * _ITEMS + item] = payload[item]
+        for item in cutlass.range_constexpr(items_per_thread):
+            outputs[thread * items_per_thread + item] = result[item]
+            checks[thread * items_per_thread + item] = payload[item]
 
     @cute.jit
     def launch(
-        source: cute.Pointer, observed: cute.Pointer, preserved: cute.Pointer
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        preserved: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, observed, preserved).launch(grid=1, block=block)
+        kernel(source, observed, preserved, items_per_thread).launch(
+            grid=1, block=block
+        )
 
     source = values_for(dtype, size, shift=47)
     observed = np.zeros_like(source)
@@ -93,7 +103,7 @@ def _run_array(api, dtype, mode, *, block=_BLOCK):
         device_array(observed) as out,
         device_array(preserved) as check,
     ):
-        launch(src, out, check)
+        launch(src, out, check, items_per_thread)
     np.testing.assert_array_equal(observed, expected)
     np.testing.assert_array_equal(preserved, source)
 
@@ -101,8 +111,9 @@ def _run_array(api, dtype, mode, *, block=_BLOCK):
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("dtype", NUMPY_DTYPES)
 @pytest.mark.parametrize("mode", ("up", "down"))
-def test_array_types(api, dtype, mode):
-    _run_array(api, dtype, mode)
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_array_types(api, dtype, mode, items_per_thread):
+    _run_array(api, dtype, mode, items_per_thread=items_per_thread)
 
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
@@ -293,15 +304,18 @@ raise AssertionError("invalid Shuffle distance did not trap")
 def test_reuse_loop(api, mixed):
     @cute.kernel
     def kernel(
-        source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        iterations: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.make_tensor(source, cute.make_layout(_TILE))
         outputs = cute.make_tensor(observed, cute.make_layout(_TILE))
-        payload = api.ThreadData(_ITEMS, dtype=cutlass.Int32)
-        for item in cutlass.range_constexpr(_ITEMS):
-            payload[item] = inputs[thread * _ITEMS + item]
+        payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
+        for item in cutlass.range_constexpr(items_per_thread):
+            payload[item] = inputs[thread * items_per_thread + item]
         for iteration in range(iterations):
             if cutlass.const_expr(mixed):
                 payload = api.exchange(
@@ -309,15 +323,20 @@ def test_reuse_loop(api, mixed):
                 )
             payload = api.shuffle(api.this_block(), payload, mode="down")
             if thread == _THREADS - 1:
-                payload[_ITEMS - 1] = cutlass.Int32(0)
-        for item in cutlass.range_constexpr(_ITEMS):
-            outputs[thread * _ITEMS + item] = payload[item]
+                payload[items_per_thread - 1] = cutlass.Int32(0)
+        for item in cutlass.range_constexpr(items_per_thread):
+            outputs[thread * items_per_thread + item] = payload[item]
 
     @cute.jit
     def launch(
-        source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        iterations: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, observed, iterations).launch(grid=1, block=_BLOCK)
+        kernel(source, observed, iterations, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.int32, _TILE, shift=61)
     observed = np.zeros_like(source)
@@ -328,7 +347,7 @@ def test_reuse_loop(api, mixed):
             expected = expected.reshape(_ITEMS, _THREADS).T.reshape(-1)
         expected = np.concatenate((expected[1:], np.zeros(1, dtype=np.int32)))
     with device_array(source) as src, device_array(observed) as out:
-        launch(src, out, iterations)
+        launch(src, out, iterations, _ITEMS)
     np.testing.assert_array_equal(observed, expected)
 
 
@@ -343,7 +362,11 @@ def test_final_cubin(tmp_path, scalar):
         )
 
     @cute.kernel
-    def kernel(source: cute.Pointer, observed: cute.Pointer):
+    def kernel(
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
         thread = cute.arch.thread_idx()[0]
         inputs = cute.make_tensor(source, cute.make_layout(_TILE))
         outputs = cute.make_tensor(observed, cute.make_layout(_TILE))
@@ -355,26 +378,34 @@ def test_final_cubin(tmp_path, scalar):
                 distance=7,
             )
         else:
-            payload = cutlass_coop.ThreadData(_ITEMS, dtype=cutlass.Int32)
-            for item in cutlass.range_constexpr(_ITEMS):
-                payload[item] = inputs[thread * _ITEMS + item]
+            payload = cutlass_coop.ThreadData(
+                items_per_thread, dtype=cutlass.Int32
+            )
+            for item in cutlass.range_constexpr(items_per_thread):
+                payload[item] = inputs[thread * items_per_thread + item]
             result = cutlass_coop.shuffle(
                 cutlass_coop.this_block(), payload, mode="down"
             )
             if thread == _THREADS - 1:
-                result[_ITEMS - 1] = cutlass.Int32(0)
-            for item in cutlass.range_constexpr(_ITEMS):
-                outputs[thread * _ITEMS + item] = result[item]
+                result[items_per_thread - 1] = cutlass.Int32(0)
+            for item in cutlass.range_constexpr(items_per_thread):
+                outputs[thread * items_per_thread + item] = result[item]
 
     @cute.jit
-    def launch(source: cute.Pointer, observed: cute.Pointer):
-        kernel(source, observed).launch(grid=1, block=_THREADS)
+    def launch(
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(source, observed, items_per_thread).launch(
+            grid=1, block=_THREADS
+        )
 
     source = values_for(np.int32, _TILE, shift=67)
     observed = np.zeros_like(source)
     with device_array(source) as src, device_array(observed) as out:
         compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](
-            launch, src, out
+            launch, src, out, _ITEMS
         )
         compiled(src, out)
     if scalar:
@@ -401,11 +432,12 @@ def test_final_cubin(tmp_path, scalar):
 
 
 @pytest.mark.parametrize("api", ("common", "qualified"))
-def test_example(api):
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_example(api, items_per_thread):
     path = PACKAGE_ROOT / "examples/cutlass/exchange_shuffle.py"
     spec = importlib.util.spec_from_file_location(
         "cutlass_exchange_shuffle_example", path
     )
     example = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(example)
-    example.run_example(api)
+    example.run_example(api, items_per_thread=items_per_thread)

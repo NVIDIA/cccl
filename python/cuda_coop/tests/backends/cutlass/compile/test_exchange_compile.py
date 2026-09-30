@@ -31,41 +31,48 @@ def _pointer(dtype=cutlass.Int32):
 )
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
 @pytest.mark.parametrize("mode", ("striped_to_blocked", "blocked_to_striped"))
-def test_logical_layouts(api, width, mode):
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_logical_layouts(api, width, mode, items_per_thread):
     @cute.kernel
-    def kernel(memory: cute.Pointer):
-        payload = api.ThreadData(2, dtype=cutlass.Int32, alignment=64)
-        payload[0] = cutlass.Int32(1)
-        payload[1] = cutlass.Int32(2)
+    def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        payload = api.ThreadData(
+            items_per_thread, dtype=cutlass.Int32, alignment=64
+        )
+        for item in cutlass.range_constexpr(items_per_thread):
+            payload[item] = cutlass.Int32(item + 1)
         result = api.exchange(
             api.this_warp().group_by(width), payload, mode=mode
         )
         cute.make_tensor(memory, cute.make_layout(1))[0] = result[0]
 
     @cute.jit
-    def launch(memory: cute.Pointer):
-        kernel(memory).launch(grid=1, block=(8, 4, 2))
+    def launch(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        kernel(memory, items_per_thread).launch(grid=1, block=(8, 4, 2))
 
-    assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer()) is not None
+    assert (
+        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), items_per_thread)
+        is not None
+    )
 
 
 @pytest.mark.parametrize("dtype", tuple(ALL_PROVIDER_TYPES))
 def test_typed_result(dtype):
     @cute.kernel
-    def kernel(memory: cute.Pointer):
+    def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         payload = cutlass_coop.ThreadData(
-            2, dtype=dtype, values=[dtype(1), dtype(2)]
+            items_per_thread, dtype=dtype, values=[dtype(1), dtype(2)]
         )
         result = cutlass_coop.exchange(cutlass_coop.this_block(), payload)
         total = cutlass_coop.sum(cutlass_coop.this_block(), result)
         cute.make_tensor(memory, cute.make_layout(1))[0] = total
 
     @cute.jit
-    def launch(memory: cute.Pointer):
-        kernel(memory).launch(grid=1, block=(8, 4, 2))
+    def launch(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        kernel(memory, items_per_thread).launch(grid=1, block=(8, 4, 2))
 
     assert (
-        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(dtype)) is not None
+        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(dtype), 2)
+        is not None
     )
 
 
@@ -74,10 +81,14 @@ def test_typed_result(dtype):
 )
 def test_rank_width(rank_type):
     @cute.kernel
-    def kernel(memory: cute.Pointer):
-        value = cutlass_coop.ThreadData(2, dtype=cutlass.Int32, values=[1, 2])
+    def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        value = cutlass_coop.ThreadData(
+            items_per_thread, dtype=cutlass.Int32, values=[1, 2]
+        )
         ranks = cutlass_coop.ThreadData(
-            2, dtype=rank_type, values=[rank_type(0), rank_type(1)]
+            items_per_thread,
+            dtype=rank_type,
+            values=[rank_type(0), rank_type(1)],
         )
         result = cutlass_coop.exchange(
             cutlass_coop.this_block(),
@@ -88,20 +99,26 @@ def test_rank_width(rank_type):
         cute.make_tensor(memory, cute.make_layout(1))[0] = result[0]
 
     @cute.jit
-    def launch(memory: cute.Pointer):
-        kernel(memory).launch(grid=1, block=32)
+    def launch(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        kernel(memory, items_per_thread).launch(grid=1, block=32)
 
-    assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer()) is not None
+    assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), 2) is not None
 
 
 @pytest.mark.parametrize("flag_type", tuple(INTEGER_VALUE_TYPES))
 def test_flag_width(flag_type):
     @cute.kernel
-    def kernel(memory: cute.Pointer):
-        value = cutlass_coop.ThreadData(2, dtype=cutlass.Int32, values=[1, 2])
-        ranks = cutlass_coop.ThreadData(2, dtype=cutlass.Int32, values=[0, 1])
+    def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        value = cutlass_coop.ThreadData(
+            items_per_thread, dtype=cutlass.Int32, values=[1, 2]
+        )
+        ranks = cutlass_coop.ThreadData(
+            items_per_thread, dtype=cutlass.Int32, values=[0, 1]
+        )
         flags = cutlass_coop.ThreadData(
-            2, dtype=flag_type, values=[flag_type(0), flag_type(2)]
+            items_per_thread,
+            dtype=flag_type,
+            values=[flag_type(0), flag_type(2)],
         )
         result = cutlass_coop.exchange(
             cutlass_coop.this_block(),
@@ -113,10 +130,10 @@ def test_flag_width(flag_type):
         cute.make_tensor(memory, cute.make_layout(1))[0] = result[0]
 
     @cute.jit
-    def launch(memory: cute.Pointer):
-        kernel(memory).launch(grid=1, block=32)
+    def launch(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        kernel(memory, items_per_thread).launch(grid=1, block=32)
 
-    assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer()) is not None
+    assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), 2) is not None
 
 
 class _Mode(str, Enum):
@@ -150,8 +167,12 @@ class _Mode(str, Enum):
 def test_invalid_controls(case, expected):
     @cute.kernel
     def kernel():
-        value = cutlass_coop.ThreadData(2, dtype=cutlass.Int32, values=[1, 2])
-        ranks = cutlass_coop.ThreadData(2, dtype=cutlass.Int32, values=[0, 1])
+        value = cutlass_coop.ThreadData(
+            items_per_thread=2, dtype=cutlass.Int32, values=[1, 2]
+        )
+        ranks = cutlass_coop.ThreadData(
+            items_per_thread=2, dtype=cutlass.Int32, values=[0, 1]
+        )
         group = cutlass_coop.this_block()
         if cutlass.const_expr(case == "scalar"):
             cutlass_coop.exchange(group, cutlass.Int32(1))
@@ -178,7 +199,7 @@ def test_invalid_controls(case, expected):
                 value,
                 mode="scatter_to_blocked",
                 ranks=cutlass_coop.ThreadData(
-                    1, dtype=cutlass.Int32, values=[0]
+                    items_per_thread=1, dtype=cutlass.Int32, values=[0]
                 ),
             )
         elif cutlass.const_expr(case == "rank_unsigned"):
@@ -187,7 +208,7 @@ def test_invalid_controls(case, expected):
                 value,
                 mode="scatter_to_blocked",
                 ranks=cutlass_coop.ThreadData(
-                    2, dtype=cutlass.Uint32, values=[0, 1]
+                    items_per_thread=2, dtype=cutlass.Uint32, values=[0, 1]
                 ),
             )
         elif cutlass.const_expr(case == "flag_float"):
@@ -197,7 +218,7 @@ def test_invalid_controls(case, expected):
                 mode="scatter_to_striped_flagged",
                 ranks=ranks,
                 valid_flags=cutlass_coop.ThreadData(
-                    2, dtype=cutlass.Float32, values=[0.0, 1.0]
+                    items_per_thread=2, dtype=cutlass.Float32, values=[0.0, 1.0]
                 ),
             )
         elif cutlass.const_expr(case == "flag_bool"):
@@ -207,7 +228,7 @@ def test_invalid_controls(case, expected):
                 mode="scatter_to_striped_flagged",
                 ranks=ranks,
                 valid_flags=cutlass_coop.ThreadData(
-                    2, dtype=bool, values=[True, False]
+                    items_per_thread=2, dtype=bool, values=[True, False]
                 ),
             )
         elif cutlass.const_expr(case == "timeslicing_integer"):
@@ -238,7 +259,10 @@ def test_invalid_controls(case, expected):
             cutlass_coop.exchange(group, value, mode="blocked_to_warp_striped")
         else:
             cutlass_coop.exchange(
-                group, cutlass_coop.ThreadData(2, values=[1 << 40, 2])
+                group,
+                cutlass_coop.ThreadData(
+                    items_per_thread=2, values=[1 << 40, 2]
+                ),
             )
 
     @cute.jit
@@ -281,15 +305,17 @@ def test_register_payload(ssa, api):
 
 def test_missing_exact_block():
     @cute.kernel
-    def kernel():
+    def kernel(items_per_thread: cutlass.Constexpr):
         cutlass_coop.exchange(
             cutlass_coop.this_block(),
-            cutlass_coop.ThreadData(2, dtype=cutlass.Int32, values=[1, 2]),
+            cutlass_coop.ThreadData(
+                items_per_thread, dtype=cutlass.Int32, values=[1, 2]
+            ),
         )
 
     @cute.jit
-    def launch(block_size: cutlass.Int32):
-        kernel().launch(grid=1, block=block_size)
+    def launch(block_size: cutlass.Int32, items_per_thread: cutlass.Constexpr):
+        kernel(items_per_thread).launch(grid=1, block=block_size)
 
     with pytest.raises(Exception, match="exact block dimensions"):
-        cute.compile[(GPUArch("sm_80"),)](launch, 64)
+        cute.compile[(GPUArch("sm_80"),)](launch, 64, 2)
