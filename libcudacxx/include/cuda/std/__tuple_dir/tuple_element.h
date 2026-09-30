@@ -21,6 +21,10 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/array.h>
+#include <cuda/std/__fwd/complex.h>
+#include <cuda/std/__fwd/pair.h>
+#include <cuda/std/__fwd/tuple.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -51,6 +55,46 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, const volatile _Tp>
 {
   using type _CCCL_NODEBUG = const volatile tuple_element_t<_Ip, _Tp>;
 };
+
+// specialize cuda::std::tuple_element for tuple-like ::std:: types
+#if _CCCL_HAS_HOST_STD_LIB()
+template <size_t _Ip, class _Tp, size_t _Np>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::array<_Tp, _Np>>
+{
+  static_assert(_Ip < _Np, "Index out of bounds in cuda::std::tuple_element<> (std::array)");
+  using type _CCCL_NODEBUG = _Tp;
+};
+
+template <size_t _Ip, class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::complex<_Tp>>
+{
+  static_assert(_Ip < 2, "Index out of bounds in cuda::std::tuple_element<std::complex<_Tp>>");
+  using type _CCCL_NODEBUG = _Tp;
+};
+
+template <size_t _Ip, class _Tp, class _Up>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::pair<_Tp, _Up>>
+{
+  static_assert(_Ip < 2, "Index out of bounds in cuda::std::tuple_element<std::pair<_Tp, _Up>>");
+};
+template <class _Tp, class _Up>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<0, ::std::pair<_Tp, _Up>>
+{
+  using type _CCCL_NODEBUG = _Tp;
+};
+template <class _Tp, class _Up>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<1, ::std::pair<_Tp, _Up>>
+{
+  using type _CCCL_NODEBUG = _Up;
+};
+
+template <size_t _Ip, class... _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::tuple<_Tp...>>
+{
+  static_assert(_Ip < sizeof...(_Tp), "Index out of bounds in cuda::std::tuple_element<> (std::tuple)");
+  using type _CCCL_NODEBUG = tuple_element_t<_Ip, tuple<_Tp...>>;
+};
+#endif // _CCCL_HAS_HOST_STD_LIB()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
