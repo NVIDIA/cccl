@@ -19,10 +19,29 @@ pytestmark = [
 ]
 
 
-@pytest.mark.parametrize("width", [1, 8, 32])
-@pytest.mark.parametrize("batches", [3, 33])
-@pytest.mark.parametrize("layout", ["striped", "blocked"])
-@pytest.mark.parametrize("dtype", [np.int32, np.float64])
+@pytest.mark.parametrize(
+    "width,batches,layout,dtype",
+    [
+        (width, batches, layout, dtype)
+        for width in (1, 8, 32)
+        for batches in (3, 33)
+        for layout in ("striped", "blocked")
+        for dtype in (np.int32, np.float64)
+    ]
+    + [
+        (8, 3, "striped", dtype)
+        for dtype in (
+            np.int8,
+            np.uint8,
+            np.int16,
+            np.uint16,
+            np.uint32,
+            np.int64,
+            np.uint64,
+            np.float32,
+        )
+    ],
+)
 def test_batch_reduction_layouts_preserve_input(width, batches, layout, dtype):
     output_count = (batches + width - 1) // width
 
@@ -45,7 +64,17 @@ def test_batch_reduction_layouts_preserve_input(width, batches, layout, dtype):
                 output[base + batch] = result[i]
         coop.store(block, preserved, values)
 
-    source = ((np.arange(64 * batches) * 7) % 29 - 14).astype(dtype)
+    source = ((np.arange(64 * batches) * 5) % 7).astype(dtype)
+    if np.issubdtype(dtype, np.floating):
+        source = source / dtype(4) - dtype(0.625)
+    elif np.issubdtype(dtype, np.signedinteger):
+        source -= dtype(3)
+    if dtype == np.float64:
+        source += dtype(2**-30)
+    elif dtype == np.int64:
+        source *= dtype(1 << 33)
+    elif dtype == np.uint64:
+        source += dtype(1 << 33)
     d_source = cuda.to_device(source)
     output = cuda.device_array((64 // width) * batches, dtype=dtype)
     preserved = cuda.device_array_like(source)
