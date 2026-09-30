@@ -26,8 +26,9 @@ class feistel_bijection
 public:
   using index_type = std::uint64_t;
 
+  // The constructor loop initializes every key.
   template <class URBG>
-  _CCCL_HOST_DEVICE feistel_bijection(std::uint64_t m, URBG&& g)
+  _CCCL_HOST_DEVICE feistel_bijection(std::uint64_t m, URBG&& g) // NOLINT(cppcoreguidelines-pro-type-member-init)
       : r_bits((total_bits(m) + 1) / 2)
       , l_bits(total_bits(m) / 2)
       , r_mask((std::uint64_t{1} << r_bits) - 1)

@@ -693,15 +693,24 @@ public:
     int device              = -1;
     cudaEvent_t start_event = nullptr, end_event = nullptr;
 
+    // The timing events are released on every path. A failing destroy leaks that event and is
+    // reported; the guard is noexcept, so it cannot become a second exception. One policy per
+    // release, so a failure on the first does not skip the second.
     SCOPE(exit)
     {
       if (start_event)
       {
-        cuda_safe_call(cudaEventDestroy(start_event));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(start_event);
+        };
       }
       if (end_event)
       {
-        cuda_safe_call(cudaEventDestroy(end_event));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(end_event);
+        };
       }
     };
 

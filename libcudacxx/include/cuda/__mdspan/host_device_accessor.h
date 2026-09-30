@@ -211,8 +211,12 @@ public:
 
 #if !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
   [[nodiscard]] _CCCL_API constexpr bool
-  __detectably_invalid([[maybe_unused]] data_handle_type __p, ::cuda::std::size_t) const noexcept
+  __detectably_invalid([[maybe_unused]] data_handle_type __p, ::cuda::std::size_t __size) const noexcept
   {
+    if (__size == 0)
+    {
+      return false;
+    }
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
       bool __is_valid = true;
