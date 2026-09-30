@@ -56,6 +56,7 @@ def test_mixed_loop(api, sharing, capacity, auto_sync, alignment):
         observed: cute.Pointer,
         preserved: cute.Pointer,
         tiles: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
@@ -71,7 +72,7 @@ def test_mixed_loop(api, sharing, capacity, auto_sync, alignment):
             )
         group = api.this_block()
         for tile in range(tiles):
-            payload = api.ThreadData(_ITEMS)
+            payload = api.ThreadData(items_per_thread)
             api.load(
                 group,
                 source,
@@ -101,8 +102,10 @@ def test_mixed_loop(api, sharing, capacity, auto_sync, alignment):
             )
             if cutlass.const_expr(not auto_sync):
                 storage.sync()
-            for item in cutlass.range_constexpr(_ITEMS):
-                checks[tile * _TILE + thread * _ITEMS + item] = payload[item]
+            for item in cutlass.range_constexpr(items_per_thread):
+                checks[tile * _TILE + thread * items_per_thread + item] = (
+                    payload[item]
+                )
 
     @cute.jit
     def launch(
@@ -110,8 +113,11 @@ def test_mixed_loop(api, sharing, capacity, auto_sync, alignment):
         observed: cute.Pointer,
         preserved: cute.Pointer,
         tiles: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, observed, preserved, tiles).launch(grid=1, block=_BLOCK)
+        kernel(source, observed, preserved, tiles, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     tiles = 8
     source = values_for(np.int64, tiles * _TILE, shift=59)
@@ -133,7 +139,7 @@ def test_mixed_loop(api, sharing, capacity, auto_sync, alignment):
         device_array(observed) as out,
         device_array(preserved) as check,
     ):
-        launch(src, out, check, tiles)
+        launch(src, out, check, tiles, _ITEMS)
     np.testing.assert_array_equal(observed, expected)
     np.testing.assert_array_equal(preserved, source)
 
