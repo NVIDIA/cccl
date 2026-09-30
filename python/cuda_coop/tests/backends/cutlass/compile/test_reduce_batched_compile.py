@@ -19,8 +19,8 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 
 def _compile(api=coop, *, block=64, bad=None, width=8):
     @cute.kernel
-    def kernel(memory: cute.Pointer):
-        payload = api.ThreadData(3, dtype=cutlass.Int32)
+    def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
         payload[0], payload[1], payload[2] = (
             cutlass.Int32(1),
             cutlass.Int32(2),
@@ -46,13 +46,13 @@ def _compile(api=coop, *, block=64, bad=None, width=8):
             outputs[api.this_block().rank()] = result[0]
 
     @cute.jit
-    def launch(memory: cute.Pointer):
-        kernel(memory).launch(grid=1, block=block)
+    def launch(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        kernel(memory, items_per_thread).launch(grid=1, block=block)
 
     pointer = make_ptr(
         cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16
     )
-    return cute.compile[(GPUArch("sm_80"),)](launch, pointer)
+    return cute.compile[(GPUArch("sm_80"),)](launch, pointer, 3)
 
 
 @pytest.mark.parametrize(
