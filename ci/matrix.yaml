@@ -79,6 +79,7 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    - {jobs: ['build_nolid'], project: 'cub', std: 17, ctk: '12.0', cxx: 'msvc2019'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:

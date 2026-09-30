@@ -16,18 +16,6 @@
 #include <cuda/std/__cccl/assert.h>
 #include <cuda/std/cstddef>
 
-// MSVC toolsets below 14.44 fail to correctly constant-fold structural_inplace_vector's bounds checks when this type
-// is evaluated deep in CC dispatch's NTTP-based policy resolution, silently producing a zero-initialized element
-// instead of hard-erroring at the actual out-of-bounds access. Disable the checks there; unaffected compilers (and
-// newer MSVC) keep them.
-#if !_CCCL_COMPILER(MSVC) || _CCCL_COMPILER(MSVC, >=, 19, 44)
-#  define _CCCL_SIV_ASSERT(...) _CCCL_ASSERT(__VA_ARGS__)
-#  define _CCCL_SIV_VERIFY(...) _CCCL_VERIFY(__VA_ARGS__)
-#else
-#  define _CCCL_SIV_ASSERT(...) ((void) 0)
-#  define _CCCL_SIV_VERIFY(...) ((void) 0)
-#endif
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -81,49 +69,49 @@ struct structural_inplace_vector
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr reference operator[](size_type pos) noexcept
   {
-    _CCCL_SIV_ASSERT(pos < count, "structural_inplace_vector::operator[]: index out of range");
+    _CCCL_ASSERT(pos < count, "structural_inplace_vector::operator[]: index out of range");
     return elems[pos];
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_reference operator[](size_type pos) const noexcept
   {
-    _CCCL_SIV_ASSERT(pos < count, "structural_inplace_vector::operator[]: index out of range");
+    _CCCL_ASSERT(pos < count, "structural_inplace_vector::operator[]: index out of range");
     return elems[pos];
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr reference at(size_type pos)
   {
-    _CCCL_SIV_VERIFY(pos < count, "structural_inplace_vector::at: index out of range");
+    _CCCL_VERIFY(pos < count, "structural_inplace_vector::at: index out of range");
     return elems[pos];
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_reference at(size_type pos) const
   {
-    _CCCL_SIV_VERIFY(pos < count, "structural_inplace_vector::at: index out of range");
+    _CCCL_VERIFY(pos < count, "structural_inplace_vector::at: index out of range");
     return elems[pos];
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr reference front() noexcept
   {
-    _CCCL_SIV_ASSERT(count > 0, "structural_inplace_vector::front: empty vector");
+    _CCCL_ASSERT(count > 0, "structural_inplace_vector::front: empty vector");
     return elems[0];
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_reference front() const noexcept
   {
-    _CCCL_SIV_ASSERT(count > 0, "structural_inplace_vector::front: empty vector");
+    _CCCL_ASSERT(count > 0, "structural_inplace_vector::front: empty vector");
     return elems[0];
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr reference back() noexcept
   {
-    _CCCL_SIV_ASSERT(count > 0, "structural_inplace_vector::back: empty vector");
+    _CCCL_ASSERT(count > 0, "structural_inplace_vector::back: empty vector");
     return elems[count - 1];
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const_reference back() const noexcept
   {
-    _CCCL_SIV_ASSERT(count > 0, "structural_inplace_vector::back: empty vector");
+    _CCCL_ASSERT(count > 0, "structural_inplace_vector::back: empty vector");
     return elems[count - 1];
   }
 
@@ -183,6 +171,3 @@ struct structural_inplace_vector
 } // namespace detail
 
 CUB_NAMESPACE_END
-
-#undef _CCCL_SIV_ASSERT
-#undef _CCCL_SIV_VERIFY
