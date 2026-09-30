@@ -1407,6 +1407,12 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
     __f_lo             = 0.0f;
   }
 
+  // Captured before the fold. CUDA's contract is sinpi(-0) == -0. two_sum of that
+  // fraction yields +0, and the sine kernel keeps the sign it is given, so the
+  // input sign has to be put back when the fraction is exactly zero. The odd
+  // negation stays on the cosine and is not applied to that sine zero.
+  const bool __exact_integer = (__f_hi == 0.0f) && (__f_lo == 0.0f);
+
   /* Fold into [-1/4, 1/4]. q == 1 uses sin=cos, cos=sin; q == 3 uses sin=-cos, cos=sin. */
   int __q = 0;
   if (__f_hi > 0.25f || (__f_hi == 0.25f && __f_lo > 0.0f))
@@ -1467,10 +1473,18 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
   }
   if (__odd != 0)
   {
-    __s_hi = -__s_hi;
-    __s_lo = -__s_lo;
+    if (!__exact_integer)
+    {
+      __s_hi = -__s_hi;
+      __s_lo = -__s_lo;
+    }
     __c_hi = -__c_hi;
     __c_lo = -__c_lo;
+  }
+  if (__exact_integer)
+  {
+    __s_hi = ::cuda::std::copysign(__s_hi, __x_hi);
+    __s_lo = ::cuda::std::copysign(__s_lo, __x_hi);
   }
 
   *__sin_hi = __s_hi;
