@@ -14,9 +14,6 @@ from cuda.bindings import driver
 from cuda.coop import cutlass as cutlass_coop
 
 _BLOCK = (8, 4, 2)
-_ITEMS = 4
-_WARP_TILE = 32 * _ITEMS
-_BLOCK_TILE = 2 * _WARP_TILE
 _SOURCE_OFFSET = 3
 _DESTINATION_OFFSET = 5
 
@@ -27,22 +24,29 @@ def _check(result):
     return result[1] if len(result) == 2 else result[1:]
 
 
-def run_example(api="common"):
+def run_example(api="common", items_per_thread=4):
     """Run both independent warp tiles and verify their prefixes and
     defaults.
     """
 
+    warp_tile = 32 * items_per_thread
+    block_tile = 2 * warp_tile
     if api not in {"common", "qualified"}:
         raise ValueError("api must be 'common' or 'qualified'")
     module = coop if api == "common" else cutlass_coop
 
     # docs: start cutlass-warp-load-store
     @cute.kernel
-    def copy_warp_tiles(source: cute.Pointer, destination: cute.Pointer):
+    def copy_warp_tiles(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        warp_tile = 32 * items_per_thread
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         warp = thread // 32
-        payload = module.ThreadData(items_per_thread=_ITEMS)
+        payload = module.ThreadData(items_per_thread)
         # Each warp gets its own consecutive tile automatically. The user
         # offset selects the beginning of the block's collection of tiles.
         module.load(
@@ -50,7 +54,7 @@ def run_example(api="common"):
             source,
             payload,
             algorithm="transpose",
-            valid_items=cutlass.Int32(_WARP_TILE - 7 - warp * 11),
+            valid_items=cutlass.Int32(warp_tile - 7 - warp * 11),
             oob_default=-1,
             offset=_SOURCE_OFFSET,
         )
@@ -63,14 +67,22 @@ def run_example(api="common"):
         )
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer):
-        copy_warp_tiles(source, destination).launch(grid=1, block=_BLOCK)
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        copy_warp_tiles(source, destination, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     # docs: end cutlass-warp-load-store
 
-    source = np.arange(_BLOCK_TILE + _SOURCE_OFFSET, dtype=np.int32)
+    source = np.arange(block_tile + _SOURCE_OFFSET, dtype=np.int32)
     destination = np.full(
-        _BLOCK_TILE + _DESTINATION_OFFSET + 3, -101, dtype=np.int32
+        block_tile + _DESTINATION_OFFSET + 3,
+        -101,
+        dtype=np.int32,
     )
     cutlass.cuda.initialize_cuda_context()
     src = _check(driver.cuMemAlloc(source.nbytes))
@@ -95,7 +107,7 @@ def run_example(api="common"):
                 cute.AddressSpace.gmem,
                 assumed_align=16,
             )
-            launch(src_pointer, dst_pointer)
+            launch(src_pointer, dst_pointer, items_per_thread)
             _check(driver.cuCtxSynchronize())
             _check(
                 driver.cuMemcpyDtoH(
@@ -108,12 +120,12 @@ def run_example(api="common"):
         _check(driver.cuMemFree(src))
     expected = np.full_like(destination, -101)
     for warp in range(2):
-        origin = warp * _WARP_TILE
-        count = _WARP_TILE - 7 - warp * 11
+        origin = warp * warp_tile
+        count = warp_tile - 7 - warp * 11
         expected[
             _DESTINATION_OFFSET + origin : _DESTINATION_OFFSET
             + origin
-            + _WARP_TILE
+            + warp_tile
         ] = -1
         expected[
             _DESTINATION_OFFSET + origin : _DESTINATION_OFFSET + origin + count
