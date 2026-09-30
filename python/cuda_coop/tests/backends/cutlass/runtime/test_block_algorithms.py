@@ -56,11 +56,14 @@ def _tile_index(algorithm, thread, item):
 def test_load_layout_and_runtime_bounds(api, algorithm, valid):
     @cute.kernel
     def kernel(
-        source: cute.Pointer, observed: cute.Pointer, count: cutlass.Int32
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        count: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
-        payload = api.ThreadData(_ITEMS)
+        payload = api.ThreadData(items_per_thread)
         api.load(
             api.this_block(),
             source,
@@ -71,14 +74,19 @@ def test_load_layout_and_runtime_bounds(api, algorithm, valid):
             offset=3,
         )
         outputs = cute.make_tensor(observed, cute.make_layout(_TILE))
-        for item in cutlass.range_constexpr(_ITEMS):
-            outputs[thread * _ITEMS + item] = payload[item]
+        for item in cutlass.range_constexpr(items_per_thread):
+            outputs[thread * items_per_thread + item] = payload[item]
 
     @cute.jit
     def launch(
-        source: cute.Pointer, observed: cute.Pointer, count: cutlass.Int32
+        source: cute.Pointer,
+        observed: cute.Pointer,
+        count: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, observed, count).launch(grid=1, block=_BLOCK)
+        kernel(source, observed, count, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.int32, _TILE + 3, shift=17)
     observed = np.full(_TILE, 71, dtype=np.int32)
@@ -89,7 +97,7 @@ def test_load_layout_and_runtime_bounds(api, algorithm, valid):
             if index < valid:
                 expected[thread * _ITEMS + item] = source[3 + index]
     with device_array(source) as src, device_array(observed) as out:
-        launch(src, out, valid)
+        launch(src, out, valid, _ITEMS)
     np.testing.assert_array_equal(observed, expected)
 
 
@@ -102,13 +110,17 @@ def test_load_layout_and_runtime_bounds(api, algorithm, valid):
 )
 def test_store_layout_and_bounds(api, algorithm, valid):
     @cute.kernel
-    def kernel(source: cute.Pointer, destination: cute.Pointer):
+    def kernel(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         inputs = cute.make_tensor(source, cute.make_layout(_TILE))
-        payload = api.ThreadData(_ITEMS, dtype=cutlass.Int32)
-        for item in cutlass.range_constexpr(_ITEMS):
-            payload[item] = inputs[thread * _ITEMS + item]
+        payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
+        for item in cutlass.range_constexpr(items_per_thread):
+            payload[item] = inputs[thread * items_per_thread + item]
         api.store(
             api.this_block(),
             destination,
@@ -119,8 +131,14 @@ def test_store_layout_and_bounds(api, algorithm, valid):
         )
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer):
-        kernel(source, destination).launch(grid=1, block=_BLOCK)
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(source, destination, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.int32, _TILE, shift=37)
     destination = np.full(_TILE + 11, -41, dtype=np.int32)
@@ -131,7 +149,7 @@ def test_store_layout_and_bounds(api, algorithm, valid):
             if index < valid:
                 expected[5 + index] = source[thread * _ITEMS + item]
     with device_array(source) as src, device_array(destination) as dst:
-        launch(src, dst)
+        launch(src, dst, _ITEMS)
     np.testing.assert_array_equal(destination, expected)
 
 
@@ -149,11 +167,12 @@ def test_partial_transpose_loads_valid_items_without_default(
         source: cute.Pointer,
         observed: cute.Pointer,
         count: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         outputs = cute.make_tensor(observed, cute.make_layout(_TILE))
-        payload = cutlass_coop.ThreadData(_ITEMS, dtype=cutlass.Int32)
+        payload = cutlass_coop.ThreadData(items_per_thread, dtype=cutlass.Int32)
         if cutlass.const_expr(static_count):
             cutlass_coop.load(
                 cutlass_coop.this_block(),
@@ -170,24 +189,27 @@ def test_partial_transpose_loads_valid_items_without_default(
                 algorithm=algorithm,
                 valid_items=count,
             )
-        for item in cutlass.range_constexpr(_ITEMS):
-            if thread * _ITEMS + item < count:
-                outputs[thread * _ITEMS + item] = payload[item]
+        for item in cutlass.range_constexpr(items_per_thread):
+            if thread * items_per_thread + item < count:
+                outputs[thread * items_per_thread + item] = payload[item]
 
     @cute.jit
     def launch(
         source: cute.Pointer,
         observed: cute.Pointer,
         count: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, observed, count).launch(grid=1, block=_BLOCK)
+        kernel(source, observed, count, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.int32, _TILE)
     observed = np.full(_TILE, 71, dtype=np.int32)
     expected = observed.copy()
     expected[:valid] = source[:valid]
     with device_array(source) as src, device_array(observed) as out:
-        launch(src, out, valid)
+        launch(src, out, valid, _ITEMS)
     np.testing.assert_array_equal(observed, expected)
 
 
@@ -197,16 +219,26 @@ def test_partial_transpose_loads_valid_items_without_default(
 @pytest.mark.parametrize(
     "algorithm", ("vectorize", "warp_transpose_timesliced")
 )
-def test_unguarded_full_tiles_use_the_correct_layout(algorithm, offset):
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_unguarded_full_tiles_use_the_correct_layout(
+    algorithm, offset, items_per_thread
+):
     @cute.kernel
     def kernel(
-        source: cute.Pointer, destination: cute.Pointer, observed: cute.Pointer
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        observed: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
-        inputs = cute.make_tensor(source, cute.make_layout(_TILE + 1))
-        outputs = cute.make_tensor(observed, cute.make_layout(_TILE))
-        loaded = cutlass_coop.ThreadData(_ITEMS)
+        inputs = cute.make_tensor(
+            source, cute.make_layout((_THREADS * items_per_thread) + 1)
+        )
+        outputs = cute.make_tensor(
+            observed, cute.make_layout(_THREADS * items_per_thread)
+        )
+        loaded = cutlass_coop.ThreadData(items_per_thread)
         cutlass_coop.load(
             cutlass_coop.this_block(),
             source,
@@ -214,10 +246,10 @@ def test_unguarded_full_tiles_use_the_correct_layout(algorithm, offset):
             algorithm=algorithm,
             offset=offset,
         )
-        stored = cutlass_coop.ThreadData(_ITEMS, dtype=cutlass.Int32)
-        for item in cutlass.range_constexpr(_ITEMS):
-            outputs[thread * _ITEMS + item] = loaded[item]
-            stored[item] = inputs[thread * _ITEMS + item]
+        stored = cutlass_coop.ThreadData(items_per_thread, dtype=cutlass.Int32)
+        for item in cutlass.range_constexpr(items_per_thread):
+            outputs[thread * items_per_thread + item] = loaded[item]
+            stored[item] = inputs[thread * items_per_thread + item]
         cutlass_coop.store(
             cutlass_coop.this_block(),
             destination,
@@ -228,22 +260,33 @@ def test_unguarded_full_tiles_use_the_correct_layout(algorithm, offset):
 
     @cute.jit
     def launch(
-        source: cute.Pointer, destination: cute.Pointer, observed: cute.Pointer
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        observed: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, destination, observed).launch(grid=1, block=_BLOCK)
+        kernel(source, destination, observed, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
-    source = values_for(np.int32, _TILE + 1, shift=59)
-    destination = np.full(_TILE + 1, -101, dtype=np.int32)
-    observed = np.zeros(_TILE, dtype=np.int32)
+    source = values_for(np.int32, (_THREADS * items_per_thread) + 1, shift=59)
+    destination = np.full(
+        (_THREADS * items_per_thread) + 1, -101, dtype=np.int32
+    )
+    observed = np.zeros((_THREADS * items_per_thread), dtype=np.int32)
     expected = destination.copy()
-    expected[offset : offset + _TILE] = source[:_TILE]
+    expected[offset : offset + (_THREADS * items_per_thread)] = source[
+        : (_THREADS * items_per_thread)
+    ]
     with (
         device_array(source) as src,
         device_array(destination) as dst,
         device_array(observed) as out,
     ):
-        launch(src, dst, out)
-    np.testing.assert_array_equal(observed, source[offset : offset + _TILE])
+        launch(src, dst, out, items_per_thread)
+    np.testing.assert_array_equal(
+        observed, source[offset : offset + (_THREADS * items_per_thread)]
+    )
     np.testing.assert_array_equal(destination, expected)
 
 
@@ -256,7 +299,10 @@ def test_storage_reuse_in_runtime_loop(
 ):
     @cute.kernel
     def kernel(
-        source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        tiles: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
         storage = cutlass_coop.TempStorage(
             capacity,
@@ -265,7 +311,7 @@ def test_storage_reuse_in_runtime_loop(
             alignment=1,
         )
         for tile in range(tiles):
-            payload = cutlass_coop.ThreadData(_ITEMS)
+            payload = cutlass_coop.ThreadData(items_per_thread)
             cutlass_coop.load(
                 cutlass_coop.this_block(),
                 source,
@@ -276,7 +322,7 @@ def test_storage_reuse_in_runtime_loop(
             )
             if cutlass.const_expr(manual_sync):
                 storage.sync()
-            for item in cutlass.range_constexpr(_ITEMS):
+            for item in cutlass.range_constexpr(items_per_thread):
                 payload[item] = payload[item] + cutlass.Int32(tile + 1)
             cutlass_coop.store(
                 cutlass_coop.this_block(),
@@ -291,9 +337,14 @@ def test_storage_reuse_in_runtime_loop(
 
     @cute.jit
     def launch(
-        source: cute.Pointer, destination: cute.Pointer, tiles: cutlass.Int32
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        tiles: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, destination, tiles).launch(grid=1, block=_BLOCK)
+        kernel(source, destination, tiles, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     tiles = 8
     source = values_for(np.int32, tiles * _TILE, shift=61)
@@ -303,7 +354,7 @@ def test_storage_reuse_in_runtime_loop(
         + np.arange(1, tiles + 1, dtype=np.int32)[:, None]
     )
     with device_array(source) as src, device_array(destination) as dst:
-        launch(src, dst, tiles)
+        launch(src, dst, tiles, _ITEMS)
     np.testing.assert_array_equal(destination, expected.reshape(-1))
 
 
@@ -314,11 +365,15 @@ def test_storage_reuse_in_runtime_loop(
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
 def test_requested_storage_alignment_is_a_minimum(api, alignment, sharing):
     @cute.kernel
-    def kernel(source: cute.Pointer, destination: cute.Pointer):
+    def kernel(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
         storage = api.TempStorage(
             alignment=alignment, sharing=sharing, auto_sync=True
         )
-        payload = api.ThreadData(_ITEMS)
+        payload = api.ThreadData(items_per_thread)
         api.load(
             api.this_block(),
             source,
@@ -335,26 +390,37 @@ def test_requested_storage_alignment_is_a_minimum(api, alignment, sharing):
         )
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer):
-        kernel(source, destination).launch(grid=1, block=_BLOCK)
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(source, destination, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.float64, _TILE, shift=43)
     destination = np.full_like(source, -101)
     with device_array(source) as src, device_array(destination) as dst:
-        launch(src, dst)
+        launch(src, dst, _ITEMS)
     np.testing.assert_array_equal(destination, source)
 
 
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
 @pytest.mark.parametrize("manual_sync", (False, True))
-def test_storage_example(sharing, manual_sync):
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_storage_example(sharing, manual_sync, items_per_thread):
     path = PACKAGE_ROOT / "examples/cutlass/block_storage.py"
     spec = importlib.util.spec_from_file_location(
         "cutlass_block_storage_example", path
     )
     example = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(example)
-    example.run_example(sharing=sharing, manual_sync=manual_sync)
+    example.run_example(
+        sharing=sharing,
+        manual_sync=manual_sync,
+        items_per_thread=items_per_thread,
+    )
 
 
 @pytest.mark.parametrize(
@@ -364,7 +430,10 @@ def test_storage_example(sharing, manual_sync):
 def test_deferred_storage_preserves_user_shared_memory(api, sharing):
     @cute.kernel
     def kernel(
-        source: cute.Pointer, destination: cute.Pointer, preserved: cute.Pointer
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        preserved: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
@@ -379,7 +448,7 @@ def test_deferred_storage_preserves_user_shared_memory(api, sharing):
         cute.arch.sync_threads()
 
         storage = api.TempStorage(sharing=sharing)
-        payload = api.ThreadData(_ITEMS)
+        payload = api.ThreadData(items_per_thread)
         api.load(
             api.this_block(),
             source,
@@ -402,9 +471,14 @@ def test_deferred_storage_preserves_user_shared_memory(api, sharing):
 
     @cute.jit
     def launch(
-        source: cute.Pointer, destination: cute.Pointer, preserved: cute.Pointer
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        preserved: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
     ):
-        kernel(source, destination, preserved).launch(grid=1, block=_BLOCK)
+        kernel(source, destination, preserved, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.int32, _TILE, shift=79)
     destination = np.full_like(source, -101)
@@ -414,7 +488,7 @@ def test_deferred_storage_preserves_user_shared_memory(api, sharing):
         device_array(destination) as dst,
         device_array(preserved) as check,
     ):
-        launch(src, dst, check)
+        launch(src, dst, check, _ITEMS)
     np.testing.assert_array_equal(destination, source)
     np.testing.assert_array_equal(
         preserved, 101 + 7 * np.arange(_THREADS - 1, -1, -1, dtype=np.int32)
@@ -430,11 +504,15 @@ def test_final_cubin_storage_contract(tmp_path, algorithm):
         )
 
     @cute.kernel
-    def kernel(source: cute.Pointer, destination: cute.Pointer):
+    def kernel(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
         storage = cutlass_coop.TempStorage(
             sharing="shared", alignment=64, auto_sync=True
         )
-        payload = cutlass_coop.ThreadData(_ITEMS)
+        payload = cutlass_coop.ThreadData(items_per_thread)
         cutlass_coop.load(
             cutlass_coop.this_block(),
             source,
@@ -451,14 +529,20 @@ def test_final_cubin_storage_contract(tmp_path, algorithm):
         )
 
     @cute.jit
-    def launch(source: cute.Pointer, destination: cute.Pointer):
-        kernel(source, destination).launch(grid=1, block=_BLOCK)
+    def launch(
+        source: cute.Pointer,
+        destination: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(source, destination, items_per_thread).launch(
+            grid=1, block=_BLOCK
+        )
 
     source = values_for(np.int32, _TILE, shift=67)
     destination = np.full_like(source, -101)
     with device_array(source) as src, device_array(destination) as dst:
         compiled = cute.compile[(KeepCUBIN, DumpDir(str(tmp_path)))](
-            launch, src, dst
+            launch, src, dst, _ITEMS
         )
         compiled(src, dst)
     np.testing.assert_array_equal(destination, source)
