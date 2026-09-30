@@ -1439,6 +1439,13 @@ def default_worker_count() -> int:
     return max(1, min(cpu, 8))
 
 
+def summarize_trace_task(task: TraceTask) -> dict[str, SliceTraceResult]:
+    try:
+        return process_trace_task(task)
+    except Exception as e:
+        raise RuntimeError(f"failed to summarize trace {task.rel_path}: {e}") from e
+
+
 def iter_trace_results(
     tasks: list[TraceTask], jobs: int
 ) -> Iterator[dict[str, SliceTraceResult]]:
@@ -1472,18 +1479,19 @@ def iter_trace_results(
             yield result
 
     if worker_count == 1 or ctx is None:
-        yield from emit(process_trace_task(task) for task in tasks)
+        yield from emit(summarize_trace_task(task) for task in tasks)
         return
 
-    executor_kwargs: dict[str, Any] = {
-        "max_workers": worker_count,
-        "mp_context": ctx,
-    }
-    if sys.version_info >= (3, 11):
-        executor_kwargs["max_tasks_per_child"] = 1
-    with ProcessPoolExecutor(**executor_kwargs) as executor:
-        futures = [executor.submit(process_trace_task, task) for task in tasks]
+    # max_tasks_per_child cannot be combined with the fork start method on
+    # Python 3.11 and newer.
+    executor = ProcessPoolExecutor(max_workers=worker_count, mp_context=ctx)
+    try:
+        futures = [executor.submit(summarize_trace_task, task) for task in tasks]
         yield from emit(future.result() for future in as_completed(futures))
+    finally:
+        # Cancel traces that have not started so one bad file does not wait
+        # for the rest of the queue. Running workers finish on their own.
+        executor.shutdown(wait=True, cancel_futures=True)
 
 
 def trace_tasks_for_slices(

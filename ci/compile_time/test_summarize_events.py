@@ -1271,6 +1271,44 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
         )
         self.assertGreater(len(csv_rows(child_report)), 0)
 
+    def test_malformed_trace_names_the_relative_path(self) -> None:
+        current = self.work / "current"
+        output = self.work / "reports"
+        same = self.traces.project_detail("libcudacxx/include/cuda/std/same.h")
+        self.traces.write_trace(
+            current / "target" / "good.json",
+            [self.traces.event("Same", same, 0, 10)],
+            "good",
+        )
+        broken = current / "target" / "broken.json"
+        broken.parent.mkdir(parents=True, exist_ok=True)
+        broken.write_text("{", encoding="utf-8")
+
+        for jobs in (1, 2):
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    SUMMARY_SCRIPT.as_posix(),
+                    current.as_posix(),
+                    "-o",
+                    (output / str(jobs)).as_posix(),
+                    "-f",
+                    "all",
+                    "--jobs",
+                    str(jobs),
+                ],
+                cwd=REPO_ROOT,
+                check=False,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            self.assertNotEqual(completed.returncode, 0, completed.stderr)
+            self.assertIn(
+                "failed to summarize trace target/broken.json",
+                completed.stderr,
+            )
+
 
 class CompileTimeMatrixAndCommentTest(unittest.TestCase):
     def setUp(self) -> None:
