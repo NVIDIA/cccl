@@ -947,7 +947,7 @@ def check_cutlass_topk_surface() -> None:
 
 def check_cutlass_neighbors() -> None:
     block = cutlass_coop.this_block()
-    values = cutlass_coop.ThreadData(3, np.int32)
+    values = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.int32)
     storage = cutlass_coop.TempStorage(alignment=16)
     assert_type(
         cutlass_coop.adjacent_difference(
