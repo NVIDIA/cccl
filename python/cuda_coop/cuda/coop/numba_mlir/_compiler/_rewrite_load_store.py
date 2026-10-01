@@ -38,6 +38,26 @@ class _ExactStoreScalar:
 
     @property
     def _numba_type_(self):
+        """Build the compiler function type for an exact-dtype identity check.
+
+        Scalar Store lowering boxes a value into a local array, whose assignment
+        could silently cast a runtime scalar to the destination dtype. This
+        callable's overload checks the argument type before that assignment and
+        returns an inline identity implementation only when the types match.
+        Literal wrappers are compared by their underlying scalar type.
+
+        The overload template and resulting function type are created lazily and
+        cached on this validator instance. The callable itself is a compilation
+        hook, not a Python implementation of the identity operation.
+
+        Returns
+        -------
+        numba_types.Function
+            Function type whose overload raises ``TypingError`` for a
+            mismatched scalar type and otherwise returns the input
+            unchanged.
+        """
+
         import numba_cuda_mlir.numba_cuda.types as _numba_types
         from numba_cuda_mlir.extending import (
             _NumbaCudaMlirOverloadFunctionTemplate,
