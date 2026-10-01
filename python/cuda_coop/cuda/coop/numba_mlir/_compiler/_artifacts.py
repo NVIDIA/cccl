@@ -6,12 +6,11 @@ import os
 import re
 import tempfile
 from collections import namedtuple
-from typing import BinaryIO
 
 version = namedtuple("version", ("major", "minor"))
 
 
-def make_binary_tempfile(content: bytes, suffix: str) -> BinaryIO:
+def make_binary_tempfile(content: bytes, suffix: str):
     """Write content to a closed, unbuffered temporary binary file."""
 
     with tempfile.NamedTemporaryFile(

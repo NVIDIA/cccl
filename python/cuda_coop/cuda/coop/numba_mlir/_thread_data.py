@@ -16,7 +16,7 @@ local: object
 shared: object
 
 
-def _normalize_thread_data_alignment(alignment):
+def _normalize_thread_data_alignment(alignment: int | None) -> int | None:
     alignment = _normalize_alignment(alignment)
     # The compiler requires pointer-aligned arrays. Stronger alignment also
     # satisfies smaller minimum-alignment requests from the common API.

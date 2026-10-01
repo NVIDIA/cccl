@@ -5,6 +5,8 @@
 from dataclasses import dataclass
 from numbers import Integral
 
+from numba_cuda_mlir import cuda as _cuda_module
+
 from cuda.coop._core import ArgumentBinding, BindingKind
 
 from ._group_rewriting import GroupRewriteContext
@@ -13,7 +15,6 @@ from ._rewrite_support import (
     _GLOBAL_NAME_COUNTER,
     _UNRESOLVED,
     CoopSinglePhaseRewriteError,
-    _cuda_module,
     _dtype_values_match,
     _next_global_name,
     _RewriteMatch,
@@ -37,7 +38,7 @@ class _ExactStoreScalar:
 
     @property
     def _numba_type_(self):
-        from numba_cuda_mlir import types
+        import numba_cuda_mlir.numba_cuda.types as _numba_types
 
         from ._numba_mlir_compat import _get_numba_mlir_compat
 
@@ -68,7 +69,7 @@ class _ExactStoreScalar:
                 prefer_literal=False,
                 base=compat.overload_function_template,
             )
-            self._numba_type = types.Function(template)
+            self._numba_type = _numba_types.Function(template)
         return self._numba_type
 
     def __call__(self, value):
@@ -423,19 +424,18 @@ def analyze_load_store_match(
             try:
                 _validate_common_numeric_dtype(
                     operand_dtype,
-                    operation=common_root_operation,
+                    operation=op_name,
                 )
             except (TypeError, ValueError) as exc:
                 raise CoopSinglePhaseRewriteError(str(exc)) from exc
-    if group_root_store and (op_name != "store" or len(runtime_args) < 2):
-        raise CoopSinglePhaseRewriteError(
-            "_group_root_store is valid only for root store calls"
-        )
-    return _LoadStoreMatchMetadata(
-        box_root_store_scalar=(
-            group_root_store and context.thread_data(runtime_args[1]) is None
-        )
-    )
+    box_root_store_scalar = False
+    if group_root_store:
+        if op_name != "store" or len(runtime_args) < 2:
+            raise CoopSinglePhaseRewriteError(
+                "_group_root_store is valid only for root store calls"
+            )
+        box_root_store_scalar = context.thread_data(runtime_args[1]) is None
+    return _LoadStoreMatchMetadata(box_root_store_scalar=box_root_store_scalar)
 
 
 def prepare_load_store_runtime_args(
@@ -444,7 +444,7 @@ def prepare_load_store_runtime_args(
     *,
     match: _RewriteMatch,
     runtime_args: list[ir.Var],
-    scope: ir.Scope,
+    scope: ir.Scope | None,
     loc: ir.Loc,
 ) -> list[ir.Var]:
     metadata = match.family_metadata

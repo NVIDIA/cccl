@@ -19,6 +19,7 @@ from ._numba_mlir_compat import (
     _runtime_requirement,
 )
 
+assert __package__ is not None
 _BACKEND_PACKAGE = __package__.removesuffix("._compiler")
 _REGISTRATION_MODULES = frozenset(
     {
