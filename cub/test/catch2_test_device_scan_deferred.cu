@@ -399,10 +399,10 @@ CUB_TEST("DeviceScan::ExclusiveSum uses batched lookback within a single batch f
   c2h::device_vector<scan_value_t> expected(static_cast<size_t>(num_items), scan_value_t{-1});
   c2h::device_vector<scan_value_t> output(static_cast<size_t>(num_items), scan_value_t{-1});
 
+  const auto deferred_num_items = cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())};
+
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), expected.begin(), num_items));
-  REQUIRE(cudaSuccess
-          == cub::DeviceScan::ExclusiveSum(
-            input.begin(), output.begin(), cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())}));
+  REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), output.begin(), deferred_num_items));
   REQUIRE(output == expected);
 }
 
