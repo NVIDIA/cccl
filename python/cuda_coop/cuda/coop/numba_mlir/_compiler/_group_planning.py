@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from numbers import Integral
 from typing import TYPE_CHECKING, Any
 
@@ -144,7 +145,7 @@ class GroupPlanningContext:
     @staticmethod
     def _validate_provider_contract(
         lowering_plan: GroupLoweringPlan,
-        factory: Any,
+        factory: Callable[..., Any],
         *,
         runtime_temp_storage_supplied: bool | None = None,
     ) -> None:
@@ -169,7 +170,8 @@ class GroupPlanningContext:
         lowering_plan : GroupLoweringPlan
             Supported plan whose storage and execution requirements are checked.
         factory : callable
-            Selected provider factory registered with operation metadata.
+            Selected host-side provider factory registered with operation
+            metadata. It is not invoked here.
         runtime_temp_storage_supplied : bool or None, optional
             Whether the proposed provider call supplies ``temp_storage``. For a
             storage-bearing plan, a boolean must agree with caller ownership.
@@ -331,7 +333,7 @@ class GroupPlanningContext:
         inst: ir.Assign,
         *,
         lowering_plan: GroupLoweringPlan,
-        factory: Any,
+        factory: Callable[..., Any],
         args: list[Any],
         kwargs: dict[str, Any],
         common_root_operation: str | None = None,
@@ -353,8 +355,8 @@ class GroupPlanningContext:
         lowering_plan : GroupLoweringPlan
             Supported semantic plan to validate and attach to the provider call.
         factory : callable
-            Registered private provider factory selected by the operation
-            family.
+            Registered host-side provider factory selected by the operation
+            family. Embedded as the generated call target, not invoked here.
         args : list of object
             Positional provider arguments, as existing IR variables or host
             values.

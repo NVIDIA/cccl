@@ -9,7 +9,8 @@ IR bundle.
 from __future__ import annotations
 
 import hashlib
-from typing import TYPE_CHECKING, cast
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, cast
 
 from .._types import (
     _hash_symbol_value,
@@ -18,6 +19,7 @@ from .._types import (
     make_invocable_from_specialization,
     prepare_ltoir_bundle,
 )
+from ._operations import FactoryOperation
 from ._rewrite_support import CoopSinglePhaseRewriteError, _RewriteMatch
 
 if TYPE_CHECKING:
@@ -27,8 +29,8 @@ if TYPE_CHECKING:
 class _InvocableRewrite:
     @staticmethod
     def _invocable_cache_key(
-        factory: object,
-        factory_metadata,
+        factory: Callable[..., Any],
+        factory_metadata: FactoryOperation,
         factory_kwargs: dict[str, object],
     ) -> tuple[str, tuple[tuple[str, str, str], ...]]:
         """Identify a provider specialization within one compiler state.
@@ -43,9 +45,11 @@ class _InvocableRewrite:
         Parameters
         ----------
         factory : callable
-            Registered provider factory whose identity partitions the cache.
+            Registered host-side provider factory whose identity partitions
+            the cache. It is not invoked here.
         factory_metadata : FactoryOperation
-            Operation name, namespace, and ABI and scope contracts.
+            Required registration carrying the operation name, namespace, and
+            ABI and scope contracts for ``factory``.
         factory_kwargs : dict of str to object
             Resolved specialization inputs, after removing lowering-plan
             metadata.
