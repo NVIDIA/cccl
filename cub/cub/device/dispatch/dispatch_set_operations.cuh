@@ -17,14 +17,14 @@
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_set_operations.cuh>
-#include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
 #include <cub/util_vsmem.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__numeric/add_overflow.h>
+#include <cuda/__numeric/mul_overflow.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__execution/env.h>
@@ -57,6 +57,9 @@ _CCCL_KERNEL_ATTRIBUTES void device_set_op_partition_kernel(
   const Offset partition_idx = static_cast<Offset>(blockDim.x) * blockIdx.x + threadIdx.x;
   if (partition_idx < num_partitions)
   {
+    // The diagonal of the last partition reaches the combined input size, so the offset type must represent it.
+    _CCCL_ASSERT(!::cuda::mul_overflow<Offset>(partition_idx, items_per_tile).overflow,
+                 "cub::DeviceSetOps: partition_idx * items_per_tile overflows the offset type");
     const Offset diag = ::cuda::std::min(partition_idx * items_per_tile, num_keys1 + num_keys2);
     partitions[partition_idx] =
       balanced_path(keys1, keys2, num_keys1, num_keys2, diag, balanced_path_levels, compare_op);
@@ -193,6 +196,10 @@ template <typename KeysIt1,
     constexpr int block_threads  = policy.threads_per_block;
     constexpr int items_per_tile = block_threads * policy.items_per_thread - 1;
 
+    // The combined input size must be representable by the offset type: it indexes the merge path and feeds the tile
+    // count, temp-storage sizes, and partition diagonals.
+    _CCCL_ASSERT(!::cuda::add_overflow<Offset>(num_keys1, num_keys2).overflow,
+                 "cub::DeviceSetOps: num_keys1 + num_keys2 overflows the offset type");
     const Offset keys_total = num_keys1 + num_keys2;
     const Offset num_tiles  = ::cuda::ceil_div(keys_total, Offset{items_per_tile});
 
