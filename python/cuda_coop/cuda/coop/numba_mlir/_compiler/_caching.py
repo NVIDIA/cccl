@@ -4,7 +4,25 @@
 
 """Cache results on disk by function identity and serialized arguments.
 
-Set ``CUDA_COOP_ENABLE_CACHE=1`` before import to enable caching.
+``CUDA_COOP_ENABLE_CACHE`` enables persistent caching when set to ``"1"`` or
+any value other than empty, ``"0"``, ``"false"``, ``"no"``, or ``"off"``.
+Comparison ignores surrounding whitespace and letter case. Unset disables the
+disk cache. This flag does not control the separate in-memory LRU cache on
+NVRTC compilation.
+
+``XDG_CACHE_HOME`` selects the cache parent directory on non-Windows systems;
+the default is ``~/.cache``. ``LOCALAPPDATA`` selects it on Windows; the
+default is ``~/AppData/Local``. Only the variable for the current platform is
+read. Its value must be an absolute path: unset, empty, and relative values
+use the platform default. Cache files live under a ``cccl`` subdirectory,
+partitioned further by callable identity.
+
+The enable flag and selected cache location are captured when this module is
+imported. Set them before backend initialization imports this module; later
+environment changes do not reconfigure its wrappers. Directory or write
+``OSError`` failures disable disk caching for the rest of the process, while
+unreadable entries simply miss. Compilation proceeds without persistent
+caching in those cases.
 """
 
 import hashlib
