@@ -1310,7 +1310,7 @@ _CCCL_FPMP_MATH_DISPATCH_1A(cospi)
   constexpr float __integral_threshold      = 0x1p23f;
   constexpr float __even_integral_threshold = 0x1p24f;
 
-  const float __abs = (__x < 0.0f) ? -__x : __x;
+  const float __abs = ::cuda::std::fabs(__x);
   if (__abs >= __even_integral_threshold)
   {
     *__f = 0.0f;
@@ -1352,13 +1352,10 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
 {
   using __afloat = fp32mp2_high;
 
-  const float __abs_hi = (__x_hi < 0.0f) ? -__x_hi : __x_hi;
-  // A float is Inf or NaN when its magnitude bits are at least the all-ones exponent.
-  // Mask the sign bit rather than negating: -0 (0x80000000) would otherwise look non-finite.
-  constexpr uint32_t __magnitude_mask    = 0x7FFFFFFFU;
-  constexpr uint32_t __exponent_all_ones = 0x7F800000U;
-  if (((::cuda::std::bit_cast<uint32_t>(__x_hi) & __magnitude_mask) >= __exponent_all_ones)
-      || ((::cuda::std::bit_cast<uint32_t>(__x_lo) & __magnitude_mask) >= __exponent_all_ones))
+  const float __abs_hi = ::cuda::std::fabs(__x_hi);
+  // Inf and NaN share an all-ones exponent. isfinite(-0) is true, so this does not
+  // treat a signed zero as non-finite the way a raw sign-bit check would.
+  if (!::cuda::std::isfinite(__x_hi) || !::cuda::std::isfinite(__x_lo))
   {
     *__sin_hi = NAN;
     *__sin_lo = 0.0f;
