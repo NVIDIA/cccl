@@ -67,26 +67,25 @@ struct policy_selector
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> SetOpsPolicy
   {
-    // The number of items per thread is scaled from a nominal 4-byte budget by the key size, rounding up (matching
-    // the original Thrust implementation). nominal_4B_items_to_items rounds down instead, which agrees for 1/2/4-byte
-    // keys but gives a smaller items-per-thread (and thus a different, more tile-heavy, sometimes slower) tiling for
-    // 8-byte keys -- this caused measurable regressions in some set operations (e.g. union, symmetric_difference),
-    // since more tiles means a longer decoupled-lookback dependency chain.
+    // We don't use cub::detail::nominal_4B_items_to_items here because Thrust scaled the nominal item count with
+    // a ceiling division, whereas nominal_4B_items_to_items rounds down.
     if (cc >= ::cuda::compute_capability{6, 0})
     {
       constexpr int nominal_items_per_thread = 19;
-      const int items_per_thread =
-        (::cuda::std::min) (nominal_items_per_thread,
-                            (::cuda::std::max) (1, (nominal_items_per_thread * 4 + key_size - 1) / key_size));
-      return SetOpsPolicy{512, items_per_thread, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS};
+      return SetOpsPolicy{
+        512,
+        ::cuda::std::clamp(::cuda::ceil_div(nominal_items_per_thread * 4, key_size), 1, nominal_items_per_thread),
+        LOAD_DEFAULT,
+        BLOCK_SCAN_WARP_SCANS};
     }
 
     // default is SM52
     constexpr int nominal_items_per_thread = 15;
-    const int items_per_thread =
-      (::cuda::std::min) (nominal_items_per_thread,
-                          (::cuda::std::max) (1, (nominal_items_per_thread * 4 + key_size - 1) / key_size));
-    return SetOpsPolicy{256, items_per_thread, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS};
+    return SetOpsPolicy{
+      256,
+      ::cuda::std::clamp(::cuda::ceil_div(nominal_items_per_thread * 4, key_size), 1, nominal_items_per_thread),
+      LOAD_DEFAULT,
+      BLOCK_SCAN_WARP_SCANS};
   }
 };
 
