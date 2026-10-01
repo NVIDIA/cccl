@@ -114,6 +114,26 @@ class _ProvenanceRewrite(Rewrite):
         self._deferred_launch_dim_inference = False
 
     def _lookup_block_definition(self, name):
+        """Look up a block definition only for an unambiguous name.
+
+        Before SSA reconstruction, branches and loops may assign the same name
+        more than once. The block map stores only the last assignment, which can
+        follow the use being analyzed. Refuse that shortcut when the function's
+        definition table contains multiple assignments so provenance analysis
+        cannot mistake one branch or a later rebinding for a constant.
+
+        Parameters
+        ----------
+        name : str
+            IR variable name to look up in the current block's assignment
+            map.
+
+        Returns
+        -------
+        object or None
+            Block-local definition, or None when absent or multiply defined.
+        """
+
         # Before SSA, a name can be rebound in a loop or branch. The block map
         # retains only its last assignment, which may follow the current use.
         if len(self._func_ir._definitions.get(name, ())) > 1:
