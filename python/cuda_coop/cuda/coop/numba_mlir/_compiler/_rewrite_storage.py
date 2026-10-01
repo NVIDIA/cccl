@@ -45,6 +45,44 @@ class _StorageRewrite:
     def _validate_storage_match_plan(
         self, match: _RewriteMatch, *, ctor_key: str | None = None
     ) -> None:
+        """Check storage contracts before allocating slices and barriers.
+
+        Validate the provider registry contract against the group planner's
+        execution topology, storage ownership, shared address space, and reuse
+        barrier. Explicit caller-owned storage is supported only for a single
+        block instance. With manual synchronization, that caller-owned case may
+        retain the provider's execution-scope synchronization declaration even
+        though this rewrite emits no automatic reuse barrier.
+
+        The group planner and this rewrite parse descriptors independently. When
+        a constructor key is available, compare their effective contracts so a
+        parser disagreement cannot silently suppress synchronization. Calls
+        without a lowering plan retain only the legacy block execution and block
+        synchronization contract. Requirement collection runs these checks
+        before materializing storage-bearing invocables.
+
+        Parameters
+        ----------
+        match : _RewriteMatch
+            Validated call whose provider ABI requires a leading storage
+            pointer.
+        ctor_key : str or None, optional
+            Explicit descriptor owner used to cross-check constructor
+            metadata. None applies to implicit storage or when no owner was
+            resolved.
+
+        Returns
+        -------
+        None
+            Successful return permits subsequent requirement collection.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            The plan cannot be emitted or any provider, ownership,
+            synchronization, or constructor contract disagrees.
+        """
+
         rewrite = cast("CoopSinglePhaseRewrite", self)
         cls = type(self)
         lowering_plan = match.lowering_plan
