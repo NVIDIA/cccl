@@ -57,7 +57,24 @@ class NumbaMlirArrayInputTransform:
 
 
 def _optional_binding(value: Any) -> ArgumentBinding:
-    """Preserve explicit bindings while retaining legacy presence sentinels."""
+    """Translate legacy presence markers without making their values static.
+
+    Lowering factories accept both explicit binding descriptors and older
+    arguments whose mere presence requested a runtime overload. Preserve an
+    ``ArgumentBinding`` as supplied; otherwise ``None`` means omitted and every
+    other object means runtime. In particular, a plain integer here is not a
+    compile-time value. Callers must use ``ArgumentBinding.static`` to embed it.
+
+    Parameters
+    ----------
+    value : object
+        Binding descriptor, omitted sentinel, or legacy presence marker.
+
+    Returns
+    -------
+    ArgumentBinding
+        Existing descriptor or a new omitted/runtime binding.
+    """
 
     if isinstance(value, ArgumentBinding):
         return value
