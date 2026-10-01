@@ -473,7 +473,9 @@ def test_reduce_infers_untyped_thread_data_symmetrically(
 
     import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as root_coop
+    from cuda.coop._core import INT32
     from cuda.coop.numba_mlir._compiler import _group_reduce
+    from cuda.coop.numba_mlir._lowering import _reduce
 
     module = numba_coop if qualified else root_coop
     plans = []
@@ -497,13 +499,20 @@ def test_reduce_infers_untyped_thread_data_symmetrically(
             algorithm="raking",
         )
 
-    _, planner = _plan(
+    func_ir, planner = _plan(
         kernel,
         arg_types=(types.int32, types.IntegerLiteral(items_per_thread)),
     )
     assert planner.run()
     assert len(plans) == 1
-    assert plans[0].call.operation.dtype == types.int32
+    assert plans[0].call.operation.dtype == INT32
+    call = _provider_call(func_ir, _reduce.sum)
+    assert _kwarg_value(func_ir, call, "dtype") is types.int32
+    key = plans[0].call.operation.semantic_key
+    monkeypatch.setattr(
+        types.int32, "_coop_dtype_boundary_test", 1, raising=False
+    )
+    assert plans[0].call.operation.semantic_key == key
     assert plans[0].call.operation.items_per_thread == items_per_thread
 
 

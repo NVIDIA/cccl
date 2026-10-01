@@ -108,9 +108,9 @@ _COMPILE_PROBE = textwrap.dedent(
     )
 
     numba_coop = sys.modules["cuda.coop.numba_mlir"]
-    public_reduce_module = "cuda.coop.numba_mlir._group_reduce"
+    public_reduce_module = "cuda.coop.numba_mlir._group._reduce"
     compiler_reduce_module = "cuda.coop.numba_mlir._compiler._group_reduce"
-    public_scan_module = "cuda.coop.numba_mlir._group_scan"
+    public_scan_module = "cuda.coop.numba_mlir._group._scan"
     compiler_scan_module = "cuda.coop.numba_mlir._compiler._group_scan"
     stateful_function_module = "cuda.coop.numba_mlir._stateful_function"
     assert public_reduce_module not in sys.modules

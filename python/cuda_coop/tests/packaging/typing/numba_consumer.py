@@ -653,7 +653,7 @@ def check_radix_surface() -> None:
         numba_coop.ThreadDataLike[np.int32],
     )
     assert_type(
-        numba_coop.radix_rank(block, keys, radix_bits=4),
+        numba_coop.radix_rank_keys(block, keys, radix_bits=4),
         numba_coop.ThreadDataLike[np.int32],
     )
     assert_type(
@@ -665,7 +665,7 @@ def check_radix_surface() -> None:
     )
     prefix = numba_coop.ThreadData(items_per_thread=1, dtype=np.int32)
     assert_type(
-        numba_coop.radix_rank(block, keys, exclusive_digit_prefix=prefix),
+        numba_coop.radix_rank_keys(block, keys, exclusive_digit_prefix=prefix),
         numba_coop.ThreadDataLike[np.int32],
     )
     assert_type(
