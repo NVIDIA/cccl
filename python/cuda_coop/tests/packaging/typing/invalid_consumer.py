@@ -627,7 +627,7 @@ portable.radix_sort_keys(  # expected-error: [type-var]
 portable.radix_sort_keys(  # expected-error: [call-arg]
     portable.this_block(), radix_keys, blocked_to_striped=True
 )
-portable.radix_rank(  # expected-error: [call-arg]
+portable.radix_rank_keys(  # expected-error: [call-arg]
     portable.this_block(), radix_keys, exclusive_digit_prefix=radix_keys
 )
 portable.radix_sort_keys(

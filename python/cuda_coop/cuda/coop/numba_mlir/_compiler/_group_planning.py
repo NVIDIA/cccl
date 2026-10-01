@@ -582,7 +582,7 @@ class GroupPlanningContext:
                 len(definition.args) >= 3
                 and self.constant(definition.args[2]) == "int32"
             ):
-                return types.int32
+                return _numba_types.int32
             return self.dtype(definition.args[0], seen=seen)
         result_dtype = self._result_dtype(definition, index=None, seen=seen)
         if result_dtype is not None:

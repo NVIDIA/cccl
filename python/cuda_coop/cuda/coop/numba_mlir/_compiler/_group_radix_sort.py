@@ -5,22 +5,23 @@
 from dataclasses import replace
 from numbers import Integral
 
-from numba_cuda_mlir import types
+import numba_cuda_mlir.numba_cuda.types as numba_types
 
 from cuda.coop._core import (
+    GroupOperandKind,
     StorageOwnership,
     SynchronizationScope,
     make_group_primitive_call,
     plan_group_primitive,
 )
-from cuda.coop._core.api.radix import _radix_bounds
+from cuda.coop._core.api.radix_sort import _radix_bounds
 from cuda.coop._core.block.radix import make_radix_bit_range
 from cuda.coop._core.block.radix_rank import (
     block_radix_rank_bins_per_thread,
     make_block_radix_rank_semantics,
 )
 from cuda.coop._core.block.radix_sort import make_block_radix_sort_semantics
-from cuda.coop._core.group.radix import (
+from cuda.coop._core.group.radix_sort import (
     GroupRadixRankSemantics,
     GroupRadixSortSemantics,
 )
@@ -42,7 +43,7 @@ from ._parameters import (
     _validate_runtime_integer_dtype,
     normalize_dtype_param,
 )
-from ._rewrite_radix import infer_radix_payload
+from ._rewrite_radix_sort import infer_radix_payload
 
 
 def _dtype(context, operation, parameter, value):
@@ -83,14 +84,14 @@ def _sort_bit(context, operation, name, value):
 
 
 def _lower(context, inst, *, operation, group, bound, is_common_root):
-    from .._lowering import _radix
+    from .._lowering import _radix_sort
     from .._lowering._core import NumbaMlirCoreAdapter
 
     if group.kind != "block":
         raise NotImplementedError(
             "cuda.coop radix operations require a complete physical block"
         )
-    rank = operation == "radix_rank"
+    rank = operation == "radix_rank_keys"
     pairs = operation == "radix_sort_pairs"
     parameters = ("keys", "values") if pairs else ("keys",)
     dtype_map = {}
@@ -121,11 +122,16 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
         array_map[name] = is_array
         dtype_map[name] = _dtype(context, operation, name, value)
     key_dtype = dtype_map["keys"]
-    integral = {types.int32, types.uint32, types.int64, types.uint64}
+    integral = {
+        numba_types.int32,
+        numba_types.uint32,
+        numba_types.int64,
+        numba_types.uint64,
+    }
     allowed = (
         integral
         if rank or is_common_root
-        else integral | {types.float32, types.float64}
+        else integral | {numba_types.float32, numba_types.float64}
     )
     if key_dtype not in allowed:
         raise TypeError(
@@ -155,6 +161,8 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
         "items_per_thread": extent,
         "descending": descending,
     }
+    prefix = None
+    prefix_extent = None
     if rank:
         begin_bit, end_bit = _radix_bounds(
             operation,
@@ -164,7 +172,6 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
             context.constant(bound.arguments["radix_bits"]),
         )
         prefix = bound.arguments.get("exclusive_digit_prefix")
-        prefix_extent = None
         if not context.is_none(prefix):
             expected = block_radix_rank_bins_per_thread(
                 end_bit - begin_bit, context.launch.exact_block_threads
@@ -181,10 +188,10 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
             dtype = context.dtype(prefix)
             if (
                 dtype is not None
-                and normalize_dtype_param(dtype) != types.int32
+                and normalize_dtype_param(dtype) != numba_types.int32
             ):
                 raise TypeError("exclusive_digit_prefix must have int32 dtype")
-            context.record_thread_data_dtype(prefix, types.int32)
+            context.record_thread_data_dtype(prefix, numba_types.int32)
         primitive = make_block_radix_rank_semantics(
             **core_kwargs,
             begin_bit=begin_bit,
@@ -194,7 +201,10 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
             exclusive_digit_prefix_items_per_thread=prefix_extent,
         )
         semantics = GroupRadixRankSemantics(
-            primitive, operand_kind="array" if array_map["keys"] else "scalar"
+            primitive,
+            operand_kind=GroupOperandKind.ARRAY
+            if array_map["keys"]
+            else GroupOperandKind.SCALAR,
         )
         kwargs.update(begin_bit=begin_bit, end_bit=end_bit)
     else:
@@ -233,7 +243,10 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
             bit_policy="both",
         )
         semantics = GroupRadixSortSemantics(
-            primitive, operand_kind="array" if array_map["keys"] else "scalar"
+            primitive,
+            operand_kind=GroupOperandKind.ARRAY
+            if array_map["keys"]
+            else GroupOperandKind.SCALAR,
         )
         kwargs["blocked_to_striped"] = striped
         if pairs:
@@ -241,6 +254,8 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
     plan = plan_group_primitive(
         make_group_primitive_call(group, semantics), context.launch
     ).require_supported()
+    assert plan.temp_storage is not None
+    assert plan.synchronization is not None
     temp_storage = bound.arguments.get("temp_storage")
     if not context.is_none(temp_storage):
         descriptor = context.temp_storage(temp_storage)
@@ -316,7 +331,7 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
     rewritten = context.rewrite_call(
         inst,
         lowering_plan=plan,
-        factory=getattr(_radix, operation),
+        factory=getattr(_radix_sort, operation),
         args=runtime_args,
         kwargs=kwargs,
         return_alias=outputs[0] if len(outputs) == 1 else tuple(outputs),
@@ -345,8 +360,8 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
 
 for _operation, _results, _count in (
     (
-        "radix_rank",
-        (GroupResultSource(None, "keys", fixed_dtype=types.int32),),
+        "radix_rank_keys",
+        (GroupResultSource(None, "keys", fixed_dtype=numba_types.int32),),
         2,
     ),
     ("radix_sort_keys", (GroupResultSource("keys", "keys"),), 3),
@@ -366,10 +381,10 @@ for _operation, _results, _count in (
             factory_namespaces=frozenset({"block"}),
             dtype_factory_kwargs=frozenset({"dtype", "value_dtype"}),
             runtime_arg_counts=frozenset({2, 3})
-            if _operation == "radix_rank"
+            if _operation == "radix_rank_keys"
             else frozenset({_count}),
             runtime_factory_kwargs=("with_exclusive_digit_prefix",)
-            if _operation == "radix_rank"
+            if _operation == "radix_rank_keys"
             else (),
             runtime_factory_kw_prerequisites=(),
             allowed_factory_kwargs=frozenset(
@@ -388,7 +403,7 @@ for _operation, _results, _count in (
             required_factory_kwargs=frozenset(
                 {"dtype", "threads_per_block", "items_per_thread"}
             ),
-            accepts_temp_storage=_operation != "radix_rank",
+            accepts_temp_storage=_operation != "radix_rank_keys",
             scalar_binding_kwargs=frozenset(),
             runtime_offset_kwarg=None,
             infer_payload=infer_radix_payload,

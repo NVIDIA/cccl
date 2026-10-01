@@ -11,7 +11,7 @@ order a block's keys by selected bits. Sort processes digits from the
 least significant selected bits upward, moving keys after each stable pass.
 The pairs operation moves associated values with their keys.
 
-:func:`cuda.coop.radix_rank` computes destinations for **one digit**. It
+:func:`cuda.coop.radix_rank_keys` computes destinations for **one digit**. It
 returns an ``int32`` rank in each key's original slot. The input keys stay
 where they were; ranking does not perform a scatter. All three operations
 preserve their input payloads.
@@ -52,7 +52,7 @@ complete, executable blocks of 64 threads.
 
          One digit's ranks describe destinations without moving the keys.
 
-   For ``radix_rank(..., begin_bit=0, end_bit=4)``, digits one, two, and
+   For ``radix_rank_keys(..., begin_bit=0, end_bit=4)``, digits one, two, and
    three occur three, three, and two times. Their ascending bin starts
    are zero, three, and six. Add the number of earlier keys with the
    same digit to obtain each destination.
@@ -141,7 +141,7 @@ automatically.
 The qualified Rank call can additionally write ``exclusive_digit_prefix``.
 That side output describes digit bins and has its own per-thread extent,
 separate from the returned per-key ranks. See
-:func:`cuda.coop.numba_mlir.radix_rank` for its layout and undefined tail
+:func:`cuda.coop.numba_mlir.radix_rank_keys` for its layout and undefined tail
 slots. The explorer's bin rows are mathematical explanations, not an
 invocation of that optional output.
 

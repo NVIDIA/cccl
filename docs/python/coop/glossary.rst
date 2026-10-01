@@ -62,7 +62,7 @@ Terms
 
    radix digit
       A fixed-width interval of key bits used in one ranking or sorting
-      step. ``radix_rank`` assigns ranks according to one such digit;
+      step. ``radix_rank_keys`` assigns ranks according to one such digit;
       ``radix_sort_keys`` and ``radix_sort_pairs`` order keys over the
       requested bit interval. See :ref:`radix sorting and ranks <coop-radix>`.
 

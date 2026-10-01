@@ -144,7 +144,7 @@
     const prefixes = bins.map((bin, index) => token(`prefix-${bin}`, result.prefixes[bin], "prefixes", index, index,
       `Digit ${bin} starts at destination ${result.prefixes[bin]}: the number of keys with ${descending ? "greater" : "smaller"} digits.`));
     return {
-      detail: `radix_rank: one ${end - begin}-bit digit [${begin}, ${end}), ${descending ? "descending" : "ascending"} destinations without moving keys.`,
+      detail: `radix_rank_keys: one ${end - begin}-bit digit [${begin}, ${end}), ${descending ? "descending" : "ascending"} destinations without moving keys.`,
       rows: [
         { id: "input", label: "Input keys · blocked · preserved", count: entries.length, groups: groups(items) },
         { id: "digit", label: "Selected digit · stays with each original key", count: entries.length, groups: groups(items) },

@@ -45,7 +45,9 @@ class GroupRadixRankSemantics:
         if not isinstance(self.primitive, BlockRadixRankSemantics):
             raise TypeError("primitive must be BlockRadixRankSemantics")
         if not self.primitive.bit_range.is_static:
-            raise ValueError("group radix_rank requires a static bit interval")
+            raise ValueError(
+                "group radix_rank_keys requires a static bit interval"
+            )
         object.__setattr__(
             self, "operand_kind", GroupOperandKind(self.operand_kind)
         )
@@ -53,7 +55,9 @@ class GroupRadixRankSemantics:
             self.operand_kind is GroupOperandKind.SCALAR
             and self.primitive.items_per_thread != 1
         ):
-            raise ValueError("scalar radix_rank requires one item per thread")
+            raise ValueError(
+                "scalar radix_rank_keys requires one item per thread"
+            )
 
     @property
     def returns_value(self) -> bool:
@@ -166,7 +170,7 @@ def _plan(
             and p.block_threads != launch.exact_block_threads
         ):
             raise ValueError(
-                "radix_rank block_threads disagrees with the launch"
+                "radix_rank_keys block_threads disagrees with the launch"
             )
         spec = make_block_radix_rank_spec(
             **kwargs,
