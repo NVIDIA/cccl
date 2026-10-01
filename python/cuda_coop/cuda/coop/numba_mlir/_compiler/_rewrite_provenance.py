@@ -423,6 +423,41 @@ class _ProvenanceRewrite(Rewrite):
         return self._resolve_python_value(call.func) is ThreadData
 
     def _extract_thread_data_spec(self, call: ir.Expr) -> _ThreadDataSpec:
+        """Recover the compile-time ``ThreadData`` constructor contract.
+
+        Require a positive integral item count, rejecting booleans, and
+        normalize an explicit alignment. A directly referenced function argument
+        used for the extent requests literal specialization before continuing.
+        An omitted or explicitly None dtype remains unresolved so operation
+        consumers or typed writes can supply it later.
+
+        Record whether the constructor came from the common API; ``apply`` uses
+        that flag when validating the inferred numeric dtype before lowering the
+        descriptor to a local array. This method does not allocate that array or
+        mutate the constructor expression.
+
+        Parameters
+        ----------
+        call : ir.Expr
+            Recognized common or Numba-CUDA-MLIR ``ThreadData`` constructor
+            call.
+
+        Returns
+        -------
+        _ThreadDataSpec
+            Static extent, optional dtype and alignment, and common-API
+            origin.
+
+        Raises
+        ------
+        ForceLiteralArg
+            The extent is a direct function argument not yet specialized
+            literally.
+        CoopSinglePhaseRewriteError
+            Constructor arguments are invalid or required compile-time
+            values cannot be resolved.
+        """
+
         kw_map = {name: value for name, value in call.kws}
         is_common_root = self._is_common_root_member(call.func, "ThreadData")
         allowed_keywords = {"items_per_thread", "dtype", "alignment"}
