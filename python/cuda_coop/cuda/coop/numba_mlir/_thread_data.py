@@ -17,6 +17,34 @@ shared: object
 
 
 def _normalize_thread_data_alignment(alignment: int | None) -> int | None:
+    """Convert a requested payload alignment to the compiler's minimum.
+
+    The common API accepts a positive power-of-two byte alignment, while the
+    Numba local-array representation also requires pointer alignment. Raise
+    smaller explicit requests to the host pointer size used by this adapter;
+    this still satisfies the caller's requested minimum. Leave unspecified
+    alignment for the compiler to choose.
+
+    Parameters
+    ----------
+    alignment : int or None
+        Requested minimum in bytes. Integer-index values are normalized by
+        the common helper; booleans are rejected. ``None`` means unspecified.
+
+    Returns
+    -------
+    int or None
+        At least ``struct.calcsize("P")`` for an explicit request, otherwise
+        ``None``.
+
+    Raises
+    ------
+    TypeError
+        The request is a boolean or cannot be interpreted as an integer.
+    ValueError
+        The request is not a positive power of two.
+    """
+
     alignment = _normalize_alignment(alignment)
     # The compiler requires pointer-aligned arrays. Stronger alignment also
     # satisfies smaller minimum-alignment requests from the common API.
