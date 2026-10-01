@@ -278,15 +278,15 @@ class _InvocableRewrite:
             match.factory_metadata,
             match.factory_kwargs,
         )
-        if key in self._invocable_cache:
-            return (self._invocable_cache[key], False)
-        compile_cache = self._state.metadata.setdefault(
+        if key in rewrite._invocable_cache:
+            return (rewrite._invocable_cache[key], False)
+        compile_cache = rewrite._state.metadata.setdefault(
             "__cuda_coop_numba_mlir_invocable_cache__", {}
         )
         if key in compile_cache:
             invocable = compile_cache[key]
             self._validate_invocable(invocable, match.factory_metadata)
-            self._invocable_cache[key] = invocable
+            rewrite._invocable_cache[key] = invocable
             return (invocable, False)
         try:
             prebundled = self._prebundled_specializations.get(key)
@@ -304,7 +304,7 @@ class _InvocableRewrite:
                 f"time for '{match.op_name}'."
             ) from e
         self._validate_invocable(invocable, match.factory_metadata)
-        self._invocable_cache[key] = invocable
+        rewrite._invocable_cache[key] = invocable
         compile_cache[key] = invocable
         return (invocable, True)
 
