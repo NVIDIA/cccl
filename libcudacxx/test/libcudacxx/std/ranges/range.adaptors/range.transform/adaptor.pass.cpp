@@ -41,7 +41,7 @@ struct CopyOnlyFn
       : offset_(offset)
   {}
   constexpr CopyOnlyFn(const CopyOnlyFn&) = default;
-  CopyOnlyFn(CopyOnlyFn&&)                          = delete;
+  CopyOnlyFn(CopyOnlyFn&&)                = delete;
 
   TEST_FUNC constexpr int operator()(int i) const
   {

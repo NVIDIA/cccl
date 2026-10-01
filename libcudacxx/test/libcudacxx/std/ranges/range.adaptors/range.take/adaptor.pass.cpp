@@ -79,7 +79,7 @@ struct CopyOnlyCount
       : value_(value)
   {}
   constexpr CopyOnlyCount(const CopyOnlyCount&) = default;
-  CopyOnlyCount(CopyOnlyCount&&)                          = delete;
+  CopyOnlyCount(CopyOnlyCount&&)                = delete;
 
   TEST_FUNC constexpr operator int() const
   {

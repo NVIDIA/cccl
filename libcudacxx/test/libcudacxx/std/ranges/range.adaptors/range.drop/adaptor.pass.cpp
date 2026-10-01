@@ -32,7 +32,7 @@ struct CopyOnlyCount
       : value_(value)
   {}
   constexpr CopyOnlyCount(const CopyOnlyCount&) = default;
-  CopyOnlyCount(CopyOnlyCount&&)                                      = delete;
+  CopyOnlyCount(CopyOnlyCount&&)                = delete;
 
   TEST_HOST_DEVICE_FUNC constexpr operator int() const
   {

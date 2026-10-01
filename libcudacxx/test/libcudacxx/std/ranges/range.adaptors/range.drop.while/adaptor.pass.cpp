@@ -33,7 +33,7 @@ struct CopyOnlyPred
       : limit_(limit)
   {}
   constexpr CopyOnlyPred(const CopyOnlyPred&) = default;
-  CopyOnlyPred(CopyOnlyPred&&)                          = delete;
+  CopyOnlyPred(CopyOnlyPred&&)                = delete;
 
   TEST_FUNC constexpr bool operator()(int i) const
   {
