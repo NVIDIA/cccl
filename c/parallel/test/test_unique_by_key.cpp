@@ -942,8 +942,8 @@ C2H_TEST("UniqueByKey works with C++ source operations using custom headers", "[
   pointer_t<std::size_t> output_num_selected_ptr(1);
 
   // Test _ex version with custom build configuration
-  const char* extra_flags[] = {"-DTEST_IDENTITY_ENABLED"};
-  const char* extra_dirs[]  = {TEST_INCLUDE_PATH};
+  const char* extra_flags[]      = {"-DTEST_IDENTITY_ENABLED"};
+  const char* extra_dirs[]       = {TEST_INCLUDE_PATH};
   const cccl_build_config config = make_build_config(extra_flags, 1, extra_dirs, 1);
 
   // Build with _ex version
