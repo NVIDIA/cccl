@@ -22,13 +22,17 @@ The function finds the ``rank``-th set bit of ``value``, counting set bits from 
 - ``value``: The unsigned integer value to search.
 - ``rank``:  The zero-based rank of the set bit to find.
 
+.. warning::
+
+    Unlike the `CUDA Math function <https://docs.nvidia.com/cuda/cuda-math-api/cuda_math_api/group__CUDA__MATH__INTRINSIC__INT.html#group__cuda__math__intrinsic__int_1ga2fc8e909eb9a959dcc3262e54365bfc5>`__ ``__fns``, which uses one-based ranks (``offset``), ``cuda::bit_fns`` uses zero-based ranks.
+
 **Return value**
 
 - The zero-based position of the set bit with rank ``rank``, or ``-1`` if ``value`` has fewer than ``rank + 1`` set bits.
 
 **Constraints**
 
-- ``T`` is an unsigned integral type.
+- ``T`` is an unsigned integer type.
 
 **Preconditions**
 
@@ -36,15 +40,15 @@ The function finds the ``rank``-th set bit of ``value``, counting set bits from 
 
 **Performance considerations**
 
-- ``log2(num_bits(T))`` binary-search steps, each of them executing population count and 6 ALU instructions.
+- ``log2(num_bits(T))`` binary-search steps, each of them executing a 32-bit population count and about 6 ALU instructions.
+- If ``rank`` is a constant expression:
+
+  - ``bit_fns(value, 0)`` is equal to ``cuda::std::countr_zero(value)``.
+  - ``bit_fns(value, num_bits(T) - 1)`` is equal to ``num_bits(T) - 1`` for a ``value`` with all bits set.
 
 .. note::
 
-    If the caller guarantees ``rank < cuda::std::popcount(value)``, using ``__builtin_assume`` before the call can eliminate the not-found check. A false assumption results in undefined behavior.
-
-.. note::
-
-    For a non-zero ``value``, ``bit_fns(value, 0)`` is equal to ``cuda::std::countr_zero(value)``.
+    The caller can skip the early return check if the rank is known to be less than the number of set bits in ``value`` by providing the assumption ``rank < cuda::std::popcount(value)`` before the call, for example with ``__builtin_assume`` (NVCC, Clang), ``__assume`` (MSVC), or ``[[assume(...)]]`` (C++23). A false assumption results in undefined behavior.
 
 Example
 -------

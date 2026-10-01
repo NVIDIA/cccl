@@ -14,11 +14,10 @@ void test_implementation(Allocator alloc)
   Traits::deallocate(alloc, p, 123);
 
   const Ptr p2 = Traits::allocate(alloc, 123);
-  ASSERT_EQUAL(p, p2);
+  REQUIRE(p == p2);
 }
 
-void TestSingleDeviceTLSCachingAllocator()
+TEST_CASE("TestSingleDeviceTLSCachingAllocator", "[caching_allocator]")
 {
   test_implementation(thrust::detail::single_device_tls_caching_allocator());
-};
-DECLARE_UNITTEST(TestSingleDeviceTLSCachingAllocator);
+}

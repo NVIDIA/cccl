@@ -14,16 +14,15 @@ OutputIterator set_symmetric_difference(
   return result;
 }
 
-void TestSetSymmetricDifferenceDispatchExplicit()
+TEST_CASE("TestSetSymmetricDifferenceDispatchExplicit", "[set_symmetric_difference]")
 {
   thrust::device_vector<int> vec(1);
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::set_symmetric_difference(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator
@@ -33,7 +32,7 @@ set_symmetric_difference(my_tag, InputIterator1, InputIterator1, InputIterator2,
   return result;
 }
 
-void TestSetSymmetricDifferenceDispatchImplicit()
+TEST_CASE("TestSetSymmetricDifferenceDispatchImplicit", "[set_symmetric_difference]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -44,12 +43,11 @@ void TestSetSymmetricDifferenceDispatchImplicit()
     thrust::retag<my_tag>(vec.begin()),
     thrust::retag<my_tag>(vec.begin()));
 
-  ASSERT_EQUAL(13, vec.front());
+  REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetSymmetricDifferenceDispatchImplicit);
 
 template <typename Vector>
-void TestSetSymmetricDifferenceSimple()
+void test_set_symmetric_difference_simple()
 {
   using Iterator = typename Vector::iterator;
 
@@ -60,13 +58,13 @@ void TestSetSymmetricDifferenceSimple()
 
   const Iterator end = thrust::set_symmetric_difference(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
-  ASSERT_EQUAL(ref, result);
+  REQUIRE(result.end() == end);
+  REQUIRE(ref == result);
 }
-DECLARE_VECTOR_UNITTEST(TestSetSymmetricDifferenceSimple);
+DECLARE_VECTOR_UNITTEST(test_set_symmetric_difference_simple);
 
 template <typename T>
-void TestSetSymmetricDifference(const size_t n)
+void test_set_symmetric_difference(const size_t n)
 {
   size_t sizes[]         = {0, 1, n / 2, n, n + 1, 2 * n};
   const size_t num_sizes = sizeof(sizes) / sizeof(size_t);
@@ -97,13 +95,13 @@ void TestSetSymmetricDifference(const size_t n)
     d_end = thrust::set_symmetric_difference(d_a.begin(), d_a.end(), d_b.begin(), d_b.begin() + size, d_result.begin());
     d_result.resize(d_end - d_result.begin());
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 }
-DECLARE_VARIABLE_UNITTEST(TestSetSymmetricDifference);
+DECLARE_VARIABLE_UNITTEST(test_set_symmetric_difference);
 
 template <typename T>
-void TestSetSymmetricDifferenceEquivalentRanges(const size_t n)
+void test_set_symmetric_difference_equivalent_ranges(const size_t n)
 {
   const thrust::host_vector<T> temp = unittest::random_integers<T>(n);
   thrust::host_vector<T> h_a        = temp;
@@ -125,12 +123,12 @@ void TestSetSymmetricDifferenceEquivalentRanges(const size_t n)
   d_end = thrust::set_symmetric_difference(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), d_result.begin());
   d_result.erase(d_end, d_result.end());
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetSymmetricDifferenceEquivalentRanges);
+DECLARE_VARIABLE_UNITTEST(test_set_symmetric_difference_equivalent_ranges);
 
 template <typename T>
-void TestSetSymmetricDifferenceMultiset(const size_t n)
+void test_set_symmetric_difference_multiset(const size_t n)
 {
   thrust::host_vector<T> vec = unittest::random_integers<int>(2 * n);
 
@@ -163,12 +161,12 @@ void TestSetSymmetricDifferenceMultiset(const size_t n)
   d_end = thrust::set_difference(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), d_result.begin());
   d_result.erase(d_end, d_result.end());
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetSymmetricDifferenceMultiset);
+DECLARE_VARIABLE_UNITTEST(test_set_symmetric_difference_multiset);
 
 template <typename U>
-void TestSetSymmetricDifferenceKeyValue(size_t n)
+void test_set_symmetric_difference_key_value(size_t n)
 {
   using T = key_value<U, U>;
 
@@ -204,6 +202,6 @@ void TestSetSymmetricDifferenceKeyValue(size_t n)
 
   d_result.erase(d_end, d_result.begin());
 
-  ASSERT_EQUAL_QUIET(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetSymmetricDifferenceKeyValue);
+DECLARE_VARIABLE_UNITTEST(test_set_symmetric_difference_key_value);

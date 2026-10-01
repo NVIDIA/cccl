@@ -31,10 +31,10 @@ using namespace cuda::experimental::stf;
 
 __global__ void add_one(slice<double> x)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
-  size_t n = x.extent(0);
+  const size_t n = x.extent(0);
   for (size_t ind = tid; ind < n; ind += nthreads)
   {
     x(ind) += 1.0;
@@ -148,7 +148,7 @@ int main()
   cuda_safe_call(cudaStreamDestroy(stream));
 
   // Grid over the fake domains
-  exec_place grid = make_locality_domain_grid(dev);
+  exec_place grid = exec_place::locality_domains(dev);
   EXPECT(grid.size() == ndomains);
   for (size_t i = 0; i < grid.size(); i++)
   {

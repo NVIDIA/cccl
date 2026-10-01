@@ -1,6 +1,7 @@
 // Suppress deprecations for trivial relocation traits
 #define CCCL_IGNORE_DEPRECATED_API
 
+#include <thrust/complex.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/device_ptr.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -16,27 +17,27 @@
 
 #include <unittest/unittest.h>
 
-void TestIsContiguousIterator()
+TEST_CASE("TestIsContiguousIterator", "[type_traits]")
 {
   using HostVector   = thrust::host_vector<int>;
   using DeviceVector = thrust::device_vector<int>;
 
-  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<int*>, true);
-  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<thrust::device_ptr<int>>, true);
+  REQUIRE(thrust::is_contiguous_iterator_v<int*>);
+  REQUIRE(thrust::is_contiguous_iterator_v<thrust::device_ptr<int>>);
 
-  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<HostVector::iterator>, true);
-  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<HostVector::const_iterator>, true);
+  REQUIRE(thrust::is_contiguous_iterator_v<HostVector::iterator>);
+  REQUIRE(thrust::is_contiguous_iterator_v<HostVector::const_iterator>);
 
-  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<DeviceVector::iterator>, true);
-  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<DeviceVector::const_iterator>, true);
+  REQUIRE(thrust::is_contiguous_iterator_v<DeviceVector::iterator>);
+  REQUIRE(thrust::is_contiguous_iterator_v<DeviceVector::const_iterator>);
 
-  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<thrust::device_ptr<int>>, true);
+  REQUIRE(thrust::is_contiguous_iterator_v<thrust::device_ptr<int>>);
 
-  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<const thrust::device_ptr<int>>, true);
-  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<volatile thrust::device_ptr<int>>, true);
-  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<thrust::device_ptr<int>&>, true);
-  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<const thrust::device_ptr<int>&>, true);
-  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<volatile thrust::device_ptr<int>&>, true);
+  REQUIRE(thrust::is_contiguous_iterator_v<const thrust::device_ptr<int>>);
+  REQUIRE(thrust::is_contiguous_iterator_v<volatile thrust::device_ptr<int>>);
+  REQUIRE(thrust::is_contiguous_iterator_v<thrust::device_ptr<int>&>);
+  REQUIRE(thrust::is_contiguous_iterator_v<const thrust::device_ptr<int>&>);
+  REQUIRE(thrust::is_contiguous_iterator_v<volatile thrust::device_ptr<int>&>);
 
   using HostIteratorTuple = cuda::std::tuple<HostVector::iterator, HostVector::iterator>;
 
@@ -45,12 +46,11 @@ void TestIsContiguousIterator()
   using TransformIterator = thrust::transform_iterator<cuda::std::identity, HostVector::iterator>;
   using ZipIterator       = thrust::zip_iterator<HostIteratorTuple>;
 
-  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<ConstantIterator>, false);
-  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<CountingIterator>, false);
-  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<TransformIterator>, false);
-  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<ZipIterator>, false);
+  REQUIRE_FALSE(thrust::is_contiguous_iterator_v<ConstantIterator>);
+  REQUIRE_FALSE(thrust::is_contiguous_iterator_v<CountingIterator>);
+  REQUIRE_FALSE(thrust::is_contiguous_iterator_v<TransformIterator>);
+  REQUIRE_FALSE(thrust::is_contiguous_iterator_v<ZipIterator>);
 }
-DECLARE_UNITTEST(TestIsContiguousIterator);
 
 struct NonTriviallyCopyable
 {
@@ -61,7 +61,7 @@ THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(NonTriviallyCopyable);
 static_assert(!::cuda::std::is_trivially_copyable<NonTriviallyCopyable>::value);
 static_assert(thrust::is_trivially_relocatable<NonTriviallyCopyable>::value);
 
-void TestTriviallyRelocatable()
+TEST_CASE("TestTriviallyRelocatable", "[type_traits]")
 {
   static_assert(thrust::is_trivially_relocatable<int>::value);
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
@@ -98,5 +98,4 @@ void TestTriviallyRelocatable()
   static_assert(thrust::is_trivially_relocatable<::cuda::std::pair<NonTriviallyCopyable, int>>::value);
   static_assert(thrust::is_trivially_relocatable<cuda::std::tuple<NonTriviallyCopyable>>::value);
   static_assert(thrust::is_trivially_relocatable<::cuda::std::tuple<NonTriviallyCopyable>>::value);
-};
-DECLARE_UNITTEST(TestTriviallyRelocatable);
+}

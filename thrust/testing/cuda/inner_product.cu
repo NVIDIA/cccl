@@ -31,26 +31,24 @@ void TestInnerProductDevice(ExecutionPolicy exec)
   inner_product_kernel<<<1, 1>>>(exec, d_v1.begin(), d_v1.end(), d_v2.begin(), init, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
-  ASSERT_EQUAL(expected, result[0]);
+  REQUIRE(expected == result[0]);
 }
 
-void TestInnerProductDeviceSeq()
+TEST_CASE("TestInnerProductDeviceSeq", "[inner_product]")
 {
   TestInnerProductDevice(thrust::seq);
-};
-DECLARE_UNITTEST(TestInnerProductDeviceSeq);
+}
 
-void TestInnerProductDeviceDevice()
+TEST_CASE("TestInnerProductDeviceDevice", "[inner_product]")
 {
   TestInnerProductDevice(thrust::device);
-};
-DECLARE_UNITTEST(TestInnerProductDeviceDevice);
+}
 #endif
 
-void TestInnerProductCudaStreams()
+TEST_CASE("TestInnerProductCudaStreams", "[inner_product]")
 {
   thrust::device_vector<int> v1 = {1, -2, 3};
   thrust::device_vector<int> v2 = {-4, 5, 6};
@@ -60,8 +58,7 @@ void TestInnerProductCudaStreams()
 
   const int init   = 3;
   const int result = thrust::inner_product(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin(), init);
-  ASSERT_EQUAL(result, 7);
+  REQUIRE(result == 7);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestInnerProductCudaStreams);

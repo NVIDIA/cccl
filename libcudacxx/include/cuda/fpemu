@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__fp/fpemu.h>
+#include <cuda/__fp/fpemu.h> // IWYU pragma: export
 
 #endif // _CUDA_FPEMU

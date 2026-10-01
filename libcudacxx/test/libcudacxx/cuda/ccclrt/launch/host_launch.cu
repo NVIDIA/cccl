@@ -20,7 +20,8 @@ void block_stream(cuda::stream_ref stream, cuda::atomic<int>& atomic)
 {
   auto block_lambda = [&]() {
     while (atomic != 1)
-      ;
+    {
+    }
   };
   cuda::host_launch(stream, block_lambda);
 }

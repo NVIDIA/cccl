@@ -5,7 +5,7 @@
 #include <unittest/unittest.h>
 
 template <typename Vector>
-void TestSetDifferenceByKeyDescendingSimple()
+void test_set_difference_by_key_descending_simple()
 {
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
@@ -28,15 +28,15 @@ void TestSetDifferenceByKeyDescendingSimple()
     result_val.begin(),
     ::cuda::std::greater<T>());
 
-  ASSERT_EQUAL_QUIET(result_key.end(), end.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), end.second);
-  ASSERT_EQUAL(ref_key, result_key);
-  ASSERT_EQUAL(ref_val, result_val);
+  REQUIRE(result_key.end() == end.first);
+  REQUIRE(result_val.end() == end.second);
+  REQUIRE(ref_key == result_key);
+  REQUIRE(ref_val == result_val);
 }
-DECLARE_VECTOR_UNITTEST(TestSetDifferenceByKeyDescendingSimple);
+DECLARE_VECTOR_UNITTEST(test_set_difference_by_key_descending_simple);
 
 template <typename T>
-void TestSetDifferenceByKeyDescending(const size_t n)
+void test_set_difference_by_key_descending(const size_t n)
 {
   thrust::host_vector<T> temp = unittest::random_integers<T>(2 * n);
   thrust::host_vector<T> h_a_key(temp.begin(), temp.begin() + n);
@@ -87,7 +87,7 @@ void TestSetDifferenceByKeyDescending(const size_t n)
   d_result_key.erase(d_end.first, d_result_key.end());
   d_result_val.erase(d_end.second, d_result_val.end());
 
-  ASSERT_EQUAL(h_result_key, d_result_key);
-  ASSERT_EQUAL(h_result_val, d_result_val);
+  REQUIRE(h_result_key == d_result_key);
+  REQUIRE(h_result_val == d_result_val);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetDifferenceByKeyDescending);
+DECLARE_VARIABLE_UNITTEST(test_set_difference_by_key_descending);

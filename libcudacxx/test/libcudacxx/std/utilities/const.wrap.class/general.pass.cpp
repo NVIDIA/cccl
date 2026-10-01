@@ -7,9 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Find a way to make this work for nvrtc.
-// nvrtc doesn't allow accessing the static constexpr const auto& value member.
-// UNSUPPORTED: nvrtc
+// todo(dabayer): Enable constant_wrapper for msvc.
+// UNSUPPORTED: msvc
 
 // constant_wrapper
 

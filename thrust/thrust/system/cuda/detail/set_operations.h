@@ -176,20 +176,20 @@ balanced_path(It1 keys1, It2 keys2, Size num_keys1, Size num_keys2, Size diag, S
   return ::cuda::std::make_pair(index1, (diag - index1) + star);
 } // func balanced_path
 
-template <int _BLOCK_THREADS,
-          int _ITEMS_PER_THREAD                   = 1,
-          cub::BlockLoadAlgorithm _LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT,
-          cub::CacheLoadModifier _LOAD_MODIFIER   = cub::LOAD_LDG,
-          cub::BlockScanAlgorithm _SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS>
+template <int BlockThreads,
+          int ItemsPerThread                    = 1,
+          cub::BlockLoadAlgorithm LoadAlgorithm = cub::BLOCK_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifier   = cub::LOAD_LDG,
+          cub::BlockScanAlgorithm ScanAlgorithm = cub::BLOCK_SCAN_WARP_SCANS>
 struct PtxPolicy
 {
-  static constexpr int BLOCK_THREADS    = _BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD = _ITEMS_PER_THREAD;
-  static constexpr int ITEMS_PER_TILE   = _BLOCK_THREADS * _ITEMS_PER_THREAD - 1;
+  static constexpr int block_threads    = BlockThreads;
+  static constexpr int items_per_thread = ItemsPerThread;
+  static constexpr int items_per_tile   = BlockThreads * ItemsPerThread - 1;
 
-  static const cub::BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
-  static const cub::CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
-  static const cub::BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+  static const cub::BlockLoadAlgorithm load_algorithm = LoadAlgorithm;
+  static const cub::CacheLoadModifier load_modifier   = LoadModifier;
+  static const cub::BlockScanAlgorithm scan_algorithm = ScanAlgorithm;
 }; // PtxPolicy
 
 template <class Arch, class T, class U>
@@ -198,40 +198,40 @@ struct Tuning;
 template <class T, class U>
 struct Tuning<core::detail::sm52, T, U>
 {
-  static constexpr int MAX_INPUT_BYTES             = static_cast<int>((::cuda::std::max) (sizeof(T), sizeof(U)));
-  static constexpr int COMBINED_INPUT_BYTES        = sizeof(T); // + sizeof(U)
-  static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 15;
-  static constexpr int ITEMS_PER_THREAD =
-    (::cuda::std::min) (NOMINAL_4B_ITEMS_PER_THREAD,
+  static constexpr int max_input_bytes             = static_cast<int>((::cuda::std::max) (sizeof(T), sizeof(U)));
+  static constexpr int combined_input_bytes        = sizeof(T); // + sizeof(U)
+  static constexpr int nominal_4b_items_per_thread = 15;
+  static constexpr int items_per_thread =
+    (::cuda::std::min) (nominal_4b_items_per_thread,
                         (::cuda::std::max) (1,
                                             static_cast<int>(
-                                              ((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1)
-                                              / COMBINED_INPUT_BYTES)));
+                                              ((nominal_4b_items_per_thread * 4) + combined_input_bytes - 1)
+                                              / combined_input_bytes)));
 
   using type =
-    PtxPolicy<256, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
+    PtxPolicy<256, items_per_thread, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
 }; // tuning sm52
 
 template <class T, class U>
 struct Tuning<core::detail::sm60, T, U>
 {
-  static constexpr int MAX_INPUT_BYTES             = static_cast<int>((::cuda::std::max) (sizeof(T), sizeof(U)));
-  static constexpr int COMBINED_INPUT_BYTES        = sizeof(T); // + sizeof(U),
-  static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 19;
-  static constexpr int ITEMS_PER_THREAD =
-    (::cuda::std::min) (NOMINAL_4B_ITEMS_PER_THREAD,
+  static constexpr int max_input_bytes             = static_cast<int>((::cuda::std::max) (sizeof(T), sizeof(U)));
+  static constexpr int combined_input_bytes        = sizeof(T); // + sizeof(U),
+  static constexpr int nominal_4b_items_per_thread = 19;
+  static constexpr int items_per_thread =
+    (::cuda::std::min) (nominal_4b_items_per_thread,
                         (::cuda::std::max) (1,
                                             static_cast<int>(
-                                              ((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1)
-                                              / COMBINED_INPUT_BYTES)));
+                                              ((nominal_4b_items_per_thread * 4) + combined_input_bytes - 1)
+                                              / combined_input_bytes)));
 
   using type =
-    PtxPolicy<512, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
+    PtxPolicy<512, items_per_thread, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
 }; // tuning sm60
 
 // a helper metaprogram that returns type of a block loader
 template <class PtxPlan, class It, class T = thrust::detail::it_value_t<It>>
-using BlockLoad = cub::BlockLoad<T, PtxPlan::BLOCK_THREADS, PtxPlan::ITEMS_PER_THREAD, PtxPlan::LOAD_ALGORITHM, 1, 1>;
+using BlockLoad = cub::BlockLoad<T, PtxPlan::block_threads, PtxPlan::items_per_thread, PtxPlan::load_algorithm, 1, 1>;
 
 template <class KeysIt1,
           class KeysIt2,
@@ -242,7 +242,7 @@ template <class KeysIt1,
           class Size,
           class CompareOp,
           class SetOp,
-          class HAS_VALUES>
+          class HasValues>
 struct SetOpAgent
 {
   using key1_type   = thrust::detail::it_value_t<KeysIt1>;
@@ -260,10 +260,10 @@ struct SetOpAgent
   {
     using tuning = Tuning<Arch, key_type, value_type>;
 
-    using KeysLoadIt1   = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, KeysIt1>;
-    using KeysLoadIt2   = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, KeysIt2>;
-    using ValuesLoadIt1 = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, ValuesIt1>;
-    using ValuesLoadIt2 = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, ValuesIt2>;
+    using KeysLoadIt1   = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::load_modifier, KeysIt1>;
+    using KeysLoadIt2   = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::load_modifier, KeysIt2>;
+    using ValuesLoadIt1 = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::load_modifier, ValuesIt1>;
+    using ValuesLoadIt2 = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::load_modifier, ValuesIt2>;
 
     using BlockLoadKeys1   = BlockLoad<PtxPlan, KeysLoadIt1>;
     using BlockLoadKeys2   = BlockLoad<PtxPlan, KeysLoadIt2>;
@@ -272,7 +272,7 @@ struct SetOpAgent
 
     using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, ::cuda::std::plus<>, ScanTileState>;
 
-    using BlockScan = cub::BlockScan<Size, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1>;
+    using BlockScan = cub::BlockScan<Size, PtxPlan::block_threads, PtxPlan::scan_algorithm, 1, 1>;
 
     // gather required temporary storage in a union
     //
@@ -286,7 +286,7 @@ struct SetOpAgent
 
       struct LoadStorage
       {
-        ::cuda::__uninitialized_array<int, PtxPlan::BLOCK_THREADS> offset;
+        ::cuda::__uninitialized_array<int, PtxPlan::block_threads> offset;
         union
         {
           // FIXME These don't appear to be used anywhere?
@@ -298,9 +298,9 @@ struct SetOpAgent
           // Allocate extra shmem than truly necessary
           // This will permit to avoid range checks in
           // serial set operations, e.g. serial_set_difference
-          ::cuda::__uninitialized_array<key_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> keys_shared;
+          ::cuda::__uninitialized_array<key_type, PtxPlan::items_per_tile + PtxPlan::block_threads> keys_shared;
 
-          ::cuda::__uninitialized_array<value_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> values_shared;
+          ::cuda::__uninitialized_array<value_type, PtxPlan::items_per_tile + PtxPlan::block_threads> values_shared;
         }; // anon union
       } load_storage; // struct LoadStorage
     }; // union TempStorage
@@ -323,8 +323,8 @@ struct SetOpAgent
 
   using TempStorage = typename ptx_plan::TempStorage;
 
-  static constexpr int ITEMS_PER_THREAD = ptx_plan::ITEMS_PER_THREAD;
-  static constexpr int BLOCK_THREADS    = ptx_plan::BLOCK_THREADS;
+  static constexpr int items_per_thread = ptx_plan::items_per_thread;
+  static constexpr int block_threads    = ptx_plan::block_threads;
 
   struct impl
   {
@@ -351,23 +351,23 @@ struct SetOpAgent
     // Utility functions
     //---------------------------------------------------------------------
 
-    template <bool IS_FULL_TILE, class T, class It1, class It2>
+    template <bool IsFullTile, class T, class It1, class It2>
     _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-    gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, int count2)
+    gmem_to_reg(T (&output)[items_per_thread], It1 input1, It2 input2, int count1, int count2)
     {
-      if (IS_FULL_TILE)
+      if (IsFullTile)
       {
         _CCCL_PRAGMA_UNROLL_FULL()
-        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD - 1; ++ITEM)
+        for (int ITEM = 0; ITEM < items_per_thread - 1; ++ITEM)
         {
-          const int idx = BLOCK_THREADS * ITEM + threadIdx.x;
+          const int idx = block_threads * ITEM + threadIdx.x;
           output[ITEM]  = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
         }
 
         // last ITEM might be a conditional load even for full tiles
         // please check first before attempting to load.
-        const int ITEM = ITEMS_PER_THREAD - 1;
-        const int idx  = BLOCK_THREADS * ITEM + threadIdx.x;
+        const int ITEM = items_per_thread - 1;
+        const int idx  = block_threads * ITEM + threadIdx.x;
         if (idx < count1 + count2)
         {
           output[ITEM] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
@@ -376,9 +376,9 @@ struct SetOpAgent
       else
       {
         _CCCL_PRAGMA_UNROLL_FULL()
-        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+        for (int ITEM = 0; ITEM < items_per_thread; ++ITEM)
         {
-          const int idx = BLOCK_THREADS * ITEM + threadIdx.x;
+          const int idx = block_threads * ITEM + threadIdx.x;
           if (idx < count1 + count2)
           {
             output[ITEM] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
@@ -388,12 +388,12 @@ struct SetOpAgent
     }
 
     template <class T, class It>
-    _CCCL_DEVICE_API _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[items_per_thread])
     {
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+      for (int ITEM = 0; ITEM < items_per_thread; ++ITEM)
       {
-        const int idx = BLOCK_THREADS * ITEM + threadIdx.x;
+        const int idx = block_threads * ITEM + threadIdx.x;
         output[idx]   = input[ITEM];
       }
     }
@@ -401,7 +401,7 @@ struct SetOpAgent
     template <class OutputIt, class T, class SharedIt>
     void _CCCL_DEVICE_API _CCCL_FORCEINLINE scatter(
       OutputIt output,
-      T (&input)[ITEMS_PER_THREAD],
+      T (&input)[items_per_thread],
       SharedIt shared,
       int active_mask,
       Size thread_output_prefix,
@@ -411,7 +411,7 @@ struct SetOpAgent
       int local_scatter_idx = thread_output_prefix - tile_output_prefix;
 
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+      for (int ITEM = 0; ITEM < items_per_thread; ++ITEM)
       {
         if (active_mask & (1 << ITEM))
         {
@@ -420,7 +420,7 @@ struct SetOpAgent
       }
       __syncthreads();
 
-      for (int item = static_cast<int>(threadIdx.x); item < tile_output_count; item += BLOCK_THREADS)
+      for (int item = static_cast<int>(threadIdx.x); item < tile_output_count; item += block_threads)
       {
         output[tile_output_prefix + item] = shared[item]; // NOLINT(bugprone-misplaced-widening-cast)
       }
@@ -432,8 +432,8 @@ struct SetOpAgent
       int keys2_beg,
       int keys1_count,
       int keys2_count,
-      key_type (&output)[ITEMS_PER_THREAD],
-      int (&indices)[ITEMS_PER_THREAD],
+      key_type (&output)[items_per_thread],
+      int (&indices)[items_per_thread],
       CompareOp compare_op,
       SetOp set_op)
     {
@@ -446,7 +446,7 @@ struct SetOpAgent
     // Tile operations
     //---------------------------------------------------------------------
 
-    template <bool IS_LAST_TILE>
+    template <bool IsLastTile>
     void _CCCL_DEVICE_API _CCCL_FORCEINLINE consume_tile(Size tile_idx)
     {
       const ::cuda::std::pair<Size, Size> partition_beg = partitions[tile_idx + 0];
@@ -463,15 +463,15 @@ struct SetOpAgent
       const int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
 
       // load keys into shared memory for further processing
-      key_type keys_loc[ITEMS_PER_THREAD];
+      key_type keys_loc[items_per_thread];
 
-      gmem_to_reg<!IS_LAST_TILE>(keys_loc, keys1_in + keys1_beg, keys2_in + keys2_beg, num_keys1, num_keys2);
+      gmem_to_reg<!IsLastTile>(keys_loc, keys1_in + keys1_beg, keys2_in + keys2_beg, num_keys1, num_keys2);
 
       reg_to_shared(&storage.load_storage.keys_shared[0], keys_loc);
 
       __syncthreads();
 
-      const int diag_loc = min<int>(ITEMS_PER_THREAD * threadIdx.x, num_keys1 + num_keys2);
+      const int diag_loc = min<int>(items_per_thread * threadIdx.x, num_keys1 + num_keys2);
 
       const ::cuda::std::pair<int, int> partition_loc = balanced_path(
         &storage.load_storage.keys_shared[0],
@@ -490,7 +490,7 @@ struct SetOpAgent
       const int value =
         threadIdx.x == 0 ? (num_keys1 << 16) | num_keys2 : (partition_loc.first << 16) | partition_loc.second;
 
-      const int dst                    = threadIdx.x == 0 ? BLOCK_THREADS - 1 : threadIdx.x - 1;
+      const int dst                    = threadIdx.x == 0 ? block_threads - 1 : threadIdx.x - 1;
       storage.load_storage.offset[dst] = value;
 
       __syncthreads();
@@ -506,7 +506,7 @@ struct SetOpAgent
 
       // perform serial set operation
       //
-      int indices[ITEMS_PER_THREAD];
+      int indices[items_per_thread];
 
       const int active_mask = serial_set_op(
         &storage.load_storage.keys_shared[0],
@@ -520,7 +520,7 @@ struct SetOpAgent
         set_op);
       __syncthreads();
 #  if 0
-        if (ITEMS_PER_THREAD*threadIdx.x >= num_keys1 + num_keys2)
+        if (items_per_thread*threadIdx.x >= num_keys1 + num_keys2)
           active_mask = 0;
 #  endif
 
@@ -537,7 +537,7 @@ struct SetOpAgent
         if (threadIdx.x == 0)
         {
           // Update tile status if this is not the last tile
-          if (!IS_LAST_TILE)
+          if (!IsLastTile)
           {
             tile_state.SetInclusive(0, tile_output_count);
           }
@@ -564,10 +564,10 @@ struct SetOpAgent
               tile_output_prefix,
               tile_output_count);
 
-      if constexpr (HAS_VALUES::value)
+      if constexpr (HasValues::value)
       {
-        value_type values_loc[ITEMS_PER_THREAD];
-        gmem_to_reg<!IS_LAST_TILE>(values_loc, values1_in + keys1_beg, values2_in + keys2_beg, num_keys1, num_keys2);
+        value_type values_loc[items_per_thread];
+        gmem_to_reg<!IsLastTile>(values_loc, values1_in + keys1_beg, values2_in + keys2_beg, num_keys1, num_keys2);
 
         __syncthreads();
 
@@ -578,7 +578,7 @@ struct SetOpAgent
         // gather items from shared mem
         //
         _CCCL_PRAGMA_UNROLL_FULL()
-        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+        for (int ITEM = 0; ITEM < items_per_thread; ++ITEM)
         {
           if (active_mask & (1 << ITEM))
           {
@@ -597,7 +597,7 @@ struct SetOpAgent
                 tile_output_count);
       }
 
-      if (IS_LAST_TILE && threadIdx.x == 0)
+      if (IsLastTile && threadIdx.x == 0)
       {
         *output_count = static_cast<std::size_t>(tile_output_prefix) + tile_output_count;
       }
@@ -624,10 +624,10 @@ struct SetOpAgent
       std::size_t* output_count_)
         : storage(storage_)
         , tile_state(tile_state_)
-        , keys1_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(keys1_))
-        , keys2_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(keys2_))
-        , values1_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(values1_))
-        , values2_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(values2_))
+        , keys1_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::load_modifier>(keys1_))
+        , keys2_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::load_modifier>(keys2_))
+        , values1_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::load_modifier>(values1_))
+        , values2_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::load_modifier>(values2_))
         , keys1_count(keys1_count_)
         , keys2_count(keys2_count_)
         , keys_out(keys_out_)
@@ -754,15 +754,15 @@ struct InitAgent
 struct serial_set_intersection
 {
   // max_input_size <= 32
-  template <class T, class CompareOp, int ITEMS_PER_THREAD>
+  template <class T, class CompareOp, int ItemsPerThread>
   int _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
     int keys1_count,
     int keys2_count,
-    T (&output)[ITEMS_PER_THREAD],
-    int (&indices)[ITEMS_PER_THREAD],
+    T (&output)[ItemsPerThread],
+    int (&indices)[ItemsPerThread],
     CompareOp compare_op)
   {
     int active_mask = 0;
@@ -776,7 +776,7 @@ struct serial_set_intersection
     T bKey = keys[bBegin];
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+    for (int i = 0; i < ItemsPerThread; ++i)
     {
       const bool pA = compare_op(aKey, bKey);
       const bool pB = compare_op(bKey, aKey);
@@ -809,15 +809,15 @@ struct serial_set_intersection
 struct serial_set_symmetric_difference
 {
   // max_input_size <= 32
-  template <class T, class CompareOp, int ITEMS_PER_THREAD>
+  template <class T, class CompareOp, int ItemsPerThread>
   int _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
     int keys1_count,
     int keys2_count,
-    T (&output)[ITEMS_PER_THREAD],
-    int (&indices)[ITEMS_PER_THREAD],
+    T (&output)[ItemsPerThread],
+    int (&indices)[ItemsPerThread],
     CompareOp compare_op)
   {
     int active_mask = 0;
@@ -832,7 +832,7 @@ struct serial_set_symmetric_difference
     T bKey = keys[bBegin];
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+    for (int i = 0; i < ItemsPerThread; ++i)
     {
       bool pB = aBegin >= aEnd;
       bool pA = !pB && bBegin >= bEnd;
@@ -871,15 +871,15 @@ struct serial_set_symmetric_difference
 struct serial_set_difference
 {
   // max_input_size <= 32
-  template <class T, class CompareOp, int ITEMS_PER_THREAD>
+  template <class T, class CompareOp, int ItemsPerThread>
   int _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
     int keys1_count,
     int keys2_count,
-    T (&output)[ITEMS_PER_THREAD],
-    int (&indices)[ITEMS_PER_THREAD],
+    T (&output)[ItemsPerThread],
+    int (&indices)[ItemsPerThread],
     CompareOp compare_op)
   {
     int active_mask = 0;
@@ -894,7 +894,7 @@ struct serial_set_difference
     T bKey = keys[bBegin];
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+    for (int i = 0; i < ItemsPerThread; ++i)
     {
       bool pB = aBegin >= aEnd;
       bool pA = !pB && bBegin >= bEnd;
@@ -933,15 +933,15 @@ struct serial_set_difference
 struct serial_set_union
 {
   // max_input_size <= 32
-  template <class T, class CompareOp, int ITEMS_PER_THREAD>
+  template <class T, class CompareOp, int ItemsPerThread>
   int _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
     int keys1_count,
     int keys2_count,
-    T (&output)[ITEMS_PER_THREAD],
-    int (&indices)[ITEMS_PER_THREAD],
+    T (&output)[ItemsPerThread],
+    int (&indices)[ItemsPerThread],
     CompareOp compare_op)
   {
     int active_mask = 0;
@@ -956,7 +956,7 @@ struct serial_set_union
     T bKey = keys[bBegin];
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+    for (int i = 0; i < ItemsPerThread; ++i)
     {
       bool pB = aBegin >= aEnd;
       bool pA = !pB && bBegin >= bEnd;
@@ -989,7 +989,7 @@ struct serial_set_union
   }
 }; // struct set_union
 
-template <class HAS_VALUES,
+template <class HasValues,
           class KeysIt1,
           class KeysIt2,
           class ValuesIt1,
@@ -1027,7 +1027,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   using core::detail::AgentPlan;
 
   using set_op_agent = AgentLauncher<
-    SetOpAgent<KeysIt1, KeysIt2, ValuesIt1, ValuesIt2, KeysOutputIt, ValuesOutputIt, Size, CompareOp, SetOp, HAS_VALUES>>;
+    SetOpAgent<KeysIt1, KeysIt2, ValuesIt1, ValuesIt2, KeysOutputIt, ValuesOutputIt, Size, CompareOp, SetOp, HasValues>>;
 
   using partition_agent = AgentLauncher<PartitionAgent<KeysIt1, KeysIt2, Size, CompareOp>>;
 
@@ -1064,7 +1064,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   _CUDA_CUB_RET_IF_FAIL(status);
 
   ::cuda::std::pair<Size, Size>* partitions = (::cuda::std::pair<Size, Size>*) allocations[1];
-  char* vshmem_ptr                          = vshmem_storage > 0 ? (char*) allocations[2] : nullptr;
+  char* vshmem_ptr                          = vshmem_storage > 0 ? static_cast<char*>(allocations[2]) : nullptr;
 
   const init_agent ia(init_plan, num_tiles, stream, "set_op::init_agent");
   ia.launch(tile_state, num_tiles);
@@ -1094,7 +1094,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   return status;
 }
 
-template <typename HAS_VALUES,
+template <typename HasValues,
           typename Derived,
           typename KeysIt1,
           typename KeysIt2,
@@ -1133,7 +1133,7 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> set_oper
   cudaError_t status;
   THRUST_DOUBLE_INDEX_TYPE_DISPATCH(
     status,
-    doit_step<HAS_VALUES>,
+    doit_step<HasValues>,
     num_keys1,
     num_keys2,
     (nullptr,
@@ -1171,7 +1171,7 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> set_oper
 
   THRUST_DOUBLE_INDEX_TYPE_DISPATCH(
     status,
-    doit_step<HAS_VALUES>,
+    doit_step<HasValues>,
     num_keys1,
     num_keys2,
     (allocations[1],

@@ -74,11 +74,9 @@ inline constexpr bool __tuple_like_with_size<_Tuple, _ExpectedSize, true> =
 template <class... _Types>
 struct __tuple_constraints;
 
-template <class... _Types>
-[[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto __tuple_get_constraints(__tuple_types<_Types...>) noexcept
-{
-  return __tuple_constraints<_Types...>{};
-}
+template <class... _Types, size_t... _Indices>
+[[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto __tuple_get_constraints(__tuple_indices<_Indices...>) noexcept
+  -> __tuple_constraints<__type_at_c<_Indices, __type_list<_Types...>>...>;
 
 template <class... _Types>
 struct __tuple_constraints
@@ -297,8 +295,8 @@ struct __tuple_constraints
     }
     else
     { // MSVC has issues with constexpr variables here, so no constexpr variable
-      using __arg_list        = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_UTypes)>;
-      using __arg_constraints = decltype(::cuda::std::__tuple_get_constraints(__arg_list{}));
+      using __arg_constraints =
+        decltype(::cuda::std::__tuple_get_constraints<_Types...>(__make_tuple_indices_t<sizeof...(_UTypes)>{}));
       if constexpr (!__arg_constraints::template __disambiguate_variadic_constructible<_UTypes...>())
       {
         return __select_constructor::__invalid;
@@ -312,8 +310,8 @@ struct __tuple_constraints
       }
       else
       {
-        using __defaulted_list = __make_tuple_types_t<__tuple_types<_Types...>, sizeof...(_Types), sizeof...(_UTypes)>;
-        using __defaulted_constraints = decltype(::cuda::std::__tuple_get_constraints(__defaulted_list{}));
+        using __defaulted_constraints = decltype(::cuda::std::__tuple_get_constraints<_Types...>(
+          __make_tuple_indices_t<sizeof...(_Types), sizeof...(_UTypes)>{}));
         if constexpr (__defaulted_constraints::__select_default_constructible() == __select_constructor::__implicit
                       || __defaulted_constraints::__select_default_constructible() == __select_constructor::__explicit)
         {
@@ -341,8 +339,7 @@ struct __tuple_constraints
     else
 #endif // _CCCL_COMPILER(GCC, <, 8)
     {
-      using ::cuda::std::get;
-      return __select_variadic_constructible<decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))...>();
+      return __select_variadic_constructible<decltype(::cuda::std::get<_Indices>(::cuda::std::declval<_UTuple>()))...>();
     }
   }
 
@@ -355,13 +352,29 @@ struct __tuple_constraints
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool
   __nothrow_tuple_like_constructible(__tuple_indices<_Indices...>) noexcept
   {
-    using ::cuda::std::get;
-    return (is_nothrow_constructible_v<_Types, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
+    return (
+      is_nothrow_constructible_v<_Types, decltype(::cuda::std::get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
   }
 
   template <class _UTuple>
   static constexpr bool __nothrow_tuple_like_constructible_v =
     __nothrow_tuple_like_constructible<_UTuple>(__make_tuple_indices_t<sizeof...(_Types)>{});
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Alloc, class _UTuple, size_t... _Indices>
+  [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool
+  __nothrow_uses_allocator_constructible(__tuple_indices<_Indices...>) noexcept
+  {
+    return (
+      __is_nothrow_uses_allocator_constructible_v<_Types,
+                                                  _Alloc,
+                                                  decltype(::cuda::std::get<_Indices>(::cuda::std::declval<_UTuple>()))>
+      && ...);
+  }
+
+  template <class _Alloc, class _UTuple>
+  static constexpr bool __nothrow_uses_allocator_constructible_v =
+    __nothrow_uses_allocator_constructible<_Alloc, _UTuple>(__make_tuple_indices_t<sizeof...(_Types)>{});
 
   // Assignments
   static constexpr bool __all_copy_assignable = (is_copy_assignable_v<_Types> && ...);
@@ -402,7 +415,6 @@ struct __tuple_constraints
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool
   __select_tuple_like_assignable(__tuple_indices<_Indices...>) noexcept
   {
-    using ::cuda::std::get;
     // NOLINTBEGIN(bugprone-branch-clone)
     if constexpr (is_same_v<remove_cvref_t<_UTuple>, tuple<_Types...>>)
     { // [tuple.assign]-39.1: different-from<UTuple, tuple>
@@ -419,11 +431,12 @@ struct __tuple_constraints
     else if constexpr (_IsConst)
     { // [tuple.assign]-42.4: is_assignable_v<const T_i&, decltype(get<i>(std::forward<UTuple>(u)))> is true for
       // all i
-      return (is_assignable_v<const _Types&, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
+      return (
+        is_assignable_v<const _Types&, decltype(::cuda::std::get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
     }
     else
     { // [tuple.assign]-39.4: is_assignable_v<T_i&, decltype(get<i>(std::forward<UTuple>(u)))> is true for all i
-      return (is_assignable_v<_Types&, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
+      return (is_assignable_v<_Types&, decltype(::cuda::std::get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
     }
     // NOLINTEND(bugprone-branch-clone)
   }
@@ -439,14 +452,16 @@ struct __tuple_constraints
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool
   __nothrow_tuple_like_assignable(__tuple_indices<_Indices...>) noexcept
   {
-    using ::cuda::std::get;
     if constexpr (_IsConst)
     {
-      return (is_nothrow_assignable_v<const _Types&, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
+      return (
+        is_nothrow_assignable_v<const _Types&, decltype(::cuda::std::get<_Indices>(::cuda::std::declval<_UTuple>()))>
+        && ...);
     }
     else
     {
-      return (is_nothrow_assignable_v<_Types&, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
+      return (
+        is_nothrow_assignable_v<_Types&, decltype(::cuda::std::get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
     }
   }
   _CCCL_EXEC_CHECK_DISABLE

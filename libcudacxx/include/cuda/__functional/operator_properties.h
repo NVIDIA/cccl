@@ -51,7 +51,7 @@ template <class _Op>
   return false;
 }
 
-template <class _Op, class _Tp, class Enable = void>
+template <class _Op, class _Tp, class _Enable = void>
 inline constexpr bool __is_associative_v = __is_associative_static_assert<_Op>();
 
 // strictly speaking, plus (+) and multiply (*) are not associative because of overflow UB
@@ -202,7 +202,7 @@ template <class _Op>
   return false;
 }
 
-template <class _Op, class _Tp, class Enable = void>
+template <class _Op, class _Tp, class _Enable = void>
 inline constexpr bool __is_commutative_v = ::cuda::__is_commutative_static_assert<_Op>();
 
 template <class _Tp>

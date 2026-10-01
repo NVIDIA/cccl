@@ -19,6 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/iket_support.cuh>
 #include <cub/detail/strong_load.cuh>
 #include <cub/detail/strong_store.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
@@ -94,7 +95,7 @@ struct BlockScanRunningPrefixOp
 /**
  * Enumerations of tile status
  */
-enum ScanTileStatus
+enum ScanTileStatus // NOLINT(cppcoreguidelines-use-enum-class)
 {
   SCAN_TILE_OOB, // Out-of-bounds (e.g., padding)
   SCAN_TILE_INVALID = 99, // Not yet processed
@@ -113,11 +114,14 @@ enum class MemoryOrder
   acquire_release
 };
 
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(Delay);
+
 namespace detail
 {
 template <int Delay, unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay()
 {
+  _CCCL_IKET_RANGE_PUSH(Delay);
   NV_IF_TARGET(NV_PROVIDES_SM_70, ({
                  if (Delay > 0)
                  {
@@ -131,11 +135,13 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void delay()
                    }
                  }
                }));
+  _CCCL_IKET_RANGE_POP();
 }
 
 template <unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay(int ns)
 {
+  _CCCL_IKET_RANGE_PUSH(Delay);
   NV_IF_TARGET(NV_PROVIDES_SM_70, ({
                  if (ns > 0)
                  {
@@ -149,17 +155,22 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void delay(int ns)
                    }
                  }
                }));
+  _CCCL_IKET_RANGE_POP();
 }
 
 template <int Delay>
 _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay()
 {
+  _CCCL_IKET_RANGE_PUSH(Delay);
   NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(Delay);));
+  _CCCL_IKET_RANGE_POP();
 }
 
 _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay([[maybe_unused]] int ns)
 {
+  _CCCL_IKET_RANGE_PUSH(Delay);
   NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(ns);));
+  _CCCL_IKET_RANGE_POP();
 }
 
 template <unsigned int Delay = 350, unsigned int GridThreshold = 500>
@@ -589,6 +600,11 @@ template <typename T,
                              && ::cuda::is_power_of_two(sizeof(T)))>
 struct ScanTileState;
 
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(LoadTileStates);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(__any_sync);
+// _CCCL_IKET_CREATE_PUSH_POP_RANGE(LoadTileStatus);
+// _CCCL_IKET_CREATE_PUSH_POP_RANGE(LoadTileAggr);
+
 /**
  * Tile status interface specialized for scan status and value types
  * that can be combined into one machine word that can be
@@ -611,6 +627,8 @@ struct ScanTileState<T, true>
   static_assert(sizeof(TxnWord) <= detail::largest_atomic_message_size);
 
   // Device word type
+  // Tile operations supply both fields while preserving triviality.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   struct TileDescriptor
   {
     StatusWord status;
@@ -716,25 +734,11 @@ private:
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (return detail::load_acquire(ptr);), (return detail::load_relaxed(ptr);));
   }
 
-  template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::relaxed), void>
-  ThreadfenceForLoadAcqPreVolta()
-  {}
-
-  template <MemoryOrder Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::acquire_release), void>
-  ThreadfenceForLoadAcqPreVolta()
-  {
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (), (__threadfence();));
-  }
-
 public:
   template <MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
   {
-    TileDescriptor tile_descriptor;
-    tile_descriptor.status = SCAN_TILE_INCLUSIVE;
-    tile_descriptor.value  = tile_inclusive;
+    const TileDescriptor tile_descriptor{SCAN_TILE_INCLUSIVE, tile_inclusive};
 
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
@@ -745,9 +749,7 @@ public:
   template <MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
   {
-    TileDescriptor tile_descriptor;
-    tile_descriptor.status = SCAN_TILE_PARTIAL;
-    tile_descriptor.value  = tile_partial;
+    const TileDescriptor tile_descriptor{SCAN_TILE_PARTIAL, tile_partial};
 
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
@@ -762,22 +764,39 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   WaitForValid(int tile_idx, StatusWord& status, T& value, DelayT delay_or_prevent_hoisting = {})
   {
+    // The descriptor is loaded before any field is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     TileDescriptor tile_descriptor;
 
+    _CCCL_IKET_RANGE_PUSH(LoadTileStates);
     {
       TxnWord alias   = LoadStatus<Order>(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
       tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
     }
+    _CCCL_IKET_RANGE_POP();
 
-    while (__any_sync(0xffffffff, (tile_descriptor.status == SCAN_TILE_INVALID)))
+    while (true)
     {
+      _CCCL_IKET_RANGE_PUSH(__any_sync);
+      auto any_invalid = __any_sync(0xffffffff, (tile_descriptor.status == SCAN_TILE_INVALID));
+      _CCCL_IKET_RANGE_POP();
+      if (!any_invalid)
+      {
+        break;
+      }
+
       delay_or_prevent_hoisting();
+      _CCCL_IKET_RANGE_PUSH(LoadTileStates);
       TxnWord alias   = LoadStatus<Order>(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
       tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
+      _CCCL_IKET_RANGE_POP();
     }
 
     // For pre-Volta and load acquire we emit relaxed loads in LoadStatus and hoist the threadfence here
-    ThreadfenceForLoadAcqPreVolta<Order>();
+    if constexpr (Order == MemoryOrder::acquire_release)
+    {
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (), (__threadfence();));
+    }
 
     status = tile_descriptor.status;
     value  = tile_descriptor.value;
@@ -922,10 +941,13 @@ struct ScanTileState<T, false>
     do
     {
       delay();
+      //_CCCL_IKET_RANGE_PUSH(LoadTileStatus);
       status = detail::load_relaxed(d_tile_status + TILE_STATUS_PADDING + tile_idx);
+      //_CCCL_IKET_RANGE_POP();
       __threadfence();
     } while (__any_sync(0xffffffff, (status == SCAN_TILE_INVALID)));
 
+    //_CCCL_IKET_RANGE_PUSH(LoadTileAggr);
     if (status == StatusWord(SCAN_TILE_PARTIAL))
     {
       value = ThreadLoad<LOAD_CG>(d_tile_partial + TILE_STATUS_PADDING + tile_idx);
@@ -934,6 +956,7 @@ struct ScanTileState<T, false>
     {
       value = ThreadLoad<LOAD_CG>(d_tile_inclusive + TILE_STATUS_PADDING + tile_idx);
     }
+    //_CCCL_IKET_RANGE_POP();
   }
 
   /**
@@ -1005,7 +1028,8 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     _If<TXN_WORD_SIZE == 16, ulonglong2, ::cuda::std::_If<TXN_WORD_SIZE == 8, unsigned long long, unsigned int>>;
 
   // Device word type (for when sizeof(ValueT) == sizeof(KeyT))
-  struct TileDescriptorBigStatus
+  // Preserve default construction for packed transaction storage.
+  struct TileDescriptorBigStatus // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     KeyT key;
     ValueT value;
@@ -1013,7 +1037,8 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
   };
 
   // Device word type (for when sizeof(ValueT) != sizeof(KeyT))
-  struct TileDescriptorLittleStatus
+  // Preserve default construction for packed transaction storage.
+  struct TileDescriptorLittleStatus // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     ValueT value;
     StatusWord status;
@@ -1148,7 +1173,9 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     do
     {
       delay_or_prevent_hoisting();
-      TxnWord alias   = detail::load_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
+      // _CCCL_IKET_RANGE_PUSH(LoadTileStates);
+      TxnWord alias = detail::load_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
+      // _CCCL_IKET_RANGE_POP();
       tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
 
     } while (__any_sync(0xffffffff, (tile_descriptor.status == SCAN_TILE_INVALID)));
@@ -1174,6 +1201,14 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(Lookback);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(ProcessWindow);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(Reduce);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(SetPartial);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(WaitAnchor);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(SetInclusive);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(WaitForValid);
+
 template <typename T,
           typename ScanOpT,
           typename ScanTileStateT,
@@ -1194,8 +1229,7 @@ struct TilePrefixCallbackOp
   };
 
   // Alias wrapper allowing temporary storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   // Type of status word
   using StatusWord = typename ScanTileStateT::StatusWord;
@@ -1242,21 +1276,32 @@ struct TilePrefixCallbackOp
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ProcessWindow(int predecessor_idx, StatusWord& predecessor_status, T& window_aggregate, DelayT delay = {})
   {
+    _CCCL_IKET_RANGE_PUSH(ProcessWindow);
+    // WaitForValid fills value before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     T value;
+
+    _CCCL_IKET_RANGE_PUSH(WaitForValid);
     tile_status.WaitForValid(predecessor_idx, predecessor_status, value, delay);
+    _CCCL_IKET_RANGE_POP();
 
     // Perform a segmented reduction to get the prefix for the current window.
     // Use the swizzled scan operator because we are now scanning *down* towards thread0.
 
+    _CCCL_IKET_RANGE_PUSH(Reduce);
     const int tail_flag = (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE));
     window_aggregate =
       WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
+    _CCCL_IKET_RANGE_POP();
+    _CCCL_IKET_RANGE_POP();
   }
 
 private:
   // Classic decoupled-lookback prefix computation.
   _CCCL_DEVICE _CCCL_FORCEINLINE T lookback(T block_aggregate)
   {
+    _CCCL_IKET_RANGE_PUSH(Lookback);
+    _CCCL_IKET_RANGE_PUSH(SetPartial);
     // Update our status with our tile-aggregate
     if (threadIdx.x == 0)
     {
@@ -1264,9 +1309,12 @@ private:
 
       tile_status.SetPartial(tile_idx, block_aggregate);
     }
+    _CCCL_IKET_RANGE_POP();
 
     int predecessor_idx = tile_idx - threadIdx.x - 1;
     StatusWord predecessor_status;
+    // ProcessWindow fills the aggregate before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     T window_aggregate;
 
     // Wait for the warp-wide window of predecessor tiles to become valid
@@ -1287,6 +1335,7 @@ private:
     }
 
     // Compute the inclusive tile prefix and update the status for this tile
+    _CCCL_IKET_RANGE_PUSH(SetInclusive);
     if (threadIdx.x == 0)
     {
       inclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
@@ -1296,7 +1345,9 @@ private:
 
       detail::uninitialized_copy_single(&temp_storage.inclusive_prefix, inclusive_prefix);
     }
+    _CCCL_IKET_RANGE_POP();
 
+    _CCCL_IKET_RANGE_POP();
     // Return exclusive_prefix
     return exclusive_prefix;
   }
@@ -1304,11 +1355,14 @@ private:
   // Run-to-run-deterministic K=1 32-batched lookback. Only anchor tiles publish INCLUSIVE.
   _CCCL_DEVICE _CCCL_FORCEINLINE T lookback_stable_reduction_order(T block_aggregate)
   {
+    _CCCL_IKET_RANGE_PUSH(Lookback);
+    _CCCL_IKET_RANGE_PUSH(SetPartial);
     if (threadIdx.x == 0)
     {
       detail::uninitialized_copy_single(&temp_storage.block_aggregate, block_aggregate);
       tile_status.SetPartial(tile_idx, block_aggregate);
     }
+    _CCCL_IKET_RANGE_POP();
 
     const int predecessor_idx = tile_idx - threadIdx.x - 1;
     StatusWord predecessor_status;
@@ -1318,6 +1372,7 @@ private:
     const int anchor_tile_lane = (tile_idx - 1) % detail::warp_threads;
 
     T value;
+    _CCCL_IKET_RANGE_PUSH(WaitAnchor);
     while (true)
     {
       tile_status.WaitForValid(predecessor_idx, predecessor_status, value, construct_delay());
@@ -1328,11 +1383,13 @@ private:
         break;
       }
     }
+    _CCCL_IKET_RANGE_POP();
 
     const int tail_flag = (static_cast<int>(threadIdx.x) == anchor_tile_lane);
     exclusive_prefix =
       WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
 
+    _CCCL_IKET_RANGE_PUSH(SetInclusive);
     if (threadIdx.x == 0)
     {
       inclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
@@ -1346,7 +1403,9 @@ private:
       detail::uninitialized_copy_single(&temp_storage.exclusive_prefix, exclusive_prefix);
       detail::uninitialized_copy_single(&temp_storage.inclusive_prefix, inclusive_prefix);
     }
+    _CCCL_IKET_RANGE_POP();
 
+    _CCCL_IKET_RANGE_POP();
     return exclusive_prefix;
   }
 

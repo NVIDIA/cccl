@@ -4,8 +4,6 @@
 
 #include <unittest/unittest.h>
 
-using namespace unittest;
-
 using UnsignedIntegerTypes =
   unittest::type_list<unittest::uint8_t, unittest::uint16_t, unittest::uint32_t, unittest::uint64_t>;
 
@@ -32,8 +30,8 @@ struct TestSortVariableBits
       thrust::sort(h_keys.begin(), h_keys.end());
       thrust::sort(d_keys.begin(), d_keys.end());
 
-      ASSERT_EQUAL(reference, h_keys);
-      ASSERT_EQUAL(h_keys, d_keys);
+      REQUIRE(reference == h_keys);
+      REQUIRE(h_keys == d_keys);
     }
   }
 };

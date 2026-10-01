@@ -29,10 +29,10 @@ using namespace cuda::experimental::stf;
 
 __global__ void axpy(double a, slice<const double> x, slice<double> y)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
-  size_t n = x.extent(0);
+  const size_t n = x.extent(0);
   for (size_t ind = tid; ind < n; ind += nthreads)
   {
     y(ind) += a * x(ind);
@@ -168,7 +168,7 @@ int main()
 
   // ==== A grid built with an explicit method has one place per domain ====
 
-  exec_place grid = make_locality_domain_grid(dev, locality_domain_sm_split::fine);
+  exec_place grid = exec_place::locality_domains(dev, locality_domain_sm_split::fine);
   EXPECT(grid.size() == ndomains);
 
   // ==== Tasks run on every method's places ====

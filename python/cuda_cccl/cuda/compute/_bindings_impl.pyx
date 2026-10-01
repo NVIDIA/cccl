@@ -609,6 +609,19 @@ cdef class Pointer(StateBase):
             )
         self.set_state(ptr, ref)
 
+    def rebind(self, ptr, owner):
+        """Update the ptr and ref in place"""
+        if isinstance(ptr, int):
+            self.ptr = int_as_ptr(ptr)
+        elif isinstance(ptr, ctypes.c_void_p):
+            self.ptr = int_as_ptr(ptr.value)
+        else:
+            raise TypeError(
+                "First argument must be an integer, or ctypes.c_void_p, "
+                f"got {type(ptr)}"
+            )
+        self.ref = owner
+
 
 def make_pointer_object(ptr, owner):
     cdef Pointer res = Pointer(0)
@@ -756,6 +769,9 @@ cdef class Iterator:
     cdef object host_advance_obj
     cdef cccl_iterator_t iter_data
 
+    cdef readonly bint is_ptr_kind
+    cdef object _cached_ptr_obj
+
     def __cinit__(self,
         int alignment,
         cccl_iterator_kind_t iterator_type,
@@ -821,6 +837,19 @@ cdef class Iterator:
         self.iter_data.advance = self.advance.op_data
         self.iter_data.dereference = self.dereference.op_data
         self.iter_data.value_type = value_type.type_info
+        self.is_ptr_kind = (it_kind == cccl_iterator_kind_t.POINTER)
+        self._cached_ptr_obj = None
+
+    def bind_pointer_state(self, ptr, owner):
+        """Set state from a raw pointer, reusing a cached Pointer instead
+        of allocating one each call. Only valid when is_ptr_kind is True.
+        """
+        cdef Pointer cached = self._cached_ptr_obj
+        if cached is None:
+            cached = Pointer(0)
+            self._cached_ptr_obj = cached
+        cached.rebind(ptr, owner)
+        self.state = cached
 
     @property
     def advance_op(self):
@@ -902,14 +931,6 @@ cdef class Iterator:
     def alignment(self):
         """Return the iterator state alignment for serialization."""
         return self.iter_data.alignment
-
-    def is_kind_pointer(self):
-        cdef cccl_iterator_kind_t it_kind = self.iter_data.type
-        return (it_kind == cccl_iterator_kind_t.POINTER)
-
-    def is_kind_iterator(self):
-        cdef cccl_iterator_kind_t it_kind = self.iter_data.type
-        return (it_kind == cccl_iterator_kind_t.ITERATOR)
 
     def as_bytes(self):
         "Debugging ulitity to get memory view into library struct"

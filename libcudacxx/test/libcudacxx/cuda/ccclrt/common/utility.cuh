@@ -163,7 +163,8 @@ struct spin_until_80
   {
     const cuda::atomic_ref atomic_pi(*pi);
     while (atomic_pi.load() != 80)
-      ;
+    {
+    }
   }
 };
 
