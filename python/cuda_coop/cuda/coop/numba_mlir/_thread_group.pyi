@@ -42,6 +42,8 @@ class ThreadGroup(
 ):
     """Compile-time CUDA group descriptor for Numba-CUDA-MLIR."""
 
+    # Pyright cannot match the inherited overloads specialized on self.
+    # These retain the common level restrictions and refine returned dtypes.
     @overload
     def rank(
         self, level: _UniversalQueryLevel = "thread"
@@ -59,7 +61,7 @@ class ThreadGroup(
     ) -> np.uint32 | np.uint64:
         """Query a logical Warp's constituent threads or parent Warp."""
     @overload
-    def rank(
+    def rank(  # pyright: ignore[reportIncompatibleMethodOverride]
         self: ThreadGroup[Literal["warps_within_block"]],
         level: _WarpsWithinBlockLevel = "thread",
     ) -> np.uint32 | np.uint64:
@@ -84,7 +86,7 @@ class ThreadGroup(
     ) -> np.uint32 | np.uint64:
         """Query a logical Warp's constituent threads or parent Warp."""
     @overload
-    def count(
+    def count(  # pyright: ignore[reportIncompatibleMethodOverride]
         self: ThreadGroup[Literal["warps_within_block"]],
         level: _WarpsWithinBlockLevel = "thread",
     ) -> np.uint32 | np.uint64:
@@ -168,7 +170,7 @@ class ThreadGroup(
     ) -> np.uint32 | np.uint64:
         """Use the C++ hierarchy operation's default unsigned dtype."""
     @overload
-    def rank_as(
+    def rank_as(  # pyright: ignore[reportIncompatibleMethodOverride]
         self: ThreadGroup[Literal["warps_within_block"]],
         dtype: None = None,
         level: _WarpsWithinBlockLevel = "thread",
@@ -253,7 +255,7 @@ class ThreadGroup(
     ) -> np.uint32 | np.uint64:
         """Use the C++ hierarchy operation's default unsigned dtype."""
     @overload
-    def count_as(
+    def count_as(  # pyright: ignore[reportIncompatibleMethodOverride]
         self: ThreadGroup[Literal["warps_within_block"]],
         dtype: None = None,
         level: _WarpsWithinBlockLevel = "thread",
