@@ -65,7 +65,7 @@ def test_block_mode_contract(mode):
         is SynchronizationScope.BLOCK
     )
     assert request.plan.result.visibility is ResultVisibility.PER_MEMBER
-    assert request.plan.result.result_items_per_thread == 2
+    assert request.plan.result.primary.items_per_member == 2
     assert request.operation.uses_ranks == (request.rank_type is not None)
     assert request.operation.uses_valid_flags == (
         request.valid_flag_type is not None

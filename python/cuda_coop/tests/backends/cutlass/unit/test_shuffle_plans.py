@@ -86,7 +86,7 @@ def test_distance_type(distance):
 @pytest.mark.parametrize("mode", ("up", "down"))
 def test_array_contract(mode):
     plan = _plan(items_per_thread=3, mode=mode)
-    assert plan.result.result_items_per_thread == 3
+    assert plan.result.primary.items_per_member == 3
     assert plan.call.operation.primitive.distance.kind is BindingKind.OMITTED
     with pytest.raises(ValueError, match="exactly 1"):
         _plan(items_per_thread=3, mode=mode, distance=2)
