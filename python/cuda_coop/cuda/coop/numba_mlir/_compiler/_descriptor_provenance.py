@@ -13,12 +13,35 @@ else:
 
 
 def descriptor_definitions(value, definitions, *, seen=None):
-    """Yield (owner, leaf) pairs through aliases, casts, and conditional joins.
+    """Yield the leaves that can define an opaque descriptor.
 
-    A backedge has no new definition and contributes no leaf. A concrete
-    non-descriptor, including a constant None, remains a leaf so callers can
-    distinguish it from an unresolved cycle. Visit sibling paths separately:
-    a constructor reached twice is still a descriptor on both paths.
+    Follow aliases, casts, iterator unpacking, and phi inputs using the caller's
+    definition lookup, so the same traversal works before and after SSA
+    construction. A cycle contributes no leaf. A concrete non-descriptor,
+    including ``None``, remains a leaf: callers need to reject paths that mix
+    such values with descriptors rather than silently accepting one valid
+    constructor. Sibling paths are independent, so a shared constructor may be
+    yielded more than once.
+
+    Parameters
+    ----------
+    value : ir.Var or object
+        IR value to trace. A non-variable is yielded unchanged with no owner.
+    definitions : callable
+        Lookup accepting an IR variable and returning all its reaching
+        definitions, including multiple definitions before SSA construction.
+    seen : set of str, optional
+        Variable names on the current recursion path. This traversal copies the
+        set before extending it and does not mutate the supplied set.
+
+    Yields
+    ------
+    owner : str or None
+        Name of the variable whose definition is the leaf, not necessarily the
+        original alias. ``None`` denotes a non-variable input.
+    leaf : object
+        Definition reached after following the supported forwarding forms. No
+        descriptor recognition or constructor validation is performed.
     """
 
     if not isinstance(value, ir.Var):
