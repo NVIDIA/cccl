@@ -5,15 +5,11 @@
 import inspect
 from enum import Enum
 from numbers import Integral
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numba_cuda_mlir.numba_cuda.types as _numba_types
 from numba_cuda_mlir.cuda.local import array as _cuda_local_array
-from numba_cuda_mlir.extending import (
-    WholeFunctionPlanner,
-    register_planner,
-    require_launch_config,
-)
+from numba_cuda_mlir.extending import require_launch_config
 from numba_cuda_mlir.numba_cuda.core.errors import ForceLiteralArg
 
 import cuda.coop._core.api as _portable_api
@@ -54,6 +50,9 @@ from ._scalar_provenance import (
     try_resolve_static_scalar,
     try_resolve_static_scalar_provenance,
 )
+
+if TYPE_CHECKING:
+    from ._planner import CoopWholeFunctionPlanner
 
 
 class _GroupCallPlanner:
@@ -1011,7 +1010,7 @@ def has_group_markers(func_ir) -> bool:
     and ``TempStorage`` constructors alone do not count as group markers.
 
     This check controls the handoff between group planning and provider
-    rewriting. ``CoopGroupHierarchyPlanner`` uses a positive result to request
+    rewriting. The planner uses a positive result to request
     launch metadata and resolve the group calls. ``CoopSinglePhaseRewrite``
     waits while the result is true. Successful group planning removes group
     descriptors and replaces public operations with private provider calls,
@@ -1092,15 +1091,74 @@ def has_group_markers(func_ir) -> bool:
     return False
 
 
-@register_planner
-class CoopGroupHierarchyPlanner(WholeFunctionPlanner):
+class _GroupPlanning:
     """Resolve cooperative group calls against one exact configured launch."""
 
-    def run(self) -> bool:
-        if not has_group_markers(self.state.func_ir):
+    def _resolve_groups(self) -> bool:
+        """Resolve group calls using launch metadata and report IR changes.
+
+        Request launch facts only when group markers remain in the function.
+        Device helpers must first be inlined into a kernel so their groups
+        can be resolved against that kernel's configured launch.
+
+        ``require_launch_config()`` explicitly declares that generated code
+        depends on launch values. Numba-CUDA-MLIR already has those values in
+        its dispatcher, but does not automatically expose them as compiler
+        specialization inputs. This opt-in lets kernels that do not need
+        launch facts retain generic dispatch, avoiding additional launch
+        normalization and specialization lookups. The helper runs during
+        compilation; the later launch cost comes from selecting a matching
+        specialization.
+
+        The runtime helper reads the options shared by compiler passes in
+        ``state.metadata["targetoptions"]``. If ``"__launch_config__"``
+        already holds a dictionary containing ``grid`` and ``block``, it
+        returns that dictionary. Otherwise, it gets the per-attempt tracker
+        from ``state.metadata`` using the runtime's
+        ``_LAUNCH_CONFIG_TRACKER_METADATA_KEY`` (``"launch_config_tracker"``).
+        This slot holds a temporary coordination object. The tracker lazily
+        normalizes the available ``grid``, ``block``, ``sharedmem``, and
+        ``cluster`` values and marks them as required. The helper caches the
+        result in ``targetoptions["__launch_config__"]`` for later passes.
+
+        Compilation continues in the same attempt. The dispatcher observes
+        the tracker's required flag and keys the compiled result by launch
+        values so later launches reuse a matching specialization. The runtime
+        removes the temporary tracker from the final compilation metadata.
+        Without an active configuration or tracker, the helper raises an
+        error requiring compilation through a configured kernel launch.
+
+        Pass the returned configuration to ``_GroupCallPlanner`` to resolve
+        the group topology and replace public operations with provider calls.
+
+        Returns
+        -------
+        bool
+            Whether group descriptors or public operations were replaced in
+            ``state.func_ir``. A function without group markers returns
+            ``False`` without requesting launch metadata.
+
+        Raises
+        ------
+        GroupRewriteError
+            Cooperative calls remain in a standalone device function, or group
+            planning finds invalid calls or escaping descriptors.
+        ForceLiteralArg
+            A group or operation needs a compile-time argument value. The
+            dispatcher consumes this compiler signal and retries with the
+            requested literal specialization.
+        RuntimeError
+            Numba has no configured launch metadata for this compilation.
+            Public compiler entry points translate the compiler's internal
+            signal to a diagnostic requiring a configured kernel launch.
+        NotImplementedError
+            The requested group or operation has no supported lowering.
+        """
+        planner = cast("CoopWholeFunctionPlanner", self)
+        if not has_group_markers(planner.state.func_ir):
             return False
-        if self.is_device_function:
-            function_name = self.state.func_ir.func_id.func_qualname
+        if planner.is_device_function:
+            function_name = planner.state.func_ir.func_id.func_qualname
             raise GroupRewriteError(
                 "cuda.coop.numba_mlir cooperative calls in device function "
                 f"{function_name!r} must be inlined into a kernel. Standalone "
@@ -1109,12 +1167,11 @@ class CoopGroupHierarchyPlanner(WholeFunctionPlanner):
                 "are unsupported; use inline='always' for a kernel helper or "
                 "move the cooperative calls into the kernel."
             )
-        launch_config = require_launch_config(self.state)
-        return _GroupCallPlanner(self.state, launch_config).run()
+        launch_config = require_launch_config(planner.state)
+        return _GroupCallPlanner(planner.state, launch_config).run()
 
 
 __all__ = [
-    "CoopGroupHierarchyPlanner",
     "GroupRewriteError",
     "has_group_markers",
 ]

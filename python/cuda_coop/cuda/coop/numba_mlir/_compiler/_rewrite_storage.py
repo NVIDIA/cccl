@@ -14,7 +14,11 @@ from numba_cuda_mlir import cuda as _cuda_module
 from numba_cuda_mlir.extending import set_required_dynamic_shared_memory
 from numba_cuda_mlir.numba_cuda.types import uint8
 
-from cuda.coop._core import StorageOwnership, SynchronizationScope
+from cuda.coop._core import (
+    GroupLoweringPlan,
+    StorageOwnership,
+    SynchronizationScope,
+)
 
 from ._operations import _GROUP_LOWERING_PLAN_KWARG, StorageABI
 from ._rewrite_support import (
@@ -1103,7 +1107,8 @@ class _StorageRewrite:
         ):
             return None
         keys = [
-            rewrite._resolve_temp_storage_ctor_key(source) for source in sources
+            rewrite._resolve_temp_storage_ctor_key(cast(ir.Var, source))
+            for source in sources
         ]
         if any(key is None for key in keys):
             return None
@@ -1202,11 +1207,12 @@ class _StorageRewrite:
                     isinstance(inst, ir.Assign)
                     and isinstance(inst.value, ir.Expr)
                     and inst.value.op == "call"
-                    and rewrite._is_jitted_dispatcher(
-                        rewrite._resolve_python_value(inst.value.func)
+                    and (
+                        helper := rewrite._resolve_python_value(inst.value.func)
                     )
+                    is not None
+                    and rewrite._is_jitted_dispatcher(helper)
                 ):
-                    helper = rewrite._resolve_python_value(inst.value.func)
                     helper_name = helper.py_func.__qualname__
                     raise CoopSinglePhaseRewriteError(
                         f"TempStorage descriptor "
@@ -1324,8 +1330,9 @@ class _StorageRewrite:
                     ) = rewrite._validate_and_split_args(
                         op_name, call, target.getitem_temp_storage
                     )
-                    lowering_plan = factory_kwargs.pop(
-                        _GROUP_LOWERING_PLAN_KWARG, None
+                    lowering_plan = cast(
+                        GroupLoweringPlan | None,
+                        factory_kwargs.pop(_GROUP_LOWERING_PLAN_KWARG, None),
                     )
                     family_metadata = rewrite._analyze_family_match(
                         op_name=op_name,

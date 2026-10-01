@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from typing import TYPE_CHECKING, cast
+
 from ._group_rewriting import GroupRewriteContext
 from ._operations import rewrite_operation
 from ._parameters import normalize_dtype_param
@@ -10,6 +12,9 @@ from ._rewrite_support import (
     _ThreadDataSpecification,
     ir,
 )
+
+if TYPE_CHECKING:
+    from ._rewrite import CoopSinglePhaseRewrite
 
 
 class PayloadInference:
@@ -84,13 +89,14 @@ class _PayloadRewrite:
         seen_factory_kwargs: set[str],
         factory_kwargs: dict[str, object],
     ) -> None:
+        rewrite = cast("CoopSinglePhaseRewrite", self)
         specification = rewrite_operation(op_name)
         if specification is None:
             raise CoopSinglePhaseRewriteError(
                 f"unsupported Numba-CUDA-MLIR operation {op_name!r}"
             )
         inference = PayloadInference(
-            GroupRewriteContext(self),
+            GroupRewriteContext(rewrite),
             op_name,
             runtime_args,
             allowed_factory_kwargs,

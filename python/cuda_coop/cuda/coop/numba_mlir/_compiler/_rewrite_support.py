@@ -14,9 +14,6 @@ from numba_cuda_mlir.numba_cuda.core.errors import ConstantInferenceError
 from numba_cuda_mlir.numba_cuda.core.rewrites import (
     Rewrite as Rewrite,  # noqa: PLC0414 - Re-export for typing.
 )
-from numba_cuda_mlir.numba_cuda.core.rewrites import (
-    register_rewrite as _register_rewrite,
-)
 
 from cuda.coop._core import GroupLoweringPlan
 
@@ -27,9 +24,6 @@ if TYPE_CHECKING:
     from numba_cuda_mlir.numba_cuda.core import ir
 else:
     from numba_cuda_mlir.numbair_transforms import ir
-
-# The runtime decorator's annotation does not preserve subclass typing.
-register_rewrite: Any = _register_rewrite
 
 _INFERENCE_EXCEPTIONS = (
     KeyError,
