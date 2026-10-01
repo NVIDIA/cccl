@@ -58,7 +58,32 @@ def check_in(name, arg, values):
 
 
 def find_unsigned(name, txt):
-    """Read one optional-initialized unsigned global from PTX text."""
+    """Read an emitted unsigned storage-metadata global from PTX text.
+
+    Provider compilation emits C++ ``sizeof`` and ``alignof`` constants, then
+    links to PTX to inspect their values without executing a GPU kernel. Match
+    the compiler's aligned 32-bit unsigned global declaration for the requested
+    symbol. A declaration without an initializer denotes zero. This is a narrow
+    metadata extractor, not a general PTX parser.
+
+    Parameters
+    ----------
+    name : str
+        Exact global symbol name, escaped before constructing the search
+        pattern.
+    txt : str
+        PTX containing the provider's metadata globals.
+
+    Returns
+    -------
+    int
+        Decimal initializer value, or zero for an uninitialized declaration.
+
+    Raises
+    ------
+    ValueError
+        No recognized declaration for ``name`` is present.
+    """
 
     escaped_name = re.escape(name)
     regex = re.compile(
