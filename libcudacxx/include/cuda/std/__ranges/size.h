@@ -31,7 +31,6 @@
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/auto_cast.h>
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -68,9 +67,7 @@ template <class _Tp>
 concept __difference =
   !__member_size<_Tp> && !__unqualified_size<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
     { ::cuda::std::ranges::begin(__t) } -> forward_iterator;
-    {
-      ::cuda::std::ranges::end(__t)
-    } -> sized_sentinel_for<decltype(::cuda::std::ranges::begin(::cuda::std::declval<_Tp>()))>;
+    { ::cuda::std::ranges::end(__t) } -> sized_sentinel_for<decltype(::cuda::std::ranges::begin(__t))>;
   };
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp>
@@ -96,12 +93,12 @@ _CCCL_CONCEPT __unqualified_size = _CCCL_FRAGMENT(__unqualified_size_, _Tp);
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(
   __difference_,
-  requires(_Tp&& __t)(requires(!__member_size<_Tp>),
-                      requires(!__unqualified_size<_Tp>),
-                      requires(__class_or_enum<remove_cvref_t<_Tp>>),
-                      requires(forward_iterator<decltype(::cuda::std::ranges::begin(__t))>),
-                      requires(sized_sentinel_for<decltype(::cuda::std::ranges::end(__t)),
-                                                  decltype(::cuda::std::ranges::begin(::cuda::std::declval<_Tp>()))>)));
+  requires(_Tp&& __t)(
+    requires(!__member_size<_Tp>),
+    requires(!__unqualified_size<_Tp>),
+    requires(__class_or_enum<remove_cvref_t<_Tp>>),
+    requires(forward_iterator<decltype(::cuda::std::ranges::begin(__t))>),
+    requires(sized_sentinel_for<decltype(::cuda::std::ranges::end(__t)), decltype(::cuda::std::ranges::begin(__t))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __difference = _CCCL_FRAGMENT(__difference_, _Tp);

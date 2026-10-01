@@ -93,7 +93,7 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_NANF)
   if constexpr (__fp_is_native_type_v<_Tp>)
   {
-    return static_cast<_Tp>(_CCCL_BUILTIN_NANF(""));
+    return static_cast<_Tp>(_CCCL_BUILTIN_NANF());
   }
   else
 #endif // _CCCL_BUILTIN_NANF
@@ -125,22 +125,22 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_NANS)
   if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary32)
   {
-    return static_cast<_Tp>(_CCCL_BUILTIN_NANSF(""));
+    return static_cast<_Tp>(_CCCL_BUILTIN_NANSF());
   }
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary64)
   {
-    return static_cast<_Tp>(_CCCL_BUILTIN_NANS(""));
+    return static_cast<_Tp>(_CCCL_BUILTIN_NANS());
   }
 #  if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format_of_v<long double>)
   {
-    return static_cast<_Tp>(_CCCL_BUILTIN_NANSL(""));
+    return static_cast<_Tp>(_CCCL_BUILTIN_NANSL());
   }
 #  endif // _CCCL_HAS_LONG_DOUBLE
 #  if defined(_CCCL_BUILTIN_NANFS128)
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary128)
   {
-    return static_cast<_Tp>(_CCCL_BUILTIN_NANFS128(""));
+    return static_cast<_Tp>(_CCCL_BUILTIN_NANFS128());
   }
 #  endif // _CCCL_BUILTIN_NANFS128
   else
