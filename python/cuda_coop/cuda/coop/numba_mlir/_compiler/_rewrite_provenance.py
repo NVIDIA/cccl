@@ -67,16 +67,10 @@ class _ProvenanceRewrite(Rewrite):
         state,
         *,
         allow_launch_dim_deferral: bool = True,
-        post_inline: bool = False,
     ):
         super().__init__(state)
         self._state = state
         self._allow_launch_dim_deferral = allow_launch_dim_deferral
-        # The whole-function planner runs after device-function inlining; the
-        # generic before-inference registration runs before it and must leave
-        # descriptors that flow into not-yet-inlined helpers alone.
-        self._post_inline = post_inline
-        self._deferred_post_inline = False
         self._func_ir = state.func_ir
         self._block: ir.Block | None = None
         self._block_defs: dict[str, object] = {}
@@ -318,62 +312,6 @@ class _ProvenanceRewrite(Rewrite):
             and hasattr(obj, "py_func")
             and isinstance(getattr(obj, "targetoptions", None), dict)
         )
-
-    def _descriptors_flow_into_dispatchers(self, func_ir) -> bool:
-        """Report whether a descriptor is an argument of a device-function call.
-
-        Before inlining, the real consumer of such a descriptor is invisible to
-        this pass. Validating it here would reject a program that the
-        whole-function planner accepts once the helper body is inlined, and
-        acceptance would then depend on whether the kernel body happens to
-        contain a group marker of its own.
-        """
-
-        saved_block = self._block
-        saved_block_defs = self._block_defs
-        descriptor_names: set[str] = set()
-        dispatcher_calls: list[ir.Expr] = []
-        try:
-            for label in sorted(func_ir.blocks):
-                scan_block = func_ir.blocks[label]
-                self._block = scan_block
-                self._block_defs = {
-                    inst.target.name: inst.value
-                    for inst in scan_block.body
-                    if isinstance(inst, ir.Assign)
-                }
-                for inst in scan_block.body:
-                    if not isinstance(inst, ir.Assign):
-                        continue
-                    call = inst.value
-                    if not isinstance(call, ir.Expr) or call.op != "call":
-                        continue
-                    if self._is_temp_storage_ctor_call(
-                        call
-                    ) or self._is_thread_data_ctor_call(call):
-                        descriptor_names.add(inst.target.name)
-                        continue
-                    if self._is_jitted_dispatcher(
-                        self._resolve_python_value(call.func)
-                    ):
-                        dispatcher_calls.append(call)
-            if not descriptor_names or not dispatcher_calls:
-                return False
-            for call in dispatcher_calls:
-                for value in (*call.args, *(value for _, value in call.kws)):
-                    if not isinstance(value, ir.Var):
-                        continue
-                    if any(
-                        owner in descriptor_names
-                        for owner, _ in descriptor_definitions(
-                            value, self._lookup_definitions
-                        )
-                    ):
-                        return True
-            return False
-        finally:
-            self._block = saved_block
-            self._block_defs = saved_block_defs
 
     def _is_temp_storage_ctor_call(self, call: ir.Expr) -> bool:
         if self._is_common_root_member(call.func, "TempStorage"):

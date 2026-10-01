@@ -12,11 +12,11 @@ import cuda.coop as portable_coop
 import cuda.coop.numba_mlir as coop
 from cuda.coop._core import LaunchFactOrigin, LaunchFacts, resolve_thread_group
 from cuda.coop.numba_mlir._compiler._group_planner import (
-    CoopGroupHierarchyPlanner,
     GroupRewriteError,
     _GroupCallPlanner,
     has_group_markers,
 )
+from cuda.coop.numba_mlir._compiler._planner import CoopWholeFunctionPlanner
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
@@ -125,7 +125,7 @@ def test_standalone_collective_helper_is_rejected_without_requesting_launch(
     with pytest.raises(
         GroupRewriteError, match="device_helper.*must be inlined"
     ):
-        CoopGroupHierarchyPlanner(state).run()
+        CoopWholeFunctionPlanner(state).run()
     assert {
         label: tuple(block.body)
         for label, block in state.func_ir.blocks.items()
