@@ -4,8 +4,26 @@
 
 """Register compatible compiler runtimes already imported by the application.
 
-Set CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION=1 to disable automatic
-registration.
+The ``cuda.coop`` root import calls this module's allowlisted registration
+probe. A runtime must already be in ``sys.modules`` before its backend is
+considered; merely installing an optional compiler does not cause the root
+import to load it. This makes compiler-first imports convenient while keeping
+the common API available without a compiler. Root-first applications can call
+``cuda.coop.register("numba-cuda-mlir")`` or import the qualified backend.
+
+``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION`` controls this probe. Unset, empty,
+``"0"``, ``"false"``, ``"no"``, and ``"off"`` leave automatic registration
+enabled; surrounding whitespace and letter case are ignored. Any other value,
+including ``"1"``, disables it. The value is read on each probe, normally
+during the first ``cuda.coop`` import. Changing it does not unregister an
+active backend or trigger another probe. Explicit registration and qualified
+backend imports remain available when automatic registration is disabled.
+
+An absent optional runtime is skipped silently. A detected runtime that fails
+activation produces ``CudaCoopAutoRegistrationWarning`` and leaves the common
+API import usable under normal warning handling. The probe removes newly
+imported modules for the failed backend; its activation code owns registry
+rollback. Warning filters may promote the warning to an exception.
 """
 
 from __future__ import annotations
