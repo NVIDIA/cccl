@@ -114,7 +114,7 @@ TEST_FUNC void test()
 #endif // !_CCCL_HAS_INT128()
 
   {
-    const cuda::std::ranges::iota_view<char> io(0);
+    [[maybe_unused]] const cuda::std::ranges::iota_view<char> io(0);
     using Iter = decltype(io.begin());
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
@@ -122,10 +122,9 @@ TEST_FUNC void test()
     static_assert(sizeof(Iter::difference_type) > sizeof(char));
     static_assert(cuda::std::is_signed_v<Iter::difference_type>);
     static_assert(cuda::std::same_as<Iter::difference_type, int>);
-    unused(io);
   }
   {
-    const cuda::std::ranges::iota_view<short> io(0);
+    [[maybe_unused]] const cuda::std::ranges::iota_view<short> io(0);
     using Iter = decltype(io.begin());
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
@@ -133,10 +132,9 @@ TEST_FUNC void test()
     static_assert(sizeof(Iter::difference_type) > sizeof(short));
     static_assert(cuda::std::is_signed_v<Iter::difference_type>);
     static_assert(cuda::std::same_as<Iter::difference_type, int>);
-    unused(io);
   }
   {
-    const cuda::std::ranges::iota_view<int> io(0);
+    [[maybe_unused]] const cuda::std::ranges::iota_view<int> io(0);
     using Iter = decltype(io.begin());
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
@@ -150,10 +148,9 @@ TEST_FUNC void test()
 #else
     static_assert(cuda::std::same_as<Iter::difference_type, long>);
 #endif
-    unused(io);
   }
   {
-    const cuda::std::ranges::iota_view<long> io(0);
+    [[maybe_unused]] const cuda::std::ranges::iota_view<long> io(0);
     using Iter = decltype(io.begin());
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
@@ -162,10 +159,9 @@ TEST_FUNC void test()
     static_assert(sizeof(Iter::difference_type) >= sizeof(long));
     static_assert(cuda::std::is_signed_v<Iter::difference_type>);
     static_assert(cuda::std::same_as<Iter::difference_type, widest_integer>);
-    unused(io);
   }
   {
-    const cuda::std::ranges::iota_view<long long> io(0);
+    [[maybe_unused]] const cuda::std::ranges::iota_view<long long> io(0);
     using Iter = decltype(io.begin());
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
@@ -175,52 +171,46 @@ TEST_FUNC void test()
     static_assert(sizeof(Iter::difference_type) >= sizeof(long long));
     static_assert(cuda::std::is_signed_v<Iter::difference_type>);
     static_assert(cuda::std::same_as<Iter::difference_type, widest_integer>);
-    unused(io);
   }
   {
-    const cuda::std::ranges::iota_view<Decrementable> io;
+    [[maybe_unused]] const cuda::std::ranges::iota_view<Decrementable> io;
     using Iter = decltype(io.begin());
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::bidirectional_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::value_type, Decrementable>);
     static_assert(cuda::std::same_as<Iter::difference_type, int>);
-    unused(io);
   }
   {
-    const cuda::std::ranges::iota_view<Incrementable> io;
+    [[maybe_unused]] const cuda::std::ranges::iota_view<Incrementable> io;
     using Iter = decltype(io.begin());
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::forward_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::value_type, Incrementable>);
     static_assert(cuda::std::same_as<Iter::difference_type, int>);
-    unused(io);
   }
   {
-    const cuda::std::ranges::iota_view<NotIncrementable> io(NotIncrementable(0));
+    [[maybe_unused]] const cuda::std::ranges::iota_view<NotIncrementable> io(NotIncrementable(0));
     using Iter = decltype(io.begin());
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::input_iterator_tag>);
     static_assert(!HasIteratorCategory<cuda::std::ranges::iota_view<NotIncrementable>>);
     static_assert(cuda::std::same_as<Iter::value_type, NotIncrementable>);
     static_assert(cuda::std::same_as<Iter::difference_type, int>);
-    unused(io);
   }
   {
-    const cuda::std::ranges::iota_view<BigType> io;
+    [[maybe_unused]] const cuda::std::ranges::iota_view<BigType> io;
     using Iter = decltype(io.begin());
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::forward_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::value_type, BigType>);
     static_assert(cuda::std::same_as<Iter::difference_type, int>);
-    unused(io);
   }
   {
-    const cuda::std::ranges::iota_view<CharDifferenceType> io;
+    [[maybe_unused]] const cuda::std::ranges::iota_view<CharDifferenceType> io;
     using Iter = decltype(io.begin());
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::forward_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::value_type, CharDifferenceType>);
     static_assert(cuda::std::same_as<Iter::difference_type, signed char>);
-    unused(io);
   }
 }
 

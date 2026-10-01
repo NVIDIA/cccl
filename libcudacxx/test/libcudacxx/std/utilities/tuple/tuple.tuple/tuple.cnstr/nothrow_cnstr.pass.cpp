@@ -28,8 +28,8 @@ int main(int, char**)
 {
   {
     using T = cuda::std::tuple<NothrowConstruct, NothrowConstruct>;
-    T t(0, 1);
-    unused(t); // Prevent unused warning
+    [[maybe_unused]] T t(0, 1);
+    // Prevent unused warning
 
     // Test that tuple<> handles noexcept properly
     static_assert(cuda::std::is_nothrow_constructible<T, int, int>());

@@ -63,7 +63,7 @@ TEST_FUNC constexpr bool test()
     static_assert(
       cuda::std::same_as<decltype(v), cuda::std::ranges::zip_view<SizedRandomAccessView, SizedRandomAccessView>>);
 
-    decltype(auto) v2 = cuda::std::views::zip(v);
+    [[maybe_unused]] decltype(auto) v2 = cuda::std::views::zip(v);
     static_assert(
       cuda::std::same_as<
         decltype(v2),
@@ -71,7 +71,6 @@ TEST_FUNC constexpr bool test()
 
     static_assert(cuda::std::is_same_v<cuda::std::ranges::range_reference_t<decltype(v2)>,
                                        cuda::std::tuple<cuda::std::tuple<int&, int&>>>);
-    unused(v2);
   }
   return true;
 }

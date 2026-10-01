@@ -171,10 +171,9 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
 
   // `views::drop(empty_view, n)` returns an `empty_view`.
   {
-    using Result          = cuda::std::ranges::empty_view<int>;
-    decltype(auto) result = cuda::std::views::empty<int> | cuda::std::views::drop(3);
+    using Result                           = cuda::std::ranges::empty_view<int>;
+    [[maybe_unused]] decltype(auto) result = cuda::std::views::empty<int> | cuda::std::views::drop(3);
     static_assert(cuda::std::same_as<decltype(result), Result>);
-    unused(result);
   }
 
   // `views::drop(span, n)` returns a `span`.
@@ -273,8 +272,7 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
   {
     struct X
     {};
-    auto partial = cuda::std::views::drop(X{});
-    unused(partial);
+    [[maybe_unused]] auto partial = cuda::std::views::drop(X{});
   }
 
   return true;

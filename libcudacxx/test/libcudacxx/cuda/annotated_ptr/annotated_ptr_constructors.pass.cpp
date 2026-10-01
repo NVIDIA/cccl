@@ -19,12 +19,10 @@ TEST_HOST_DEVICE_FUNC __noinline__ void test_ctor(T* ptr)
   // default ctor, cpy and cpy assignment
   cuda::annotated_ptr<T, P> def;
   {
-    cuda::annotated_ptr<T, P> temp;
+    [[maybe_unused]] cuda::annotated_ptr<T, P> temp;
     temp = def;
-    unused(temp);
   }
-  cuda::annotated_ptr<T, P> other(def);
-  unused(other);
+  [[maybe_unused]] cuda::annotated_ptr<T, P> other(def);
   // from ptr
   cuda::annotated_ptr<T, P> a(ptr);
   assert(a);
@@ -38,13 +36,12 @@ TEST_HOST_DEVICE_FUNC __noinline__ void test_ctor(T* ptr)
   e = def;
 
   // from c|v to c|v|cv
-  cuda::annotated_ptr<const T, P> f(c);
-  cuda::annotated_ptr<volatile T, P> g(d);
-  cuda::annotated_ptr<const volatile T, P> h(e);
+  [[maybe_unused]] cuda::annotated_ptr<const T, P> f(c);
+  [[maybe_unused]] cuda::annotated_ptr<volatile T, P> g(d);
+  [[maybe_unused]] cuda::annotated_ptr<const volatile T, P> h(e);
   f = c;
   g = d;
   h = e;
-  unused(f, g, h);
 
   // to cv
   cuda::annotated_ptr<const volatile T, P> i(c);

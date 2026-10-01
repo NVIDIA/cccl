@@ -29,14 +29,10 @@ static_assert(cuda::std::is_nothrow_constructible_v<cuda::std::ranges::dangling,
 
 TEST_FUNC constexpr bool test_dangling()
 {
-  auto a = cuda::std::ranges::dangling();
-  auto b = cuda::std::ranges::dangling(S<0>());
-  auto c = cuda::std::ranges::dangling(S<0>(), S<1>());
-  auto d = cuda::std::ranges::dangling(S<0>(), S<1>(), S<2>());
-  unused(a);
-  unused(b);
-  unused(c);
-  unused(d);
+  [[maybe_unused]] auto a = cuda::std::ranges::dangling();
+  [[maybe_unused]] auto b = cuda::std::ranges::dangling(S<0>());
+  [[maybe_unused]] auto c = cuda::std::ranges::dangling(S<0>(), S<1>());
+  [[maybe_unused]] auto d = cuda::std::ranges::dangling(S<0>(), S<1>(), S<2>());
   return true;
 }
 

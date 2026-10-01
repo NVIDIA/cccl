@@ -238,8 +238,12 @@ TEST_HOST_DEVICE_FUNC constexpr bool test_eval_constexpr()
   typename D::param_type param;
   D dist(param);
   URNG g{};
-  unused(dist(g, param));
-  unused(dist(g));
+  {
+    [[maybe_unused]] auto&& discarded = dist(g, param);
+  }
+  {
+    [[maybe_unused]] auto&& discarded = dist(g);
+  }
   return true;
 }
 } // namespace detail

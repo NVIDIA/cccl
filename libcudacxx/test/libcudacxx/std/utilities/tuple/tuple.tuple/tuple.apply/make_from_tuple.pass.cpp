@@ -188,10 +188,8 @@ TEST_HOST_DEVICE_FUNC void test_noexcept()
   };
   {
     using Tuple = cuda::std::tuple<int, NothrowMoveable>;
-    Tuple tup;
-    unused(tup);
-    Tuple const& ctup = tup;
-    unused(ctup);
+    [[maybe_unused]] Tuple tup;
+    [[maybe_unused]] Tuple const& ctup = tup;
 #if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cuda::std::make_from_tuple<TestType>(ctup)));
 #endif // TEST_COMPILER(NVHPC)
@@ -199,10 +197,8 @@ TEST_HOST_DEVICE_FUNC void test_noexcept()
   }
   {
     using Tuple = cuda::std::pair<int, NothrowMoveable>;
-    Tuple tup;
-    unused(tup);
-    Tuple const& ctup = tup;
-    unused(ctup);
+    [[maybe_unused]] Tuple tup;
+    [[maybe_unused]] Tuple const& ctup = tup;
 #if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cuda::std::make_from_tuple<TestType>(ctup)));
 #endif // TEST_COMPILER(NVHPC)
@@ -211,28 +207,23 @@ TEST_HOST_DEVICE_FUNC void test_noexcept()
 #if !TEST_COMPILER(NVHPC)
   {
     using Tuple = cuda::std::tuple<int, int, int>;
-    Tuple tup;
-    unused(tup);
+    [[maybe_unused]] Tuple tup;
     static_assert(!noexcept(cuda::std::make_from_tuple<TestType>(tup)));
-    unused(tup);
   }
   {
     using Tuple = cuda::std::tuple<long, long, long>;
-    Tuple tup;
-    unused(tup);
+    [[maybe_unused]] Tuple tup;
     static_assert(noexcept(cuda::std::make_from_tuple<TestType>(tup)));
   }
   {
     using Tuple = cuda::std::array<int, 3>;
-    Tuple tup;
-    unused(tup);
+    [[maybe_unused]] Tuple tup;
     static_assert(!noexcept(cuda::std::make_from_tuple<TestType>(tup)));
   }
 #endif // TEST_COMPILER(NVHPC)
   {
     using Tuple = cuda::std::array<long, 3>;
-    Tuple tup;
-    unused(tup);
+    [[maybe_unused]] Tuple tup;
     static_assert(noexcept(cuda::std::make_from_tuple<TestType>(tup)));
   }
 }

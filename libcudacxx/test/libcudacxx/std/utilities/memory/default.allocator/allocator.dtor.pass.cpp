@@ -20,8 +20,7 @@
 template <typename T>
 TEST_FUNC constexpr bool test()
 {
-  cuda::std::allocator<T> alloc;
-  unused(alloc);
+  [[maybe_unused]] cuda::std::allocator<T> alloc;
 
   // destructor called here
   return true;

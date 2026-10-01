@@ -21,8 +21,7 @@ bool managed_accessor_test()
 {
   int array[] = {1, 2, 3, 4};
   using ext_t = cuda::std::extents<int, 4>;
-  cuda::managed_mdspan<int, ext_t> d_md{array, ext_t{}};
-  unused(d_md);
+  [[maybe_unused]] cuda::managed_mdspan<int, ext_t> d_md{array, ext_t{}};
   return true;
 }
 

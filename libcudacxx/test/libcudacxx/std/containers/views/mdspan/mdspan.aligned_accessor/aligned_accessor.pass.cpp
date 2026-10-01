@@ -48,20 +48,15 @@ TEST_HOST_DEVICE_FUNC constexpr bool test()
 
   // different alignment
   cuda::std::aligned_accessor<T, sizeof(T) * 2> aligned_x2{};
-  cuda::std::aligned_accessor<T, sizeof(T)> aligned_x1{aligned_x2};
-  unused(aligned_x1);
+  [[maybe_unused]] cuda::std::aligned_accessor<T, sizeof(T)> aligned_x1{aligned_x2};
 
   // aligned accessor <-> default accessor
-  cuda::std::default_accessor<int> acc1{aligned_non_const};
-  cuda::std::default_accessor<int> acc2 = aligned_non_const;
-  unused(acc1);
-  unused(acc2);
+  [[maybe_unused]] cuda::std::default_accessor<int> acc1{aligned_non_const};
+  [[maybe_unused]] cuda::std::default_accessor<int> acc2 = aligned_non_const;
   take_default_accessor(aligned_non_const);
 
-  cuda::std::default_accessor<const T> acc3{aligned_const};
-  cuda::std::default_accessor<const T> acc4 = aligned_const;
-  unused(acc3);
-  unused(acc4);
+  [[maybe_unused]] cuda::std::default_accessor<const T> acc3{aligned_const};
+  [[maybe_unused]] cuda::std::default_accessor<const T> acc4 = aligned_const;
   take_default_accessor_const(aligned_const);
   return true;
 }

@@ -84,23 +84,20 @@ struct Different
 TEST_FUNC constexpr bool testReturnTypes()
 {
   {
-    int* x[2] = {};
-    unused(x);
+    [[maybe_unused]] int* x[2] = {};
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::rbegin(x)), cuda::std::reverse_iterator<int**>>);
     static_assert(
       cuda::std::is_same_v<decltype(cuda::std::ranges::crbegin(x)), cuda::std::reverse_iterator<int* const*>>);
   }
   {
-    int x[2][2] = {};
-    unused(x);
+    [[maybe_unused]] int x[2][2] = {};
     static_assert(
       cuda::std::is_same_v<decltype(cuda::std::ranges::rbegin(x)), cuda::std::reverse_iterator<int (*)[2]>>);
     static_assert(
       cuda::std::is_same_v<decltype(cuda::std::ranges::crbegin(x)), cuda::std::reverse_iterator<const int (*)[2]>>);
   }
   {
-    Different x{};
-    unused(x);
+    [[maybe_unused]] Different x{};
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::rbegin(x)), char*>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::crbegin(x)), short*>);
   }
@@ -573,14 +570,14 @@ static_assert(noexcept(cuda::std::ranges::rbegin(cuda::std::declval<int (&)[10]>
 static_assert(noexcept(cuda::std::ranges::crbegin(cuda::std::declval<int (&)[10]>())));
 
 #if !TEST_COMPILER(MSVC2019) // broken noexcept
-_CCCL_GLOBAL_CONSTANT struct NoThrowMemberRBegin
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct NoThrowMemberRBegin
 {
   TEST_FUNC ThrowingIterator<int> rbegin() const noexcept; // auto(t.rbegin()) doesn't throw
 } ntmb;
 static_assert(noexcept(cuda::std::ranges::rbegin(ntmb)));
 static_assert(noexcept(cuda::std::ranges::crbegin(ntmb)));
 
-_CCCL_GLOBAL_CONSTANT struct NoThrowADLRBegin
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct NoThrowADLRBegin
 {
   TEST_FUNC friend ThrowingIterator<int> rbegin(NoThrowADLRBegin&) noexcept; // auto(rbegin(t)) doesn't throw
   TEST_FUNC friend ThrowingIterator<int> rbegin(const NoThrowADLRBegin&) noexcept;
@@ -589,21 +586,21 @@ static_assert(noexcept(cuda::std::ranges::rbegin(ntab)));
 static_assert(noexcept(cuda::std::ranges::crbegin(ntab)));
 #endif // !TEST_COMPILER(MSVC2019)
 
-_CCCL_GLOBAL_CONSTANT struct NoThrowMemberRBeginReturnsRef
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct NoThrowMemberRBeginReturnsRef
 {
   TEST_FUNC ThrowingIterator<int>& rbegin() const noexcept; // auto(t.rbegin()) may throw
 } ntmbrr;
 static_assert(!noexcept(cuda::std::ranges::rbegin(ntmbrr)));
 static_assert(!noexcept(cuda::std::ranges::crbegin(ntmbrr)));
 
-_CCCL_GLOBAL_CONSTANT struct RBeginReturnsArrayRef
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct RBeginReturnsArrayRef
 {
   TEST_FUNC auto rbegin() const noexcept -> int (&)[10];
 } brar;
 static_assert(noexcept(cuda::std::ranges::rbegin(brar)));
 static_assert(noexcept(cuda::std::ranges::crbegin(brar)));
 
-_CCCL_GLOBAL_CONSTANT struct NoThrowBeginThrowingEnd
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct NoThrowBeginThrowingEnd
 {
   TEST_FUNC int* begin() const noexcept;
   TEST_FUNC int* end() const;
@@ -611,7 +608,7 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowBeginThrowingEnd
 static_assert(!noexcept(cuda::std::ranges::rbegin(ntbte)));
 static_assert(!noexcept(cuda::std::ranges::crbegin(ntbte)));
 
-_CCCL_GLOBAL_CONSTANT struct NoThrowEndThrowingBegin
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct NoThrowEndThrowingBegin
 {
   TEST_FUNC int* begin() const;
   TEST_FUNC int* end() const noexcept;
@@ -650,13 +647,7 @@ int main(int, char**)
   static_assert(testBeginEnd());
 
 #if !TEST_COMPILER(MSVC2019)
-  unused(ntmb);
-  unused(ntab);
 #endif // !TEST_COMPILER(MSVC2019)
-  unused(ntmbrr);
-  unused(brar);
-  unused(ntbte);
-  unused(ntetb);
 
   return 0;
 }

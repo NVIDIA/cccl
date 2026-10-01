@@ -203,8 +203,7 @@ void test_exceptions()
     const cuda::std::expected<int, int> e1;
     try
     {
-      cuda::std::expected<ThrowingInt, int> e2 = e1;
-      unused(e2);
+      [[maybe_unused]] cuda::std::expected<ThrowingInt, int> e2 = e1;
       assert(false);
     }
     catch (Except)
@@ -216,8 +215,7 @@ void test_exceptions()
     const cuda::std::expected<int, int> e1(cuda::std::unexpect);
     try
     {
-      cuda::std::expected<int, ThrowingInt> e2 = e1;
-      unused(e2);
+      [[maybe_unused]] cuda::std::expected<int, ThrowingInt> e2 = e1;
       assert(false);
     }
     catch (Except)

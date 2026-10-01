@@ -64,8 +64,7 @@ public:
 int main(int, char**)
 {
   {
-    cuda::std::tuple<MoveOnly> t = 1;
-    unused(t);
+    [[maybe_unused]] cuda::std::tuple<MoveOnly> t = 1;
   }
 
   return 0;

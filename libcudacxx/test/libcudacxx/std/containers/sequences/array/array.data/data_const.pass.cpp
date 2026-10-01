@@ -40,16 +40,14 @@ TEST_FUNC constexpr bool tests()
     using C   = cuda::std::array<T, 0>;
     const C c = {};
     static_assert(noexcept(c.data()));
-    const T* p = c.data();
-    unused(p);
+    [[maybe_unused]] const T* p = c.data();
   }
   {
     using T   = NoDefault;
     using C   = cuda::std::array<T, 0>;
     const C c = {};
     static_assert(noexcept(c.data()));
-    const T* p = c.data();
-    unused(p);
+    [[maybe_unused]] const T* p = c.data();
   }
   {
     cuda::std::array<int, 5> const c = {0, 1, 2, 3, 4};

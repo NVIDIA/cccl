@@ -287,9 +287,8 @@ TEST_HOST_DEVICE_FUNC constexpr void test_noexcept()
   using Vec  = simd::basic_vec<int, simd::fixed_size<4>>;
   using Mask = simd::basic_mask<4, simd::fixed_size<4>>;
 
-  Vec v{};
-  Mask m{};
-  unused(v, m);
+  [[maybe_unused]] Vec v{};
+  [[maybe_unused]] Mask m{};
 
   static_assert(!noexcept(simd::permute(v, identity_gen{})));
   static_assert(!noexcept(simd::permute(m, identity_gen{})));

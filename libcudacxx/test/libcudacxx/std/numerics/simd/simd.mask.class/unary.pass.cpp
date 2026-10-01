@@ -34,11 +34,10 @@ template <int Bytes, int N>
 TEST_HOST_DEVICE_FUNC constexpr void test_logical_not()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
-  Mask mask(true);
+  [[maybe_unused]] Mask mask(true);
   static_assert(cuda::std::is_same_v<decltype(!mask), Mask>);
   static_assert(noexcept(!mask));
   static_assert(is_const_member_function_v<decltype(&Mask::operator!)>);
-  unused(mask);
 
   Mask all_true(true);
   Mask all_false(false);

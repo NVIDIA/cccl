@@ -112,7 +112,7 @@ public:
   }
 };
 
-TEST_GLOBAL_VARIABLE constexpr C gC[1];
+[[maybe_unused]] TEST_GLOBAL_VARIABLE constexpr C gC[1];
 
 int main(int, char**)
 {
@@ -159,7 +159,6 @@ int main(int, char**)
   }
 #endif // !TEST_COMPILER(NVRTC) && _CCCL_BUILTIN_ADDRESSOF && !_CCCL_TILE_COMPILATION()
   {
-    unused(gC);
   }
 
   return 0;

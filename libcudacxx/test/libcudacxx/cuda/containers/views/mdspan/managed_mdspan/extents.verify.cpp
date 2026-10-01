@@ -23,8 +23,7 @@ TEST_FUNC void not_extents()
 {
   // expected-error-re@*:* {{{{(static_assert|static assertion)}} failed {{.*}}mdspan: Extents template parameter must
   // be a specialization of extents.}}
-  cuda::managed_mdspan<int, int> m;
-  unused(m);
+  [[maybe_unused]] cuda::managed_mdspan<int, int> m;
 }
 
 int main(int, char**)

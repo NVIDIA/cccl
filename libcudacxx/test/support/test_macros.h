@@ -147,12 +147,6 @@ TEST_FUNC inline void DoNotOptimize(Tp& value)
     return v;                         \
   }
 
-template <class... T>
-TEST_FUNC constexpr bool unused(T&&...)
-{
-  return true;
-}
-
 // Class-type and floating-point NTTPs require C++20 and are broken on nvcc < 13.1
 #if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L \
   && !TEST_CUDA_COMPILER(NVCC, <, 13, 1)

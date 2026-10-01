@@ -25,10 +25,10 @@
 
 // Test Constraints
 template <class T>
-_CCCL_CONCEPT HasConstBegin = _CCCL_REQUIRES_EXPR((T), const T& ct)((unused(ct.begin())));
+_CCCL_CONCEPT HasConstBegin = _CCCL_REQUIRES_EXPR((T), const T& ct)((ct.begin()));
 
 template <class T>
-_CCCL_CONCEPT HasBegin = _CCCL_REQUIRES_EXPR((T), T& t)((unused(t.begin())));
+_CCCL_CONCEPT HasBegin = _CCCL_REQUIRES_EXPR((T), T& t)((t.begin()));
 
 template <class T>
 _CCCL_CONCEPT HasConstAndNonConstBegin = _CCCL_REQUIRES_EXPR((T), T& t, const T& ct)(

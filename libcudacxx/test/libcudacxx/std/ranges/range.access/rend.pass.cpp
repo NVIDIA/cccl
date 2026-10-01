@@ -70,24 +70,21 @@ struct Different
 TEST_FUNC constexpr bool testReturnTypes()
 {
   {
-    int* x[2] = {};
-    unused(x);
+    [[maybe_unused]] int* x[2] = {};
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::rend(x)), cuda::std::reverse_iterator<int**>>);
     static_assert(
       cuda::std::is_same_v<decltype(cuda::std::ranges::crend(x)), cuda::std::reverse_iterator<int* const*>>);
   }
 
   {
-    int x[2][2] = {};
-    unused(x);
+    [[maybe_unused]] int x[2][2] = {};
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::rend(x)), cuda::std::reverse_iterator<int (*)[2]>>);
     static_assert(
       cuda::std::is_same_v<decltype(cuda::std::ranges::crend(x)), cuda::std::reverse_iterator<const int (*)[2]>>);
   }
 
   {
-    Different x{};
-    unused(x);
+    [[maybe_unused]] Different x{};
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::rend(x)), sentinel_wrapper<char*>>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::crend(x)), sentinel_wrapper<short*>>);
   }
@@ -630,7 +627,7 @@ static_assert(noexcept(cuda::std::ranges::rend(cuda::std::declval<int (&)[10]>()
 static_assert(noexcept(cuda::std::ranges::crend(cuda::std::declval<int (&)[10]>())));
 
 #if !TEST_COMPILER(MSVC2019)
-_CCCL_GLOBAL_CONSTANT struct NoThrowMemberREnd
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct NoThrowMemberREnd
 {
   TEST_FUNC ThrowingIterator<int> rbegin() const;
   TEST_FUNC ThrowingIterator<int> rend() const noexcept; // auto(t.rend()) doesn't throw
@@ -638,7 +635,7 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowMemberREnd
 static_assert(noexcept(cuda::std::ranges::rend(ntmre)));
 static_assert(noexcept(cuda::std::ranges::crend(ntmre)));
 
-_CCCL_GLOBAL_CONSTANT struct NoThrowADLREnd
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct NoThrowADLREnd
 {
   TEST_FUNC ThrowingIterator<int> rbegin() const;
   TEST_FUNC friend ThrowingIterator<int> rend(NoThrowADLREnd&) noexcept; // auto(rend(t)) doesn't throw
@@ -648,7 +645,7 @@ static_assert(noexcept(cuda::std::ranges::rend(ntare)));
 static_assert(noexcept(cuda::std::ranges::crend(ntare)));
 #endif // !TEST_COMPILER(MSVC2019)
 
-_CCCL_GLOBAL_CONSTANT struct NoThrowMemberREndReturnsRef
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct NoThrowMemberREndReturnsRef
 {
   TEST_FUNC ThrowingIterator<int> rbegin() const;
   TEST_FUNC ThrowingIterator<int>& rend() const noexcept; // auto(t.rend()) may throw
@@ -656,7 +653,7 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowMemberREndReturnsRef
 static_assert(!noexcept(cuda::std::ranges::rend(ntmrerr)));
 static_assert(!noexcept(cuda::std::ranges::crend(ntmrerr)));
 
-_CCCL_GLOBAL_CONSTANT struct REndReturnsArrayRef
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct REndReturnsArrayRef
 {
   TEST_FUNC auto rbegin() const noexcept -> int (&)[10];
   TEST_FUNC auto rend() const noexcept -> int (&)[10];
@@ -664,7 +661,7 @@ _CCCL_GLOBAL_CONSTANT struct REndReturnsArrayRef
 static_assert(noexcept(cuda::std::ranges::rend(rerar)));
 static_assert(noexcept(cuda::std::ranges::crend(rerar)));
 
-_CCCL_GLOBAL_CONSTANT struct NoThrowBeginThrowingEnd
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct NoThrowBeginThrowingEnd
 {
   TEST_FUNC int* begin() const noexcept;
   TEST_FUNC int* end() const;
@@ -672,7 +669,7 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowBeginThrowingEnd
 static_assert(noexcept(cuda::std::ranges::rend(ntbte)));
 static_assert(noexcept(cuda::std::ranges::crend(ntbte)));
 
-_CCCL_GLOBAL_CONSTANT struct NoThrowEndThrowingBegin
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct NoThrowEndThrowingBegin
 {
   TEST_FUNC int* begin() const;
   TEST_FUNC int* end() const noexcept;
@@ -711,13 +708,7 @@ int main(int, char**)
   static_assert(testBeginEnd());
 
 #if !TEST_COMPILER(MSVC2019)
-  unused(ntmre);
-  unused(ntare);
 #endif // !TEST_COMPILER(MSVC2019)
-  unused(ntmrerr);
-  unused(rerar);
-  unused(ntbte);
-  unused(ntetb);
 
   return 0;
 }

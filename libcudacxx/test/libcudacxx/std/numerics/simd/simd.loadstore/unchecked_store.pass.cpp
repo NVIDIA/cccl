@@ -238,10 +238,9 @@ TEST_HOST_DEVICE_FUNC constexpr void test_unchecked_store_not_noexcept()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
-  Vec vec(iota_generator<T>{});
-  cuda::std::array<T, N> arr{};
-  Mask mask(true);
-  unused(vec, arr, mask);
+  [[maybe_unused]] Vec vec(iota_generator<T>{});
+  [[maybe_unused]] cuda::std::array<T, N> arr{};
+  [[maybe_unused]] Mask mask(true);
 
   // range overloads
   static_assert(!noexcept(simd::unchecked_store(vec, arr, mask)));

@@ -15,11 +15,10 @@
 
 TEST_HOST_DEVICE_FUNC __noinline__ void test_access_property_fail()
 {
-  cuda::access_property o = cuda::access_property::normal{};
+  [[maybe_unused]] cuda::access_property o = cuda::access_property::normal{};
   // Test implicit conversion fails
   std::uint64_t x;
   x = o;
-  unused(o);
 }
 
 int main(int argc, char** argv)

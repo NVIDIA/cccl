@@ -371,10 +371,10 @@ struct MemberObj
 TEST_FUNC void noexcept_test()
 {
   {
-    NoThrowCallable obj;
-    unused(obj); // suppress unused warning
-    CopyThrows arg;
-    unused(arg); // suppress unused warning
+    [[maybe_unused]] NoThrowCallable obj;
+    // suppress unused warning
+    [[maybe_unused]] CopyThrows arg;
+    // suppress unused warning
     static_assert(noexcept(cuda::std::invoke(obj)));
 #if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cuda::std::invoke(obj, arg)));
@@ -383,14 +383,14 @@ TEST_FUNC void noexcept_test()
   }
 #if !TEST_COMPILER(NVHPC)
   {
-    ThrowsCallable obj;
-    unused(obj); // suppress unused warning
+    [[maybe_unused]] ThrowsCallable obj;
+    // suppress unused warning
     static_assert(!noexcept(cuda::std::invoke(obj)));
   }
 #endif // TEST_COMPILER(NVHPC)
   {
-    MemberObj obj{42};
-    unused(obj); // suppress unused warning.
+    [[maybe_unused]] MemberObj obj{42};
+    // suppress unused warning.
     static_assert(noexcept(cuda::std::invoke(&MemberObj::x, obj)));
   }
 }

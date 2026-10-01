@@ -220,11 +220,10 @@ TEST_HOST_DEVICE_FUNC constexpr void test_noexcept()
   using Ind  = simd::basic_vec<int, simd::fixed_size<4>>;
   using Mask = typename Ind::mask_type;
 
-  cuda::std::array<int, 4> out{};
-  Vec v{};
-  Ind indices{};
-  Mask m{};
-  unused(out, v, indices, m);
+  [[maybe_unused]] cuda::std::array<int, 4> out{};
+  [[maybe_unused]] Vec v{};
+  [[maybe_unused]] Ind indices{};
+  [[maybe_unused]] Mask m{};
 
   static_assert(!noexcept(simd::partial_scatter_to(v, out, indices)));
   static_assert(!noexcept(simd::partial_scatter_to(v, out, m, indices)));
@@ -241,11 +240,10 @@ TEST_HOST_DEVICE_FUNC constexpr void test_return_type()
   using Ind  = simd::basic_vec<int, simd::fixed_size<4>>;
   using Mask = typename Ind::mask_type;
 
-  cuda::std::array<int, 4> out{};
-  Vec v{};
-  Ind indices{};
-  Mask m{};
-  unused(out, v, indices, m);
+  [[maybe_unused]] cuda::std::array<int, 4> out{};
+  [[maybe_unused]] Vec v{};
+  [[maybe_unused]] Ind indices{};
+  [[maybe_unused]] Mask m{};
 
   static_assert(cuda::std::is_same_v<decltype(simd::partial_scatter_to(v, out, indices)), void>);
   static_assert(cuda::std::is_same_v<decltype(simd::partial_scatter_to(v, out, m, indices)), void>);

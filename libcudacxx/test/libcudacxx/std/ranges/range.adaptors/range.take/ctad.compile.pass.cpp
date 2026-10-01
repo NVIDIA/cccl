@@ -45,9 +45,9 @@ using result_take_view_owning_borrowed = cuda::std::ranges::take_view<cuda::std:
 
 TEST_FUNC void testCTAD()
 {
-  View v;
-  Range r;
-  BorrowedRange br;
+  [[maybe_unused]] View v;
+  [[maybe_unused]] Range r;
+  [[maybe_unused]] BorrowedRange br;
 
   static_assert(cuda::std::same_as<decltype(cuda::std::ranges::take_view(v, 0)), result_take_view>);
   static_assert(cuda::std::same_as<decltype(cuda::std::ranges::take_view(cuda::std::move(v), 0)), result_take_view>);
@@ -57,10 +57,6 @@ TEST_FUNC void testCTAD()
   static_assert(cuda::std::same_as<decltype(cuda::std::ranges::take_view(br, 0)), result_take_view_ref_borrowed>);
   static_assert(cuda::std::same_as<decltype(cuda::std::ranges::take_view(cuda::std::move(br), 0)),
                                    result_take_view_owning_borrowed>);
-
-  unused(v);
-  unused(r);
-  unused(br);
 }
 
 int main(int, char**)

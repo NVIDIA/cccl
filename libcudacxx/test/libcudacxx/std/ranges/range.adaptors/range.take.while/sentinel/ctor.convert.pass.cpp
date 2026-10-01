@@ -228,8 +228,7 @@ TEST_FUNC constexpr bool test()
     Sentinel s1(Sent{0}, &pred);
     ConstSentinel s2 = s1;
 
-    bool b = iter == s2;
-    unused(b);
+    [[maybe_unused]] bool b = iter == s2;
     assert(called);
   }
 

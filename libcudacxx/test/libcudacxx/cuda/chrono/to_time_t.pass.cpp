@@ -22,9 +22,8 @@
 int main(int, char**)
 {
   NV_IF_TARGET(NV_IS_HOST, ({
-                 using C              = ::std::chrono::system_clock;
-                 cuda::std::time_t t1 = C::to_time_t(C::now());
-                 unused(t1);
+                 using C                               = ::std::chrono::system_clock;
+                 [[maybe_unused]] cuda::std::time_t t1 = C::to_time_t(C::now());
                }));
   return 0;
 }

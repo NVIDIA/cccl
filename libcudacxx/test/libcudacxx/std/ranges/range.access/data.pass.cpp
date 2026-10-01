@@ -74,14 +74,12 @@ struct NC
 TEST_FUNC constexpr bool testReturnTypes()
 {
   {
-    int* x[2] = {};
-    unused(x);
+    [[maybe_unused]] int* x[2] = {};
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(x)), int**>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(x)), int* const*>);
   }
   {
-    int x[2][2] = {};
-    unused(x);
+    [[maybe_unused]] int x[2][2] = {};
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(x)), int (*)[2]>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(x)), const int (*)[2]>);
   }

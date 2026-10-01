@@ -37,11 +37,11 @@
 template <typename Alloc>
 TEST_FUNC void test_pointer()
 {
-  typename cuda::std::allocator_traits<Alloc>::pointer vp;
-  typename cuda::std::allocator_traits<Alloc>::const_pointer cvp;
+  [[maybe_unused]] typename cuda::std::allocator_traits<Alloc>::pointer vp;
+  [[maybe_unused]] typename cuda::std::allocator_traits<Alloc>::const_pointer cvp;
 
-  unused(vp); // Prevent unused warning
-  unused(cvp); // Prevent unused warning
+  // Prevent unused warning
+  // Prevent unused warning
 
   static_assert(cuda::std::is_same<bool, decltype(vp == vp)>::value);
   static_assert(cuda::std::is_same<bool, decltype(vp != vp)>::value);
@@ -74,11 +74,11 @@ TEST_FUNC void test_pointer()
 template <typename Alloc>
 TEST_FUNC void test_void_pointer()
 {
-  typename cuda::std::allocator_traits<Alloc>::void_pointer vp;
-  typename cuda::std::allocator_traits<Alloc>::const_void_pointer cvp;
+  [[maybe_unused]] typename cuda::std::allocator_traits<Alloc>::void_pointer vp;
+  [[maybe_unused]] typename cuda::std::allocator_traits<Alloc>::const_void_pointer cvp;
 
-  unused(vp); // Prevent unused warning
-  unused(cvp); // Prevent unused warning
+  // Prevent unused warning
+  // Prevent unused warning
 
   static_assert(cuda::std::is_same<bool, decltype(vp == vp)>::value);
   static_assert(cuda::std::is_same<bool, decltype(vp != vp)>::value);

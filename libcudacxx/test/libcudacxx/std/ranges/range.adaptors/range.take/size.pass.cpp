@@ -19,7 +19,7 @@
 #include "types.h"
 
 template <class T>
-_CCCL_CONCEPT SizeEnabled = _CCCL_REQUIRES_EXPR((T), const cuda::std::ranges::take_view<T>& tv)((unused(tv.size())));
+_CCCL_CONCEPT SizeEnabled = _CCCL_REQUIRES_EXPR((T), const cuda::std::ranges::take_view<T>& tv)((tv.size()));
 
 TEST_FUNC constexpr bool test()
 {

@@ -139,10 +139,9 @@ TEST_FUNC constexpr bool test()
 
   // `views::take(empty_view, n)` returns an `empty_view`.
   {
-    using Result          = cuda::std::ranges::empty_view<int>;
-    decltype(auto) result = cuda::std::views::empty<int> | cuda::std::views::take(3);
+    using Result                           = cuda::std::ranges::empty_view<int>;
+    [[maybe_unused]] decltype(auto) result = cuda::std::views::empty<int> | cuda::std::views::take(3);
     static_assert(cuda::std::same_as<decltype(result), Result>);
-    unused(result);
   }
 
   // `views::take(span, n)` returns a `span`.
@@ -202,9 +201,8 @@ TEST_FUNC constexpr bool test()
   {
     cuda::std::ranges::subrange<int*, sized_sentinel<int*>, cuda::std::ranges::subrange_kind::sized> subrange;
 
-    decltype(auto) result = subrange | cuda::std::views::take(3);
+    [[maybe_unused]] decltype(auto) result = subrange | cuda::std::views::take(3);
     static_assert(cuda::std::same_as<decltype(result), result_subrange_sized>);
-    unused(result);
   }
 
   // `views::take(iota_view, n)` returns an `iota_view`.
@@ -289,8 +287,7 @@ TEST_FUNC constexpr bool test()
   {
     struct X
     {};
-    auto partial = cuda::std::views::take(X{});
-    unused(partial);
+    [[maybe_unused]] auto partial = cuda::std::views::take(X{});
   }
 
 #if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code

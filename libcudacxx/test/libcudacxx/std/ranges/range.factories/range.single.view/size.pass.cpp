@@ -18,8 +18,7 @@
 TEST_FUNC constexpr bool test()
 {
   {
-    auto sv = cuda::std::ranges::single_view<int>(42);
-    unused(sv);
+    [[maybe_unused]] auto sv = cuda::std::ranges::single_view<int>(42);
     assert(sv.size() == 1);
 
     static_assert(cuda::std::is_same_v<decltype(sv.size()), size_t>);

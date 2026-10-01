@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <class Iter>
-_CCCL_CONCEPT ArrowEnabled = _CCCL_REQUIRES_EXPR((Iter), Iter& iter)(unused(iter.operator->()));
+_CCCL_CONCEPT ArrowEnabled = _CCCL_REQUIRES_EXPR((Iter), Iter& iter)(iter.operator->());
 
 TEST_FUNC constexpr bool test()
 {

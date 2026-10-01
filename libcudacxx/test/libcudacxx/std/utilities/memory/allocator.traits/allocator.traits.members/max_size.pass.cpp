@@ -68,9 +68,8 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
            == cuda::std::numeric_limits<cuda::std::size_t>::max() / sizeof(int));
   }
   {
-    cuda::std::allocator<int> a;
+    [[maybe_unused]] cuda::std::allocator<int> a;
     static_assert(noexcept(cuda::std::allocator_traits<cuda::std::allocator<int>>::max_size(a)) == true);
-    unused(a);
   }
 
   return true;

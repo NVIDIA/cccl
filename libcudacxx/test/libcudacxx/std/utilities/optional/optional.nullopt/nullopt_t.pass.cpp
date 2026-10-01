@@ -26,8 +26,7 @@ using cuda::std::nullopt_t;
 
 TEST_FUNC constexpr bool test()
 {
-  nullopt_t foo{nullopt};
-  unused(foo);
+  [[maybe_unused]] nullopt_t foo{nullopt};
   return true;
 }
 

@@ -45,15 +45,13 @@ TEST_FUNC constexpr bool test()
   {
     // underlying non-const to const not convertible
     cuda::std::ranges::zip_view v(ConstIterIncompatibleView{buffer});
-    auto iter1 = v.begin();
-    auto iter2 = cuda::std::as_const(v).begin();
+    [[maybe_unused]] auto iter1 = v.begin();
+    [[maybe_unused]] auto iter2 = cuda::std::as_const(v).begin();
 
     static_assert(!cuda::std::is_same_v<decltype(iter1), decltype(iter2)>);
 
     static_assert(!cuda::std::constructible_from<decltype(iter1), decltype(iter2)>);
     static_assert(!cuda::std::constructible_from<decltype(iter2), decltype(iter1)>);
-    unused(iter1);
-    unused(iter2);
   }
 
   return true;

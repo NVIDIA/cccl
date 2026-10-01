@@ -38,7 +38,9 @@ TEST_FUNC void testEmptySpan(Span sp)
 {
   if (!sp.empty())
   {
-    unused(sp.front());
+    {
+      [[maybe_unused]] auto&& discarded = sp.front();
+    }
   }
 }
 

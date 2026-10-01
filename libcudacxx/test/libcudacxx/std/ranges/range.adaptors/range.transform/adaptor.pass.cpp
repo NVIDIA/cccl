@@ -101,8 +101,7 @@ TEST_FUNC constexpr bool test()
   {
     struct X
     {};
-    auto partial = cuda::std::views::transform(X{});
-    unused(partial);
+    [[maybe_unused]] auto partial = cuda::std::views::transform(X{});
   }
 
   // Test `adaptor | views::transform(f)`

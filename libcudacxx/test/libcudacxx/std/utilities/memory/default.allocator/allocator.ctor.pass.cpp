@@ -32,10 +32,8 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
   using A2 = cuda::std::allocator<long>;
 
   A1 a1;
-  A1 a1_copy = a1;
-  unused(a1_copy);
-  A2 a2 = a1;
-  unused(a2);
+  [[maybe_unused]] A1 a1_copy = a1;
+  [[maybe_unused]] A2 a2      = a1;
 
   return true;
 }

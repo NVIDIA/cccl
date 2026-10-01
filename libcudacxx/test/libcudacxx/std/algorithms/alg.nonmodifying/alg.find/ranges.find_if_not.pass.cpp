@@ -272,9 +272,8 @@ TEST_HOST_DEVICE_FUNC constexpr bool test()
   }
 
   { // check that ranges::dangling is returned
-    decltype(auto) ret = cuda::std::ranges::find_if_not(cuda::std::array<int, 2>{1, 2}, AlwaysTrue{});
+    [[maybe_unused]] decltype(auto) ret = cuda::std::ranges::find_if_not(cuda::std::array<int, 2>{1, 2}, AlwaysTrue{});
     static_assert(cuda::std::same_as<decltype(ret), cuda::std::ranges::dangling>);
-    unused(ret);
   }
 
   { // check that an iterator is returned with a borrowing range

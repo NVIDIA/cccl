@@ -193,10 +193,9 @@ TEST_FUNC constexpr bool test()
   mixin_accessor<const double>();
 
   // deduction from array alone
-  float a[12] = {};
+  [[maybe_unused]] float a[12] = {};
   static_assert(
     cuda::std::is_same_v<decltype(cuda::device_mdspan(a)), cuda::device_mdspan<float, cuda::std::extents<size_t, 12>>>);
-  unused(a);
 
   return true;
 }

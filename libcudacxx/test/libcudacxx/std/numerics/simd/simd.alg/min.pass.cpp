@@ -29,9 +29,8 @@ template <typename T, int N>
 TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
-  Vec a(T{6});
-  Vec b(T{3});
-  unused(a, b);
+  [[maybe_unused]] Vec a(T{6});
+  [[maybe_unused]] Vec b(T{3});
 
   static_assert(cuda::std::is_same_v<decltype(simd::min(a, b)), Vec>);
   static_assert(noexcept(simd::min(a, b)));

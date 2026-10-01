@@ -18,8 +18,8 @@
 #include "test_macros.h"
 
 using FI = forward_iterator<int*>;
-TEST_GLOBAL_VARIABLE FI fi{nullptr};
-TEST_GLOBAL_VARIABLE int* ptr = nullptr;
+[[maybe_unused]] TEST_GLOBAL_VARIABLE FI fi{nullptr};
+[[maybe_unused]] TEST_GLOBAL_VARIABLE int* ptr = nullptr;
 
 static_assert(cuda::std::same_as<decltype(cuda::std::ranges::subrange(fi, fi)),
                                  cuda::std::ranges::subrange<FI, FI, cuda::std::ranges::subrange_kind::unsized>>);
@@ -54,8 +54,5 @@ static_assert(cuda::std::same_as<decltype(cuda::std::ranges::subrange(SizedRange
 
 int main(int, char**)
 {
-  unused(fi);
-  unused(ptr);
-
   return 0;
 }

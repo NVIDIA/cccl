@@ -23,10 +23,8 @@ TEST_FUNC void compile_test()
   using T  = int;
   using CT = const T;
 
-  U u{};
-  const U& cu = u;
-
-  unused(u, cu);
+  [[maybe_unused]] U u{};
+  [[maybe_unused]] const U& cu = u;
 
   static_assert(cuda::std::is_same<decltype(cuda::std::forward_like<T>(U{})), U&&>::value);
   static_assert(cuda::std::is_same<decltype(cuda::std::forward_like<T>(CU{})), CU&&>::value);
