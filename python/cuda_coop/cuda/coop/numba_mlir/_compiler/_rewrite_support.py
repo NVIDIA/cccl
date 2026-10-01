@@ -2,49 +2,32 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# The family rewrites import this module's private support names explicitly.
-# ruff: noqa: F401
-
 from __future__ import annotations
 
-import hashlib
-import operator
 import struct
-from dataclasses import dataclass, field, replace
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from itertools import count
-
-import numpy as np
-from numba_cuda_mlir import cuda as _cuda_module
-from numba_cuda_mlir.extending import (
-    WholeFunctionPlanner,
-    register_planner,
-    require_launch_config,
-    set_required_dynamic_shared_memory,
-)
+from typing import TYPE_CHECKING, Any
 
 from cuda.coop._core import GroupLoweringPlan
-from cuda.coop._core import api as _common_api
 
-from .. import _lowering
-from .._types import (
-    _hash_symbol_value,
-    algo_coalesce_key,
-    collect_specializations,
-    make_invocable_from_specialization,
-    prepare_ltoir_bundle,
-)
 from ._numba_mlir_compat import (
     _get_numba_mlir_compat,
     _get_numba_mlir_devices,
 )
-from ._operations import FactoryOperation, factory_operation
-from ._parameters import normalize_dim_param, normalize_dtype_param
+from ._operations import FactoryOperation
+from ._parameters import normalize_dtype_param
 
 _numba_mlir_compat = _get_numba_mlir_compat()
 _numba_errors = _numba_mlir_compat.numba_errors
 _numba_typeof = _numba_mlir_compat.numba_typeof
-ir = _numba_mlir_compat.numba_ir
-Rewrite = _numba_mlir_compat.rewrite_type
+if TYPE_CHECKING:
+    from numba_cuda_mlir.numba_cuda.core import ir
+    from numba_cuda_mlir.numba_cuda.core.rewrites import Rewrite
+else:
+    ir = _numba_mlir_compat.numba_ir
+    Rewrite = _numba_mlir_compat.rewrite_type
 register_rewrite = _numba_mlir_compat.register_rewrite
 
 _INFERENCE_EXCEPTIONS = (
@@ -144,23 +127,23 @@ def _check_driver_error(err, op: str) -> None:
 
 
 def _query_device_shared_memory_limits() -> dict[str, int]:
-    from cuda.bindings import driver
+    import cuda.bindings.driver as _driver
 
     devices = _get_numba_mlir_devices()
     context = devices.get_context()
-    (err,) = driver.cuInit(0)
+    (err,) = _driver.cuInit(0)
     _check_driver_error(err, "cuInit")
-    err, device = driver.cuDeviceGet(int(context.device.id))
+    err, device = _driver.cuDeviceGet(int(context.device.id))
     _check_driver_error(err, "cuDeviceGet")
-    err, max_default = driver.cuDeviceGetAttribute(
-        driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK,
+    err, max_default = _driver.cuDeviceGetAttribute(
+        _driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK,
         device,
     )
     _check_driver_error(
         err, "cuDeviceGetAttribute(MAX_SHARED_MEMORY_PER_BLOCK)"
     )
-    err, max_optin = driver.cuDeviceGetAttribute(
-        driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN,
+    err, max_optin = _driver.cuDeviceGetAttribute(
+        _driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN,
         device,
     )
     _check_driver_error(
@@ -178,7 +161,7 @@ def _query_device_shared_memory_limits() -> dict[str, int]:
 @dataclass(frozen=True)
 class _RewriteMatch:
     op_name: str
-    factory: object
+    factory: Callable[..., Any]
     factory_metadata: FactoryOperation
     func_var_name: str
     func_var_name_extra: str | None
@@ -193,7 +176,7 @@ class _RewriteMatch:
 
 @dataclass(frozen=True)
 class _ResolvedCallTarget:
-    factory: object
+    factory: Callable[..., Any]
     factory_metadata: FactoryOperation
     func_var_name: str
     func_var_name_extra: str | None
@@ -206,7 +189,7 @@ class _ResolvedCallTarget:
 
 @dataclass(frozen=True)
 class _ThreadDataSpec:
-    items_per_thread: object | None
+    items_per_thread: int | None
     dtype: object | None
     common_root: bool = False
     alignment: int | None = None
@@ -270,6 +253,3 @@ class _TempStorageGlobalPlan:
     max_alignment: int
     uses_dynamic_smem: bool
     dynamic_shared_bytes: int
-
-
-# Support consumers import the private names they use explicitly.

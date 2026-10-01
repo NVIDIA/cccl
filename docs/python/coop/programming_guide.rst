@@ -748,7 +748,7 @@ call, including between loop iterations:
 Set ``auto_sync=True`` to insert automatic trailing barriers for scratch reuse.
 Without an explicit descriptor, the compiler synchronizes scratch automatically.
 An unrelated memory access between calls does not establish a block barrier.
-The MVP conservatively rejects merging multiple manually synchronized
+The compiler rejects merging multiple manually synchronized
 ``TempStorage`` constructors into one descriptor, including conditional
 definitions. Use one constructor and keep its synchronization explicit. This
 restriction reflects what the planner can establish; it does not mean that
@@ -1016,7 +1016,7 @@ The rank bit interval is a compile-time choice containing one to eight bits;
 it defaults to four bits starting at ``begin_bit``. When both ``end_bit`` and
 ``radix_bits`` are supplied, they must describe the same interval. Ranking one
 digit does not rank keys by their complete values. The qualified
-:func:`~cuda.coop.numba_mlir.radix_rank` also writes optional digit prefixes;
+:func:`~cuda.coop.numba_mlir.radix_rank_keys` also writes optional digit prefixes;
 its API reference describes the ``int32`` side array's required extent and
 bin indexing, including descending ranking.
 
