@@ -4,14 +4,14 @@
 
 from typing_extensions import TypeVar
 
-from .._typing import (
+from ..._typing import (
     IntegralScalar,
     PortableNumericScalar,
     PortableThreadDataLike,
     ThreadDataLike,
 )
-from ._temp_storage import TempStorage
-from ._thread_group import BlockGroup
+from .._temp_storage import TempStorage
+from .._thread_group import BlockGroup
 
 _K = TypeVar("_K", bound=PortableNumericScalar)
 _V = TypeVar("_V", bound=PortableNumericScalar)
