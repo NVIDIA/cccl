@@ -1,0 +1,32 @@
+
+Fatbin elf code:
+================
+arch = sm_120
+code version = [1,8]
+host = linux
+compile_size = 64bit
+identifier = /mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_retained/normalization.cu
+
+Resource usage:
+ Common:
+  GLOBAL:147 CONSTANT[4]:448
+ Function _Z16normalize_kernelILi512ELb0EEvPKfPfi:
+  REG:38 STACK:0 SHARED:1200 LOCAL:0 CONSTANT[0]:916 TEXTURE:0 SURFACE:0 SAMPLER:0
+ Function _Z25normalize_retained_kernelILi512ELi2ELb0EEvPKfPfi:
+  REG:27 STACK:0 SHARED:1200 LOCAL:0 CONSTANT[0]:916 TEXTURE:0 SURFACE:0 SAMPLER:0
+ Function _Z25normalize_retained_kernelILi512ELi1ELb0EEvPKfPfi:
+  REG:25 STACK:0 SHARED:1200 LOCAL:0 CONSTANT[0]:916 TEXTURE:0 SURFACE:0 SAMPLER:0
+ Function _Z19first_thread_kernelILi512EEvPKfPf:
+  REG:24 STACK:0 SHARED:1108 LOCAL:0 CONSTANT[0]:912 TEXTURE:0 SURFACE:0 SAMPLER:0
+ Function _Z25normalize_retained_kernelILi256ELi1ELb0EEvPKfPfi:
+  REG:21 STACK:0 SHARED:1120 LOCAL:0 CONSTANT[0]:916 TEXTURE:0 SURFACE:0 SAMPLER:0
+ Function _Z19first_thread_kernelILi256EEvPKfPf:
+  REG:17 STACK:0 SHARED:1068 LOCAL:0 CONSTANT[0]:912 TEXTURE:0 SURFACE:0 SAMPLER:0
+ Function _Z25normalize_retained_kernelILi128ELi1ELb0EEvPKfPfi:
+  REG:18 STACK:0 SHARED:1080 LOCAL:0 CONSTANT[0]:916 TEXTURE:0 SURFACE:0 SAMPLER:0
+ Function _Z19first_thread_kernelILi128EEvPKfPf:
+  REG:20 STACK:0 SHARED:1048 LOCAL:0 CONSTANT[0]:912 TEXTURE:0 SURFACE:0 SAMPLER:0
+ Function _Z25normalize_retained_kernelILi32ELi1ELb0EEvPKfPfi:
+  REG:16 STACK:0 SHARED:1032 LOCAL:0 CONSTANT[0]:916 TEXTURE:0 SURFACE:0 SAMPLER:0
+ Function _Z19first_thread_kernelILi32EEvPKfPf:
+  REG:14 STACK:0 SHARED:0 LOCAL:0 CONSTANT[0]:912 TEXTURE:0 SURFACE:0 SAMPLER:0

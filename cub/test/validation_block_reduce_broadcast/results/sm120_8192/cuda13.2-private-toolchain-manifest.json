@@ -1,0 +1,50 @@
+[
+  {
+    "package": "nvidia-cuda-nvcc",
+    "version": "13.2.51",
+    "filename": "nvidia_cuda_nvcc-13.2.51-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+    "url": "https://files.pythonhosted.org/packages/5a/79/0da17b5b200ede8f25554f8c227c2624e26fb143c36ba7724b812c7e46ce/nvidia_cuda_nvcc-13.2.51-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+    "size": 44040269,
+    "digests": {
+      "blake2b_256": "5a790da17b5b200ede8f25554f8c227c2624e26fb143c36ba7724b812c7e46ce",
+      "md5": "a2c56f7017aab9dcd4fce03c8d5615bb",
+      "sha256": "18aea9976c8a0033cc61d45baf5649a5bd8647a45999ddd50b885814a6190442"
+    }
+  },
+  {
+    "package": "nvidia-nvvm",
+    "version": "13.2.51",
+    "filename": "nvidia_nvvm-13.2.51-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl",
+    "url": "https://files.pythonhosted.org/packages/34/4c/865325b6cffe2c2c20fe63696dca29b869ea7c0845aa743c217c2fb987dd/nvidia_nvvm-13.2.51-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl",
+    "size": 64279456,
+    "digests": {
+      "blake2b_256": "344c865325b6cffe2c2c20fe63696dca29b869ea7c0845aa743c217c2fb987dd",
+      "md5": "7fe883f8f24df4b902758e82da863d9b",
+      "sha256": "9c5725d97b1108bdb6c474784f7901c34f570319a2c2a0f279d23190070915f3"
+    }
+  },
+  {
+    "package": "nvidia-cuda-runtime",
+    "version": "13.2.51",
+    "filename": "nvidia_cuda_runtime-13.2.51-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+    "url": "https://files.pythonhosted.org/packages/a6/5a/b116ad2b7e574d691458ca0139ab4e9f26beed62184c85570636ce127b7f/nvidia_cuda_runtime-13.2.51-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+    "size": 2321923,
+    "digests": {
+      "blake2b_256": "a65ab116ad2b7e574d691458ca0139ab4e9f26beed62184c85570636ce127b7f",
+      "md5": "9820fc002823a2783bc428309371134a",
+      "sha256": "9c43b06a52c5b9316e19abc047236932c4d5c729969918a83223c4d2a4132f9a"
+    }
+  },
+  {
+    "package": "nvidia-cuda-crt",
+    "version": "13.2.51",
+    "filename": "nvidia_cuda_crt-13.2.51-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+    "url": "https://files.pythonhosted.org/packages/c8/5a/24af4197e8496870857fb56d5b93f65919fe5103fa311b526ec15d77a96a/nvidia_cuda_crt-13.2.51-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+    "size": 133298,
+    "digests": {
+      "blake2b_256": "c85a24af4197e8496870857fb56d5b93f65919fe5103fa311b526ec15d77a96a",
+      "md5": "1a8a7ec7d6a0b6315c1763dd4e23094e",
+      "sha256": "f4cda277fbf1025ad291a5d3b4dc4f788056ae11921552cdbebcf0626db99ba9"
+    }
+  }
+]

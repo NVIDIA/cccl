@@ -1,0 +1,148 @@
+{
+  "cuda_visible_devices": "",
+  "gpu_work_started": false,
+  "frozen_inputs": [
+    {
+      "path": "tools/admit_formal_models.py",
+      "sha256": "a920acdaccca3bf7f0818d7a762aa12c1333cea26ac53e4e2ba1e356ca47b158"
+    },
+    {
+      "path": "tools/consumer_integer/benchmark.py",
+      "sha256": "e7cc4ba607d8081264e230c07b5c741fb4a54fc4d4c3c7bbf3d1af85eaa4a529"
+    },
+    {
+      "path": "tools/consumer_integer/bindings.cpp",
+      "sha256": "84eff6522ef789a264ec7c098637140bd333797092d3062e99a4b48e9389644a"
+    },
+    {
+      "path": "tools/consumer_integer/build.py",
+      "sha256": "38856c3cc1adf52d0700de8a372fdd7e36332b09e85354d0faefa9addfbdc311"
+    },
+    {
+      "path": "tools/consumer_integer/common.py",
+      "sha256": "3aacf34535aa9097dbea73a147e9d58da497c084986651c7a7cce00dcc473b5e"
+    },
+    {
+      "path": "tools/consumer_integer/normalization.cu",
+      "sha256": "7962ad0bc85e72cc069ef1cc660e558e91c1deacd9b334a3f035f010bde3ade1"
+    },
+    {
+      "path": "tools/consumer_legacy/benchmark.py",
+      "sha256": "5e3a712dd16d1b0151f2c70c595eb543284134f1c4f15a988e132afbba82fd31"
+    },
+    {
+      "path": "tools/consumer_legacy/bindings.cpp",
+      "sha256": "84eff6522ef789a264ec7c098637140bd333797092d3062e99a4b48e9389644a"
+    },
+    {
+      "path": "tools/consumer_legacy/build.py",
+      "sha256": "52e23ffec7ab4b21563f9a267cf9a06517cd025bff3ebbd96a7034dbd2ea1237"
+    },
+    {
+      "path": "tools/consumer_legacy/common.py",
+      "sha256": "3aacf34535aa9097dbea73a147e9d58da497c084986651c7a7cce00dcc473b5e"
+    },
+    {
+      "path": "tools/consumer_legacy/normalization.cu",
+      "sha256": "713613cb342b9cbc5f36cd64a7124248bb4763385271dc0ca6b245b91f6b1f5f"
+    },
+    {
+      "path": "tools/consumer_retained/benchmark.py",
+      "sha256": "76167587aa5885ede4a685713b0583cc4220bab291c34f8907724ee2c322c952"
+    },
+    {
+      "path": "tools/consumer_retained/bindings.cpp",
+      "sha256": "84eff6522ef789a264ec7c098637140bd333797092d3062e99a4b48e9389644a"
+    },
+    {
+      "path": "tools/consumer_retained/build.py",
+      "sha256": "38856c3cc1adf52d0700de8a372fdd7e36332b09e85354d0faefa9addfbdc311"
+    },
+    {
+      "path": "tools/consumer_retained/common.py",
+      "sha256": "3aacf34535aa9097dbea73a147e9d58da497c084986651c7a7cce00dcc473b5e"
+    },
+    {
+      "path": "tools/consumer_retained/normalization.cu",
+      "sha256": "713613cb342b9cbc5f36cd64a7124248bb4763385271dc0ca6b245b91f6b1f5f"
+    },
+    {
+      "path": "tools/consumer_torch_order/accuracy_probe.py",
+      "sha256": "5b7a47b3eea61216c6b9ee6f62aa1f953f6598e553cee87c4d42b838846c39f0"
+    },
+    {
+      "path": "tools/consumer_torch_order/bindings.cpp",
+      "sha256": "84eff6522ef789a264ec7c098637140bd333797092d3062e99a4b48e9389644a"
+    },
+    {
+      "path": "tools/consumer_torch_order/build.py",
+      "sha256": "d314af30dc11650d25a8715934b70cff71c6a5655bf61786c63aa83c2c67951a"
+    },
+    {
+      "path": "tools/consumer_torch_order/common.py",
+      "sha256": "eabc5785bdb6e21dba43f93f7c3870ed2be0cb8627a96438d2b4425c4ba2fa86"
+    },
+    {
+      "path": "tools/consumer_torch_order/normalization.cu",
+      "sha256": "12768692c5c299b02c07116a6ea3afa74366cbbee2353d6f44675515e2d978ea"
+    },
+    {
+      "path": "tools/fetch_mirror_weights.py",
+      "sha256": "06dec9d9399e308af2ac09e608f2ea9fcace84ebd994ac4178ec7f377359dc9a"
+    },
+    {
+      "path": "tools/fetch_model.py",
+      "sha256": "3c67a941022d040dcd3acd849cc117cd41366ef2a4ab3eee6ca819b2dc7317a8"
+    },
+    {
+      "path": "tools/gpu_plan_gpu0.py",
+      "sha256": "3890baad18363ccf2778a7a1584d34b92f30665e593af174bacf0325ca5b65df"
+    },
+    {
+      "path": "tools/model_generation_screen.py",
+      "sha256": "4eacae2f3df48e97cd3f4ef2065ffeddf6c9b0fdebd7403a07fc569b0f621434"
+    },
+    {
+      "path": "tools/run_cpu_build_plan.py",
+      "sha256": "b8c9b546c6ece9c9b1e99fb0de2354507190dda3fa031578641e39aeee00c999"
+    },
+    {
+      "path": "tools/run_sm120.py",
+      "sha256": "46cba181c0f22a060325768bf34c2f21f3d13f9a54430e230818f60812c52f2b"
+    },
+    {
+      "path": "tools/summarize_formal_gpu0.py",
+      "sha256": "4fe1b90edc10614f268651a47293d1eb3b1038d0efbab2e87339c98efab483d0"
+    },
+    {
+      "path": "tools/summarize_formal_gpu0_v2.py",
+      "sha256": "3a775b2ef531a2b28bd7c3475f053e17a440a20c3db645920f17b4040f30b12e"
+    },
+    {
+      "path": "tools/summarize_formal_iteration.py",
+      "sha256": "5f81fc02f6f4ea1d75734c95f9898dc471fe78ed7c59789b1b03b28e4e7489cc"
+    },
+    {
+      "path": "tools/summarize_formal_model_gpu0.py",
+      "sha256": "7f9a1de1b00abeafd2b10bf48ab505371a22f018d9a14fe5d87be3cf74d12443"
+    },
+    {
+      "path": "tools/summarize_formal_sm120.py",
+      "sha256": "545b6785bc9cf4bf85e38ab60ed1d944e5ef6fecf10fffeb33a0da9578c6cbbb"
+    },
+    {
+      "path": "evidence/sm120-cpu-build-plan.json",
+      "sha256": "d88a5e612781b0ce4408bb85430a89975b13417ffffba63387600ba762cf9614"
+    },
+    {
+      "path": "evidence/sm120-formal-micro-plan.json",
+      "sha256": "48814978525a8c79b72936d74ad57b28f8fbf4c6a373df50275b93c7bcff8f06"
+    },
+    {
+      "path": "evidence/sm120-screen-plan.json",
+      "sha256": "92fb2b6d81c984c2189dbaf13ce91aee14c103dbcfb95fef8a42b6f3e83ebd08"
+    }
+  ],
+  "source": "0909f9ee05c632af18fba74a366b657370a12aee",
+  "candidate": "76db7e3f3ab0d665fc87282b0160a321e51e698e"
+}

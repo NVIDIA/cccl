@@ -1,0 +1,6 @@
+sm120-build-retained-A
+Traceback (most recent call last):
+  File "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_cpu_build_plan.py", line 45, in <module>
+    assert code == 0, (job["label"], code)
+           ^^^^^^^^^
+AssertionError: ('sm120-build-retained-A', 1)
