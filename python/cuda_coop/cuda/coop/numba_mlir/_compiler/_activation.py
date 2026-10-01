@@ -415,7 +415,28 @@ def _remove_backend_additions(
     *,
     owned_modules: frozenset[str],
 ) -> None:
-    """Delete post-snapshot backend registrations without replacing a list."""
+    """Delete owned registrations beyond the saved identity counts in place.
+
+    A class may occur more than once in the baseline, so membership alone
+    cannot distinguish old registrations from newly appended duplicates.
+    Consume saved counts by object identity while scanning the current list,
+    and remove only excess entries whose classes belong to an owned module.
+    Delete indices from the tail so list positions remain valid and foreign
+    appends made during cleanup are retained.
+
+    Parameters
+    ----------
+    registrations : MutableSequence of type
+        Live registry list to mutate. Registration APIs are assumed to append
+        entries; this routine does not protect arbitrary concurrent list edits.
+        The caller supplies any registry lock required by the compiler.
+    baseline : tuple of type
+        Pre-attempt entries, including duplicate occurrences to preserve.
+        Entries already removed from the live list are not reinserted.
+    owned_modules : frozenset of str
+        Exact class ``__module__`` names whose excess entries may be removed.
+        All other entries stay in their original order.
+    """
 
     baseline_counts: dict[int, int] = {}
     for registration in baseline:
