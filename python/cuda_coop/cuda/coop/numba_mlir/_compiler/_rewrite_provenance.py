@@ -853,6 +853,39 @@ class _ProvenanceRewrite(Rewrite):
         return root
 
     def _merge_temp_storage_ctor_keys(self, keys: set[str]) -> str:
+        """Unify compatible storage constructor owners.
+
+        All reachable roots must have the same effective size, alignment,
+        sharing, and synchronization contract. Distinct roots may merge only
+        with automatic synchronization: the compiler cannot prove that
+        caller-managed barriers still protect reuse after independently
+        constructed regions collapse into one allocation.
+
+        Choose the earliest recorded constructor, breaking ties by variable
+        name, and redirect existing root mappings to it. Requirement collection
+        later uses this canonical identity to combine every alias's primitive
+        uses. This method checks distinct roots; repeated constructor sites
+        under one pre-SSA name are checked separately by constructor-site
+        validation.
+
+        Parameters
+        ----------
+        keys : set of str
+            Nonempty set of known constructor owner names to unify.
+
+        Returns
+        -------
+        str
+            Canonical owner name. ``_temp_storage_ctor_roots`` is updated in
+            place.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            Effective contracts differ, or multiple roots disable automatic
+            sync.
+        """
+
         roots = {self._canonical_temp_storage_ctor_key(key) for key in keys}
         contracts = {
             self._temp_storage_contract(self._temp_storage_ctor_specs[key])
