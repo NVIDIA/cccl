@@ -827,6 +827,38 @@ class _GroupCallPlanner:
     def _array_extent(
         self, value: Any, *, seen: set[str] | None = None
     ) -> int | None:
+        """Recover one known per-thread item count from payload definitions.
+
+        Follow aliases, casts, phi inputs, and constant tuple projections to
+        ``ThreadData`` item counts or scalar local-array shapes. Gather known
+        extents and require them to agree, ignoring unresolved paths and
+        recursion backedges. Payload-kind validation is separate: a returned
+        extent alone is not proof that every reaching definition is a valid
+        payload. Required constructor dimensions may request literal argument
+        specialization.
+
+        Parameters
+        ----------
+        value : ir.Var or object
+            Payload variable to inspect. Non-variables have no inferred extent.
+        seen : set of str, optional
+            Recursion-path names and tuple-projection keys. The current name is
+            added in place; each reaching definition receives a separate copy.
+
+        Returns
+        -------
+        int or None
+            The unique known integral extent, excluding booleans, or ``None`` if
+            none can be recovered. Positivity is validated elsewhere.
+
+        Raises
+        ------
+        GroupRewriteError
+            Known extents disagree, or a dimension depends on literal unrolling.
+        ForceLiteralArg
+            A constructor dimension needs literal argument specialization.
+        """
+
         if not isinstance(value, ir.Var):
             return None
         if seen is None:
