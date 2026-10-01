@@ -9,7 +9,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from numba_cuda_mlir import cuda, types
+import numba_cuda_mlir.numba_cuda.types as numba_types
+from numba_cuda_mlir import cuda
 
 from cuda.coop._core import (
     SynchronizationScope,
@@ -60,7 +61,11 @@ def _cpp_type(dtype: Any) -> str:
 
 
 def _current_cc() -> int:
-    major, minor = cuda.get_current_device().compute_capability
+    # The CUDA module reexports this accessor but omits it from its stub.
+    device = (
+        cuda.get_current_device()  # pyright: ignore[reportAttributeAccessIssue]
+    )
+    major, minor = device.compute_capability
     return int(major) * 10 + int(minor)
 
 
@@ -173,9 +178,9 @@ def _normalize_query_dtype(
 ) -> Any:
     if dtype is None:
         dtype = (
-            types.uint64
+            numba_types.uint64
             if level == "grid" or group.kind == "grid"
-            else types.uint32
+            else numba_types.uint32
         )
     else:
         dtype = normalize_dtype_param(dtype)
@@ -251,7 +256,7 @@ def make_group_method_invocable(
             ),
             "}",
         ]
-        return_type = types.uint8
+        return_type = numba_types.uint8
     else:
         symbol = (
             "cuda_coop_numba_mlir_group_"
@@ -274,7 +279,7 @@ def make_group_method_invocable(
             f"  group.{operation}();",
             "}",
         ]
-        return_type = types.void
+        return_type = numba_types.void
 
     source = "\n".join((*_INCLUDE_LINES, "", *lines, ""))
     return RawCAbiInvocable(

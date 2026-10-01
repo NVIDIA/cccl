@@ -359,7 +359,7 @@ class _GroupCallPlanner:
         if depends_on_unroll(value, set()):
             raise GroupRewriteError(
                 "cuda.coop.numba_mlir does not support literal_unroll values "
-                f"that determine {parameter} in the MVP. Write separate "
+                f"that determine {parameter}. Write separate "
                 "cooperative calls with explicit constant shapes/selectors, "
                 "or use an ordinary loop with a fixed cooperative shape."
             )

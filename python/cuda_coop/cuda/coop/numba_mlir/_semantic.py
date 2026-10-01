@@ -16,8 +16,8 @@ hashes, rather than serializing compiler objects for later reconstruction.
 import hashlib
 from collections.abc import Hashable
 
-import numpy as np
 import numba_cuda_mlir.numba_cuda.types as numba_types
+import numpy as np
 from numba_cuda_mlir.descriptor import MLIRDispatcher
 
 from cuda.coop._core import semantic_token
