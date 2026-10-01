@@ -11,10 +11,10 @@ pytest.importorskip("numba_cuda_mlir")
 from numba_cuda_mlir import types
 from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
+from cuda.coop.numba_mlir._compiler._planner import CoopWholeFunctionPlanner
 from cuda.coop.numba_mlir._compiler._rewrite import (
     CoopSinglePhaseRewrite,
     CoopSinglePhaseRewriteError,
-    CoopWholeFunctionPlanner,
 )
 from cuda.coop.numba_mlir._lowering import load as block_load
 
