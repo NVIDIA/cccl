@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import Any, ClassVar
 
-from numba_cuda_mlir import types
+import numba_cuda_mlir.numba_cuda.types as numba_types
 
 from cuda.coop._core import (
     FLOAT32,
@@ -71,19 +71,19 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
     caching.
     """
 
-    _BUILTIN_DTYPES: ClassVar[dict[BuiltinDType, types.Type]] = {
-        INT8: types.int8,
-        UINT8: types.uint8,
-        INT16: types.int16,
-        UINT16: types.uint16,
-        INT32: types.int32,
-        UINT32: types.uint32,
-        INT64: types.int64,
-        UINT64: types.uint64,
-        FLOAT32: types.float32,
-        FLOAT64: types.float64,
+    _BUILTIN_DTYPES: ClassVar[dict[BuiltinDType, numba_types.Type]] = {
+        INT8: numba_types.int8,
+        UINT8: numba_types.uint8,
+        INT16: numba_types.int16,
+        UINT16: numba_types.uint16,
+        INT32: numba_types.int32,
+        UINT32: numba_types.uint32,
+        INT64: numba_types.int64,
+        UINT64: numba_types.uint64,
+        FLOAT32: numba_types.float32,
+        FLOAT64: numba_types.float64,
     }
-    _CORE_DTYPES: ClassVar[dict[types.Type, BuiltinDType]] = {
+    _CORE_DTYPES: ClassVar[dict[numba_types.Type, BuiltinDType]] = {
         value: key for key, value in _BUILTIN_DTYPES.items()
     }
 
@@ -141,7 +141,11 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
                 static_value=parameter.static_value,
             )
         if isinstance(parameter, Array):
-            transform = self._input_transforms.get(parameter.name)
+            transform = (
+                self._input_transforms.get(parameter.name)
+                if parameter.name is not None
+                else None
+            )
             if transform is not None:
                 if parameter.is_output or parameter.is_inout:
                     raise ValueError(
@@ -227,7 +231,11 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
                     "Numba-CUDA-MLIR does not support dependent scalar values"
                 )
             normalized_dtype = self.normalize_dtype(dtype)
-            value_abi = self._value_abis.get(parameter.name)
+            value_abi = (
+                self._value_abis.get(parameter.name)
+                if parameter.name is not None
+                else None
+            )
             if value_abi is not None:
                 return value_abi
             return backend.Value(

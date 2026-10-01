@@ -4,9 +4,12 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ._rewrite_support import _ThreadDataSpecification, ir
+
+if TYPE_CHECKING:
+    from ._rewrite import CoopSinglePhaseRewrite
 
 
 class GroupRewriteContext:
@@ -14,7 +17,7 @@ class GroupRewriteContext:
 
     __slots__ = ("__rewrite",)
 
-    def __init__(self, rewrite: Any) -> None:
+    def __init__(self, rewrite: CoopSinglePhaseRewrite) -> None:
         self.__rewrite = rewrite
 
     def thread_data(self, value: ir.Var) -> _ThreadDataSpecification | None:

@@ -6,16 +6,22 @@
 IR bundle.
 """
 
-from ._rewrite_support import (
-    CoopSinglePhaseRewriteError,
+from __future__ import annotations
+
+import hashlib
+from typing import TYPE_CHECKING, cast
+
+from .._types import (
     _hash_symbol_value,
-    _RewriteMatch,
     algo_coalesce_key,
     collect_specializations,
-    hashlib,
     make_invocable_from_specialization,
     prepare_ltoir_bundle,
 )
+from ._rewrite_support import CoopSinglePhaseRewriteError, _RewriteMatch
+
+if TYPE_CHECKING:
+    from ._rewrite import CoopSinglePhaseRewrite
 
 
 class _InvocableRewrite:
@@ -90,10 +96,11 @@ class _InvocableRewrite:
     def _prepare_ltoir_bundle_for_matches(
         self, matches: list[_RewriteMatch]
     ) -> None:
+        rewrite = cast("CoopSinglePhaseRewrite", self)
         self._prebundled_specializations = {}
         if not matches:
             return
-        if self._state.metadata.get(
+        if rewrite._state.metadata.get(
             "__cuda_coop_numba_mlir_materialized_specializations__"
         ):
             return
@@ -131,7 +138,7 @@ class _InvocableRewrite:
                     block_threads_by_algo[id(algo)] = block_threads
             prepare_ltoir_bundle(
                 algorithms,
-                bundle_name=f"cuda_coop_numba_mlir_bundle_{id(self)}_{id(self._func_ir)}",
+                bundle_name=f"cuda_coop_numba_mlir_bundle_{id(self)}_{id(rewrite._func_ir)}",
                 allow_single=False,
                 threads_by_algo=threads_by_algo,
                 block_threads_by_algo=block_threads_by_algo,
@@ -141,20 +148,21 @@ class _InvocableRewrite:
             self._prebundled_specializations = {}
 
     def _materialize_invocable(self, match: _RewriteMatch):
+        rewrite = cast("CoopSinglePhaseRewrite", self)
         key = self._invocable_cache_key(
             match.factory,
             match.factory_metadata,
             match.factory_kwargs,
         )
-        if key in self._invocable_cache:
-            return (self._invocable_cache[key], False)
-        compile_cache = self._state.metadata.setdefault(
+        if key in rewrite._invocable_cache:
+            return (rewrite._invocable_cache[key], False)
+        compile_cache = rewrite._state.metadata.setdefault(
             "__cuda_coop_numba_mlir_invocable_cache__", {}
         )
         if key in compile_cache:
             invocable = compile_cache[key]
             self._validate_invocable(invocable, match.factory_metadata)
-            self._invocable_cache[key] = invocable
+            rewrite._invocable_cache[key] = invocable
             return (invocable, False)
         try:
             prebundled = self._prebundled_specializations.get(key)
@@ -171,18 +179,19 @@ class _InvocableRewrite:
                 f"for '{match.op_name}'."
             ) from e
         self._validate_invocable(invocable, match.factory_metadata)
-        self._invocable_cache[key] = invocable
+        rewrite._invocable_cache[key] = invocable
         compile_cache[key] = invocable
         return (invocable, True)
 
     def _record_invocable_specialization(self, invocable):
+        rewrite = cast("CoopSinglePhaseRewrite", self)
         specialization = getattr(invocable, "specialization", None)
         link_key = (
             algo_coalesce_key(specialization)
             if specialization is not None
             else None
         )
-        materialized_specializations = self._state.metadata.setdefault(
+        materialized_specializations = rewrite._state.metadata.setdefault(
             "__cuda_coop_numba_mlir_materialized_specializations__", []
         )
         if (

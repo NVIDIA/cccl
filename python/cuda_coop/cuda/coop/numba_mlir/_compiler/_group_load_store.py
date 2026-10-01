@@ -2,7 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import inspect
 import operator
+from typing import Any, cast
+
+from numba_cuda_mlir import cuda as _cuda_module
 
 from cuda.coop._core import (
     ArgumentBinding,
@@ -13,6 +17,7 @@ from cuda.coop._core import (
     GroupLoweringPlan,
     GroupLoweringTarget,
     StorageOwnership,
+    ThreadGroup,
     make_group_primitive_call,
     plan_group_primitive,
 )
@@ -31,14 +36,7 @@ from ._group_errors import (
     UnsupportedLoadStoreGroupError,
     UnsupportedLoadStoreTargetError,
 )
-from ._group_planner_support import (
-    Any,
-    GroupRewriteError,
-    ThreadGroup,
-    _cuda_module,
-    inspect,
-    ir,
-)
+from ._group_planner_support import GroupRewriteError, ir
 from ._group_planning import GroupPlanningContext
 from ._load_store_algorithms import (
     _BLOCK_LOAD_STORE_ALGORITHMS,
@@ -237,6 +235,8 @@ class _LoadStorePlanning:
         group: ThreadGroup,
         bound: inspect.BoundArguments,
     ) -> GroupLoweringPlan:
+        from .._lowering._core import NumbaMlirCoreAdapter
+
         payload_name = "output" if operation == "load" else "value"
         memory_name = "source" if operation == "load" else "destination"
         payload = bound.arguments[payload_name]
@@ -316,7 +316,7 @@ class _LoadStorePlanning:
 
         semantics = GroupLoadStoreSemantics(
             kind=GroupLoadStoreKind(operation),
-            dtype=dtype,
+            dtype=NumbaMlirCoreAdapter().core_dtype(dtype),
             items_per_thread=items_per_thread,
             algorithm=GroupLoadStoreAlgorithm(algorithm),
             valid_items=self._context.planning_binding(
@@ -476,6 +476,8 @@ class _LoadStorePlanning:
         bound: inspect.BoundArguments,
         is_common_root: bool,
     ) -> list[Any]:
+        from .._lowering._core import NumbaMlirCoreAdapter
+
         if is_common_root:
             if operation == "load":
                 if not self._context.is_thread_data(
@@ -504,7 +506,9 @@ class _LoadStorePlanning:
         factory_kwargs.update(
             {
                 "algorithm": plan.implementation.metadata["algorithm"],
-                "dtype": plan.implementation.template_arguments["T"],
+                "dtype": NumbaMlirCoreAdapter().normalize_dtype(
+                    plan.implementation.template_arguments["T"]
+                ),
                 "items_per_thread": plan.implementation.template_arguments[
                     "ITEMS_PER_THREAD"
                 ],
@@ -512,7 +516,7 @@ class _LoadStorePlanning:
         )
         if is_common_root:
             factory_kwargs["_common_root_operation"] = operation
-        semantics = plan.call.operation
+        semantics = cast(GroupLoadStoreSemantics, plan.call.operation)
         requires_runtime_effective_offset = bool(
             plan.implementation.metadata.get(
                 "requires_runtime_effective_offset", False

@@ -2,42 +2,22 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# The family planners import this module's private support names explicitly.
-# ruff: noqa: F401
-
 from __future__ import annotations
 
-import inspect
 from itertools import count
-from numbers import Integral
-from typing import Any
-
-import numpy as np
-from numba_cuda_mlir import cuda, types
-from numba_cuda_mlir.errors import ForceLiteralArg
-from numba_cuda_mlir.extending import (
-    WholeFunctionPlanner,
-    register_planner,
-    require_launch_config,
-)
+from typing import TYPE_CHECKING, Any
 
 import cuda.coop._core.api as _common_api
 import cuda.coop._core.api._dispatch as _common_dispatch
-from cuda.coop._core import (
-    LaunchFactOrigin,
-    LaunchFacts,
-    ThreadGroup,
-    ThreadHierarchy,
-    normalize_thread_level,
-    resolve_thread_group,
-)
 
 from .. import _thread_group as _thread_groups
 from ._numba_mlir_compat import _get_numba_mlir_compat
 from ._operations import group_operation_name
 
-_cuda_module = cuda
-ir = _get_numba_mlir_compat().numba_ir
+if TYPE_CHECKING:
+    from numba_cuda_mlir.numba_cuda.core import ir
+else:
+    ir = _get_numba_mlir_compat().numba_ir
 
 _NAME_COUNTER = count()
 _GROUP_CONSTRUCTORS = {
@@ -78,6 +58,3 @@ def _group_operation_name(function: Any) -> str | None:
 
 def _is_common_root_operation(function: Any, operation: str) -> bool:
     return _common_dispatch._common_group_operation_name(function) == operation
-
-
-# Support consumers import the private names they use explicitly.

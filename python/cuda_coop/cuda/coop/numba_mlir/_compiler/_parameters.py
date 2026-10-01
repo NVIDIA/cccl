@@ -6,8 +6,9 @@ import math
 import operator
 from collections import namedtuple
 from numbers import Real
-from typing import Union
+from typing import cast
 
+import numba_cuda_mlir.numba_cuda.types as numba_types
 import numpy as np
 from numba_cuda_mlir import types as numba_mlir_types
 
@@ -50,20 +51,20 @@ def normalize_dim_param(dim) -> dim3:
 
 
 _NP_DTYPE_TO_NUMBA_MLIR_TYPE = {
-    np.dtype(np.bool_): numba_mlir_types.boolean,
-    np.dtype(np.int8): numba_mlir_types.int8,
-    np.dtype(np.int16): numba_mlir_types.int16,
-    np.dtype(np.int32): numba_mlir_types.int32,
-    np.dtype(np.int64): numba_mlir_types.int64,
-    np.dtype(np.uint8): numba_mlir_types.uint8,
-    np.dtype(np.uint16): numba_mlir_types.uint16,
-    np.dtype(np.uint32): numba_mlir_types.uint32,
-    np.dtype(np.uint64): numba_mlir_types.uint64,
-    np.dtype(np.float16): numba_mlir_types.float16,
-    np.dtype(np.float32): numba_mlir_types.float32,
-    np.dtype(np.float64): numba_mlir_types.float64,
-    np.dtype(np.complex64): numba_mlir_types.complex64,
-    np.dtype(np.complex128): numba_mlir_types.complex128,
+    np.dtype(np.bool_): numba_types.boolean,
+    np.dtype(np.int8): numba_types.int8,
+    np.dtype(np.int16): numba_types.int16,
+    np.dtype(np.int32): numba_types.int32,
+    np.dtype(np.int64): numba_types.int64,
+    np.dtype(np.uint8): numba_types.uint8,
+    np.dtype(np.uint16): numba_types.uint16,
+    np.dtype(np.uint32): numba_types.uint32,
+    np.dtype(np.uint64): numba_types.uint64,
+    np.dtype(np.float16): numba_types.float16,
+    np.dtype(np.float32): numba_types.float32,
+    np.dtype(np.float64): numba_types.float64,
+    np.dtype(np.complex64): numba_types.complex64,
+    np.dtype(np.complex128): numba_types.complex128,
 }
 
 _NUMBA_MLIR_TYPE_NAME_ALIASES = {
@@ -76,7 +77,7 @@ def _normalize_numba_mlir_type_name(type_name: str) -> str:
     return _NUMBA_MLIR_TYPE_NAME_ALIASES.get(type_name, type_name)
 
 
-def _dtype_from_numpy(np_dtype: np.dtype) -> numba_mlir_types.Type:
+def _dtype_from_numpy(np_dtype: np.dtype) -> numba_types.Type:
     canonical = np.dtype(np_dtype)
     if canonical in _NP_DTYPE_TO_NUMBA_MLIR_TYPE:
         return _NP_DTYPE_TO_NUMBA_MLIR_TYPE[canonical]
@@ -84,26 +85,26 @@ def _dtype_from_numpy(np_dtype: np.dtype) -> numba_mlir_types.Type:
     type_name = _normalize_numba_mlir_type_name(canonical.name)
     if hasattr(numba_mlir_types, type_name):
         resolved = getattr(numba_mlir_types, type_name)
-        if isinstance(resolved, numba_mlir_types.Type):
+        if isinstance(resolved, numba_types.Type):
             return resolved
 
     raise ValueError(f"Unsupported numpy dtype: {canonical}")
 
 
 def normalize_dtype_param(
-    dtype: Union[str, type, "np.dtype", "numba_mlir_types.Type"],
-) -> "numba_mlir_types.Type":
+    dtype: object,
+) -> "numba_types.Type":
     """Normalize a dtype parameter into a Numba-CUDA-MLIR type object."""
 
     if dtype is bool:
-        return numba_mlir_types.boolean
+        return numba_types.boolean
     if dtype is int:
-        return numba_mlir_types.int32
+        return numba_types.int32
     if dtype is float:
-        return numba_mlir_types.float32
+        return numba_types.float32
     if dtype is complex:
-        return numba_mlir_types.complex128
-    if isinstance(dtype, numba_mlir_types.Type):
+        return numba_types.complex128
+    if isinstance(dtype, numba_types.Type):
         return dtype
     if isinstance(dtype, np.dtype):
         return _dtype_from_numpy(dtype)
@@ -124,7 +125,7 @@ def normalize_dtype_param(
         type_name = _normalize_numba_mlir_type_name(dtype)
         if hasattr(numba_mlir_types, type_name):
             resolved = getattr(numba_mlir_types, type_name)
-            if isinstance(resolved, numba_mlir_types.Type):
+            if isinstance(resolved, numba_types.Type):
                 return resolved
         raise ValueError(f"Invalid Numba-CUDA-MLIR type name: {dtype}")
 
@@ -177,7 +178,7 @@ def _python_scalar_dtype(value):
 def _scalar_cast_dtype(function):
     """Return the dtype named by a scalar cast callable, if any."""
 
-    if isinstance(function, numba_mlir_types.Type):
+    if isinstance(function, numba_types.Type):
         try:
             return normalize_dtype_param(function)
         except (TypeError, ValueError):
@@ -226,10 +227,10 @@ def _scalar_operator_result_dtype(function, *operand_dtypes):
 def _validate_runtime_integer_dtype(dtype, *, operation: str, parameter: str):
     """Validate the runtime integer domain accepted by Load/Store controls."""
 
-    if isinstance(dtype, numba_mlir_types.Literal):
+    if isinstance(dtype, numba_types.Literal):
         dtype = dtype.literal_type
-    if isinstance(dtype, numba_mlir_types.Boolean) or not isinstance(
-        dtype, numba_mlir_types.Integer
+    if isinstance(dtype, numba_types.Boolean) or not isinstance(
+        dtype, numba_types.Integer
     ):
         raise TypeError(
             f"coop {operation} {parameter} must be an integer, not bool "
@@ -290,6 +291,7 @@ def coerce_static_scalar(
             "numeric literal or an exactly typed NumPy/compiler scalar"
         )
 
+    value = cast(int | float, value)
     if np.issubdtype(target_numpy_dtype, np.integer):
         if type(value) is float:
             raise TypeError(
