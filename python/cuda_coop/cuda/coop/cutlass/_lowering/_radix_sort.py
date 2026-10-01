@@ -31,13 +31,13 @@ from cuda.coop._core import (
     plan_group_primitive,
 )
 from cuda.coop._core._types import INT32
-from cuda.coop._core.api.radix import _radix_bounds
+from cuda.coop._core.api.radix_sort import _radix_bounds
 from cuda.coop._core.block.radix_rank import (
     block_radix_rank_bins_per_thread,
     make_block_radix_rank_semantics,
 )
 from cuda.coop._core.block.radix_sort import make_block_radix_sort_semantics
-from cuda.coop._core.group.radix import (
+from cuda.coop._core.group.radix_sort import (
     GroupRadixRankSemantics,
     GroupRadixSortSemantics,
 )
@@ -615,10 +615,10 @@ def provider_radix_rank(
     exclusive_digit_prefix,
 ):
     keys, key_type, key_items, scalar = _resolve_payload(
-        keys, allowed=_INTEGER_KEYS, feature="radix_rank"
+        keys, allowed=_INTEGER_KEYS, feature="radix_rank_keys"
     )
     begin_bit, end_bit = _radix_bounds(
-        "radix_rank",
+        "radix_rank_keys",
         _types.TYPE_SPECS[key_type].width_bits,
         begin_bit,
         end_bit,
@@ -628,14 +628,15 @@ def provider_radix_rank(
     if prefix is not None:
         if not isinstance(prefix, ThreadData):
             raise TypeError(
-                "radix_rank exclusive_digit_prefix must be writable ThreadData"
+                "radix_rank_keys exclusive_digit_prefix must be writable "
+                "ThreadData"
             )
         expected = block_radix_rank_bins_per_thread(
             end_bit - begin_bit, launch.exact_block_threads
         )
         if prefix.items_per_thread != expected:
             raise ValueError(
-                "radix_rank exclusive_digit_prefix must contain "
+                "radix_rank_keys exclusive_digit_prefix must contain "
                 f"{expected} items per thread"
             )
         if (
@@ -643,7 +644,7 @@ def provider_radix_rank(
             and _types.canonical_dsl_type(prefix.dtype) is not Int32
         ):
             raise TypeError(
-                "radix_rank exclusive_digit_prefix dtype must be Int32"
+                "radix_rank_keys exclusive_digit_prefix dtype must be Int32"
             )
     plan = _rank_plan(
         group=group,

@@ -807,7 +807,7 @@ def check_cutlass_radix_surface(scalar: Float32, value: Int16) -> None:
         tuple[cutlass_coop.ThreadData[Any], cutlass_coop.ThreadData[Any]],
     )
     assert_type(
-        cutlass_coop.radix_rank(
+        cutlass_coop.radix_rank_keys(
             block,
             keys,
             begin_bit=4,
@@ -818,19 +818,19 @@ def check_cutlass_radix_surface(scalar: Float32, value: Int16) -> None:
         cutlass_coop.ThreadData[Int32],
     )
     assert_type(
-        cutlass_coop.radix_rank(block, _ReadOnlyKeys()),
+        cutlass_coop.radix_rank_keys(block, _ReadOnlyKeys()),
         cutlass_coop.ThreadData[Int32],
     )
     assert_type(
-        cutlass_coop.radix_rank(block, keys.to_register_tensor()),
+        cutlass_coop.radix_rank_keys(block, keys.to_register_tensor()),
         cutlass_coop.ThreadData[Int32],
     )
     assert_type(
-        cutlass_coop.radix_rank(block, keys.to_tensor_ssa()),
+        cutlass_coop.radix_rank_keys(block, keys.to_tensor_ssa()),
         cutlass_coop.ThreadData[Int32],
     )
     assert_type(
-        cutlass_coop.radix_rank(
+        cutlass_coop.radix_rank_keys(
             block,
             Int64(1),
             end_bit=8,
@@ -845,7 +845,7 @@ def check_cutlass_radix_surface(scalar: Float32, value: Int16) -> None:
         common_coop.ThreadDataLike[np.int32],
     )
     assert_type(
-        common_coop.radix_rank(block, keys),
+        common_coop.radix_rank_keys(block, keys),
         common_coop.ThreadDataLike[np.int32],
     )
     assert_type(

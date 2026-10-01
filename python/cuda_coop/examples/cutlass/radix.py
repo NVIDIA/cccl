@@ -74,7 +74,7 @@ def run_example(api="common", items_per_thread=2):
                 block, digit_positions, pair_positions, algorithm="striped"
             )
             prefixes = module.ThreadData(items_per_thread=1)
-            ranks = module.radix_rank(
+            ranks = module.radix_rank_keys(
                 block,
                 keys,
                 begin_bit=28,
@@ -96,7 +96,7 @@ def run_example(api="common", items_per_thread=2):
             )
             module.store(block, digit_keys, pair_keys)
             module.store(block, digit_positions, pair_positions)
-            ranks = module.radix_rank(
+            ranks = module.radix_rank_keys(
                 block,
                 keys,
                 begin_bit=28,

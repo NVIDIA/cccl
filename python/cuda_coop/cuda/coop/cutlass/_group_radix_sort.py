@@ -66,7 +66,7 @@ def _sort(
                 "items_per_thread"
             )
     from ._compiler._launch import current_kernel_launch_facts
-    from ._lowering._radix import provider_radix_sort
+    from ._lowering._radix_sort import provider_radix_sort
 
     return provider_radix_sort(
         group=group,
@@ -147,7 +147,7 @@ def radix_sort_keys(
     See Also
     --------
     cuda.coop.cutlass.radix_sort_pairs
-    cuda.coop.cutlass.radix_rank
+    cuda.coop.cutlass.radix_rank_keys
     """
     return _sort(
         group,
@@ -235,7 +235,7 @@ def radix_sort_pairs(
     )
 
 
-def radix_rank(
+def radix_rank_keys(
     group,
     keys,
     /,
@@ -248,8 +248,9 @@ def radix_rank(
 ):
     """Return stable digit ranks and optional exclusive bin prefixes.
 
-    This qualified form of :func:`cuda.coop.radix_rank` adds scalar and CuTe
-    register inputs and a writable prefix output. Keys remain unchanged.
+    This qualified form of :func:`cuda.coop.radix_rank_keys` adds scalar
+    and CuTe register inputs and a writable prefix output. Keys remain
+    unchanged.
 
     Parameters
     ----------
@@ -302,16 +303,16 @@ def radix_rank(
     _validate_group(group)
     if not isinstance(descending, bool):
         raise TypeError(
-            "cuda.coop.cutlass.radix_rank descending must be "
+            "cuda.coop.cutlass.radix_rank_keys descending must be "
             "a compile-time bool"
         )
     if exclusive_digit_prefix is keys:
         raise ValueError(
-            "radix_rank exclusive_digit_prefix must be distinct from keys"
+            "radix_rank_keys exclusive_digit_prefix must be distinct from keys"
         )
-    keys = _input(keys, "keys", "radix_rank")
+    keys = _input(keys, "keys", "radix_rank_keys")
     from ._compiler._launch import current_kernel_launch_facts
-    from ._lowering._radix import provider_radix_rank
+    from ._lowering._radix_sort import provider_radix_rank
 
     return provider_radix_rank(
         group=group,
@@ -325,4 +326,4 @@ def radix_rank(
     )
 
 
-__all__ = ["radix_rank", "radix_sort_keys", "radix_sort_pairs"]
+__all__ = ["radix_rank_keys", "radix_sort_keys", "radix_sort_pairs"]

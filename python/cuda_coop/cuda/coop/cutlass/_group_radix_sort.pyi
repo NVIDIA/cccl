@@ -171,7 +171,7 @@ def radix_sort_pairs(
     blocked_to_striped: bool = False,
 ) -> tuple[_KeyT, _ValueT]: ...
 @overload
-def radix_rank(
+def radix_rank_keys(
     group: BlockGroup,
     keys: CommonThreadDataLike[_RankKeyT],
     /,
@@ -183,7 +183,7 @@ def radix_rank(
     exclusive_digit_prefix: _PrefixOutput | None = None,
 ) -> ThreadData[Int32]: ...
 @overload
-def radix_rank(
+def radix_rank_keys(
     group: BlockGroup,
     keys: _RegisterPayload,
     /,
@@ -195,7 +195,7 @@ def radix_rank(
     exclusive_digit_prefix: _PrefixOutput | None = None,
 ) -> ThreadData[Int32]: ...
 @overload
-def radix_rank(
+def radix_rank_keys(
     group: BlockGroup,
     keys: _RankKeyT,
     /,
