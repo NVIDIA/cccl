@@ -31,6 +31,32 @@ class _InvocableRewrite:
         factory_metadata,
         factory_kwargs: dict[str, object],
     ) -> tuple[str, tuple[tuple[str, str, str], ...]]:
+        """Identify a provider specialization within one compiler state.
+
+        Include factory object identity and the registered storage, execution,
+        and synchronization contracts so distinct providers cannot share an
+        invocable merely because their operation names match. Keyword order is
+        irrelevant; each value contributes its Python type and structural symbol
+        hash. The object identity makes this unsuitable as a persistent cache
+        key across processes.
+
+        Parameters
+        ----------
+        factory : callable
+            Registered provider factory whose identity partitions the cache.
+        factory_metadata : FactoryOperation
+            Operation name, namespace, and ABI and scope contracts.
+        factory_kwargs : dict of str to object
+            Resolved specialization inputs, after removing lowering-plan
+            metadata.
+
+        Returns
+        -------
+        tuple
+            Provider identity string and sorted keyword-name, value-type,
+            and value-digest triples used by the rewrite and compiler-state
+            caches.
+        """
 
         def cache_component(name, value):
             hasher = hashlib.sha1()
