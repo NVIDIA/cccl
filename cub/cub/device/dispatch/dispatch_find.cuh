@@ -34,6 +34,7 @@
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__iterator/transform_iterator.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__host_stdlib/sstream>
 
 CUB_NAMESPACE_BEGIN
@@ -84,10 +85,7 @@ template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename PredicateT,
-          typename PolicySelector = policy_selector_from_types<it_value_t<InputIteratorT>>>
-#if _CCCL_HAS_CONCEPTS()
-  requires find_policy_selector<PolicySelector>
-#endif // _CCCL_HAS_CONCEPTS()
+          typename TuningEnvT = ::cuda::std::execution::env<>>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -96,8 +94,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   OffsetT num_items,
   PredicateT predicate,
   cudaStream_t stream,
-  PolicySelector policy_selector = {})
+  TuningEnvT = {})
 {
+  using default_policy_selector_t = policy_selector_from_types<it_value_t<InputIteratorT>>;
+  using policy_selector_t =
+    ::cuda::std::execution::__query_result_or_t<TuningEnvT, FindIfPolicy, default_policy_selector_t>;
+#if _CCCL_HAS_CONCEPTS()
+  static_assert(find_policy_selector<policy_selector_t>);
+#endif // _CCCL_HAS_CONCEPTS()
+
   using output_t = it_value_t<OutputIteratorT>;
 
   // if the output iterator can be turned into a pointer, the value type is integral, and has the same size as OffsetT
@@ -113,7 +118,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  const FindIfPolicy active_policy = policy_selector(cc);
+  const FindIfPolicy active_policy = policy_selector_t{}(cc);
 
   detail::log_dispatch("DeviceFind", cc, active_policy);
 
@@ -133,7 +138,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
 
   using unwrapped_input_iterator_t = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>;
-  auto kernel_ptr                  = find_kernel<PolicySelector, unwrapped_input_iterator_t, OffsetT, PredicateT>;
+  auto kernel_ptr                  = find_kernel<policy_selector_t, unwrapped_input_iterator_t, OffsetT, PredicateT>;
 
   int find_if_sm_occupancy;
   if (const auto error =
