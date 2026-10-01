@@ -42,6 +42,33 @@ class PayloadInference:
         return actual == expected
 
     def infer_kwarg(self, name: str, value) -> None:
+        """Merge a payload-derived value into the factory specialization inputs.
+
+        Ignore unavailable values and keywords the operation does not accept. An
+        already resolved keyword must agree with the payload; dtype keywords are
+        compared after normalization when possible so equivalent dtype spellings
+        do not conflict. Never overwrite a conflicting explicit value.
+
+        Parameters
+        ----------
+        name : str
+            Factory keyword to infer or check.
+        value : object
+            Value inferred from a payload. None means no inference is
+            available.
+
+        Returns
+        -------
+        None
+            Update ``factory_kwargs`` and ``seen_factory_kwargs`` in place
+            when this supplies a previously missing keyword.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            The inferred value conflicts with an already resolved keyword.
+        """
+
         if name not in self.allowed_factory_kwargs or value is None:
             return
         if name in self.seen_factory_kwargs:
