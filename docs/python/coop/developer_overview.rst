@@ -661,11 +661,16 @@ from ``pyproject.toml``; it does not change the wheel or register hooks in a
 running process.
 
 ``_compiler/_activation.py`` registers the planners and rewrite.
-``_compiler/_numba_mlir_compat.py`` isolates access to Numba-CUDA-MLIR's
-private overload, IR, datamodel, and registry APIs. It supports one runtime
-series without adapting between versions. The package currently bounds
-that dependency to ``>=0.5.0,<0.6``. A new compiler series needs its
-integration checked before that bound changes.
+``_compiler/_numba_mlir_compat.py`` checks the installed compiler version
+when the Numba backend is activated, before importing its compiler integration.
+The Numba extras declare ``numba-cuda-mlir>=0.5.0,<0.6`` for package installers;
+the activation check also covers applications that install bare ``cuda-coop``
+and manage compiler dependencies separately. An unused Numba installation
+has no effect on other backends. Once the version check succeeds, integration
+modules import the required compiler APIs directly. Missing launch metadata
+and other compilation errors retain their specific diagnostics. A new compiler
+series needs its integration checked before the supported range changes.
+The compatibility module documents the reasons for this division in detail.
 
 The rewrite can collect compatible CUB specializations and compile them
 in a single NVRTC source bundle. This reduces repeated header parsing and
