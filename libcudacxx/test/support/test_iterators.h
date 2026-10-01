@@ -1110,8 +1110,7 @@ struct CopyMayThrowIterator
   {}
   // The exception specification depends on NoThrowCopy, so this copy cannot be defaulted.
   // NOLINTBEGIN(modernize-use-equals-default)
-  TEST_FUNC constexpr CopyMayThrowIterator(const CopyMayThrowIterator& other) noexcept(
-    NoThrowCopy)
+  TEST_FUNC constexpr CopyMayThrowIterator(const CopyMayThrowIterator& other) noexcept(NoThrowCopy)
       : ptr_(other.ptr_)
   {}
   // NOLINTEND(modernize-use-equals-default)
