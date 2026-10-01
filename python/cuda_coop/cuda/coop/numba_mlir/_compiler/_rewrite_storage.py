@@ -373,6 +373,33 @@ class _StorageRewrite:
 
     @staticmethod
     def _validate_emittable_topology(lowering_plan):
+        """Require the canonical group ranks understood by storage IR emitters.
+
+        A plan must cover the exact block dimensions with its logical width and
+        instance count. Accept a single block, contiguous power-of-two logical
+        warps dividing 32, or individual threads. Check the symbolic instance
+        and rank expressions against those forms; emitters implement these
+        specific formulas rather than evaluating arbitrary topology expression
+        strings.
+
+        Parameters
+        ----------
+        lowering_plan : GroupLoweringPlan or None
+            Plan whose topology and participation contracts govern storage.
+            None preserves the legacy block-provider path.
+
+        Returns
+        -------
+        GroupTopologyContract or None
+            Validated topology, or None when no plan was supplied.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            Exact dimensions or required contracts are missing, coverage is
+            inconsistent, or the scope and rank formulas lack an emitter.
+        """
+
         if lowering_plan is None:
             return None
         topology = lowering_plan.topology
