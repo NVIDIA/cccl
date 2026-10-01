@@ -2535,6 +2535,41 @@ def prepare_ltoir_bundle(
 def make_invocable_from_specialization(
     specialization: Algorithm, *, threads=None, block_threads=None
 ):
+    """Turn a concrete provider into a callable and retain its link artifacts.
+
+    Store explicit topology overrides and qualify the provider's private
+    symbols. During ``collect_specializations``, append a record and return the
+    algorithm immediately so the caller can bundle providers before compilation.
+    Otherwise obtain its link images and scratch ABI, then create an
+    ``Invocable`` exposing the files to compiler overloads.
+
+    Previously bundled files are shared by reference. New files written for this
+    invocation are owned by the returned invocable and removed by its finalizer.
+    This separation keeps a shared bundle alive while any invocable or
+    specialization still retains it.
+
+    Parameters
+    ----------
+    specialization : Algorithm
+        Concrete provider to qualify and, outside collection, compile or reuse.
+    threads : int, optional
+        Logical warp width stored on the algorithm when supplied.
+    block_threads : int or tuple of int, optional
+        Exact enclosing block configuration stored when supplied.
+
+    Returns
+    -------
+    Invocable or Algorithm
+        Callable wrapper outside collection; the same ``specialization`` object
+        inside collection, recorded with the explicit topology arguments.
+
+    Raises
+    ------
+    RuntimeError
+        Qualification/cache inputs conflict, compilation fails, or cached link
+        images and suffix metadata have inconsistent lengths.
+    """
+
     if threads is not None:
         specialization.threads = threads
     if block_threads is not None:
