@@ -3548,7 +3548,6 @@ def prepare_ltoir_bundle(
         else:
             algo._temp_storage_bytes = 0
             algo._temp_storage_alignment = 1
-        algo._lto_irs = extras
         algo._precompiled_ltoir_files = (bundle_temp_file,)
         algo.__dict__["_lto_ir_cache_key"] = algo._make_lto_ir_cache_key(
             compile_identity=compile_identity,
