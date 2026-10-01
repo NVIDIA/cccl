@@ -56,7 +56,33 @@ def _auto_registration_disabled(value: str | None = None) -> bool:
 
 
 def _import_optional(module_name: str, *, top_level: str) -> ModuleType:
-    """Import one optional module and distinguish absence from breakage."""
+    """Import a backend dependency while preserving evidence of broken installs.
+
+    Automatic registration may silently skip an absent optional runtime, but
+    a dependency failure inside an installed runtime should be reported. Use
+    the missing module recorded on ``ImportError`` to distinguish these cases;
+    catching every import failure as absence would hide incompatible installs.
+
+    Parameters
+    ----------
+    module_name : str
+        Fully qualified module to import.
+    top_level : str
+        Runtime module name whose absence is an expected optional dependency.
+        Only an exact match with the exception's ``name`` is treated as absent.
+
+    Returns
+    -------
+    ModuleType
+        Imported module.
+
+    Raises
+    ------
+    _BackendUnavailable
+        The import reports that ``top_level`` itself is missing.
+    ImportError
+        Any other import failure, propagated unchanged for diagnostics.
+    """
 
     try:
         return importlib.import_module(module_name)
