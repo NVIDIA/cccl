@@ -82,7 +82,40 @@ def _load_store_value_abis(
     block_dim=None,
     threads_in_warp=None,
 ):
-    """Declare family-owned runtime scalar ABIs for one specialization."""
+    """Describe runtime controls whose ABI differs from ordinary core scalars.
+
+    A runtime valid-item count enters through a signed 64-bit value so bounds
+    can be checked before narrowing to CUB's signed 32-bit count. Its inclusive
+    limit is the exact group tile size. A runtime Load default instead uses
+    ``ExactValue`` so typing requires the payload dtype without an implicit
+    conversion. Omitted and static controls need no runtime ABI override.
+
+    Parameters
+    ----------
+    dtype : numba_types.Type
+        Normalized payload dtype, also required for a runtime default.
+    items_per_thread : int
+        Positive specialized payload extent per participating thread.
+    valid_items : ArgumentBinding
+        Binding kind for the optional valid-item count.
+    oob_default : ArgumentBinding or None, optional
+        Load default binding; ``None`` supplies no override.
+    block_dim : iterable of int, optional
+        Block dimensions used to compute a block tile's capacity.
+    threads_in_warp : int, optional
+        Logical warp width used to compute a warp tile's capacity.
+
+    Returns
+    -------
+    dict of str to Value
+        Named backend overrides for ``num_valid_items`` and/or ``oob_default``.
+
+    Raises
+    ------
+    ValueError
+        A runtime count does not have exactly one block/warp topology source, or
+        its bounds cannot fit the integer ABI.
+    """
 
     value_abis = {}
     if valid_items.kind is BindingKind.RUNTIME:
