@@ -51,7 +51,42 @@ def try_resolve_static_scalar_provenance(
     argument_type: Callable[[int], Any | None],
     seen: set[str] | None = None,
 ) -> tuple[bool, StaticScalarProvenance | None]:
-    """Resolve a scalar and retain whether Numba already assigned its dtype."""
+    """Resolve an explicitly static value while retaining its compiler dtype.
+
+    Planning must distinguish a literal supplied by the user from a runtime
+    expression that general constant inference happens to evaluate. Accept
+    constants, globals, free variables, literal arguments, and arguments known
+    to be ``None``; follow only aliases, casts, and phi inputs. Every reaching
+    leaf must agree in Python value type, value, and recorded dtype. Runtime
+    expressions, unresolved paths, and cycles make the result unresolved. This
+    traversal neither evaluates scalar operators nor requests dispatcher
+    specialization.
+
+    Parameters
+    ----------
+    value : ir.Var or object
+        Value to inspect. Non-variable inputs are accepted directly as static;
+        callers are responsible for restricting them to the intended scalar
+        domain.
+    definitions : callable
+        Return all reaching definitions for an IR variable.
+    argument_type : callable
+        Return the compiler type for a function argument index, or ``None`` when
+        unavailable. Literal types retain their ``literal_type``.
+    seen : set of str, optional
+        Names already visited on this recursion path. The current variable is
+        added in place; recursive branches receive separate copies.
+
+    Returns
+    -------
+    resolved : bool
+        Whether all inspected definitions establish the same static value.
+    scalar : StaticScalarProvenance or None
+        Resolved value and its known dtype, or ``None`` on failure. A resolved
+        ``None`` value is represented by a provenance object and is distinct
+        from failure. NumPy scalars contribute their own dtype; ordinary Python
+        constants leave the dtype unspecified for contextual coercion.
+    """
 
     if not isinstance(value, ir.Var):
         return (True, _static_scalar(value))
