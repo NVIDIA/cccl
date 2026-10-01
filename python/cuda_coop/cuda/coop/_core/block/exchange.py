@@ -41,15 +41,6 @@ class BlockExchangeMode(str, Enum):
     def cub_method_name(self) -> str:
         return _CUB_METHOD_NAMES[self]
 
-    @classmethod
-    def from_cub_method_name(cls, method_name: str) -> BlockExchangeMode:
-        try:
-            return _CUB_METHOD_MODES[method_name]
-        except (KeyError, TypeError) as exc:
-            raise ValueError(
-                f"unsupported CUB BlockExchange method name: {method_name!r}"
-            ) from exc
-
 
 class BlockExchangeValueForm(str, Enum):
     IN_PLACE = "in_place"
@@ -67,7 +58,6 @@ _CUB_METHOD_NAMES = {
     BlockExchangeMode.SCATTER_TO_STRIPED_GUARDED: "ScatterToStripedGuarded",
     BlockExchangeMode.SCATTER_TO_STRIPED_FLAGGED: "ScatterToStripedFlagged",
 }
-_CUB_METHOD_MODES = {name: mode for mode, name in _CUB_METHOD_NAMES.items()}
 _T = Dependency("T")
 _ITEMS_PER_THREAD = Dependency("ITEMS_PER_THREAD")
 _OFFSET_T = Dependency("OffsetT")

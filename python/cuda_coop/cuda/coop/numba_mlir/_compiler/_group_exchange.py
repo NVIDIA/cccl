@@ -4,9 +4,11 @@
 
 from __future__ import annotations
 
+import inspect
 from enum import Enum
+from typing import Any
 
-from numba_cuda_mlir import types
+import numba_cuda_mlir.numba_cuda.types as numba_types
 
 from cuda.coop._core import (
     BlockExchangeMode,
@@ -14,19 +16,13 @@ from cuda.coop._core import (
     GroupExchangeSemantics,
     GroupLoweringPlan,
     GroupLoweringTarget,
+    ThreadGroup,
     make_block_exchange_semantics,
     make_group_primitive_call,
     plan_group_primitive,
 )
 
-from ._group_planner_support import (
-    _PAYLOAD_DTYPE_LIKE,
-    Any,
-    GroupRewriteError,
-    ThreadGroup,
-    inspect,
-    ir,
-)
+from ._group_planner_support import _PAYLOAD_DTYPE_LIKE, GroupRewriteError, ir
 from ._group_planning import GroupPlanningContext
 from ._operations import (
     GroupResultSource,
@@ -114,8 +110,8 @@ def _rank_dtype(dtype: Any) -> Any:
         ) from exc
     dtype = getattr(dtype, "literal_type", dtype)
     if (
-        isinstance(dtype, types.Boolean)
-        or not isinstance(dtype, types.Integer)
+        isinstance(dtype, numba_types.Boolean)
+        or not isinstance(dtype, numba_types.Integer)
         or not dtype.signed
     ):
         raise TypeError(
@@ -134,7 +130,9 @@ def _flag_dtype(dtype: Any) -> Any:
             "non-bool dtype"
         ) from exc
     dtype = getattr(dtype, "literal_type", dtype)
-    if isinstance(dtype, types.Boolean) or not isinstance(dtype, types.Integer):
+    if isinstance(dtype, numba_types.Boolean) or not isinstance(
+        dtype, numba_types.Integer
+    ):
         raise TypeError(
             "cuda.coop.numba_mlir.exchange valid_flags must have an integral "
             "non-bool dtype"
@@ -328,15 +326,18 @@ class _ExchangePlanning:
                     "cuda.coop.exchange requires valid_flags to be ThreadData"
                 )
 
+        from .._lowering._core import NumbaMlirCoreAdapter
+
+        adapter = NumbaMlirCoreAdapter()
         semantics = GroupExchangeSemantics(
             make_block_exchange_semantics(
-                dtype=dtype,
+                dtype=adapter.core_dtype(dtype),
                 items_per_thread=items_per_thread,
                 mode=normalized_mode,
                 value_form=BlockExchangeValueForm.OUT_OF_PLACE,
                 warp_time_slicing=warp_time_slicing,
-                rank_dtype=rank_dtype,
-                valid_flag_dtype=valid_flag_dtype,
+                rank_dtype=adapter.core_dtype(rank_dtype),
+                valid_flag_dtype=adapter.core_dtype(valid_flag_dtype),
             )
         )
         return plan_group_primitive(
@@ -364,12 +365,18 @@ class _ExchangePlanning:
         )
         assert plan.implementation is not None
         assert plan.topology is not None
-        primitive = plan.call.operation.primitive
+        semantics = plan.call.operation
+        assert isinstance(semantics, GroupExchangeSemantics)
+        assert plan.participation is not None
+        primitive = semantics.primitive
         factory = self._provider(plan, primitive)
         block_dim = plan.participation.exact_block_dim
         assert block_dim is not None
+        from .._lowering._core import NumbaMlirCoreAdapter
+
+        adapter = NumbaMlirCoreAdapter()
         factory_kwargs: dict[str, Any] = {
-            "dtype": primitive.dtype,
+            "dtype": adapter.normalize_dtype(primitive.dtype),
             "threads_per_block": block_dim,
             "items_per_thread": primitive.items_per_thread,
             "mode": primitive.mode.value,
@@ -379,9 +386,13 @@ class _ExchangePlanning:
         else:
             factory_kwargs["threads_in_warp"] = plan.topology.logical_width
         if primitive.rank_dtype is not None:
-            factory_kwargs["rank_dtype"] = primitive.rank_dtype
+            factory_kwargs["rank_dtype"] = adapter.normalize_dtype(
+                primitive.rank_dtype
+            )
         if primitive.valid_flag_dtype is not None:
-            factory_kwargs["valid_flag_dtype"] = primitive.valid_flag_dtype
+            factory_kwargs["valid_flag_dtype"] = adapter.normalize_dtype(
+                primitive.valid_flag_dtype
+            )
 
         statements: list[Any] = []
         scope = inst.target.scope
@@ -435,7 +446,7 @@ class _ExchangePlanning:
                 ranks = preserved_ranks
             runtime_args.append(ranks)
         if primitive.uses_valid_flags:
-            runtime_args.append(bound.arguments.get("valid_flags"))
+            runtime_args.append(bound.arguments["valid_flags"])
 
         statements.extend(
             self._context.rewrite_call(

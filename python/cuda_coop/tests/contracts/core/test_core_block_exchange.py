@@ -4,9 +4,14 @@
 
 import pytest
 
-from cuda.coop._core import ArgumentKind, Array, Dependency, ParameterRole
+from cuda.coop._core import (
+    ArgumentKind,
+    Array,
+    Dependency,
+    ParameterRole,
+    classify_parameter,
+)
 from cuda.coop._core.block import (
-    BlockExchangeMode,
     BlockExchangeValueForm,
     make_block_exchange_semantics,
     make_block_exchange_spec,
@@ -41,7 +46,6 @@ def test_block_exchange_modes_own_their_cub_contract(
     )
 
     assert semantics.method_name == method
-    assert BlockExchangeMode.from_cub_method_name(method) is semantics.mode
     assert semantics.uses_ranks is uses_ranks
     assert semantics.uses_valid_flags is uses_flags
     assert semantics.value_form is BlockExchangeValueForm.OUT_OF_PLACE
@@ -88,13 +92,19 @@ def test_block_exchange_flagged_forms_preserve_parameters_and_roles():
         is_inout=True,
         is_return=False,
     )
-    assert [entry.role for entry in spec.specialization.classify_method(0)] == [
+    assert [
+        entry.role
+        for entry in map(classify_parameter, spec.specialization.parameters[0])
+    ] == [
         ParameterRole.TEMP_STORAGE,
         ParameterRole.INOUT,
         ParameterRole.INPUT,
         ParameterRole.INPUT,
     ]
-    assert [entry.role for entry in spec.specialization.classify_method(1)] == [
+    assert [
+        entry.role
+        for entry in map(classify_parameter, spec.specialization.parameters[1])
+    ] == [
         ParameterRole.TEMP_STORAGE,
         ParameterRole.INPUT,
         ParameterRole.OUTPUT,
@@ -104,7 +114,9 @@ def test_block_exchange_flagged_forms_preserve_parameters_and_roles():
     assert all(
         entry.kind is ArgumentKind.RUNTIME
         for method_index in range(2)
-        for entry in spec.specialization.classify_method(method_index)
+        for entry in map(
+            classify_parameter, spec.specialization.parameters[method_index]
+        )
     )
 
 

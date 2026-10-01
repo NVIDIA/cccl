@@ -15,35 +15,13 @@ exception here. Keeping these definitions separate lets group planning and its
 operation modules use them without importing each other during initialization.
 """
 
-# The family planners import this module's private support names explicitly.
-# ruff: noqa: F401
-
 from __future__ import annotations
 
-import inspect
 from itertools import count
-from numbers import Integral
 from typing import TYPE_CHECKING, Any
-
-import numpy as np
-from numba_cuda_mlir import cuda, types
-from numba_cuda_mlir.errors import ForceLiteralArg
-from numba_cuda_mlir.extending import (
-    WholeFunctionPlanner,
-    register_planner,
-    require_launch_config,
-)
 
 import cuda.coop._core.api as _portable_api
 import cuda.coop._core.api._dispatch as _portable_dispatch
-from cuda.coop._core import (
-    LaunchFactOrigin,
-    LaunchFacts,
-    ThreadGroup,
-    ThreadHierarchy,
-    normalize_thread_level,
-    resolve_thread_group,
-)
 
 from .. import _thread_group as _thread_groups
 from ._operations import group_operation_name
@@ -56,8 +34,6 @@ else:
     from numba_cuda_mlir.numbair_transforms import (
         ir as ir,  # noqa: PLC0414 - Re-export for typing.
     )
-
-_cuda_module = cuda
 
 
 _NAME_COUNTER = count()
@@ -113,6 +89,3 @@ def _typed_group_payload_like(
     raise GroupRewriteError(
         "typed group payload markers must be lowered before device compilation"
     )
-
-
-# Support consumers import the private names they use explicitly.

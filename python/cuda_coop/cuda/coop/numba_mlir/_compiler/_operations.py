@@ -481,7 +481,7 @@ def register_rewrite_operation(
     operation: str,
     spec: RewriteOperationSpec,
 ) -> None:
-    """Register one provider ABI with the shared before-inference rewrite.
+    """Register one provider ABI with the shared cooperative-call rewrite.
 
     Re-registering an equal specification is allowed; a different specification
     for the same operation would make call interpretation ambiguous.
@@ -512,7 +512,7 @@ def register_rewrite_operation(
 
 
 def rewrite_operation(operation: str) -> RewriteOperationSpec | None:
-    """Return the before-inference registration for one operation.
+    """Return the cooperative-call rewrite registration for one operation.
 
     Load the owning primitive family when its registration is missing,
     without eagerly importing every family.

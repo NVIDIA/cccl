@@ -18,9 +18,9 @@ from cuda.coop._core import (
     Reference,
     TempStorageParameter,
     Value,
+    classify_parameter,
 )
 from cuda.coop._core.block import (
-    BlockShuffleMode,
     BlockShuffleValueKind,
     make_block_shuffle_semantics,
     make_block_shuffle_spec,
@@ -44,7 +44,6 @@ def test_block_shuffle_modes_own_their_cub_method(mode, method):
     )
 
     assert semantics.method_name == method
-    assert BlockShuffleMode.from_cub_method_name(method) is semantics.mode
 
 
 def test_scalar_shuffle_preserves_runtime_distance_and_output_shape():
@@ -63,7 +62,10 @@ def test_scalar_shuffle_preserves_runtime_distance_and_output_shape():
         Reference(Dependency("T"), name="output_item", is_output=True),
         Value(INT32, name="distance"),
     )
-    assert [entry.role for entry in spec.specialization.classify_method()] == [
+    assert [
+        entry.role
+        for entry in map(classify_parameter, spec.specialization.parameters[0])
+    ] == [
         ParameterRole.TEMP_STORAGE,
         ParameterRole.INPUT,
         ParameterRole.OUTPUT,
@@ -71,7 +73,7 @@ def test_scalar_shuffle_preserves_runtime_distance_and_output_shape():
     ]
     assert all(
         entry.kind is ArgumentKind.RUNTIME
-        for entry in spec.specialization.classify_method()
+        for entry in map(classify_parameter, spec.specialization.parameters[0])
     )
 
     rotate = make_block_shuffle_spec(
@@ -103,10 +105,12 @@ def test_scalar_static_and_default_distances_are_core_constants():
         "1", UINT32, name="distance"
     )
     assert (
-        offset.specialization.classify_method()[-1].kind is ArgumentKind.STATIC
+        classify_parameter(offset.specialization.parameters[0][-1]).kind
+        is ArgumentKind.STATIC
     )
     assert (
-        rotate.specialization.classify_method()[-1].kind is ArgumentKind.STATIC
+        classify_parameter(rotate.specialization.parameters[0][-1]).kind
+        is ArgumentKind.STATIC
     )
 
 

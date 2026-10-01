@@ -255,8 +255,9 @@ class CoopSinglePhaseRewrite(
         typing and lowering passes can process.
 
         Materialize the selected invocables, turn ``ThreadData`` constructors
-        into local arrays, and replace consumed ``TempStorage`` descriptors with
-        views of one function-wide shared allocation. Calls receive the
+        and planner-created result payloads into local arrays, and replace
+        consumed ``TempStorage`` descriptors with views of one function-wide
+        shared allocation. Calls receive the
         family-specific runtime operands and, when required by the provider ABI,
         a leading scratch view. Automatic reuse barriers follow calls whose
         storage plan requests synchronization.

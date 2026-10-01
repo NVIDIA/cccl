@@ -347,10 +347,6 @@ class ResultContract:
         return self.primary.operand_kind
 
     @property
-    def result_items_per_thread(self) -> int:
-        return self.primary.items_per_member
-
-    @property
     def has_aggregate(self) -> bool:
         return any(value.name == "aggregate" for value in self.values)
 
