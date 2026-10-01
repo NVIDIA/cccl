@@ -414,11 +414,12 @@ struct __fn
     class _Range, class _Np, class _RawRange = remove_cvref_t<_Range>, class _Dist = range_difference_t<_Range>)
   _CCCL_REQUIRES(convertible_to<_Np, range_difference_t<_Range>> _CCCL_AND
                    __is_repeat_specialization<_RawRange> _CCCL_AND(!sized_range<_RawRange>))
-  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Range&& __range, _Np&& __n) noexcept(
-    noexcept(views::repeat(::cuda::std::forward_like<_Range>(*__range.__value_), static_cast<_Dist>(__n))))
-    -> repeat_view<range_value_t<_RawRange>, _Dist>
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Range&& __range, _Np&& __n) noexcept(noexcept(
+    views::repeat(::cuda::std::forward_like<_Range>(*__range.__value_),
+                  static_cast<_Dist>(::cuda::std::forward<_Np>(__n))))) -> repeat_view<range_value_t<_RawRange>, _Dist>
   {
-    return views::repeat(::cuda::std::forward_like<_Range>(*__range.__value_), static_cast<_Dist>(__n));
+    return views::repeat(::cuda::std::forward_like<_Range>(*__range.__value_),
+                         static_cast<_Dist>(::cuda::std::forward<_Np>(__n)));
   }
 
   // [range.take.overview]: the `iota_view` case.

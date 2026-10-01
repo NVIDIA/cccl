@@ -71,6 +71,14 @@ struct Pred
 using result_subrange       = cuda::std::ranges::subrange<int*>;
 using result_subrange_sized = cuda::std::ranges::subrange<int*, int*, cuda::std::ranges::subrange_kind::sized>;
 
+struct RvalueOnlyCount
+{
+  TEST_FUNC constexpr operator cuda::std::ptrdiff_t() &&
+  {
+    return 4;
+  }
+};
+
 TEST_FUNC constexpr bool test()
 {
   constexpr int N = 8;
@@ -285,6 +293,16 @@ TEST_FUNC constexpr bool test()
     static_assert(!cuda::std::same_as<decltype(result), decltype(repeat)>);
     assert(result.size() == 3);
     assert(*result.begin() == 1);
+  }
+
+  // An rvalue-only conversion of the count is used for an unbounded `repeat_view`.
+  {
+    auto repeat  = cuda::std::views::repeat(7);
+    using Result = cuda::std::ranges::repeat_view<int, cuda::std::ranges::range_difference_t<decltype(repeat)>>;
+    decltype(auto) result = repeat | cuda::std::views::take(RvalueOnlyCount{});
+    static_assert(cuda::std::same_as<decltype(result), Result>);
+    assert(result.size() == 4);
+    assert(*result.begin() == 7);
   }
 
   // When the size of the input range `s` is shorter than `n`, only `s` elements are taken.
