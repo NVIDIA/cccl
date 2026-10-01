@@ -6,14 +6,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from .._core.api._payload import (
+from ..._core.api._payload import (
     TempStorageLike,
     ThreadDataLike,
     _ReadableThreadDataLike,
 )
-from ._compiler._operations import group_operation
-from ._group_marker import group_primitive_marker
-from ._thread_group import ThreadGroup
+from .._compiler._operations import group_operation
+from .._thread_group import ThreadGroup
+from ._marker import group_primitive_marker
 
 
 @group_operation(
