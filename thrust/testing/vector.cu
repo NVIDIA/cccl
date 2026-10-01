@@ -1298,3 +1298,51 @@ TEST_CASE("TestVectorGrowthSaturatesAtMaxSize", "[vector]")
   d.resize(6);
   REQUIRE(d.capacity() == 8);
 }
+
+struct RemembersConstructionType
+{
+  _CCCL_HOST_DEVICE RemembersConstructionType()
+      : copy_cted_(false)
+      , move_cted_(false)
+      , state_(0) {};
+  _CCCL_HOST_DEVICE RemembersConstructionType(const RemembersConstructionType& other)
+      : copy_cted_(true)
+      , move_cted_(false)
+  {
+    state_ = other.state_;
+  };
+  _CCCL_HOST_DEVICE RemembersConstructionType(RemembersConstructionType&& other)
+      : copy_cted_(false)
+      , move_cted_(true)
+  {
+    state_ = other.state_;
+  };
+
+  bool move_cted()
+  {
+    return move_cted_;
+  }
+  bool copy_cted()
+  {
+    return copy_cted_;
+  }
+
+  bool copy_cted_;
+  bool move_cted_;
+  int state_;
+};
+
+TEST_CASE("TestEmplaceBackCallsRightConstructor", "[vector]")
+{
+  using T = RemembersConstructionType;
+
+  thrust::host_vector<T> v_h;
+
+  T element;
+
+  v_h.emplace_back(element);
+  v_h.emplace_back(cuda::std::move(element));
+
+  REQUIRE(v_h[0].copy_cted() == true);
+  REQUIRE(v_h[1].move_cted() == true);
+}
