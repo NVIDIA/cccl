@@ -1344,6 +1344,41 @@ class _ProvenanceRewrite(Rewrite):
     def _resolve_thread_data_spec_from_var(
         self, value: ir.Var, seen: set[str]
     ) -> _ThreadDataSpec | None:
+        """Infer payload shape and dtype through variable origins.
+
+        Follow aliases, casts, static tuple selections, and phi inputs to
+        ``ThreadData`` or local-array constructors. Reuse complete cached specs;
+        otherwise merge discovered facts with any partial cached information and
+        cache the result. Conflicting known extents or dtypes are errors, while
+        alignment constraints merge by taking the larger minimum.
+
+        Unrecognized or cyclic paths contribute no facts. A returned spec is
+        therefore partial inference, not proof that every path is a public
+        payload. ``_is_thread_data_like_var`` supplies that stricter origin
+        check when rewriting the public ``items_per_thread`` attribute. Shared
+        arrays are handled by the separate array-spec resolver.
+
+        Parameters
+        ----------
+        value : ir.Var
+            Variable whose payload facts are needed.
+        seen : set of str
+            Active traversal names, extended in place. Branches receive
+            copies so independent incoming paths can still contribute facts.
+
+        Returns
+        -------
+        _ThreadDataSpec or None
+            Merged known facts, possibly with an unresolved dtype, or None
+            when no payload specification can be recovered.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            A recognized constructor is invalid or incoming payload facts
+            conflict.
+        """
+
         if not isinstance(value, ir.Var):
             return None
         cached = self._thread_data_specs.get(value.name)
