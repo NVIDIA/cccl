@@ -340,6 +340,59 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         extra_type_definitions: tuple[Any, ...] = (),
         **kwargs: Any,
     ) -> Any:
+        """Build a concrete backend algorithm from a specialized core
+        specification.
+
+        Validate named scalar ABI overrides and array input transforms against
+        all matching core parameters before lowering. Scalar overrides must
+        preserve provider dtype and output role; transforms apply only to
+        input-only arrays. Copy each lowered descriptor before attaching its
+        parameter name because an override may be reused by several parameters
+        or specifications.
+
+        Keep checked scalar overloads ahead of runtime pointer-offset overloads.
+        Numba-CUDA-MLIR selects the first convertible signature, and the offset
+        integer domain is intentionally broader than an exact scalar ABI. The
+        stable ordering otherwise preserves the core's method order. Include the
+        leading scratch parameter only for ``LEADING_POINTER`` storage,
+        translate type declarations, and finish template substitution without
+        compiling LTO.
+
+        Parameters
+        ----------
+        specialization : AlgorithmSpec
+            Core specification with ordered template arguments and overloads.
+        storage_abi : StorageABI
+            Whether the backend receives a leading scratch pointer or no
+            scratch.
+        execution_scope : SynchronizationScope
+            Participating scope used by the source emitter to allocate scratch.
+        synchronization_scope : SynchronizationScope
+            Post-call synchronization for allocating wrappers; must be ``NONE``
+            or match ``execution_scope``.
+        extra_type_definitions : tuple, optional
+            Backend type definitions prepended to the core's declarations,
+            including any supporting link images.
+        **kwargs : dict
+            Reserved for the adapter interface; additional options are rejected.
+
+        Returns
+        -------
+        Algorithm
+            Specialized backend provider with copied, named parameter
+            descriptors and explicit storage/execution contracts.
+
+        Raises
+        ------
+        TypeError
+            Options or scalar ABI declarations are unsupported, or parameter
+            lowering encounters an unsupported descriptor.
+        ValueError
+            Named overrides/transforms do not match eligible core parameters,
+            their dtypes or output roles conflict, or scope/ABI values are
+            invalid.
+        """
+
         if kwargs:
             unexpected = ", ".join(sorted(kwargs))
             raise TypeError(
