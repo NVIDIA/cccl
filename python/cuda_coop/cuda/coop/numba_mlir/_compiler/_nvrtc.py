@@ -293,7 +293,26 @@ def compile_impl(
 
 
 def resolve_compile_context() -> CompileContext:
-    """Resolve headers and exact same-root compiler libraries lazily."""
+    """Resolve one header/toolkit identity and preload its compiler libraries.
+
+    Discover the required CCCL and CUDA headers using this package location and
+    the optional ``CUDA_COOP_CCCL_ROOT`` override. Preload NVRTC, its builtins,
+    and nvJitLink from the selected toolkit before importing the CUDA NVRTC
+    bindings, then check that the loaded NVRTC version matches that toolkit.
+    This ordering keeps wrapper compilation and subsequent linking tied to the
+    same selected installation.
+
+    Hash the resolved header roots and their contents into the returned context.
+    The context is used both for artifact cache keys and provider symbol
+    qualification. Resolution is lazy at its callers; this function itself is
+    not memoized and may load process-wide compiler libraries.
+
+    Returns
+    -------
+    CompileContext
+        Frozen snapshot of exact library paths/versions, ordered include roots,
+        and header identity for a provider compilation.
+    """
 
     include_paths = resolve_include_paths(
         start=Path(__file__),
