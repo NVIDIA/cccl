@@ -90,6 +90,15 @@ struct reduce_sum_partial_tile_op_t
   }
 };
 
+struct reduce_narrow_sum_partial_tile_op_t
+{
+  template <int ItemsPerThread, class BlockReduceT, class T>
+  __device__ T operator()(BlockReduceT& reduce, T (&thread_data)[ItemsPerThread], int valid_items) const
+  {
+    return reduce.Reduce(thread_data[0], cuda::std::plus<std::uint8_t>{}, valid_items);
+  }
+};
+
 struct max_partial_tile_op_t
 {
   template <int ItemsPerThread, class BlockReduceT, class T>
@@ -125,11 +134,12 @@ using block_dim_xs           = c2h::enum_type_list<int, TEST_DIM_X>;
 using block_dim_yzs          = c2h::enum_type_list<int, TEST_DIM_YZ>;
 using items_per_thread       = c2h::enum_type_list<int, 1, 4>;
 using single_item_per_thread = c2h::enum_type_list<int, 1>;
-using algorithm =
+using arithmetic_algorithm =
   c2h::enum_type_list<cub::BlockReduceAlgorithm,
                       cub::BlockReduceAlgorithm::BLOCK_REDUCE_RAKING,
                       cub::BlockReduceAlgorithm::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
-                      cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS>;
+                      cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS,
+                      cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC>;
 
 template <class TestType>
 struct params_t
@@ -152,7 +162,7 @@ CUB_TEST("Block reduce works with sum",
          items_per_thread,
          block_dim_xs,
          block_dim_yzs,
-         algorithm)
+         arithmetic_algorithm)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -184,7 +194,7 @@ CUB_TEST("Block reduce works with sum in partial tiles",
          single_item_per_thread,
          block_dim_xs,
          block_dim_yzs,
-         algorithm)
+         arithmetic_algorithm)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -216,7 +226,7 @@ CUB_TEST("Block reduce works with custom op",
          items_per_thread,
          block_dim_xs,
          block_dim_yzs,
-         algorithm)
+         arithmetic_algorithm)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -248,7 +258,7 @@ CUB_TEST("Block reduce works with custom op in partial tiles",
          single_item_per_thread,
          block_dim_xs,
          block_dim_yzs,
-         algorithm)
+         arithmetic_algorithm)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -273,19 +283,42 @@ CUB_TEST("Block reduce works with custom op in partial tiles",
   REQUIRE_APPROX_EQ(h_reference, d_out);
 }
 
-using custom_type_algorithms =
-  c2h::enum_type_list<cub::BlockReduceAlgorithm,
-                      cub::BLOCK_REDUCE_RAKING,
-                      cub::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
-                      cub::BLOCK_REDUCE_WARP_REDUCTIONS,
-                      cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC>;
+CUB_TEST("Block reduce respects a differently typed plus operator", "[reduce][block]", CUB_SMALL)
+{
+  const auto check = [](int valid_items) {
+    using type               = std::uint16_t;
+    constexpr int block_size = 128;
+
+    c2h::device_vector<type> d_in(valid_items, type{7});
+    c2h::device_vector<type> d_out(1);
+    c2h::host_vector<type> h_in = d_in;
+    // The operator narrows each sum to 8 bits, including the combination of warp aggregates.
+    // Atomic addition in the 16-bit accumulator would skip that narrowing between warps.
+    const c2h::host_vector<type> h_reference(
+      1, std::accumulate(h_in.begin(), h_in.end(), type{}, cuda::std::plus<std::uint8_t>{}));
+
+    block_reduce<cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC, 1, block_size, 1, 1, type>(
+      d_in, d_out, reduce_narrow_sum_partial_tile_op_t{});
+
+    REQUIRE(h_reference == d_out);
+  };
+
+  SECTION("Full tile")
+  {
+    check(128);
+  }
+  SECTION("Partial tile")
+  {
+    check(65);
+  }
+}
 
 CUB_TEST("Block reduce works with custom types",
          "[reduce][block]",
          CUB_SMALL,
          block_dim_xs,
          block_dim_yzs,
-         custom_type_algorithms)
+         arithmetic_algorithm)
 {
   using type = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
 
@@ -327,7 +360,7 @@ CUB_TEST("Block reduce works with vec types",
          vec_types,
          block_dim_xs,
          block_dim_yzs,
-         custom_type_algorithms)
+         arithmetic_algorithm)
 {
   using type = c2h::get<0, TestType>;
 

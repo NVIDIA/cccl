@@ -30,7 +30,6 @@
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -126,23 +125,24 @@ enum BlockReduceAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
   //! ++++++++++++++++++++++++++
   //!
   //! A quick "tiled warp-reductions" reduction algorithm that supports commutative (e.g., addition)
-  //! and non-commutative (e.g., string concatenation) reduction operators. This variant uses atomic
-  //! operations to reduce the warp-wide reduction results, making it non-deterministic, i.e. the
-  //! order of reduction operations is not guaranteed to be the same across different invocations of
-  //! the same kernel.
+  //! and non-commutative (e.g., string concatenation) reduction operators. For arithmetic types with
+  //! addition (``Sum`` or ``Reduce`` with ``cuda::std::plus<>`` or ``cuda::std::plus<T>`` matching
+  //! the reduced type), this variant uses atomic operations to reduce the warp-wide reduction
+  //! results, making it non-deterministic, i.e. the order of reduction operations is not guaranteed
+  //! to be the same across different invocations of the same kernel. For other types or reduction
+  //! operators, warp aggregates are combined in order as with ``BLOCK_REDUCE_WARP_REDUCTIONS``.
   //!
-  //! Execution is comprised of three phases:
+  //! Execution is comprised of the following phases:
   //!   #. Upsweep sequential reduction in registers (if threads contribute more than one input each).
   //!      Each thread then places the partial reduction of its item(s) into shared memory.
   //!   #. Compute a shallow, but non work-efficient warp-synchronous Kogge-Stone style reduction
   //!      within each warp.
-  //!   #. Lane 0 of warp 0 stores its warp aggregate, while lane 0 of other warps use atomic
-  //!      operations to accumulate their warp aggregates into a shared location, making the final
-  //!      order non-deterministic.
-  //!   #. The final block-wide result is available to all threads.
-  //!
-  //! For non-arithmetic types, warp aggregates are combined in order as with
-  //! ``BLOCK_REDUCE_WARP_REDUCTIONS``, and the result is only valid in thread 0.
+  //!   #. For arithmetic addition, lane 0 of warp 0 stores its warp aggregate, while lane 0 of other
+  //!      warps use atomic operations to accumulate their warp aggregates into a shared location,
+  //!      making the final order non-deterministic. Otherwise, thread 0 combines the warp aggregates
+  //!      in order.
+  //!   #. The final block-wide result is available to all threads for arithmetic addition, and is
+  //!      only valid in thread 0 for other types or reduction operators.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -220,10 +220,10 @@ CUB_NAMESPACE_BEGIN
 //!      non-commutative reduction operators.
 //!   #. :cpp:enumerator:`cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC`:
 //!      A quick "tiled warp-reductions" reduction algorithm that supports commutative and
-//!      non-commutative reduction operators. This variant uses atomic operations to reduce the
-//!      warp-wide reduction results, making it non-deterministic, i.e. the order of reduction
-//!      operations is not guaranteed to be the same across different invocations of the same
-//!      kernel.
+//!      non-commutative reduction operators. For arithmetic addition, this variant uses atomic
+//!      operations to reduce the warp-wide reduction results, making it non-deterministic, i.e. the
+//!      order of reduction operations is not guaranteed to be the same across different invocations
+//!      of the same kernel. Other types or reduction operators use deterministic warp aggregation.
 //!
 //! Performance Considerations
 //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -301,12 +301,10 @@ private:
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
-  using WarpReductions = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ>;
-  // Atomic addition is unavailable for user-defined and vector types.
-  using WarpReductionsNondeterministic =
-    detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ, !::cuda::std::is_arithmetic_v<T>>;
-  using RakingCommutativeOnly = detail::BlockReduceRakingCommutativeOnly<T, BlockDimX, BlockDimY, BlockDimZ>;
-  using Raking                = detail::BlockReduceRaking<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using WarpReductions                 = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using WarpReductionsNondeterministic = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ, false>;
+  using RakingCommutativeOnly          = detail::BlockReduceRakingCommutativeOnly<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using Raking                         = detail::BlockReduceRaking<T, BlockDimX, BlockDimY, BlockDimZ>;
 
   /// Internal specialization type
   using InternalBlockReduce =
