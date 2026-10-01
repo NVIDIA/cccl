@@ -1835,6 +1835,7 @@ class _GroupPlanning:
         launch_config = require_launch_config(planner.state)
         group_planner = _GroupCallPlanner(planner.state, launch_config)
         changed = group_planner.run()
+        assert isinstance(group_planner.launch.exact_block_dim, tuple)
         x, y, z = group_planner.launch.exact_block_dim
         threads = x * y * z
         # Configured compiles own these options; never write inferred bounds
