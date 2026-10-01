@@ -6,7 +6,7 @@
 
 from dataclasses import replace
 
-from numba_cuda_mlir import types
+import numba_cuda_mlir.numba_cuda.types as numba_types
 
 from cuda.coop._core import (
     BindingKind,
@@ -54,7 +54,7 @@ def _infer_payload(context, inference):
         extent = spec.items_per_thread
         dtype = inference.inferred_array_dtype(value, spec)
         expected = (
-            types.int32
+            numba_types.int32
             if index > 0 and inference.op_name.startswith("discontinuity")
             else inference.factory_value("dtype")
         )
@@ -143,9 +143,12 @@ def _lower_neighbors(context, inst, *, operation, group, bound, is_common_root):
                         f"must match input dtype {dtype}"
                     )
                 boundaries[name] = raw
+    from .._lowering._core import NumbaMlirCoreAdapter
+
+    adapter = NumbaMlirCoreAdapter()
     primitive = BlockNeighborSemantics(
         operation=operation,
-        dtype=dtype,
+        dtype=adapter.core_dtype(dtype),
         items_per_thread=extent,
         mode=mode,
         operator=_neighbors.neighbor_operator(operation, op),
@@ -159,6 +162,10 @@ def _lower_neighbors(context, inst, *, operation, group, bound, is_common_root):
         ),
         context.launch,
     ).require_supported()
+    participation = plan.participation
+    assert participation is not None
+    assert plan.temp_storage is not None
+    assert plan.synchronization is not None
     storage = arguments["temp_storage"]
     if not context.is_none(storage):
         descriptor = context.temp_storage(storage)
@@ -206,7 +213,7 @@ def _lower_neighbors(context, inst, *, operation, group, bound, is_common_root):
             items_per_thread=extent,
         )
         context.record_thread_data_dtype(
-            output, dtype if adjacent else types.int32
+            output, dtype if adjacent else numba_types.int32
         )
         outputs.append(output)
     count = (
@@ -219,7 +226,14 @@ def _lower_neighbors(context, inst, *, operation, group, bound, is_common_root):
     runtime_args = [
         source,
         *outputs,
-        _cast(context, statements, inst, count, types.int64, "neighbor_count"),
+        _cast(
+            context,
+            statements,
+            inst,
+            count,
+            numba_types.int64,
+            "neighbor_count",
+        ),
     ]
     runtime_args.extend(
         _cast(context, statements, inst, raw, dtype, name)
@@ -227,7 +241,7 @@ def _lower_neighbors(context, inst, *, operation, group, bound, is_common_root):
     )
     kwargs = {
         "dtype": dtype,
-        "threads_per_block": plan.participation.exact_block_dim,
+        "threads_per_block": participation.exact_block_dim,
         "items_per_thread": extent,
         "mode": mode,
         "partial": partial,
@@ -255,7 +269,7 @@ def _lower_neighbors(context, inst, *, operation, group, bound, is_common_root):
 
 def _discontinuity_results(context, bound):
     mode = context.constant(bound.arguments["mode"])
-    result = GroupResultSource(None, "values", fixed_dtype=types.int32)
+    result = GroupResultSource(None, "values", fixed_dtype=numba_types.int32)
     return (result, result) if mode == "heads_and_tails" else (result,)
 
 

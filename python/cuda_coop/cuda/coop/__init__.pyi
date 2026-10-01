@@ -10,7 +10,11 @@ from ._core.api.merge_sort import merge_sort_keys as merge_sort_keys
 from ._core.api.merge_sort import merge_sort_pairs as merge_sort_pairs
 from ._core.api.neighbors import adjacent_difference as adjacent_difference
 from ._core.api.neighbors import discontinuity as discontinuity
-from ._core.api.radix import radix_rank, radix_sort_keys, radix_sort_pairs
+from ._core.api.radix_sort import (
+    radix_rank_keys,
+    radix_sort_keys,
+    radix_sort_pairs,
+)
 from ._core.api.reduce import reduce, sum
 from ._core.api.scan import (
     exclusive_scan,
@@ -64,7 +68,7 @@ __all__ = [
     "load",
     "merge_sort_keys",
     "merge_sort_pairs",
-    "radix_rank",
+    "radix_rank_keys",
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
