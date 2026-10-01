@@ -14,7 +14,7 @@ from cuda.coop._typing import (
     ThreadDataLike,
 )
 
-from ._thread_group import BlockGroup
+from .._thread_group import BlockGroup
 
 _Sample: TypeAlias = (
     int
