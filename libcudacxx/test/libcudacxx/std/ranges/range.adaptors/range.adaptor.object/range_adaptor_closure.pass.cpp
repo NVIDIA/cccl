@@ -35,15 +35,9 @@ struct ThrowingMoveClosure : cuda::std::ranges::range_adaptor_closure<ThrowingMo
       : offset_(other.offset_)
   {}
 
-  template <class Range>
-  TEST_FUNC constexpr int operator()(Range&& range) const
+  TEST_FUNC constexpr int operator()(int (&buf)[3]) const
   {
-    int sum = offset_;
-    for (int value : range)
-    {
-      sum += value;
-    }
-    return sum;
+    return offset_ + buf[0] + buf[1] + buf[2];
   }
 
   TEST_FUNC constexpr int operator()(int value) const
@@ -68,15 +62,9 @@ struct CopyOnlyClosure : cuda::std::ranges::range_adaptor_closure<CopyOnlyClosur
   {}
   CopyOnlyClosure(CopyOnlyClosure&&) = delete;
 
-  template <class Range>
-  TEST_FUNC constexpr int operator()(Range&& range) const
+  TEST_FUNC constexpr int operator()(int (&buf)[3]) const
   {
-    int sum = offset_;
-    for (int value : range)
-    {
-      sum += value;
-    }
-    return sum;
+    return offset_ + buf[0] + buf[1] + buf[2];
   }
 
   TEST_FUNC constexpr int operator()(int value) const
