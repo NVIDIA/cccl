@@ -103,7 +103,8 @@ repos:
         # pre-commit.ci runs. numpy is instead ignored in the mypy config.
         additional_dependencies: [types-cachetools]
         args: ["--config-file=python/cuda_cccl/pyproject.toml",
-               "python/cuda_cccl/cuda/compute/"]
+               "python/cuda_cccl/cuda/compute/",
+               "benchmarks/scripts/"]
         pass_filenames: false
 
   - repo: https://github.com/sirosen/texthooks

@@ -119,8 +119,8 @@ C2H_TEST("cuda::std::merge", "[parallel algorithm]")
   thrust::device_vector<int> in2(size2, thrust::no_init);
   thrust::device_vector<int> out(size1 + size2, thrust::no_init);
 
-  cuda::strided_iterator iter1{cuda::counting_iterator{0}, 2}; // [0,2,4,..., 2 * size1)
-  cuda::strided_iterator iter2{cuda::counting_iterator{1}, 2}; // [1,3,5,..., 2 * size2)
+  const cuda::strided_iterator iter1{cuda::counting_iterator{0}, 2}; // [0,2,4,..., 2 * size1)
+  const cuda::strided_iterator iter2{cuda::counting_iterator{1}, 2}; // [1,3,5,..., 2 * size2)
   cuda::std::copy_n(cuda::execution::gpu, iter1, size1, in1.begin());
   cuda::std::copy_n(cuda::execution::gpu, iter2, size2, in2.begin());
 
@@ -132,7 +132,7 @@ C2H_TEST("cuda::std::merge", "[parallel algorithm]")
 
   SECTION("with provided stream")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_merge(policy, in1, in2, out);
   }
@@ -146,7 +146,7 @@ C2H_TEST("cuda::std::merge", "[parallel algorithm]")
 
   SECTION("with provided stream and memory_resource")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource).with(cuda::get_stream, stream);

@@ -35,6 +35,7 @@
 #include <cuda/std/__mdspan/submdspan_extents.h>
 #include <cuda/std/__mdspan/submdspan_helper.h>
 #include <cuda/std/__mdspan/submdspan_mapping.h>
+#include <cuda/std/__pstl/mdspan/copy.h>
 #include <cuda/std/version>
 
 #endif // _CUDA_STD_MDSPAN

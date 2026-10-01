@@ -31,27 +31,21 @@
 #  include <cuda/__ptx/instructions/mbarrier_wait.h>
 #  include <cuda/__ptx/ptx_dot_variants.h>
 #  include <cuda/__ptx/ptx_helper_functions.h>
+#  include <cuda/std/__bit/popcount.h>
+#  include <cuda/std/__chrono/high_resolution_clock.h>
+
 #endif // _CCCL_CUDA_COMPILATION()
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__barrier/barrier.h>
 #include <cuda/std/__barrier/empty_completion.h>
 #include <cuda/std/__barrier/poll_tester.h>
-#include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__chrono/duration.h>
-#include <cuda/std/__chrono/high_resolution_clock.h>
 #include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__host_stdlib/new>
-#include <cuda/std/__new/device_new.h>
+#include <cuda/std/__host_stdlib/new> // IWYU pragma: keep
 #include <cuda/std/cstdint>
 
 #include <nv/target>
-
-#if _CCCL_COMPILER(NVRTC)
-#  define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !(&(((type*) 0)->member))
-#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
-#  define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !offsetof(type, member)
-#endif // _CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -76,6 +70,7 @@ class barrier<thread_scope_block, ::cuda::std::__empty_completion> : public __bl
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint64_t* __native_handle() const
   {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     return ::cuda::device::barrier_native_handle(const_cast<barrier&>(*this));
   }
 
@@ -94,8 +89,7 @@ public:
   _CCCL_HOST_DEVICE_API barrier(::cuda::std::ptrdiff_t __expected,
                                 ::cuda::std::__empty_completion __completion = ::cuda::std::__empty_completion())
   {
-    static_assert(_LIBCUDACXX_OFFSET_IS_ZERO(barrier<thread_scope_block>, __barrier),
-                  "fatal error: bad barrier layout");
+    static_assert(offsetof(barrier<thread_scope_block>, __barrier) == 0, "fatal error: bad barrier layout");
     init(this, __expected, __completion);
   }
 
@@ -167,13 +161,13 @@ private:
       return __barrier.arrive(__update);
     }
 
-    unsigned int __mask    = ::__activemask();
-    unsigned int __activeA = ::__match_any_sync(__mask, __update);
-    unsigned int __activeB = ::__match_any_sync(__mask, reinterpret_cast<::cuda::std::uintptr_t>(&__barrier));
-    unsigned int __active  = __activeA & __activeB;
-    int __inc              = static_cast<int>(::cuda::std::popcount(__active) * __update);
+    const unsigned int __mask    = ::__activemask();
+    const unsigned int __activeA = ::__match_any_sync(__mask, __update);
+    const unsigned int __activeB = ::__match_any_sync(__mask, reinterpret_cast<::cuda::std::uintptr_t>(&__barrier));
+    const unsigned int __active  = __activeA & __activeB;
+    const int __inc              = static_cast<int>(::cuda::std::popcount(__active) * __update);
 
-    int __leader = static_cast<int>(::__ffs(static_cast<int>(__active))) - 1;
+    const int __leader = static_cast<int>(::__ffs(static_cast<int>(__active))) - 1;
     // All threads in mask synchronize here, establishing cummulativity to the __leader:
     ::__syncwarp(__mask);
     arrival_token __token = {};

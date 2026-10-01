@@ -42,12 +42,13 @@ inline constexpr bool is_nothrow_copy_constructible_v =
 #else // ^^^ Use builtin ^^^ / vvv No builtin
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_copy_constructible
-    : public is_nothrow_constructible<_Tp, add_lvalue_reference_t<typename add_const<_Tp>::type>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_nothrow_copy_constructible : bool_constant<is_nothrow_constructible_v<_Tp, add_lvalue_reference_t<add_const_t<_Tp>>>>
 {};
 
 template <class _Tp>
-inline constexpr bool is_nothrow_copy_constructible_v = is_nothrow_copy_constructible<_Tp>::value;
+inline constexpr bool is_nothrow_copy_constructible_v =
+  is_nothrow_constructible_v<_Tp, add_lvalue_reference_t<add_const_t<_Tp>>>;
 
 #endif // No builtin
 

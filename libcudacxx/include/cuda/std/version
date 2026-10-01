@@ -86,6 +86,7 @@
 #define __cccl_lib_make_reverse_iterator 201402L
 // # define __cccl_lib_make_unique                          201304L
 #define __cccl_lib_mdspan         202207L
+#define __cccl_lib_mdspan_copy    202606L
 #define __cccl_lib_null_iterators 201304L
 #define __cccl_lib_optional       202506L
 // # define __cccl_lib_quoted_string_io                     201304L
@@ -148,6 +149,9 @@
 #define __cccl_lib_ranges_indices 202506L
 
 #define __cccl_lib_saturation_arithmetic 202603L
+#if defined(_CCCL_BUILTIN_IS_IMPLICIT_LIFETIME)
+#  define __cccl_lib_is_implicit_lifetime 202302L
+#endif // _CCCL_BUILTIN_IS_IMPLICIT_LIFETIME
 
 #if _CCCL_STD_VER >= 2020
 #  undef __cccl_lib_array_constexpr

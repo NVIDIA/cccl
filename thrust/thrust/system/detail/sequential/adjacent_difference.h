@@ -44,9 +44,9 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
 
   while (++first != last)
   {
-    InputType next = *first; // NOLINT(performance-unnecessary-copy-initialization)
-    *(++result)    = binary_op(next, curr);
-    curr           = next;
+    const InputType next = *first; // NOLINT(performance-unnecessary-copy-initialization)
+    *(++result)          = binary_op(next, curr);
+    curr                 = next;
   }
 
   return ++result;

@@ -16,6 +16,7 @@
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/device/dispatch/dispatch_transform_tile_config.cuh>
 #include <cub/device/dispatch/kernels/kernel_transform.cuh>
@@ -272,7 +273,31 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
 
   const int ipt = spread_out_items_per_thread(
     num_items, policy.async_copy, config->items_per_thread, config->sm_count, config->max_occupancy);
-  const int tile_size     = threads_per_block * ipt;
+  const int tile_size = threads_per_block * ipt;
+
+#if _CCCL_HOSTED()
+  NV_IF_TARGET(
+    NV_IS_HOST, ({
+      if (detail::logging_enabled())
+      {
+        char reduced_note[64] = "";
+        if (ipt != config->items_per_thread)
+        {
+          ::std::snprintf(
+            reduced_note, sizeof(reduced_note), ", reduced from %d to spread load evenly", config->items_per_thread);
+        }
+        detail::log_always(
+          "DeviceTransform: with occupancy %d, picked %d items per thread, achieving %d bytes in flight "
+          "(target: %d)%s\n",
+          config->max_occupancy,
+          ipt,
+          config->max_occupancy * tile_size * kernel_source.LoadedBytesPerIteration(),
+          policy.min_bytes_in_flight,
+          reduced_note);
+      }
+    }));
+#endif // _CCCL_HOSTED()
+
   const int dyn_smem_size = dyn_smem_for_tile_size(tile_size, alignment);
   _CCCL_ASSERT(NoInputs != (dyn_smem_size != 0), ""); // logical xor
 
@@ -466,7 +491,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
   Offset num_items;
   Predicate pred;
   TransformOp op;
-  cudaStream_t stream;
+  cudaStream_t stream = nullptr;
   KernelSource kernel_source;
   KernelLauncherFactory launcher_factory;
   ::cuda::compute_capability cc;
@@ -477,16 +502,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
     CUB_DETAIL_CONSTEXPR_ISH TransformPolicy active_policy = policy_getter();
     const auto seq = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   ::std::stringstream ss;
-                   ss << active_policy;
-                   _CubLog("Dispatching DeviceTransform to compute capability %d.%d with tuning: %s\n",
-                           cc.major_cap(),
-                           cc.minor_cap(),
-                           ss.str().c_str());
-                 }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    detail::log_dispatch("DeviceTransform", cc, active_policy);
 
     if CUB_DETAIL_CONSTEXPR_ISH (TransformAlgorithm::ublkcp == active_policy.algorithm)
     {
@@ -563,7 +579,7 @@ template <requires_stable_address StableAddress,
 #if _CCCL_HAS_CONCEPTS()
   requires transform_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   ::cuda::std::tuple<RandomAccessIteratorsIn...> in,
   RandomAccessIteratorOut out,
   Offset num_items,

@@ -4,6 +4,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/iterator>
+#include <cuda/std/cstring>
 #include <cuda/std/type_traits>
 
 #include "cub_test_macros.h"
@@ -86,18 +87,58 @@ CUB_TEST("Test FutureValue", "[util][type]", CUB_SMALL)
 {
   // read
   int value;
-  cub::FutureValue<int> fv{&value};
+  cub::FutureValue<int> fv{&value}; // NOLINT(misc-const-correctness)
   value = 42;
   CHECK(fv == 42);
   value = 43;
   CHECK(fv == 43);
 
   // CTAD
-  cub::FutureValue fv2{&value};
+  cub::FutureValue fv2{&value}; // NOLINT(misc-const-correctness): decltype must not be const-qualified
   STATIC_REQUIRE(cuda::std::is_same_v<decltype(fv2), cub::FutureValue<int, int*>>);
 
   c2h::device_vector<int> v(0);
-  cub::FutureValue fv3{v.begin()};
+  cub::FutureValue fv3{v.begin()}; // NOLINT(misc-const-correctness): decltype must not be const-qualified
   STATIC_REQUIRE(
     cuda::std::is_same_v<decltype(fv3), cub::FutureValue<int, typename c2h::device_vector<int>::iterator>>);
+}
+
+// Compares by bytes instead of operator== so this also works for types like int3 that do not define operator==.
+template <typename T>
+void test_uninitialized(T value)
+{
+  STATIC_REQUIRE(sizeof(cub::Uninitialized<T>) == sizeof(T));
+  STATIC_REQUIRE(alignof(cub::Uninitialized<T>) == alignof(T));
+
+  // u being uninitialized here is the point of the test
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+  cub::Uninitialized<T> u;
+  new (&u.Alias()) T(value);
+  CHECK(cuda::std::memcmp(&u.Alias(), &value, sizeof(T)) == 0);
+  u.Alias().~T();
+}
+
+CUB_TEST("Test Uninitialized", "[util][type]", CUB_SMALL)
+{
+  test_uninitialized<char>(42); // 1 byte, align 1
+  test_uninitialized<short>(42); // 2 bytes, align 2
+  test_uninitialized<int>(42); // 4 bytes, align 4
+  test_uninitialized<long long>(42); // 8 bytes, align 8
+  test_uninitialized<double>(42); // 8 bytes, align 8
+  test_uninitialized<double2>({42, 42}); // 16 bytes, align 16
+
+  test_uninitialized(char3{1, 2, 3}); // 3 bytes, align 1
+  test_uninitialized(int3{1, 2, 3}); // 12 bytes, align 4
+}
+
+struct alignas(32) overaligned_type
+{
+  char data[64];
+};
+
+CUB_TEST("Test Uninitialized with overaligned type", "[util][type]", CUB_SMALL)
+{
+  STATIC_REQUIRE(alignof(overaligned_type) == 32);
+  STATIC_REQUIRE(sizeof(cub::Uninitialized<overaligned_type>) == sizeof(overaligned_type));
+  STATIC_REQUIRE(alignof(cub::Uninitialized<overaligned_type>) == alignof(overaligned_type));
 }

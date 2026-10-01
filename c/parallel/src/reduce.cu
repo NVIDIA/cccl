@@ -66,11 +66,11 @@ auto convert_determinism(cccl_determinism_t d)
   throw std::runtime_error("unknown cccl_determinism_t value");
 }
 
-static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_value_t init)
+static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_type_info init)
 {
   // TODO Should be decltype(op(init, *input_it)) but haven't implemented type arithmetic yet
   //      so switching back to the old accumulator type logic for now
-  return init.type;
+  return init;
 }
 
 std::string get_single_tile_kernel_name(
@@ -174,7 +174,8 @@ CUresult cccl_device_reduce_compile(
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
   cccl_op_t op,
-  cccl_value_t init,
+  cccl_type_info init,
+  cccl_init_kind_t init_kind,
   cccl_determinism_t determinism,
   int cc_major,
   int cc_minor,
@@ -202,6 +203,25 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
+  if (init_kind == CCCL_FUTURE_VALUE_INIT)
+  {
+    fflush(stderr);
+    printf("\nERROR in cccl_device_reduce_compile(): future value init is not supported\n");
+    fflush(stdout);
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  // The non-deterministic (atomic) kernel folds the initial value into block zero's
+  // aggregate, which requires an initial value to exist.
+  if (init_kind == CCCL_NO_INIT && determinism == CCCL_NOT_GUARANTEED)
+  {
+    fflush(stderr);
+    printf("\nERROR in cccl_device_reduce_compile(): non-deterministic reduce without an initial value is not "
+           "supported\n");
+    fflush(stdout);
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
   const char* name = "device_reduce";
 
   const cccl_type_info accum_t = reduce::get_accumulator_type(op, input_it, init);
@@ -216,7 +236,8 @@ try
     template_id<binary_user_operation_traits>(), op, accum_t, accum_t, accum_t);
 
   const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
-  const auto init_t   = cccl_type_enum_to_name(init.type.type);
+  const auto init_t =
+    init_kind == CCCL_NO_INIT ? std::string{"cub::detail::reduce::no_init_t"} : cccl_type_enum_to_name(init.type);
 
   const auto policy_sel = [&] {
     using namespace cub::detail;
@@ -329,6 +350,7 @@ static_assert(device_reduce_policy()(detail::current_tuning_cc()) == {10},
   build->cc               = cc_major * 10 + cc_minor;
   build->accumulator_size = accum_t.size;
   build->determinism      = determinism;
+  build->init_kind        = init_kind;
   // Zero-init fields set by _load, not _compile.
   build->library                   = nullptr;
   build->single_tile_kernel        = nullptr;
@@ -414,7 +436,8 @@ CUresult cccl_device_reduce_build_ex(
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
   cccl_op_t op,
-  cccl_value_t init,
+  cccl_type_info init,
+  cccl_init_kind_t init_kind,
   cccl_determinism_t determinism,
   int cc_major,
   int cc_minor,
@@ -430,6 +453,7 @@ CUresult cccl_device_reduce_build_ex(
     output_it,
     op,
     init,
+    init_kind,
     determinism,
     cc_major,
     cc_minor,
@@ -450,10 +474,66 @@ CUresult cccl_device_reduce_build_ex(
   return load_r;
 }
 
-// c.parallel provides two separate reduce functions, one for each determinism
-// level, rather than a single function with a runtime switch. Keeping the functions separate avoids
-// branching at runtime to select the appropriate one; cuda.compute selects the
-// appropriate function to call at build time.
+// c.parallel provides two separate reduce entry points, one for each determinism
+// level, rather than a single function with a runtime switch; cuda.compute selects
+// the appropriate function to call at build time. cccl_device_reduce additionally
+// dispatches on the build's init kind and ignores `init` for CCCL_NO_INIT builds
+// (the non-deterministic build rejects CCCL_NO_INIT, so it takes values only).
+
+template <bool StableReductionOrder, typename InitValueT>
+static CUresult cccl_device_reduce_impl(
+  const char* name,
+  cccl_device_reduce_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  uint64_t num_items,
+  cccl_op_t op,
+  InitValueT init,
+  CUstream stream)
+{
+  bool pushed    = false;
+  CUresult error = CUDA_SUCCESS;
+  try
+  {
+    pushed = try_push_context();
+
+    CUdevice cu_device;
+    check(cuCtxGetDevice(&cu_device));
+
+    auto exec_status = cub::detail::reduce::dispatch<void, StableReductionOrder>(
+      d_temp_storage,
+      *temp_storage_bytes,
+      indirect_arg_t{d_in}, // could be indirect_iterator_t, but CUB does not need to increment it
+      indirect_arg_t{d_out}, // could be indirect_iterator_t, but CUB does not need to increment it
+      static_cast<OffsetT>(num_items),
+      indirect_arg_t{op},
+      init,
+      stream,
+      ::cuda::std::identity{},
+      *static_cast<cub::detail::reduce::policy_selector*>(build.runtime_policy),
+      reduce::reduce_kernel_source{build},
+      cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
+
+    error = static_cast<CUresult>(exec_status);
+  }
+  catch (const std::exception& exc)
+  {
+    fflush(stderr);
+    printf("\nEXCEPTION in %s(): %s\n", name, exc.what());
+    fflush(stdout);
+    error = CUDA_ERROR_UNKNOWN;
+  }
+
+  if (pushed)
+  {
+    CUcontext dummy;
+    cuCtxPopCurrent(&dummy);
+  }
+
+  return error;
+}
 
 CUresult cccl_device_reduce(
   cccl_device_reduce_build_result_t build,
@@ -467,47 +547,31 @@ CUresult cccl_device_reduce(
   CUstream stream)
 {
   assert(build.determinism == CCCL_RUN_TO_RUN);
-
-  bool pushed    = false;
-  CUresult error = CUDA_SUCCESS;
-  try
+  if (build.init_kind == CCCL_NO_INIT)
   {
-    pushed = try_push_context();
-
-    CUdevice cu_device;
-    check(cuCtxGetDevice(&cu_device));
-
-    auto exec_status = cub::detail::reduce::dispatch<void>(
+    return cccl_device_reduce_impl<true>(
+      "cccl_device_reduce",
+      build,
       d_temp_storage,
-      *temp_storage_bytes,
-      indirect_arg_t{d_in}, // could be indirect_iterator_t, but CUB does not need to increment it
-      indirect_arg_t{d_out}, // could be indirect_iterator_t, but CUB does not need to increment it
-      static_cast<OffsetT>(num_items),
-      indirect_arg_t{op},
-      indirect_arg_t{init},
-      stream,
-      ::cuda::std::identity{},
-      *static_cast<cub::detail::reduce::policy_selector*>(build.runtime_policy),
-      reduce::reduce_kernel_source{build},
-      cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
-
-    error = static_cast<CUresult>(exec_status);
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_items,
+      op,
+      cub::detail::reduce::no_init,
+      stream);
   }
-  catch (const std::exception& exc)
-  {
-    fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_reduce(): %s\n", exc.what());
-    fflush(stdout);
-    error = CUDA_ERROR_UNKNOWN;
-  }
-
-  if (pushed)
-  {
-    CUcontext dummy;
-    cuCtxPopCurrent(&dummy);
-  }
-
-  return error;
+  return cccl_device_reduce_impl<true>(
+    "cccl_device_reduce",
+    build,
+    d_temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_out,
+    num_items,
+    op,
+    indirect_arg_t{init},
+    stream);
 }
 
 CUresult cccl_device_reduce_nondeterministic(
@@ -522,47 +586,18 @@ CUresult cccl_device_reduce_nondeterministic(
   CUstream stream)
 {
   assert(build.determinism == CCCL_NOT_GUARANTEED);
-
-  bool pushed    = false;
-  CUresult error = CUDA_SUCCESS;
-  try
-  {
-    pushed = try_push_context();
-
-    CUdevice cu_device;
-    check(cuCtxGetDevice(&cu_device));
-
-    auto exec_status = cub::detail::reduce::dispatch<void, /* StableReductionOrder */ false>(
-      d_temp_storage,
-      *temp_storage_bytes,
-      indirect_arg_t{d_in}, // could be indirect_iterator_t, but CUB does not need to increment it
-      indirect_arg_t{d_out}, // could be indirect_iterator_t, but CUB does not need to increment it
-      static_cast<OffsetT>(num_items),
-      indirect_arg_t{op},
-      indirect_arg_t{init},
-      stream,
-      ::cuda::std::identity{},
-      *static_cast<cub::detail::reduce::policy_selector*>(build.runtime_policy),
-      reduce::reduce_kernel_source{build},
-      cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
-
-    error = static_cast<CUresult>(exec_status);
-  }
-  catch (const std::exception& exc)
-  {
-    fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_reduce_nondeterministic(): %s\n", exc.what());
-    fflush(stdout);
-    error = CUDA_ERROR_UNKNOWN;
-  }
-
-  if (pushed)
-  {
-    CUcontext dummy;
-    cuCtxPopCurrent(&dummy);
-  }
-
-  return error;
+  assert(build.init_kind == CCCL_VALUE_INIT);
+  return cccl_device_reduce_impl<false>(
+    "cccl_device_reduce_nondeterministic",
+    build,
+    d_temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_out,
+    num_items,
+    op,
+    indirect_arg_t{init},
+    stream);
 }
 
 CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* build_ptr)
@@ -604,7 +639,8 @@ CUresult cccl_device_reduce_build(
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
   cccl_op_t op,
-  cccl_value_t init,
+  cccl_type_info init,
+  cccl_init_kind_t init_kind,
   cccl_determinism_t determinism,
   int cc_major,
   int cc_minor,
@@ -619,6 +655,7 @@ CUresult cccl_device_reduce_build(
     d_out,
     op,
     init,
+    init_kind,
     determinism,
     cc_major,
     cc_minor,
@@ -699,6 +736,7 @@ try
   write_header(w, CCCL_SERIALIZATION_ALGO_REDUCE, build_ptr->payload_kind, build_ptr->cc);
   w.write_pod<uint64_t>(build_ptr->accumulator_size);
   w.write_pod<uint32_t>(static_cast<uint32_t>(build_ptr->determinism));
+  w.write_pod<uint32_t>(static_cast<uint32_t>(build_ptr->init_kind));
   w.write_blob(build_ptr->payload, build_ptr->payload_size);
   w.write_blob(build_ptr->runtime_policy, build_ptr->runtime_policy_size);
   w.write_cstring(build_ptr->single_tile_kernel_lowered_name);
@@ -734,6 +772,12 @@ try
     throw std::runtime_error(std::format("serialization blob: invalid determinism ({})", determinism_v));
   }
   const auto determinism = static_cast<cccl_determinism_t>(determinism_v);
+  const auto init_kind_v = r.read_pod<uint32_t>();
+  if (init_kind_v > static_cast<uint32_t>(CCCL_NO_INIT))
+  {
+    throw std::runtime_error(std::format("serialization blob: invalid init kind ({})", init_kind_v));
+  }
+  const auto init_kind = static_cast<cccl_init_kind_t>(init_kind_v);
 
   std::unique_ptr<char[]> payload_owner;
   size_t payload_size = 0;
@@ -764,6 +808,7 @@ try
   result.payload_kind                           = static_cast<cccl_payload_kind_t>(h.payload_kind);
   result.accumulator_size                       = accum_size;
   result.determinism                            = determinism;
+  result.init_kind                              = init_kind;
   result.payload                                = payload_owner.release();
   result.payload_size                           = payload_size;
   result.runtime_policy                         = policy.release();

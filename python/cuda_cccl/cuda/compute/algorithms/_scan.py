@@ -27,26 +27,14 @@ from .._serialization import (
     VALUE,
     Serializable,
 )
+from .._utils import get_init_kind
 from .._utils.protocols import (
     get_data_pointer,
-    is_device_array,
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
-
-
-def get_init_kind(
-    init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
-) -> _bindings.InitKind:
-    match init_value:
-        case None:
-            return _bindings.InitKind.NO_INIT
-        case _ if is_device_array(init_value):
-            return _bindings.InitKind.FUTURE_VALUE_INIT
-        case _:
-            return _bindings.InitKind.VALUE_INIT
 
 
 class _Scan(Serializable):

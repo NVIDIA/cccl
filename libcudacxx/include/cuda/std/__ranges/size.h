@@ -111,7 +111,8 @@ struct __fn
 {
   // `[range.prim.size]`: the array case (for rvalues).
   template <class _Tp, size_t _Sz>
-  [[nodiscard]] _CCCL_API constexpr size_t _CCCL_STATIC_CALL_OPERATOR(_Tp (&&)[_Sz]) noexcept
+  [[nodiscard]] _CCCL_API constexpr size_t
+  _CCCL_STATIC_CALL_OPERATOR(_Tp (&&)[_Sz]) noexcept // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
   {
     return _Sz;
   }

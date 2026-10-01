@@ -24,7 +24,6 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__fwd/hierarchy.h>
-#  include <cuda/__hierarchy/hierarchy_query_result.h>
 #  include <cuda/__hierarchy/queries/count.h>
 #  include <cuda/__hierarchy/queries/extents.h>
 #  include <cuda/__hierarchy/queries/index.h>
@@ -32,7 +31,7 @@
 #  include <cuda/std/__cstddef/types.h>
 
 #  if _CCCL_CUDA_COMPILATION()
-#    include <cuda/__ptx/instructions/get_sreg.h>
+#    include <cuda/__ptx/instructions/get_sreg.h> // IWYU pragma: keep
 #  endif // _CCCL_CUDA_COMPILATION()
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -99,7 +98,7 @@ struct __rank_query_native<block_level, cluster_level>
   template <class _Tp>
   [[nodiscard]] _CCCL_DEVICE_API static _Tp __call() noexcept
   {
-    unsigned __rank = 0;
+    unsigned __rank = 0; // NOLINT(misc-const-correctness)
     NV_IF_TARGET(NV_PROVIDES_SM_90, (__rank = ::__clusterRelativeBlockRank();))
     return static_cast<_Tp>(__rank);
   }

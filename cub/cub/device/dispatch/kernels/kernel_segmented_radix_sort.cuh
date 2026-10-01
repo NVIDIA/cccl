@@ -218,7 +218,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < bins_tracked_per_thread; ++track)
     {
-      int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
+      const int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
 
       if ((threads_per_block == radix_digits) || (bin_idx < radix_digits))
       {
@@ -231,7 +231,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < bins_tracked_per_thread; ++track)
     {
-      int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
+      const int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
 
       if ((threads_per_block == radix_digits) || (bin_idx < radix_digits))
       {
@@ -251,7 +251,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < bins_tracked_per_thread; ++track)
     {
-      int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
+      const int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
 
       if ((threads_per_block == radix_digits) || (bin_idx < radix_digits))
       {
@@ -264,7 +264,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < bins_tracked_per_thread; ++track)
     {
-      int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
+      const int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
 
       if ((threads_per_block == radix_digits) || (bin_idx < radix_digits))
       {

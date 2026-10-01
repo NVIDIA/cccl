@@ -6,7 +6,6 @@
 #include <cub/device/device_select.cuh>
 
 #include <cuda/cmath>
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/execution>
 #include <cuda/stream>
@@ -14,6 +13,7 @@
 #include <algorithm>
 
 #include "catch2_large_problem_helper.cuh"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
@@ -182,7 +182,7 @@ CUB_TEST("DeviceSelect::Unique does not change input", "[device][select_unique]"
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // copy input first
-  c2h::device_vector<type> reference = in;
+  const c2h::device_vector<type> reference = in;
 
   // test overload without predicate
   select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items);
@@ -274,47 +274,7 @@ CUB_TEST(
     }
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("DeviceSelect::Unique works with cudaStream_t")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_unique(stream.get());
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_unique(stream);
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::stream_ref")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
-    test_unique(stream_ref);
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::std::execution::env")
-  {
-    cuda::std::execution::env env{};
-    test_unique(env);
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_unique(policy);
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::execution::gpu with stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_unique(policy);
-  }
+  test_with_custom_streams(test_unique);
 }
 #endif // TEST_LAUNCH == 0
 
@@ -521,7 +481,7 @@ try
   // The partition size (the maximum number of items processed by a single kernel invocation) is an important boundary
   constexpr auto max_partition_size = static_cast<offset_t>(cuda::std::numeric_limits<std::int32_t>::max());
 
-  offset_t num_items = GENERATE_COPY(
+  const offset_t num_items = GENERATE_COPY(
     values({
       offset_t{2} * max_partition_size + offset_t{20000000}, // 3 partitions
       offset_t{2} * max_partition_size, // 2 partitions

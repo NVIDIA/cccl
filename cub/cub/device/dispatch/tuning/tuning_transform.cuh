@@ -207,6 +207,7 @@ struct TransformAsyncCopyPolicy
 };
 
 //! The tuning policy for all algorithms in @ref cub::DeviceTransform "DeviceTransform".
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct TransformPolicy
 {
   int min_bytes_in_flight; //!< Minimum number of bytes in flight per SM to reach by scaling the items per thread. Has
@@ -308,6 +309,10 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_dyn_smem_for_tile_size(
 
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int cc_to_min_bytes_in_flight(::cuda::compute_capability cc)
 {
+  if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
+  {
+    return 128 * 1024; // Rubin
+  }
   if (cc >= ::cuda::compute_capability{10, 0})
   {
     return 64 * 1024; // B200
@@ -329,11 +334,15 @@ tuned_vectorized_policy(::cuda::compute_capability cc, int store_size, bool fill
   if (filling)
   {
     // manually tuned fill on RTX 5090
-    // TODO(bgruber): re-enable this later! It's disabled to avoid SASS changes in PR #6914
-    // if (cc >= ::cuda::compute_capability{12, 0})
-    // {
-    //   return TransformVectorizedPolicy{256, 8, 4};
-    // }
+    if (cc >= ::cuda::compute_capability{12, 0})
+    {
+      if (store_size == 8)
+      {
+        return TransformVectorizedPolicy{256, 8, 4};
+      }
+      // otherwise, the tunings for B200 are good
+    }
+
     // manually tuned fill on B200, same as H200
     if (cc >= ::cuda::compute_capability{9, 0})
     {

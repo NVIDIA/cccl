@@ -105,7 +105,7 @@ C2H_TEST("when_all can be used with just_*", "[when_all]")
 
 C2H_TEST("when_all terminates with error if one child terminates with error", "[when_all]")
 {
-  error_scheduler sched{42};
+  const error_scheduler sched{42};
   auto snd = ex::when_all(ex::just(2), ex::just(5) | ex::continues_on(sched), ex::just(7));
   auto op  = ex::connect(std::move(snd), checked_error_receiver{42});
   ex::start(op);
@@ -113,7 +113,7 @@ C2H_TEST("when_all terminates with error if one child terminates with error", "[
 
 C2H_TEST("when_all terminates with stopped if one child is cancelled", "[when_all]")
 {
-  stopped_scheduler sched;
+  stopped_scheduler sched; // NOLINT(misc-const-correctness)
   auto snd = ex::when_all(ex::just(2), ex::just(5) | ex::continues_on(sched), ex::just(7));
   auto op  = ex::connect(std::move(snd), checked_stopped_receiver{});
   ex::start(op);

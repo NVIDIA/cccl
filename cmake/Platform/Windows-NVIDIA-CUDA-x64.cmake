@@ -1,0 +1,6 @@
+# Windows is currently not supported with C++23
+# if (NOT CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 13.3)
+#  set(CMAKE_CUDA23_STANDARD_COMPILE_OPTION "-std=c++23")
+#  set(CMAKE_CUDA23_EXTENSION_COMPILE_OPTION "-std=c++23")
+#  set(CMAKE_CUDA_STANDARD_LATEST 23)
+#endif()

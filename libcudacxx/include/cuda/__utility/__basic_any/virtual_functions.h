@@ -21,20 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__utility/__basic_any/basic_any_fwd.h>
-#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_member_function_pointer.h>
-#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/type_identity.h>
-#include <cuda/std/__type_traits/type_list.h>
-#include <cuda/std/__utility/swap.h>
-#include <cuda/std/__utility/typeid.h>
+#include <cuda/std/__utility/undefined.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -47,7 +42,7 @@ template <class _Tp, auto _Override>
 struct __override_tag_;
 
 template <class _Tp, auto _Override>
-using __override_tag _CCCL_NODEBUG_ALIAS = __override_tag_<_Tp, _Override>*;
+using __override_tag _CCCL_NODEBUG = __override_tag_<_Tp, _Override>*;
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wstrict-aliasing")
@@ -56,7 +51,7 @@ template <class _Fn, class _Cp>
 _CCCL_HOST_DEVICE_API auto __class_of_(_Fn _Cp::*) -> _Cp;
 
 template <class _Fn>
-using __class_of _CCCL_NODEBUG_ALIAS = decltype(::cuda::__class_of_(_Fn()));
+using __class_of _CCCL_NODEBUG = decltype(::cuda::__class_of_(_Fn()));
 
 //! We use a C-style cast instead of a static_cast because a C-style cast will
 //! ignore accessibility, letting us cast to a private base class.
@@ -76,7 +71,7 @@ template <class _Tp, class _FnType, class _Ret, bool _IsConst, bool _IsNothrow, 
   [[maybe_unused]] ::cuda::std::__maybe_const<_IsConst, void>* __pv,
   [[maybe_unused]] _Args... __args) noexcept(_IsNothrow) -> _Ret
 {
-  using __value_type _CCCL_NODEBUG_ALIAS = ::cuda::std::__maybe_const<_IsConst, _Tp>;
+  using __value_type _CCCL_NODEBUG = ::cuda::std::__maybe_const<_IsConst, _Tp>;
 
   if constexpr (::cuda::std::is_same_v<_Tp, void>)
   {
@@ -174,8 +169,8 @@ _CCCL_HOST_DEVICE_API auto __is_virtual_const(_Ret (*)(void const*, _Args...)) -
 template <auto _Fn>
 struct __virtual_fn
 {
-  using __function_t _CCCL_NODEBUG_ALIAS = decltype(__virtual_override_fn<decltype(_Fn)>);
-  using __result_t _CCCL_NODEBUG_ALIAS   = decltype(__get_virtual_result(__function_t{}));
+  using __function_t _CCCL_NODEBUG = decltype(__virtual_override_fn<decltype(_Fn)>);
+  using __result_t _CCCL_NODEBUG   = decltype(__get_virtual_result(__function_t{}));
 
   static constexpr bool __const_fn   = decltype(::cuda::__is_virtual_const(__function_t{}))::value;
   static constexpr bool __nothrow_fn = noexcept(::cuda::__get_virtual_result(__function_t{}));

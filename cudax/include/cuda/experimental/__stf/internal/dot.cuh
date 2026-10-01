@@ -44,9 +44,9 @@
 
 #include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/nvtx.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh>
 #include <cuda/experimental/__stf/utility/unique_id.cuh>
 #include <cuda/experimental/__utility/meyers_singleton.cuh>
@@ -562,7 +562,8 @@ public:
   {
     // Timing metadata is diagnostic only; allocation or locking failures must
     // not interfere with task teardown.
-    on_throw(notify, loc) << [&] {
+    ON_THROW(notify, loc)
+    {
       ::std::scoped_lock guard(mtx);
 
       if (!tracing_enabled)
@@ -580,8 +581,7 @@ public:
   {
     if (getenv("CUDASTF_DOT_COLOR_BY_DEVICE"))
     {
-      int dev = 0;
-      cuda_safe_call(cudaGetDevice(&dev));
+      const int dev = cuda_try<cudaGetDevice>();
       EXPECT(dev < sizeof(colors) / sizeof(*colors));
       current_color = colors[dev];
     }

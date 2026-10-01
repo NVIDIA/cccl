@@ -24,9 +24,7 @@
 #include <cuda/__fwd/barrier.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__barrier/barrier.h>
-#include <cuda/std/__barrier/empty_completion.h>
-#include <cuda/std/__new/device_new.h>
-#include <cuda/std/cstdint>
+#include <cuda/std/__new/device_new.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -35,6 +33,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <thread_scope _Sco, class _CompletionF>
 class barrier : public ::cuda::std::__barrier_base<_CompletionF, _Sco>
 {
+  static_assert(_Sco != thread_scope_cluster, "cuda::barrier does not support thread_scope_cluster");
+
 public:
   _CCCL_HIDE_FROM_ABI barrier() = default;
 

@@ -26,6 +26,7 @@
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/span>
 
@@ -326,6 +327,74 @@ public:
   }
 
 #if _CCCL_CUDA_COMPILATION()
+  // ===== Storage operations =====
+
+  //! @brief Cooperatively initializes the map's slot storage with the empty slot sentinel.
+  //!
+  //! This function turns a ref constructed over raw (uninitialized) memory, e.g. a shared-memory
+  //! array, into an empty, ready-to-use map. It can also be used to clear an existing map.
+  //!
+  //! @note This is a group-collective operation: all threads of `__group` must call it. The group
+  //! is synchronized before this function returns.
+  //! @note No other operation may access the map concurrently. When clearing a map after earlier
+  //! operations, the caller must ensure those operations have completed before calling this function.
+  //!
+  //! @tparam _Group Cooperative group type
+  //!
+  //! @param[in] __group The cooperative group used to initialize the storage
+  template <class _Group>
+  _CCCL_DEVICE_API constexpr void initialize(_Group __group) noexcept
+  {
+    __impl.initialize(__group);
+  }
+
+  //! @brief Cooperatively copies the map's slots to `__slots` and returns a new ref operating on
+  //! the copy.
+  //!
+  //! This function is intended to create shared-memory copies of small maps, although any device
+  //! memory can be used as well. The thread scope of the returned ref can be set via `_NewScope`,
+  //! e.g. `__ref.make_copy<::cuda::thread_scope_block>(__block, __slots)` for a copy that is only
+  //! accessed by threads of a single block.
+  //!
+  //! @note This is a group-collective operation: all threads of `__group` must call it with the
+  //! same `__slots`. The group is synchronized before this function returns. The source map must
+  //! not be modified concurrently, and the destination must not be accessed concurrently.
+  //! @note The source and destination storage ranges must not overlap.
+  //! @note `value_type` must be trivially copyable.
+  //!
+  //! @tparam _NewScope Thread scope of the returned ref (defaults to this ref's scope)
+  //! @tparam _Group Cooperative group type
+  //!
+  //! @param[in] __group The cooperative group used to perform the copy
+  //! @param[out] __slots Span over the target slot storage; must contain exactly `capacity()` slots
+  //!
+  //! @return A new ref with thread scope `_NewScope` operating on `__slots`
+  template <::cuda::thread_scope _NewScope = _Scope, class _Group>
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto make_copy(_Group __group, storage_span_type __slots) const noexcept
+    -> fixed_capacity_map_ref<_Key, _Tp, _NewScope, _KeyEqual, _ProbingScheme, _BucketSize, _Capacity>
+  {
+    if constexpr (_Capacity == ::cuda::std::dynamic_extent)
+    {
+      _CCCL_ASSERT(__slots.size() == capacity(), "destination storage size must equal the map capacity");
+    }
+    __impl.make_copy(__group, __slots.data());
+    using __copy_ref_type =
+      fixed_capacity_map_ref<_Key, _Tp, _NewScope, _KeyEqual, _ProbingScheme, _BucketSize, _Capacity>;
+    return detail::__bitwise_compare(empty_key_sentinel(), erased_key_sentinel())
+           ? __copy_ref_type{empty_key<_Key>{empty_key_sentinel()},
+                             empty_value<_Tp>{empty_value_sentinel()},
+                             key_eq(),
+                             probing_scheme(),
+                             __slots}
+           : __copy_ref_type{
+               empty_key<_Key>{empty_key_sentinel()},
+               empty_value<_Tp>{empty_value_sentinel()},
+               erased_key<_Key>{erased_key_sentinel()},
+               key_eq(),
+               probing_scheme(),
+               __slots};
+  }
+
   // ===== Insert operations =====
 
   //! @brief Inserts a key-value pair.
@@ -409,6 +478,45 @@ public:
   find(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
   {
     return __impl.find(__group, __key);
+  }
+
+  //! @brief Applies `__callback_op` to a copy of every slot whose key is equivalent to `__key`.
+  //!
+  //! @note The return value of `__callback_op`, if any, is ignored.
+  //!
+  //! @tparam _ProbeKey Probe key type
+  //! @tparam _CallbackOp Unary callable invocable with `value_type`
+  //!
+  //! @param __key The key to search for
+  //! @param __callback_op Function to apply to every matching slot
+  template <class _ProbeKey, class _CallbackOp>
+  _CCCL_DEVICE_API void for_each(_ProbeKey __key, _CallbackOp&& __callback_op) const noexcept
+  {
+    __impl.for_each(__key, ::cuda::std::forward<_CallbackOp>(__callback_op));
+  }
+
+  //! @brief Cooperative-group variant of `for_each`.
+  //!
+  //! @note Any thread in `__group` may invoke the callback. If multiple threads find a match, each
+  //! of them invokes the callback with its own matching slot.
+  //!
+  //! @note Synchronizing `__group` inside `__callback_op` is undefined behavior.
+  //!
+  //! @note The return value of `__callback_op`, if any, is ignored.
+  //!
+  //! @tparam _ParentCG Parent cooperative group type
+  //! @tparam _ProbeKey Probe key type
+  //! @tparam _CallbackOp Unary callable invocable with `value_type`
+  //!
+  //! @param __group Cooperative group of size `cg_size` performing this operation
+  //! @param __key The key to search for
+  //! @param __callback_op Function to apply to every matching slot
+  template <class _ParentCG, class _ProbeKey, class _CallbackOp>
+  _CCCL_DEVICE_API void for_each(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
+                                 _ProbeKey __key,
+                                 _CallbackOp&& __callback_op) const noexcept
+  {
+    __impl.for_each(__group, __key, ::cuda::std::forward<_CallbackOp>(__callback_op));
   }
 #endif // _CCCL_CUDA_COMPILATION()
 };

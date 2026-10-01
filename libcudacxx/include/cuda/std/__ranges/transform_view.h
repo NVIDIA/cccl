@@ -63,7 +63,7 @@ _CCCL_CONCEPT __transform_view_constraints = _CCCL_REQUIRES_EXPR((_View, _Fn))(
   requires(view<_View>),
   requires(is_object_v<_Fn>),
   requires(regular_invocable<_Fn&, range_reference_t<_View>>),
-  requires(__can_reference<invoke_result_t<_Fn&, range_reference_t<_View>>>));
+  requires(__referenceable<invoke_result_t<_Fn&, range_reference_t<_View>>>));
 
 template <class, class, class = void>
 struct __transform_view_iterator_category_base
@@ -121,6 +121,8 @@ public:
     friend class __sentinel;
 
   public:
+    // Non-member friend operators of __sentinel require access.
+    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
     iterator_t<_Base> __current_ = iterator_t<_Base>();
 
     using iterator_concept =

@@ -30,7 +30,7 @@
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh> // graph_launch_impl() uses SCOPE
+#include <cuda/experimental/__stf/utility/exception_policy.cuh> // graph_launch_impl() uses SCOPE
 
 namespace cuda::experimental::stf
 {
@@ -249,7 +249,7 @@ public:
         deallocateManagedMemory(sys_mem, th_mem_config[0], streams[0]);
       }
 
-      unsigned char* hostMemoryArrivedList = interpreted_policy.cg_system.get_arrived_list();
+      unsigned char* hostMemoryArrivedList = interpreted_policy.get_cg_system().get_arrived_list();
       if (hostMemoryArrivedList)
       {
         deallocateManagedMemory(hostMemoryArrivedList, grid_size - 1, streams[0]);
@@ -272,7 +272,7 @@ public:
           cuda_safe_call(cudaFree(hostMemoryArrivedList));
         };
         memset(hostMemoryArrivedList, 0, arrived_bytes);
-        interpreted_policy.cg_system = reserved::cooperative_group_system(hostMemoryArrivedList);
+        interpreted_policy.get_cg_system() = reserved::cooperative_group_system(hostMemoryArrivedList);
       }
     }
 
@@ -442,7 +442,7 @@ public:
           deallocateManagedMemory(sys_mem, th_mem_config[0], t.get_stream());
         }
 
-        unsigned char* hostMemoryArrivedList = interpreted_policy.cg_system.get_arrived_list();
+        unsigned char* hostMemoryArrivedList = interpreted_policy.get_cg_system().get_arrived_list();
         if (hostMemoryArrivedList)
         {
           deallocateManagedMemory(hostMemoryArrivedList, grid_size - 1, t.get_stream());
@@ -527,7 +527,7 @@ public:
           cuda_safe_call(cudaFree(hostMemoryArrivedList));
         };
         memset(hostMemoryArrivedList, 0, arrived_bytes);
-        interpreted_policy.cg_system = reserved::cooperative_group_system(hostMemoryArrivedList);
+        interpreted_policy.get_cg_system() = reserved::cooperative_group_system(hostMemoryArrivedList);
       }
     }
 

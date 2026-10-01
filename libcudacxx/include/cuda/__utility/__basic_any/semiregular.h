@@ -35,7 +35,6 @@
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/movable.h>
 #include <cuda/std/__memory/addressof.h>
-#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -124,7 +123,7 @@ template <class...>
 struct __imovable : __basic_interface<__imovable>
 {
   template <class _Tp>
-  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, &::cuda::__try_move_fn<_Tp>, &::cuda::__move_fn<_Tp>>;
+  using overrides _CCCL_NODEBUG = __overrides_for<_Tp, &::cuda::__try_move_fn<_Tp>, &::cuda::__move_fn<_Tp>>;
 
   _CCCL_HOST_DEVICE_API auto __move_to(void* __pv) noexcept -> void
   {
@@ -141,7 +140,7 @@ template <class...>
 struct __icopyable : __basic_interface<__icopyable, __extends<__imovable<>>>
 {
   template <class _Tp>
-  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, &::cuda::__copy_fn<_Tp>>;
+  using overrides _CCCL_NODEBUG = __overrides_for<_Tp, &::cuda::__copy_fn<_Tp>>;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API auto __copy_to(void* __pv, size_t __size, size_t __align) const -> bool
   {
@@ -264,7 +263,7 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::equality_comparable<_Tp>)
-  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, &::cuda::__equal_fn<_Tp>>;
+  using overrides _CCCL_NODEBUG = __overrides_for<_Tp, &::cuda::__equal_fn<_Tp>>;
 };
 
 template <class... _Super>
@@ -336,7 +335,7 @@ struct __iconvertible_to_<__self const&, _To>
 };
 
 template <class _From, class _To>
-using __iconvertible_to _CCCL_NODEBUG_ALIAS = typename __iconvertible_to_<_From, _To>::template __interface_<>;
+using __iconvertible_to _CCCL_NODEBUG = typename __iconvertible_to_<_From, _To>::template __interface_<>;
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>

@@ -202,8 +202,8 @@ class __fmt_output_buffer
   }
 
 public:
-  using value_type _CCCL_NODEBUG_ALIAS           = _CharT;
-  using __prepare_write_type _CCCL_NODEBUG_ALIAS = void (*)(__fmt_output_buffer<_CharT>&, size_t);
+  using value_type _CCCL_NODEBUG           = _CharT;
+  using __prepare_write_type _CCCL_NODEBUG = void (*)(__fmt_output_buffer<_CharT>&, size_t);
 
   _CCCL_HOST_DEVICE_API constexpr explicit __fmt_output_buffer(
     _CharT* __ptr,
@@ -358,20 +358,20 @@ public:
 template <class _It, class = void>
 struct __fmt_back_insert_iterator_container
 {
-  using type _CCCL_NODEBUG_ALIAS = void;
+  using type _CCCL_NODEBUG = void;
 };
 
 template <class _Container>
 struct __fmt_back_insert_iterator_container<__back_insert_iterator<_Container>, enable_if_t<__fmt_insertable<_Container>>>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Container;
+  using type _CCCL_NODEBUG = _Container;
 };
 
 // A dynamically growing buffer.
 template <class _CharT>
 class __fmt_allocating_buffer : public __fmt_output_buffer<_CharT>
 {
-  using _Alloc _CCCL_NODEBUG_ALIAS = allocator<_CharT>;
+  using _Alloc _CCCL_NODEBUG = allocator<_CharT>;
 
   // Since allocating is expensive the class has a small internal buffer. When
   // its capacity is exceeded a dynamic buffer will be allocated.
@@ -392,7 +392,7 @@ class __fmt_allocating_buffer : public __fmt_output_buffer<_CharT>
     // _CharT is an implicit lifetime type so can be used without explicit
     // construction or destruction.
     _Alloc __alloc;
-    auto __result = ::cuda::std::__allocate_at_least(__alloc, __capacity);
+    auto __result = ::cuda::std::allocate_at_least(__alloc, __capacity);
     ::cuda::std::copy_n(__ptr_, this->__size(), __result.ptr);
     if (__ptr_ != __small_buffer_)
     {
@@ -533,7 +533,7 @@ public:
 
 // Selects the type of the buffer used for the output iterator.
 template <class _OutIt, class _CharT, class _Container = typename __fmt_back_insert_iterator_container<_OutIt>::type>
-using __fmt_buffer_select_t _CCCL_NODEBUG_ALIAS =
+using __fmt_buffer_select_t _CCCL_NODEBUG =
   conditional_t<!same_as<_Container, void>,
                 __fmt_container_inserter_buffer<_OutIt, _CharT>,
                 conditional_t<__fmt_enable_direct_output<_OutIt, _CharT>,

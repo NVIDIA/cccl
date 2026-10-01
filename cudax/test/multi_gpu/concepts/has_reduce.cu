@@ -36,9 +36,9 @@ _CCCL_END_NV_DIAG_SUPPRESS()
 
 C2H_TEST("__has_reduce concept", "[multi_gpu][concepts]")
 {
-  STATIC_REQUIRE(cudax::__has_reduce<types::collective_communicator_model>);
-  STATIC_REQUIRE(cudax::__has_reduce<types::collective_communicator_model, long*>);
-  STATIC_REQUIRE(!cudax::__has_reduce<types::communicator_model>);
+  STATIC_REQUIRE(cudax::mgmn::__has_reduce<types::collective_communicator_model>);
+  STATIC_REQUIRE(cudax::mgmn::__has_reduce<types::collective_communicator_model, long*>);
+  STATIC_REQUIRE(!cudax::mgmn::__has_reduce<types::communicator_model>);
 
-  STATIC_REQUIRE(!cudax::__has_reduce<reduce_returns_int>);
+  STATIC_REQUIRE(!cudax::mgmn::__has_reduce<reduce_returns_int>);
 }

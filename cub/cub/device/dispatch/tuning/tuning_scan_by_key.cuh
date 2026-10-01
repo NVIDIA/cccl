@@ -1159,6 +1159,80 @@ private:
                 delay_ctor_key_size, sizeof(int), delay_ctor_key_is_primitive_or_trivially_copyable, true)};
     };
 
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
+    {
+      // tunings from cub/benchmarks/bench/scan/exclusive/by_key.cu. int32 and int64 keys were tuned with value sizes
+      // 1/2/4/8/16 each; the combinations without an entry below (key size 4 with value sizes 1/16, key size 8 with
+      // value sizes 2/4/16) showed no improvement during verification benchmarks. Keys of size 1, 2, and 16 bytes
+      // were not tuned. Untuned shapes fall through to the sm100 tunings below.
+      if (primitive_op && primitive_value)
+      {
+        switch (key_size)
+        {
+          case 4:
+            switch (value_size)
+            {
+              case 2:
+                // ipt_20.tpb_224.ns_460.dcid_0.l2w_1195.trp_1.ld_0  1.307715  1.206044  1.337792  1.636066
+                return {224,
+                        20,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
+                        lookback_delay_policy_from_type<no_delay_constructor_t<1195>>};
+              case 4:
+                // ipt_20.tpb_288.ns_552.dcid_7.l2w_595.trp_1.ld_1  1.229061  1.108666  1.244334  1.371951
+                return {288,
+                        20,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_CA,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
+                        lookback_delay_policy_from_type<exponential_backon_constructor_t<552, 595>>};
+              case 8:
+                // ipt_19.tpb_128.ns_104.dcid_1.l2w_985.trp_1.ld_1  1.228535  1.098424  1.255085  1.476489
+                return {128,
+                        19,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_CA,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
+                        lookback_delay_policy_from_type<fixed_delay_constructor_t<104, 985>>};
+              default:
+                break;
+            }
+            break;
+          case 8:
+            switch (value_size)
+            {
+              case 1:
+                // ipt_13.tpb_320.ns_16.dcid_2.l2w_520.trp_1.ld_0  1.137893  1.009494  1.124837  1.226726
+                return {320,
+                        13,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
+                        lookback_delay_policy_from_type<exponential_backoff_constructor_t<16, 520>>};
+              case 8:
+                // ipt_17.tpb_160.ns_92.dcid_5.l2w_515.trp_1.ld_1  1.133580  1.023188  1.150020  1.300613
+                return {160,
+                        17,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_CA,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
+                        lookback_delay_policy_from_type<exponential_backon_jitter_window_constructor_t<92, 515>>};
+              default:
+                break;
+            }
+            break;
+          default:
+            break;
+        }
+      }
+    }
     if (cc >= ::cuda::compute_capability{10, 0})
     {
       if (primitive_op && primitive_value)

@@ -21,12 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__event/event.h>
-#include <cuda/__event/event_ref.h>
-#include <cuda/__event/timed_event.h>
-#include <cuda/__stream/get_stream.h>
-#include <cuda/__stream/invalid_stream.h>
-#include <cuda/__stream/stream.h>
-#include <cuda/__stream/stream_ref.h>
+#include <cuda/__event/event.h> // IWYU pragma: export
+#include <cuda/__event/event_ref.h> // IWYU pragma: export
+#include <cuda/__event/timed_event.h> // IWYU pragma: export
+#include <cuda/__stream/get_stream.h> // IWYU pragma: export
+#include <cuda/__stream/invalid_stream.h> // IWYU pragma: export
+#include <cuda/__stream/stream.h> // IWYU pragma: export
+#include <cuda/__stream/stream_ref.h> // IWYU pragma: export
 
 #endif //_CUDA_STREAM

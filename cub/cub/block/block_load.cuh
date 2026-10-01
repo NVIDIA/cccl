@@ -9,6 +9,8 @@
 
 #include <cub/config.cuh>
 
+#include <thrust/type_traits/is_contiguous_iterator.h>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -608,7 +610,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectWarpStriped(
 
 //! @brief cub::BlockLoadAlgorithm enumerates alternative algorithms for cub::BlockLoad to read a linear segment of data
 //!        from memory into a blocked arrangement across a CUDA thread block.
-enum BlockLoadAlgorithm
+enum BlockLoadAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
   //! @rst
   //! Overview
@@ -1009,8 +1011,7 @@ public:
       {
         InternalLoadDirectBlockedVectorized<RandomAccessIterator::__modifier>(linear_tid, block_src_it.ptr, dst_items);
       }
-      else if constexpr (::cuda::std::contiguous_iterator<RandomAccessIterator>
-                         && ::cuda::std::__can_to_address<RandomAccessIterator>)
+      else if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIterator>)
       {
         InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, ::cuda::std::to_address(block_src_it), dst_items);
       }

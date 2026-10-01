@@ -19,7 +19,7 @@ CUB_TEST("DevicePartition::Flagged legacy size-query is unambiguous", "[partitio
   int* d_out          = nullptr;
   int* d_num_selected = nullptr;
   size_t bytes        = 0;
-  int n               = 0;
+  const int n         = 0;
 
   REQUIRE(cudaSuccess == cub::DevicePartition::Flagged(nullptr, bytes, d_in, d_flags, d_out, d_num_selected, n));
 }
@@ -30,7 +30,7 @@ CUB_TEST("DevicePartition::If legacy size-query is unambiguous", "[partition][de
   int* d_out          = nullptr;
   int* d_num_selected = nullptr;
   size_t bytes        = 0;
-  int n               = 0;
+  const int n         = 0;
 
   REQUIRE(
     cudaSuccess == cub::DevicePartition::If(nullptr, bytes, d_in, d_out, d_num_selected, n, ::cuda::always_true{}));
@@ -44,7 +44,7 @@ CUB_TEST("DevicePartition::If three-way legacy size-query is unambiguous", "[par
   int* d_unselected   = nullptr;
   int* d_num_selected = nullptr;
   size_t bytes        = 0;
-  int n               = 0;
+  const int n         = 0;
 
   REQUIRE(
     cudaSuccess

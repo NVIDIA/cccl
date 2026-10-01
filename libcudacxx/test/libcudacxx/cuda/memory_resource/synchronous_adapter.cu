@@ -34,11 +34,11 @@ constexpr bool same_properties =
 
 struct explicit_dynamic_resource
 {
-  void* allocate_sync(size_t, size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate_sync(void*, size_t, size_t) noexcept {}
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
   friend constexpr void get_property(const explicit_dynamic_resource&, cuda::mr::host_accessible) noexcept {}
   friend constexpr cuda::mr::__memory_accessibility
   get_property(const explicit_dynamic_resource&, cuda::mr::dynamic_accessibility_property) noexcept
@@ -49,7 +49,7 @@ struct explicit_dynamic_resource
 
 C2H_CCCLRT_TEST("synchronous_resource_adapter", "[memory_resource]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
 
   SECTION("Test wrapping a resource")
   {
@@ -92,7 +92,7 @@ C2H_CCCLRT_TEST("synchronous_resource_adapter", "[memory_resource]")
 
   SECTION("explicit dynamic_accessibility_property overrides template")
   {
-    cuda::mr::synchronous_resource_adapter<explicit_dynamic_resource> adapter{explicit_dynamic_resource{}};
+    const cuda::mr::synchronous_resource_adapter<explicit_dynamic_resource> adapter{explicit_dynamic_resource{}};
     STATIC_CHECK(cuda::has_property<decltype(adapter), cuda::mr::dynamic_accessibility_property>);
     CHECK(get_property(adapter, cuda::mr::dynamic_accessibility_property{})
           == cuda::mr::__memory_accessibility ::__device);

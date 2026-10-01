@@ -53,7 +53,8 @@ Operator = Callable | OpKind | RawOp | OpAdapter
 Algorithms accept the following objects as operators:
 
 * Python functions or lambdas implementing the operator. This function will be JIT
-  compiled into device code using `numba.cuda <https://nvidia.github.io/numba-cuda/>`_.
+  compiled into device code using
+  `numba-cuda-mlir <https://nvidia.github.io/numba-cuda-mlir/>`_.
 
 * :class:`OpKind <cuda.compute.op.OpKind>` enumerators which are pre-defined constants
   for common operations.

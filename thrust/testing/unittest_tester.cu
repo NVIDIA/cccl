@@ -1,46 +1,40 @@
 #include <unittest/unittest.h>
 
-void TestAssertEqual()
+TEST_CASE("TestAssertEqual", "[unittest_tester]")
 {
-  ASSERT_EQUAL(0, 0);
-  ASSERT_EQUAL(1, 1);
-  ASSERT_EQUAL(-15.0f, -15.0f);
+  REQUIRE(0 == 0);
+  REQUIRE(1 == 1);
+  REQUIRE(-15.0f == -15.0f);
 }
-DECLARE_UNITTEST(TestAssertEqual);
 
-void TestAssertLEqual()
+TEST_CASE("TestAssertLEqual", "[unittest_tester]")
 {
-  ASSERT_LEQUAL(0, 1);
-  ASSERT_LEQUAL(0, 0);
+  REQUIRE(0 <= 1);
+  REQUIRE(0 <= 0);
 }
-DECLARE_UNITTEST(TestAssertLEqual);
 
-void TestAssertGEqual()
+TEST_CASE("TestAssertGEqual", "[unittest_tester]")
 {
-  ASSERT_GEQUAL(1, 0);
-  ASSERT_GEQUAL(0, 0);
+  REQUIRE(1 >= 0);
+  REQUIRE(0 >= 0);
 }
-DECLARE_UNITTEST(TestAssertGEqual);
 
-void TestAssertLess()
+TEST_CASE("TestAssertLess", "[unittest_tester]")
 {
-  ASSERT_LESS(0, 1);
+  REQUIRE(0 < 1);
 }
-DECLARE_UNITTEST(TestAssertLess);
 
-void TestAssertGreater()
+TEST_CASE("TestAssertGreater", "[unittest_tester]")
 {
-  ASSERT_GREATER(1, 0);
+  REQUIRE(1 > 0);
 }
-DECLARE_UNITTEST(TestAssertGreater);
 
-void TestTypeName()
+TEST_CASE("TestTypeName", "[unittest_tester]")
 {
-  ASSERT_EQUAL(unittest::type_name<char>(), "char");
-  ASSERT_EQUAL(unittest::type_name<signed char>(), "signed char");
-  ASSERT_EQUAL(unittest::type_name<unsigned char>(), "unsigned char");
-  ASSERT_EQUAL(unittest::type_name<int>(), "int");
-  ASSERT_EQUAL(unittest::type_name<float>(), "float");
-  ASSERT_EQUAL(unittest::type_name<double>(), "double");
+  REQUIRE(unittest::type_name<char>() == "char");
+  REQUIRE(unittest::type_name<signed char>() == "signed char");
+  REQUIRE(unittest::type_name<unsigned char>() == "unsigned char");
+  REQUIRE(unittest::type_name<int>() == "int");
+  REQUIRE(unittest::type_name<float>() == "float");
+  REQUIRE(unittest::type_name<double>() == "double");
 }
-DECLARE_UNITTEST(TestTypeName);

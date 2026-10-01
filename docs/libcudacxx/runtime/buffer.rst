@@ -1,8 +1,5 @@
 .. _cccl-runtime-buffer:
 
-.. |cuda_make_buffer| replace:: ``cuda::make_buffer``
-.. _cuda_make_buffer: ../api/namespacecuda_1a8d909070d4cf758e776659b91e473a6f.html
-
 Buffer
 ======
 
@@ -201,11 +198,11 @@ Example:
     // Alternative would be to call buf.destroy(stream2)
    }
 
-|cuda_make_buffer|_
+:ref:`cuda::make_buffer <libcudacxx-api-function-cuda-ns-make_buffer>`
 ------------------------------------------------------------------------------------------------
 .. _cccl-runtime-buffer-make-buffer:
 
-|cuda_make_buffer|_ is a factory function that
+:ref:`cuda::make_buffer <libcudacxx-api-function-cuda-ns-make_buffer>` is a factory function that
 creates buffers with automatic property deduction from the memory resource. It supports the same construction patterns
 as the buffer constructors, in addition to an overload that sets all elements of the buffer to the same value.
 

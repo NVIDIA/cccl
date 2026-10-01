@@ -26,8 +26,8 @@
 #  include <cuda/__memory_pool/memory_pool_base.h>
 #  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__utility/no_init.h>
-#  include <cuda/std/__concepts/concept_macros.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -133,7 +133,7 @@ struct managed_memory_pool : managed_memory_pool_ref
   {
     if (__pool_ != nullptr)
     {
-      _CCCL_ASSERT_CUDA_API(::cuda::__driver::__mempoolDestroyNoThrow, "Failed to destroy a memory pool", __pool_);
+      _CCCL_ASSERT_DRIVER_API(::cuda::__driver::__mempoolDestroyNoThrow, "Failed to destroy a memory pool", __pool_);
     }
   }
 

@@ -22,7 +22,7 @@ struct scalar_to_vec_t<VectorT, ::cuda::std::void_t<decltype(VectorT::x)>>
   __host__ __device__ __forceinline__ auto operator()(T scalar) const -> VectorT
   {
     const auto c = static_cast<decltype(VectorT::x)>(scalar);
-    VectorT r;
+    VectorT r{};
     constexpr auto components = ::cuda::std::tuple_size_v<VectorT>;
     if constexpr (components >= 1)
     {
@@ -51,7 +51,7 @@ void fill_striped(IteratorT it)
 
   constexpr int warps_in_block = ThreadsPerBlock / LogicalWarpThreads;
   constexpr int items_per_warp = LogicalWarpThreads * ItemsPerThread;
-  scalar_to_vec_t<T> convert;
+  const scalar_to_vec_t<T> convert;
 
   for (int warp_id = 0; warp_id < warps_in_block; warp_id++)
   {

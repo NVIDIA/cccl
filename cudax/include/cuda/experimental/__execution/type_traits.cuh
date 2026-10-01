@@ -30,16 +30,16 @@
 namespace cuda::experimental::execution
 {
 template <class _Ret, class... _Args>
-using __fn_t _CCCL_NODEBUG_ALIAS = _Ret(_Args...);
+using __fn_t _CCCL_NODEBUG = _Ret(_Args...);
 
 template <class _Ret, class... _Args>
-using __fn_ptr_t _CCCL_NODEBUG_ALIAS = _Ret (*)(_Args...);
+using __fn_ptr_t _CCCL_NODEBUG = _Ret (*)(_Args...);
 
 template <class _Ty>
-using __cref_t _CCCL_NODEBUG_ALIAS = _Ty const&;
+using __cref_t _CCCL_NODEBUG = _Ty const&;
 
-using __cp _CCCL_NODEBUG_ALIAS    = ::cuda::std::__type_self;
-using __cpclr _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_quote1<__cref_t>;
+using __cp _CCCL_NODEBUG    = ::cuda::std::__type_self;
+using __cpclr _CCCL_NODEBUG = ::cuda::std::__type_quote1<__cref_t>;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

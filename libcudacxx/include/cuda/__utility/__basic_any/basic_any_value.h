@@ -32,10 +32,8 @@
 #include <cuda/__utility/__basic_any/virtual_tables.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_class.h>
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
@@ -186,7 +184,7 @@ public:
   template <bool _Copyable = __copyable, ::cuda::std::enable_if_t<_Copyable, int> = 0>
   _CCCL_HOST_DEVICE_API __basic_any(__basic_any<_Interface&>&& __other)
   {
-    __convert_from(__other);
+    __convert_from(::cuda::std::move(__other));
   }
 
 #if _CCCL_COMPILER(CLANG, <, 12) || _CCCL_COMPILER(GCC, <, 11)
@@ -228,6 +226,9 @@ public:
   //! __basic_any(cuda::std::move(__other)).swap(*this);
   //! return *this;
   //! @endcode
+  // The return type is already __basic_any&; __assign_from returns *this, which the check
+  // does not follow.
+  // NOLINTBEGIN(misc-unconventional-assign-operator)
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES((!::cuda::std::same_as<_OtherInterface, _Interface>)
                    _CCCL_AND __any_convertible_to<__basic_any<_OtherInterface>, __basic_any>)
@@ -235,6 +236,7 @@ public:
   {
     return __assign_from(::cuda::std::move(__other));
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
   //! @brief Converting copy assignment operator from a compatible `__basic_any`
   //! object.
@@ -245,6 +247,7 @@ public:
   //! __basic_any(__other).swap(*this);
   //! return *this;
   //! @endcode
+  // NOLINTBEGIN(misc-unconventional-assign-operator): __assign_from returns *this
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES((!::cuda::std::same_as<_OtherInterface, _Interface>)
                    _CCCL_AND __any_convertible_to<__basic_any<_OtherInterface> const&, __basic_any>)
@@ -252,6 +255,7 @@ public:
   {
     return __assign_from(__other);
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 #else
   // nvcc 12.0 has a bug with its concepts implementation where substitution occurs too
   // early here causing a hard error. So we use SFINAE to work around it.
@@ -423,7 +427,7 @@ private:
 
   _CCCL_HOST_DEVICE_API void __release_()
   {
-    __vptr_for<_Interface> __vptr = nullptr;
+    const __vptr_for<_Interface> __vptr = nullptr;
     __vptr_.__set(__vptr, false);
   }
 
@@ -462,7 +466,7 @@ private:
       }
     }
 
-    __vptr_for<_Interface> __vptr = ::cuda::__get_vtable_ptr_for<_Interface, _Tp>();
+    const __vptr_for<_Interface> __vptr = ::cuda::__get_vtable_ptr_for<_Interface, _Tp>();
     __vptr_.__set(__vptr, __is_small<_Tp, __movable>(__size_, __align_));
     return *::cuda::std::launder(static_cast<_Tp*>(__get_optr()));
   }
@@ -494,11 +498,12 @@ private:
   // __basic_any<__ireference<_SrcInterface const>>).
   _CCCL_TEMPLATE(class _SrcInterface)
   _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface>, __basic_any>)
-  _CCCL_HOST_DEVICE_API void
-  __convert_from(__basic_any<_SrcInterface>&& __from) noexcept(::cuda::std::same_as<_SrcInterface, _Interface>)
+  _CCCL_HOST_DEVICE_API void __convert_from(
+    __basic_any<_SrcInterface>&& __from // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    ) noexcept(::cuda::std::same_as<_SrcInterface, _Interface>)
   {
     _CCCL_ASSERT(!has_value(), "forgot to clear the destination object first");
-    using __src_interface_t _CCCL_NODEBUG_ALIAS = __remove_ireference_t<_SrcInterface>;
+    using __src_interface_t _CCCL_NODEBUG = __remove_ireference_t<_SrcInterface>;
     // if the source is an lvalue reference, we need to copy from it.
     if constexpr (__is_lvalue_reference_v<_SrcInterface>)
     {
@@ -535,7 +540,7 @@ private:
   _CCCL_HOST_DEVICE_API void __convert_from(__basic_any<_SrcInterface> const& __from)
   {
     _CCCL_ASSERT(!has_value(), "forgot to clear the destination object first");
-    using __src_interface_t _CCCL_NODEBUG_ALIAS = __remove_ireference_t<::cuda::std::remove_reference_t<_SrcInterface>>;
+    using __src_interface_t _CCCL_NODEBUG = __remove_ireference_t<::cuda::std::remove_reference_t<_SrcInterface>>;
     if (auto __to_vptr = __vptr_cast<__src_interface_t, _Interface>(__from.__get_vptr()))
     {
       bool const __small = __from.__copy_to(__buffer_, __size_, __align_);

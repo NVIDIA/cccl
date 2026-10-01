@@ -626,19 +626,19 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<nullptr_t> : public __unary_function<n
 };
 
 template <class _Key, class _Hash>
-using __check_hash_requirements _CCCL_NODEBUG_ALIAS = integral_constant<
+using __check_hash_requirements _CCCL_NODEBUG = integral_constant<
   bool,
   is_copy_constructible_v<_Hash> && is_move_constructible_v<_Hash> && __invocable_r<size_t, _Hash, _Key const&>::value>;
 
 template <class _Key, class _Hash = hash<_Key>>
-using __has_enabled_hash _CCCL_NODEBUG_ALIAS =
+using __has_enabled_hash _CCCL_NODEBUG =
   integral_constant<bool, __check_hash_requirements<_Key, _Hash>::value && is_default_constructible_v<_Hash>>;
 
 template <class _Type, class>
-using __enable_hash_helper_imp _CCCL_NODEBUG_ALIAS = _Type;
+using __enable_hash_helper_imp _CCCL_NODEBUG = _Type;
 
 template <class _Type, class... _Keys>
-using __enable_hash_helper _CCCL_NODEBUG_ALIAS =
+using __enable_hash_helper _CCCL_NODEBUG =
   __enable_hash_helper_imp<_Type, enable_if_t<__fold_and_v<__has_enabled_hash<_Keys>::value...>>>;
 
 _CCCL_END_NAMESPACE_CUDA_STD

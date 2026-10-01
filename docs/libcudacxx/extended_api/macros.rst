@@ -28,6 +28,14 @@ included, and do not require including a specific header file.
    * - .. toctree::
           :maxdepth: 1
 
+          ../api/macro_cccl_host_compiler
+     - Detecting the current host compiler and optionally comparing its version.
+     - CCCL 3.6.0
+     - CUDA 13.6
+
+   * - .. toctree::
+          :maxdepth: 1
+
           ../api/macro_cccl_os
      - Detecting the current operating system.
      - CCCL 3.4.0
