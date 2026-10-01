@@ -357,6 +357,45 @@ class _LoadStoreRewrite:
         context: GroupRewriteContext,
         inference: PayloadInference,
     ) -> None:
+        """Reconcile Load/Store payload shape and dtype.
+
+        Array payloads supply their static extent; scalars imply one item per
+        thread. Prefer the memory element dtype when available, while checking
+        it against any known payload dtype. For an untyped Store array, inspect
+        typed writes before recording a destination-derived dtype so an
+        incompatible producer cannot be hidden by the destination type.
+
+        Record inferred dtypes back through payload aliases for later
+        constructor lowering. Static scalar Store values use scalar coercion
+        rules against the destination dtype, while runtime scalars must match it
+        exactly when their type is known. This phase updates inference metadata;
+        boxing a scalar into the provider's array operand happens during
+        runtime-argument emission.
+
+        Parameters
+        ----------
+        context : GroupRewriteContext
+            Payload, dtype, write-provenance, and scalar-provenance
+            accessors.
+        inference : PayloadInference
+            Mutable Load/Store inference state. Runtime operands are memory
+            then payload; factory keywords and payload dtype caches may be
+            updated.
+
+        Returns
+        -------
+        None
+            Available shape and dtype facts are merged into the inference
+            state.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            Known memory and payload dtypes conflict, static scalar
+            conversion fails, or inferred values violate the supported
+            numeric contract.
+        """
+
         payload_var, payload_spec = inference.candidate(1)
         memory_var = (
             inference.runtime_args[0] if inference.runtime_args else None
