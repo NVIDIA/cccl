@@ -156,12 +156,27 @@ def _warn_incompatible(candidate: _Candidate, error: Exception) -> None:
 
 
 def _auto_register_known_dsls() -> tuple[str, ...]:
-    """Enable compatible runtimes that the application already imported.
+    """Activate allowlisted runtimes already imported by the application.
 
-    Merely importing cuda.coop must remain host-only and must not import CUDA
-    bindings. Applications that import Numba-CUDA-MLIR first get automatic
-    activation; applications that import cuda.coop first can call
-    cuda.coop.register("numba-cuda-mlir") to activate explicitly.
+    The root package import must remain usable without loading an optional
+    compiler or CUDA bindings. Inspect ``sys.modules`` first: installing a
+    runtime is insufficient to activate it. Compiler-first imports get this
+    automatic activation; root-first callers can use
+    ``cuda.coop.register("numba-cuda-mlir")`` explicitly.
+
+    Respect ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION`` and reuse qualified
+    backends already in ``sys.modules``. For a new attempt, snapshot loaded
+    modules so failure cleanup removes only newly imported backend modules.
+    An absent optional runtime is skipped silently; other activation
+    exceptions produce ``CudaCoopAutoRegistrationWarning`` and allow probing
+    to continue. Registry rollback is the qualified backend's responsibility.
+
+    Returns
+    -------
+    tuple of str
+        Internal backend names successfully activated or already loaded, in
+        candidate order. Empty when probing is disabled or no candidate
+        qualifies. Does not include missing or unsuccessfully activated DSLs.
     """
 
     if _auto_registration_disabled():
