@@ -23,6 +23,7 @@ from cuda.coop._core import (
     ScanMode,
     ScanValueKind,
     StatefulOperator,
+    classify_parameter,
     make_block_scan_specialization,
     make_scan_semantics,
 )
@@ -248,7 +249,9 @@ def test_block_scan_custom_operator_and_initial_value_signature():
     assert specialization.specialization.fake_return
     assert [
         (item.kind, item.role)
-        for item in specialization.specialization.classify_method()
+        for item in map(
+            classify_parameter, specialization.specialization.parameters[0]
+        )
     ] == [
         (ArgumentKind.RUNTIME, ParameterRole.TEMP_STORAGE),
         (ArgumentKind.RUNTIME, ParameterRole.INPUT),
@@ -277,7 +280,9 @@ def test_block_scan_accepts_stateless_python_operator():
         ),
     )
 
-    operator = specialization.specialization.classify_method()[-1]
+    operator = classify_parameter(
+        specialization.specialization.parameters[0][-1]
+    )
     assert operator.kind is ArgumentKind.STATIC
     assert operator.role is ParameterRole.OPERATOR
 
@@ -300,7 +305,7 @@ def test_block_scan_sum_accepts_stateless_prefix_callback():
     )
 
     assert specialization.method_name == "InclusiveSum"
-    assert specialization.has_prefix_callback
+    assert specialization.call.prefix_callback is not None
     assert [
         item.name for item in specialization.specialization.parameters[0]
     ] == [
@@ -309,7 +314,9 @@ def test_block_scan_sum_accepts_stateless_prefix_callback():
         "output",
         "prefix_op",
     ]
-    classification = specialization.specialization.classify_method()[-1]
+    classification = classify_parameter(
+        specialization.specialization.parameters[0][-1]
+    )
     assert classification.kind is ArgumentKind.STATIC
     assert classification.role is ParameterRole.OPERATOR
 
@@ -347,9 +354,9 @@ def test_block_scan_prefix_callback_follows_scan_operator_in_cub_signature():
     )
 
     assert specialization.method_name == "ExclusiveScan"
-    assert specialization.has_prefix_callback
-    assert not specialization.has_initial_value
-    assert not specialization.has_block_aggregate
+    assert specialization.call.prefix_callback is not None
+    assert specialization.call.initial_value is None
+    assert not specialization.call.aggregate
     method = specialization.specialization.parameters[0]
     assert [item.name for item in method] == [
         "temp_storage",
@@ -360,7 +367,9 @@ def test_block_scan_prefix_callback_follows_scan_operator_in_cub_signature():
     ]
     assert [
         (item.kind, item.role)
-        for item in specialization.specialization.classify_method()
+        for item in map(
+            classify_parameter, specialization.specialization.parameters[0]
+        )
     ] == [
         (ArgumentKind.RUNTIME, ParameterRole.TEMP_STORAGE),
         (ArgumentKind.RUNTIME, ParameterRole.INPUT),
