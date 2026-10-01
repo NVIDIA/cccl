@@ -67,17 +67,26 @@ struct policy_selector
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> SetOpsPolicy
   {
-    // The number of items per thread is scaled from a nominal 4-byte budget by the key size.
-    // NOTE: this differs slightly from the original Thrust implementation, which rounded the scaled item count up
-    // ((nominal * 4 + key_size - 1) / key_size) whereas nominal_4B_items_to_items rounds down (nominal * 4 / key_size).
-    // They agree for 1/2/4-byte keys but differ for 8-byte keys (9 vs 10 items per thread), giving a different tiling.
+    // The number of items per thread is scaled from a nominal 4-byte budget by the key size, rounding up (matching
+    // the original Thrust implementation). nominal_4B_items_to_items rounds down instead, which agrees for 1/2/4-byte
+    // keys but gives a smaller items-per-thread (and thus a different, more tile-heavy, sometimes slower) tiling for
+    // 8-byte keys -- this caused measurable regressions in some set operations (e.g. union, symmetric_difference),
+    // since more tiles means a longer decoupled-lookback dependency chain.
     if (cc >= ::cuda::compute_capability{6, 0})
     {
-      return SetOpsPolicy{512, nominal_4B_items_to_items(19, key_size), LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS};
+      constexpr int nominal_items_per_thread = 19;
+      const int items_per_thread =
+        (::cuda::std::min) (nominal_items_per_thread,
+                            (::cuda::std::max) (1, (nominal_items_per_thread * 4 + key_size - 1) / key_size));
+      return SetOpsPolicy{512, items_per_thread, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS};
     }
 
     // default is SM52
-    return SetOpsPolicy{256, nominal_4B_items_to_items(15, key_size), LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS};
+    constexpr int nominal_items_per_thread = 15;
+    const int items_per_thread =
+      (::cuda::std::min) (nominal_items_per_thread,
+                          (::cuda::std::max) (1, (nominal_items_per_thread * 4 + key_size - 1) / key_size));
+    return SetOpsPolicy{256, items_per_thread, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS};
   }
 };
 
