@@ -1333,7 +1333,42 @@ class _StorageRewrite:
     def _validate_temp_storage_uses(
         self, func_ir, matches: dict[ir.Assign, _RewriteMatch]
     ) -> None:
-        """Ensure TempStorage descriptors only feed a primitive keyword."""
+        """Reject storage descriptors that escape their compile-time role.
+
+        After recording all constructors and matches, inspect every use through
+        its alias provenance. Allow simple alias, cast, and phi assignments and
+        one ``temp_storage=`` keyword on a recognized primitive; descriptor
+        values cannot be ordinary runtime operands, returned objects, or
+        arbitrary call arguments. Subscripted-provider syntax is not an accepted
+        descriptor use. Every canonical constructor must have a primitive
+        consumer.
+
+        Before inlining, ``match`` defers functions that pass descriptors to
+        device helpers. If such a call remains when this validation runs, report
+        that the helper was not inlined. Perform these checks before compiling
+        providers so invalid descriptor escapes fail without materialization.
+        The scan updates the current block lookup state; its caller restores it.
+
+        Parameters
+        ----------
+        func_ir : FunctionIR
+            Entire function whose constructors have been recorded.
+        matches : dict of ir.Assign to _RewriteMatch
+            Recognized primitive calls keyed by their original assignments.
+
+        Returns
+        -------
+        None
+            All descriptor uses and constructor consumers satisfy the
+            contract.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            A storage argument lacks local constructor provenance, a
+            descriptor escapes to runtime, or a constructor has no primitive
+            consumer.
+        """
         rewrite = cast("CoopSinglePhaseRewrite", self)
 
         if not self._temp_storage_ctor_specs:
