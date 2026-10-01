@@ -629,7 +629,7 @@ def check_radix_surface() -> None:
         coop.radix_sort_keys(block, keys), coop.ThreadDataLike[np.int32]
     )
     assert_type(
-        coop.radix_rank(block, keys, radix_bits=4),
+        coop.radix_rank_keys(block, keys, radix_bits=4),
         coop.ThreadDataLike[np.int32],
     )
     assert_type(
@@ -638,7 +638,7 @@ def check_radix_surface() -> None:
     )
     prefix = coop.ThreadData(items_per_thread=1, dtype=np.int32)
     assert_type(
-        coop.radix_rank(block, keys, exclusive_digit_prefix=prefix),
+        coop.radix_rank_keys(block, keys, exclusive_digit_prefix=prefix),
         coop.ThreadDataLike[np.int32],
     )
     assert_type(

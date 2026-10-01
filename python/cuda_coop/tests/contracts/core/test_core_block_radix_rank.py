@@ -17,6 +17,7 @@ from cuda.coop._core import (
     RuntimeValue,
     TempStorageParameter,
     Value,
+    classify_parameter,
 )
 from cuda.coop._core.block import (
     RadixOrder,
@@ -88,7 +89,9 @@ def test_radix_rank_spec_owns_cub_specialization_and_full_abi():
     )
     assert [
         (parameter.kind, parameter.role)
-        for parameter in spec.specialization.classify_method()
+        for parameter in map(
+            classify_parameter, spec.specialization.parameters[0]
+        )
     ] == [
         (ArgumentKind.RUNTIME, ParameterRole.TEMP_STORAGE),
         (ArgumentKind.RUNTIME, ParameterRole.INPUT),

@@ -6,14 +6,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from ._compiler._operations import group_operation
-from ._group_marker import group_primitive_marker
-from ._thread_group import ThreadGroup
+from .._compiler._operations import group_operation
+from .._thread_group import ThreadGroup
+from ._marker import group_primitive_marker
 
 
 @group_operation(
     "radix_sort_keys",
-    family_module="cuda.coop.numba_mlir._compiler._group_radix",
+    family_module="cuda.coop.numba_mlir._compiler._group_radix_sort",
 )
 def radix_sort_keys(
     group: ThreadGroup,
@@ -82,7 +82,7 @@ def radix_sort_keys(
 
 @group_operation(
     "radix_sort_pairs",
-    family_module="cuda.coop.numba_mlir._compiler._group_radix",
+    family_module="cuda.coop.numba_mlir._compiler._group_radix_sort",
 )
 def radix_sort_pairs(
     group: ThreadGroup,
@@ -149,9 +149,10 @@ def radix_sort_pairs(
 
 
 @group_operation(
-    "radix_rank", family_module="cuda.coop.numba_mlir._compiler._group_radix"
+    "radix_rank_keys",
+    family_module="cuda.coop.numba_mlir._compiler._group_radix_sort",
 )
-def radix_rank(
+def radix_rank_keys(
     group: ThreadGroup,
     keys: Any,
     /,
@@ -202,7 +203,7 @@ def radix_rank(
     output. Scratch allocation and its reuse barrier are automatic.
     """
     return group_primitive_marker(
-        "radix_rank",
+        "radix_rank_keys",
         group,
         keys,
         begin_bit=begin_bit,
@@ -213,4 +214,4 @@ def radix_rank(
     )
 
 
-__all__ = ["radix_rank", "radix_sort_keys", "radix_sort_pairs"]
+__all__ = ["radix_rank_keys", "radix_sort_keys", "radix_sort_pairs"]

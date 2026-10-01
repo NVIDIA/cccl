@@ -41,7 +41,7 @@ from .load_store import (
 from .merge_sort import (
     GroupMergeSortSemantics,
 )
-from .radix import (
+from .radix_sort import (
     GroupRadixRankSemantics,
     GroupRadixSortSemantics,
 )
