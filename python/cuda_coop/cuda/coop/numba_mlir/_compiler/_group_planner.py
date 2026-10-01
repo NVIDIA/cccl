@@ -2,9 +2,29 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import inspect
 from enum import Enum
+from numbers import Integral
+from typing import Any
 
+import numba_cuda_mlir.numba_cuda.types as _numba_types
+from numba_cuda_mlir.cuda.local import array as _cuda_local_array
+from numba_cuda_mlir.extending import (
+    WholeFunctionPlanner,
+    register_planner,
+    require_launch_config,
+)
+from numba_cuda_mlir.numba_cuda.core.errors import ForceLiteralArg
+
+import cuda.coop._core.api as _portable_api
 import cuda.coop._core.api._dispatch as _portable_dispatch
+from cuda.coop._core import (
+    LaunchFactOrigin,
+    LaunchFacts,
+    ThreadGroup,
+    ThreadHierarchy,
+    resolve_thread_group,
+)
 
 from .._temp_storage import TempStorage
 from .._thread_data import ThreadData
@@ -24,26 +44,11 @@ from ._group_planner_support import (
     _GROUP_CONSTRUCTORS,
     _NAME_COUNTER,
     _PORTABLE_GROUP_CONSTRUCTORS,
-    Any,
-    ForceLiteralArg,
     GroupRewriteError,
-    Integral,
-    LaunchFactOrigin,
-    LaunchFacts,
-    ThreadGroup,
-    ThreadHierarchy,
-    WholeFunctionPlanner,
-    _cuda_module,
     _group_operation_name,
     _is_common_root_operation,
-    _portable_api,
     _typed_group_payload_like,
-    inspect,
     ir,
-    register_planner,
-    require_launch_config,
-    resolve_thread_group,
-    types,
 )
 from ._group_planning import GroupPlanningContext
 from ._operations import group_primitive
@@ -177,7 +182,7 @@ class _GroupCallPlanner:
         if depends_on_unroll(value, set()):
             raise GroupRewriteError(
                 "cuda.coop.numba_mlir does not support literal_unroll values "
-                f"that determine {parameter} in the MVP. Write separate "
+                f"that determine {parameter}. Write separate "
                 "cooperative calls with explicit constant shapes/selectors, "
                 "or use an ordinary loop with a fixed cooperative shape."
             )
@@ -211,7 +216,7 @@ class _GroupCallPlanner:
         if isinstance(definition, ir.Arg):
             position = definition.index
             argtype = self.state.args[position]
-            if not isinstance(argtype, types.Literal):
+            if not isinstance(argtype, _numba_types.Literal):
                 raise ForceLiteralArg({position})
             return argtype.literal_value
         if isinstance(definition, (ir.Global, ir.FreeVar, ir.Const)):
@@ -233,10 +238,11 @@ class _GroupCallPlanner:
             definition = self._definition(value)
             if isinstance(definition, ir.Arg):
                 argtype = self.state.args[definition.index]
-                if isinstance(argtype, types.Literal):
+                if isinstance(argtype, _numba_types.Literal):
                     return (True, argtype.literal_value)
-                if isinstance(argtype, types.NoneType) or (
-                    isinstance(argtype, types.Omitted) and argtype.value is None
+                if isinstance(argtype, _numba_types.NoneType) or (
+                    isinstance(argtype, _numba_types.Omitted)
+                    and argtype.value is None
                 ):
                     return (True, None)
                 return (False, None)
@@ -635,7 +641,7 @@ class _GroupCallPlanner:
             return self._is_array_value(
                 definition.args[0], seen=seen, thread_data_only=thread_data_only
             )
-        if function is _cuda_module.local.array:
+        if function is _cuda_local_array:
             return not thread_data_only
         resolved = self._result_source(definition)
         if resolved is None:
@@ -903,7 +909,7 @@ class _GroupCallPlanner:
             if isinstance(extent, Integral) and (not isinstance(extent, bool)):
                 return int(extent)
             return None
-        if function is _cuda_module.local.array:
+        if function is _cuda_local_array:
             shape_ref = (
                 definition.args[0]
                 if definition.args

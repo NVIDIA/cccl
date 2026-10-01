@@ -8,7 +8,7 @@ import operator
 from enum import Enum
 from typing import Any
 
-from numba_cuda_mlir import types
+import numba_cuda_mlir.numba_cuda.types as numba_types
 
 from cuda.coop._core import ArgumentBinding, BindingKind, SynchronizationScope
 from cuda.coop._core.block.shuffle import (
@@ -127,9 +127,9 @@ def shuffle_scalar(
     value_abis = {}
     if distance.kind is BindingKind.RUNTIME:
         provider_dtype, bounds = (
-            (types.int32, (_I32_MIN, _I32_MAX))
+            (numba_types.int32, (_I32_MIN, _I32_MAX))
             if mode is BlockShuffleMode.OFFSET
-            else (types.uint32, (1, block_threads - 1))
+            else (numba_types.uint32, (1, block_threads - 1))
         )
         value_abis["distance"] = BoundedInteger(
             provider_dtype,
