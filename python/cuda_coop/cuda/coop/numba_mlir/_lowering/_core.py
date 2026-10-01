@@ -340,8 +340,7 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         extra_type_definitions: tuple[Any, ...] = (),
         **kwargs: Any,
     ) -> Any:
-        """Build a concrete backend algorithm from a specialized core
-        specification.
+        """Build a backend algorithm from a specialized core specification.
 
         Validate named scalar ABI overrides and array input transforms against
         all matching core parameters before lowering. Scalar overrides must

@@ -1168,8 +1168,8 @@ class Algorithm:
         targets remain distinct.
 
         The first call stores the compile identity, key, and digest on this
-        object. Later calls accept the same identity and key but reject a
-        changed one. When no identity is supplied, query the current CUDA device
+        object. Later calls accept the same identity and key but reject changes
+        to either. When no identity is supplied, query the current CUDA device
         even if a previous call has already qualified the provider.
 
         Parameters
@@ -1354,8 +1354,7 @@ class Algorithm:
         temp_storage_type_name: str | None = "temp_storage_t",
         temp_storage_param_pid: int | None = 0,
     ):
-        """Write the external-call ABI shim around one typed C++ provider
-        wrapper.
+        """Write the external-call ABI shim for one typed C++ wrapper.
 
         ``ExternFunction`` calls a symbol ending in ``__abi`` with a leading
         return slot and an integer status result. Convert untyped pointer
@@ -1506,8 +1505,7 @@ class Algorithm:
     def _source_code(
         self, threads=None, block_threads=None, *, compile_identity=None
     ):
-        """Generate C++ provider wrappers and their compile-time storage
-        metadata.
+        """Generate C++ wrappers and compile-time storage metadata.
 
         Emit a typed wrapper plus an ``__abi`` shim for each specialized method.
         The typed wrapper adapts array pointers to CUB array references, applies
@@ -1518,8 +1516,8 @@ class Algorithm:
 
         For ``LEADING_POINTER`` storage, emit both explicit-scratch and
         ``_alloc`` entry points. Only ``_alloc`` allocates scratch and emits the
-        declared post-call synchronization: one shared object for a block, one
-        shared object per logical warp, or a local object for scope ``NONE``.
+        declared post-call synchronization. It allocates one shared object per
+        block or logical warp, or one local object for scope ``NONE``.
         Warp scratch uses the linear thread rank in the exact enclosing block;
         its width must divide the block size. Explicit-scratch wrappers leave
         allocation and reuse synchronization to their caller. Storage-free
@@ -1906,8 +1904,7 @@ class Algorithm:
     def get_lto_ir(
         self, threads=None, block_threads=None, *, compile_identity=None
     ):
-        """Compile this specialization or reuse its matching in-memory link
-        images.
+        """Compile or reuse this specialization's matching link images.
 
         On first use, generate and compile a provider translation unit to LTO
         IR, then link that image to PTX to read C++ scratch size/alignment
@@ -2237,8 +2234,7 @@ def _param_coalesce_key(param):
 
 
 def algo_coalesce_key(algo, *, threads=None, block_threads=None):
-    """Describe provider semantics for source coalescing and symbol
-    qualification.
+    """Describe a provider for source coalescing and symbol qualification.
 
     Include the C++ operation, ordered ABI descriptors, type-definition source
     and link-image digests, topology, storage/synchronization contracts, and

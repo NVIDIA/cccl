@@ -155,8 +155,7 @@ def _load(
     offset=None,
     threads_in_warp=None,
 ):
-    """Build a Load provider from the planner's specialization and binding
-    choices.
+    """Build a Load provider for the planned specialization and bindings.
 
     Use the registered factory identity to select block/warp semantics and
     verify whether the chosen algorithm requires scratch. Lower the common Load
@@ -413,8 +412,7 @@ def _store(
     offset=None,
     threads_in_warp=None,
 ):
-    """Build a Store provider from the planner's specialization and binding
-    choices.
+    """Build a Store provider for the planned specialization and bindings.
 
     Resolve the registered block/warp factory and its storage contract, then
     materialize the common Store specification with Numba-specific runtime count

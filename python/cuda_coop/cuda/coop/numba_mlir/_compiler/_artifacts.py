@@ -11,8 +11,7 @@ version = namedtuple("version", ("major", "minor"))
 
 
 def make_binary_tempfile(content: bytes, suffix: str):
-    """Write a persistent temporary link input and return its closed file
-    handle.
+    """Write a persistent link-input file and return its closed handle.
 
     Compiler link inputs are consumed by filename after provider construction,
     so flush and close the file before returning while leaving its path intact.
