@@ -1166,8 +1166,6 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-  // ExtremumOutIteratorT, which is wrong IMO
   _CCCL_TEMPLATE(typename InputIteratorT,
                  typename ExtremumOutIteratorT,
                  typename IndexOutIteratorT,
@@ -1276,8 +1274,6 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-  // ExtremumOutIteratorT, which is wrong IMO
   _CCCL_TEMPLATE(typename InputIteratorT,
                  typename ExtremumOutIteratorT,
                  typename IndexOutIteratorT,
@@ -1298,8 +1294,6 @@ public:
 
   //! @overload
   //! @note Uses ``cuda::std::less`` as comparison operator
-  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-  // ExtremumOutIteratorT, which is wrong IMO
   _CCCL_TEMPLATE(typename InputIteratorT,
                  typename ExtremumOutIteratorT,
                  typename IndexOutIteratorT,
@@ -1727,8 +1721,6 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-  // ExtremumOutIteratorT, which is wrong IMO
   _CCCL_TEMPLATE(typename InputIteratorT,
                  typename ExtremumOutIteratorT,
                  typename IndexOutIteratorT,
@@ -1971,8 +1963,6 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-  // ExtremumOutIteratorT, which is wrong IMO
   _CCCL_TEMPLATE(typename InputIteratorT,
                  typename ExtremumOutIteratorT,
                  typename IndexOutIteratorT,
@@ -1997,8 +1987,6 @@ public:
             typename ExtremumOutIteratorT,
             typename IndexOutIteratorT,
             typename EnvT = ::cuda::std::execution::env<>,
-            // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-            // ExtremumOutIteratorT, which is wrong IMO
             ::cuda::std::enable_if_t<!::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ArgMax(InputIteratorT d_in,

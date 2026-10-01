@@ -64,7 +64,7 @@ CCCL_C_API CUresult cccl_device_binary_search_build_ex(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config);
+  const cccl_build_config* config);
 
 CCCL_C_API CUresult cccl_device_binary_search(
   cccl_device_binary_search_build_result_t build,

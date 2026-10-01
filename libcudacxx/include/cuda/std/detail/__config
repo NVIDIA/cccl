@@ -11,6 +11,8 @@
 #ifndef __cuda_std__
 #define __cuda_std__
 
+// IWYU pragma: always_keep
+
 #include <cuda/std/__internal/atomic.h>
 #include <cuda/std/__internal/cpp_dialect.h>
 #include <cuda/std/__internal/features.h>
