@@ -314,7 +314,7 @@ inline constexpr bool disable_sized_range<const ImproperlyDisabledFunction> = tr
 
 static_assert(cuda::std::is_invocable_v<RangeSizeT, ImproperlyDisabledMember&>);
 static_assert(cuda::std::is_invocable_v<RangeSizeT, const ImproperlyDisabledMember&>);
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, ImproperlyDisabledFunction&>);
+static_assert(cuda::std::is_invocable_v<RangeSizeT, ImproperlyDisabledFunction&>);
 static_assert(cuda::std::is_invocable_v<RangeSizeT, const ImproperlyDisabledFunction&>);
 
 // No begin end.

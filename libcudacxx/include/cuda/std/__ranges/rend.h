@@ -39,10 +39,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 // [range.access.rend]
 
 _CCCL_BEGIN_NAMESPACE_CPO(__rend)
-template <class _Tp>
-void rend(_Tp&) = delete;
-template <class _Tp>
-void rend(const _Tp&) = delete;
+
+#if _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
+// A deleted declaration suppresses ADL on these compilers.
+_CCCL_HOST_DEVICE void rend();
+#else // ^^^ _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51) ^^^ / vvv deleted declaration vvv
+_CCCL_HOST_DEVICE void rend() = delete;
+#endif // _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
