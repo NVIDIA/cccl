@@ -617,6 +617,48 @@ def prepare_load_store_runtime_args(
     scope: ir.Scope | None,
     loc: ir.Loc,
 ) -> list[ir.Var]:
+    """Emit a local-array payload when a root Store supplies a scalar value.
+
+    Use the inferred item count and dtype to allocate the provider's payload,
+    then assign the scalar to every item. A scalar without static provenance
+    first passes through ``_ExactStoreScalar`` so compiler typing rejects a
+    dtype mismatch before array assignment can silently cast it. Static values
+    have already been checked using scalar coercion rules.
+
+    Calls without a boxing request return their operand list unchanged. For
+    boxed calls, append preparation statements before the eventual provider call
+    and replace only its payload operand.
+
+    Parameters
+    ----------
+    context : GroupRewriteContext
+        Access to static scalar provenance for the Store value.
+    block : ir.Block
+        Destination receiving allocation, optional validation, and
+        assignments.
+    match : _RewriteMatch
+        Match with Load/Store family metadata and inferred factory inputs.
+    runtime_args : list of ir.Var
+        Ordered operands, mutated at index one when boxing is required.
+    scope : ir.Scope or None
+        Scope assigned to generated variables.
+    loc : ir.Loc
+        Source location assigned to generated statements and variables.
+
+    Returns
+    -------
+    list of ir.Var
+        The supplied list with the scalar payload replaced by a local array,
+        or the original operands when boxing is unnecessary.
+
+    Raises
+    ------
+    CoopSinglePhaseRewriteError
+        Family metadata, the Store value, or inferred dtype/extent is
+        missing or invalid. Runtime scalar mismatches fail later during
+        typing.
+    """
+
     metadata = match.family_metadata
     if not isinstance(metadata, _LoadStoreMatchMetadata):
         raise CoopSinglePhaseRewriteError("missing Load/Store family metadata")
