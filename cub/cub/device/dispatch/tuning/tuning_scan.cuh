@@ -147,7 +147,7 @@ struct ScanLookaheadPolicy
   // Therefore, a value of 0 just takes the number of stages.
 
   // We do not need too many stages for lookahead since the lookahead warp is the bottleneck. As soon as it produces a
-  // new value, it will be consumed by the scanStore squad, releasing the stage. So just always use 2 stages.
+  // new value, it will be consumed by the scan squad, releasing the stage. So just always use 2 stages.
   int lookahead_stages = 2; //!< Number of pipeline stages for the lookahead squad
 
   //! Deprecated [Since CCCL 3.6]
@@ -752,7 +752,7 @@ _CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_reduce(const ScanLook
   return warpspeed::SquadDesc{0, policy.reduce_and_scan_warps};
 }
 
-_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_scan_store(const ScanLookaheadPolicy& policy)
+_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_scan(const ScanLookaheadPolicy& policy)
 {
   return warpspeed::SquadDesc{1, policy.reduce_and_scan_warps};
 }
@@ -818,24 +818,24 @@ _CCCL_HOST_DEVICE_API constexpr void setup_scan_resources(
 {
   const warpspeed::SquadDesc scanSquads[] = {
     squad_reduce(policy),
-    squad_scan_store(policy),
+    squad_scan(policy),
     squad_load_and_next_idx(policy),
     squad_lookahead(policy),
     squad_store(policy),
   };
 
   smemInOut.addPhase(syncHandler, smemAllocator, squad_load_and_next_idx(policy));
-  smemInOut.addPhase(syncHandler, smemAllocator, {squad_reduce(policy), squad_scan_store(policy)});
+  smemInOut.addPhase(syncHandler, smemAllocator, {squad_reduce(policy), squad_scan(policy)});
   smemInOut.addPhase(syncHandler, smemAllocator, squad_store(policy));
 
   smemNextBlockIdx.addPhase(syncHandler, smemAllocator, squad_load_and_next_idx(policy));
   smemNextBlockIdx.addPhase(syncHandler, smemAllocator, scanSquads);
 
   smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_lookahead(policy));
-  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_scan_store(policy));
+  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_scan(policy));
 
   smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, squad_reduce(policy));
-  smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, squad_scan_store(policy));
+  smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, squad_scan(policy));
 }
 
 _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(

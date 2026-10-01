@@ -51,7 +51,7 @@ namespace __scan_detail = CUB_NS_QUALIFIER::detail::scan;
 
 _CCCL_IKET_CREATE_PUSH_POP_RANGE(Prologue);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadReduce);
-_CCCL_IKET_CREATE_START_END_RANGE(SquadScanStore);
+_CCCL_IKET_CREATE_START_END_RANGE(SquadScan);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadLoadAndNextIdx);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadStore);
 // _CCCL_IKET_CREATE_PUSH_POP_RANGE(Load); // Already declared in cub/agent/agent_scan.cuh, can't declare again
@@ -281,14 +281,14 @@ struct lookahead_scan_closure
 {
   static constexpr ScanLookaheadPolicy policy               = current_policy<PolicySelector>().lookahead;
   static constexpr warpspeed::SquadDesc squadReduce         = squad_reduce(policy);
-  static constexpr warpspeed::SquadDesc squadScanStore      = squad_scan_store(policy);
+  static constexpr warpspeed::SquadDesc squadScan           = squad_scan(policy);
   static constexpr warpspeed::SquadDesc squadLoadAndNextIdx = squad_load_and_next_idx(policy);
   static constexpr warpspeed::SquadDesc squadLookahead      = squad_lookahead(policy);
   static constexpr warpspeed::SquadDesc squadStore          = squad_store(policy);
 
   static constexpr ::cuda::std::array<warpspeed::SquadDesc, 5> scanSquads = {
     squad_reduce(policy),
-    squad_scan_store(policy),
+    squad_scan(policy),
     squad_load_and_next_idx(policy),
     squad_lookahead(policy),
     squad_store(policy),
@@ -483,7 +483,7 @@ struct lookahead_scan_closure
   }
 
   template <bool IsLastTile>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_and_store_tile(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_tile(
     const warpspeed::Squad& squad,
     warpspeed::SmemPhase<thread_and_warp_aggr_t>& phaseThreadAndWarpAggrR,
     warpspeed::SmemPhase<AccumT>& phaseAggrExclusiveCtaR,
@@ -523,11 +523,11 @@ struct lookahead_scan_closure
       _CCCL_IKET_RANGE_PUSH(IncludeThreadWarpAggr);
       // Add the aggregates of the preceding warps in this CTA to the cumulative aggregate. These have been calculated
       // in reduce squad. We need the reduce and scan squads to be the same size to do this.
-      static_assert(squadReduce.warpCount() == squadScanStore.warpCount());
+      static_assert(squadReduce.warpCount() == squadScan.warpCount());
 
       // Include warp aggregates
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < squadScanStore.warpCount(); ++i)
+      for (int i = 0; i < squadScan.warpCount(); ++i)
       {
         // We want a predicated unrolled loop here.
         bool include_warp = i < squad.warpRank();
@@ -887,13 +887,13 @@ struct lookahead_scan_closure
       }
 
       // slice is intentional, see SquadDesc::operator==()
-      if (squad == squadScanStore) // NOLINT(cppcoreguidelines-slicing)
+      if (squad == squadScan) // NOLINT(cppcoreguidelines-slicing)
       {
-        static_assert(tile_size % squadScanStore.threadCount() == 0);
-        _CCCL_IKET_RANGE_START(SquadScanStore);
+        static_assert(tile_size % squadScan.threadCount() == 0);
+        _CCCL_IKET_RANGE_START(SquadScan);
         if (is_last_tile)
         {
-          scan_and_store_tile<true>(
+          scan_tile<true>(
             squad,
             phaseThreadAndWarpAggrR,
             phaseAggrExclusiveCtaR,
@@ -905,7 +905,7 @@ struct lookahead_scan_closure
         }
         else
         {
-          scan_and_store_tile<false>(
+          scan_tile<false>(
             squad,
             phaseThreadAndWarpAggrR,
             phaseAggrExclusiveCtaR,
@@ -915,7 +915,7 @@ struct lookahead_scan_closure
             loadInfo,
             idxTileBase);
         }
-        _CCCL_IKET_RANGE_END(SquadScanStore);
+        _CCCL_IKET_RANGE_END(SquadScan);
       }
 
       // slice is intentional, see SquadDesc::operator==()
