@@ -1506,6 +1506,66 @@ class Algorithm:
     def _source_code(
         self, threads=None, block_threads=None, *, compile_identity=None
     ):
+        """Generate C++ provider wrappers and their compile-time storage
+        metadata.
+
+        Emit a typed wrapper plus an ``__abi`` shim for each specialized method.
+        The typed wrapper adapts array pointers to CUB array references, applies
+        input transforms, folds pointer offsets into earlier pointer arguments,
+        and traps on out-of-range ``BoundedInteger`` values before narrowing
+        them. C++ functors and static offsets are embedded in source instead of
+        passed as runtime arguments.
+
+        For ``LEADING_POINTER`` storage, emit both explicit-scratch and
+        ``_alloc`` entry points. Only ``_alloc`` allocates scratch and emits the
+        declared post-call synchronization: one shared object for a block, one
+        shared object per logical warp, or a local object for scope ``NONE``.
+        Warp scratch uses the linear thread rank in the exact enclosing block;
+        its width must divide the block size. Explicit-scratch wrappers leave
+        allocation and reuse synchronization to their caller. Storage-free
+        providers emit neither scratch metadata nor allocating variants.
+
+        This method qualifies private symbols on the algorithm but does not run
+        NVRTC. Storage sizes are emitted as C++ ``sizeof``/``alignof`` globals;
+        artifact creation later reads their compiled values from PTX.
+
+        Parameters
+        ----------
+        threads : int, optional
+            Logical warp width for allocating warp wrappers. ``None`` uses
+            ``self.threads``.
+        block_threads : int or tuple of int, optional
+            Exact enclosing block size or dimensions. ``None`` uses
+            ``self.block_threads``.
+        compile_identity : tuple, optional
+            Bound target/options identity. ``None`` resolves the current
+            device's identity through ``_qualify_private_symbols``.
+
+        Returns
+        -------
+        src : str
+            Complete CUDA C++ translation unit for this specialization.
+        support_lto_irs : list
+            Deduplicated supporting link images from type definitions.
+        temp_storage_symbols : tuple of str
+            Size and alignment global names, or an empty tuple without scratch.
+        udf_declarations : collections.OrderedDict
+            Declaration table used when constructing a shared source preamble;
+            currently empty.
+
+        Raises
+        ------
+        ValueError
+            A pointer offset has no earlier pointer target, multiple outputs are
+            requested, or allocating warp storage has an invalid width/block
+            size.
+        RuntimeError
+            The provider was already qualified for incompatible compiler inputs.
+        NotImplementedError
+            The requested allocating execution or synchronization scope has no
+            source emitter.
+        """
+
         self._qualify_private_symbols(
             threads=threads,
             block_threads=block_threads,
