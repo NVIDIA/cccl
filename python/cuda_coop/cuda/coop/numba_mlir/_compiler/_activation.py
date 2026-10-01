@@ -381,6 +381,10 @@ def _restore_registrations(snapshot: _RegistrationSnapshot) -> None:
     activation modules. Registrations from every other module remain in
     place, including ones appended concurrently during rollback.
 
+    Planner entries are filtered under the registry lock. Each current rewrite
+    bucket is filtered in place, including buckets created after the snapshot;
+    empty buckets may remain. Entries removed by other code are not reinserted.
+
     Parameters
     ----------
     snapshot : _RegistrationSnapshot
