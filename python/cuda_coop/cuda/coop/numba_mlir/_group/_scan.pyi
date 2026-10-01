@@ -7,11 +7,11 @@ from typing import Literal, Protocol, TypeAlias, overload
 
 from typing_extensions import TypeVar
 
-from .._typing import (
+from ..._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
     ContextualInitialValue,
     NonSumScanOperator,
-    PortableNumericScalar,
-    PortableThreadDataLike,
     ScanAlgorithm,
     ScanOperator,
     SumScanOperator,
@@ -19,10 +19,10 @@ from .._typing import (
     ThreadDataLike,
     ValidItems,
 )
-from ._thread_group import BlockGroup, WarpGroup
+from .._thread_group import BlockGroup, WarpGroup
 
-_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
-_ScalarT = TypeVar("_ScalarT", bound=PortableNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+_ScalarT = TypeVar("_ScalarT", bound=CommonNumericScalar)
 
 _NumpyScanUfuncName: TypeAlias = Literal[
     "add",
@@ -77,7 +77,7 @@ _NonSumScalarScanOperator: TypeAlias = (
 @overload
 def scan(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     mode: Literal["exclusive"] = "exclusive",
@@ -91,7 +91,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     mode: Literal["exclusive"] = "exclusive",
@@ -105,7 +105,7 @@ def scan(
 @overload
 def scan(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     mode: Literal["inclusive"],
@@ -203,7 +203,7 @@ def scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     scan_op: SumScanOperator | _NumpySumScanUfunc | None = None,
@@ -216,7 +216,7 @@ def exclusive_scan(
 @overload
 def exclusive_scan(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     scan_op: _NonSumItemScanOperator[_ItemT],
@@ -281,7 +281,7 @@ def exclusive_scan(
 @overload
 def inclusive_scan(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     scan_op: _KnownItemScanOperator[_ItemT] | None = None,
@@ -317,7 +317,7 @@ def inclusive_scan(
 @overload
 def exclusive_sum(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     algorithm: ScanAlgorithm | None = None,
@@ -350,7 +350,7 @@ def exclusive_sum(
 @overload
 def inclusive_sum(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     algorithm: ScanAlgorithm | None = None,
