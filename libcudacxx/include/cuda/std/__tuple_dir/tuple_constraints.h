@@ -360,6 +360,22 @@ struct __tuple_constraints
   static constexpr bool __nothrow_tuple_like_constructible_v =
     __nothrow_tuple_like_constructible<_UTuple>(__make_tuple_indices_t<sizeof...(_Types)>{});
 
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Alloc, class _UTuple, size_t... _Indices>
+  [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool
+  __nothrow_uses_allocator_constructible(__tuple_indices<_Indices...>) noexcept
+  {
+    return (
+      __is_nothrow_uses_allocator_constructible_v<_Types,
+                                                  _Alloc,
+                                                  decltype(::cuda::std::get<_Indices>(::cuda::std::declval<_UTuple>()))>
+      && ...);
+  }
+
+  template <class _Alloc, class _UTuple>
+  static constexpr bool __nothrow_uses_allocator_constructible_v =
+    __nothrow_uses_allocator_constructible<_Alloc, _UTuple>(__make_tuple_indices_t<sizeof...(_Types)>{});
+
   // Assignments
   static constexpr bool __all_copy_assignable = (is_copy_assignable_v<_Types> && ...);
   static constexpr bool __all_move_assignable = (is_move_assignable_v<_Types> && ...);

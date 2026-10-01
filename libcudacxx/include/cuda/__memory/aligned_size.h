@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/__memory/is_valid_alignment.h>
-#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 
