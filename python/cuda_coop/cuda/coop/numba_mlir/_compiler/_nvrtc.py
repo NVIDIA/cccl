@@ -312,7 +312,7 @@ def compile(*, context: CompileContext | None = None, **kwargs):
 
 def compile_with_layouts(
     *, layout_types: tuple[str, ...], code="lto", **kwargs
-):
+) -> tuple[version, tuple[bytes, tuple[tuple[int, int], ...]]]:
     """Cache provider LTO IR and its ordered storage layouts together.
 
     The same NVRTC program evaluates sizeof/alignof and emits the provider.
