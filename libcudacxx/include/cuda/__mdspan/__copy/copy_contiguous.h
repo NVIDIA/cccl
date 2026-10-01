@@ -34,10 +34,10 @@
 #include <cuda/__mdspan/__copy/types.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__mdspan/default_accessor.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/array>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -210,11 +210,14 @@ _CCCL_HOST_API void __launch_copy_contiguous_kernel(
     const auto __inner_size      = __src.__extents[0];
     const auto __outer_size      = ::cuda::__total_size(__src) / __inner_size;
     const auto __num_inner_tiles = ::cuda::ceil_div(__inner_size, __tile_size);
-    _CCCL_ASSERT(__num_inner_tiles <= _ExtentT(__arch_limits.max_grid_dim_x),
+    _CCCL_ASSERT(::cuda::std::cmp_less_equal(__num_inner_tiles, __arch_limits.max_grid_dim_x),
                  "grid x-dimension exceeds the maximum grid size");
-    const auto __grid_dim_y = ::cuda::std::min(__outer_size, _ExtentT(__arch_limits.max_grid_dim_y));
-    const auto __grid_dims  = ::dim3(static_cast<unsigned>(__num_inner_tiles), static_cast<unsigned>(__grid_dim_y));
-    const auto __config     = ::cuda::make_config(::cuda::block_dims<__block_size>(), ::cuda::grid_dims(__grid_dims));
+    const auto __grid_dim_y =
+      ::cuda::std::cmp_less(__outer_size, __arch_limits.max_grid_dim_y)
+        ? static_cast<unsigned>(__outer_size)
+        : static_cast<unsigned>(__arch_limits.max_grid_dim_y);
+    const auto __grid_dims = ::dim3(static_cast<unsigned>(__num_inner_tiles), __grid_dim_y);
+    const auto __config    = ::cuda::make_config(::cuda::block_dims<__block_size>(), ::cuda::grid_dims(__grid_dims));
 
     const __tensor_coord_iterator<_ExtentT, _Rank> __coord_iter{__src.__extents};
     const auto __kernel = ::cuda::__copy_contiguous_kernel<

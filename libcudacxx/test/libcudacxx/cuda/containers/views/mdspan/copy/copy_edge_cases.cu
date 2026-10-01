@@ -368,7 +368,10 @@ TEST_CASE("copy d2d mismatched empty shapes", "[copy][d2d][negative][zero_size]"
     thrust::raw_pointer_cast(d_src.data()), extents_t(0, 3));
   const cuda::device_mdspan<float, extents_t, layout_right> dst(thrust::raw_pointer_cast(d_dst.data()), extents_t(0, 2));
 
-  CHECK_THROWS_AS(cuda::copy(src, dst, copy_stream), std::invalid_argument);
+  REQUIRE_THROWS_MATCHES(
+    cuda::copy(src, dst, copy_stream),
+    std::invalid_argument,
+    Catch::Matchers::Message("mdspans must have the same extents (after removing singleton dimensions)"));
 }
 
 /***********************************************************************************************************************
@@ -515,10 +518,10 @@ TEST_CASE("copy d2d large count > INT_MAX", "[copy][d2d][large][.]")
 // inner extent >= bytes-in-flight of every architecture -> contiguous kernel (2a), outer size > max grid y-dimension
 TEST_CASE("copy d2d contiguous kernel outer size > max grid y", "[copy][d2d][contiguous][large][.]")
 {
-  constexpr int M     = 65537;
-  constexpr int N     = 128 * 1024;
-  constexpr int Ld    = N + 128;
-  const auto required = size_t{M} * (Ld + N);
+  constexpr int M         = 65537;
+  constexpr int N         = 128 * 1024;
+  constexpr int Ld        = N + 128;
+  constexpr auto required = size_t{M} * (Ld + N);
 
   size_t free_mem  = 0;
   size_t total_mem = 0;
@@ -530,11 +533,10 @@ TEST_CASE("copy d2d contiguous kernel outer size > max grid y", "[copy][d2d][con
   thrust::device_vector<char> d_src(size_t{M} * Ld, static_cast<char>(0x42));
   thrust::device_vector<char> d_dst(size_t{M} * N, static_cast<char>(0x00));
 
-  using cuda::std::layout_stride;
   using extents_t     = cuda::std::dextents<long long, 2>;
-  using src_mdspan_t  = cuda::device_mdspan<const char, extents_t, layout_stride>;
+  using src_mdspan_t  = cuda::device_mdspan<const char, extents_t, cuda::std::layout_stride>;
   using dst_mdspan_t  = cuda::device_mdspan<char, extents_t>;
-  using src_mapping_t = layout_stride::mapping<extents_t>;
+  using src_mapping_t = cuda::std::layout_stride::mapping<extents_t>;
 
   const src_mapping_t src_mapping(extents_t(M, N), cuda::std::array<long long, 2>{Ld, 1});
 
