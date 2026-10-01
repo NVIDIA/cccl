@@ -24,9 +24,11 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_base_of.h>
+#include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/void_t.h>
 
 #if _CCCL_HOSTED()
@@ -85,11 +87,24 @@ struct __is_primary_std_template : bool_constant<__is_primary_std_template_impl<
 {};
 #  elif _CCCL_HOST_STD_LIB(LIBCXX)
 
-// libc++ uses the same mechanism than we do with __primary_template
+// libc++ uses the same mechanism than we do with __primary_template.
+// `iterator_traits<T*>` for a non-object `T` (void, functions) is ill-formed in
+// libc++ (`typedef T& reference`), and that error is outside the immediate context
+// of `_IsValidExpansion`. Treat those pointers as the primary template.
 template <class _Traits>
 using __test_for_primary_std_template = enable_if_t<is_same_v<_Traits, typename _Traits::__primary_template>>;
+
+template <class _Iter, bool _SkipStdTraits = is_pointer_v<_Iter> && !is_object_v<remove_pointer_t<_Iter>>>
+struct __is_primary_std_template_impl
+    : _IsValidExpansion<__test_for_primary_std_template, ::std::iterator_traits<_Iter>>
+{};
+
 template <class _Iter>
-using __is_primary_std_template = _IsValidExpansion<__test_for_primary_std_template, ::std::iterator_traits<_Iter>>;
+struct __is_primary_std_template_impl<_Iter, true> : true_type
+{};
+
+template <class _Iter>
+using __is_primary_std_template = __is_primary_std_template_impl<_Iter>;
 
 #  elif _CCCL_HOST_STD_LIB(STL)
 // On MSVC we must check for the base class because `_From_primary` is only defined in C++20
