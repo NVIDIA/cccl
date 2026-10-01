@@ -205,6 +205,38 @@ class _InvocableRewrite:
             self._prebundled_specializations = {}
 
     def _materialize_invocable(self, match: _RewriteMatch):
+        """Obtain the callable specialization for one validated provider match.
+
+        Consult the rewrite-local cache, then the cache in compiler metadata so
+        a fresh rewrite during launch retries can reuse prior work. On a miss,
+        construct an invocable from a prepared specialization or evaluate the
+        factory directly. Newly constructed and compiler-cache invocables must
+        agree with the provider's storage and synchronization contracts before
+        being used; successful construction populates both caches.
+
+        Parameters
+        ----------
+        match : _RewriteMatch
+            Provider factory, registered contract, and resolved
+            specialization keywords. Lowering-plan metadata has already been
+            removed.
+
+        Returns
+        -------
+        invocable : object
+            Callable provider object exposing link files and its ABI
+            metadata.
+        created : bool
+            True when this call constructed the invocable, including from a
+            prepared specialization; False for either cache hit.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            Construction fails or the result violates the registered
+            contract.
+        """
+
         rewrite = cast("CoopSinglePhaseRewrite", self)
         key = self._invocable_cache_key(
             match.factory,
