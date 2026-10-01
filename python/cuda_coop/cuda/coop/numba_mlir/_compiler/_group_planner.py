@@ -403,6 +403,41 @@ class _GroupCallPlanner:
         return hierarchy
 
     def _group(self, value: Any) -> ThreadGroup | None:
+        """Reconstruct a group descriptor from a supported IR definition.
+
+        Follow aliases and casts, accept existing host descriptors, and
+        interpret registered constructors and ``group_by`` calls on recognized
+        parents. Constructor identity matters; matching a callable's name is
+        insufficient. Arguments are resolved through ``_constant``, which may
+        request literal specialization. Common-API constructors retain
+        ``common_root`` provenance so later validation applies the portable
+        contract.
+
+        Cache newly constructed descriptors by variable name for this planner.
+        This describes the requested group; launch-dependent resolution belongs
+        to ``_resolve_group``. Unlike marker detection, this routine requires a
+        single resolvable definition and does not merge phi inputs.
+
+        Parameters
+        ----------
+        value : ThreadGroup, ir.Var, or object
+            Existing descriptor or variable expected to name one.
+
+        Returns
+        -------
+        ThreadGroup or None
+            Reconstructed or cached descriptor, or ``None`` if the definition is
+            not a recognized group expression.
+
+        Raises
+        ------
+        ForceLiteralArg
+            A constructor or subgroup argument needs literal specialization.
+        GroupRewriteError
+            A recognized constructor or subgroup call cannot be bound or its
+            arguments cannot be resolved as required compile-time values.
+        """
+
         if isinstance(value, ThreadGroup):
             return value
         if not isinstance(value, ir.Var):
