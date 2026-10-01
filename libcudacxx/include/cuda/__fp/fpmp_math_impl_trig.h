@@ -27,7 +27,10 @@
 */
 
 #include <cuda/__fp/fpmp_math_impl.h>
-#include <cuda/std/cmath> // NAN
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/copysign.h>
+#include <cuda/std/__cmath/isfinite.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/numbers>
 // Sibling families whose kernels this family calls (exp10 is used by trig).
 #include <cuda/__fp/fpmp_math_impl_exp.h>
@@ -1357,9 +1360,9 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
   // treat a signed zero as non-finite the way a raw sign-bit check would.
   if (!::cuda::std::isfinite(__x_hi) || !::cuda::std::isfinite(__x_lo))
   {
-    *__sin_hi = NAN;
+    *__sin_hi = ::cuda::std::numeric_limits<float>::quiet_NaN();
     *__sin_lo = 0.0f;
-    *__cos_hi = NAN;
+    *__cos_hi = ::cuda::std::numeric_limits<float>::quiet_NaN();
     *__cos_lo = 0.0f;
     return;
   }
