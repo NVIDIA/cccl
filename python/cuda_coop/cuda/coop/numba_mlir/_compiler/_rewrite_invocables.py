@@ -122,6 +122,37 @@ class _InvocableRewrite:
     def _prepare_ltoir_bundle_for_matches(
         self, matches: list[_RewriteMatch]
     ) -> None:
+        """Prepare one LTO IR bundle for distinct specializations when possible.
+
+        Collect factory specializations without immediately building each
+        invocable, deduplicate identical matches, and associate each collected
+        algorithm with its thread dimensions. Bundling is attempted only for at
+        least two unique matches and before any specialization has been recorded
+        as materialized in this compiler state.
+
+        This is an optional compilation optimization. Clear the previous bundle
+        lookup first; a collection-count mismatch or an import, OS, or runtime
+        failure leaves it empty so ``_materialize_invocable`` can call factories
+        individually. Other exceptions propagate. Successful preparation records
+        specializations by invocable cache key without replacing function IR.
+        If those specializations coalesce to one algorithm, bundle preparation
+        may produce no shared bundle; retain the collected specializations for
+        individual materialization anyway.
+
+        Parameters
+        ----------
+        matches : list of _RewriteMatch
+            Validated provider calls from the entire function, in scan
+            order.
+
+        Returns
+        -------
+        None
+            ``_prebundled_specializations`` holds the prepared specializations,
+            which may share a bundle. Early exits and caught failures leave
+            it empty so materialization can invoke factories directly.
+        """
+
         rewrite = cast("CoopSinglePhaseRewrite", self)
         self._prebundled_specializations = {}
         if not matches:
