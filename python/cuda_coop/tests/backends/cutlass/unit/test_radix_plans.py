@@ -16,9 +16,9 @@ from cuda.coop._core import (
     this_block,
     this_warp,
 )
-from cuda.coop.cutlass import TempStorage, ThreadData, radix_rank
+from cuda.coop.cutlass import TempStorage, ThreadData, radix_rank_keys
 from cuda.coop.cutlass._compiler import _rendering, _state, _storage
-from cuda.coop.cutlass._lowering import _radix
+from cuda.coop.cutlass._lowering import _radix_sort
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
@@ -37,7 +37,7 @@ def _sort(**kwargs):
         "blocked_to_striped": False,
     }
     options.update(kwargs)
-    return _radix._CubRadixRequest(_radix._sort_plan(**options))
+    return _radix_sort._CubRadixRequest(_radix_sort._sort_plan(**options))
 
 
 def _rank(**kwargs):
@@ -53,10 +53,10 @@ def _rank(**kwargs):
         "prefix_items": None,
     }
     options.update(kwargs)
-    return _radix._CubRadixRequest(_radix._rank_plan(**options))
+    return _radix_sort._CubRadixRequest(_radix_sort._rank_plan(**options))
 
 
-@pytest.mark.parametrize("dtype", tuple(_radix._SORT_KEYS))
+@pytest.mark.parametrize("dtype", tuple(_radix_sort._SORT_KEYS))
 @pytest.mark.parametrize("pairs", (False, True))
 def test_sort_plans(dtype, pairs):
     request = _sort(
@@ -135,13 +135,13 @@ def test_result_dtype_validated():
         values=(replace(request.plan.result.values[0], dtype=cutlass.Uint32),),
     )
     with pytest.raises(ValueError, match="result dtypes"):
-        _radix._CubRadixRequest(replace(request.plan, result=result))
+        _radix_sort._CubRadixRequest(replace(request.plan, result=result))
 
 
 def test_prefix_alias_rejected_before_snapshot():
     keys = ThreadData(items_per_thread=1, dtype=cutlass.Int32, values=[2])
     with pytest.raises(ValueError, match="distinct"):
-        radix_rank(this_block(), keys, exclusive_digit_prefix=keys)
+        radix_rank_keys(this_block(), keys, exclusive_digit_prefix=keys)
 
 
 def test_failed_ffi_preserves_prefix_and_session(monkeypatch):
@@ -152,14 +152,14 @@ def test_failed_ffi_preserves_prefix_and_session(monkeypatch):
     monkeypatch.setattr(_state, "snapshot_active_session_state", lambda: saved)
     monkeypatch.setattr(_state, "restore_active_session_state", restored.append)
     monkeypatch.setattr(_state, "register_request", lambda request: None)
-    monkeypatch.setattr(_radix, "_typed_item", lambda value, dtype: value)
+    monkeypatch.setattr(_radix_sort, "_typed_item", lambda value, dtype: value)
     monkeypatch.setattr(
-        _radix,
+        _radix_sort,
         "_make_rmem_tensor",
         lambda *args: SimpleNamespace(iterator=SimpleNamespace(llvm_ptr=0)),
     )
     monkeypatch.setattr(
-        _radix,
+        _radix_sort,
         "llvm",
         SimpleNamespace(PointerType=SimpleNamespace(get=lambda space: 0)),
     )
@@ -172,12 +172,12 @@ def test_failed_ffi_preserves_prefix_and_session(monkeypatch):
     def fail(*args):
         raise RuntimeError("injected radix ffi failure")
 
-    monkeypatch.setattr(_radix, "ffi", lambda **kwargs: fail)
+    monkeypatch.setattr(_radix_sort, "ffi", lambda **kwargs: fail)
     with pytest.raises(RuntimeError, match="injected radix ffi failure"):
-        _radix._materialize(
+        _radix_sort._materialize(
             request, [keys], [(cutlass.Int32, (3, 1, 2))], prefix=prefix
         )
     assert restored == [saved]
     assert prefix.dtype is None
-    assert prefix.values("radix_rank") == (-7,)
-    assert keys.values("radix_rank") == (3, 1, 2)
+    assert prefix.values("radix_rank_keys") == (-7,)
+    assert keys.values("radix_rank_keys") == (3, 1, 2)
