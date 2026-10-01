@@ -6,9 +6,9 @@ from __future__ import annotations
 
 import operator
 from enum import Enum
-from typing import Any
+from typing import Any, TypeVar
 
-from numba_cuda_mlir import types
+import numba_cuda_mlir.numba_cuda.types as numba_types
 
 from cuda.coop._core import SynchronizationScope
 from cuda.coop._core.block.exchange import (
@@ -48,7 +48,10 @@ def _positive_int(value: Any, *, name: str) -> int:
     return value
 
 
-def _mode(value: Any, enum_type: type, *, operation: str):
+_ModeT = TypeVar("_ModeT", bound=Enum)
+
+
+def _mode(value: Any, enum_type: type[_ModeT], *, operation: str) -> _ModeT:
     if not isinstance(value, str) or isinstance(value, Enum):
         raise TypeError(f"{operation} mode must be a string")
     token = value.strip().lower().replace("-", "_")
@@ -62,8 +65,8 @@ def _mode(value: Any, enum_type: type, *, operation: str):
 def _rank_dtype(value: Any):
     value = normalize_dtype_param(value)
     if (
-        isinstance(value, types.Boolean)
-        or not isinstance(value, types.Integer)
+        isinstance(value, numba_types.Boolean)
+        or not isinstance(value, numba_types.Integer)
         or not value.signed
     ):
         raise TypeError("exchange ranks must have a signed integer dtype")
@@ -72,7 +75,9 @@ def _rank_dtype(value: Any):
 
 def _valid_flag_dtype(value: Any):
     value = normalize_dtype_param(value)
-    if isinstance(value, types.Boolean) or not isinstance(value, types.Integer):
+    if isinstance(value, numba_types.Boolean) or not isinstance(
+        value, numba_types.Integer
+    ):
         raise TypeError("exchange valid_flags must have an integer dtype")
     return value
 
