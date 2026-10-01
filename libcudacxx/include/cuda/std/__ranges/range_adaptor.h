@@ -103,7 +103,7 @@ _CCCL_REQUIRES(__range_adaptor_can_pipe_compose<_Closure, _OtherClosure>)
   is_nothrow_constructible_v<decay_t<_Closure>, _Closure>
   && is_nothrow_constructible_v<decay_t<_OtherClosure>, _OtherClosure>)
 {
-  using _Composer = ::cuda::std::__compose_t<decay_t<_OtherClosure>, decay_t<_Closure>>;
+  using _Composer _CCCL_NODEBUG = ::cuda::std::__compose_t<decay_t<_OtherClosure>, decay_t<_Closure>>;
   return __pipeable<_Composer>(
     ::cuda::std::forward<_OtherClosure>(__other_closure), ::cuda::std::forward<_Closure>(__closure));
 }
