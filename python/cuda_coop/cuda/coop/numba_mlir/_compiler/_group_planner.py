@@ -1506,6 +1506,7 @@ class CoopGroupHierarchyPlanner(WholeFunctionPlanner):
         launch_config = require_launch_config(self.state)
         planner = _GroupCallPlanner(self.state, launch_config)
         changed = planner.run()
+        assert isinstance(planner.launch.exact_block_dim, tuple)
         x, y, z = planner.launch.exact_block_dim
         threads = x * y * z
         # Configured compiles own these options; never write inferred bounds
