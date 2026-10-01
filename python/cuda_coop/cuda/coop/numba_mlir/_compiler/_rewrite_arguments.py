@@ -255,7 +255,7 @@ class _ArgumentRewrite:
         )
         if specification.validate_runtime_controls is not None:
             specification.validate_runtime_controls(
-                GroupRewriteContext(self),
+                GroupRewriteContext(rewrite),
                 op_name=op_name,
                 runtime_args=runtime_args,
                 factory_kwargs=factory_kwargs,

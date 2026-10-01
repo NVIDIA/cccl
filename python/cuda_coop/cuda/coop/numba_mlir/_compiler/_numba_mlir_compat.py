@@ -30,7 +30,7 @@ An application using another backend, such as CUTLASS, should not need to
 upgrade an unrelated Numba installation. We check only when activating
 ``cuda.coop.numba_mlir``, through its qualified import or
 ``coop.register("numba-cuda-mlir")``. Activation checks the version before
-importing the CUDA compiler integration and registering compiler hooks. A failed
+importing the CUDA compiler integration and registering the planner. A failed
 check therefore reports an environment problem before kernel compilation,
 without adding checks to individual operations or the kernel launch path.
 
