@@ -23,23 +23,17 @@ import numba_cuda_mlir.numba_cuda.types as numba_types
 from numba_cuda_mlir import cuda, types
 from numba_cuda_mlir.compiler import ExternFunction
 from numba_cuda_mlir.descriptor import mlir_target
-from numba_cuda_mlir.numba_cuda.typing.templates import signature
+from numba_cuda_mlir.extending import _NumbaCudaMlirOverloadFunctionTemplate
+from numba_cuda_mlir.numba_cuda.typing.templates import (
+    make_overload_template,
+    signature,
+)
 
 from cuda.coop._core import SynchronizationScope
 
 from ._compiler import _nvrtc as nvrtc
-from ._compiler._numba_mlir_compat import (
-    _get_numba_mlir_compat,
-    _get_numba_mlir_datamodel_compat,
-)
 from ._compiler._operations import StorageABI
 from ._semantic import _numba_semantic_token
-
-_numba_mlir_compat = _get_numba_mlir_compat()
-_NumbaCudaMlirOverloadFunctionTemplate = (
-    _numba_mlir_compat.overload_function_template
-)
-make_overload_template = _numba_mlir_compat.make_overload_template
 
 NUMBA_TYPES_TO_CPP = {
     numba_types.boolean: "bool",
@@ -177,8 +171,16 @@ def _registered_struct_member_types(numba_type):
 
     from numba_cuda_mlir import models as mlir_models
 
-    compat = _get_numba_mlir_datamodel_compat()
-    mlir_ir = compat.mlir_ir
+    # These classes are provided by MLIR's compiled extension without stubs.
+    from numba_cuda_mlir._mlir.ir import (
+        Context,  # pyright: ignore[reportAttributeAccessIssue]
+        Location,  # pyright: ignore[reportAttributeAccessIssue]
+    )
+    from numba_cuda_mlir.numba_cuda.datamodel.models import (
+        StructModel as CudaStructModel,
+    )
+    from numba_cuda_mlir.numba_cuda.datamodel.registry import default_manager
+    from numba_cuda_mlir.numba_cuda.models import cuda_data_manager
 
     def get_member_types(manager, model_type):
         try:
@@ -191,29 +193,29 @@ def _registered_struct_member_types(numba_type):
             model.get_type(index) for index in range(model.field_count)
         )
 
-    cuda_manager = compat.cuda_data_manager.chain(compat.default_manager)
-    cuda_members = get_member_types(cuda_manager, compat.cuda_struct_model)
+    cuda_manager = cuda_data_manager.chain(default_manager)
+    cuda_members = get_member_types(cuda_manager, CudaStructModel)
     if cuda_members is None:
         return None
 
     try:
-        current_context = mlir_ir.Context.current
+        current_context = Context.current
     except ValueError:
         current_context = None
 
     if current_context is None:
-        with mlir_ir.Context(), mlir_ir.Location.unknown():
+        with Context(), Location.unknown():
             mlir_members = get_member_types(
                 mlir_models.mlir_data_manager,
                 mlir_models.StructModel,
             )
     else:
         try:
-            current_location = mlir_ir.Location.current
+            current_location = Location.current
         except ValueError:
             current_location = None
         if current_location is None:
-            with mlir_ir.Location.unknown():
+            with Location.unknown():
                 mlir_members = get_member_types(
                     mlir_models.mlir_data_manager,
                     mlir_models.StructModel,

@@ -39,17 +39,21 @@ class _ExactStoreScalar:
     @property
     def _numba_type_(self):
         import numba_cuda_mlir.numba_cuda.types as _numba_types
-
-        from ._numba_mlir_compat import _get_numba_mlir_compat
+        from numba_cuda_mlir.extending import (
+            _NumbaCudaMlirOverloadFunctionTemplate,
+        )
+        from numba_cuda_mlir.numba_cuda.core.errors import TypingError
+        from numba_cuda_mlir.numba_cuda.typing.templates import (
+            make_overload_template,
+        )
 
         if self._numba_type is None:
-            compat = _get_numba_mlir_compat()
             dtype = self.dtype
 
             def validate(value):
                 actual_dtype = getattr(value, "literal_type", value)
                 if actual_dtype != dtype:
-                    raise compat.numba_errors.TypingError(
+                    raise TypingError(
                         "cuda.coop.numba_mlir.store value dtype "
                         f"{actual_dtype} does not "
                         f"match destination dtype {dtype}"
@@ -60,14 +64,14 @@ class _ExactStoreScalar:
 
                 return impl
 
-            template = compat.make_overload_template(
+            template = make_overload_template(
                 self,
                 validate,
                 {"no_cpython_wrapper": True, "nopython": True},
                 strict=True,
                 inline="always",
                 prefer_literal=False,
-                base=compat.overload_function_template,
+                base=_NumbaCudaMlirOverloadFunctionTemplate,
             )
             self._numba_type = _numba_types.Function(template)
         return self._numba_type

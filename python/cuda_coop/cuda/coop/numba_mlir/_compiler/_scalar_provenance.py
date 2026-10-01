@@ -11,12 +11,10 @@ from typing import TYPE_CHECKING, Any
 import numba_cuda_mlir.numba_cuda.types as _numba_types
 import numpy as np
 
-from ._numba_mlir_compat import _get_numba_mlir_compat
-
 if TYPE_CHECKING:
     from numba_cuda_mlir.numba_cuda.core import ir
 else:
-    ir = _get_numba_mlir_compat().numba_ir
+    from numba_cuda_mlir.numbair_transforms import ir
 
 
 @dataclass(frozen=True)
