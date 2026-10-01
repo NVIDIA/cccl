@@ -61,7 +61,7 @@ def test_block_contracts(algorithm, array, mode):
     assert plan.target is GroupLoweringTarget.CUB_BLOCK
     assert plan.result.visibility is ResultVisibility.PER_MEMBER
     assert plan.result.has_aggregate
-    assert plan.result.result_items_per_thread == (3 if array else 1)
+    assert plan.result.primary.items_per_member == (3 if array else 1)
     assert (
         request.plan.temp_storage.ownership is StorageOwnership.IMPLEMENTATION
     )
