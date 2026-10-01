@@ -252,6 +252,30 @@ class _StorageRewrite:
         scope: ir.Scope | None,
         loc: ir.Loc,
     ) -> ir.Var:
+        """Append IR for the CUDA thread's linear rank within its block.
+
+        Compute ``threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y *
+        threadIdx.z)`` from runtime CUDA indices. Storage instance selection and
+        logical-warp barrier masks need this rank rather than ``threadIdx.x`` so
+        the same topology works for multidimensional launches.
+
+        Parameters
+        ----------
+        block : ir.Block
+            Destination receiving index reads and integer arithmetic in
+            place.
+        scope : ir.Scope or None
+            Scope assigned to generated variables.
+        loc : ir.Loc
+            Source location assigned to generated statements and variables.
+
+        Returns
+        -------
+        ir.Var
+            Variable containing the linear block rank, with the x dimension
+            varying fastest.
+        """
+
         module_var = ir.Var(
             scope,
             f"__coop_group_topology_module_{next(_GLOBAL_NAME_COUNTER)}__",
