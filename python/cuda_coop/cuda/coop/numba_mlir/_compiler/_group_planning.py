@@ -460,7 +460,9 @@ class GroupPlanningContext:
             return None
         return cls._one_dtype(set(resolved), message=message)
 
-    def record_thread_data_dtype(self, value: Any, dtype: Any) -> None:
+    def record_thread_data_dtype(
+        self, value: Any, dtype: _numba_types.Type
+    ) -> None:
         """Record a producer's element dtype at the payload's constructor sites.
 
         Group planning precedes the provider rewrite that materializes payloads.
@@ -480,7 +482,7 @@ class GroupPlanningContext:
         value : ir.Var
             Producer's output payload, possibly reached through supported
             aliases or tuple projections.
-        dtype : object
+        dtype : numba_types.Type
             Normalized element dtype inferred by the producer.
 
         Returns

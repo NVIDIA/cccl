@@ -6,6 +6,7 @@ import inspect
 import operator
 from typing import Any, cast
 
+import numba_cuda_mlir.numba_cuda.types as numba_types
 from numba_cuda_mlir import cuda as _cuda_module
 
 from cuda.coop._core import (
@@ -184,7 +185,7 @@ class _LoadStorePlanning:
         self,
         value: Any,
         *,
-        payload_dtype: Any,
+        payload_dtype: numba_types.Type,
     ) -> ArgumentBinding:
         """Classify a load default and validate its available dtype information.
 
@@ -198,7 +199,7 @@ class _LoadStorePlanning:
         ----------
         value : ir.Var or object
             Bound ``oob_default`` argument, including ``None`` for omission.
-        payload_dtype : object
+        payload_dtype : numba_types.Type
             Normalized element dtype selected for the load.
 
         Returns
