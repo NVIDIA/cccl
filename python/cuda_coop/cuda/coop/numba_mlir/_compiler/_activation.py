@@ -214,6 +214,34 @@ def _verify_registration_postconditions(
     planner_module: Any,
     group_planner_module: Any,
 ) -> None:
+    """Require one live registration for each mandatory compiler pass.
+
+    Import success alone does not show that the compiler will run a pass:
+    registration APIs may have changed or registered the same class twice.
+    Check the class objects exported by the imported modules against the
+    registries used by this activation attempt. Missing exports count as zero.
+
+    Parameters
+    ----------
+    snapshot : _RegistrationSnapshot
+        Snapshot holding references to the live registries being checked.
+        Counts come from their current contents, not the saved baseline.
+    planner_module : module
+        Rewrite module exporting ``CoopWholeFunctionPlanner`` and
+        ``CoopSinglePhaseRewrite``.
+    group_planner_module : module
+        Module exporting ``CoopGroupHierarchyPlanner``.
+    compat : _NumbaMlirCompilerCompat or None, optional
+        Compiler adapter used to inspect registrations. ``None`` loads the
+        active runtime's cached adapter.
+
+    Raises
+    ------
+    _NumbaMlirBackendImportError
+        A required planner or before-inference rewrite is absent or duplicated.
+        The error records all three counts for activation diagnostics.
+    """
+
     expected_planners = (
         (
             "CoopGroupHierarchyPlanner",
