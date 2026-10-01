@@ -44,10 +44,8 @@ inline constexpr bool disable_sized_range = false;
 // [range.prim.size]
 
 _CCCL_BEGIN_NAMESPACE_CPO(__size)
-template <class _Tp>
-void size(_Tp&) = delete;
-template <class _Tp>
-void size(const _Tp&) = delete;
+
+void size() = delete;
 
 template <class _Tp>
 _CCCL_CONCEPT __size_enabled = !disable_sized_range<remove_cvref_t<_Tp>>;

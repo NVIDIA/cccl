@@ -39,10 +39,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 // [range.access.rend]
 
 _CCCL_BEGIN_NAMESPACE_CPO(__rend)
-template <class _Tp>
-void rend(_Tp&) = delete;
-template <class _Tp>
-void rend(const _Tp&) = delete;
+
+void rend() = delete;
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>

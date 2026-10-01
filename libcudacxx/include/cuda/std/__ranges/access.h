@@ -41,10 +41,8 @@ _CCCL_CONCEPT __can_borrow = is_lvalue_reference_v<_Tp> || enable_borrowed_range
 // [range.access.begin]
 
 _CCCL_BEGIN_NAMESPACE_CPO(__begin)
-template <class _Tp>
-void begin(_Tp&) = delete;
-template <class _Tp>
-void begin(const _Tp&) = delete;
+
+void begin() = delete;
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
@@ -146,10 +144,8 @@ using iterator_t = decltype(::cuda::std::ranges::begin(::cuda::std::declval<_Tp&
 // [range.access.end]
 
 _CCCL_BEGIN_NAMESPACE_CPO(__end)
-template <class _Tp>
-void end(_Tp&) = delete;
-template <class _Tp>
-void end(const _Tp&) = delete;
+
+void end() = delete;
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>

@@ -38,10 +38,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 // [ranges.access.rbegin]
 
 _CCCL_BEGIN_NAMESPACE_CPO(__rbegin)
-template <class _Tp>
-void rbegin(_Tp&) = delete;
-template <class _Tp>
-void rbegin(const _Tp&) = delete;
+
+void rbegin() = delete;
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
