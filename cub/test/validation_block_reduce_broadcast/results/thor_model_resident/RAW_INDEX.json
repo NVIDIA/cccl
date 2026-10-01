@@ -1,0 +1,52 @@
+[
+  {
+    "path": "ORIGINAL_RAW_TEXT.json",
+    "bytes": 8444322,
+    "sha256": "b4ded854d9973427db47b69d55367672fa1d60ac3b4e7393bb4a75bfcdafd621"
+  },
+  {
+    "path": "PUBLIC_FORMATTING.json",
+    "bytes": 490,
+    "sha256": "a63a65c7bb4132448df7adb71ea1827f64b3e8323c73f71f916d05123f86f77b"
+  },
+  {
+    "path": "harness-sources.json",
+    "bytes": 14543,
+    "sha256": "c39ce5d871491a2ee6e116ac69bacfeac08d5e4cbfd4f4d734170436d3d0f27a"
+  },
+  {
+    "path": "thor-model-and-finalizer-screen-plan.json",
+    "bytes": 3785,
+    "sha256": "bb7501fae7e3896d094d1f320097b3d234678c0c450ddccd2f7bbcd7a429d7d3"
+  },
+  {
+    "path": "thor-model-and-finalizer-screen-plan.log",
+    "bytes": 140,
+    "sha256": "a16131929d241424044a0e9aff6cff957754f6f2d8ce4f42d6e3b60cf6eba7d1"
+  },
+  {
+    "path": "thor-model-and-finalizer-screen-plan.status.json",
+    "bytes": 7742318,
+    "sha256": "f9b2d0cd76a9fa751300eb5862d6f6ea35694bad86bf2d39d0b8e3e698ac75c5"
+  },
+  {
+    "path": "thor-model-torch-order-b1-screen.json",
+    "bytes": 100817,
+    "sha256": "af1fed87459d86677ac6f320e7fa6117a3e675599ee910a0dfbf22b66f09105d"
+  },
+  {
+    "path": "thor-model-torch-order-b1-screen.log",
+    "bytes": 410,
+    "sha256": "a87daa5604ff359ca7759a8d8c8ad381125a27fc7468b438734da2a5b239a122"
+  },
+  {
+    "path": "thor-model-torch-order-b16-screen.json",
+    "bytes": 101375,
+    "sha256": "57dc7a6830b8daf7817441e4dbc77c574dc3edd454ccb54594119153a691a62c"
+  },
+  {
+    "path": "thor-model-torch-order-b16-screen.log",
+    "bytes": 685,
+    "sha256": "61a30bf32d2c91d46c47a074203a013885eee839233b9844696a66c75cd2f996"
+  }
+]

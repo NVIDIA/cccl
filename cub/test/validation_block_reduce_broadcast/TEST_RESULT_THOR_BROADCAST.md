@@ -73,9 +73,12 @@ each executing script against its own exact frozen common.py hash; all other
 source, artifact, completeness, ordering and GPU interference gates are retained.
 Neither correction changes measured code, data, quartets, seeds or thresholds.
 
-The complete original28-layer Qwen model is being validated separately, with
-fixed checkpoint/prompt,32-step generation and all native/control logits.
-Results will be added after completion. No H20 model sample is pooled here.
+The complete original28-layer Qwen model passes native tokens and all-step logits
+exactly for batches1/16 and lengths128/512. All16 resident timed arms finish
+naturally. The [model table](TEST_RESULT_THOR_MODEL_RESIDENT.md) retains those
+screening timings separately; fresh-process model confidence intervals remain
+unexecuted because another finite queue holds the GPU. No model speedup is
+claimed and no H20 model sample is pooled here.
 
 [Raw data index](results/thor_8192/RAW_INDEX.json),
 [formal manifest](results/thor_8192/thor-formal-micro-manifest.json),
