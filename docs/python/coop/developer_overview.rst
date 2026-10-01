@@ -858,7 +858,7 @@ A :term:`family` groups related primitives and their implementation. The
 Scan family, for example, has shared API declarations in
 ``_core/api/scan.py`` and ``scan.pyi``, semantic descriptions in
 ``_core/group/scan.py``, and Numba-specific entry points in
-``numba_mlir/_group_scan.py`` and ``_group_scan.pyi``. Compiler analysis and
+``numba_mlir/_group/_scan.py`` and ``_scan.pyi``. Compiler analysis and
 lowering have their own Scan modules. A family can span several modules
 and include both common operations and qualified extensions.
 
