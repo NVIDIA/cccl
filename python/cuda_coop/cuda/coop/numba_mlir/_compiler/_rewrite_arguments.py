@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
 from cuda.coop._core import ArgumentBinding, GroupLoweringPlan
 
 from ._group_rewriting import GroupRewriteContext
@@ -13,6 +17,9 @@ from ._rewrite_support import (
     ir,
 )
 
+if TYPE_CHECKING:
+    from ._rewrite import CoopSinglePhaseRewrite
+
 
 class _ArgumentRewrite:
     def _validate_and_split_args(
@@ -23,6 +30,7 @@ class _ArgumentRewrite:
         dict[str, object],
         tuple[ir.Var, ...],
     ]:
+        rewrite = cast("CoopSinglePhaseRewrite", self)
         spec = rewrite_operation(op_name)
         if spec is None:
             raise CoopSinglePhaseRewriteError(
@@ -75,7 +83,7 @@ class _ArgumentRewrite:
             ):
                 value_var = call.args[base_runtime_arg_count + index]
                 if name in scalar_binding_kwargs:
-                    value = self._resolve_static_scalar_value(value_var)
+                    value = rewrite._resolve_static_scalar_value(value_var)
                     if value is not _UNRESOLVED:
                         if value is not None:
                             factory_kwargs[name] = (
@@ -103,7 +111,7 @@ class _ArgumentRewrite:
                         "lowering-plan metadata."
                     )
                 seen_lowering_plan = True
-                lowering_plan = self._resolve_factory_kwarg_value(
+                lowering_plan = rewrite._resolve_factory_kwarg_value(
                     op_name, name, value_var
                 )
                 if not isinstance(lowering_plan, GroupLoweringPlan):
@@ -140,7 +148,7 @@ class _ArgumentRewrite:
                         f"cooperative group runtime argument {name!r} must be "
                         "a variable."
                     )
-                value = self._resolve_static_scalar_value(value_var)
+                value = rewrite._resolve_static_scalar_value(value_var)
                 if value is not _UNRESOLVED:
                     if value is not None:
                         factory_kwargs[name] = (
@@ -170,7 +178,7 @@ class _ArgumentRewrite:
                         "a variable."
                     )
                 if name in scalar_binding_kwargs:
-                    value = self._resolve_static_scalar_value(value_var)
+                    value = rewrite._resolve_static_scalar_value(value_var)
                     if value is not _UNRESOLVED:
                         if value is not None:
                             factory_kwargs[name] = (
@@ -201,7 +209,9 @@ class _ArgumentRewrite:
                     f"duplicate factory keyword {name!r}."
                 )
             seen_factory_kwargs.add(name)
-            value = self._resolve_factory_kwarg_value(op_name, name, value_var)
+            value = rewrite._resolve_factory_kwarg_value(
+                op_name, name, value_var
+            )
             if value is _UNRESOLVED:
                 raise CoopSinglePhaseRewriteError(
                     f"Failed to evaluate cooperative group operation "
@@ -236,7 +246,7 @@ class _ArgumentRewrite:
             seen_runtime_factory_kwargs.add(name)
         if runtime_offset_var is not None:
             runtime_args.append(runtime_offset_var)
-        self._infer_factory_kwargs_from_payload(
+        rewrite._infer_factory_kwargs_from_payload(
             op_name,
             runtime_args,
             allowed_factory_kwargs,
@@ -250,12 +260,12 @@ class _ArgumentRewrite:
                 runtime_args=runtime_args,
                 factory_kwargs=factory_kwargs,
             )
-        self._canonicalize_dim_factory_alias(
+        rewrite._canonicalize_dim_factory_alias(
             op_name=op_name,
             seen_factory_kwargs=seen_factory_kwargs,
             factory_kwargs=factory_kwargs,
         )
-        self._infer_threads_per_block_from_context(
+        rewrite._infer_threads_per_block_from_context(
             op_name=op_name,
             allowed_factory_kwargs=allowed_factory_kwargs,
             seen_factory_kwargs=seen_factory_kwargs,
@@ -264,9 +274,9 @@ class _ArgumentRewrite:
         missing = required_factory_kwargs - seen_factory_kwargs
         if missing:
             if "threads_per_block" in missing:
-                if self._can_defer_launch_dim_inference():
+                if rewrite._can_defer_launch_dim_inference():
                     raise _DeferredCoopRewrite
-                if not self._allow_launch_dim_deferral:
+                if not rewrite._allow_launch_dim_deferral:
                     other_missing = sorted(missing - {"threads_per_block"})
                     other_missing_message = (
                         " Also missing required factory keywords: "
@@ -277,7 +287,8 @@ class _ArgumentRewrite:
                     raise CoopSinglePhaseRewriteError(
                         f"coop operation '{op_name}' could not infer an exact "
                         "positive threads_per_block value because "
-                        f"{self._launch_dim_inference_failure_detail()}. Use a "
+                        f"{rewrite._launch_dim_inference_failure_detail()}. "
+                        "Use a "
                         "compile-time constant launch shape or pass explicit "
                         f"threads_per_block.{other_missing_message}"
                     )

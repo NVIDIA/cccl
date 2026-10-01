@@ -35,7 +35,7 @@ class _GroupMetadataRewrite:
         *,
         match,
         runtime_args: list[ir.Var],
-        scope: ir.Scope,
+        scope: ir.Scope | None,
         loc: ir.Loc,
     ) -> list[ir.Var]:
         spec = rewrite_operation(match.op_name)

@@ -50,6 +50,7 @@ test = [
   "mypy",
   "numpy",
   "packaging",
+  "pyright==1.1.414",
   "pytest",
   "pytest-cov",
   "tomli>=2.0; python_version < '3.11'",
@@ -120,6 +121,12 @@ module = [
 ]
 ignore_missing_imports = true
 follow_imports = "skip"
+
+[tool.pyright]
+include = ["cuda/coop/numba_mlir"]
+extraPaths = ["."]
+typeCheckingMode = "standard"
+pythonVersion = "3.10"
 
 [tool.ruff]
 extend = "../../pyproject.toml"

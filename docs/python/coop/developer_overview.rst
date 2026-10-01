@@ -437,8 +437,8 @@ aliases and conditional definitions. A surviving unsupported helper or
 descriptor escape is diagnosed with its name. Standalone callbacks cannot
 contain primitives because they lack the caller's cooperative launch context.
 
-For the MVP, ``literal_unroll`` values shaping cooperative groups, selectors,
-payloads, or storage are explicitly unsupported. The planner diagnoses those
+``literal_unroll`` values shaping cooperative groups, selectors, payloads,
+or storage are unsupported. The planner diagnoses those
 uses and suggests explicit calls with compile-time constants. Ordinary unrolling
 unrelated to cooperative planning remains available. Supporting shaped unrolling
 would require revisiting planner ordering; this implementation does not move
@@ -464,7 +464,7 @@ A :term:`family` groups related primitives and their implementation. The
 Load/Store family has shared declarations in ``_core/api/load_store.py``
 and ``load_store.pyi``, semantic descriptions in
 ``_core/group/load_store.py``, and Numba-specific entry points in
-``numba_mlir/_group_load_store.py`` and ``_group_load_store.pyi``. Compiler
+``numba_mlir/_group/_load_store.py`` and ``_load_store.pyi``. Compiler
 analysis and lowering have their own Load/Store modules. A family spans
 common operations and qualified extensions.
 

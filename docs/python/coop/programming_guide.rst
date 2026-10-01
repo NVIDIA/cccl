@@ -496,7 +496,7 @@ including between loop iterations.
 Set ``auto_sync=True`` to insert automatic trailing barriers for scratch reuse.
 Without an explicit descriptor, the compiler synchronizes scratch automatically.
 An unrelated memory access between calls does not establish a block barrier.
-The MVP conservatively rejects merging multiple manually synchronized
+The compiler rejects merging multiple manually synchronized
 ``TempStorage`` constructors into one descriptor, including conditional
 definitions. Use one constructor and keep its synchronization explicit. This
 restriction reflects what the planner can establish; it does not mean that

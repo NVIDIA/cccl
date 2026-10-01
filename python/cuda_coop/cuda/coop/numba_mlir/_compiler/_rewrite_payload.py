@@ -4,12 +4,8 @@
 
 from ._group_rewriting import GroupRewriteContext
 from ._operations import rewrite_operation
-from ._rewrite_support import (
-    CoopSinglePhaseRewriteError,
-    _ThreadDataSpec,
-    ir,
-    normalize_dtype_param,
-)
+from ._parameters import normalize_dtype_param
+from ._rewrite_support import CoopSinglePhaseRewriteError, _ThreadDataSpec, ir
 
 
 class PayloadInference:
