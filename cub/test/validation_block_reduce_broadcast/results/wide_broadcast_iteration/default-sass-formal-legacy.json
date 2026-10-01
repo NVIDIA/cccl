@@ -1,0 +1,48 @@
+{
+  "baseline_library": "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/formal-legacy-A/cccl_baseline_h20.so",
+  "candidate_library": "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/formal-legacy-P/cccl_patch_h20.so",
+  "baseline_sha256": "d590750c22f4ae49d7d6c6361d477d308ab1174971d8e71e52882152b79aeeb6",
+  "candidate_sha256": "6d41e2544883b801d7613c4685103ef97bc478288f00b07f9610056a6f48cf2f",
+  "default_kernels": [
+    {
+      "name": "_Z16normalize_kernelILi512ELb0EEvPKfPfi",
+      "exact": true,
+      "sass_sha256": "84ad2c31e82020bd5ee279d059b50acc37c8915d1d6d108cc7260465347e4524"
+    },
+    {
+      "name": "_Z19first_thread_kernelILi512EEvPKfPf",
+      "exact": true,
+      "sass_sha256": "8f4a5cc383a737ab4d71a07f2a1bed0a1c199e17e4f507a8e0b7dc77b155b86f"
+    },
+    {
+      "name": "_Z16normalize_kernelILi256ELb0EEvPKfPfi",
+      "exact": true,
+      "sass_sha256": "45f38ac39b9a8cbb033d8771acafd7231d7c6d28705a2901780db6e4c16878dc"
+    },
+    {
+      "name": "_Z19first_thread_kernelILi256EEvPKfPf",
+      "exact": true,
+      "sass_sha256": "d0ca0fd3102fdaa1950236c9bae2db63444cfa154a7d03184542b61e536250cb"
+    },
+    {
+      "name": "_Z16normalize_kernelILi128ELb0EEvPKfPfi",
+      "exact": true,
+      "sass_sha256": "6188f3c6a2b54c9472f7828b564df116cc4d66849e9a749a021d6120b07ca91e"
+    },
+    {
+      "name": "_Z19first_thread_kernelILi128EEvPKfPf",
+      "exact": true,
+      "sass_sha256": "1dd74f9299aac606b410d1715f8a1b9d6b510741897a1caded6a88e222c76e54"
+    },
+    {
+      "name": "_Z16normalize_kernelILi32ELb0EEvPKfPfi",
+      "exact": true,
+      "sass_sha256": "03797e1c0b9de6db650ab36fd5477d60512ca9108e57b79a152b2a1324295e81"
+    },
+    {
+      "name": "_Z19first_thread_kernelILi32EEvPKfPf",
+      "exact": true,
+      "sass_sha256": "5060e785ee920234f2c9c913946ef40dbf5f287f4b0d5f357a0575c6fe932d09"
+    }
+  ]
+}

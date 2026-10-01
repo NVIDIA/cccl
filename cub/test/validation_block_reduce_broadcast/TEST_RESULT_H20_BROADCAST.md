@@ -3,9 +3,11 @@
 
 # H20 validation: opt-in BlockReduce broadcast
 
-`ReduceBroadcast` returns the aggregate in every thread for `BLOCK_REDUCE_WARP_REDUCTIONS`. `Reduce` and `Sum` retain their thread-0 contract and original folding path. The broadcast uses the existing warp-aggregate storage and the same reduction order.
+`ReduceBroadcast` returns the aggregate in every thread for `BLOCK_REDUCE_WARP_REDUCTIONS`. `Reduce` and `Sum` retain their thread-0 contract and original folding path. The broadcast uses existing storage; floating-point and custom operators preserve the original reduction order.
 
-The 128-wide normalization consumer measures 1.0251–1.0297×, while the 512-wide consumer measures 0.9022–0.9132×. The unchanged first-thread consumer has identical SASS. Full-model ratios are 0.9900× and 1.0002×, with quartet ranges crossing 1×; these runs demonstrate no stable model speedup. The broadcast cost is explicitly opt-in.
+The [wide-broadcast iteration](TEST_RESULT_H20_WIDE_BROADCAST.md) records the current source and independent eight-quartet consumer results. Its full-model follow-up remains pending. The measurements below retain the earlier source/binaries.
+
+The earlier 128-wide normalization consumer measures 1.0251–1.0297×, while the 512-wide consumer measures 0.9022–0.9132×. The unchanged first-thread consumer has identical SASS. Full-model ratios are 0.9900× and 1.0002×, with quartet ranges crossing 1×; these runs demonstrate no stable model speedup. The broadcast cost is explicitly opt-in.
 
 The [oversized valid-count follow-up](TEST_RESULT_H20_VALID_COUNT.md) adds a partial-warp correction and stronger noncommutative coverage. The original timing records below retain their recorded source; all 12 measured consumer kernels are unchanged by that correction.
 

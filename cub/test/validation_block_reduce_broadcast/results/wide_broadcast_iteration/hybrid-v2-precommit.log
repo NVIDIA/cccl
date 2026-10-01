@@ -1,0 +1,26 @@
+check for leaked secrets (trufflehog)....................................Passed
+fix end of files.........................................................Passed
+mixed line ending........................................................Passed
+trim trailing whitespace.............................(no files to check)Skipped
+check json...........................................(no files to check)Skipped
+check toml...........................................(no files to check)Skipped
+pretty format json...................................(no files to check)Skipped
+check for broken symlinks............................(no files to check)Skipped
+check that executables have shebangs.................(no files to check)Skipped
+check for merge conflicts................................................Passed
+check that scripts with shebangs are executable..........................Passed
+check yaml...........................................(no files to check)Skipped
+shellcheck..............................................................Skipped
+clang-format.............................................................Passed
+ruff (legacy alias)..................................(no files to check)Skipped
+ruff format..........................................(no files to check)Skipped
+gersemi.................................................................Skipped
+codespell................................................................Passed
+mypy.................................................(no files to check)Skipped
+Fix smartquote characters................................................Passed
+Normalize irregular space characters to "space"..........................Passed
+Forbid the use of unicode BiDi control characters........................Passed
+Fix ligature characters with NFKD normalization..........................Passed
+check-shebang........................................(no files to check)Skipped
+require CUB test memory classification...................................Passed
+unprintable-unicode......................................................Passed

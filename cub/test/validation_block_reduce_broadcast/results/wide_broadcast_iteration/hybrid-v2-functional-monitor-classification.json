@@ -1,0 +1,32 @@
+{
+  "observations": [
+    {
+      "job": "hybrid-v2-65x1-memcheck",
+      "pid": 306605,
+      "flag_time": 1790855302.8727276,
+      "previously_recorded_own_child": true,
+      "last_own_observation": 1790855302.223545,
+      "present_in_process_snapshot": false,
+      "timing_worker": false
+    },
+    {
+      "job": "hybrid-v2-128x2-synccheck",
+      "pid": 307161,
+      "flag_time": 1790855317.691158,
+      "previously_recorded_own_child": true,
+      "last_own_observation": 1790855317.0526907,
+      "present_in_process_snapshot": false,
+      "timing_worker": false
+    },
+    {
+      "job": "hybrid-v2-256x2-synccheck",
+      "pid": 307464,
+      "flag_time": 1790855326.5787668,
+      "previously_recorded_own_child": true,
+      "last_own_observation": 1790855325.932859,
+      "present_in_process_snapshot": false,
+      "timing_worker": false
+    }
+  ],
+  "classification": "NVML snapshot precedes ps; sanitizer children naturally exited between the two snapshots. Raw flags are retained. No timing quartet is exempted."
+}
