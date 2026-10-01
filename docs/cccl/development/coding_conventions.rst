@@ -1,6 +1,6 @@
-.. _cccl-development-coding-guidelines:
+.. _cccl-development-coding-conventions:
 
-CCCL C++ Coding Guidelines
+CCCL C++ Coding Conventions
 ============================
 
 The following guidelines must generally be followed when contributing to any of the CCCL C++ libraries,

@@ -420,7 +420,7 @@ int main(int argc, char** argv)
   fflush(stderr);
 
   // CPU performance comparisons vs cached.  Allocate and free a 1MB block 2000 times
-  CpuTimer cpu_timer;
+  CpuTimer cpu_timer{};
   char* d_1024MB  = nullptr;
   allocator.debug = false;
 

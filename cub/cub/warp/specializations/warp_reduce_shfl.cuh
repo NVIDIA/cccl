@@ -356,6 +356,8 @@ struct WarpReduceShfl
     int last_lane,
     int offset)
   {
+    // The reduction supplies both output fields.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     KeyValuePair<OffsetT, ValueT> output;
 
     output.value = ReduceStep(input.value, ::cuda::std::plus<>{}, last_lane, offset);
