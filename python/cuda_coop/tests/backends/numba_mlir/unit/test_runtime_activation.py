@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-import ast
 import os
 import subprocess
 import sys
@@ -13,7 +12,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from cuda.coop.numba_mlir._compiler import _activation, _numba_mlir_compat
+from cuda.coop.numba_mlir._compiler import _activation
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
@@ -35,76 +34,6 @@ def _run_import_probe(script: str) -> None:
     )
 
     assert result.returncode == 0, result.stdout + result.stderr
-
-
-def _fake_compat_modules():
-    planner_registry = SimpleNamespace(_lock=RLock(), _planners=[])
-    rewrite_registry = SimpleNamespace(
-        rewrites={"before-inference": [], "after-inference": []}
-    )
-    overload_base = type("_OverloadFunctionTemplate", (), {})
-
-    def get_jit_decorator(self):
-        del self
-
-    overload_template = type(
-        "_NumbaCudaMlirOverloadFunctionTemplate",
-        (overload_base,),
-        {"_get_jit_decorator": get_jit_decorator},
-    )
-
-    def make_overload_template(
-        func,
-        overload_func,
-        jit_options,
-        strict,
-        inline,
-        prefer_literal=False,
-        base=overload_base,
-        **kwargs,
-    ):
-        return (
-            func,
-            overload_func,
-            jit_options,
-            strict,
-            inline,
-            prefer_literal,
-            base,
-            kwargs,
-        )
-
-    extending = SimpleNamespace(
-        WholeFunctionPlanner=type("WholeFunctionPlanner", (), {}),
-        register_planner=lambda planner: planner,
-        require_launch_config=lambda state: {},
-        set_required_dynamic_shared_memory=lambda state, size: None,
-        _NumbaCudaMlirOverloadFunctionTemplate=overload_template,
-    )
-    return {
-        "numba_cuda_mlir.extending": extending,
-        "numba_cuda_mlir._whole_function_planners": SimpleNamespace(
-            _planner_registry=planner_registry
-        ),
-        "numba_cuda_mlir.numba_cuda.core.rewrites": SimpleNamespace(
-            Rewrite=type("Rewrite", (), {}),
-            register_rewrite=lambda kind: lambda rewrite: rewrite,
-            rewrite_registry=rewrite_registry,
-        ),
-        "numba_cuda_mlir.numba_cuda.core.errors": SimpleNamespace(
-            ConstantInferenceError=type(
-                "ConstantInferenceError", (Exception,), {}
-            )
-        ),
-        "numba_cuda_mlir.numba_cuda.typing.typeof": SimpleNamespace(
-            typeof=lambda value: value
-        ),
-        "numba_cuda_mlir.numba_cuda.typing.templates": SimpleNamespace(
-            _OverloadFunctionTemplate=overload_base,
-            make_overload_template=make_overload_template,
-        ),
-        "numba_cuda_mlir.numbair_transforms": SimpleNamespace(ir=object()),
-    }
 
 
 def test_numba_first_root_import_automatically_activates_backend():
@@ -200,15 +129,14 @@ def test_root_first_register_explicitly_activates_backend_once(
         }}
         assert expected <= set(sys.modules), expected - set(sys.modules)
 
-        from cuda.coop.numba_mlir._compiler._numba_mlir_compat import (
-            _get_numba_mlir_compat,
+        from cuda.coop.numba_mlir._compiler._activation import (
+            _snapshot_registrations,
         )
 
-        compat = _get_numba_mlir_compat()
-        snapshot = compat.snapshot_registrations()
+        snapshot = _snapshot_registrations()
         assert coop.register("numba-cuda-mlir") is None
         assert coop.register("numba_cuda_mlir") is None
-        assert compat.snapshot_registrations() == snapshot
+        assert _snapshot_registrations() == snapshot
         """
     )
 
@@ -340,7 +268,10 @@ def test_runtime_loading_retries_after_a_failed_qualified_import(monkeypatch):
     assert _activation._cuda_module is runtime
 
 
-def test_failed_activation_after_types_import_leaves_typeof_registry_unchanged():  # noqa: E501 - Preserve descriptive test name.
+@pytest.mark.parametrize("error_type", ["RuntimeError", "AttributeError"])
+def test_failed_activation_after_types_import_leaves_typeof_registry_unchanged(
+    error_type,
+):
     script = textwrap.dedent(
         """
         import importlib
@@ -356,19 +287,20 @@ def test_failed_activation_after_types_import_leaves_typeof_registry_unchanged()
         baseline = dict(typeof_impl.registry)
         real_import_module = importlib.import_module
         fail_once = True
+        injected_error = ERROR_TYPE("injected post-types activation failure")
 
         def fail_after_rewrite(name, package=None):
             global fail_once
             if fail_once and name.endswith("._compiler._group_planner"):
                 fail_once = False
-                raise RuntimeError("injected post-types activation failure")
+                raise injected_error
             return real_import_module(name, package)
 
         importlib.import_module = fail_after_rewrite
         try:
             import cuda.coop.numba_mlir  # noqa: F401
-        except RuntimeError as error:
-            assert str(error) == "injected post-types activation failure"
+        except ERROR_TYPE as error:
+            assert error is injected_error
         else:
             raise AssertionError("injected activation failure did not occur")
         finally:
@@ -379,7 +311,7 @@ def test_failed_activation_after_types_import_leaves_typeof_registry_unchanged()
         import cuda.coop.numba_mlir  # noqa: F401
 
         assert dict(typeof_impl.registry) == baseline
-        """
+        """.replace("ERROR_TYPE", error_type)
     )
     env = os.environ.copy()
     env["PYTHONPATH"] = os.pathsep.join(
@@ -396,214 +328,6 @@ def test_failed_activation_after_types_import_leaves_typeof_registry_unchanged()
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_compat_accepts_public_0_5_capabilities_without_refresh(monkeypatch):
-    modules = _fake_compat_modules()
-    extending = modules["numba_cuda_mlir.extending"]
-    assert not hasattr(extending, "refresh_registries")
-    monkeypatch.setattr(
-        _numba_mlir_compat.importlib,
-        "import_module",
-        lambda name: modules[name],
-    )
-
-    compat = _numba_mlir_compat._load_numba_mlir_compat(
-        SimpleNamespace(__version__="0.5.99")
-    )
-
-    assert compat.version == "0.5.99"
-    assert compat.numba_ir is modules["numba_cuda_mlir.numbair_transforms"].ir
-    snapshot = compat.snapshot_registrations()
-    assert snapshot.planners == ()
-    assert snapshot.rewrites["before-inference"] == ()
-
-
-@pytest.mark.parametrize(
-    ("version", "supported"),
-    [
-        (None, False),
-        ("", False),
-        ("0.4.99", False),
-        ("0.5", True),
-        ("0.5.0", True),
-        ("0.5.99", True),
-        ("0.6", False),
-        ("1.0.0", False),
-    ],
-)
-def test_compat_owns_runtime_version_predicate(version, supported):
-    assert (
-        _numba_mlir_compat._is_supported_runtime_version(version) is supported
-    )
-
-
-def test_compat_runtime_requirement_uses_detected_version():
-    requirement = _numba_mlir_compat._runtime_requirement(
-        SimpleNamespace(__version__="0.5.7")
-    )
-
-    assert "detected numba-cuda-mlir==0.5.7" in requirement
-    assert "numba-cuda-mlir>=0.5.0,<0.6" in requirement
-    assert "cuda-coop[numba-cuda-mlir-cu12]" in requirement
-    assert "cuda-coop[numba-cuda-mlir-cu13]" in requirement
-
-
-def test_activation_consumes_compat_runtime_requirement(monkeypatch):
-    diagnostic = "compat-owned runtime diagnostic"
-
-    def missing_runtime(name):
-        assert name == "numba_cuda_mlir"
-        raise ImportError("missing runtime", name=name)
-
-    monkeypatch.setattr(_activation.importlib, "import_module", missing_runtime)
-    monkeypatch.setattr(
-        _activation,
-        "_runtime_requirement",
-        lambda runtime=None: diagnostic,
-    )
-
-    runtime, error = _activation._load_runtime()
-
-    assert runtime is None
-    assert error is not None
-    assert error.reason_code == "backend-runtime-missing"
-    assert diagnostic in str(error)
-
-
-def test_compat_wraps_required_module_import_failures(monkeypatch):
-    modules = _fake_compat_modules()
-
-    def import_module(name):
-        if name == "numba_cuda_mlir.extending":
-            raise ImportError("missing extending module", name=name)
-        return modules[name]
-
-    monkeypatch.setattr(
-        _numba_mlir_compat.importlib,
-        "import_module",
-        import_module,
-    )
-
-    with pytest.raises(_activation._NumbaMlirBackendImportError) as exc_info:
-        _numba_mlir_compat._load_numba_mlir_compat(
-            SimpleNamespace(__version__="0.5.1")
-        )
-
-    error = exc_info.value
-    assert error.reason_code == "runtime-hook-api-import-failed"
-    assert error.details["module"] == "numba_cuda_mlir.extending"
-    assert isinstance(error.__cause__, ImportError)
-
-
-@pytest.mark.parametrize("version", ["0.4.9", "0.6.0", "1.0.0"])
-def test_compat_rejects_unsupported_runtime_series(version):
-    with pytest.raises(_activation._NumbaMlirBackendImportError) as exc_info:
-        _numba_mlir_compat._load_numba_mlir_compat(
-            SimpleNamespace(__version__=version)
-        )
-
-    error = exc_info.value
-    assert error.reason_code == "unsupported-runtime-version"
-    assert error.details == {
-        "detected_version": version,
-        "supported_series": "0.5.x",
-    }
-
-
-@pytest.mark.parametrize(
-    ("module_name", "attribute"),
-    [
-        ("numba_cuda_mlir.extending", "_NumbaCudaMlirOverloadFunctionTemplate"),
-        (
-            "numba_cuda_mlir.numba_cuda.typing.templates",
-            "make_overload_template",
-        ),
-        ("numba_cuda_mlir.numbair_transforms", "ir"),
-        ("numba_cuda_mlir._whole_function_planners", "_planner_registry"),
-    ],
-)
-def test_compat_reports_missing_private_api(
-    monkeypatch, module_name, attribute
-):
-    modules = _fake_compat_modules()
-    delattr(modules[module_name], attribute)
-    monkeypatch.setattr(
-        _numba_mlir_compat.importlib,
-        "import_module",
-        lambda name: modules[name],
-    )
-
-    with pytest.raises(_activation._NumbaMlirBackendImportError) as exc_info:
-        _numba_mlir_compat._load_numba_mlir_compat(
-            SimpleNamespace(__version__="0.5.1")
-        )
-
-    assert exc_info.value.reason_code == "incomplete-runtime-hook-api"
-    assert exc_info.value.details["missing"] == attribute
-    assert isinstance(exc_info.value.__cause__, AttributeError)
-
-
-def test_private_compiler_integration_stays_in_compatibility_shim():
-    backend_root = PACKAGE_ROOT / "cuda" / "coop" / "numba_mlir"
-    compat_path = backend_root / "_compiler" / "_numba_mlir_compat.py"
-    private_prefixes = (
-        "numba_cuda_mlir._mlir",
-        "numba_cuda_mlir._whole_function_planners",
-        "numba_cuda_mlir.numba_cuda",
-        "numba_cuda_mlir.numbair_transforms",
-    )
-    # These definitions are also exposed by the runtime's public facades.
-    # Import their owners so static analysis does not depend on incomplete
-    # re-export declarations. Mutable compiler APIs still belong in the shim.
-    public_definitions = {
-        "numba_cuda_mlir.numba_cuda.core.errors": {"ForceLiteralArg"},
-        "numba_cuda_mlir.numba_cuda.typing.templates": {"signature"},
-    }
-    public_type_module = "numba_cuda_mlir.numba_cuda.types"
-    violations = []
-
-    for source in backend_root.rglob("*.py"):
-        if source == compat_path:
-            continue
-        module = ast.parse(
-            source.read_text(encoding="utf-8"), filename=str(source)
-        )
-        annotation_only = {
-            child
-            for guard in ast.walk(module)
-            if isinstance(guard, ast.If)
-            and isinstance(guard.test, ast.Name)
-            and guard.test.id == "TYPE_CHECKING"
-            for statement in guard.body
-            for child in ast.walk(statement)
-        }
-        for node in ast.walk(module):
-            if node in annotation_only:
-                continue
-            imported = []
-            if isinstance(node, ast.Import):
-                imported = [
-                    alias.name
-                    for alias in node.names
-                    if alias.name != public_type_module
-                ]
-            elif isinstance(node, ast.ImportFrom) and node.module is not None:
-                if node.module == public_type_module:
-                    continue
-                if node.module in public_definitions and all(
-                    alias.name in public_definitions[node.module]
-                    for alias in node.names
-                ):
-                    continue
-                imported = [node.module]
-            for name in imported:
-                if name.startswith(private_prefixes):
-                    violations.append(
-                        f"{source.relative_to(PACKAGE_ROOT)}:{node.lineno}:{name}"
-                    )
-
-    assert violations == []
-
-
 @pytest.mark.parametrize(
     "activate",
     [
@@ -611,26 +335,187 @@ def test_private_compiler_integration_stays_in_compatibility_shim():
         'from cuda import coop; coop.register("numba-cuda-mlir")',
     ],
 )
-def test_backend_registration_rejects_unsupported_runtime_series(activate):
+@pytest.mark.parametrize(
+    "version", ["0.4.9", "0.5.0rc1", "0.6.0rc1", "0.6.0", "invalid", None]
+)
+def test_backend_registration_rejects_unsupported_runtime_version(
+    activate, version
+):
     _run_import_probe(
         """
+        import importlib.metadata
         import os
+        import sys
+        from types import ModuleType
 
         os.environ["CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION"] = "1"
 
-        import numba_cuda_mlir
+        runtime = ModuleType("numba_cuda_mlir")
+        runtime.__version__ = VERSION
+        sys.modules[runtime.__name__] = runtime
+        real_version = importlib.metadata.version
 
-        numba_cuda_mlir.__version__ = "0.6.0"
+        def distribution_version(name):
+            if name == "numba-cuda-mlir":
+                raise importlib.metadata.PackageNotFoundError(name)
+            return real_version(name)
+
+        importlib.metadata.version = distribution_version
         try:
             ACTIVATE_BACKEND
         except ImportError as exc:
             assert exc.backend == "numba-cuda-mlir"
             assert exc.reason_code == "unsupported-runtime-version"
-            assert exc.details["detected_version"] == "0.6.0"
-            assert "supports numba-cuda-mlir 0.5.x" in str(exc)
+            assert exc.details["detected_version"] == VERSION
+            assert exc.details["required_version"] == ">=0.5.0,<0.6"
+            message = str(exc)
+            assert "numba-cuda-mlir>=0.5.0,<0.6" in message
+            assert "cuda-coop[numba-cuda-mlir-cu12]" in message
+            assert "cuda-coop[numba-cuda-mlir-cu13]" in message
+            if VERSION is not None:
+                assert str(VERSION) in message
         else:
             raise AssertionError("unsupported runtime unexpectedly activated")
-        """.replace("ACTIVATE_BACKEND", activate)
+
+        assert "numba_cuda_mlir.cuda" not in sys.modules
+        assert "cuda.coop.numba_mlir._compiler._rewrite" not in sys.modules
+        assert (
+            "cuda.coop.numba_mlir._compiler._group_planner" not in sys.modules
+        )
+        """.replace("ACTIVATE_BACKEND", activate).replace(
+            "VERSION", repr(version)
+        )
+    )
+
+
+@pytest.mark.parametrize("version", ["0.5.0+local", "0.5.1rc1", None])
+def test_backend_registration_accepts_supported_runtime_version(version):
+    _run_import_probe(
+        f"""
+        import os
+        import sys
+
+        os.environ["CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION"] = "1"
+
+        import numba_cuda_mlir
+
+        # An absent module version falls back to installed package metadata.
+        version = {version!r}
+        if version is None:
+            del numba_cuda_mlir.__version__
+        else:
+            numba_cuda_mlir.__version__ = version
+
+        from cuda import coop
+
+        coop.register("numba-cuda-mlir")
+        assert "cuda.coop.numba_mlir._compiler._rewrite" in sys.modules
+        assert "cuda.coop.numba_mlir._compiler._group_planner" in sys.modules
+        """
+    )
+
+
+def test_root_import_ignores_an_installed_but_unused_old_runtime(tmp_path):
+    runtime = tmp_path / "numba_cuda_mlir"
+    runtime.mkdir()
+    (runtime / "__init__.py").write_text('__version__ = "0.4.9"\n')
+    _run_import_probe(
+        f"""
+        import importlib.util
+        import sys
+        import warnings
+
+        sys.path.insert(0, {str(tmp_path)!r})
+        assert importlib.util.find_spec("numba_cuda_mlir") is not None
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            from cuda import coop
+
+        assert callable(coop.ThreadData)
+        assert not caught, caught
+        assert "numba_cuda_mlir" not in sys.modules
+        assert "cuda.coop.numba_mlir" not in sys.modules
+        """
+    )
+
+
+def test_root_import_warns_when_an_old_runtime_was_already_imported():
+    _run_import_probe(
+        """
+        import sys
+        import warnings
+        from types import ModuleType
+
+        runtime = ModuleType("numba_cuda_mlir")
+        runtime.__version__ = "0.4.9"
+        sys.modules[runtime.__name__] = runtime
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            from cuda import coop
+
+        from cuda.coop._core._auto_registration import (
+            CudaCoopAutoRegistrationWarning,
+        )
+
+        assert callable(coop.ThreadData)
+        assert len(caught) == 1, caught
+        assert caught[0].category is CudaCoopAutoRegistrationWarning
+        assert "0.4.9" in str(caught[0].message)
+        assert "numba-cuda-mlir>=0.5.0,<0.6" in str(caught[0].message)
+        assert "cuda.coop.numba_mlir" not in sys.modules
+        assert "numba_cuda_mlir.cuda" not in sys.modules
+        """
+    )
+
+
+def test_missing_packaging_is_reported_before_compiler_import():
+    _run_import_probe(
+        """
+        import importlib.abc
+        import os
+        import sys
+        from types import ModuleType
+
+        os.environ["CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION"] = "1"
+        runtime = ModuleType("numba_cuda_mlir")
+        runtime.__version__ = "0.5.0"
+        sys.modules[runtime.__name__] = runtime
+        missing = ModuleNotFoundError(
+            "No module named 'packaging'", name="packaging"
+        )
+
+        class BlockPackaging(importlib.abc.MetaPathFinder):
+            def find_spec(self, fullname, path=None, target=None):
+                if fullname == "packaging":
+                    raise missing
+                return None
+
+        assert "packaging" not in sys.modules
+        sys.meta_path.insert(0, BlockPackaging())
+        from cuda import coop
+
+        try:
+            coop.register("numba-cuda-mlir")
+        except ImportError as exc:
+            assert exc.reason_code == "backend-dependency-missing"
+            assert exc.details["missing"] == "packaging"
+            assert exc.__cause__ is missing
+            message = str(exc)
+            assert "packaging" in message
+            assert "cuda-coop[numba-cuda-mlir-cu12]" in message
+            assert "cuda-coop[numba-cuda-mlir-cu13]" in message
+        else:
+            raise AssertionError(
+                "activation without packaging unexpectedly succeeded"
+            )
+
+        assert "numba_cuda_mlir.cuda" not in sys.modules
+        assert "cuda.coop.numba_mlir._compiler._rewrite" not in sys.modules
+        assert (
+            "cuda.coop.numba_mlir._compiler._group_planner" not in sys.modules
+        )
+        """
     )
 
 
