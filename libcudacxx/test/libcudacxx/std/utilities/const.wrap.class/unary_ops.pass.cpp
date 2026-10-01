@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Enable constant_wrapper for msvc.
-// UNSUPPORTED: msvc
-
 // todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
 //   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
 //   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
@@ -259,12 +256,9 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<!42>, decltype(result4)>);
     static_assert(result4 == !42);
 
-    // todo(dabayer): This is failing with MSVC.
-#if !_CCCL_COMPILER(MSVC)
     decltype(auto) result5 = &cw42;
     static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<&cw42.value>, decltype(result5)>);
     static_assert(result5 == &cw42.value);
-#endif // !_CCCL_COMPILER(MSVC)
   }
 
 #if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
@@ -315,11 +309,8 @@ TEST_FUNC constexpr bool test()
     cuda::std::same_as<NonStructural> decltype(auto) result5 = &cwOpsReturnNonStructural;
     assert(result5.get() == 84);
 
-    // todo(dabayer): This is failing with MSVC.
-#  if !_CCCL_COMPILER(MSVC)
     cuda::std::same_as<NonStructural> decltype(auto) result6 = *cwOpsReturnNonStructural;
     assert(result6.get() == 0);
-#  endif // !_CCCL_COMPILER(MSVC)
   }
 
 #endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)

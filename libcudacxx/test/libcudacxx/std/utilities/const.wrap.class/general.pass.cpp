@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Enable constant_wrapper for msvc.
-// UNSUPPORTED: msvc
-
 // constant_wrapper
 
 // The class template constant_wrapper aids in metaprogramming by ensuring that the

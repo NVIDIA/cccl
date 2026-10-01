@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Enable constant_wrapper for msvc.
-// UNSUPPORTED: msvc
-
 // todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
 //   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
 //   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
@@ -27,10 +24,7 @@
 #include "test_macros.h"
 
 static_assert(cuda::std::__constant_wrapper<42>::value == 42);
-// todo(dabayer): This is failing with MSVC.
-#if !_CCCL_COMPILER(MSVC)
 static_assert(cuda::std::same_as<decltype(cuda::std::__constant_wrapper<42>::value), const int>);
-#endif // !_CCCL_COMPILER(MSVC)
 static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<42>::type, cuda::std::__constant_wrapper<42>>);
 static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<42>::value_type, int>);
 
@@ -61,8 +55,8 @@ static_assert(cuda::std::same_as<SValue::value_type, S>);
 template <auto V>
 TEST_FUNC constexpr bool value_ref_to_template_parameter_object()
 {
-// gcc < 13 evaluates this as taking address of rvalue.
-#  if !TEST_COMPILER(GCC, <, 13)
+// gcc < 13 evaluates this as taking address of rvalue. msvc crashes.
+#  if !TEST_COMPILER(GCC, <, 13) && !_CCCL_COMPILER(MSVC)
   return &V == &cuda::std::__constant_wrapper<V>{};
 #  else // ^^^ !TEST_COMPILER(GCC, <, 13) ^^^ / vvv TEST_COMPILER(GCC, <, 13) vvv
   return &V == &cuda::std::__constant_wrapper<V>::__get();

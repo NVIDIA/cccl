@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Enable constant_wrapper for msvc.
+// todo(dabayer): Enable for msvc. It has problems selecting the constexpr path.
 // UNSUPPORTED: msvc
 
 // todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
@@ -119,11 +119,7 @@ static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<cu
 #if !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_COMPILER(GCC, <, 14)
 static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<cuda::std::plus<>{}>, cuda::std::__constant_wrapper<42>, int>);
 #endif // !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_COMPILER(GCC, <, 14)
-// todo(dabayer): This is failing when compiling with msvc with:
-//   'cuda::std::__4::operator +': call to immediate function is not a constant expression
-#if !_CCCL_COMPILER(MSVC)
 static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<cuda::std::plus<>{}>, cuda::std::__constant_wrapper<42>, cuda::std::__constant_wrapper<42>>);
-#endif // !_CCCL_COMPILER(MSVC)
 #endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 // gcc < 13 fails this test with error:
@@ -186,14 +182,11 @@ TEST_FUNC constexpr bool test()
 #  endif // !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_COMPILER(GCC, <, 14)
 
   {
-    // msvc believes this is not a constant expression.
-#  if !_CCCL_COMPILER(MSVC)
     // with only constexpr param
     using T = cuda::std::__constant_wrapper<cuda::std::plus<>{}>;
     cuda::std::same_as<cuda::std::__constant_wrapper<3>> decltype(auto) result =
       TEST_CALL(T, cuda::std::__cw<1>, cuda::std::__cw<2>);
     static_assert(result == 3);
-#  endif // !_CCCL_COMPILER(MSVC)
   }
 
   {
@@ -372,12 +365,9 @@ TEST_FUNC constexpr bool test()
   }
 
   {
-// todo(dabayer): This is failing with msvc.
-#  if !_CCCL_COMPILER(MSVC)
     using T = cuda::std::__constant_wrapper<Poison{}>;
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<MustBeInt<int>{}>> decltype(auto) result =
       TEST_CALL(T, cuda::std::__cw<5>);
-#  endif // !_CCCL_COMPILER(MSVC)
   }
 
 #endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)

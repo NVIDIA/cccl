@@ -23,8 +23,10 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -36,12 +38,6 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-// operator may not be a static member function
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342)
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
 
 // clang-tidy warns about for example _LIBCUDACXX_AUTO_CAST(++_Tp::value) being repeated multiple times in the macro
 // expansion.
@@ -373,13 +369,34 @@ template <class _Vp, class _Arg>
 inline constexpr bool __cw_is_indexable_v<_Vp, void_t<decltype(_Vp::value[::cuda::std::declval<_Arg>()])>, _Arg> = true;
 #endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
 
+#if _CCCL_COMPILER(MSVC)
+template <auto _Xp, class = void>
+struct __constant_wrapper_msvc_value_type_select
+{
+  static constexpr decltype(auto) __dummy = (_Xp);
+  using type _CCCL_NODEBUG                = decltype(__dummy);
+};
+template <auto _Xp>
+struct __constant_wrapper_msvc_value_type_select<_Xp, enable_if_t<is_pointer_v<decltype(_Xp)>>>
+{
+  static constexpr auto __dummy = (_Xp);
+  using type _CCCL_NODEBUG      = decltype(__dummy);
+};
+#endif // _CCCL_COMPILER(MSVC)
+
 template <auto _Xp, class _Tp>
 struct __constant_wrapper : __cw_operators
 {
   using type       = __constant_wrapper;
   using value_type = _Tp;
 
+  // When _Xp is a pointer, msvc tries to convert (_Xp) to const _Up*&, which fail to compile, so we need to fix the
+  // type of `value` to be a value, not a reference.
+#if _CCCL_COMPILER(MSVC)
+  static constexpr typename __constant_wrapper_msvc_value_type_select<_Xp>::type value = (_Xp);
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
   static constexpr decltype((_Xp)) value = (_Xp);
+#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
   // [const.wrap.class] mandates this signature: operator= is a constant-expression
   // operation that yields a new constant_wrapper, so it must not return *this.
@@ -393,12 +410,12 @@ struct __constant_wrapper : __cw_operators
   }
   // NOLINTEND(misc-unconventional-assign-operator)
 
-  _CCCL_HOST_DEVICE_API constexpr operator decltype((_Xp))() const noexcept
+  _CCCL_HOST_DEVICE_API constexpr operator decltype(value)() const noexcept
   {
     return (_Xp);
   }
 
-  _CCCL_HOST_DEVICE_API static constexpr decltype((_Xp)) __get() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr decltype(value) __get() noexcept
   {
     return (_Xp);
   }
@@ -552,10 +569,6 @@ struct __constant_wrapper : __cw_operators
 };
 
 // NOLINTEND(bugprone-macro-repeated-side-effects)
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
