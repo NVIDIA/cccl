@@ -1238,7 +1238,7 @@ _CCCL_FPMP_CORE_API void
 __internal_fpmp2_sinpi(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
   float __c_hi, __c_lo;
-  __internal_fpmp2_sincospi(__x_hi, __x_lo, __res_hi, __res_lo, &__c_hi, &__c_lo);
+  ::cuda::experimental::__internal_fpmp2_sincospi(__x_hi, __x_lo, __res_hi, __res_lo, &__c_hi, &__c_lo);
 }
 
 /*
@@ -1249,11 +1249,11 @@ __internal_fpmp2_sinpi(const float __x_hi, const float __x_lo, float* __res_hi, 
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_sinpi(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
-  double __xd = __fpmp2_to_double(__x_hi, __x_lo);
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE,
-    (__fpmp2_from_double(::sinpi(__xd), __res_hi, __res_lo);),
-    (__fpmp2_from_double(::cuda::std::sin(__xd * ::cuda::std::__numbers<double>::__pi()), __res_hi, __res_lo);))
+  double __xd = ::cuda::experimental::__fpmp2_to_double(__x_hi, __x_lo);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (::cuda::experimental::__fpmp2_from_double(::sinpi(__xd), __res_hi, __res_lo);),
+                    (::cuda::experimental::__fpmp2_from_double(
+                       ::cuda::std::sin(__xd * ::cuda::std::__numbers<double>::__pi()), __res_hi, __res_lo);))
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(sinpi)
@@ -1273,7 +1273,7 @@ _CCCL_FPMP_CORE_API void
 __internal_fpmp2_cospi(const float __x_hi, const float __x_lo, float* __res_hi, float* __res_lo) noexcept
 {
   float __s_hi, __s_lo;
-  __internal_fpmp2_sincospi(__x_hi, __x_lo, &__s_hi, &__s_lo, __res_hi, __res_lo);
+  ::cuda::experimental::__internal_fpmp2_sincospi(__x_hi, __x_lo, &__s_hi, &__s_lo, __res_hi, __res_lo);
 }
 
 /*
@@ -1284,11 +1284,11 @@ __internal_fpmp2_cospi(const float __x_hi, const float __x_lo, float* __res_hi, 
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_cospi(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
-  double __xd = __fpmp2_to_double(__x_hi, __x_lo);
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE,
-    (__fpmp2_from_double(::cospi(__xd), __res_hi, __res_lo);),
-    (__fpmp2_from_double(::cuda::std::cos(__xd * ::cuda::std::__numbers<double>::__pi()), __res_hi, __res_lo);))
+  double __xd = ::cuda::experimental::__fpmp2_to_double(__x_hi, __x_lo);
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (::cuda::experimental::__fpmp2_from_double(::cospi(__xd), __res_hi, __res_lo);),
+                    (::cuda::experimental::__fpmp2_from_double(
+                       ::cuda::std::cos(__xd * ::cuda::std::__numbers<double>::__pi()), __res_hi, __res_lo);))
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(cospi)
@@ -1318,13 +1318,13 @@ _CCCL_FPMP_MATH_DISPATCH_1A(cospi)
   }
   if (__abs >= __integral_threshold)
   {
-    const int __n = __fpmp_fp2int_rn(__x);
+    const int __n = ::cuda::experimental::__fpmp_fp2int_rn(__x);
     *__f          = 0.0f;
     return __n & 1;
   }
 
-  int __n          = __fpmp_fp2int_rn(__x);
-  const float __nf = __fpmp_int2fp_rn<float>(__n);
+  int __n          = ::cuda::experimental::__fpmp_fp2int_rn(__x);
+  const float __nf = ::cuda::experimental::__fpmp_int2fp_rn<float>(__n);
   float __frac     = __x - __nf;
   if (__frac > 0.5f)
   {
@@ -1375,33 +1375,34 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
   constexpr float __even_integral_threshold = 0x1p24f;
   if (__abs_hi < __integral_threshold)
   {
-    int __n           = __fpmp_fp2int_rn(__x_hi);
-    const float __n_f = __fpmp_int2fp_rn<float>(__n);
+    int __n           = ::cuda::experimental::__fpmp_fp2int_rn(__x_hi);
+    const float __n_f = ::cuda::experimental::__fpmp_int2fp_rn<float>(__n);
     const float __e   = __x_hi - __n_f;
     float __fl        = 0.0f;
-    float __fh        = __fpmp_two_sum(__e, __x_lo, &__fl);
+    float __fh        = ::cuda::experimental::__fpmp_two_sum(__e, __x_lo, &__fl);
     if (__fh > 0.5f || (__fh == 0.5f && __fl > 0.0f))
     {
       ++__n;
       float __err = 0.0f;
-      __fh        = __fpmp_two_sum(__fh, -1.0f, &__err);
+      __fh        = ::cuda::experimental::__fpmp_two_sum(__fh, -1.0f, &__err);
       __fl += __err;
     }
     else if (__fh < -0.5f || (__fh == -0.5f && __fl < 0.0f))
     {
       --__n;
       float __err = 0.0f;
-      __fh        = __fpmp_two_sum(__fh, 1.0f, &__err);
+      __fh        = ::cuda::experimental::__fpmp_two_sum(__fh, 1.0f, &__err);
       __fl += __err;
     }
-    __f_hi = __fpmp_two_sum(__fh, __fl, &__f_lo);
+    __f_hi = ::cuda::experimental::__fpmp_two_sum(__fh, __fl, &__f_lo);
     __odd  = __n & 1;
   }
   else
   {
-    const int __odd_hi = (__abs_hi < __even_integral_threshold) ? (__fpmp_fp2int_rn(__x_hi) & 1) : 0;
+    const int __odd_hi =
+      (__abs_hi < __even_integral_threshold) ? (::cuda::experimental::__fpmp_fp2int_rn(__x_hi) & 1) : 0;
     float __lo_f       = 0.0f;
-    const int __odd_lo = __internal_fpmp2_pi_limb(__x_lo, &__lo_f);
+    const int __odd_lo = ::cuda::experimental::__internal_fpmp2_pi_limb(__x_lo, &__lo_f);
     __odd              = __odd_hi ^ __odd_lo;
     __f_hi             = __lo_f;
     __f_lo             = 0.0f;
@@ -1419,18 +1420,18 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
   {
     __q         = 1;
     float __err = 0.0f;
-    __f_hi      = __fpmp_two_sum(0.5f, -__f_hi, &__err);
+    __f_hi      = ::cuda::experimental::__fpmp_two_sum(0.5f, -__f_hi, &__err);
     __f_lo      = __err - __f_lo;
   }
   else if (__f_hi < -0.25f || (__f_hi == -0.25f && __f_lo < 0.0f))
   {
     __q         = 3;
     float __err = 0.0f;
-    __f_hi      = __fpmp_two_sum(__f_hi, 0.5f, &__err);
+    __f_hi      = ::cuda::experimental::__fpmp_two_sum(__f_hi, 0.5f, &__err);
     __f_lo += __err;
   }
   {
-    const float __renorm = __fpmp_two_sum(__f_hi, __f_lo, &__f_lo);
+    const float __renorm = ::cuda::experimental::__fpmp_two_sum(__f_hi, __f_lo, &__f_lo);
     __f_hi               = __renorm;
   }
 
@@ -1441,17 +1442,17 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
   constexpr float __pi3 = 2.0f * 5.3903029534742384e-15f;
 
   float __p_lo       = 0.0f;
-  const float __p_hi = __fpmp_two_mult_fma(__f_hi, __pi1, &__p_lo);
+  const float __p_hi = ::cuda::experimental::__fpmp_two_mult_fma(__f_hi, __pi1, &__p_lo);
   __afloat __angle(__p_hi, __p_lo);
   float __q_lo       = 0.0f;
-  const float __q_hi = __fpmp_two_mult_fma(__f_lo, __pi1, &__q_lo);
+  const float __q_hi = ::cuda::experimental::__fpmp_two_mult_fma(__f_lo, __pi1, &__q_lo);
   __angle            = __angle + __afloat(__q_hi, __q_lo);
   __angle            = __angle + __afloat(__f_hi * __pi2);
   __angle            = __angle + __afloat(__f_hi * __pi3);
 
   float __s_hi, __s_lo, __c_hi, __c_lo;
-  __internal_fpmp2_sin_kernel(__angle.hi(), __angle.lo(), &__s_hi, &__s_lo);
-  __internal_fpmp2_cos_kernel(__angle.hi(), __angle.lo(), &__c_hi, &__c_lo);
+  ::cuda::experimental::__internal_fpmp2_sin_kernel(__angle.hi(), __angle.lo(), &__s_hi, &__s_lo);
+  ::cuda::experimental::__internal_fpmp2_cos_kernel(__angle.hi(), __angle.lo(), &__c_hi, &__c_lo);
 
   if (__q == 1)
   {
@@ -1506,20 +1507,20 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_sincospi(
   double* __cos_hi,
   double* __cos_lo) noexcept
 {
-  double __xd = __fpmp2_to_double(__x_hi, __x_lo);
+  double __xd = ::cuda::experimental::__fpmp2_to_double(__x_hi, __x_lo);
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
     ({
       double __sd;
       double __cd;
       ::sincospi(__xd, &__sd, &__cd);
-      __fpmp2_from_double(__sd, __sin_hi, __sin_lo);
-      __fpmp2_from_double(__cd, __cos_hi, __cos_lo);
+      ::cuda::experimental::__fpmp2_from_double(__sd, __sin_hi, __sin_lo);
+      ::cuda::experimental::__fpmp2_from_double(__cd, __cos_hi, __cos_lo);
     }),
     ({
       double __xpi = __xd * ::cuda::std::__numbers<double>::__pi();
-      __fpmp2_from_double(::cuda::std::sin(__xpi), __sin_hi, __sin_lo);
-      __fpmp2_from_double(::cuda::std::cos(__xpi), __cos_hi, __cos_lo);
+      ::cuda::experimental::__fpmp2_from_double(::cuda::std::sin(__xpi), __sin_hi, __sin_lo);
+      ::cuda::experimental::__fpmp2_from_double(::cuda::std::cos(__xpi), __cos_hi, __cos_lo);
     }))
 }
 
