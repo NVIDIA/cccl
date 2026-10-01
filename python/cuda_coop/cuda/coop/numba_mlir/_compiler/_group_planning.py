@@ -148,6 +148,47 @@ class GroupPlanningContext:
         *,
         runtime_temp_storage_supplied: bool | None = None,
     ) -> None:
+        """Check the selected provider against planned storage and execution.
+
+        This is the boundary between compiler-neutral planning and the private
+        provider call. Require complete topology, participation,
+        synchronization, and storage facts, then compare them with the
+        registered factory's ABI and scopes. Storage-bearing plans must cover
+        the exact block with shared storage slices matching the group instances.
+        Caller-owned storage is supported only for one block-scoped instance.
+
+        Normally the provider's declared reuse barrier must match the plan.
+        Caller-owned storage with ``auto_sync=False`` also permits the
+        provider's execution-scope barrier declaration: the pointer rewrite
+        bypasses its allocating wrapper and controls synchronization itself.
+        This exception does not apply to implementation-owned storage. No IR is
+        mutated here.
+
+        Parameters
+        ----------
+        lowering_plan : GroupLoweringPlan
+            Supported plan whose storage and execution requirements are checked.
+        factory : callable
+            Selected provider factory registered with operation metadata.
+        runtime_temp_storage_supplied : bool or None, optional
+            Whether the proposed provider call supplies ``temp_storage``. For a
+            storage-bearing plan, a boolean must agree with caller ownership.
+            ``None`` skips this argument-presence check only.
+
+        Returns
+        -------
+        None
+            The provider metadata and supported storage contracts agree.
+
+        Raises
+        ------
+        TypeError
+            ``lowering_plan`` is not a ``GroupLoweringPlan``.
+        GroupRewriteError
+            The plan is unsupported or incomplete, the provider is unregistered,
+            or its ABI, scopes, storage ownership, or layout are incompatible.
+        """
+
         if not isinstance(lowering_plan, GroupLoweringPlan):
             raise TypeError("lowering_plan must be a GroupLoweringPlan")
         if lowering_plan.unsupported is not None:
