@@ -43,6 +43,7 @@ def histogram(
         algorithm=algorithm,
     )
     metadata = factory_operation(histogram)
+    assert metadata is not None
     specialization = adapter.materialize(
         spec.specialization,
         storage_abi=metadata.storage_abi,

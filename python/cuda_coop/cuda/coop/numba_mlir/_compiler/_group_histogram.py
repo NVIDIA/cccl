@@ -6,7 +6,7 @@
 
 from dataclasses import replace
 
-from numba_cuda_mlir import types
+import numba_cuda_mlir.numba_cuda.types as numba_types
 
 from cuda.coop._core import (
     StorageOwnership,
@@ -80,7 +80,7 @@ def _lower_histogram(context, inst, *, operation, group, bound, is_common_root):
     validate_histogram_dtype(dtype)
     context.record_thread_data_dtype(value, dtype)
     counter = (
-        types.int32
+        numba_types.int32
         if context.is_none(bound.arguments["counter_dtype"])
         else normalize_dtype_param(
             context.constant(bound.arguments["counter_dtype"])
@@ -106,6 +106,10 @@ def _lower_histogram(context, inst, *, operation, group, bound, is_common_root):
     plan = plan_group_primitive(
         make_group_primitive_call(group, semantics), context.launch
     ).require_supported()
+    participation = plan.participation
+    assert participation is not None
+    assert plan.temp_storage is not None
+    assert plan.synchronization is not None
     storage = bound.arguments.get("temp_storage")
     if not context.is_none(storage):
         descriptor = context.temp_storage(storage)
@@ -170,7 +174,7 @@ def _lower_histogram(context, inst, *, operation, group, bound, is_common_root):
     kwargs = {
         "sample_dtype": dtype,
         "counter_dtype": counter,
-        "threads_per_block": plan.participation.exact_block_dim,
+        "threads_per_block": participation.exact_block_dim,
         "items_per_thread": extent,
         "bins": bins,
         "bins_per_thread": bins_per_thread,
@@ -198,7 +202,7 @@ register_group_primitive(
         GroupResultSource(
             None,
             None,
-            fixed_dtype=types.int32,
+            fixed_dtype=numba_types.int32,
             dtype_keyword="counter_dtype",
             extent_resolver=_extent,
         ),
