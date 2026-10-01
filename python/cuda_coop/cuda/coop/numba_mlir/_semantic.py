@@ -6,8 +6,8 @@
 
 import hashlib
 
+import numba_cuda_mlir.numba_cuda.types as numba_types
 import numpy as np
-from numba_cuda_mlir import types
 from numba_cuda_mlir.descriptor import MLIRDispatcher
 
 from cuda.coop._core import semantic_token
@@ -86,7 +86,7 @@ def _normalize_numba_semantic_value(value):
             value.locals,
             signatures,
         )
-    if isinstance(value, types.Type):
+    if isinstance(value, numba_types.Type):
         # The display name is not unique; key defines Numba type equality.
         return (
             "numba-cuda-mlir-type",

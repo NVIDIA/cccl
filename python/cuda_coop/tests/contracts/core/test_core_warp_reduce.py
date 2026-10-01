@@ -13,6 +13,7 @@ from cuda.coop._core import (
     ParameterRole,
     PythonOperator,
     WarpReduceOperation,
+    classify_parameter,
     make_warp_reduce_spec,
 )
 
@@ -60,7 +61,7 @@ def test_warp_reduce_custom_operator_and_runtime_prefix_signature():
 
     assert [
         (item.name, item.kind, item.role)
-        for item in spec.specialization.classify_method()
+        for item in map(classify_parameter, spec.specialization.parameters[0])
     ] == [
         ("temp_storage", ArgumentKind.RUNTIME, ParameterRole.TEMP_STORAGE),
         ("input", ArgumentKind.RUNTIME, ParameterRole.INPUT),

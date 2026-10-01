@@ -52,7 +52,7 @@ _QUALIFIED_EXPORTS = [
 _EXCLUDED_BACKEND_MODULES = (
     "cuda.coop.numba_mlir._dataclass",
     "cuda.coop.numba_mlir._enums",
-    "cuda.coop.numba_mlir._group_scan",
+    "cuda.coop.numba_mlir._group._scan",
     "cuda.coop.numba_mlir._stateful_function",
     "cuda.coop.numba_mlir._compiler._group_scan",
     "cuda.coop.numba_mlir._compiler._rewrite_scan",
@@ -84,7 +84,7 @@ def test_public_exports_are_only_the_supported_group_families():
     assert excluded_exports.isdisjoint(coop.__all__)
 
     loaded = set(sys.modules)
-    assert "cuda.coop.numba_mlir._group_load_store" in loaded
+    assert "cuda.coop.numba_mlir._group._load_store" in loaded
     assert "cuda.coop.numba_mlir._compiler._rewrite" in loaded
     assert set(_EXCLUDED_BACKEND_MODULES).isdisjoint(loaded)
     assert (
@@ -209,7 +209,7 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
         ]
 
     assert stub_signatures(
-        coop_root / "numba_mlir" / "_group_load_store.pyi"
+        coop_root / "numba_mlir" / "_group" / "_load_store.pyi"
     ) == (stub_signatures(coop_root / "_core" / "api" / "load_store.pyi"))
 
 
@@ -345,7 +345,7 @@ def test_physical_warp_factories_use_exact_callable_identity(operation):
         assert factory_operation(impostor) is None
 
 
-def test_compiler_hooks_are_registered_exactly_once_and_idempotently():
+def test_hooks_register_once():
     group_rewrites = importlib.import_module(
         "cuda.coop.numba_mlir._compiler._group_planner"
     )
