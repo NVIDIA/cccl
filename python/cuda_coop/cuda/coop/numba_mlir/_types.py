@@ -321,7 +321,7 @@ def _normalize_compute_capability(compute_capability) -> tuple[int, int]:
         or not isinstance(minor, Integral)
         or major < 1
         or minor < 0
-        or minor > 9
+        or int(minor) > 9
     ):
         raise RuntimeError(
             "cuda.coop.numba_mlir received an invalid CUDA compute capability "
@@ -628,7 +628,8 @@ def _compile_device_ltoir(
     if cached is not None:
         return cached
 
-    ltoir, _ = cuda.compile(
+    # Numba-CUDA-MLIR exports the compiler function without declaring its stub.
+    ltoir, _ = cuda.compile(  # pyright: ignore[reportAttributeAccessIssue]
         py_func,
         sig=sig,
         output="ltoir",
@@ -730,7 +731,12 @@ def _ltoir_to_ptx(ltoir: bytes, *, name: str, cc: int) -> str:
     the input image; it does not change the provider's retained artifacts.
     """
 
-    from cuda.core import Linker, LinkerOptions, ObjectCode
+    # cuda-core chooses cu12/cu13 exports dynamically, outside its stubs.
+    from cuda.core import (
+        Linker,  # pyright: ignore[reportAttributeAccessIssue]
+        LinkerOptions,  # pyright: ignore[reportAttributeAccessIssue]
+        ObjectCode,  # pyright: ignore[reportAttributeAccessIssue]
+    )
 
     ltoir_obj = ObjectCode.from_ltoir(ltoir, name=name)
     linker_options = LinkerOptions(
@@ -961,7 +967,7 @@ class Parameter:
     def __repr__(self) -> str:
         return f"Parameter(out={self.is_output})"
 
-    def specialize(self, _):
+    def specialize(self, template_arguments):
         return self
 
     def is_provided_by_user(self):
@@ -3072,14 +3078,16 @@ class Algorithm:
                 extern_fn, arg_transforms, returns_value=returns_value
             )
             if link_files:
-                impl.__numba_cuda_mlir_link__ = link_files
+                impl.__dict__["__numba_cuda_mlir_link__"] = link_files
             return impl
 
         wrapped_algorithm_impl = war_introspection(
             algorithm_impl, num_user_provided_params
         )
         if link_files:
-            wrapped_algorithm_impl.__numba_cuda_mlir_link__ = link_files
+            wrapped_algorithm_impl.__dict__["__numba_cuda_mlir_link__"] = (
+                link_files
+            )
         return make_overload_template(
             func_to_overload,
             wrapped_algorithm_impl,
@@ -3905,11 +3913,11 @@ class RawCAbiInvocable:
                     transforms,
                     returns_value=returns_value,
                 )
-                impl.__numba_cuda_mlir_link__ = link_files
+                impl.__dict__["__numba_cuda_mlir_link__"] = link_files
                 return impl
 
             wrapped_impl = war_introspection(invocable_impl, len(parameters))
-            wrapped_impl.__numba_cuda_mlir_link__ = link_files
+            wrapped_impl.__dict__["__numba_cuda_mlir_link__"] = link_files
             template = make_overload_template(
                 self,
                 wrapped_impl,
