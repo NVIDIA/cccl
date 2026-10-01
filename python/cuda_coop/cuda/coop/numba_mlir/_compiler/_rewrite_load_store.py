@@ -525,6 +525,41 @@ def analyze_load_store_match(
     runtime_args: tuple[ir.Var, ...],
     factory_kwargs: dict[str, object],
 ) -> _LoadStoreMatchMetadata:
+    """Consume Load/Store markers and identify scalar boxing.
+
+    Remove private common-API and root-Store markers from factory keywords so
+    they are not passed to the provider. A common-API marker requires supported
+    numeric dtypes for the relevant memory and array operands. Scalar Store
+    values are handled by scalar inference and the later typing guard instead of
+    being required to have an array payload spec here.
+
+    A root Store with no recognized per-thread array records a boxing request.
+    ``prepare_load_store_runtime_args`` then supplies the array operand required
+    by the provider. No runtime statements are emitted during this analysis.
+
+    Parameters
+    ----------
+    context : GroupRewriteContext
+        Access to operand dtypes and per-thread payload specifications.
+    op_name : str
+        Load/Store operation whose private markers are being consumed.
+    runtime_args : tuple of ir.Var
+        Ordered provider operands, starting with memory and payload.
+    factory_kwargs : dict of str to object
+        Specialization values; private family markers are popped in place.
+
+    Returns
+    -------
+    _LoadStoreMatchMetadata
+        Whether the runtime Store operand must be boxed into a local array.
+
+    Raises
+    ------
+    CoopSinglePhaseRewriteError
+        Private markers are inconsistent or portable operand dtypes cannot
+        be established or are unsupported.
+    """
+
     group_root_store = factory_kwargs.pop("_group_root_store", False)
     common_root_operation = factory_kwargs.pop("_common_root_operation", None)
     if not isinstance(group_root_store, bool):
