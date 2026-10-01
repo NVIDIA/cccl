@@ -95,6 +95,24 @@ class _LaunchRewrite:
         seen_factory_kwargs.add("threads_per_block")
 
     def _can_defer_explicit_launch_dim_reconciliation(self) -> bool:
+        """Record whether explicit dimensions need pending launch metadata.
+
+        Device functions acquire their launch shape from the caller after
+        inlining. Configured kernels retain a launch tracker until the planner
+        requests an exact shape. Either case permits deferral when enabled on
+        this rewrite object; without either signal, this helper returns False.
+
+        This predicate has a side effect: a positive result latches
+        ``_deferred_launch_dim_inference`` so matching preserves descriptors and
+        the whole-function planner knows that it must retry.
+
+        Returns
+        -------
+        bool
+            Whether the caller should defer reconciliation of explicit
+            dimensions.
+        """
+
         rewrite = cast("CoopSinglePhaseRewrite", self)
         metadata = getattr(rewrite._state, "metadata", {}) or {}
         targetoptions = metadata.get("targetoptions", {}) or {}
