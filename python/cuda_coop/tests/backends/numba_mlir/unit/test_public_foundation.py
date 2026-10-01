@@ -14,7 +14,7 @@ import pytest
 import cuda.coop as portable_coop
 import cuda.coop.numba_mlir as coop
 from cuda.coop.numba_mlir import _temp_storage, _thread_data
-from cuda.coop.numba_mlir._compiler import _activation, _numba_mlir_compat
+from cuda.coop.numba_mlir._compiler import _activation
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
@@ -320,11 +320,10 @@ def test_hooks_register_once():
     storage_rewrites = importlib.import_module(
         "cuda.coop.numba_mlir._compiler._rewrite"
     )
-    compat = _numba_mlir_compat._get_numba_mlir_compat()
-    snapshot = compat.snapshot_registrations()
+    snapshot = _activation._snapshot_registrations()
 
     def counts():
-        registration_counts = compat.registration_counts(
+        registration_counts = _activation._registration_counts(
             snapshot,
             (
                 (
