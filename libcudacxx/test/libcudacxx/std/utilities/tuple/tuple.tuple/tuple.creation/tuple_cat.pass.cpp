@@ -16,6 +16,7 @@
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
+#include <cuda/std/ranges>
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
 
@@ -445,6 +446,19 @@ TEST_FUNC constexpr bool test()
     cuda::std::tuple<StagingTupleConstructible, int> two(StagingTupleConstructible(7), 1);
     cuda::std::tuple<StagingTupleConstructible, int> two_result = cuda::std::tuple_cat(two);
     assert(cuda::std::get<0>(two_result).value == 7);
+  }
+  {
+    int a[] = {1, 2, 3};
+    cuda::std::ranges::subrange<int*> view(a, a + 3);
+    cuda::std::tuple<int*, int*> result = cuda::std::tuple_cat(view);
+    assert(cuda::std::get<0>(result) == a);
+    assert(cuda::std::get<1>(result) == a + 3);
+
+    const cuda::std::ranges::subrange<int*> const_view(a, a + 3);
+    cuda::std::tuple<int*, int*, int> combined = cuda::std::tuple_cat(const_view, cuda::std::tuple<int>(4));
+    assert(cuda::std::get<0>(combined) == a);
+    assert(cuda::std::get<1>(combined) == a + 3);
+    assert(cuda::std::get<2>(combined) == 4);
   }
 
   return true;
