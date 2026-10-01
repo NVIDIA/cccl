@@ -112,6 +112,7 @@ _CUDAX_INCLUDE_LINES = (
     "#include <cuda/devices>",
     "#include <cuda/functional>",
     "#include <cuda/hierarchy>",
+    "#include <cuda/experimental/hierarchy.cuh>",
     "#include <cuda/std/cstdint>",
     "#include <cuda/std/functional>",
     "#include <cuda/std/type_traits>",
