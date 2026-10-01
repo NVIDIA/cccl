@@ -60,6 +60,27 @@ _COOP_SPECIALIZATION_COLLECTOR: ContextVar[
 
 @contextmanager
 def collect_specializations():
+    """Collect provider specializations without compiling their wrappers.
+
+    Within this context, ``make_invocable_from_specialization`` records each
+    qualified ``Algorithm`` and returns it instead of an ``Invocable``. The
+    rewrite uses the collected records to compile several providers in one NVRTC
+    translation unit before creating their callable wrappers. Qualification
+    still resolves compiler identity; this context only defers artifact
+    creation.
+
+    Each entry creates a fresh context-local list. Exiting restores the previous
+    collector even after an exception, so nested collections do not append to
+    their parent's list.
+
+    Yields
+    ------
+    list of tuple
+        Mutable records ``(algorithm, threads, block_threads)`` in factory-call
+        order. Thread values are the explicit arguments supplied to
+        ``make_invocable_from_specialization``, including ``None``.
+    """
+
     collected: list[
         tuple[object, int | None, int | tuple[int, ...] | None]
     ] = []
