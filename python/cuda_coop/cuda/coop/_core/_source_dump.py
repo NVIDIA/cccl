@@ -18,9 +18,38 @@ def dump_source(
 ) -> Path | None:
     """Write a backend-tagged, content-addressed CUDA translation unit.
 
-    CUDA_COOP_SOURCE_DUMP_DIR selects the directory. Unset or empty disables
-    dumping.
-    Call before compiler/cache lookup to capture sources on cache hits too.
+    ``CUDA_COOP_SOURCE_DUMP_DIR`` selects the directory; unset or empty disables
+    dumping. Call before compiler or cache lookup to capture sources on cache
+    hits too. The filename combines the backend tag with a hash of the identity
+    representation and source bytes, allowing different targets and generated
+    variants to coexist. An existing file is reused without rewriting it.
+
+    Publish through a flushed and synced temporary file in the same directory
+    followed by atomic replacement, so concurrent dumps leave complete files.
+    Filesystem failures propagate to the caller.
+
+    Parameters
+    ----------
+    source : str
+        Complete generated CUDA source, written as UTF-8 without modification.
+    backend : str
+        Backend label embedded directly in the filename, such as
+        ``"numba_mlir"``. Callers supply a filename-safe label.
+    identity : tuple of object, optional
+        Extra compile identity, such as target architecture and output kind.
+        Its ``repr`` contributes to the digest; use reproducible representations
+        when repeated compilations should select the same path.
+
+    Returns
+    -------
+    pathlib.Path or None
+        Absolute path of the existing or newly written source file, or ``None``
+        when dumping is disabled.
+
+    Raises
+    ------
+    OSError
+        The destination directory or source file cannot be created or written.
     """
 
     dump_dir = os.environ.get("CUDA_COOP_SOURCE_DUMP_DIR")
