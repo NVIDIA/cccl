@@ -227,6 +227,38 @@ class CoopSinglePhaseRewrite(
         )
 
     def apply(self):
+        """Replace the block recorded by ``match`` with executable provider IR.
+
+        Materialize the selected invocables, turn ``ThreadData`` constructors
+        into local arrays, and replace consumed ``TempStorage`` descriptors with
+        views of one function-wide shared allocation. Calls receive the
+        family-specific runtime operands and, when required by the provider ABI,
+        a leading scratch view. Automatic reuse barriers follow calls whose
+        storage plan requests synchronization.
+
+        This method also mutates the function outside the returned block:
+        backing storage is staged in the entry block so it dominates every
+        consumer, and unused payload constructor aliases may be retired in other
+        blocks. Each rewritten call receives its own callee binding so aliases
+        in unrevised blocks remain usable. Compile-time argument assignments are
+        removed only when no block still uses them. Refresh the typing context
+        after installing invocables; the caller installs the returned block in
+        the function IR.
+
+        Returns
+        -------
+        ir.Block
+            Replacement for the most recently matched block. ``match`` must
+            have returned True before this method is called.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            Payload inference, invocable construction, storage allocation,
+            or synchronization contracts cannot support the matched
+            operation.
+        """
+
         assert self._block is not None
         call_invocable_globals: dict[ir.Assign, tuple[str, object]] = {}
         func_var_names_to_clear: set[str] = set()
