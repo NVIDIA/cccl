@@ -76,7 +76,39 @@ def descriptor_definitions(value, definitions, *, seen=None):
 def temp_storage_constructor(
     call, constant, *, syntax_error: type[Exception] = TypeError
 ):
-    """Parse a descriptor using the current phase's constant resolver."""
+    """Build a storage descriptor from an IR constructor call.
+
+    Share argument binding and descriptor validation between group planning and
+    provider rewriting while letting each phase supply its own constant
+    resolver. This creates the host-side descriptor only; it does not allocate
+    scratch or modify the call. Constructor defaults and value validation come
+    from ``TempStorage`` itself.
+
+    Parameters
+    ----------
+    call : ir.Expr
+        Call already recognized as a ``TempStorage`` constructor.
+    constant : callable
+        Resolve an argument as ``constant(value, name=parameter_name)``. The
+        callback controls constant specialization and its diagnostics.
+    syntax_error : type of Exception, optional
+        Exception class for unsupported call syntax, duplicate arguments, or
+        unknown keywords. Defaults to ``TypeError``; exceptions from the
+        resolver and descriptor constructor propagate unchanged.
+
+    Returns
+    -------
+    TempStorage
+        Descriptor with resolved, validated constructor arguments.
+
+    Raises
+    ------
+    TypeError
+        Invalid call syntax when ``syntax_error`` has its default value, or an
+        invalid descriptor option type.
+    ValueError
+        A descriptor option has an invalid value.
+    """
 
     from .._temp_storage import TempStorage
 
