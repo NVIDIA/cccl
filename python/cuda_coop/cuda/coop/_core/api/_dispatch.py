@@ -95,11 +95,32 @@ def _validate_portable_operation_group(
     operation: str,
     group: object,
 ) -> None:
-    """Reject groups outside an operation's common API contract.
+    """Reject groups outside a registered operation's common API contract.
 
-    Compiler adapters validate a recognized common call after resolving its
-    symbolic group and before lowering it. Backend-qualified operations may
-    accept additional groups without changing this common API contract.
+    Compiler adapters call this after reconstructing a symbolic group
+    descriptor and before lowering a recognized common operation. The registry
+    defines the portable set of group kinds; a backend-qualified operation can
+    support more kinds
+    without broadening that common contract. This check does not validate
+    launch dimensions, collective participation, or backend implementation.
+
+    Parameters
+    ----------
+    operation : str
+        Common operation name used to look up its registered group kinds and
+        identify it in diagnostics.
+    group : object
+        Symbolic group descriptor; launch dimensions need not be resolved. Must
+        be a ``ThreadGroup`` with a supported ``kind``. It is not modified.
+
+    Raises
+    ------
+    TypeError
+        ``group`` is not a ``ThreadGroup``.
+    UnsupportedCoopBackendOperationError
+        ``operation`` has no common operation registration.
+    NotImplementedError
+        The registered common operation does not support this group kind.
     """
 
     if not isinstance(group, ThreadGroup):
