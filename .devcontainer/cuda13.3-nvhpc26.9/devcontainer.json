@@ -4,7 +4,7 @@
   "runArgs": [
     "--init",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda13.4-nvhpc26.9",
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda13.3-nvhpc26.9",
     "--ulimit",
     "nofile=500000"
   ],
@@ -35,12 +35,12 @@
     "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE": "true",
     "SCCACHE_SERVER_LOG": "${localEnv:SCCACHE_SERVER_LOG:sccache=debug}",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
-    "DEVCONTAINER_NAME": "cuda13.4-nvhpc26.9",
+    "DEVCONTAINER_NAME": "cuda13.3-nvhpc26.9",
     "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST": "1",
-    "CCCL_CUDA_VERSION": "13.4",
+    "CCCL_CUDA_VERSION": "13.3",
     "CCCL_HOST_COMPILER": "nvhpc",
     "CCCL_HOST_COMPILER_VERSION": "26.9",
-    "CCCL_BUILD_INFIX": "cuda13.4-nvhpc26.9",
+    "CCCL_BUILD_INFIX": "cuda13.3-nvhpc26.9",
     "CCCL_CUDA_EXTENDED": "false",
     "HOST_WORKSPACE": "${localWorkspaceFolder}"
   },
@@ -78,5 +78,5 @@
       }
     }
   },
-  "name": "cuda13.4-nvhpc26.9"
+  "name": "cuda13.3-nvhpc26.9"
 }
