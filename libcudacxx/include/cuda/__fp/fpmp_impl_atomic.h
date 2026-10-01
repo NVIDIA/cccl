@@ -31,9 +31,9 @@
     error-free-transform primitives live in <cuda/__fp/fpmp_impl.h>, which this header includes.
 */
 
-#include <cuda/__atomic/atomic.h> // dd atomics use cuda::atomic_ref for the 128-bit compare-exchange
-#include <cuda/__fp/fpmp_impl.h>
-#include <cuda/__fp/fpmp_impl_muladd.h> // dd atomics reuse __fpmp2_high_add (muladd family)
+#include <cuda/__atomic/atomic.h> // IWYU pragma: keep
+#include <cuda/__fp/fpmp_impl.h> // IWYU pragma: keep
+#include <cuda/__fp/fpmp_impl_muladd.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

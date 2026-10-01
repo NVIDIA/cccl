@@ -26,20 +26,16 @@
 #  include <cuda/__container/simple_vector.h>
 #  include <cuda/__device/attributes.h>
 #  include <cuda/__device/device_ref.h>
-#  include <cuda/__memory_resource/any_resource.h>
 #  include <cuda/__memory_resource/properties.h>
-#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__runtime/types.h>
 #  include <cuda/__stream/internal_streams.h>
 #  include <cuda/__stream/relaxed_capture_scope.h>
 #  include <cuda/__stream/stream.h>
 #  include <cuda/__stream/stream_ref.h>
-#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
-#  include <cuda/std/__memory/construct_at.h>
-#  include <cuda/std/cstddef>
+#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 
 #  include <cuda/std/__cccl/prologue.h>
 

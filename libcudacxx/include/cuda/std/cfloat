@@ -22,7 +22,7 @@
 #endif // no system header
 
 #if _CCCL_HOSTED()
-#  include <cfloat>
+#  include <cfloat> // IWYU pragma: export
 #else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
 #  define FLT_RADIX       2
 #  define DECIMAL_DIG     DBL_DECIMAL_DIG

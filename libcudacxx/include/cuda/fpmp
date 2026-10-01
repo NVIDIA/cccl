@@ -25,11 +25,11 @@
 
 // Core types and operations: constructors, conversions, arithmetic and
 // comparison operators, sqrt, rsqrt, fma.
-#include <cuda/__fp/fpmp.h>
+#include <cuda/__fp/fpmp.h> // IWYU pragma: export
 // cuda::std::numeric_limits<> specialization for the fpmp2 types.
-#include <cuda/__fp/fpmp_limits.h>
+#include <cuda/__fp/fpmp_limits.h> // IWYU pragma: export
 // The math surface: exp, log, pow, the trigonometric and hyperbolic families,
 // the rounding and min/max families, and the classification predicates.
-#include <cuda/__fp/fpmp_math.h>
+#include <cuda/__fp/fpmp_math.h> // IWYU pragma: export
 
 #endif // _CUDA_FPMP
