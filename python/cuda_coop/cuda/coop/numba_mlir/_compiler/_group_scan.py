@@ -4,15 +4,17 @@
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import replace
 from enum import Enum
 from typing import Any
 
-from numba_cuda_mlir import types
+import numba_cuda_mlir.numba_cuda.types as numba_types
 
 from cuda.coop._core import (
     ArgumentBinding,
     BindingKind,
+    BlockScanAlgorithm,
     CxxFunction,
     CxxOperator,
     Dependency,
@@ -23,19 +25,14 @@ from cuda.coop._core import (
     Reference,
     StorageOwnership,
     SynchronizationScope,
+    ThreadGroup,
     make_group_primitive_call,
     make_scan_semantics,
     plan_group_primitive,
 )
 
 from .._semantic import _normalize_numba_callable, _numba_semantic_token
-from ._group_planner_support import (
-    _PAYLOAD_DTYPE_LIKE,
-    GroupRewriteError,
-    ThreadGroup,
-    inspect,
-    ir,
-)
+from ._group_planner_support import _PAYLOAD_DTYPE_LIKE, GroupRewriteError, ir
 from ._group_planning import GroupPlanningContext
 from ._operations import (
     GroupResultSource,
@@ -379,9 +376,12 @@ class _ScanPlanning:
                 self._context.constant(algorithm_raw)
             )
 
+        from .._lowering._core import NumbaMlirCoreAdapter
+
+        adapter = NumbaMlirCoreAdapter()
         semantics = GroupScanSemantics(
             make_scan_semantics(
-                dtype=dtype,
+                dtype=adapter.core_dtype(dtype),
                 mode=mode,
                 value_kind="array" if is_array else "scalar",
                 items_per_thread=items_per_thread,
@@ -445,7 +445,7 @@ class _ScanPlanning:
             scope=scope,
             loc=loc,
             stem="scan_valid_items_type",
-            value=types.int64,
+            value=numba_types.int64,
         )
         result = self._context.new_var(scope, loc, "scan_valid_items_i64")
         statements.append(
@@ -476,7 +476,10 @@ class _ScanPlanning:
             bound=bound,
             is_common_root=is_common_root,
         )
-        primitive = plan.call.operation.primitive
+        semantics = plan.call.operation
+        assert isinstance(semantics, GroupScanSemantics)
+        assert plan.participation is not None
+        primitive = semantics.primitive
         factory = self._provider(plan, is_array=is_array)
         block_dim = plan.participation.exact_block_dim
         assert block_dim is not None
@@ -510,14 +513,17 @@ class _ScanPlanning:
         elif operator_kind == "callback":
             provider_scan_op = scan_op
 
+        from .._lowering._core import NumbaMlirCoreAdapter
+
+        adapter = NumbaMlirCoreAdapter()
         factory_kwargs: dict[str, Any] = {
-            "dtype": primitive.dtype,
+            "dtype": adapter.normalize_dtype(primitive.dtype),
             "mode": primitive.mode.value,
             "scan_op": provider_scan_op,
         }
         if plan.target is GroupLoweringTarget.CUB_BLOCK:
-            algorithm = plan.call.operation.cub_algorithm
-            assert algorithm is not None
+            algorithm = semantics.cub_algorithm
+            assert isinstance(algorithm, BlockScanAlgorithm)
             factory_kwargs.update(
                 {
                     "algorithm": algorithm.name.lower(),
@@ -534,7 +540,7 @@ class _ScanPlanning:
                     "threads_per_block": block_dim,
                 }
             )
-            valid_items = plan.call.operation.valid_items
+            valid_items = semantics.valid_items
             if valid_items.kind is not BindingKind.OMITTED:
                 factory_kwargs["valid_items"] = self._runtime_valid_items(
                     statements,
