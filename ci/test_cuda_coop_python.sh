@@ -157,6 +157,8 @@ case "$stage" in
     python -m pytest -v test_*.py packaging/
     ;;
   numba-mlir-compile)
+    python -m pyright --project "$repo_root/python/cuda_coop" \
+      --pythonpath "$(command -v python)" --warnings
     # The compile contract is deliberately GPU-free. Tests may replace only
     # the backend's current-device query with a fixed compute capability; NVRTC
     # and nvJitLink remain real.

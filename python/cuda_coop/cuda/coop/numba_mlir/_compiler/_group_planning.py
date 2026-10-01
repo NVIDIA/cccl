@@ -5,9 +5,11 @@
 from __future__ import annotations
 
 from numbers import Integral
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from numba_cuda_mlir import types
+import numba_cuda_mlir.numba_cuda.types as _numba_types
+from numba_cuda_mlir import cuda as _cuda_module
+from numba_cuda_mlir.cuda.local import array as _cuda_local_array
 
 import cuda.coop._core.api as _portable_api
 from cuda.coop._core import (
@@ -24,11 +26,7 @@ from ._descriptor_provenance import (
     payload_write_dtypes,
     temp_storage_constructor,
 )
-from ._group_planner_support import (
-    GroupRewriteError,
-    _cuda_module,
-    ir,
-)
+from ._group_planner_support import GroupRewriteError, ir
 from ._operations import (
     _GROUP_LOWERING_PLAN_KWARG,
     StorageABI,
@@ -44,13 +42,16 @@ from ._scalar_provenance import (
     scalar_expression_dtype,
 )
 
+if TYPE_CHECKING:
+    from ._group_planner import _GroupCallPlanner
+
 
 class GroupPlanningContext:
     """Stable cross-family view of one whole-function planner."""
 
     __slots__ = ("__planner", "__thread_data_dtypes")
 
-    def __init__(self, planner: Any) -> None:
+    def __init__(self, planner: _GroupCallPlanner) -> None:
         self.__planner = planner
         self.__thread_data_dtypes: dict[int, Any] = {}
 
@@ -326,9 +327,9 @@ class GroupPlanningContext:
 
     @staticmethod
     def _dtype_from_numba_type(value: Any) -> Any | None:
-        if isinstance(value, types.Array):
+        if isinstance(value, _numba_types.Array):
             value = value.dtype
-        elif not isinstance(value, types.Type):
+        elif not isinstance(value, _numba_types.Type):
             return None
         return normalize_dtype_param(value)
 
@@ -372,6 +373,7 @@ class GroupPlanningContext:
                         continue
                 if not isinstance(index, Integral) or isinstance(index, bool):
                     continue
+                index = int(index)
                 next_seen = {*seen, current.name}
                 for packed in payload_definitions(definition.value, next_seen):
                     if (
@@ -517,7 +519,7 @@ class GroupPlanningContext:
             if resolved and dtype is not None:
                 return normalize_dtype_param(dtype)
             return self.__thread_data_dtypes.get(id(definition))
-        if function is _cuda_module.local.array:
+        if function is _cuda_local_array:
             if len(definition.args) >= 2:
                 resolved, dtype = self.try_constant(definition.args[1])
                 if resolved:

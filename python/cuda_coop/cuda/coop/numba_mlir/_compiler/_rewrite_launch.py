@@ -2,11 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from ._rewrite_support import (
-    CoopSinglePhaseRewriteError,
-    _DeferredCoopRewrite,
-    normalize_dim_param,
-)
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
+from ._parameters import normalize_dim_param
+from ._rewrite_support import CoopSinglePhaseRewriteError, _DeferredCoopRewrite
+
+if TYPE_CHECKING:
+    from ._rewrite import CoopSinglePhaseRewrite
 
 
 class _LaunchRewrite:
@@ -51,12 +55,13 @@ class _LaunchRewrite:
         seen_factory_kwargs.add("threads_per_block")
 
     def _can_defer_explicit_launch_dim_reconciliation(self) -> bool:
-        metadata = getattr(self._state, "metadata", {}) or {}
+        rewrite = cast("CoopSinglePhaseRewrite", self)
+        metadata = getattr(rewrite._state, "metadata", {}) or {}
         targetoptions = metadata.get("targetoptions", {}) or {}
         # Configured kernel launches carry a tracker until the whole-function
         # planner requests the exact block. Device functions defer to that
         # same planner after inlining into their kernel caller.
-        should_defer = self._allow_launch_dim_deferral and (
+        should_defer = rewrite._allow_launch_dim_deferral and (
             bool(targetoptions.get("device", False))
             or metadata.get("launch_config_tracker") is not None
         )
@@ -64,7 +69,8 @@ class _LaunchRewrite:
         return should_defer
 
     def _launch_block_from_context(self):
-        metadata = getattr(self._state, "metadata", {}) or {}
+        rewrite = cast("CoopSinglePhaseRewrite", self)
+        metadata = getattr(rewrite._state, "metadata", {}) or {}
         targetoptions = metadata.get("targetoptions", {}) or {}
         launch_config = targetoptions.get("__launch_config__")
         if not isinstance(launch_config, dict):
@@ -72,7 +78,8 @@ class _LaunchRewrite:
         return launch_config.get("block")
 
     def _launch_dim_inference_failure_detail(self) -> str:
-        metadata = getattr(self._state, "metadata", {}) or {}
+        rewrite = cast("CoopSinglePhaseRewrite", self)
+        metadata = getattr(rewrite._state, "metadata", {}) or {}
         targetoptions = metadata.get("targetoptions", {}) or {}
         if "__launch_config__" not in targetoptions:
             detail = "no __launch_config__ metadata was provided"
@@ -115,8 +122,9 @@ class _LaunchRewrite:
         return x
 
     def _can_defer_launch_dim_inference(self) -> bool:
+        rewrite = cast("CoopSinglePhaseRewrite", self)
         should_defer = (
-            self._allow_launch_dim_deferral
+            rewrite._allow_launch_dim_deferral
             and self._infer_threads_per_block_from_launch_config() is None
         )
         self._deferred_launch_dim_inference |= should_defer

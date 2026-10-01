@@ -76,9 +76,9 @@ class CompileContext:
 def _load_nvrtc():
     """Import CUDA bindings only after exact toolkit libraries are preloaded."""
 
-    from cuda.bindings import nvrtc
+    import cuda.bindings.nvrtc as _nvrtc_bindings
 
-    return nvrtc
+    return _nvrtc_bindings
 
 
 def _nvrtc_version(nvrtc: Any) -> version:
@@ -143,7 +143,7 @@ def _compiler_options(
 
 def compiler_identity(
     *, context: CompileContext, cc: int, rdc: bool, code: str
-) -> tuple[object, ...]:
+) -> tuple[int, bool, str, tuple[bytes, ...]]:
     """Return target and option identity for provider symbols and LTO reuse."""
 
     return (

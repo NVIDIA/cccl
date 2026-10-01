@@ -6,14 +6,17 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+import numba_cuda_mlir.numba_cuda.types as _numba_types
 import numpy as np
-from numba_cuda_mlir import types
 
 from ._numba_mlir_compat import _get_numba_mlir_compat
 
-ir = _get_numba_mlir_compat().numba_ir
+if TYPE_CHECKING:
+    from numba_cuda_mlir.numba_cuda.core import ir
+else:
+    ir = _get_numba_mlir_compat().numba_ir
 
 
 @dataclass(frozen=True)
@@ -64,15 +67,16 @@ def try_resolve_static_scalar_provenance(
     for definition in definitions(value):
         if isinstance(definition, ir.Arg):
             arg_type = argument_type(definition.index)
-            if isinstance(arg_type, types.Literal):
+            if isinstance(arg_type, _numba_types.Literal):
                 resolved_values.append(
                     _static_scalar(
                         arg_type.literal_value, arg_type.literal_type
                     )
                 )
                 continue
-            if isinstance(arg_type, types.NoneType) or (
-                isinstance(arg_type, types.Omitted) and arg_type.value is None
+            if isinstance(arg_type, _numba_types.NoneType) or (
+                isinstance(arg_type, _numba_types.Omitted)
+                and arg_type.value is None
             ):
                 resolved_values.append(_static_scalar(None, arg_type))
                 continue
@@ -205,7 +209,7 @@ def cuda_index_dtype(definition, attribute_chain, cuda_module):
             for index in ("blockDim", "blockIdx", "gridDim", "threadIdx")
             for component in ("x", "y", "z")
         }:
-            return types.int32
+            return _numba_types.int32
     return None
 
 

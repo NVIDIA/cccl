@@ -542,7 +542,7 @@ def test_compat_reports_missing_private_api(
     assert isinstance(exc_info.value.__cause__, AttributeError)
 
 
-def test_private_compiler_imports_are_confined_to_compatibility_shim():
+def test_private_compiler_integration_stays_in_compatibility_shim():
     backend_root = PACKAGE_ROOT / "cuda" / "coop" / "numba_mlir"
     compat_path = backend_root / "_compiler" / "_numba_mlir_compat.py"
     private_prefixes = (
@@ -551,6 +551,14 @@ def test_private_compiler_imports_are_confined_to_compatibility_shim():
         "numba_cuda_mlir.numba_cuda",
         "numba_cuda_mlir.numbair_transforms",
     )
+    # These definitions are also exposed by the runtime's public facades.
+    # Import their owners so static analysis does not depend on incomplete
+    # re-export declarations. Mutable compiler APIs still belong in the shim.
+    public_definitions = {
+        "numba_cuda_mlir.numba_cuda.core.errors": {"ForceLiteralArg"},
+        "numba_cuda_mlir.numba_cuda.typing.templates": {"signature"},
+    }
+    public_type_module = "numba_cuda_mlir.numba_cuda.types"
     violations = []
 
     for source in backend_root.rglob("*.py"):
@@ -559,11 +567,33 @@ def test_private_compiler_imports_are_confined_to_compatibility_shim():
         module = ast.parse(
             source.read_text(encoding="utf-8"), filename=str(source)
         )
+        annotation_only = {
+            child
+            for guard in ast.walk(module)
+            if isinstance(guard, ast.If)
+            and isinstance(guard.test, ast.Name)
+            and guard.test.id == "TYPE_CHECKING"
+            for statement in guard.body
+            for child in ast.walk(statement)
+        }
         for node in ast.walk(module):
+            if node in annotation_only:
+                continue
             imported = []
             if isinstance(node, ast.Import):
-                imported = [alias.name for alias in node.names]
+                imported = [
+                    alias.name
+                    for alias in node.names
+                    if alias.name != public_type_module
+                ]
             elif isinstance(node, ast.ImportFrom) and node.module is not None:
+                if node.module == public_type_module:
+                    continue
+                if node.module in public_definitions and all(
+                    alias.name in public_definitions[node.module]
+                    for alias in node.names
+                ):
+                    continue
                 imported = [node.module]
             for name in imported:
                 if name.startswith(private_prefixes):

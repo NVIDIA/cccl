@@ -335,15 +335,15 @@ user data out of shared memory. Storage-free operations do not add this
 restriction.
 
 With `auto_sync=False`, a descriptor must originate from exactly one
-constructor site. Selecting between multiple manual-sync constructors is an
-MVP restriction: the compiler cannot prove that caller barriers protect the
-merged region, even when a particular program supplies sufficient barriers.
+constructor site. Selecting between multiple manual-sync constructors is unsupported:
+the compiler cannot prove that caller barriers protect the merged region,
+even when a particular program supplies sufficient barriers.
 
 Cooperative calls in device helpers must be inlined into the kernel; use
 `@cuda.jit(device=True, inline="always")` when selecting the helper's
 policy explicitly. Standalone collective helpers and collectives inside
-standalone callbacks are unsupported. For the MVP, `literal_unroll`
-values cannot determine cooperative payload extents, group dimensions,
+standalone callbacks are unsupported. `literal_unroll` values cannot
+determine cooperative payload extents, group dimensions,
 selectors, or descriptor constructor arguments. Write separate calls with
 explicit constants, or use an ordinary loop with one fixed cooperative shape.
 An unrelated `literal_unroll` loop does not add this restriction.
