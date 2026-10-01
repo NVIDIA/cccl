@@ -1501,6 +1501,49 @@ class _StorageRewrite:
     def _compute_func_temp_storage_requirements(
         self, func_ir
     ) -> dict[str, _TempStorageRequirementSummary]:
+        """Collect function-wide scratch requirements before rewriting.
+
+        Scan the entire function in two passes: record payload and storage
+        constructors first, then resolve provider arguments, family metadata,
+        and storage ownership. Knowing every constructor before resolving
+        aliases allows branch and loop origins to be checked together. Validate
+        descriptor uses and storage contracts before requesting specialization
+        bundles or materializing storage-bearing providers.
+
+        Use each invocable's byte and alignment requirements, with a minimum of
+        one for the leading-pointer ABI, and retain original assignment identity
+        for later slice lookup. Explicit descriptors accumulate under canonical
+        owner names; calls with implementation-owned storage accumulate in a
+        separate summary. This collects requirements, not allocation offsets.
+
+        Constructor tables and implicit requirements are rebuilt, payload facts
+        and invocable caches may be updated, and the prior block lookup state is
+        restored even if collection fails. Source order is sorted block labels
+        followed by statement order, not a claim about runtime execution order.
+
+        Parameters
+        ----------
+        func_ir : FunctionIR
+            Function after group markers have been consumed and, when
+            necessary, device helpers have been inlined.
+
+        Returns
+        -------
+        dict of str to _TempStorageRequirementSummary
+            Explicit-descriptor requirements keyed by canonical constructor
+            owner. Implicit requirements are stored on the rewrite object
+            separately.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            Calls, descriptor uses, provider contracts, or materialization
+            are invalid.
+        _DeferredCoopRewrite
+            Required launch metadata is not yet available; matching retries
+            later.
+        """
+
         rewrite = cast("CoopSinglePhaseRewrite", self)
         requirements: dict[str, _TempStorageRequirementSummary] = {}
         saved_block_defs = self._block_defs
