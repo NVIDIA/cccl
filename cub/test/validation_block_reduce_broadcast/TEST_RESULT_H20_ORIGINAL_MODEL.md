@@ -39,9 +39,13 @@ The 8,192-row width-32 default control has ratio 0.9970× and interval
 interval also contains parity; it is not evidence that default code changed.
 The corresponding independently compiled instructions/encodings are identical,
 as are all 26 default kernels already reported. The initial failed-bound result
-remains visible. Exactly one separately reported eight-quartet validation over
-all original widths/controls is predeclared with unchanged sources, binaries,
-flags and samples. It will not replace or pool the initial valid result.
+remains visible. The one predeclared validation has now completed all 32 workers
+naturally, with unchanged sources, binaries, flags and samples. Its width-32
+default result is 0.9938× (95% CI 0.9885–0.9992), also failing to establish the
+1% default bound. This separate result neither replaces nor pools the initial
+valid estimate. All other default controls meet the bound. CPU-only resource
+inspection confirms identical register/shared/local/stack/constant usage at all
+four widths; it does not override either failed-bound estimate.
 
 ## Complete-model screening
 
@@ -62,12 +66,43 @@ match the frozen manifest; checkpoint files and native Torch sources were checke
 before screening. Every arm passes the unchanged baseline-only FP64-normalization
 error budget inside the BF16 network. Screens are excluded from formal estimates.
 
-Eight fresh-process quartets per batch remain pending under the
-[frozen protocol](results/recovery_39817/FORMAL_MODEL_TORCH_ORDER_PROTOCOL.md).
-This one-warp consumer validates complete-model use and does not exercise the
-wider-block optimization. No model speedup is claimed. Task-owned checkpoint
-copies remain while required model workers are pending and will be cleaned after
-natural completion.
+The formal follow-up was interrupted by loss of the H20 SSH connection at
+2026-10-01 14:48:50 UTC. The controller returned transport exit 255; no signal or
+shutdown command was sent. Before disconnection, 16 batch-1 remaining workers
+were observed complete and the first batch-16 worker had started. Only the first
+14 remaining workers had been backed up locally, together with the earlier 16.
+The final remote state and checkpoint cleanup cannot be verified.
+
+All 30 backed-up workers pass source/library/harness/PID, native generation and
+exact-logit gates. Seven complete batch-1 quartets are auditable; the last partial
+quartet is retained and excluded. The prescribed eight-quartet estimate is
+incomplete, and no interval or model gain is claimed:
+
+| Batch / input tokens | Complete quartets | A median (ms) | P median (ms) | A/P | Result |
+| :--- | ---: | ---: | ---: | ---: | :--- |
+| 1 / 128 | 7 | 701.821 | 697.600 | 1.0003× | incomplete; no formal speedup claim |
+| 1 / 512 | 7 | 705.297 | 701.397 | 0.9987× | incomplete; no formal speedup claim |
+| 16 / 128 and 512 | 0 | — | — | — | formal records not recovered |
+
+The earlier complete resident batch-1/batch-16 equivalence screens remain valid.
+This one-warp consumer does not exercise wider-block optimization. The user
+moved remaining work to RTX 5080 and Thor; their independent runs will be
+reported by architecture and will not complete the H20 timing estimate by pooling
+samples. Two task-owned H20 checkpoint copies have unverified cleanup because
+that machine is inaccessible. No other task's files or environments were modified.
+
+## Fixed default-control validation
+
+| Workload | Kind/width | Quartets | A | P | A/P | 95% quartet CI | Result |
+| :--- | :--- | ---: | ---: | ---: | ---: | :--- | :--- |
+| legacy-8192-validation2 | first-thread/32 | 8 | 7.309 | 7.409 | 0.9938× | 0.9885–0.9992 | default bound not met |
+| legacy-8192-validation2 | first-thread/128 | 8 | 7.425 | 7.479 | 0.9966× | 0.9913–1.0026 | within default bound |
+| legacy-8192-validation2 | first-thread/256 | 8 | 12.944 | 13.023 | 0.9959× | 0.9932–0.9987 | within default bound |
+| legacy-8192-validation2 | first-thread/512 | 8 | 25.553 | 25.650 | 0.9984× | 0.9969–1.0000 | within default bound |
+| legacy-8192-validation2 | normalization/32 | 8 | 7.272 | 7.291 | 1.0004× | 0.9947–1.0077 | no stable >1% gain |
+| legacy-8192-validation2 | normalization/128 | 8 | 14.269 | 13.951 | 1.0250× | 1.0224–1.0279 | stable >1% gain |
+| legacy-8192-validation2 | normalization/256 | 8 | 26.641 | 26.484 | 1.0079× | 1.0064–1.0097 | no stable >1% gain |
+| legacy-8192-validation2 | normalization/512 | 8 | 53.729 | 53.244 | 1.0094× | 1.0086–1.0103 | no stable >1% gain |
 
 ## Evidence
 
@@ -78,3 +113,7 @@ are committed. The micro status is an immutable 64-worker subset of the full
 finite 66-worker controller. Its full status preserves both subsequent model
 screens and all observations. Original CUDA consumer sources remain in `normalization.cu`, `bindings.cpp`
 and `build.py`; the exact fresh-worker benchmark wrappers are in this snapshot.
+
+The [shutdown snapshot index](results/h20_shutdown/RAW_INDEX.json) preserves the
+completed default-validation queue, all backed-up model records, the incomplete
+quartet, controller observations and the transport-loss checkpoint.

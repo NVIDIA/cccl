@@ -1,0 +1,142 @@
+{
+  "invalid_quartets": [],
+  "cases": [
+    {
+      "experiment": "model-torch-order-b1",
+      "kind": "model",
+      "width": 128,
+      "ratio": 1.0065899172821684,
+      "ci95": null,
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 701.7642253430531,
+          "candidate": 699.1407351926734,
+          "ratio": 1.0037524492828425,
+          "baseline_worker_medians": [
+            697.590172290802,
+            705.9632539749146
+          ],
+          "candidate_worker_medians": [
+            696.0375308990479,
+            702.2577747702599
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 699.4505842306247,
+          "candidate": 694.5607148135426,
+          "ratio": 1.0070402332190567,
+          "baseline_worker_medians": [
+            703.9846777915955,
+            694.9456930160522
+          ],
+          "candidate_worker_medians": [
+            690.3776675462723,
+            698.7691074609756
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 699.2241172839226,
+          "candidate": 700.2379821893285,
+          "ratio": 0.9985521138081714,
+          "baseline_worker_medians": [
+            701.525405049324,
+            696.9303786754608
+          ],
+          "candidate_worker_medians": [
+            704.0656358003616,
+            696.4311376214027
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 706.6874819459072,
+          "candidate": 694.802336250106,
+          "ratio": 1.0171057940880655,
+          "baseline_worker_medians": [
+            703.7341296672821,
+            709.653228521347
+          ],
+          "candidate_worker_medians": [
+            693.7628611922264,
+            695.843368768692
+          ]
+        }
+      ],
+      "result": "incomplete",
+      "baseline_latency": 702.6297673583031,
+      "candidate_latency": 696.2343342602253
+    },
+    {
+      "experiment": "model-torch-order-b1",
+      "kind": "model",
+      "width": 512,
+      "ratio": 1.0046341304415245,
+      "ci95": null,
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 704.0826256859261,
+          "candidate": 706.689745889404,
+          "ratio": 0.9963107994439673,
+          "baseline_worker_medians": [
+            699.3975415825844,
+            708.7990939617157
+          ],
+          "candidate_worker_medians": [
+            698.5676139593124,
+            714.9063125252724
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 700.7297228386097,
+          "candidate": 697.5425267065359,
+          "ratio": 1.0045691782365187,
+          "baseline_worker_medians": [
+            706.7580446600914,
+            694.7528198361397
+          ],
+          "candidate_worker_medians": [
+            693.2091638445854,
+            701.9029781222343
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 703.1878097972443,
+          "candidate": 704.1430363086976,
+          "ratio": 0.9986434197851891,
+          "baseline_worker_medians": [
+            704.6344429254532,
+            701.7441466450691
+          ],
+          "candidate_worker_medians": [
+            709.7806185483932,
+            698.5502317547798
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 711.0489121940185,
+          "candidate": 697.674572042711,
+          "ratio": 1.0191698833342155,
+          "baseline_worker_medians": [
+            708.630234003067,
+            713.4758457541466
+          ],
+          "candidate_worker_medians": [
+            694.4720894098282,
+            700.8918225765228
+          ]
+        }
+      ],
+      "result": "incomplete",
+      "baseline_latency": 705.6962437927723,
+      "candidate_latency": 699.7297182679176
+    }
+  ],
+  "protocol": "# Torch-order full-model follow-up protocol\n\nThe retained fast-exp consumer failed native generation at batch 1. The original\nregular-exp consumer passed batch 1 but failed batch 16 at both fixed lengths.\nTorch-only replay matched native logits exactly. A common one-warp, bit-reversed\nlane mapping follows the native descending XOR reduction tree and regular expf;\n56 fixed FP32/BF16/masked normalization cases match native FP32 output bitwise.\nThe independent batch-16 diagnostic matches all native tokens and all-step logits.\nThese consumer changes apply to both A and P, and are not PR performance gains.\nKeep both prior failures and unexecuted protocols/plans visible.\n\nUse the same pinned Qwen3-0.6B checkpoint, all 28 BF16 layers, original fixed text,\nbatches 1 and 16, lengths 128 and 512, and 32 complete greedy-generation steps.\nEvery worker checks native tokens, exact native-versus-A logits, exact P-versus-A\nlogits, the independent FP64-normalization baseline-only error budget, fresh KV\nstate, stable weight addresses/versions and 160 calls per layer per timed case.\nNo prompt, precision or tolerance change is permitted to hide a prior failure.\n\nAfter two finite resident APPA/PAAP screens pass, run eight fresh-process quartets\nper batch, alternating APPA/PAAP. Each worker uses two warmups and five complete\ngenerations per case; retain every sample, artifact hash and NVML observation.\nThe full quartet is the resampling unit: 10,000 bootstrap draws, seed 11504,\n95% interval and 1% useful-speedup threshold. A foreign GPU1 process invalidates\nthe entire quartet; replace only whole groups with distinct IDs. Publish all\nlengths, default controls and negative results. One-warp consumer parity does\nnot establish a wide-block or model speedup; micro results remain separate.\n"
+}
