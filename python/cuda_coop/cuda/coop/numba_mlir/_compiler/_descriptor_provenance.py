@@ -145,7 +145,32 @@ def temp_storage_constructor(
 
 
 def payload_write_dtypes(func_ir, payload, dtype):
-    """Yield known dtypes written through a payload's reaching aliases."""
+    """Yield known element dtypes written through a payload's aliases.
+
+    Build an alias set to a fixed point across the entire function, following
+    assignments, casts, iterator unpacking, and phi inputs in both directions.
+    This lets inference start at either a constructor or a later alias. The scan
+    is flow-insensitive: it collects writes throughout the function, including
+    all connected phi inputs, without checking path feasibility or write order.
+    The caller decides whether the collected dtypes agree.
+
+    Parameters
+    ----------
+    func_ir : ir.FunctionIR
+        Function containing alias assignments and element writes. Not modified.
+    payload : ir.Var or object
+        Variable whose aliases are searched. Non-variable inputs yield nothing.
+    dtype : callable
+        Lookup accepting the variable assigned to an element and returning its
+        dtype, or ``None`` when unknown.
+
+    Yields
+    ------
+    object
+        Known dtype for each ``SetItem`` or ``StaticSetItem`` write through the
+        alias set. Unknown dtypes are skipped; duplicates are retained. An empty
+        result does not establish that the payload has no writes.
+    """
 
     if not isinstance(payload, ir.Var):
         return
