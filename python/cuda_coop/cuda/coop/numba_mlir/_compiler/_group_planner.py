@@ -1114,6 +1114,39 @@ class _GroupCallPlanner:
                 raise EscapingGroupDescriptorError(names)
 
     def run(self) -> bool:
+        """Plan public group operations and replace their descriptors in the IR.
+
+        First reject unsupported literal-unroll dependencies, identify
+        descriptor assignments, and ask each registered operation family to
+        build replacement statements. Before replacing block bodies, reject
+        runtime uses of the descriptors marked for removal.
+
+        Accepted descriptor assignments and obsolete callable assignments become
+        ``None`` assignments, preserving their targets; public operations become
+        private provider calls carrying their lowering plans. This removes the
+        group markers that hold back the later provider-rewrite phase. Planning
+        updates this instance's caches, dtype facts, and replacement
+        bookkeeping; block bodies are changed only after all calls and
+        descriptor uses pass.
+
+        Returns
+        -------
+        bool
+            ``True`` when block bodies were rewritten, including descriptor-only
+            cleanup. ``False`` when no descriptor, call, or callable needs
+            replacing.
+
+        Raises
+        ------
+        GroupRewriteError
+            A group call is invalid or a descriptor escapes its compile-time
+            uses.
+        ForceLiteralArg
+            Planning requires specialization of a function argument.
+        NotImplementedError
+            The requested group or operation has no supported lowering.
+        """
+
         self._reject_literal_unroll_constructors()
         self._mark_descriptor_calls()
         for block in self.func_ir.blocks.values():
