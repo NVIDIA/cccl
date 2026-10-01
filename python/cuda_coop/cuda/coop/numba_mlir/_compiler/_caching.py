@@ -205,6 +205,31 @@ def _read_cache(path):
 
 
 def _write_cache(path, value):
+    """Serialize a result and atomically replace its cache entry.
+
+    Write a schema and top-level type tag alongside the value, encoding bytes
+    as base64. Use a temporary file in the destination directory, flush and
+    fsync it, then replace the destination so readers do not see a partially
+    written JSON document. Concurrent writers may replace the same entry.
+    On a write or replacement failure, attempt to remove the temporary file
+    and propagate the error for ``disk_cache`` to handle.
+
+    Parameters
+    ----------
+    path : str or path-like
+        Destination entry. Its parent directory must already exist.
+    value : object
+        Result to persist: bytes or a JSON-serializable value. A later read
+        also requires the decoded top-level type to match the saved type tag.
+
+    Raises
+    ------
+    OSError
+        Creating, writing, syncing, or replacing the entry fails.
+    TypeError or ValueError
+        The result cannot be serialized as a cache entry.
+    """
+
     cached = {
         "version": _CACHE_SCHEMA_VERSION,
         "value_type": _cache_value_type(value),
