@@ -240,7 +240,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   // Query temporary storage requirements for per-partition reduction
   void* allocations[2]       = {nullptr, nullptr};
   size_t allocation_sizes[2] = {0, 2 * sizeof(GlobalAccumT)};
-  if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::reduce::dispatch<PerPartitionAccumT>(
+  if (const auto error = CubDebug(_CUB::detail::reduce::dispatch<PerPartitionAccumT>(
         nullptr,
         allocation_sizes[0],
         d_indexed_in,
@@ -256,8 +256,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   }
 
   // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
-  if (const auto error = CubDebug(
-        CUB_NS_QUALIFIER::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  if (const auto error =
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -283,7 +283,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
 
     d_indexed_in = ArgIndexInputIteratorT(d_in + current_partition_offset);
 
-    if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::reduce::dispatch<PerPartitionAccumT>(
+    if (const auto error = CubDebug(_CUB::detail::reduce::dispatch<PerPartitionAccumT>(
           d_temp_storage,
           temp_storage_bytes,
           d_indexed_in,
@@ -380,11 +380,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   }();
   auto initial_value = empty_problem_init_t<per_partition_accum_t>{{PerPartitionOffsetT{1}, empty_problem_extremum}};
 
-  return CUB_NS_QUALIFIER::detail::reduce::dispatch_streaming_arg_reduce_impl<
-    per_partition_accum_t,
-    global_accum_t,
-    PerPartitionOffsetT,
-    arg_index_input_iterator_t>(
+  return _CUB::detail::reduce::dispatch_streaming_arg_reduce_impl<per_partition_accum_t,
+                                                                  global_accum_t,
+                                                                  PerPartitionOffsetT,
+                                                                  arg_index_input_iterator_t>(
     d_temp_storage,
     temp_storage_bytes,
     d_in,
@@ -460,11 +459,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_minmax
                                MaxExtremumOutIteratorT,
                                MaxIndexOutIteratorT>{d_min_out, d_min_index_out, d_max_out, d_max_index_out});
 
-  return CUB_NS_QUALIFIER::detail::reduce::dispatch_streaming_arg_reduce_impl<
-    per_partition_accum_t,
-    global_accum_t,
-    PerPartitionOffsetT,
-    arg_index_input_iterator_t>(
+  return _CUB::detail::reduce::dispatch_streaming_arg_reduce_impl<per_partition_accum_t,
+                                                                  global_accum_t,
+                                                                  PerPartitionOffsetT,
+                                                                  arg_index_input_iterator_t>(
     d_temp_storage,
     temp_storage_bytes,
     d_in,

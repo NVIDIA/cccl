@@ -73,7 +73,7 @@ namespace detail
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 inline ::std::ostream& operator<<(::std::ostream& os, RadixSortStoreAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
@@ -81,12 +81,12 @@ CUB_NAMESPACE_END
 
 #if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
 template <::cuda::std::same_as<char> CharT>
-struct std::formatter<CUB_NS_QUALIFIER::RadixSortStoreAlgorithm, CharT> : formatter<const CharT*, CharT>
+struct std::formatter<_CUB::RadixSortStoreAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const CUB_NS_QUALIFIER::RadixSortStoreAlgorithm& algo, FmtCtx& ctx) const
+  auto format(const _CUB::RadixSortStoreAlgorithm& algo, FmtCtx& ctx) const
   {
-    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+    return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
   }
 };
 #endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
@@ -344,11 +344,11 @@ struct AgentRadixSortOnesweep
   {
     if (full_block)
     {
-      CUB_NS_QUALIFIER::LoadDirectWarpStriped(threadIdx.x, d_keys_in + tile_offset, keys);
+      _CUB::LoadDirectWarpStriped(threadIdx.x, d_keys_in + tile_offset, keys);
     }
     else
     {
-      CUB_NS_QUALIFIER::LoadDirectWarpStriped(
+      _CUB::LoadDirectWarpStriped(
         threadIdx.x, d_keys_in + tile_offset, keys, num_items - tile_offset, Twiddle::DefaultKey(decomposer));
     }
 
@@ -363,12 +363,12 @@ struct AgentRadixSortOnesweep
   {
     if (full_block)
     {
-      CUB_NS_QUALIFIER::LoadDirectWarpStriped(threadIdx.x, d_values_in + tile_offset, values);
+      _CUB::LoadDirectWarpStriped(threadIdx.x, d_values_in + tile_offset, values);
     }
     else
     {
       const int tile_items = num_items - tile_offset;
-      CUB_NS_QUALIFIER::LoadDirectWarpStriped(threadIdx.x, d_values_in + tile_offset, values, tile_items);
+      _CUB::LoadDirectWarpStriped(threadIdx.x, d_values_in + tile_offset, values, tile_items);
     }
   }
 
@@ -438,12 +438,12 @@ struct AgentRadixSortOnesweep
     }
     if (full_block)
     {
-      CUB_NS_QUALIFIER::StoreDirectWarpStriped(threadIdx.x, d_keys_out + global_offset, keys);
+      _CUB::StoreDirectWarpStriped(threadIdx.x, d_keys_out + global_offset, keys);
     }
     else
     {
       const int tile_items = num_items - block_idx * TILE_ITEMS;
-      CUB_NS_QUALIFIER::StoreDirectWarpStriped(threadIdx.x, d_keys_out + global_offset, keys, tile_items);
+      _CUB::StoreDirectWarpStriped(threadIdx.x, d_keys_out + global_offset, keys, tile_items);
     }
 
     if (!KEYS_ONLY)
@@ -453,17 +453,17 @@ struct AgentRadixSortOnesweep
       LoadValues(block_idx * TILE_ITEMS, values); // NOLINT(bugprone-misplaced-widening-cast)
       if (full_block)
       {
-        CUB_NS_QUALIFIER::StoreDirectWarpStriped(threadIdx.x, d_values_out + global_offset, values);
+        _CUB::StoreDirectWarpStriped(threadIdx.x, d_values_out + global_offset, values);
       }
       else
       {
         const int tile_items = num_items - block_idx * TILE_ITEMS;
-        CUB_NS_QUALIFIER::StoreDirectWarpStriped(threadIdx.x, d_values_out + global_offset, values, tile_items);
+        _CUB::StoreDirectWarpStriped(threadIdx.x, d_values_out + global_offset, values, tile_items);
       }
     }
 
     // exit early
-    CUB_NS_QUALIFIER::ThreadExit();
+    _CUB::ThreadExit();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void

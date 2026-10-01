@@ -50,7 +50,7 @@ _CCCL_KERNEL_ATTRIBUTES void device_partition_find_bound_sorted_values_kernel(
   _CCCL_GRID_CONSTANT Offset* const range_beg_offsets,
   PartitionCompOp partition_comp)
 {
-  constexpr FindBoundSortedValuesPolicy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>();
+  constexpr FindBoundSortedValuesPolicy policy = _CUB::detail::current_policy<PolicySelector>();
   constexpr int tile_size                      = policy.threads_per_block * policy.items_per_thread;
 
   const Offset diagonal_idx = static_cast<Offset>(blockDim.x) * blockIdx.x + threadIdx.x;
@@ -58,7 +58,7 @@ _CCCL_KERNEL_ATTRIBUTES void device_partition_find_bound_sorted_values_kernel(
   {
     const Offset diagonal = ::cuda::std::min(diagonal_idx * static_cast<Offset>(tile_size), range_count + values_count);
     range_beg_offsets[diagonal_idx] =
-      CUB_NS_QUALIFIER::MergePath(d_range, d_values, range_count, values_count, diagonal, partition_comp);
+      _CUB::MergePath(d_range, d_values, range_count, values_count, diagonal, partition_comp);
   }
 }
 
@@ -69,7 +69,7 @@ template <typename PolicySelector,
           typename OutputIt,
           typename Offset,
           typename CompareOp>
-__launch_bounds__(int(CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().threads_per_block))
+__launch_bounds__(int(_CUB::detail::current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void device_find_bound_sorted_values_kernel(
     _CCCL_GRID_CONSTANT const HaystackIt d_range,
     _CCCL_GRID_CONSTANT const NeedlesIt d_values,
@@ -79,7 +79,7 @@ __launch_bounds__(int(CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>()
     _CCCL_GRID_CONSTANT Offset* const range_beg_offsets,
     CompareOp comp)
 {
-  constexpr FindBoundSortedValuesPolicy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>();
+  constexpr FindBoundSortedValuesPolicy policy = _CUB::detail::current_policy<PolicySelector>();
   using AgentT =
     agent_t<policy.threads_per_block,
             policy.items_per_thread,
@@ -128,7 +128,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   const auto active_policy = policy_selector(cc);
 
-  CUB_NS_QUALIFIER::detail::log_dispatch("DeviceFind (bound sorted values)", cc, active_policy);
+  _CUB::detail::log_dispatch("DeviceFind (bound sorted values)", cc, active_policy);
 
   const Offset tile_size = static_cast<Offset>(active_policy.threads_per_block) * active_policy.items_per_thread;
   if (range_count > cuda::std::numeric_limits<Offset>::max() - values_count)
@@ -141,8 +141,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   void* allocations[1]             = {nullptr};
   const size_t allocation_sizes[1] = {static_cast<size_t>(num_diagonals) * sizeof(Offset)};
-  if (const auto error = CubDebug(
-        CUB_NS_QUALIFIER::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  if (const auto error =
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -180,7 +180,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       return error;
     }
-    if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -202,7 +202,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       return error;
     }
-    if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }

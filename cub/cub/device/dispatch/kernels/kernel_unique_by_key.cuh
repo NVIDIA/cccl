@@ -237,7 +237,7 @@ template <typename PolicySelector,
           typename OffsetT>
 __launch_bounds__(
   device_unique_by_key_vsmem_helper_t<
-    device_policy_getter<PolicySelector, CUB_NS_QUALIFIER::detail::current_tuning_cc().get()>,
+    device_policy_getter<PolicySelector, _CUB::detail::current_tuning_cc().get()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,
@@ -257,7 +257,7 @@ __launch_bounds__(
     vsmem_t vsmem)
 {
   using vsmem_adapted_agents = device_unique_by_key_vsmem_helper_t<
-    device_policy_getter<PolicySelector, CUB_NS_QUALIFIER::detail::current_tuning_cc().get()>,
+    device_policy_getter<PolicySelector, _CUB::detail::current_tuning_cc().get()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,

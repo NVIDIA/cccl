@@ -191,12 +191,12 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
     }
 
     // Direct-store using vector types
-    CUB_NS_QUALIFIER::StoreDirectBlocked(linear_tid, block_ptr_vectors, raw_vector);
+    _CUB::StoreDirectBlocked(linear_tid, block_ptr_vectors, raw_vector);
   }
   else
   {
     // Direct-store using original type when the address is misaligned
-    CUB_NS_QUALIFIER::StoreDirectBlocked(linear_tid, block_ptr, items);
+    _CUB::StoreDirectBlocked(linear_tid, block_ptr, items);
   }
 }
 
@@ -573,7 +573,7 @@ namespace detail
 
 inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
@@ -581,12 +581,12 @@ CUB_NAMESPACE_END
 
 #if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
 template <::cuda::std::same_as<char> CharT>
-struct std::formatter<CUB_NS_QUALIFIER::BlockStoreAlgorithm, CharT> : formatter<const CharT*, CharT>
+struct std::formatter<_CUB::BlockStoreAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const CUB_NS_QUALIFIER::BlockStoreAlgorithm& algo, FmtCtx& ctx) const
+  auto format(const _CUB::BlockStoreAlgorithm& algo, FmtCtx& ctx) const
   {
-    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+    return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
   }
 };
 #endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
@@ -755,7 +755,7 @@ public:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockStore()
       : temp_storage(PrivateStorage())
-      , linear_tid(CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
@@ -771,7 +771,7 @@ public:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockStore(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}
@@ -831,32 +831,32 @@ public:
   {
     if constexpr (Algorithm == BLOCK_STORE_DIRECT)
     {
-      CUB_NS_QUALIFIER::StoreDirectBlocked(linear_tid, block_itr, items);
+      _CUB::StoreDirectBlocked(linear_tid, block_itr, items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_STRIPED)
     {
-      CUB_NS_QUALIFIER::StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
+      _CUB::StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_VECTORIZE)
     {
       if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>)
       {
-        CUB_NS_QUALIFIER::StoreDirectBlockedVectorized(linear_tid, ::cuda::std::to_address(block_itr), items);
+        _CUB::StoreDirectBlockedVectorized(linear_tid, ::cuda::std::to_address(block_itr), items);
       }
       else
       {
-        CUB_NS_QUALIFIER::StoreDirectBlocked(linear_tid, block_itr, items);
+        _CUB::StoreDirectBlocked(linear_tid, block_itr, items);
       }
     }
     else if constexpr (Algorithm == BLOCK_STORE_TRANSPOSE)
     {
       block_exchange(temp_storage).BlockedToStriped(items);
-      CUB_NS_QUALIFIER::StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
+      _CUB::StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE || Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
     {
       block_exchange(temp_storage).BlockedToWarpStriped(items);
-      CUB_NS_QUALIFIER::StoreDirectWarpStriped(linear_tid, block_itr, items);
+      _CUB::StoreDirectWarpStriped(linear_tid, block_itr, items);
     }
   }
 
@@ -917,11 +917,11 @@ public:
   {
     if constexpr (Algorithm == BLOCK_STORE_DIRECT || Algorithm == BLOCK_STORE_VECTORIZE)
     {
-      CUB_NS_QUALIFIER::StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
+      _CUB::StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_STRIPED)
     {
-      CUB_NS_QUALIFIER::StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, valid_items);
+      _CUB::StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, valid_items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_TRANSPOSE)
     {
@@ -932,7 +932,7 @@ public:
         temp_storage.valid_items = valid_items;
       }
       __syncthreads();
-      CUB_NS_QUALIFIER::StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, temp_storage.valid_items);
+      _CUB::StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, temp_storage.valid_items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE || Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
     {
@@ -943,7 +943,7 @@ public:
         temp_storage.valid_items = valid_items;
       }
       __syncthreads();
-      CUB_NS_QUALIFIER::StoreDirectWarpStriped(linear_tid, block_itr, items, temp_storage.valid_items);
+      _CUB::StoreDirectWarpStriped(linear_tid, block_itr, items, temp_storage.valid_items);
     }
   }
 

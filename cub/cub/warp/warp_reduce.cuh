@@ -242,7 +242,7 @@ public:
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(const InputType& input)
   {
-    auto thread_reduction = CUB_NS_QUALIFIER::ThreadReduce(input, ::cuda::std::plus<>{});
+    auto thread_reduction = _CUB::ThreadReduce(input, ::cuda::std::plus<>{});
     return InternalWarpReduce{temp_storage}.template Reduce<true>(
       thread_reduction, LogicalWarpThreads, ::cuda::std::plus<>{});
   }
@@ -256,7 +256,7 @@ public:
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(const InputType& input)
   {
-    auto thread_reduction = CUB_NS_QUALIFIER::ThreadReduce(input, ::cuda::maximum<>{});
+    auto thread_reduction = _CUB::ThreadReduce(input, ::cuda::maximum<>{});
     return InternalWarpReduce{temp_storage}.template Reduce<true>(
       thread_reduction, LogicalWarpThreads, ::cuda::maximum<>{});
   }
@@ -270,7 +270,7 @@ public:
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(const InputType& input)
   {
-    auto thread_reduction = CUB_NS_QUALIFIER::ThreadReduce(input, ::cuda::minimum<>{});
+    auto thread_reduction = _CUB::ThreadReduce(input, ::cuda::minimum<>{});
     return InternalWarpReduce{temp_storage}.template Reduce<true>(
       thread_reduction, LogicalWarpThreads, ::cuda::minimum<>{});
   }
@@ -524,7 +524,7 @@ public:
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(const InputType& input, ReductionOp reduction_op)
   {
-    auto thread_reduction = CUB_NS_QUALIFIER::ThreadReduce(input, reduction_op);
+    auto thread_reduction = _CUB::ThreadReduce(input, reduction_op);
     return WarpReduce<T, LogicalWarpThreads>::Reduce(thread_reduction, reduction_op);
   }
   //! @rst
@@ -761,7 +761,7 @@ public:
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(const InputType& input)
   {
-    return CUB_NS_QUALIFIER::ThreadReduce(input, ::cuda::std::plus<>{});
+    return _CUB::ThreadReduce(input, ::cuda::std::plus<>{});
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int /* valid_items */)
@@ -778,7 +778,7 @@ public:
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(const InputType& input)
   {
-    return CUB_NS_QUALIFIER::ThreadReduce(input, ::cuda::maximum<>{});
+    return _CUB::ThreadReduce(input, ::cuda::maximum<>{});
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input, int /* valid_items */)
@@ -795,7 +795,7 @@ public:
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(const InputType& input)
   {
-    return CUB_NS_QUALIFIER::ThreadReduce(input, ::cuda::minimum<>{});
+    return _CUB::ThreadReduce(input, ::cuda::minimum<>{});
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(T input, int /* valid_items */)
@@ -825,7 +825,7 @@ public:
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(const InputType& input, ReductionOp reduction_op)
   {
-    return CUB_NS_QUALIFIER::ThreadReduce(input, reduction_op);
+    return _CUB::ThreadReduce(input, reduction_op);
   }
 
   template <typename ReductionOp>

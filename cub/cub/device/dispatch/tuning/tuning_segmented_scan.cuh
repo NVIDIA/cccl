@@ -117,8 +117,8 @@ struct policy_selector
     const int augmented_size_block =
       ::cuda::round_up(accum_size + ((max_segments_per_block == 1) ? 0 : 1), accum_align);
 
-    const auto block_scaled = CUB_NS_QUALIFIER::detail::scale_mem_bound(
-      nominal_threads_per_block, nominal_items_per_thread, augmented_size_block);
+    const auto block_scaled =
+      _CUB::detail::scale_mem_bound(nominal_threads_per_block, nominal_items_per_thread, augmented_size_block);
 
     const bool large_values = augmented_size_block > 128;
     const auto scan_transposed_blockload =

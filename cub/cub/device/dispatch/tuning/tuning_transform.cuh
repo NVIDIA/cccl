@@ -68,7 +68,7 @@ namespace detail
 #if _CCCL_HOSTED()
 inline ::std::ostream& operator<<(::std::ostream& os, const TransformAlgorithm& algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
 
@@ -76,12 +76,12 @@ CUB_NAMESPACE_END
 
 #if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
 template <::cuda::std::same_as<char> CharT>
-struct std::formatter<CUB_NS_QUALIFIER::TransformAlgorithm, CharT> : formatter<const CharT*, CharT>
+struct std::formatter<_CUB::TransformAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const CUB_NS_QUALIFIER::TransformAlgorithm& algo, FmtCtx& ctx) const
+  auto format(const _CUB::TransformAlgorithm& algo, FmtCtx& ctx) const
   {
-    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+    return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
   }
 };
 #endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
@@ -400,18 +400,18 @@ struct policy_selector
     }
     const bool can_memcpy_all_inputs = all_inputs_contiguous && all_input_values_trivially_reloc;
     const bool fallback_to_prefetch  = requires_stable_address || !can_memcpy_contiguous_inputs || !dense_output;
-    const int min_bytes_in_flight    = CUB_NS_QUALIFIER::detail::transform::cc_to_min_bytes_in_flight(cc);
+    const int min_bytes_in_flight    = _CUB::detail::transform::cc_to_min_bytes_in_flight(cc);
 
     if (cc >= ::cuda::compute_capability{9, 0}) // handles sm_100 as well
     {
       const int async_block_size = (cc < ::cuda::compute_capability{10, 0}) ? 256 : 128;
-      const int alignment        = CUB_NS_QUALIFIER::detail::transform::bulk_copy_alignment(cc);
+      const int alignment        = _CUB::detail::transform::bulk_copy_alignment(cc);
 
       const auto prefetch   = TransformPrefetchPolicy{256};
-      const auto vectorized = CUB_NS_QUALIFIER::detail::transform::tuned_vectorized_policy(
+      const auto vectorized = _CUB::detail::transform::tuned_vectorized_policy(
         cc, ::cuda::std::max(1, output.value_type_size), no_input_streams);
       auto async           = TransformAsyncCopyPolicy{async_block_size};
-      async.store_vec_size = CUB_NS_QUALIFIER::detail::transform::auto_ublkcp_store_vec_size(output.value_type_size);
+      async.store_vec_size = _CUB::detail::transform::auto_ublkcp_store_vec_size(output.value_type_size);
 
       // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
       // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
@@ -466,7 +466,7 @@ struct policy_selector
     {
       const int threads_per_block = 256;
       const auto prefetch         = TransformPrefetchPolicy{threads_per_block};
-      const auto vectorized       = CUB_NS_QUALIFIER::detail::transform::tuned_vectorized_policy(
+      const auto vectorized       = _CUB::detail::transform::tuned_vectorized_policy(
         cc, ::cuda::std::max(1, output.value_type_size), no_input_streams);
       const auto async = TransformAsyncCopyPolicy{threads_per_block};
 
@@ -509,7 +509,7 @@ struct policy_selector
         ? TransformAlgorithm::prefetch
         : TransformAlgorithm::vectorized,
       TransformPrefetchPolicy{256},
-      CUB_NS_QUALIFIER::detail::transform::tuned_vectorized_policy(
+      _CUB::detail::transform::tuned_vectorized_policy(
         ::cuda::compute_capability{6, 0}, ::cuda::std::max(1, output.value_type_size), no_input_streams),
       TransformAsyncCopyPolicy{}, // never used
     };
@@ -549,8 +549,8 @@ struct policy_selector_from_types<RequiresStableAddress,
     constexpr auto policies = policy_selector<sizeof...(RandomAccessIteratorsIn)>{
       RequiresStableAddress,
       DenseOutput,
-      {CUB_NS_QUALIFIER::detail::make_iterator_info<RandomAccessIteratorsIn>()...},
-      CUB_NS_QUALIFIER::detail::make_iterator_info<RandomAccessIteratorOut>()};
+      {_CUB::detail::make_iterator_info<RandomAccessIteratorsIn>()...},
+      _CUB::detail::make_iterator_info<RandomAccessIteratorOut>()};
     return policies(cc);
   }
 };

@@ -136,7 +136,7 @@ set_kth_key_bits(key_prefix_storage_t<KeyT>& prefix, const int pass, const int b
   if constexpr (detail::radix::can_twiddle<KeyT>)
   {
     using bits_t        = typename Traits<KeyT>::UnsignedBits;
-    const int start_bit = CUB_NS_QUALIFIER::detail::topk::calc_start_bit<KeyT, BitsPerPass>(pass);
+    const int start_bit = _CUB::detail::topk::calc_start_bit<KeyT, BitsPerPass>(pass);
     const bits_t bucket = bin_index;
     prefix.bits |= static_cast<bits_t>(bucket) << start_bit;
   }

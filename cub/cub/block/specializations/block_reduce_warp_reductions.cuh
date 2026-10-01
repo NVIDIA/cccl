@@ -92,7 +92,7 @@ struct BlockReduceWarpReductions
 
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduceWarpReductions(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
       , warp_id((warps == 1) ? 0 : linear_tid / warp_threads)
       , lane_id(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
   {}
@@ -114,7 +114,7 @@ struct BlockReduceWarpReductions
   {
     if (linear_tid == 0)
     {
-      CUB_NS_QUALIFIER::detail::uninitialized_copy_single(temp_storage.warp_aggregates, warp_aggregate);
+      _CUB::detail::uninitialized_copy_single(temp_storage.warp_aggregates, warp_aggregate);
     }
 
     __syncthreads();
@@ -146,7 +146,7 @@ struct BlockReduceWarpReductions
     // Share lane aggregates
     if (lane_id == 0)
     {
-      CUB_NS_QUALIFIER::detail::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
+      _CUB::detail::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
     }
 
     __syncthreads();

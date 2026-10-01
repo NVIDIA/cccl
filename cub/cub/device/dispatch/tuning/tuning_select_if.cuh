@@ -95,7 +95,7 @@ namespace detail
 
 inline ::std::ostream& operator<<(::std::ostream& os, SelectAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
 
@@ -149,7 +149,7 @@ namespace detail
 
 inline ::std::ostream& operator<<(::std::ostream& os, PartitionAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
 
@@ -1721,11 +1721,11 @@ struct policy_hub
   {
     using SelectIfPolicyT =
       decltype(select_agent_policy<sm80_tuning<InputT,
-                                               CUB_NS_QUALIFIER::detail::select::is_flagged<FlagT>(),
-                                               CUB_NS_QUALIFIER::detail::select::are_rejects_kept<keep_rejects>(),
+                                               _CUB::detail::select::is_flagged<FlagT>(),
+                                               _CUB::detail::select::are_rejects_kept<keep_rejects>(),
                                                offset_size::_4, // before SM100, we only tuned for int32
-                                               CUB_NS_QUALIFIER::detail::select::is_primitive<InputT>(),
-                                               CUB_NS_QUALIFIER::detail::select::classify_input_size<InputT>()>>(0));
+                                               _CUB::detail::select::is_primitive<InputT>(),
+                                               _CUB::detail::select::classify_input_size<InputT>()>>(0));
   };
 
   // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy860
@@ -1740,11 +1740,11 @@ struct policy_hub
   {
     using SelectIfPolicyT =
       decltype(select_agent_policy<sm90_tuning<InputT,
-                                               CUB_NS_QUALIFIER::detail::select::is_flagged<FlagT>(),
-                                               CUB_NS_QUALIFIER::detail::select::are_rejects_kept<keep_rejects>(),
+                                               _CUB::detail::select::is_flagged<FlagT>(),
+                                               _CUB::detail::select::are_rejects_kept<keep_rejects>(),
                                                offset_size::_4, // before SM100, we only tuned for int32
-                                               CUB_NS_QUALIFIER::detail::select::is_primitive<InputT>(),
-                                               CUB_NS_QUALIFIER::detail::select::classify_input_size<InputT>()>>(0));
+                                               _CUB::detail::select::is_primitive<InputT>(),
+                                               _CUB::detail::select::classify_input_size<InputT>()>>(0));
   };
 
   struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
@@ -1753,7 +1753,7 @@ struct policy_hub
     template <typename Tuning>
     static auto select_agent_policy100(int)
       -> agent_select_if_policy<Tuning::threads,
-                                CUB_NS_QUALIFIER::Nominal4BItemsToItems<InputT>(Tuning::nominal_4b_items),
+                                _CUB::Nominal4BItemsToItems<InputT>(Tuning::nominal_4b_items),
                                 Tuning::load_algorithm,
                                 Tuning::load_modifier,
                                 BLOCK_SCAN_WARP_SCANS,
@@ -1764,13 +1764,13 @@ struct policy_hub
     using SelectIfPolicyT =
       decltype(select_agent_policy100<
                sm100_tuning<InputT,
-                            CUB_NS_QUALIFIER::detail::select::is_flagged<FlagT>(),
-                            CUB_NS_QUALIFIER::detail::select::are_rejects_kept<keep_rejects>(),
-                            CUB_NS_QUALIFIER::detail::select::classify_offset_size<OffsetT>(),
-                            CUB_NS_QUALIFIER::detail::select::is_primitive<InputT>(),
-                            CUB_NS_QUALIFIER::detail::select::classify_input_size<InputT>(),
-                            CUB_NS_QUALIFIER::detail::select::should_alias<may_alias>(),
-                            CUB_NS_QUALIFIER::detail::select::is_distinct_partitions<DistinctPartitions>()>>(0));
+                            _CUB::detail::select::is_flagged<FlagT>(),
+                            _CUB::detail::select::are_rejects_kept<keep_rejects>(),
+                            _CUB::detail::select::classify_offset_size<OffsetT>(),
+                            _CUB::detail::select::is_primitive<InputT>(),
+                            _CUB::detail::select::classify_input_size<InputT>(),
+                            _CUB::detail::select::should_alias<may_alias>(),
+                            _CUB::detail::select::is_distinct_partitions<DistinctPartitions>()>>(0));
   };
 
   using MaxPolicy = Policy1000;
@@ -1814,8 +1814,7 @@ private:
     CacheLoadModifier load_mod,
     LookbackDelayPolicy delay) const -> SelectLookbackPolicy
   {
-    const int items_per_thread =
-      CUB_NS_QUALIFIER::detail::nominal_4B_items_to_items(nominal_4b_items, input_size_bytes);
+    const int items_per_thread = _CUB::detail::nominal_4B_items_to_items(nominal_4b_items, input_size_bytes);
     return SelectLookbackPolicy{threads_per_block, items_per_thread, load_alg, load_mod, BLOCK_SCAN_WARP_SCANS, delay};
   }
 

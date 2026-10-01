@@ -70,7 +70,7 @@ _CCCL_HOST_DEVICE_API inline void log([[maybe_unused]] const char* fmt, ...) noe
 {
 #if _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
   NV_IF_TARGET(NV_IS_HOST, ({
-                 if (CUB_NS_QUALIFIER::detail::logging_enabled())
+                 if (_CUB::detail::logging_enabled())
                  {
                    ::std::va_list args;
                    va_start(args, fmt);
@@ -99,11 +99,11 @@ _CCCL_HOST_DEVICE_API void log_dispatch([[maybe_unused]] const char* device_alg,
                }))
 #elif _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
   NV_IF_TARGET(NV_IS_HOST, ({
-                 if (CUB_NS_QUALIFIER::detail::logging_enabled())
+                 if (_CUB::detail::logging_enabled())
                  {
                    ::std::stringstream ss;
                    ss << active_policy;
-                   CUB_NS_QUALIFIER::detail::log_always(
+                   _CUB::detail::log_always(
                      "Dispatching %s on compute capability %d.%d with tuning: %s\n",
                      device_alg,
                      cc.major_cap(),
@@ -130,7 +130,7 @@ CUB_NAMESPACE_END
 #else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
 #  define _CUB_LOG_KERNEL_LAUNCH(                                                             \
     kernel_name, grid_dim_x, grid_dim_y, grid_dim_z, block_dim, smem_bytes, stream, fmt, ...) \
-    CUB_NS_QUALIFIER::detail::log(                                                            \
+    _CUB::detail::log(                                                                        \
       "Invoking " kernel_name "<<<{%u, %u, %u}, %u, %zu, %lld>>>()" fmt "\n",                 \
       static_cast<unsigned int>(grid_dim_x),                                                  \
       static_cast<unsigned int>(grid_dim_y),                                                  \

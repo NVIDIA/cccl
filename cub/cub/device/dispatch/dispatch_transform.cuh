@@ -126,25 +126,25 @@ struct TransformKernelSource<PolicySelector,
 
   CUB_RUNTIME_FUNCTION static constexpr int LoadedBytesPerIteration()
   {
-    return CUB_NS_QUALIFIER::detail::transform::loaded_bytes_per_iteration<RandomAccessIteratorsIn...>();
+    return _CUB::detail::transform::loaded_bytes_per_iteration<RandomAccessIteratorsIn...>();
   }
 
   CUB_RUNTIME_FUNCTION static constexpr auto InputIteratorInfos()
   {
     return ::cuda::std::array<iterator_info, sizeof...(RandomAccessIteratorsIn)>{
-      CUB_NS_QUALIFIER::detail::make_iterator_info<RandomAccessIteratorsIn>()...};
+      _CUB::detail::make_iterator_info<RandomAccessIteratorsIn>()...};
   }
 
   template <typename It>
   CUB_RUNTIME_FUNCTION static constexpr kernel_arg<It> MakeIteratorKernelArg(It it)
   {
-    return CUB_NS_QUALIFIER::detail::transform::make_iterator_kernel_arg(it);
+    return _CUB::detail::transform::make_iterator_kernel_arg(it);
   }
 
   template <typename It>
   CUB_RUNTIME_FUNCTION static constexpr kernel_arg<It> MakeAlignedBasePtrKernelArg(It it, int align)
   {
-    return CUB_NS_QUALIFIER::detail::transform::make_aligned_base_ptr_kernel_arg(it, align);
+    return _CUB::detail::transform::make_aligned_base_ptr_kernel_arg(it, align);
   }
 
 private:
@@ -271,14 +271,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
   _CCCL_ASSERT(config->items_per_thread > 0, "");
   _CCCL_ASSERT((config->items_per_thread * threads_per_block) % alignment == 0, "");
 
-  const int ipt = CUB_NS_QUALIFIER::detail::transform::spread_out_items_per_thread(
+  const int ipt = _CUB::detail::transform::spread_out_items_per_thread(
     num_items, policy.async_copy, config->items_per_thread, config->sm_count, config->max_occupancy);
   const int tile_size = threads_per_block * ipt;
 
 #if _CCCL_HOSTED()
   NV_IF_TARGET(
     NV_IS_HOST, ({
-      if (CUB_NS_QUALIFIER::detail::logging_enabled())
+      if (_CUB::detail::logging_enabled())
       {
         char reduced_note[64] = "";
         if (ipt != config->items_per_thread)
@@ -286,7 +286,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
           ::std::snprintf(
             reduced_note, sizeof(reduced_note), ", reduced from %d to spread load evenly", config->items_per_thread);
         }
-        CUB_NS_QUALIFIER::detail::log_always(
+        _CUB::detail::log_always(
           "DeviceTransform: with occupancy %d, picked %d items per thread, achieving %d bytes in flight "
           "(target: %d)%s\n",
           config->max_occupancy,
@@ -336,7 +336,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
   KernelLauncherFactory launcher_factory,
   ::cuda::compute_capability cc)
 {
-  auto ret = CUB_NS_QUALIFIER::detail::transform::configure_async_kernel<(sizeof...(RandomAccessIteratorsIn) == 0)>(
+  auto ret = _CUB::detail::transform::configure_async_kernel<(sizeof...(RandomAccessIteratorsIn) == 0)>(
     num_items, alignment, dyn_smem_for_tile_size, stream, policy_getter, kernel_source, launcher_factory, cc);
   if (!ret)
   {
@@ -441,7 +441,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
                            config->max_occupancy * threads_per_block * loaded_bytes_per_iter);
 
     // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16/2^20 elements
-    ipt = CUB_NS_QUALIFIER::detail::transform::spread_out_items_per_thread(
+    ipt = _CUB::detail::transform::spread_out_items_per_thread(
       num_items, prefetch_policy, items_per_thread, config->sm_count, config->max_occupancy);
   }
   _CCCL_ASSERT(ipt, "");
@@ -502,21 +502,21 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
     CUB_DETAIL_CONSTEXPR_ISH TransformPolicy active_policy = policy_getter();
     const auto seq = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
 
-    CUB_NS_QUALIFIER::detail::log_dispatch("DeviceTransform", cc, active_policy);
+    _CUB::detail::log_dispatch("DeviceTransform", cc, active_policy);
 
     if CUB_DETAIL_CONSTEXPR_ISH (TransformAlgorithm::ublkcp == active_policy.algorithm)
     {
-      return CUB_NS_QUALIFIER::detail::transform::invoke_async_algorithm(
+      return _CUB::detail::transform::invoke_async_algorithm(
         ::cuda::std::move(in),
         ::cuda::std::move(out),
         num_items,
         ::cuda::std::move(pred),
         ::cuda::std::move(op),
         stream,
-        CUB_NS_QUALIFIER::detail::transform::bulk_copy_alignment(cc),
+        _CUB::detail::transform::bulk_copy_alignment(cc),
         [&](int tile_size, int alignment) {
-          return CUB_NS_QUALIFIER::detail::transform::bulk_copy_dyn_smem_for_tile_size<sizeof...(
-            RandomAccessIteratorsIn)>(kernel_source.InputIteratorInfos(), tile_size, alignment);
+          return _CUB::detail::transform::bulk_copy_dyn_smem_for_tile_size<sizeof...(RandomAccessIteratorsIn)>(
+            kernel_source.InputIteratorInfos(), tile_size, alignment);
         },
         seq,
         policy_getter,
@@ -526,7 +526,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
     }
     else if CUB_DETAIL_CONSTEXPR_ISH (TransformAlgorithm::ldgsts == active_policy.algorithm)
     {
-      return CUB_NS_QUALIFIER::detail::transform::invoke_async_algorithm(
+      return _CUB::detail::transform::invoke_async_algorithm(
         ::cuda::std::move(in),
         ::cuda::std::move(out),
         num_items,
@@ -535,8 +535,8 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
         stream,
         ldgsts_size_and_align,
         [&](int tile_size, int alignment) {
-          return CUB_NS_QUALIFIER::detail::transform::memcpy_async_dyn_smem_for_tile_size<sizeof...(
-            RandomAccessIteratorsIn)>(kernel_source.InputIteratorInfos(), tile_size, alignment);
+          return _CUB::detail::transform::memcpy_async_dyn_smem_for_tile_size<sizeof...(RandomAccessIteratorsIn)>(
+            kernel_source.InputIteratorInfos(), tile_size, alignment);
         },
         seq,
         policy_getter,
@@ -546,7 +546,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
     }
     else
     {
-      return CUB_NS_QUALIFIER::detail::transform::invoke_prefetch_or_vectorized_algorithm(
+      return _CUB::detail::transform::invoke_prefetch_or_vectorized_algorithm(
         ::cuda::std::move(in),
         ::cuda::std::move(out),
         num_items,

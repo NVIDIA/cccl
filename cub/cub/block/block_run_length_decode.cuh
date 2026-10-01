@@ -196,7 +196,7 @@ public:
     RunLengthT (&run_lengths)[RunsPerThread],
     TotalDecodedSizeT& total_decoded_size)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {
     InitWithRunLengths(run_values, run_lengths, total_decoded_size);
   }
@@ -213,7 +213,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRunLengthDecode(
     TempStorage& temp_storage, ItemT (&run_values)[RunsPerThread], UserRunOffsetT (&run_offsets)[RunsPerThread])
       : temp_storage(temp_storage.Alias())
-      , linear_tid(CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {
     InitWithRunOffsets(run_values, run_offsets);
   }
@@ -230,7 +230,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRunLengthDecode(
     ItemT (&run_values)[RunsPerThread], RunLengthT (&run_lengths)[RunsPerThread], TotalDecodedSizeT& total_decoded_size)
       : temp_storage(PrivateStorage())
-      , linear_tid(CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {
     InitWithRunLengths(run_values, run_lengths, total_decoded_size);
   }
@@ -247,7 +247,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE
   BlockRunLengthDecode(ItemT (&run_values)[RunsPerThread], UserRunOffsetT (&run_offsets)[RunsPerThread])
       : temp_storage(PrivateStorage())
-      , linear_tid(CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {
     InitWithRunOffsets(run_values, run_offsets);
   }
@@ -276,7 +276,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i <= Log2<MaxNumItems>::VALUE; i++)
     {
-      OffsetT mid = CUB_NS_QUALIFIER::MidPoint<OffsetT>(lower_bound, upper_bound);
+      OffsetT mid = _CUB::MidPoint<OffsetT>(lower_bound, upper_bound);
       mid         = (::cuda::std::min) (mid, num_items - 1);
 
       if (val < input[mid])

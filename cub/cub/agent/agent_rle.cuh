@@ -449,7 +449,7 @@ struct AgentRle
     //      number of non-trivial runs starts in this thread
     // `thread_aggregate.val`:
     //      number of items in the last non-trivial run in this thread
-    const LengthOffsetPair thread_aggregate = CUB_NS_QUALIFIER::ThreadReduce(lengths_and_num_runs, scan_op);
+    const LengthOffsetPair thread_aggregate = _CUB::ThreadReduce(lengths_and_num_runs, scan_op);
     WarpScanPairs(temp_storage.aliasable.scan_storage.warp_scan[warp_id])
       .Scan(thread_aggregate, thread_inclusive, thread_exclusive_in_warp, identity, scan_op);
 
@@ -840,8 +840,7 @@ struct AgentRle
       LengthOffsetPair lengths_and_num_runs2[ITEMS_PER_THREAD];
 
       // Downsweep scan through lengths_and_num_runs
-      CUB_NS_QUALIFIER::detail::ThreadScanExclusive(
-        lengths_and_num_runs, lengths_and_num_runs2, scan_op, thread_exclusive_in_warp);
+      _CUB::detail::ThreadScanExclusive(lengths_and_num_runs, lengths_and_num_runs2, scan_op, thread_exclusive_in_warp);
 
       // Zip
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -961,8 +960,7 @@ struct AgentRle
       LengthOffsetPair lengths_and_offsets[ITEMS_PER_THREAD];
       OffsetT thread_num_runs_exclusive_in_warp[ITEMS_PER_THREAD];
 
-      CUB_NS_QUALIFIER::detail::ThreadScanExclusive(
-        lengths_and_num_runs, lengths_and_num_runs2, scan_op, thread_exclusive_in_warp);
+      _CUB::detail::ThreadScanExclusive(lengths_and_num_runs, lengths_and_num_runs2, scan_op, thread_exclusive_in_warp);
 
       // Zip
       _CCCL_PRAGMA_UNROLL_FULL()

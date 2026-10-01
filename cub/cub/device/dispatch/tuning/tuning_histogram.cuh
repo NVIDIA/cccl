@@ -121,8 +121,8 @@ template <class SampleT,
           int NumChannels,
           int NumActiveChannels,
           counter_size CounterSize,
-          primitive_sample PrimitiveSample = CUB_NS_QUALIFIER::detail::histogram::is_primitive_sample<SampleT>(),
-          sample_size SampleSize           = CUB_NS_QUALIFIER::detail::histogram::classify_sample_size<SampleT>()>
+          primitive_sample PrimitiveSample = _CUB::detail::histogram::is_primitive_sample<SampleT>(),
+          sample_size SampleSize           = _CUB::detail::histogram::classify_sample_size<SampleT>()>
 struct sm90_tuning;
 
 template <class SampleT>
@@ -161,8 +161,8 @@ template <bool IsEven,
           int NumChannels,
           int NumActiveChannels,
           counter_size CounterSize,
-          primitive_sample PrimitiveSample = CUB_NS_QUALIFIER::detail::histogram::is_primitive_sample<SampleT>(),
-          sample_size SampleSize           = CUB_NS_QUALIFIER::detail::histogram::classify_sample_size<SampleT>()>
+          primitive_sample PrimitiveSample = _CUB::detail::histogram::is_primitive_sample<SampleT>(),
+          sample_size SampleSize           = _CUB::detail::histogram::classify_sample_size<SampleT>()>
 struct sm100_tuning;
 
 // even
@@ -242,8 +242,7 @@ struct policy_hub
       decltype(select_agent_policy<sm90_tuning<SampleT,
                                                NumChannels,
                                                NumActiveChannels,
-                                               CUB_NS_QUALIFIER::detail::histogram::classify_counter_size<CounterT>()>>(
-        0));
+                                               _CUB::detail::histogram::classify_counter_size<CounterT>()>>(0));
 
     static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
   };
@@ -270,8 +269,7 @@ struct policy_hub
                                                 SampleT,
                                                 NumChannels,
                                                 NumActiveChannels,
-                                                CUB_NS_QUALIFIER::detail::histogram::classify_counter_size<CounterT>()>>(
-        0));
+                                                _CUB::detail::histogram::classify_counter_size<CounterT>()>>(0));
 
     static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
   };

@@ -219,7 +219,7 @@ get_param(const ::cuda::args::deferred<Arg, StaticBounds>& __arg, [[maybe_unused
   // otherwise bind to the proxy).
   using __element_t         = typename ::cuda::args::__traits<::cuda::args::deferred<Arg, StaticBounds>>::element_type;
   const __element_t __value = *::cuda::args::__unwrap(__arg);
-  CUB_NS_QUALIFIER::detail::params::__assert_param_in_bounds(__arg, __value);
+  _CUB::detail::params::__assert_param_in_bounds(__arg, __value);
   return __value;
 }
 
@@ -231,7 +231,7 @@ get_param(const ::cuda::args::deferred_sequence<Arg, StaticBounds>& __arg, Segme
   // deduced return type.
   using __element_t = typename ::cuda::args::__traits<::cuda::args::deferred_sequence<Arg, StaticBounds>>::element_type;
   const __element_t __value = ::cuda::args::__unwrap(__arg)[__index];
-  CUB_NS_QUALIFIER::detail::params::__assert_param_in_bounds(__arg, __value);
+  _CUB::detail::params::__assert_param_in_bounds(__arg, __value);
   return __value;
 }
 
@@ -248,7 +248,7 @@ __get_and_clamp_param_to_nonnegative(const Arg& __arg, SegmentIndexT __index) no
   // and the clamp must act on a real value (a `static_cast<proxy>(0)` would form a null proxy that `max` then
   // dereferences).
   using __element_t         = typename ::cuda::args::__traits<Arg>::element_type;
-  const __element_t __value = CUB_NS_QUALIFIER::detail::params::get_param(__arg, __index);
+  const __element_t __value = _CUB::detail::params::get_param(__arg, __index);
   constexpr auto __lowest   = ::cuda::args::__traits<Arg>::lowest;
   // Use a plain `<` against a same-typed zero, not the integer-only `cmp_*` comparators (which reject character element
   // types, see `__assert_param_in_bounds`); the `is_signed_v` guard skips the test for unsigned types, whose lower
@@ -335,8 +335,7 @@ template <typename ParamT, typename SegmentIndexT, typename Functor>
 {
   using supported_list = typename ParamT::supported_options_t;
   auto param_value     = param.get_param(segment_id);
-  return CUB_NS_QUALIFIER::detail::params::dispatch_impl(
-    param_value, supported_list{}, ::cuda::std::forward<Functor>(f));
+  return _CUB::detail::params::dispatch_impl(param_value, supported_list{}, ::cuda::std::forward<Functor>(f));
 }
 } // namespace detail::params
 

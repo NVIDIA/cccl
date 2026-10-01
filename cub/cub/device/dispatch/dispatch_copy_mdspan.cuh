@@ -73,9 +73,9 @@ template <class MDSpanIn, class MDSpanOut, class Env>
 __copy_with_cub(MDSpanIn __mdspan_in, MDSpanOut __mdspan_out, const Env& __env)
 {
   if (__mdspan_in.is_exhaustive() && __mdspan_out.is_exhaustive()
-      && CUB_NS_QUALIFIER::detail::have_same_strides(__mdspan_in.mapping(), __mdspan_out.mapping()))
+      && _CUB::detail::have_same_strides(__mdspan_in.mapping(), __mdspan_out.mapping()))
   {
-    return CUB_NS_QUALIFIER::detail::copy_mdspan::__transform_copy(__mdspan_in, __mdspan_out, __env);
+    return _CUB::detail::copy_mdspan::__transform_copy(__mdspan_in, __mdspan_out, __env);
   }
   using extents_t = typename MDSpanIn::extents_type;
   const ::cuda::std::layout_right::mapping<extents_t> mapping{__mdspan_in.extents()};
@@ -133,7 +133,7 @@ copy(::cuda::std::mdspan<TIn, EIn, LIn, AIn> mdspan_in,
         // cuda::copy performs context/device queries, breaking graph capture
         else if (::cuda::__driver::__streamIsCapturing(stream.get()) == ::CU_STREAM_CAPTURE_STATUS_ACTIVE)
         {
-          return CUB_NS_QUALIFIER::detail::copy_mdspan::__copy_with_cub(input, output, environment);
+          return _CUB::detail::copy_mdspan::__copy_with_cub(input, output, environment);
         }
         else
         {
@@ -141,7 +141,7 @@ copy(::cuda::std::mdspan<TIn, EIn, LIn, AIn> mdspan_in,
           ::cuda::copy(mdspan_in, mdspan_out, stream);
         }
 #else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
-        return CUB_NS_QUALIFIER::detail::copy_mdspan::__copy_with_cub(input, output, environment);
+        return _CUB::detail::copy_mdspan::__copy_with_cub(input, output, environment);
 #endif // !_CCCL_HOSTED()
       }
 #if _CCCL_HOSTED()
@@ -181,7 +181,7 @@ copy(::cuda::std::mdspan<TIn, EIn, LIn, AIn> mdspan_in,
         _CCCL_ASSERT(!(in_end >= out_start && out_end >= in_start), "mdspan memory ranges must not overlap");
       }
 
-      return CUB_NS_QUALIFIER::detail::copy_mdspan::__copy_with_cub(mdspan_in, mdspan_out, env);
+      return _CUB::detail::copy_mdspan::__copy_with_cub(mdspan_in, mdspan_out, env);
     }));
 }
 } // namespace detail::copy_mdspan

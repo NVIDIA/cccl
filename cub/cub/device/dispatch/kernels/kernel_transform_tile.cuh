@@ -58,10 +58,9 @@ __tile_global__ void transform_kernel(const ::cuda::std::int64_t num_items, Out*
   NV_IF_TARGET(
     NV_PROVIDES_SM_80,
     (const auto bx = ct::bid().x; const auto n = ct::assume_bounded_below<0>(ct::assume_divisible<16>(num_items));
-     const auto out_view = CUB_NS_QUALIFIER::detail::transform::tile::make_aligned_partition_view<TileSize>(out, n);
+     const auto out_view = _CUB::detail::transform::tile::make_aligned_partition_view<TileSize>(out, n);
      out_view.store_masked(
-       Fn{}(CUB_NS_QUALIFIER::detail::transform::tile::make_aligned_partition_view<TileSize>(ins, n).load_masked(bx)...),
-       bx);));
+       Fn{}(_CUB::detail::transform::tile::make_aligned_partition_view<TileSize>(ins, n).load_masked(bx)...), bx);));
 }
 } // namespace detail::transform::tile
 

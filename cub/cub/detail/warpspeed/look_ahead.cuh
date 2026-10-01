@@ -80,7 +80,7 @@ storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, Ac
   _CCCL_ASSERT(::cuda::is_aligned(ptrTileStates, alignof(tile_state_t<AccumT>)), "");
   _CCCL_ASSERT(index >= 0 && index < num_tiles, "Reading out of bounds tile state");
 
-  if constexpr (sizeof(tile_state_t<AccumT>) <= CUB_NS_QUALIFIER::detail::warpspeed::max_native_atomic_size()
+  if constexpr (sizeof(tile_state_t<AccumT>) <= _CUB::detail::warpspeed::max_native_atomic_size()
                 && ::cuda::is_trivially_copyable_v<tile_state_t<AccumT>>)
   {
     static_assert(::cuda::is_power_of_two(sizeof(tile_state_t<AccumT>)));
@@ -97,7 +97,7 @@ storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, Ac
   {
     ThreadStore<STORE_CG>(&ptrTileStates[index].value, aggr);
     using state_int = ::cuda::std::underlying_type_t<scan_state>;
-    CUB_NS_QUALIFIER::detail::store_release(
+    _CUB::detail::store_release(
       reinterpret_cast<state_int*>(&ptrTileStates[index].state), static_cast<state_int>(scanState));
   }
 }
@@ -109,7 +109,7 @@ _CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* pt
   _CCCL_ASSERT(index >= 0 && index < num_tiles, "Reading out of bounds tile state");
 
   tile_state_t<AccumT> res;
-  if constexpr (sizeof(tile_state_t<AccumT>) <= CUB_NS_QUALIFIER::detail::warpspeed::max_native_atomic_size()
+  if constexpr (sizeof(tile_state_t<AccumT>) <= _CUB::detail::warpspeed::max_native_atomic_size()
                 && ::cuda::is_trivially_copyable_v<tile_state_t<AccumT>>)
   {
     static_assert(::cuda::is_power_of_two(sizeof(tile_state_t<AccumT>)));
@@ -124,7 +124,7 @@ _CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* pt
   {
     using state_int = ::cuda::std::underlying_type_t<scan_state>;
     res.state       = static_cast<scan_state>(
-      CUB_NS_QUALIFIER::detail::load_acquire(reinterpret_cast<const state_int*>(&ptrTileStates[index].state)));
+      _CUB::detail::load_acquire(reinterpret_cast<const state_int*>(&ptrTileStates[index].state)));
     res.value = ThreadLoad<LOAD_CG>(&ptrTileStates[index].value);
   }
   return res;
@@ -163,8 +163,7 @@ _CCCL_DEVICE_API void warpLoadLookahead(
     const int idxTileLookahead = idxTileCur + 32 * i + laneIdx;
     if (idxTileLookahead < idxTileNext)
     {
-      outTileStates[i] =
-        CUB_NS_QUALIFIER::detail::warpspeed::loadTileAggregate(ptrTileStates, idxTileLookahead, num_tiles);
+      outTileStates[i] = _CUB::detail::warpspeed::loadTileAggregate(ptrTileStates, idxTileLookahead, num_tiles);
     }
     else
     {
@@ -208,8 +207,7 @@ template <int NumTileStatesPerThread, typename AccumT, typename ScanOpT>
   while (idxTileCur < idxTileNext)
   {
     tile_state_t<AccumT> regTmpStates[NumTileStatesPerThread];
-    CUB_NS_QUALIFIER::detail::warpspeed::warpLoadLookahead(
-      laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext, num_tiles);
+    _CUB::detail::warpspeed::warpLoadLookahead(laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext, num_tiles);
 
     for (int idx = 0; idx < NumTileStatesPerThread; ++idx)
     {
@@ -237,7 +235,7 @@ template <int NumTileStatesPerThread, typename AccumT, typename ScanOpT>
           {
             const bool use_value = lanemaskEq & warp_right_aggregates_mask;
             const AccumT value   = use_value ? regTmpStates[idx].value : cuda::identity_element<ScanOpT, AccumT>();
-            local_aggr           = CUB_NS_QUALIFIER::detail::warp_redux_sm80(value, ~0, scan_op);
+            local_aggr           = _CUB::detail::warp_redux_sm80(value, ~0, scan_op);
           }
           else
           {
@@ -294,8 +292,7 @@ template <int NumTileStatesPerThread, typename AccumT, typename ScanOpT>
   while (idxTileCur < idxTileNext)
   {
     tile_state_t<AccumT> regTmpStates[NumTileStatesPerThread];
-    CUB_NS_QUALIFIER::detail::warpspeed::warpLoadLookahead(
-      laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext, num_tiles);
+    _CUB::detail::warpspeed::warpLoadLookahead(laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext, num_tiles);
 
     for (int idx = 0; idx < NumTileStatesPerThread; ++idx)
     {

@@ -75,7 +75,7 @@ struct warp_reduce_batched_wspro
       : physical_lane_id(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
       , logical_lane_id(is_arch_warp ? physical_lane_id : physical_lane_id % LogicalWarpThreads)
       , logical_warp_id(is_arch_warp ? 0 : (physical_lane_id / LogicalWarpThreads))
-      , member_mask(SyncPhysicalWarp ? 0xFFFFFFFFu : CUB_NS_QUALIFIER::WarpMask<LogicalWarpThreads>(logical_warp_id))
+      , member_mask(SyncPhysicalWarp ? 0xFFFFFFFFu : _CUB::WarpMask<LogicalWarpThreads>(logical_warp_id))
   {}
 
   template <bool ToBlocked, typename InputT, typename OutputT, typename ReductionOp>
@@ -121,11 +121,11 @@ struct warp_reduce_batched_wspro
       ::cuda::std::array<T, max_out_per_thread> intermediate_outputs; // NOLINT(cppcoreguidelines-pro-type-member-init)
 
       // Can't use the full member mask given SyncPhysicalWarp==true because it affects the result of the reduction.
-      const auto reduce_mask = CUB_NS_QUALIFIER::WarpMask<LogicalWarpThreads>(logical_warp_id);
+      const auto reduce_mask = _CUB::WarpMask<LogicalWarpThreads>(logical_warp_id);
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < Batches; ++i)
       {
-        const auto result = CUB_NS_QUALIFIER::detail::warp_redux(inputs[i], reduce_mask, reduction_op);
+        const auto result = _CUB::detail::warp_redux(inputs[i], reduce_mask, reduction_op);
         if (!result)
         {
           return false;

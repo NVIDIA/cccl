@@ -77,10 +77,10 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // beneficial for all problem sizes in cub.bench.scan.exclusive.sum.base
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  constexpr ScanPolicy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelectorT>();
+  constexpr ScanPolicy policy = _CUB::detail::current_policy<PolicySelectorT>();
   if constexpr (policy.algorithm == ScanAlgorithm::lookahead)
   {
-    CUB_NS_QUALIFIER::detail::scan::device_scan_init_lookahead_body(
+    _CUB::detail::scan::device_scan_init_lookahead_body(
       tile_state.lookahead.tile_states, num_tiles, tile_state.lookahead.atomic_counter);
   }
   else
@@ -128,7 +128,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
 {
-  constexpr ScanPolicy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>();
+  constexpr ScanPolicy policy = _CUB::detail::current_policy<PolicySelector>();
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
   if constexpr (policy.algorithm == ScanAlgorithm::lookahead)
   {
@@ -138,7 +138,7 @@ template <typename PolicySelector>
                   "CUB DeviceScan warpspeed/lookahead scan is unsupported with nvcc -G and RDC. Compile without -G, "
                   "disable RDC/separable compilation, or define CCCL_DISABLE_WARPSPEED_SCAN.");
 #  endif // _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_DEBUG__) && _CCCL_HAS_RDC()
-    return CUB_NS_QUALIFIER::detail::scan::num_total_threads(policy.lookahead);
+    return _CUB::detail::scan::num_total_threads(policy.lookahead);
   }
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
   return policy.lookback.threads_per_block;
@@ -147,8 +147,7 @@ template <typename PolicySelector>
 // need a variable template for clang in CUDA mode to avoid:
 // error: 'launch_bounds' attribute requires parameter 0 to be an integer constant
 template <typename PolicySelector>
-inline constexpr int device_scan_launch_bounds =
-  CUB_NS_QUALIFIER::detail::scan::get_device_scan_launch_bounds<PolicySelector>();
+inline constexpr int device_scan_launch_bounds = _CUB::detail::scan::get_device_scan_launch_bounds<PolicySelector>();
 
 /**
  * @brief Scan kernel entry point (multi-block)
@@ -216,7 +215,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   const OffsetT num_items,
   const int num_stages)
 {
-  static constexpr ScanPolicy active_policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>();
+  static constexpr ScanPolicy active_policy = _CUB::detail::current_policy<PolicySelector>();
   if constexpr (active_policy.algorithm == ScanAlgorithm::lookahead)
   {
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
@@ -224,7 +223,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
       NV_PROVIDES_SM_90, ({
         auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
           d_in, d_out, tile_state.lookahead.tile_states, tile_state.lookahead.atomic_counter, num_items, num_stages};
-        CUB_NS_QUALIFIER::detail::scan::
+        _CUB::detail::scan::
           device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT, StableReductionOrder>(
             scan_params, scan_op, init_value);
       }));

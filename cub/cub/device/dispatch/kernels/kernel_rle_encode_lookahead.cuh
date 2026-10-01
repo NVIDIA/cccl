@@ -282,7 +282,7 @@ clc_next_tile_id(uint4& clc_resp, ::cuda::std::uint64_t& clc_bar, int pipeline_g
   int next = num_tiles; // if no more work was cancellable
   if (lane_id == 0)
   {
-    CUB_NS_QUALIFIER::detail::rle::encode::wait_parity(&clc_bar, static_cast<unsigned>(pipeline_gen & 1));
+    _CUB::detail::rle::encode::wait_parity(&clc_bar, static_cast<unsigned>(pipeline_gen & 1));
     // try_cancel wrote clc_resp via the async proxy
     // TODO(nan): possibly unnecessary; the mbarrier try_wait visibility guarantee is documented for cp.async.bulk
     // but not for CLC (doc gap) -- keep the defensive fence until the PTX docs or gonzalobg confirm
@@ -369,12 +369,12 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void reduce_and_publish_tile_state(
     if (lane_id == last_warp_with_runs)
     {
       const int open_len = tile_len - slot_warp_last_heads[lane_id];
-      CUB_NS_QUALIFIER::detail::rle::encode::publish_state(tile_partial_states, tile_id, run_count, open_len);
+      _CUB::detail::rle::encode::publish_state(tile_partial_states, tile_id, run_count, open_len);
     }
   }
   else if (lane_id == 0)
   {
-    CUB_NS_QUALIFIER::detail::rle::encode::publish_state(tile_partial_states, tile_id, run_count, tile_len);
+    _CUB::detail::rle::encode::publish_state(tile_partial_states, tile_id, run_count, tile_len);
   }
 }
 
@@ -397,7 +397,7 @@ stage_head_positions(unsigned my_flags, position_t* pos_dst, int warp_tile_offse
     {
       const int head_offset = __ffs(static_cast<int>(pending_heads)) - 1; // offset (0..31) of the next head within the
                                                                           // word
-      pos_dst[warp_tile_offset + CUB_NS_QUALIFIER::detail::rle::encode::swizzle_xor_stride32(run_index)] =
+      pos_dst[warp_tile_offset + _CUB::detail::rle::encode::swizzle_xor_stride32(run_index)] =
         static_cast<position_t>(word_pos + head_offset);
       pending_heads &= (pending_heads - 1); // clear the lowest set bit
     }
@@ -473,7 +473,7 @@ struct head_flag_decode_t
     // how many heads my word has?
     const int flag_word_run_count = __popc(flag_word);
     // position of my head inside the word
-    const int head_bit_in_word = CUB_NS_QUALIFIER::detail::rle::encode::nth_set_bit(
+    const int head_bit_in_word = _CUB::detail::rle::encode::nth_set_bit(
       flag_word, (run_rank_in_word < flag_word_run_count) ? run_rank_in_word : 0);
     const int head_pos_in_warp_tile = flag_word_idx * 32 + head_bit_in_word;
     // where does my run end? try find the position of next head in word
@@ -517,7 +517,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_fold_windows(
         // we only try if that state is not published
         if (i < lane_tile_count && packed_words[i].published_tag() != tile_published)
         {
-          packed_words[i] = CUB_NS_QUALIFIER::detail::rle::encode::load_state(
+          packed_words[i] = _CUB::detail::rle::encode::load_state(
             tile_partial_states, first_unseen_tile_id + (i * detail::warp_threads + lane_id));
           if (packed_words[i].published_tag() != tile_published)
           {
@@ -586,7 +586,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_and_fold(
     // when it is dense, compute has a slower rate of publishing tile states. so we wait for a smaller window first and
     // fold it. as we fold the small window, more tiles in the next window are becoming ready, so we get some
     // overlapping
-    CUB_NS_QUALIFIER::detail::rle::encode::poll_fold_windows<
+    _CUB::detail::rle::encode::poll_fold_windows<
       detail::warp_threads * current_policy<PolicySelector>().lookahead.dense_poll_items_per_thread,
       PolicySelector>(
       tile_partial_states,
@@ -600,7 +600,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void poll_and_fold(
   else
   {
     // when it is sparse, compute has a high rate of publishing tile states. so we just poll the big window at once
-    CUB_NS_QUALIFIER::detail::rle::encode::poll_fold_windows<
+    _CUB::detail::rle::encode::poll_fold_windows<
       detail::warp_threads * current_policy<PolicySelector>().lookahead.poll_items_per_thread,
       PolicySelector>(
       tile_partial_states,
@@ -655,8 +655,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
                 "poll_items_per_thread must be in [3, 32] so the fold windows cover the dense cap and the int "
                 "open-length accumulator cannot overflow");
 
-  static_assert(CUB_NS_QUALIFIER::detail::rle::encode::num_total_threads(policy) <= 1024,
-                "a CTA is capped at 1024 threads");
+  static_assert(_CUB::detail::rle::encode::num_total_threads(policy) <= 1024, "a CTA is capped at 1024 threads");
   static_assert(policy.decode_items_per_thread() * int{sizeof(KeyT) + sizeof(int)} <= 64,
                 "reg-buf rounds must fit the 64B/lane register budget");
   static_assert(
@@ -773,10 +772,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   constexpr warpspeed::SquadDesc squadBookkeeper{4, 1};
   constexpr warpspeed::SquadDesc squads[] = {squadLoad, squadCompute, squadPoll, squadStore, squadBookkeeper};
 
-  CUB_NS_QUALIFIER::detail::warpspeed::squadDispatch(
-    CUB_NS_QUALIFIER::detail::warpspeed::getSpecialRegisters(),
-    squads,
-    [&](warpspeed::Squad squad) _CCCL_FORCEINLINE_LAMBDA {
+  _CUB::detail::warpspeed::squadDispatch(
+    _CUB::detail::warpspeed::getSpecialRegisters(), squads, [&](warpspeed::Squad squad) _CCCL_FORCEINLINE_LAMBDA {
       // if you are load
       if (squad == squadLoad)
       {
@@ -795,7 +792,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           if (pipeline_gen >= key_ring_stages)
           {
             // need to wait for slot to be free
-            CUB_NS_QUALIFIER::detail::rle::encode::wait_parity(&empty[slot_id], key_ring.parity ^ 1u);
+            _CUB::detail::rle::encode::wait_parity(&empty[slot_id], key_ring.parity ^ 1u);
           }
           if (lane_id == 0)
           {
@@ -815,7 +812,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           const bool first_tile = (tile_id == 0);
           const int tile_len    = static_cast<int>(
             (::cuda::std::min) (static_cast<OffT>(tile_size), num_items - static_cast<OffT>(tile_id) * tile_size));
-          CUB_NS_QUALIFIER::detail::rle::encode::load_tile_keys<tile_size, slot_pad>(
+          _CUB::detail::rle::encode::load_tile_keys<tile_size, slot_pad>(
             tile_buf + static_cast<size_t>(slot_id) * slot_stride,
             d_keys,
             tile_id,
@@ -827,8 +824,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             lane_id,
             keys_staged);
           // consume the prefetched cancel, this is ok since it should be fast to get next cancelled id
-          tile_id = CUB_NS_QUALIFIER::detail::rle::encode::clc_next_tile_id(
-            clc_resp, clc_bar, pipeline_gen, num_tiles, lane_id);
+          tile_id = _CUB::detail::rle::encode::clc_next_tile_id(clc_resp, clc_bar, pipeline_gen, num_tiles, lane_id);
         }
       }
       // if you are compute
@@ -842,7 +838,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
              ++pipeline_gen, key_ring.advance(key_ring_stages), pos_ring.advance(pos_ring_stages))
         {
           const int slot_id = key_ring.slot;
-          CUB_NS_QUALIFIER::detail::rle::encode::wait_parity(&full[slot_id], key_ring.parity);
+          _CUB::detail::rle::encode::wait_parity(&full[slot_id], key_ring.parity);
           const int tile_id = tile_id_buf[slot_id];
           if (tile_id >= num_tiles)
           {
@@ -863,14 +859,14 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           if (keys_staged)
           {
             const KeyT* key_buf = tile_buf + static_cast<size_t>(slot_id) * slot_stride + slot_pad;
-            my_flags            = CUB_NS_QUALIFIER::detail::rle::encode::compute_head_flags<items_per_thread, true>(
+            my_flags            = _CUB::detail::rle::encode::compute_head_flags<items_per_thread, true>(
               key_buf, warp_tile_offset, tile_len, tile_id, lane_id, skip_elems);
           }
           else
           {
             // vvv regressed case: we load compute flags straight from global vvv
             const KeyT* key_buf = d_keys + static_cast<size_t>(tile_id) * tile_size;
-            my_flags            = CUB_NS_QUALIFIER::detail::rle::encode::compute_head_flags<items_per_thread, false>(
+            my_flags            = _CUB::detail::rle::encode::compute_head_flags<items_per_thread, false>(
               key_buf, warp_tile_offset, tile_len, tile_id, lane_id, 0);
             // ^^^ regressed case ^^^
           }
@@ -903,8 +899,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // then collect results from all warptiles and publish the tile run count and tile open len
           if (compute_warp_id == 0)
           {
-            CUB_NS_QUALIFIER::detail::rle::encode::wait_parity(&computed[slot_id], key_ring.parity);
-            CUB_NS_QUALIFIER::detail::rle::encode::reduce_and_publish_tile_state<compute_warps>(
+            _CUB::detail::rle::encode::wait_parity(&computed[slot_id], key_ring.parity);
+            _CUB::detail::rle::encode::reduce_and_publish_tile_state<compute_warps>(
               tile_partial_states, tile_id, tile_len, warp_run_counts[slot_id], warp_last_heads[slot_id], lane_id);
           }
           // now we start to stage head positions per warp tile, if a warptile has enough runs
@@ -918,7 +914,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             // need to wait for it to be cleared by STORE
             if (pipeline_gen >= pos_ring_stages)
             {
-              CUB_NS_QUALIFIER::detail::rle::encode::wait_parity(&pos_buf_free[pos_ring.slot], pos_ring.parity ^ 1u);
+              _CUB::detail::rle::encode::wait_parity(&pos_buf_free[pos_ring.slot], pos_ring.parity ^ 1u);
             }
           }
           if (stage_flags)
@@ -927,7 +923,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           }
           else
           {
-            CUB_NS_QUALIFIER::detail::rle::encode::stage_head_positions<items_per_thread>(
+            _CUB::detail::rle::encode::stage_head_positions<items_per_thread>(
               my_flags, pos_dst, warp_tile_offset, lane_id);
           } // stage flags
           __syncwarp();
@@ -949,7 +945,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
         for (int pipeline_gen = 0;; ++pipeline_gen, key_ring.advance(key_ring_stages))
         {
           const int slot_id = key_ring.slot;
-          CUB_NS_QUALIFIER::detail::rle::encode::wait_parity(&full[slot_id], key_ring.parity);
+          _CUB::detail::rle::encode::wait_parity(&full[slot_id], key_ring.parity);
           const int tile_id = tile_id_buf[slot_id];
           if (tile_id >= num_tiles)
           {
@@ -962,7 +958,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
 
           // fold every predecessor tile's published state into this tile's exclusive prefix
           OffT curr_prefix_run_count, curr_prefix_open_length;
-          CUB_NS_QUALIFIER::detail::rle::encode::poll_and_fold<PolicySelector>(
+          _CUB::detail::rle::encode::poll_and_fold<PolicySelector>(
             tile_partial_states,
             tile_id,
             first_unseen_tile_id,
@@ -995,7 +991,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
         {
           const int slot_id = key_ring.slot;
           // wait for computed (1/3): all per-warp-tile metadata (run counts, first/last heads)
-          CUB_NS_QUALIFIER::detail::rle::encode::wait_parity(&computed[slot_id], key_ring.parity);
+          _CUB::detail::rle::encode::wait_parity(&computed[slot_id], key_ring.parity);
           const int tile_id = tile_id_buf[slot_id];
           if (tile_id >= num_tiles)
           {
@@ -1008,8 +1004,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           // lane i: run-count sum over warp-tiles [0, i) = where warp-tile i's runs begin within the tile
           // we do this BEFORE the wait on prefixed so they overlap
           const auto [lane_warp_tile_run_count, lane_runs_before_warp_tile] =
-            CUB_NS_QUALIFIER::detail::rle::encode::scan_warp_tile_run_counts<compute_warps>(
-              warp_run_counts[slot_id], lane_id);
+            _CUB::detail::rle::encode::scan_warp_tile_run_counts<compute_warps>(warp_run_counts[slot_id], lane_id);
           // staged positions
           const position_t* run_positions = pos_buf + static_cast<size_t>(pos_ring.slot) * tile_size;
           const int warp_tile_id          = store_warp_idx;
@@ -1022,8 +1017,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           if (warp_tile_run_count >= 1 && warp_tile_run_count < staging_threshold)
           {
             // wait for staged_warp_tile (2/3)
-            CUB_NS_QUALIFIER::detail::rle::encode::wait_parity(
-              &staged_warp_tile[slot_id][warp_tile_id], key_ring.parity);
+            _CUB::detail::rle::encode::wait_parity(&staged_warp_tile[slot_id][warp_tile_id], key_ring.parity);
             constexpr int decode_items_per_thread = policy.decode_items_per_thread();
             KeyT buf_key[decode_items_per_thread];
             int buf_run_length[decode_items_per_thread];
@@ -1059,7 +1053,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             }
 
             // wait for prefixed (3/3)
-            CUB_NS_QUALIFIER::detail::rle::encode::wait_parity(&prefixed[slot_id], key_ring.parity);
+            _CUB::detail::rle::encode::wait_parity(&prefixed[slot_id], key_ring.parity);
             const OffT global_runs_before_warp_tile = prefix_packed[slot_id].run_count() + runs_before_warp_tile;
             _CCCL_PRAGMA_UNROLL_FULL()
             for (int it = 0; it < decode_items_per_thread; ++it)
@@ -1087,10 +1081,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           } // reg buf
           // if not reg buffed, we do the normal things, i.e. prefixed wait, then staged_warp_tile, then drain
           // wait for prefixed (2/3)
-          CUB_NS_QUALIFIER::detail::rle::encode::wait_parity(&prefixed[slot_id], key_ring.parity);
+          _CUB::detail::rle::encode::wait_parity(&prefixed[slot_id], key_ring.parity);
           const OffT curr_prefix_run_count = prefix_packed[slot_id].run_count();
           // wait for staged_warp_tile (3/3)
-          CUB_NS_QUALIFIER::detail::rle::encode::wait_parity(&staged_warp_tile[slot_id][warp_tile_id], key_ring.parity);
+          _CUB::detail::rle::encode::wait_parity(&staged_warp_tile[slot_id][warp_tile_id], key_ring.parity);
           // writes warp tile (warp_tile_id)'s staged output into the global arrays.
           // Per run: gather its key from the run's head position -> d_unique,
           // and write its length -> d_counts (= next run's head pos - this run's head pos).
@@ -1110,10 +1104,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
               const int run_idx         = chunk_base + lane_id;
               const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
               const int head_pos        = static_cast<int>(
-                run_positions[warp_tile_offset + CUB_NS_QUALIFIER::detail::rle::encode::swizzle_xor_stride32(run_idx)]);
+                run_positions[warp_tile_offset + _CUB::detail::rle::encode::swizzle_xor_stride32(run_idx)]);
               const int next_head_pos = static_cast<int>(
-                run_positions[warp_tile_offset
-                              + CUB_NS_QUALIFIER::detail::rle::encode::swizzle_xor_stride32(run_idx + 1)]);
+                run_positions[warp_tile_offset + _CUB::detail::rle::encode::swizzle_xor_stride32(run_idx + 1)]);
               d_unique[global_run_idx] = tile_keys[next_head_pos - 1 + skip_elems];
               d_counts[global_run_idx] = next_head_pos - head_pos;
             }
@@ -1122,10 +1115,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             {
               const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
               const int head_pos        = static_cast<int>(
-                run_positions[warp_tile_offset + CUB_NS_QUALIFIER::detail::rle::encode::swizzle_xor_stride32(run_idx)]);
+                run_positions[warp_tile_offset + _CUB::detail::rle::encode::swizzle_xor_stride32(run_idx)]);
               const int next_head_pos = static_cast<int>(
-                run_positions[warp_tile_offset
-                              + CUB_NS_QUALIFIER::detail::rle::encode::swizzle_xor_stride32(run_idx + 1)]);
+                run_positions[warp_tile_offset + _CUB::detail::rle::encode::swizzle_xor_stride32(run_idx + 1)]);
               d_unique[global_run_idx] = tile_keys[next_head_pos - 1 + skip_elems];
               d_counts[global_run_idx] = next_head_pos - head_pos;
             }
@@ -1141,10 +1133,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
               const int run_idx         = chunk_base + lane_id;
               const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
               const int head_pos        = static_cast<int>(
-                run_positions[warp_tile_offset + CUB_NS_QUALIFIER::detail::rle::encode::swizzle_xor_stride32(run_idx)]);
+                run_positions[warp_tile_offset + _CUB::detail::rle::encode::swizzle_xor_stride32(run_idx)]);
               const int next_head_pos = static_cast<int>(
-                run_positions[warp_tile_offset
-                              + CUB_NS_QUALIFIER::detail::rle::encode::swizzle_xor_stride32(run_idx + 1)]);
+                run_positions[warp_tile_offset + _CUB::detail::rle::encode::swizzle_xor_stride32(run_idx + 1)]);
               d_unique[global_run_idx] = tile_keys[next_head_pos - 1];
               d_counts[global_run_idx] = next_head_pos - head_pos;
             }
@@ -1153,10 +1144,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
             {
               const OffT global_run_idx = global_runs_before_warp_tile + run_idx;
               const int head_pos        = static_cast<int>(
-                run_positions[warp_tile_offset + CUB_NS_QUALIFIER::detail::rle::encode::swizzle_xor_stride32(run_idx)]);
+                run_positions[warp_tile_offset + _CUB::detail::rle::encode::swizzle_xor_stride32(run_idx)]);
               const int next_head_pos = static_cast<int>(
-                run_positions[warp_tile_offset
-                              + CUB_NS_QUALIFIER::detail::rle::encode::swizzle_xor_stride32(run_idx + 1)]);
+                run_positions[warp_tile_offset + _CUB::detail::rle::encode::swizzle_xor_stride32(run_idx + 1)]);
               d_unique[global_run_idx] = tile_keys[next_head_pos - 1];
               d_counts[global_run_idx] = next_head_pos - head_pos;
             }
@@ -1181,7 +1171,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
         for (int pipeline_gen = 0;; ++pipeline_gen, key_ring.advance(key_ring_stages))
         {
           const int slot_id = key_ring.slot;
-          CUB_NS_QUALIFIER::detail::rle::encode::wait_parity(&computed[slot_id], key_ring.parity);
+          _CUB::detail::rle::encode::wait_parity(&computed[slot_id], key_ring.parity);
           const int tile_id = tile_id_buf[slot_id];
           if (tile_id >= num_tiles)
           {
@@ -1196,8 +1186,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
           const bool is_last_tile = (tile_id == num_tiles - 1);
           // same scan as the store warps (lane i = warp-tile i)
           const auto [lane_warp_tile_run_count, lane_runs_before_warp_tile] =
-            CUB_NS_QUALIFIER::detail::rle::encode::scan_warp_tile_run_counts<compute_warps>(
-              warp_run_counts[slot_id], lane_id);
+            _CUB::detail::rle::encode::scan_warp_tile_run_counts<compute_warps>(warp_run_counts[slot_id], lane_id);
           const int tile_total_runs =
             __shfl_sync(full_mask, lane_runs_before_warp_tile + lane_warp_tile_run_count, compute_warps - 1);
           const unsigned nonempty_warp_tiles_mask = __ballot_sync(full_mask, lane_warp_tile_run_count > 0);
@@ -1207,7 +1196,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
                                                  : d_keys + static_cast<size_t>(tile_id) * tile_size;
           const int bk_key_skip    = keys_staged ? skip_elems : 0;
           // wait for prefixed
-          CUB_NS_QUALIFIER::detail::rle::encode::wait_parity(&prefixed[slot_id], key_ring.parity);
+          _CUB::detail::rle::encode::wait_parity(&prefixed[slot_id], key_ring.parity);
           const prefix_t packed_prefix       = prefix_packed[slot_id];
           const OffT curr_prefix_run_count   = packed_prefix.run_count();
           const OffT curr_prefix_open_length = packed_prefix.open_len();
@@ -1278,14 +1267,14 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceRleEncodeLookaheadInitKernel(StateT* states, 
 template <typename PolicySelector>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int get_device_rle_encode_lookahead_launch_bounds() noexcept
 {
-  return CUB_NS_QUALIFIER::detail::rle::encode::num_total_threads(current_policy<PolicySelector>().lookahead);
+  return _CUB::detail::rle::encode::num_total_threads(current_policy<PolicySelector>().lookahead);
 }
 
 // need a variable template for clang in CUDA mode to avoid:
 // error: 'launch_bounds' attribute requires parameter 0 to be an integer constant
 template <typename PolicySelector>
 inline constexpr int device_rle_encode_lookahead_launch_bounds =
-  CUB_NS_QUALIFIER::detail::rle::encode::get_device_rle_encode_lookahead_launch_bounds<PolicySelector>();
+  _CUB::detail::rle::encode::get_device_rle_encode_lookahead_launch_bounds<PolicySelector>();
 
 template <typename PolicySelector, class KeyT, class LenT, class NumRunsT, class OffT>
 __launch_bounds__(device_rle_encode_lookahead_launch_bounds<PolicySelector>, 1)
@@ -1306,7 +1295,7 @@ __launch_bounds__(device_rle_encode_lookahead_launch_bounds<PolicySelector>, 1)
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_100,
-      (CUB_NS_QUALIFIER::detail::rle::encode::device_rle_encode_lookahead_body<PolicySelector>(
+      (_CUB::detail::rle::encode::device_rle_encode_lookahead_body<PolicySelector>(
          d_keys,
          d_unique,
          d_counts,

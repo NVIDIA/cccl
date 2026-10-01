@@ -151,11 +151,11 @@ struct AgentSegmentedRadixSort
         bool_constant_v<KEYS_ONLY>,
         decomposer);
 
-    CUB_NS_QUALIFIER::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_out, thread_keys, num_items);
+    _CUB::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_out, thread_keys, num_items);
 
     if (!KEYS_ONLY)
     {
-      CUB_NS_QUALIFIER::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_values_out, thread_values, num_items);
+      _CUB::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_values_out, thread_values, num_items);
     }
   }
 

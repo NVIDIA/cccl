@@ -87,7 +87,7 @@ namespace detail
 
 inline ::std::ostream& operator<<(::std::ostream& os, ThreeWayPartitionAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
 
@@ -185,8 +185,8 @@ _CCCL_HOST_DEVICE constexpr offset_size classify_offset_size()
 
 template <class InputT,
           class OffsetT,
-          input_size InputSize   = CUB_NS_QUALIFIER::detail::three_way_partition::classify_input_size<InputT>(),
-          offset_size OffsetSize = CUB_NS_QUALIFIER::detail::three_way_partition::classify_offset_size<OffsetT>()>
+          input_size InputSize   = _CUB::detail::three_way_partition::classify_input_size<InputT>(),
+          offset_size OffsetSize = _CUB::detail::three_way_partition::classify_offset_size<OffsetT>()>
 struct sm80_tuning;
 
 template <class Input, class OffsetT>
@@ -227,8 +227,8 @@ struct sm80_tuning<Input, OffsetT, input_size::_16, offset_size::_4>
 
 template <class InputT,
           class OffsetT,
-          input_size InputSize   = CUB_NS_QUALIFIER::detail::three_way_partition::classify_input_size<InputT>(),
-          offset_size OffsetSize = CUB_NS_QUALIFIER::detail::three_way_partition::classify_offset_size<OffsetT>()>
+          input_size InputSize   = _CUB::detail::three_way_partition::classify_input_size<InputT>(),
+          offset_size OffsetSize = _CUB::detail::three_way_partition::classify_offset_size<OffsetT>()>
 struct sm90_tuning;
 
 template <class Input, class OffsetT>
@@ -323,8 +323,8 @@ struct sm90_tuning<Input, OffsetT, input_size::_16, offset_size::_8>
 
 template <class InputT,
           class OffsetT,
-          input_size InputSize   = CUB_NS_QUALIFIER::detail::three_way_partition::classify_input_size<InputT>(),
-          offset_size OffsetSize = CUB_NS_QUALIFIER::detail::three_way_partition::classify_offset_size<OffsetT>()>
+          input_size InputSize   = _CUB::detail::three_way_partition::classify_input_size<InputT>(),
+          offset_size OffsetSize = _CUB::detail::three_way_partition::classify_offset_size<OffsetT>()>
 struct sm100_tuning;
 
 // This tuning regressed during validation, so we disabled it and fall back to the SM90 tuning
@@ -522,12 +522,12 @@ private:
   {
     const auto default_policy = ThreeWayPartitionLookbackPolicy{
       256,
-      CUB_NS_QUALIFIER::detail::nominal_4B_items_to_items(9, input_size),
+      _CUB::detail::nominal_4B_items_to_items(9, input_size),
       BLOCK_LOAD_DIRECT,
       LOAD_DEFAULT,
       BLOCK_SCAN_WARP_SCANS,
-      CUB_NS_QUALIFIER::detail::default_delay_constructor_policy(true)}; // we assume that the OffsetT is trivially
-                                                                         // copyable
+      _CUB::detail::default_delay_constructor_policy(true)}; // we assume that the OffsetT is trivially
+                                                             // copyable
 
     // tunings from cub/benchmarks/bench/partition/three_way.cu
     if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0} && offset_size == 4)

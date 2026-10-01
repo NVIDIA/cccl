@@ -164,18 +164,17 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
  * \brief Debug macro
  */
 #ifndef CubDebug
-#  define CubDebug(e) /* NOLINT(readability-identifier-naming) */ \
-    CUB_NS_QUALIFIER::Debug((cudaError_t) (e), __FILE__, __LINE__)
+#  define CubDebug(e) /* NOLINT(readability-identifier-naming) */ _CUB::Debug((cudaError_t) (e), __FILE__, __LINE__)
 #endif
 
 /**
  * \brief Debug macro with exit
  */
 #ifndef CubDebugExit
-#  define CubDebugExit(e) /* NOLINT(readability-identifier-naming) */   \
-    if (CUB_NS_QUALIFIER::Debug((cudaError_t) (e), __FILE__, __LINE__)) \
-    {                                                                   \
-      exit(1);                                                          \
+#  define CubDebugExit(e) /* NOLINT(readability-identifier-naming) */ \
+    if (_CUB::Debug((cudaError_t) (e), __FILE__, __LINE__))           \
+    {                                                                 \
+      exit(1);                                                        \
     }
 #endif
 

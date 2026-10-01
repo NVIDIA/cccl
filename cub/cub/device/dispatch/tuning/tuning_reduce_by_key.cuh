@@ -88,7 +88,7 @@ namespace detail
 
 inline ::std::ostream& operator<<(::std::ostream& os, ReduceByKeyAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
 
@@ -215,10 +215,10 @@ _CCCL_HOST_DEVICE_API constexpr accum_size classify_accum_size()
 template <class KeyT,
           class AccumT,
           primitive_op PrimitiveOp,
-          primitive_key PrimitiveKey     = CUB_NS_QUALIFIER::detail::reduce_by_key::is_primitive_key<KeyT>(),
-          primitive_accum PrimitiveAccum = CUB_NS_QUALIFIER::detail::reduce_by_key::is_primitive_accum<AccumT>(),
-          key_size KeySize               = CUB_NS_QUALIFIER::detail::reduce_by_key::classify_key_size<KeyT>(),
-          accum_size AccumSize           = CUB_NS_QUALIFIER::detail::reduce_by_key::classify_accum_size<AccumT>()>
+          primitive_key PrimitiveKey     = _CUB::detail::reduce_by_key::is_primitive_key<KeyT>(),
+          primitive_accum PrimitiveAccum = _CUB::detail::reduce_by_key::is_primitive_accum<AccumT>(),
+          key_size KeySize               = _CUB::detail::reduce_by_key::classify_key_size<KeyT>(),
+          accum_size AccumSize           = _CUB::detail::reduce_by_key::classify_accum_size<AccumT>()>
 struct sm80_tuning;
 
 // 8-bit key
@@ -455,10 +455,10 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
 template <class KeyT,
           class AccumT,
           primitive_op PrimitiveOp,
-          primitive_key PrimitiveKey     = CUB_NS_QUALIFIER::detail::reduce_by_key::is_primitive_key<KeyT>(),
-          primitive_accum PrimitiveAccum = CUB_NS_QUALIFIER::detail::reduce_by_key::is_primitive_accum<AccumT>(),
-          key_size KeySize               = CUB_NS_QUALIFIER::detail::reduce_by_key::classify_key_size<KeyT>(),
-          accum_size AccumSize           = CUB_NS_QUALIFIER::detail::reduce_by_key::classify_accum_size<AccumT>()>
+          primitive_key PrimitiveKey     = _CUB::detail::reduce_by_key::is_primitive_key<KeyT>(),
+          primitive_accum PrimitiveAccum = _CUB::detail::reduce_by_key::is_primitive_accum<AccumT>(),
+          key_size KeySize               = _CUB::detail::reduce_by_key::classify_key_size<KeyT>(),
+          accum_size AccumSize           = _CUB::detail::reduce_by_key::classify_accum_size<AccumT>()>
 struct sm90_tuning;
 
 // 8-bit key
@@ -695,10 +695,10 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
 template <class KeyT,
           class AccumT,
           primitive_op PrimitiveOp,
-          primitive_key PrimitiveKey     = CUB_NS_QUALIFIER::detail::reduce_by_key::is_primitive_key<KeyT>(),
-          primitive_accum PrimitiveAccum = CUB_NS_QUALIFIER::detail::reduce_by_key::is_primitive_accum<AccumT>(),
-          key_size KeySize               = CUB_NS_QUALIFIER::detail::reduce_by_key::classify_key_size<KeyT>(),
-          accum_size AccumSize           = CUB_NS_QUALIFIER::detail::reduce_by_key::classify_accum_size<AccumT>()>
+          primitive_key PrimitiveKey     = _CUB::detail::reduce_by_key::is_primitive_key<KeyT>(),
+          primitive_accum PrimitiveAccum = _CUB::detail::reduce_by_key::is_primitive_accum<AccumT>(),
+          key_size KeySize               = _CUB::detail::reduce_by_key::classify_key_size<KeyT>(),
+          accum_size AccumSize           = _CUB::detail::reduce_by_key::classify_accum_size<AccumT>()>
 struct sm100_tuning;
 
 // 8-bit key
@@ -993,7 +993,7 @@ struct policy_hub
   {
     using ReduceByKeyPolicyT =
       decltype(select_agent_policy<
-               sm80_tuning<KeyT, AccumT, CUB_NS_QUALIFIER::detail::reduce_by_key::is_primitive_op<ReductionOpT>()>>(0));
+               sm80_tuning<KeyT, AccumT, _CUB::detail::reduce_by_key::is_primitive_op<ReductionOpT>()>>(0));
   };
 
   // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy860
@@ -1008,7 +1008,7 @@ struct policy_hub
   {
     using ReduceByKeyPolicyT =
       decltype(select_agent_policy<
-               sm90_tuning<KeyT, AccumT, CUB_NS_QUALIFIER::detail::reduce_by_key::is_primitive_op<ReductionOpT>()>>(0));
+               sm90_tuning<KeyT, AccumT, _CUB::detail::reduce_by_key::is_primitive_op<ReductionOpT>()>>(0));
   };
 
   struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
@@ -1028,7 +1028,7 @@ struct policy_hub
 
     using ReduceByKeyPolicyT =
       decltype(select_agent_policy<
-               sm100_tuning<KeyT, AccumT, CUB_NS_QUALIFIER::detail::reduce_by_key::is_primitive_op<ReductionOpT>()>>(0));
+               sm100_tuning<KeyT, AccumT, _CUB::detail::reduce_by_key::is_primitive_op<ReductionOpT>()>>(0));
   };
   using MaxPolicy = Policy1000;
 };
@@ -1070,7 +1070,7 @@ private:
       BLOCK_LOAD_DIRECT,
       load_mod,
       BLOCK_SCAN_WARP_SCANS,
-      CUB_NS_QUALIFIER::detail::default_reduce_by_key_delay_constructor_policy(
+      _CUB::detail::default_reduce_by_key_delay_constructor_policy(
         accum_size, sizeof(int), key_is_primitive || key_is_trivially_copyable, true)};
   }
 

@@ -46,8 +46,7 @@ to_array(const Input& input)
 {
   using InputType = ::cuda::std::iter_value_t<Input>;
   using CastType1 = ::cuda::std::_If<::cuda::std::is_same_v<CastType, void>, InputType, CastType>;
-  return CUB_NS_QUALIFIER::detail::to_array_impl<CastType1>(
-    input, ::cuda::std::make_index_sequence<static_size_v<Input>>{});
+  return _CUB::detail::to_array_impl<CastType1>(input, ::cuda::std::make_index_sequence<static_size_v<Input>>{});
 }
 
 #endif // !_CCCL_DOXYGEN_INVOKED

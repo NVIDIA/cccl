@@ -43,8 +43,8 @@ namespace detail::topk
 template <typename T, int BitsPerPass>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr unsigned calc_mask(const int pass)
 {
-  const int num_bits = CUB_NS_QUALIFIER::detail::topk::calc_start_bit<T, BitsPerPass>(pass - 1)
-                     - CUB_NS_QUALIFIER::detail::topk::calc_start_bit<T, BitsPerPass>(pass);
+  const int num_bits = _CUB::detail::topk::calc_start_bit<T, BitsPerPass>(pass - 1)
+                     - _CUB::detail::topk::calc_start_bit<T, BitsPerPass>(pass);
   return (1 << num_bits) - 1;
 }
 
@@ -68,8 +68,8 @@ struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, true>
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE extract_bin_op_t(int pass, int /*total_bits*/, DecomposerT /*decomposer*/)
       : pass(pass)
-      , start_bit(CUB_NS_QUALIFIER::detail::topk::calc_start_bit<T, BitsPerPass>(pass))
-      , mask(CUB_NS_QUALIFIER::detail::topk::calc_mask<T, BitsPerPass>(pass))
+      , start_bit(_CUB::detail::topk::calc_start_bit<T, BitsPerPass>(pass))
+      , mask(_CUB::detail::topk::calc_mask<T, BitsPerPass>(pass))
   {}
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int operator()(T key) const
@@ -99,9 +99,9 @@ struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, false>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE extract_bin_op_t(int pass, int total_bits, DecomposerT decomposer)
       : decomposer(decomposer)
       , digit_extractor(radix_traits_t::template digit_extractor<ShiftDigitExtractor<T>>(
-          CUB_NS_QUALIFIER::detail::topk::calc_start_bit<BitsPerPass>(total_bits, pass),
-          CUB_NS_QUALIFIER::detail::topk::calc_start_bit<BitsPerPass>(total_bits, pass - 1)
-            - CUB_NS_QUALIFIER::detail::topk::calc_start_bit<BitsPerPass>(total_bits, pass),
+          _CUB::detail::topk::calc_start_bit<BitsPerPass>(total_bits, pass),
+          _CUB::detail::topk::calc_start_bit<BitsPerPass>(total_bits, pass - 1)
+            - _CUB::detail::topk::calc_start_bit<BitsPerPass>(total_bits, pass),
           decomposer))
   {}
 
@@ -131,7 +131,7 @@ struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, tr
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
   identify_candidates_op_t(key_prefix_t* kth_key_bits, int pass, int /*total_bits*/, DecomposerT /*decomposer*/)
       : kth_key_bits(&kth_key_bits->bits)
-      , start_bit(CUB_NS_QUALIFIER::detail::topk::calc_start_bit<T, BitsPerPass>(pass - 1))
+      , start_bit(_CUB::detail::topk::calc_start_bit<T, BitsPerPass>(pass - 1))
   {}
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE candidate_class operator()(T key) const
@@ -188,9 +188,9 @@ struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, fa
     key_prefix_t key_prefix{};
     for (int prefix_pass = 0; prefix_pass < pass; ++prefix_pass)
     {
-      const int start_bit = CUB_NS_QUALIFIER::detail::topk::calc_start_bit<BitsPerPass>(total_bits, prefix_pass);
-      const int num_bits  = CUB_NS_QUALIFIER::detail::topk::calc_start_bit<BitsPerPass>(total_bits, prefix_pass - 1)
-                          - CUB_NS_QUALIFIER::detail::topk::calc_start_bit<BitsPerPass>(total_bits, prefix_pass);
+      const int start_bit = _CUB::detail::topk::calc_start_bit<BitsPerPass>(total_bits, prefix_pass);
+      const int num_bits  = _CUB::detail::topk::calc_start_bit<BitsPerPass>(total_bits, prefix_pass - 1)
+                          - _CUB::detail::topk::calc_start_bit<BitsPerPass>(total_bits, prefix_pass);
       auto extractor =
         radix_traits_t::template digit_extractor<ShiftDigitExtractor<T>>(start_bit, num_bits, decomposer);
       key_prefix.shift_or(BitsPerPass, static_cast<unsigned int>(extractor.Digit(ordered)));
@@ -251,7 +251,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().threads_per_block))
+__launch_bounds__(int(_CUB::detail::current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceTopKKernel(
     const KeyInputIteratorT d_keys_in,
     const KeyOutputIteratorT d_keys_out,
@@ -271,7 +271,7 @@ __launch_bounds__(int(CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>()
     const int pass,
     const bool is_last_pass)
 {
-  static constexpr topk_policy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>();
+  static constexpr topk_policy policy = _CUB::detail::current_policy<PolicySelector>();
   using agent_topk_policy_t =
     agent_topk_policy<policy.threads_per_block,
                       policy.items_per_thread,
@@ -316,7 +316,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().threads_per_block))
+__launch_bounds__(int(_CUB::detail::current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceTopKHistogramKernel(
     const KeyInputIteratorT d_keys_in,
     const KeyOutputIteratorT d_keys_out,
@@ -331,7 +331,7 @@ __launch_bounds__(int(CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>()
     const int pass,
     const bool is_last_pass)
 {
-  static constexpr topk_policy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>();
+  static constexpr topk_policy policy = _CUB::detail::current_policy<PolicySelector>();
   using agent_topk_policy_t =
     agent_topk_policy<policy.threads_per_block,
                       policy.items_per_thread,
@@ -377,7 +377,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().threads_per_block))
+__launch_bounds__(int(_CUB::detail::current_policy<PolicySelector>().threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceTopKLastFilterKernel(
     const KeyInputIteratorT d_keys_in,
     const KeyOutputIteratorT d_keys_out,
@@ -392,7 +392,7 @@ __launch_bounds__(int(CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>()
     IdentifyCandidatesOpT identify_candidates_op,
     const int pass)
 {
-  static constexpr topk_policy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>();
+  static constexpr topk_policy policy = _CUB::detail::current_policy<PolicySelector>();
   using agent_topk_policy_t =
     agent_topk_policy<policy.threads_per_block,
                       policy.items_per_thread,
@@ -485,9 +485,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  return CUB_NS_QUALIFIER::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+  return _CUB::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     static constexpr topk_policy active_policy = policy_getter();
-    CUB_NS_QUALIFIER::detail::log_dispatch("DeviceTopK", cc, active_policy);
+    _CUB::detail::log_dispatch("DeviceTopK", cc, active_policy);
     using key_in_t                  = it_value_t<KeyInputIteratorT>;
     using value_in_t                = it_value_t<ValueInputIteratorT>;
     static constexpr bool keys_only = ::cuda::std::is_same_v<value_in_t, NullType>;
@@ -547,8 +547,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
     // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
     void* allocations[allocations_array_size] = {};
-    if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::alias_temporaries(
-          d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+    if (const auto error =
+          CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }

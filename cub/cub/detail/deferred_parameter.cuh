@@ -61,8 +61,7 @@ template <typename TargetT, typename ParameterT>
 }
 
 template <typename TargetT, typename ParameterT>
-using parameter_from_host_t =
-  decltype(CUB_NS_QUALIFIER::detail::parameter_from_host<TargetT>(::cuda::std::declval<ParameterT>()));
+using parameter_from_host_t = decltype(_CUB::detail::parameter_from_host<TargetT>(::cuda::std::declval<ParameterT>()));
 #endif // !_CCCL_COMPILER(NVRTC)
 
 // Forms a value from a kernel parameter, reading element zero when the parameter is a deferred source.

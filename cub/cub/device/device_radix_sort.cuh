@@ -200,7 +200,7 @@ private:
     using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, OffsetT>;
     using policy_selector_t =
       ::cuda::std::execution::__query_result_or_t<TuningEnvT, RadixSortPolicy, default_policy_selector_t>;
-    return CUB_NS_QUALIFIER::detail::radix_sort::dispatch<Order>(
+    return _CUB::detail::radix_sort::dispatch<Order>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -552,21 +552,20 @@ public:
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return select_tuning_and_dispatch<SortOrder::Ascending>(
-          storage,
-          bytes,
-          d_keys,
-          d_values,
-          static_cast<offset_t>(num_items),
-          begin_bit,
-          end_bit,
-          false,
-          stream,
-          {},
-          tuning_env);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return select_tuning_and_dispatch<SortOrder::Ascending>(
+        storage,
+        bytes,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        begin_bit,
+        end_bit,
+        false,
+        stream,
+        {},
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -794,22 +793,21 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return radix_sort_with_decomposer<SortOrder::Ascending>(
-          storage,
-          bytes,
-          d_keys_in,
-          d_keys_out,
-          d_values_in,
-          d_values_out,
-          num_items,
-          decomposer,
-          stream,
-          tuning_env,
-          begin_bit,
-          end_bit);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Ascending>(
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        d_values_in,
+        d_values_out,
+        num_items,
+        decomposer,
+        stream,
+        tuning_env,
+        begin_bit,
+        end_bit);
+    });
   }
 
   //! @rst
@@ -1014,11 +1012,10 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return radix_sort_with_decomposer<SortOrder::Ascending>(
-          storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, decomposer, stream, tuning_env);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Ascending>(
+        storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, decomposer, stream, tuning_env);
+    });
   }
 
   //! @rst
@@ -1248,21 +1245,20 @@ public:
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return select_tuning_and_dispatch<SortOrder::Ascending>(
-          storage,
-          bytes,
-          d_keys,
-          d_values,
-          static_cast<offset_t>(num_items),
-          begin_bit,
-          end_bit,
-          true,
-          stream,
-          {},
-          tuning_env);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return select_tuning_and_dispatch<SortOrder::Ascending>(
+        storage,
+        bytes,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        begin_bit,
+        end_bit,
+        true,
+        stream,
+        {},
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -1454,11 +1450,10 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return radix_sort_with_decomposer<SortOrder::Ascending>(
-          storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Ascending>(
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env);
+    });
   }
 
   //! @rst
@@ -1672,11 +1667,10 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return radix_sort_with_decomposer<SortOrder::Ascending>(
-          storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env, begin_bit, end_bit);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Ascending>(
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env, begin_bit, end_bit);
+    });
   }
 
   //! @rst
@@ -1924,21 +1918,20 @@ public:
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return select_tuning_and_dispatch<SortOrder::Descending>(
-          storage,
-          bytes,
-          d_keys,
-          d_values,
-          static_cast<offset_t>(num_items),
-          begin_bit,
-          end_bit,
-          false,
-          stream,
-          {},
-          tuning_env);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return select_tuning_and_dispatch<SortOrder::Descending>(
+        storage,
+        bytes,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        begin_bit,
+        end_bit,
+        false,
+        stream,
+        {},
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -2424,21 +2417,20 @@ public:
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return select_tuning_and_dispatch<SortOrder::Descending>(
-          storage,
-          bytes,
-          d_keys,
-          d_values,
-          static_cast<offset_t>(num_items),
-          begin_bit,
-          end_bit,
-          true,
-          stream,
-          {},
-          tuning_env);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return select_tuning_and_dispatch<SortOrder::Descending>(
+        storage,
+        bytes,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        begin_bit,
+        end_bit,
+        true,
+        stream,
+        {},
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -2747,22 +2739,21 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return radix_sort_with_decomposer<SortOrder::Descending>(
-          storage,
-          bytes,
-          d_keys_in,
-          d_keys_out,
-          d_values_in,
-          d_values_out,
-          num_items,
-          decomposer,
-          stream,
-          tuning_env,
-          begin_bit,
-          end_bit);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Descending>(
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        d_values_in,
+        d_values_out,
+        num_items,
+        decomposer,
+        stream,
+        tuning_env,
+        begin_bit,
+        end_bit);
+    });
   }
 
   //! @rst
@@ -2823,11 +2814,10 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return radix_sort_with_decomposer<SortOrder::Descending>(
-          storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, decomposer, stream, tuning_env);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Descending>(
+        storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, decomposer, stream, tuning_env);
+    });
   }
 
   //! @rst
@@ -2884,11 +2874,10 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return radix_sort_with_decomposer<SortOrder::Descending>(
-          storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Descending>(
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env);
+    });
   }
 
   //! @rst
@@ -2950,11 +2939,10 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return radix_sort_with_decomposer<SortOrder::Descending>(
-          storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env, begin_bit, end_bit);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Descending>(
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env, begin_bit, end_bit);
+    });
   }
 
   //! @}
@@ -3174,21 +3162,20 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return select_tuning_and_dispatch<SortOrder::Ascending>(
-          storage,
-          bytes,
-          d_keys,
-          d_values,
-          static_cast<offset_t>(num_items),
-          begin_bit,
-          end_bit,
-          false,
-          stream,
-          {},
-          tuning_env);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return select_tuning_and_dispatch<SortOrder::Ascending>(
+        storage,
+        bytes,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        begin_bit,
+        end_bit,
+        false,
+        stream,
+        {},
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -3376,22 +3363,21 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return radix_sort_with_decomposer<SortOrder::Ascending>(
-          storage,
-          bytes,
-          d_keys_in,
-          d_keys_out,
-          static_cast<NullType*>(nullptr),
-          static_cast<NullType*>(nullptr),
-          num_items,
-          decomposer,
-          stream,
-          tuning_env,
-          begin_bit,
-          end_bit);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Ascending>(
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        static_cast<NullType*>(nullptr),
+        static_cast<NullType*>(nullptr),
+        num_items,
+        decomposer,
+        stream,
+        tuning_env,
+        begin_bit,
+        end_bit);
+    });
   }
 
   //! @rst
@@ -3557,20 +3543,19 @@ public:
   SortKeys(const KeyT* d_keys_in, KeyT* d_keys_out, NumItemsT num_items, DecomposerT decomposer, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return radix_sort_with_decomposer<SortOrder::Ascending>(
-          storage,
-          bytes,
-          d_keys_in,
-          d_keys_out,
-          static_cast<NullType*>(nullptr),
-          static_cast<NullType*>(nullptr),
-          num_items,
-          decomposer,
-          stream,
-          tuning_env);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Ascending>(
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        static_cast<NullType*>(nullptr),
+        static_cast<NullType*>(nullptr),
+        num_items,
+        decomposer,
+        stream,
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -3784,21 +3769,20 @@ public:
 
     DoubleBuffer<NullType> d_values;
 
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return select_tuning_and_dispatch<SortOrder::Ascending>(
-          storage,
-          bytes,
-          d_keys,
-          d_values,
-          static_cast<offset_t>(num_items),
-          begin_bit,
-          end_bit,
-          true,
-          stream,
-          {},
-          tuning_env);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return select_tuning_and_dispatch<SortOrder::Ascending>(
+        storage,
+        bytes,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        begin_bit,
+        end_bit,
+        true,
+        stream,
+        {},
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -3955,12 +3939,11 @@ public:
   SortKeys(DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        DoubleBuffer<NullType> d_values;
-        return radix_sort_with_decomposer<SortOrder::Ascending>(
-          storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      DoubleBuffer<NullType> d_values;
+      return radix_sort_with_decomposer<SortOrder::Ascending>(
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env);
+    });
   }
 
   //! @rst
@@ -4139,12 +4122,11 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        DoubleBuffer<NullType> d_values;
-        return radix_sort_with_decomposer<SortOrder::Ascending>(
-          storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env, begin_bit, end_bit);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      DoubleBuffer<NullType> d_values;
+      return radix_sort_with_decomposer<SortOrder::Ascending>(
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env, begin_bit, end_bit);
+    });
   }
 
   //! @rst Sorts keys into descending order using :math:`\approx 2N` auxiliary storage.
@@ -4358,21 +4340,20 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return select_tuning_and_dispatch<SortOrder::Descending>(
-          storage,
-          bytes,
-          d_keys,
-          d_values,
-          static_cast<offset_t>(num_items),
-          begin_bit,
-          end_bit,
-          false,
-          stream,
-          {},
-          tuning_env);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return select_tuning_and_dispatch<SortOrder::Descending>(
+        storage,
+        bytes,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        begin_bit,
+        end_bit,
+        false,
+        stream,
+        {},
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -4815,21 +4796,20 @@ public:
 
     DoubleBuffer<NullType> d_values;
 
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return select_tuning_and_dispatch<SortOrder::Descending>(
-          storage,
-          bytes,
-          d_keys,
-          d_values,
-          static_cast<offset_t>(num_items),
-          begin_bit,
-          end_bit,
-          true,
-          stream,
-          {},
-          tuning_env);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return select_tuning_and_dispatch<SortOrder::Descending>(
+        storage,
+        bytes,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        begin_bit,
+        end_bit,
+        true,
+        stream,
+        {},
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -5106,22 +5086,21 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return radix_sort_with_decomposer<SortOrder::Descending>(
-          storage,
-          bytes,
-          d_keys_in,
-          d_keys_out,
-          static_cast<NullType*>(nullptr),
-          static_cast<NullType*>(nullptr),
-          num_items,
-          decomposer,
-          stream,
-          tuning_env,
-          begin_bit,
-          end_bit);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Descending>(
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        static_cast<NullType*>(nullptr),
+        static_cast<NullType*>(nullptr),
+        num_items,
+        decomposer,
+        stream,
+        tuning_env,
+        begin_bit,
+        end_bit);
+    });
   }
 
   //! @rst
@@ -5171,20 +5150,19 @@ public:
     const KeyT* d_keys_in, KeyT* d_keys_out, NumItemsT num_items, DecomposerT decomposer, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return radix_sort_with_decomposer<SortOrder::Descending>(
-          storage,
-          bytes,
-          d_keys_in,
-          d_keys_out,
-          static_cast<NullType*>(nullptr),
-          static_cast<NullType*>(nullptr),
-          num_items,
-          decomposer,
-          stream,
-          tuning_env);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Descending>(
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        static_cast<NullType*>(nullptr),
+        static_cast<NullType*>(nullptr),
+        num_items,
+        decomposer,
+        stream,
+        tuning_env);
+    });
   }
 
   //! @rst
@@ -5233,12 +5211,11 @@ public:
   SortKeysDescending(DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        DoubleBuffer<NullType> d_values;
-        return radix_sort_with_decomposer<SortOrder::Descending>(
-          storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      DoubleBuffer<NullType> d_values;
+      return radix_sort_with_decomposer<SortOrder::Descending>(
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env);
+    });
   }
 
   //! @rst
@@ -5296,12 +5273,11 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
-      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        DoubleBuffer<NullType> d_values;
-        return radix_sort_with_decomposer<SortOrder::Descending>(
-          storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env, begin_bit, end_bit);
-      });
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      DoubleBuffer<NullType> d_values;
+      return radix_sort_with_decomposer<SortOrder::Descending>(
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env, begin_bit, end_bit);
+    });
   }
 
   //! @}

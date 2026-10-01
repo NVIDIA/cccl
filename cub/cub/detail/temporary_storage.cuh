@@ -283,7 +283,7 @@ public:
     // alias_temporaries can return error only in mapping stage, so it's safe to ignore it here.
     size_t temp_storage_bytes{};
     [[maybe_unused]] const auto error =
-      CUB_NS_QUALIFIER::detail::alias_temporaries(nullptr, temp_storage_bytes, m_pointers, m_sizes);
+      _CUB::detail::alias_temporaries(nullptr, temp_storage_bytes, m_pointers, m_sizes);
     _CCCL_ASSERT(error == cudaSuccess, "");
 
     if (temp_storage_bytes == 0)
@@ -316,7 +316,7 @@ public:
     this->prepare_interface();
 
     if (const cudaError_t error =
-          CUB_NS_QUALIFIER::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes))
+          _CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes))
     {
       return error;
     }

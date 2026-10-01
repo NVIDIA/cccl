@@ -276,7 +276,7 @@ struct agent_batched_topk_cluster
   // Radix passes for this key type (compile-time). The overflow stream flips direction each pass; `run` primes the
   // first wave in `first_wave_is_forward` so the leftover after `num_passes` matches the deterministic filter
   // (non-deterministic keeps the forward default).
-  static constexpr int num_passes = CUB_NS_QUALIFIER::detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
+  static constexpr int num_passes = _CUB::detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
   static constexpr bool first_wave_is_forward =
     !needs_set_determinism || ((!is_tie_reversed) ^ ((num_passes & 1) != 0));
 
@@ -2239,7 +2239,7 @@ private:
     // (`ATOMS.POPC.INC.32`). `atomicAdd` defaults to `.gpu` scope (not `.cta` -- that is `atomicAdd_block`), which
     // includes the cluster peers, so it is morally strong with (atomic against) the `.cluster`-scoped DSMEM reductions
     // racing into the leader's `hist` (the Step 2 DSMEM reduction) during the Step 1/2 overlap.
-    offset_t* const hist = CUB_NS_QUALIFIER::detail::warpspeed::optimizeSmemPtr(temp_storage.hist);
+    offset_t* const hist = _CUB::detail::warpspeed::optimizeSmemPtr(temp_storage.hist);
     auto add_first_pass  = [&](const key_t& key) {
       const int bucket = extract_op(key);
       _CCCL_ASSERT(bucket >= 0 && bucket < num_buckets, "histogram bucket index out of range");
@@ -2741,9 +2741,8 @@ private:
     {
       if (!is_single_cta)
       {
-        layout.num_logical_cluster_blocks =
-          CUB_NS_QUALIFIER::detail::batched_topk_cluster::compute_num_logical_cluster_blocks(
-            layout.num_cluster_chunks, policy.min_chunks_per_block, num_full_cluster_blocks);
+        layout.num_logical_cluster_blocks = _CUB::detail::batched_topk_cluster::compute_num_logical_cluster_blocks(
+          layout.num_cluster_chunks, policy.min_chunks_per_block, num_full_cluster_blocks);
       }
     }
     _CCCL_ASSERT(layout.num_logical_cluster_blocks >= 1u && layout.num_logical_cluster_blocks <= num_full_cluster_blocks
@@ -2913,7 +2912,7 @@ private:
       detail::topk::identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
 
     constexpr int total_bits = int{sizeof(key_t)} * 8;
-    constexpr int num_passes = CUB_NS_QUALIFIER::detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
+    constexpr int num_passes = _CUB::detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
 
     int num_executed_passes = num_passes;
     // No unroll pragma on purpose: the compiler's partial/full auto-unroll beats forced nounroll here.
@@ -2931,7 +2930,7 @@ private:
 
         // Step 1: block-private histogram. Same pinned 32-bit base + `.gpu`-scope `atomicAdd` as
         // `load_and_histogram_first_pass` (see there for the addressing/scope rationale).
-        offset_t* const hist = CUB_NS_QUALIFIER::detail::warpspeed::optimizeSmemPtr(temp_storage.hist);
+        offset_t* const hist = _CUB::detail::warpspeed::optimizeSmemPtr(temp_storage.hist);
         auto add_hist        = [&](const key_t& key) {
           if (identify_op(key) == detail::topk::candidate_class::candidate)
           {
@@ -3090,7 +3089,7 @@ private:
       {
         const int bucket = static_cast<int>(pass_result.kth_bucket);
         _CCCL_ASSERT(bucket >= 0 && bucket < num_buckets, "published splitter bucket index is out of range");
-        CUB_NS_QUALIFIER::detail::topk::set_kth_key_bits<key_t, policy.bits_per_pass>(kth_key_bits_local, pass, bucket);
+        _CUB::detail::topk::set_kth_key_bits<key_t, policy.bits_per_pass>(kth_key_bits_local, pass, bucket);
         num_executed_passes = pass + 1;
 
         // Non-leader: the lane owning the splitter bucket holds its exclusive prefix and raw count in registers from
@@ -3130,8 +3129,7 @@ private:
 
     constexpr int total_bits = int{sizeof(key_t)} * 8;
     // Only read inside the `needs_set_determinism` branch below; unused otherwise.
-    [[maybe_unused]] constexpr int num_passes =
-      CUB_NS_QUALIFIER::detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
+    [[maybe_unused]] constexpr int num_passes = _CUB::detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
 
     // `process_impl` handles `k == 0` and select-all, so the radix path sees a strict `0 < k < segment_size`.
     _CCCL_ASSERT(k > out_offset_t{0} && static_cast<segment_size_val_t>(k) < segment_size,
@@ -3298,7 +3296,7 @@ private:
   {
     if constexpr (enable_runtime_single_cta)
     {
-      const bool fits_single_cta = CUB_NS_QUALIFIER::detail::batched_topk_cluster::is_single_cta_eligible(
+      const bool fits_single_cta = _CUB::detail::batched_topk_cluster::is_single_cta_eligible(
         segment_size, max_block_resident_items, policy.single_block_max_seg_size);
       if (fits_single_cta && cluster_block_rank != 0u)
       {
@@ -3325,16 +3323,15 @@ private:
                  "hardware cluster rank must lie within a non-empty cluster");
     segment_id = static_cast<num_segments_val_t>(::cuda::ptx::get_sreg_clusterid_x());
 
-    if (segment_id >= static_cast<num_segments_val_t>(
-          CUB_NS_QUALIFIER::detail::params::get_param(num_segments, num_segments_val_t{0})))
+    if (segment_id
+        >= static_cast<num_segments_val_t>(_CUB::detail::params::get_param(num_segments, num_segments_val_t{0})))
     {
       return;
     }
 
     // Read the clamped-to-nonnegative size before narrowing to `segment_size_val_t`, so the assert sees the caller's
     // value: sizes are clamped >= 0 and capped at 2^21, so a value exceeding 32-bit `offset_t` is a violation.
-    const auto segment_size_raw =
-      CUB_NS_QUALIFIER::detail::params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id);
+    const auto segment_size_raw = _CUB::detail::params::__get_and_clamp_param_to_nonnegative(segment_sizes, segment_id);
     _CCCL_ASSERT(
       static_cast<::cuda::std::uint64_t>(segment_size_raw) <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max(),
       "segment size must be non-negative and fit the 32-bit cluster offset type");
@@ -3342,7 +3339,7 @@ private:
     // Clamp `k` (already floored to >= 0) to the segment size in a 64-bit width holding both operands.
     const auto k_clamped =
       (::cuda::std::min) (static_cast<::cuda::std::uint64_t>(
-                            CUB_NS_QUALIFIER::detail::params::__get_and_clamp_param_to_nonnegative(k_param, segment_id)),
+                            _CUB::detail::params::__get_and_clamp_param_to_nonnegative(k_param, segment_id)),
                           static_cast<::cuda::std::uint64_t>(segment_size));
 
     if (k_clamped == 0)
@@ -3395,7 +3392,7 @@ private:
     cluster_or_block_arrive(is_single_cta);
 
     [[maybe_unused]] const bool is_ok =
-      CUB_NS_QUALIFIER::detail::params::dispatch_discrete(select_directions, segment_id, [this](auto direction_tag) {
+      _CUB::detail::params::dispatch_discrete(select_directions, segment_id, [this](auto direction_tag) {
         constexpr detail::topk::select Direction = decltype(direction_tag)::value;
         this->template run<Direction>();
       });

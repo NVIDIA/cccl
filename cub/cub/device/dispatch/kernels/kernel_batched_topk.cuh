@@ -348,16 +348,16 @@ template <typename PolicySelector>
 // Variable templates force constant evaluation of the helpers, otherwise nvcc reports a "bad attribute argument
 // substitution" error on the `__launch_bounds__` below (same pattern as `transform_kernel`).
 template <typename PolicySelector, typename SegmentSizeParameterT, typename... AgentParamsT>
-inline constexpr int topk_threads_per_block = CUB_NS_QUALIFIER::detail::batched_topk::
-  topk_threads_per_block_helper<PolicySelector, SegmentSizeParameterT, AgentParamsT...>();
+inline constexpr int topk_threads_per_block =
+  _CUB::detail::batched_topk::topk_threads_per_block_helper<PolicySelector, SegmentSizeParameterT, AgentParamsT...>();
 
 template <typename PolicySelector>
 inline constexpr int topk_min_blocks_per_sm =
-  CUB_NS_QUALIFIER::detail::batched_topk::topk_min_blocks_per_sm_helper<PolicySelector>();
+  _CUB::detail::batched_topk::topk_min_blocks_per_sm_helper<PolicySelector>();
 
 template <typename PolicySelector>
 inline constexpr int topk_max_blocks_per_cluster =
-  CUB_NS_QUALIFIER::detail::batched_topk::topk_max_blocks_per_cluster_helper<PolicySelector>();
+  _CUB::detail::batched_topk::topk_max_blocks_per_cluster_helper<PolicySelector>();
 
 // Hands the cluster agent its resolved sub-policy as a type (C++17 has no class-type NTTP).
 // TODO(bgruber): drop this in C++20 and pass `policy.cluster` by value.

@@ -203,9 +203,9 @@ struct DeviceMemcpy
     using BlockOffsetT            = uint32_t;
     using default_policy_selector = detail::batch_memcpy::policy_selector;
 
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return CUB_NS_QUALIFIER::detail::batch_memcpy::dispatch<CopyAlg::Memcpy, BlockOffsetT>(
+        return _CUB::detail::batch_memcpy::dispatch<CopyAlg::Memcpy, BlockOffsetT>(
           storage, bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream, policy_selector);
       });
   }
@@ -294,9 +294,9 @@ struct DeviceMemcpy
     using BlockOffsetT            = uint32_t;
     using default_policy_selector = detail::batch_memcpy::policy_selector;
 
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return CUB_NS_QUALIFIER::detail::batch_memcpy::dispatch<CopyAlg::Memcpy, BlockOffsetT>(
+        return _CUB::detail::batch_memcpy::dispatch<CopyAlg::Memcpy, BlockOffsetT>(
           storage, bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream, policy_selector);
       });
   }

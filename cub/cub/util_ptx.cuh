@@ -82,7 +82,7 @@ template <typename UnsignedBits>
 CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE
 _CCCL_FORCEINLINE unsigned int BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits)
 {
-  return CUB_NS_QUALIFIER::BFE(source, bit_start, num_bits, detail::constant_v<int{sizeof(UnsignedBits)}>);
+  return _CUB::BFE(source, bit_start, num_bits, detail::constant_v<int{sizeof(UnsignedBits)}>);
 }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -225,15 +225,13 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_th
   const ShuffleWord* input_alias = reinterpret_cast<ShuffleWord*>(&input);
 
   unsigned int shuffle_word;
-  shuffle_word =
-    CUB_NS_QUALIFIER::SHFL_UP_SYNC((unsigned int) input_alias[0], src_offset, first_thread | SHFL_C, member_mask);
+  shuffle_word    = _CUB::SHFL_UP_SYNC((unsigned int) input_alias[0], src_offset, first_thread | SHFL_C, member_mask);
   output_alias[0] = shuffle_word;
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int WORD = 1; WORD < WORDS; ++WORD)
   {
-    shuffle_word =
-      CUB_NS_QUALIFIER::SHFL_UP_SYNC((unsigned int) input_alias[WORD], src_offset, first_thread | SHFL_C, member_mask);
+    shuffle_word = _CUB::SHFL_UP_SYNC((unsigned int) input_alias[WORD], src_offset, first_thread | SHFL_C, member_mask);
     output_alias[WORD] = shuffle_word;
   }
 
@@ -307,15 +305,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_t
   const ShuffleWord* input_alias = reinterpret_cast<ShuffleWord*>(&input);
 
   unsigned int shuffle_word;
-  shuffle_word =
-    CUB_NS_QUALIFIER::SHFL_DOWN_SYNC((unsigned int) input_alias[0], src_offset, last_thread | SHFL_C, member_mask);
+  shuffle_word    = _CUB::SHFL_DOWN_SYNC((unsigned int) input_alias[0], src_offset, last_thread | SHFL_C, member_mask);
   output_alias[0] = shuffle_word;
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int WORD = 1; WORD < WORDS; ++WORD)
   {
     shuffle_word =
-      CUB_NS_QUALIFIER::SHFL_DOWN_SYNC((unsigned int) input_alias[WORD], src_offset, last_thread | SHFL_C, member_mask);
+      _CUB::SHFL_DOWN_SYNC((unsigned int) input_alias[WORD], src_offset, last_thread | SHFL_C, member_mask);
     output_alias[WORD] = shuffle_word;
   }
 

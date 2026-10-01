@@ -67,7 +67,7 @@ public:
       : temp_storage(temp_storage.Alias())
       , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads))
       , warp_id(IS_ARCH_WARP ? 0 : (::cuda::ptx::get_sreg_laneid() / LogicalWarpThreads))
-      , member_mask(CUB_NS_QUALIFIER::WarpMask<LogicalWarpThreads>(warp_id))
+      , member_mask(_CUB::WarpMask<LogicalWarpThreads>(warp_id))
   {}
 
   template <typename OutputT>

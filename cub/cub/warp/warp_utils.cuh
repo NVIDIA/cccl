@@ -53,7 +53,7 @@ template <int LogicalWarpSize>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int
 logical_warp_base_id(::cuda::std::integral_constant<int, LogicalWarpSize> logical_warp_size = {})
 {
-  return CUB_NS_QUALIFIER::detail::logical_warp_id(logical_warp_size) * LogicalWarpSize;
+  return _CUB::detail::logical_warp_id(logical_warp_size) * LogicalWarpSize;
 }
 } // namespace detail
 CUB_NAMESPACE_END

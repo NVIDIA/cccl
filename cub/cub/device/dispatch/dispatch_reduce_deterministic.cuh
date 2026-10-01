@@ -145,7 +145,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   }
 
   // Sync the stream if specified to flush runtime errors
-  return CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream));
+  return CubDebug(_CUB::detail::DebugSyncStream(stream));
 }
 
 template <typename PolicySelector,
@@ -229,8 +229,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
 
   // Alias the temporary allocations from the single storage blob (or
   // compute the necessary size of the blob)
-  if (const auto error = CubDebug(
-        CUB_NS_QUALIFIER::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  if (const auto error =
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -258,7 +258,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     const auto kernel_num_items = [=] {
       if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
       {
-        return CUB_NS_QUALIFIER::detail::reduce::make_num_items_kernel_arg(num_items);
+        return _CUB::detail::reduce::make_num_items_kernel_arg(num_items);
       }
       else
       {
@@ -309,7 +309,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -334,7 +334,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
                 DeterministicAccumT>,
               d_block_reductions,
               d_out,
-              CUB_NS_QUALIFIER::detail::reduce::make_num_items_kernel_arg(num_items),
+              _CUB::detail::reduce::make_num_items_kernel_arg(num_items),
               reduce_grid_size,
               reduction_op,
               init,
@@ -370,7 +370,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   }
 
   // Sync the stream if specified to flush runtime errors
-  return CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream));
+  return CubDebug(_CUB::detail::DebugSyncStream(stream));
 }
 
 template <typename InputIteratorT,
@@ -405,7 +405,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   const ReducePolicy active_policy = policy_selector(cc);
 
-  CUB_NS_QUALIFIER::detail::log_dispatch("DeviceReduceDeterministic", cc, active_policy);
+  _CUB::detail::log_dispatch("DeviceReduceDeterministic", cc, active_policy);
 
   using deterministic_add_t  = deterministic_sum_t<AccumT>;
   using input_unwrapped_it_t = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>;

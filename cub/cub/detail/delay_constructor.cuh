@@ -143,7 +143,7 @@ _CCCL_HOST_DEVICE_API constexpr auto default_reduce_by_key_delay_constructor_pol
   {
     return LookbackDelayPolicy{LookbackDelayAlgorithm::__reduce_by_key, 350, 450};
   }
-  return CUB_NS_QUALIFIER::detail::default_delay_constructor_policy(key_is_primitive_or_trivially_copyable);
+  return _CUB::detail::default_delay_constructor_policy(key_is_primitive_or_trivially_copyable);
 }
 } // namespace detail
 
