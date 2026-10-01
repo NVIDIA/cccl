@@ -315,7 +315,7 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
 
   // A copy-only count, and a count whose move may throw, can form a partial `views::drop`.
   {
-    int count_value = 3;
+    [[maybe_unused]] int count_value = 3;
     static_assert(noexcept(cuda::std::views::drop(count_value)));
 
     CopyOnlyCount copy_only{2};

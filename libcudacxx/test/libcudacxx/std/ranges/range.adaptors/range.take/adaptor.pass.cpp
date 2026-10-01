@@ -341,7 +341,7 @@ TEST_FUNC constexpr bool test()
 
   // A copy-only count, and a count whose move may throw, can form a partial `views::take`.
   {
-    int count_value = 3;
+    [[maybe_unused]] int count_value = 3;
     static_assert(noexcept(cuda::std::views::take(count_value)));
 
     CopyOnlyCount copy_only{2};
