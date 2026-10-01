@@ -71,7 +71,7 @@ struct policy_selector
     -> FindBoundSortedValuesPolicy
   {
     const int combined_size = range_type_size + values_type_size;
-    const int ipt           = cub::detail::nominal_4B_items_to_items(15, combined_size);
+    const int ipt           = _CUB::detail::nominal_4B_items_to_items(15, combined_size);
 
     if (cc >= ::cuda::compute_capability{8, 0})
     {

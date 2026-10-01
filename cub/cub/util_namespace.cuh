@@ -112,6 +112,8 @@
 #  define CUB_NS_QUALIFIER ::cub
 #endif
 
+#define _CUB CUB_NS_QUALIFIER
+
 #if defined(CUB_DISABLE_NAMESPACE_MAGIC) || defined(CUB_WRAPPED_NAMESPACE)
 #  if !defined(CUB_WRAPPED_NAMESPACE)
 #    if !defined(CUB_IGNORE_NAMESPACE_MAGIC_ERROR)

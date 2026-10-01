@@ -78,14 +78,14 @@ CUB_NAMESPACE_END
 namespace std
 {
 template <typename Tp, size_t NumPhases>
-struct tuple_size<CUB_NS_QUALIFIER::detail::warpspeed::SmemPhaseStructuredBinding<Tp, NumPhases>>
+struct tuple_size<_CUB::detail::warpspeed::SmemPhaseStructuredBinding<Tp, NumPhases>>
 {
   static constexpr size_t value = NumPhases;
 };
 
 template <typename Tp, size_t Index, ::cuda::std::size_t NumPhases>
-struct tuple_element<Index, CUB_NS_QUALIFIER::detail::warpspeed::SmemPhaseStructuredBinding<Tp, NumPhases>>
+struct tuple_element<Index, _CUB::detail::warpspeed::SmemPhaseStructuredBinding<Tp, NumPhases>>
 {
-  using type = CUB_NS_QUALIFIER::detail::warpspeed::SmemPhase<Tp>;
+  using type = _CUB::detail::warpspeed::SmemPhase<Tp>;
 };
 } // namespace std

@@ -329,16 +329,16 @@ struct AgentReduceImpl
       }
 
       // Reduce items within each thread stripe
-      thread_aggregate =
-        IsFirstTile ? cub::ThreadReduce(items, reduction_op) : cub::ThreadReduce(items, reduction_op, thread_aggregate);
+      thread_aggregate = IsFirstTile ? _CUB::ThreadReduce(items, reduction_op)
+                                     : _CUB::ThreadReduce(items, reduction_op, thread_aggregate);
     }
     else
     {
       // Scalar path: load items in striped fashion and reduce items within each thread stripe
       AccumT items[ITEMS_PER_THREAD];
       load_transform_direct_striped<NumThreads>(lane_id, d_wrapped_in + block_offset, items, transform_op);
-      thread_aggregate =
-        IsFirstTile ? cub::ThreadReduce(items, reduction_op) : cub::ThreadReduce(items, reduction_op, thread_aggregate);
+      thread_aggregate = IsFirstTile ? _CUB::ThreadReduce(items, reduction_op)
+                                     : _CUB::ThreadReduce(items, reduction_op, thread_aggregate);
     }
   }
 

@@ -337,7 +337,7 @@ struct AgentRadixSortDownsweep
   {
     if constexpr (LOAD_WARP_STRIPED)
     {
-      LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys);
+      _CUB::LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys);
     }
     else
     {
@@ -362,7 +362,7 @@ struct AgentRadixSortDownsweep
 
     if constexpr (LOAD_WARP_STRIPED)
     {
-      LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, valid_items, oob_item);
+      _CUB::LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, valid_items, oob_item);
     }
     else
     {
@@ -379,7 +379,7 @@ struct AgentRadixSortDownsweep
   {
     if constexpr (LOAD_WARP_STRIPED)
     {
-      LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values);
+      _CUB::LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values);
     }
     else
     {
@@ -400,7 +400,7 @@ struct AgentRadixSortDownsweep
 
     if constexpr (LOAD_WARP_STRIPED)
     {
-      LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, valid_items);
+      _CUB::LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, valid_items);
     }
     else
     {
@@ -539,9 +539,9 @@ struct AgentRadixSortDownsweep
     {
       T items[ITEMS_PER_THREAD];
 
-      LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items);
+      _CUB::LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items);
       __syncthreads();
-      StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items);
+      _CUB::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items);
 
       block_offset += TILE_ITEMS;
     }
@@ -553,9 +553,9 @@ struct AgentRadixSortDownsweep
 
       T items[ITEMS_PER_THREAD];
 
-      LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items, valid_items);
+      _CUB::LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in + block_offset, items, valid_items);
       __syncthreads();
-      StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items, valid_items);
+      _CUB::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items, valid_items);
     }
   }
 

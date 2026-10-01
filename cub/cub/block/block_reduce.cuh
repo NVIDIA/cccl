@@ -176,7 +176,7 @@ namespace detail
 
 inline ::std::ostream& operator<<(::std::ostream& os, BlockReduceAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
@@ -184,12 +184,12 @@ CUB_NAMESPACE_END
 
 #if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
 template <::cuda::std::same_as<char> CharT>
-struct std::formatter<CUB_NS_QUALIFIER::BlockReduceAlgorithm, CharT> : formatter<const CharT*, CharT>
+struct std::formatter<_CUB::BlockReduceAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const CUB_NS_QUALIFIER::BlockReduceAlgorithm& algo, FmtCtx& ctx) const
+  auto format(const _CUB::BlockReduceAlgorithm& algo, FmtCtx& ctx) const
   {
-    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+    return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
   }
 };
 #endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
@@ -347,7 +347,7 @@ public:
   //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduce()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
@@ -363,7 +363,7 @@ public:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduce(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}
@@ -478,7 +478,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T (&inputs)[ItemsPerThread], ReductionOp reduction_op)
   {
     // Reduce partials
-    T partial = cub::ThreadReduce(inputs, reduction_op);
+    T partial = _CUB::ThreadReduce(inputs, reduction_op);
     return Reduce(partial, reduction_op);
   }
 
@@ -645,7 +645,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T (&inputs)[ItemsPerThread])
   {
     // Reduce partials
-    T partial = cub::ThreadReduce(inputs, ::cuda::std::plus<>{});
+    T partial = _CUB::ThreadReduce(inputs, ::cuda::std::plus<>{});
     return Sum(partial);
   }
 

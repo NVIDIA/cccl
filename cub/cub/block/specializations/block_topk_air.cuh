@@ -581,7 +581,7 @@ public:
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE block_topk_air(TempStorage& storage)
       : storage(storage.Alias())
-      , linear_tid(RowMajorTid(ThreadsPerBlock, 1, 1))
+      , linear_tid(_CUB::RowMajorTid(ThreadsPerBlock, 1, 1))
   {}
 
   template <detail::topk::select SelectDirection, bool IsFullTile>

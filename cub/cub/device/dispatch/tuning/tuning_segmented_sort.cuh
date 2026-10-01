@@ -169,7 +169,8 @@ struct policy_selector
     BlockScanAlgorithm scan_algorithm,
     int radix_bits) const
   {
-    const auto scaled = scale_reg_bound(nominal_4B_threads_per_block, nominal_4B_items_per_thread, __dominant_size());
+    const auto scaled =
+      _CUB::detail::scale_reg_bound(nominal_4B_threads_per_block, nominal_4B_items_per_thread, __dominant_size());
     return SegmentedSortRadixSortPolicy{
       scaled.threads_per_block,
       scaled.items_per_thread,
@@ -184,7 +185,7 @@ struct policy_selector
     -> SegmentedSortPolicy
   {
     const auto scale_items = [&](int nominal_4b_items_per_thread) {
-      return nominal_4B_items_to_items(nominal_4b_items_per_thread, __dominant_size());
+      return _CUB::detail::nominal_4B_items_to_items(nominal_4b_items_per_thread, __dominant_size());
     };
 
     if (cc >= ::cuda::compute_capability{8, 6})

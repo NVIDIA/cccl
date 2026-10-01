@@ -137,7 +137,7 @@ private:
 
     auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
       THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>{0},
-      detail::segmented_reduce::generate_idx_value<InputIteratorT, output_value_t>(d_in, segment_size));
+      _CUB::detail::segmented_reduce::generate_idx_value<InputIteratorT, output_value_t>(d_in, segment_size));
     using arg_index_input_iterator_t = decltype(d_indexed_in);
 
     constexpr bool is_min = ::cuda::std::is_same_v<ReductionOpT, cub::detail::arg_min>;
@@ -150,7 +150,7 @@ private:
     using policy_selector_t =
       ::cuda::std::execution::__query_result_or_t<TuningEnvT, SegmentedReducePolicy, default_policy_selector_t>;
 
-    return detail::segmented_reduce::dispatch_fixed_size<accum_t>(
+    return _CUB::detail::segmented_reduce::dispatch_fixed_size<accum_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_indexed_in,
@@ -177,7 +177,7 @@ private:
     static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
                   "gpu_to_gpu determinism is not supported for device segmented reductions ");
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return fixed_size_arg_impl<ReductionOpT, decltype(tuning)>(
           d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, stream);
@@ -216,14 +216,14 @@ private:
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
-      return detail::dispatch_with_env(
+      return _CUB::detail::dispatch_with_env(
         env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
           using default_policy_selector_t =
             detail::segmented_reduce::policy_selector_from_types<AccumT, OffsetT, ReductionOpT>;
           using policy_selector_t = ::cuda::std::execution::
             __query_result_or_t<decltype(tuning), SegmentedReducePolicy, default_policy_selector_t>;
           // TODO: in most cases we can just take the default AccumT and OffsetT. Refactor this
-          return detail::segmented_reduce::dispatch<AccumT, OffsetT>(
+          return _CUB::detail::segmented_reduce::dispatch<AccumT, OffsetT>(
             d_temp_storage,
             temp_storage_bytes,
             d_in,
@@ -257,7 +257,7 @@ private:
     // integral constant or larger integral types
     using offset_t = int;
 
-    return detail::segmented_reduce::dispatch_fixed_size(
+    return _CUB::detail::segmented_reduce::dispatch_fixed_size(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -297,9 +297,9 @@ private:
 
     using default_policy_selector_t =
       detail::segmented_reduce::policy_selector_from_types<AccumT, OffsetT, ReductionOpT>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector_t>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector_t>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::segmented_reduce::dispatch_fixed_size<AccumT>(
+        return _CUB::detail::segmented_reduce::dispatch_fixed_size<AccumT>(
           d_temp_storage,
           temp_storage_bytes,
           d_in,
@@ -439,7 +439,7 @@ public:
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
-      return detail::segmented_reduce::dispatch(
+      return _CUB::detail::segmented_reduce::dispatch(
         d_temp_storage,
         temp_storage_bytes,
         d_in,
@@ -865,7 +865,7 @@ public:
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
-      return detail::segmented_reduce::dispatch(
+      return _CUB::detail::segmented_reduce::dispatch(
         d_temp_storage,
         temp_storage_bytes,
         d_in,
@@ -1239,7 +1239,7 @@ public:
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
-      return detail::segmented_reduce::dispatch(
+      return _CUB::detail::segmented_reduce::dispatch(
         d_temp_storage,
         temp_storage_bytes,
         d_in,
@@ -1657,7 +1657,7 @@ public:
     static_assert(::cuda::std::is_integral_v<OverrideOffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OverrideOffsetT>)
     {
-      return detail::segmented_reduce::dispatch<OverrideAccumT, OverrideOffsetT>(
+      return _CUB::detail::segmented_reduce::dispatch<OverrideAccumT, OverrideOffsetT>(
         d_temp_storage,
         temp_storage_bytes,
         d_indexed_in,
@@ -2037,7 +2037,7 @@ public:
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
-      return detail::segmented_reduce::dispatch(
+      return _CUB::detail::segmented_reduce::dispatch(
         d_temp_storage,
         temp_storage_bytes,
         d_in,
@@ -2455,7 +2455,7 @@ public:
     static_assert(::cuda::std::is_integral_v<OverrideOffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OverrideOffsetT>)
     {
-      return detail::segmented_reduce::dispatch<OverrideAccumT, OverrideOffsetT>(
+      return _CUB::detail::segmented_reduce::dispatch<OverrideAccumT, OverrideOffsetT>(
         d_temp_storage,
         temp_storage_bytes,
         d_indexed_in,

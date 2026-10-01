@@ -186,11 +186,11 @@ struct AgentRadixSortHistogram
     const bool full_tile = num_items - tile_offset >= TILE_ITEMS;
     if (full_tile)
     {
-      LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_in + tile_offset, keys);
+      _CUB::LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_in + tile_offset, keys);
     }
     else
     {
-      LoadDirectStriped<BLOCK_THREADS>(
+      _CUB::LoadDirectStriped<BLOCK_THREADS>(
         threadIdx.x, d_keys_in + tile_offset, keys, num_items - tile_offset, Twiddle::DefaultKey(decomposer));
     }
 
@@ -230,7 +230,7 @@ struct AgentRadixSortHistogram
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int pass = 0; pass < num_passes; ++pass)
       {
-        OffsetT count = cub::ThreadReduce(s.bins[pass][bin], ::cuda::std::plus<>{});
+        OffsetT count = _CUB::ThreadReduce(s.bins[pass][bin], ::cuda::std::plus<>{});
         if (count > 0)
         {
           // Using cuda::atomic<> here would also require using it in

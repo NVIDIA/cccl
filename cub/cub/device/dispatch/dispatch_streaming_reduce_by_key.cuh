@@ -74,14 +74,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   [[maybe_unused]] KernelSource kernel_source = {})
 {
   ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(ptx_compute_cap(cc)))
+  if (const auto error = CubDebug(_CUB::detail::ptx_compute_cap(cc)))
   {
     return error;
   }
 
   const ReduceByKeyPolicy policy = policy_selector(cc);
 
-  detail::log_dispatch("DeviceReduce (by key, streaming)", cc, policy);
+  _CUB::detail::log_dispatch("DeviceReduce (by key, streaming)", cc, policy);
 
   using local_offset_t  = ::cuda::std::int32_t;
   using global_offset_t = OffsetT;
@@ -121,7 +121,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
 
   void* allocations[3] = {};
   if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -156,7 +156,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -236,7 +236,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
         return error;
       }
     }
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }

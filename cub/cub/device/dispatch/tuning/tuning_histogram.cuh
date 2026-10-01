@@ -121,8 +121,8 @@ template <class SampleT,
           int NumChannels,
           int NumActiveChannels,
           counter_size CounterSize,
-          primitive_sample PrimitiveSample = is_primitive_sample<SampleT>(),
-          sample_size SampleSize           = classify_sample_size<SampleT>()>
+          primitive_sample PrimitiveSample = _CUB::detail::histogram::is_primitive_sample<SampleT>(),
+          sample_size SampleSize           = _CUB::detail::histogram::classify_sample_size<SampleT>()>
 struct sm90_tuning;
 
 template <class SampleT>
@@ -161,8 +161,8 @@ template <bool IsEven,
           int NumChannels,
           int NumActiveChannels,
           counter_size CounterSize,
-          primitive_sample PrimitiveSample = is_primitive_sample<SampleT>(),
-          sample_size SampleSize           = classify_sample_size<SampleT>()>
+          primitive_sample PrimitiveSample = _CUB::detail::histogram::is_primitive_sample<SampleT>(),
+          sample_size SampleSize           = _CUB::detail::histogram::classify_sample_size<SampleT>()>
 struct sm100_tuning;
 
 // even
@@ -239,8 +239,10 @@ struct policy_hub
     _CCCL_HOST_DEVICE_API static auto select_agent_policy(long) -> typename Policy500::AgentHistogramPolicyT;
 
     using AgentHistogramPolicyT =
-      decltype(select_agent_policy<
-               sm90_tuning<SampleT, NumChannels, NumActiveChannels, histogram::classify_counter_size<CounterT>()>>(0));
+      decltype(select_agent_policy<sm90_tuning<SampleT,
+                                               NumChannels,
+                                               NumActiveChannels,
+                                               _CUB::detail::histogram::classify_counter_size<CounterT>()>>(0));
 
     static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
   };
@@ -263,9 +265,11 @@ struct policy_hub
     _CCCL_HOST_DEVICE_API static auto select_agent_policy(long) -> typename Policy900::AgentHistogramPolicyT;
 
     using AgentHistogramPolicyT =
-      decltype(select_agent_policy<
-               sm100_tuning<IsEven, SampleT, NumChannels, NumActiveChannels, histogram::classify_counter_size<CounterT>()>>(
-        0));
+      decltype(select_agent_policy<sm100_tuning<IsEven,
+                                                SampleT,
+                                                NumChannels,
+                                                NumActiveChannels,
+                                                _CUB::detail::histogram::classify_counter_size<CounterT>()>>(0));
 
     static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
   };

@@ -256,7 +256,7 @@ public:
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
+    return _CUB::detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -434,7 +434,7 @@ public:
     // Signed integer type for global offsets
     using SegmentSizeT = ::cuda::std::int32_t;
 
-    return detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
+    return _CUB::detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -579,8 +579,8 @@ public:
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-      return detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return _CUB::detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
         storage,
         bytes,
         d_keys,
@@ -729,8 +729,8 @@ public:
 
     using SegmentSizeT = ::cuda::std::int32_t;
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-      return detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return _CUB::detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
         storage,
         bytes,
         d_keys,
@@ -913,7 +913,7 @@ public:
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
+    return _CUB::detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -1094,7 +1094,7 @@ public:
     // Signed integer type for global offsets
     using SegmentSizeT = ::cuda::std::int32_t;
 
-    return detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
+    return _CUB::detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -1239,8 +1239,8 @@ public:
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-      return detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return _CUB::detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
         storage,
         bytes,
         d_keys,
@@ -1389,8 +1389,8 @@ public:
 
     using SegmentSizeT = ::cuda::std::int32_t;
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-      return detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return _CUB::detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
         storage,
         bytes,
         d_keys,
@@ -1559,7 +1559,7 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
+    return _CUB::detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -1728,7 +1728,7 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
+    return _CUB::detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -1861,8 +1861,8 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-      return detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return _CUB::detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
         storage,
         bytes,
         d_keys,
@@ -2002,8 +2002,8 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-      return detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return _CUB::detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
         storage,
         bytes,
         d_keys,
@@ -2168,7 +2168,7 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
+    return _CUB::detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -2336,7 +2336,7 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
+    return _CUB::detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -2467,8 +2467,8 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-      return detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return _CUB::detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
         storage,
         bytes,
         d_keys,
@@ -2608,8 +2608,8 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-      return detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
+    return _CUB::detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+      return _CUB::detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
         storage,
         bytes,
         d_keys,

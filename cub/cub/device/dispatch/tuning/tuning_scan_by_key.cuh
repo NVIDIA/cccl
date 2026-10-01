@@ -92,7 +92,7 @@ namespace detail
 
 inline ::std::ostream& operator<<(::std::ostream& os, ScanByKeyAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
 
@@ -992,7 +992,7 @@ struct policy_hub
   {
     static constexpr int nominal_4b_items_per_thread = 6;
     static constexpr int items_per_thread =
-      max_input_bytes <= 8 ? 6 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes);
+      max_input_bytes <= 8 ? 6 : _CUB::Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes);
 
     using ScanByKeyPolicyT =
       agent_scan_by_key_policy<128,
@@ -1009,7 +1009,7 @@ struct policy_hub
   {
     static constexpr int nominal_4b_items_per_thread = 9;
     static constexpr int items_per_thread =
-      max_input_bytes <= 8 ? 9 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes);
+      max_input_bytes <= 8 ? 9 : _CUB::Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes);
 
     using ScanByKeyPolicyT =
       agent_scan_by_key_policy<256,
@@ -1046,7 +1046,9 @@ struct policy_hub
 
   struct Policy800 : detail::chained_policy<800, Policy800, Policy520>
   {
-    using ScanByKeyPolicyT = decltype(select_agent_policy<sm80_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>>(0));
+    using ScanByKeyPolicyT =
+      decltype(select_agent_policy<sm80_tuning<key_t, ValueT, _CUB::detail::scan_by_key::is_primitive_op<ScanOpT>()>>(
+        0));
   };
 
   // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy860
@@ -1059,7 +1061,9 @@ struct policy_hub
 
   struct Policy900 : detail::chained_policy<900, Policy900, Policy860>
   {
-    using ScanByKeyPolicyT = decltype(select_agent_policy<sm90_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>>(0));
+    using ScanByKeyPolicyT =
+      decltype(select_agent_policy<sm90_tuning<key_t, ValueT, _CUB::detail::scan_by_key::is_primitive_op<ScanOpT>()>>(
+        0));
   };
 
   struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
@@ -1080,7 +1084,8 @@ struct policy_hub
     static auto select_agent_policy100(long) -> typename Policy900::ScanByKeyPolicyT;
 
     using ScanByKeyPolicyT =
-      decltype(select_agent_policy100<sm100_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>>(0));
+      decltype(select_agent_policy100<sm100_tuning<key_t, ValueT, _CUB::detail::scan_by_key::is_primitive_op<ScanOpT>()>>(
+        0));
   };
 
   using MaxPolicy = Policy1000;
@@ -1148,14 +1153,14 @@ private:
       const auto items_per_thread =
         max_input_bytes <= 8
           ? 9
-          : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 9, combined_input_bytes);
+          : _CUB::Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 9, combined_input_bytes);
       return {256,
               items_per_thread,
               BLOCK_LOAD_WARP_TRANSPOSE,
               load_modifier,
               BLOCK_STORE_WARP_TRANSPOSE,
               BLOCK_SCAN_WARP_SCANS,
-              default_reduce_by_key_delay_constructor_policy(
+              _CUB::detail::default_reduce_by_key_delay_constructor_policy(
                 delay_ctor_key_size, sizeof(int), delay_ctor_key_is_primitive_or_trivially_copyable, true)};
     };
 
@@ -2036,14 +2041,14 @@ private:
     const auto items_per_thread =
       max_input_bytes <= 8
         ? 6
-        : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 6, combined_input_bytes);
+        : _CUB::Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 6, combined_input_bytes);
     return {128,
             items_per_thread,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_CA,
             BLOCK_STORE_WARP_TRANSPOSE,
             BLOCK_SCAN_WARP_SCANS,
-            default_reduce_by_key_delay_constructor_policy(
+            _CUB::detail::default_reduce_by_key_delay_constructor_policy(
               accum_size, sizeof(int), accum_is_primitive_or_trivially_copyable, true)};
   }
 

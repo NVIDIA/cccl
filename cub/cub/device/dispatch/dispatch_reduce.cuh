@@ -318,7 +318,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchRe
     }
 
     // Sync the stream if specified to flush runtime errors
-    return CubDebug(detail::DebugSyncStream(stream));
+    return CubDebug(_CUB::detail::DebugSyncStream(stream));
   }
 
   //---------------------------------------------------------------------------
@@ -378,7 +378,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchRe
     // Alias the temporary allocations from the single storage blob (or
     // compute the necessary size of the blob)
     if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -419,7 +419,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchRe
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -440,7 +440,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchRe
     }
 
     // Sync the stream if specified to flush runtime errors
-    return CubDebug(detail::DebugSyncStream(stream));
+    return CubDebug(_CUB::detail::DebugSyncStream(stream));
   }
 
   //---------------------------------------------------------------------------
@@ -451,7 +451,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchRe
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
-    auto wrapped_policy = detail::reduce::MakeReducePolicyWrapper(active_policy);
+    auto wrapped_policy = _CUB::detail::reduce::MakeReducePolicyWrapper(active_policy);
     if (num_items <= static_cast<OffsetT>(
           wrapped_policy.SingleTile().ThreadsPerBlock() * wrapped_policy.SingleTile().ItemsPerThread()))
     {
@@ -644,7 +644,7 @@ template <typename OffsetT>
       sizeof(element_t) == sizeof(::cuda::std::int32_t) || sizeof(element_t) == sizeof(::cuda::std::int64_t));
   }
 
-  return CUB_NS_QUALIFIER::detail::parameter_from_host<num_items_offset_t<OffsetT>>(num_items);
+  return _CUB::detail::parameter_from_host<num_items_offset_t<OffsetT>>(num_items);
 }
 
 template <bool StableReductionOrder,
@@ -673,7 +673,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
 {
   using offset_t = num_items_offset_t<OffsetT>;
 
-  const auto kernel_num_items = make_num_items_kernel_arg(num_items);
+  const auto kernel_num_items = _CUB::detail::reduce::make_num_items_kernel_arg(num_items);
 
   // Get SM count
   int sm_count = 0;
@@ -697,8 +697,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   [[maybe_unused]] AccumT* d_block_reductions = nullptr; // buffer for per-block aggregates for the two-phase code path
   if constexpr (!StableReductionOrder)
   {
-    if (const auto error =
-          CubDebug(launcher_factory.MemsetAsync(get_device_ptr(&d_out), 0, kernel_source.InitSize(), stream)))
+    if (const auto error = CubDebug(launcher_factory.MemsetAsync(
+          _CUB::detail::reduce::get_device_ptr(&d_out), 0, kernel_source.InitSize(), stream)))
     {
       return error;
     }
@@ -714,7 +714,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
     // Alias the temporary allocations from the single storage blob (or
     // compute the necessary size of the blob)
     if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -797,7 +797,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   }
 
   // Sync the stream if specified to flush runtime errors
-  if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+  if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
   {
     return error;
   }
@@ -848,7 +848,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -898,7 +898,7 @@ template <
     InputIteratorT,
     OutputIteratorT,
     num_items_offset_t<OffsetT>,
-    CUB_NS_QUALIFIER::detail::parameter_from_host_t<num_items_offset_t<OffsetT>, OffsetT>,
+    _CUB::detail::parameter_from_host_t<num_items_offset_t<OffsetT>, OffsetT>,
     ReductionOpT,
     InitValueT,
     AccumT,
@@ -941,7 +941,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
   (void) offset_num_items;
 
-  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+  return _CUB::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     CUB_DETAIL_CONSTEXPR_ISH const ReducePolicy active_policy = policy_getter();
 
     // known operators for integers are stable, even when using a non-deterministic reduction order
@@ -956,7 +956,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         "A run-to-run deterministic reduction must not use a non-deterministic reduce_algorithm");
     }
 
-    detail::log_dispatch("DeviceReduce", cc, active_policy);
+    _CUB::detail::log_dispatch("DeviceReduce", cc, active_policy);
 
     if constexpr (StableReductionOrder && !::cuda::args::__traits<OffsetT>::is_deferred)
     {
@@ -994,7 +994,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         }
 
         // Sync the stream if specified to flush runtime errors
-        if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+        if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
         {
           return error;
         }
@@ -1013,7 +1013,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     }
 
     // Regular size
-    return invoke_regular_size_reduce<StableReductionOrder, AccumT>(
+    return _CUB::detail::reduce::invoke_regular_size_reduce<StableReductionOrder, AccumT>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,

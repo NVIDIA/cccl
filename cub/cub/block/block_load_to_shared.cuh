@@ -104,7 +104,7 @@ private:
   /// Shared storage reference
   _TempStorage& temp_storage;
 
-  const int linear_tid{cub::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ)};
+  const int linear_tid{_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ)};
 
   // Thread selection for uniform operations
   const bool elected{__elect_thread()};
@@ -335,10 +335,10 @@ public:
                  "Begin of global memory range needs to be aligned according to GmemAlign.");
     _CCCL_ASSERT(::cuda::is_aligned(src_ptr + num_bytes, GmemAlign),
                  "End of global memory range needs to be aligned according to GmemAlign.");
-    _CCCL_ASSERT(::cuda::is_aligned(dst_ptr, cub::detail::LoadToSharedBufferAlignBytes<T>()),
+    _CCCL_ASSERT(::cuda::is_aligned(dst_ptr, _CUB::detail::LoadToSharedBufferAlignBytes<T>()),
                  "Shared memory needs to be 16 byte aligned.");
     _CCCL_ASSERT((static_cast<int>(::cuda::std::size(smem_dst))
-                  >= cub::detail::LoadToSharedBufferSizeBytes<T, GmemAlign>(::cuda::std::size(gmem_src))),
+                  >= _CUB::detail::LoadToSharedBufferSizeBytes<T, GmemAlign>(::cuda::std::size(gmem_src))),
                  "Shared memory destination buffer must have enough space");
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::ready_to_copy || state == State::ready_to_copy_or_commit,

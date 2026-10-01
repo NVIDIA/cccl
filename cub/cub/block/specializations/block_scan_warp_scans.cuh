@@ -110,7 +110,7 @@ struct BlockScanWarpScans
   /// Constructor
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockScanWarpScans(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(_CUB::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
       , warp_id((WARPS == 1) ? 0 : linear_tid / WARP_THREADS)
       , lane_id(::cuda::ptx::get_sreg_laneid())
   {}
@@ -179,7 +179,7 @@ struct BlockScanWarpScans
     // Last lane in each warp shares its warp-aggregate
     if (lane_id == WARP_THREADS - 1)
     {
-      detail::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
+      _CUB::detail::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
     }
 
     __syncthreads();
@@ -410,7 +410,7 @@ struct BlockScanWarpScans
       if (lane_id == 0)
       {
         // Share the prefix with all threads
-        detail::uninitialized_copy_single(&temp_storage.block_prefix, block_prefix);
+        _CUB::detail::uninitialized_copy_single(&temp_storage.block_prefix, block_prefix);
 
         exclusive_output = block_prefix; // The block prefix is the exclusive output for tid0
       }
@@ -519,7 +519,7 @@ struct BlockScanWarpScans
       if (lane_id == 0)
       {
         // Share the prefix with all threads
-        detail::uninitialized_copy_single(&temp_storage.block_prefix, block_prefix);
+        _CUB::detail::uninitialized_copy_single(&temp_storage.block_prefix, block_prefix);
       }
     }
 

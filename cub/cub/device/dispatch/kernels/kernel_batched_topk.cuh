@@ -349,13 +349,15 @@ template <typename PolicySelector>
 // substitution" error on the `__launch_bounds__` below (same pattern as `transform_kernel`).
 template <typename PolicySelector, typename SegmentSizeParameterT, typename... AgentParamsT>
 inline constexpr int topk_threads_per_block =
-  topk_threads_per_block_helper<PolicySelector, SegmentSizeParameterT, AgentParamsT...>();
+  _CUB::detail::batched_topk::topk_threads_per_block_helper<PolicySelector, SegmentSizeParameterT, AgentParamsT...>();
 
 template <typename PolicySelector>
-inline constexpr int topk_min_blocks_per_sm = topk_min_blocks_per_sm_helper<PolicySelector>();
+inline constexpr int topk_min_blocks_per_sm =
+  _CUB::detail::batched_topk::topk_min_blocks_per_sm_helper<PolicySelector>();
 
 template <typename PolicySelector>
-inline constexpr int topk_max_blocks_per_cluster = topk_max_blocks_per_cluster_helper<PolicySelector>();
+inline constexpr int topk_max_blocks_per_cluster =
+  _CUB::detail::batched_topk::topk_max_blocks_per_cluster_helper<PolicySelector>();
 
 // Hands the cluster agent its resolved sub-policy as a type (C++17 has no class-type NTTP).
 // TODO(bgruber): drop this in C++20 and pass `policy.cluster` by value.

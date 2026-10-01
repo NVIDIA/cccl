@@ -298,7 +298,7 @@ struct AgentRadixSortUpsweep
     // Tile of keys
     bit_ordered_type keys[KEYS_PER_THREAD];
 
-    LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_in + block_offset, keys);
+    _CUB::LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_in + block_offset, keys);
 
     // Prevent hoisting
     __syncthreads();

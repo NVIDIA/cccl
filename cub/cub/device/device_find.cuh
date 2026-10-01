@@ -154,12 +154,12 @@ struct DeviceFind
 
     using default_policy_selector = detail::find::policy_selector_from_types<detail::it_value_t<InputIteratorT>>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage,
       temp_storage_bytes,
       env,
       [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::find::dispatch(
+        return _CUB::detail::find::dispatch(
           storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream, policy_selector);
       });
   }
@@ -270,7 +270,7 @@ struct DeviceFind
     using RangeOffsetT  = detail::choose_offset_t<RangeNumItemsT>;
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -281,12 +281,12 @@ struct DeviceFind
           return cudaSuccess;
         }
 
-        return DeviceTransform::__transform_internal(
+        return _CUB::DeviceTransform::__transform_internal(
           ::cuda::std::make_tuple(d_values),
           d_output,
           static_cast<ValuesOffsetT>(values_num_items),
           ::cuda::always_true{},
-          detail::find::make_binary_search_transform_op<detail::find::lower_bound>(
+          _CUB::detail::find::make_binary_search_transform_op<detail::find::lower_bound>(
             d_range, static_cast<RangeOffsetT>(range_num_items), comp),
           ::cuda::stream_ref{stream});
       });
@@ -399,7 +399,7 @@ struct DeviceFind
     using RangeOffsetT  = detail::choose_offset_t<RangeNumItemsT>;
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
 
-    return detail::dispatch_with_env(
+    return _CUB::detail::dispatch_with_env(
       d_temp_storage,
       temp_storage_bytes,
       env,
@@ -410,12 +410,12 @@ struct DeviceFind
           return cudaSuccess;
         }
 
-        return DeviceTransform::__transform_internal(
+        return _CUB::DeviceTransform::__transform_internal(
           ::cuda::std::make_tuple(d_values),
           d_output,
           static_cast<ValuesOffsetT>(values_num_items),
           ::cuda::always_true{},
-          detail::find::make_binary_search_transform_op<detail::find::upper_bound>(
+          _CUB::detail::find::make_binary_search_transform_op<detail::find::upper_bound>(
             d_range, static_cast<RangeOffsetT>(range_num_items), comp),
           ::cuda::stream_ref{stream});
       });
@@ -501,9 +501,9 @@ struct DeviceFind
 
     using default_policy_selector = detail::find::policy_selector_from_types<detail::it_value_t<InputIteratorT>>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::find::dispatch(
+        return _CUB::detail::find::dispatch(
           storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream, policy_selector);
       });
   }
@@ -609,22 +609,23 @@ struct DeviceFind
     using RangeOffsetT  = detail::choose_offset_t<RangeNumItemsT>;
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      if (storage == nullptr)
-      {
-        bytes = 1;
-        return cudaSuccess;
-      }
+    return _CUB::detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        if (storage == nullptr)
+        {
+          bytes = 1;
+          return cudaSuccess;
+        }
 
-      return DeviceTransform::__transform_internal(
-        ::cuda::std::make_tuple(d_values),
-        d_output,
-        static_cast<ValuesOffsetT>(values_num_items),
-        ::cuda::always_true{},
-        detail::find::make_binary_search_transform_op<detail::find::lower_bound>(
-          d_range, static_cast<RangeOffsetT>(range_num_items), comp),
-        ::cuda::stream_ref{stream});
-    });
+        return _CUB::DeviceTransform::__transform_internal(
+          ::cuda::std::make_tuple(d_values),
+          d_output,
+          static_cast<ValuesOffsetT>(values_num_items),
+          ::cuda::always_true{},
+          _CUB::detail::find::make_binary_search_transform_op<detail::find::lower_bound>(
+            d_range, static_cast<RangeOffsetT>(range_num_items), comp),
+          ::cuda::stream_ref{stream});
+      });
   }
 
   //! @rst
@@ -729,22 +730,23 @@ struct DeviceFind
     using RangeOffsetT  = detail::choose_offset_t<RangeNumItemsT>;
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      if (storage == nullptr)
-      {
-        bytes = 1;
-        return cudaSuccess;
-      }
+    return _CUB::detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        if (storage == nullptr)
+        {
+          bytes = 1;
+          return cudaSuccess;
+        }
 
-      return DeviceTransform::__transform_internal(
-        ::cuda::std::make_tuple(d_values),
-        d_output,
-        static_cast<ValuesOffsetT>(values_num_items),
-        ::cuda::always_true{},
-        detail::find::make_binary_search_transform_op<detail::find::upper_bound>(
-          d_range, static_cast<RangeOffsetT>(range_num_items), comp),
-        ::cuda::stream_ref{stream});
-    });
+        return _CUB::DeviceTransform::__transform_internal(
+          ::cuda::std::make_tuple(d_values),
+          d_output,
+          static_cast<ValuesOffsetT>(values_num_items),
+          ::cuda::always_true{},
+          _CUB::detail::find::make_binary_search_transform_op<detail::find::upper_bound>(
+            d_range, static_cast<RangeOffsetT>(range_num_items), comp),
+          ::cuda::stream_ref{stream});
+      });
   }
 
   //! @rst
@@ -853,7 +855,7 @@ struct DeviceFind
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
     using OffsetT       = ::cuda::std::common_type_t<RangeOffsetT, ValuesOffsetT>;
 
-    return detail::find_bound_sorted_values::dispatch<detail::find_bound_sorted_values::lower_bound_mode>(
+    return _CUB::detail::find_bound_sorted_values::dispatch<detail::find_bound_sorted_values::lower_bound_mode>(
       d_temp_storage,
       temp_storage_bytes,
       d_range,
@@ -972,9 +974,9 @@ struct DeviceFind
       detail::find_bound_sorted_values::policy_selector_from_types<detail::it_value_t<RangeIteratorT>,
                                                                    detail::it_value_t<ValuesIteratorT>>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::find_bound_sorted_values::dispatch<detail::find_bound_sorted_values::lower_bound_mode>(
+        return _CUB::detail::find_bound_sorted_values::dispatch<detail::find_bound_sorted_values::lower_bound_mode>(
           storage,
           bytes,
           d_range,
@@ -1093,7 +1095,7 @@ struct DeviceFind
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
     using OffsetT       = ::cuda::std::common_type_t<RangeOffsetT, ValuesOffsetT>;
 
-    return detail::find_bound_sorted_values::dispatch<detail::find_bound_sorted_values::upper_bound_mode>(
+    return _CUB::detail::find_bound_sorted_values::dispatch<detail::find_bound_sorted_values::upper_bound_mode>(
       d_temp_storage,
       temp_storage_bytes,
       d_range,
@@ -1212,9 +1214,9 @@ struct DeviceFind
       detail::find_bound_sorted_values::policy_selector_from_types<detail::it_value_t<RangeIteratorT>,
                                                                    detail::it_value_t<ValuesIteratorT>>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return _CUB::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::find_bound_sorted_values::dispatch<detail::find_bound_sorted_values::upper_bound_mode>(
+        return _CUB::detail::find_bound_sorted_values::dispatch<detail::find_bound_sorted_values::upper_bound_mode>(
           storage,
           bytes,
           d_range,

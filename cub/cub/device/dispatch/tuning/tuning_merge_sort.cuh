@@ -108,7 +108,7 @@ struct policy_hub
   {
     using MergeSortPolicy =
       agent_merge_sort_policy<256,
-                              Nominal4BItemsToItems<KeyT>(11),
+                              _CUB::Nominal4BItemsToItems<KeyT>(11),
                               BLOCK_LOAD_WARP_TRANSPOSE,
                               LOAD_LDG,
                               BLOCK_STORE_WARP_TRANSPOSE>;
@@ -122,7 +122,7 @@ struct policy_hub
   {
     using MergeSortPolicy =
       agent_merge_sort_policy<512,
-                              Nominal4BItemsToItems<KeyT>(15),
+                              _CUB::Nominal4BItemsToItems<KeyT>(15),
                               BLOCK_LOAD_WARP_TRANSPOSE,
                               LOAD_LDG,
                               BLOCK_STORE_WARP_TRANSPOSE>;
@@ -133,7 +133,7 @@ struct policy_hub
   {
     using MergeSortPolicy =
       agent_merge_sort_policy<256,
-                              Nominal4BItemsToItems<KeyT>(17),
+                              _CUB::Nominal4BItemsToItems<KeyT>(17),
                               BLOCK_LOAD_WARP_TRANSPOSE,
                               LOAD_DEFAULT,
                               BLOCK_STORE_WARP_TRANSPOSE>;
@@ -156,7 +156,7 @@ struct policy_selector
     // from SM60
     return MergeSortPolicy{
       256,
-      detail::nominal_4B_items_to_items(17, key_size),
+      _CUB::detail::nominal_4B_items_to_items(17, key_size),
       BLOCK_LOAD_WARP_TRANSPOSE,
       LOAD_DEFAULT,
       BLOCK_STORE_WARP_TRANSPOSE};

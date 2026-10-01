@@ -135,7 +135,7 @@ namespace detail
 
 inline ::std::ostream& operator<<(::std::ostream& os, WarpStoreAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
 
@@ -143,12 +143,12 @@ CUB_NAMESPACE_END
 
 #if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
 template <::cuda::std::same_as<char> CharT>
-struct std::formatter<CUB_NS_QUALIFIER::WarpStoreAlgorithm, CharT> : formatter<const CharT*, CharT>
+struct std::formatter<_CUB::WarpStoreAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const CUB_NS_QUALIFIER::WarpStoreAlgorithm& algo, FmtCtx& ctx) const
+  auto format(const _CUB::WarpStoreAlgorithm& algo, FmtCtx& ctx) const
   {
-    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+    return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
   }
 };
 #endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
@@ -275,13 +275,13 @@ private:
     template <typename OutputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
-      StoreDirectBlocked(linear_tid, block_itr, items);
+      _CUB::StoreDirectBlocked(linear_tid, block_itr, items);
     }
 
     template <typename OutputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
-      StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
+      _CUB::StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
     }
   };
 
@@ -299,13 +299,13 @@ private:
     template <typename OutputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
-      StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items);
+      _CUB::StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items);
     }
 
     template <typename OutputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
-      StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items);
+      _CUB::StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items);
     }
   };
 
@@ -322,19 +322,19 @@ private:
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(T* block_ptr, T (&items)[ItemsPerThread])
     {
-      StoreDirectBlockedVectorized(linear_tid, block_ptr, items);
+      _CUB::StoreDirectBlockedVectorized(linear_tid, block_ptr, items);
     }
 
     template <typename OutputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
-      StoreDirectBlocked(linear_tid, block_itr, items);
+      _CUB::StoreDirectBlocked(linear_tid, block_itr, items);
     }
 
     template <typename OutputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
-      StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
+      _CUB::StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
     }
   };
 
@@ -361,14 +361,14 @@ private:
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
       WarpExchangeT(temp_storage).BlockedToStriped(items, items);
-      StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items);
+      _CUB::StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items);
     }
 
     template <typename OutputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
       WarpExchangeT(temp_storage).BlockedToStriped(items, items);
-      StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items);
+      _CUB::StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items);
     }
   };
 

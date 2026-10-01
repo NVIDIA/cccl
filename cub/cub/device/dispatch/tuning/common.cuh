@@ -239,7 +239,7 @@ namespace detail
 #if _CCCL_HOSTED()
 inline ::std::ostream& operator<<(::std::ostream& os, LookbackDelayAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
 
@@ -247,12 +247,12 @@ CUB_NAMESPACE_END
 
 #if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
 template <::cuda::std::same_as<char> CharT>
-struct std::formatter<CUB_NS_QUALIFIER::LookbackDelayAlgorithm, CharT> : formatter<const CharT*, CharT>
+struct std::formatter<_CUB::LookbackDelayAlgorithm, CharT> : formatter<const CharT*, CharT>
 {
   template <class FmtCtx>
-  auto format(const CUB_NS_QUALIFIER::LookbackDelayAlgorithm& algo, FmtCtx& ctx) const
+  auto format(const _CUB::LookbackDelayAlgorithm& algo, FmtCtx& ctx) const
   {
-    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+    return formatter<const CharT*, CharT>::format(_CUB::detail::to_string(algo), ctx);
   }
 };
 #endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)

@@ -93,7 +93,7 @@ template <class PolicySelector, class OffsetT, class OpT>
 #endif // _CCCL_HAS_CONCEPTS()
 _CCCL_KERNEL_ATTRIBUTES void dynamic_kernel(const OffsetT num_items, OpT op)
 {
-  static constexpr ForPolicy policy = current_policy<PolicySelector>();
+  static constexpr ForPolicy policy = _CUB::detail::current_policy<PolicySelector>();
   using agent_policy_t              = policy_t<policy.threads_per_block, policy.items_per_thread>;
   using agent_t                     = agent_block_striped_t<agent_policy_t, OffsetT, OpT>;
 
@@ -119,10 +119,10 @@ template <class PolicySelector, class OffsetT, class OpT>
   requires for_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 _CCCL_KERNEL_ATTRIBUTES //
-__launch_bounds__(int(current_policy<PolicySelector>().threads_per_block)) //
+__launch_bounds__(int(_CUB::detail::current_policy<PolicySelector>().threads_per_block)) //
   void static_kernel(const OffsetT num_items, OpT op)
 {
-  static constexpr ForPolicy policy = current_policy<PolicySelector>();
+  static constexpr ForPolicy policy = _CUB::detail::current_policy<PolicySelector>();
   using agent_policy_t              = policy_t<policy.threads_per_block, policy.items_per_thread>;
   using agent_t                     = agent_block_striped_t<agent_policy_t, OffsetT, OpT>;
 
@@ -177,12 +177,12 @@ _CCCL_DEVICE_API auto extent_at(ExtentType extents, FastDivModType dynamic_exten
 template <int Start, int End, typename ExtentType, typename FastDivModType>
 _CCCL_DEVICE_API auto get_extents_sub_size(ExtentType extents, FastDivModType extent_sub_size)
 {
-  if constexpr (cub::detail::are_extents_in_range_static<ExtentType>(Start, End))
+  if constexpr (_CUB::detail::are_extents_in_range_static<ExtentType>(Start, End))
   {
     using extent_index_type   = typename ExtentType::index_type;
     using index_type          = implicit_prom_t<extent_index_type>;
     using unsigned_index_type = ::cuda::std::make_unsigned_t<index_type>;
-    auto sub_size             = cub::detail::size_range(extents, Start, End);
+    auto sub_size             = _CUB::detail::size_range(extents, Start, End);
     return static_cast<unsigned_index_type>(sub_size);
   }
   else
@@ -211,8 +211,9 @@ coordinate_at(IndexType index, ExtentType extents, FastDivModType extent_sub_siz
   using extent_index_type = typename ExtentType::index_type;
   constexpr auto start    = IsLayoutRight ? Position + 1 : 0;
   constexpr auto end      = IsLayoutRight ? ExtentType::rank() : Position;
-  return static_cast<extent_index_type>((index / get_extents_sub_size<start, end>(extents, extent_sub_size))
-                                        % extent_at<Position>(extents, dynamic_extent));
+  return static_cast<extent_index_type>(
+    (index / _CUB::detail::for_each::get_extents_sub_size<start, end>(extents, extent_sub_size))
+    % _CUB::detail::for_each::extent_at<Position>(extents, dynamic_extent));
 }
 
 // Function object wrapper for applying operations with multi-dimensional coordinate conversion.
@@ -235,7 +236,7 @@ struct op_wrapper_extents_t
   {
     using cub::detail::for_each::coordinate_at;
     op(i,
-       coordinate_at<IsLayoutRight, Positions>(
+       _CUB::detail::for_each::coordinate_at<IsLayoutRight, Positions>(
          i, extents, sub_sizes_div_array[Positions], extents_mod_array[Positions])...);
   }
 
@@ -245,7 +246,7 @@ struct op_wrapper_extents_t
   {
     using cub::detail::for_each::coordinate_at;
     op(i,
-       coordinate_at<IsLayoutRight, Positions>(
+       _CUB::detail::for_each::coordinate_at<IsLayoutRight, Positions>(
          i, extents, sub_sizes_div_array[Positions], extents_mod_array[Positions])...);
   }
 

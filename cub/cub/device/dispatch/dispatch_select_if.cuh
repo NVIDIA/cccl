@@ -338,7 +338,7 @@ template <typename PolicySelectorT,
   requires select_if_policy_selector<PolicySelectorT>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(
-  make_vsmem_helper<device_policy_getter<PolicySelectorT, current_tuning_cc().get()>,
+  make_vsmem_helper<device_policy_getter<PolicySelectorT, _CUB::detail::current_tuning_cc().get()>,
                     SelectionOpt,
                     InputIteratorT,
                     FlagsInputIteratorT,
@@ -361,7 +361,7 @@ __launch_bounds__(int(
     vsmem_t vsmem)
 {
   using VsmemHelperT = typename make_vsmem_helper<
-    device_policy_getter<PolicySelectorT, current_tuning_cc().get()>,
+    device_policy_getter<PolicySelectorT, _CUB::detail::current_tuning_cc().get()>,
     SelectionOpt,
     InputIteratorT,
     FlagsInputIteratorT,
@@ -657,7 +657,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
       // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
       void* allocations[3] = {};
 
-      error = CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error =
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -706,7 +707,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
         }
 
         // Sync the stream if specified to flush runtime errors
-        error = CubDebug(detail::DebugSyncStream(stream));
+        error = CubDebug(_CUB::detail::DebugSyncStream(stream));
         if (cudaSuccess != error)
         {
           return error;
@@ -723,15 +724,16 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
 #ifdef CUB_DEBUG_LOG
         constexpr bool cub_debug_log_select_if_kernel = true;
 #else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
-        const bool cub_debug_log_select_if_kernel = detail::logging_enabled();
+        const bool cub_debug_log_select_if_kernel = _CUB::detail::logging_enabled();
 #endif // !CUB_DEBUG_LOG
         if (cub_debug_log_select_if_kernel)
         {
           // Get SM occupancy for select_if_kernel
           int range_select_sm_occupancy;
-          error = CubDebug(MaxSmOccupancy(range_select_sm_occupancy, // out
-                                          select_if_kernel,
-                                          threads_per_block));
+          error = CubDebug(_CUB::MaxSmOccupancy(
+            range_select_sm_occupancy, // out
+            select_if_kernel,
+            threads_per_block));
           if (cudaSuccess != error)
           {
             return error;
@@ -770,7 +772,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
         }
 
         // Sync the stream if specified to flush runtime errors
-        error = CubDebug(detail::DebugSyncStream(stream));
+        error = CubDebug(_CUB::detail::DebugSyncStream(stream));
         if (cudaSuccess != error)
         {
           return error;
@@ -851,7 +853,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
     cudaStream_t stream)
   {
     int ptx_version = 0;
-    if (const cudaError_t error = CubDebug(PtxVersion(ptx_version)))
+    if (const cudaError_t error = CubDebug(_CUB::PtxVersion(ptx_version)))
     {
       return error;
     }
@@ -954,7 +956,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
 
   void* allocations[3] = {};
   if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+        CubDebug(_CUB::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -995,7 +997,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -1008,7 +1010,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
 #ifdef CUB_DEBUG_LOG
     constexpr bool cub_debug_log_select_sweep_kernel = true;
 #else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
-    const bool cub_debug_log_select_sweep_kernel = logging_enabled();
+    const bool cub_debug_log_select_sweep_kernel = _CUB::detail::logging_enabled();
 #endif // !CUB_DEBUG_LOG
     if (cub_debug_log_select_sweep_kernel)
     {
@@ -1072,7 +1074,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(_CUB::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -1118,10 +1120,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
-    detail::log_dispatch("DeviceSelectIf", cc, policy_getter());
+  return _CUB::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+    _CUB::detail::log_dispatch("DeviceSelectIf", cc, policy_getter());
 
-    return dispatch_policy<SelectionOpt, decltype(policy_getter)>(
+    return _CUB::detail::select::dispatch_policy<SelectionOpt, decltype(policy_getter)>(
       policy_getter,
       d_temp_storage,
       temp_storage_bytes,

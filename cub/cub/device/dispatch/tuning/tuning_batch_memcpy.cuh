@@ -147,7 +147,7 @@ namespace detail
 
 inline ::std::ostream& operator<<(::std::ostream& os, BatchedCopyAlgorithm algo)
 {
-  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+  return os << _CUB::detail::to_string(algo);
 }
 #endif // _CCCL_HOSTED()
 
@@ -205,8 +205,8 @@ private:
         /* .warp_level_threshold = */ 128,
         /* .block_level_threshold = */ 8 * 1024,
         // BufferOffsetT and BlockOffsetT are primitive/trivially copyable
-        /* .buffer_lookback_delay = */ default_delay_constructor_policy(true),
-        /* .block_lookback_delay = */ default_delay_constructor_policy(true)},
+        /* .buffer_lookback_delay = */ _CUB::detail::default_delay_constructor_policy(true),
+        /* .block_lookback_delay = */ _CUB::detail::default_delay_constructor_policy(true)},
       large,
     };
   }
