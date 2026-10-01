@@ -124,7 +124,7 @@ See :ref:`radix sorting and digit ranks <coop-radix>`.
 
 .. autofunction:: radix_sort_keys
 .. autofunction:: radix_sort_pairs
-.. autofunction:: radix_rank
+.. autofunction:: radix_rank_keys
 
 Top-k selection
 ^^^^^^^^^^^^^^^
@@ -208,7 +208,7 @@ Radix sorting and ranking
 
 .. autofunction:: radix_sort_keys
 .. autofunction:: radix_sort_pairs
-.. autofunction:: radix_rank
+.. autofunction:: radix_rank_keys
 
 Top-k selection
 ^^^^^^^^^^^^^^^
