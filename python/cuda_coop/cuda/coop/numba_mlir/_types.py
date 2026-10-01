@@ -2237,6 +2237,35 @@ def _param_coalesce_key(param):
 
 
 def algo_coalesce_key(algo, *, threads=None, block_threads=None):
+    """Describe provider semantics for source coalescing and symbol
+    qualification.
+
+    Include the C++ operation, ordered ABI descriptors, type-definition source
+    and link-image digests, topology, storage/synchronization contracts, and
+    already resolved compiler identity. Human-readable parameter names are
+    excluded: renaming a wrapper argument does not create a distinct provider.
+    The bundler uses this key to choose one source representative for equivalent
+    algorithms; private symbol qualification hashes the same description.
+
+    This function only reads the supplied state. It does not resolve a compiler
+    context, bind a device target, or validate thread dimensions, so callers
+    must establish those inputs before comparing compilation-ready providers.
+
+    Parameters
+    ----------
+    algo : Algorithm
+        Provider whose current source and ABI state is described.
+    threads : int, optional
+        Logical warp width override, falling back to ``algo.threads``.
+    block_threads : int or tuple of int, optional
+        Block configuration override, falling back to ``algo.block_threads``.
+
+    Returns
+    -------
+    tuple
+        Equality key for the provider's current compilation-relevant state.
+    """
+
     type_defs = []
     for type_definition in getattr(algo, "type_definitions", None) or []:
         code = getattr(type_definition, "code", None) or ""
