@@ -17,7 +17,7 @@ from cuda.coop._typing import (
     ThreadDataLike,
 )
 
-from ._thread_group import BlockGroup, WarpGroup
+from .._thread_group import BlockGroup, WarpGroup
 
 _KeyT = TypeVar("_KeyT", bound=PortableNumericScalar)
 _ValueT = TypeVar("_ValueT", bound=PortableNumericScalar)
