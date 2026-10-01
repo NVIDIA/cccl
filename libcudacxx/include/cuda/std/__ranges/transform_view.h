@@ -523,8 +523,8 @@ struct __fn
 
   _CCCL_TEMPLATE(class _Fn)
   _CCCL_REQUIRES(constructible_from<decay_t<_Fn>, _Fn>)
-  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Fn&& __f) noexcept(
-    noexcept(::cuda::std::is_nothrow_constructible_v<::cuda::std::decay_t<_Fn>, _Fn>))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Fn&& __f) noexcept(is_nothrow_constructible_v<decay_t<_Fn>, _Fn>)
   {
     return ::cuda::std::ranges::__pipeable_bind_back(__fn{}, ::cuda::std::forward<_Fn>(__f));
   }
