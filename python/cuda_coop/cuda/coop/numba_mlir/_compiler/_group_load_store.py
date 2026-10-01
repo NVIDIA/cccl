@@ -186,6 +186,38 @@ class _LoadStorePlanning:
         *,
         payload_dtype: Any,
     ) -> ArgumentBinding:
+        """Classify a load default and validate its available dtype information.
+
+        An omitted default stays omitted. A runtime default with a known dtype
+        must match the payload exactly; an unknown dtype is left for later
+        validation. Static defaults are coerced with their original dtype
+        provenance, preserving the distinction between contextual Python
+        literals and values whose numeric width is already established.
+
+        Parameters
+        ----------
+        value : ir.Var or object
+            Bound ``oob_default`` argument, including ``None`` for omission.
+        payload_dtype : object
+            Normalized element dtype selected for the load.
+
+        Returns
+        -------
+        ArgumentBinding
+            Omitted or runtime binding, or a static binding containing the
+            validated, coerced default.
+
+        Raises
+        ------
+        DefaultDtypeMismatchError
+            A runtime default has a known dtype different from the payload.
+        TypeError
+            A known scalar dtype is unsupported or incompatible with the
+            payload.
+        ValueError
+            A static default is nonfinite or outside the payload dtype range.
+        """
+
         binding = self._context.planning_binding(value)
         if binding.kind is BindingKind.OMITTED:
             return binding
