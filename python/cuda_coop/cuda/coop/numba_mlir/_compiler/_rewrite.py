@@ -51,6 +51,48 @@ class CoopSinglePhaseRewrite(
     """Rewrite planner-private providers into two-phase invocable calls."""
 
     def match(self, func_ir, block, typemap, calltypes):
+        """Find provider calls and descriptors ready for a block rewrite.
+
+        Public group markers must first be consumed by group planning. On the
+        first visit to a function IR, collect storage requirements across all
+        its blocks before rewriting any constructor or call. Before helper
+        inlining, descriptors passed into device functions defer this entire
+        scan so their consumers remain visible to the whole-function planner.
+
+        The match records payload metadata, constructor sites, constant payload
+        extents, and provider arguments for ``apply``. It does not replace block
+        statements, but requirement collection may materialize invocables and
+        update compiler caches. Missing launch dimensions defer rewriting with
+        descriptors intact; a later planner retries with exact launch metadata.
+
+        Parameters
+        ----------
+        func_ir : FunctionIR
+            Current function, with definitions available for provenance
+            lookup.
+        block : ir.Block
+            Block to inspect once function-wide requirements are available.
+        typemap : dict
+            Type map supplied by the rewrite interface; not read here.
+            Inference helpers consult the compiler state when types are
+            available.
+        calltypes : dict
+            Call signatures supplied by the rewrite interface; not read
+            here.
+
+        Returns
+        -------
+        bool
+            Whether ``apply`` has work for this block. False may also indicate
+            that group planning, helper inlining, or launch metadata must
+            be supplied first.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            A recognized call or descriptor violates the rewrite contract.
+        """
+
         from ._group_planner import has_group_markers
 
         if has_group_markers(func_ir):
