@@ -98,7 +98,7 @@ struct hierarchy_level_base
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND __is_or_has_hierarchy_member_v<_Hierarchy>)
   [[nodiscard]] _CCCL_API static constexpr auto static_count(const _InLevel& __level, const _Hierarchy& __hier) noexcept
   {
-    return __static_count_impl(__level, ::cuda::__unpack_hierarchy_if_needed(__hier));
+    return ::cuda::__static_count_query<_Level, _InLevel, decltype(::cuda::__unpack_hierarchy_if_needed(__hier))>();
   }
 
   _CCCL_TEMPLATE(class _InLevel, class _Hierarchy)
@@ -254,26 +254,6 @@ private:
       __ret[__i] = _Exts::static_extent(__i);
     }
     return __ret;
-  }
-
-  template <class... _Args>
-  [[nodiscard]] _CCCL_API static constexpr auto __static_count_impl(const _Args&... __args) noexcept
-  {
-    using _Exts = decltype(_Level::extents(__args...));
-
-    if constexpr (_Exts::rank_dynamic() == 0)
-    {
-      ::cuda::std::size_t __ret{1};
-      for (::cuda::std::size_t __i = 0; __i < _Exts::rank(); ++__i)
-      {
-        __ret *= _Exts::static_extent(__i);
-      }
-      return __ret;
-    }
-    else
-    {
-      return ::cuda::std::dynamic_extent;
-    }
   }
 };
 

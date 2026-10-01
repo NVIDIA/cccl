@@ -98,7 +98,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __native_hierarchy_level_base : hierarchy_leve
   _CCCL_REQUIRES(__is_native_hierarchy_level_v<_InLevel>)
   [[nodiscard]] _CCCL_DEVICE_API static constexpr auto static_count(const _InLevel& __level) noexcept
   {
-    return __base_type::__static_count_impl(__level);
+    return ::cuda::__static_count_query_native<_Level, _InLevel>();
   }
 
   _CCCL_TEMPLATE(class _InLevel)

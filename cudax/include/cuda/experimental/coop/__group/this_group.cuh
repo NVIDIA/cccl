@@ -182,7 +182,7 @@ public:
     }
     else
     {
-      return _Level::static_count(__in_level, _Hierarchy{});
+      return ::cuda::__static_count_query<_Level, _InLevel, _Hierarchy>();
     }
   }
 
@@ -196,7 +196,7 @@ public:
     }
     else
     {
-      return _Level::template count_as<_Tp>(__in_level, __hier);
+      return __count_query<_Level, _InLevel>::template __call<_Tp>(__hier);
     }
   }
 
@@ -224,7 +224,7 @@ public:
     }
     else
     {
-      return _Level::template rank_as<_Tp>(__in_level, __hier);
+      return __rank_query<_Level, _InLevel>::template __call<_Tp>(__hier);
     }
   }
 
