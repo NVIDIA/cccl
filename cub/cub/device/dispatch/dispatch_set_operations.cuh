@@ -45,14 +45,14 @@ inline constexpr long long balanced_path_levels = 4;
 // Computes the duplicate-aware merge-path partition boundaries at every tile-sized diagonal. One thread per diagonal.
 template <typename KeysIt1, typename KeysIt2, typename Offset, typename CompareOp>
 _CCCL_KERNEL_ATTRIBUTES void device_set_op_partition_kernel(
-  KeysIt1 keys1,
-  KeysIt2 keys2,
-  Offset num_keys1,
-  Offset num_keys2,
-  Offset num_partitions,
-  ::cuda::std::pair<Offset, Offset>* partitions,
-  CompareOp compare_op,
-  int items_per_tile)
+  const KeysIt1 keys1,
+  const KeysIt2 keys2,
+  const Offset num_keys1,
+  const Offset num_keys2,
+  const Offset num_partitions,
+  ::cuda::std::pair<Offset, Offset>* const partitions,
+  const CompareOp compare_op,
+  const int items_per_tile)
 {
   const Offset partition_idx = static_cast<Offset>(blockDim.x) * blockIdx.x + threadIdx.x;
   if (partition_idx < num_partitions)
