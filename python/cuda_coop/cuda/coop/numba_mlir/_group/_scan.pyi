@@ -7,7 +7,7 @@ from typing import Literal, Protocol, TypeAlias, overload
 
 from typing_extensions import TypeVar
 
-from .._typing import (
+from ..._typing import (
     ContextualInitialValue,
     NonSumScanOperator,
     PortableNumericScalar,
@@ -19,8 +19,8 @@ from .._typing import (
     ThreadDataLike,
     ValidItems,
 )
-from ._stateful_function import StatefulFunction
-from ._thread_group import BlockGroup, WarpGroup
+from .._stateful_function import StatefulFunction
+from .._thread_group import BlockGroup, WarpGroup
 
 _ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 _ScalarT = TypeVar("_ScalarT", bound=PortableNumericScalar)

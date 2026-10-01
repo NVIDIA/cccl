@@ -277,10 +277,12 @@ class _ScanPlanning:
                         f"{state_dtype} does not match StatefulFunction dtype "
                         f"{descriptor_dtype}"
                     )
+            from .._lowering._core import NumbaMlirCoreAdapter
+
             operator = StatefulOperator(
                 op_tokenizer=_numba_semantic_token,
                 op=callback.op,
-                state_dtype=descriptor_dtype,
+                state_dtype=NumbaMlirCoreAdapter().core_dtype(descriptor_dtype),
                 ret_dtype=Dependency("T"),
                 arg_dtypes=(Dependency("T"),),
                 name="prefix_op",

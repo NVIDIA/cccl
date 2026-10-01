@@ -829,7 +829,7 @@ lane zero's returned prefix is used, and only thread zero's state is
 authoritative after the call. Callers initialize each participating state
 cell equally. This is local state for successive tiles handled by one
 block; it does not provide communication between blocks. Prefix callbacks
-currently cannot be combined with ``initial_value`` or
+cannot be combined with ``initial_value`` or
 ``aggregate_output`` and are not supported for Warp Scan.
 
 Activation and compilation reuse

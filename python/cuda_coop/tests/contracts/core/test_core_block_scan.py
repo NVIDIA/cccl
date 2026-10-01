@@ -15,6 +15,7 @@ from cuda.coop._core import (
     ScanMode,
     ScanValueKind,
     StatefulOperator,
+    classify_parameter,
     make_block_scan_spec,
     make_scan_semantics,
 )
@@ -237,7 +238,8 @@ def test_block_scan_custom_operator_and_initial_value_signature():
     assert spec.method_name == "ExclusiveScan"
     assert spec.specialization.fake_return
     assert [
-        (item.kind, item.role) for item in spec.specialization.classify_method()
+        (item.kind, item.role)
+        for item in map(classify_parameter, spec.specialization.parameters[0])
     ] == [
         (ArgumentKind.RUNTIME, ParameterRole.TEMP_STORAGE),
         (ArgumentKind.RUNTIME, ParameterRole.INPUT),
@@ -266,7 +268,7 @@ def test_block_scan_accepts_stateless_python_operator():
         ),
     )
 
-    operator = spec.specialization.classify_method()[-1]
+    operator = classify_parameter(spec.specialization.parameters[0][-1])
     assert operator.kind is ArgumentKind.STATIC
     assert operator.role is ParameterRole.OPERATOR
 
@@ -289,14 +291,14 @@ def test_block_scan_sum_accepts_stateless_prefix_callback():
     )
 
     assert spec.method_name == "InclusiveSum"
-    assert spec.has_prefix_callback
+    assert spec.call.prefix_callback is not None
     assert [item.name for item in spec.specialization.parameters[0]] == [
         "temp_storage",
         "input",
         "output",
         "prefix_op",
     ]
-    classification = spec.specialization.classify_method()[-1]
+    classification = classify_parameter(spec.specialization.parameters[0][-1])
     assert classification.kind is ArgumentKind.STATIC
     assert classification.role is ParameterRole.OPERATOR
 
@@ -334,9 +336,9 @@ def test_block_scan_prefix_callback_follows_scan_operator_in_cub_signature():
     )
 
     assert spec.method_name == "ExclusiveScan"
-    assert spec.has_prefix_callback
-    assert not spec.has_initial_value
-    assert not spec.has_block_aggregate
+    assert spec.call.prefix_callback is not None
+    assert spec.call.initial_value is None
+    assert not spec.call.aggregate
     method = spec.specialization.parameters[0]
     assert [item.name for item in method] == [
         "temp_storage",
@@ -346,7 +348,8 @@ def test_block_scan_prefix_callback_follows_scan_operator_in_cub_signature():
         "prefix_op",
     ]
     assert [
-        (item.kind, item.role) for item in spec.specialization.classify_method()
+        (item.kind, item.role)
+        for item in map(classify_parameter, spec.specialization.parameters[0])
     ] == [
         (ArgumentKind.RUNTIME, ParameterRole.TEMP_STORAGE),
         (ArgumentKind.RUNTIME, ParameterRole.INPUT),
