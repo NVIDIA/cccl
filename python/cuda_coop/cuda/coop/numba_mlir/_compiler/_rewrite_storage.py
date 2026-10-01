@@ -543,6 +543,35 @@ class _StorageRewrite:
         return (max_default, max_optin)
 
     def _ensure_temp_storage_global_plan(self) -> _TempStorageGlobalPlan:
+        """Plan one shared backing for explicit and implicit scratch.
+
+        Finalize canonical explicit descriptors in constructor order and assign
+        aligned base offsets, then append the implementation-owned region. Calls
+        within each region have already been assigned reusable or exclusive
+        slices. Round the total size to the greatest alignment so the backing
+        can satisfy every region with one allocation.
+
+        Use static shared memory when the total fits the default device limit;
+        otherwise request the exact dynamic byte count in compiler metadata.
+        Small allocations use the conservative limit without querying a device.
+        Dynamic placement must fit the opt-in limit and the compiler's dynamic
+        window alignment guarantee. Cache the plan and updated region offsets;
+        this method does not emit the allocation or check user shared arrays.
+
+        Returns
+        -------
+        _TempStorageGlobalPlan
+            Cached or newly computed total size, maximum alignment,
+            placement, and required dynamic byte count.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            A descriptor cannot be finalized, exact device limits are
+            required but unavailable, or size/alignment requirements exceed
+            supported limits.
+        """
+
         rewrite = cast("CoopSinglePhaseRewrite", self)
         cached = self._temp_storage_global_plan
         if cached is not None:
