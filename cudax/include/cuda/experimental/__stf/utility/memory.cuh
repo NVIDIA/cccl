@@ -55,10 +55,7 @@ inline auto& managed_pool()
 }
 
 // maximum number of entries in the host-allocated pool
-enum : size_t
-{
-  maxPoolEntries = 16 * 1024
-};
+inline constexpr size_t maxPoolEntries = 16 * 1024;
 } // namespace reserved
 
 /**
@@ -85,7 +82,8 @@ inline void* allocateHostMemory(size_t sz)
     // the next call).
     while (!pool.empty())
     {
-      const auto it     = pool.begin();
+      const auto it = pool.begin();
+      // NOLINTNEXTLINE(misc-const-correctness) -- the free call takes void*
       void* const entry = it->second;
       pool.erase(it);
       cuda_try<cudaFreeHost>(entry);
@@ -123,7 +121,8 @@ inline void* allocateManagedMemory(size_t sz)
     // leaks at most the in-flight pointer, never causes a double-free.
     while (!pool.empty())
     {
-      const auto it     = pool.begin();
+      const auto it = pool.begin();
+      // NOLINTNEXTLINE(misc-const-correctness) -- the free call takes void*
       void* const entry = it->second;
       pool.erase(it);
       cuda_try(cudaFree(entry));
@@ -148,6 +147,7 @@ inline void deallocateHostMemory(
   void* p, size_t sz, const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
 {
   ::std::ignore = loc;
+  // NOLINTNEXTLINE(bugprone-assert-side-effect) -- the lambda only reports; it changes no state
   assert([&] {
     auto r = reserved::host_pool().equal_range(sz);
     for (auto i = r.first; i != r.second; ++i)
@@ -187,6 +187,7 @@ inline void deallocateManagedMemory(
   void* p, size_t sz, const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
 {
   ::std::ignore = loc;
+  // NOLINTNEXTLINE(bugprone-assert-side-effect) -- the lambda only reports; it changes no state
   assert([&] {
     auto r = reserved::managed_pool().equal_range(sz);
     for (auto i = r.first; i != r.second; ++i)
@@ -246,6 +247,7 @@ inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
       };
     },
     args.get()));
+  // NOLINTNEXTLINE(bugprone-unused-return-value) -- ownership went to the host callback registered above
   args.release();
 }
 
@@ -276,6 +278,7 @@ inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
       };
     },
     args.get()));
+  // NOLINTNEXTLINE(bugprone-unused-return-value) -- ownership went to the host callback registered above
   args.release();
 }
 
@@ -308,6 +311,7 @@ inline cudaGraphNode_t deallocateHostMemory(
       },
     .userData = args.get()};
   const auto result = cuda_try<cudaGraphAddHostNode>(graph, pDependencies, numDependencies, &params);
+  // NOLINTNEXTLINE(bugprone-unused-return-value) -- ownership went to the host callback registered above
   args.release();
   return result;
 }
@@ -888,7 +892,7 @@ public:
     {
       if (small_length < small_cap)
       {
-        new (small_begin() + small_length) T(mv(value));
+        new (small_begin() + small_length) T(::cuda::std::move(value));
         ++small_length;
         return;
       }
@@ -896,7 +900,7 @@ public:
       assert(!is_small());
       // fall through to big case
     }
-    big().push_back(mv(value));
+    big().push_back(::cuda::std::move(value));
   }
 
   template <class... Args>
@@ -1101,7 +1105,7 @@ private:
 
   void adopt_big_vector(::std::vector<T>&& vec)
   {
-    new (&big())::std::vector<T>(mv(vec));
+    new (&big())::std::vector<T>(::cuda::std::move(vec));
     small_length = small_size_t(-1);
   }
 
@@ -1134,7 +1138,7 @@ private:
 
   union
   {
-    alignas(T) unsigned char small_[sizeof(T) * small_cap];
+    alignas(T) unsigned char small_[sizeof(T) * small_cap]{};
     alignas(::std::vector<T>) unsigned char big_[sizeof(::std::vector<T>)];
   };
   small_size_t small_length = 0;

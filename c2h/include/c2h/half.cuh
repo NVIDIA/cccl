@@ -40,9 +40,8 @@ struct half_t
 
   /// Constructor from __half
   __host__ __device__ __forceinline__ explicit half_t(const __half& other)
-  {
-    __x = reinterpret_cast<const uint16_t&>(other);
-  }
+      : __x(reinterpret_cast<const uint16_t&>(other))
+  {}
 
   /// Constructor from integer
   __host__ __device__ __forceinline__ explicit half_t(int a)
@@ -80,9 +79,7 @@ struct half_t
   {
     // Stolen from Norbert Juffa
     uint32_t ia = *reinterpret_cast<uint32_t*>(&a);
-    uint16_t ir;
-
-    ir = (ia >> 16) & 0x8000;
+    uint16_t ir = (ia >> 16) & 0x8000;
 
     if ((ia & 0x7f800000) == 0x7f800000)
     {

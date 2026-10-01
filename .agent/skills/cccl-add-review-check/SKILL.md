@@ -1,15 +1,15 @@
 ---
-name: cccl-add-review-rule
-description: Use when adding or extending a rule in docs/cccl/development/review_guidelines.md; describes how to research, word, place, and validate a new review guideline.
+name: cccl-add-review-check
+description: Use when adding or extending a rule in docs/cccl/development/review_checks.md; describes how to research, word, place, and validate a new review check.
 ---
 
-# Adding a CCCL Review Guideline
+# Adding a CCCL Review Check
 
 ## Workflow
 
-1. Read `docs/cccl/development/review_guidelines.md` and follow its `Format` section exactly.
-   List the historical regressions in the provenance comment (one `#intro→#fix note` per line),
-   or `<!-- provenance: manually added -->` for a convention rule.
+1. Read `docs/cccl/development/review_checks.md` and follow its `Format` section exactly.
+   If the rule was distilled from a historical regression, list it in the provenance comment
+   (one `#intro→#fix note` per line); otherwise omit the provenance comment entirely.
 2. Research first: read the relevant PRs and/or a few representative code sites. Verify every
    symbol, macro, and path the rule names exists in the repo (grep) — never name an API from memory.
 3. Word the rule diff-triggered ("when a diff does X, flag it unless Y"), state why the defect

@@ -509,6 +509,7 @@ struct policy_hub
 
 using cuda::execution::determinism::__determinism_t;
 
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct policy_selector
 {
   type_t accum_t;

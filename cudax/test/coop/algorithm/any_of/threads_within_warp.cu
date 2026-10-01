@@ -11,6 +11,7 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/type_traits>
 #include <cuda/stream>
 
 #include <cuda/experimental/coop/algorithm>
@@ -166,12 +167,15 @@ struct TestKernel
     const cudax::coop::this_warp warp{config};
     test_group(cudax::coop::generic_group{
       cuda::gpu_thread, warp, cudax::coop::identity_mapping{}, cudax::coop::lane_synchronizer{}});
-    test_group(
-      cudax::coop::generic_group{cuda::gpu_thread, warp, cudax::coop::group_by<4>{}, cudax::coop::lane_synchronizer{}});
+    test_group(cudax::coop::generic_group{
+      cuda::gpu_thread,
+      warp,
+      cudax::coop::group_by{cuda::std::integral_constant<cuda::std::size_t, 4>{}},
+      cudax::coop::lane_synchronizer{}});
     test_group(
       cudax::coop::generic_group{cuda::gpu_thread, warp, cudax::coop::group_by{1}, cudax::coop::lane_synchronizer{}});
     test_group(cudax::coop::generic_group{
-      cuda::gpu_thread, warp, cudax::coop::group_by{3, cudax::coop::non_exhaustive}, cudax::coop::lane_synchronizer{}});
+      cuda::gpu_thread, warp, cudax::coop::group_by{cudax::coop::non_exhaustive, 3}, cudax::coop::lane_synchronizer{}});
     test_group(cudax::coop::generic_group{
       cuda::gpu_thread, warp, cudax::coop::binary_partition{CustomBinaryPartition{}}, cudax::coop::lane_synchronizer{}});
   }

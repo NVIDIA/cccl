@@ -139,26 +139,33 @@
 
 #if _CCCL_CHECK_BUILTIN(builtin_huge_valf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_HUGE_VALF() __builtin_huge_valf()
-#endif // _CCCL_CHECK_BUILTIN(builtin_huge_valf)
+#elif _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_HUGE_VALF() static_cast<float>(__INFINITY__)
+#endif // ^^^ has _CCCL_BUILTIN_HUGE_VALF ^^^
 
 #if _CCCL_CHECK_BUILTIN(builtin_huge_val) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_HUGE_VAL() __builtin_huge_val()
-#endif // _CCCL_CHECK_BUILTIN(builtin_huge_val)
+#elif _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_HUGE_VAL() static_cast<double>(__INFINITY__)
+#endif // ^^^ has _CCCL_BUILTIN_HUGE_VAL ^^^
 
 #if _CCCL_CHECK_BUILTIN(builtin_huge_vall) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_HUGE_VALL() __builtin_huge_vall()
-#elif _CCCL_COMPILER(MSVC)
-#  define _CCCL_BUILTIN_HUGE_VALL() static_cast<long double>(__builtin_huge_val())
-#endif // _CCCL_CHECK_BUILTIN(builtin_huge_vall)
+#elif _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_HUGE_VALL() static_cast<long double>(_CCCL_BUILTIN_HUGE_VAL())
+#endif // ^^^ has _CCCL_BUILTIN_HUGE_VALL ^^^
 
 #if _CCCL_HAS_FLOAT128()
 #  if _CCCL_CHECK_BUILTIN(builtin_huge_valf128) || _CCCL_COMPILER(GCC, >=, 7)
 #    define _CCCL_BUILTIN_HUGE_VALF128() __builtin_huge_valf128()
-#  endif // _CCCL_CHECK_BUILTIN(builtin_huge_valf128) || _CCCL_COMPILER(GCC, >=, 7)
+#  elif _CCCL_COMPILER(NVRTC)
+#    define _CCCL_BUILTIN_HUGE_VALF128() static_cast<__float128>(__INFINITY__)
+#  endif // ^^^ has _CCCL_BUILTIN_HUGE_VALF128 ^^^
 
 // nvcc does not implement __builtin_huge_valf128
 #  if _CCCL_CUDA_COMPILER(NVCC)
 #    undef _CCCL_BUILTIN_HUGE_VALF128
+#    define _CCCL_BUILTIN_HUGE_VALF128() static_cast<__float128>(__INFINITY__)
 #  endif // _CCCL_CUDA_COMPILER(NVCC)
 #endif // _CCCL_HAS_FLOAT128()
 
@@ -210,47 +217,54 @@
 #endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
 
 #if _CCCL_CHECK_BUILTIN(builtin_nanf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
-#  define _CCCL_BUILTIN_NANF(...) __builtin_nanf(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_nanf)
+#  define _CCCL_BUILTIN_NANF() __builtin_nanf("")
+#elif _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_NANF() static_cast<float>(__NAN__)
+#endif // ^^^ has _CCCL_BUILTIN_NANF ^^^
 
 #if _CCCL_CHECK_BUILTIN(builtin_nan) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
-#  define _CCCL_BUILTIN_NAN(...) __builtin_nan(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_nan)
+#  define _CCCL_BUILTIN_NAN() __builtin_nan("")
+#elif _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_NAN() static_cast<double>(__NAN__)
+#endif // ^^^ has _CCCL_BUILTIN_NAN ^^^
 
 #if _CCCL_CHECK_BUILTIN(builtin_nanl) || _CCCL_COMPILER(GCC, <, 10)
-#  define _CCCL_BUILTIN_NANL(...) __builtin_nanl(__VA_ARGS__)
-#elif _CCCL_COMPILER(MSVC)
-#  define _CCCL_BUILTIN_NANL(...) static_cast<long double>(__builtin_nan(__VA_ARGS__))
-#endif // _CCCL_CHECK_BUILTIN(builtin_nanl)
+#  define _CCCL_BUILTIN_NANL() __builtin_nanl("")
+#elif _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_NANL() static_cast<long double>(_CCCL_BUILTIN_NAN())
+#endif // ^^^ has _CCCL_BUILTIN_NANL ^^^
 
 #if _CCCL_HAS_FLOAT128()
 #  if _CCCL_CHECK_BUILTIN(builtin_nanf128) || _CCCL_COMPILER(GCC, >=, 7)
-#    define _CCCL_BUILTIN_NANF128(...) __builtin_nanf128(__VA_ARGS__)
-#  endif // _CCCL_CHECK_BUILTIN(builtin_nanf128) || _CCCL_COMPILER(GCC, >=, 7)
+#    define _CCCL_BUILTIN_NANF128() __builtin_nanf128("")
+#  elif _CCCL_COMPILER(NVRTC)
+#    define _CCCL_BUILTIN_NANF128() static_cast<__float128>(__NAN__)
+#  endif // ^^^ has _CCCL_BUILTIN_NANF128 ^^^
 
 // nvcc does not implement __builtin_nanf128
 #  if _CCCL_CUDA_COMPILER(NVCC)
 #    undef _CCCL_BUILTIN_NANF128
+#    define _CCCL_BUILTIN_NANF128() static_cast<__float128>(__NAN__)
 #  endif // _CCCL_CUDA_COMPILER(NVCC)
 #endif // _CCCL_HAS_FLOAT128()
 
 #if _CCCL_CHECK_BUILTIN(builtin_nansf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
-#  define _CCCL_BUILTIN_NANSF(...) __builtin_nansf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_NANSF() __builtin_nansf("")
 #endif // _CCCL_CHECK_BUILTIN(builtin_nansf)
 
 #if _CCCL_CHECK_BUILTIN(builtin_nans) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
-#  define _CCCL_BUILTIN_NANS(...) __builtin_nans(__VA_ARGS__)
+#  define _CCCL_BUILTIN_NANS() __builtin_nans("")
 #endif // _CCCL_CHECK_BUILTIN(builtin_nans)
 
 #if _CCCL_CHECK_BUILTIN(builtin_nansl) || _CCCL_COMPILER(GCC, <, 10)
-#  define _CCCL_BUILTIN_NANSL(...) __builtin_nansl(__VA_ARGS__)
+#  define _CCCL_BUILTIN_NANSL() __builtin_nansl("")
 #elif _CCCL_COMPILER(MSVC)
-#  define _CCCL_BUILTIN_NANSL(...) static_cast<long double>(__builtin_nans(__VA_ARGS__))
+#  define _CCCL_BUILTIN_NANSL() static_cast<long double>(__builtin_nans(""))
 #endif // _CCCL_CHECK_BUILTIN(builtin_nansl)
 
 #if _CCCL_HAS_FLOAT128()
 #  if _CCCL_CHECK_BUILTIN(builtin_nansf128) || _CCCL_COMPILER(GCC, >=, 7)
-#    define _CCCL_BUILTIN_NANSF128(...) __builtin_nansf128(__VA_ARGS__)
+#    define _CCCL_BUILTIN_NANSF128() __builtin_nansf128("")
 #  endif // _CCCL_CHECK_BUILTIN(builtin_nansf128) || _CCCL_COMPILER(GCC, >=, 7)
 
 // nvcc does not implement __builtin_nansf128
@@ -295,10 +309,6 @@
   || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_HAS_NOTHROW_COPY(...) __has_nothrow_copy(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(has_nothrow_copy) && gcc >= 4.3
-
-#if _CCCL_HAS_BUILTIN(__integer_pack)
-#  define _CCCL_BUILTIN_INTEGER_PACK(...) __integer_pack(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__integer_pack)
 
 #if _CCCL_CHECK_BUILTIN(is_array)
 #  define _CCCL_BUILTIN_IS_ARRAY(...) __is_array(__VA_ARGS__)
@@ -361,10 +371,6 @@
 #if 0 // _CCCL_HAS_BUILTIN(__is_scalar)
 #  define _CCCL_BUILTIN_IS_SCALAR(...) __is_scalar(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_scalar)
-
-#if _CCCL_CHECK_BUILTIN(make_integer_seq) || _CCCL_COMPILER(MSVC, >=, 19, 23)
-#  define _CCCL_BUILTIN_MAKE_INTEGER_SEQ(...) __make_integer_seq<__VA_ARGS__>
-#endif // _CCCL_CHECK_BUILTIN(make_integer_seq)
 
 #if _CCCL_HAS_BUILTIN(__reference_constructs_from_temporary)
 #  define _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY(...) __reference_constructs_from_temporary(__VA_ARGS__)
