@@ -275,6 +275,35 @@ def _registered_struct_member_types(numba_type):
 
 
 def _size_alignment_from_numba_type(numba_type):
+    """Compute a supported value layout when LLVM ABI inspection is unavailable.
+
+    ``TypeWrapper`` needs byte size and alignment to generate the opaque C++
+    ``storage_t`` used for non-builtin types. Recursively lay out scalar values,
+    uniform tuples, native aggregates, and matching registered CUDA/MLIR struct
+    models. Struct fields receive alignment padding and the final size is
+    rounded to the largest member alignment. Bitfield aggregates use their
+    compiler-provided storage type instead of laying out individual bitfields.
+
+    This is a restricted fallback, not a general data-model size estimator.
+    Unknown types and registered structs with no inspectable members fail rather
+    than receiving a guessed CUB storage layout.
+
+    Parameters
+    ----------
+    numba_type : numba_types.Type
+        Type whose by-value representation must be shared with generated C++.
+
+    Returns
+    -------
+    tuple of int
+        ``(size, alignment)`` in bytes.
+
+    Raises
+    ------
+    TypeError
+        The type or one of its members has no supported layout description.
+    """
+
     from numba_cuda_mlir.type_defs.aggregate_types import AggregateType
 
     if isinstance(
