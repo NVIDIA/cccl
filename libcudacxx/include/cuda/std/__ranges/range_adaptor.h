@@ -87,13 +87,13 @@ _CCCL_CTAD_SUPPORTED_FOR_TYPE(__pipeable);
 // Building the binder in place constructs each bound argument once from the original argument.
 template <class _Fn, class... _Args>
 [[nodiscard]] _CCCL_API constexpr auto __pipeable_bind_back(_Fn&& __f, _Args&&... __args) noexcept(
-  noexcept(::cuda::std::ranges::__pipeable<::cuda::std::__bind_back_t<decay_t<_Fn>, tuple<decay_t<_Args>...>>>(
+  noexcept(::cuda::std::ranges::__pipeable<__bind_back_t<decay_t<_Fn>, tuple<decay_t<_Args>...>>>(
     __bind_back_in_place,
     ::cuda::std::forward<_Fn>(__f),
     ::cuda::std::forward_as_tuple(::cuda::std::forward<_Args>(__args)...))))
-  -> ::cuda::std::ranges::__pipeable<::cuda::std::__bind_back_t<decay_t<_Fn>, tuple<decay_t<_Args>...>>>
+  -> ::cuda::std::ranges::__pipeable<__bind_back_t<decay_t<_Fn>, tuple<decay_t<_Args>...>>>
 {
-  using _Binder _CCCL_NODEBUG = ::cuda::std::__bind_back_t<decay_t<_Fn>, tuple<decay_t<_Args>...>>;
+  using _Binder _CCCL_NODEBUG = __bind_back_t<decay_t<_Fn>, tuple<decay_t<_Args>...>>;
   return ::cuda::std::ranges::__pipeable<_Binder>(
     __bind_back_in_place,
     ::cuda::std::forward<_Fn>(__f),
