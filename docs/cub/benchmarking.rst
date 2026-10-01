@@ -176,8 +176,9 @@ to restrict the values for some axes.
 
 NVBench also ships ``nvbench_compare_robust.py``, a statistically more rigorous alternative to ``nvbench_compare.py``.
 Instead of a mean/stdev-based diff, it treats each measurement as a timing interval and only reports ``FAST``/``SLOW``
-when the two intervals are clearly separated, falling back to ``AMBG`` (ambiguous) rather than forcing a verdict when
-they aren't. It otherwise accepts the same kind of filters as ``nvbench_compare.py``:
+when the two intervals are clearly separated, reports ``SAME`` when their timing centers are close and their
+intervals overlap strongly, and falls back to ``AMBG`` (ambiguous) when neither result is supported. It otherwise
+accepts the same kind of filters as ``nvbench_compare.py``:
 
 .. code-block:: bash
 
