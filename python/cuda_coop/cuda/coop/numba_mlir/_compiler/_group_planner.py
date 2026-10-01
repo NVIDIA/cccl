@@ -1212,6 +1212,17 @@ def has_group_markers(func_ir) -> bool:
 
     Detection does not validate the calls or resolve their launch dimensions;
     those checks belong to the group planner.
+
+    Parameters
+    ----------
+    func_ir : ir.FunctionIR
+        Current function IR with its reaching-definition lookup available.
+        Scanned without modifying its blocks or resolving launch metadata.
+
+    Returns
+    -------
+    bool
+        Whether at least one recognized group-planning marker remains.
     """
     analyzer = object.__new__(_GroupCallPlanner)
     analyzer.func_ir = func_ir
