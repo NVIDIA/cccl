@@ -229,20 +229,21 @@ _CCCL_HOST_API cudaError_t dispatch_batched_topk(
     // conservative 64-bit upper bound here.
     constexpr auto total_num_items = ::cuda::args::immediate{::cuda::std::numeric_limits<::cuda::std::int64_t>::max()};
 
-    return batched_topk::dispatch<requested_determinism_t::value, requested_tie_break_t::value, requested_order_t::value>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      d_values_in,
-      d_values_out,
-      segment_sizes,
-      k,
-      ::cuda::args::constant<SelectDirection>{},
-      num_segments,
-      total_num_items,
-      stream,
-      tuning);
+    return CUB_NS_QUALIFIER::detail::batched_topk::
+      dispatch<requested_determinism_t::value, requested_tie_break_t::value, requested_order_t::value>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_keys_in,
+        d_keys_out,
+        d_values_in,
+        d_values_out,
+        segment_sizes,
+        k,
+        ::cuda::args::constant<SelectDirection>{},
+        num_segments,
+        total_num_items,
+        stream,
+        tuning);
   }
   else
   {
@@ -513,9 +514,9 @@ struct DeviceBatchedTopK
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceBatchedTopK::MaxKeys");
-    return detail::dispatch_with_env(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::dispatch_batched_topk<detail::topk::select::max>(
+        return CUB_NS_QUALIFIER::detail::dispatch_batched_topk<detail::topk::select::max>(
           storage,
           bytes,
           d_keys_in,
@@ -617,21 +618,22 @@ struct DeviceBatchedTopK
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MaxKeys");
-    return detail::dispatch_with_env(env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
-      return detail::dispatch_batched_topk<detail::topk::select::max>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_keys_out,
-        static_cast<NullType**>(nullptr),
-        static_cast<NullType**>(nullptr),
-        segment_sizes,
-        k,
-        num_segments,
-        stream,
-        tuning,
-        env);
-    });
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
+      env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
+        return CUB_NS_QUALIFIER::detail::dispatch_batched_topk<detail::topk::select::max>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          static_cast<NullType**>(nullptr),
+          static_cast<NullType**>(nullptr),
+          segment_sizes,
+          k,
+          num_segments,
+          stream,
+          tuning,
+          env);
+      });
   }
 
   //! @rst
@@ -728,9 +730,9 @@ struct DeviceBatchedTopK
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceBatchedTopK::MinKeys");
-    return detail::dispatch_with_env(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::dispatch_batched_topk<detail::topk::select::min>(
+        return CUB_NS_QUALIFIER::detail::dispatch_batched_topk<detail::topk::select::min>(
           storage,
           bytes,
           d_keys_in,
@@ -830,21 +832,22 @@ struct DeviceBatchedTopK
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MinKeys");
-    return detail::dispatch_with_env(env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
-      return detail::dispatch_batched_topk<detail::topk::select::min>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_keys_out,
-        static_cast<NullType**>(nullptr),
-        static_cast<NullType**>(nullptr),
-        segment_sizes,
-        k,
-        num_segments,
-        stream,
-        tuning,
-        env);
-    });
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
+      env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
+        return CUB_NS_QUALIFIER::detail::dispatch_batched_topk<detail::topk::select::min>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          static_cast<NullType**>(nullptr),
+          static_cast<NullType**>(nullptr),
+          segment_sizes,
+          k,
+          num_segments,
+          stream,
+          tuning,
+          env);
+      });
   }
 
   //! @rst
@@ -962,9 +965,9 @@ struct DeviceBatchedTopK
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceBatchedTopK::MaxPairs");
-    return detail::dispatch_with_env(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::dispatch_batched_topk<detail::topk::select::max>(
+        return CUB_NS_QUALIFIER::detail::dispatch_batched_topk<detail::topk::select::max>(
           storage,
           bytes,
           d_keys_in,
@@ -1076,21 +1079,22 @@ struct DeviceBatchedTopK
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MaxPairs");
-    return detail::dispatch_with_env(env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
-      return detail::dispatch_batched_topk<detail::topk::select::max>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_keys_out,
-        d_values_in,
-        d_values_out,
-        segment_sizes,
-        k,
-        num_segments,
-        stream,
-        tuning,
-        env);
-    });
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
+      env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
+        return CUB_NS_QUALIFIER::detail::dispatch_batched_topk<detail::topk::select::max>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          d_values_in,
+          d_values_out,
+          segment_sizes,
+          k,
+          num_segments,
+          stream,
+          tuning,
+          env);
+      });
   }
 
   //! @rst
@@ -1205,9 +1209,9 @@ struct DeviceBatchedTopK
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceBatchedTopK::MinPairs");
-    return detail::dispatch_with_env(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::dispatch_batched_topk<detail::topk::select::min>(
+        return CUB_NS_QUALIFIER::detail::dispatch_batched_topk<detail::topk::select::min>(
           storage,
           bytes,
           d_keys_in,
@@ -1319,21 +1323,22 @@ struct DeviceBatchedTopK
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceBatchedTopK::MinPairs");
-    return detail::dispatch_with_env(env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
-      return detail::dispatch_batched_topk<detail::topk::select::min>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_keys_out,
-        d_values_in,
-        d_values_out,
-        segment_sizes,
-        k,
-        num_segments,
-        stream,
-        tuning,
-        env);
-    });
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
+      env, [&](auto tuning, void* storage, size_t& bytes, cudaStream_t stream) {
+        return CUB_NS_QUALIFIER::detail::dispatch_batched_topk<detail::topk::select::min>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          d_values_in,
+          d_values_out,
+          segment_sizes,
+          k,
+          num_segments,
+          stream,
+          tuning,
+          env);
+      });
   }
 };
 

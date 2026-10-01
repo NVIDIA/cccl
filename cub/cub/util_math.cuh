@@ -75,13 +75,13 @@ constexpr _CCCL_HOST_DEVICE int Nominal4BItemsToItemsCombined(int nominal_items_
 template <typename T>
 constexpr _CCCL_HOST_DEVICE int Nominal4BItemsToItems(int nominal_items_per_thread)
 {
-  return detail::nominal_4B_items_to_items(nominal_items_per_thread, int{sizeof(T)});
+  return CUB_NS_QUALIFIER::detail::nominal_4B_items_to_items(nominal_items_per_thread, int{sizeof(T)});
 }
 
 template <typename ItemT>
 constexpr _CCCL_HOST_DEVICE int Nominal8BItemsToItems(int nominal_items_per_thread)
 {
-  return detail::nominal_8B_items_to_items(nominal_items_per_thread, int{sizeof(ItemT)});
+  return CUB_NS_QUALIFIER::detail::nominal_8B_items_to_items(nominal_items_per_thread, int{sizeof(ItemT)});
 }
 
 /**

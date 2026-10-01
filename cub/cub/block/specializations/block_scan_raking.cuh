@@ -202,7 +202,7 @@ struct BlockScanRaking
       CopySegment(cached_segment, smem_raking_ptr, constant_v<0>);
     }
 
-    detail::ThreadScanExclusive(cached_segment, cached_segment, scan_op, raking_partial, apply_prefix);
+    CUB_NS_QUALIFIER::detail::ThreadScanExclusive(cached_segment, cached_segment, scan_op, raking_partial, apply_prefix);
 
     // Write data back to smem
     CopySegment(smem_raking_ptr, cached_segment, constant_v<0>);
@@ -220,7 +220,7 @@ struct BlockScanRaking
       CopySegment(cached_segment, smem_raking_ptr, constant_v<0>);
     }
 
-    detail::ThreadScanInclusive(cached_segment, cached_segment, scan_op, raking_partial, apply_prefix);
+    CUB_NS_QUALIFIER::detail::ThreadScanInclusive(cached_segment, cached_segment, scan_op, raking_partial, apply_prefix);
 
     // Write data back to smem
     CopySegment(smem_raking_ptr, cached_segment, constant_v<0>);
@@ -266,7 +266,7 @@ struct BlockScanRaking
     {
       // Place thread partial into shared memory raking grid
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
-      detail::uninitialized_copy_single(placement_ptr, input);
+      CUB_NS_QUALIFIER::detail::uninitialized_copy_single(placement_ptr, input);
 
       __syncthreads();
 
@@ -319,7 +319,7 @@ struct BlockScanRaking
     {
       // Place thread partial into shared memory raking grid
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
-      detail::uninitialized_copy_single(placement_ptr, input);
+      CUB_NS_QUALIFIER::detail::uninitialized_copy_single(placement_ptr, input);
 
       __syncthreads();
 
@@ -376,7 +376,7 @@ struct BlockScanRaking
     {
       // Place thread partial into shared memory raking grid
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
-      detail::uninitialized_copy_single(placement_ptr, input);
+      CUB_NS_QUALIFIER::detail::uninitialized_copy_single(placement_ptr, input);
 
       __syncthreads();
 
@@ -444,7 +444,7 @@ struct BlockScanRaking
     {
       // Place thread partial into shared memory raking grid
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
-      detail::uninitialized_copy_single(placement_ptr, input);
+      CUB_NS_QUALIFIER::detail::uninitialized_copy_single(placement_ptr, input);
 
       __syncthreads();
 
@@ -525,7 +525,7 @@ struct BlockScanRaking
     {
       // Place thread partial into shared memory raking grid
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
-      detail::uninitialized_copy_single(placement_ptr, input);
+      CUB_NS_QUALIFIER::detail::uninitialized_copy_single(placement_ptr, input);
 
       __syncthreads();
 
@@ -592,7 +592,7 @@ struct BlockScanRaking
     {
       // Place thread partial into shared memory raking grid
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
-      detail::uninitialized_copy_single(placement_ptr, input);
+      CUB_NS_QUALIFIER::detail::uninitialized_copy_single(placement_ptr, input);
 
       __syncthreads();
 
@@ -646,7 +646,7 @@ struct BlockScanRaking
     {
       // Place thread partial into shared memory raking grid
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
-      detail::uninitialized_copy_single(placement_ptr, input);
+      CUB_NS_QUALIFIER::detail::uninitialized_copy_single(placement_ptr, input);
 
       __syncthreads();
 
@@ -724,7 +724,7 @@ struct BlockScanRaking
     {
       // Place thread partial into shared memory raking grid
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
-      detail::uninitialized_copy_single(placement_ptr, input);
+      CUB_NS_QUALIFIER::detail::uninitialized_copy_single(placement_ptr, input);
 
       __syncthreads();
 

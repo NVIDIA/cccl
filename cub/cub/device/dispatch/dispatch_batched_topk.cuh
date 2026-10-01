@@ -364,7 +364,7 @@ _CCCL_HOST_API ::cuda::std::expected<cluster_launch_shape, cudaError_t> select_c
   int cluster_blocks     = 0;
   int dynamic_smem_bytes = 0;
 
-  if (batched_topk_cluster::is_single_cta_eligible(
+  if (CUB_NS_QUALIFIER::detail::batched_topk_cluster::is_single_cta_eligible(
         static_cast<::cuda::std::uint32_t>(max_segment_size),
         static_cast<::cuda::std::uint32_t>(max_block_resident_items),
         policy.single_block_max_seg_size))
@@ -408,10 +408,11 @@ _CCCL_HOST_API ::cuda::std::expected<cluster_launch_shape, cudaError_t> select_c
 
       // Cluster blocks the max segment actually needs (shared with the device so the launch is never wider than
       // necessary). At `min_chunks_per_block == 1` this equals the segment's chunk count; a larger knob shrinks it.
-      const auto desired_cluster_blocks = ::cuda::narrow<int>(batched_topk_cluster::compute_num_logical_cluster_blocks(
-        static_cast<::cuda::std::uint32_t>(layout_t::num_chunks_from_num_items(max_segment_size)),
-        policy.min_chunks_per_block,
-        ::cuda::narrow<::cuda::std::uint32_t>(eff_max_blocks_per_cluster)));
+      const auto desired_cluster_blocks =
+        ::cuda::narrow<int>(CUB_NS_QUALIFIER::detail::batched_topk_cluster::compute_num_logical_cluster_blocks(
+          static_cast<::cuda::std::uint32_t>(layout_t::num_chunks_from_num_items(max_segment_size)),
+          policy.min_chunks_per_block,
+          ::cuda::narrow<::cuda::std::uint32_t>(eff_max_blocks_per_cluster)));
 
       // Scan `[min_candidate_blocks, max_candidate_blocks]` for the min-waves block count, tie-breaking largest.
       // `max_candidate_blocks == max(desired_cluster_blocks, min(min_candidate_blocks, eff_max_blocks_per_cluster))`:
@@ -832,7 +833,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
               segment_size_scan_input_it,
               static_cast<large_segment_tile_offset_t*>(nullptr),
               ::cuda::std::plus<>{},
-              detail::InputValue<large_segment_tile_offset_t>(large_segment_tile_offset_t{0}),
+              CUB_NS_QUALIFIER::detail::InputValue<large_segment_tile_offset_t>(large_segment_tile_offset_t{0}),
               static_cast<segment_size_scan_offset_t>(num_segments_val),
               stream,
               {},
@@ -920,7 +921,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
             segment_size_scan_input_it,
             static_cast<large_segment_tile_offset_t*>(allocations[0]),
             ::cuda::std::plus<>{},
-            detail::InputValue<large_segment_tile_offset_t>(large_segment_tile_offset_t{0}),
+            CUB_NS_QUALIFIER::detail::InputValue<large_segment_tile_offset_t>(large_segment_tile_offset_t{0}),
             static_cast<segment_size_scan_offset_t>(num_segments_val),
             stream,
             {},

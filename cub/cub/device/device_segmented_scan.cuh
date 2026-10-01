@@ -231,7 +231,7 @@ public:
       d_in_end_offsets,
       d_in_begin_offsets,
       scan_op,
-      detail::InputValue<init_value_t>(init_value),
+      CUB_NS_QUALIFIER::detail::InputValue<init_value_t>(init_value),
       1,
       detail::segmented_scan::worker::block,
       stream);
@@ -340,7 +340,7 @@ public:
     init_value_t init_value{};
 
     using accum_t = detail::segmented_scan::
-      deduced_accum_t<scan_op_t, detail::InputValue<init_value_t>, detail::it_value_t<InputIteratorT>>;
+      deduced_accum_t<scan_op_t, CUB_NS_QUALIFIER::detail::InputValue<init_value_t>, detail::it_value_t<InputIteratorT>>;
 
     using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
 
@@ -356,7 +356,7 @@ public:
           d_in_end_offsets,
           d_in_begin_offsets,
           scan_op,
-          detail::InputValue<init_value_t>(init_value),
+          CUB_NS_QUALIFIER::detail::InputValue<init_value_t>(init_value),
           1,
           detail::segmented_scan::worker::block,
           stream,
@@ -486,7 +486,7 @@ public:
       d_in_end_offsets,
       d_out_begin_offsets,
       scan_op,
-      detail::InputValue<init_value_t>(init_value),
+      CUB_NS_QUALIFIER::detail::InputValue<init_value_t>(init_value),
       1,
       detail::segmented_scan::worker::block,
       stream);
@@ -601,7 +601,7 @@ public:
     init_value_t init_value{};
 
     using accum_t = detail::segmented_scan::
-      deduced_accum_t<scan_op_t, detail::InputValue<init_value_t>, detail::it_value_t<InputIteratorT>>;
+      deduced_accum_t<scan_op_t, CUB_NS_QUALIFIER::detail::InputValue<init_value_t>, detail::it_value_t<InputIteratorT>>;
 
     using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
 
@@ -617,7 +617,7 @@ public:
           d_in_end_offsets,
           d_out_begin_offsets,
           scan_op,
-          detail::InputValue<init_value_t>(init_value),
+          CUB_NS_QUALIFIER::detail::InputValue<init_value_t>(init_value),
           1,
           detail::segmented_scan::worker::block,
           stream,
@@ -746,7 +746,7 @@ public:
       d_in_end_offsets,
       d_in_begin_offsets,
       scan_op,
-      detail::InputValue<InitValueT>(init_value),
+      CUB_NS_QUALIFIER::detail::InputValue<InitValueT>(init_value),
       1,
       detail::segmented_scan::worker::block,
       stream);
@@ -862,7 +862,7 @@ public:
     check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
 
     using accum_t = detail::segmented_scan::
-      deduced_accum_t<ScanOpT, detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
+      deduced_accum_t<ScanOpT, CUB_NS_QUALIFIER::detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
 
     using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
 
@@ -878,7 +878,7 @@ public:
           d_in_end_offsets,
           d_in_begin_offsets,
           scan_op,
-          detail::InputValue<InitValueT>(init_value),
+          CUB_NS_QUALIFIER::detail::InputValue<InitValueT>(init_value),
           1,
           detail::segmented_scan::worker::block,
           stream,
@@ -1009,7 +1009,7 @@ public:
       d_in_end_offsets,
       d_out_begin_offsets,
       scan_op,
-      detail::InputValue<InitValueT>(init_value),
+      CUB_NS_QUALIFIER::detail::InputValue<InitValueT>(init_value),
       1,
       detail::segmented_scan::worker::block,
       stream);
@@ -1140,7 +1140,7 @@ public:
                                             BeginOffsetIteratorOutputT>();
 
     using accum_t = detail::segmented_scan::
-      deduced_accum_t<ScanOpT, detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
+      deduced_accum_t<ScanOpT, CUB_NS_QUALIFIER::detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
 
     using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
 
@@ -1156,7 +1156,7 @@ public:
           d_in_end_offsets,
           d_out_begin_offsets,
           scan_op,
-          detail::InputValue<InitValueT>(init_value),
+          CUB_NS_QUALIFIER::detail::InputValue<InitValueT>(init_value),
           1,
           detail::segmented_scan::worker::block,
           stream,
@@ -2272,7 +2272,7 @@ public:
       d_in_end_offsets,
       d_in_begin_offsets,
       scan_op,
-      detail::InputValue<InitValueT>(init_value),
+      CUB_NS_QUALIFIER::detail::InputValue<InitValueT>(init_value),
       1,
       detail::segmented_scan::worker::block,
       stream);
@@ -2389,7 +2389,7 @@ public:
     static_assert(!::cuda::std::is_same_v<InitValueT, NullType>);
 
     using accum_t = detail::segmented_scan::
-      deduced_accum_t<ScanOpT, detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
+      deduced_accum_t<ScanOpT, CUB_NS_QUALIFIER::detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
 
     using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
 
@@ -2405,7 +2405,7 @@ public:
           d_in_end_offsets,
           d_in_begin_offsets,
           scan_op,
-          detail::InputValue<InitValueT>(init_value),
+          CUB_NS_QUALIFIER::detail::InputValue<InitValueT>(init_value),
           1,
           detail::segmented_scan::worker::block,
           stream,
@@ -2538,7 +2538,7 @@ public:
       d_in_end_offsets,
       d_out_begin_offsets,
       scan_op,
-      detail::InputValue<InitValueT>(init_value),
+      CUB_NS_QUALIFIER::detail::InputValue<InitValueT>(init_value),
       1,
       detail::segmented_scan::worker::block,
       stream);
@@ -2671,7 +2671,7 @@ public:
     static_assert(!::cuda::std::is_same_v<InitValueT, NullType>);
 
     using accum_t = detail::segmented_scan::
-      deduced_accum_t<ScanOpT, detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
+      deduced_accum_t<ScanOpT, CUB_NS_QUALIFIER::detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
 
     using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
 
@@ -2687,7 +2687,7 @@ public:
           d_in_end_offsets,
           d_out_begin_offsets,
           scan_op,
-          detail::InputValue<InitValueT>(init_value),
+          CUB_NS_QUALIFIER::detail::InputValue<InitValueT>(init_value),
           1,
           detail::segmented_scan::worker::block,
           stream,

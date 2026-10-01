@@ -773,8 +773,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   constexpr warpspeed::SquadDesc squadBookkeeper{4, 1};
   constexpr warpspeed::SquadDesc squads[] = {squadLoad, squadCompute, squadPoll, squadStore, squadBookkeeper};
 
-  warpspeed::squadDispatch(
-    warpspeed::getSpecialRegisters(), squads, [&](warpspeed::Squad squad) _CCCL_FORCEINLINE_LAMBDA {
+  CUB_NS_QUALIFIER::detail::warpspeed::squadDispatch(
+    CUB_NS_QUALIFIER::detail::warpspeed::getSpecialRegisters(),
+    squads,
+    [&](warpspeed::Squad squad) _CCCL_FORCEINLINE_LAMBDA {
       // if you are load
       if (squad == squadLoad)
       {

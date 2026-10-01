@@ -150,14 +150,14 @@ CUB_RUNTIME_FUNCTION inline int device_count()
  */
 CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") CUB_RUNTIME_FUNCTION inline int DeviceCountUncached()
 {
-  return detail::device_count_uncached();
+  return CUB_NS_QUALIFIER::detail::device_count_uncached();
 }
 
 // TODO(bgruber): remove in CCCL 4.0
 // Host code. This is a separate function to avoid defining a local static in a host/device function.
 CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") _CCCL_HOST inline int DeviceCountCachedValue()
 {
-  return detail::device_count_cached_value();
+  return CUB_NS_QUALIFIER::detail::device_count_cached_value();
 }
 
 // TODO(bgruber): remove in CCCL 4.0
@@ -172,7 +172,7 @@ CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") _CCCL_HOST inline in
  */
 CCCL_DEPRECATED_BECAUSE("Use cuda::devices.size() instead") CUB_RUNTIME_FUNCTION inline int DeviceCount()
 {
-  return detail::device_count();
+  return CUB_NS_QUALIFIER::detail::device_count();
 }
 
 #  if _CCCL_HOSTED()
@@ -216,7 +216,7 @@ public:
   _CCCL_HOST inline PerDeviceAttributeCache()
       : entries_()
   {
-    _CCCL_ASSERT(detail::device_count() <= detail::max_devices, "");
+    _CCCL_ASSERT(CUB_NS_QUALIFIER::detail::device_count() <= detail::max_devices, "");
   }
 
   /**
@@ -228,7 +228,7 @@ public:
   template <typename Invocable>
   _CCCL_HOST DevicePayload operator()(Invocable&& f, int device)
   {
-    if (device >= detail::device_count() || device < 0)
+    if (device >= CUB_NS_QUALIFIER::detail::device_count() || device < 0)
     {
       return DevicePayload{0, cudaErrorInvalidDevice};
     }

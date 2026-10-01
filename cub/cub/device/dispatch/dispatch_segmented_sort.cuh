@@ -440,7 +440,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedSort") Dis
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT policy = {})
   {
-    auto wrapped_policy = detail::segmented_sort::MakeSegmentedSortPolicyWrapper(policy);
+    auto wrapped_policy = CUB_NS_QUALIFIER::detail::segmented_sort::MakeSegmentedSortPolicyWrapper(policy);
 
     CUB_DETAIL_STATIC_ISH_ASSERT(wrapped_policy.LargeSegmentLoadModifier() != CacheLoadModifier::LOAD_LDG,
                                  "The memory consistency model does not apply to texture accesses");
@@ -1041,7 +1041,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
       return error;
     }
 
-    if (const auto error = three_way_partition::dispatch(
+    if (const auto error = CUB_NS_QUALIFIER::detail::three_way_partition::dispatch(
           device_partition_temp_storage.get(),
           three_way_partition_temp_storage_bytes,
           THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>(0),
@@ -1381,7 +1381,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         return error;
       }
 
-      three_way_partition::dispatch(
+      CUB_NS_QUALIFIER::detail::three_way_partition::dispatch(
         nullptr,
         three_way_partition_temp_storage_bytes,
         THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>(0),

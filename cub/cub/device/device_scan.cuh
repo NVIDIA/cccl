@@ -396,7 +396,7 @@ struct DeviceScan
       d_in,
       d_out,
       ::cuda::std::plus<>{},
-      detail::InputValue<init_value_t>(init_value),
+      CUB_NS_QUALIFIER::detail::InputValue<init_value_t>(init_value),
       static_cast<OffsetT>(num_items),
       stream);
   }
@@ -471,7 +471,12 @@ struct DeviceScan
     const init_value_t init_value{};
 
     return scan_impl_env(
-      d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<init_value_t>(init_value), num_items, env);
+      d_in,
+      d_out,
+      ::cuda::std::plus<>{},
+      CUB_NS_QUALIFIER::detail::InputValue<init_value_t>(init_value),
+      num_items,
+      env);
   }
 
   //! @rst
@@ -745,7 +750,7 @@ struct DeviceScan
       d_in,
       d_out,
       scan_op,
-      detail::InputValue<InitValueT>(init_value),
+      CUB_NS_QUALIFIER::detail::InputValue<InitValueT>(init_value),
       static_cast<OffsetT>(num_items),
       stream);
   }
@@ -846,7 +851,8 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScan");
 
-    return scan_impl_env(d_in, d_out, scan_op, detail::InputValue<InitValueT>(init_value), num_items, env);
+    return scan_impl_env(
+      d_in, d_out, scan_op, CUB_NS_QUALIFIER::detail::InputValue<InitValueT>(init_value), num_items, env);
   }
 
   //! @rst
@@ -1172,7 +1178,7 @@ struct DeviceScan
       d_in,
       d_out,
       scan_op,
-      detail::InputValue<InitValueT, InitValueIterT>(init_value),
+      CUB_NS_QUALIFIER::detail::InputValue<InitValueT, InitValueIterT>(init_value),
       static_cast<OffsetT>(num_items),
       stream);
   }
@@ -1470,7 +1476,12 @@ struct DeviceScan
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScan");
 
     return scan_impl_env(
-      d_in, d_out, scan_op, detail::InputValue<InitValueT, InitValueIterT>(init_value), num_items, env);
+      d_in,
+      d_out,
+      scan_op,
+      CUB_NS_QUALIFIER::detail::InputValue<InitValueT, InitValueIterT>(init_value),
+      num_items,
+      env);
   }
 
   //! @}
@@ -2000,7 +2011,7 @@ struct DeviceScan
       d_in,
       d_out,
       scan_op,
-      detail::InputValue<InitValueT>(init_value),
+      CUB_NS_QUALIFIER::detail::InputValue<InitValueT>(init_value),
       static_cast<OffsetT>(num_items),
       stream);
   }
@@ -2335,7 +2346,7 @@ struct DeviceScan
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveScanInit");
 
     return scan_impl_env<ForceInclusive::Yes>(
-      d_in, d_out, scan_op, detail::InputValue<InitValueT>(init_value), num_items, env);
+      d_in, d_out, scan_op, CUB_NS_QUALIFIER::detail::InputValue<InitValueT>(init_value), num_items, env);
   }
 
   //! @rst
@@ -2436,7 +2447,12 @@ struct DeviceScan
     auto __fut = FutureValue<__init_value_type, InitValueIterT>{::cuda::args::__unwrap(init_value)};
 
     return scan_impl_env<ForceInclusive::Yes>(
-      d_in, d_out, scan_op, detail::InputValue<__init_value_type, InitValueIterT>(__fut), num_items, env);
+      d_in,
+      d_out,
+      scan_op,
+      CUB_NS_QUALIFIER::detail::InputValue<__init_value_type, InitValueIterT>(__fut),
+      num_items,
+      env);
   }
 
   //! @rst
@@ -2546,7 +2562,7 @@ struct DeviceScan
       d_in,
       d_out,
       scan_op,
-      detail::InputValue<__init_value_type, InitValueIterT>(__fut),
+      CUB_NS_QUALIFIER::detail::InputValue<__init_value_type, InitValueIterT>(__fut),
       static_cast<OffsetT>(num_items),
       stream);
   }

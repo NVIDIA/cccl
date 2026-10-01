@@ -352,7 +352,8 @@ private:
     PackedCounter* raking_ptr = (MemoizeOuterScan) ? cached_segment : smem_raking_ptr;
 
     // Exclusive raking downsweep scan
-    detail::ThreadScanExclusive<RAKING_SEGMENT>(raking_ptr, raking_ptr, ::cuda::std::plus<>{}, raking_partial);
+    CUB_NS_QUALIFIER::detail::ThreadScanExclusive<RAKING_SEGMENT>(
+      raking_ptr, raking_ptr, ::cuda::std::plus<>{}, raking_partial);
 
     if (MemoizeOuterScan)
     {

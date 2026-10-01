@@ -226,7 +226,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
 
   return CUB_NS_QUALIFIER::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
-    detail::log_dispatch("DeviceMerge", cc, policy_getter());
+    CUB_NS_QUALIFIER::detail::log_dispatch("DeviceMerge", cc, policy_getter());
 
     static_assert(::cuda::std::is_empty_v<decltype(policy_getter)>);
     using AgentT = typename choose_merge_agent<
@@ -246,8 +246,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       const size_t key1_beg_offsets_size      = (1 + num_tiles) * sizeof(Offset);
       const size_t virtual_shared_memory_size = num_tiles * vsmem_helper_impl<AgentT>::vsmem_per_block;
       const size_t allocation_sizes[2]        = {key1_beg_offsets_size, virtual_shared_memory_size};
-      if (const auto error =
-            CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+      if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::alias_temporaries(
+            d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
       {
         return error;
       }

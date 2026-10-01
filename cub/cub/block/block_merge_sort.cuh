@@ -135,7 +135,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   CompareOp compare_op,
   KeyT oob_default)
 {
-  detail::serial_merge(
+  CUB_NS_QUALIFIER::detail::serial_merge(
     keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, oob_default);
 }
 
@@ -150,7 +150,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   int (&indices)[ItemsPerThread],
   CompareOp compare_op)
 {
-  detail::serial_merge(keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op);
+  CUB_NS_QUALIFIER::detail::serial_merge(
+    keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op);
 }
 
 /**
@@ -454,7 +455,7 @@ public:
     }
     else
     {
-      detail::stable_odd_even_sort<Unroll>(keys, items, compare_op);
+      CUB_NS_QUALIFIER::detail::stable_odd_even_sort<Unroll>(keys, items, compare_op);
 
       // each thread has sorted keys
       // merge sort keys in shared memory
@@ -905,7 +906,7 @@ private:
         }
       }
 
-      detail::stable_odd_even_sort<Unroll>(keys, items, compare_op);
+      CUB_NS_QUALIFIER::detail::stable_odd_even_sort<Unroll>(keys, items, compare_op);
     }
 
     MergeRounds<true>(keys, items, compare_op, valid_items);
@@ -992,7 +993,7 @@ private:
       const int keys2_beg_loc   = keys2_beg + diag - partition_diag;
       const int keys1_count_loc = keys1_end - keys1_beg_loc;
       const int keys2_count_loc = keys2_end - keys2_beg_loc;
-      detail::serial_merge<Unroll>(
+      CUB_NS_QUALIFIER::detail::serial_merge<Unroll>(
         &temp_storage.keys_shared[0],
         keys1_beg_loc,
         keys2_beg_loc,

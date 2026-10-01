@@ -292,7 +292,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -360,7 +360,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
     }
 
     // Sync the stream if specified to flush runtime errors
-    return CubDebug(detail::DebugSyncStream(stream));
+    return CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream));
   }
 
   template <typename ActivePolicyT>
@@ -370,7 +370,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
     {
       _CCCL_HOST_DEVICE constexpr auto operator()() const -> UniqueByKeyPolicy
       {
-        return detail::unique_by_key::convert_policy<ActivePolicyT>();
+        return CUB_NS_QUALIFIER::detail::unique_by_key::convert_policy<ActivePolicyT>();
       }
     };
 
@@ -590,7 +590,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -653,7 +653,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       return error;
     }
 
-    return CubDebug(detail::DebugSyncStream(stream));
+    return CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream));
   });
 }
 } // namespace detail::unique_by_key

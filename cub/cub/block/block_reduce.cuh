@@ -478,7 +478,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T (&inputs)[ItemsPerThread], ReductionOp reduction_op)
   {
     // Reduce partials
-    T partial = cub::ThreadReduce(inputs, reduction_op);
+    T partial = CUB_NS_QUALIFIER::ThreadReduce(inputs, reduction_op);
     return Reduce(partial, reduction_op);
   }
 
@@ -645,7 +645,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T (&inputs)[ItemsPerThread])
   {
     // Reduce partials
-    T partial = cub::ThreadReduce(inputs, ::cuda::std::plus<>{});
+    T partial = CUB_NS_QUALIFIER::ThreadReduce(inputs, ::cuda::std::plus<>{});
     return Sum(partial);
   }
 
