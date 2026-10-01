@@ -594,6 +594,59 @@ class _LoadStorePlanning:
         bound: inspect.BoundArguments,
         is_common_root: bool,
     ) -> list[Any]:
+        """Build replacement IR for a public group load or store.
+
+        Validate common-API payload restrictions, obtain a semantic lowering
+        plan, and select the matching private factory by provider provenance and
+        scope. Translate planned dtype, shape, algorithm, and scalar bindings
+        into the provider's arguments. Warp plans that require a tile origin
+        first emit the effective-offset arithmetic. Other static controls retain
+        their ``ArgumentBinding`` objects; runtime controls retain their
+        original IR operands.
+
+        The final provider call carries the complete plan for the subsequent
+        provider rewrite. Planning may record inferred payload dtypes, but this
+        method only returns replacement statements; the whole-function planner
+        installs them after validating all descriptor uses.
+
+        Parameters
+        ----------
+        inst : ir.Assign
+            Public call assignment whose result target and location are
+            preserved.
+        operation : {"load", "store"}
+            Registered public operation to lower.
+        group : ThreadGroup
+            Group resolved against the current kernel launch.
+        bound : inspect.BoundArguments
+            Public call arguments with defaults applied. Runtime operands are
+            forwarded; the argument mapping is not modified.
+        is_common_root : bool
+            Whether the call uses the common API, requiring its payload contract
+            and a retained common-operation marker on the provider call.
+
+        Returns
+        -------
+        list of object
+            Ordered IR statements computing any warp offset, materializing
+            factory arguments, and calling the selected provider with the
+            original target.
+
+        Raises
+        ------
+        GroupRewriteError
+            Planning cannot resolve the payload, provider provenance selects the
+            wrong operation, or its contract is incompatible with the plan.
+        TypeError
+            A common-API payload is unsupported or known dtypes disagree.
+        ValueError
+            A scalar, algorithm, or explicit storage argument is invalid.
+        ForceLiteralArg
+            A planning argument needs literal specialization.
+        NotImplementedError
+            The requested group operation has no supported lowering.
+        """
+
         from .._lowering._core import NumbaMlirCoreAdapter
 
         if is_common_root:
