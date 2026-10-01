@@ -18,11 +18,17 @@ def dump_source(
 ) -> Path | None:
     """Write a backend-tagged, content-addressed CUDA translation unit.
 
-    ``CUDA_COOP_SOURCE_DUMP_DIR`` selects the directory; unset or empty disables
-    dumping. Call before compiler or cache lookup to capture sources on cache
-    hits too. The filename combines the backend tag with a hash of the identity
+    ``CUDA_COOP_SOURCE_DUMP_DIR`` selects the directory and is read on every
+    call; unset or empty disables dumping. Other values are directory names,
+    including strings such as ``"0"`` or ``"false"``. Expand ``~`` and resolve
+    relative paths against the current working directory when the call runs.
+    Environment changes affect subsequent dumps without reimporting a backend.
+
+    Call before compiler or cache lookup to capture sources on cache hits too.
+    The filename combines the backend tag with a hash of the identity
     representation and source bytes, allowing different targets and generated
-    variants to coexist. An existing file is reused without rewriting it.
+    variants to coexist. An existing file is reused without rewriting it;
+    changing or unsetting the directory does not remove previous dumps.
 
     Publish through a flushed and synced temporary file in the same directory
     followed by atomic replacement, so concurrent dumps leave complete files.
