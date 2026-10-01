@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from numba_cuda_mlir import types
+import numba_cuda_mlir.numba_cuda.types as numba_types
 
 from cuda.coop._core import (
     BindingKind,
@@ -99,6 +99,7 @@ def _lower_topk(context, inst, *, operation, group, bound, is_common_root):
         )
         context.record_thread_data_dtype(value, dtype)
         dtypes.append(dtype)
+    assert extent is not None
     bindings = {}
     for name in ("k", "valid_items"):
         binding = context.planning_binding(bound.arguments[name])
@@ -112,9 +113,12 @@ def _lower_topk(context, inst, *, operation, group, bound, is_common_root):
                 dtype, operation=operation, parameter=name
             )
         bindings[name] = binding
+    from .._lowering._core import NumbaMlirCoreAdapter
+
+    adapter = NumbaMlirCoreAdapter()
     semantics = GroupTopKSemantics(
-        key_dtype=dtypes[0],
-        value_dtype=dtypes[1] if len(dtypes) > 1 else None,
+        key_dtype=adapter.core_dtype(dtypes[0]),
+        value_dtype=adapter.core_dtype(dtypes[1] if len(dtypes) > 1 else None),
         items_per_thread=extent,
         selection=operation.split("_")[1],
         k=bindings["k"],
@@ -123,6 +127,10 @@ def _lower_topk(context, inst, *, operation, group, bound, is_common_root):
     plan = plan_group_primitive(
         make_group_primitive_call(group, semantics), context.launch
     ).require_supported()
+    participation = plan.participation
+    assert participation is not None
+    assert plan.temp_storage is not None
+    assert plan.synchronization is not None
     storage = bound.arguments.get("temp_storage")
     if not context.is_none(storage):
         descriptor = context.temp_storage(storage)
@@ -183,7 +191,7 @@ def _lower_topk(context, inst, *, operation, group, bound, is_common_root):
         outputs.append(output)
     kwargs = {
         "key_dtype": dtypes[0],
-        "threads_per_block": plan.participation.exact_block_dim,
+        "threads_per_block": participation.exact_block_dim,
         "items_per_thread": extent,
         "selection": semantics.selection,
     }
@@ -196,7 +204,7 @@ def _lower_topk(context, inst, *, operation, group, bound, is_common_root):
                 scope=scope,
                 loc=loc,
                 stem="topk_count_type",
-                value=types.int64,
+                value=numba_types.int64,
             )
             value = context.new_var(scope, loc, f"topk_{name}_i64")
             statements.append(

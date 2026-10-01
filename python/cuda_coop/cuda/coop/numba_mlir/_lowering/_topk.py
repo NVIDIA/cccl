@@ -51,6 +51,7 @@ def _topk(
         num_valid=num_valid,
     )
     metadata = factory_operation(factory)
+    assert metadata is not None
     specialization = adapter.materialize(
         spec.specialization,
         storage_abi=metadata.storage_abi,

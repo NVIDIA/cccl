@@ -125,7 +125,7 @@ explains terms and concepts, including blocked and striped layouts.
 | Scan | `scan`, `inclusive_scan`, `exclusive_scan`, `inclusive_sum`, `exclusive_sum` |
 | Data rearrangement | `exchange`, `shuffle` |
 | Comparison sorting | `merge_sort_keys`, `merge_sort_pairs` |
-| Radix sorting and ranking | `radix_sort_keys`, `radix_sort_pairs`, `radix_rank` |
+| Radix sorting and ranking | `radix_sort_keys`, `radix_sort_pairs`, `radix_rank_keys` |
 | Top-k selection | `topk_min_keys`, `topk_max_keys`, `topk_min_pairs`, `topk_max_pairs` |
 
 Each operation documents its supported groups and result ownership in the
@@ -293,8 +293,8 @@ compile-time constants. A logical threads-within-warp group can query its
 threads and immediate parent Warp; a mapped warps-within-block group can query
 its threads, physical Warps, and immediate parent block. Queries above the
 immediate physical parent are rejected. Mapped warps-within-block groups expose
-queries and `is_member()` but not `sync()` or `sync_aligned()`; their block
-barrier lifetime must be owned by a future planner contract. For a
+queries and `is_member()` but not `sync()` or `sync_aligned()`; the planner
+does not manage the lifetime of their block barriers. For a
 non-exhaustive partition, use `is_member()` to guard rank-dependent work for
 excluded threads. Do not use that branch to skip a collective unless the
 collective's participation contract explicitly permits it; every required
@@ -366,15 +366,15 @@ reductions also allocate internal static shared memory, even without a
 or dynamic cooperative backing in these compiler releases.
 
 With `auto_sync=False`, a descriptor must originate from exactly one
-constructor site. Selecting between multiple manual-sync constructors is an
-MVP restriction: the compiler cannot prove that caller barriers protect the
-merged region, even when a particular program supplies sufficient barriers.
+constructor site. Selecting between multiple manual-sync constructors is unsupported:
+the compiler cannot prove that caller barriers protect the merged region,
+even when a particular program supplies sufficient barriers.
 
 Cooperative calls in device helpers must be inlined into the kernel; use
 `@cuda.jit(device=True, inline="always")` when selecting the helper's
 policy explicitly. Standalone collective helpers and collectives inside
-standalone callbacks are unsupported. For the MVP, `literal_unroll`
-values cannot determine cooperative payload extents, group dimensions,
+standalone callbacks are unsupported. `literal_unroll` values cannot
+determine cooperative payload extents, group dimensions,
 selectors, or descriptor constructor arguments. Write separate calls with
 explicit constants, or use an ordinary loop with one fixed cooperative shape.
 An unrelated `literal_unroll` loop does not add this restriction.
