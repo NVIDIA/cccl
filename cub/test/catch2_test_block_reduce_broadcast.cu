@@ -87,6 +87,13 @@ void check_broadcast(c2h::device_vector<T>& input, ReductionOp reduction_op)
 }
 
 using types = c2h::type_list<std::int32_t, float, double>;
+using unsigned_ops =
+  c2h::type_list<cuda::std::plus<>,
+                 cuda::minimum<>,
+                 cuda::maximum<>,
+                 cuda::std::bit_and<>,
+                 cuda::std::bit_or<>,
+                 cuda::std::bit_xor<>>;
 
 struct take_first_t
 {
@@ -154,4 +161,16 @@ CUB_TEST("Block reduce preserves affine composition order", "[reduce][block][bro
   }
   c2h::device_vector<std::uint64_t> input = values;
   check_broadcast<TEST_DIM_X, TEST_DIM_YZ>(input, compose_affine_t{});
+}
+
+CUB_TEST("Block reduce broadcasts unsigned hardware aggregates", "[reduce][block][broadcast]", CUB_SMALL, unsigned_ops)
+{
+  using reduction_op = c2h::get<0, TestType>;
+  c2h::host_vector<std::uint32_t> values(TEST_DIM_X * TEST_DIM_YZ * TEST_DIM_YZ);
+  for (std::size_t i = 0; i < values.size(); ++i)
+  {
+    values[i] = 0x80000000u | (static_cast<std::uint32_t>(i) * 2654435761u);
+  }
+  c2h::device_vector<std::uint32_t> input = values;
+  check_broadcast<TEST_DIM_X, TEST_DIM_YZ>(input, reduction_op{});
 }
