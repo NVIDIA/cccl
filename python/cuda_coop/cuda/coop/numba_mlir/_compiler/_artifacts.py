@@ -11,7 +11,28 @@ version = namedtuple("version", ("major", "minor"))
 
 
 def make_binary_tempfile(content: bytes, suffix: str):
-    """Write content to a closed, unbuffered temporary binary file."""
+    """Write a persistent temporary link input and return its closed file
+    handle.
+
+    Compiler link inputs are consumed by filename after provider construction,
+    so flush and close the file before returning while leaving its path intact.
+    The caller must arrange successful-file cleanup, normally through an
+    ``Invocable`` or shared-bundle owner. If writing raises, remove the
+    partially written file before propagating the exception.
+
+    Parameters
+    ----------
+    content : bytes
+        Binary image to write without buffering.
+    suffix : str
+        Filename suffix used by the linker to recognize the image format.
+
+    Returns
+    -------
+    file object
+        Closed ``NamedTemporaryFile`` wrapper whose ``name`` identifies the
+        persistent file. It is not an open stream for subsequent writes.
+    """
 
     with tempfile.NamedTemporaryFile(
         mode="w+b", suffix=suffix, buffering=0, delete=False
