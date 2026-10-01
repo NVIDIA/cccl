@@ -191,7 +191,7 @@ public:
   //! @post `__other` has a size of zero and may only be assigned to or destroyed
   _CCCL_HOST_API __stream_pool& operator=(__stream_pool&& __other) noexcept
   {
-    if (this != &__other)
+    if (this != ::cuda::std::addressof(__other))
     {
       __destroy_slots();
       __device_   = __other.__device_;
