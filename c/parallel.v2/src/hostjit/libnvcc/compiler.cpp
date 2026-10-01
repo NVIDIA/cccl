@@ -156,8 +156,9 @@ struct BitcodeResult
 // historical derivation from cuda_toolkit_path when the flag wasn't passed.
 static std::string resolved_libdevice_path(const CompilerOptions& config)
 {
-  return config.libdevice_path.empty() ? config.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc"
-                                        : config.libdevice_path;
+  return config.libdevice_path.empty()
+         ? config.cuda_toolkit_path + "/nvvm/libdevice/libdevice.10.bc"
+         : config.libdevice_path;
 }
 
 // Appends the CUDA toolkit's system include dir(s) to arg_strings as
