@@ -81,8 +81,19 @@ _RUNTIME_INSTALL_HINT = (
 )
 
 
-class _NumbaMlirBackendImportError(ImportError):
-    """Qualified-backend import failure with its original cause preserved."""
+class NumbaMlirBackendImportError(ImportError):
+    """Report a Numba backend activation failure to the application.
+
+    Explicit registration and qualified backend imports propagate this error;
+    applications can catch it as ``ImportError``. Automatic registration
+    catches activation failures and emits ``CudaCoopAutoRegistrationWarning``
+    instead, allowing the common import to complete. This is a diagnostic
+    exception, rather than an internal signal for compiler control flow.
+
+    ``backend`` identifies the compiler, ``reason_code`` classifies the failure,
+    and ``details`` carries diagnostic context. When supplied, the original
+    import failure is preserved as ``__cause__``.
+    """
 
     def __init__(self, reason_code, message, *, cause=None, **details):
         super().__init__(message)
@@ -128,7 +139,7 @@ def _require_numba_mlir_version(runtime: Any) -> None:
     except ModuleNotFoundError as exc:
         if exc.name != "packaging":
             raise
-        raise _NumbaMlirBackendImportError(
+        raise NumbaMlirBackendImportError(
             "backend-dependency-missing",
             "cuda.coop.numba_mlir requires packaging to validate its compiler "
             f"version. Install with {_RUNTIME_INSTALL_HINT}.",
@@ -144,7 +155,7 @@ def _require_numba_mlir_version(runtime: Any) -> None:
     except InvalidVersion:
         supported = False
     if not supported:
-        raise _NumbaMlirBackendImportError(
+        raise NumbaMlirBackendImportError(
             "unsupported-runtime-version",
             _runtime_requirement(runtime),
             detected_version=version,

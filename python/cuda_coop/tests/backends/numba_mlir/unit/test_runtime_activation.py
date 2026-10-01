@@ -180,7 +180,7 @@ def test_registration_postcondition_rejects_noop_or_duplicate_hooks(
         rewrites={},
     )
 
-    with pytest.raises(_activation._NumbaMlirBackendImportError) as exc_info:
+    with pytest.raises(_activation.NumbaMlirBackendImportError) as exc_info:
         _activation._verify_registration_postconditions(
             snapshot,
             SimpleNamespace(
@@ -252,7 +252,7 @@ def test_registration_rollback_preserves_foreign_registrations():
 
 def test_runtime_loading_retries_after_a_failed_qualified_import(monkeypatch):
     runtime = object()
-    error = _activation._NumbaMlirBackendImportError(
+    error = _activation.NumbaMlirBackendImportError(
         "backend-runtime-missing",
         "runtime unavailable",
     )
@@ -260,7 +260,7 @@ def test_runtime_loading_retries_after_a_failed_qualified_import(monkeypatch):
     monkeypatch.setattr(_activation, "_cuda_module", None)
     monkeypatch.setattr(_activation, "_load_runtime", lambda: next(outcomes))
 
-    with pytest.raises(_activation._NumbaMlirBackendImportError) as exc_info:
+    with pytest.raises(_activation.NumbaMlirBackendImportError) as exc_info:
         _activation._require_runtime()
 
     assert exc_info.value is error

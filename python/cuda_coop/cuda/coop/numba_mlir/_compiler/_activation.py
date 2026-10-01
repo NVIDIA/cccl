@@ -14,7 +14,7 @@ from threading import RLock
 from typing import Any
 
 from ._numba_mlir_compat import (
-    _NumbaMlirBackendImportError,
+    NumbaMlirBackendImportError,
     _require_numba_mlir_version,
     _runtime_requirement,
 )
@@ -38,22 +38,36 @@ class _RegistrationSnapshot:
     rewrites: dict[str, tuple[type, ...]]
 
 
-def _load_runtime() -> tuple[Any, _NumbaMlirBackendImportError | None]:
+def _load_runtime() -> tuple[Any, NumbaMlirBackendImportError | None]:
     """Import the CUDA runtime and classify failures for backend activation.
 
-    Import the top-level package before its CUDA module so an absent runtime,
-    a conflicting package without CUDA support, and a broken dependency can
-    produce different diagnostics. Preserve the original exception as the
-    structured error's cause. Import failures are returned here so
-    ``_require_runtime`` can raise them at the activation boundary.
+    Import ``numba_cuda_mlir``, validate its version, then import
+    ``numba_cuda_mlir.cuda``. Classify import failures to distinguish
+    a missing runtime, a package that lacks the required ``.cuda`` compiler
+    submodule, and a dependency that fails while either module is imported.
+    This checks the Python compiler installation; it does not check GPU
+    availability, driver support, or the installed CUDA Toolkit.
+
+    Preserve the original import exception as the returned error's cause.
+    Version-validation errors raise directly instead of using the return tuple.
+    ``_require_runtime`` raises that error during activation. Explicit
+    registration and qualified imports propagate it as an ``ImportError``;
+    automatic registration catches it and warns while keeping the common
+    import usable.
 
     Returns
     -------
     runtime : module or None
         The ``numba_cuda_mlir.cuda`` module on success, otherwise ``None``.
-    error : _NumbaMlirBackendImportError or None
+    error : NumbaMlirBackendImportError or None
         Failure with a reason code and import details, otherwise ``None``.
         Exactly one of the two return values is non-``None``.
+
+    Raises
+    ------
+    NumbaMlirBackendImportError
+        The runtime version cannot be established, falls outside the supported
+        range, or the version checker's ``packaging`` dependency is missing.
     """
 
     try:
@@ -63,7 +77,7 @@ def _load_runtime() -> tuple[Any, _NumbaMlirBackendImportError | None]:
         if missing == "numba_cuda_mlir":
             return (
                 None,
-                _NumbaMlirBackendImportError(
+                NumbaMlirBackendImportError(
                     "backend-runtime-missing",
                     "cuda.coop.numba_mlir requires a compatible "
                     f"Numba-CUDA-MLIR runtime. {_runtime_requirement()}",
@@ -73,7 +87,7 @@ def _load_runtime() -> tuple[Any, _NumbaMlirBackendImportError | None]:
             )
         return (
             None,
-            _NumbaMlirBackendImportError(
+            NumbaMlirBackendImportError(
                 "transitive-runtime-import-failed",
                 "cuda.coop.numba_mlir found the Numba-CUDA-MLIR runtime, but "
                 f"importing it failed at dependency {missing!r}. "
@@ -85,7 +99,7 @@ def _load_runtime() -> tuple[Any, _NumbaMlirBackendImportError | None]:
     except Exception as exc:  # noqa: BLE001 - preserve backend import context
         return (
             None,
-            _NumbaMlirBackendImportError(
+            NumbaMlirBackendImportError(
                 "transitive-runtime-import-failed",
                 "cuda.coop.numba_mlir found the Numba-CUDA-MLIR runtime, but "
                 "importing it failed with "
@@ -104,7 +118,7 @@ def _load_runtime() -> tuple[Any, _NumbaMlirBackendImportError | None]:
         if missing == "numba_cuda_mlir.cuda":
             return (
                 None,
-                _NumbaMlirBackendImportError(
+                NumbaMlirBackendImportError(
                     "conflicting-backend-runtime",
                     "cuda.coop.numba_mlir found a package named "
                     "'numba_cuda_mlir', but it does not provide the CUDA "
@@ -116,7 +130,7 @@ def _load_runtime() -> tuple[Any, _NumbaMlirBackendImportError | None]:
             )
         return (
             None,
-            _NumbaMlirBackendImportError(
+            NumbaMlirBackendImportError(
                 "transitive-runtime-import-failed",
                 "cuda.coop.numba_mlir found the Numba-CUDA-MLIR runtime, but "
                 f"its CUDA compiler failed to import dependency {missing!r}. "
@@ -128,7 +142,7 @@ def _load_runtime() -> tuple[Any, _NumbaMlirBackendImportError | None]:
     except Exception as exc:  # noqa: BLE001 - preserve backend import context
         return (
             None,
-            _NumbaMlirBackendImportError(
+            NumbaMlirBackendImportError(
                 "transitive-runtime-import-failed",
                 "cuda.coop.numba_mlir found the Numba-CUDA-MLIR runtime, but "
                 "its CUDA compiler failed to import with "
@@ -163,8 +177,8 @@ def _initialize_runtime_hooks() -> None:
 def _initialize_runtime_hooks_transaction() -> None:
     """Import compiler passes as one recoverable registration attempt.
 
-    Require the runtime and compatibility layer before taking snapshots of
-    the compiler registries and currently loaded backend submodules. Importing
+    Require a supported runtime before taking snapshots of the compiler
+    registries and currently loaded backend submodules. Importing
     the rewrite and group-planner modules registers their classes as a side
     effect; verify that both planners and the before-inference rewrite are
     present exactly once, including when imports reuse existing modules.
@@ -173,7 +187,7 @@ def _initialize_runtime_hooks_transaction() -> None:
     entries and newly loaded submodules before re-raising. This lets a later
     activation retry execute the registration code, while preserving modules
     and registrations that predate the attempt or belong to other extensions.
-    Runtime imports and compatibility objects are outside this rollback.
+    Runtime imports and version validation are outside this rollback.
 
     The caller must hold ``_activation_lock`` to serialize this backend's
     registration attempts. The rollback also runs for ``BaseException``
@@ -231,13 +245,10 @@ def _verify_registration_postconditions(
         ``CoopSinglePhaseRewrite``.
     group_planner_module : module
         Module exporting ``CoopGroupHierarchyPlanner``.
-    compat : _NumbaMlirCompilerCompat or None, optional
-        Compiler adapter used to inspect registrations. ``None`` loads the
-        active runtime's cached adapter.
 
     Raises
     ------
-    _NumbaMlirBackendImportError
+    NumbaMlirBackendImportError
         A required planner or before-inference rewrite is absent or duplicated.
         The error records all three counts for activation diagnostics.
     """
@@ -266,7 +277,7 @@ def _verify_registration_postconditions(
         if count != 1
     )
     if invalid:
-        raise _NumbaMlirBackendImportError(
+        raise NumbaMlirBackendImportError(
             "registration-postcondition-failed",
             "cuda.coop.numba_mlir called the compiler registration APIs, but "
             "the required planner and rewrite hooks were not each registered "
@@ -293,7 +304,7 @@ def _snapshot_registrations() -> _RegistrationSnapshot:
 
     Raises
     ------
-    _NumbaMlirBackendImportError
+    NumbaMlirBackendImportError
         A required registry cannot be inspected using the supported compiler
         interface. The original attribute or type error is retained as its cause.
     """
@@ -317,7 +328,7 @@ def _snapshot_registrations() -> _RegistrationSnapshot:
             rewrites=rewrites,
         )
     except (AttributeError, TypeError) as exc:
-        raise _NumbaMlirBackendImportError(
+        raise NumbaMlirBackendImportError(
             "registration-transaction-unavailable",
             "cuda.coop.numba_mlir cannot transactionally register its "
             "planners and rewrite with the installed numba-cuda-mlir runtime.",
