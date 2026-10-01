@@ -36,11 +36,9 @@
 #include <cuda/__fp/fpemu_impl.h>
 #include <cuda/__fp/fpemu_impl_unpack.h>
 #include <cuda/std/__bit/countl.h>
-// ::fma, the host seed. Declaring it by hand instead cannot be made portable:
-// the exception specification has to match the platform's <math.h> (glibc marks
-// it __THROW, MSVC's CRT does not), and on Windows the CRT prototype carries a
-// dllimport that a plain redeclaration conflicts with.
-#include <cuda/std/__host_stdlib/math.h>
+// The ::fma host seed from the platform's <math.h>, which no hand-written declaration
+// can portably match, plus the cuda::std::fma the end of this file extends.
+#include <cuda/std/__cmath/fma.h>
 
 #include <nv/target>
 
