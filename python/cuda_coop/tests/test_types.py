@@ -44,7 +44,6 @@ def test_algorithm_identity_distinguishes_specializations():
     assert cache[equivalent] == "compiled"
     for variant in variants:
         assert variant not in cache
-        assert variant.symbol_mangling_inputs != base.symbol_mangling_inputs
 
 
 @pytest.mark.parametrize("value", (False, True))

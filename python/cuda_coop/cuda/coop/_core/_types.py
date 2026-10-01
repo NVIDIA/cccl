@@ -70,12 +70,6 @@ class TemplateParameter:
 class Dependency:
     name: str
 
-    @property
-    def dep(self) -> str:
-        """Compatibility spelling used by existing backend descriptors."""
-
-        return self.name
-
     def resolve(self, template_arguments: Mapping[str, Any]) -> Any:
         if self.name not in template_arguments:
             raise SubstitutionFailure(
@@ -90,12 +84,6 @@ class Dependency:
 @dataclass(frozen=True)
 class Constant:
     value: Any
-
-    @property
-    def val(self) -> Any:
-        """Compatibility spelling used by existing backend descriptors."""
-
-        return self.value
 
     def resolve(self, _template_arguments: Mapping[str, Any]) -> Any:
         return self.value

@@ -200,16 +200,6 @@ class ArgumentPrecondition:
         ):
             raise ValueError("argument precondition minimum exceeds maximum")
 
-    def validate(self, value: int) -> None:
-        """Validate a concrete value when a caller can inspect it."""
-
-        if not isinstance(value, int) or isinstance(value, bool):
-            raise TypeError(f"{self.name} must be an integer")
-        if self.minimum is not None and value < self.minimum:
-            raise ValueError(f"{self.name} must be at least {self.minimum}")
-        if self.maximum is not None and value > self.maximum:
-            raise ValueError(f"{self.name} must be at most {self.maximum}")
-
 
 @dataclass(frozen=True)
 class ParticipationContract:
