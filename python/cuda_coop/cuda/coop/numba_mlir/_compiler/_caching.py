@@ -255,6 +255,36 @@ def _write_cache(path, value):
 
 
 def disk_cache(func):
+    """Decorate a computation with best-effort persistent result caching.
+
+    Cache files are namespaced by the callable's module and qualified name;
+    the entry key includes that identity, arguments, and the cache schema.
+    Callers must therefore include every compilation input that affects the
+    result in the arguments. Callable source changes do not invalidate entries
+    by themselves. The enable flag is read from ``CUDA_COOP_ENABLE_CACHE``
+    when this module is imported.
+
+    Unsupported key encodings bypass the cache, and unsupported result
+    encodings skip the write. Directory or write ``OSError`` failures disable
+    caching for every wrapper in this module for the rest of the process;
+    unreadable entries simply miss. Exceptions from the wrapped computation
+    propagate without being cached. There is no lock around computation, so
+    concurrent misses can compute the same result before atomic publication.
+
+    Parameters
+    ----------
+    func : callable
+        Computation whose result can be reused for the same serialized inputs.
+        Arguments must be accepted by ``_json_cache_key`` to use the cache;
+        results must round-trip through the cache value encoding.
+
+    Returns
+    -------
+    callable
+        Wrapper preserving ``func`` metadata and forwarding its arguments.
+        Returns a decoded cache hit or the newly computed result.
+    """
+
     cache_identity = f"{func.__module__}.{func.__qualname__}"
 
     @wraps(func)
