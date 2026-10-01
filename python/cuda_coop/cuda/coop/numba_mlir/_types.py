@@ -1158,8 +1158,44 @@ class Algorithm:
     def _qualify_private_symbols(
         self, *, threads=None, block_threads=None, compile_identity=None
     ):
-        """Give each emitted provider interface a deterministic private
-        namespace.
+        """Bind this provider to a deterministic private symbol namespace.
+
+        Source emission and overload registration must agree on exported names,
+        including when several specializations share one translation unit. Hash
+        the provider's coalescing key, which includes its ABI, thread
+        configuration, compiler context, and compilation target. Equivalent
+        providers therefore share names; providers with different interfaces or
+        targets remain distinct.
+
+        The first call stores the compile identity, key, and digest on this
+        object. Later calls accept the same identity and key but reject a
+        changed one. When no identity is supplied, query the current CUDA device
+        even if a previous call has already qualified the provider.
+
+        Parameters
+        ----------
+        threads : int, optional
+            Logical warp width override used in the coalescing key. ``None``
+            uses ``self.threads``.
+        block_threads : int or tuple of int, optional
+            Enclosing block configuration override. ``None`` uses
+            ``self.block_threads``.
+        compile_identity : tuple, optional
+            Target and options returned by ``nvrtc.compiler_identity``. ``None``
+            resolves them from this provider's compiler context and current
+            device.
+
+        Returns
+        -------
+        tuple
+            Bound compilation identity for subsequent source and artifact
+            creation.
+
+        Raises
+        ------
+        RuntimeError
+            This object was already bound to a different compilation identity or
+            coalescing key.
         """
 
         compile_identity = self._bind_provider_compile_identity(
