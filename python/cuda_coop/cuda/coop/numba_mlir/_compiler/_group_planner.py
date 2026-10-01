@@ -237,6 +237,38 @@ class _GroupCallPlanner:
                     )
 
     def _constant(self, value: Any) -> Any:
+        """Resolve a required compile-time argument or request specialization.
+
+        Try direct argument and constant definitions first, then reconstruct
+        hierarchy or group descriptors, and finally use Numba constant
+        inference. A non-literal kernel argument requests dispatcher
+        specialization rather than being treated as an unsupported value.
+        Descriptor reconstruction may populate the planner's caches. This is the
+        required-constant path; callers classifying optional runtime controls
+        use ``_try_static_scalar`` instead.
+
+        Parameters
+        ----------
+        value : ir.Var or object
+            IR variable to resolve, or an already-resolved value returned
+            unchanged.
+
+        Returns
+        -------
+        object
+            Compile-time value, including ``None`` or a reconstructed
+            descriptor.
+
+        Raises
+        ------
+        ForceLiteralArg
+            A function argument must be recompiled with a literal type.
+        NonConstantGroupArgumentError
+            The value cannot be resolved by descriptor or constant inference.
+        GroupRewriteError
+            A recognized descriptor has unsupported call syntax or arguments.
+        """
+
         if not isinstance(value, ir.Var):
             return value
         definition = self._definition(value)
