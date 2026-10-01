@@ -39,6 +39,7 @@
 #    include <cuda/experimental/coop/__group/concepts.cuh>
 #    include <cuda/experimental/coop/__group/fwd.cuh>
 #    include <cuda/experimental/coop/__group/queries.cuh>
+#    include <cuda/experimental/coop/__group/traits.cuh>
 #  endif // _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -209,16 +210,17 @@ struct hierarchy_level_base
 
   _CCCL_TEMPLATE(class _Group)
   _CCCL_REQUIRES(::cuda::experimental::coop::group<_Group>)
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_root_rank(const _Group& __group) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static bool is_root_rank(const _Group& __group) noexcept
   {
     return _Level::rank(__group) == 0;
   }
 
   _CCCL_TEMPLATE(class _Group)
   _CCCL_REQUIRES(::cuda::experimental::coop::group<_Group>)
-  [[nodiscard]] _CCCL_API static constexpr bool is_part_of(const _Group& __group) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static bool is_part_of(const _Group& __group) noexcept
   {
-    // todo: static_assert that the _Level <= _Group::unit_type
+    static_assert(::cuda::experimental::coop::__unit_same_as_or_below_v<_Level, typename _Group::unit_type>,
+                  "Only levels below or same as _Group::unit_type can be queried for participation");
     return ::cuda::experimental::coop::__is_part_of_group<_Level>(__group);
   }
 #    endif // _CCCL_CUDA_COMPILATION()
