@@ -459,8 +459,39 @@ class GroupPlanningContext:
         return cls._one_dtype(set(resolved), message=message)
 
     def record_thread_data_dtype(self, value: Any, dtype: Any) -> None:
-        """Keep an output's inferred dtype available to subsequent group
-        calls.
+        """Record a producer's element dtype at the payload's constructor sites.
+
+        Group planning precedes the provider rewrite that materializes payloads.
+        A load into untyped ``ThreadData`` therefore records its inferred dtype
+        here so subsequent group calls can recover it. Follow descriptor
+        aliases, casts, phi inputs, and constant tuple projections to
+        constructor calls, keying the cache by call-expression identity so
+        aliases share the fact. Explicit constructor dtypes and earlier inferred
+        dtypes must agree.
+
+        Only recognized constructors reached by this traversal are updated;
+        unresolved tuple projections and other leaves contribute no cache entry.
+        This updates the planning context, not constructor arguments in the IR.
+
+        Parameters
+        ----------
+        value : ir.Var
+            Producer's output payload, possibly reached through supported
+            aliases or tuple projections.
+        dtype : object
+            Normalized element dtype inferred by the producer.
+
+        Returns
+        -------
+        None
+            Any recognized constructor sites now carry the inferred dtype.
+
+        Raises
+        ------
+        GroupRewriteError
+            A reached constructor already has a different explicit or inferred
+            dtype. Cache entries recorded before the conflict are not rolled
+            back.
         """
 
         def payload_definitions(current, seen):
