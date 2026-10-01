@@ -341,7 +341,35 @@ def group_operation(
     *,
     family_module: str,
 ) -> Callable[[_CallableT], _CallableT]:
-    """Register one public group marker by exact callable identity."""
+    """Associate a public group marker with its compiler family.
+
+    The decorator records the exact callable object, so the planner recognizes
+    aliases of the registered function without treating unrelated functions with
+    the same name as cooperative operations. Record the family module for lazy
+    loading of planning/rewrite hooks and attach the backend-member marker used
+    during common API provenance checks. Registration does not import that
+    family or wrap the decorated function.
+
+    Parameters
+    ----------
+    operation : str
+        Shared operation identifier used by group planning and rewrite lookup.
+    family_module : str
+        Importable compiler-family module that registers the operation's hooks.
+
+    Returns
+    -------
+    callable
+        Decorator that mutates the registries and callable metadata, then
+        returns the original function. Repeating the same registration is
+        allowed.
+
+    Raises
+    ------
+    RuntimeError
+        Applying the decorator would associate an already registered callable
+        with another operation, or an operation with another family module.
+    """
 
     def decorate(function: _CallableT) -> _CallableT:
         existing = _GROUP_OPERATIONS.get(function)
