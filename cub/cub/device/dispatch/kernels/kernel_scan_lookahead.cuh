@@ -53,6 +53,7 @@ _CCCL_IKET_CREATE_PUSH_POP_RANGE(Prologue);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadReduce);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadScanStore);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadLoadAndNextIdx);
+_CCCL_IKET_CREATE_START_END_RANGE(SquadStore);
 // _CCCL_IKET_CREATE_PUSH_POP_RANGE(Load); // Already declared in cub/agent/agent_scan.cuh, can't declare again
 _CCCL_IKET_CREATE_PUSH_POP_RANGE(NextIdx);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadLookahead);
@@ -67,7 +68,8 @@ _CCCL_IKET_CREATE_PUSH_POP_RANGE(ThreadScan);
 _CCCL_HOST_DEVICE_API constexpr int num_total_threads(const ScanLookaheadPolicy& policy)
 {
   const auto num_total_warps =
-    2 * policy.reduce_and_scan_warps + 1 /*num_load_and_sched_warps*/ + 1 /*num_lookahead_warps*/;
+    2 * policy.reduce_and_scan_warps + 1 /*num_load_and_sched_warps*/ + 1 /*num_lookahead_warps*/
+    + 1 /*num_store_warps*/;
   return num_total_warps * warp_threads;
 }
 
@@ -282,13 +284,19 @@ struct lookahead_scan_closure
   static constexpr warpspeed::SquadDesc squadScanStore      = squad_scan_store(policy);
   static constexpr warpspeed::SquadDesc squadLoadAndNextIdx = squad_load_and_next_idx(policy);
   static constexpr warpspeed::SquadDesc squadLookahead      = squad_lookahead(policy);
+  static constexpr warpspeed::SquadDesc squadStore          = squad_store(policy);
 
-  static constexpr ::cuda::std::array<warpspeed::SquadDesc, 4> scanSquads = {
+  static constexpr ::cuda::std::array<warpspeed::SquadDesc, 5> scanSquads = {
     squad_reduce(policy),
     squad_scan_store(policy),
     squad_load_and_next_idx(policy),
     squad_lookahead(policy),
+    squad_store(policy),
   };
+
+  // If the output elements are larger than the input elements, the output of a tile does not fit into the SMEM tile
+  // buffer at once and the scan squad has to issue multiple bulk stores itself. Otherwise, the store squad does it.
+  static constexpr bool scanSquadStores = sizeof(OutputT) > sizeof(InputT);
 
   static constexpr int tile_size                  = policy.tile_size();
   static constexpr int lookahead_items_per_thread = policy.lookahead_items_per_thread;
@@ -695,13 +703,9 @@ struct lookahead_scan_closure
 
       warpspeed::squadStoreSmem(
         squad, reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.smemStartSkipBytes), regAggrInclusive);
-      // We do *not* release refSmemInOut here, because we will issue a TMA
-      // instruction below. Instead, we issue a squad-local syncthreads +
-      // fence.proxy.async to sync the shared memory writes with the TMA store.
-      squad.syncThreads();
-
-      // Store result to global memory using TMA
-      warpspeed::squadStoreBulkSync(squad, storeInfo, smem_output_tile);
+      // The store squad issues the TMA store once all threads of this squad released refInOutRW. Fence the shared
+      // memory writes to the async proxy before releasing.
+      refInOutRW.setFenceLdsToAsyncProxy();
     }
     else
     {
@@ -737,9 +741,25 @@ struct lookahead_scan_closure
       }
     }
 
-    // Release refInOut. No need to do any cross-proxy fencing here, because
-    // the TMA store in this warp and the TMA load in the load warp are both
-    // async proxy.
+    // Release refInOut. The store squad (or this squad for chunked stores) issues the TMA stores, which are async
+    // proxy like the TMA load in the load squad.
+  }
+
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void store_tile(
+    const warpspeed::Squad& squad,
+    warpspeed::SmemPhase<in_out_t>& phaseInOutS,
+    int valid_items,
+    ::cuda::std::size_t idxTileBase) const
+  {
+    // Wait until the scan squad has written the output tile to shared memory
+    warpspeed::SmemRef refInOutS = phaseInOutS.acquireRef();
+    if constexpr (!scanSquadStores)
+    {
+      const warpspeed::CpAsyncOobInfo storeInfo =
+        warpspeed::prepareCpAsyncOob(params.ptrOut + idxTileBase, valid_items);
+      // Blocks until the bulk store finished reading from shared memory, then refInOutS is released for the next load
+      warpspeed::squadStoreBulkSync(squad, storeInfo, refInOutS.data().inout);
+    }
   }
 
   // This function is a straight-line implementation of the warp-specialized kernel.
@@ -794,7 +814,7 @@ struct lookahead_scan_closure
       // readable by a set of threads. To acquire and release a phase, we need to arrive and wait on certain barriers.
       // The selection of the barriers is handled under the hood.
       auto [phaseNextBlockIdxW, phaseNextBlockIdxR]           = warpspeed::bindPhases<2>(stageNextBlockIdx);
-      auto [phaseInOutW, phaseInOutRW]                        = warpspeed::bindPhases<2>(stageInOut);
+      auto [phaseInOutW, phaseInOutRW, phaseInOutS]           = warpspeed::bindPhases<3>(stageInOut);
       auto [phaseThreadAndWarpAggrW, phaseThreadAndWarpAggrR] = warpspeed::bindPhases<2>(stageThreadAndWarpAggr);
       auto [phaseAggrExclusiveCtaW, phaseAggrExclusiveCtaR]   = warpspeed::bindPhases<2>(stageAggrExclusiveCta);
 
@@ -896,6 +916,14 @@ struct lookahead_scan_closure
             idxTileBase);
         }
         _CCCL_IKET_RANGE_END(SquadScanStore);
+      }
+
+      // slice is intentional, see SquadDesc::operator==()
+      if (squad == squadStore) // NOLINT(cppcoreguidelines-slicing)
+      {
+        _CCCL_IKET_RANGE_START(SquadStore);
+        store_tile(squad, phaseInOutS, valid_items, idxTileBase);
+        _CCCL_IKET_RANGE_END(SquadStore);
       }
 
       // All squads: Check loop condition and update next tile index

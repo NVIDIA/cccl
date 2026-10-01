@@ -767,6 +767,11 @@ _CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_lookahead(const ScanL
   return warpspeed::SquadDesc{3, 1}; // must have 1 warp
 }
 
+_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_store(const ScanLookaheadPolicy&)
+{
+  return warpspeed::SquadDesc{4, 1}; // issues the bulk store, so 1 warp is enough
+}
+
 // TODO(bgruber): put this somewhere else
 constexpr _CCCL_HOST_DEVICE_API bool is_arithmetic_type(type_t type)
 {
@@ -816,10 +821,12 @@ _CCCL_HOST_DEVICE_API constexpr void setup_scan_resources(
     squad_scan_store(policy),
     squad_load_and_next_idx(policy),
     squad_lookahead(policy),
+    squad_store(policy),
   };
 
   smemInOut.addPhase(syncHandler, smemAllocator, squad_load_and_next_idx(policy));
   smemInOut.addPhase(syncHandler, smemAllocator, {squad_reduce(policy), squad_scan_store(policy)});
+  smemInOut.addPhase(syncHandler, smemAllocator, squad_store(policy));
 
   smemNextBlockIdx.addPhase(syncHandler, smemAllocator, squad_load_and_next_idx(policy));
   smemNextBlockIdx.addPhase(syncHandler, smemAllocator, scanSquads);
