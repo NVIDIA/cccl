@@ -60,7 +60,7 @@ class _CubLoadStoreRequest:
         if self.plan.target is GroupLoweringTarget.CUB_WARP:
             if self.plan.resolved_group.kind != "warp":
                 raise NotImplementedError(
-                    "CUTLASS Warp Load/Store currently requires physical warps"
+                    "CUTLASS Warp Load/Store requires physical warps"
                 )
             if self.plan.temp_storage.ownership is StorageOwnership.CALLER:
                 raise NotImplementedError(
