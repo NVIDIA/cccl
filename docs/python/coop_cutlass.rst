@@ -763,7 +763,7 @@ Radix Sort and Rank
 
 ``radix_sort_keys(block, keys, ...)`` returns sorted keys, and
 ``radix_sort_pairs(block, keys, values, ...)`` returns sorted keys and their
-associated values. ``radix_rank(block, keys, ...)`` instead returns each
+associated values. ``radix_rank_keys(block, keys, ...)`` instead returns each
 input item's position in the order of a selected digit. It preserves the
 input arrangement; use the returned ranks when assigning destinations.
 All three primitives preserve their inputs. Equal selected digits retain
