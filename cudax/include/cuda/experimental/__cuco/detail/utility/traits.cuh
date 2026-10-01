@@ -23,6 +23,7 @@
 
 #include <thrust/device_reference.h>
 
+#include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/declval.h>
@@ -39,6 +40,24 @@ template <class _Tp>
 inline constexpr bool __is_pair_like_v = ::cuda::std::__pair_like<
   ::cuda::std::remove_reference_t<decltype(::thrust::raw_reference_cast(::cuda::std::declval<_Tp>()))>>;
 } // namespace cuda::experimental::cuco::detail
+
+//! @brief Declares that a type is safe for bitwise comparison by cuco operations.
+//!
+//! Invoke at global scope, before the first use of `cuda::is_bitwise_comparable_v<Type>`.
+//! This specializes the CUDA trait, so the declaration also applies to other CUDA facilities.
+//! As with `CUCO_DECLARE_BITWISE_COMPARABLE`, callers may opt in floating-point types, but
+//! must ensure that their values and sentinels have suitable object representations. In
+//! particular, distinct NaN representations and positive/negative zero compare differently
+//! bitwise even when the application treats them as equivalent.
+//!
+//! @param Type Unqualified type to declare bitwise comparable
+//!
+//! @code
+//! CUDAX_CUCO_DECLARE_BITWISE_COMPARABLE(float);
+//! @endcode
+#define CUDAX_CUCO_DECLARE_BITWISE_COMPARABLE(Type) \
+  template <>                                       \
+  inline constexpr bool ::cuda::is_bitwise_comparable_v<Type> = true
 
 #include <cuda/std/__cccl/epilogue.h>
 
