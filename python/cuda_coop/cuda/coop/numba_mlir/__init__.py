@@ -7,10 +7,11 @@ Numba-CUDA-MLIR.
 """
 
 import importlib
+from typing import TYPE_CHECKING
 
 from .._core.api import TempStorageLike, ThreadDataLike
 from ._compiler._activation import _initialize_runtime_hooks
-from ._group_load_store import load, store
+from ._group._load_store import load, store
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData
 from ._thread_group import (
@@ -23,6 +24,35 @@ from ._thread_group import (
     this_thread,
     this_warp,
 )
+
+if TYPE_CHECKING:
+    from ._group._exchange import exchange
+    from ._group._histogram import histogram
+    from ._group._merge_sort import merge_sort_keys, merge_sort_pairs
+    from ._group._neighbors import adjacent_difference, discontinuity
+    from ._group._radix_sort import (
+        radix_rank_keys,
+        radix_sort_keys,
+        radix_sort_pairs,
+    )
+    from ._group._reduce import reduce, sum
+    from ._group._run_length import run_length_decode, run_length_decode_into
+    from ._group._scan import (
+        exclusive_scan,
+        exclusive_sum,
+        inclusive_scan,
+        inclusive_sum,
+        scan,
+    )
+    from ._group._shuffle import shuffle
+    from ._group._topk import (
+        topk_max_keys,
+        topk_max_pairs,
+        topk_min_keys,
+        topk_min_pairs,
+    )
+    from ._stateful_function import StatefulFunction
+    from ._thread_data import local, shared
 
 __all__ = [
     "Hierarchy",
@@ -45,7 +75,7 @@ __all__ = [
     "local",
     "merge_sort_keys",
     "merge_sort_pairs",
-    "radix_rank",
+    "radix_rank_keys",
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
@@ -75,7 +105,7 @@ def __getattr__(name):
         "histogram",
         "merge_sort_keys",
         "merge_sort_pairs",
-        "radix_rank",
+        "radix_rank_keys",
         "radix_sort_keys",
         "radix_sort_pairs",
         "exchange",
@@ -95,29 +125,29 @@ def __getattr__(name):
         "topk_min_pairs",
     }:
         module_name = {
-            "adjacent_difference": "_group_neighbors",
-            "discontinuity": "_group_neighbors",
-            "histogram": "_group_histogram",
-            "merge_sort_keys": "_group_merge_sort",
-            "merge_sort_pairs": "_group_merge_sort",
-            "radix_rank": "_group_radix",
-            "radix_sort_keys": "_group_radix",
-            "radix_sort_pairs": "_group_radix",
-            "exchange": "_group_exchange",
-            "exclusive_scan": "_group_scan",
-            "exclusive_sum": "_group_scan",
-            "inclusive_scan": "_group_scan",
-            "inclusive_sum": "_group_scan",
-            "reduce": "_group_reduce",
-            "run_length_decode": "_group_run_length",
-            "run_length_decode_into": "_group_run_length",
-            "scan": "_group_scan",
-            "shuffle": "_group_shuffle",
-            "sum": "_group_reduce",
-            "topk_max_keys": "_group_topk",
-            "topk_max_pairs": "_group_topk",
-            "topk_min_keys": "_group_topk",
-            "topk_min_pairs": "_group_topk",
+            "adjacent_difference": "_group._neighbors",
+            "discontinuity": "_group._neighbors",
+            "histogram": "_group._histogram",
+            "merge_sort_keys": "_group._merge_sort",
+            "merge_sort_pairs": "_group._merge_sort",
+            "radix_rank_keys": "_group._radix_sort",
+            "radix_sort_keys": "_group._radix_sort",
+            "radix_sort_pairs": "_group._radix_sort",
+            "exchange": "_group._exchange",
+            "exclusive_scan": "_group._scan",
+            "exclusive_sum": "_group._scan",
+            "inclusive_scan": "_group._scan",
+            "inclusive_sum": "_group._scan",
+            "reduce": "_group._reduce",
+            "run_length_decode": "_group._run_length",
+            "run_length_decode_into": "_group._run_length",
+            "scan": "_group._scan",
+            "shuffle": "_group._shuffle",
+            "sum": "_group._reduce",
+            "topk_max_keys": "_group._topk",
+            "topk_max_pairs": "_group._topk",
+            "topk_min_keys": "_group._topk",
+            "topk_min_pairs": "_group._topk",
         }[name]
         value = getattr(
             importlib.import_module(f"{__name__}.{module_name}"), name

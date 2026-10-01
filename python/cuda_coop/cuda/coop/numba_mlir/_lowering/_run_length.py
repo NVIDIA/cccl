@@ -42,6 +42,7 @@ def _decode(
         relative_offsets=relative_offsets,
     )
     metadata = factory_operation(factory)
+    assert metadata is not None
     return make_invocable_from_specialization(
         adapter.materialize(
             spec.specialization,

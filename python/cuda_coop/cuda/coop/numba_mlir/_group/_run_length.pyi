@@ -5,14 +5,14 @@
 import numpy
 from typing_extensions import TypeVar
 
-from .._typing import (
+from ..._typing import (
     IntegralScalar,
     PortableNumericScalar,
     PortableThreadDataLike,
     TempStorageLike,
     ThreadDataLike,
 )
-from ._thread_group import BlockGroup
+from .._thread_group import BlockGroup
 
 _ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 _LengthT = TypeVar("_LengthT", bound=IntegralScalar)
