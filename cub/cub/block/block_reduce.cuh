@@ -608,7 +608,7 @@ public:
     {
       if (num_valid >= BLOCK_THREADS)
       {
-        return InternalBlockReduce(temp_storage).template Reduce<true, true>(input, num_valid, reduction_op);
+        return InternalBlockReduce(temp_storage).template Reduce<true, true>(input, BLOCK_THREADS, reduction_op);
       }
       else
       {

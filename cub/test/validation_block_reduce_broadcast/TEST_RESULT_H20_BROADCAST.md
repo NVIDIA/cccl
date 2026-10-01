@@ -7,6 +7,8 @@
 
 The 128-wide normalization consumer measures 1.0251–1.0297×, while the 512-wide consumer measures 0.9022–0.9132×. The unchanged first-thread consumer has identical SASS. Full-model ratios are 0.9900× and 1.0002×, with quartet ranges crossing 1×; these runs demonstrate no stable model speedup. The broadcast cost is explicitly opt-in.
 
+The [oversized valid-count follow-up](TEST_RESULT_H20_VALID_COUNT.md) adds a partial-warp correction and stronger noncommutative coverage. The original timing records below retain their recorded source; all 12 measured consumer kernels are unchanged by that correction.
+
 ## Source and machine
 
 - Patch source: `e3af129906d20c3d3317668e9aa30e2fe4a1217c`; control source: `0909f9ee05c632af18fba74a366b657370a12aee`.

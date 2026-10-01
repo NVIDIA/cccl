@@ -33,7 +33,8 @@ __global__ void broadcast_kernel(const T* input, T* output, int valid_items, boo
   output[tid] = full_tile ? reduce.ReduceBroadcast(input[tid], reduction_op)
                           : reduce.ReduceBroadcast(input[tid], reduction_op, valid_items);
   __syncthreads();
-  const T aggregate = reduce.Reduce(input[tid], reduction_op, valid_items);
+  const T aggregate =
+    reduce.Reduce(input[tid], reduction_op, valid_items < block_threads ? valid_items : block_threads);
   if (tid == 0)
   {
     output[block_threads] = aggregate;
@@ -56,6 +57,7 @@ void check_broadcast(c2h::device_vector<T>& input, ReductionOp reduction_op)
           std::max(1, block_threads - 1),
           block_threads,
           block_threads + 3);
+  CAPTURE(full_tile, valid_items);
   c2h::device_vector<T> output(block_threads + 1);
   broadcast_kernel<BlockDimX, BlockDimYZ><<<1, dim3(BlockDimX, BlockDimYZ, BlockDimYZ)>>>(
     thrust::raw_pointer_cast(input.data()),
@@ -95,6 +97,20 @@ struct take_first_t
   }
 };
 
+struct compose_affine_t
+{
+  __host__ __device__ std::uint64_t operator()(std::uint64_t left, std::uint64_t right) const
+  {
+    const auto left_a     = static_cast<std::uint32_t>(left >> 32);
+    const auto left_b     = static_cast<std::uint32_t>(left);
+    const auto right_a    = static_cast<std::uint32_t>(right >> 32);
+    const auto right_b    = static_cast<std::uint32_t>(right);
+    const std::uint32_t a = left_a * right_a;
+    const std::uint32_t b = left_a * right_b + left_b;
+    return (static_cast<std::uint64_t>(a) << 32) | b;
+  }
+};
+
 CUB_TEST("Block reduce broadcasts numeric aggregates", "[reduce][block][broadcast]", CUB_SMALL, types)
 {
   using type = c2h::get<0, TestType>;
@@ -126,4 +142,16 @@ CUB_TEST("Block reduce broadcasts noncommutative aggregates", "[reduce][block][b
   c2h::device_vector<type> input(TEST_DIM_X * TEST_DIM_YZ * TEST_DIM_YZ);
   c2h::gen(C2H_SEED(3), input, type{-7}, type{7});
   check_broadcast<TEST_DIM_X, TEST_DIM_YZ>(input, take_first_t{});
+}
+
+CUB_TEST("Block reduce preserves affine composition order", "[reduce][block][broadcast]", CUB_SMALL)
+{
+  // Composition modulo 2^32 is associative and depends on every item's order.
+  c2h::host_vector<std::uint64_t> values(TEST_DIM_X * TEST_DIM_YZ * TEST_DIM_YZ);
+  for (std::size_t i = 0; i < values.size(); ++i)
+  {
+    values[i] = (static_cast<std::uint64_t>(2 * i + 3) << 32) | (i + 1);
+  }
+  c2h::device_vector<std::uint64_t> input = values;
+  check_broadcast<TEST_DIM_X, TEST_DIM_YZ>(input, compose_affine_t{});
 }
