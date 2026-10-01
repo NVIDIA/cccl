@@ -169,6 +169,26 @@ def _decode_cache_value(value):
 
 
 def _read_cache(path):
+    """Read one cache entry, treating unusable files as cache misses.
+
+    Validate the schema version and the decoded value's recorded type before
+    returning it. This catches stale formats and values whose JSON round trip
+    changes their top-level type. It does not authenticate cached data or
+    validate the value against a particular compiler invocation.
+
+    Parameters
+    ----------
+    path : str or path-like
+        JSON cache entry to open. The function does not modify or remove it.
+
+    Returns
+    -------
+    object
+        Decoded value on success, otherwise the unique ``_CACHE_MISS`` sentinel
+        for an unreadable, malformed, stale, or type-inconsistent entry.
+        ``None`` is a valid cached result and is distinct from a miss.
+    """
+
     try:
         with open(path, encoding="utf-8") as f:
             cached = json.load(f)
