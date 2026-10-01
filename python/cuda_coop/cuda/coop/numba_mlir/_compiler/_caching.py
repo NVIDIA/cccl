@@ -101,6 +101,31 @@ def _json_cache_key(value):
 
 
 def json_hash(*args, **kwargs):
+    """Hash positional and keyword arguments using the current cache schema.
+
+    Prefix the serialized argument tree with the schema version so changes to
+    the cache format invalidate older entries. Keyword names are part of the
+    key, and their insertion order does not affect it. This function does not
+    add callable identity; ``disk_cache`` passes that identity as an argument.
+
+    Parameters
+    ----------
+    *args : object
+        Positional key components accepted by ``_json_cache_key``.
+    **kwargs : object
+        Named key components with the same serialization restrictions.
+
+    Returns
+    -------
+    str
+        Hexadecimal SHA-256 digest of the versioned argument representation.
+
+    Raises
+    ------
+    TypeError
+        An argument cannot be represented by the cache key encoder.
+    """
+
     hasher = hashlib.sha256()
     hasher.update(f"v{_CACHE_SCHEMA_VERSION}:".encode())
     payload = json.dumps(
