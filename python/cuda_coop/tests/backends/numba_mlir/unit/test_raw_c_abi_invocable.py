@@ -119,9 +119,7 @@ def test_raw_c_abi_invocable_typing_is_local_and_owns_artifact(monkeypatch):
     from numba_cuda_mlir.descriptor import mlir_target
 
     from cuda.coop.numba_mlir import _types
-    from cuda.coop.numba_mlir._compiler._numba_mlir_compat import (
-        _get_numba_mlir_compat,
-    )
+    from numba_cuda_mlir.extending import _NumbaCudaMlirOverloadFunctionTemplate
 
     registry_sizes = _registry_sizes()
     invocable, _ = _make_raw(
@@ -136,7 +134,7 @@ def test_raw_c_abi_invocable_typing_is_local_and_owns_artifact(monkeypatch):
     assert len(invocable_type.templates) == 1
     assert issubclass(
         invocable_type.templates[0],
-        _get_numba_mlir_compat().overload_function_template,
+        _NumbaCudaMlirOverloadFunctionTemplate,
     )
     assert invocable.abi_types == (types.int32, types.int32)
     overload = invocable_type.templates[0]._overload_func
