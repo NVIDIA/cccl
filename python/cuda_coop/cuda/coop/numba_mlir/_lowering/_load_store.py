@@ -413,7 +413,57 @@ def _store(
     offset=None,
     threads_in_warp=None,
 ):
-    """Build the Store invocable selected by group planning."""
+    """Build a Store provider from the planner's specialization and binding
+    choices.
+
+    Resolve the registered block/warp factory and its storage contract, then
+    materialize the common Store specification with Numba-specific runtime count
+    bounds. A warp provider also retains the enclosing block dimensions for
+    scratch layout. This constructs a compiled callable; it does not write
+    device memory during host-side factory evaluation.
+
+    As in ``_load``, explicit bindings control whether scalar arguments are
+    omitted, embedded, or runtime. A legacy non-``None`` count means runtime
+    presence and retains a full-tile overload. Legacy offset inputs request
+    offset overloads regardless of their value; an explicit binding selects the
+    offset form. Store never accepts a Load padding default.
+
+    Parameters
+    ----------
+    provider_factory : callable
+        Exactly registered Store factory supplying namespace and ABI metadata.
+    dtype : object
+        Payload dtype accepted by the common numeric profile.
+    threads_per_block : int or tuple of int
+        Required enclosing block dimensions, also for warp providers.
+    items_per_thread : int, optional
+        Positive per-thread payload extent; defaults to one.
+    algorithm : str, optional
+        Specialized Store algorithm within the factory's namespace.
+    num_valid_items : ArgumentBinding or object, optional
+        Valid-count binding or legacy runtime-presence marker.
+    oob_default : None, optional
+        Shared factory-interface slot; any non-``None`` value is rejected.
+    offset : ArgumentBinding or object, optional
+        Pointer-offset binding or legacy overload-presence input.
+    threads_in_warp : int, optional
+        Required logical width for warp providers; invalid for block providers.
+
+    Returns
+    -------
+    Invocable or Algorithm
+        Compiled provider callable, or the specialization recorded by an active
+        ``collect_specializations`` context.
+
+    Raises
+    ------
+    TypeError
+        A dtype or integer extent is unsupported.
+    ValueError
+        Topology, algorithm/storage pairing, or optional bindings are invalid.
+    RuntimeError
+        The factory is unregistered or artifact construction fails.
+    """
 
     if oob_default is not None:
         raise ValueError("oob_default is only valid for Load")
