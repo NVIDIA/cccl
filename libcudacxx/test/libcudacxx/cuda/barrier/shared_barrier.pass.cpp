@@ -324,18 +324,19 @@ TEST_DEVICE_FUNC void complete_tx(cuda::shared_barrier& bar, int transaction_cou
     (__trap();));
 }
 
-TEST_DEVICE_FUNC void test_tx_wait(cuda::shared_barrier* bar, int tx_count)
+TEST_DEVICE_FUNC void test_tx_wait(cuda::shared_barrier* bar, int tx_count, int arrive_count = 1)
 {
-  auto token = bar->arrive_tx(1, tx_count);
+  auto token = bar->arrive_tx(arrive_count, tx_count);
+  assert(!bar->test_wait(token, cuda::ignore_status));
   complete_tx(*bar, tx_count);
   bar->wait(token, cuda::ignore_status);
 
   bar->expect_tx(tx_count);
-  token = bar->arrive();
+  token = bar->arrive(arrive_count);
   complete_tx(*bar, tx_count);
   bar->wait(token, cuda::ignore_status);
 
-  token = bar->arrive_tx(1, tx_count);
+  token = bar->arrive_tx(arrive_count, tx_count);
   complete_tx(*bar, tx_count);
   auto status = bar->wait(token, cuda::return_status);
   check_success_status(status);
@@ -357,6 +358,41 @@ TEST_DEVICE_FUNC void test_test_waits(cuda::shared_barrier* bar)
     auto status = bar->test_wait(token, cuda::return_status);
     assert(!status.complete());
     assert(!status.has_report());
+
+    // The other thread has not arrived, so every poll must return an incomplete status with no report.
+    // Reassignment also checks that incomplete results can be overwritten without an inspection failure.
+    for (int i = 0; i != 4; ++i)
+    {
+      status = bar->try_wait(token, cuda::return_status);
+      assert(!status.complete());
+      assert(!status.has_report());
+
+      status = bar->try_wait_for(token, cuda::std::chrono::nanoseconds(1), cuda::return_status);
+      assert(!status.complete());
+      assert(!status.has_report());
+
+      status = bar->try_wait_until(
+        token, cuda::std::chrono::system_clock::now() - cuda::std::chrono::seconds(1), cuda::return_status);
+      assert(!status.complete());
+      assert(!status.has_report());
+
+      status = bar->test_wait(0, cuda::return_status);
+      assert(!status.complete());
+      assert(!status.has_report());
+
+      status = bar->try_wait(0, cuda::return_status);
+      assert(!status.complete());
+      assert(!status.has_report());
+
+      status = bar->try_wait_for(0, cuda::std::chrono::nanoseconds(1), cuda::return_status);
+      assert(!status.complete());
+      assert(!status.has_report());
+
+      status = bar->try_wait_until(
+        0, cuda::std::chrono::system_clock::now() - cuda::std::chrono::seconds(1), cuda::return_status);
+      assert(!status.complete());
+      assert(!status.has_report());
+    }
   });
 
   __syncthreads();
@@ -471,6 +507,10 @@ TEST_DEVICE_FUNC void test_shared_barrier_sm90_extensions()
   cuda::shared_barrier* bar = construct_barrier<9>(blockDim.x);
 
   test_tx_waits(bar);
+
+  cuda::shared_barrier* batched_bar = construct_barrier<13>(2 * blockDim.x);
+  test_tx_wait(batched_bar, 1, 2);
+  test_tx_wait(batched_bar, 1024, 2);
 }
 
 TEST_DEVICE_FUNC void test_shared_barrier_device()

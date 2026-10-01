@@ -78,19 +78,20 @@ public:
     _CCCL_HOST_DEVICE_API constexpr operation_status(
       bool __complete, bool __report_predicate, ::cuda::std::uint8_t __report_value) noexcept
         : __complete_(__complete)
-        , __report_predicate_(__report_predicate)
-        , __report_value_(__report_value)
+        , __report_predicate_(__complete && __report_predicate)
+        , __report_value_(__complete ? __report_value : 0)
     {}
 
     _CCCL_HOST_DEVICE_API constexpr operation_status(::cuda::__shared_mbarrier_impl::__wait_status __result) noexcept
         : __complete_(__result.__complete)
-        , __report_predicate_(__result.__report_predicate)
-        , __report_value_(__result.__report_value)
+        // PTX leaves both report outputs undefined until the phase completes.
+        , __report_predicate_(__result.__complete && __result.__report_predicate)
+        , __report_value_(__result.__complete ? __result.__report_value : 0)
     {}
 
     friend class shared_barrier;
 
-    _CCCL_HOST_DEVICE_API void __assert_report_inspected() const noexcept
+    _CCCL_HOST_DEVICE_API void __verify_report_inspected() const noexcept
     {
       _CCCL_VERIFY(!__report_predicate_ || __report_inspected_,
                    "shared_barrier operation_status report was not inspected");
@@ -120,7 +121,7 @@ public:
       {
         return *this;
       }
-      __assert_report_inspected();
+      __verify_report_inspected();
       __complete_         = ::cuda::std::exchange(__other.__complete_, false);
       __report_predicate_ = ::cuda::std::exchange(__other.__report_predicate_, false);
       __report_inspected_ = ::cuda::std::exchange(__other.__report_inspected_, true);
@@ -133,7 +134,7 @@ public:
     //! If this object owns an uninspected report, the destructor traps on device.
     _CCCL_HOST_DEVICE_API ~operation_status() noexcept
     {
-      __assert_report_inspected();
+      __verify_report_inspected();
     }
 
     //! @brief Checks whether the wait operation completed.
@@ -154,7 +155,7 @@ public:
     }
 
   private:
-    _CCCL_DEVICE_API static void __assert_fabric_status(::cudaError_t __status) noexcept
+    _CCCL_DEVICE_API static void __verify_fabric_status(::cudaError_t __status) noexcept
     {
       _CCCL_VERIFY(__status == ::cudaSuccess, "failed to decode shared_barrier status");
     }
@@ -188,7 +189,7 @@ public:
       }
       unsigned int __count = 0;
       auto __report_value  = __report_value_;
-      __assert_fabric_status(::cudaFabricOpErrorStatusCount(&__report_value, __cuda_status_source(__source), &__count));
+      __verify_fabric_status(::cudaFabricOpErrorStatusCount(&__report_value, __cuda_status_source(__source), &__count));
       return __count;
     }
 
@@ -198,7 +199,7 @@ public:
       _CCCL_ASSERT(__encodes_fabric_errors(__source), "shared_barrier status source does not encode fabric errors");
       ::cudaFabricOpStatusInfo __status_info{};
       auto __report_value = __report_value_;
-      __assert_fabric_status(
+      __verify_fabric_status(
         ::cudaFabricOpErrorStatusGet(&__report_value, __cuda_status_source(__source), __status_index, &__status_info));
       return __status_info;
     }
