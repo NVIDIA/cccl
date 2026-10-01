@@ -11,7 +11,11 @@ from ._group_histogram import histogram
 from ._group_load_store import load, store
 from ._group_merge_sort import merge_sort_keys, merge_sort_pairs
 from ._group_neighbors import adjacent_difference, discontinuity
-from ._group_radix import radix_rank, radix_sort_keys, radix_sort_pairs
+from ._group_radix_sort import (
+    radix_rank_keys,
+    radix_sort_keys,
+    radix_sort_pairs,
+)
 from ._group_reduce import reduce, sum
 from ._group_run_length import run_length_decode, run_length_decode_into
 from ._group_scan import (
@@ -60,7 +64,7 @@ __all__ = [
     "load",
     "merge_sort_keys",
     "merge_sort_pairs",
-    "radix_rank",
+    "radix_rank_keys",
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
