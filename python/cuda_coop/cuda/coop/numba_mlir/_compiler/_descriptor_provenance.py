@@ -4,9 +4,14 @@
 
 """Reaching definitions for opaque descriptors before and after SSA."""
 
+from typing import TYPE_CHECKING
+
 from ._numba_mlir_compat import _get_numba_mlir_compat
 
-ir = _get_numba_mlir_compat().numba_ir
+if TYPE_CHECKING:
+    from numba_cuda_mlir.numba_cuda.core import ir
+else:
+    ir = _get_numba_mlir_compat().numba_ir
 
 
 def descriptor_definitions(value, definitions, *, seen=None):
@@ -47,7 +52,9 @@ def descriptor_definitions(value, definitions, *, seen=None):
             yield value.name, definition
 
 
-def temp_storage_constructor(call, constant, *, syntax_error=TypeError):
+def temp_storage_constructor(
+    call, constant, *, syntax_error: type[Exception] = TypeError
+):
     """Parse a descriptor using the current phase's constant resolver."""
 
     from .._temp_storage import TempStorage

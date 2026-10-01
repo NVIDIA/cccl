@@ -358,7 +358,7 @@ def group_operation(
                 f"compiler family {existing_module!r}"
             )
         _GROUP_FAMILY_MODULES[operation] = family_module
-        function.__cuda_coop_backend_member__ = operation
+        function.__dict__["__cuda_coop_backend_member__"] = operation
         return function
 
     return decorate

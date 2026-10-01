@@ -6,7 +6,7 @@ from typing import overload
 
 from typing_extensions import TypeVar
 
-from .._typing import (
+from ..._typing import (
     BlockLoadStoreAlgorithm,
     IntegerValue,
     PortableNumericScalar,
@@ -16,7 +16,7 @@ from .._typing import (
     ValidItems,
     WarpLoadStoreAlgorithm,
 )
-from ._thread_group import BlockGroup, WarpGroup
+from .._thread_group import BlockGroup, WarpGroup
 
 _PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
 

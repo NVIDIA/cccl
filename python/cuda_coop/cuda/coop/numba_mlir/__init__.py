@@ -7,10 +7,11 @@ Numba-CUDA-MLIR.
 """
 
 import importlib
+from typing import TYPE_CHECKING
 
 from .._core.api import TempStorageLike, ThreadDataLike
 from ._compiler._activation import _initialize_runtime_hooks
-from ._group_load_store import load, store
+from ._group._load_store import load, store
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData
 from ._thread_group import (
@@ -23,6 +24,9 @@ from ._thread_group import (
     this_thread,
     this_warp,
 )
+
+if TYPE_CHECKING:
+    from ._thread_data import local, shared
 
 __all__ = [
     "Hierarchy",

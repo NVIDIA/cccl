@@ -4,13 +4,13 @@
 
 """Normalize compiler dtypes for cache keys."""
 
-from numba_cuda_mlir import types
+import numba_cuda_mlir.numba_cuda.types as numba_types
 
 from cuda.coop._core import semantic_token
 
 
 def _numba_semantic_token(value):
-    if isinstance(value, types.Type):
+    if isinstance(value, numba_types.Type):
         value = (
             "numba-cuda-mlir-type",
             type(value).__module__,
