@@ -110,6 +110,40 @@ class _LoadStoreRewrite:
         runtime_args: list[ir.Var],
         factory_kwargs: dict[str, object],
     ) -> None:
+        """Check Load padding against the inferred payload dtype.
+
+        Static padding is coerced with its scalar provenance and replaced by a
+        normalized static binding. Runtime padding must have the payload's exact
+        supported numeric dtype; it is not implicitly narrowed or widened.
+        Locate that operand after the two array operands and any runtime
+        valid-item count. If its type is still unknown, leave validation for
+        later typing.
+
+        Parameters
+        ----------
+        context : GroupRewriteContext
+            Access to scalar provenance and available IR variable types.
+        runtime_args : list of ir.Var
+            Provider operands in the order produced by argument splitting.
+        factory_kwargs : dict of str to object
+            Inferred dtype and control bindings. A static ``oob_default``
+            binding is replaced in place by its normalized value.
+
+        Returns
+        -------
+        None
+            An omitted binding needs no validation; other bindings are
+            checked as far as the currently available dtype information
+            permits.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            Static padding cannot be converted under the scalar rules, a
+            runtime operand is missing, or its known dtype is unsupported or
+            mismatched.
+        """
+
         binding = factory_kwargs.get("oob_default")
         if not isinstance(binding, ArgumentBinding) or (
             binding.kind is BindingKind.OMITTED
