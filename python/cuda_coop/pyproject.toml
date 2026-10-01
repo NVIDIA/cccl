@@ -35,6 +35,7 @@ numba-cuda-mlir-cu12 = [
   "cuda-core>=0.5.1,<2",
   "cuda-pathfinder>=1.2.3",
   "numba-cuda-mlir[cu12]>=0.5.0,<0.6",
+  "packaging",
   "numpy",
   "typing_extensions>=4.12.0",
 ]
@@ -42,6 +43,7 @@ numba-cuda-mlir-cu13 = [
   "cuda-core>=0.5.1,<2",
   "cuda-pathfinder>=1.2.3",
   "numba-cuda-mlir[cu13]>=0.5.0,<0.6",
+  "packaging",
   "numpy",
   "typing_extensions>=4.12.0",
 ]
