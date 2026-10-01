@@ -51,9 +51,7 @@ class _CubLoadStoreRequest:
     def __post_init__(self):
         self.plan.require_supported()
         if self.plan.target is not GroupLoweringTarget.CUB_BLOCK:
-            raise NotImplementedError(
-                "CUTLASS Load/Store currently requires a block"
-            )
+            raise NotImplementedError("CUTLASS Load/Store requires a block")
         if not isinstance(self.plan.implementation, AlgorithmSpec):
             raise TypeError("Load/Store requires a shared AlgorithmSpec")
         if self.operation.dtype is not self.value_type:

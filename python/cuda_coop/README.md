@@ -57,10 +57,9 @@ architecture or launch state can belong to the original context. The upstream
 [context-isolation fix](https://github.com/NVIDIA/numba-cuda-mlir/pull/314)
 must be released and qualified before relying on that reuse.
 
-The CUTLASS integration is implemented with Linux and CUDA 13 as its initial
-development target. A supported public CUTLASS package has not yet been
-qualified, so there is no CUTLASS installation extra or supported minimum
-version. A compatible CuTe compiler must provide the external LTO-IR linking
+The CUTLASS integration targets Linux with CUDA 13. No public CUTLASS
+package version has passed consumer qualification, so there is no CUTLASS
+installation extra or supported minimum version. A compatible CuTe compiler must provide the external LTO-IR linking
 and compilation hooks described in its developer guide.
 
 - Numba-CUDA-MLIR: [Programming Guide](https://nvidia.github.io/cccl/unstable/python/coop/programming_guide.html)
@@ -162,7 +161,7 @@ explains terms and concepts, including blocked and striped layouts.
 | Scan | `scan`, `inclusive_scan`, `exclusive_scan`, `inclusive_sum`, `exclusive_sum` |
 | Data rearrangement | `exchange`, `shuffle` |
 | Comparison sorting | `merge_sort_keys`, `merge_sort_pairs` |
-| Radix sorting and ranking | `radix_sort_keys`, `radix_sort_pairs`, `radix_rank` |
+| Radix sorting and ranking | `radix_sort_keys`, `radix_sort_pairs`, `radix_rank_keys` |
 | Top-k selection | `topk_min_keys`, `topk_max_keys`, `topk_min_pairs`, `topk_max_pairs` |
 | Neighbor comparisons | `adjacent_difference`, `discontinuity` |
 | Counting | `histogram` |
@@ -355,8 +354,8 @@ compile-time constants. A logical threads-within-warp group can query its
 threads and immediate parent Warp; a mapped warps-within-block group can query
 its threads, physical Warps, and immediate parent block. Queries above the
 immediate physical parent are rejected. Mapped warps-within-block groups expose
-queries and `is_member()` but not `sync()` or `sync_aligned()`; their block
-barrier lifetime must be owned by a future planner contract. For a
+queries and `is_member()` but not `sync()` or `sync_aligned()`; the planner
+does not manage the lifetime of their block barriers. For a
 non-exhaustive partition, use `is_member()` to guard rank-dependent work for
 excluded threads. Do not use that branch to skip a primitive unless the
 primitive's participation contract explicitly permits it; every required

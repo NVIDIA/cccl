@@ -24,7 +24,7 @@ def _resolve_group(group, algorithm, temp_storage, operation):
         raise TypeError(f"{_SCOPE}.{operation} group must be a ThreadGroup")
     if group.kind != "block":
         raise NotImplementedError(
-            f"{_SCOPE}.{operation} currently supports block groups"
+            f"{_SCOPE}.{operation} supports only block groups"
         )
     algorithm = _normalize_algorithm(algorithm)
     if temp_storage is not None:
