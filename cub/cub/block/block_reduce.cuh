@@ -544,6 +544,79 @@ public:
     }
   }
 
+  //! @rst
+  //! Computes a block-wide reduction and returns the same aggregate in every thread.
+  //! Each thread contributes one input element.
+  //!
+  //! - Only supported for ``BLOCK_REDUCE_WARP_REDUCTIONS``.
+  //! - Uses the same reduction order as ``Reduce`` with this algorithm.
+  //! - All threads in the block must call this function.
+  //! - @rowmajor
+  //! - @smemreuse
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    using BlockReduce = cub::BlockReduce<float, 128>;
+  //!    __shared__ typename BlockReduce::TempStorage temp_storage;
+  //!    float maximum = BlockReduce(temp_storage).ReduceBroadcast(input, cuda::maximum<>{});
+  //!    output = expf(input - maximum);
+  //!
+  //! @endrst
+  //!
+  //! @tparam ReductionOp
+  //!   **[inferred]** Binary reduction functor type
+  //!
+  //! @param[in] input
+  //!   Calling thread's input
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction functor
+  template <typename ReductionOp>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T ReduceBroadcast(T input, ReductionOp reduction_op)
+  {
+    return ReduceBroadcast(input, reduction_op, BLOCK_THREADS);
+  }
+
+  //! @rst
+  //! Computes a block-wide reduction and returns the same aggregate in every thread.
+  //! The first ``num_valid`` threads each contribute one input element.
+  //!
+  //! - Only supported for ``BLOCK_REDUCE_WARP_REDUCTIONS``.
+  //! - Uses the same reduction order as ``Reduce`` with this algorithm.
+  //! - All threads in the block must call this function, including those without valid input.
+  //! - ``num_valid`` must be positive; values at least ``BLOCK_THREADS`` include every thread.
+  //! - @rowmajor
+  //! - @smemreuse
+  //! @endrst
+  //!
+  //! @tparam ReductionOp
+  //!   **[inferred]** Binary reduction functor type
+  //!
+  //! @param[in] input
+  //!   Calling thread's input
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction functor
+  //!
+  //! @param[in] num_valid
+  //!   Number of threads containing valid elements
+  template <typename ReductionOp>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T ReduceBroadcast(T input, ReductionOp reduction_op, int num_valid)
+  {
+    static_assert(Algorithm == BLOCK_REDUCE_WARP_REDUCTIONS, "ReduceBroadcast requires BLOCK_REDUCE_WARP_REDUCTIONS");
+    if constexpr (Algorithm == BLOCK_REDUCE_WARP_REDUCTIONS)
+    {
+      if (num_valid >= BLOCK_THREADS)
+      {
+        return InternalBlockReduce(temp_storage).template Reduce<true, true>(input, num_valid, reduction_op);
+      }
+      else
+      {
+        return InternalBlockReduce(temp_storage).template Reduce<false, true>(input, num_valid, reduction_op);
+      }
+    }
+  }
+
   //! @}
   //! @name Summation reductions
   //! @{

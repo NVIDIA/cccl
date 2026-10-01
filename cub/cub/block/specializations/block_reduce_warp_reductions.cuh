@@ -142,9 +142,12 @@ struct BlockReduceWarpReductions
   //! @tparam FullTile
   //!   **[inferred]** Whether this is a full tile
   //!
+  //! @tparam Broadcast
+  //!   Whether every thread receives the block aggregate
+  //!
   //! @tparam ReductionOp
   //!   **[inferred]** Binary reduction operator type
-  template <bool FullTile, typename ReductionOp>
+  template <bool FullTile, bool Broadcast = false, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(ReductionOp reduction_op, T warp_aggregate, int num_valid)
   {
     // Share lane aggregates
@@ -155,22 +158,26 @@ struct BlockReduceWarpReductions
 
     __syncthreads();
 
-    // Fold the published warp aggregates in every thread, walking them in one fixed order, so the
-    // block aggregate is already identical across the block and no broadcast pass is needed. The
-    // order matters: starting each thread from its own warp aggregate would leave different warps
-    // with different floating point results. All threads read the same address per step, which the
-    // hardware serves as a single broadcast.
-    T total = temp_storage.warp_aggregates[0];
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int warp_idx = 1; warp_idx < warps; ++warp_idx)
+    if constexpr (Broadcast)
     {
-      if (FullTile || (warp_idx * logical_warp_size < num_valid))
+      // Start from the same warp and fold in the same order in every thread.
+      warp_aggregate = temp_storage.warp_aggregates[0];
+    }
+
+    if (Broadcast || linear_tid == 0)
+    {
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int warp_idx = 1; warp_idx < warps; ++warp_idx)
       {
-        total = reduction_op(total, temp_storage.warp_aggregates[warp_idx]);
+        if (FullTile || (warp_idx * logical_warp_size < num_valid))
+        {
+          const T addend = temp_storage.warp_aggregates[warp_idx];
+          warp_aggregate = reduction_op(warp_aggregate, addend);
+        }
       }
     }
 
-    return total;
+    return warp_aggregate;
   }
 
   //! @rst
@@ -215,11 +222,14 @@ struct BlockReduceWarpReductions
   //! @rst
   //! Computes a thread block-wide reduction using the specified reduction operator.
   //! The first num_valid threads each contribute one reduction partial.
-  //! The return value is only valid for *thread*\ :sub:`0`.
+  //! The return value is only valid for *thread*\ :sub:`0` unless Broadcast is true.
   //! @endrst
   //!
   //! @tparam FullTile
   //!   **[inferred]** Whether this is a full tile
+  //!
+  //! @tparam Broadcast
+  //!   Whether every thread receives the block aggregate
   //!
   //! @tparam ReductionOp
   //!   **[inferred]** Binary reduction operator type
@@ -232,7 +242,7 @@ struct BlockReduceWarpReductions
   //!
   //! @param[in] reduction_op
   //!   Binary reduction operator
-  template <bool FullTile, typename ReductionOp>
+  template <bool FullTile, bool Broadcast = false, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int num_valid, ReductionOp reduction_op)
   {
     const int warp_offset = warp_id * logical_warp_size;
@@ -248,7 +258,7 @@ struct BlockReduceWarpReductions
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
     if constexpr (IsDeterministic)
     {
-      return ApplyWarpAggregates<FullTile>(reduction_op, warp_aggregate, num_valid);
+      return ApplyWarpAggregates<FullTile, Broadcast>(reduction_op, warp_aggregate, num_valid);
     }
     else
     {
