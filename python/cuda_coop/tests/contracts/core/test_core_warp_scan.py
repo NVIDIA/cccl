@@ -15,6 +15,7 @@ from cuda.coop._core import (
     PythonOperator,
     Reference,
     WarpScanMode,
+    classify_parameter,
     make_warp_scan_specialization,
 )
 
@@ -35,7 +36,7 @@ def test_warp_scan_selects_default_sum_entry_point(mode, method_name):
 
     assert specialization.mode is WarpScanMode(mode)
     assert specialization.method_name == method_name
-    assert specialization.uses_sum_method
+    assert specialization.specialization.metadata["operator"] is None
     assert specialization.specialization.fake_return
     assert [
         item.name for item in specialization.specialization.parameters[0]
@@ -55,7 +56,7 @@ def test_partial_exclusive_sum_uses_plus_and_an_explicitly_typed_zero():
     )
 
     assert specialization.method_name == "ExclusiveScanPartial"
-    assert not specialization.uses_sum_method
+    assert specialization.specialization.metadata["operator"] is not None
     assert specialization.call.scan_operator == CxxOperator(
         "::cuda::std::plus<T>",
         Dependency("T"),
@@ -95,10 +96,12 @@ def test_warp_scan_partial_signature_and_aggregate_output():
 
     assert specialization.method_name == "InclusiveScanPartial"
     assert specialization.has_valid_items
-    assert specialization.has_warp_aggregate
+    assert specialization.call.aggregate
     assert [
         (item.name, item.kind, item.role)
-        for item in specialization.specialization.classify_method()
+        for item in map(
+            classify_parameter, specialization.specialization.parameters[0]
+        )
     ] == [
         ("temp_storage", ArgumentKind.RUNTIME, ParameterRole.TEMP_STORAGE),
         ("input", ArgumentKind.RUNTIME, ParameterRole.INPUT),
@@ -131,7 +134,9 @@ def test_warp_scan_accepts_runtime_initial_value_and_python_operator():
     )
 
     assert specialization.method_name == "ExclusiveScan"
-    classifications = specialization.specialization.classify_method()
+    classifications = tuple(
+        map(classify_parameter, specialization.specialization.parameters[0])
+    )
     assert classifications[3].kind is ArgumentKind.RUNTIME
     assert classifications[3].role is ParameterRole.INPUT
     assert classifications[4].kind is ArgumentKind.STATIC
