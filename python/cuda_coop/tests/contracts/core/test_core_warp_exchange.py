@@ -4,7 +4,7 @@
 
 import pytest
 
-from cuda.coop._core import ArgumentKind, ParameterRole
+from cuda.coop._core import ArgumentKind, ParameterRole, classify_parameter
 from cuda.coop._core.warp import (
     WarpExchangeMode,
     WarpExchangeValueForm,
@@ -42,7 +42,10 @@ def test_warp_exchange_supports_each_cub_logical_width(
         "WARP_EXCHANGE_ALGORITHM": "::cub::WARP_EXCHANGE_SMEM",
     }
     assert [
-        entry.role for entry in specialization.specialization.classify_method()
+        entry.role
+        for entry in map(
+            classify_parameter, specialization.specialization.parameters[0]
+        )
     ] == [
         ParameterRole.TEMP_STORAGE,
         ParameterRole.INPUT,
@@ -50,7 +53,9 @@ def test_warp_exchange_supports_each_cub_logical_width(
     ]
     assert all(
         entry.kind is ArgumentKind.RUNTIME
-        for entry in specialization.specialization.classify_method()
+        for entry in map(
+            classify_parameter, specialization.specialization.parameters[0]
+        )
     )
 
 

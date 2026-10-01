@@ -66,7 +66,6 @@ from ._scalar_provenance import (
     scalar_expression_dtype,
 )
 
-
 if TYPE_CHECKING:
     from ._group_planner import _GroupCallPlanner
 
@@ -727,6 +726,7 @@ class GroupPlanningContext:
                         continue
                 if not isinstance(index, Integral) or isinstance(index, bool):
                     continue
+                index = int(index)
                 next_seen = {*seen, current.name}
                 for packed in payload_definitions(definition.value, next_seen):
                     if (
@@ -987,13 +987,14 @@ class GroupPlanningContext:
 
         Use argument types, scalar constants and operators, supported CUDA
         index attributes, local-array constructors, and ``ThreadData``
-        declarations or recorded producer dtypes. Follow aliases, casts, phi
-        inputs, and tuple projections; array indexing contributes the source
-        element dtype. This is a limited pre-typing analysis, not full Numba
-        type inference.
+        declarations or recorded producer dtypes. Operation result policies
+        and planner-created payload markers supply the types of returned
+        payloads. Follow aliases, casts, phi inputs, and tuple projections;
+        array indexing contributes the source element dtype. This is a limited
+        pre-typing analysis, not full Numba type inference.
 
         Loop backedges can use a candidate established by a known incoming
-        definition, provided every recorded definition then resolves to the
+        definition, provided every reaching definition then resolves to the
         same type. Unknown definitions and unseeded cycles return ``None``;
         fully known but inconsistent paths are rejected.
 
