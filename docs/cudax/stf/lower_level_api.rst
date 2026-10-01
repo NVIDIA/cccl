@@ -11,10 +11,9 @@ interface for creating tasks, which is described below.
 
 .. code:: cpp
 
-   #include "cudastf/stf.h"
-   #include "cudastf/__stf/stream/stream_ctx.h"
+   #include <cuda/experimental/stf.cuh>
 
-   using namespace cudastf;
+   using namespace cuda::experimental::stf;
 
    template <typename T>
    __global__ void axpy(int n, T a, T* x, T* y) {
@@ -26,7 +25,7 @@ interface for creating tasks, which is described below.
        }
    }
 
-   int main(int argc, char** argv) {
+   int main() {
        stream_ctx ctx;
 
        const size_t N = 16;
@@ -45,12 +44,12 @@ interface for creating tasks, which is described below.
        /* Compute Y = Y + alpha X */
        auto t = ctx.task(lX.read(), lY.rw());
        t.start();
-       slice<double> sX = t.get<0>();
-       slice<double> sY = t.get<1>();
+       auto sX = t.template get<slice<double>>(0);
+       auto sY = t.template get<slice<double>>(1);
        axpy<<<16, 128, 0, t.get_stream()>>>(sX.size(), alpha, sX.data_handle(), sY.data_handle());
        t.end();
 
-       ctx.sync();
+       ctx.finalize();
    }
 
 The ``ctx.task()`` call returns a task object. This object provides
@@ -86,22 +85,22 @@ low-level interface.
        auto lY = ctx.logical_data(Y);
 
        for (int k = 0; k < 10; k++) {
-           graph_task t = ctx.task();
-           t.add_deps(handle_X.rw());
+           graph_task<> t = ctx.task();
+           t.add_deps(lX.rw());
            t.start();
            cudaGraphNode_t n;
            cuda_safe_call(cudaGraphAddEmptyNode(&n, t.get_graph(), nullptr, 0));
            t.end();
        }
 
-       graph_task t2 = ctx.task();
+       graph_task<> t2 = ctx.task();
        t2.add_deps(lX.read(), lY.rw());
        t2.start();
        cudaGraphNode_t n2;
        cuda_safe_call(cudaGraphAddEmptyNode(&n2, t2.get_graph(), nullptr, 0));
        t2.end();
 
-       ctx.sync();
+       ctx.finalize();
 
 A task in the CUDA graph backend corresponds to a *child graph*
 automatically inserted into the CUDA graph associated to a ``graph_ctx``
