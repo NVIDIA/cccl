@@ -34,7 +34,7 @@ struct NontrivialDtorIter
 
   int* ptr_ = nullptr;
 
-  TEST_HOST_DEVICE_FUNC NontrivialDtorIter() = default;
+  NontrivialDtorIter() = default;
   TEST_HOST_DEVICE_FUNC explicit NontrivialDtorIter(int* ptr)
       : ptr_(ptr)
   {}

@@ -78,7 +78,7 @@ struct CopyOnlyCount
   TEST_FUNC constexpr CopyOnlyCount(int value)
       : value_(value)
   {}
-  TEST_FUNC constexpr CopyOnlyCount(const CopyOnlyCount&) = default;
+  constexpr CopyOnlyCount(const CopyOnlyCount&) = default;
   CopyOnlyCount(CopyOnlyCount&&)                          = delete;
 
   TEST_FUNC constexpr operator int() const
@@ -94,7 +94,7 @@ struct ThrowingMoveCount
   TEST_FUNC constexpr ThrowingMoveCount(int value)
       : value_(value)
   {}
-  TEST_FUNC constexpr ThrowingMoveCount(const ThrowingMoveCount&) = default;
+  constexpr ThrowingMoveCount(const ThrowingMoveCount&) = default;
   TEST_FUNC ThrowingMoveCount(ThrowingMoveCount&& other)
       : value_(other.value_)
   {}

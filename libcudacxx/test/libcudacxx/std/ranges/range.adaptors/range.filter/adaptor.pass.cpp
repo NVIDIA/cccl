@@ -76,7 +76,7 @@ struct CopyOnlyPred
   TEST_FUNC constexpr explicit CopyOnlyPred(int limit)
       : limit_(limit)
   {}
-  TEST_FUNC constexpr CopyOnlyPred(const CopyOnlyPred&) = default;
+  constexpr CopyOnlyPred(const CopyOnlyPred&) = default;
   CopyOnlyPred(CopyOnlyPred&&)                          = delete;
 
   [[nodiscard]] TEST_FUNC constexpr bool operator()(int i) const
@@ -92,7 +92,7 @@ struct ThrowingMovePred
   TEST_FUNC constexpr explicit ThrowingMovePred(int limit)
       : limit_(limit)
   {}
-  TEST_FUNC constexpr ThrowingMovePred(const ThrowingMovePred&) = default;
+  constexpr ThrowingMovePred(const ThrowingMovePred&) = default;
   TEST_FUNC constexpr ThrowingMovePred(ThrowingMovePred&& other) noexcept(false)
       : limit_(other.limit_)
   {}

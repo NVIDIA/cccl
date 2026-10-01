@@ -45,6 +45,7 @@
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -455,7 +456,7 @@ struct __fn
   _CCCL_TEMPLATE(class _Np)
   _CCCL_REQUIRES(constructible_from<decay_t<_Np>, _Np>)
   [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Np&& __n) noexcept(
-    noexcept(::cuda::std::ranges::__pipeable_bind_back(__fn{}, ::cuda::std::forward<_Np>(__n))))
+    noexcept(::cuda::std::is_nothrow_constructible_v<::cuda::std::decay_t<_Np>, _Np>))
   {
     return ::cuda::std::ranges::__pipeable_bind_back(__fn{}, ::cuda::std::forward<_Np>(__n));
   }

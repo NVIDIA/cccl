@@ -40,7 +40,7 @@ struct CopyOnlyFn
   TEST_FUNC constexpr explicit CopyOnlyFn(int offset)
       : offset_(offset)
   {}
-  TEST_FUNC constexpr CopyOnlyFn(const CopyOnlyFn&) = default;
+  constexpr CopyOnlyFn(const CopyOnlyFn&) = default;
   CopyOnlyFn(CopyOnlyFn&&)                          = delete;
 
   TEST_FUNC constexpr int operator()(int i) const
@@ -56,7 +56,7 @@ struct ThrowingMoveFn
   TEST_FUNC constexpr explicit ThrowingMoveFn(int offset)
       : offset_(offset)
   {}
-  TEST_FUNC constexpr ThrowingMoveFn(const ThrowingMoveFn&) = default;
+  constexpr ThrowingMoveFn(const ThrowingMoveFn&) = default;
   TEST_FUNC constexpr ThrowingMoveFn(ThrowingMoveFn&& other) noexcept(false)
       : offset_(other.offset_)
   {}
