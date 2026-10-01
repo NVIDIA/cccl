@@ -277,7 +277,49 @@ def coerce_static_scalar(
     parameter: str,
     source_dtype=None,
 ):
-    """Validate and normalize one trace-static scalar for a target dtype."""
+    """Normalize a compile-time scalar without erasing its dtype provenance.
+
+    Ordinary Python ``int``/``float`` literals take the payload's dtype after
+    range and finiteness checks; float-to-integer conversion is forbidden.
+    Floating conversion may round a finite in-range literal. NumPy scalars and
+    values with an explicit compiler ``source_dtype`` instead require an exact
+    dtype match, even if their numeric value would fit another payload dtype.
+    This keeps a typed default or Store value from silently changing width.
+
+    The explicit-source path treats ``source_dtype`` as authoritative
+    provenance: the caller is responsible for pairing it with a value of that
+    dtype. This helper handles static values only; runtime arguments use
+    provider typing and generated ABI checks.
+
+    Parameters
+    ----------
+    value : object
+        Compile-time scalar value to normalize.
+    dtype : object
+        Target payload dtype from the common numeric profile.
+    operation : str
+        Public operation name used in diagnostics, such as ``"load"``.
+    parameter : str
+        Argument name used in diagnostics, such as ``"oob_default"``.
+    source_dtype : object, optional
+        Known compiler dtype of ``value``. When absent, a NumPy scalar's dtype
+        is used; ordinary Python numeric literals remain contextually typed.
+
+    Returns
+    -------
+    numpy.generic
+        Scalar in the normalized target dtype.
+
+    Raises
+    ------
+    TypeError
+        The target is outside the common numeric profile, a value is boolean or
+        non-numeric, typed provenance differs from the target, or an ordinary
+        float would be converted to an integer.
+    ValueError
+        The dtype cannot be normalized, an ordinary literal is out of range, or
+        a checked scalar is non-finite.
+    """
 
     target_dtype = _validate_common_numeric_dtype(
         dtype,
