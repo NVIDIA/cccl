@@ -330,7 +330,28 @@ def _registration_counts(
     planners: tuple[tuple[str, type | None], ...],
     rewrite: tuple[str, type | None],
 ) -> dict[str, int]:
-    """Count expected registrations without exposing registry internals."""
+    """Count the expected pass classes in the snapshot's live registries.
+
+    Activation uses these counts to detect both missing hooks and duplicate
+    registration. The saved baseline entries do not affect the counts.
+
+    Parameters
+    ----------
+    snapshot : _RegistrationSnapshot
+        Identifies the registry objects to inspect at the time of this call.
+    planners : tuple of (str, type or None)
+        Diagnostic names paired with expected planner classes. ``None``
+        represents a missing export and produces a count of zero.
+    rewrite : tuple of (str, type or None)
+        Diagnostic name and expected rewrite class. Only the
+        ``"before-inference"`` bucket is checked; ``None`` counts as zero.
+
+    Returns
+    -------
+    dict of str to int
+        Occurrences of each supplied class, keyed by its diagnostic name.
+        Planner counts are read while holding the planner registry lock.
+    """
 
     with snapshot.planner_registry._lock:
         counts = {
