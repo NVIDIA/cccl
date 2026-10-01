@@ -489,7 +489,7 @@ def _run_rank(
                 result[item] = cutlass.Int32(0)
         for iteration in range(repeats):
             if cutlass.const_expr(prefix):
-                result = api.radix_rank(
+                result = api.radix_rank_keys(
                     group,
                     input_keys,
                     begin_bit=begin_bit,
@@ -498,7 +498,7 @@ def _run_rank(
                     exclusive_digit_prefix=digit_prefix,
                 )
             else:
-                result = api.radix_rank(
+                result = api.radix_rank_keys(
                     group,
                     input_keys,
                     begin_bit=begin_bit,

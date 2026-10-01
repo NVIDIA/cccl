@@ -360,4 +360,4 @@ Radix sorting and ranking
 
 .. autofunction:: radix_sort_keys
 .. autofunction:: radix_sort_pairs
-.. autofunction:: radix_rank
+.. autofunction:: radix_rank_keys

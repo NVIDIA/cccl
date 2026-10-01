@@ -62,7 +62,7 @@ def _compile(
             if cutlass.const_expr(bad == "prefix-alias"):
                 output = keys
             result = (
-                api.radix_rank(
+                api.radix_rank_keys(
                     group,
                     keys,
                     begin_bit=bound if bad == "rank-runtime" else 0,
@@ -70,7 +70,7 @@ def _compile(
                     exclusive_digit_prefix=output,
                 )
                 if cutlass.const_expr(api is cutlass_coop)
-                else api.radix_rank(group, keys, radix_bits=radix_bits)
+                else api.radix_rank_keys(group, keys, radix_bits=radix_bits)
             )
         else:
             begin = bound

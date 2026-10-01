@@ -17,15 +17,16 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
         ("radix_sort_keys", {"descending": 1}),
         ("radix_sort_keys", {"begin_bit": -1}),
         ("radix_sort_keys", {"end_bit": 33}),
-        ("radix_rank", {"radix_bits": 9}),
-        ("radix_rank", {"begin_bit": 31}),
-        ("radix_rank", {"end_bit": 6, "radix_bits": 4}),
+        ("radix_rank_keys", {"radix_bits": 9}),
+        ("radix_rank_keys", {"begin_bit": 31}),
+        ("radix_rank_keys", {"end_bit": 6, "radix_bits": 4}),
     ],
 )
 def test_common_frontend_rejects_invalid_controls_before_dispatch(
     monkeypatch, operation, options
 ):
-    from cuda.coop._core.api import _dispatch, radix
+    from cuda.coop._core.api import _dispatch
+    from cuda.coop._core.api import radix_sort as radix
 
     class Payload:
         items_per_thread = 2
@@ -42,7 +43,7 @@ def test_common_frontend_rejects_invalid_controls_before_dispatch(
             _dispatch, "_backend_module_name", lambda: "test.backend"
         )
         compiler_context.setattr(
-            import_module("cuda.coop._core.api.radix"),
+            import_module("cuda.coop._core.api.radix_sort"),
             "_backend_module_name",
             lambda: "test.backend",
         )
