@@ -22,6 +22,7 @@
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/forward_like.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/tuple>
 
@@ -42,23 +43,11 @@ inline constexpr bool has_effectful_member_construct = ::cuda::std::__has_constr
 template <typename U, typename T, typename... Args>
 inline constexpr bool has_effectful_member_construct<std::allocator<U>, T, Args...> = false;
 
-template <typename Arg, typename Stored>
-_CCCL_HOST_DEVICE decltype(auto) forward_stored_emplace_arg(Stored& arg)
-{
-  if constexpr (::cuda::std::is_lvalue_reference_v<Arg>)
-  {
-    return (arg);
-  }
-  else
-  {
-    return ::cuda::std::move(arg);
-  }
-}
-
 template <typename Allocator, typename... Args>
 struct emplace_via_allocator_construct
 {
   Allocator& a;
+  // Arguments are stored as value here (decay) but forwarded like Args to ctor (forward_like)
   ::cuda::std::tuple<::cuda::std::decay_t<Args>...> args;
 
   template <typename T>
@@ -66,7 +55,7 @@ struct emplace_via_allocator_construct
   {
     ::cuda::std::apply(
       [&](auto&... xs) {
-        ::cuda::std::allocator_traits<Allocator>::construct(a, &loc, forward_stored_emplace_arg<Args>(xs)...);
+        ::cuda::std::allocator_traits<Allocator>::construct(a, &loc, ::cuda::std::forward_like<Args>(xs)...);
       },
       args);
   }
@@ -82,7 +71,7 @@ struct emplace_via_placement_new
   {
     ::cuda::std::apply(
       [&](auto&... xs) {
-        ::new (static_cast<void*>(&loc)) T(forward_stored_emplace_arg<Args>(xs)...);
+        ::new (static_cast<void*>(&loc)) T(::cuda::std::forward_like<Args>(xs)...);
       },
       args);
   }
@@ -90,7 +79,7 @@ struct emplace_via_placement_new
 
 // Build one object at loc from args, on the system (CPU or GPU) the allocator belongs to
 template <typename Allocator, typename Pointer, typename... Args>
-_CCCL_HOST_DEVICE void emplace_construct(Allocator& a, Pointer loc, Args... args)
+_CCCL_HOST_DEVICE void emplace_construct(Allocator& a, Pointer loc, Args&&... args)
 {
   using T = typename ::cuda::std::pointer_traits<Pointer>::element_type;
   if constexpr (has_effectful_member_construct<Allocator, T, Args...>)

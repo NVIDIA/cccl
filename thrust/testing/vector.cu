@@ -1302,47 +1302,94 @@ TEST_CASE("TestVectorGrowthSaturatesAtMaxSize", "[vector]")
 struct RemembersConstructionType
 {
   _CCCL_HOST_DEVICE RemembersConstructionType()
-      : copy_cted_(false)
-      , move_cted_(false)
-      , state_(0) {};
-  _CCCL_HOST_DEVICE RemembersConstructionType(const RemembersConstructionType& other)
+      : state_(0) {};
+  _CCCL_HOST_DEVICE RemembersConstructionType(RemembersConstructionType& other)
       : copy_cted_(true)
-      , move_cted_(false)
-  {
-    state_ = other.state_;
-  };
+      , state_(other.state_) {};
+  _CCCL_HOST_DEVICE RemembersConstructionType(const RemembersConstructionType& other)
+      : const_copy_cted_(true)
+      , state_(other.state_) {};
   _CCCL_HOST_DEVICE RemembersConstructionType(RemembersConstructionType&& other)
-      : copy_cted_(false)
-      , move_cted_(true)
-  {
-    state_ = other.state_;
-  };
+      : move_cted_(true)
+      , state_(other.state_) {};
+  _CCCL_HOST_DEVICE RemembersConstructionType(const RemembersConstructionType&& other)
+      : const_move_cted_(true)
+      , state_(other.state_) {};
 
-  bool move_cted()
+  bool move_cted() const
   {
     return move_cted_;
   }
-  bool copy_cted()
+  bool copy_cted() const
   {
     return copy_cted_;
   }
+  bool const_move_cted() const
+  {
+    return const_move_cted_;
+  }
+  bool const_copy_cted() const
+  {
+    return const_copy_cted_;
+  }
 
-  bool copy_cted_;
-  bool move_cted_;
+  bool copy_cted_       = false;
+  bool move_cted_       = false;
+  bool const_copy_cted_ = false;
+  bool const_move_cted_ = false;
   int state_;
 };
+
+// Helper to read a flag in place on the device: copying the element to host would run a ctor and reset it
+using construction_flag = bool RemembersConstructionType::*;
+struct flag_is_set
+{
+  construction_flag flag;
+  _CCCL_HOST_DEVICE bool operator()(const RemembersConstructionType& t) const
+  {
+    return t.*flag;
+  }
+};
+bool device_flag(const thrust::device_vector<RemembersConstructionType>& v, size_t i, construction_flag flag)
+{
+  const auto* p = thrust::raw_pointer_cast(v.data()) + i;
+  return thrust::count_if(thrust::device, p, p + 1, flag_is_set{flag}) == 1;
+}
 
 TEST_CASE("TestEmplaceBackCallsRightConstructor", "[vector]")
 {
   using T = RemembersConstructionType;
 
-  thrust::host_vector<T> v_h;
+  {
+    thrust::host_vector<T> v_h;
 
-  T element;
+    T x;
+    const T cx;
 
-  v_h.emplace_back(element);
-  v_h.emplace_back(cuda::std::move(element));
+    // Interleave tests and emplaces to avoid reallocation side effects.
+    v_h.emplace_back(x);
+    REQUIRE(v_h[0].copy_cted() == true);
+    v_h.emplace_back(cx);
+    REQUIRE(v_h[1].const_copy_cted() == true);
+    v_h.emplace_back(cuda::std::move(x));
+    REQUIRE(v_h[2].move_cted() == true);
+    v_h.emplace_back(cuda::std::move(cx));
+    REQUIRE(v_h[3].const_move_cted() == true);
+  }
 
-  REQUIRE(v_h[0].copy_cted() == true);
-  REQUIRE(v_h[1].move_cted() == true);
+  {
+    thrust::device_vector<T> v_d;
+
+    T x;
+    const T cx;
+
+    v_d.emplace_back(x);
+    REQUIRE(device_flag(v_d, 0, &T::copy_cted_));
+    v_d.emplace_back(cx);
+    REQUIRE(device_flag(v_d, 1, &T::const_copy_cted_));
+    v_d.emplace_back(cuda::std::move(x));
+    REQUIRE(device_flag(v_d, 2, &T::move_cted_));
+    v_d.emplace_back(cuda::std::move(cx));
+    REQUIRE(device_flag(v_d, 3, &T::const_move_cted_));
+  }
 }
