@@ -7,6 +7,8 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
+from cuda.coop._core import INT32
+
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
 _STATIC_PROVENANCE_GLOBAL = np.int32(3)
@@ -292,6 +294,12 @@ def test_direct_load_provider_is_selected_from_complete_core_plan(
 
     plan = plans[0]
     implicit_plan = plans[1]
+    semantic_key = plan.call.operation.semantic_key
+    # Compiler metadata on a backend dtype does not change the operation.
+    monkeypatch.setattr(
+        types.int32, "_coop_test_metadata", {"generation": 1}, raising=False
+    )
+    assert plan.call.operation.semantic_key == semantic_key
     assert plan.call.operation == implicit_plan.call.operation
     assert plan.target == implicit_plan.target
     assert plan.participation == implicit_plan.participation
@@ -334,7 +342,7 @@ def test_direct_load_provider_is_selected_from_complete_core_plan(
         "Load",
     )
     semantics = plan.call.operation
-    assert semantics.dtype == types.int32
+    assert semantics.dtype == INT32
     assert semantics.items_per_thread == items_per_thread
     assert semantics.valid_items.kind is BindingKind.STATIC
     assert semantics.valid_items.value == 31
@@ -403,7 +411,7 @@ def test_load_store_infer_untyped_payloads_symmetrically(
     ).run()
 
     assert len(plans) == 1
-    assert plans[0].call.operation.dtype == types.int32
+    assert plans[0].call.operation.dtype == INT32
 
 
 @pytest.mark.parametrize(
@@ -754,7 +762,7 @@ def test_equivalent_dtype_spellings_are_canonicalized_before_planning(
     )
     assert planner.run()
     assert len(plans) == 1
-    assert plans[0].call.operation.dtype == types.int32
+    assert plans[0].call.operation.dtype == INT32
 
 
 _STATIC_DEFAULT_DTYPES = (
