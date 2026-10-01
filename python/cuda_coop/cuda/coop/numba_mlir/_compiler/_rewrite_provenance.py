@@ -957,6 +957,37 @@ class _ProvenanceRewrite(Rewrite):
     def _temp_storage_domain_key(
         entry,
     ) -> tuple[object, ...]:
+        """Identify storage uses that may reuse one region.
+
+        Legacy block providers share one domain. Caller-owned storage also uses
+        one domain, preserving its explicit reuse contract; its block-only
+        restriction is checked by storage-plan validation. Implementation-owned
+        storage instead partitions uses by group topology and reuse-barrier
+        scope so incompatible group instances cannot alias.
+
+        When a group has an execution scope but no reuse barrier, append the
+        call order to its key. Such calls receive distinct domains even if their
+        topologies match, because completion before scratch reuse is not
+        assured.
+
+        Parameters
+        ----------
+        entry : _TempStorageUseRequirement
+            One primitive use with its lowering plan and stable scan order.
+
+        Returns
+        -------
+        tuple of object
+            Domain key used by ``_layout_temp_storage_uses`` for shared
+            placement.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            The lowering plan is unsupported, lacks storage contracts, or
+            its storage instances disagree with its topology.
+        """
+
         lowering_plan = entry.lowering_plan
         if lowering_plan is None:
             return ("legacy-provider",)
