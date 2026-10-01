@@ -338,6 +338,38 @@ def resolve_compile_context() -> CompileContext:
 
 
 def compile(*, context: CompileContext | None = None, **kwargs):
+    """Compile generated provider source with resolved compiler/cache identity.
+
+    Build the ordered options from the selected context, optionally dump the
+    source through the shared source-dump hook, and pass every context field to
+    ``compile_impl``. Dumping occurs before cache lookup so source inspection
+    also works when artifact compilation is reused from memory or disk.
+
+    Parameters
+    ----------
+    context : CompileContext, optional
+        Previously resolved and preloaded compiler context. ``None`` resolves
+        one now. Supplying a context reuses its identity; it does not reload the
+        library paths stored in it.
+    **kwargs : dict
+        Required ``cpp`` source string, integer ``cc`` target, boolean ``rdc``,
+        and ``code`` equal to ``"lto"`` or ``"ptx"``. These are forwarded to
+        ``compile_impl`` with the context and generated compiler options.
+
+    Returns
+    -------
+    tuple
+        ``(nvrtc_version, image)`` with LTO bytes or PTX text according to
+        ``code``. The version is taken from the selected context.
+
+    Raises
+    ------
+    RuntimeError
+        Compiler identity checks or NVRTC compilation fail.
+    ValueError
+        An output format or relocatable-code option is invalid.
+    """
+
     context = resolve_compile_context() if context is None else context
     compiler_options = _compiler_options(
         cc=kwargs["cc"],
