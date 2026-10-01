@@ -1043,7 +1043,7 @@ cdef extern from "cccl/c/reduce.h":
         cccl_init_kind_t,
         cccl_determinism_t,
         int, int, const char*, const char*, const char*, const char*,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_reduce(
@@ -1263,7 +1263,7 @@ cdef extern from "cccl/c/scan.h":
         _Bool,
         cccl_init_kind_t,
         int, int, const char*, const char*, const char*, const char*,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_exclusive_scan(
@@ -1595,7 +1595,7 @@ cdef extern from "cccl/c/segmented_reduce.h":
         cccl_op_t,
         cccl_value_t,
         int, int, const char*, const char*, const char*, const char*,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     # `cccl_device_segmented_reduce` (the execute entry point) is declared in the
@@ -1752,7 +1752,7 @@ cdef extern from "cccl/c/merge_sort.h":
         cccl_iterator_t d_out_items,
         cccl_op_t,
         int, int, const char*, const char*, const char*, const char*,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_merge_sort(
@@ -1906,7 +1906,7 @@ cdef extern from "cccl/c/unique_by_key.h":
         cccl_iterator_t d_num_selected_out,
         cccl_op_t comparison_op,
         int, int, const char *, const char *, const char *, const char *,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_unique_by_key(
@@ -2063,7 +2063,7 @@ cdef extern from "cccl/c/radix_sort.h":
         cccl_op_t decomposer,
         const char* decomposer_return_type,
         int, int, const char *, const char *, const char *, const char *,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_radix_sort(
@@ -2226,7 +2226,7 @@ cdef extern from "cccl/c/transform.h":
         cccl_iterator_t d_out,
         cccl_op_t op,
         int, int, const char *, const char *, const char *, const char *,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_unary_transform(
@@ -2244,7 +2244,7 @@ cdef extern from "cccl/c/transform.h":
       cccl_iterator_t d_out,
       cccl_op_t op,
       int, int, const char *, const char *, const char *, const char *,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_binary_transform(
@@ -2474,7 +2474,7 @@ cdef extern from "cccl/c/histogram.h":
         int64_t row_stride_samples,
         bint is_evenly_segmented,
         int, int, const char *, const char *, const char *, const char *,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_histogram_even(
@@ -2641,7 +2641,7 @@ cdef extern from "cccl/c/binary_search.h":
         cccl_iterator_t,
         cccl_op_t,
         int, int, const char*, const char*, const char*, const char*,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_binary_search(
@@ -2782,7 +2782,7 @@ cdef extern from "cccl/c/three_way_partition.h":
         cccl_op_t select_first_part_op,
         cccl_op_t select_second_part_op,
         int, int, const char *, const char *, const char *, const char *,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     CUresult cccl_device_three_way_partition(
@@ -2945,7 +2945,7 @@ cdef extern from "cccl/c/segmented_sort.h":
         cccl_iterator_t begin_offset_in,
         cccl_iterator_t end_offset_in,
         int, int, const char *, const char *, const char *, const char *,
-        cccl_build_config*
+        const cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_segmented_sort(
