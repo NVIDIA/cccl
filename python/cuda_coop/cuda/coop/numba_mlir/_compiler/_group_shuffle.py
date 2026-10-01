@@ -4,10 +4,12 @@
 
 from __future__ import annotations
 
+import inspect
 from enum import Enum
 from numbers import Integral
+from typing import Any
 
-from numba_cuda_mlir import types
+import numba_cuda_mlir.numba_cuda.types as numba_types
 
 from cuda.coop._core import (
     ArgumentBinding,
@@ -16,19 +18,13 @@ from cuda.coop._core import (
     GroupLoweringPlan,
     GroupLoweringTarget,
     GroupShuffleSemantics,
+    ThreadGroup,
     make_block_shuffle_semantics,
     make_group_primitive_call,
     plan_group_primitive,
 )
 
-from ._group_planner_support import (
-    _PAYLOAD_DTYPE_LIKE,
-    Any,
-    GroupRewriteError,
-    ThreadGroup,
-    inspect,
-    ir,
-)
+from ._group_planner_support import _PAYLOAD_DTYPE_LIKE, GroupRewriteError, ir
 from ._group_planning import GroupPlanningContext
 from ._operations import (
     GroupResultSource,
@@ -240,9 +236,12 @@ class _ShufflePlanning:
             operation="shuffle",
             parameter="value",
         )
+        from .._lowering._core import NumbaMlirCoreAdapter
+
+        adapter = NumbaMlirCoreAdapter()
         semantics = GroupShuffleSemantics(
             make_block_shuffle_semantics(
-                dtype=dtype,
+                dtype=adapter.core_dtype(dtype),
                 mode=mode,
                 items_per_thread=items_per_thread,
                 distance=distance_binding,
@@ -272,13 +271,19 @@ class _ShufflePlanning:
             bound=bound,
             is_common_root=is_common_root,
         )
-        primitive = plan.call.operation.primitive
+        semantics = plan.call.operation
+        assert isinstance(semantics, GroupShuffleSemantics)
+        assert plan.participation is not None
+        primitive = semantics.primitive
         block_dim = plan.participation.exact_block_dim
         assert block_dim is not None
         factory = self._provider(plan, is_array=is_array)
         statements: list[Any] = []
+        from .._lowering._core import NumbaMlirCoreAdapter
+
+        adapter = NumbaMlirCoreAdapter()
         factory_kwargs: dict[str, Any] = {
-            "dtype": primitive.dtype,
+            "dtype": adapter.normalize_dtype(primitive.dtype),
             "threads_per_block": block_dim,
             "mode": primitive.mode.value,
         }
@@ -297,7 +302,7 @@ class _ShufflePlanning:
                     scope=scope,
                     loc=loc,
                     stem="shuffle_distance_type",
-                    value=types.int64,
+                    value=numba_types.int64,
                 )
                 cast_distance = self._context.new_var(
                     scope,
