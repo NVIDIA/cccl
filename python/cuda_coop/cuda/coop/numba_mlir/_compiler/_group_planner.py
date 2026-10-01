@@ -148,7 +148,36 @@ class _GroupCallPlanner:
         return obj
 
     def _reject_literal_unroll_value(self, value: Any, parameter: str) -> None:
-        """Diagnose unrolled values used before the unrolling pass runs."""
+        """Reject compile-time controls that depend on a pending literal unroll.
+
+        Group planning needs shapes and selectors before the literal-unroll pass
+        has expanded its iterations. Trace all reaching definitions and
+        expression operands for a recognized ``literal_unroll`` call instead of
+        trying to resolve an iteration value prematurely. Unrelated
+        literal-unroll loops are allowed. Cycles terminate the search without
+        establishing a dependency.
+
+        Parameters
+        ----------
+        value : ir.Var or object
+            Argument whose IR dependencies are inspected. Non-variables have no
+            dependencies to inspect.
+        parameter : str
+            Description of the shape, selector, or other compile-time control
+            used in the diagnostic.
+
+        Returns
+        -------
+        None
+            The value has no detected dependency on a recognized unroll call.
+
+        Raises
+        ------
+        GroupRewriteError
+            A dependency reaches the standard or vendored Numba literal-unroll
+            marker; use constant controls or an ordinary loop with a fixed
+            cooperative shape.
+        """
 
         def depends_on_unroll(current, seen):
             if not isinstance(current, ir.Var) or current.name in seen:
