@@ -154,7 +154,28 @@ class _ProvenanceRewrite(Rewrite):
         self,
         value,
     ):
-        """Resolve only scalar values with explicitly static IR provenance."""
+        """Resolve a scalar only when its IR provenance is explicitly static.
+
+        Use the shared scalar-provenance resolver with this function's
+        definitions and specialized argument types. Callers use the result to
+        choose between compile-time scalar bindings and runtime operands;
+        ordinary constant inference is not enough to establish that binding
+        contract.
+
+        Parameters
+        ----------
+        value : object
+            Scalar value or IR reference accepted by the provenance
+            resolver.
+
+        Returns
+        -------
+        object
+            Resolved scalar, including None when it is explicitly static, or
+            the ``_UNRESOLVED`` sentinel when static provenance cannot be
+            established. Compare the sentinel by identity; None can mean an
+            omitted control.
+        """
 
         arg_types = tuple(getattr(self._state, "args", ()) or ())
         resolved, scalar = try_resolve_static_scalar(
