@@ -183,7 +183,7 @@ CUresult cccl_device_reduce_compile(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 try
 {
   if (determinism == CCCL_NOT_GUARANTEED && (op.type != CCCL_PLUS || output_it.type != CCCL_POINTER))
@@ -445,7 +445,7 @@ CUresult cccl_device_reduce_build_ex(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 {
   CUresult r = cccl_device_reduce_compile(
     build,

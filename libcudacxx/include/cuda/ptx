@@ -69,69 +69,69 @@
  * - Some helper function and types can be found in ptx/ptx_helper_functions.h and ptx/ptx_dot_variants.h.
  */
 
-#include <cuda/__ptx/instructions/applypriority_async_bulk.h>
-#include <cuda/__ptx/instructions/barrier_cluster.h>
-#include <cuda/__ptx/instructions/bfind.h>
-#include <cuda/__ptx/instructions/bmsk.h>
-#include <cuda/__ptx/instructions/clusterlaunchcontrol.h>
-#include <cuda/__ptx/instructions/cp_async_bulk.h>
-#include <cuda/__ptx/instructions/cp_async_bulk_commit_group.h>
-#include <cuda/__ptx/instructions/cp_async_bulk_prefetch.h>
-#include <cuda/__ptx/instructions/cp_async_bulk_prefetch_tensor.h>
-#include <cuda/__ptx/instructions/cp_async_bulk_tensor.h>
-#include <cuda/__ptx/instructions/cp_async_bulk_wait_group.h>
-#include <cuda/__ptx/instructions/cp_async_mbarrier_arrive.h>
-#include <cuda/__ptx/instructions/cp_reduce_async_bulk.h>
-#include <cuda/__ptx/instructions/cp_reduce_async_bulk_tensor.h>
-#include <cuda/__ptx/instructions/elect_sync.h>
-#include <cuda/__ptx/instructions/exit.h>
-#include <cuda/__ptx/instructions/fabric_submit.h>
-#include <cuda/__ptx/instructions/fabric_try_get.h>
-#include <cuda/__ptx/instructions/fabric_try_pullred.h>
-#include <cuda/__ptx/instructions/fabric_try_put.h>
-#include <cuda/__ptx/instructions/fabric_try_red.h>
-#include <cuda/__ptx/instructions/fabric_wait.h>
-#include <cuda/__ptx/instructions/fence.h>
-#include <cuda/__ptx/instructions/get_sreg.h>
-#include <cuda/__ptx/instructions/getctarank.h>
-#include <cuda/__ptx/instructions/ld.h>
-#include <cuda/__ptx/instructions/ldmatrix.h>
-#include <cuda/__ptx/instructions/mbarrier_arrive.h>
-#include <cuda/__ptx/instructions/mbarrier_check_layout.h>
-#include <cuda/__ptx/instructions/mbarrier_complete_tx.h>
-#include <cuda/__ptx/instructions/mbarrier_expect_tx.h>
-#include <cuda/__ptx/instructions/mbarrier_init.h>
-#include <cuda/__ptx/instructions/mbarrier_inval.h>
-#include <cuda/__ptx/instructions/mbarrier_pending_count.h>
-#include <cuda/__ptx/instructions/mbarrier_wait.h>
-#include <cuda/__ptx/instructions/multimem_ld_reduce.h>
-#include <cuda/__ptx/instructions/multimem_red.h>
-#include <cuda/__ptx/instructions/multimem_st.h>
-#include <cuda/__ptx/instructions/prefetch.h>
-#include <cuda/__ptx/instructions/prmt.h>
-#include <cuda/__ptx/instructions/red_async.h>
-#include <cuda/__ptx/instructions/setmaxnreg.h>
-#include <cuda/__ptx/instructions/shfl_sync.h>
-#include <cuda/__ptx/instructions/shl.h>
-#include <cuda/__ptx/instructions/shr.h>
-#include <cuda/__ptx/instructions/st.h>
-#include <cuda/__ptx/instructions/st_async.h>
-#include <cuda/__ptx/instructions/st_bulk.h>
-#include <cuda/__ptx/instructions/stmatrix.h>
-#include <cuda/__ptx/instructions/tcgen05_alloc.h>
-#include <cuda/__ptx/instructions/tcgen05_commit.h>
-#include <cuda/__ptx/instructions/tcgen05_cp.h>
-#include <cuda/__ptx/instructions/tcgen05_fence.h>
-#include <cuda/__ptx/instructions/tcgen05_ld.h>
-#include <cuda/__ptx/instructions/tcgen05_mma.h>
-#include <cuda/__ptx/instructions/tcgen05_mma_ws.h>
-#include <cuda/__ptx/instructions/tcgen05_shift.h>
-#include <cuda/__ptx/instructions/tcgen05_st.h>
-#include <cuda/__ptx/instructions/tcgen05_wait.h>
-#include <cuda/__ptx/instructions/tensormap_cp_fenceproxy.h>
-#include <cuda/__ptx/instructions/tensormap_replace.h>
-#include <cuda/__ptx/instructions/trap.h>
-#include <cuda/__ptx/pragmas/enable_smem_spilling.h>
+#include <cuda/__ptx/instructions/applypriority_async_bulk.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/barrier_cluster.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/bfind.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/bmsk.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/clusterlaunchcontrol.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/cp_async_bulk.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/cp_async_bulk_commit_group.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/cp_async_bulk_prefetch.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/cp_async_bulk_prefetch_tensor.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/cp_async_bulk_tensor.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/cp_async_bulk_wait_group.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/cp_async_mbarrier_arrive.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/cp_reduce_async_bulk.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/cp_reduce_async_bulk_tensor.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/elect_sync.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/exit.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/fabric_submit.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/fabric_try_get.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/fabric_try_pullred.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/fabric_try_put.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/fabric_try_red.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/fabric_wait.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/fence.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/get_sreg.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/getctarank.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/ld.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/ldmatrix.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/mbarrier_arrive.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/mbarrier_check_layout.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/mbarrier_complete_tx.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/mbarrier_expect_tx.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/mbarrier_init.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/mbarrier_inval.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/mbarrier_pending_count.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/mbarrier_wait.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/multimem_ld_reduce.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/multimem_red.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/multimem_st.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/prefetch.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/prmt.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/red_async.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/setmaxnreg.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/shfl_sync.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/shl.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/shr.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/st.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/st_async.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/st_bulk.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/stmatrix.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/tcgen05_alloc.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/tcgen05_commit.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/tcgen05_cp.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/tcgen05_fence.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/tcgen05_ld.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/tcgen05_mma.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/tcgen05_mma_ws.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/tcgen05_shift.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/tcgen05_st.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/tcgen05_wait.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/tensormap_cp_fenceproxy.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/tensormap_replace.h> // IWYU pragma: export
+#include <cuda/__ptx/instructions/trap.h> // IWYU pragma: export
+#include <cuda/__ptx/pragmas/enable_smem_spilling.h> // IWYU pragma: export
 
 #include <cuda/std/__cccl/prologue.h>
 

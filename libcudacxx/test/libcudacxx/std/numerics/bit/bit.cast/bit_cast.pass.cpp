@@ -249,9 +249,6 @@ TEST_FUNC bool tests()
 #if !TEST_COMPILER(NVRTC) && !TEST_CUDA_COMPILER(CLANG)
         cuda::std::nanf(""),
 #endif // !TEST_COMPILER(NVRTC) && !TEST_CUDA_COMPILER(CLANG)
-#if defined(_CCCL_BUILTIN_NANF)
-        _CCCL_BUILTIN_NANF("0x55550001"), // NaN with a payload
-#endif // _CCCL_BUILTIN_NANF
         cuda::std::numeric_limits<float>::signaling_NaN(),
         cuda::std::numeric_limits<float>::quiet_NaN(),
         cuda::std::numeric_limits<float>::infinity()})

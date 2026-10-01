@@ -25,11 +25,9 @@
 
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__stream/stream_ref.h>
-#  include <cuda/std/__functional/reference_wrapper.h>
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__tuple_dir/apply.h>
 #  include <cuda/std/__tuple_dir/tuple.h>
-#  include <cuda/std/__type_traits/decay.h>
 #  include <cuda/std/__type_traits/is_function.h>
 #  include <cuda/std/__type_traits/is_move_constructible.h>
 #  include <cuda/std/__type_traits/is_pointer.h>
