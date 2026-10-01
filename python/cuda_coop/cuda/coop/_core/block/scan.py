@@ -72,14 +72,6 @@ class BlockScanSpec:
         return self.call.items_per_thread
 
     @property
-    def has_initial_value(self) -> bool:
-        return self.call.initial_value is not None
-
-    @property
-    def has_block_aggregate(self) -> bool:
-        return self.call.aggregate
-
-    @property
     def method_name(self) -> str:
         return self.specialization.method_name
 

@@ -7,10 +7,11 @@ Numba-CUDA-MLIR.
 """
 
 import importlib
+from typing import TYPE_CHECKING
 
 from .._core.api import TempStorageLike, ThreadDataLike
 from ._compiler._activation import _initialize_runtime_hooks
-from ._group_load_store import load, store
+from ._group._load_store import load, store
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData
 from ._thread_group import (
@@ -23,6 +24,19 @@ from ._thread_group import (
     this_thread,
     this_warp,
 )
+
+if TYPE_CHECKING:
+    from ._group._exchange import exchange
+    from ._group._reduce import reduce, sum
+    from ._group._scan import (
+        exclusive_scan,
+        exclusive_sum,
+        inclusive_scan,
+        inclusive_sum,
+        scan,
+    )
+    from ._group._shuffle import shuffle
+    from ._thread_data import local, shared
 
 __all__ = [
     "Hierarchy",
@@ -66,15 +80,15 @@ def __getattr__(name):
         "sum",
     }:
         module_name = {
-            "exchange": "_group_exchange",
-            "exclusive_scan": "_group_scan",
-            "exclusive_sum": "_group_scan",
-            "inclusive_scan": "_group_scan",
-            "inclusive_sum": "_group_scan",
-            "reduce": "_group_reduce",
-            "scan": "_group_scan",
-            "shuffle": "_group_shuffle",
-            "sum": "_group_reduce",
+            "exchange": "_group._exchange",
+            "exclusive_scan": "_group._scan",
+            "exclusive_sum": "_group._scan",
+            "inclusive_scan": "_group._scan",
+            "inclusive_sum": "_group._scan",
+            "reduce": "_group._reduce",
+            "scan": "_group._scan",
+            "shuffle": "_group._shuffle",
+            "sum": "_group._reduce",
         }[name]
         value = getattr(
             importlib.import_module(f"{__name__}.{module_name}"), name

@@ -8,8 +8,8 @@ import operator
 from enum import Enum
 from typing import Any
 
+import numba_cuda_mlir.numba_cuda.types as numba_types
 import numpy as np
-from numba_cuda_mlir import types
 
 from cuda.coop._core import (
     BindingKind,
@@ -107,7 +107,7 @@ def validate_scan_operator_dtype(scan_op: Any, dtype: Any) -> Any:
     )
     operation = normalize_scan_operation(scan_op)
     if operation in _BITWISE_SCAN_OPERATORS and not isinstance(
-        dtype, types.Integer
+        dtype, numba_types.Integer
     ):
         raise TypeError(
             f"cuda.coop.numba_mlir scan {operation} requires an integer dtype"
@@ -315,7 +315,7 @@ def warp_scan(
     value_abis = {}
     if valid_items_binding.kind is BindingKind.RUNTIME:
         value_abis["valid_items"] = BoundedInteger(
-            types.int32,
+            numba_types.int32,
             minimum=1,
             maximum=threads_in_warp,
         )

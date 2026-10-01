@@ -495,8 +495,8 @@ aliases and conditional definitions. A surviving unsupported helper or
 descriptor escape is diagnosed with its name. Standalone callbacks cannot
 contain primitives because they lack the caller's cooperative launch context.
 
-For the MVP, ``literal_unroll`` values shaping cooperative groups, selectors,
-payloads, or storage are explicitly unsupported. The planner diagnoses those
+``literal_unroll`` values shaping cooperative groups, selectors, payloads,
+or storage are unsupported. The planner diagnoses those
 uses and suggests explicit calls with compile-time constants. Ordinary unrolling
 unrelated to cooperative planning remains available. Supporting shaped unrolling
 would require revisiting planner ordering; this implementation does not move
@@ -522,7 +522,7 @@ A :term:`family` groups related primitives and their implementation. The
 Scan family, for example, has shared API declarations in
 ``_core/api/scan.py`` and ``scan.pyi``, semantic descriptions in
 ``_core/group/scan.py``, and Numba-specific entry points in
-``numba_mlir/_group_scan.py`` and ``_group_scan.pyi``. Compiler analysis and
+``numba_mlir/_group/_scan.py`` and ``_scan.pyi``. Compiler analysis and
 lowering have their own Scan modules. A family can span several modules
 and include both common operations and qualified extensions.
 
