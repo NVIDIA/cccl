@@ -158,13 +158,24 @@ struct BlockReduceWarpReductions
 
     __syncthreads();
 
-    if constexpr (Broadcast)
+    if constexpr (Broadcast && even_warp_multiple && warps > 4
+                  && ::cuda::has_identity_element_v<ReductionOp, T> && is_warp_redux_op_supported_sm80<ReductionOp, T>)
+    {
+      const int valid_warps = FullTile ? warps : ::cuda::ceil_div(num_valid, logical_warp_size);
+      const T partial =
+        lane_id < valid_warps ? temp_storage.warp_aggregates[lane_id] : ::cuda::identity_element<ReductionOp, T>();
+      const T aggregate =
+        WarpReduceInternal(temp_storage.warp_reduce[warp_id]).template Reduce<true>(partial, warp_threads, reduction_op);
+      return ShuffleIndex<warp_threads>(aggregate, 0, 0xffffffff);
+    }
+
+    if constexpr (Broadcast && warps <= 4)
     {
       // Start from the same warp and fold in the same order in every thread.
       warp_aggregate = temp_storage.warp_aggregates[0];
     }
 
-    if (Broadcast || linear_tid == 0)
+    if ((Broadcast && warps <= 4) || linear_tid == 0)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int warp_idx = 1; warp_idx < warps; ++warp_idx)
@@ -175,6 +186,16 @@ struct BlockReduceWarpReductions
           warp_aggregate = reduction_op(warp_aggregate, addend);
         }
       }
+    }
+
+    if constexpr (Broadcast && warps > 4)
+    {
+      if (linear_tid == 0)
+      {
+        detail::uninitialized_copy_single(&temp_storage.block_prefix, warp_aggregate);
+      }
+      __syncthreads();
+      return temp_storage.block_prefix;
     }
 
     return warp_aggregate;
