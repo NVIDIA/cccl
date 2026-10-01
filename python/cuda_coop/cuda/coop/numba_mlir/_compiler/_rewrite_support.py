@@ -10,32 +10,33 @@ from dataclasses import dataclass, field
 from itertools import count
 from typing import TYPE_CHECKING, Any
 
+from numba_cuda_mlir.numba_cuda.core.errors import ConstantInferenceError
+from numba_cuda_mlir.numba_cuda.core.rewrites import (
+    Rewrite as Rewrite,  # noqa: PLC0414 - Re-export for typing.
+)
+from numba_cuda_mlir.numba_cuda.core.rewrites import (
+    register_rewrite as _register_rewrite,
+)
+
 from cuda.coop._core import GroupLoweringPlan
 
-from ._numba_mlir_compat import (
-    _get_numba_mlir_compat,
-    _get_numba_mlir_devices,
-)
 from ._operations import FactoryOperation
 from ._parameters import normalize_dtype_param
 
-_numba_mlir_compat = _get_numba_mlir_compat()
-_numba_errors = _numba_mlir_compat.numba_errors
-_numba_typeof = _numba_mlir_compat.numba_typeof
 if TYPE_CHECKING:
     from numba_cuda_mlir.numba_cuda.core import ir
-    from numba_cuda_mlir.numba_cuda.core.rewrites import Rewrite
 else:
-    ir = _numba_mlir_compat.numba_ir
-    Rewrite = _numba_mlir_compat.rewrite_type
-register_rewrite = _numba_mlir_compat.register_rewrite
+    from numba_cuda_mlir.numbair_transforms import ir
+
+# The runtime decorator's annotation does not preserve subclass typing.
+register_rewrite: Any = _register_rewrite
 
 _INFERENCE_EXCEPTIONS = (
     KeyError,
     ValueError,
     TypeError,
     AttributeError,
-    _numba_errors.ConstantInferenceError,
+    ConstantInferenceError,
 )
 _GLOBAL_NAME_COUNTER = count()
 _UNRESOLVED = object()
@@ -127,9 +128,10 @@ def _check_driver_error(err, op: str) -> None:
 
 
 def _query_device_shared_memory_limits() -> dict[str, int]:
+    from numba_cuda_mlir.numba_cuda.cudadrv import devices
+
     import cuda.bindings.driver as _driver
 
-    devices = _get_numba_mlir_devices()
     context = devices.get_context()
     (err,) = _driver.cuInit(0)
     _check_driver_error(err, "cuInit")
