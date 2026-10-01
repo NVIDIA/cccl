@@ -39,7 +39,7 @@ CUB_NAMESPACE_BEGIN
 
 //! BlockReduceAlgorithm enumerates alternative algorithms for parallel reduction across a CUDA thread
 //! block.
-enum BlockReduceAlgorithm
+enum BlockReduceAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
 
   //! @rst
@@ -333,8 +333,7 @@ private:
 
 public:
   /// @smemstorage{BlockReduce}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
