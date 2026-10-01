@@ -1354,6 +1354,49 @@ class Algorithm:
         temp_storage_type_name: str | None = "temp_storage_t",
         temp_storage_param_pid: int | None = 0,
     ):
+        """Write the external-call ABI shim around one typed C++ provider
+        wrapper.
+
+        ``ExternFunction`` calls a symbol ending in ``__abi`` with a leading
+        return slot and an integer status result. Convert untyped pointer
+        arguments back to their C++ pointee types, materialize scalar references
+        as local values, and route the single output through the return slot.
+        Emit status zero after the call; the shim does not allocate scratch or
+        add synchronization.
+
+        C++ functors and static pointer offsets are already embedded in the
+        internal wrapper, so neither appears in this runtime ABI. Output
+        parameters are likewise removed from the input list and represented by
+        ``__ret``.
+
+        Parameters
+        ----------
+        w : callable
+            Text writer receiving generated C++ fragments.
+        method : sequence of Parameter
+            Specialized parameters in internal-wrapper order, with at most one
+            output. An allocating wrapper supplies the method without scratch.
+        exported_name : str
+            Symbol prefix; the emitted entry point appends ``__abi``.
+        internal_name : str
+            Typed C++ wrapper called by the shim.
+        temp_storage_type_name : str or None, optional
+            C++ scratch type used when casting the designated byte pointer.
+        temp_storage_param_pid : int or None, optional
+            Index of an explicit scratch pointer in ``method``. ``None``
+            disables that special cast for allocating or storage-free wrappers.
+
+        Returns
+        -------
+        None
+            Generated source is appended through ``w``.
+
+        Raises
+        ------
+        ValueError
+            More than one runtime output parameter is present.
+        """
+
         output_param = None
         user_params = []
         for pid, param in enumerate(method):
