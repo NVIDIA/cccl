@@ -636,6 +636,37 @@ class _GroupCallPlanner:
         seen: set[str] | None = None,
         thread_data_only: bool = False,
     ) -> bool | None:
+        """Classify a value by its per-thread payload constructor provenance.
+
+        Trace aliases, casts, phi inputs, and constant tuple projections to
+        ``ThreadData`` or qualified local-array constructors. The three-state
+        result lets a loop backedge coexist with a known constructor: a cycle
+        alone is unresolved, a constructor plus cycles is accepted, and any
+        concrete unrecognized path rejects the value. This classifies the
+        payload form only; dtype and extent are inferred separately.
+
+        Parameters
+        ----------
+        value : ir.Var or object
+            Variable to classify. Non-variables are not recognized payloads.
+        seen : set of str, optional
+            Recursion-path variable names and tuple-projection keys. The current
+            name is added in place; branches receive separate copies.
+        thread_data_only : bool, optional
+            If true, accept only common or qualified ``ThreadData``
+            constructors. Otherwise, also accept the recognized CUDA local-array
+            constructor.
+
+        Returns
+        -------
+        bool or None
+            ``True`` if at least one constructor is found and no path is
+            rejected; ``False`` for an unsupported definition, missing
+            definitions, or a non-variable; ``None`` when only cyclic paths
+            remain. The operand validation wrappers turn that last state into a
+            provenance diagnostic.
+        """
+
         if not isinstance(value, ir.Var):
             return False
         if seen is None:
