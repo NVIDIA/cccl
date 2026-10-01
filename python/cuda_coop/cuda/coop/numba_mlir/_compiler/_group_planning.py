@@ -688,6 +688,42 @@ class GroupPlanningContext:
         return current.value, tuple(attributes)
 
     def dtype(self, value: Any, *, seen: set[str] | None = None) -> Any | None:
+        """Infer a normalized dtype from facts available during group planning.
+
+        Use argument types, scalar constants and operators, supported CUDA index
+        attributes, local-array constructors, and ``ThreadData`` declarations or
+        recorded producer dtypes. Follow aliases, casts, phi inputs, and tuple
+        projections; array indexing contributes the source element dtype. This
+        is a limited pre-typing analysis, not full Numba type inference.
+
+        Every reaching definition must produce a dtype before agreement is
+        checked. Unknown definitions and cycles return ``None`` even when
+        another path has a known type; fully known but inconsistent paths are
+        rejected.
+
+        Parameters
+        ----------
+        value : ir.Var or Numba type or object
+            IR value to inspect, or a compiler type to normalize directly. Array
+            types contribute their element dtype. Other non-variable values have
+            no inferred dtype through this entry point.
+        seen : set of str, optional
+            Recursion-path variable names and tuple-projection keys. The current
+            name is added in place; definitions are visited with separate
+            copies.
+
+        Returns
+        -------
+        object or None
+            Normalized compiler dtype when every relevant path is known and
+            agrees, or ``None`` when inference is incomplete.
+
+        Raises
+        ------
+        GroupRewriteError
+            Fully resolved aliases or tuple projections disagree on the dtype.
+        """
+
         if not isinstance(value, ir.Var):
             return self._dtype_from_numba_type(value)
         if seen is None:
