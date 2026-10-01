@@ -179,12 +179,35 @@ def try_resolve_static_scalar(
     argument_type: Callable[[int], Any | None],
     seen: set[str] | None = None,
 ) -> tuple[bool, Any]:
-    """Resolve a scalar only when every reaching definition is static.
+    """Resolve a static value and preserve a known scalar width when possible.
 
-    Globals, free variables, literals, and IR constants are static. Aliases,
-    casts, and phi nodes preserve that classification only when all incoming
-    definitions resolve to the same typed value. Runtime expressions are never
-    evaluated through Numba's general constant-inference machinery here.
+    Use ``try_resolve_static_scalar_provenance`` to require agreement across all
+    reaching definitions without evaluating runtime expressions. Unwrap its
+    result, converting a value with a known compiler dtype to the matching NumPy
+    scalar when possible. If that conversion is unsupported or fails, return the
+    original value. Use the provenance-returning helper when the recorded dtype
+    itself is needed for validation.
+
+    Parameters
+    ----------
+    value : ir.Var or object
+        IR value or already-static Python value to resolve.
+    definitions : callable
+        Return all reaching definitions for an IR variable.
+    argument_type : callable
+        Return the compiler type for a function argument index, or ``None`` when
+        unavailable.
+    seen : set of str, optional
+        Names on the current recursion path. Passed to the provenance resolver,
+        which adds the current variable in place and copies it for branches.
+
+    Returns
+    -------
+    resolved : bool
+        Whether the value has consistent, explicitly static provenance.
+    value : object
+        Unwrapped static value, or ``None`` on failure. Consult ``resolved`` to
+        distinguish an unresolved value from a statically known ``None``.
     """
 
     resolved, scalar = try_resolve_static_scalar_provenance(
