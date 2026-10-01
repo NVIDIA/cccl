@@ -229,7 +229,7 @@ struct RBeginFunction
 };
 static_assert(cuda::std::is_invocable_v<RangeRBeginT, RBeginFunction const&>);
 static_assert(!cuda::std::is_invocable_v<RangeRBeginT, RBeginFunction&&>);
-static_assert(!cuda::std::is_invocable_v<RangeRBeginT, RBeginFunction&>);
+static_assert(cuda::std::is_invocable_v<RangeRBeginT, RBeginFunction&>);
 static_assert(cuda::std::is_invocable_v<RangeCRBeginT, RBeginFunction const&>);
 static_assert(cuda::std::is_invocable_v<RangeCRBeginT, RBeginFunction&>);
 
@@ -319,7 +319,7 @@ TEST_FUNC constexpr bool testRBeginFunction()
 {
   RBeginFunction a{};
   const RBeginFunction aa{};
-  static_assert(!cuda::std::invocable<RangeRBeginT, decltype((a))>);
+  assert(cuda::std::ranges::rbegin(a) == &a.x);
   assert(cuda::std::ranges::crbegin(a) == &a.x);
   assert(cuda::std::ranges::rbegin(aa) == &aa.x);
   assert(cuda::std::ranges::crbegin(aa) == &aa.x);
@@ -340,21 +340,21 @@ TEST_FUNC constexpr bool testRBeginFunction()
 
   RBeginFunctionReturnsEmptyPtr d{};
   const RBeginFunctionReturnsEmptyPtr dd{};
-  static_assert(!cuda::std::invocable<RangeRBeginT, decltype((d))>);
+  assert(cuda::std::ranges::rbegin(d) == &d.x);
   assert(cuda::std::ranges::crbegin(d) == &d.x);
   assert(cuda::std::ranges::rbegin(dd) == &dd.x);
   assert(cuda::std::ranges::crbegin(dd) == &dd.x);
 
   RBeginFunctionWithDataMember e{};
   const RBeginFunctionWithDataMember ee{};
-  static_assert(!cuda::std::invocable<RangeRBeginT, decltype((e))>);
+  assert(cuda::std::ranges::rbegin(e) == &e.x);
   assert(cuda::std::ranges::rbegin(ee) == &ee.x);
   assert(cuda::std::ranges::crbegin(e) == &e.x);
   assert(cuda::std::ranges::crbegin(ee) == &ee.x);
 
   RBeginFunctionWithPrivateBeginMember f{};
   const RBeginFunctionWithPrivateBeginMember ff{};
-  static_assert(!cuda::std::invocable<RangeRBeginT, decltype((f))>);
+  assert(cuda::std::ranges::rbegin(f) == &f.y);
   assert(cuda::std::ranges::crbegin(f) == &f.y);
   assert(cuda::std::ranges::rbegin(ff) == &ff.y);
   assert(cuda::std::ranges::crbegin(ff) == &ff.y);

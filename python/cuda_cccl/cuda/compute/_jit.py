@@ -1169,6 +1169,22 @@ def _extract_state(func: Callable):
     return state_names, state_arrays
 
 
+def _pack_state_bytes(state_arrays: List[DeviceArrayLike]) -> bytes:
+    """
+    Pack state arrays into the runtime state buffer read by the generated
+    wrapper (see ``_odr_helpers.create_stateful_op_void_ptr_wrapper``): for
+    each array, its data pointer followed by one ``int64`` word per dimension
+    of its shape, all tightly packed with no padding. Refreshed on every call
+    (see ``_JitOpState.to_bytes``), so a single compiled op can be reused
+    across calls even if a captured array's pointer and/or shape changes.
+    """
+    words = []
+    for arr in state_arrays:
+        words.append(get_data_pointer(arr))
+        words.extend(int(dim) for dim in get_shape(arr))
+    return struct.pack(f"<{len(words)}Q", *words)
+
+
 def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
     """
     Compile a stateful operator for use with CCCL algorithms.
@@ -1190,10 +1206,12 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
     numba_input_types = tuple(type_descriptor_to_numba(t) for t in input_types)
 
     # State arrays are passed to the (transformed) op as real device Arrays: the
-    # wrapper rebuilds each packed pointer with carray so the op body can use
-    # array operations (state[i], len, .shape, cuda.atomic).  The array shape is
-    # baked into the wrapper, so it is also part of the op cache key (see
-    # _JitOpState.get_cache_key).  See _odr_helpers.create_stateful_op_void_ptr_wrapper.
+    # wrapper rebuilds each packed pointer (and shape, read from the same
+    # buffer -- see _pack_state_bytes) with carray so the op body can use array
+    # operations (state[i], len, .shape, cuda.atomic). Only each array's rank
+    # (ndim) affects the compiled wrapper, so only rank is part of the op cache
+    # key (see _JitOpState.get_cache_key).  See
+    # _odr_helpers.create_stateful_op_void_ptr_wrapper.
     state_dtypes = [_mlir.from_numpy_dtype(get_dtype(s)) for s in state_arrays]
     state_shapes = [tuple(get_shape(s)) for s in state_arrays]
     state_array_types = [
@@ -1216,21 +1234,19 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
     # Build full signature: output_type(state_arrays..., regular_args...)
     sig = numba_output_type(*state_array_types, *numba_input_types)
 
-    # Get state pointers - pointers to the device array data
-    state_ptrs = [get_data_pointer(arr) for arr in state_arrays]
-
-    # All pointers have the same alignment, use pointer-sized int alignment
+    # All words in the packed state buffer are pointer-sized, so use
+    # pointer-sized int alignment
     state_alignment = np.dtype(np.intp).alignment
 
-    # Create the stateful wrapper (unpacks the packed state pointers).
+    # Create the stateful wrapper (unpacks the packed state pointers/shapes).
     wrapped_op, wrapper_sig = create_stateful_op_void_ptr_wrapper(
         op, sig, state_dtypes, state_shapes
     )
 
     code = _compile_wrapper_to_device_code(wrapped_op, wrapper_sig, get_target_cc())
 
-    # Pack all data pointers as bytes (sequentially)
-    state_bytes = struct.pack(f"{len(state_ptrs)}P", *state_ptrs)
+    # Pack each array's data pointer and shape as bytes (sequentially)
+    state_bytes = _pack_state_bytes(state_arrays)
 
     # Return Op with STATEFUL kind and packed pointers
     return Op(
@@ -1257,18 +1273,19 @@ class _JitOpState:
         self.arrays = arrays
 
     def get_cache_key(self) -> Hashable:
-        # Include shapes: the stateful wrapper bakes each state array's shape
-        # into a carray(...) call, so two otherwise-identical ops that capture
-        # differently-shaped state compile to different device code.
+        # Include each array's rank (ndim), not its full shape: the wrapper's
+        # carray() call is sized by rank, and reads the concrete shape from
+        # the runtime state buffer (see _pack_state_bytes) rather than baking
+        # it in, so two ops capturing same-dtype, same-rank state compile to
+        # the same device code even at different concrete shapes.
         return (
             tuple(self.names),
             tuple(get_dtype(s) for s in self.arrays),
-            tuple(tuple(get_shape(s)) for s in self.arrays),
+            tuple(len(get_shape(s)) for s in self.arrays),
         )
 
     def to_bytes(self):
-        state_ptrs = [get_data_pointer(arr) for arr in self.arrays]
-        return struct.pack(f"{len(state_ptrs)}P", *state_ptrs)
+        return _pack_state_bytes(self.arrays)
 
 
 class _StatefulOp(OpAdapter):
