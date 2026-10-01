@@ -402,6 +402,29 @@ class GroupPlanningContext:
         )
 
     def planning_binding(self, value: Any) -> ArgumentBinding:
+        """Classify a scalar control from its explicit static provenance.
+
+        Use explicit static provenance rather than general constant inference. A
+        runtime expression remains a runtime binding even if another compiler
+        analysis could fold it. The original runtime operand is retained by the
+        operation family, not inside the returned binding.
+
+        Parameters
+        ----------
+        value : ir.Var or object
+            Optional scalar control such as ``valid_items``, ``offset``, or a
+            load default, represented by an IR variable or an already-static
+            value.
+
+        Returns
+        -------
+        ArgumentBinding
+            ``OMITTED`` for statically known ``None``, ``STATIC`` with the
+            resolved value otherwise, or ``RUNTIME`` when static provenance is
+            not established. Numeric validity and operation-specific constraints
+            are checked later.
+        """
+
         resolved, constant = self.try_static_scalar(value)
         if not resolved:
             return ArgumentBinding.runtime()
