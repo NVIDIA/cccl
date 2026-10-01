@@ -73,7 +73,7 @@ def test_radix_rank_example():
         block = coop.this_block()
         keys = coop.ThreadData(items_per_thread)
         coop.load(block, source, keys)
-        ranks = coop.radix_rank(block, keys, begin_bit=0, end_bit=4)
+        ranks = coop.radix_rank_keys(block, keys, begin_bit=0, end_bit=4)
         coop.store(block, destination, ranks)
 
     for items_per_thread in (1, 4):
