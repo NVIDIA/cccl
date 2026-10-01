@@ -678,6 +678,31 @@ class CoopWholeFunctionPlanner(WholeFunctionPlanner):
     """Apply cooperative-provider rewrites after device-function inlining."""
 
     def run(self) -> bool:
+        """Rewrite cooperative providers after device helpers have been inlined.
+
+        Visit blocks in label order and repeatedly apply each block's matches
+        until no further rewrite is available. A fresh rewrite object sees the
+        inlined consumers when collecting payload and storage requirements.
+
+        If launch-dependent work remains in a kernel, request its exact launch
+        configuration and retry with deferral disabled. A device function leaves
+        that work for its kernel caller; it has no independent kernel launch.
+        The second kernel attempt diagnoses unresolved dimensions instead of
+        silently leaving provider markers for type inference.
+
+        Returns
+        -------
+        bool
+            Whether any replacement block was installed in
+            ``state.func_ir``.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            Provider rewriting fails, including when the kernel retry cannot
+            obtain a required exact block shape.
+        """
+
         rewrite = CoopSinglePhaseRewrite(self.state, post_inline=True)
         modified = False
 
