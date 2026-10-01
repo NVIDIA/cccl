@@ -24,13 +24,11 @@ def _resolve_group(group, algorithm, temp_storage, operation):
         raise TypeError(f"{_SCOPE}.{operation} group must be a ThreadGroup")
     if group.kind != "block":
         raise NotImplementedError(
-            f"{_SCOPE}.{operation} currently supports block groups"
+            f"{_SCOPE}.{operation} supports only block groups"
         )
     algorithm = _normalize_algorithm(algorithm)
     if algorithm is not GroupLoadStoreAlgorithm.DIRECT:
-        raise NotImplementedError(
-            f"{_SCOPE}.{operation} currently supports DIRECT"
-        )
+        raise NotImplementedError(f"{_SCOPE}.{operation} supports only DIRECT")
     if temp_storage is not None:
         _validate_common_temp_storage(operation, temp_storage)
     from ._compiler._launch import current_kernel_launch_facts
