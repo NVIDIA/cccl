@@ -75,6 +75,7 @@ def _make_provider(operation, *, both=False):
             call, block_dim=normalize_dim_param(threads_per_block)
         )
         metadata = factory_operation(provider)
+        assert metadata is not None
         specialization = adapter.materialize(
             spec,
             storage_abi=metadata.storage_abi,
