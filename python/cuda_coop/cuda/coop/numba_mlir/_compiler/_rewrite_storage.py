@@ -953,6 +953,46 @@ class _StorageRewrite:
         base_offset: int,
         loc: ir.Loc,
     ) -> None:
+        """Append IR selecting one call's scratch view for the executing group.
+
+        A single-instance view has constant bounds. Multiple instances add the
+        emitted group index times the aligned instance stride to the region's
+        static offset. The view length remains the call's byte requirement, even
+        when its stride includes padding or space required by another consumer.
+
+        Parameters
+        ----------
+        block : ir.Block
+            Destination receiving bound calculations and the slice
+            assignment.
+        source_var : ir.Var
+            Shared byte array or descriptor view from which to take the
+            slice.
+        target_var : ir.Var
+            Variable assigned the generated view; also supplies the IR
+            scope.
+        slice_info : _TempStorageSlice
+            Region-relative offset, per-call size, instance layout, and
+            topology.
+        base_offset : int
+            Region origin relative to ``source_var``. Use zero for an
+            already sliced explicit descriptor and the region base for the
+            unified backing.
+        loc : ir.Loc
+            Source location for generated statements.
+
+        Returns
+        -------
+        None
+            ``target_var`` is defined by statements appended to ``block``.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            A multi-instance slice lacks a lowering plan or has unsupported
+            topology.
+        """
+
         static_start = int(base_offset) + int(slice_info.offset)
         if slice_info.instances == 1:
             start: int | ir.Var = static_start
