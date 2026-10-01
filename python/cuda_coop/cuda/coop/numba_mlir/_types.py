@@ -2032,6 +2032,44 @@ class Algorithm:
         return tuple(overloads)
 
     def codegen_method(self, func_to_overload, method, mangled_name):
+        """Build a Numba overload template for one specialized provider method.
+
+        Pair the method's Python-facing argument checks with the generated
+        ``__abi`` symbol. Pointer-backed arguments use an untyped pointer ABI
+        and ``types.ptr`` conversion; scalar arguments use their descriptor
+        dtype. An output becomes the external call's return value. Embedded
+        functors and static pointer offsets consume no runtime arguments.
+
+        The resulting typing implementation returns ``None`` when the arity or
+        an input descriptor rejects the actual compiler types, allowing overload
+        selection to continue. On a match, it returns a fixed-arity
+        implementation and attaches the invocable's link paths. Registration
+        remains local to the returned template instead of modifying a global
+        typing registry.
+
+        Parameters
+        ----------
+        func_to_overload : callable
+            Invocable used as the overload key. Its ``files`` attribute, when
+            present, supplies paths needed to link the external symbol.
+        method : sequence of Parameter
+            Concrete method signature, including at most one output parameter.
+        mangled_name : str
+            Generated wrapper name without the ``__abi`` suffix; may include
+            ``_alloc`` when ``method`` omits an explicit scratch argument.
+
+        Returns
+        -------
+        type
+            Strict, always-inline overload template for this method.
+
+        Raises
+        ------
+        ValueError
+            The algorithm still has template parameters or the method has
+            multiple output parameters.
+        """
+
         if len(self.template_parameters):
             raise ValueError("Cannot generate codegen for a template")
 
