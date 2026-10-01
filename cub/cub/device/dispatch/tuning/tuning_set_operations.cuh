@@ -23,7 +23,8 @@
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
-
+namespace detail::set_ops
+{
 //! The tuning policy for all algorithms in DeviceSetOps.
 struct SetOpsPolicy
 {
@@ -55,8 +56,6 @@ struct SetOpsPolicy
 #endif // _CCCL_HOSTED()
 };
 
-namespace detail::set_ops
-{
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
 concept set_ops_policy_selector = policy_selector<T, SetOpsPolicy>;

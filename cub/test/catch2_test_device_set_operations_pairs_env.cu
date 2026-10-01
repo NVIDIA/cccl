@@ -276,7 +276,8 @@ CUB_TEST("DeviceSetOps pairs use custom stream", "[set_ops][device]", CUB_SMALL,
 template <int ThreadsPerBlock>
 struct set_ops_tuning
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::SetOpsPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
+    -> cub::detail::set_ops::SetOpsPolicy
   {
     return {ThreadsPerBlock, 1, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS};
   }
