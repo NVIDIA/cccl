@@ -93,25 +93,27 @@ def _portable_group_name(kind: str) -> str:
 
 def _validate_portable_operation_group(
     operation: str,
-    group: object,
+    group: ThreadGroup,
 ) -> None:
     """Reject groups outside a registered operation's common API contract.
 
     Compiler adapters call this after reconstructing a symbolic group
     descriptor and before lowering a recognized common operation. The registry
     defines the portable set of group kinds; a backend-qualified operation can
-    support more kinds
-    without broadening that common contract. This check does not validate
-    launch dimensions, collective participation, or backend implementation.
+    support more kinds without broadening that common contract.
+
+    The descriptor may still have unresolved launch dimensions. This check
+    validates only its type and group kind, not launch dimensions, collective
+    participation, or backend implementation.
 
     Parameters
     ----------
     operation : str
         Common operation name used to look up its registered group kinds and
         identify it in diagnostics.
-    group : object
-        Symbolic group descriptor; launch dimensions need not be resolved. Must
-        be a ``ThreadGroup`` with a supported ``kind``. It is not modified.
+    group : ThreadGroup
+        Symbolic group descriptor whose ``kind`` must be supported by the
+        registered operation. It is not modified.
 
     Raises
     ------
