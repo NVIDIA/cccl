@@ -71,6 +71,22 @@ struct Pred
 using result_subrange       = cuda::std::ranges::subrange<int*>;
 using result_subrange_sized = cuda::std::ranges::subrange<int*, int*, cuda::std::ranges::subrange_kind::sized>;
 
+struct CopyOnlyCount
+{
+  int value_;
+
+  TEST_FUNC constexpr CopyOnlyCount(int value)
+      : value_(value)
+  {}
+  TEST_FUNC constexpr CopyOnlyCount(const CopyOnlyCount&) = default;
+  CopyOnlyCount(CopyOnlyCount&&)                          = delete;
+
+  TEST_FUNC constexpr operator int() const
+  {
+    return value_;
+  }
+};
+
 struct ThrowingMoveCount
 {
   int value_;
@@ -323,10 +339,16 @@ TEST_FUNC constexpr bool test()
     assert(*result.begin() == 7);
   }
 
-  // A count whose move may throw still forms a non-throwing partial `views::take` from an lvalue.
+  // A copy-only count, and a count whose move may throw, can form a partial `views::take`.
   {
     int count_value = 3;
     static_assert(noexcept(cuda::std::views::take(count_value)));
+
+    CopyOnlyCount copy_only{2};
+    static_assert(noexcept(cuda::std::views::take(copy_only)));
+    auto copy_only_partial    = cuda::std::views::take(copy_only);
+    decltype(auto) copy_taken = buf | copy_only_partial;
+    assert(copy_taken.size() == 2);
 
     ThrowingMoveCount throwing_move{5};
     static_assert(noexcept(cuda::std::views::take(throwing_move)));

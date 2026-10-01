@@ -24,6 +24,22 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
+struct CopyOnlyCount
+{
+  int value_;
+
+  TEST_HOST_DEVICE_FUNC constexpr CopyOnlyCount(int value)
+      : value_(value)
+  {}
+  TEST_HOST_DEVICE_FUNC constexpr CopyOnlyCount(const CopyOnlyCount&) = default;
+  CopyOnlyCount(CopyOnlyCount&&)                                      = delete;
+
+  TEST_HOST_DEVICE_FUNC constexpr operator int() const
+  {
+    return value_;
+  }
+};
+
 struct ThrowingMoveCount
 {
   int value_;
@@ -297,10 +313,16 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
     assert(*result.begin() == 1);
   }
 
-  // A count whose move may throw still forms a non-throwing partial `views::drop` from an lvalue.
+  // A copy-only count, and a count whose move may throw, can form a partial `views::drop`.
   {
     int count_value = 3;
     static_assert(noexcept(cuda::std::views::drop(count_value)));
+
+    CopyOnlyCount copy_only{2};
+    static_assert(noexcept(cuda::std::views::drop(copy_only)));
+    auto copy_only_partial      = cuda::std::views::drop(copy_only);
+    decltype(auto) copy_dropped = buf | copy_only_partial;
+    assert(copy_dropped.size() == N - 2);
 
     ThrowingMoveCount throwing_move{5};
     static_assert(noexcept(cuda::std::views::drop(throwing_move)));
