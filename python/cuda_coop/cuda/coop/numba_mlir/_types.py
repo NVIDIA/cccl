@@ -372,6 +372,33 @@ def _ltoir_to_ptx(ltoir: bytes, *, name: str, cc: int) -> str:
 
 class TypeWrapper:
     def __init__(self, numba_type):
+        """Build the C++ storage declaration for a compiler value type.
+
+        Builtin types already have C++ spellings and need no declaration. Other
+        types use an aligned byte-array ``storage_t`` with the compiler's ABI
+        size and alignment; no field accessors or value conversion are
+        generated. First query the target context's LLVM layout. If that
+        inspection fails, use the restricted native/registered-model fallback
+        rather than guessing.
+
+        Parameters
+        ----------
+        numba_type : numba_types.Type
+            Type that will appear in a provider template or parameter.
+
+        Raises
+        ------
+        TypeError
+            LLVM layout inspection failed and the fallback cannot establish the
+            type's size and alignment.
+
+        Notes
+        -----
+        The instance stores the declaration in ``code`` and initializes
+        ``lto_irs`` to an empty list. Constructing this wrapper does not compile
+        any source.
+        """
+
         self.lto_irs = []
 
         if numba_type in NUMBA_TYPES_TO_CPP:
