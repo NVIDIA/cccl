@@ -733,6 +733,11 @@ def render_group_decl_lines(
     assert group.parent is not None
     mapping = group.mapping
     exhaustive = "true" if mapping.exhaustive else "false"
+    mapping_args = str(mapping.count)
+    if not mapping.exhaustive:
+        mapping_args = (
+            f"::cuda::experimental::coop::non_exhaustive, {mapping.count}"
+        )
     parent_name = f"{var_name}_parent"
     lines = [
         render_group_decl(
@@ -752,7 +757,7 @@ def render_group_decl_lines(
                 f"{indent}    ::cuda::gpu_thread, {parent_name},",
                 (
                     f"{indent}    ::cuda::experimental::coop::group_by<"
-                    f"{mapping.count}, {exhaustive}>{{}},"
+                    f"{mapping.count}, {exhaustive}>{{{mapping_args}}},"
                 ),
                 (
                     f"{indent}    "
@@ -787,7 +792,7 @@ def render_group_decl_lines(
             f"{indent}    ::cuda::warp, {parent_name},",
             (
                 f"{indent}    ::cuda::experimental::coop::group_by<"
-                f"{mapping.count}, {exhaustive}>{{}},"
+                f"{mapping.count}, {exhaustive}>{{{mapping_args}}},"
             ),
             (
                 f"{indent}    "
