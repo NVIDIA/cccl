@@ -1006,6 +1006,36 @@ def war_introspection(fn, n):
 
 
 def war_introspection_call_with_transforms(fn, transforms, returns_value):
+    """Generate an inspectable Python call adapter for one provider ABI.
+
+    Numba overload implementations need an explicit argument list. Build a
+    function with one named argument per transform instead of forwarding
+    ``*args``. Pointer-backed payloads and scratch are converted with
+    ``types.ptr``; scalars pass through unchanged. This bridges the Python
+    argument representations selected by typing to ``ExternFunction`` inputs.
+    The generated function is returned for compilation, not executed here.
+
+    Parameters
+    ----------
+    fn : callable
+        External provider function captured in the generated function's globals.
+    transforms : sequence of {"ptr", "value"}
+        Conversion for each positional argument, in ABI order.
+    returns_value : bool
+        Whether to return the external result. Otherwise call ``fn`` for its
+        side effects and return ``None`` explicitly.
+
+    Returns
+    -------
+    types.FunctionType
+        Function with the requested fixed arity and argument conversions.
+
+    Raises
+    ------
+    ValueError
+        A transform is neither ``"ptr"`` nor ``"value"``.
+    """
+
     n = len(transforms)
     arglist = ", ".join(f"param{i}" for i in range(n))
     mod_lines = [f"def impl({arglist}):"]
