@@ -45,7 +45,8 @@ inline constexpr bool disable_sized_range = false;
 
 _CCCL_BEGIN_NAMESPACE_CPO(__size)
 
-void size() = delete;
+// Not deleted: deleting this declaration suppresses ADL on GCC <= 11 and MSVC.
+_CCCL_HOST_DEVICE void size();
 
 template <class _Tp>
 _CCCL_CONCEPT __size_enabled = !disable_sized_range<remove_cvref_t<_Tp>>;
