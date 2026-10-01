@@ -77,7 +77,7 @@ def test_radix_compiles_and_preserves_result_dtype(
             destination[t * items_per_thread] = result[0]
             associated[t * items_per_thread] = payload[0]
         else:
-            ranks = coop.radix_rank(coop.this_block(), keys)
+            ranks = coop.radix_rank_keys(coop.this_block(), keys)
             # Composition must use int32 rank dtype, even with uint64 keys.
             ranked = coop.radix_sort_keys(coop.this_block(), ranks)
             destination[t * items_per_thread] = ranked[0]
@@ -105,7 +105,7 @@ def test_qualified_prefix_and_float_striped_sort_compile(items_per_thread):
         for item in range(items_per_thread):
             keys[item] = source[t * items_per_thread + item]
         prefix = numba_coop.ThreadData(items_per_thread=2, dtype=types.int32)
-        ranks = numba_coop.radix_rank(
+        ranks = numba_coop.radix_rank_keys(
             numba_coop.this_block(),
             keys,
             radix_bits=7,
@@ -153,7 +153,7 @@ def test_invalid_radix_contracts_fail_before_device_code(failure):
         if failure == "warp":
             result = coop.radix_sort_keys(coop.this_warp(), keys)
         elif failure == "width":
-            result = coop.radix_rank(coop.this_block(), keys, radix_bits=9)
+            result = coop.radix_rank_keys(coop.this_block(), keys, radix_bits=9)
         elif failure == "bool":
             result = coop.radix_sort_keys(coop.this_block(), keys, descending=1)
         elif failure == "extent":
@@ -165,7 +165,7 @@ def test_invalid_radix_contracts_fail_before_device_code(failure):
             prefix = numba_coop.ThreadData(
                 items_per_thread=2, dtype=types.int32
             )
-            result = numba_coop.radix_rank(
+            result = numba_coop.radix_rank_keys(
                 numba_coop.this_block(), keys, exclusive_digit_prefix=prefix
             )
         else:
