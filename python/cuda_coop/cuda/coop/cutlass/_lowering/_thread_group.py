@@ -270,11 +270,16 @@ _rendering.register_bundle_renderer(
         "#include <cuda/barrier>",
         "#include <cuda/devices>",
         "#include <cuda/hierarchy>",
+        "#include <cuda/experimental/hierarchy.cuh>",
         "#include <cuda/std/cstdint>",
         "#include <cuda/std/type_traits>",
         "#include <cuda/experimental/coop/group>",
     ),
     cccl_headers=(
+        (
+            "#include <cuda/experimental/hierarchy.cuh>",
+            "cuda/experimental/hierarchy.cuh",
+        ),
         ("cuda/experimental/coop/group", "cuda/experimental/coop/group"),
     ),
 )
