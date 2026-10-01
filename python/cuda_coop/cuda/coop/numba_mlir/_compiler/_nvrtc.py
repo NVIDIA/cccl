@@ -177,7 +177,61 @@ def compile_impl(
     header_identity,
     compiler_options,
 ):
-    """Compile one cache-key-complete source unit."""
+    """Compile one source unit using a complete, explicit cache identity.
+
+    The memory and disk cache decorators key all arguments, including toolkit
+    paths and header identity that are not otherwise read by the function body.
+    Those fields prevent artifacts from different compiler installations or
+    header sets from sharing an entry. Callers must resolve and preload the
+    matching compiler context before entering this function.
+
+    On a cache miss, verify that the supplied option tuple matches the request
+    and that the loaded NVRTC version still matches the context. Compile the
+    source, retrieve the requested image, and destroy the NVRTC program on both
+    success and failure. A cleanup error does not replace an earlier compilation
+    error. Cache hits bypass these body-level checks.
+
+    Parameters
+    ----------
+    cpp : str
+        Complete CUDA C++ translation unit.
+    cc : int
+        Compute capability encoded as major times ten plus minor.
+    rdc : bool
+        Whether to enable relocatable device code.
+    code : {"lto", "ptx"}
+        Requested output format.
+    toolkit_root : str
+        Selected toolkit root, retained in cache identity.
+    toolkit_version : tuple of int
+        Selected toolkit version, retained in cache identity.
+    nvrtc_path, nvrtc_builtins_path, nvjitlink_path : str
+        Exact compiler-library paths from the preloaded context.
+    nvrtc_version : version
+        Expected loaded NVRTC version.
+    nvjitlink_version : tuple of int
+        Selected linker version, retained in cache identity.
+    include_dirs : tuple of str
+        Ordered header search roots.
+    header_identity : str
+        Header-content identity supplied by context resolution.
+    compiler_options : tuple of bytes
+        Exact ordered options produced by ``_compiler_options`` for this
+        request.
+
+    Returns
+    -------
+    bytes or str
+        LTO image bytes for ``"lto"`` or ASCII-decoded source for ``"ptx"``.
+
+    Raises
+    ------
+    RuntimeError
+        Options or loaded compiler version disagree with the request, or NVRTC
+        compilation, image retrieval, or program cleanup fails.
+    ValueError
+        The requested output format or relocatable-code option is invalid.
+    """
 
     del (
         toolkit_root,
