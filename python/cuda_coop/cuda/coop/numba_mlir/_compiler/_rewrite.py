@@ -6,6 +6,17 @@
 inlining.
 """
 
+from typing import cast
+
+from numba_cuda_mlir import cuda as _cuda_module
+from numba_cuda_mlir.extending import (
+    WholeFunctionPlanner,
+    register_planner,
+    require_launch_config,
+)
+
+from cuda.coop._core import GroupLoweringPlan
+
 from ._operations import _GROUP_LOWERING_PLAN_KWARG, StorageABI
 from ._rewrite_arguments import _ArgumentRewrite
 from ._rewrite_group_metadata import _GroupMetadataRewrite
@@ -18,15 +29,11 @@ from ._rewrite_support import (
     _GLOBAL_NAME_COUNTER,
     CoopSinglePhaseRewriteError,
     Rewrite,
-    WholeFunctionPlanner,
-    _cuda_module,
     _DeferredCoopRewrite,
     _next_global_name,
     _RewriteMatch,
     ir,
-    register_planner,
     register_rewrite,
-    require_launch_config,
 )
 
 
@@ -147,7 +154,10 @@ class CoopSinglePhaseRewrite(
                 )
             except _DeferredCoopRewrite:
                 continue
-            lowering_plan = factory_kwargs.pop(_GROUP_LOWERING_PLAN_KWARG, None)
+            lowering_plan = cast(
+                GroupLoweringPlan | None,
+                factory_kwargs.pop(_GROUP_LOWERING_PLAN_KWARG, None),
+            )
             family_metadata = self._analyze_family_match(
                 op_name=op_name,
                 runtime_args=runtime_args,
@@ -455,6 +465,7 @@ class CoopSinglePhaseRewrite(
                         call_assign=inst,
                     )
                 rewritten_runtime_args.insert(0, runtime_temp_storage_arg)
+            assert isinstance(inst.value, ir.Expr)
             call_func = inst.value.func
             call_invocable = call_invocable_globals.get(inst)
             if call_invocable is not None:

@@ -11,7 +11,7 @@ import importlib.metadata
 import re
 from collections.abc import MutableSequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypeGuard
 
 _MINIMUM_RUNTIME_VERSION = "0.5.0"
 _MAXIMUM_RUNTIME_VERSION = "0.6"
@@ -148,7 +148,7 @@ def _detected_version(runtime: Any) -> str | None:
         return None
 
 
-def _is_supported_runtime_version(version: str | None) -> bool:
+def _is_supported_runtime_version(version: str | None) -> TypeGuard[str]:
     """Return whether ``version`` is covered by the private compatibility
     shim.
     """

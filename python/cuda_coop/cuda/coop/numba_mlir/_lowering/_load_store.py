@@ -4,7 +4,7 @@
 
 import operator
 
-from numba_cuda_mlir import types
+import numba_cuda_mlir.numba_cuda.types as numba_types
 
 from cuda.coop._core import ArgumentBinding, BindingKind, SynchronizationScope
 from cuda.coop._core.block import (
@@ -103,7 +103,7 @@ def _load_store_value_abis(
         else:
             tile_items *= threads_in_warp
         value_abis["num_valid_items"] = BoundedInteger(
-            types.int32,
+            numba_types.int32,
             minimum=0,
             maximum=tile_items,
         )
