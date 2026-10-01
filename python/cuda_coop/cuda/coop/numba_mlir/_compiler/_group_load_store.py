@@ -448,7 +448,44 @@ class _LoadStorePlanning:
         runtime_value: Any,
         items_per_thread: int,
     ) -> ir.Var:
-        """Add this physical or logical Warp group's tile origin."""
+        """Append IR computing a physical or logical warp tile offset.
+
+        The tile origin separates consecutive groups within the block. Compute
+        x-fastest linear rank as ``x + block_x * (y + block_y * z)``, divide by
+        the logical group width, and multiply by ``width * items_per_thread``.
+        Add the user's base offset to that tile origin. The arithmetic remains
+        runtime IR because the group instance depends on ``threadIdx``, even
+        when the user supplied a static offset. One-dimensional blocks need only
+        ``x``.
+
+        Parameters
+        ----------
+        statements : list of object
+            Output list extended in place with constants, CUDA attribute reads,
+            and arithmetic assignments in dependency order.
+        inst : ir.Assign
+            Original public call; supplies scope and source locations.
+        plan : GroupLoweringPlan
+            Plan with a physical or logical warp topology, supported
+            power-of-two width, and exact enclosing block dimensions.
+        binding : ArgumentBinding
+            Planned user offset. Omission supplies zero; a static binding
+            supplies its value; a runtime binding selects ``runtime_value``.
+        runtime_value : object
+            Original offset operand, used only for a runtime binding.
+        items_per_thread : int
+            Planned payload extent used to determine the group's tile size.
+
+        Returns
+        -------
+        ir.Var
+            Variable holding the effective element offset for the provider call.
+
+        Raises
+        ------
+        GroupRewriteError
+            The plan lacks the required exact warp topology or block dimensions.
+        """
 
         topology = plan.topology
         participation = plan.participation
