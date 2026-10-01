@@ -997,7 +997,30 @@ class _GroupCallPlanner:
 
 
 def has_group_markers(func_ir) -> bool:
-    """Cheaply detect whether the function needs launch metadata."""
+    """Return whether the current function IR still needs group planning.
+
+    One recognized call anywhere in the function is enough: a group
+    constructor such as ``this_block()``, ``ThreadHierarchy()``, a registered
+    public group operation such as ``load()`` or ``store()``, or ``group_by()``
+    on a recognized group descriptor. For ``group_by()``, trace the receiver
+    through aliases, casts, control-flow merges, and earlier subgroup calls
+    to distinguish group descriptors from unrelated objects with that method.
+
+    Inspect only the supplied IR. Calls inside device helpers become visible
+    here after inlining; this scan does not visit their bodies. ``ThreadData``
+    and ``TempStorage`` constructors alone do not count as group markers.
+
+    This check controls the handoff between group planning and provider
+    rewriting. ``CoopGroupHierarchyPlanner`` uses a positive result to request
+    launch metadata and resolve the group calls. ``CoopSinglePhaseRewrite``
+    waits while the result is true. Successful group planning removes group
+    descriptors and replaces public operations with private provider calls,
+    which do not count as group markers. The result then becomes false even
+    though cooperative work remains, allowing provider rewriting to proceed.
+
+    Detection does not validate the calls or resolve their launch dimensions;
+    those checks belong to the group planner.
+    """
     analyzer = object.__new__(_GroupCallPlanner)
     analyzer.func_ir = func_ir
     analyzer._group_cache = {}
