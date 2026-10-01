@@ -1130,6 +1130,39 @@ class _ProvenanceRewrite(Rewrite):
     def _finalize_temp_storage_plan_for_var(
         self, var_name: str
     ) -> _TempStoragePlan:
+        """Combine a descriptor contract with its primitive requirements.
+
+        Lay out the uses, infer capacity when the constructor omitted it, and
+        check that an explicit capacity covers the result. Alignment is raised
+        to satisfy both the constructor and every consumer, with a pointer-sized
+        minimum. An unspecified ``auto_sync`` means caller-managed
+        synchronization.
+
+        Cache the resulting region plan before the function-wide allocation adds
+        its base offset. A descriptor with no uses needs an explicit capacity
+        and the default sharing/synchronization policy here; whole-function
+        descriptor validation separately rejects constructors without primitive
+        consumers.
+
+        Parameters
+        ----------
+        var_name : str
+            Known constructor owner name; aliases are canonicalized first.
+
+        Returns
+        -------
+        _TempStoragePlan
+            Cached or newly finalized region plan, including per-call
+            slices.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            Constructor metadata is missing, capacity cannot be inferred or
+            is insufficient, or the descriptor policy is invalid for the
+            known uses.
+        """
+
         var_name = self._canonical_temp_storage_ctor_key(var_name)
         cached = self._temp_storage_plans.get(var_name)
         if cached is not None:
