@@ -295,17 +295,27 @@ def compile_impl(
 def resolve_compile_context() -> CompileContext:
     """Resolve one header/toolkit identity and preload its compiler libraries.
 
-    Discover the required CCCL and CUDA headers using this package location and
-    the optional ``CUDA_COOP_CCCL_ROOT`` override. Preload NVRTC, its builtins,
-    and nvJitLink from the selected toolkit before importing the CUDA NVRTC
-    bindings, then check that the loaded NVRTC version matches that toolkit.
-    This ordering keeps wrapper compilation and subsequent linking tied to the
-    same selected installation.
+    ``CUDA_COOP_CCCL_ROOT`` optionally selects a CCCL source checkout or
+    packaged header bundle instead of automatic source-tree/wheel discovery.
+    Read it on each call; unset or empty uses discovery. The header resolver
+    expands ``~`` and resolves relative paths from the current working
+    directory. A configured root must supply all required CCCL headers; an
+    invalid or incomplete selection raises rather than falling back. This
+    variable selects CCCL headers, not the CUDA Toolkit installation.
+
+    Resolve CUDA headers separately, then preload NVRTC, its builtins, and
+    nvJitLink from that toolkit before importing the CUDA NVRTC bindings.
+    Check that the loaded NVRTC version matches the selected toolkit. This
+    ordering keeps wrapper compilation and subsequent linking tied to the same
+    installation.
 
     Hash the resolved header roots and their contents into the returned context.
     The context is used both for artifact cache keys and provider symbol
     qualification. Resolution is lazy at its callers; this function itself is
-    not memoized and may load process-wide compiler libraries.
+    not memoized and may load process-wide compiler libraries. Algorithms
+    retain their resolved context, so changing ``CUDA_COOP_CCCL_ROOT`` affects
+    subsequent resolutions, not contexts already held by providers or supplied
+    explicitly to ``compile``.
 
     Returns
     -------
