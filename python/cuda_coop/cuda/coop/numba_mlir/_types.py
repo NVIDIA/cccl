@@ -1229,6 +1229,41 @@ class Algorithm:
         return mangle_symbol(self._symbol_base_name(), parameters)
 
     def specialize(self, template_arguments):
+        """Create a concrete provider by substituting template dependencies.
+
+        Resolve each overload independently: ``SubstitutionFailure`` removes
+        that entire overload while other overloads remain available. Copy
+        resolved parameter descriptors before preserving their source names so
+        specialization does not attach names to descriptors shared with the
+        template.
+
+        The returned algorithm has a concrete C++ struct name, a specialized
+        symbol prefix, and no remaining template parameters. It carries the
+        storage and synchronization contracts and compiler context forward, but
+        starts without compiled artifacts or qualified private symbols. An
+        available logical warp width is copied from the template arguments for
+        later storage generation.
+
+        Parameters
+        ----------
+        template_arguments : mapping of str to object
+            Values for every declared template parameter and parameter
+            dependency. Integers become numeric C++ arguments, strings are used
+            as C++ spellings, and other values are translated as compiler
+            dtypes.
+
+        Returns
+        -------
+        Algorithm
+            New specialization containing only the successfully substituted
+            methods.
+
+        Raises
+        ------
+        ValueError
+            A declared template parameter has no supplied argument.
+        """
+
         # Every template parameter requires an argument.
         template_list = []
         for template_parameter in self.template_parameters:
