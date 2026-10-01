@@ -88,7 +88,7 @@ public:
   {}
 #endif // !_CCCL_HAS_CONCEPTS()
 
-  _CCCL_API constexpr drop_view(_View __base, range_difference_t<_View> __count) //
+  _CCCL_API constexpr explicit drop_view(_View __base, range_difference_t<_View> __count) //
     noexcept(is_nothrow_move_constructible_v<_View>)
       : view_interface<drop_view<_View>>()
       , __base_(::cuda::std::move(__base))

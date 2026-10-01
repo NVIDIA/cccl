@@ -154,7 +154,7 @@ public:
   _CCCL_API constexpr take_view() noexcept(is_nothrow_default_constructible_v<_View2>) {}
 #endif // !_CCCL_HAS_CONCEPTS()
 
-  _CCCL_API constexpr take_view(_View __base, range_difference_t<_View> __count)
+  _CCCL_API constexpr explicit take_view(_View __base, range_difference_t<_View> __count)
       : __base_(::cuda::std::move(__base))
       , __count_(__count)
   {}
