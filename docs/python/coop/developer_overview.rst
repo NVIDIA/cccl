@@ -402,30 +402,31 @@ also provide enough memory for the selected tile and offset.
 From Python syntax to an external call
 --------------------------------------
 
-The integration uses two whole-function planners and a before-inference
-rewrite to inspect and modify the compiler's intermediate representation
-(IR). Their implementation names appear below because they are useful
-places to start reading the code.
+The integration registers one whole-function planner,
+``CoopWholeFunctionPlanner`` in ``_compiler/_planner.py``. It inspects and
+modifies the compiler's intermediate representation (IR) after device
+helper inlining. Its ``run()`` method sequences two phases implemented by
+separate mixins:
 
-#. ``CoopGroupHierarchyPlanner`` finds group constructors, group methods,
-   and group-first primitive calls. It requests exact launch metadata,
-   resolves descriptors and payload information, and asks the primitive
-   family's core planner for a lowering plan.
-#. The family's Numba implementation turns that plan into private provider
-   calls. At this point, the operation and its C++ specialization are known,
-   but the kernel still needs concrete payloads, storage, and callables.
-#. ``CoopSinglePhaseRewrite`` materializes those calls. It replaces
-   ``ThreadData`` with fixed local arrays, builds invocables, supplies
-   scratch pointers where needed, and emits result handling and reuse
-   barriers. It removes the compile-time constructors from the runtime IR.
-#. ``CoopWholeFunctionPlanner`` gives the rewrite a whole-function retry
-   after launch information and inlined device helpers are available.
-   Compilation then continues with ordinary typed device calls.
+#. ``_GroupPlanning._resolve_groups()`` finds group constructors, group
+   methods, and group-first primitive calls. It requests exact launch
+   metadata, resolves descriptors and payload information, and asks the
+   primitive family's core planner for a lowering plan. The family's Numba
+   implementation turns that plan into private provider calls.
+#. ``_CallRewriting._rewrite_calls()`` materializes those calls using
+   ``CoopSinglePhaseRewrite``. It replaces ``ThreadData`` with fixed local
+   arrays, builds invocables, supplies scratch pointers where needed, and
+   emits result handling and reuse barriers. It removes the compile-time
+   constructors from the runtime IR.
 
-These are responsibilities rather than a claim that every kernel takes
-four passes in that exact order. Numba-CUDA-MLIR can retry compilation when
-a planner requests launch facts. The initial rewrite leaves unresolved
-group calls in place until the group planner can handle them.
+When group resolution changes the IR, the planner rebuilds Numba's
+definition lookup and control-flow analysis before rewriting calls. The
+second phase can then inspect the newly introduced providers and their
+operands. Rewriting also runs when no group resolution was needed, since
+payload constructors and private provider calls may remain. The mixins and
+rewrite helper have no separate registration. The planner reports whether
+either phase changed the IR so Numba can refresh the final analysis before
+typing and lowering the resulting device calls.
 
 Inlining is relevant to helper functions. A helper that receives a group
 and calls ``coop.load`` can be planned after it is inlined into its kernel
@@ -660,7 +661,10 @@ the same DSL integration modules. An extra only adds dependency requirements
 from ``pyproject.toml``; it does not change the wheel or register hooks in a
 running process.
 
-``_compiler/_activation.py`` registers the planners and rewrite.
+``_compiler/_activation.py`` checks the runtime and compiler compatibility,
+imports the planner, and registers ``CoopWholeFunctionPlanner`` as its
+final step. There is one compiler hook to register, so activation needs no
+registry snapshots or rollback.
 ``_compiler/_numba_mlir_compat.py`` checks the installed compiler version
 when the Numba backend is activated, before importing its compiler integration.
 The Numba extras declare ``numba-cuda-mlir>=0.5.0,<0.6`` for package installers;
@@ -809,18 +813,13 @@ This is why the import order matters. The automatic path recognizes a
 runtime the application has already imported.
 
 Before continuing, set a breakpoint on ``_require_runtime()`` inside
-``_initialize_runtime_hooks_transaction()`` in
+``_initialize_runtime_hooks()`` in
 ``numba_mlir/_compiler/_activation.py``. At this stop, the call stack
 connects the root import to the qualified backend import and then to hook
-registration. Step over the imports of ``_rewrite`` and ``_group_planner``;
-their decorators register the compiler hooks.
-
-For a compact confirmation, stop on ``invalid = tuple(...)`` inside
-``_verify_registration_postconditions()`` in the same file. Inspect
-``registration_counts``. It should contain one registration each for
-``CoopGroupHierarchyPlanner``, ``CoopWholeFunctionPlanner``, and
-``CoopSinglePhaseRewrite``. Registration gives Numba ways to recognize and
-rewrite cooperative calls when it compiles a kernel.
+registration. Step over the compatibility check and the import of
+``_planner``. Inspect ``planner_module.CoopWholeFunctionPlanner`` before
+stepping over ``register_planner(...)``. This final call registers
+the single compiler hook that resolves and rewrites cooperative calls.
 
 Disable these import breakpoints. Set a breakpoint on the first
 ``copy_tile[1, 128](source, destination, items_per_thread)`` in the example and continue.
@@ -834,11 +833,16 @@ Fast-forward to the Numba hooks
 Paths from here through the provider steps are relative to
 ``python/cuda_coop/cuda/coop/numba_mlir/``.
 
+In ``_compiler/_planner.py``, find ``CoopWholeFunctionPlanner.run()`` and
+set a breakpoint on ``groups_changed = self._resolve_groups()``. Continue
+from the example's launch line. You have crossed from application code
+into a hook Numba calls while compiling it. Inspect the Call Stack to see
+that caller.
+
 In ``_compiler/_group_planner.py``, find
-``CoopGroupHierarchyPlanner.run()`` and set a breakpoint on
-``launch_config = require_launch_config(self.state)``. Continue from the
-example's launch line. You have crossed from application code into a hook
-Numba calls while compiling it. Inspect the Call Stack to see that caller.
+``_GroupPlanning._resolve_groups()`` and set a breakpoint on
+``launch_config = require_launch_config(planner.state)``. Continue from the
+planner's entry point to inspect the first phase.
 
 Step over the assignment, then evaluate:
 
@@ -859,11 +863,9 @@ give ``this_block()`` a concrete group shape for C++ specialization. You
 are inspecting compiler values and descriptors here; ``items`` has not
 become a particular GPU thread's two integers.
 
-An earlier ``CoopSinglePhaseRewrite.match()`` can run before this stop.
-It leaves group markers alone until group planning resolves them. Planner
-and rewrite hooks can also run for generated helper functions. The
-breakpoint above comes after the no-group-markers guard, which avoids
-many uninteresting stops. This configured launch obtains its launch facts
+The planner can also run for generated helper functions. The launch-config
+breakpoint comes after the no-group-markers guard, which avoids many
+uninteresting stops. This configured launch obtains its launch facts
 directly; it does not require a failed first compilation to discover them.
 
 .. _from-a-collective-call-to-a-plan:
@@ -907,9 +909,9 @@ Generate and compile the C++ providers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Set a breakpoint on ``rewrite = CoopSinglePhaseRewrite(...)`` in
-``CoopWholeFunctionPlanner.run()`` in ``_compiler/_rewrite.py``. Continue
+``_CallRewriting._rewrite_calls()`` in ``_compiler/_rewrite.py``. Continue
 and use ``self.state.func_ir.dump()`` again. Compare it with the earlier
-dump: the group planner has introduced private factories and constants
+dump: group resolution has introduced private factories and constants
 for the resolved operations.
 
 Before continuing, set a breakpoint in ``_types.py``, inside
@@ -1175,6 +1177,8 @@ Paths below are relative to ``python/cuda_coop/cuda/coop/``:
      - Group resolution, primitive semantics, and lowering contracts.
    * - ``_core/block/`` and ``_core/warp/``
      - CUB algorithm specifications and generated support code.
+   * - ``numba_mlir/_compiler/_planner.py``
+     - Sequence group resolution and call rewriting in one compiler hook.
    * - ``numba_mlir/_compiler/_group_planner.py`` and ``_group_*.py``
      - Recover group calls from compiler IR and invoke family planners.
    * - ``numba_mlir/_compiler/_rewrite.py`` and ``_rewrite_*.py``

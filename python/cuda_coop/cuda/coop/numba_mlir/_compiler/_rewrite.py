@@ -2,18 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Rewrite cooperative calls before type inference and after device-function
-inlining.
-"""
+"""Materialize cooperative calls after group planning and helper inlining."""
 
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from numba_cuda_mlir import cuda as _cuda_module
-from numba_cuda_mlir.extending import (
-    WholeFunctionPlanner,
-    register_planner,
-    require_launch_config,
-)
+from numba_cuda_mlir.extending import require_launch_config
 
 from cuda.coop._core import GroupLoweringPlan
 
@@ -33,11 +27,12 @@ from ._rewrite_support import (
     _next_global_name,
     _RewriteMatch,
     ir,
-    register_rewrite,
 )
 
+if TYPE_CHECKING:
+    from ._planner import CoopWholeFunctionPlanner
 
-@register_rewrite("before-inference")
+
 class CoopSinglePhaseRewrite(
     _ProvenanceRewrite,
     _ArgumentRewrite,
@@ -69,15 +64,6 @@ class CoopSinglePhaseRewrite(
             self._temp_storage_backing_var = None
             self._temp_storage_backing_emitted = False
             self._prebundled_specializations = {}
-            self._deferred_post_inline = (
-                not self._post_inline
-                and self._descriptors_flow_into_dispatchers(func_ir)
-            )
-            if self._deferred_post_inline:
-                # Device-function bodies are inlined before the whole-function
-                # planner runs; it will see the descriptor's real consumers.
-                self._func_temp_storage_requirements = {}
-                return False
             try:
                 self._func_temp_storage_requirements = (
                     self._compute_func_temp_storage_requirements(func_ir)
@@ -85,8 +71,6 @@ class CoopSinglePhaseRewrite(
             except _DeferredCoopRewrite:
                 self._func_temp_storage_requirements = {}
                 return False
-        if self._deferred_post_inline:
-            return False
         self._block = block
         self._block_defs = {
             inst.target.name: inst.value
@@ -579,41 +563,37 @@ class CoopSinglePhaseRewrite(
                 break
 
 
-from . import _group_planner  # noqa: F401
-
-
-@register_planner
-class CoopWholeFunctionPlanner(WholeFunctionPlanner):
+class _CallRewriting:
     """Apply cooperative-provider rewrites after device-function inlining."""
 
-    def run(self) -> bool:
-        rewrite = CoopSinglePhaseRewrite(self.state, post_inline=True)
+    def _rewrite_calls(self) -> bool:
+        planner = cast("CoopWholeFunctionPlanner", self)
+        rewrite = CoopSinglePhaseRewrite(planner.state)
         modified = False
 
         def apply_matches() -> None:
             nonlocal modified
-            for label in sorted(self.state.func_ir.blocks):
-                block = self.state.func_ir.blocks[label]
+            for label in sorted(planner.state.func_ir.blocks):
+                block = planner.state.func_ir.blocks[label]
                 while rewrite.match(
-                    self.state.func_ir,
+                    planner.state.func_ir,
                     block,
-                    self.state.typemap,
-                    self.state.calltypes,
+                    planner.state.typemap,
+                    planner.state.calltypes,
                 ):
                     block = rewrite.apply()
-                    self.state.func_ir.blocks[label] = block
+                    planner.state.func_ir.blocks[label] = block
                     modified = True
 
         apply_matches()
         if (
             rewrite._deferred_launch_dim_inference
-            and not self.is_device_function
+            and not planner.is_device_function
         ):
-            require_launch_config(self.state)
+            require_launch_config(planner.state)
             rewrite = CoopSinglePhaseRewrite(
-                self.state,
+                planner.state,
                 allow_launch_dim_deferral=False,
-                post_inline=True,
             )
             apply_matches()
         return modified
@@ -622,5 +602,4 @@ class CoopWholeFunctionPlanner(WholeFunctionPlanner):
 __all__ = [
     "CoopSinglePhaseRewrite",
     "CoopSinglePhaseRewriteError",
-    "CoopWholeFunctionPlanner",
 ]

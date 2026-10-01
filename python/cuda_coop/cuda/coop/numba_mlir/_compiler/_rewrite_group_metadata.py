@@ -2,9 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from typing import TYPE_CHECKING, cast
+
 from ._group_rewriting import GroupRewriteContext
 from ._operations import rewrite_operation
 from ._rewrite_support import CoopSinglePhaseRewriteError, ir
+
+if TYPE_CHECKING:
+    from ._rewrite import CoopSinglePhaseRewrite
 
 
 class _GroupMetadataRewrite:
@@ -15,6 +20,7 @@ class _GroupMetadataRewrite:
         runtime_args: tuple[ir.Var, ...],
         factory_kwargs: dict[str, object],
     ) -> object:
+        rewrite = cast("CoopSinglePhaseRewrite", self)
         spec = rewrite_operation(op_name)
         if spec is None:
             raise CoopSinglePhaseRewriteError(
@@ -23,7 +29,7 @@ class _GroupMetadataRewrite:
         if spec.analyze_match is None:
             return None
         return spec.analyze_match(
-            GroupRewriteContext(self),
+            GroupRewriteContext(rewrite),
             op_name=op_name,
             runtime_args=runtime_args,
             factory_kwargs=factory_kwargs,
@@ -38,6 +44,7 @@ class _GroupMetadataRewrite:
         scope: ir.Scope | None,
         loc: ir.Loc,
     ) -> list[ir.Var]:
+        rewrite = cast("CoopSinglePhaseRewrite", self)
         spec = rewrite_operation(match.op_name)
         if spec is None:
             raise CoopSinglePhaseRewriteError(
@@ -46,7 +53,7 @@ class _GroupMetadataRewrite:
         if spec.prepare_runtime_args is None:
             return runtime_args
         return spec.prepare_runtime_args(
-            GroupRewriteContext(self),
+            GroupRewriteContext(rewrite),
             block,
             match=match,
             runtime_args=runtime_args,

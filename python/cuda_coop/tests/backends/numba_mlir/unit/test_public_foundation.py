@@ -14,7 +14,6 @@ import pytest
 import cuda.coop as portable_coop
 import cuda.coop.numba_mlir as coop
 from cuda.coop.numba_mlir import _temp_storage, _thread_data
-from cuda.coop.numba_mlir._compiler import _activation
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
@@ -311,41 +310,6 @@ def test_physical_warp_factories_use_exact_callable_identity(operation):
         impostor.__module__ = factory.__module__
         impostor.__name__ = factory.__name__
         assert factory_operation(impostor) is None
-
-
-def test_hooks_register_once():
-    group_rewrites = importlib.import_module(
-        "cuda.coop.numba_mlir._compiler._group_planner"
-    )
-    storage_rewrites = importlib.import_module(
-        "cuda.coop.numba_mlir._compiler._rewrite"
-    )
-    snapshot = _activation._snapshot_registrations()
-
-    def counts():
-        registration_counts = _activation._registration_counts(
-            snapshot,
-            (
-                (
-                    "CoopGroupHierarchyPlanner",
-                    group_rewrites.CoopGroupHierarchyPlanner,
-                ),
-                (
-                    "CoopWholeFunctionPlanner",
-                    storage_rewrites.CoopWholeFunctionPlanner,
-                ),
-            ),
-            (
-                "CoopSinglePhaseRewrite",
-                storage_rewrites.CoopSinglePhaseRewrite,
-            ),
-        )
-        return tuple(registration_counts.values())
-
-    assert counts() == (1, 1, 1)
-    _activation._initialize_runtime_hooks()
-    _activation._initialize_runtime_hooks()
-    assert counts() == (1, 1, 1)
 
 
 def test_public_runtime_helpers_have_semantic_module_owners():

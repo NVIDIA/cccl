@@ -15,10 +15,10 @@ import cuda.coop as common_coop
 import cuda.coop.numba_mlir as coop
 from cuda.coop._core import SynchronizationScope
 from cuda.coop.numba_mlir._compiler import _operations
+from cuda.coop.numba_mlir._compiler._planner import CoopWholeFunctionPlanner
 from cuda.coop.numba_mlir._compiler._rewrite import (
     CoopSinglePhaseRewrite,
     CoopSinglePhaseRewriteError,
-    CoopWholeFunctionPlanner,
 )
 from cuda.coop.numba_mlir._compiler._rewrite_support import (
     _DEFAULT_STATIC_SHARED_MEMORY_BYTES,
@@ -1251,72 +1251,41 @@ def test_group_planning_rejects_mixed_descriptor_phi():
         planner.context.temp_storage(phi_assign.target)
 
 
-@pytest.mark.parametrize("descriptor", ["temp_storage", "thread_data"])
 @pytest.mark.parametrize("aliases", ["direct", "chain", "conditional"])
-def test_descriptor_passed_to_a_device_function_defers_until_inlining(
-    descriptor, aliases
+def test_temp_storage_passed_to_a_non_inlined_device_function_is_rejected(
+    aliases,
 ):
     invocable = _FakeInvocable()
     provider = _register_leading_pointer_provider(invocable)
 
-    @cuda.jit(device=True)
+    @cuda.jit(device=True, inline="never")
     def helper(value, storage):
         return provider(value, temp_storage=storage)
 
-    if descriptor == "temp_storage":
+    def kernel(value, flag):
+        storage = coop.TempStorage()
+        alias = storage
+        chained = alias
+        if aliases == "direct":
+            selected = storage
+        elif aliases == "chain":
+            selected = chained
+        else:
+            selected = alias if flag else chained
+        first = helper(value, selected)
+        return helper(first, selected)
 
-        def kernel(value, flag):
-            storage = coop.TempStorage()
-            alias = storage
-            chained = alias
-            if aliases == "direct":
-                selected = storage
-            elif aliases == "chain":
-                selected = chained
-            else:
-                selected = alias if flag else chained
-            first = helper(value, selected)
-            return helper(first, selected)
-
-    else:
-
-        def kernel(value, flag):
-            payload = coop.ThreadData(items_per_thread=2)
-            alias = payload
-            chained = alias
-            if aliases == "direct":
-                selected = payload
-            elif aliases == "chain":
-                selected = chained
-            else:
-                selected = alias if flag else chained
-            return helper(value, selected)
-
-    # Before inlining the helper body is invisible: leave the IR untouched so
-    # the whole-function planner sees the real consumers after inlining.
     func_ir, state, rewrite = _rewrite_preflight(kernel)
-    for label in sorted(func_ir.blocks):
-        block = func_ir.blocks[label]
-        assert not rewrite.match(func_ir, block, state.typemap, state.calltypes)
-    assert rewrite._deferred_post_inline
-    assert _call_targets(func_ir).count(helper) == (
-        2 if descriptor == "temp_storage" else 1
-    )
-
-    if descriptor == "temp_storage":
-        # After inlining, a surviving device-function call means the helper
-        # was not inlined; the escape is then reported as such.
-        post_inline = CoopSinglePhaseRewrite(state, post_inline=True)
-        with pytest.raises(
-            CoopSinglePhaseRewriteError,
-            match="device function that was not inlined",
-        ):
-            post_inline.match(
-                func_ir,
-                func_ir.blocks[min(func_ir.blocks)],
-                state.typemap,
-                state.calltypes,
-            )
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="device function that was not inlined",
+    ):
+        rewrite.match(
+            func_ir,
+            func_ir.blocks[min(func_ir.blocks)],
+            state.typemap,
+            state.calltypes,
+        )
 
 
 @pytest.mark.parametrize(
