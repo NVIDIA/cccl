@@ -21,15 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memcpy_async/check_preconditions.h>
+#include <cuda/__memcpy_async/check_preconditions.h> // IWYU pragma: export
 #include <cuda/__memcpy_async/completion_mechanism.h>
 #include <cuda/__memcpy_async/memcpy_async_barrier.h>
 #include <cuda/__memory/aligned_size.h>
-#include <cuda/__ptx/instructions/get_sreg.h>
-#include <cuda/atomic>
-#include <cuda/barrier>
+#include <cuda/__ptx/instructions/get_sreg.h> // IWYU pragma: export
+#include <cuda/atomic> // IWYU pragma: export
+#include <cuda/barrier> // IWYU pragma: export
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__bit/popcount.h>
+#include <cuda/std/__bit/popcount.h> // IWYU pragma: export
 #include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/cstdint>
