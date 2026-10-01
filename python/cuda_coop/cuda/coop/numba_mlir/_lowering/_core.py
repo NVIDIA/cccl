@@ -151,6 +151,48 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         *,
         specialization: AlgorithmSpec,
     ) -> Any:
+        """Translate one core parameter into the Numba provider ABI description.
+
+        Preserve template dependencies for arrays, pointers, and references
+        until ``Algorithm.specialize`` resolves them. Scalar values require a
+        concrete dtype; a named scalar ABI override can impose stricter runtime
+        typing or checked narrowing. Output ownership follows ``is_return`` when
+        explicitly set, otherwise ``is_output`` determines the backend return
+        value.
+
+        Named input transforms are different from ordinary arrays: resolve their
+        extent and target dtype now so source generation can emit a fixed local
+        array and per-element C++ conversions. Only input-only arrays may use
+        this path. Dependent C++ functors substitute bracketed type placeholders
+        only, leaving unrelated bare tokens unchanged.
+
+        Parameters
+        ----------
+        parameter : object
+            Core pointer offset, array, pointer, reference, value, or C++
+            functor descriptor. Temporary storage is handled by
+            ``lower_temp_storage``.
+        specialization : AlgorithmSpec
+            Core specification providing template arguments for eager dependency
+            resolution in transforms and C++ functors.
+
+        Returns
+        -------
+        Parameter
+            Backend descriptor; a scalar override may be the adapter's existing
+            descriptor. ``materialize`` copies descriptors before attaching
+            names.
+
+        Raises
+        ------
+        TypeError
+            The parameter kind is unsupported or a scalar value has a dependent
+            dtype.
+        ValueError
+            An input transform targets an output/inout array or lacks a positive
+            specialized integer extent.
+        """
+
         if isinstance(parameter, PointerOffset):
             return backend.PointerOffset(
                 self.normalize_dtype(parameter.dtype),
