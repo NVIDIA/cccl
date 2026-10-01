@@ -2326,6 +2326,51 @@ def prepare_ltoir_bundle(
     threads_by_algo=None,
     block_threads_by_algo=None,
 ):
+    """Compile distinct provider specializations into one shared LTO artifact.
+
+    Deduplicate input objects by identity, then coalesce equivalent providers
+    with ``algo_coalesce_key``. Emit one body per representative and one shared
+    preamble for includes and type declarations. All providers must resolve to
+    the same compiler context and bind to the current device's target. Link the
+    result to PTX to inspect each representative's scratch ABI.
+
+    On success, mutate every supplied algorithm with its scratch size/alignment,
+    cache key, extra link images, and a reference to the same temporary bundle
+    file. Extra images remain separate link inputs. The shared file is removed
+    when its final shared owner is released, so one invocable cannot delete a
+    bundle still used by another. Symbol/context qualification can occur even
+    when the function decides there are too few providers to compile.
+
+    Parameters
+    ----------
+    algorithms : sequence of Algorithm
+        Concrete provider specializations to bundle.
+    bundle_name : str, optional
+        Name used for the LTO-to-PTX inspection object. ``None`` derives a name
+        from the emitted source hash.
+    allow_single : bool, optional
+        Compile even one distinct representative when true. Defaults to false.
+    threads_by_algo : mapping of int to int, optional
+        Logical warp width overrides keyed by ``id(algorithm)``. Missing entries
+        use the algorithm's stored width.
+    block_threads_by_algo : mapping of int to int or tuple of int, optional
+        Exact block configuration overrides keyed by ``id(algorithm)``.
+
+    Returns
+    -------
+    bytes or None
+        Shared provider LTO image. ``None`` means no input algorithms, or fewer
+        than two representatives with ``allow_single=False``.
+
+    Raises
+    ------
+    RuntimeError
+        Providers resolve to different compiler contexts, conflict with an
+        existing qualification, or compilation/linking fails.
+    ValueError
+        Provider source/topology is invalid or scratch metadata cannot be read.
+    """
+
     if not algorithms:
         return None
 
