@@ -136,7 +136,7 @@ _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
   else
   {
     t      = ::cuda::std::sqrt((-a + ::cuda::std::hypot(a, b)) * 0.5);
-    result = complex<double>(fabs(b) / (2 * t), ::cuda::std::copysign(t, b));
+    result = complex<double>(::cuda::std::fabs(b) / (2 * t), ::cuda::std::copysign(t, b));
   }
 
   /* Rescale. */

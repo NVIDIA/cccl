@@ -68,13 +68,13 @@ reviews:
         Focus on correctness, ABI/API stability, standard-library conformance, host/device availability,
         NVRTC compatibility, supported C++ standards, tests, and portability across supported CUDA toolchains.
         For tests, use .agent/skills/cccl-test/SKILL.md as test context. Avoid style comments unless the
-        requirement is explicitly mentioned in the cccl-style skill or in the coding_guidelines.rst.
+        requirement is explicitly mentioned in the cccl-style skill or in the coding_conventions.rst.
 
     - path: "cudax/**/*"
       instructions: |
         Focus on correctness, lifetime/resource ownership, stream ordering, host/device annotations, experimental
         API clarity, tests, and compatibility with the supported CUDA toolchains. Avoid style comments unless
-        the requirement is explicitly mentioned in the cccl-style skill or in the coding_guidelines.rst.
+        the requirement is explicitly mentioned in the cccl-style skill or in the coding_conventions.rst.
 
     - path: "cub/**/*"
       instructions: |
@@ -137,8 +137,8 @@ knowledge_base:
       - "docs/cccl/development/macro.rst"
       - "docs/cccl/development/visibility.rst"
       - "docs/cccl/development/testing.rst"
-      - "docs/cccl/development/coding_guidelines.rst"
-      - "docs/cccl/development/review_guidelines.md"
+      - "docs/cccl/development/coding_conventions.rst"
+      - "docs/cccl/development/review_checks.md"
       - "docs/cub/developer_overview.rst"
       - "docs/cub/developer/*.rst"
       - "docs/cub/benchmarking.rst"
