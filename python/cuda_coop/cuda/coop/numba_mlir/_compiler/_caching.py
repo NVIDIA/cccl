@@ -41,6 +41,34 @@ _CACHE_LOCATION = _cache_location()
 
 
 def _json_cache_key(value):
+    """Convert supported key values into a tagged JSON-serializable tree.
+
+    Plain JSON loses distinctions such as tuples versus lists and cannot
+    encode bytes. Tag these containers, preserve a tuple subclass's qualified
+    type name, and encode bytes as base64. Represent dictionaries as sorted
+    key/value pairs so supported non-string keys can participate without JSON
+    coercing them to strings. Scalar values retain JSON's native encoding.
+
+    Parameters
+    ----------
+    value : object
+        A scalar (``None``, bool, int, float, or str), bytes, or a recursively
+        supported tuple, list, or dictionary. Dictionary entries are ordered
+        by ``repr`` of their keys. Recursive containers are not supported.
+
+    Returns
+    -------
+    object
+        JSON-compatible representation used to hash arguments. This is a key
+        encoding, not a general-purpose serialization format for cache values.
+
+    Raises
+    ------
+    TypeError
+        A value has no supported key representation. The disk-cache wrapper
+        treats this as a request to compute without caching.
+    """
+
     if value is None or isinstance(value, (bool, int, float, str)):
         return value
     if isinstance(value, bytes):
