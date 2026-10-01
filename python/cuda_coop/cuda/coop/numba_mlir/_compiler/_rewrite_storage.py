@@ -663,7 +663,30 @@ class _StorageRewrite:
         return plan
 
     def _stage_temp_storage_backing(self) -> ir.Var:
-        """Insert the aggregate allocation before rewriting any consumer."""
+        """Stage the scratch allocation before rewriting consumers.
+
+        Place generated allocation statements in the entry block immediately
+        after argument assignments. Block rewrite visitation need not follow
+        control flow; emitting next to the first visited consumer could leave
+        other consumers without a dominating definition. Reject conflicting user
+        shared-memory declarations before inserting the unified backing.
+
+        Repeated calls return the existing backing variable without inserting a
+        second allocation. The function's entry block is mutated directly, even
+        when ``apply`` is currently rewriting a different block.
+
+        Returns
+        -------
+        ir.Var
+            Unified shared byte array available to every rewritten consumer.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            Allocation planning fails, user shared arrays would overlap, or
+            the emission state claims a backing exists without recording its
+            variable.
+        """
         rewrite = cast("CoopSinglePhaseRewrite", self)
 
         if self._temp_storage_backing_emitted:
