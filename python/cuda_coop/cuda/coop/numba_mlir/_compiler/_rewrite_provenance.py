@@ -1504,7 +1504,32 @@ class _ProvenanceRewrite(Rewrite):
     def _is_thread_data_like_var(
         self, value: ir.Var, seen: set[str] | None = None
     ) -> bool:
-        """Whether *value* originates from a public thread-data payload."""
+        """Check that known origins identify a public ``ThreadData`` payload.
+
+        Unlike shape inference, this check rejects an incoming non-payload
+        origin, including a native local array, even when another branch is
+        ``ThreadData``. Trace aliases, casts, iterator exhaustion, tuple items,
+        and phi inputs; cycle-only paths remain unknown rather than proving or
+        disproving origin. At least one positive origin and no negative origin
+        are needed to cache a positive result. This prevents rewriting
+        ``items_per_thread`` on a mixed or unrelated object just because some
+        shape information is available.
+
+        Parameters
+        ----------
+        value : ir.Var
+            Candidate receiver of the public payload attribute.
+        seen : set of str or None, optional
+            Initial traversal guard. A copy is used, leaving the supplied
+            set intact.
+
+        Returns
+        -------
+        bool
+            Whether public payload provenance is established. Positive
+            results are cached in ``_thread_data_like_vars``; unknown
+            results return False.
+        """
 
         def resolve(candidate: ir.Var, active: set[str]) -> bool | None:
             if not isinstance(candidate, ir.Var):
