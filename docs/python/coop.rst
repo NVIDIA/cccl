@@ -134,9 +134,9 @@ Numba-CUDA-MLIR additionally supports qualified device operators and
 :ref:`Scan prefix callbacks <coop-prefix-callbacks>`. CUTLASS currently
 supports built-in operators; custom
 operators and stateful Scan callbacks are outside its current scope.
-CUTLASS qualification covers a compatible Linux/CUDA 13 environment. An
-official public runtime artifact has not yet passed consumer qualification;
-see its programming guide before selecting a runtime.
+CUTLASS qualification covers a compatible Linux/CUDA 13 environment. No
+official public runtime artifact has passed consumer qualification; see its
+programming guide before selecting a runtime.
 
 .. raw:: html
 

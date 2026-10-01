@@ -170,8 +170,7 @@ def _validate_scan_request_plan(
     else:
         if not isinstance(scan_operator, CxxOperator):
             raise NotImplementedError(
-                "CUTLASS group scan currently supports "
-                "built-in C++ operators only"
+                "CUTLASS group scan supports built-in C++ operators only"
             )
         expected_cpp = _normalize_cpp_operator(operator_expression(op))
         if _normalize_cpp_operator(scan_operator.cpp) != expected_cpp:
