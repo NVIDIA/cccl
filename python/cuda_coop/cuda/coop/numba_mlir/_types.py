@@ -1906,6 +1906,50 @@ class Algorithm:
     def get_lto_ir(
         self, threads=None, block_threads=None, *, compile_identity=None
     ):
+        """Compile this specialization or reuse its matching in-memory link
+        images.
+
+        On first use, generate and compile a provider translation unit to LTO
+        IR, then link that image to PTX to read C++ scratch size/alignment
+        globals. Cache those values, the link images, and their filename
+        suffixes on the algorithm. Storage-free providers receive size zero and
+        alignment one.
+
+        Reuse is confined to the same bound target, options, and thread
+        configuration. Without an explicit identity, re-query the current device
+        before returning cached artifacts. A specialization cannot silently
+        reuse artifacts compiled for a previous device. For a prebundled
+        algorithm, ``lto_irs`` contains only its extra link images; the shared
+        provider image is retained separately in ``_precompiled_ltoir_files``.
+
+        Parameters
+        ----------
+        threads : int, optional
+            Logical warp width override; ``None`` uses ``self.threads``.
+        block_threads : int or tuple of int, optional
+            Exact enclosing block configuration; ``None`` uses
+            ``self.block_threads``.
+        compile_identity : tuple, optional
+            Previously resolved target/options identity, or ``None`` to query
+            it.
+
+        Returns
+        -------
+        list
+            Cached supporting link images followed by the generated provider LTO
+            image, or only extra images after bundling. The list is returned
+            directly.
+
+        Raises
+        ------
+        RuntimeError
+            Cached or qualified artifacts use different compiler inputs, or the
+            compiler/linker reports an error.
+        ValueError
+            Warp topology is invalid or an expected scratch metadata global is
+            absent.
+        """
+
         # With no explicit identity, re-query the current device even when an
         # artifact is already cached. Reusing one Algorithm across devices must
         # fail closed instead of returning LTO compiled for the earlier target.
