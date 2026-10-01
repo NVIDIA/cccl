@@ -120,7 +120,7 @@ using host_vector_nsp   = thrust::host_vector<int, host_alloc_nsp>;
 using device_vector_nsp = thrust::device_vector<int, device_alloc_nsp>;
 
 template <typename Vector>
-void TestVectorAllocatorConstructors()
+void test_vector_allocator_constructors()
 {
   using Alloc = typename Vector::allocator_type;
   const Alloc alloc1(1);
@@ -161,20 +161,18 @@ void TestVectorAllocatorConstructors()
   REQUIRE(Alloc::last_allocated == 2);
 }
 
-void TestVectorAllocatorConstructorsHost()
+TEST_CASE("TestVectorAllocatorConstructorsHost", "[vector_allocators]")
 {
-  TestVectorAllocatorConstructors<host_vector>();
+  test_vector_allocator_constructors<host_vector>();
 }
-DECLARE_UNITTEST(TestVectorAllocatorConstructorsHost);
 
-void TestVectorAllocatorConstructorsDevice()
+TEST_CASE("TestVectorAllocatorConstructorsDevice", "[vector_allocators]")
 {
-  TestVectorAllocatorConstructors<device_vector>();
+  test_vector_allocator_constructors<device_vector>();
 }
-DECLARE_UNITTEST(TestVectorAllocatorConstructorsDevice);
 
 template <typename Vector>
-void TestVectorAllocatorPropagateOnCopyAssignment()
+void test_vector_allocator_propagate_on_copy_assignment()
 {
   REQUIRE(cuda::std::allocator_traits<typename Vector::allocator_type>::propagate_on_container_copy_assignment::value);
 
@@ -192,20 +190,18 @@ void TestVectorAllocatorPropagateOnCopyAssignment()
   REQUIRE(Alloc::last_deallocated == 2);
 }
 
-void TestVectorAllocatorPropagateOnCopyAssignmentHost()
+TEST_CASE("TestVectorAllocatorPropagateOnCopyAssignmentHost", "[vector_allocators]")
 {
-  TestVectorAllocatorPropagateOnCopyAssignment<host_vector>();
+  test_vector_allocator_propagate_on_copy_assignment<host_vector>();
 }
-DECLARE_UNITTEST(TestVectorAllocatorPropagateOnCopyAssignmentHost);
 
-void TestVectorAllocatorPropagateOnCopyAssignmentDevice()
+TEST_CASE("TestVectorAllocatorPropagateOnCopyAssignmentDevice", "[vector_allocators]")
 {
-  TestVectorAllocatorPropagateOnCopyAssignment<device_vector>();
+  test_vector_allocator_propagate_on_copy_assignment<device_vector>();
 }
-DECLARE_UNITTEST(TestVectorAllocatorPropagateOnCopyAssignmentDevice);
 
 template <typename Vector>
-void TestVectorAllocatorPropagateOnMoveAssignment()
+void test_vector_allocator_propagate_on_move_assignment()
 {
   using Alloc = typename Vector::allocator_type;
   REQUIRE(cuda::std::allocator_traits<typename Vector::allocator_type>::propagate_on_container_copy_assignment::value);
@@ -227,20 +223,18 @@ void TestVectorAllocatorPropagateOnMoveAssignment()
   REQUIRE(Alloc::last_deallocated == 1);
 }
 
-void TestVectorAllocatorPropagateOnMoveAssignmentHost()
+TEST_CASE("TestVectorAllocatorPropagateOnMoveAssignmentHost", "[vector_allocators]")
 {
-  TestVectorAllocatorPropagateOnMoveAssignment<host_vector>();
+  test_vector_allocator_propagate_on_move_assignment<host_vector>();
 }
-DECLARE_UNITTEST(TestVectorAllocatorPropagateOnMoveAssignmentHost);
 
-void TestVectorAllocatorPropagateOnMoveAssignmentDevice()
+TEST_CASE("TestVectorAllocatorPropagateOnMoveAssignmentDevice", "[vector_allocators]")
 {
-  TestVectorAllocatorPropagateOnMoveAssignment<device_vector>();
+  test_vector_allocator_propagate_on_move_assignment<device_vector>();
 }
-DECLARE_UNITTEST(TestVectorAllocatorPropagateOnMoveAssignmentDevice);
 
 template <typename Vector>
-void TestVectorAllocatorPropagateOnSwap()
+void test_vector_allocator_propagate_on_swap()
 {
   using Alloc = typename Vector::allocator_type;
   const Alloc alloc1(1);
@@ -263,14 +257,12 @@ void TestVectorAllocatorPropagateOnSwap()
                              "but compare non-equal"));
 }
 
-void TestVectorAllocatorPropagateOnSwapHost()
+TEST_CASE("TestVectorAllocatorPropagateOnSwapHost", "[vector_allocators]")
 {
-  TestVectorAllocatorPropagateOnSwap<host_vector_nsp>();
+  test_vector_allocator_propagate_on_swap<host_vector_nsp>();
 }
-DECLARE_UNITTEST(TestVectorAllocatorPropagateOnSwapHost);
 
-void TestVectorAllocatorPropagateOnSwapDevice()
+TEST_CASE("TestVectorAllocatorPropagateOnSwapDevice", "[vector_allocators]")
 {
-  TestVectorAllocatorPropagateOnSwap<device_vector_nsp>();
+  test_vector_allocator_propagate_on_swap<device_vector_nsp>();
 }
-DECLARE_UNITTEST(TestVectorAllocatorPropagateOnSwapDevice);

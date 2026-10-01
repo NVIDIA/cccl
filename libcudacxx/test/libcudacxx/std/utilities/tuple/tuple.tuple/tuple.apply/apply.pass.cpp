@@ -334,6 +334,249 @@ TEST_HOST_DEVICE_FUNC void test()
 }
 } // end namespace ReturnTypeTest
 
+// Callables that accept only one specific value category. A forwarding reference would accept every category and
+// hide a missing cv-ref on the tuple element.
+struct ApplyLvalueInt
+{
+  TEST_HOST_DEVICE_FUNC void operator()(int&) const {}
+};
+
+struct ApplyConstLvalueInt
+{
+  TEST_HOST_DEVICE_FUNC void operator()(int const&) const {}
+};
+
+struct ApplyRvalueInt
+{
+  TEST_HOST_DEVICE_FUNC void operator()(int&&) const {}
+};
+
+struct ApplyConstRvalueInt
+{
+  TEST_HOST_DEVICE_FUNC void operator()(int const&&) const {}
+};
+
+struct ApplyLvalueIntInt
+{
+  TEST_HOST_DEVICE_FUNC void operator()(int&, int&) const {}
+};
+
+struct ApplyConstLvalueIntInt
+{
+  TEST_HOST_DEVICE_FUNC void operator()(int const&, int const&) const {}
+};
+
+struct ApplyRvalueIntInt
+{
+  TEST_HOST_DEVICE_FUNC void operator()(int&&, int&&) const {}
+};
+
+struct ApplyConstRvalueIntInt
+{
+  TEST_HOST_DEVICE_FUNC void operator()(int const&&, int const&&) const {}
+};
+
+struct ApplyNullary
+{
+  TEST_HOST_DEVICE_FUNC void operator()() const {}
+};
+
+struct ApplyLvalueConstLvalue
+{
+  TEST_HOST_DEVICE_FUNC void operator()(int&, int const&) const {}
+};
+
+struct ApplyRvalueConstRvalue
+{
+  TEST_HOST_DEVICE_FUNC void operator()(int&&, int const&&) const {}
+};
+
+struct ApplyMixedLvalue
+{
+  TEST_HOST_DEVICE_FUNC void operator()(int&, int const&, unsigned&) const {}
+};
+
+struct ApplyMixedConstLvalue
+{
+  TEST_HOST_DEVICE_FUNC void operator()(int const&, int const&, unsigned&) const {}
+};
+
+struct ApplyMixedRvalue
+{
+  TEST_HOST_DEVICE_FUNC void operator()(int&&, int const&, unsigned&&) const {}
+};
+
+struct ApplyMixedConstRvalue
+{
+  TEST_HOST_DEVICE_FUNC void operator()(int const&&, int const&, unsigned&&) const {}
+};
+
+struct ApplyVolatileLvalue
+{
+  TEST_HOST_DEVICE_FUNC void operator()(int volatile&) const {}
+};
+
+struct ApplyVolatileRvalue
+{
+  TEST_HOST_DEVICE_FUNC void operator()(int volatile&&) const {}
+};
+
+struct ApplyConstVolatileLvalue
+{
+  TEST_HOST_DEVICE_FUNC void operator()(int const volatile&) const {}
+};
+
+// Tuple has a single value element. Each cv-ref qualification of the tuple must surface as the matching qualification
+// of that element.
+template <class Tuple>
+TEST_HOST_DEVICE_FUNC constexpr void test_can_apply_value_element()
+{
+  static_assert(cuda::std::__can_apply<ApplyLvalueInt, Tuple&>);
+  static_assert(cuda::std::__can_apply<ApplyConstLvalueInt, Tuple&>);
+  static_assert(!cuda::std::__can_apply<ApplyRvalueInt, Tuple&>);
+  static_assert(!cuda::std::__can_apply<ApplyConstRvalueInt, Tuple&>);
+
+  static_assert(!cuda::std::__can_apply<ApplyLvalueInt, Tuple const&>);
+  static_assert(cuda::std::__can_apply<ApplyConstLvalueInt, Tuple const&>);
+  static_assert(!cuda::std::__can_apply<ApplyRvalueInt, Tuple const&>);
+  static_assert(!cuda::std::__can_apply<ApplyConstRvalueInt, Tuple const&>);
+
+  static_assert(!cuda::std::__can_apply<ApplyLvalueInt, Tuple&&>);
+  static_assert(cuda::std::__can_apply<ApplyConstLvalueInt, Tuple&&>);
+  static_assert(cuda::std::__can_apply<ApplyRvalueInt, Tuple&&>);
+  static_assert(cuda::std::__can_apply<ApplyConstRvalueInt, Tuple&&>);
+
+  static_assert(!cuda::std::__can_apply<ApplyLvalueInt, Tuple const&&>);
+  static_assert(cuda::std::__can_apply<ApplyConstLvalueInt, Tuple const&&>);
+  static_assert(!cuda::std::__can_apply<ApplyRvalueInt, Tuple const&&>);
+  static_assert(cuda::std::__can_apply<ApplyConstRvalueInt, Tuple const&&>);
+}
+
+template <class Tuple>
+TEST_HOST_DEVICE_FUNC constexpr void test_can_apply_two_value_elements()
+{
+  static_assert(cuda::std::__can_apply<ApplyLvalueIntInt, Tuple&>);
+  static_assert(cuda::std::__can_apply<ApplyConstLvalueIntInt, Tuple&>);
+  static_assert(!cuda::std::__can_apply<ApplyRvalueIntInt, Tuple&>);
+  static_assert(!cuda::std::__can_apply<ApplyConstRvalueIntInt, Tuple&>);
+
+  static_assert(!cuda::std::__can_apply<ApplyLvalueIntInt, Tuple const&>);
+  static_assert(cuda::std::__can_apply<ApplyConstLvalueIntInt, Tuple const&>);
+  static_assert(!cuda::std::__can_apply<ApplyRvalueIntInt, Tuple const&>);
+  static_assert(!cuda::std::__can_apply<ApplyConstRvalueIntInt, Tuple const&>);
+
+  static_assert(!cuda::std::__can_apply<ApplyLvalueIntInt, Tuple&&>);
+  static_assert(cuda::std::__can_apply<ApplyConstLvalueIntInt, Tuple&&>);
+  static_assert(cuda::std::__can_apply<ApplyRvalueIntInt, Tuple&&>);
+  static_assert(cuda::std::__can_apply<ApplyConstRvalueIntInt, Tuple&&>);
+
+  static_assert(!cuda::std::__can_apply<ApplyLvalueIntInt, Tuple const&&>);
+  static_assert(cuda::std::__can_apply<ApplyConstLvalueIntInt, Tuple const&&>);
+  static_assert(!cuda::std::__can_apply<ApplyRvalueIntInt, Tuple const&&>);
+  static_assert(cuda::std::__can_apply<ApplyConstRvalueIntInt, Tuple const&&>);
+}
+
+TEST_HOST_DEVICE_FUNC constexpr void test_can_apply_cvref()
+{
+  test_can_apply_value_element<cuda::std::tuple<int>>();
+  test_can_apply_value_element<cuda::std::array<int, 1>>();
+  test_can_apply_two_value_elements<cuda::std::tuple<int, int>>();
+  test_can_apply_two_value_elements<cuda::std::pair<int, int>>();
+  test_can_apply_two_value_elements<cuda::std::array<int, 2>>();
+
+  static_assert(cuda::std::__can_apply<ApplyNullary, cuda::std::tuple<>&>);
+  static_assert(cuda::std::__can_apply<ApplyNullary, cuda::std::tuple<> const&>);
+  static_assert(cuda::std::__can_apply<ApplyNullary, cuda::std::tuple<>&&>);
+  static_assert(cuda::std::__can_apply<ApplyNullary, cuda::std::tuple<> const&&>);
+  static_assert(cuda::std::__can_apply<ApplyNullary, cuda::std::array<int, 0>&>);
+  static_assert(!cuda::std::__can_apply<ApplyLvalueInt, cuda::std::tuple<>&>);
+  static_assert(!cuda::std::__can_apply<ApplyNullary, cuda::std::tuple<int>&>);
+
+  // Reference elements keep their own value category. The tuple's cv-ref does not rebind them.
+  {
+    using RefTup = cuda::std::tuple<int&>;
+    static_assert(cuda::std::__can_apply<ApplyLvalueInt, RefTup&>);
+    static_assert(cuda::std::__can_apply<ApplyLvalueInt, RefTup const&>);
+    static_assert(cuda::std::__can_apply<ApplyLvalueInt, RefTup&&>);
+    static_assert(cuda::std::__can_apply<ApplyLvalueInt, RefTup const&&>);
+    static_assert(!cuda::std::__can_apply<ApplyRvalueInt, RefTup&>);
+    static_assert(!cuda::std::__can_apply<ApplyRvalueInt, RefTup&&>);
+    static_assert(!cuda::std::__can_apply<ApplyConstRvalueInt, RefTup const&&>);
+  }
+  {
+    using CRefTup = cuda::std::tuple<int const&>;
+    static_assert(!cuda::std::__can_apply<ApplyLvalueInt, CRefTup&>);
+    static_assert(cuda::std::__can_apply<ApplyConstLvalueInt, CRefTup&>);
+    static_assert(cuda::std::__can_apply<ApplyConstLvalueInt, CRefTup const&>);
+    static_assert(cuda::std::__can_apply<ApplyConstLvalueInt, CRefTup&&>);
+    static_assert(cuda::std::__can_apply<ApplyConstLvalueInt, CRefTup const&&>);
+    static_assert(!cuda::std::__can_apply<ApplyRvalueInt, CRefTup&&>);
+    static_assert(!cuda::std::__can_apply<ApplyConstRvalueInt, CRefTup&&>);
+  }
+  {
+    using RRefTup = cuda::std::tuple<int&&>;
+    static_assert(cuda::std::__can_apply<ApplyLvalueInt, RRefTup&>);
+    static_assert(cuda::std::__can_apply<ApplyLvalueInt, RRefTup const&>);
+    static_assert(!cuda::std::__can_apply<ApplyRvalueInt, RRefTup&>);
+    static_assert(!cuda::std::__can_apply<ApplyRvalueInt, RRefTup const&>);
+    static_assert(!cuda::std::__can_apply<ApplyLvalueInt, RRefTup&&>);
+    static_assert(!cuda::std::__can_apply<ApplyLvalueInt, RRefTup const&&>);
+    static_assert(cuda::std::__can_apply<ApplyRvalueInt, RRefTup&&>);
+    static_assert(cuda::std::__can_apply<ApplyRvalueInt, RRefTup const&&>);
+  }
+  {
+    using RefPair = cuda::std::pair<int&, int const&>;
+    static_assert(cuda::std::__can_apply<ApplyLvalueConstLvalue, RefPair&>);
+    static_assert(cuda::std::__can_apply<ApplyLvalueConstLvalue, RefPair const&>);
+    static_assert(cuda::std::__can_apply<ApplyLvalueConstLvalue, RefPair&&>);
+    static_assert(cuda::std::__can_apply<ApplyLvalueConstLvalue, RefPair const&&>);
+    static_assert(!cuda::std::__can_apply<ApplyRvalueConstRvalue, RefPair&>);
+    static_assert(!cuda::std::__can_apply<ApplyRvalueConstRvalue, RefPair&&>);
+    static_assert(!cuda::std::__can_apply<ApplyRvalueConstRvalue, RefPair const&&>);
+  }
+
+  // Same element mix as test_call_quals_and_arg_types. Each tuple cv-ref must select a different callable.
+  {
+    using Mixed = cuda::std::tuple<int, int const&, unsigned&&>;
+    static_assert(cuda::std::__can_apply<ApplyMixedLvalue, Mixed&>);
+    static_assert(!cuda::std::__can_apply<ApplyMixedLvalue, Mixed const&>);
+    static_assert(!cuda::std::__can_apply<ApplyMixedLvalue, Mixed&&>);
+    static_assert(!cuda::std::__can_apply<ApplyMixedLvalue, Mixed const&&>);
+
+    static_assert(cuda::std::__can_apply<ApplyMixedConstLvalue, Mixed&>);
+    static_assert(cuda::std::__can_apply<ApplyMixedConstLvalue, Mixed const&>);
+    static_assert(!cuda::std::__can_apply<ApplyMixedConstLvalue, Mixed&&>);
+    static_assert(!cuda::std::__can_apply<ApplyMixedConstLvalue, Mixed const&&>);
+
+    static_assert(!cuda::std::__can_apply<ApplyMixedRvalue, Mixed&>);
+    static_assert(!cuda::std::__can_apply<ApplyMixedRvalue, Mixed const&>);
+    static_assert(cuda::std::__can_apply<ApplyMixedRvalue, Mixed&&>);
+    static_assert(!cuda::std::__can_apply<ApplyMixedRvalue, Mixed const&&>);
+
+    static_assert(!cuda::std::__can_apply<ApplyMixedConstRvalue, Mixed&>);
+    static_assert(!cuda::std::__can_apply<ApplyMixedConstRvalue, Mixed const&>);
+    static_assert(cuda::std::__can_apply<ApplyMixedConstRvalue, Mixed&&>);
+    static_assert(cuda::std::__can_apply<ApplyMixedConstRvalue, Mixed const&&>);
+  }
+
+  {
+    using VolTup = cuda::std::tuple<int volatile>;
+    static_assert(cuda::std::__can_apply<ApplyVolatileLvalue, VolTup&>);
+    static_assert(!cuda::std::__can_apply<ApplyVolatileRvalue, VolTup&>);
+    static_assert(!cuda::std::__can_apply<ApplyLvalueInt, VolTup&>);
+    static_assert(cuda::std::__can_apply<ApplyVolatileRvalue, VolTup&&>);
+    static_assert(!cuda::std::__can_apply<ApplyVolatileLvalue, VolTup&&>);
+    static_assert(cuda::std::__can_apply<ApplyConstVolatileLvalue, VolTup const&>);
+    static_assert(!cuda::std::__can_apply<ApplyVolatileLvalue, VolTup const&>);
+    static_assert(!cuda::std::__can_apply<ApplyVolatileRvalue, VolTup const&&>);
+  }
+
+  static_assert(!cuda::std::__can_apply<ApplyLvalueInt, int>);
+  static_assert(!cuda::std::__can_apply<ApplyLvalueInt, int&>);
+  static_assert(!cuda::std::__can_apply<ApplyNullary, int>);
+  static_assert(!cuda::std::__can_apply<ApplyLvalueInt, cuda::std::tuple<int, int>&>);
+}
+
 TEST_HOST_DEVICE_FUNC void test_return_type()
 {
   using ReturnTypeTest::test;
@@ -359,6 +602,7 @@ int main(int, char**)
   test_call_quals_and_arg_types();
   test_return_type();
   test_noexcept();
+  test_can_apply_cvref();
 
   return 0;
 }

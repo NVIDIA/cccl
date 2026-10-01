@@ -8,9 +8,9 @@
 
 struct alloc_id
 {
-  std::size_t id;
-  std::size_t size;
-  std::size_t alignment;
+  std::size_t id{};
+  std::size_t size{};
+  std::size_t alignment{};
   std::size_t offset{};
 
   _CCCL_HOST_DEVICE bool operator==(const alloc_id& other) const
@@ -122,7 +122,7 @@ public:
 };
 
 template <template <typename, typename> class PoolTemplate>
-void TestDisjointPool()
+void test_disjoint_pool()
 {
   dummy_resource upstream;
   thrust::mr::new_delete_resource bookkeeper;
@@ -198,20 +198,18 @@ void TestDisjointPool()
   REQUIRE(upstream.id_to_deallocate == 0u);
 }
 
-void TestDisjointUnsynchronizedPool()
+TEST_CASE("TestDisjointUnsynchronizedPool", "[mr_disjoint_pool]")
 {
-  TestDisjointPool<thrust::mr::disjoint_unsynchronized_pool_resource>();
+  test_disjoint_pool<thrust::mr::disjoint_unsynchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestDisjointUnsynchronizedPool);
 
-void TestDisjointSynchronizedPool()
+TEST_CASE("TestDisjointSynchronizedPool", "[mr_disjoint_pool]")
 {
-  TestDisjointPool<thrust::mr::disjoint_synchronized_pool_resource>();
+  test_disjoint_pool<thrust::mr::disjoint_synchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestDisjointSynchronizedPool);
 
 template <template <typename, typename> class PoolTemplate>
-void TestDisjointPoolCachingOversized()
+void test_disjoint_pool_caching_oversized()
 {
   dummy_resource upstream;
   thrust::mr::new_delete_resource bookkeeper;
@@ -276,40 +274,36 @@ void TestDisjointPoolCachingOversized()
   REQUIRE(a9.id == 7u);
 }
 
-void TestDisjointUnsynchronizedPoolCachingOversized()
+TEST_CASE("TestDisjointUnsynchronizedPoolCachingOversized", "[mr_disjoint_pool]")
 {
-  TestDisjointPoolCachingOversized<thrust::mr::disjoint_unsynchronized_pool_resource>();
+  test_disjoint_pool_caching_oversized<thrust::mr::disjoint_unsynchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestDisjointUnsynchronizedPoolCachingOversized);
 
-void TestDisjointSynchronizedPoolCachingOversized()
+TEST_CASE("TestDisjointSynchronizedPoolCachingOversized", "[mr_disjoint_pool]")
 {
-  TestDisjointPoolCachingOversized<thrust::mr::disjoint_synchronized_pool_resource>();
+  test_disjoint_pool_caching_oversized<thrust::mr::disjoint_synchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestDisjointSynchronizedPoolCachingOversized);
 
 template <template <typename, typename> class PoolTemplate>
-void TestDisjointGlobalPool()
+void test_disjoint_global_pool()
 {
   using Pool = PoolTemplate<thrust::mr::new_delete_resource, thrust::mr::new_delete_resource>;
 
   REQUIRE(thrust::mr::get_global_resource<Pool>() != nullptr);
 }
 
-void TestUnsynchronizedDisjointGlobalPool()
+TEST_CASE("TestUnsynchronizedDisjointGlobalPool", "[mr_disjoint_pool]")
 {
-  TestDisjointGlobalPool<thrust::mr::disjoint_unsynchronized_pool_resource>();
+  test_disjoint_global_pool<thrust::mr::disjoint_unsynchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestUnsynchronizedDisjointGlobalPool);
 
-void TestSynchronizedDisjointGlobalPool()
+TEST_CASE("TestSynchronizedDisjointGlobalPool", "[mr_disjoint_pool]")
 {
-  TestDisjointGlobalPool<thrust::mr::disjoint_synchronized_pool_resource>();
+  test_disjoint_global_pool<thrust::mr::disjoint_synchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestSynchronizedDisjointGlobalPool);
 
 template <template <typename, typename> class PoolTemplate>
-void TestDisjointPoolSqueeze()
+void test_disjoint_pool_squeeze()
 {
   dummy_resource upstream;
   thrust::mr::new_delete_resource bookkeeper;
@@ -509,14 +503,12 @@ void TestDisjointPoolSqueeze()
   REQUIRE(upstream.id_to_deallocate == 0u);
 }
 
-void TestDisjointUnsynchronizedPoolSqueeze()
+TEST_CASE("TestDisjointUnsynchronizedPoolSqueeze", "[mr_disjoint_pool]")
 {
-  TestDisjointPoolSqueeze<thrust::mr::disjoint_unsynchronized_pool_resource>();
+  test_disjoint_pool_squeeze<thrust::mr::disjoint_unsynchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestDisjointUnsynchronizedPoolSqueeze);
 
-void TestDisjointSynchronizedPoolSqueeze()
+TEST_CASE("TestDisjointSynchronizedPoolSqueeze", "[mr_disjoint_pool]")
 {
-  TestDisjointPoolSqueeze<thrust::mr::disjoint_synchronized_pool_resource>();
+  test_disjoint_pool_squeeze<thrust::mr::disjoint_synchronized_pool_resource>();
 }
-DECLARE_UNITTEST(TestDisjointSynchronizedPoolSqueeze);

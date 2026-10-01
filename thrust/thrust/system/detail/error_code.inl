@@ -40,10 +40,9 @@ error_code ::error_code(ErrorCodeEnum e
                         ,
                         ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value, int>
 #endif // !_CCCL_COMPILER(MSVC)
-)
-{
-  *this = make_error_code(e);
-} // end error_code::error_code()
+                        )
+    : error_code(make_error_code(e))
+{} // end error_code::error_code()
 
 void error_code ::assign(int val, const error_category& cat)
 {
@@ -111,8 +110,8 @@ bool operator<(const error_code& lhs, const error_code& rhs)
   return result;
 } // end operator==()
 
-template <typename charT, typename traits>
-std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& os, const error_code& ec)
+template <typename CharT, typename Traits>
+std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const error_code& ec)
 {
   return os << ec.category().name() << ':' << ec.value();
 } // end operator<<()

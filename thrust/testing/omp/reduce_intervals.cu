@@ -36,7 +36,7 @@ void reduce_intervals(InputIterator input, OutputIterator output, BinaryFunction
   }
 }
 
-void TestOmpReduceIntervalsSimple()
+TEST_CASE("TestOmpReduceIntervalsSimple", "[reduce_intervals]")
 {
   using T      = int;
   using Vector = thrust::device_vector<T>;
@@ -65,7 +65,6 @@ void TestOmpReduceIntervalsSimple()
     REQUIRE(output[1] == 4);
   }
 }
-DECLARE_UNITTEST(TestOmpReduceIntervalsSimple);
 
 template <typename T>
 struct TestOmpReduceIntervals

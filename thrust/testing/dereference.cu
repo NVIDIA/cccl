@@ -31,7 +31,7 @@ void simple_copy(Iterator1 first1, Iterator1 last1, Iterator2 first2)
 #endif
 }
 
-void TestDeviceDereferenceDeviceVectorIterator()
+TEST_CASE("TestDeviceDereferenceDeviceVectorIterator", "[dereference]")
 {
   thrust::device_vector<int> input = unittest::random_integers<int>(100);
   thrust::device_vector<int> output(input.size(), 0);
@@ -40,9 +40,8 @@ void TestDeviceDereferenceDeviceVectorIterator()
 
   REQUIRE(input == output);
 }
-DECLARE_UNITTEST(TestDeviceDereferenceDeviceVectorIterator);
 
-void TestDeviceDereferenceDevicePtr()
+TEST_CASE("TestDeviceDereferenceDevicePtr", "[dereference]")
 {
   thrust::device_vector<int> input = unittest::random_integers<int>(100);
   thrust::device_vector<int> output(input.size(), 0);
@@ -55,9 +54,8 @@ void TestDeviceDereferenceDevicePtr()
 
   REQUIRE(input == output);
 }
-DECLARE_UNITTEST(TestDeviceDereferenceDevicePtr);
 
-void TestDeviceDereferenceTransformIterator()
+TEST_CASE("TestDeviceDereferenceTransformIterator", "[dereference]")
 {
   thrust::device_vector<int> input = unittest::random_integers<int>(100);
   thrust::device_vector<int> output(input.size(), 0);
@@ -68,9 +66,8 @@ void TestDeviceDereferenceTransformIterator()
 
   REQUIRE(input == output);
 }
-DECLARE_UNITTEST(TestDeviceDereferenceTransformIterator);
 
-void TestDeviceDereferenceTransformIteratorInputConversion()
+TEST_CASE("TestDeviceDereferenceTransformIteratorInputConversion", "[dereference]")
 {
   thrust::device_vector<int> input = unittest::random_integers<int>(100);
   thrust::device_vector<double> output(input.size(), 0);
@@ -81,9 +78,8 @@ void TestDeviceDereferenceTransformIteratorInputConversion()
 
   REQUIRE(input == output);
 }
-DECLARE_UNITTEST(TestDeviceDereferenceTransformIteratorInputConversion);
 
-void TestDeviceDereferenceTransformIteratorOutputConversion()
+TEST_CASE("TestDeviceDereferenceTransformIteratorOutputConversion", "[dereference]")
 {
   thrust::device_vector<int> input = unittest::random_integers<int>(100);
   thrust::device_vector<double> output(input.size(), 0);
@@ -94,9 +90,8 @@ void TestDeviceDereferenceTransformIteratorOutputConversion()
 
   REQUIRE(input == output);
 }
-DECLARE_UNITTEST(TestDeviceDereferenceTransformIteratorOutputConversion);
 
-void TestDeviceDereferenceCountingIterator()
+TEST_CASE("TestDeviceDereferenceCountingIterator", "[dereference]")
 {
   const thrust::counting_iterator<int> first(1);
   const thrust::counting_iterator<int> last(6);
@@ -108,9 +103,8 @@ void TestDeviceDereferenceCountingIterator()
   const thrust::device_vector<int> ref{1, 2, 3, 4, 5};
   REQUIRE(output == ref);
 }
-DECLARE_UNITTEST(TestDeviceDereferenceCountingIterator);
 
-void TestDeviceDereferenceTransformedCountingIterator()
+TEST_CASE("TestDeviceDereferenceTransformedCountingIterator", "[dereference]")
 {
   const thrust::counting_iterator<int> first(1);
   const thrust::counting_iterator<int> last(6);
@@ -124,6 +118,5 @@ void TestDeviceDereferenceTransformedCountingIterator()
   const thrust::device_vector<int> ref{-1, -2, -3, -4, -5};
   REQUIRE(output == ref);
 }
-DECLARE_UNITTEST(TestDeviceDereferenceTransformedCountingIterator);
 
 _CCCL_DIAG_POP

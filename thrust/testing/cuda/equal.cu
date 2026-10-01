@@ -93,7 +93,7 @@ void TestEqualDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestEqualDeviceDevice);
 #endif
 
-void TestEqualCudaStreams()
+TEST_CASE("TestEqualCudaStreams", "[equal]")
 {
   thrust::device_vector<int> v1 = {5, 2, 0, 0, 0};
   thrust::device_vector<int> v2 = {5, 2, 0, 6, 1};
@@ -115,4 +115,3 @@ void TestEqualCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestEqualCudaStreams);

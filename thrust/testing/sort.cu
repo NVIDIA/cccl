@@ -10,7 +10,7 @@ void sort(my_system& system, RandomAccessIterator, RandomAccessIterator)
   system.validate_dispatch();
 }
 
-void TestSortDispatchExplicit()
+TEST_CASE("TestSortDispatchExplicit", "[sort]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -19,7 +19,6 @@ void TestSortDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSortDispatchExplicit);
 
 template <typename RandomAccessIterator>
 void sort(my_tag, RandomAccessIterator first, RandomAccessIterator)
@@ -27,7 +26,7 @@ void sort(my_tag, RandomAccessIterator first, RandomAccessIterator)
   *first = 13;
 }
 
-void TestSortDispatchImplicit()
+TEST_CASE("TestSortDispatchImplicit", "[sort]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -35,10 +34,9 @@ void TestSortDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSortDispatchImplicit);
 
 template <class Vector>
-void InitializeSimpleKeySortTest(Vector& unsorted_keys, Vector& sorted_keys)
+void initialize_simple_key_sort_test(Vector& unsorted_keys, Vector& sorted_keys)
 {
   unsorted_keys.resize(7);
   unsorted_keys = {1, 3, 6, 5, 2, 0, 4};
@@ -48,21 +46,21 @@ void InitializeSimpleKeySortTest(Vector& unsorted_keys, Vector& sorted_keys)
 }
 
 template <class Vector>
-void TestSortSimple()
+void test_sort_simple()
 {
   Vector unsorted_keys;
   Vector sorted_keys;
 
-  InitializeSimpleKeySortTest(unsorted_keys, sorted_keys);
+  initialize_simple_key_sort_test(unsorted_keys, sorted_keys);
 
   thrust::sort(unsorted_keys.begin(), unsorted_keys.end());
 
   REQUIRE(unsorted_keys == sorted_keys);
 }
-DECLARE_VECTOR_UNITTEST(TestSortSimple);
+DECLARE_VECTOR_UNITTEST(test_sort_simple);
 
 template <typename T>
-void TestSortAscendingKey(const size_t n)
+void test_sort_ascending_key(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -72,9 +70,9 @@ void TestSortAscendingKey(const size_t n)
 
   REQUIRE(h_data == d_data);
 }
-DECLARE_VARIABLE_UNITTEST(TestSortAscendingKey);
+DECLARE_VARIABLE_UNITTEST(test_sort_ascending_key);
 
-void TestSortDescendingKey()
+TEST_CASE("TestSortDescendingKey", "[sort]")
 {
   const size_t n = 10027;
 
@@ -86,9 +84,8 @@ void TestSortDescendingKey()
 
   REQUIRE(h_data == d_data);
 }
-DECLARE_UNITTEST(TestSortDescendingKey);
 
-void TestSortBool()
+TEST_CASE("TestSortBool", "[sort]")
 {
   const size_t n = 10027;
 
@@ -100,9 +97,8 @@ void TestSortBool()
 
   REQUIRE(h_data == d_data);
 }
-DECLARE_UNITTEST(TestSortBool);
 
-void TestSortBoolDescending()
+TEST_CASE("TestSortBoolDescending", "[sort]")
 {
   const size_t n = 10027;
 
@@ -114,10 +110,9 @@ void TestSortBoolDescending()
 
   REQUIRE(h_data == d_data);
 }
-DECLARE_UNITTEST(TestSortBoolDescending);
 
 // See also: https://github.com/NVIDIA/cccl/issues/4919
-void TestSortTrivial()
+TEST_CASE("TestSortTrivial", "[sort]")
 {
   thrust::host_vector<int> h_data    = {1, 0, -1, -2, -3};
   const thrust::host_vector<int> ref = {-3, -2, -1, 0, 1};
@@ -125,4 +120,3 @@ void TestSortTrivial()
   thrust::sort(h_data.begin(), h_data.end());
   REQUIRE(h_data == ref);
 }
-DECLARE_UNITTEST(TestSortTrivial);

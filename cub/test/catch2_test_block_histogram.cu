@@ -16,22 +16,22 @@
 #include "cub_test_macros.h"
 
 template <int BINS,
-          int BLOCK_THREADS,
-          int ITEMS_PER_THREAD,
+          int BlockThreads,
+          int ItemsPerThread,
           cub::BlockHistogramAlgorithm ALGORITHM,
           typename T,
           typename HistoCounter>
 __global__ void block_histogram_kernel(T* d_samples, HistoCounter* d_histogram)
 {
   // Parameterize BlockHistogram type for our thread block
-  using block_histogram_t = cub::BlockHistogram<T, BLOCK_THREADS, ITEMS_PER_THREAD, BINS, ALGORITHM>;
+  using block_histogram_t = cub::BlockHistogram<T, BlockThreads, ItemsPerThread, BINS, ALGORITHM>;
 
   // Allocate temp storage in shared memory
   __shared__ typename block_histogram_t::TempStorage temp_storage;
 
   // Per-thread tile data
-  T data[ITEMS_PER_THREAD];
-  cub::LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_samples, data);
+  T data[ItemsPerThread];
+  cub::LoadDirectStriped<BlockThreads>(threadIdx.x, d_samples, data);
 
   // Test histo (writing directly to histogram buffer in global)
   block_histogram_t(temp_storage).Histogram(data, d_histogram);

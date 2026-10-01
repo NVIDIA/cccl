@@ -22,7 +22,7 @@ struct vector_like
 };
 
 template <class Vector>
-void TestVectorLowerBoundSimple()
+void test_vector_lower_bound_simple()
 {
   Vector vec{0, 2, 5, 7, 8};
 
@@ -60,7 +60,7 @@ void TestVectorLowerBoundSimple()
   //    ASSERT_EQUAL(iterator_output[8] - vec.begin(), 4);
   //    ASSERT_EQUAL(iterator_output[9] - vec.begin(), 5);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorLowerBoundSimple);
+DECLARE_VECTOR_UNITTEST(test_vector_lower_bound_simple);
 
 template <typename ForwardIterator, typename InputIterator, typename OutputIterator>
 OutputIterator
@@ -70,7 +70,7 @@ lower_bound(my_system& system, ForwardIterator, ForwardIterator, InputIterator, 
   return output;
 }
 
-void TestVectorLowerBoundDispatchExplicit()
+TEST_CASE("TestVectorLowerBoundDispatchExplicit", "[binary_search_vector]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -79,7 +79,6 @@ void TestVectorLowerBoundDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestVectorLowerBoundDispatchExplicit);
 
 template <typename ForwardIterator, typename InputIterator, typename OutputIterator>
 OutputIterator lower_bound(my_tag, ForwardIterator, ForwardIterator, InputIterator, InputIterator, OutputIterator output)
@@ -88,7 +87,7 @@ OutputIterator lower_bound(my_tag, ForwardIterator, ForwardIterator, InputIterat
   return output;
 }
 
-void TestVectorLowerBoundDispatchImplicit()
+TEST_CASE("TestVectorLowerBoundDispatchImplicit", "[binary_search_vector]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -101,10 +100,9 @@ void TestVectorLowerBoundDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestVectorLowerBoundDispatchImplicit);
 
 template <class Vector>
-void TestVectorUpperBoundSimple()
+void test_vector_upper_bound_simple()
 {
   Vector vec{0, 2, 5, 7, 8};
 
@@ -140,7 +138,7 @@ void TestVectorUpperBoundSimple()
   //    ASSERT_EQUAL(iterator_output[8] - vec.begin(), 5);
   //    ASSERT_EQUAL(iterator_output[9] - vec.begin(), 5);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorUpperBoundSimple);
+DECLARE_VECTOR_UNITTEST(test_vector_upper_bound_simple);
 
 template <typename ForwardIterator, typename InputIterator, typename OutputIterator>
 OutputIterator
@@ -150,7 +148,7 @@ upper_bound(my_system& system, ForwardIterator, ForwardIterator, InputIterator, 
   return output;
 }
 
-void TestVectorUpperBoundDispatchExplicit()
+TEST_CASE("TestVectorUpperBoundDispatchExplicit", "[binary_search_vector]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -159,7 +157,6 @@ void TestVectorUpperBoundDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestVectorUpperBoundDispatchExplicit);
 
 template <typename ForwardIterator, typename InputIterator, typename OutputIterator>
 OutputIterator upper_bound(my_tag, ForwardIterator, ForwardIterator, InputIterator, InputIterator, OutputIterator output)
@@ -168,7 +165,7 @@ OutputIterator upper_bound(my_tag, ForwardIterator, ForwardIterator, InputIterat
   return output;
 }
 
-void TestVectorUpperBoundDispatchImplicit()
+TEST_CASE("TestVectorUpperBoundDispatchImplicit", "[binary_search_vector]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -181,10 +178,9 @@ void TestVectorUpperBoundDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestVectorUpperBoundDispatchImplicit);
 
 template <class Vector>
-void TestVectorBinarySearchSimple()
+void test_vector_binary_search_simple()
 {
   Vector vec{0, 2, 5, 7, 8};
 
@@ -215,7 +211,7 @@ void TestVectorBinarySearchSimple()
   const IntVector int_ref{1, 0, 1, 0, 0, 1, 0, 1, 1, 0};
   REQUIRE(integral_output == int_ref);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorBinarySearchSimple);
+DECLARE_VECTOR_UNITTEST(test_vector_binary_search_simple);
 
 template <typename ForwardIterator, typename InputIterator, typename OutputIterator>
 OutputIterator
@@ -225,7 +221,7 @@ binary_search(my_system& system, ForwardIterator, ForwardIterator, InputIterator
   return output;
 }
 
-void TestVectorBinarySearchDispatchExplicit()
+TEST_CASE("TestVectorBinarySearchDispatchExplicit", "[binary_search_vector]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -234,7 +230,6 @@ void TestVectorBinarySearchDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestVectorBinarySearchDispatchExplicit);
 
 template <typename ForwardIterator, typename InputIterator, typename OutputIterator>
 OutputIterator
@@ -244,7 +239,7 @@ binary_search(my_tag, ForwardIterator, ForwardIterator, InputIterator, InputIter
   return output;
 }
 
-void TestVectorBinarySearchDispatchImplicit()
+TEST_CASE("TestVectorBinarySearchDispatchImplicit", "[binary_search_vector]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -257,7 +252,6 @@ void TestVectorBinarySearchDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestVectorBinarySearchDispatchImplicit);
 
 template <typename T>
 struct TestVectorLowerBound

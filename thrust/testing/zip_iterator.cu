@@ -10,7 +10,7 @@
 #include <unittest/unittest.h>
 
 // ensure that we properly support thrust::zip_iterator from cuda::std
-void TestZipIteratorTraits()
+TEST_CASE("TestZipIteratorTraits", "[zip_iterator]")
 {
   using base_it = thrust::host_vector<int>::iterator;
 
@@ -121,7 +121,6 @@ void TestZipIteratorTraits()
     static_assert(!cuda::std::contiguous_iterator<it>);
   }
 }
-DECLARE_UNITTEST(TestZipIteratorTraits);
 
 template <typename T>
 struct TestZipIteratorConstructionFromIterators
@@ -290,7 +289,7 @@ struct TestZipIteratorReference
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipIteratorReference, NumericTypes);
 
 template <typename Vector>
-void TestZipIteratorCopy()
+void test_zip_iterator_copy()
 {
   using T = typename Vector::value_type;
 
@@ -308,7 +307,7 @@ void TestZipIteratorCopy()
   REQUIRE(input0 == output0);
   REQUIRE(input1 == output1);
 }
-DECLARE_VECTOR_UNITTEST(TestZipIteratorCopy);
+DECLARE_VECTOR_UNITTEST(test_zip_iterator_copy);
 
 struct SumTwoTuple
 {
@@ -369,7 +368,7 @@ struct TestZipIteratorTransform
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipIteratorTransform, ThirtyTwoBitTypes);
 
-void TestZipIteratorCopyAoSToSoA()
+TEST_CASE("TestZipIteratorCopyAoSToSoA", "[zip_iterator]")
 {
   const size_t n = 1;
 
@@ -414,9 +413,8 @@ void TestZipIteratorCopyAoSToSoA()
   thrust::copy(d_aos.begin(), d_aos.end(), h_soa);
   REQUIRE((cuda::std::make_tuple(7, 13) == h_soa[0]));
 }
-DECLARE_UNITTEST(TestZipIteratorCopyAoSToSoA);
 
-void TestZipIteratorCopySoAToAoS()
+TEST_CASE("TestZipIteratorCopySoAToAoS", "[zip_iterator]")
 {
   const size_t n = 1;
 
@@ -466,11 +464,10 @@ void TestZipIteratorCopySoAToAoS()
   thrust::copy(d_soa, d_soa + n, h_aos.begin());
   REQUIRE((7 == cuda::std::get<0>(h_soa[0])));
   REQUIRE((13 == cuda::std::get<1>(h_soa[0])));
-};
-DECLARE_UNITTEST(TestZipIteratorCopySoAToAoS);
+}
 
 template <typename T>
-void TestZipIteratorDereferenceToValueType(const T& t)
+void test_zip_iterator_dereference_to_value_type(const T& t)
 {
   thrust::device_vector<T> data(1, t);
 
@@ -491,17 +488,17 @@ void TestZipIteratorDereferenceToValueType(const T& t)
   REQUIRE((c == cuda::std::make_tuple(t)));
 }
 
-void TestZipIteratorDereferenceToValue()
+TEST_CASE("TestZipIteratorDereferenceToValue", "[zip_iterator]")
 {
-  TestZipIteratorDereferenceToValueType(1);
-  TestZipIteratorDereferenceToValueType(cuda::std::make_tuple(1));
-  TestZipIteratorDereferenceToValueType(cuda::std::make_tuple(1, cuda::std::make_tuple(1)));
-  TestZipIteratorDereferenceToValueType(cuda::std::make_tuple(1, cuda::std::make_tuple(1, 1)));
-  TestZipIteratorDereferenceToValueType(cuda::std::make_tuple(cuda::std::make_tuple(1), cuda::std::make_tuple(1, 1)));
+  test_zip_iterator_dereference_to_value_type(1);
+  test_zip_iterator_dereference_to_value_type(cuda::std::make_tuple(1));
+  test_zip_iterator_dereference_to_value_type(cuda::std::make_tuple(1, cuda::std::make_tuple(1)));
+  test_zip_iterator_dereference_to_value_type(cuda::std::make_tuple(1, cuda::std::make_tuple(1, 1)));
+  test_zip_iterator_dereference_to_value_type(
+    cuda::std::make_tuple(cuda::std::make_tuple(1), cuda::std::make_tuple(1, 1)));
 }
-DECLARE_UNITTEST(TestZipIteratorDereferenceToValue);
 
-void TestZipIteratorNestedCopy()
+TEST_CASE("TestZipIteratorNestedCopy", "[zip_iterator]")
 {
   using T = int;
 
@@ -549,10 +546,9 @@ void TestZipIteratorNestedCopy()
     REQUIRE((b == b_expected));
   }
 }
-DECLARE_UNITTEST(TestZipIteratorNestedCopy);
 
 // See https://github.com/NVIDIA/cccl/issues/9773
-void TestZipIteratorComparison()
+TEST_CASE("TestZipIteratorComparison", "[zip_iterator]")
 {
   using T = int;
 
@@ -573,4 +569,3 @@ void TestZipIteratorComparison()
     REQUIRE((pos == iter + 1));
   }
 }
-DECLARE_UNITTEST(TestZipIteratorComparison);

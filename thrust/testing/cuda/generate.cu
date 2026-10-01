@@ -61,7 +61,7 @@ void TestGenerateDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestGenerateDeviceDevice);
 #endif
 
-void TestGenerateCudaStreams()
+TEST_CASE("TestGenerateCudaStreams", "[generate]")
 {
   thrust::device_vector<int> result(5);
 
@@ -83,7 +83,6 @@ void TestGenerateCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestGenerateCudaStreams);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy, typename Iterator, typename Size, typename Function>
@@ -127,7 +126,7 @@ void TestGenerateNDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestGenerateNDeviceDevice);
 #endif
 
-void TestGenerateNCudaStreams()
+TEST_CASE("TestGenerateNCudaStreams", "[generate]")
 {
   thrust::device_vector<int> result(5);
 
@@ -149,4 +148,3 @@ void TestGenerateNCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestGenerateNCudaStreams);

@@ -216,20 +216,18 @@ void TestTransformScanDevice(ExecutionPolicy exec)
   REQUIRE(ref == input);
 }
 
-void TestTransformScanDeviceSeq()
+TEST_CASE("TestTransformScanDeviceSeq", "[transform_scan]")
 {
   TestTransformScanDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestTransformScanDeviceSeq);
 
-void TestTransformScanDeviceDevice()
+TEST_CASE("TestTransformScanDeviceDevice", "[transform_scan]")
 {
   TestTransformScanDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestTransformScanDeviceDevice);
 #endif
 
-void TestTransformScanCudaStreams()
+TEST_CASE("TestTransformScanCudaStreams", "[transform_scan]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -356,9 +354,8 @@ void TestTransformScanCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestTransformScanCudaStreams);
 
-void TestTransformScanConstAccumulator()
+TEST_CASE("TestTransformScanConstAccumulator", "[transform_scan]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -373,4 +370,3 @@ void TestTransformScanConstAccumulator()
 
   REQUIRE(output == reference);
 }
-DECLARE_UNITTEST(TestTransformScanConstAccumulator);

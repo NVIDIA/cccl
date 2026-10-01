@@ -18,7 +18,7 @@ bool are_same_type(const T&, const T&)
   return true;
 }
 
-void TestSelectSystemCudaToCpp()
+TEST_CASE("TestSelectSystemCudaToCpp", "[memory]")
 {
   using thrust::system::detail::generic::select_system;
 
@@ -31,7 +31,6 @@ void TestSelectSystemCudaToCpp()
   const bool is_cuda_to_cpp = are_same_type(cuda_to_cpp, select_system(cuda_tag, cpp_tag));
   REQUIRE(is_cuda_to_cpp);
 }
-DECLARE_UNITTEST(TestSelectSystemCudaToCpp);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename Iterator>
@@ -46,7 +45,7 @@ __global__ void return_temporary_buffer_kernel(Pointer ptr, std::ptrdiff_t n)
   thrust::return_temporary_buffer(thrust::seq, ptr, n);
 }
 
-void TestGetTemporaryBufferDeviceSeq()
+TEST_CASE("TestGetTemporaryBufferDeviceSeq", "[memory]")
 {
   const std::ptrdiff_t n = 9001;
 
@@ -81,7 +80,6 @@ void TestGetTemporaryBufferDeviceSeq()
     }
   }
 }
-DECLARE_UNITTEST(TestGetTemporaryBufferDeviceSeq);
 
 template <typename Iterator>
 __global__ void malloc_kernel(size_t n, Iterator result)
@@ -95,7 +93,7 @@ __global__ void free_kernel(Pointer ptr)
   thrust::free(thrust::seq, ptr);
 }
 
-void TestMallocDeviceSeq()
+TEST_CASE("TestMallocDeviceSeq", "[memory]")
 {
   const std::ptrdiff_t n = 9001;
 
@@ -126,5 +124,4 @@ void TestMallocDeviceSeq()
     }
   }
 }
-DECLARE_UNITTEST(TestMallocDeviceSeq);
 #endif

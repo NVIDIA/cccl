@@ -130,7 +130,7 @@ struct TestScanDeviceDevice
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScanDeviceDevice, IntegralTypes);
 #endif
 
-void TestScanCudaStreams()
+TEST_CASE("TestScanCudaStreams", "[scan]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -232,7 +232,6 @@ void TestScanCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestScanCudaStreams);
 
 template <typename T>
 struct const_ref_plus_mod3
@@ -249,7 +248,7 @@ struct const_ref_plus_mod3
   }
 };
 
-static void TestInclusiveScanWithConstAccumulator()
+TEST_CASE("TestInclusiveScanWithConstAccumulator", "[scan]")
 {
   // add numbers modulo 3 with external lookup table
   thrust::device_vector<int> data{0, 1, 2, 1, 2, 0, 1};
@@ -262,4 +261,3 @@ static void TestInclusiveScanWithConstAccumulator()
   const thrust::device_vector<int> ref{0, 1, 0, 1, 0, 0, 1};
   REQUIRE(data == ref);
 }
-DECLARE_UNITTEST(TestInclusiveScanWithConstAccumulator);

@@ -101,17 +101,15 @@ void TestRemoveDevice(ExecutionPolicy exec)
   REQUIRE(h_data == d_data);
 }
 
-void TestRemoveDeviceSeq()
+TEST_CASE("TestRemoveDeviceSeq", "[remove]")
 {
   TestRemoveDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestRemoveDeviceSeq);
 
-void TestRemoveDeviceDevice()
+TEST_CASE("TestRemoveDeviceDevice", "[remove]")
 {
   TestRemoveDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestRemoveDeviceDevice);
 
 template <typename ExecutionPolicy>
 void TestRemoveIfDevice(ExecutionPolicy exec)
@@ -139,17 +137,15 @@ void TestRemoveIfDevice(ExecutionPolicy exec)
   REQUIRE(h_data == d_data);
 }
 
-void TestRemoveIfDeviceSeq()
+TEST_CASE("TestRemoveIfDeviceSeq", "[remove]")
 {
   TestRemoveIfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestRemoveIfDeviceSeq);
 
-void TestRemoveIfDeviceDevice()
+TEST_CASE("TestRemoveIfDeviceDevice", "[remove]")
 {
   TestRemoveIfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestRemoveIfDeviceDevice);
 
 template <typename ExecutionPolicy>
 void TestRemoveIfStencilDevice(ExecutionPolicy exec)
@@ -180,17 +176,15 @@ void TestRemoveIfStencilDevice(ExecutionPolicy exec)
   REQUIRE(h_data == d_data);
 }
 
-void TestRemoveIfStencilDeviceSeq()
+TEST_CASE("TestRemoveIfStencilDeviceSeq", "[remove]")
 {
   TestRemoveIfStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestRemoveIfStencilDeviceSeq);
 
-void TestRemoveIfStencilDeviceDevice()
+TEST_CASE("TestRemoveIfStencilDeviceDevice", "[remove]")
 {
   TestRemoveIfStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestRemoveIfStencilDeviceDevice);
 
 template <typename ExecutionPolicy>
 void TestRemoveCopyDevice(ExecutionPolicy exec)
@@ -221,17 +215,15 @@ void TestRemoveCopyDevice(ExecutionPolicy exec)
   REQUIRE(h_result == d_result);
 }
 
-void TestRemoveCopyDeviceSeq()
+TEST_CASE("TestRemoveCopyDeviceSeq", "[remove]")
 {
   TestRemoveCopyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestRemoveCopyDeviceSeq);
 
-void TestRemoveCopyDeviceDevice()
+TEST_CASE("TestRemoveCopyDeviceDevice", "[remove]")
 {
   TestRemoveCopyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestRemoveCopyDeviceDevice);
 
 template <typename ExecutionPolicy>
 void TestRemoveCopyIfDevice(ExecutionPolicy exec)
@@ -264,17 +256,15 @@ void TestRemoveCopyIfDevice(ExecutionPolicy exec)
   REQUIRE(h_result == d_result);
 }
 
-void TestRemoveCopyIfDeviceSeq()
+TEST_CASE("TestRemoveCopyIfDeviceSeq", "[remove]")
 {
   TestRemoveCopyIfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestRemoveCopyIfDeviceSeq);
 
-void TestRemoveCopyIfDeviceDevice()
+TEST_CASE("TestRemoveCopyIfDeviceDevice", "[remove]")
 {
   TestRemoveCopyIfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestRemoveCopyIfDeviceDevice);
 
 template <typename ExecutionPolicy>
 void TestRemoveCopyIfStencilDevice(ExecutionPolicy exec)
@@ -311,20 +301,18 @@ void TestRemoveCopyIfStencilDevice(ExecutionPolicy exec)
   REQUIRE(h_result == d_result);
 }
 
-void TestRemoveCopyIfStencilDeviceSeq()
+TEST_CASE("TestRemoveCopyIfStencilDeviceSeq", "[remove]")
 {
   TestRemoveCopyIfStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestRemoveCopyIfStencilDeviceSeq);
 
-void TestRemoveCopyIfStencilDeviceDevice()
+TEST_CASE("TestRemoveCopyIfStencilDeviceDevice", "[remove]")
 {
   TestRemoveCopyIfStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestRemoveCopyIfStencilDeviceDevice);
 #endif
 
-void TestRemoveCudaStreams()
+TEST_CASE("TestRemoveCudaStreams", "[remove]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -344,9 +332,8 @@ void TestRemoveCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestRemoveCudaStreams);
 
-void TestRemoveCopyCudaStreams()
+TEST_CASE("TestRemoveCopyCudaStreams", "[remove]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -369,9 +356,8 @@ void TestRemoveCopyCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestRemoveCopyCudaStreams);
 
-void TestRemoveIfCudaStreams()
+TEST_CASE("TestRemoveIfCudaStreams", "[remove]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -391,9 +377,8 @@ void TestRemoveIfCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestRemoveIfCudaStreams);
 
-void TestRemoveIfStencilCudaStreams()
+TEST_CASE("TestRemoveIfStencilCudaStreams", "[remove]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -416,9 +401,8 @@ void TestRemoveIfStencilCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestRemoveIfStencilCudaStreams);
 
-void TestRemoveCopyIfCudaStreams()
+TEST_CASE("TestRemoveCopyIfCudaStreams", "[remove]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -441,9 +425,8 @@ void TestRemoveCopyIfCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestRemoveCopyIfCudaStreams);
 
-void TestRemoveCopyIfStencilCudaStreams()
+TEST_CASE("TestRemoveCopyIfStencilCudaStreams", "[remove]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -468,4 +451,3 @@ void TestRemoveCopyIfStencilCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestRemoveCopyIfStencilCudaStreams);

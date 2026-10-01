@@ -31,6 +31,7 @@
 #include <cstdio>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -73,10 +74,10 @@ struct CommandLineArgs
   std::vector<std::string> keys;
   std::vector<std::string> values;
   std::vector<std::string> args;
-  cudaDeviceProp deviceProp;
-  float device_giga_bandwidth;
-  std::size_t device_free_physmem;
-  std::size_t device_total_physmem;
+  cudaDeviceProp deviceProp{};
+  float device_giga_bandwidth{};
+  std::size_t device_free_physmem{};
+  std::size_t device_total_physmem{};
 
   /**
    * Constructor
@@ -437,7 +438,7 @@ T RandomValue(T max)
 /**
  * Test problem generation options
  */
-enum GenMode
+enum class GenMode
 {
   UNIFORM, // Assign to '2', regardless of integer seed
   INTEGER_SEED, // Assign to integer seed
@@ -459,16 +460,16 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, s
     ({
       switch (gen_mode)
       {
-        case RANDOM:
+        case GenMode::RANDOM:
           RandomBits(value);
           break;
-        case RANDOM_BIT: {
+        case GenMode::RANDOM_BIT: {
           char c;
           RandomBits(c, 0, 0, 1);
           value = static_cast<T>((c > 0) ? 1 : -1);
           break;
         }
-        case RANDOM_MINUS_PLUS_ZERO: {
+        case GenMode::RANDOM_MINUS_PLUS_ZERO: {
           // Replace roughly 1/128 of values with -0.0 or +0.0, and
           // generate the rest randomly
           using UnsignedBits = typename CUB_NS_QUALIFIER::Traits<T>::UnsignedBits;
@@ -491,10 +492,10 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, s
           }
           break;
         }
-        case UNIFORM:
+        case GenMode::UNIFORM:
           value = 2;
           break;
-        case INTEGER_SEED:
+        case GenMode::INTEGER_SEED:
         default:
           value = static_cast<T>(index);
           break;
@@ -503,16 +504,16 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, T& value, s
     ({
       switch (gen_mode)
       {
-        case RANDOM:
-        case RANDOM_BIT:
-        case RANDOM_MINUS_PLUS_ZERO:
+        case GenMode::RANDOM:
+        case GenMode::RANDOM_BIT:
+        case GenMode::RANDOM_MINUS_PLUS_ZERO:
           _CubLog("%s\n", "cub::InitValue cannot generate random numbers on device.");
           cuda::std::terminate();
           break;
-        case UNIFORM:
+        case GenMode::UNIFORM:
           value = 2;
           break;
-        case INTEGER_SEED:
+        case GenMode::INTEGER_SEED:
         default:
           value = static_cast<T>(index);
           break;
@@ -532,16 +533,16 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, bool& value
     ({
       switch (gen_mode)
       {
-        case RANDOM:
-        case RANDOM_BIT:
+        case GenMode::RANDOM:
+        case GenMode::RANDOM_BIT:
           char c;
           RandomBits(c, 0, 0, 1);
           value = (c > 0);
           break;
-        case UNIFORM:
+        case GenMode::UNIFORM:
           value = true;
           break;
-        case INTEGER_SEED:
+        case GenMode::INTEGER_SEED:
         default:
           value = (index > 0);
           break;
@@ -550,16 +551,16 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, bool& value
     ({
       switch (gen_mode)
       {
-        case RANDOM:
-        case RANDOM_BIT:
-        case RANDOM_MINUS_PLUS_ZERO:
+        case GenMode::RANDOM:
+        case GenMode::RANDOM_BIT:
+        case GenMode::RANDOM_MINUS_PLUS_ZERO:
           _CubLog("%s\n", "cub::InitValue cannot generate random numbers on device.");
           cuda::std::terminate();
           break;
-        case UNIFORM:
+        case GenMode::UNIFORM:
           value = true;
           break;
-        case INTEGER_SEED:
+        case GenMode::INTEGER_SEED:
         default:
           value = (index > 0);
           break;
@@ -1212,10 +1213,10 @@ int CompareDeviceResults(
   }
 
   // Allocate array on host
-  T* h_data = (T*) malloc(num_items * sizeof(T));
+  const std::unique_ptr<T[]> h_data(new T[num_items]);
 
   // Copy data back
-  cudaMemcpy(h_data, d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_data.get(), d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
 
   // Display data
   if (display_data)
@@ -1234,15 +1235,7 @@ int CompareDeviceResults(
   }
 
   // Check
-  const int retval = CompareResults(h_data, h_reference, num_items, verbose);
-
-  // Cleanup
-  if (h_data)
-  {
-    free(h_data);
-  }
-
-  return retval;
+  return CompareResults(h_data.get(), h_reference, num_items, verbose);
 }
 
 /**
@@ -1254,12 +1247,12 @@ int CompareDeviceDeviceResults(
   T* d_reference, T* d_data, std::size_t num_items, bool verbose = true, bool display_data = false)
 {
   // Allocate array on host
-  T* h_reference = (T*) malloc(num_items * sizeof(T));
-  T* h_data      = (T*) malloc(num_items * sizeof(T));
+  const std::unique_ptr<T[]> h_reference(new T[num_items]);
+  const std::unique_ptr<T[]> h_data(new T[num_items]);
 
   // Copy data back
-  cudaMemcpy(h_reference, d_reference, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
-  cudaMemcpy(h_data, d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_reference.get(), d_reference, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_data.get(), d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
 
   // Display data
   if (display_data)
@@ -1278,19 +1271,7 @@ int CompareDeviceDeviceResults(
   }
 
   // Check
-  int retval = CompareResults(h_data, h_reference, num_items, verbose);
-
-  // Cleanup
-  if (h_reference)
-  {
-    free(h_reference);
-  }
-  if (h_data)
-  {
-    free(h_data);
-  }
-
-  return retval;
+  return CompareResults(h_data.get(), h_reference.get(), num_items, verbose);
 }
 
 /**
@@ -1319,18 +1300,12 @@ template <typename T>
 void DisplayDeviceResults(T* d_data, std::size_t num_items)
 {
   // Allocate array on host
-  T* h_data = (T*) malloc(num_items * sizeof(T));
+  const std::unique_ptr<T[]> h_data(new T[num_items]);
 
   // Copy data back
-  cudaMemcpy(h_data, d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_data.get(), d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
 
-  DisplayResults(h_data, num_items);
-
-  // Cleanup
-  if (h_data)
-  {
-    free(h_data);
-  }
+  DisplayResults(h_data.get(), num_items);
 }
 
 /******************************************************************************
@@ -1429,8 +1404,8 @@ struct CpuTimer
 
 struct GpuTimer
 {
-  cudaEvent_t start;
-  cudaEvent_t stop;
+  cudaEvent_t start{};
+  cudaEvent_t stop{};
 
   GpuTimer()
   {
@@ -1463,10 +1438,10 @@ struct GpuTimer
   }
 };
 
-template <int ELEMENTS_PER_OBJECT_ = 128>
+template <int ElementsPerObjectParam = 128>
 struct HugeDataType
 {
-  static constexpr int ELEMENTS_PER_OBJECT = ELEMENTS_PER_OBJECT_;
+  static constexpr int ELEMENTS_PER_OBJECT = ElementsPerObjectParam;
 
   __device__ __host__ HugeDataType()
   {
@@ -1504,14 +1479,14 @@ struct HugeDataType
     return *this;
   }
 
-  int data[ELEMENTS_PER_OBJECT];
+  int data[ELEMENTS_PER_OBJECT]{};
 };
 
-template <int ELEMENTS_PER_OBJECT>
+template <int ElementsPerObject>
 inline __device__ __host__ bool
-operator==(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEMENTS_PER_OBJECT>& rhs)
+operator==(const HugeDataType<ElementsPerObject>& lhs, const HugeDataType<ElementsPerObject>& rhs)
 {
-  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ElementsPerObject; i++)
   {
     if (lhs.data[i] != rhs.data[i])
     {
@@ -1522,11 +1497,11 @@ operator==(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEM
   return true;
 }
 
-template <int ELEMENTS_PER_OBJECT>
+template <int ElementsPerObject>
 inline __device__ __host__ bool
-operator<(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEMENTS_PER_OBJECT>& rhs)
+operator<(const HugeDataType<ElementsPerObject>& lhs, const HugeDataType<ElementsPerObject>& rhs)
 {
-  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ElementsPerObject; i++)
   {
     if (lhs.data[i] < rhs.data[i])
     {
@@ -1537,10 +1512,10 @@ operator<(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEME
   return false;
 }
 
-template <typename DataType, int ELEMENTS_PER_OBJECT>
-__device__ __host__ bool operator!=(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const DataType& rhs)
+template <typename DataType, int ElementsPerObject>
+__device__ __host__ bool operator!=(const HugeDataType<ElementsPerObject>& lhs, const DataType& rhs)
 {
-  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ElementsPerObject; i++)
   {
     if (lhs.data[i] != rhs)
     {
@@ -1551,14 +1526,14 @@ __device__ __host__ bool operator!=(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs
   return false;
 }
 
-template <int ELEMENTS_PER_OBJECT>
-std::ostream& operator<<(std::ostream& os, const HugeDataType<ELEMENTS_PER_OBJECT>& val)
+template <int ElementsPerObject>
+std::ostream& operator<<(std::ostream& os, const HugeDataType<ElementsPerObject>& val)
 {
   os << '(';
-  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ElementsPerObject; i++)
   {
     os << CoutCast(val.data[i]);
-    if (i < ELEMENTS_PER_OBJECT - 1)
+    if (i < ElementsPerObject - 1)
     {
       os << ',';
     }

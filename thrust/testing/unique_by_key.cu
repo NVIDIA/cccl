@@ -30,7 +30,7 @@ unique_by_key(my_system& system, ForwardIterator1 keys_first, ForwardIterator1, 
   return cuda::std::make_pair(keys_first, values_first);
 }
 
-void TestUniqueByKeyDispatchExplicit()
+TEST_CASE("TestUniqueByKeyDispatchExplicit", "[unique_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -39,7 +39,6 @@ void TestUniqueByKeyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUniqueByKeyDispatchExplicit);
 
 template <typename ForwardIterator1, typename ForwardIterator2>
 cuda::std::pair<ForwardIterator1, ForwardIterator2>
@@ -49,7 +48,7 @@ unique_by_key(my_tag, ForwardIterator1 keys_first, ForwardIterator1, ForwardIter
   return cuda::std::make_pair(keys_first, values_first);
 }
 
-void TestUniqueByKeyDispatchImplicit()
+TEST_CASE("TestUniqueByKeyDispatchImplicit", "[unique_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -58,7 +57,6 @@ void TestUniqueByKeyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestUniqueByKeyDispatchImplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
 cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
@@ -73,7 +71,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   return cuda::std::make_pair(keys_output, values_output);
 }
 
-void TestUniqueByKeyCopyDispatchExplicit()
+TEST_CASE("TestUniqueByKeyCopyDispatchExplicit", "[unique_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -82,7 +80,6 @@ void TestUniqueByKeyCopyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestUniqueByKeyCopyDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
 cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
@@ -92,7 +89,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   return cuda::std::make_pair(keys_output, values_output);
 }
 
-void TestUniqueByKeyCopyDispatchImplicit()
+TEST_CASE("TestUniqueByKeyCopyDispatchImplicit", "[unique_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -105,7 +102,6 @@ void TestUniqueByKeyCopyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestUniqueByKeyCopyDispatchImplicit);
 
 template <typename T>
 struct is_equal_div_10_unique
@@ -131,7 +127,7 @@ void initialize_values(Vector& values)
 }
 
 template <typename Vector>
-void TestUniqueByKeySimple()
+void test_unique_by_key_simple()
 {
   using T = typename Vector::value_type;
 
@@ -174,10 +170,10 @@ void TestUniqueByKeySimple()
   values_ref = {0, 2, 7};
   REQUIRE(values == values_ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestUniqueByKeySimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_unique_by_key_simple);
 
 template <typename Vector>
-void TestUniqueCopyByKeySimple()
+void test_unique_copy_by_key_simple()
 {
   using T = typename Vector::value_type;
 
@@ -224,7 +220,7 @@ void TestUniqueCopyByKeySimple()
   values_ref = {0, 2, 7};
   REQUIRE(output_values == values_ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestUniqueCopyByKeySimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_unique_copy_by_key_simple);
 
 template <typename K>
 struct TestUniqueByKey
@@ -482,7 +478,7 @@ struct Entry
 };
 } // namespace
 
-void TestKeysWithoutEqualityOperator()
+TEST_CASE("TestKeysWithoutEqualityOperator", "[unique_by_key]")
 {
   using Key = cuda::std::pair<std::int32_t, Entry>;
 
@@ -515,5 +511,4 @@ void TestKeysWithoutEqualityOperator()
   REQUIRE(unique_data_h[1].a == 3);
   REQUIRE(unique_data_h[1].b == 3);
 }
-DECLARE_UNITTEST(TestKeysWithoutEqualityOperator);
 #endif // !defined(__GNUC__) || __GNUC__ != 6

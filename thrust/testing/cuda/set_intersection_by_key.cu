@@ -63,27 +63,24 @@ void TestSetIntersectionByKeyDevice(ExecutionPolicy exec)
   test_runtime::assert_equal(stream, result_val, {0, 0});
 }
 
-void TestSetIntersectionByKeyDeviceSeq()
+TEST_CASE("TestSetIntersectionByKeyDeviceSeq", "[set_intersection_by_key]")
 {
   TestSetIntersectionByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestSetIntersectionByKeyDeviceSeq);
 
-void TestSetIntersectionByKeyDeviceDevice()
+TEST_CASE("TestSetIntersectionByKeyDeviceDevice", "[set_intersection_by_key]")
 {
   TestSetIntersectionByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestSetIntersectionByKeyDeviceDevice);
 
-void TestSetIntersectionByKeyDeviceNoSync()
+TEST_CASE("TestSetIntersectionByKeyDeviceNoSync", "[set_intersection_by_key]")
 {
   TestSetIntersectionByKeyDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestSetIntersectionByKeyDeviceNoSync);
 #endif
 
 template <typename ExecutionPolicy>
-void TestSetIntersectionByKeyCudaStreams(ExecutionPolicy policy)
+void test_set_intersection_by_key_cuda_streams(ExecutionPolicy policy)
 {
   const auto device = test_runtime::current_test_device();
   const cuda::stream stream{device};
@@ -113,14 +110,12 @@ void TestSetIntersectionByKeyCudaStreams(ExecutionPolicy policy)
   test_runtime::assert_equal(stream, result_val, {0, 0});
 }
 
-void TestSetIntersectionByKeyCudaStreamsSync()
+TEST_CASE("TestSetIntersectionByKeyCudaStreamsSync", "[set_intersection_by_key]")
 {
-  TestSetIntersectionByKeyCudaStreams(thrust::cuda::par);
+  test_set_intersection_by_key_cuda_streams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestSetIntersectionByKeyCudaStreamsSync);
 
-void TestSetIntersectionByKeyCudaStreamsNoSync()
+TEST_CASE("TestSetIntersectionByKeyCudaStreamsNoSync", "[set_intersection_by_key]")
 {
-  TestSetIntersectionByKeyCudaStreams(thrust::cuda::par_nosync);
+  test_set_intersection_by_key_cuda_streams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestSetIntersectionByKeyCudaStreamsNoSync);
