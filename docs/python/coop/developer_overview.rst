@@ -514,11 +514,11 @@ unrelated runtime call raises ``EscapingGroupDescriptorError``. ``ThreadData``
 constructs a per-thread payload array and follows the separate payload
 analysis and materialization path.
 
-For the MVP, ``literal_unroll`` values shaping cooperative groups, selectors,
-payloads, or storage are explicitly unsupported. The planner diagnoses those
-uses and suggests explicit calls with compile-time constants. Ordinary unrolling
-unrelated to cooperative planning remains available. Supporting shaped unrolling
-would require revisiting planner ordering; this implementation does not move
+``literal_unroll`` values shaping cooperative groups, selectors, payloads,
+or storage are unsupported. The planner diagnoses those uses and suggests
+explicit calls with compile-time constants. Ordinary unrolling unrelated to
+cooperative planning remains available. Supporting shaped unrolling would
+require revisiting planner ordering; this implementation does not move
 planning after SSA or unrolling.
 
 The common API primitives in ``_core/api/`` are compiler markers with shared
@@ -541,7 +541,7 @@ A :term:`family` groups related primitives and their implementation. The
 Scan family, for example, has shared API declarations in
 ``_core/api/scan.py`` and ``scan.pyi``, semantic descriptions in
 ``_core/group/scan.py``, and Numba-specific entry points in
-``numba_mlir/_group_scan.py`` and ``_group_scan.pyi``. Compiler analysis and
+``numba_mlir/_group/_scan.py`` and ``_scan.pyi``. Compiler analysis and
 lowering have their own Scan modules. A family can span several modules
 and include both common operations and qualified extensions.
 
@@ -922,8 +922,8 @@ lane zero's returned prefix is used, and only thread zero's state is
 authoritative after the call. Callers initialize each participating state
 cell equally. This is local state for successive tiles handled by one
 block; it does not provide communication between blocks. Prefix callbacks
-currently cannot be combined with ``initial_value`` or
-``aggregate_output`` and are not supported for Warp Scan.
+cannot be combined with ``initial_value`` or ``aggregate_output`` and are
+not supported for Warp Scan.
 
 .. _coop-numba-compilation-reuse:
 

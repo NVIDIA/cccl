@@ -163,9 +163,6 @@ def _typed_group_payload_like(
     )
 
 
-# Support consumers import the private names they use explicitly.
-
-
 __all__ = [
     "_GROUP_CONSTRUCTORS",
     "_GROUP_METHODS",

@@ -13,9 +13,11 @@ its registered result policy inherits dtype from the value argument.
 
 from __future__ import annotations
 
+import inspect
 from enum import Enum
+from typing import Any
 
-from numba_cuda_mlir import types
+import numba_cuda_mlir.numba_cuda.types as numba_types
 
 from cuda.coop._core import (
     ArgumentBinding,
@@ -27,6 +29,7 @@ from cuda.coop._core import (
     GroupReduceSemantics,
     PythonOperator,
     StorageOwnership,
+    ThreadGroup,
     make_group_primitive_call,
     make_reduce_semantics,
     plan_group_primitive,
@@ -34,13 +37,7 @@ from cuda.coop._core import (
 
 from .._semantic import _normalize_numba_callable, _numba_semantic_token
 from ._group_errors import NonConstantTempStorageError
-from ._group_planner_support import (
-    Any,
-    GroupRewriteError,
-    ThreadGroup,
-    inspect,
-    ir,
-)
+from ._group_planner_support import GroupRewriteError, ir
 from ._group_planning import GroupPlanningContext
 from ._operations import (
     GroupResultSource,
@@ -330,6 +327,9 @@ class _ReducePlanning:
             operation=operation,
             is_common_root=is_common_root,
         )
+        from .._lowering._core import NumbaMlirCoreAdapter
+
+        adapter = NumbaMlirCoreAdapter()
         storage_options: dict[str, Any] = {}
         temp_storage_value = bound.arguments["temp_storage"]
         if not self._context.is_none(temp_storage_value):
@@ -346,7 +346,7 @@ class _ReducePlanning:
             }
         semantics = GroupReduceSemantics(
             make_reduce_semantics(
-                dtype=dtype,
+                dtype=adapter.core_dtype(dtype),
                 items_per_thread=items_per_thread,
                 operation=semantic_operation,
                 value_kind="array" if is_array else "scalar",
@@ -385,7 +385,7 @@ class _ReducePlanning:
             scope=scope,
             loc=loc,
             stem="reduce_valid_items_type",
-            value=types.int64,
+            value=numba_types.int64,
         )
         result = self._context.new_var(scope, loc, "reduce_valid_items_i64")
         statements.append(
@@ -423,17 +423,25 @@ class _ReducePlanning:
             bound=bound,
             is_common_root=is_common_root,
         )
-        primitive = plan.call.operation.primitive
+        semantics = plan.call.operation
+        assert isinstance(semantics, GroupReduceSemantics)
+        assert plan.participation is not None
+        primitive = semantics.primitive
         factory = self._provider(plan, operator_kind=operator_kind)
         block_dim = plan.participation.exact_block_dim
         assert block_dim is not None
         statements: list[Any] = []
-        factory_kwargs: dict[str, Any] = {"dtype": primitive.dtype}
+        from .._lowering._core import NumbaMlirCoreAdapter
+
+        adapter = NumbaMlirCoreAdapter()
+        factory_kwargs: dict[str, Any] = {
+            "dtype": adapter.normalize_dtype(primitive.dtype)
+        }
         if plan.target is GroupLoweringTarget.CUB_BLOCK:
             factory_kwargs.update(
                 {
                     "threads_per_block": block_dim,
-                    "algorithm": plan.call.operation.cub_algorithm,
+                    "algorithm": semantics.cub_algorithm,
                     "items_per_thread": primitive.items_per_thread,
                     "value_kind": primitive.value_kind.value,
                 }

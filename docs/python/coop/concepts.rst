@@ -542,8 +542,8 @@ memory. Reduce uses the same cooperative backing, including when
 restriction.
 
 With ``auto_sync=False``, a descriptor must originate from exactly one
-constructor site. Selecting between multiple manual-sync constructors is an
-MVP restriction: the compiler cannot prove that caller barriers protect the
+constructor site. Selecting between multiple manual-sync constructors is
+unsupported: the compiler cannot prove that caller barriers protect the
 merged region, even when a particular program supplies sufficient barriers.
 
 Cooperative calls in device helpers must be inlined into the kernel; use

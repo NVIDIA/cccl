@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Expose common block radix operations for supported GPU compilers.
+
+These functions describe stable ranking and sorting of integral ThreadData
+keys. Decorators register each function so a supported compiler can recognize
+its calls; the Python bodies raise a compiler-context error. The static bound
+helper shares default and validation rules with frontends that need resolved
+compile-time bounds.
+"""
+
 from __future__ import annotations
 
 from numbers import Integral
@@ -18,6 +27,15 @@ from ._payload import (
 
 
 def _radix_bounds(operation, key_width, begin_bit, end_bit, radix_bits=None):
+    """Resolve static radix defaults and check the common API's interval.
+
+    Sort defaults to the full key width. Rank defaults to four bits from
+    begin, unless radix_bits or end is supplied, and permits at most eight
+    selected bits. An explicit radix_bits must agree with the resolved
+    interval. This helper handles static values only; it is not the runtime
+    Sort bounds check.
+    """
+
     for name, value in (
         ("begin_bit", begin_bit),
         ("end_bit", end_bit),
@@ -34,7 +52,7 @@ def _radix_bounds(operation, key_width, begin_bit, end_bit, radix_bits=None):
     if end_bit is None:
         end_bit = (
             begin_bit + (4 if radix_bits is None else radix_bits)
-            if operation == "radix_rank"
+            if operation == "radix_rank_keys"
             else key_width
         )
     if radix_bits is not None and end_bit - begin_bit != radix_bits:
@@ -42,8 +60,8 @@ def _radix_bounds(operation, key_width, begin_bit, end_bit, radix_bits=None):
     make_radix_bit_range(
         begin_bit=begin_bit, end_bit=end_bit, bit_width=key_width
     )
-    if operation == "radix_rank" and end_bit - begin_bit > 8:
-        raise ValueError("radix_rank bit width must be <= 8")
+    if operation == "radix_rank_keys" and end_bit - begin_bit > 8:
+        raise ValueError("radix_rank_keys bit width must be <= 8")
     return int(begin_bit), int(end_bit)
 
 
@@ -73,8 +91,8 @@ def radix_sort_keys(
         begin is zero; omitted end selects the full key width, even when begin
         is nonzero. Bounds may be runtime values but must be block-uniform and
         satisfy ``0 <= begin_bit < end_bit <= key_width``. Known bounds are
-        checked during compilation; invalid runtime bounds trap before narrowing
-        to CUB's integer arguments.
+        checked during compilation. Invalid runtime bounds trap before
+        conversion to CUB's integer arguments.
     descending : bool
         Compile-time selector for descending instead of ascending digit order.
     temp_storage : TempStorageLike, optional
@@ -130,8 +148,8 @@ def radix_sort_pairs(
         Omitted end selects the key width. Require
         ``0 <= begin_bit < end_bit <= key_width``. Invalid static bounds fail
         compilation; invalid runtime bounds trap before narrowing. Signed keys
-        invert their sign bit before digit
-        extraction; returned keys retain their original representation.
+        invert their sign bit before digit extraction. Returned keys keep their
+        original representation.
     descending : bool
         Compile-time order selector. Equal digits retain their input order
         for both ascending and descending sorts.
@@ -158,8 +176,8 @@ def radix_sort_pairs(
     )
 
 
-@_common_group_operation("radix_rank", group_kinds=("block",))
-def radix_rank(
+@_common_group_operation("radix_rank_keys", group_kinds=("block",))
+def radix_rank_keys(
     group: ThreadGroup,
     keys: Any,
     /,
@@ -206,8 +224,13 @@ def radix_rank(
     can write exclusive digit prefixes into a caller-provided output array.
     """
     raise CoopCompilerContextRequiredError(
-        "cuda.coop.radix_rank must be called from a supported GPU kernel."
+        "cuda.coop.radix_rank_keys must be called from a supported GPU kernel."
     )
 
 
-__all__ = ["radix_rank", "radix_sort_keys", "radix_sort_pairs"]
+__all__ = [
+    "_radix_bounds",
+    "radix_rank_keys",
+    "radix_sort_keys",
+    "radix_sort_pairs",
+]

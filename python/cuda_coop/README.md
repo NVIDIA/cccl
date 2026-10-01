@@ -126,7 +126,7 @@ explains terms and concepts, including blocked and striped layouts.
 | Scan | `scan`, `inclusive_scan`, `exclusive_scan`, `inclusive_sum`, `exclusive_sum` |
 | Data rearrangement | `exchange`, `shuffle` |
 | Comparison sorting | `merge_sort_keys`, `merge_sort_pairs` |
-| Radix sorting and ranking | `radix_sort_keys`, `radix_sort_pairs`, `radix_rank` |
+| Radix sorting and ranking | `radix_sort_keys`, `radix_sort_pairs`, `radix_rank_keys` |
 | Top-k selection | `topk_min_keys`, `topk_max_keys`, `topk_min_pairs`, `topk_max_pairs` |
 | Neighbor comparisons | `adjacent_difference`, `discontinuity` |
 | Counting | `histogram` |
@@ -381,8 +381,8 @@ user data out of shared memory. Reduce uses the same cooperative backing,
 including when `temp_storage` is omitted.
 
 With `auto_sync=False`, a descriptor must originate from exactly one
-constructor site. Selecting between multiple manual-sync constructors is an
-MVP restriction: the compiler cannot prove that caller barriers protect the
+constructor site. Selecting between multiple manual-sync constructors is
+unsupported: the compiler cannot prove that caller barriers protect the
 merged region, even when a particular program supplies sufficient barriers.
 
 Cooperative calls in device helpers must be inlined into the kernel; use
