@@ -36,14 +36,6 @@ def normalize_block_dim(value: Any) -> tuple[int, int, int] | None:
     return tuple(normalized)
 
 
-def block_dim_product(value: Any) -> int | None:
-    dimensions = normalize_block_dim(value)
-    if dimensions is None:
-        return None
-    x, y, z = dimensions
-    return x * y * z
-
-
 def launch_facts_from_cutlass_api(
     facts: Any,
     *,
@@ -98,9 +90,3 @@ def current_kernel_launch_facts() -> LaunchFacts:
 
     runtime = validate_cutlass_runtime()
     return launch_facts_from_cutlass_api(runtime.cute._get_launch_facts())
-
-
-def current_kernel_block_dim() -> tuple[int, int, int] | None:
-    """Return the current kernel's exact block dimensions, if known."""
-
-    return current_kernel_launch_facts().exact_block_dim

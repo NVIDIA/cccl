@@ -896,21 +896,6 @@ class ThreadData:
     def __iter__(self) -> Iterator[Any]:
         return iter(self._require_values(None))
 
-    def _new_uninitialized(self, *, dtype: Any = None) -> ThreadData:
-        resolved_dtype = self.dtype if dtype is None else dtype
-        if self._common_root and resolved_dtype is not None:
-            from ._compiler._types import _validate_common_root_numeric_dtype
-
-            _validate_common_root_numeric_dtype(
-                resolved_dtype,
-                operation="ThreadData",
-            )
-        result = ThreadData(
-            self.items_per_thread,
-            dtype=resolved_dtype,
-        )
-        return self._preserve_common_root(result)
-
 
 def _is_thread_payload_candidate(value: Any) -> bool:
     if _is_ordinary_scalar_dtype(type(value)) or _is_cutlass_dsl_dtype(
