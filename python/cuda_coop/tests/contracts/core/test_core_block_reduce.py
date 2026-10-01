@@ -14,6 +14,7 @@ from cuda.coop._core import (
     PythonOperator,
     ReduceOperation,
     ReduceValueKind,
+    classify_parameter,
     make_block_reduce_semantics,
     make_block_reduce_spec,
 )
@@ -43,7 +44,7 @@ def test_block_sum_scalar_signature_and_specialization():
     }
     assert [
         (item.name, item.kind, item.role)
-        for item in spec.specialization.classify_method()
+        for item in map(classify_parameter, spec.specialization.parameters[0])
     ] == [
         ("temp_storage", ArgumentKind.RUNTIME, ParameterRole.TEMP_STORAGE),
         ("src", ArgumentKind.RUNTIME, ParameterRole.INPUT),
@@ -81,7 +82,7 @@ def test_block_reduce_array_tracks_item_count_and_custom_operator():
         "binary_op",
         "output",
     ]
-    operator = spec.specialization.classify_method()[2]
+    operator = classify_parameter(spec.specialization.parameters[0][2])
     assert operator.kind is ArgumentKind.STATIC
     assert operator.role is ParameterRole.OPERATOR
 

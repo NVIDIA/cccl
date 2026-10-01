@@ -7,14 +7,14 @@ from typing import Literal, Protocol, TypeAlias, overload
 
 from typing_extensions import TypeVar
 
-from .._typing import (
+from ..._typing import (
     PortableNumericScalar,
     PortableThreadDataLike,
     ReduceAlgorithm,
     ReduceOperator,
     ValidItems,
 )
-from ._thread_group import BlockGroup, ReductionGroup, WarpGroup
+from .._thread_group import BlockGroup, ReductionGroup, WarpGroup
 
 _ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 _ScalarT = TypeVar("_ScalarT", bound=PortableNumericScalar)

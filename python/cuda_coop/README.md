@@ -289,8 +289,8 @@ compile-time constants. A logical threads-within-warp group can query its
 threads and immediate parent Warp; a mapped warps-within-block group can query
 its threads, physical Warps, and immediate parent block. Queries above the
 immediate physical parent are rejected. Mapped warps-within-block groups expose
-queries and `is_member()` but not `sync()` or `sync_aligned()`; their block
-barrier lifetime must be owned by a future planner contract. For a
+queries and `is_member()` but not `sync()` or `sync_aligned()`; the planner
+does not manage the lifetime of their block barriers. For a
 non-exhaustive partition, use `is_member()` to guard rank-dependent work for
 excluded threads. Do not use that branch to skip a collective unless the
 collective's participation contract explicitly permits it; every required

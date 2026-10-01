@@ -76,7 +76,7 @@ _COMPILE_PROBE = textwrap.dedent(
         raise AssertionError(f"unexpected import order: {import_order!r}")
 
     qualified_coop = sys.modules["cuda.coop.numba_mlir"]
-    public_reduce_module = "cuda.coop.numba_mlir._group_reduce"
+    public_reduce_module = "cuda.coop.numba_mlir._group._reduce"
     compiler_reduce_module = "cuda.coop.numba_mlir._compiler._group_reduce"
     assert public_reduce_module not in sys.modules
     assert compiler_reduce_module not in sys.modules

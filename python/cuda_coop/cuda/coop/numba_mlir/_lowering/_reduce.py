@@ -12,8 +12,9 @@ import re
 from enum import Enum
 from typing import Any
 
+import numba_cuda_mlir.numba_cuda.types as numba_types
 import numpy as np
-from numba_cuda_mlir import cuda, types
+from numba_cuda_mlir import cuda
 
 from cuda.coop._core import (
     BindingKind,
@@ -164,7 +165,7 @@ def validate_reduce_operator_dtype(operation: str, dtype: Any) -> Any:
         parameter="value",
     )
     if operation in _BITWISE_REDUCE_OPERATORS and not isinstance(
-        dtype, types.Integer
+        dtype, numba_types.Integer
     ):
         raise TypeError(
             f"cuda.coop.numba_mlir.reduce {operation} requires an integer dtype"
@@ -256,7 +257,7 @@ def _block_reduce(
     if valid_items.kind is BindingKind.RUNTIME:
         block_threads = block_dim.x * block_dim.y * block_dim.z
         value_abis["num_valid"] = BoundedInteger(
-            types.int32,
+            numba_types.int32,
             minimum=1,
             maximum=block_threads,
         )
@@ -393,7 +394,7 @@ def _warp_reduce(
     value_abis = {}
     if valid_items_binding.kind is BindingKind.RUNTIME:
         value_abis["valid_items"] = BoundedInteger(
-            types.int32,
+            numba_types.int32,
             minimum=1,
             maximum=threads_in_warp,
         )
@@ -623,7 +624,10 @@ def _group_reduce(
         raise ValueError(
             "CUDAX reduction provider metadata does not match the group scope"
         )
-    device = cuda.get_current_device()
+    # The CUDA module reexports this accessor but omits it from its stub.
+    device = (
+        cuda.get_current_device()  # pyright: ignore[reportAttributeAccessIssue]
+    )
     cc = int(device.compute_capability[0]) * 10 + int(
         device.compute_capability[1]
     )

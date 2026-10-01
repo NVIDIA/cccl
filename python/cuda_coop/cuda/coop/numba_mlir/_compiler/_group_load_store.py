@@ -27,6 +27,7 @@ import numba_cuda_mlir.numba_cuda.types as numba_types
 from numba_cuda_mlir import cuda as _cuda_module
 
 from cuda.coop._core import (
+    AlgorithmSpec,
     ArgumentBinding,
     BindingKind,
     GroupLoadStoreAlgorithm,
@@ -695,7 +696,7 @@ class _LoadStorePlanning:
                 f"{planned_operation!r} provider"
             )
         factory, factory_kwargs = self._scope_factory(plan, planned_operation)
-        assert plan.implementation is not None
+        assert isinstance(plan.implementation, AlgorithmSpec)
         factory_kwargs.update(
             {
                 "algorithm": plan.implementation.metadata["algorithm"],

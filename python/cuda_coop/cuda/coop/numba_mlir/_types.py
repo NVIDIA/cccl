@@ -250,7 +250,7 @@ def _normalize_compute_capability(compute_capability) -> tuple[int, int]:
         or not isinstance(minor, Integral)
         or major < 1
         or minor < 0
-        or minor > 9
+        or int(minor) > 9
     ):
         raise RuntimeError(
             "cuda.coop.numba_mlir received an invalid CUDA compute capability "
@@ -262,9 +262,11 @@ def _normalize_compute_capability(compute_capability) -> tuple[int, int]:
 def _current_compute_capability() -> tuple[int, int]:
     """Return the exact target used for callback device compilation."""
 
-    return _normalize_compute_capability(
-        cuda.get_current_device().compute_capability
+    # The CUDA module reexports this accessor but omits it from its stub.
+    device = (
+        cuda.get_current_device()  # pyright: ignore[reportAttributeAccessIssue]
     )
+    return _normalize_compute_capability(device.compute_capability)
 
 
 def _compute_capability_number(compute_capability: tuple[int, int]) -> int:
@@ -420,9 +422,13 @@ def _size_alignment_from_numba_type(
 
     from numba_cuda_mlir.type_defs.aggregate_types import AggregateType
 
-    if isinstance(numba_type, (numba_types.Boolean, numba_types.BooleanLiteral)):
+    if isinstance(
+        numba_type, (numba_types.Boolean, numba_types.BooleanLiteral)
+    ):
         return 1, 1
-    if isinstance(numba_type, (numba_types.Integer, numba_types.IntegerLiteral)):
+    if isinstance(
+        numba_type, (numba_types.Integer, numba_types.IntegerLiteral)
+    ):
         size = max(1, numba_type.bitwidth // 8)
         return size, size
     if isinstance(numba_type, numba_types.Float):
@@ -432,7 +438,9 @@ def _size_alignment_from_numba_type(
         elem_size = max(1, numba_type.underlying_float.bitwidth // 8)
         return 2 * elem_size, elem_size
     if isinstance(numba_type, numba_types.UniTuple):
-        elem_size, elem_align = _size_alignment_from_numba_type(numba_type.dtype)
+        elem_size, elem_align = _size_alignment_from_numba_type(
+            numba_type.dtype
+        )
         return elem_size * numba_type.count, elem_align
     if isinstance(numba_type, AggregateType):
         if numba_type.is_bitfield_struct:
@@ -489,7 +497,8 @@ def _compile_device_ltoir(
     if cached is not None:
         return cached
 
-    ltoir, _ = cuda.compile(
+    # Numba-CUDA-MLIR exports the compiler function without declaring its stub.
+    ltoir, _ = cuda.compile(  # pyright: ignore[reportAttributeAccessIssue]
         py_func,
         sig=sig,
         output="ltoir",
@@ -558,7 +567,12 @@ def _adapt_python_operator_abi(
 def _ltoir_to_ptx(ltoir: bytes, *, name: str, cc: int) -> str:
     """Link one LTO-IR image to PTX for compile-time metadata inspection."""
 
-    from cuda.core import Linker, LinkerOptions, ObjectCode
+    # cuda-core chooses cu12/cu13 exports dynamically, outside its stubs.
+    from cuda.core import (
+        Linker,  # pyright: ignore[reportAttributeAccessIssue]
+        LinkerOptions,  # pyright: ignore[reportAttributeAccessIssue]
+        ObjectCode,  # pyright: ignore[reportAttributeAccessIssue]
+    )
 
     ltoir_obj = ObjectCode.from_ltoir(ltoir, name=name)
     linker_options = LinkerOptions(
@@ -1201,7 +1215,12 @@ class DependentPythonOperator:
         ret_dtype = self.ret_dtype.resolve(template_arguments)
         ret_cpp_type = numba_type_to_cpp(ret_dtype)
         ret_numba_type = (
-            numba_types.CPointer(ret_dtype) if ret_cpp_type == "storage_t" else ret_dtype
+            numba_types.CPointer(ret_dtype)
+            if ret_cpp_type == "storage_t"
+            else ret_dtype
+        )
+        arg_dtypes = tuple(
+            arg.resolve(template_arguments) for arg in self.arg_dtypes
         )
         arg_cpp_types = tuple(numba_type_to_cpp(dtype) for dtype in arg_dtypes)
         arg_numba_types = tuple(
@@ -1993,7 +2012,7 @@ class Algorithm:
         w("\n")
 
         w(f"using {algorithm_type_name} = cub::{algorithm_name};\n")
-        if temp_storage_type_name is not None:
+        if temp_storage_symbols:
             temp_storage_bytes_symbol, temp_storage_alignment_symbol = (
                 temp_storage_symbols
             )
@@ -2500,7 +2519,9 @@ class Algorithm:
             if ignore_param(param) or param.is_output:
                 if not ignore_param(param) and param.is_output:
                     if ret_type is not numba_types.void:
-                        raise ValueError("Multiple output parameters not supported")
+                        raise ValueError(
+                            "Multiple output parameters not supported"
+                        )
                     ret_type = param.dtype()
                 continue
 
@@ -2530,14 +2551,16 @@ class Algorithm:
                 extern_fn, arg_transforms, returns_value=returns_value
             )
             if link_files:
-                impl.__numba_cuda_mlir_link__ = link_files
+                impl.__dict__["__numba_cuda_mlir_link__"] = link_files
             return impl
 
         wrapped_algorithm_impl = war_introspection(
             algorithm_impl, num_user_provided_params
         )
         if link_files:
-            wrapped_algorithm_impl.__numba_cuda_mlir_link__ = link_files
+            wrapped_algorithm_impl.__dict__["__numba_cuda_mlir_link__"] = (
+                link_files
+            )
         return make_overload_template(
             func_to_overload,
             wrapped_algorithm_impl,
@@ -2803,7 +2826,10 @@ def prepare_ltoir_bundle(
             "coalesced providers must use one exact compiler context"
         )
     compile_context = next(iter(compile_contexts))
-    device = cuda.get_current_device()
+    # The CUDA module reexports this accessor but omits it from its stub.
+    device = (
+        cuda.get_current_device()  # pyright: ignore[reportAttributeAccessIssue]
+    )
     cc_major, cc_minor = device.compute_capability
     cc = int(cc_major) * 10 + int(cc_minor)
     compile_identity = nvrtc.compiler_identity(
@@ -3124,8 +3150,8 @@ class RawCAbiInvocable:
         *,
         source: str,
         symbol: str,
-        return_type: types.Type,
-        parameters: Sequence[Parameter | types.Type],
+        return_type: numba_types.Type,
+        parameters: Sequence[Parameter | numba_types.Type],
         abi_transforms: Sequence[str],
         cc: int,
         compile_context: nvrtc.CompileContext,
@@ -3199,7 +3225,7 @@ class RawCAbiInvocable:
 
         from ._compiler._artifacts import make_binary_tempfile
 
-        temp_file = make_binary_tempfile(bytes(lto_ir), ".ltoir")
+        temp_file = make_binary_tempfile(bytes(cast(bytes, lto_ir)), ".ltoir")
         self.source = source
         self.symbol = symbol
         self.return_type = return_type
@@ -3244,7 +3270,10 @@ class RawCAbiInvocable:
             )
             parameters = self.parameters
             transforms = self.abi_transforms
-            returns_value = self.return_type not in {numba_types.none, numba_types.void}
+            returns_value = self.return_type not in {
+                numba_types.none,
+                numba_types.void,
+            }
 
             def invocable_impl(*actual_types):
                 if len(actual_types) != len(parameters):
@@ -3265,11 +3294,11 @@ class RawCAbiInvocable:
                     transforms,
                     returns_value=returns_value,
                 )
-                impl.__numba_cuda_mlir_link__ = link_files
+                impl.__dict__["__numba_cuda_mlir_link__"] = link_files
                 return impl
 
             wrapped_impl = war_introspection(invocable_impl, len(parameters))
-            wrapped_impl.__numba_cuda_mlir_link__ = link_files
+            wrapped_impl.__dict__["__numba_cuda_mlir_link__"] = link_files
             template = make_overload_template(
                 self,
                 wrapped_impl,
