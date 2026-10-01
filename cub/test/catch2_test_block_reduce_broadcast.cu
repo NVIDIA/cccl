@@ -99,7 +99,9 @@ CUB_TEST("Block reduce broadcasts numeric aggregates", "[reduce][block][broadcas
 {
   using type = c2h::get<0, TestType>;
   c2h::device_vector<type> input(TEST_DIM_X * TEST_DIM_YZ * TEST_DIM_YZ);
-  c2h::gen(C2H_SEED(3), input, type{-7}, type{7});
+  // Avoid cancellation in the sequential CPU reference; all GPU outputs still match Reduce exactly.
+  const type minimum = cuda::std::is_floating_point_v<type> ? type{1} : type{-7};
+  c2h::gen(C2H_SEED(3), input, minimum, type{7});
   if (GENERATE(true, false))
   {
     check_broadcast<TEST_DIM_X, TEST_DIM_YZ>(input, cuda::std::plus<>{});
