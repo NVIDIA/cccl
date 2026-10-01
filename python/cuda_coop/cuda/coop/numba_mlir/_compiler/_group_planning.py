@@ -766,6 +766,47 @@ class GroupPlanningContext:
         *,
         seen: set[str] | None = None,
     ) -> tuple[int | None, int | None, bool, str] | None:
+        """Recover one storage contract from reaching descriptor definitions.
+
+        Parse each recognized constructor with the planning constant resolver,
+        then require its normalized contract to agree with the others. A
+        concrete non-descriptor path, including a ``None`` initializer,
+        invalidates a value that also reaches a descriptor. Backedges contribute
+        no new leaf.
+
+        Equivalent constructors may merge when automatic synchronization is
+        used. With ``auto_sync=False``, all aliases must reach exactly one call
+        expression: merging separately constructed regions would lose the origin
+        needed to reason about caller-managed synchronization. This checks
+        provenance and constructor options, not backing storage or capacity.
+
+        Parameters
+        ----------
+        value : ir.Var or object
+            Value expected to name a storage descriptor. Non-variables return
+            ``None`` without parsing.
+        seen : set of str, optional
+            Recursion-path names passed to ``descriptor_definitions``. The
+            supplied set is not mutated.
+
+        Returns
+        -------
+        tuple or None
+            ``(size_in_bytes, alignment, auto_sync, sharing)`` for the unique
+            contract, or ``None`` if no recognized constructor is reached. The
+            first two fields may be ``None`` to defer size or alignment
+            selection.
+
+        Raises
+        ------
+        GroupRewriteError
+            Contracts conflict, descriptor and non-descriptor paths mix,
+            multiple constructor sites use manual synchronization, or call
+            syntax is invalid.
+        ForceLiteralArg
+            A constructor option requires literal argument specialization.
+        """
+
         if not isinstance(value, ir.Var):
             return None
         candidates = set()
