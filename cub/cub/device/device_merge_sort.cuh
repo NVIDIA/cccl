@@ -175,7 +175,7 @@ private:
     CompareOpT compare_op,
     const EnvT& env)
   {
-    using ChooseOffsetT = detail::choose_offset_t<NumItemsT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
 
     return detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -186,7 +186,7 @@ private:
           d_values,
           d_keys,
           d_values,
-          static_cast<ChooseOffsetT>(num_items),
+          static_cast<offset_t>(num_items),
           compare_op,
           stream,
           tuning_env);
@@ -376,7 +376,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT = detail::choose_offset_t<NumItemsT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch(
         storage,
@@ -385,7 +385,7 @@ public:
         d_values,
         d_keys,
         d_values,
-        static_cast<ChooseOffsetT>(num_items),
+        static_cast<offset_t>(num_items),
         compare_op,
         stream,
         tuning_env);
@@ -530,7 +530,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    using ChooseOffsetT = detail::choose_offset_t<NumItemsT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
 
     return detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -541,7 +541,7 @@ public:
           d_input_values,
           d_output_keys,
           d_output_values,
-          static_cast<ChooseOffsetT>(num_items),
+          static_cast<offset_t>(num_items),
           compare_op,
           stream,
           tuning_env);
@@ -635,7 +635,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT = detail::choose_offset_t<NumItemsT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch(
         storage,
@@ -644,7 +644,7 @@ public:
         d_input_values,
         d_output_keys,
         d_output_values,
-        static_cast<ChooseOffsetT>(num_items),
+        static_cast<offset_t>(num_items),
         compare_op,
         stream,
         tuning_env);
@@ -662,7 +662,7 @@ private:
     CompareOpT compare_op,
     const EnvT& env)
   {
-    using ChooseOffsetT = detail::choose_offset_t<NumItemsT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
 
     return detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -673,7 +673,7 @@ private:
           static_cast<NullType*>(nullptr),
           d_keys,
           static_cast<NullType*>(nullptr),
-          static_cast<ChooseOffsetT>(num_items),
+          static_cast<offset_t>(num_items),
           compare_op,
           stream,
           tuning_env);
@@ -839,7 +839,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT = detail::choose_offset_t<NumItemsT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch(
         storage,
@@ -848,7 +848,7 @@ public:
         static_cast<NullType*>(nullptr),
         d_keys,
         static_cast<NullType*>(nullptr),
-        static_cast<ChooseOffsetT>(num_items),
+        static_cast<offset_t>(num_items),
         compare_op,
         stream,
         tuning_env);
@@ -867,7 +867,7 @@ private:
     CompareOpT compare_op,
     const EnvT& env)
   {
-    using ChooseOffsetT = detail::choose_offset_t<NumItemsT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
 
     return detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -878,7 +878,7 @@ private:
           static_cast<NullType*>(nullptr),
           d_output_keys,
           static_cast<NullType*>(nullptr),
-          static_cast<ChooseOffsetT>(num_items),
+          static_cast<offset_t>(num_items),
           compare_op,
           stream,
           tuning_env);
@@ -1080,7 +1080,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT = detail::choose_offset_t<NumItemsT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch(
         storage,
@@ -1089,7 +1089,7 @@ public:
         static_cast<NullType*>(nullptr),
         d_output_keys,
         static_cast<NullType*>(nullptr),
-        static_cast<ChooseOffsetT>(num_items),
+        static_cast<offset_t>(num_items),
         compare_op,
         stream,
         tuning_env);
@@ -1280,7 +1280,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT = detail::choose_offset_t<NumItemsT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch(
         storage,
@@ -1289,7 +1289,7 @@ public:
         d_values,
         d_keys,
         d_values,
-        static_cast<ChooseOffsetT>(num_items),
+        static_cast<offset_t>(num_items),
         compare_op,
         stream,
         tuning_env);
@@ -1457,7 +1457,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT = detail::choose_offset_t<NumItemsT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch(
         storage,
@@ -1466,7 +1466,7 @@ public:
         static_cast<NullType*>(nullptr),
         d_keys,
         static_cast<NullType*>(nullptr),
-        static_cast<ChooseOffsetT>(num_items),
+        static_cast<offset_t>(num_items),
         compare_op,
         stream,
         tuning_env);
@@ -1667,7 +1667,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT = detail::choose_offset_t<NumItemsT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch(
         storage,
@@ -1676,7 +1676,7 @@ public:
         static_cast<NullType*>(nullptr),
         d_output_keys,
         static_cast<NullType*>(nullptr),
-        static_cast<ChooseOffsetT>(num_items),
+        static_cast<offset_t>(num_items),
         compare_op,
         stream,
         tuning_env);
