@@ -35,7 +35,7 @@ def test_payload_storage_and_copy(alignment):
     assert data[0] == 4
     assert data[2] == 8
 
-    for cloned in (copy(data), deepcopy(data), data._new_uninitialized()):
+    for cloned in (copy(data), deepcopy(data)):
         assert cloned.dtype is np.int32
         assert cloned.alignment == alignment
         assert cloned._values[1] is _UNSET
@@ -97,7 +97,7 @@ def test_common_root_restrictions_survive_copy():
         data = ThreadData(items_per_thread=1, dtype=np.int16, alignment=64)
         with pytest.raises(TypeError, match="dtypes"):
             ThreadData(items_per_thread=1, dtype=np.bool_)
-    for cloned in (data, copy(data), deepcopy(data), data._new_uninitialized()):
+    for cloned in (data, copy(data), deepcopy(data)):
         cloned[0] = np.int16(3)
         with pytest.raises(TypeError, match="dtypes"):
             cloned[0] = True

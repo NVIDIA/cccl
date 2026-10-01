@@ -57,10 +57,9 @@ architecture or launch state can belong to the original context. The upstream
 [context-isolation fix](https://github.com/NVIDIA/numba-cuda-mlir/pull/314)
 must be released and qualified before relying on that reuse.
 
-The CUTLASS integration is implemented with Linux and CUDA 13 as its initial
-development target. A supported public CUTLASS package has not yet been
-qualified, so there is no CUTLASS installation extra or supported minimum
-version. A compatible CuTe compiler must provide the external LTO-IR linking
+The CUTLASS integration targets Linux with CUDA 13. No public CUTLASS
+package version has passed consumer qualification, so there is no CUTLASS
+installation extra or supported minimum version. A compatible CuTe compiler must provide the external LTO-IR linking
 and compilation hooks described in its developer guide.
 
 - Numba-CUDA-MLIR: [Programming Guide](https://nvidia.github.io/cccl/unstable/python/coop/programming_guide.html)

@@ -83,7 +83,7 @@ def test_current_facts_use_only_the_compiler_hook(monkeypatch):
         )
     )
     monkeypatch.setattr(_launch, "validate_cutlass_runtime", lambda: runtime)
-    assert _launch.current_kernel_block_dim() == (8, 4, 2)
+    assert _launch.current_kernel_launch_facts().exact_block_dim == (8, 4, 2)
 
 
 def test_unavailable_compiler_facts_preserve_the_error(monkeypatch):

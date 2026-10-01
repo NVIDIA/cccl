@@ -48,7 +48,6 @@ def test_all_common_numeric_types(numpy_type, dsl_type):
             _types._validate_common_root_numeric_dtype(value, operation="store")
             is dsl_type
         )
-    assert _types.type_size_bytes(dsl_type) == np.dtype(numpy_type).itemsize
     assert (
         _types.TYPE_SPECS[dsl_type].width_bits
         == 8 * np.dtype(numpy_type).itemsize

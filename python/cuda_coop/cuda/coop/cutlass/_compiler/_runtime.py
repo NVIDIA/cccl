@@ -9,7 +9,6 @@ from __future__ import annotations
 import functools
 import importlib
 import importlib.metadata
-from collections.abc import Callable
 from dataclasses import dataclass
 from types import ModuleType
 from typing import Any
@@ -205,26 +204,9 @@ def raise_for_missing_cutlass_runtime(error: ImportError) -> None:
         raise translated from error
 
 
-def guard_cutlass_runtime(function: Callable[..., Any]) -> Callable[..., Any]:
-    """Translate CUTLASS import failures from lazily imported provider
-    modules.
-    """
-
-    @functools.wraps(function)
-    def guarded(*args: Any, **kwargs: Any) -> Any:
-        try:
-            return function(*args, **kwargs)
-        except ImportError as error:
-            raise_for_missing_cutlass_runtime(error)
-            raise
-
-    return guarded
-
-
 __all__ = [
     "CutlassRuntime",
     "CutlassRuntimeDependencyError",
-    "guard_cutlass_runtime",
     "raise_for_missing_cutlass_runtime",
     "validate_cutlass_runtime",
 ]

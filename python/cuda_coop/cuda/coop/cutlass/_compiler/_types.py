@@ -148,12 +148,6 @@ def coerce_plain_scalar(
     return _NOT_PLAIN_SCALAR
 
 
-def as_int32(value: Any) -> Any:
-    if isinstance(value, Int32):
-        return value
-    return Int32(value)
-
-
 def as_valid_items_arg(value: Any, *, scope: str) -> Any:
     if value is None:
         return Int32(-1)
@@ -187,10 +181,6 @@ def as_valid_items_arg(value: Any, *, scope: str) -> Any:
             Int32(-1).ir_value(),
         )
     )
-
-
-def type_size_bytes(value_type: type) -> int:
-    return max(1, (TYPE_SPECS[value_type].width_bits + 7) // 8)
 
 
 def resolve_thread_data_value_type(
@@ -263,45 +253,6 @@ def _signless_integer_item_matches_dtype(item: Any, value_type: type) -> bool:
     if mlir_type is None:
         return False
     return str(mlir_type) == f"i{TYPE_SPECS[value_type].width_bits}"
-
-
-def validate_thread_data_output(
-    *,
-    output: Any,
-    expected_items_per_thread: int,
-    resolved_dtype: type,
-    scope: str,
-    primitive_name: str,
-    output_name: str,
-    resolve_type: Callable[..., type],
-    assigned_dtype: Any | None = None,
-    type_label: str = "ThreadData",
-    item_count_message: str | None = None,
-) -> ThreadData | None:
-    if output is None:
-        return None
-    if not isinstance(output, ThreadData):
-        raise TypeError(
-            f"{scope}.{primitive_name} {output_name} must be {type_label}"
-        )
-    if output.items_per_thread != expected_items_per_thread:
-        if item_count_message is None:
-            item_count_message = (
-                f"{scope}.{primitive_name} {output_name} must have "
-                f"items_per_thread={expected_items_per_thread}"
-            )
-        raise ValueError(item_count_message)
-    if output.dtype is not None:
-        resolve_type(
-            output.dtype,
-            allowed=frozenset({resolved_dtype}),
-            feature=primitive_name,
-        )
-    else:
-        output.dtype = (
-            resolved_dtype if assigned_dtype is None else assigned_dtype
-        )
-    return output
 
 
 def thread_data_output_dtype(value: ThreadData, value_type: type) -> Any:
@@ -403,7 +354,7 @@ def resolve_provider_type(
         validate_common_numeric_dtype_name(dtype_name, operation=operation)
     if value_type not in TYPE_SPECS or value_type not in allowed:
         raise NotImplementedError(
-            f"{root_scope}.{namespace} provider {feature} currently supports "
+            f"{root_scope}.{namespace} provider {feature} supports "
             f"{supported_names(allowed)} only"
         )
     return value_type
