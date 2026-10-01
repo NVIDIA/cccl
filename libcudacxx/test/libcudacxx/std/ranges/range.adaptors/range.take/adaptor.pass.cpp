@@ -19,6 +19,7 @@
 #include <cuda/std/string_view>
 #include <cuda/std/utility>
 
+#include "../../range.factories/range.iota.view/types.h"
 #include "test_iterators.h"
 
 template <class View, class T>
@@ -209,12 +210,49 @@ TEST_FUNC constexpr bool test()
   // `views::take(iota_view, n)` returns an `iota_view`.
   {
     auto iota = cuda::std::views::iota(1, 8);
-    // The second template argument of the resulting `iota_view` is different because it has to be able to hold
-    // the `range_difference_t` of the input `iota_view`.
-    using Result          = cuda::std::ranges::iota_view<int, cuda::std::ranges::range_difference_t<decltype(iota)>>;
+    // The second template argument of the resulting `iota_view` is same as the first.
+    using Result          = cuda::std::ranges::iota_view<int, int>;
     decltype(auto) result = iota | cuda::std::views::take(3);
     static_assert(cuda::std::same_as<decltype(result), Result>);
     assert(result.size() == 3);
+    assert(*result.begin() == 1);
+  }
+
+  // `views::take` on an unsigned `iota_view` keeps that unsigned type as the bound.
+  {
+    auto iota             = cuda::std::views::iota(cuda::std::size_t{0}, cuda::std::size_t{8});
+    using Result          = cuda::std::ranges::iota_view<cuda::std::size_t, cuda::std::size_t>;
+    decltype(auto) result = iota | cuda::std::views::take(3);
+    static_assert(cuda::std::same_as<decltype(result), Result>);
+    assert(result.size() == 3);
+    assert(*result.begin() == 0);
+    assert(*(result.begin() + 2) == 2);
+
+    decltype(auto) capped = iota | cuda::std::views::take(100);
+    static_assert(cuda::std::same_as<decltype(capped), Result>);
+    assert(capped.size() == 8);
+  }
+
+  // `views::take` on a class-type `iota_view` keeps that class type as the bound.
+  {
+    auto iota             = cuda::std::views::iota(SomeInt{1}, SomeInt{8});
+    using Result          = cuda::std::ranges::iota_view<SomeInt, SomeInt>;
+    decltype(auto) result = iota | cuda::std::views::take(3);
+    static_assert(cuda::std::same_as<decltype(result), Result>);
+    assert(result.size() == 3);
+    assert(*result.begin() == SomeInt{1});
+    assert(*(result.begin() + 2) == SomeInt{3});
+  }
+
+  // `views::take` on `iota_view<short, int>` returns `iota_view<short, short>`.
+  {
+    auto iota             = cuda::std::views::iota(short{2}, 9);
+    using Result          = cuda::std::ranges::iota_view<short, short>;
+    decltype(auto) result = iota | cuda::std::views::take(3);
+    static_assert(cuda::std::same_as<decltype(result), Result>);
+    assert(*result.begin() == 2);
+    assert(*(result.begin() + 2) == 4);
+    assert(result.begin() + 3 == result.end());
   }
 
   // `views::take(repeat_view, n)` returns a `repeat_view` when `repeat_view` models `sized_range`.
