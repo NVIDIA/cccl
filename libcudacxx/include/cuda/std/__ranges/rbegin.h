@@ -39,8 +39,12 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CPO(__rbegin)
 
-// Not deleted: deleting this declaration suppresses ADL on GCC <= 11 and MSVC.
+#if _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
+// A deleted declaration suppresses ADL on these compilers.
 _CCCL_HOST_DEVICE void rbegin();
+#else // ^^^ _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51) ^^^ / vvv deleted declaration vvv
+_CCCL_HOST_DEVICE void rbegin() = delete;
+#endif // _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
