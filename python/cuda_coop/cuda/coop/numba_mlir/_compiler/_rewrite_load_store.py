@@ -527,13 +527,14 @@ def analyze_load_store_match(
 ) -> _LoadStoreMatchMetadata:
     """Consume Load/Store markers and identify scalar boxing.
 
-    Remove private common-API and root-Store markers from factory keywords so
-    they are not passed to the provider. A common-API marker requires supported
-    numeric dtypes for the relevant memory and array operands. Scalar Store
-    values are handled by scalar inference and the later typing guard instead of
-    being required to have an array payload spec here.
+    Remove the private ``_common_root_operation`` and ``_group_root_store``
+    markers from factory keywords so they are not passed to the provider.
+    The common-API marker requires supported numeric dtypes for the memory and
+    array operands. Scalar Store values are handled by scalar inference and the
+    later typing guard; they need no array payload spec here.
 
-    A root Store with no recognized per-thread array records a boxing request.
+    A public group Store with no recognized per-thread array records a boxing
+    request for either the common or backend-qualified API.
     ``prepare_load_store_runtime_args`` then supplies the array operand required
     by the provider. No runtime statements are emitted during this analysis.
 
@@ -617,7 +618,7 @@ def prepare_load_store_runtime_args(
     scope: ir.Scope | None,
     loc: ir.Loc,
 ) -> list[ir.Var]:
-    """Emit a local-array payload when a root Store supplies a scalar value.
+    """Build a local-array payload for a scalar group Store value.
 
     Use the inferred item count and dtype to allocate the provider's payload,
     then assign the scalar to every item. A scalar without static provenance
