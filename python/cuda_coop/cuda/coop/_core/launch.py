@@ -144,13 +144,6 @@ class LaunchFacts:
         return x * y * z
 
     @property
-    def max_block_threads(self) -> int | None:
-        if self.max_block_dim is None:
-            return None
-        x, y, z = self.max_block_dim
-        return x * y * z
-
-    @property
     def semantic_key(self) -> tuple[Any, ...]:
         return (
             self.exact_block_dim,
