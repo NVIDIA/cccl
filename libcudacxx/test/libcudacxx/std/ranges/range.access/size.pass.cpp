@@ -477,12 +477,37 @@ struct SizeBeginAndEndMembers
   }
 };
 
+// `begin` and `end` are lvalue-qualified. `ranges::size` on a prvalue uses them through its function parameter.
+struct LvalueOnlyBeginEnd
+{
+  int buff[4];
+  TEST_FUNC constexpr int* begin() &
+  {
+    return buff;
+  }
+  TEST_FUNC constexpr int* end() &
+  {
+    return buff + 4;
+  }
+};
+static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::ranges::begin), LvalueOnlyBeginEnd>);
+static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::ranges::begin), HasMinusBeginEnd>);
+static_assert(cuda::std::is_invocable_v<RangeSizeT, LvalueOnlyBeginEnd>);
+static_assert(cuda::std::is_invocable_v<RangeSizeT, HasMinusBeginEnd>);
+
 TEST_FUNC constexpr bool testRanges()
 {
   HasMinusBeginEnd a{};
   assert(cuda::std::ranges::size(a) == 2);
+  assert(cuda::std::ranges::size(HasMinusBeginEnd{}) == 2);
   // Ensure that this is converted to an *unsigned* type.
   static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::size(a)), size_t>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::size(HasMinusBeginEnd{})), size_t>);
+
+  LvalueOnlyBeginEnd f{};
+  assert(cuda::std::ranges::size(f) == 4);
+  assert(cuda::std::ranges::size(LvalueOnlyBeginEnd{}) == 4);
+  assert(cuda::std::ranges::size(static_cast<LvalueOnlyBeginEnd&&>(f)) == 4);
 
   IntPtrBeginAndEnd b{};
   assert(cuda::std::ranges::size(b) == 8);

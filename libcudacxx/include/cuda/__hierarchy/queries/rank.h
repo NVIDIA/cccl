@@ -24,7 +24,6 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__fwd/hierarchy.h>
-#  include <cuda/__hierarchy/hierarchy_query_result.h>
 #  include <cuda/__hierarchy/queries/count.h>
 #  include <cuda/__hierarchy/queries/extents.h>
 #  include <cuda/__hierarchy/queries/index.h>
@@ -32,7 +31,7 @@
 #  include <cuda/std/__cstddef/types.h>
 
 #  if _CCCL_CUDA_COMPILATION()
-#    include <cuda/__ptx/instructions/get_sreg.h>
+#    include <cuda/__ptx/instructions/get_sreg.h> // IWYU pragma: keep
 #  endif // _CCCL_CUDA_COMPILATION()
 
 #  include <cuda/std/__cccl/prologue.h>

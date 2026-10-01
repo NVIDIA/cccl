@@ -420,20 +420,23 @@ struct __fn
   }
 
   // [range.take.overview]: the `iota_view` case.
-  _CCCL_TEMPLATE(
-    class _Range, class _Np, class _RawRange = remove_cvref_t<_Range>, class _Dist = range_difference_t<_Range>)
+  // Dereference the advanced iterator so both `iota_view` arguments have the original value type.
+  _CCCL_TEMPLATE(class _Range, class _Np, class _Dist = range_difference_t<_Range>)
   _CCCL_REQUIRES(__use_iota<_Range, _Np>)
   [[nodiscard]] _CCCL_API constexpr auto
   _CCCL_STATIC_CALL_OPERATOR(_Range&& __rng, _Np&& __n) noexcept(noexcept(::cuda::std::ranges::iota_view(
     *::cuda::std::ranges::begin(__rng),
-    *::cuda::std::ranges::begin(__rng)
-      + ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__rng), ::cuda::std::forward<_Np>(__n)))))
-    -> iota_view<range_value_t<_RawRange>, _Dist>
+    *(::cuda::std::ranges::begin(__rng)
+      + ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__rng), ::cuda::std::forward<_Np>(__n))))))
+    -> decltype(::cuda::std::ranges::iota_view(
+      *::cuda::std::ranges::begin(__rng),
+      *(::cuda::std::ranges::begin(__rng)
+        + ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__rng), ::cuda::std::forward<_Np>(__n)))))
   {
     return ::cuda::std::ranges::iota_view(
       *::cuda::std::ranges::begin(__rng),
-      *::cuda::std::ranges::begin(__rng)
-        + ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__rng), ::cuda::std::forward<_Np>(__n)));
+      *(::cuda::std::ranges::begin(__rng)
+        + ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__rng), ::cuda::std::forward<_Np>(__n))));
   }
 
   // [range.take.overview]: the "otherwise" case.
