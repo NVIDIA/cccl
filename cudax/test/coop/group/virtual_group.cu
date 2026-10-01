@@ -50,7 +50,8 @@ __device__ void test_virtual_group(Config config, Level level)
   {
     constexpr auto n = 4;
 
-    const cudax::coop::virtual_group vg{cuda::gpu_thread, g, cudax::coop::group_by<n>{}};
+    const cudax::coop::virtual_group vg{
+      cuda::gpu_thread, g, cudax::coop::group_by{cuda::std::integral_constant<cuda::std::size_t, n>{}}};
 
     REQUIRE(cuda::gpu_thread.is_part_of(vg));
 

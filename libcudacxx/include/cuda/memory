@@ -21,19 +21,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory/address_space.h>
-#include <cuda/__memory/align_down.h>
-#include <cuda/__memory/align_up.h>
-#include <cuda/__memory/aligned_size.h>
-#include <cuda/__memory/discard_memory.h>
-#include <cuda/__memory/get_device_address.h>
-#include <cuda/__memory/is_aligned.h>
-#include <cuda/__memory/is_pointer_accessible.h>
-#include <cuda/__memory/is_valid_alignment.h>
-#include <cuda/__memory/ptr_alignment.h>
-#include <cuda/__memory/ptr_in_range.h>
-#include <cuda/__memory/ptr_rebind.h>
-#include <cuda/__memory/ranges_overlap.h>
-#include <cuda/std/memory>
+#include <cuda/__memory/address_space.h> // IWYU pragma: export
+#include <cuda/__memory/align_down.h> // IWYU pragma: export
+#include <cuda/__memory/align_up.h> // IWYU pragma: export
+#include <cuda/__memory/aligned_size.h> // IWYU pragma: export
+#include <cuda/__memory/discard_memory.h> // IWYU pragma: export
+#include <cuda/__memory/get_device_address.h> // IWYU pragma: export
+#include <cuda/__memory/is_aligned.h> // IWYU pragma: export
+#include <cuda/__memory/is_pointer_accessible.h> // IWYU pragma: export
+#include <cuda/__memory/is_valid_alignment.h> // IWYU pragma: export
+#include <cuda/__memory/ptr_alignment.h> // IWYU pragma: export
+#include <cuda/__memory/ptr_in_range.h> // IWYU pragma: export
+#include <cuda/__memory/ptr_rebind.h> // IWYU pragma: export
+#include <cuda/__memory/ranges_overlap.h> // IWYU pragma: export
+#include <cuda/std/memory> // IWYU pragma: export
 
 #endif // _CUDA_MEMORY

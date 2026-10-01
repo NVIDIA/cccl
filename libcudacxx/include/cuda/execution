@@ -21,13 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/guarantee.h>
-#include <cuda/__execution/output_ordering.h>
-#include <cuda/__execution/policy.h>
-#include <cuda/__execution/require.h>
-#include <cuda/__execution/tie_break.h>
-#include <cuda/__execution/tune.h>
-#include <cuda/std/execution>
+#include <cuda/__execution/determinism.h> // IWYU pragma: export
+#include <cuda/__execution/guarantee.h> // IWYU pragma: export
+#include <cuda/__execution/output_ordering.h> // IWYU pragma: export
+#include <cuda/__execution/policy.h> // IWYU pragma: export
+#include <cuda/__execution/require.h> // IWYU pragma: export
+#include <cuda/__execution/tie_break.h> // IWYU pragma: export
+#include <cuda/__execution/tune.h> // IWYU pragma: export
+#include <cuda/std/execution> // IWYU pragma: export
 
 #endif // _CUDA_EXECUTION

@@ -26,7 +26,7 @@ __device__ int binary_search(slice<const int> arr, int start, int end, int looku
 {
   while (start <= end)
   {
-    int mid = start + (end - start) / 2;
+    const int mid = start + (end - start) / 2;
     if (arr[mid] == lookup)
     {
       return mid;
@@ -96,7 +96,7 @@ int main()
   // edges in CSR format
   std::vector<int> nonzeros = {1, 2, 3, 6, 0, 3, 4, 5, 6, 7, 8, 0, 0, 1, 1, 1, 0, 1, 1, 1};
   // output jaccard similarities for each vertex
-  int num_vertices = offsets.size() - 1;
+  const int num_vertices = static_cast<int>(offsets.size() - 1);
   std::vector<float> jaccard_similarities(num_vertices * num_vertices, 0.0f);
 
   auto loffsets              = ctx.logical_data(&offsets[0], offsets.size());
@@ -109,11 +109,12 @@ int main()
             {
               if (idx != j)
               {
-                int intersection = calculate_intersection_size(loffsets, lnonzeros, idx, j);
-                int uni          = calculate_union_size(loffsets, lnonzeros, idx, j);
+                const int intersection = calculate_intersection_size(loffsets, lnonzeros, idx, j);
+                const int uni          = calculate_union_size(loffsets, lnonzeros, idx, j);
                 if (uni > 0)
                 {
-                  ljaccard_similarities[idx * (loffsets.size() - 1) + j] = static_cast<float>(intersection) / uni;
+                  ljaccard_similarities[idx * (loffsets.size() - 1) + j] =
+                    static_cast<float>(intersection) / static_cast<float>(uni);
                 }
               }
             }

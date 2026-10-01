@@ -18,6 +18,10 @@
  * See https://nvidia.github.io/NVTX/LICENSE.txt for license information.
  */
 
+// This is vendored third-party code from the NVTX project (https://github.com/NVIDIA/NVTX) and
+// does not follow CCCL's naming conventions.
+// NOLINTBEGIN(readability-identifier-naming)
+
 /* Temporary helper #defines, #undef'ed at end of header */
 #define NVTX3_CPP_VERSION_MAJOR 1
 #define NVTX3_CPP_VERSION_MINOR 0
@@ -653,12 +657,11 @@
 #ifndef NVTX3_CPP_DEFINITIONS_V1_0
 #  define NVTX3_CPP_DEFINITIONS_V1_0
 
-#  include <cuda/std/__host_stdlib/memory>
+#  include <cuda/std/__host_stdlib/memory> // IWYU pragma: keep
 
 #  include <cstddef>
 #  include <string>
 #  include <type_traits>
-#  include <utility>
 
 #  include <nvtx3/nvToolsExt.h>
 
@@ -2975,3 +2978,5 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
 #  undef NVTX3_STATIC_ASSERT_DEFINED_HERE
 #  undef NVTX3_STATIC_ASSERT
 #endif
+
+// NOLINTEND(readability-identifier-naming)

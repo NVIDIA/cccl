@@ -39,7 +39,7 @@ TEST_CASE("TestTransformIteratorTraits", "[transform_iterator]")
 }
 
 template <class Vector>
-void TestTransformIterator()
+void test_transform_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -60,10 +60,10 @@ void TestTransformIterator()
   Vector ref{-1, -2, -3, -4};
   REQUIRE(output == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestTransformIterator);
+DECLARE_VECTOR_UNITTEST(test_transform_iterator);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMakeTransformIterator()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_make_transform_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -86,7 +86,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMakeTransformIterator()
   Vector ref{-1, -2, -3, -4};
   REQUIRE(output == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestMakeTransformIterator);
+DECLARE_VECTOR_UNITTEST(test_make_transform_iterator);
 
 template <typename T>
 struct TestTransformIteratorReduce

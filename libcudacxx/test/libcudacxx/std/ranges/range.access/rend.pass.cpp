@@ -253,7 +253,7 @@ static_assert(!cuda::std::is_invocable_v<RangeREndT, REndFunction&&>);
 
 static_assert(cuda::std::is_invocable_v<RangeREndT, REndFunction const&>);
 static_assert(!cuda::std::is_invocable_v<RangeREndT, REndFunction&&>);
-static_assert(!cuda::std::is_invocable_v<RangeREndT, REndFunction&>);
+static_assert(cuda::std::is_invocable_v<RangeREndT, REndFunction&>);
 static_assert(cuda::std::is_invocable_v<RangeCREndT, REndFunction const&>);
 static_assert(cuda::std::is_invocable_v<RangeCREndT, REndFunction&>);
 
@@ -377,7 +377,7 @@ TEST_FUNC constexpr bool testREndFunction()
   assert(cuda::std::ranges::rend(a) == &a.x);
   assert(cuda::std::ranges::crend(a) == &a.x);
   REndFunction aa{};
-  static_assert(!cuda::std::is_invocable_v<RangeREndT, decltype((aa))>);
+  assert(cuda::std::ranges::rend(aa) == &aa.x);
   assert(cuda::std::ranges::crend(aa) == &aa.x);
 
   REndFunctionByValue b{};
@@ -392,28 +392,28 @@ TEST_FUNC constexpr bool testREndFunction()
   assert(cuda::std::ranges::rend(d) == &d.x);
   assert(cuda::std::ranges::crend(d) == &d.x);
   REndFunctionReturnsEmptyPtr dd{};
-  static_assert(!cuda::std::is_invocable_v<RangeREndT, decltype((dd))>);
+  assert(cuda::std::ranges::rend(dd) == &dd.x);
   assert(cuda::std::ranges::crend(dd) == &dd.x);
 
   const REndFunctionWithDataMember e{};
   assert(cuda::std::ranges::rend(e) == &e.x);
   assert(cuda::std::ranges::crend(e) == &e.x);
   REndFunctionWithDataMember ee{};
-  static_assert(!cuda::std::is_invocable_v<RangeREndT, decltype((ee))>);
+  assert(cuda::std::ranges::rend(ee) == &ee.x);
   assert(cuda::std::ranges::crend(ee) == &ee.x);
 
   const REndFunctionWithPrivateEndMember f{};
   assert(cuda::std::ranges::rend(f) == &f.y);
   assert(cuda::std::ranges::crend(f) == &f.y);
   REndFunctionWithPrivateEndMember ff{};
-  static_assert(!cuda::std::is_invocable_v<RangeREndT, decltype((ff))>);
+  assert(cuda::std::ranges::rend(ff) == &ff.y);
   assert(cuda::std::ranges::crend(ff) == &ff.y);
 
   const RBeginMemberEndFunction g{};
   assert(cuda::std::ranges::rend(g) == &g.x);
   assert(cuda::std::ranges::crend(g) == &g.x);
   RBeginMemberEndFunction gg{};
-  static_assert(!cuda::std::is_invocable_v<RangeREndT, decltype((gg))>);
+  assert(cuda::std::ranges::rend(gg) == &gg.x);
   assert(cuda::std::ranges::crend(gg) == &gg.x);
 
   return true;

@@ -32,7 +32,7 @@ The function finds the ``rank``-th set bit of ``value``, counting set bits from 
 
 **Constraints**
 
-- ``T`` is an unsigned integral type.
+- ``T`` is an unsigned integer type.
 
 **Preconditions**
 
@@ -40,7 +40,7 @@ The function finds the ``rank``-th set bit of ``value``, counting set bits from 
 
 **Performance considerations**
 
-- ``log2(num_bits(T))`` binary-search steps, each of them executing population count and 6 ALU instructions.
+- ``log2(num_bits(T))`` binary-search steps, each of them executing a 32-bit population count and about 6 ALU instructions.
 - If ``rank`` is a constant expression:
 
   - ``bit_fns(value, 0)`` is equal to ``cuda::std::countr_zero(value)``.
@@ -48,7 +48,7 @@ The function finds the ``rank``-th set bit of ``value``, counting set bits from 
 
 .. note::
 
-    The caller can skip the early return check if the rank is known to be less than the number of set bits in ``value`` by providing the assumption ``rank < cuda::std::popcount(value)`` with ``__builtin_assume`` before the call. A false assumption results in undefined behavior.
+    The caller can skip the early return check if the rank is known to be less than the number of set bits in ``value`` by providing the assumption ``rank < cuda::std::popcount(value)`` before the call, for example with ``__builtin_assume`` (NVCC, Clang), ``__assume`` (MSVC), or ``[[assume(...)]]`` (C++23). A false assumption results in undefined behavior.
 
 Example
 -------

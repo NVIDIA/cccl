@@ -24,7 +24,7 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__container/buffer.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__utility/exchange.h>
 #  include <cuda/std/__utility/move.h>

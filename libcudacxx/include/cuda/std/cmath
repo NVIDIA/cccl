@@ -54,12 +54,11 @@
 #include <cuda/std/__cmath/traits.h>
 #include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/__cstdlib/abs.h>
-#include <cuda/std/limits>
 #include <cuda/std/version>
 
 #if _CCCL_FREESTANDING()
-#  define INFINITY ::cuda::std::numeric_limits<float>::infinity()
-#  define NAN      ::cuda::std::numeric_limits<float>::quiet_NaN()
+#  define INFINITY _CCCL_BUILTIN_HUGE_VALF()
+#  define NAN      _CCCL_BUILTIN_NANF()
 #endif // _CCCL_FREESTANDING()
 
 #include <cuda/std/__cccl/prologue.h>
