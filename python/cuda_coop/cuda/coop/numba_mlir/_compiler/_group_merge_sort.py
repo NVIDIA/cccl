@@ -7,8 +7,8 @@
 import math
 from dataclasses import replace
 
+import numba_cuda_mlir.numba_cuda.types as numba_types
 import numpy as np
-from numba_cuda_mlir import types
 
 from cuda.coop._core import (
     BindingKind,
@@ -150,10 +150,13 @@ def _lower_merge_sort(
                     f"match keys dtype {key_dtype}"
                 )
             sentinel = sentinel_raw
+    from .._lowering._core import NumbaMlirCoreAdapter
+
+    adapter = NumbaMlirCoreAdapter()
     semantics = GroupMergeSortSemantics(
         make_block_merge_sort_semantics(
-            key_dtype=key_dtype,
-            value_dtype=value_dtype,
+            key_dtype=adapter.core_dtype(key_dtype),
+            value_dtype=adapter.core_dtype(value_dtype),
             items_per_thread=extent,
             compare_operator=compare_operator,
             valid_items=0 if partial else None,
@@ -164,6 +167,12 @@ def _lower_merge_sort(
     plan = plan_group_primitive(
         make_group_primitive_call(group, semantics), context.launch
     ).require_supported()
+    participation = plan.participation
+    assert participation is not None
+    assert plan.temp_storage is not None
+    assert plan.synchronization is not None
+    topology = plan.topology
+    assert topology is not None
     temp_storage = arguments["temp_storage"]
     if not context.is_none(temp_storage):
         if plan.target is not GroupLoweringTarget.CUB_BLOCK:
@@ -213,14 +222,14 @@ def _lower_merge_sort(
     kwargs = {
         "key_dtype": key_dtype,
         "items_per_thread": extent,
-        "threads_per_block": plan.participation.exact_block_dim,
+        "threads_per_block": participation.exact_block_dim,
         "descending": descending,
         "compare_op": compare_raw,
     }
     if pairs:
         kwargs["value_dtype"] = value_dtype
     if namespace == "warp":
-        kwargs["threads_in_warp"] = plan.topology.logical_width
+        kwargs["threads_in_warp"] = topology.logical_width
     if not context.is_none(temp_storage):
         kwargs["temp_storage"] = temp_storage
     statements = []
@@ -259,7 +268,12 @@ def _lower_merge_sort(
         runtime_args.extend(
             (
                 _cast(
-                    context, statements, inst, count, types.int64, "valid_items"
+                    context,
+                    statements,
+                    inst,
+                    count,
+                    numba_types.int64,
+                    "valid_items",
                 ),
                 _cast(
                     context,
