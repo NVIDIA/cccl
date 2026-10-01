@@ -227,6 +227,44 @@ class _LoadStoreRewrite:
         runtime_args: list[ir.Var],
         factory_kwargs: dict[str, object],
     ) -> None:
+        """Check Load/Store controls before provider creation.
+
+        Static valid-item counts must be integral rather than boolean. Static
+        offsets must additionally be nonnegative and fit signed 64-bit storage.
+        For runtime valid-item counts and offsets, check known dtypes while
+        leaving unknown types for later inference. This method does not prove
+        runtime value ranges, memory bounds, or group uniformity, nor does it
+        enforce the static valid-item count's tile bound.
+
+        The operand cursor follows the provider ABI: memory and payload first,
+        then runtime valid-item count, runtime padding, and optional offset.
+        Load padding receives its separate dtype/coercion check.
+
+        Parameters
+        ----------
+        context : GroupRewriteContext
+            Available compiler types and scalar provenance for the operands.
+        op_name : str
+            Registered ``"load"`` or ``"store"`` operation.
+        runtime_args : list of ir.Var
+            Operands already ordered by argument splitting.
+        factory_kwargs : dict of str to object
+            Specialization values and scalar bindings; static Load padding
+            may be normalized in place.
+
+        Returns
+        -------
+        None
+            Currently resolvable control values and types satisfy these
+            checks.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            The operation is unsupported or a known control value/type is
+            invalid.
+        """
+
         if op_name not in {"load", "store"}:
             raise CoopSinglePhaseRewriteError(
                 f"unsupported Numba-CUDA-MLIR operation {op_name!r}"
