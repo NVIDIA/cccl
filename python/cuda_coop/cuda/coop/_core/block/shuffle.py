@@ -39,15 +39,6 @@ class BlockShuffleMode(str, Enum):
     def allows_negative_distance(self) -> bool:
         return self is BlockShuffleMode.OFFSET
 
-    @classmethod
-    def from_cub_method_name(cls, method_name: str) -> BlockShuffleMode:
-        try:
-            return cls(method_name.lower())
-        except (AttributeError, ValueError) as exc:
-            raise ValueError(
-                f"unsupported CUB BlockShuffle method name: {method_name!r}"
-            ) from exc
-
 
 class BlockShuffleValueKind(str, Enum):
     SCALAR = "scalar"

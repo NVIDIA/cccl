@@ -6,7 +6,7 @@ from typing import Literal, overload
 
 from typing_extensions import TypeVar
 
-from .._typing import (
+from ..._typing import (
     IntegerValue,
     PortableNumericScalar,
     PortableShuffleMode,
@@ -14,7 +14,7 @@ from .._typing import (
     ScalarShuffleMode,
     ThreadDataLike,
 )
-from ._thread_group import BlockGroup
+from .._thread_group import BlockGroup
 
 _ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 

@@ -4,7 +4,7 @@
 
 from enum import Enum
 
-from numba_cuda_mlir import types
+import numba_cuda_mlir.numba_cuda.types as numba_types
 
 from ._group_rewriting import GroupRewriteContext
 from ._parameters import _validate_common_numeric_dtype, normalize_dtype_param
@@ -69,8 +69,8 @@ def _validate_rank_dtype(dtype: object) -> object:
         ) from exc
     literal_type = getattr(dtype, "literal_type", dtype)
     if (
-        isinstance(literal_type, types.Boolean)
-        or not isinstance(literal_type, types.Integer)
+        isinstance(literal_type, numba_types.Boolean)
+        or not isinstance(literal_type, numba_types.Integer)
         or not literal_type.signed
     ):
         raise CoopSinglePhaseRewriteError(
@@ -87,8 +87,8 @@ def _validate_flag_dtype(dtype: object) -> object:
             "coop exchange valid_flags must have an integral non-bool dtype"
         ) from exc
     literal_type = getattr(dtype, "literal_type", dtype)
-    if isinstance(literal_type, types.Boolean) or not isinstance(
-        literal_type, types.Integer
+    if isinstance(literal_type, numba_types.Boolean) or not isinstance(
+        literal_type, numba_types.Integer
     ):
         raise CoopSinglePhaseRewriteError(
             "coop exchange valid_flags must have an integral non-bool dtype"
