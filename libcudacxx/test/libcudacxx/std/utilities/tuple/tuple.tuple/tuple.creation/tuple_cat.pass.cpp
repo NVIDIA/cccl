@@ -459,6 +459,13 @@ TEST_FUNC constexpr bool test()
     assert(cuda::std::get<0>(combined) == a);
     assert(cuda::std::get<1>(combined) == a + 3);
     assert(cuda::std::get<2>(combined) == 4);
+
+    cuda::std::tuple<int*, int*, int, int> recursive =
+      cuda::std::tuple_cat(view, cuda::std::tuple<int>(4), cuda::std::tuple<int>(5));
+    assert(cuda::std::get<0>(recursive) == a);
+    assert(cuda::std::get<1>(recursive) == a + 3);
+    assert(cuda::std::get<2>(recursive) == 4);
+    assert(cuda::std::get<3>(recursive) == 5);
   }
 
   return true;
