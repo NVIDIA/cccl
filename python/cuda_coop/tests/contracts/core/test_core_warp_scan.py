@@ -15,6 +15,7 @@ from cuda.coop._core import (
     PythonOperator,
     Reference,
     WarpScanMode,
+    classify_parameter,
     make_warp_scan_spec,
 )
 
@@ -35,7 +36,7 @@ def test_warp_scan_selects_default_sum_entry_point(mode, method_name):
 
     assert spec.mode is WarpScanMode(mode)
     assert spec.method_name == method_name
-    assert spec.uses_sum_method
+    assert spec.specialization.metadata["operator"] is None
     assert spec.specialization.fake_return
     assert [item.name for item in spec.specialization.parameters[0]] == [
         "temp_storage",
@@ -53,7 +54,7 @@ def test_partial_exclusive_sum_uses_plus_and_an_explicitly_typed_zero():
     )
 
     assert spec.method_name == "ExclusiveScanPartial"
-    assert not spec.uses_sum_method
+    assert spec.specialization.metadata["operator"] is not None
     assert spec.call.scan_operator == CxxOperator(
         "::cuda::std::plus<T>",
         Dependency("T"),
@@ -91,10 +92,10 @@ def test_warp_scan_partial_signature_and_aggregate_output():
 
     assert spec.method_name == "InclusiveScanPartial"
     assert spec.has_valid_items
-    assert spec.has_warp_aggregate
+    assert spec.call.aggregate
     assert [
         (item.name, item.kind, item.role)
-        for item in spec.specialization.classify_method()
+        for item in map(classify_parameter, spec.specialization.parameters[0])
     ] == [
         ("temp_storage", ArgumentKind.RUNTIME, ParameterRole.TEMP_STORAGE),
         ("input", ArgumentKind.RUNTIME, ParameterRole.INPUT),
@@ -127,7 +128,9 @@ def test_warp_scan_accepts_runtime_initial_value_and_python_operator():
     )
 
     assert spec.method_name == "ExclusiveScan"
-    classifications = spec.specialization.classify_method()
+    classifications = tuple(
+        map(classify_parameter, spec.specialization.parameters[0])
+    )
     assert classifications[3].kind is ArgumentKind.RUNTIME
     assert classifications[3].role is ParameterRole.INPUT
     assert classifications[4].kind is ArgumentKind.STATIC

@@ -69,24 +69,12 @@ class WarpScanSpec:
         return WarpScanMode(self.call.mode.value)
 
     @property
-    def has_initial_value(self) -> bool:
-        return self.call.initial_value is not None
-
-    @property
     def has_valid_items(self) -> bool:
         return self.valid_items.kind is not BindingKind.OMITTED
 
     @property
-    def has_warp_aggregate(self) -> bool:
-        return self.call.aggregate
-
-    @property
     def method_name(self) -> str:
         return self.specialization.method_name
-
-    @property
-    def uses_sum_method(self) -> bool:
-        return self.specialization.metadata["operator"] is None
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
