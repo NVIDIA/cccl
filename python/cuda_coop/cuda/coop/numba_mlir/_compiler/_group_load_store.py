@@ -267,6 +267,55 @@ class _LoadStorePlanning:
         group: ThreadGroup,
         bound: inspect.BoundArguments,
     ) -> GroupLoweringPlan:
+        """Translate a bound group memory operation into a supported core plan.
+
+        Recover payload shape and element type before selecting a provider.
+        Memory dtype takes precedence when known, but a known payload dtype must
+        match it. Untyped stores first consult element writes; static scalar
+        stores use contextual coercion. Loads record their inferred output dtype
+        in the planning context for later group calls.
+
+        Classify optional scalar controls by provenance, parse caller storage,
+        and pass compiler-neutral load/store semantics plus exact launch facts
+        to the core planner. Warp groups reject explicit storage here. The
+        result selects topology, storage, synchronization, and implementation
+        metadata; it does not yet construct provider-call IR. The dtype cache
+        may already be updated if a later validation fails.
+
+        Parameters
+        ----------
+        operation : {"load", "store"}
+            Public operation being planned.
+        group : ThreadGroup
+            Group already resolved against this kernel's launch facts.
+        bound : inspect.BoundArguments
+            Public call arguments with defaults applied; values may be IR
+            variables or host constants. The mapping is read without
+            modification.
+
+        Returns
+        -------
+        GroupLoweringPlan
+            Supported core plan containing the inferred semantic operation and
+            the selected provider implementation.
+
+        Raises
+        ------
+        GroupRewriteError
+            Payload extent or dtype is unknown, or storage provenance is
+            invalid.
+        TypeError
+            A payload or scalar control has an unsupported type, or known
+            payload and memory dtypes disagree.
+        ValueError
+            A scalar or algorithm is invalid, or explicit storage is supplied
+            for a warp group.
+        ForceLiteralArg
+            A shape, algorithm, or storage option needs literal specialization.
+        NotImplementedError
+            The core planner cannot lower the requested group operation.
+        """
+
         from .._lowering._core import NumbaMlirCoreAdapter
 
         payload_name = "output" if operation == "load" else "value"
