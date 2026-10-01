@@ -75,31 +75,53 @@ __same_extents(const __raw_tensor<_ExtentTIn, _StrideTIn, _TpIn, _MaxRankIn>& __
 //! @param[in] __extents_out Second extents
 //! @return true if the sequences of non-singleton extents match element-wise
 template <typename _ExtentsIn, typename _ExtentsOut>
-[[nodiscard]] _CCCL_HOST_API constexpr bool
-__same_non_singleton_extents(const _ExtentsIn& __extents_in, const _ExtentsOut& __extents_out) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr bool __same_non_singleton_extents(
+  [[maybe_unused]] const _ExtentsIn& __extents_in, [[maybe_unused]] const _ExtentsOut& __extents_out) noexcept
 {
-  typename _ExtentsIn::rank_type __i  = 0;
-  typename _ExtentsOut::rank_type __j = 0;
-  while (true)
+  using __rank_in_t _CCCL_NODEBUG  = typename _ExtentsIn::rank_type;
+  using __rank_out_t _CCCL_NODEBUG = typename _ExtentsOut::rank_type;
+  // rank-zero cases are handled separately to avoid statically unreachable loops (MSVC C4702)
+  if constexpr (_ExtentsIn::rank() == 0 && _ExtentsOut::rank() == 0)
   {
-    while (__i != _ExtentsIn::rank() && __extents_in.extent(__i) == 1)
+    return true;
+  }
+  else if constexpr (_ExtentsIn::rank() == 0)
+  {
+    for (__rank_out_t __j = 0; __j < _ExtentsOut::rank(); ++__j)
     {
-      ++__i;
+      if (__extents_out.extent(__j) != 1)
+      {
+        return false;
+      }
     }
-    while (__j != _ExtentsOut::rank() && __extents_out.extent(__j) == 1)
+    return true;
+  }
+  else if constexpr (_ExtentsOut::rank() == 0)
+  {
+    return ::cuda::__same_non_singleton_extents(__extents_out, __extents_in);
+  }
+  else
+  {
+    __rank_out_t __j = 0;
+    for (__rank_in_t __i = 0;; ++__i, ++__j)
     {
-      ++__j;
+      while (__i < _ExtentsIn::rank() && __extents_in.extent(__i) == 1)
+      {
+        ++__i;
+      }
+      while (__j < _ExtentsOut::rank() && __extents_out.extent(__j) == 1)
+      {
+        ++__j;
+      }
+      if (__i == _ExtentsIn::rank() || __j == _ExtentsOut::rank())
+      {
+        return __i == _ExtentsIn::rank() && __j == _ExtentsOut::rank();
+      }
+      if (::cuda::std::cmp_not_equal(__extents_in.extent(__i), __extents_out.extent(__j)))
+      {
+        return false;
+      }
     }
-    if (__i == _ExtentsIn::rank() || __j == _ExtentsOut::rank())
-    {
-      return __i == _ExtentsIn::rank() && __j == _ExtentsOut::rank();
-    }
-    if (::cuda::std::cmp_not_equal(__extents_in.extent(__i), __extents_out.extent(__j)))
-    {
-      return false;
-    }
-    ++__i;
-    ++__j;
   }
 }
 
