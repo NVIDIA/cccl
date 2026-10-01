@@ -36,6 +36,7 @@ if TYPE_CHECKING:
         scan,
     )
     from ._group._shuffle import shuffle
+    from ._stateful_function import StatefulFunction
     from ._thread_data import local, shared
 
 __all__ = [

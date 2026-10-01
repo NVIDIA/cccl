@@ -329,7 +329,7 @@ def test_all_qualified_scan_spellings_plan_explicit_state(spelling: str):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as coop
-    from cuda.coop._core import ArgumentKind, ParameterRole
+    from cuda.coop._core import INT64, ArgumentKind, ParameterRole
     from cuda.coop.numba_mlir._compiler._operations import (
         _GROUP_LOWERING_PLAN_KWARG,
     )
@@ -411,7 +411,7 @@ def test_all_qualified_scan_spellings_plan_explicit_state(spelling: str):
     assert kwargs["prefix_state"].name == "state"
     plan = _kwarg_value(func_ir, call, _GROUP_LOWERING_PLAN_KWARG)
     prefix = plan.call.operation.prefix_callback
-    assert prefix.state_dtype == types.int64
+    assert prefix.state_dtype == INT64
     classification = next(
         item
         for item in plan.call.argument_classifications

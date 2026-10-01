@@ -17,12 +17,13 @@ from io import StringIO
 from numbers import Integral
 from textwrap import dedent
 from types import FunctionType as PyFunctionType
-from typing import BinaryIO
+from typing import Protocol, cast
 
+import numba_cuda_mlir.numba_cuda.types as numba_types
 from numba_cuda_mlir import cuda, types
 from numba_cuda_mlir.compiler import ExternFunction
 from numba_cuda_mlir.descriptor import mlir_target
-from numba_cuda_mlir.types import signature
+from numba_cuda_mlir.numba_cuda.typing.templates import signature
 
 from cuda.coop._core import SynchronizationScope
 
@@ -41,18 +42,18 @@ _NumbaCudaMlirOverloadFunctionTemplate = (
 make_overload_template = _numba_mlir_compat.make_overload_template
 
 NUMBA_TYPES_TO_CPP = {
-    types.boolean: "bool",
-    types.int8: "::cuda::std::int8_t",
-    types.int16: "::cuda::std::int16_t",
-    types.int32: "::cuda::std::int32_t",
-    types.int64: "::cuda::std::int64_t",
-    types.uint8: "::cuda::std::uint8_t",
-    types.uint16: "::cuda::std::uint16_t",
-    types.uint32: "::cuda::std::uint32_t",
-    types.uint64: "::cuda::std::uint64_t",
-    types.float16: "__half",
-    types.float32: "float",
-    types.float64: "double",
+    numba_types.boolean: "bool",
+    numba_types.int8: "::cuda::std::int8_t",
+    numba_types.int16: "::cuda::std::int16_t",
+    numba_types.int32: "::cuda::std::int32_t",
+    numba_types.int64: "::cuda::std::int64_t",
+    numba_types.uint8: "::cuda::std::uint8_t",
+    numba_types.uint16: "::cuda::std::uint16_t",
+    numba_types.uint32: "::cuda::std::uint32_t",
+    numba_types.uint64: "::cuda::std::uint64_t",
+    numba_types.float16: "__half",
+    numba_types.float32: "float",
+    numba_types.float64: "double",
 }
 
 _SUPPORTED_LOGICAL_WARP_THREADS = frozenset({1, 2, 4, 8, 16, 32})
@@ -174,10 +175,10 @@ def _callable_symbol_component(fn: Callable) -> str:
 
 def _python_operator_symbol_name(
     binary_op: Callable,
-    ret_dtype: types.Type,
-    arg_dtypes: Sequence[types.Type],
+    ret_dtype: numba_types.Type,
+    arg_dtypes: Sequence[numba_types.Type],
     *,
-    state_dtype: types.Type | None = None,
+    state_dtype: numba_types.Type | None = None,
 ) -> str:
     """Name a compiled Python operator without relying on object identity."""
 
@@ -209,7 +210,7 @@ def _normalize_compute_capability(compute_capability) -> tuple[int, int]:
         or not isinstance(minor, Integral)
         or major < 1
         or minor < 0
-        or minor > 9
+        or int(minor) > 9
     ):
         raise RuntimeError(
             "cuda.coop.numba_mlir received an invalid CUDA compute capability "
@@ -221,9 +222,11 @@ def _normalize_compute_capability(compute_capability) -> tuple[int, int]:
 def _current_compute_capability() -> tuple[int, int]:
     """Return the exact target used for callback device compilation."""
 
-    return _normalize_compute_capability(
-        cuda.get_current_device().compute_capability
+    # The CUDA module reexports this accessor but omits it from its stub.
+    device = (
+        cuda.get_current_device()  # pyright: ignore[reportAttributeAccessIssue]
     )
+    return _normalize_compute_capability(device.compute_capability)
 
 
 def _compute_capability_number(compute_capability: tuple[int, int]) -> int:
@@ -314,18 +317,22 @@ def _registered_struct_member_types(numba_type):
 def _size_alignment_from_numba_type(numba_type):
     from numba_cuda_mlir.type_defs.aggregate_types import AggregateType
 
-    if isinstance(numba_type, (types.Boolean, types.BooleanLiteral)):
+    if isinstance(
+        numba_type, (numba_types.Boolean, numba_types.BooleanLiteral)
+    ):
         return 1, 1
-    if isinstance(numba_type, (types.Integer, types.IntegerLiteral)):
+    if isinstance(
+        numba_type, (numba_types.Integer, numba_types.IntegerLiteral)
+    ):
         size = max(1, numba_type.bitwidth // 8)
         return size, size
-    if isinstance(numba_type, types.Float):
+    if isinstance(numba_type, numba_types.Float):
         size = max(1, numba_type.bitwidth // 8)
         return size, size
-    if isinstance(numba_type, types.Complex):
+    if isinstance(numba_type, numba_types.Complex):
         elem_size = max(1, numba_type.underlying_float.bitwidth // 8)
         return 2 * elem_size, elem_size
-    if isinstance(numba_type, types.UniTuple):
+    if isinstance(numba_type, numba_types.UniTuple):
         elem_size, elem_align = _size_alignment_from_numba_type(
             numba_type.dtype
         )
@@ -385,7 +392,8 @@ def _compile_device_ltoir(
     if cached is not None:
         return cached
 
-    ltoir, _ = cuda.compile(
+    # Numba-CUDA-MLIR exports the compiler function without declaring its stub.
+    ltoir, _ = cuda.compile(  # pyright: ignore[reportAttributeAccessIssue]
         py_func,
         sig=sig,
         output="ltoir",
@@ -454,7 +462,12 @@ def _adapt_python_operator_abi(
 def _ltoir_to_ptx(ltoir: bytes, *, name: str, cc: int) -> str:
     """Link one LTO-IR image to PTX for compile-time metadata inspection."""
 
-    from cuda.core import Linker, LinkerOptions, ObjectCode
+    # cuda-core chooses cu12/cu13 exports dynamically, outside its stubs.
+    from cuda.core import (
+        Linker,  # pyright: ignore[reportAttributeAccessIssue]
+        LinkerOptions,  # pyright: ignore[reportAttributeAccessIssue]
+        ObjectCode,  # pyright: ignore[reportAttributeAccessIssue]
+    )
 
     ltoir_obj = ObjectCode.from_ltoir(ltoir, name=name)
     linker_options = LinkerOptions(
@@ -493,7 +506,7 @@ class TypeWrapper:
         self.code = buf.getvalue()
 
 
-def numba_type_to_wrapper(numba_type: types.Type):
+def numba_type_to_wrapper(numba_type: numba_types.Type):
     return TypeWrapper(numba_type)
 
 
@@ -648,11 +661,14 @@ class Parameter:
     def __repr__(self) -> str:
         return f"Parameter(out={self.is_output})"
 
-    def specialize(self, _):
+    def specialize(self, template_arguments):
         return self
 
     def is_provided_by_user(self):
         return not self.is_output
+
+    def dtype(self):
+        raise NotImplementedError("parameter must be specialized before typing")
 
     def accepts_actual_type(self, actual_type, typing_context):
         return typing_context.can_convert(actual_type, self.dtype()) is not None
@@ -700,7 +716,7 @@ class ExactValue(Value):
 def _accepts_runtime_control_integer(actual_type) -> bool:
     actual_type = getattr(actual_type, "literal_type", actual_type)
     return (
-        isinstance(actual_type, types.Integer)
+        isinstance(actual_type, numba_types.Integer)
         and actual_type.bitwidth <= 64
         and (actual_type.signed or actual_type.bitwidth <= 32)
     )
@@ -710,8 +726,8 @@ class BoundedInteger(Value):
     """A signed 64-bit integer checked before provider-type narrowing."""
 
     def __init__(self, provider_dtype, *, minimum, maximum):
-        if not isinstance(provider_dtype, types.Integer) or isinstance(
-            provider_dtype, types.IntegerLiteral
+        if not isinstance(provider_dtype, numba_types.Integer) or isinstance(
+            provider_dtype, numba_types.IntegerLiteral
         ):
             raise TypeError(
                 "provider_dtype must be a non-literal integer dtype"
@@ -742,7 +758,7 @@ class BoundedInteger(Value):
         self._provider_dtype = provider_dtype
         self.minimum = minimum
         self.maximum = maximum
-        super().__init__(types.int64)
+        super().__init__(numba_types.int64)
 
     def __repr__(self) -> str:
         return (
@@ -814,7 +830,7 @@ class Pointer(Parameter):
         # an arbitrary array stride. Require contiguous one-dimensional memory
         # so a sliced device view cannot silently produce adjacent-element
         # results.
-        return types.Array(self.value_dtype, 1, "C")
+        return numba_types.Array(self.value_dtype, 1, "C")
 
     def mangled_name(self):
         return f"P{self.value_dtype}"
@@ -912,7 +928,7 @@ class Array(Pointer):
         return f"{numba_type_to_cpp(self.value_dtype)} (&{name})[{self.size}]"
 
     def dtype(self):
-        return types.Array(self.value_dtype, 1, "C")
+        return numba_types.Array(self.value_dtype, 1, "C")
 
     def mangled_name(self):
         return f"A{self.size}_{self.value_dtype}"
@@ -1103,7 +1119,7 @@ class StatefulOperator(Parameter):
         return f"char *{name}_state"
 
     def dtype(self):
-        return types.Array(self.state_dtype, 1, "C")
+        return numba_types.Array(self.state_dtype, 1, "C")
 
     def wrap_decl(self, name):
         param_decls = []
@@ -1150,7 +1166,7 @@ class DependentPythonOperator:
         ret_dtype = self.ret_dtype.resolve(template_arguments)
         ret_cpp_type = numba_type_to_cpp(ret_dtype)
         ret_numba_type = (
-            types.CPointer(ret_dtype)
+            numba_types.CPointer(ret_dtype)
             if ret_cpp_type == "storage_t"
             else ret_dtype
         )
@@ -1159,7 +1175,7 @@ class DependentPythonOperator:
         )
         arg_cpp_types = tuple(numba_type_to_cpp(dtype) for dtype in arg_dtypes)
         arg_numba_types = tuple(
-            types.CPointer(dtype) if cpp_type == "storage_t" else dtype
+            numba_types.CPointer(dtype) if cpp_type == "storage_t" else dtype
             for dtype, cpp_type in zip(arg_dtypes, arg_cpp_types)
         )
 
@@ -1183,7 +1199,7 @@ class DependentPythonOperator:
         compute_capability = _current_compute_capability()
         if return_by_pointer:
             operator_signature = signature(
-                types.void,
+                numba_types.void,
                 *arg_numba_types,
                 ret_numba_type,
             )
@@ -1246,7 +1262,7 @@ class DependentStatefulOperator:
         )
         operator_signature = signature(
             ret_dtype,
-            types.CPointer(state_dtype),
+            numba_types.CPointer(state_dtype),
             *arg_dtypes,
         )
         compile_identity = (
@@ -1535,7 +1551,7 @@ class Algorithm:
         return mangle_symbol(self._symbol_base_name(), parameters)
 
     def specialize(self, template_arguments):
-        # No partial specializations for now
+        # Every template parameter requires an argument.
         template_list = []
         for template_parameter in self.template_parameters:
             if template_parameter.name not in template_arguments:
@@ -1622,8 +1638,8 @@ class Algorithm:
         method,
         exported_name,
         internal_name,
-        temp_storage_type_name="temp_storage_t",
-        temp_storage_param_pid=0,
+        temp_storage_type_name: str | None = "temp_storage_t",
+        temp_storage_param_pid: int | None = 0,
     ):
         output_param = None
         user_params = []
@@ -1655,7 +1671,7 @@ class Algorithm:
                 if (
                     pid == temp_storage_param_pid
                     and isinstance(param, Pointer)
-                    and param.value_dtype == types.uint8
+                    and param.value_dtype == numba_types.uint8
                 ):
                     # Non-alloc wrappers receive raw temporary storage
                     # explicitly.
@@ -1804,7 +1820,7 @@ class Algorithm:
         w("\n")
 
         w(f"using {algorithm_type_name} = cub::{algorithm_name};\n")
-        if temp_storage_type_name is not None:
+        if temp_storage_symbols:
             temp_storage_bytes_symbol, temp_storage_alignment_symbol = (
                 temp_storage_symbols
             )
@@ -2155,7 +2171,7 @@ class Algorithm:
             code="lto",
             context=self._resolved_compile_context(),
         )
-        ltoir_blob = bytes(ltoir)
+        ltoir_blob = bytes(cast(bytes, ltoir))
         ptx = _ltoir_to_ptx(ltoir_blob, name=self.c_name, cc=cc)
 
         lto_irs = list(support_lto_irs)
@@ -2221,12 +2237,12 @@ class Algorithm:
         expected_input_parameters = []
         abi_input_types = []
         arg_transforms = []
-        ret_type = types.void
+        ret_type = numba_types.void
 
         for param in method:
             if ignore_param(param) or param.is_output:
                 if not ignore_param(param) and param.is_output:
-                    if ret_type is not types.void:
+                    if ret_type is not numba_types.void:
                         raise ValueError(
                             "Multiple output parameters not supported"
                         )
@@ -2238,7 +2254,7 @@ class Algorithm:
                 param,
                 (Pointer, Array, PointerReference, StatefulOperator),
             ):
-                abi_input_types.append(types.CPointer(types.none))
+                abi_input_types.append(numba_types.CPointer(numba_types.none))
                 arg_transforms.append("ptr")
             else:
                 abi_input_types.append(param.dtype())
@@ -2262,14 +2278,16 @@ class Algorithm:
                 extern_fn, arg_transforms, returns_value=returns_value
             )
             if link_files:
-                impl.__numba_cuda_mlir_link__ = link_files
+                impl.__dict__["__numba_cuda_mlir_link__"] = link_files
             return impl
 
         wrapped_algorithm_impl = war_introspection(
             algorithm_impl, num_user_provided_params
         )
         if link_files:
-            wrapped_algorithm_impl.__numba_cuda_mlir_link__ = link_files
+            wrapped_algorithm_impl.__dict__["__numba_cuda_mlir_link__"] = (
+                link_files
+            )
         return make_overload_template(
             func_to_overload,
             wrapped_algorithm_impl,
@@ -2293,8 +2311,13 @@ def _dedupe_ltoirs(lto_irs):
     return deduped
 
 
+class _NamedTempFile(Protocol):
+    @property
+    def name(self) -> str: ...
+
+
 class _SharedTempFile:
-    def __init__(self, temp_file: BinaryIO):
+    def __init__(self, temp_file: _NamedTempFile):
         self._temp_file = temp_file
         self._temp_file_finalizer = weakref.finalize(
             self, _cleanup_temp_files, (temp_file.name,)
@@ -2461,7 +2484,10 @@ def prepare_ltoir_bundle(
             "coalesced providers must use one exact compiler context"
         )
     compile_context = next(iter(compile_contexts))
-    device = cuda.get_current_device()
+    # The CUDA module reexports this accessor but omits it from its stub.
+    device = (
+        cuda.get_current_device()  # pyright: ignore[reportAttributeAccessIssue]
+    )
     cc_major, cc_minor = device.compute_capability
     cc = int(cc_major) * 10 + int(cc_minor)
     compile_identity = nvrtc.compiler_identity(
@@ -2560,7 +2586,7 @@ def prepare_ltoir_bundle(
         code="lto",
         context=compile_context,
     )
-    ltoir_blob = bytes(ltoir)
+    ltoir_blob = bytes(cast(bytes, ltoir))
     ptx = _ltoir_to_ptx(ltoir_blob, name=bundle_name, cc=cc)
 
     symbols = []
@@ -2651,11 +2677,11 @@ def make_invocable_from_specialization(
 class Invocable:
     def __init__(
         self,
-        temp_files: Sequence[BinaryIO],
+        temp_files: Sequence[_NamedTempFile],
         temp_storage_bytes: int,
         temp_storage_alignment: int,
         algorithm: Algorithm,
-        owned_temp_files: Sequence[BinaryIO] | None = None,
+        owned_temp_files: Sequence[_NamedTempFile] | None = None,
     ):
         self._temp_files = temp_files
         self._owned_temp_files = (
@@ -2701,7 +2727,7 @@ class Invocable:
 
         if self._numba_type is None:
             templates = self.specialization.codegen(self)
-            self._numba_type = types.Function(templates)
+            self._numba_type = numba_types.Function(templates)
         return self._numba_type
 
     def __call__(self, *args):
@@ -2719,8 +2745,8 @@ class RawCAbiInvocable:
         *,
         source: str,
         symbol: str,
-        return_type: types.Type,
-        parameters: Sequence[Parameter | types.Type],
+        return_type: numba_types.Type,
+        parameters: Sequence[Parameter | numba_types.Type],
         abi_transforms: Sequence[str],
         cc: int,
         compile_context: nvrtc.CompileContext,
@@ -2735,7 +2761,7 @@ class RawCAbiInvocable:
             or re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", symbol) is None
         ):
             raise ValueError("raw C-ABI symbol must be a valid C identifier")
-        if not isinstance(return_type, types.Type):
+        if not isinstance(return_type, numba_types.Type):
             raise TypeError("raw C-ABI return_type must be a Numba type")
         if isinstance(cc, bool) or not isinstance(cc, int) or cc < 1:
             raise ValueError("raw C-ABI cc must be a positive integer")
@@ -2756,7 +2782,7 @@ class RawCAbiInvocable:
                     raise ValueError(
                         "raw C-ABI parameters must be runtime input parameters"
                     )
-            elif not isinstance(parameter, types.Type):
+            elif not isinstance(parameter, numba_types.Type):
                 raise TypeError(
                     "raw C-ABI parameters must be backend Parameter objects "
                     "or exact Numba types"
@@ -2777,7 +2803,7 @@ class RawCAbiInvocable:
             )
 
         abi_types = tuple(
-            types.CPointer(types.none)
+            numba_types.CPointer(numba_types.none)
             if transform == "ptr"
             else parameter.dtype()
             if isinstance(parameter, Parameter)
@@ -2794,7 +2820,7 @@ class RawCAbiInvocable:
 
         from ._compiler._artifacts import make_binary_tempfile
 
-        temp_file = make_binary_tempfile(bytes(lto_ir), ".ltoir")
+        temp_file = make_binary_tempfile(bytes(cast(bytes, lto_ir)), ".ltoir")
         self.source = source
         self.symbol = symbol
         self.return_type = return_type
@@ -2839,7 +2865,10 @@ class RawCAbiInvocable:
             )
             parameters = self.parameters
             transforms = self.abi_transforms
-            returns_value = self.return_type not in {types.none, types.void}
+            returns_value = self.return_type not in {
+                numba_types.none,
+                numba_types.void,
+            }
 
             def invocable_impl(*actual_types):
                 if len(actual_types) != len(parameters):
@@ -2860,11 +2889,11 @@ class RawCAbiInvocable:
                     transforms,
                     returns_value=returns_value,
                 )
-                impl.__numba_cuda_mlir_link__ = link_files
+                impl.__dict__["__numba_cuda_mlir_link__"] = link_files
                 return impl
 
             wrapped_impl = war_introspection(invocable_impl, len(parameters))
-            wrapped_impl.__numba_cuda_mlir_link__ = link_files
+            wrapped_impl.__dict__["__numba_cuda_mlir_link__"] = link_files
             template = make_overload_template(
                 self,
                 wrapped_impl,
@@ -2874,7 +2903,7 @@ class RawCAbiInvocable:
                 prefer_literal=False,
                 base=_NumbaCudaMlirOverloadFunctionTemplate,
             )
-            self._numba_type = types.Function((template,))
+            self._numba_type = numba_types.Function((template,))
         return self._numba_type
 
     def __call__(self, *args):
