@@ -25,6 +25,40 @@ struct Pred
   }
 };
 
+struct CopyOnlyPred
+{
+  int limit_;
+
+  TEST_FUNC constexpr explicit CopyOnlyPred(int limit)
+      : limit_(limit)
+  {}
+  TEST_FUNC constexpr CopyOnlyPred(const CopyOnlyPred&) = default;
+  CopyOnlyPred(CopyOnlyPred&&)                          = delete;
+
+  TEST_FUNC constexpr bool operator()(int i) const
+  {
+    return i < limit_;
+  }
+};
+
+struct ThrowingMovePred
+{
+  int limit_;
+
+  TEST_FUNC constexpr explicit ThrowingMovePred(int limit)
+      : limit_(limit)
+  {}
+  TEST_FUNC constexpr ThrowingMovePred(const ThrowingMovePred&) = default;
+  TEST_FUNC constexpr ThrowingMovePred(ThrowingMovePred&& other) noexcept(false)
+      : limit_(other.limit_)
+  {}
+
+  TEST_FUNC constexpr bool operator()(int i) const
+  {
+    return i < limit_;
+  }
+};
+
 struct Foo
 {};
 
@@ -165,6 +199,20 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::std::same_as<decltype(result), Result>);
     auto expected = {4, 3, 2, 1};
     assert(equal(result, expected));
+  }
+
+  // A copy-only predicate, and a predicate whose move may throw, can form a partial `views::drop_while`.
+  {
+    CopyOnlyPred copy_only{3};
+    static_assert(noexcept(cuda::std::views::drop_while(copy_only)));
+    [[maybe_unused]] auto copy_only_partial = cuda::std::views::drop_while(copy_only);
+
+    ThrowingMovePred throwing_move{3};
+    static_assert(noexcept(cuda::std::views::drop_while(throwing_move)));
+    auto throwing_partial          = cuda::std::views::drop_while(throwing_move);
+    decltype(auto) throwing_result = MoveOnlyView{buff} | throwing_partial;
+    auto expected                  = {3, 4, 3, 2, 1};
+    assert(equal(throwing_result, expected));
   }
   return true;
 }

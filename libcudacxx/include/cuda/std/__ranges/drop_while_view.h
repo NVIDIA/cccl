@@ -157,9 +157,9 @@ struct __fn
   _CCCL_TEMPLATE(class _Pred)
   _CCCL_REQUIRES(::cuda::std::constructible_from<::cuda::std::decay_t<_Pred>, _Pred>)
   [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Pred&& __pred) noexcept(
-    ::cuda::std::is_nothrow_constructible_v<::cuda::std::decay_t<_Pred>, _Pred>)
+    noexcept(::cuda::std::ranges::__pipeable_bind_back(__fn{}, ::cuda::std::forward<_Pred>(__pred))))
   {
-    return ::cuda::std::ranges::__pipeable{::cuda::std::__bind_back(__fn{}, ::cuda::std::forward<_Pred>(__pred))};
+    return ::cuda::std::ranges::__pipeable_bind_back(__fn{}, ::cuda::std::forward<_Pred>(__pred));
   }
 };
 _CCCL_END_NAMESPACE_CPO

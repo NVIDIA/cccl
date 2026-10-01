@@ -71,6 +71,24 @@ struct Pred
 using result_subrange       = cuda::std::ranges::subrange<int*>;
 using result_subrange_sized = cuda::std::ranges::subrange<int*, int*, cuda::std::ranges::subrange_kind::sized>;
 
+struct ThrowingMoveCount
+{
+  int value_;
+
+  TEST_FUNC constexpr ThrowingMoveCount(int value)
+      : value_(value)
+  {}
+  TEST_FUNC constexpr ThrowingMoveCount(const ThrowingMoveCount&) = default;
+  TEST_FUNC ThrowingMoveCount(ThrowingMoveCount&& other)
+      : value_(other.value_)
+  {}
+
+  TEST_FUNC constexpr operator int() const
+  {
+    return value_;
+  }
+};
+
 struct RvalueOnlyCount
 {
   TEST_FUNC constexpr operator cuda::std::ptrdiff_t() &&
@@ -303,6 +321,18 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::std::same_as<decltype(result), Result>);
     assert(result.size() == 4);
     assert(*result.begin() == 7);
+  }
+
+  // A count whose move may throw still forms a non-throwing partial `views::take` from an lvalue.
+  {
+    int count_value = 3;
+    static_assert(noexcept(cuda::std::views::take(count_value)));
+
+    ThrowingMoveCount throwing_move{5};
+    static_assert(noexcept(cuda::std::views::take(throwing_move)));
+    auto throwing_partial         = cuda::std::views::take(throwing_move);
+    decltype(auto) throwing_taken = buf | throwing_partial;
+    assert(throwing_taken.size() == 5);
   }
 
   // When the size of the input range `s` is shorter than `n`, only `s` elements are taken.

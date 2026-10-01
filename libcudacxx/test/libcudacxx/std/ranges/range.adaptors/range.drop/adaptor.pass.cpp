@@ -24,6 +24,24 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
+struct ThrowingMoveCount
+{
+  int value_;
+
+  TEST_HOST_DEVICE_FUNC constexpr ThrowingMoveCount(int value)
+      : value_(value)
+  {}
+  TEST_HOST_DEVICE_FUNC constexpr ThrowingMoveCount(const ThrowingMoveCount&) = default;
+  TEST_HOST_DEVICE_FUNC ThrowingMoveCount(ThrowingMoveCount&& other)
+      : value_(other.value_)
+  {}
+
+  TEST_HOST_DEVICE_FUNC constexpr operator int() const
+  {
+    return value_;
+  }
+};
+
 template <class View, class T>
 _CCCL_CONCEPT CanBePiped =
   _CCCL_REQUIRES_EXPR((View, T), View&& view, T&& t)((cuda::std::forward<View>(view) | cuda::std::forward<T>(t)));
@@ -277,6 +295,18 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
     static_assert(!cuda::std::same_as<decltype(result), decltype(repeat)>);
     assert(result.size() == 5);
     assert(*result.begin() == 1);
+  }
+
+  // A count whose move may throw still forms a non-throwing partial `views::drop` from an lvalue.
+  {
+    int count_value = 3;
+    static_assert(noexcept(cuda::std::views::drop(count_value)));
+
+    ThrowingMoveCount throwing_move{5};
+    static_assert(noexcept(cuda::std::views::drop(throwing_move)));
+    auto throwing_partial           = cuda::std::views::drop(throwing_move);
+    decltype(auto) throwing_dropped = buf | throwing_partial;
+    assert(throwing_dropped.size() == N - 5);
   }
 
   // Test that it's possible to call `cuda::std::views::drop` with any single argument as long as the resulting closure

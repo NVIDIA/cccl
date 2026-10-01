@@ -371,10 +371,10 @@ struct __fn
 
   _CCCL_TEMPLATE(class _Np)
   _CCCL_REQUIRES(constructible_from<decay_t<_Np>, _Np>)
-  [[nodiscard]] _CCCL_API constexpr auto
-  _CCCL_STATIC_CALL_OPERATOR(_Np&& __n) noexcept(is_nothrow_constructible_v<decay_t<_Np>, _Np>)
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Np&& __n) noexcept(
+    noexcept(::cuda::std::ranges::__pipeable_bind_back(__fn{}, ::cuda::std::forward<_Np>(__n))))
   {
-    return __pipeable(::cuda::std::__bind_back(__fn{}, ::cuda::std::forward<_Np>(__n)));
+    return ::cuda::std::ranges::__pipeable_bind_back(__fn{}, ::cuda::std::forward<_Np>(__n));
   }
 };
 
