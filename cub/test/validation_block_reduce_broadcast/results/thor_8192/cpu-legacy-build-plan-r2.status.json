@@ -1,0 +1,47 @@
+{
+  "state": "FINISHED",
+  "jobs": [
+    {
+      "label": "legacy-A",
+      "command": [
+        "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_legacy/build.py",
+        "--source",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/source",
+        "--variant",
+        "baseline",
+        "--build",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/legacy-A",
+        "--output",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/build-legacy-A.json",
+        "--arch",
+        "110",
+        "--fast-exp",
+        "0"
+      ],
+      "code": 0,
+      "seconds": 33.6254563331604
+    },
+    {
+      "label": "legacy-P",
+      "command": [
+        "/home/jwipc/projects/host-gateway/.vllm/bin/python",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_legacy/build.py",
+        "--source",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/candidate",
+        "--variant",
+        "patch",
+        "--build",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/legacy-P",
+        "--output",
+        "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/evidence/build-legacy-P.json",
+        "--arch",
+        "110",
+        "--fast-exp",
+        "0"
+      ],
+      "code": 0,
+      "seconds": 25.710070371627808
+    }
+  ]
+}
