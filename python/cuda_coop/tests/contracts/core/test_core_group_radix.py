@@ -17,7 +17,7 @@ from cuda.coop._core import (
 )
 from cuda.coop._core.block.radix_rank import make_block_radix_rank_semantics
 from cuda.coop._core.block.radix_sort import make_block_radix_sort_semantics
-from cuda.coop._core.group.radix import (
+from cuda.coop._core.group.radix_sort import (
     GroupRadixRankSemantics,
     GroupRadixSortSemantics,
 )
