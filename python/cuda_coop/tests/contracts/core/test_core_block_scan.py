@@ -14,6 +14,7 @@ from cuda.coop._core import (
     Reference,
     ScanMode,
     ScanValueKind,
+    classify_parameter,
     make_block_scan_specialization,
     make_scan_semantics,
 )
@@ -134,7 +135,9 @@ def test_block_scan_custom_operator_and_initial_value_signature():
     assert specialization.specialization.fake_return
     assert [
         (item.kind, item.role)
-        for item in specialization.specialization.classify_method()
+        for item in map(
+            classify_parameter, specialization.specialization.parameters[0]
+        )
     ] == [
         (ArgumentKind.RUNTIME, ParameterRole.TEMP_STORAGE),
         (ArgumentKind.RUNTIME, ParameterRole.INPUT),
@@ -163,7 +166,9 @@ def test_block_scan_accepts_stateless_python_operator():
         ),
     )
 
-    operator = specialization.specialization.classify_method()[-1]
+    operator = classify_parameter(
+        specialization.specialization.parameters[0][-1]
+    )
     assert operator.kind is ArgumentKind.STATIC
     assert operator.role is ParameterRole.OPERATOR
 
