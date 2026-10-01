@@ -59,6 +59,13 @@ struct __pipeable
   _CCCL_API constexpr explicit __pipeable(_Fn&& __f)
       : _Fn(::cuda::std::move(__f))
   {}
+
+  _CCCL_TEMPLATE(class _Arg1, class _Arg2)
+  _CCCL_REQUIRES(::cuda::std::constructible_from<_Fn, _Arg1, _Arg2>)
+  _CCCL_API constexpr explicit __pipeable(_Arg1&& __arg1, _Arg2&& __arg2) noexcept(
+    ::cuda::std::is_nothrow_constructible_v<_Fn, _Arg1, _Arg2>)
+      : _Fn(::cuda::std::forward<_Arg1>(__arg1), ::cuda::std::forward<_Arg2>(__arg2))
+  {}
 };
 _CCCL_CTAD_SUPPORTED_FOR_TYPE(__pipeable);
 
@@ -96,8 +103,9 @@ _CCCL_REQUIRES(__range_adaptor_can_pipe_compose<_Closure, _OtherClosure>)
   is_nothrow_constructible_v<decay_t<_Closure>, _Closure>
   && is_nothrow_constructible_v<decay_t<_OtherClosure>, _OtherClosure>)
 {
-  return __pipeable(::cuda::std::__compose(
-    ::cuda::std::forward<_OtherClosure>(__other_closure), ::cuda::std::forward<_Closure>(__closure)));
+  using _Composer = ::cuda::std::__compose_t<decay_t<_OtherClosure>, decay_t<_Closure>>;
+  return __pipeable<_Composer>(
+    ::cuda::std::forward<_OtherClosure>(__other_closure), ::cuda::std::forward<_Closure>(__closure));
 }
 
 template <class _Tp, enable_if_t<is_class_v<_Tp>, int> = 0, enable_if_t<same_as<_Tp, remove_cv_t<_Tp>>, int> = 0>
