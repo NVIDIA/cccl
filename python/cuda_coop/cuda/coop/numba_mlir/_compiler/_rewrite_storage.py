@@ -1145,6 +1145,46 @@ class _StorageRewrite:
         synchronization_scope: SynchronizationScope,
         lowering_plan=None,
     ) -> None:
+        """Emit the post-call barrier required for automatic scratch reuse.
+
+        Emit ``syncthreads`` for block scope and ``syncwarp`` for warp scope;
+        ``NONE`` emits nothing. A logical warp smaller than 32 receives a mask
+        covering only its contiguous lanes within the physical warp, computed
+        from the linear block rank. Full warps use the default warp mask.
+
+        This is the post-call storage-reuse barrier selected by the lowering
+        contract. It neither establishes uniform participation nor decides
+        whether a call needs synchronization; the caller has already checked the
+        storage policy and invokes this emitter when automatic sync is
+        requested.
+
+        Parameters
+        ----------
+        block : ir.Block
+            Destination receiving mask calculations and the barrier call.
+        scope : ir.Scope or None
+            Scope assigned to generated variables.
+        loc : ir.Loc
+            Source location for generated statements and variables.
+        synchronization_scope : SynchronizationScope
+            Requested reuse-barrier scope, converted to the enum on entry.
+        lowering_plan : GroupLoweringPlan or None, optional
+            Group topology for validation and logical-warp mask
+            construction. None uses the legacy scope-only emission path.
+
+        Returns
+        -------
+        None
+            Barrier IR is appended in place, unless the requested scope is
+            NONE.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            The topology is unsupported or disagrees with the requested
+            scope.
+        """
+
         synchronization_scope = SynchronizationScope(synchronization_scope)
         if synchronization_scope is SynchronizationScope.NONE:
             return
