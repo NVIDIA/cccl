@@ -39,6 +39,23 @@ class _RegistrationSnapshot:
 
 
 def _load_runtime() -> tuple[Any, _NumbaMlirBackendImportError | None]:
+    """Import the CUDA runtime and classify failures for backend activation.
+
+    Import the top-level package before its CUDA module so an absent runtime,
+    a conflicting package without CUDA support, and a broken dependency can
+    produce different diagnostics. Preserve the original exception as the
+    structured error's cause. Import failures are returned here so
+    ``_require_runtime`` can raise them at the activation boundary.
+
+    Returns
+    -------
+    runtime : module or None
+        The ``numba_cuda_mlir.cuda`` module on success, otherwise ``None``.
+    error : _NumbaMlirBackendImportError or None
+        Failure with a reason code and import details, otherwise ``None``.
+        Exactly one of the two return values is non-``None``.
+    """
+
     try:
         runtime = importlib.import_module("numba_cuda_mlir")
     except ImportError as exc:
