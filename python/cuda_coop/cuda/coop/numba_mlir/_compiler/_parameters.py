@@ -196,7 +196,32 @@ def _scalar_cast_dtype(function):
 
 
 def _scalar_operator_result_dtype(function, *operand_dtypes):
-    """Ask the active Numba typing context for an expression result dtype."""
+    """Ask compiler typing for the result dtype of a scalar expression.
+
+    Payload inference uses this probe before the authoritative typing pass.
+    Resolve the operator through the active Numba-CUDA-MLIR typing context so
+    integer promotion and result widths follow compiler rules rather than Python
+    evaluation. Initialize that context lazily when a usable set of operand
+    dtypes is available.
+
+    All resolution failures become ``None``. This intentionally leaves
+    unsupported expressions for later typing diagnostics rather than making a
+    best-effort provenance query reject the kernel.
+
+    Parameters
+    ----------
+    function : callable or None
+        Operator or scalar function whose result is being inferred.
+    *operand_dtypes : object
+        Operand compiler dtypes, each accepted by ``normalize_dtype_param``. Any
+        unknown (``None``) operand prevents inference.
+
+    Returns
+    -------
+    numba_types.Type or None
+        Normalized result dtype, or ``None`` for missing inputs, no typing
+        signature, or an exception during normalization or resolution.
+    """
 
     if (
         function is None
