@@ -72,7 +72,7 @@ than to a registry of capabilities in this module.
 from __future__ import annotations
 
 import importlib.metadata
-from typing import Any
+from types import ModuleType
 
 _REQUIRED_RUNTIME_VERSION = ">=0.5.0,<0.6"
 _RUNTIME_INSTALL_HINT = (
@@ -104,7 +104,7 @@ class NumbaMlirBackendImportError(ImportError):
             self.__cause__ = cause
 
 
-def _detected_version(runtime: Any) -> str | None:
+def _detected_version(runtime: ModuleType | None) -> str | None:
     version = getattr(runtime, "__version__", None)
     if isinstance(version, str) and version:
         return version
@@ -114,7 +114,7 @@ def _detected_version(runtime: Any) -> str | None:
         return None
 
 
-def _runtime_requirement(runtime: Any = None) -> str:
+def _runtime_requirement(runtime: ModuleType | None = None) -> str:
     """Describe the supported range and detected compiler installation."""
 
     version = _detected_version(runtime)
@@ -128,8 +128,29 @@ def _runtime_requirement(runtime: Any = None) -> str:
     )
 
 
-def _require_numba_mlir_version(runtime: Any) -> None:
-    """Reject unsupported installations before accessing compiler APIs."""
+def _require_numba_mlir_version(runtime: ModuleType) -> None:
+    """Reject unsupported installations before accessing compiler APIs.
+
+    Activation calls this after importing the top-level compiler package and
+    before loading its CUDA integration. Import ``packaging`` here so a bare
+    ``cuda-coop`` installation can use the common API without that dependency.
+    The declared range accepts installed prereleases within its bounds; it
+    does not admit versions below the minimum or in the excluded next series.
+
+    Parameters
+    ----------
+    runtime : module
+        Imported ``numba_cuda_mlir`` package. Prefer its nonempty
+        ``__version__`` string, falling back to distribution metadata when
+        that attribute is unavailable.
+
+    Raises
+    ------
+    NumbaMlirBackendImportError
+        ``packaging`` is missing, the compiler version cannot be determined
+        or parsed, or it lies outside the supported range. The diagnostic
+        includes installation instructions and relevant version details.
+    """
 
     # Packaging is a backend dependency. Import it here so a missing runtime
     # still gets its own diagnostic, including in a base-only installation.

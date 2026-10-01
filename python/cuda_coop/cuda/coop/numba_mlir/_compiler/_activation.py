@@ -11,6 +11,7 @@ import sys
 from collections.abc import MutableSequence
 from dataclasses import dataclass
 from threading import RLock
+from types import ModuleType
 from typing import Any
 
 from ._numba_mlir_compat import (
@@ -38,8 +39,10 @@ class _RegistrationSnapshot:
     rewrites: dict[str, tuple[type, ...]]
 
 
-def _load_runtime() -> tuple[Any, NumbaMlirBackendImportError | None]:
-    """Import the CUDA runtime and classify failures for backend activation.
+def _load_runtime() -> tuple[
+    ModuleType | None, NumbaMlirBackendImportError | None
+]:
+    """Load the Numba CUDA compiler and classify activation failures.
 
     Import ``numba_cuda_mlir``, validate its version, then import
     ``numba_cuda_mlir.cuda``. Classify import failures to distinguish
@@ -48,12 +51,12 @@ def _load_runtime() -> tuple[Any, NumbaMlirBackendImportError | None]:
     This checks the Python compiler installation; it does not check GPU
     availability, driver support, or the installed CUDA Toolkit.
 
-    Preserve the original import exception as the returned error's cause.
-    Version-validation errors raise directly instead of using the return tuple.
-    ``_require_runtime`` raises that error during activation. Explicit
-    registration and qualified imports propagate it as an ``ImportError``;
-    automatic registration catches it and warns while keeping the common
-    import usable.
+    Return import failures with their original exception as the cause for
+    ``_require_runtime`` to raise. Version-validation failures raise directly,
+    before importing the ``.cuda`` submodule. In either case, explicit
+    registration and qualified imports propagate an ``ImportError``;
+    automatic registration catches it and warns, keeping the common import
+    usable.
 
     Returns
     -------
@@ -225,8 +228,8 @@ def _initialize_runtime_hooks_transaction() -> None:
 
 def _verify_registration_postconditions(
     snapshot: _RegistrationSnapshot,
-    planner_module: Any,
-    group_planner_module: Any,
+    planner_module: ModuleType,
+    group_planner_module: ModuleType,
 ) -> None:
     """Require one live registration for each mandatory compiler pass.
 
@@ -306,7 +309,7 @@ def _snapshot_registrations() -> _RegistrationSnapshot:
     ------
     NumbaMlirBackendImportError
         A required registry cannot be inspected using the supported compiler
-        interface. The original attribute or type error is retained as its cause.
+        interface. The original attribute or type error remains its cause.
     """
 
     from numba_cuda_mlir._whole_function_planners import _planner_registry
