@@ -1092,6 +1092,71 @@ private:
   const T* current_;
 };
 
+// Bidirectional iterator whose copy constructor is potentially throwing when `NoThrowCopy` is false.
+template <bool NoThrowCopy>
+struct CopyMayThrowIterator
+{
+  using iterator_category = cuda::std::bidirectional_iterator_tag;
+  using value_type        = int;
+  using difference_type   = cuda::std::ptrdiff_t;
+  using pointer           = int*;
+  using reference         = int&;
+
+  int* ptr_ = nullptr;
+
+  constexpr CopyMayThrowIterator() noexcept = default;
+  TEST_FUNC constexpr explicit CopyMayThrowIterator(int* ptr) noexcept
+      : ptr_(ptr)
+  {}
+  // The exception specification depends on NoThrowCopy, so this copy cannot be defaulted.
+  // NOLINTBEGIN(modernize-use-equals-default)
+  TEST_FUNC constexpr CopyMayThrowIterator(const CopyMayThrowIterator& other) noexcept(
+    NoThrowCopy)
+      : ptr_(other.ptr_)
+  {}
+  // NOLINTEND(modernize-use-equals-default)
+  constexpr CopyMayThrowIterator& operator=(const CopyMayThrowIterator&) noexcept = default;
+
+  TEST_FUNC constexpr reference operator*() const noexcept
+  {
+    return *ptr_;
+  }
+  TEST_FUNC constexpr CopyMayThrowIterator& operator++() noexcept
+  {
+    ++ptr_;
+    return *this;
+  }
+  TEST_FUNC constexpr CopyMayThrowIterator operator++(int) noexcept(NoThrowCopy)
+  {
+    CopyMayThrowIterator tmp(*this);
+    ++ptr_;
+    return tmp;
+  }
+  TEST_FUNC constexpr CopyMayThrowIterator& operator--() noexcept
+  {
+    --ptr_;
+    return *this;
+  }
+  TEST_FUNC constexpr CopyMayThrowIterator operator--(int) noexcept(NoThrowCopy)
+  {
+    CopyMayThrowIterator tmp(*this);
+    --ptr_;
+    return tmp;
+  }
+
+  TEST_FUNC friend constexpr bool operator==(const CopyMayThrowIterator& x, const CopyMayThrowIterator& y) noexcept
+  {
+    return x.ptr_ == y.ptr_;
+  }
+  TEST_FUNC friend constexpr bool operator!=(const CopyMayThrowIterator& x, const CopyMayThrowIterator& y) noexcept
+  {
+    return x.ptr_ != y.ptr_;
+  }
+
+  template <class T2>
+  void operator,(T2 const&) = delete;
+};
+
 template <class It>
 class cpp20_input_iterator
 {
