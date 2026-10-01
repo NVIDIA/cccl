@@ -34,7 +34,7 @@ def _radix_bounds(operation, key_width, begin_bit, end_bit, radix_bits=None):
     if end_bit is None:
         end_bit = (
             begin_bit + (4 if radix_bits is None else radix_bits)
-            if operation == "radix_rank"
+            if operation == "radix_rank_keys"
             else key_width
         )
     if radix_bits is not None and end_bit - begin_bit != radix_bits:
@@ -42,8 +42,8 @@ def _radix_bounds(operation, key_width, begin_bit, end_bit, radix_bits=None):
     make_radix_bit_range(
         begin_bit=begin_bit, end_bit=end_bit, bit_width=key_width
     )
-    if operation == "radix_rank" and end_bit - begin_bit > 8:
-        raise ValueError("radix_rank bit width must be <= 8")
+    if operation == "radix_rank_keys" and end_bit - begin_bit > 8:
+        raise ValueError("radix_rank_keys bit width must be <= 8")
     return int(begin_bit), int(end_bit)
 
 
@@ -158,8 +158,8 @@ def radix_sort_pairs(
     )
 
 
-@_common_group_operation("radix_rank", group_kinds=("block",))
-def radix_rank(
+@_common_group_operation("radix_rank_keys", group_kinds=("block",))
+def radix_rank_keys(
     group: ThreadGroup,
     keys: Any,
     /,
@@ -206,8 +206,8 @@ def radix_rank(
     can write exclusive digit prefixes into a caller-provided output array.
     """
     raise CoopCompilerContextRequiredError(
-        "cuda.coop.radix_rank must be called from a supported GPU kernel."
+        "cuda.coop.radix_rank_keys must be called from a supported GPU kernel."
     )
 
 
-__all__ = ["radix_rank", "radix_sort_keys", "radix_sort_pairs"]
+__all__ = ["radix_rank_keys", "radix_sort_keys", "radix_sort_pairs"]

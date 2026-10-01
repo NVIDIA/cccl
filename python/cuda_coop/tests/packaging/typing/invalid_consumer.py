@@ -625,7 +625,7 @@ common.radix_sort_keys(  # expected-error: [type-var]
 common.radix_sort_keys(  # expected-error: [call-arg]
     common.this_block(), radix_keys, blocked_to_striped=True
 )
-common.radix_rank(  # expected-error: [call-arg]
+common.radix_rank_keys(  # expected-error: [call-arg]
     common.this_block(), radix_keys, exclusive_digit_prefix=radix_keys
 )
 common.radix_sort_keys(

@@ -61,11 +61,11 @@ from ._group_errors import (
     UnknownResultExtentError,
 )
 from ._group_planner_support import (
+    _COMMON_GROUP_CONSTRUCTORS,
     _GROUP_CONSTRUCTORS,
     _GROUP_METHODS,
     _NAME_COUNTER,
     _PAYLOAD_DTYPE_LIKE,
-    _COMMON_GROUP_CONSTRUCTORS,
     GroupRewriteError,
     _group_operation_name,
     _is_common_root_operation,
@@ -245,7 +245,7 @@ class _GroupCallPlanner:
         if depends_on_unroll(value, set()):
             raise GroupRewriteError(
                 "cuda.coop.numba_mlir does not support literal_unroll values "
-                f"that determine {parameter} in the MVP. Write separate "
+                f"that determine {parameter}. Write separate "
                 "cooperative calls with explicit constant shapes/selectors, "
                 "or use an ordinary loop with a fixed cooperative shape."
             )
@@ -336,7 +336,8 @@ class _GroupCallPlanner:
                 if isinstance(argtype, _numba_types.Literal):
                     return (True, argtype.literal_value)
                 if isinstance(argtype, _numba_types.NoneType) or (
-                    isinstance(argtype, _numba_types.Omitted) and argtype.value is None
+                    isinstance(argtype, _numba_types.Omitted)
+                    and argtype.value is None
                 ):
                     return (True, None)
                 return (False, None)
@@ -445,7 +446,7 @@ class _GroupCallPlanner:
         parents. Constructor identity matters; matching a callable's name is
         insufficient. Arguments are resolved through ``_constant``, which may
         request literal specialization. Common-API constructors retain
-        ``common_root`` provenance so later validation applies the portable
+        ``common_root`` provenance so later validation applies the common API
         contract.
 
         Cache newly constructed descriptors by variable name for this planner.

@@ -100,6 +100,3 @@ def _typed_group_payload_like(
     raise GroupRewriteError(
         "typed group payload markers must be lowered before device compilation"
     )
-
-
-# Support consumers import the private names they use explicitly.

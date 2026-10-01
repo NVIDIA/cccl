@@ -43,7 +43,7 @@ _COMMON_EXPORTS = [
     "load",
     "merge_sort_keys",
     "merge_sort_pairs",
-    "radix_rank",
+    "radix_rank_keys",
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
@@ -99,7 +99,7 @@ def test_public_exports_are_only_the_supported_group_families():
     assert "StatefulFunction" in coop.__all__
 
     loaded = set(sys.modules)
-    assert "cuda.coop.numba_mlir._group_load_store" in loaded
+    assert "cuda.coop.numba_mlir._group._load_store" in loaded
     assert "cuda.coop.numba_mlir._compiler._rewrite" in loaded
     assert set(_EXCLUDED_BACKEND_MODULES).isdisjoint(loaded)
     assert (
@@ -257,7 +257,7 @@ def test_qualified_surface_is_common_plus_backend_extensions():
         ]
 
     assert stub_signatures(
-        coop_root / "numba_mlir" / "_group_load_store.pyi"
+        coop_root / "numba_mlir" / "_group" / "_load_store.pyi"
     ) == (stub_signatures(coop_root / "_core" / "api" / "load_store.pyi"))
 
 
@@ -320,7 +320,7 @@ def test_python_operator_compilation_supports_explicit_state():
         "load",
         "merge_sort_keys",
         "merge_sort_pairs",
-        "radix_rank",
+        "radix_rank_keys",
         "radix_sort_keys",
         "radix_sort_pairs",
         "reduce",

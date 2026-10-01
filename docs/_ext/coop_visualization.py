@@ -63,7 +63,7 @@ _API_VISUALIZATIONS = {
     "merge_sort_pairs": "merge-sort",
     "radix_sort_keys": "radix",
     "radix_sort_pairs": "radix",
-    "radix_rank": "radix",
+    "radix_rank_keys": "radix",
     "topk_min_keys": "topk",
     "topk_max_keys": "topk",
     "topk_min_pairs": "topk",
