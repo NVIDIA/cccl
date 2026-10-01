@@ -142,6 +142,7 @@ inline constexpr int sorted_output_policy_count =
   static_cast<int>(sizeof(sorted_output_policies) / sizeof(sorted_output_policies[0]));
 
 //! Sub-policy for the baseline (worker-per-segment) backend of @ref DeviceBatchedTopK.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct baseline_topk_policy
 {
   //! Per-segment worker policies ordered by decreasing tile size. At compile time the smallest policy whose tile size
@@ -1945,6 +1946,7 @@ enum class topk_algorithm
 //!
 //! This is a regular type: `detail::dispatch_compute_cap` (and the `policy_selector` concept) require the selector's
 //! result to be `::cuda::std::regular`, hence the equality/streaming operators below.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct topk_policy
 {
   topk_algorithm backend; //!< Backend the dispatch selected, i.e. the kernel arm that runs.
