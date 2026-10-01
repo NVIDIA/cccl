@@ -1540,8 +1540,9 @@ class _StorageRewrite:
             Calls, descriptor uses, provider contracts, or materialization
             are invalid.
         _DeferredCoopRewrite
-            Required launch metadata is not yet available; matching retries
-            later.
+            Internal signal that required launch metadata is unavailable.
+            ``CoopSinglePhaseRewrite.match`` catches it and leaves the IR
+            intact for ``CoopWholeFunctionPlanner`` to retry.
         """
 
         rewrite = cast("CoopSinglePhaseRewrite", self)

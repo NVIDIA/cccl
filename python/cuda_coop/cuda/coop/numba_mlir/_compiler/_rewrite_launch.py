@@ -58,8 +58,10 @@ class _LaunchRewrite:
         CoopSinglePhaseRewriteError
             An explicit shape disagrees with the exact kernel launch shape.
         _DeferredCoopRewrite
-            Explicit dimensions need reconciliation with pending launch
-            metadata.
+            Internal signal that explicit dimensions need pending launch
+            metadata. It propagates through argument validation to
+            ``CoopSinglePhaseRewrite.match``, which preserves the IR for
+            ``CoopWholeFunctionPlanner`` to retry with the launch shape.
         """
 
         if "threads_per_block" not in allowed_factory_kwargs:

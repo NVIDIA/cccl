@@ -79,8 +79,9 @@ class _ArgumentRewrite:
             Arguments are invalid, factory values cannot be resolved, or
             required inputs remain unavailable when deferral is disabled.
         _DeferredCoopRewrite
-            Exact launch metadata is needed before this call can be
-            committed.
+            Internal signal that exact launch metadata is still needed.
+            ``CoopSinglePhaseRewrite.match`` catches it and preserves the
+            call for a later attempt by ``CoopWholeFunctionPlanner``.
         """
 
         rewrite = cast("CoopSinglePhaseRewrite", self)
