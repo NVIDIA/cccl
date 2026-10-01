@@ -188,7 +188,29 @@ def _struct_size_alignment(member_types):
 
 
 def _registered_struct_member_types(numba_type):
-    """Return matching CUDA/MLIR ``StructModel`` members, or ``None``."""
+    """Find a struct layout whose CUDA and MLIR member types agree.
+
+    The storage-layout fallback must describe the same value on both sides of
+    the compiler boundary. Require a CUDA ``StructModel`` and an MLIR
+    ``StructModel`` with identical ordered member types before using their
+    members to compute size and alignment. This compares member descriptions,
+    not independently measured byte layouts.
+
+    MLIR model lookup can require an active context and location. Supply only
+    those that are missing, leaving an existing caller context in place.
+
+    Parameters
+    ----------
+    numba_type : numba_types.Type
+        Compiler type to look up in the CUDA/default and MLIR data managers.
+
+    Returns
+    -------
+    tuple of numba_types.Type or None
+        Ordered members when both models agree, including an empty tuple for
+        matching empty models. ``None`` means either lookup has no supported
+        struct model or the member sequences differ.
+    """
 
     from numba_cuda_mlir import models as mlir_models
 
