@@ -400,7 +400,9 @@ struct __fn
   [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Range&& __range, _Np&& __n) noexcept(noexcept(
     views::repeat(::cuda::std::forward_like<_Range>(*__range.__value_),
                   ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__range), ::cuda::std::forward<_Np>(__n)))))
-    -> _RawRange
+    -> decltype(views::repeat(
+      ::cuda::std::forward_like<_Range>(*__range.__value_),
+      ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__range), ::cuda::std::forward<_Np>(__n))))
   {
     return views::repeat(
       ::cuda::std::forward_like<_Range>(*__range.__value_),

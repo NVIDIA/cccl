@@ -276,6 +276,17 @@ TEST_FUNC constexpr bool test()
     assert(*result.begin() == 1);
   }
 
+  // `views::take` on a sized `repeat_view` with an unsigned bound uses the difference type of `min`.
+  {
+    auto repeat  = cuda::std::views::repeat(1, cuda::std::size_t{8});
+    using Result = cuda::std::ranges::repeat_view<int, cuda::std::ranges::range_difference_t<decltype(repeat)>>;
+    decltype(auto) result = repeat | cuda::std::views::take(3);
+    static_assert(cuda::std::same_as<decltype(result), Result>);
+    static_assert(!cuda::std::same_as<decltype(result), decltype(repeat)>);
+    assert(result.size() == 3);
+    assert(*result.begin() == 1);
+  }
+
   // When the size of the input range `s` is shorter than `n`, only `s` elements are taken.
   {
     test_small_range(cuda::std::span(buf));

@@ -336,7 +336,11 @@ struct __fn
   _CCCL_STATIC_CALL_OPERATOR(_Range&& __range, _Np&& __n) noexcept(noexcept(::cuda::std::ranges::views::repeat(
     ::cuda::std::forward_like<_Range>(*__range.__value_),
     ::cuda::std::ranges::distance(__range)
-      - ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__range), ::cuda::std::forward<_Np>(__n))))) -> _RawRange
+      - ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__range), ::cuda::std::forward<_Np>(__n)))))
+    -> decltype(::cuda::std::ranges::views::repeat(
+      ::cuda::std::forward_like<_Range>(*__range.__value_),
+      ::cuda::std::ranges::distance(__range)
+        - ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__range), ::cuda::std::forward<_Np>(__n))))
   {
     return ::cuda::std::ranges::views::repeat(
       ::cuda::std::forward_like<_Range>(*__range.__value_),

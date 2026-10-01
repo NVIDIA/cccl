@@ -268,6 +268,17 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
     test_small_range(cuda::std::views::iota(1, 8));
   }
 
+  // `views::drop` on a sized `repeat_view` with an unsigned bound uses the difference type of `distance - min`.
+  {
+    auto repeat  = cuda::std::views::repeat(1, cuda::std::size_t{8});
+    using Result = cuda::std::ranges::repeat_view<int, cuda::std::ranges::range_difference_t<decltype(repeat)>>;
+    decltype(auto) result = repeat | cuda::std::views::drop(3);
+    static_assert(cuda::std::same_as<decltype(result), Result>);
+    static_assert(!cuda::std::same_as<decltype(result), decltype(repeat)>);
+    assert(result.size() == 5);
+    assert(*result.begin() == 1);
+  }
+
   // Test that it's possible to call `cuda::std::views::drop` with any single argument as long as the resulting closure
   // is never invoked. There is no good use case for it, but it's valid.
   {
