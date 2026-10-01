@@ -45,6 +45,7 @@
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -154,7 +155,7 @@ public:
   _CCCL_API constexpr take_view() noexcept(is_nothrow_default_constructible_v<_View2>) {}
 #endif // !_CCCL_HAS_CONCEPTS()
 
-  _CCCL_API constexpr take_view(_View __base, range_difference_t<_View> __count)
+  _CCCL_API constexpr explicit take_view(_View __base, range_difference_t<_View> __count)
       : __base_(::cuda::std::move(__base))
       , __count_(__count)
   {}
@@ -400,7 +401,9 @@ struct __fn
   [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Range&& __range, _Np&& __n) noexcept(noexcept(
     views::repeat(::cuda::std::forward_like<_Range>(*__range.__value_),
                   ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__range), ::cuda::std::forward<_Np>(__n)))))
-    -> _RawRange
+    -> decltype(views::repeat(
+      ::cuda::std::forward_like<_Range>(*__range.__value_),
+      ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__range), ::cuda::std::forward<_Np>(__n))))
   {
     return views::repeat(
       ::cuda::std::forward_like<_Range>(*__range.__value_),
@@ -412,11 +415,12 @@ struct __fn
     class _Range, class _Np, class _RawRange = remove_cvref_t<_Range>, class _Dist = range_difference_t<_Range>)
   _CCCL_REQUIRES(convertible_to<_Np, range_difference_t<_Range>> _CCCL_AND
                    __is_repeat_specialization<_RawRange> _CCCL_AND(!sized_range<_RawRange>))
-  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Range&& __range, _Np&& __n) noexcept(
-    noexcept(views::repeat(::cuda::std::forward_like<_Range>(*__range.__value_), static_cast<_Dist>(__n))))
-    -> repeat_view<range_value_t<_RawRange>, _Dist>
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Range&& __range, _Np&& __n) noexcept(noexcept(
+    views::repeat(::cuda::std::forward_like<_Range>(*__range.__value_),
+                  static_cast<_Dist>(::cuda::std::forward<_Np>(__n))))) -> repeat_view<range_value_t<_RawRange>, _Dist>
   {
-    return views::repeat(::cuda::std::forward_like<_Range>(*__range.__value_), static_cast<_Dist>(__n));
+    return views::repeat(::cuda::std::forward_like<_Range>(*__range.__value_),
+                         static_cast<_Dist>(::cuda::std::forward<_Np>(__n)));
   }
 
   // [range.take.overview]: the `iota_view` case.
@@ -454,7 +458,7 @@ struct __fn
   [[nodiscard]] _CCCL_API constexpr auto
   _CCCL_STATIC_CALL_OPERATOR(_Np&& __n) noexcept(is_nothrow_constructible_v<decay_t<_Np>, _Np>)
   {
-    return __pipeable(::cuda::std::__bind_back(__fn{}, ::cuda::std::forward<_Np>(__n)));
+    return ::cuda::std::ranges::__pipeable_bind_back(__fn{}, ::cuda::std::forward<_Np>(__n));
   }
 };
 
