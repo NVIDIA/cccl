@@ -29,8 +29,6 @@
 #include <cstdlib>
 #include <exception>
 
-#include <stdlib.h>
-
 using namespace cuda::experimental::stf;
 
 int main()

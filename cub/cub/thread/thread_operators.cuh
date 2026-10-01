@@ -28,6 +28,7 @@
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
@@ -162,6 +163,8 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES swap_args(Predicate) -> swap_args<Predicate>;
 using arg_max = arg_reduce_op<swap_args<::cuda::std::less<>>>;
 
 template <typename T, typename IndexT>
+// Reduction inputs supply all fields while preserving triviality.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct argminmax_accum_t
 {
   T min_value;
@@ -230,6 +233,8 @@ struct ScanBySegmentOp
   template <typename KeyValuePairT>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePairT operator()(const KeyValuePairT& first, const KeyValuePairT& second)
   {
+    // Both branches assign key and value before returning.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     KeyValuePairT retval;
     retval.key = first.key | second.key;
 #ifdef _NVHPC_CUDA // WAR bug on nvc++
@@ -292,7 +297,7 @@ struct CastOp
   template <typename A>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE B operator()(A&& a) const
   {
-    return (B) a;
+    return (B)::cuda::std::forward<A>(a);
   }
 };
 
@@ -364,6 +369,8 @@ struct ReduceBySegmentOp
   template <typename KeyValuePairT>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePairT operator()(const KeyValuePairT& first, const KeyValuePairT& second)
   {
+    // Both branches assign key and value before returning.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     KeyValuePairT retval;
     retval.key = first.key + second.key;
 #ifdef _NVHPC_CUDA // WAR bug on nvc++

@@ -233,8 +233,7 @@ struct AgentScan
   };
 
   // Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per-thread fields
@@ -366,6 +365,8 @@ struct AgentScan
     if (tile_idx == 0)
     {
       // Scan first tile
+      // ScanFirstTile fills the aggregate before it is read.
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
       AccumT block_aggregate;
       ScanFirstTile(items, init_value, scan_op, block_aggregate);
 

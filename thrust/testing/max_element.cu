@@ -8,7 +8,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestMaxElementSimple()
+void test_max_element_simple()
 {
   using T = typename Vector::value_type;
 
@@ -20,10 +20,10 @@ void TestMaxElementSimple()
   REQUIRE(*thrust::max_element(data.begin(), data.end(), ::cuda::std::greater<T>()) == 1);
   REQUIRE(thrust::max_element(data.begin(), data.end(), ::cuda::std::greater<T>()) - data.begin() == 2);
 }
-DECLARE_VECTOR_UNITTEST(TestMaxElementSimple);
+DECLARE_VECTOR_UNITTEST(test_max_element_simple);
 
 template <class Vector>
-void TestMaxElementWithTransform()
+void test_max_element_with_transform()
 {
   using T = typename Vector::value_type;
 
@@ -37,10 +37,10 @@ void TestMaxElementWithTransform()
                                ::cuda::std::greater<T>())
           == -5);
 }
-DECLARE_VECTOR_UNITTEST(TestMaxElementWithTransform);
+DECLARE_VECTOR_UNITTEST(test_max_element_with_transform);
 
 template <typename T>
-void TestMaxElement(const size_t n)
+void test_max_element(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -57,7 +57,7 @@ void TestMaxElement(const size_t n)
 
   REQUIRE(h_min - h_data.begin() == d_min - d_data.begin());
 }
-DECLARE_VARIABLE_UNITTEST(TestMaxElement);
+DECLARE_VARIABLE_UNITTEST(test_max_element);
 
 template <typename ForwardIterator>
 ForwardIterator max_element(my_system& system, ForwardIterator first, ForwardIterator)
@@ -92,7 +92,7 @@ TEST_CASE("TestMaxElementDispatchImplicit", "[max_element]")
   REQUIRE(13 == vec.front());
 }
 
-void TestMaxElementWithBigIndexesHelper(int magnitude)
+void test_max_element_with_big_indexes_helper(int magnitude)
 {
   const thrust::counting_iterator<long long> begin(1);
   const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
@@ -103,11 +103,11 @@ void TestMaxElementWithBigIndexesHelper(int magnitude)
 
 TEST_CASE("TestMaxElementWithBigIndexes", "[max_element]")
 {
-  TestMaxElementWithBigIndexesHelper(30);
+  test_max_element_with_big_indexes_helper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
-  TestMaxElementWithBigIndexesHelper(31);
-  TestMaxElementWithBigIndexesHelper(32);
-  TestMaxElementWithBigIndexesHelper(33);
+  test_max_element_with_big_indexes_helper(31);
+  test_max_element_with_big_indexes_helper(32);
+  test_max_element_with_big_indexes_helper(33);
 #endif
 }
 

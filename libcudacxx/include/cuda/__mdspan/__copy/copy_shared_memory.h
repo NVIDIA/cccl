@@ -208,7 +208,8 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_shared_mem_kernel(
                                 + static_cast<_StrideTIn>(__outer) * __src_perm_src_strides[1];
         const auto __raw_offset = __inner * __tile_src_perm_smem_strides[0] + __outer * __tile_src_perm_smem_strides[1];
         const auto __smem_offset = ::cuda::__smem_offset<true, _Tp, _MaxRankUZ>(__raw_offset);
-        __smem[__smem_offset]    = __src_accessor.access(const_cast<__src_value_type*>(__src_ptr), __src_offset);
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+        __smem[__smem_offset] = __src_accessor.access(const_cast<__src_value_type*>(__src_ptr), __src_offset);
       }
     }
     else
@@ -285,7 +286,7 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_shared_mem_kernel(
     for (auto __i = __tid; __i < __partial_tile_total; __i += __block_stride)
     {
       __tile_extent_t __linear = __i;
-      ::cuda::std::array<__tile_extent_t, __max_rank> __coords;
+      ::cuda::std::array<__tile_extent_t, __max_rank> __coords{};
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int __k = 0; __k < __max_rank; ++__k)
       {

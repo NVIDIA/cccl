@@ -118,7 +118,7 @@ struct is_equal_div_10_unique
 };
 
 template <typename Vector>
-void TestUniqueSimple()
+void test_unique_simple()
 {
   using T = typename Vector::value_type;
 
@@ -141,7 +141,7 @@ void TestUniqueSimple()
   ref = {11, 20, 31};
   REQUIRE(data == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestUniqueSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_unique_simple);
 
 template <typename T>
 struct TestUnique
@@ -168,7 +168,7 @@ struct TestUnique
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUnique, IntegralTypes);
 
 template <typename Vector>
-void TestUniqueCopySimple()
+void test_unique_copy_simple()
 {
   using T = typename Vector::value_type;
 
@@ -192,7 +192,7 @@ void TestUniqueCopySimple()
   ref = {11, 20, 31};
   REQUIRE(data == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestUniqueCopySimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_unique_copy_simple);
 
 template <typename T>
 struct TestUniqueCopy
@@ -247,7 +247,7 @@ struct TestUniqueCopyToDiscardIterator
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueCopyToDiscardIterator, IntegralTypes);
 
 template <typename Vector>
-void TestUniqueCountSimple()
+void test_unique_count_simple()
 {
   using T = typename Vector::value_type;
 
@@ -261,7 +261,7 @@ void TestUniqueCountSimple()
 
   REQUIRE(div_10_count == 3);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestUniqueCountSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_unique_count_simple);
 
 template <typename T>
 struct TestUniqueCount

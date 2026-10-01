@@ -26,8 +26,8 @@ using namespace cuda::experimental::stf;
 template <typename T>
 __global__ void axpy(size_t start, size_t cnt, T a, const T* x, T* y)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int ind = tid; ind < cnt; ind += nthreads)
   {
@@ -80,7 +80,7 @@ void run()
   /* Compute Y = Y + alpha X */
   auto t = ctx.task(all_devs, handle_X.read(cdp), handle_Y.rw(cdp));
   t->*[&](auto, auto sX, auto sY) {
-    size_t grid_size = t.grid_dims().size();
+    const size_t grid_size = t.grid_dims().size();
 
     assert(N % grid_size == 0);
 

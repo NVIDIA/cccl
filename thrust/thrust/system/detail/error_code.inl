@@ -40,10 +40,9 @@ error_code ::error_code(ErrorCodeEnum e
                         ,
                         ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value, int>
 #endif // !_CCCL_COMPILER(MSVC)
-)
-{
-  *this = make_error_code(e);
-} // end error_code::error_code()
+                        )
+    : error_code(make_error_code(e))
+{} // end error_code::error_code()
 
 void error_code ::assign(int val, const error_category& cat)
 {
