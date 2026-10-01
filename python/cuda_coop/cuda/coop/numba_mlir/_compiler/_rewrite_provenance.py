@@ -1043,6 +1043,42 @@ class _ProvenanceRewrite(Rewrite):
         *,
         sharing: str,
     ) -> tuple[int, int, dict[int, _TempStorageSlice]]:
+        """Lay out scratch for each call and group instance.
+
+        Exclusive sharing gives each use a distinct domain. Shared placement
+        reuses a domain only when ``_temp_storage_domain_key`` permits it.
+        Within a domain, reserve the largest per-instance requirement and align
+        its stride for every consumer. Multiple group instances receive separate
+        strides; compatible calls reuse those same instance slots.
+
+        Offsets are relative to the region, before the function-wide backing's
+        base offset is assigned. Views retain each call's actual byte count even
+        when another call determines the larger shared stride. No lifetime or
+        control-flow overlap analysis is performed here.
+
+        Parameters
+        ----------
+        uses : list of _TempStorageUseRequirement
+            Nonempty list of validated primitive requirements and lowering
+            plans.
+        sharing : str
+            Validated sharing policy: ``"exclusive"`` separates every call;
+            ``"shared"`` permits reuse within compatible domains.
+
+        Returns
+        -------
+        required_size : int
+            Bytes required by the region, including alignment gaps and
+            instances.
+        required_alignment : int
+            Maximum required alignment, at least the storage pointer
+            alignment.
+        slices_by_call_id : dict of int to _TempStorageSlice
+            Region-relative offset, byte count, instance stride, and
+            lowering plan indexed by the identity of each original call
+            assignment.
+        """
+
         ordered_uses = sorted(uses, key=lambda entry: entry.order)
         required_alignment = max(
             _MIN_TEMP_STORAGE_ALIGNMENT,
