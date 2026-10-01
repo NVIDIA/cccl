@@ -2622,6 +2622,31 @@ class Invocable:
         algorithm: Algorithm,
         owned_temp_files: Sequence[_NamedTempFile] | None = None,
     ):
+        """Retain a provider's link inputs and install cleanup for owned files.
+
+        All link files must remain available while the compiler types and links
+        calls to this object. Keep references to shared bundle owners alongside
+        ordinary files, but unlink only the explicitly owned paths when this
+        invocable is finalized. The Numba callable type is constructed lazily on
+        first ``_numba_type_`` access.
+
+        Parameters
+        ----------
+        temp_files : sequence of _NamedTempFile
+            Complete ordered link inputs, including any shared bundle owners.
+        temp_storage_bytes : int
+            Compiled scratch size required by the specialization.
+        temp_storage_alignment : int
+            Compiled scratch alignment in bytes.
+        algorithm : Algorithm
+            Specialized provider supplying code generation and execution
+            metadata.
+        owned_temp_files : sequence of _NamedTempFile, optional
+            Files this invocable alone is responsible for unlinking. ``None``
+            owns no paths; membership in ``temp_files`` alone does not imply
+            ownership.
+        """
+
         self._temp_files = temp_files
         self._owned_temp_files = (
             () if owned_temp_files is None else owned_temp_files
