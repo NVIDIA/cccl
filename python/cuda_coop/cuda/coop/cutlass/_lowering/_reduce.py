@@ -601,12 +601,17 @@ def _register_renderer() -> None:
             "#include <cuda/devices>",
             "#include <cuda/functional>",
             "#include <cuda/hierarchy>",
+            "#include <cuda/experimental/hierarchy.cuh>",
             "#include <cuda/std/functional>",
             "#include <cuda/std/type_traits>",
             "#include <cuda/experimental/coop/algorithm>",
             "#include <cuda/experimental/coop/group>",
         ),
         cccl_headers=(
+            (
+                "#include <cuda/experimental/hierarchy.cuh>",
+                "cuda/experimental/hierarchy.cuh",
+            ),
             (
                 "#include <cuda/experimental/coop/algorithm>",
                 "cuda/experimental/coop/algorithm",
