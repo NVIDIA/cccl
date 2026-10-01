@@ -75,7 +75,8 @@ struct __pipeable
       : _Fn(::cuda::std::forward<_Arg1>(__arg1), ::cuda::std::forward<_Arg2>(__arg2))
   {}
 
-  template <class... _Args>
+  _CCCL_TEMPLATE(class... _Args)
+  _CCCL_REQUIRES(::cuda::std::constructible_from<_Fn, _Args...>)
   _CCCL_API constexpr explicit __pipeable(__bind_back_in_place_t, _Args&&... __args) noexcept(
     ::cuda::std::is_nothrow_constructible_v<_Fn, _Args...>)
       : _Fn(::cuda::std::forward<_Args>(__args)...)
