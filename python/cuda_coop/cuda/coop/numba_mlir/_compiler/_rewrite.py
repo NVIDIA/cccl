@@ -617,8 +617,25 @@ class CoopSinglePhaseRewrite(
         return new_block
 
     def _clear_unused_payload_callees(self, new_block):
-        """Retire constructor bindings only after their last call is
-        rewritten.
+        """Retire constructor bindings after their final use has been rewritten.
+
+        Inspect uses across the function with ``new_block`` substituted for the
+        current block. Replace unused candidate assignments with ``None`` and
+        follow their source aliases until no additional binding can be retired.
+        This preserves shared constructor aliases while later blocks still need
+        them, but removes Python descriptor callees before type inference.
+
+        Parameters
+        ----------
+        new_block : ir.Block
+            Replacement block from ``apply``. This block and other function
+            blocks may be mutated in place; the candidate set is consumed as
+            bindings are retired.
+
+        Returns
+        -------
+        None
+            Constructor assignments are updated in place.
         """
 
         blocks = [
