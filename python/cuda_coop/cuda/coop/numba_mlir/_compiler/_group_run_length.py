@@ -4,7 +4,7 @@
 
 from dataclasses import replace
 
-from numba_cuda_mlir import types
+import numba_cuda_mlir.numba_cuda.types as numba_types
 
 from cuda.coop._core import (
     BindingKind,
@@ -30,7 +30,7 @@ from ._rewrite_support import CoopSinglePhaseRewriteError
 
 def _integer_dtype(dtype, name):
     dtype = normalize_dtype_param(dtype)
-    if not isinstance(dtype, types.Integer) or dtype.bitwidth > 64:
+    if not isinstance(dtype, numba_types.Integer) or dtype.bitwidth > 64:
         raise TypeError(
             f"run_length_decode {name} must have an integer dtype up to 64 bits"
         )
@@ -100,7 +100,7 @@ def _infer_payload(context, inference):
         for index, name, dtype in arrays:
             actual = context.numba_type(inference.runtime_args[index])
             if (
-                not isinstance(actual, types.Array)
+                not isinstance(actual, numba_types.Array)
                 or actual.ndim != 1
                 or actual.layout != "C"
                 or not actual.mutable
@@ -177,34 +177,41 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
     decoded_extent = _decode_extent(context, bound)
     offset_dtype = bound.arguments.get("decoded_offset_dtype")
     offset_dtype = (
-        types.uint32
+        numba_types.uint32
         if context.is_none(offset_dtype)
         else normalize_dtype_param(context.constant(offset_dtype))
     )
-    if offset_dtype not in (types.uint32, types.uint64):
+    if offset_dtype not in (numba_types.uint32, numba_types.uint64):
         raise TypeError("decoded_offset_dtype must be uint32 or uint64")
     control_name = "destination_offset" if bulk else "decoded_window_offset"
     control = bound.arguments[control_name]
     binding = context.planning_binding(control)
-    control_dtype = types.uint64
+    control_dtype = numba_types.uint64
     if binding.kind is BindingKind.RUNTIME:
         control_dtype = _integer_dtype(context.dtype(control), control_name)
     relative = bound.arguments.get("relative_offsets")
     has_relative = not context.is_none(relative)
+    from .._lowering._core import NumbaMlirCoreAdapter
+
+    adapter = NumbaMlirCoreAdapter()
     semantics = GroupRunLengthDecodeSemantics(
-        item_dtype=dtypes[0],
-        run_length_dtype=dtypes[1],
+        item_dtype=adapter.core_dtype(dtypes[0]),
+        run_length_dtype=adapter.core_dtype(dtypes[1]),
         runs_per_thread=extent,
         decoded_items_per_thread=decoded_extent,
         offset=binding,
-        decoded_offset_dtype=offset_dtype,
-        control_dtype=control_dtype,
+        decoded_offset_dtype=adapter.core_dtype(offset_dtype),
+        control_dtype=adapter.core_dtype(control_dtype),
         bulk=bulk,
         relative_offsets=has_relative,
     )
     plan = plan_group_primitive(
         make_group_primitive_call(group, semantics), context.launch
     ).require_supported()
+    participation = plan.participation
+    assert participation is not None
+    assert plan.temp_storage is not None
+    assert plan.synchronization is not None
     storage = bound.arguments.get("temp_storage")
     if not context.is_none(storage):
         descriptor = context.temp_storage(storage)
@@ -301,7 +308,7 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
         "run_length_dtype": dtypes[1],
         "decoded_offset_dtype": offset_dtype,
         "control_dtype": control_dtype,
-        "threads_per_block": plan.participation.exact_block_dim,
+        "threads_per_block": participation.exact_block_dim,
         "runs_per_thread": extent,
         "decoded_items_per_thread": decoded_extent,
         "offset": control if binding.kind is BindingKind.RUNTIME else binding,
@@ -339,7 +346,7 @@ register_group_primitive(
         GroupResultSource(
             None,
             None,
-            fixed_dtype=types.uint32,
+            fixed_dtype=numba_types.uint32,
             dtype_keyword="decoded_offset_dtype",
         ),
     ),
