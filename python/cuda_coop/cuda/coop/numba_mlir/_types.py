@@ -1968,7 +1968,9 @@ class Algorithm:
             requested, or allocating warp storage has an invalid width/block
             size.
         RuntimeError
-            The provider was already qualified for incompatible compiler inputs.
+            The provider was already qualified for incompatible compiler inputs,
+            a Python operator targets a different compute capability, or two
+            operators declare the same device symbol with different signatures.
         NotImplementedError
             The requested allocating execution or synchronization scope has no
             source emitter.

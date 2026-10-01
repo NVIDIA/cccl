@@ -39,6 +39,7 @@ _INCLUDE_LINES = (
     "#include <cuda/barrier>",
     "#include <cuda/devices>",
     "#include <cuda/hierarchy>",
+    "#include <cuda/experimental/hierarchy.cuh>",
     "#include <cuda/std/cstdint>",
     "#include <cuda/std/type_traits>",
     "#include <cuda/experimental/coop/group>",

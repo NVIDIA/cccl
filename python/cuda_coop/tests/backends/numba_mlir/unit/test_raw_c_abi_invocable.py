@@ -117,9 +117,9 @@ def test_raw_c_abi_invocable_compiles_exact_source_and_exposes_contract(
 def test_raw_c_abi_invocable_typing_is_local_and_owns_artifact(monkeypatch):
     from numba_cuda_mlir import types
     from numba_cuda_mlir.descriptor import mlir_target
+    from numba_cuda_mlir.extending import _NumbaCudaMlirOverloadFunctionTemplate
 
     from cuda.coop.numba_mlir import _types
-    from numba_cuda_mlir.extending import _NumbaCudaMlirOverloadFunctionTemplate
 
     registry_sizes = _registry_sizes()
     invocable, _ = _make_raw(
