@@ -93,6 +93,18 @@ class NumbaMlirBackendImportError(ImportError):
     ``backend`` identifies the compiler, ``reason_code`` classifies the failure,
     and ``details`` carries diagnostic context. When supplied, the original
     import failure is preserved as ``__cause__``.
+
+    Parameters
+    ----------
+    reason_code : str
+        Category used to distinguish activation failures.
+    message : str
+        Human-readable failure description and recovery guidance.
+    cause : BaseException or None, optional
+        Original failure to retain as the explicit exception cause.
+    **details : object
+        Named diagnostic values, such as detected and required versions,
+        stored in the exception's ``details`` dictionary.
     """
 
     def __init__(self, reason_code, message, *, cause=None, **details):
