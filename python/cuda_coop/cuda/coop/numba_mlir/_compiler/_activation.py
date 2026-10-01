@@ -334,11 +334,18 @@ def _restore_registrations(snapshot: _RegistrationSnapshot) -> None:
     """Remove only this backend's additions after a failed import.
 
     Other extensions may register with Numba-CUDA-MLIR while this backend is
-    importing.  Replacing either registry with its pre-import snapshot would
-    erase those independent additions.  Instead, retain the occurrences that
+    importing. Replacing either registry with its pre-import snapshot would
+    erase those independent additions. Instead, retain the occurrences that
     existed in the snapshot and delete only new classes owned by the two
-    activation modules.  Registrations from every other module remain in
+    activation modules. Registrations from every other module remain in
     place, including ones appended concurrently during rollback.
+
+    Parameters
+    ----------
+    snapshot : _RegistrationSnapshot
+        Original registry objects and their pre-import entries. The live
+        lists are edited in place; saved entries are used to distinguish
+        preexisting occurrences from this attempt's additions.
     """
 
     with snapshot.planner_registry._lock:
