@@ -2,12 +2,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe Scan result types and mode-specific options for type checkers.
+
+Separate overloads retain scalar types and per-thread payload item types.
+They also express Warp-only lane counts, block-only storage, and the seed
+required for non-sum exclusive scans. Runtime contracts are documented on
+the corresponding functions in _scan.py.
+"""
+
 from collections.abc import Callable
 from typing import Literal, Protocol, TypeAlias, overload
 
 from typing_extensions import TypeVar
 
-from .._typing import (
+from ..._typing import (
     ContextualInitialValue,
     NonSumScanOperator,
     PortableNumericScalar,
@@ -19,8 +27,8 @@ from .._typing import (
     ThreadDataLike,
     ValidItems,
 )
-from ._stateful_function import StatefulFunction
-from ._thread_group import BlockGroup, WarpGroup
+from .._stateful_function import StatefulFunction
+from .._thread_group import BlockGroup, WarpGroup
 
 _ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 _ScalarT = TypeVar("_ScalarT", bound=PortableNumericScalar)
@@ -37,6 +45,8 @@ _NumpyScanUfuncName: TypeAlias = Literal[
 ]
 
 class _NumpyScanUfunc(Protocol):
+    """Recognize supported binary NumPy ufuncs by name and arity."""
+
     @property
     def __name__(self) -> _NumpyScanUfuncName: ...
     @property
@@ -45,6 +55,8 @@ class _NumpyScanUfunc(Protocol):
     def nout(self) -> Literal[1]: ...
 
 class _NumpySumScanUfunc(_NumpyScanUfunc, Protocol):
+    """Identify NumPy addition, whose exclusive scan may omit the seed."""
+
     @property
     def __name__(self) -> Literal["add"]: ...
 
