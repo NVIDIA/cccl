@@ -276,7 +276,27 @@ def _verify_registration_postconditions(
 
 
 def _snapshot_registrations() -> _RegistrationSnapshot:
-    """Snapshot compiler registries populated during backend activation."""
+    """Capture registration baselines without copying the registry objects.
+
+    Activation needs both the original entries and the live containers: the
+    former identify additions to roll back, while the latter remain the
+    compiler's authoritative registries. Capture planner entries under the
+    planner lock and copy each rewrite bucket to a tuple. The two registries
+    are sampled separately; this is not an atomic snapshot across both.
+
+    Returns
+    -------
+    _RegistrationSnapshot
+        References to the live planner and rewrite registries, plus saved
+        sequences of their current class entries. Later appends do not
+        change those sequences; duplicate entries retain their multiplicity.
+
+    Raises
+    ------
+    _NumbaMlirBackendImportError
+        A required registry cannot be inspected using the supported compiler
+        interface. The original attribute or type error is retained as its cause.
+    """
 
     from numba_cuda_mlir._whole_function_planners import _planner_registry
     from numba_cuda_mlir.numba_cuda.core.rewrites import rewrite_registry
