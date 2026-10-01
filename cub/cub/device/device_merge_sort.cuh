@@ -174,12 +174,11 @@ private:
     CompareOpT compare_op,
     const EnvT& env)
   {
-    using ChooseOffsetT           = detail::choose_offset_t<NumItemsT>;
-    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
+    using ChooseOffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return select_tuning_and_dispatch(
           storage,
           bytes,
           d_keys,
@@ -189,7 +188,7 @@ private:
           static_cast<ChooseOffsetT>(num_items),
           compare_op,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -530,12 +529,11 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    using ChooseOffsetT           = detail::choose_offset_t<NumItemsT>;
-    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
+    using ChooseOffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return select_tuning_and_dispatch(
           storage,
           bytes,
           d_input_keys,
@@ -545,7 +543,7 @@ public:
           static_cast<ChooseOffsetT>(num_items),
           compare_op,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -663,12 +661,11 @@ private:
     CompareOpT compare_op,
     const EnvT& env)
   {
-    using ChooseOffsetT           = detail::choose_offset_t<NumItemsT>;
-    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
+    using ChooseOffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return select_tuning_and_dispatch(
           storage,
           bytes,
           d_keys,
@@ -678,7 +675,7 @@ private:
           static_cast<ChooseOffsetT>(num_items),
           compare_op,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
@@ -869,12 +866,11 @@ private:
     CompareOpT compare_op,
     const EnvT& env)
   {
-    using ChooseOffsetT           = detail::choose_offset_t<NumItemsT>;
-    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
+    using ChooseOffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return select_tuning_and_dispatch(
           storage,
           bytes,
           d_input_keys,
@@ -884,7 +880,7 @@ private:
           static_cast<ChooseOffsetT>(num_items),
           compare_op,
           stream,
-          policy_selector);
+          tuning_env);
       });
   }
 
