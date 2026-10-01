@@ -11,9 +11,7 @@ from typing import Any
 
 from ._symbols import semantic_token
 from ._types import (
-    ParameterClassification,
     TemplateParameter,
-    classify_parameter,
 )
 
 
@@ -245,22 +243,7 @@ class AlgorithmSpec:
         return (*self.ordered_template_arguments, *auxiliary)
 
     @property
-    def symbol_mangling_inputs(self) -> tuple[Any, ...]:
-        """Raw semantic inputs a backend should use when naming a shim."""
-
-        return self.c_name, self.method_name, self.semantic_key
-
-    @property
     def semantic_key(self) -> tuple[Any, ...]:
         """Stable, hashable identity for provider/cache de-duplication."""
 
         return self._semantic_key
-
-    def classify_method(
-        self,
-        method_index: int = 0,
-    ) -> tuple[ParameterClassification, ...]:
-        return tuple(
-            classify_parameter(parameter)
-            for parameter in self.parameters[method_index]
-        )
