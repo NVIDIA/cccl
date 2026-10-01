@@ -43,7 +43,7 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
 
   while (keys1_begin < keys1_end)
   {
-    const OffsetT mid = cub::MidPoint<OffsetT>(keys1_begin, keys1_end);
+    const OffsetT mid = CUB_NS_QUALIFIER::MidPoint<OffsetT>(keys1_begin, keys1_end);
     // pull copies of the keys before calling binary_pred so proxy references are unwrapped
     const detail::it_value_t<KeyIt1> key1 = keys1[mid];
     const detail::it_value_t<KeyIt2> key2 = keys2[diag - 1 - mid];
@@ -980,7 +980,7 @@ private:
       const int keys1_count = keys1_end - keys1_beg;
       const int keys2_count = keys2_end - keys2_beg;
 
-      const int partition_diag = MergePath(
+      const int partition_diag = CUB_NS_QUALIFIER::MergePath(
         &temp_storage.keys_shared[keys1_beg],
         &temp_storage.keys_shared[keys2_beg],
         keys1_count,
@@ -1119,11 +1119,11 @@ private:
 
 public:
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSort()
-      : BlockMergeSortStrategyT(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      : BlockMergeSortStrategyT(CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   _CCCL_DEVICE _CCCL_FORCEINLINE explicit BlockMergeSort(typename BlockMergeSortStrategyT::TempStorage& temp_storage)
-      : BlockMergeSortStrategyT(temp_storage, RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      : BlockMergeSortStrategyT(temp_storage, CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
 private:

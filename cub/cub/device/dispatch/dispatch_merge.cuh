@@ -105,7 +105,7 @@ _CCCL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
   // items_per_tile must be the same of the merge kernel later, so we have to consider whether a fallback agent will be
   // selected for the merge agent that changes the tile size
   constexpr int items_per_tile =
-    choose_merge_agent<device_policy_getter<PolicySelector, current_tuning_cc().get()>,
+    choose_merge_agent<device_policy_getter<PolicySelector, CUB_NS_QUALIFIER::detail::current_tuning_cc().get()>,
                        KeyIt1,
                        ValueIt1,
                        KeyIt2,
@@ -118,8 +118,9 @@ _CCCL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
     static_cast<Offset>(blockDim.x * blockIdx.x + threadIdx.x); // NOLINT(bugprone-misplaced-widening-cast)
   if (diagonal_idx < num_diagonals)
   {
-    const Offset diagonal_num      = (::cuda::std::min) (diagonal_idx * items_per_tile, keys1_count + keys2_count);
-    key1_beg_offsets[diagonal_idx] = cub::MergePath(keys1, keys2, keys1_count, keys2_count, diagonal_num, compare_op);
+    const Offset diagonal_num = (::cuda::std::min) (diagonal_idx * items_per_tile, keys1_count + keys2_count);
+    key1_beg_offsets[diagonal_idx] =
+      CUB_NS_QUALIFIER::MergePath(keys1, keys2, keys1_count, keys2_count, diagonal_num, compare_op);
   }
 }
 
@@ -133,7 +134,7 @@ template <typename PolicySelector,
           typename Offset,
           typename CompareOp>
 __launch_bounds__(
-  choose_merge_agent<device_policy_getter<PolicySelector, current_tuning_cc().get()>,
+  choose_merge_agent<device_policy_getter<PolicySelector, CUB_NS_QUALIFIER::detail::current_tuning_cc().get()>,
                      KeyIt1,
                      ValueIt1,
                      KeyIt2,
@@ -161,7 +162,7 @@ __launch_bounds__(
                 "Comparison operator must be convertible to bool");
 
   using MergeAgent = typename choose_merge_agent<
-    device_policy_getter<PolicySelector, current_tuning_cc().get()>,
+    device_policy_getter<PolicySelector, CUB_NS_QUALIFIER::detail::current_tuning_cc().get()>,
     KeyIt1,
     ValueIt1,
     KeyIt2,
@@ -224,7 +225,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+  return CUB_NS_QUALIFIER::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     detail::log_dispatch("DeviceMerge", cc, policy_getter());
 
     static_assert(::cuda::std::is_empty_v<decltype(policy_getter)>);
@@ -288,7 +289,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       {
         return error;
       }
-      if (const auto error = CubDebug(DebugSyncStream(stream)))
+      if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -315,7 +316,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       {
         return error;
       }
-      if (const auto error = CubDebug(DebugSyncStream(stream)))
+      if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream)))
       {
         return error;
       }

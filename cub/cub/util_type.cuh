@@ -282,7 +282,7 @@ struct InputValue
     }
     else
     {
-      detail::uninitialized_copy_single(&m_immediate_value, other.m_immediate_value);
+      CUB_NS_QUALIFIER::detail::uninitialized_copy_single(&m_immediate_value, other.m_immediate_value);
     }
   }
 

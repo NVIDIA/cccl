@@ -70,7 +70,7 @@ struct SmemResourceRaw
   _CCCL_HOST_DEVICE_API constexpr void
   addPhase(SyncHandler& syncHandler, ::cuda::std::uint64_t* ptrBarrier, const SquadDesc (&squads)[NumSquads])
   {
-    const int numOwningThreads = squadCountThreads(squads);
+    const int numOwningThreads = CUB_NS_QUALIFIER::detail::warpspeed::squadCountThreads(squads);
 
     const int curPhase = mNumPhases;
     mNumPhases++;

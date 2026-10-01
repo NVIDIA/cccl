@@ -121,7 +121,8 @@ struct agent_t
     const int needles_count  = total_in_tile - haystack_count;
 
     {
-      const auto d_range_cm = cub::detail::try_make_cache_modified_iterator<LoadModifier>(d_range + range_beg);
+      const auto d_range_cm =
+        CUB_NS_QUALIFIER::detail::try_make_cache_modified_iterator<LoadModifier>(d_range + range_beg);
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ItemsPerThread; ++item)
       {
@@ -134,7 +135,8 @@ struct agent_t
     }
 
     {
-      auto d_values_cm = cub::detail::try_make_cache_modified_iterator<LoadModifier>(d_values + values_beg);
+      auto d_values_cm =
+        CUB_NS_QUALIFIER::detail::try_make_cache_modified_iterator<LoadModifier>(d_values + values_beg);
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ItemsPerThread; ++item)
       {
@@ -169,8 +171,8 @@ struct agent_t
       d0_thread = ::cuda::std::min(d0_thread, total_in_tile);
     }
 
-    const int i0 =
-      cub::MergePath(storage.haystack, storage.needles, haystack_count, needles_count, d0_thread, partition_comp);
+    const int i0 = CUB_NS_QUALIFIER::MergePath(
+      storage.haystack, storage.needles, haystack_count, needles_count, d0_thread, partition_comp);
     const int j0 = d0_thread - i0;
 
     int i                  = i0;

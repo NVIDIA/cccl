@@ -110,7 +110,8 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_block) //
+_CCCL_KERNEL_ATTRIBUTES
+__launch_bounds__(CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().large_reduce.threads_per_block) //
   void DeviceSegmentedReduceKernel(
     const InputIteratorT d_in,
     const OutputIteratorT d_out,
@@ -121,7 +122,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
     const InitValueT init,
     const size_t max_segment_size)
 {
-  static constexpr SegmentedReducePolicy full_policy = current_policy<PolicySelector>();
+  static constexpr SegmentedReducePolicy full_policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>();
 
   // Large segment agent (one block per segment)
   static constexpr ReducePassPolicy large_pol = full_policy.large_reduce;
@@ -198,7 +199,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
         {
           if (lane_id == 0)
           {
-            reduce::handle_empty_problem(d_out + global_segment_id, init);
+            CUB_NS_QUALIFIER::detail::reduce::handle_empty_problem(d_out + global_segment_id, init);
           }
           return;
         }
@@ -206,11 +207,12 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
         AccumT warp_aggregate =
           AgentWarpReduceT(storage[sid_within_block], d_in, reduction_op).ConsumeRange(segment_begin, segment_end);
 
-        NormalizeReductionOutput(warp_aggregate, segment_begin, d_in);
+        CUB_NS_QUALIFIER::detail::segmented_reduce::NormalizeReductionOutput(warp_aggregate, segment_begin, d_in);
 
         if (lane_id == 0)
         {
-          reduce::finalize_and_store_aggregate(d_out + global_segment_id, reduction_op, init, warp_aggregate);
+          CUB_NS_QUALIFIER::detail::reduce::finalize_and_store_aggregate(
+            d_out + global_segment_id, reduction_op, init, warp_aggregate);
         }
       }
     };
@@ -240,7 +242,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
     {
       if (tid == 0)
       {
-        reduce::handle_empty_problem(d_out + bid, init);
+        CUB_NS_QUALIFIER::detail::reduce::handle_empty_problem(d_out + bid, init);
       }
       return;
     }
@@ -248,11 +250,11 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large
     AccumT block_aggregate =
       AgentReduceT(temp_storage.large_storage, d_in, reduction_op).ConsumeRange(segment_begin, segment_end);
 
-    NormalizeReductionOutput(block_aggregate, segment_begin, d_in);
+    CUB_NS_QUALIFIER::detail::segmented_reduce::NormalizeReductionOutput(block_aggregate, segment_begin, d_in);
 
     if (tid == 0)
     {
-      reduce::finalize_and_store_aggregate(d_out + bid, reduction_op, init, block_aggregate);
+      CUB_NS_QUALIFIER::detail::reduce::finalize_and_store_aggregate(d_out + bid, reduction_op, init, block_aggregate);
     }
   }
 }
@@ -315,19 +317,20 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-_CCCL_KERNEL_ATTRIBUTES
-__launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_block) void DeviceFixedSizeSegmentedReduceKernel(
-  const InputIteratorT d_in,
-  const OutputIteratorT d_out,
-  const OffsetT segment_size,
-  const int num_segments,
-  ReductionOpT reduction_op,
-  const InitValueT init,
-  AccumT* const d_partial_out,
-  const int full_chunk_size,
-  const int blocks_per_segment)
+_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
+  CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>()
+    .large_reduce
+    .threads_per_block) void DeviceFixedSizeSegmentedReduceKernel(const InputIteratorT d_in,
+                                                                  const OutputIteratorT d_out,
+                                                                  const OffsetT segment_size,
+                                                                  const int num_segments,
+                                                                  ReductionOpT reduction_op,
+                                                                  const InitValueT init,
+                                                                  AccumT* const d_partial_out,
+                                                                  const int full_chunk_size,
+                                                                  const int blocks_per_segment)
 {
-  static constexpr SegmentedReducePolicy full_policy = current_policy<PolicySelector>();
+  static constexpr SegmentedReducePolicy full_policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>();
 
   // Large segment agent (one block per segment)
   static constexpr ReducePassPolicy large_pol = full_policy.large_reduce;
@@ -399,7 +402,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
       {
         if (lane_id == 0)
         {
-          detail::reduce::handle_empty_problem(d_out + global_segment_id, init);
+          CUB_NS_QUALIFIER::detail::reduce::handle_empty_problem(d_out + global_segment_id, init);
         }
         return;
       }
@@ -410,7 +413,8 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
 
       if (lane_id == 0)
       {
-        reduce::finalize_and_store_aggregate(d_out + global_segment_id, reduction_op, init, warp_aggregate);
+        CUB_NS_QUALIFIER::detail::reduce::finalize_and_store_aggregate(
+          d_out + global_segment_id, reduction_op, init, warp_aggregate);
       }
     }
   }
@@ -431,7 +435,8 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
 
       if (lane_id == 0)
       {
-        reduce::finalize_and_store_aggregate(d_out + global_segment_id, reduction_op, init, warp_aggregate);
+        CUB_NS_QUALIFIER::detail::reduce::finalize_and_store_aggregate(
+          d_out + global_segment_id, reduction_op, init, warp_aggregate);
       }
     }
   }
@@ -470,7 +475,7 @@ __launch_bounds__(current_policy<PolicySelector>().large_reduce.threads_per_bloc
 
       if (tid == 0)
       {
-        reduce::finalize_and_store_aggregate(d_out + bid, reduction_op, init, block_aggregate);
+        CUB_NS_QUALIFIER::detail::reduce::finalize_and_store_aggregate(d_out + bid, reduction_op, init, block_aggregate);
       }
     }
   }

@@ -164,7 +164,7 @@ struct DeviceScan
   {
     // Unsigned integer type for global offsets
     using offset_t = detail::choose_offset_t<NumItemsT>;
-    return detail::scan::dispatch<EnforceInclusive, StableReductionOrder>(
+    return CUB_NS_QUALIFIER::detail::scan::dispatch<EnforceInclusive, StableReductionOrder>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -229,7 +229,7 @@ struct DeviceScan
     using default_policy_selector_t = detail::scan::
       policy_selector_from_types<InputIteratorT, OutputIteratorT, accum_t, offset_t, ScanOpT, stable_reduction_order>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector_t>(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector_t>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
         return scan_impl_determinism<EnforceInclusive, stable_reduction_order>(
           storage, bytes, d_in, d_out, scan_op, init, num_items, stream, policy_selector);
@@ -273,7 +273,7 @@ struct DeviceScan
       ::cuda::std::execution::__query_result_or_t<TuningEnvT, ScanByKeyPolicy, default_policy_selector_t>;
 
     // we would not need to override the accumulator type, but we must ensure it's the same as for the policy here
-    return detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>(
+    return CUB_NS_QUALIFIER::detail::scan_by_key::dispatch</* OverrideAccumT = */ accum_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -390,7 +390,7 @@ struct DeviceScan
     // Initial value
     const init_value_t init_value{};
 
-    return detail::scan::dispatch(
+    return CUB_NS_QUALIFIER::detail::scan::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -739,7 +739,7 @@ struct DeviceScan
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return detail::scan::dispatch(
+    return CUB_NS_QUALIFIER::detail::scan::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -1166,7 +1166,7 @@ struct DeviceScan
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return detail::scan::dispatch(
+    return CUB_NS_QUALIFIER::detail::scan::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -1572,7 +1572,7 @@ struct DeviceScan
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return detail::scan::dispatch(
+    return CUB_NS_QUALIFIER::detail::scan::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -1904,7 +1904,7 @@ struct DeviceScan
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return detail::scan::dispatch(
+    return CUB_NS_QUALIFIER::detail::scan::dispatch(
       d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, NullType(), static_cast<OffsetT>(num_items), stream);
   }
 
@@ -1994,7 +1994,7 @@ struct DeviceScan
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return detail::scan::dispatch<ForceInclusive::Yes>(
+    return CUB_NS_QUALIFIER::detail::scan::dispatch<ForceInclusive::Yes>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -2540,7 +2540,7 @@ struct DeviceScan
 
     auto __fut = FutureValue<__init_value_type, InitValueIterT>{::cuda::args::__unwrap(init_value)};
 
-    return detail::scan::dispatch<ForceInclusive::Yes>(
+    return CUB_NS_QUALIFIER::detail::scan::dispatch<ForceInclusive::Yes>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -3237,20 +3237,21 @@ struct DeviceScan
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSumByKey");
 
     using init_value_t = cub::detail::it_value_t<ValuesInputIteratorT>;
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return scan_by_key_impl<tuning_t>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_values_in,
-        d_values_out,
-        equality_op,
-        ::cuda::std::plus<>{},
-        init_value_t{},
-        num_items,
-        stream);
-    });
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_values_in,
+          d_values_out,
+          equality_op,
+          ::cuda::std::plus<>{},
+          init_value_t{},
+          num_items,
+          stream);
+      });
   }
 
   //! @rst
@@ -3364,11 +3365,12 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScanByKey");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return scan_by_key_impl<tuning_t>(
-        storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, init_value, num_items, stream);
-    });
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, init_value, num_items, stream);
+      });
   }
 
   //! @rst
@@ -3462,20 +3464,21 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveSumByKey");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return scan_by_key_impl<tuning_t>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_values_in,
-        d_values_out,
-        equality_op,
-        ::cuda::std::plus<>{},
-        NullType{},
-        num_items,
-        stream);
-    });
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_values_in,
+          d_values_out,
+          equality_op,
+          ::cuda::std::plus<>{},
+          NullType{},
+          num_items,
+          stream);
+      });
   }
 
   //! @rst
@@ -3578,11 +3581,12 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveScanByKey");
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return scan_by_key_impl<tuning_t>(
-        storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, NullType{}, num_items, stream);
-    });
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return scan_by_key_impl<tuning_t>(
+          storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, NullType{}, num_items, stream);
+      });
   }
 
   //! @}

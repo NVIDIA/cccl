@@ -278,7 +278,8 @@ ThreadStoreVolatilePtr(T* ptr, T val, ::cuda::std::false_type /*is_primitive*/)
     reinterpret_cast<ShuffleWord*>(words)[i] = reinterpret_cast<ShuffleWord*>(&val)[i];
   }
 
-  detail::iterate_thread_store<0, VOLATILE_MULTIPLE>::Dereference(reinterpret_cast<volatile VolatileWord*>(ptr), words);
+  CUB_NS_QUALIFIER::detail::iterate_thread_store<0, VOLATILE_MULTIPLE>::Dereference(
+    reinterpret_cast<volatile VolatileWord*>(ptr), words);
 }
 
 //! ThreadStore definition for STORE_VOLATILE modifier on pointer types
@@ -287,7 +288,7 @@ template <typename T>
 CCCL_DEPRECATED_BECAUSE("Use ThreadStore<STORE_VOLATILE>(ptr, val) instead") _CCCL_DEVICE _CCCL_FORCEINLINE void
 ThreadStore(T* ptr, T val, detail::constant_t<STORE_VOLATILE> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
-  ThreadStoreVolatilePtr(ptr, val, detail::bool_constant_v<detail::is_primitive<T>::value>);
+  CUB_NS_QUALIFIER::ThreadStoreVolatilePtr(ptr, val, detail::bool_constant_v<detail::is_primitive<T>::value>);
 }
 
 //! ThreadStore definition for generic modifiers on pointer types
@@ -311,7 +312,7 @@ ThreadStore(T* ptr, T val, detail::constant_t<MODIFIER> /*modifier*/, ::cuda::st
     reinterpret_cast<ShuffleWord*>(words)[i] = reinterpret_cast<ShuffleWord*>(&val)[i];
   }
 
-  detail::iterate_thread_store<0, DEVICE_MULTIPLE>::template Store<CacheStoreModifier(MODIFIER)>(
+  CUB_NS_QUALIFIER::detail::iterate_thread_store<0, DEVICE_MULTIPLE>::template Store<CacheStoreModifier(MODIFIER)>(
     reinterpret_cast<DeviceWord*>(ptr), words);
 }
 
@@ -346,13 +347,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(OutputIteratorT itr, T val)
 
     if constexpr (MODIFIER == STORE_VOLATILE)
     {
-      detail::dereference_helper(reinterpret_cast<volatile StoreWord*>(::cuda::std::to_address(itr)),
-                                 words,
-                                 ::cuda::std::make_index_sequence<WORD_MULTIPLE>{});
+      CUB_NS_QUALIFIER::detail::dereference_helper(
+        reinterpret_cast<volatile StoreWord*>(::cuda::std::to_address(itr)),
+        words,
+        ::cuda::std::make_index_sequence<WORD_MULTIPLE>{});
     }
     else
     {
-      detail::store_helper<MODIFIER>(
+      CUB_NS_QUALIFIER::detail::store_helper<MODIFIER>(
         reinterpret_cast<StoreWord*>(::cuda::std::to_address(itr)),
         words,
         ::cuda::std::make_index_sequence<WORD_MULTIPLE>{});

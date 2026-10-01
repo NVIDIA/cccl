@@ -142,7 +142,7 @@ dispatch_compute_cap(PolicySelector policy_selector, ::cuda::compute_capability 
 {
   // when not using CCCL.C, policy_selector is empty since all information is contained in its type
   static_assert(::cuda::std::is_empty_v<PolicySelector>);
-  return dispatch_to_cc_list(
+  return CUB_NS_QUALIFIER::detail::dispatch_to_cc_list(
     policy_selector,
     device_cc,
     ::cuda::std::forward<F>(f),

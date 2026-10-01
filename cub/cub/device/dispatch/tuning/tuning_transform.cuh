@@ -400,18 +400,18 @@ struct policy_selector
     }
     const bool can_memcpy_all_inputs = all_inputs_contiguous && all_input_values_trivially_reloc;
     const bool fallback_to_prefetch  = requires_stable_address || !can_memcpy_contiguous_inputs || !dense_output;
-    const int min_bytes_in_flight    = cc_to_min_bytes_in_flight(cc);
+    const int min_bytes_in_flight    = CUB_NS_QUALIFIER::detail::transform::cc_to_min_bytes_in_flight(cc);
 
     if (cc >= ::cuda::compute_capability{9, 0}) // handles sm_100 as well
     {
       const int async_block_size = (cc < ::cuda::compute_capability{10, 0}) ? 256 : 128;
-      const int alignment        = bulk_copy_alignment(cc);
+      const int alignment        = CUB_NS_QUALIFIER::detail::transform::bulk_copy_alignment(cc);
 
-      const auto prefetch = TransformPrefetchPolicy{256};
-      const auto vectorized =
-        tuned_vectorized_policy(cc, ::cuda::std::max(1, output.value_type_size), no_input_streams);
+      const auto prefetch   = TransformPrefetchPolicy{256};
+      const auto vectorized = CUB_NS_QUALIFIER::detail::transform::tuned_vectorized_policy(
+        cc, ::cuda::std::max(1, output.value_type_size), no_input_streams);
       auto async           = TransformAsyncCopyPolicy{async_block_size};
-      async.store_vec_size = auto_ublkcp_store_vec_size(output.value_type_size);
+      async.store_vec_size = CUB_NS_QUALIFIER::detail::transform::auto_ublkcp_store_vec_size(output.value_type_size);
 
       // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
       // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
@@ -466,8 +466,8 @@ struct policy_selector
     {
       const int threads_per_block = 256;
       const auto prefetch         = TransformPrefetchPolicy{threads_per_block};
-      const auto vectorized =
-        tuned_vectorized_policy(cc, ::cuda::std::max(1, output.value_type_size), no_input_streams);
+      const auto vectorized       = CUB_NS_QUALIFIER::detail::transform::tuned_vectorized_policy(
+        cc, ::cuda::std::max(1, output.value_type_size), no_input_streams);
       const auto async = TransformAsyncCopyPolicy{threads_per_block};
 
       // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
@@ -509,7 +509,7 @@ struct policy_selector
         ? TransformAlgorithm::prefetch
         : TransformAlgorithm::vectorized,
       TransformPrefetchPolicy{256},
-      tuned_vectorized_policy(
+      CUB_NS_QUALIFIER::detail::transform::tuned_vectorized_policy(
         ::cuda::compute_capability{6, 0}, ::cuda::std::max(1, output.value_type_size), no_input_streams),
       TransformAsyncCopyPolicy{}, // never used
     };
@@ -549,8 +549,8 @@ struct policy_selector_from_types<RequiresStableAddress,
     constexpr auto policies = policy_selector<sizeof...(RandomAccessIteratorsIn)>{
       RequiresStableAddress,
       DenseOutput,
-      {make_iterator_info<RandomAccessIteratorsIn>()...},
-      make_iterator_info<RandomAccessIteratorOut>()};
+      {CUB_NS_QUALIFIER::detail::make_iterator_info<RandomAccessIteratorsIn>()...},
+      CUB_NS_QUALIFIER::detail::make_iterator_info<RandomAccessIteratorOut>()};
     return policies(cc);
   }
 };

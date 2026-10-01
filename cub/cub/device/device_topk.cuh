@@ -140,7 +140,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_topk_hub(
   NumOutItemsT k,
   const EnvT& env)
 {
-  return dispatch_topk<SelectDirection>(
+  return CUB_NS_QUALIFIER::detail::dispatch_topk<SelectDirection>(
     d_temp_storage,
     temp_storage_bytes,
     d_keys_in,

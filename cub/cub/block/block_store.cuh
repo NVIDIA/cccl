@@ -191,12 +191,12 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
     }
 
     // Direct-store using vector types
-    StoreDirectBlocked(linear_tid, block_ptr_vectors, raw_vector);
+    CUB_NS_QUALIFIER::StoreDirectBlocked(linear_tid, block_ptr_vectors, raw_vector);
   }
   else
   {
     // Direct-store using original type when the address is misaligned
-    StoreDirectBlocked(linear_tid, block_ptr, items);
+    CUB_NS_QUALIFIER::StoreDirectBlocked(linear_tid, block_ptr, items);
   }
 }
 
@@ -755,7 +755,7 @@ public:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockStore()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
@@ -771,7 +771,7 @@ public:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockStore(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}
@@ -831,32 +831,32 @@ public:
   {
     if constexpr (Algorithm == BLOCK_STORE_DIRECT)
     {
-      StoreDirectBlocked(linear_tid, block_itr, items);
+      CUB_NS_QUALIFIER::StoreDirectBlocked(linear_tid, block_itr, items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_STRIPED)
     {
-      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
+      CUB_NS_QUALIFIER::StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_VECTORIZE)
     {
       if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>)
       {
-        StoreDirectBlockedVectorized(linear_tid, ::cuda::std::to_address(block_itr), items);
+        CUB_NS_QUALIFIER::StoreDirectBlockedVectorized(linear_tid, ::cuda::std::to_address(block_itr), items);
       }
       else
       {
-        StoreDirectBlocked(linear_tid, block_itr, items);
+        CUB_NS_QUALIFIER::StoreDirectBlocked(linear_tid, block_itr, items);
       }
     }
     else if constexpr (Algorithm == BLOCK_STORE_TRANSPOSE)
     {
       block_exchange(temp_storage).BlockedToStriped(items);
-      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
+      CUB_NS_QUALIFIER::StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE || Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
     {
       block_exchange(temp_storage).BlockedToWarpStriped(items);
-      StoreDirectWarpStriped(linear_tid, block_itr, items);
+      CUB_NS_QUALIFIER::StoreDirectWarpStriped(linear_tid, block_itr, items);
     }
   }
 
@@ -917,11 +917,11 @@ public:
   {
     if constexpr (Algorithm == BLOCK_STORE_DIRECT || Algorithm == BLOCK_STORE_VECTORIZE)
     {
-      StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
+      CUB_NS_QUALIFIER::StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_STRIPED)
     {
-      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, valid_items);
+      CUB_NS_QUALIFIER::StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, valid_items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_TRANSPOSE)
     {
@@ -932,7 +932,7 @@ public:
         temp_storage.valid_items = valid_items;
       }
       __syncthreads();
-      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, temp_storage.valid_items);
+      CUB_NS_QUALIFIER::StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, temp_storage.valid_items);
     }
     else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE || Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
     {
@@ -943,7 +943,7 @@ public:
         temp_storage.valid_items = valid_items;
       }
       __syncthreads();
-      StoreDirectWarpStriped(linear_tid, block_itr, items, temp_storage.valid_items);
+      CUB_NS_QUALIFIER::StoreDirectWarpStriped(linear_tid, block_itr, items, temp_storage.valid_items);
     }
   }
 

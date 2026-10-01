@@ -878,7 +878,7 @@ struct policy_selector
 private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto default_items_per_thread() const -> int
   {
-    return cub::detail::nominal_4B_items_to_items(11, key_size);
+    return CUB_NS_QUALIFIER::detail::nominal_4B_items_to_items(11, key_size);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_default_policy() const -> UniqueByKeyPolicy

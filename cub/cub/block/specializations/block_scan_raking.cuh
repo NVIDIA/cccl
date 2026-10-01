@@ -233,7 +233,7 @@ struct BlockScanRaking
   /// Constructor
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockScanRaking(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //---------------------------------------------------------------------

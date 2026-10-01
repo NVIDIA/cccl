@@ -177,7 +177,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires non_trivial_runs::rle_non_trivial_runs_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_block))
+__launch_bounds__(int(CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().lookback.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceRleSweepKernel(
     const InputIteratorT d_in,
     const OffsetsOutputIteratorT d_offsets_out,
@@ -189,7 +189,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
     const int num_tiles,
     const StreamingContextT streaming_context)
 {
-  static constexpr RleNonTrivialRunsPolicy policy = current_policy<PolicySelector>();
+  static constexpr RleNonTrivialRunsPolicy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>();
   using AgentRlePolicyT =
     agent_rle_policy<policy.lookback.threads_per_block,
                      policy.lookback.items_per_thread,
@@ -409,7 +409,8 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
     // the blob)
     void* allocations[3] = {};
 
-    error = CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+    error = CubDebug(
+      CUB_NS_QUALIFIER::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
     if (error != cudaSuccess)
     {
       return error;
@@ -456,7 +457,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         return error;
@@ -528,7 +529,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         return error;
@@ -603,7 +604,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
 
     // Get PTX version
     int ptx_version = 0;
-    error           = CubDebug(PtxVersion(ptx_version));
+    error           = CubDebug(CUB_NS_QUALIFIER::PtxVersion(ptx_version));
     if (cudaSuccess != error)
     {
       return error;
@@ -666,13 +667,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   static constexpr int init_kernel_threads = 128;
 
   ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(ptx_compute_cap(cc)))
+  if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::ptx_compute_cap(cc)))
   {
     return error;
   }
 
   const RleNonTrivialRunsPolicy active_policy = policy_selector(cc);
-  detail::log_dispatch("DeviceRle", cc, active_policy);
+  CUB_NS_QUALIFIER::detail::log_dispatch("DeviceRle", cc, active_policy);
 
   const int threads_per_block = active_policy.lookback.threads_per_block;
   const int items_per_thread  = active_policy.lookback.items_per_thread;
@@ -704,8 +705,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   allocation_sizes[2] = num_partitions > 1 ? sizeof(LengthT) * 2 : size_t{0};
 
   void* allocations[3] = {};
-  if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  if (const auto error = CubDebug(
+        CUB_NS_QUALIFIER::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -739,7 +740,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       return error;
     }
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -798,7 +799,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       return error;
     }
 
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream)))
     {
       return error;
     }

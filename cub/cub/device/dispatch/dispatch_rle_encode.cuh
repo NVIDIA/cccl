@@ -79,7 +79,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires rle_encode_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_block))
+__launch_bounds__(int(CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().lookback.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void DeviceRleEncodeStreamingKernel(
     const KeysInputIteratorT d_keys_in,
     const UniqueOutputIteratorT d_unique_out,
@@ -94,7 +94,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
     const StreamingContextT streaming_context,
     vsmem_t vsmem)
 {
-  static constexpr RleEncodePolicy policy = current_policy<PolicySelector>();
+  static constexpr RleEncodePolicy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>();
   // this kernel is launched only from the call path whose lookahead branch is compile-time viable, so on
   // architectures whose policy selects lookahead it can never run and compiles to an empty stub
   if constexpr (policy.algorithm != RleAlgorithm::lookback)
@@ -179,7 +179,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_streaming(
 {
   using length_t                 = cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>;
   using lengths_input_iterator_t = ::cuda::constant_iterator<length_t, OffsetT>;
-  return detail::reduce_by_key::dispatch_streaming(
+  return CUB_NS_QUALIFIER::detail::reduce_by_key::dispatch_streaming(
     d_temp_storage,
     temp_storage_bytes,
     d_in,
@@ -277,8 +277,8 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
 
   void* allocations[1]       = {};
   size_t allocation_sizes[1] = {static_cast<size_t>(num_tiles) * sizeof(tile_partial_state_t)};
-  if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  if (const auto error = CubDebug(
+        CUB_NS_QUALIFIER::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }
@@ -343,13 +343,13 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
     {
       return error;
     }
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream)))
     {
       return error;
     }
   }
   {
-    const int block_dim = num_total_threads(lookahead_policy);
+    const int block_dim = CUB_NS_QUALIFIER::detail::rle::encode::num_total_threads(lookahead_policy);
     _CUB_LOG_KERNEL_LAUNCH("DeviceRleEncodeLookaheadKernel", num_tiles, 1, 1, block_dim, dyn_smem_bytes, stream, "");
     if (const auto error = CubDebug(
           launcher_factory(num_tiles,
@@ -375,7 +375,7 @@ CUB_RUNTIME_FUNCTION cudaError_t invoke_lookahead(
     {
       return error;
     }
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -424,12 +424,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       return error;
     }
-    return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
-      detail::log_dispatch("DeviceRunLengthEncode::Encode", cc, policy_getter());
+    return CUB_NS_QUALIFIER::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
+      CUB_NS_QUALIFIER::detail::log_dispatch("DeviceRunLengthEncode::Encode", cc, policy_getter());
 
       if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == RleAlgorithm::lookahead)
       {
-        return invoke_lookahead(
+        return CUB_NS_QUALIFIER::detail::rle::encode::invoke_lookahead(
           kernel_source,
           policy_getter().lookahead,
           d_temp_storage,
@@ -444,7 +444,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       }
       else
       {
-        return invoke_streaming<PolicySelector, streaming_kernel_source<PolicySelector>>(
+        return CUB_NS_QUALIFIER::detail::rle::encode::invoke_streaming<PolicySelector,
+                                                                       streaming_kernel_source<PolicySelector>>(
           d_temp_storage, temp_storage_bytes, d_in, d_unique_out, d_counts_out, d_num_runs_out, num_items, stream);
       }
     });
@@ -452,7 +453,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   else
 #endif // __cccl_ptx_isa >= 920
   {
-    return invoke_streaming<PolicySelector>(
+    return CUB_NS_QUALIFIER::detail::rle::encode::invoke_streaming<PolicySelector>(
       d_temp_storage, temp_storage_bytes, d_in, d_unique_out, d_counts_out, d_num_runs_out, num_items, stream);
   }
 }

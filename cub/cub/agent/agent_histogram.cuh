@@ -620,7 +620,7 @@ struct AgentHistogram
     const PrivatizedDecodeOpT* privatized_decode_op)
       : temp_storage(temp_storage.Alias())
       , d_wrapped_samples(d_samples)
-      , d_native_samples(NativePointer(d_wrapped_samples))
+      , d_native_samples(CUB_NS_QUALIFIER::detail::histogram::NativePointer(d_wrapped_samples))
       , num_output_bins(num_output_bins)
       , num_privatized_bins(num_privatized_bins)
       , d_output_histograms(d_output_histograms)

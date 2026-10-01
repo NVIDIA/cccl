@@ -68,7 +68,7 @@ struct SmemAllocator
           // Convert allocated smem address to generic pointer
           const void* mPtrAllocation = __cvta_shared_to_generic(ptrAllocation32);
           // Ensure alignment calculation does not move down into rest of kernel code.
-          return optimizeSmemPtr(mPtrAllocation);))
+          return CUB_NS_QUALIFIER::detail::warpspeed::optimizeSmemPtr(mPtrAllocation);))
     }
     return nullptr;
   }

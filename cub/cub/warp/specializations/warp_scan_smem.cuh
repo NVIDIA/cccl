@@ -91,7 +91,7 @@ struct WarpScanSmem
       lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads)
       ,
 
-      member_mask(WarpMask<LogicalWarpThreads>(::cuda::ptx::get_sreg_laneid() / LogicalWarpThreads))
+      member_mask(CUB_NS_QUALIFIER::WarpMask<LogicalWarpThreads>(::cuda::ptx::get_sreg_laneid() / LogicalWarpThreads))
   {}
 
   /******************************************************************************
@@ -235,7 +235,7 @@ struct WarpScanSmem
   {
     // Avoid reading uninitialized memory
     // TODO(pauleonix): Is there a cheaper way of ensuring no uninitialized reads?
-    cub::detail::uninitialized_copy_single(&temp_storage[lane_id], T{});
+    CUB_NS_QUALIFIER::detail::uninitialized_copy_single(&temp_storage[lane_id], T{});
     __syncwarp(member_mask);
 
     // Iterate scan steps
@@ -250,7 +250,8 @@ struct WarpScanSmem
       if constexpr (step == 0)
       {
         // Upper half is still uninitialized, i.e. some positions are initialized twice without destructing in between.
-        cub::detail::uninitialized_copy_single(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive_output);
+        CUB_NS_QUALIFIER::detail::uninitialized_copy_single(
+          &temp_storage[HALF_WARP_THREADS + lane_id], inclusive_output);
       }
       else
       {

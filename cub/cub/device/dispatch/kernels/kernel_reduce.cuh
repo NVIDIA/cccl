@@ -156,17 +156,17 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-_CCCL_KERNEL_ATTRIBUTES
-__launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_block)) void DeviceReduceKernel(
-  const InputIteratorT d_in,
-  const OutputIteratorT d_out,
-  const KernelNumItemsT kernel_num_items,
-  GridEvenShare<OffsetT> even_share,
-  ReductionOpT reduction_op,
-  [[maybe_unused]] const InitValueT init,
-  TransformOpT transform_op)
+_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
+  CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>()
+    .multi_tile.threads_per_block)) void DeviceReduceKernel(const InputIteratorT d_in,
+                                                            const OutputIteratorT d_out,
+                                                            const KernelNumItemsT kernel_num_items,
+                                                            GridEvenShare<OffsetT> even_share,
+                                                            ReductionOpT reduction_op,
+                                                            [[maybe_unused]] const InitValueT init,
+                                                            TransformOpT transform_op)
 {
-  static constexpr ReducePassPolicy policy = current_policy<PolicySelector>().multi_tile;
+  static constexpr ReducePassPolicy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().multi_tile;
   const OffsetT num_items                  = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
 
   // Early return from surplus blocks for deferred num_items
@@ -203,7 +203,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
     {
       if (threadIdx.x == 0)
       {
-        reduce::handle_empty_problem(d_out, init);
+        CUB_NS_QUALIFIER::detail::reduce::handle_empty_problem(d_out, init);
       }
 
       return;
@@ -238,7 +238,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
   {
     if constexpr (StableReductionOrder)
     {
-      detail::uninitialized_copy_single(d_out + blockIdx.x, block_aggregate);
+      CUB_NS_QUALIFIER::detail::uninitialized_copy_single(d_out + blockIdx.x, block_aggregate);
     }
     else
     {
@@ -309,7 +309,7 @@ template <typename PolicySelector,
   requires reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
-  int(current_policy<PolicySelector>().single_tile.threads_per_block),
+  int(CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().single_tile.threads_per_block),
   1) void DeviceReduceSingleTileKernel(const InputIteratorT d_in,
                                        OutputIteratorT d_out,
                                        const OffsetT num_items,
@@ -317,7 +317,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
                                        const InitValueT init,
                                        TransformOpT transform_op)
 {
-  static constexpr ReducePassPolicy policy = current_policy<PolicySelector>().single_tile;
+  static constexpr ReducePassPolicy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().single_tile;
   // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
   using agent_policy_t = detail::agent_reduce_policy<
     /* NominalThreadsPerBlock4B = */ 0,
@@ -347,7 +347,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   {
     if (threadIdx.x == 0)
     {
-      detail::reduce::handle_empty_problem(d_out, init);
+      CUB_NS_QUALIFIER::detail::reduce::handle_empty_problem(d_out, init);
     }
 
     return;
@@ -360,7 +360,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   // Output result
   if (threadIdx.x == 0)
   {
-    detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
+    CUB_NS_QUALIFIER::detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
   }
 }
 
@@ -378,7 +378,7 @@ template <typename PolicySelector,
   requires reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
-  int{current_policy<PolicySelector>().single_tile.threads_per_block},
+  int{CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().single_tile.threads_per_block},
   1) void DeviceReduceDeferredSingleTileKernel(const InputIteratorT d_in,
                                                const OutputIteratorT d_out,
                                                const KernelNumItemsT kernel_num_items,
@@ -388,13 +388,14 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
                                                TransformOpT transform_op)
 {
   const OffsetT actual_num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
-  static constexpr ReducePassPolicy first_pass_policy = current_policy<PolicySelector>().multi_tile;
+  static constexpr ReducePassPolicy first_pass_policy =
+    CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().multi_tile;
   constexpr int first_pass_tile_size = first_pass_policy.threads_per_block * first_pass_policy.items_per_thread;
   GridEvenShare<OffsetT> even_share;
   even_share.DispatchInit(actual_num_items, first_pass_grid_size, first_pass_tile_size);
   const int num_items = even_share.grid_size;
 
-  static constexpr ReducePassPolicy policy = current_policy<PolicySelector>().single_tile;
+  static constexpr ReducePassPolicy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().single_tile;
 
   // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
   using agent_policy_t = detail::agent_reduce_policy<
@@ -424,7 +425,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   {
     if (threadIdx.x == 0)
     {
-      detail::reduce::handle_empty_problem(d_out, init);
+      CUB_NS_QUALIFIER::detail::reduce::handle_empty_problem(d_out, init);
     }
 
     return;
@@ -436,7 +437,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   // Output result
   if (threadIdx.x == 0)
   {
-    detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
+    CUB_NS_QUALIFIER::detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
   }
 }
 } // namespace detail::reduce

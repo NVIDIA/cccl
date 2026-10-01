@@ -423,7 +423,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       // the necessary size of the blob)
       void* allocations[2] = {};
 
-      error = CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(
+        CUB_NS_QUALIFIER::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -459,7 +460,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         break;
@@ -474,7 +475,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       // Get SM occupancy for reduce_by_key_kernel (only needed for logging)
       int reduce_by_key_sm_occupancy = 0;
 #ifndef CUB_DEBUG_LOG
-      if (detail::logging_enabled())
+      if (CUB_NS_QUALIFIER::detail::logging_enabled())
 #endif // CUB_DEBUG_LOG
       {
         error = CubDebug(MaxSmOccupancy(reduce_by_key_sm_occupancy, reduce_by_key_kernel, threads_per_block));
@@ -532,7 +533,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
         }
 
         // Sync the stream if specified to flush runtime errors
-        error = CubDebug(detail::DebugSyncStream(stream));
+        error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream));
         if (cudaSuccess != error)
         {
           break;
@@ -713,21 +714,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
-    detail::log_dispatch("DeviceReduceByKey", cc, policy_getter());
+  return CUB_NS_QUALIFIER::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+    CUB_NS_QUALIFIER::detail::log_dispatch("DeviceReduceByKey", cc, policy_getter());
 
-    const auto [threads_per_block, items_per_thread, vsmem_per_block] = determine_threads_items_vsmem<
-      decltype(policy_getter),
-      KeysInputIteratorT,
-      UniqueOutputIteratorT,
-      ValuesInputIteratorT,
-      AggregatesOutputIteratorT,
-      NumRunsOutputIteratorT,
-      EqualityOpT,
-      ReductionOpT,
-      OffsetT,
-      AccumT,
-      streaming_context_t>(policy_getter);
+    const auto [threads_per_block, items_per_thread, vsmem_per_block] =
+      CUB_NS_QUALIFIER::detail::reduce_by_key::determine_threads_items_vsmem<
+        decltype(policy_getter),
+        KeysInputIteratorT,
+        UniqueOutputIteratorT,
+        ValuesInputIteratorT,
+        AggregatesOutputIteratorT,
+        NumRunsOutputIteratorT,
+        EqualityOpT,
+        ReductionOpT,
+        OffsetT,
+        AccumT,
+        streaming_context_t>(policy_getter);
 
     // Number of input tiles
     const int tile_size = threads_per_block * items_per_thread;
@@ -744,8 +746,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     const size_t allocation_sizes[2] = {tile_descriptor_memory, vsmem_size};
     void* allocations[2]             = {};
 
-    if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+    if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::alias_temporaries(
+          d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -772,7 +774,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       return error;
     }
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -851,7 +853,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       {
         return error;
       }
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream)))
       {
         return error;
       }

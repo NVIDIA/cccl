@@ -107,7 +107,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t device_segmented_sort_c
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(DebugSyncStream(stream)))
+    if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -156,7 +156,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t device_segmented_sort_c
     }
 
     // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(DebugSyncStream(stream)))
+    if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream)))
     {
       return error;
     }
@@ -207,27 +207,28 @@ __launch_bounds__(1) _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContinuatio
   //
   // Due to (4, 5), we can't pass the user-provided stream in the continuation.
   // Due to (1, 2, 3) it's safe to pass the main stream.
-  [[maybe_unused]] const auto error = CubDebug(detail::segmented_sort::device_segmented_sort_continuation(
-    large_kernel,
-    small_kernel,
-    num_segments,
-    d_current_keys,
-    d_final_keys,
-    d_keys_double_buffer,
-    d_current_values,
-    d_final_values,
-    d_values_double_buffer,
-    d_begin_offsets,
-    d_end_offsets,
-    group_sizes,
-    large_and_medium_segments_indices,
-    small_segments_indices,
-    0, // always launching on the main stream (see motivation above)
-    launcher_factory,
-    large_threads_per_block,
-    small_threads_per_block,
-    medium_segments_per_block,
-    small_segments_per_block));
+  [[maybe_unused]] const auto error =
+    CubDebug(CUB_NS_QUALIFIER::detail::segmented_sort::device_segmented_sort_continuation(
+      large_kernel,
+      small_kernel,
+      num_segments,
+      d_current_keys,
+      d_final_keys,
+      d_keys_double_buffer,
+      d_current_values,
+      d_final_values,
+      d_values_double_buffer,
+      d_begin_offsets,
+      d_end_offsets,
+      group_sizes,
+      large_and_medium_segments_indices,
+      small_segments_indices,
+      0, // always launching on the main stream (see motivation above)
+      launcher_factory,
+      large_threads_per_block,
+      small_threads_per_block,
+      medium_segments_per_block,
+      small_segments_per_block));
 }
 #endif // CUB_RDC_ENABLED
 
@@ -868,7 +869,7 @@ private:
       return error;                                                                     \
     }                                                                                   \
                                                                                         \
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))                   \
+    if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream))) \
     {                                                                                   \
       return error;                                                                     \
     }
@@ -888,12 +889,12 @@ private:
             return error;
           }
 
-          if (const auto error = CubDebug(SyncStream(stream)))
+          if (const auto error = CubDebug(CUB_NS_QUALIFIER::SyncStream(stream)))
           {
             return error;
           }
 
-          if (const auto error = detail::segmented_sort::device_segmented_sort_continuation(
+          if (const auto error = CUB_NS_QUALIFIER::detail::segmented_sort::device_segmented_sort_continuation(
                 large_kernel,
                 small_kernel,
                 current_num_segments,
@@ -967,7 +968,7 @@ private:
     }
 
     // Sync the stream if specified to flush runtime errors
-    return CubDebug(detail::DebugSyncStream(stream));
+    return CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream));
   }
 };
 
@@ -1094,7 +1095,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
       {
         return error;
       }
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -1116,12 +1117,12 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
           return error;
         }
 
-        if (const auto error = CubDebug(SyncStream(stream)))
+        if (const auto error = CubDebug(CUB_NS_QUALIFIER::SyncStream(stream)))
         {
           return error;
         }
 
-        if (const auto error = detail::segmented_sort::device_segmented_sort_continuation(
+        if (const auto error = CUB_NS_QUALIFIER::detail::segmented_sort::device_segmented_sort_continuation(
               large_kernel,
               small_kernel,
               current_num_segments,
@@ -1227,7 +1228,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
   {
     return error;
   }
-  if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+  if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream)))
   {
     return error;
   }
@@ -1310,12 +1311,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
+  return CUB_NS_QUALIFIER::detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
     check_policy<keys_only>(policy_getter); // MSVC fails to evaluate static_asserts inside this lambda, so move them to
                                             // a function
     CUB_DETAIL_CONSTEXPR_ISH const SegmentedSortPolicy active_policy = policy_getter();
 
-    detail::log_dispatch("DeviceSegmentedSort", cc, active_policy);
+    CUB_NS_QUALIFIER::detail::log_dispatch("DeviceSegmentedSort", cc, active_policy);
 
     const int radix_bits = active_policy.large_segment.radix_bits;
 

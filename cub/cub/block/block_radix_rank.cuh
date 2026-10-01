@@ -134,10 +134,10 @@ struct warp_in_block_matcher_t
   {
     if (warp_id == static_cast<::cuda::std::uint32_t>(PartialWarpId))
     {
-      return MatchAny<Bits, PartialWarpThreads>(label);
+      return CUB_NS_QUALIFIER::MatchAny<Bits, PartialWarpThreads>(label);
     }
 
-    return MatchAny<Bits>(label);
+    return CUB_NS_QUALIFIER::MatchAny<Bits>(label);
   }
 };
 
@@ -146,7 +146,7 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 {
   static _CCCL_DEVICE ::cuda::std::uint32_t match_any(::cuda::std::uint32_t label, ::cuda::std::uint32_t warp_id)
   {
-    return MatchAny<Bits>(label);
+    return CUB_NS_QUALIFIER::MatchAny<Bits>(label);
   }
 };
 } // namespace detail
@@ -335,11 +335,12 @@ private:
       {
         cached_segment[i] = smem_raking_ptr[i];
       }
-      return cub::ThreadReduce(::cuda::std::span<PackedCounter, RAKING_SEGMENT>{cached_segment}, ::cuda::std::plus<>{});
+      return CUB_NS_QUALIFIER::ThreadReduce(
+        ::cuda::std::span<PackedCounter, RAKING_SEGMENT>{cached_segment}, ::cuda::std::plus<>{});
     }
     else
     {
-      return cub::ThreadReduce(smem_raking_ptr, ::cuda::std::plus<>{});
+      return CUB_NS_QUALIFIER::ThreadReduce(smem_raking_ptr, ::cuda::std::plus<>{});
     }
   }
 
@@ -425,7 +426,7 @@ public:
   //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixRank()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
@@ -436,7 +437,7 @@ public:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixRank(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}
@@ -647,7 +648,7 @@ public:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixRankMatch(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}
@@ -1022,7 +1023,7 @@ struct BlockRadixRankMatchEarlyCounts
         for (int u = 0; u < WARP_BINS_PER_THREAD; ++u)
         {
           const int bin = lane + u * WARP_THREADS;
-          bins[u]       = cub::ThreadReduce(warp_histograms[bin], ::cuda::std::plus<>{});
+          bins[u]       = CUB_NS_QUALIFIER::ThreadReduce(warp_histograms[bin], ::cuda::std::plus<>{});
         }
         __syncthreads();
 

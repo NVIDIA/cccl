@@ -70,7 +70,7 @@ _CCCL_HOST_DEVICE_API inline void log([[maybe_unused]] const char* fmt, ...) noe
 {
 #if _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
   NV_IF_TARGET(NV_IS_HOST, ({
-                 if (logging_enabled())
+                 if (CUB_NS_QUALIFIER::detail::logging_enabled())
                  {
                    ::std::va_list args;
                    va_start(args, fmt);
@@ -99,15 +99,16 @@ _CCCL_HOST_DEVICE_API void log_dispatch([[maybe_unused]] const char* device_alg,
                }))
 #elif _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
   NV_IF_TARGET(NV_IS_HOST, ({
-                 if (logging_enabled())
+                 if (CUB_NS_QUALIFIER::detail::logging_enabled())
                  {
                    ::std::stringstream ss;
                    ss << active_policy;
-                   log_always("Dispatching %s on compute capability %d.%d with tuning: %s\n",
-                              device_alg,
-                              cc.major_cap(),
-                              cc.minor_cap(),
-                              ss.str().c_str());
+                   CUB_NS_QUALIFIER::detail::log_always(
+                     "Dispatching %s on compute capability %d.%d with tuning: %s\n",
+                     device_alg,
+                     cc.major_cap(),
+                     cc.minor_cap(),
+                     ss.str().c_str());
                  }
                }))
 #endif // !CUB_DEBUG_LOG && _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)

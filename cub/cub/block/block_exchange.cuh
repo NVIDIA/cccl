@@ -153,7 +153,7 @@ private:
   _TempStorage& temp_storage;
 
   // TODO(bgruber): can we use signed int here? Only these variables are unsigned:
-  unsigned int linear_tid  = RowMajorTid(BlockDimX, BlockDimY, BlockDimZ);
+  unsigned int linear_tid  = CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ);
   unsigned int lane_id     = ::cuda::ptx::get_sreg_laneid();
   unsigned int warp_id     = WARPS == 1 ? 0 : linear_tid / WARP_THREADS;
   unsigned int warp_offset = warp_id * WARP_TIME_SLICED_ITEMS;
@@ -187,7 +187,7 @@ private:
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      CUB_NS_QUALIFIER::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncthreads();
@@ -238,7 +238,7 @@ private:
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
-          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          CUB_NS_QUALIFIER::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
       }
 
@@ -296,7 +296,7 @@ private:
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      CUB_NS_QUALIFIER::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncwarp(0xffffffff);
@@ -337,7 +337,7 @@ private:
         {
           item_offset += item_offset >> LOG_SMEM_BANKS;
         }
-        detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+        CUB_NS_QUALIFIER::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
       }
 
       __syncwarp(0xffffffff);
@@ -369,7 +369,7 @@ private:
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
-          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          CUB_NS_QUALIFIER::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
 
         __syncwarp(0xffffffff);
@@ -410,7 +410,7 @@ private:
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      CUB_NS_QUALIFIER::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncthreads();
@@ -469,7 +469,7 @@ private:
             {
               item_offset += item_offset >> LOG_SMEM_BANKS;
             }
-            detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+            CUB_NS_QUALIFIER::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
           }
         }
       }
@@ -521,7 +521,7 @@ private:
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      CUB_NS_QUALIFIER::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncwarp(0xffffffff);
@@ -534,7 +534,7 @@ private:
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy_single(output_items + i, temp_storage.buff[item_offset]);
+      CUB_NS_QUALIFIER::detail::uninitialized_copy_single(output_items + i, temp_storage.buff[item_offset]);
     }
   }
 
@@ -567,7 +567,7 @@ private:
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
-          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          CUB_NS_QUALIFIER::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
 
         __syncwarp(0xffffffff);
@@ -611,7 +611,7 @@ private:
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
-      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      CUB_NS_QUALIFIER::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncthreads();
@@ -664,7 +664,7 @@ private:
           {
             item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
           }
-          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          CUB_NS_QUALIFIER::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
       }
 
@@ -718,7 +718,7 @@ private:
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
-      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      CUB_NS_QUALIFIER::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncthreads();
@@ -772,7 +772,7 @@ private:
           {
             item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
           }
-          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          CUB_NS_QUALIFIER::detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
       }
 

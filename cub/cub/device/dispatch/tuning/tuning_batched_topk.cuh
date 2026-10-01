@@ -332,7 +332,8 @@ struct cluster_topk_policy
       && policy.max_chunk_slots_per_block >= 0;
 }
 
-static_assert(is_valid_cluster_policy(make_cluster_policy()));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy()));
 
 // Tuned cluster sub-policies for SM 100 pairs (key + index) requests under a deterministic result-set requirement,
 // measured on B200 (EVO search over `cub.bench.segmented_topk.variable.indexed.cluster` with F32 keys and I32
@@ -351,14 +352,14 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
   // selects the whole segment), for which the selection-tuned buckets below are pessimal.
   if (max_k >= static_max_segment_size)
   {
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   // No benchmark coverage below 512 (the K axis starts at 512, so smaller segments only ever
   // measure the copy fast path), so stay on the default policy.
   if (static_max_segment_size <= 512)
   {
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 1024)
@@ -380,7 +381,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 2 * 1024) // 2048
@@ -419,7 +420,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 4 * 1024) // 4096
@@ -475,7 +476,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 8 * 1024) // 8192
@@ -531,7 +532,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 16 * 1024) // 16384
@@ -587,7 +588,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 32 * 1024) // 32768
@@ -628,7 +629,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 64 * 1024) // 65536
@@ -684,7 +685,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 128 * 1024) // 131072
@@ -740,7 +741,7 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 256 * 1024) // 262144
@@ -796,14 +797,14 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 512 * 1024) // 524288
   {
     if (max_k <= 1024)
     {
-      return make_cluster_policy();
+      return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
     }
     else if (max_k <= 2048)
     {
@@ -822,14 +823,14 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 1024 * 1024) // 1048576
   {
     if (max_k <= 1024)
     {
-      return make_cluster_policy();
+      return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
     }
     else if (max_k <= 2048)
     {
@@ -848,38 +849,64 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
   // Sizes above 1Mi keep the default policy.
-  return make_cluster_policy();
+  return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
 }
 
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(1024, 512)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(2048, 512)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(2048, 1024)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(4096, 512)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(4096, 1024)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(4096, 2048)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(8192, 512)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(8192, 1024)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(8192, 2048)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(16384, 512)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(16384, 1024)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(16384, 2048)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(32768, 512)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(32768, 1024)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(32768, 2048)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(65536, 512)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(65536, 1024)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(65536, 2048)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(131072, 512)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(131072, 1024)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(131072, 2048)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(262144, 512)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(262144, 1024)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(262144, 2048)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(524288, 2048)));
-static_assert(is_valid_cluster_policy(make_sm100_pairs_cluster_policy(1048576, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(1024, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(2048, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(2048, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(4096, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(4096, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(4096, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(8192, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(8192, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(8192, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(16384, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(16384, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(16384, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(32768, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(32768, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(32768, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(65536, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(65536, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(65536, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(131072, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(131072, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(131072, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(262144, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(262144, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(262144, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(524288, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_pairs_cluster_policy(1048576, 2048)));
 
 //! SM 100 cluster sub-policies for keys-only top-k, measured on B200 under the non-deterministic requirement
 //! (F32 keys). Shapes without a bucket keep the default policy: below the 8K crossover the baseline backend runs
@@ -893,14 +920,14 @@ make_sm100_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
   // k >= segment size degenerates to the select-all copy path, for which selection-tuned buckets are pessimal.
   if (max_k >= static_max_segment_size)
   {
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   // At and below the 8K crossover the non-deterministic path mostly runs the baseline backend, and the one
   // measured 8Ki candidate regressed at high segment counts; everything through 8Ki keeps the default policy.
   if (static_max_segment_size <= 8 * 1024) // 8192
   {
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 16 * 1024) // 16384, all three shared with pairs
@@ -956,7 +983,7 @@ make_sm100_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 32 * 1024) // 32768
@@ -996,7 +1023,7 @@ make_sm100_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 64 * 1024) // 65536
@@ -1052,7 +1079,7 @@ make_sm100_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 128 * 1024) // 131072
@@ -1091,7 +1118,7 @@ make_sm100_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 256 * 1024) // 262144
@@ -1130,25 +1157,37 @@ make_sm100_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   // Above 256Ki no measured keys config beat the default without a worst-case regression.
-  return make_cluster_policy();
+  return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
 }
 
-static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(16384, 512)));
-static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(16384, 1024)));
-static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(16384, 2048)));
-static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(32768, 1024)));
-static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(32768, 2048)));
-static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(65536, 512)));
-static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(65536, 1024)));
-static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(65536, 2048)));
-static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(131072, 512)));
-static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(131072, 1024)));
-static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(262144, 512)));
-static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(262144, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_keys_cluster_policy(16384, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_keys_cluster_policy(16384, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_keys_cluster_policy(16384, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_keys_cluster_policy(32768, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_keys_cluster_policy(32768, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_keys_cluster_policy(65536, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_keys_cluster_policy(65536, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_keys_cluster_policy(65536, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_keys_cluster_policy(131072, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_keys_cluster_policy(131072, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_keys_cluster_policy(262144, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm100_keys_cluster_policy(262144, 1024)));
 
 //! SM 103 cluster sub-policies for deterministic pairs top-k, measured on B300 (under a gpu_to_gpu +
 //! prefer-larger-index requirement, F32 keys with I32 indices). A separate table from sm_100 by design: B300 does not
@@ -1161,7 +1200,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
   // k >= segment size degenerates to the select-all copy path, for which selection-tuned buckets are pessimal.
   if (max_k >= static_max_segment_size)
   {
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 1024)
@@ -1183,7 +1222,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 2 * 1024) // 2048
@@ -1222,7 +1261,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 4 * 1024) // 4096
@@ -1278,7 +1317,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 8 * 1024) // 8192
@@ -1334,7 +1373,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 16 * 1024) // 16384
@@ -1390,7 +1429,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 32 * 1024) // 32768
@@ -1446,7 +1485,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 64 * 1024) // 65536
@@ -1502,7 +1541,7 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 128 * 1024) // 131072
@@ -1541,33 +1580,53 @@ make_sm103_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   // Above 128Ki no measured config beat the default without a worst-case regression.
-  return make_cluster_policy();
+  return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
 }
 
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(1024, 512)));
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(2048, 512)));
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(2048, 1024)));
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(4096, 512)));
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(4096, 1024)));
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(4096, 2048)));
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(8192, 512)));
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(8192, 1024)));
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(8192, 2048)));
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(16384, 512)));
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(16384, 1024)));
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(16384, 2048)));
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(32768, 512)));
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(32768, 1024)));
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(32768, 2048)));
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(65536, 512)));
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(65536, 1024)));
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(65536, 2048)));
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(131072, 512)));
-static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(131072, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(1024, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(2048, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(2048, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(4096, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(4096, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(4096, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(8192, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(8192, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(8192, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(16384, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(16384, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(16384, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(32768, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(32768, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(32768, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(65536, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(65536, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(65536, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(131072, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_pairs_cluster_policy(131072, 1024)));
 
 //! SM 103 cluster sub-policies for keys-only top-k under the non-deterministic requirement (F32 keys).
 //! Buckets marked "sm103 pairs" or "B200 keys" were transferred from the corresponding campaign and verified on B300.
@@ -1580,13 +1639,13 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
   // k >= segment size degenerates to the select-all copy path, for which selection-tuned buckets are pessimal.
   if (max_k >= static_max_segment_size)
   {
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   // Below the 8K crossover the non-deterministic path runs the baseline backend; keep the default policy.
   if (static_max_segment_size <= 4 * 1024) // 4096
   {
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 8 * 1024) // 8192
@@ -1642,7 +1701,7 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 16 * 1024) // 16384, all three sm103 pairs
@@ -1698,7 +1757,7 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 32 * 1024) // 32768
@@ -1754,7 +1813,7 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 64 * 1024) // 65536
@@ -1810,7 +1869,7 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 128 * 1024) // 131072, both B200 keys
@@ -1849,7 +1908,7 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   if (static_max_segment_size <= 256 * 1024) // 262144, both B200 keys
@@ -1888,29 +1947,45 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    return make_cluster_policy();
+    return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
   }
 
   // Above 256Ki neither donor campaign produced a config that beat the default.
-  return make_cluster_policy();
+  return CUB_NS_QUALIFIER::detail::batched_topk::make_cluster_policy();
 }
 
-static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(8192, 512)));
-static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(8192, 1024)));
-static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(8192, 2048)));
-static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(16384, 512)));
-static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(16384, 1024)));
-static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(16384, 2048)));
-static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(32768, 512)));
-static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(32768, 1024)));
-static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(32768, 2048)));
-static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(65536, 512)));
-static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(65536, 1024)));
-static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(65536, 2048)));
-static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(131072, 512)));
-static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(131072, 1024)));
-static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(262144, 512)));
-static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(262144, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_keys_cluster_policy(8192, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_keys_cluster_policy(8192, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_keys_cluster_policy(8192, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_keys_cluster_policy(16384, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_keys_cluster_policy(16384, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_keys_cluster_policy(16384, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_keys_cluster_policy(32768, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_keys_cluster_policy(32768, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_keys_cluster_policy(32768, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_keys_cluster_policy(65536, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_keys_cluster_policy(65536, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_keys_cluster_policy(65536, 2048)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_keys_cluster_policy(131072, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_keys_cluster_policy(131072, 1024)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_keys_cluster_policy(262144, 512)));
+static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(
+  CUB_NS_QUALIFIER::detail::batched_topk::make_sm103_keys_cluster_policy(262144, 1024)));
 
 // -----------------------------------------------------------------------------
 // Backend selection

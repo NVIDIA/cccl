@@ -922,13 +922,13 @@ public:
   ExclusiveScan(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], T initial_value, ScanOp scan_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = CUB_NS_QUALIFIER::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op);
 
     // Exclusive scan in registers with prefix as seed
-    detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
+    CUB_NS_QUALIFIER::detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @rst
@@ -1012,13 +1012,13 @@ public:
     T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], T initial_value, ScanOp scan_op, T& block_aggregate)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = CUB_NS_QUALIFIER::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op, block_aggregate);
 
     // Exclusive scan in registers with prefix as seed
-    detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
+    CUB_NS_QUALIFIER::detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @rst
@@ -1099,13 +1099,13 @@ public:
     BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = CUB_NS_QUALIFIER::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, scan_op, block_prefix_callback_op);
 
     // Exclusive scan in registers with prefix as seed
-    detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
+    CUB_NS_QUALIFIER::detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @}
@@ -1209,13 +1209,13 @@ public:
   ExclusiveScan(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], ScanOp scan_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_partial = cub::ThreadReduce(input, scan_op);
+    T thread_partial = CUB_NS_QUALIFIER::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_partial, thread_partial, scan_op);
 
     // Exclusive scan in registers with prefix
-    detail::ThreadScanExclusive(input, output, scan_op, thread_partial, (linear_tid != 0));
+    CUB_NS_QUALIFIER::detail::ThreadScanExclusive(input, output, scan_op, thread_partial, (linear_tid != 0));
   }
 
   //! @rst
@@ -1253,13 +1253,13 @@ public:
   ExclusiveScan(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], ScanOp scan_op, T& block_aggregate)
   {
     // Reduce consecutive thread items in registers
-    T thread_partial = cub::ThreadReduce(input, scan_op);
+    T thread_partial = CUB_NS_QUALIFIER::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_partial, thread_partial, scan_op, block_aggregate);
 
     // Exclusive scan in registers with prefix
-    detail::ThreadScanExclusive(input, output, scan_op, thread_partial, (linear_tid != 0));
+    CUB_NS_QUALIFIER::detail::ThreadScanExclusive(input, output, scan_op, thread_partial, (linear_tid != 0));
   }
 
   //! @}
@@ -1500,13 +1500,13 @@ public:
     {
       // Reduce consecutive thread items in registers
       const ::cuda::std::plus<> scan_op;
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      T thread_prefix = CUB_NS_QUALIFIER::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveSum(thread_prefix, thread_prefix);
 
       // Inclusive scan in registers with prefix as seed
-      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
+      CUB_NS_QUALIFIER::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
     }
   }
 
@@ -1566,13 +1566,13 @@ public:
     {
       // Reduce consecutive thread items in registers
       const ::cuda::std::plus<> scan_op;
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      T thread_prefix = CUB_NS_QUALIFIER::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveSum(thread_prefix, thread_prefix, block_aggregate);
 
       // Inclusive scan in registers with prefix as seed
-      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
+      CUB_NS_QUALIFIER::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
     }
   }
 
@@ -1650,13 +1650,13 @@ public:
     {
       // Reduce consecutive thread items in registers
       const ::cuda::std::plus<> scan_op;
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      T thread_prefix = CUB_NS_QUALIFIER::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveSum(thread_prefix, thread_prefix, block_prefix_callback_op);
 
       // Inclusive scan in registers with prefix as seed
-      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+      CUB_NS_QUALIFIER::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
     }
   }
 
@@ -1908,13 +1908,13 @@ public:
     else
     {
       // Reduce consecutive thread items in registers
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      T thread_prefix = CUB_NS_QUALIFIER::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveScan(thread_prefix, thread_prefix, scan_op);
 
       // Inclusive scan in registers with prefix as seed (first thread does not seed)
-      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
+      CUB_NS_QUALIFIER::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
     }
   }
 
@@ -1967,13 +1967,13 @@ public:
   InclusiveScan(T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], T initial_value, ScanOp scan_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = CUB_NS_QUALIFIER::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op);
 
     // Exclusive scan in registers with prefix as seed
-    detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+    CUB_NS_QUALIFIER::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @rst
@@ -2052,13 +2052,13 @@ public:
     else
     {
       // Reduce consecutive thread items in registers
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      T thread_prefix = CUB_NS_QUALIFIER::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan (with no initial value)
       ExclusiveScan(thread_prefix, thread_prefix, scan_op, block_aggregate);
 
       // Inclusive scan in registers with prefix as seed (first thread does not seed)
-      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
+      CUB_NS_QUALIFIER::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
     }
   }
 
@@ -2122,13 +2122,13 @@ public:
     T (&input)[ItemsPerThread], T (&output)[ItemsPerThread], T initial_value, ScanOp scan_op, T& block_aggregate)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = CUB_NS_QUALIFIER::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op, block_aggregate);
 
     // Exclusive scan in registers with prefix as seed
-    detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+    CUB_NS_QUALIFIER::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @rst
@@ -2260,13 +2260,13 @@ public:
     else
     {
       // Reduce consecutive thread items in registers
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      T thread_prefix = CUB_NS_QUALIFIER::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveScan(thread_prefix, thread_prefix, scan_op, block_prefix_callback_op);
 
       // Inclusive scan in registers with prefix as seed
-      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+      CUB_NS_QUALIFIER::detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
     }
   }
 

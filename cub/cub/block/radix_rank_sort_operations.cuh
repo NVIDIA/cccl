@@ -158,7 +158,7 @@ _CCCL_HOST_DEVICE void for_each_member(F f, DecomposerT decomposer, T& aggregate
 {
   const auto& tuple_of_refs = decomposer(aggregate);
   constexpr int tuple_size  = ::cuda::std::tuple_size_v<::cuda::std::remove_reference_t<decltype(tuple_of_refs)>>;
-  for_each_member_impl(f, tuple_of_refs, ::cuda::std::make_index_sequence<tuple_size>{});
+  CUB_NS_QUALIFIER::detail::for_each_member_impl(f, tuple_of_refs, ::cuda::std::make_index_sequence<tuple_size>{});
 }
 
 namespace radix
@@ -453,7 +453,7 @@ struct custom_digit_extractor_t
     ::cuda::std::uint32_t dst_bit_start{};
     ::cuda::std::uint32_t src_bit_start = bit_start;
     ::cuda::std::uint32_t bits_remaining{num_bits};
-    digit(decomposer, result, key, dst_bit_start, src_bit_start, bits_remaining);
+    CUB_NS_QUALIFIER::detail::radix::digit(decomposer, result, key, dst_bit_start, src_bit_start, bits_remaining);
     return result;
   }
 };

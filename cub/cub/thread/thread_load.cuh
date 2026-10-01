@@ -146,7 +146,7 @@ template <CacheLoadModifier MODIFIER, typename T, int... Is>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 UnrolledThreadLoadImpl(T const* src, T* dst, ::cuda::std::integer_sequence<int, Is...>)
 {
-  ((dst[Is] = ThreadLoad<MODIFIER>(src + Is)), ...);
+  ((dst[Is] = CUB_NS_QUALIFIER::ThreadLoad<MODIFIER>(src + Is)), ...);
 }
 
 template <typename RandomAccessIterator, typename T, int... Is>
@@ -160,13 +160,13 @@ UnrolledCopyImpl(RandomAccessIterator src, T* dst, ::cuda::std::integer_sequence
 template <int Count, CacheLoadModifier MODIFIER, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void UnrolledThreadLoad(T const* src, T* dst)
 {
-  detail::UnrolledThreadLoadImpl<MODIFIER>(src, dst, ::cuda::std::make_integer_sequence<int, Count>{});
+  CUB_NS_QUALIFIER::detail::UnrolledThreadLoadImpl<MODIFIER>(src, dst, ::cuda::std::make_integer_sequence<int, Count>{});
 }
 
 template <int Count, typename RandomAccessIterator, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void UnrolledCopy(RandomAccessIterator src, T* dst)
 {
-  detail::UnrolledCopyImpl(src, dst, ::cuda::std::make_integer_sequence<int, Count>{});
+  CUB_NS_QUALIFIER::detail::UnrolledCopyImpl(src, dst, ::cuda::std::make_integer_sequence<int, Count>{});
 }
 
 //! Define a uint4 (16B) ThreadLoad specialization for the given Cache load modifier
@@ -319,7 +319,7 @@ ThreadLoadVolatilePointer(const T* ptr, ::cuda::std::false_type /*is_primitive*/
 
   T retval;
   VolatileWord* words = reinterpret_cast<VolatileWord*>(&retval);
-  UnrolledCopy<VOLATILE_MULTIPLE>(reinterpret_cast<const volatile VolatileWord*>(ptr), words);
+  CUB_NS_QUALIFIER::UnrolledCopy<VOLATILE_MULTIPLE>(reinterpret_cast<const volatile VolatileWord*>(ptr), words);
   return retval;
 }
 
@@ -329,7 +329,7 @@ template <typename T>
 CCCL_DEPRECATED_BECAUSE("Use ThreadLoad<LOAD_VOLATILE>(ptr) instead") _CCCL_DEVICE _CCCL_FORCEINLINE T
 ThreadLoad(const T* ptr, detail::constant_t<LOAD_VOLATILE> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
-  return ThreadLoadVolatilePointer(ptr, detail::bool_constant_v<detail::is_primitive_v<T>>);
+  return CUB_NS_QUALIFIER::ThreadLoadVolatilePointer(ptr, detail::bool_constant_v<detail::is_primitive_v<T>>);
 }
 
 //! ThreadLoad definition for generic modifiers on pointer types
@@ -342,7 +342,8 @@ ThreadLoad(T const* ptr, detail::constant_t<MODIFIER> /*modifier*/, ::cuda::std:
   constexpr int DEVICE_MULTIPLE = sizeof(T) / sizeof(DeviceWord);
 
   DeviceWord words[DEVICE_MULTIPLE];
-  UnrolledThreadLoad<DEVICE_MULTIPLE, CacheLoadModifier(MODIFIER)>(reinterpret_cast<const DeviceWord*>(ptr), words);
+  CUB_NS_QUALIFIER::UnrolledThreadLoad<DEVICE_MULTIPLE, CacheLoadModifier(MODIFIER)>(
+    reinterpret_cast<const DeviceWord*>(ptr), words);
   return *reinterpret_cast<T*>(words);
 }
 
@@ -364,7 +365,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE detail::it_value_t<RandomAccessIterator> ThreadLo
     constexpr int LOAD_MULTIPLE = sizeof(T) / sizeof(LoadWord);
     T retval;
     auto* words = reinterpret_cast<LoadWord*>(&retval);
-    UnrolledCopy<LOAD_MULTIPLE>(reinterpret_cast<const volatile LoadWord*>(::cuda::std::to_address(itr)), words);
+    CUB_NS_QUALIFIER::UnrolledCopy<LOAD_MULTIPLE>(
+      reinterpret_cast<const volatile LoadWord*>(::cuda::std::to_address(itr)), words);
     return retval;
   }
   else
@@ -373,7 +375,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE detail::it_value_t<RandomAccessIterator> ThreadLo
     // NOLINTNEXTLINE(bugprone-sizeof-expression)
     constexpr int LOAD_MULTIPLE = sizeof(T) / sizeof(LoadWord);
     LoadWord words[LOAD_MULTIPLE];
-    UnrolledThreadLoad<LOAD_MULTIPLE, MODIFIER>(reinterpret_cast<const LoadWord*>(::cuda::std::to_address(itr)), words);
+    CUB_NS_QUALIFIER::UnrolledThreadLoad<LOAD_MULTIPLE, MODIFIER>(
+      reinterpret_cast<const LoadWord*>(::cuda::std::to_address(itr)), words);
     return *reinterpret_cast<T*>(words);
   }
 }

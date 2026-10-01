@@ -205,8 +205,9 @@ private:
   {
     using args_traits_t = ::cuda::args::__traits<NumItemsT>;
     using offset_t      = detail::choose_offset_t<typename args_traits_t::element_type>;
-    using accum_t       = decltype(detail::reduce::select_accum_t<InputIteratorT, T, ReductionOpT, TransformOpT>(
-      static_cast<detail::use_default*>(nullptr)));
+    using accum_t =
+      decltype(CUB_NS_QUALIFIER::detail::reduce::select_accum_t<InputIteratorT, T, ReductionOpT, TransformOpT>(
+        static_cast<detail::use_default*>(nullptr)));
 
     if constexpr (Determinism == ::cuda::execution::determinism::__determinism_t::__gpu_to_gpu)
     {
@@ -214,19 +215,20 @@ private:
       (void) reduction_op;
       using default_policy_selector = detail::reduce::
         policy_selector_from_types<accum_t, offset_t, detail::rfa::deterministic_sum_t<accum_t>, Determinism>;
-      return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
         env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-          return detail::rfa::dispatch<InputIteratorT,
-                                       OutputIteratorT,
-                                       decltype(detail::make_num_items_dispatch_arg(num_items)),
-                                       T,
-                                       TransformOpT,
-                                       accum_t>(
+          return CUB_NS_QUALIFIER::detail::rfa::dispatch<
+            InputIteratorT,
+            OutputIteratorT,
+            decltype(CUB_NS_QUALIFIER::detail::make_num_items_dispatch_arg(num_items)),
+            T,
+            TransformOpT,
+            accum_t>(
             storage,
             bytes,
             d_in,
             d_out,
-            detail::make_num_items_dispatch_arg(num_items),
+            CUB_NS_QUALIFIER::detail::make_num_items_dispatch_arg(num_items),
             init,
             stream,
             transform_op,
@@ -237,14 +239,14 @@ private:
     {
       using default_policy_selector =
         detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT, Determinism>;
-      return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
         env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-          return detail::reduce::dispatch<accum_t, /* StableReductionOrder */ false>(
+          return CUB_NS_QUALIFIER::detail::reduce::dispatch<accum_t, /* StableReductionOrder */ false>(
             storage,
             bytes,
             d_in,
             THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out),
-            detail::make_num_items_dispatch_arg(num_items),
+            CUB_NS_QUALIFIER::detail::make_num_items_dispatch_arg(num_items),
             reduction_op,
             init,
             stream,
@@ -256,14 +258,14 @@ private:
     {
       using default_policy_selector =
         detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT, Determinism>;
-      return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
         env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-          return detail::reduce::dispatch<accum_t>(
+          return CUB_NS_QUALIFIER::detail::reduce::dispatch<accum_t>(
             storage,
             bytes,
             d_in,
             d_out,
-            detail::make_num_items_dispatch_arg(num_items),
+            CUB_NS_QUALIFIER::detail::make_num_items_dispatch_arg(num_items),
             reduction_op,
             init,
             stream,
@@ -281,8 +283,9 @@ private:
             typename T,
             typename NumItemsT,
             typename EnvT,
-            typename AccumT = decltype(detail::reduce::select_accum_t<InputIteratorT, T, ReductionOpT, TransformOpT>(
-              static_cast<detail::use_default*>(nullptr)))>
+            typename AccumT =
+              decltype(CUB_NS_QUALIFIER::detail::reduce::select_accum_t<InputIteratorT, T, ReductionOpT, TransformOpT>(
+                static_cast<detail::use_default*>(nullptr)))>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __transform_reduce(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -511,12 +514,12 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Reduce");
 
-    return detail::reduce::dispatch(
+    return CUB_NS_QUALIFIER::detail::reduce::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
-      detail::make_num_items_dispatch_arg(num_items),
+      CUB_NS_QUALIFIER::detail::make_num_items_dispatch_arg(num_items),
       reduction_op,
       init,
       stream);
@@ -783,12 +786,12 @@ public:
 
     using init_value_t = OutputT;
 
-    return detail::reduce::dispatch(
+    return CUB_NS_QUALIFIER::detail::reduce::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
-      detail::make_num_items_dispatch_arg(num_items),
+      CUB_NS_QUALIFIER::detail::make_num_items_dispatch_arg(num_items),
       ::cuda::std::plus<>{},
       init_value_t{}, // zero-initialize
       stream);
@@ -894,12 +897,12 @@ public:
                   "CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX to suppress this check.");
 #endif // CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
 
-    return detail::reduce::dispatch(
+    return CUB_NS_QUALIFIER::detail::reduce::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
-      detail::make_num_items_dispatch_arg(num_items),
+      CUB_NS_QUALIFIER::detail::make_num_items_dispatch_arg(num_items),
       ::cuda::minimum<>{},
       limits_t::max(),
       stream);
@@ -1013,9 +1016,9 @@ private:
     using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
     using reduce_op_t         = detail::arg_reduce_op<CompareOpT>;
 
-    return detail::dispatch_with_env(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-        return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+        return CUB_NS_QUALIFIER::detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
           storage,
           bytes,
           d_in,
@@ -1047,18 +1050,19 @@ private:
     using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
     using reduce_op_t         = detail::arg_reduce_op<CompareOpT>;
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
-      return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
-        storage,
-        bytes,
-        d_in,
-        d_min_out,
-        d_index_out,
-        static_cast<GlobalOffsetT>(num_items),
-        reduce_op_t{compare_op},
-        stream,
-        tuning_env);
-    });
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
+      env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return CUB_NS_QUALIFIER::detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+          storage,
+          bytes,
+          d_in,
+          d_min_out,
+          d_index_out,
+          static_cast<GlobalOffsetT>(num_items),
+          reduce_op_t{compare_op},
+          stream,
+          tuning_env);
+      });
   }
 
 public:
@@ -1427,7 +1431,7 @@ public:
     // Initial value
     const init_value_t initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
 
-    return detail::reduce::dispatch<AccumT>(
+    return CUB_NS_QUALIFIER::detail::reduce::dispatch<AccumT>(
       d_temp_storage,
       temp_storage_bytes,
       d_indexed_in,
@@ -1535,12 +1539,12 @@ public:
                   "CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX to suppress this check.");
 #endif // CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
 
-    return detail::reduce::dispatch(
+    return CUB_NS_QUALIFIER::detail::reduce::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
-      detail::make_num_items_dispatch_arg(num_items),
+      CUB_NS_QUALIFIER::detail::make_num_items_dispatch_arg(num_items),
       ::cuda::maximum<>{},
       limits_t::lowest(),
       stream);
@@ -1888,7 +1892,7 @@ public:
     // Initial value
     const init_value_t initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
 
-    return detail::reduce::dispatch<AccumT>(
+    return CUB_NS_QUALIFIER::detail::reduce::dispatch<AccumT>(
       d_temp_storage,
       temp_storage_bytes,
       d_indexed_in,
@@ -2025,9 +2029,9 @@ private:
     using PerPartitionOffsetT = int;
     using GlobalOffsetT       = ::cuda::std::int64_t;
 
-    return detail::dispatch_with_env(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::reduce::dispatch_streaming_arg_minmax<PerPartitionOffsetT>(
+        return CUB_NS_QUALIFIER::detail::reduce::dispatch_streaming_arg_minmax<PerPartitionOffsetT>(
           storage,
           bytes,
           d_in,
@@ -2279,7 +2283,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMinMax");
-    return detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
       return __arg_minmax<false>(
         storage, bytes, d_in, d_min_out, d_min_index_out, d_max_out, d_max_index_out, num_items, compare_op, env);
     });
@@ -2308,7 +2312,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMinMax");
-    return detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
       return __arg_minmax<false>(
         storage,
         bytes,
@@ -2424,7 +2428,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMinLastMax");
-    return detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
       return __arg_minmax<true>(
         storage, bytes, d_in, d_min_out, d_min_index_out, d_max_out, d_max_index_out, num_items, compare_op, env);
     });
@@ -2453,7 +2457,7 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMinLastMax");
-    return detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
       return __arg_minmax<true>(
         storage,
         bytes,
@@ -2594,12 +2598,12 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::TransformReduce");
 
-    return detail::reduce::dispatch(
+    return CUB_NS_QUALIFIER::detail::reduce::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
-      detail::make_num_items_dispatch_arg(num_items),
+      CUB_NS_QUALIFIER::detail::make_num_items_dispatch_arg(num_items),
       reduction_op,
       init,
       stream,
@@ -2824,9 +2828,9 @@ public:
       ReductionOpT,
       ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<ValuesInputIteratorT>>,
       detail::non_void_value_t<UniqueOutputIteratorT, detail::it_value_t<KeysInputIteratorT>>>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::reduce_by_key::dispatch(
+        return CUB_NS_QUALIFIER::detail::reduce_by_key::dispatch(
           storage,
           bytes,
           d_keys_in,
@@ -3002,7 +3006,7 @@ public:
     using OffsetT    = detail::choose_offset_t<NumItemsT>;
     using EqualityOp = ::cuda::std::equal_to<>;
 
-    return detail::reduce_by_key::dispatch(
+    return CUB_NS_QUALIFIER::detail::reduce_by_key::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,

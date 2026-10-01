@@ -402,8 +402,8 @@ struct dispatch_scan_by_key
     // Compute allocation pointers into the single storage blob (or compute
     // the necessary size of the blob)
     void* allocations[2] = {};
-    if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+    if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::alias_temporaries(
+          d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -609,7 +609,7 @@ struct dispatch_scan_by_key
 
     const ScanByKeyPolicy active_policy = policy_selector(cc);
 
-    detail::log_dispatch("DeviceScanByKey", cc, active_policy);
+    CUB_NS_QUALIFIER::detail::log_dispatch("DeviceScanByKey", cc, active_policy);
 
     return dispatch_scan_by_key<
              KeysInputIteratorT,
@@ -706,7 +706,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   const ScanByKeyPolicy active_policy = policy_selector(cc);
 
-  detail::log_dispatch("DeviceScanByKey", cc, active_policy);
+  CUB_NS_QUALIFIER::detail::log_dispatch("DeviceScanByKey", cc, active_policy);
 
   // Get device ordinal
   int device_ordinal;
@@ -733,8 +733,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   // Compute allocation pointers into the single storage blob (or compute
   // the necessary size of the blob)
   void* allocations[2] = {};
-  if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  if (const auto error = CubDebug(
+        CUB_NS_QUALIFIER::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;
   }

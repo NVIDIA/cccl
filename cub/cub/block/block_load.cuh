@@ -170,7 +170,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectBlocked(
     dst_items[i] = oob_default;
   }
 
-  LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
+  CUB_NS_QUALIFIER::LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
 }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -227,7 +227,7 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
   }
   else
   {
-    LoadDirectBlocked(linear_tid, block_src_ptr, dst_items);
+    CUB_NS_QUALIFIER::LoadDirectBlocked(linear_tid, block_src_ptr, dst_items);
   }
 }
 
@@ -270,7 +270,7 @@ template <typename T, int ItemsPerThread>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 LoadDirectBlockedVectorized(int linear_tid, T* block_src_ptr, T (&dst_items)[ItemsPerThread])
 {
-  InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_src_ptr, dst_items);
+  CUB_NS_QUALIFIER::InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_src_ptr, dst_items);
 }
 
 //! @}
@@ -435,7 +435,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
     dst_items[i] = oob_default;
   }
 
-  LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
+  CUB_NS_QUALIFIER::LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
 }
 
 //! @}
@@ -603,7 +603,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectWarpStriped(
     dst_items[i] = oob_default;
   }
 
-  LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end);
+  CUB_NS_QUALIFIER::LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end);
 }
 
 //! @}
@@ -930,7 +930,7 @@ public:
   //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockLoad()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @brief Collective constructor using the specified memory allocation as temporary storage.
@@ -943,7 +943,7 @@ public:
   //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockLoad(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
+      , linear_tid(CUB_NS_QUALIFIER::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}
@@ -999,35 +999,37 @@ public:
   {
     if constexpr (Algorithm == BLOCK_LOAD_DIRECT)
     {
-      LoadDirectBlocked(linear_tid, block_src_it, dst_items);
+      CUB_NS_QUALIFIER::LoadDirectBlocked(linear_tid, block_src_it, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED)
     {
-      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items);
+      CUB_NS_QUALIFIER::LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_VECTORIZE)
     {
       if constexpr (detail::is_CacheModifiedInputIterator<RandomAccessIterator>)
       {
-        InternalLoadDirectBlockedVectorized<RandomAccessIterator::__modifier>(linear_tid, block_src_it.ptr, dst_items);
+        CUB_NS_QUALIFIER::InternalLoadDirectBlockedVectorized<RandomAccessIterator::__modifier>(
+          linear_tid, block_src_it.ptr, dst_items);
       }
       else if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIterator>)
       {
-        InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, ::cuda::std::to_address(block_src_it), dst_items);
+        CUB_NS_QUALIFIER::InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(
+          linear_tid, ::cuda::std::to_address(block_src_it), dst_items);
       }
       else
       {
-        LoadDirectBlocked(linear_tid, block_src_it, dst_items);
+        CUB_NS_QUALIFIER::LoadDirectBlocked(linear_tid, block_src_it, dst_items);
       }
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
-      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items);
+      CUB_NS_QUALIFIER::LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items);
       block_exchange(temp_storage).StripedToBlocked(dst_items, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
     {
-      LoadDirectWarpStriped(linear_tid, block_src_it, dst_items);
+      CUB_NS_QUALIFIER::LoadDirectWarpStriped(linear_tid, block_src_it, dst_items);
       block_exchange(temp_storage).WarpStripedToBlocked(dst_items, dst_items);
     }
   }
@@ -1087,20 +1089,20 @@ public:
   {
     if constexpr (Algorithm == BLOCK_LOAD_DIRECT || Algorithm == BLOCK_LOAD_VECTORIZE)
     {
-      LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
+      CUB_NS_QUALIFIER::LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED)
     {
-      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
+      CUB_NS_QUALIFIER::LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
-      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
+      CUB_NS_QUALIFIER::LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end);
       block_exchange(temp_storage).StripedToBlocked(dst_items, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
     {
-      LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end);
+      CUB_NS_QUALIFIER::LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end);
       block_exchange(temp_storage).WarpStripedToBlocked(dst_items, dst_items);
     }
   }
@@ -1163,20 +1165,22 @@ public:
   {
     if constexpr (Algorithm == BLOCK_LOAD_DIRECT || Algorithm == BLOCK_LOAD_VECTORIZE)
     {
-      LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+      CUB_NS_QUALIFIER::LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_STRIPED)
     {
-      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+      CUB_NS_QUALIFIER::LoadDirectStriped<ThreadsPerBlock>(
+        linear_tid, block_src_it, dst_items, block_items_end, oob_default);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_TRANSPOSE)
     {
-      LoadDirectStriped<ThreadsPerBlock>(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+      CUB_NS_QUALIFIER::LoadDirectStriped<ThreadsPerBlock>(
+        linear_tid, block_src_it, dst_items, block_items_end, oob_default);
       block_exchange(temp_storage).StripedToBlocked(dst_items, dst_items);
     }
     else if constexpr (Algorithm == BLOCK_LOAD_WARP_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED)
     {
-      LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+      CUB_NS_QUALIFIER::LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
       block_exchange(temp_storage).WarpStripedToBlocked(dst_items, dst_items);
     }
   }

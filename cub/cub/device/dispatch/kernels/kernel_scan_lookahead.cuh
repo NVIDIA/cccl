@@ -86,7 +86,7 @@ struct scanKernelParams
 template <typename PolicySelector, typename InputT, typename OutputT, typename AccumT>
 struct ScanResources
 {
-  static constexpr ScanLookaheadPolicy policy = current_policy<PolicySelector>().lookahead;
+  static constexpr ScanLookaheadPolicy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().lookahead;
 
   // align to at least 16 bytes (InputT/OutputT may be aligned higher) so each stage starts correctly aligned
   struct alignas(::cuda::std::max({::cuda::std::size_t{16}, alignof(InputT), alignof(OutputT)})) in_out_t
@@ -99,7 +99,8 @@ struct ScanResources
   };
   static_assert(alignof(in_out_t) >= alignof(InputT));
   static_assert(alignof(in_out_t) >= alignof(OutputT));
-  using thread_and_warp_aggr_t = AccumT[squad_reduce(policy).threadCount() + squad_reduce(policy).warpCount()];
+  using thread_and_warp_aggr_t = AccumT[CUB_NS_QUALIFIER::detail::scan::squad_reduce(policy).threadCount()
+                                        + CUB_NS_QUALIFIER::detail::scan::squad_reduce(policy).warpCount()];
 
   warpspeed::SmemResource<in_out_t> smemInOut; // will also be used to stage the output (as OutputT) for the bulk copy
   warpspeed::SmemResource<uint4> smemNextBlockIdx;
@@ -116,7 +117,7 @@ allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& sm
   using in_out_t               = typename ScanResourcesT::in_out_t;
   using thread_and_warp_aggr_t = typename ScanResourcesT::thread_and_warp_aggr_t;
 
-  constexpr auto policy = current_policy<PolicySelector>().lookahead;
+  constexpr auto policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().lookahead;
 
   const int num_aggr_exclusive_cta_stages =
     policy.lookahead_stages > 0 ? policy.lookahead_stages : ::cuda::std::max(1, numStages + policy.lookahead_stages);
@@ -128,7 +129,7 @@ allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& sm
     warpspeed::SmemResource<thread_and_warp_aggr_t>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
   };
 
-  setup_scan_resources(
+  CUB_NS_QUALIFIER::detail::scan::setup_scan_resources(
     policy,
     syncHandler,
     smemAllocator,
@@ -203,7 +204,7 @@ warpScanExclusivePartial(Tp regInput, ScanOpT& scan_op, const int num_items, boo
     {
       regInput = cuda::identity_element<ScanOpT, Tp>();
     }
-    return warpScanExclusive(regInput, scan_op);
+    return __scan_detail::warpScanExclusive(regInput, scan_op);
   }
   else
   {
@@ -277,17 +278,18 @@ template <typename PolicySelector,
           bool StableReductionOrder = false>
 struct lookahead_scan_closure
 {
-  static constexpr ScanLookaheadPolicy policy               = current_policy<PolicySelector>().lookahead;
-  static constexpr warpspeed::SquadDesc squadReduce         = squad_reduce(policy);
-  static constexpr warpspeed::SquadDesc squadScanStore      = squad_scan_store(policy);
-  static constexpr warpspeed::SquadDesc squadLoadAndNextIdx = squad_load_and_next_idx(policy);
-  static constexpr warpspeed::SquadDesc squadLookahead      = squad_lookahead(policy);
+  static constexpr ScanLookaheadPolicy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().lookahead;
+  static constexpr warpspeed::SquadDesc squadReduce    = CUB_NS_QUALIFIER::detail::scan::squad_reduce(policy);
+  static constexpr warpspeed::SquadDesc squadScanStore = CUB_NS_QUALIFIER::detail::scan::squad_scan_store(policy);
+  static constexpr warpspeed::SquadDesc squadLoadAndNextIdx =
+    CUB_NS_QUALIFIER::detail::scan::squad_load_and_next_idx(policy);
+  static constexpr warpspeed::SquadDesc squadLookahead = CUB_NS_QUALIFIER::detail::scan::squad_lookahead(policy);
 
   static constexpr ::cuda::std::array<warpspeed::SquadDesc, 4> scanSquads = {
-    squad_reduce(policy),
-    squad_scan_store(policy),
-    squad_load_and_next_idx(policy),
-    squad_lookahead(policy),
+    CUB_NS_QUALIFIER::detail::scan::squad_reduce(policy),
+    CUB_NS_QUALIFIER::detail::scan::squad_scan_store(policy),
+    CUB_NS_QUALIFIER::detail::scan::squad_load_and_next_idx(policy),
+    CUB_NS_QUALIFIER::detail::scan::squad_lookahead(policy),
   };
 
   static constexpr int tile_size                  = policy.tile_size();
@@ -316,8 +318,8 @@ struct lookahead_scan_closure
   {
     warpspeed::SmemRef refNextBlockIdxW = phaseNextBlockIdxW.acquireRef();
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
-                      (squadGetNextBlockIdx(squad, refNextBlockIdxW);),
-                      (squadGetNextBlockIdxAtomic(squad, refNextBlockIdxW, params.atomicCounter);));
+                      (__scan_detail::squadGetNextBlockIdx(squad, refNextBlockIdxW);),
+                      (__scan_detail::squadGetNextBlockIdxAtomic(squad, refNextBlockIdxW, params.atomicCounter);));
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_current_tile(
@@ -502,7 +504,7 @@ struct lookahead_scan_closure
     AccumT regAggrInclusive[elemPerThread];
     if constexpr (IsLastTile)
     {
-      fillWithIdentity<ScanOpT>(regAggrInclusive, valid_items_this_thread);
+      __scan_detail::fillWithIdentity<ScanOpT>(regAggrInclusive, valid_items_this_thread);
     }
 
     // Aggregate of all threads up to but not including this one
@@ -679,7 +681,7 @@ struct lookahead_scan_closure
     // Perform inclusive scan of register array in current thread.
     // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use aggrExclusive
     const bool use_prefix = hasInit ? true : !(is_first_tile && squad.threadRank() == 0);
-    threadScanPartial<isInclusive, IsLastTile>(
+    __scan_detail::threadScanPartial<isInclusive, IsLastTile>(
       regAggrInclusive, scan_op, aggrExclusive, use_prefix, valid_items_this_thread);
 
     // Sync before storing to avoid data races on SMEM
@@ -938,14 +940,15 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
   // Cache special registers at the start of kernel, since getting them takes a few cycles
   warpspeed::SpecialRegisters specialRegisters = warpspeed::getSpecialRegisters();
 
-  static constexpr ScanLookaheadPolicy policy = current_policy<PolicySelector>().lookahead;
+  static constexpr ScanLookaheadPolicy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().lookahead;
 
   // Set up the shared memory resources
   auto res = [&] {
     warpspeed::SyncHandler syncHandler{};
     warpspeed::SmemAllocator smemAllocator{};
-    auto r = allocResources<PolicySelector, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params.numStages);
-    syncHandler.clusterInitSync<num_total_threads(policy)>(specialRegisters);
+    auto r = __scan_detail::allocResources<PolicySelector, InputT, OutputT, AccumT>(
+      syncHandler, smemAllocator, params.numStages);
+    syncHandler.clusterInitSync<__scan_detail::num_total_threads(policy)>(specialRegisters);
     return r;
   }();
 
@@ -1016,7 +1019,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_init_lookahead_body(
 template <typename InputT, typename OutputT, typename AccumT>
 _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(const ScanLookaheadPolicy& policy, int num_stages) -> int
 {
-  return smem_for_stages(
+  return CUB_NS_QUALIFIER::detail::scan::smem_for_stages(
     policy,
     num_stages,
     static_cast<int>(sizeof(InputT)),

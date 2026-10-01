@@ -65,7 +65,7 @@ template <typename PolicySelector, typename NumItemsT>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE int
 deferred_reduce_grid_size(NumItemsT num_items, int launched_grid_size) noexcept
 {
-  constexpr ReducePassPolicy policy = detail::current_policy<PolicySelector>().multi_tile;
+  constexpr ReducePassPolicy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().multi_tile;
   constexpr int tile_size           = policy.threads_per_block * policy.items_per_thread;
   const NumItemsT num_tiles         = ::cuda::ceil_div(num_items, NumItemsT{tile_size});
   return static_cast<int>(::cuda::std::min(static_cast<NumItemsT>(launched_grid_size), num_tiles));
@@ -109,23 +109,23 @@ template <typename PolicySelector,
           typename ReductionOpT,
           typename AccumT,
           typename TransformOpT>
-_CCCL_KERNEL_ATTRIBUTES
-__launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_block)) void DeterministicDeviceReduceKernel(
-  InputIteratorT d_in,
-  AccumT* d_out,
-  const KernelNumItemsT kernel_num_items,
-  ReductionOpT reduction_op,
-  TransformOpT transform_op,
-  const int reduce_grid_size)
+_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
+  CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>()
+    .multi_tile.threads_per_block)) void DeterministicDeviceReduceKernel(InputIteratorT d_in,
+                                                                         AccumT* d_out,
+                                                                         const KernelNumItemsT kernel_num_items,
+                                                                         ReductionOpT reduction_op,
+                                                                         TransformOpT transform_op,
+                                                                         const int reduce_grid_size)
 {
-  constexpr ReducePassPolicy policy = current_policy<PolicySelector>().multi_tile;
+  constexpr ReducePassPolicy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().multi_tile;
   constexpr int items_per_thread    = policy.items_per_thread;
   constexpr int threads_per_block   = policy.threads_per_block;
 
   // A 64-bit deferred problem size is consumed in a single launch that loops over 32-bit chunks in the kernel.
   using num_items_t = deterministic_num_items_t<KernelNumItemsT>;
 
-  const num_items_t num_items = detail::parameter_from_device<num_items_t>(kernel_num_items);
+  const num_items_t num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<num_items_t>(kernel_num_items);
 
   // The worst-case grid of a deferred problem size is trimmed to the blocks that receive at least one tile. Both the
   // early exit and the loop stride must use the trimmed grid so that the remaining blocks cover the whole input.
@@ -136,7 +136,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
     }
     else
     {
-      return detail::reduce::deferred_reduce_grid_size<PolicySelector>(num_items, reduce_grid_size);
+      return CUB_NS_QUALIFIER::detail::reduce::deferred_reduce_grid_size<PolicySelector>(num_items, reduce_grid_size);
     }
   }();
 
@@ -157,7 +157,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
   constexpr int bin_length = AccumT::max_index + AccumT::max_fold;
   const int tid            = threads_per_block * blockIdx.x + threadIdx.x;
 
-  ftype* shared_bins = detail::rfa::get_shared_bin_array<ftype, bin_length>();
+  ftype* shared_bins = CUB_NS_QUALIFIER::detail::rfa::get_shared_bin_array<ftype, bin_length>();
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int index = static_cast<int>(threadIdx.x); index < bin_length; index += threads_per_block)
@@ -277,7 +277,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
   // Output result
   if (threadIdx.x == 0)
   {
-    detail::uninitialized_copy_single(d_out + blockIdx.x, block_aggregate);
+    CUB_NS_QUALIFIER::detail::uninitialized_copy_single(d_out + blockIdx.x, block_aggregate);
   }
 }
 
@@ -328,7 +328,7 @@ template <typename PolicySelector,
           typename AccumT,
           typename TransformOpT = ::cuda::std::identity>
 _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
-  int(current_policy<PolicySelector>().single_tile.threads_per_block),
+  int(CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().single_tile.threads_per_block),
   1) void DeterministicDeviceReduceSingleTileKernel(InputIteratorT d_in,
                                                     OutputIteratorT d_out,
                                                     int num_items,
@@ -336,7 +336,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
                                                     InitValueT init,
                                                     TransformOpT transform_op)
 {
-  constexpr ReducePassPolicy policy = current_policy<PolicySelector>().single_tile;
+  constexpr ReducePassPolicy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().single_tile;
   constexpr int threads_per_block   = policy.threads_per_block;
 
   using block_reduce_t = BlockReduce<AccumT, threads_per_block, policy.reduce_algorithm>;
@@ -361,7 +361,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   using float_type         = typename AccumT::ftype;
   constexpr int bin_length = AccumT::max_index + AccumT::max_fold;
 
-  float_type* shared_bins = detail::rfa::get_shared_bin_array<float_type, bin_length>();
+  float_type* shared_bins = CUB_NS_QUALIFIER::detail::rfa::get_shared_bin_array<float_type, bin_length>();
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int index = static_cast<int>(threadIdx.x); index < bin_length; index += threads_per_block)
@@ -385,7 +385,8 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   // Output result
   if (threadIdx.x == 0)
   {
-    detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate.conv_to_fp());
+    CUB_NS_QUALIFIER::detail::reduce::finalize_and_store_aggregate(
+      d_out, reduction_op, init, block_aggregate.conv_to_fp());
   }
 }
 
@@ -401,7 +402,7 @@ template <typename PolicySelector,
           typename AccumT,
           typename TransformOpT = ::cuda::std::identity>
 _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
-  int(current_policy<PolicySelector>().single_tile.threads_per_block),
+  int(CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().single_tile.threads_per_block),
   1) void DeterministicDeviceReduceDeferredSingleTileKernel(const InputIteratorT d_in,
                                                             const OutputIteratorT d_out,
                                                             const KernelNumItemsT kernel_num_items,
@@ -410,12 +411,13 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
                                                             const InitValueT init,
                                                             TransformOpT transform_op)
 {
-  using actual_num_items_t                  = deterministic_num_items_t<KernelNumItemsT>;
-  const actual_num_items_t actual_num_items = detail::parameter_from_device<actual_num_items_t>(kernel_num_items);
+  using actual_num_items_t = deterministic_num_items_t<KernelNumItemsT>;
+  const actual_num_items_t actual_num_items =
+    CUB_NS_QUALIFIER::detail::parameter_from_device<actual_num_items_t>(kernel_num_items);
   const int num_items =
-    detail::reduce::deferred_reduce_grid_size<PolicySelector>(actual_num_items, first_pass_grid_size);
+    CUB_NS_QUALIFIER::detail::reduce::deferred_reduce_grid_size<PolicySelector>(actual_num_items, first_pass_grid_size);
 
-  constexpr ReducePassPolicy policy = current_policy<PolicySelector>().single_tile;
+  constexpr ReducePassPolicy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>().single_tile;
   constexpr int threads_per_block   = policy.threads_per_block;
 
   using block_reduce_t = BlockReduce<AccumT, threads_per_block, policy.reduce_algorithm>;
@@ -440,7 +442,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   using float_type         = typename AccumT::ftype;
   constexpr int bin_length = AccumT::max_index + AccumT::max_fold;
 
-  float_type* shared_bins = detail::rfa::get_shared_bin_array<float_type, bin_length>();
+  float_type* shared_bins = CUB_NS_QUALIFIER::detail::rfa::get_shared_bin_array<float_type, bin_length>();
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int index = static_cast<int>(threadIdx.x); index < bin_length; index += threads_per_block)
@@ -464,7 +466,8 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   // Output result
   if (threadIdx.x == 0)
   {
-    detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate.conv_to_fp());
+    CUB_NS_QUALIFIER::detail::reduce::finalize_and_store_aggregate(
+      d_out, reduction_op, init, block_aggregate.conv_to_fp());
   }
 }
 } // namespace detail::reduce

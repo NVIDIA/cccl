@@ -139,9 +139,9 @@ private:
     using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
     using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
+        return CUB_NS_QUALIFIER::detail::merge_sort::dispatch(
           storage,
           bytes,
           d_keys,
@@ -341,9 +341,9 @@ public:
     using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
     using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
+        return CUB_NS_QUALIFIER::detail::merge_sort::dispatch(
           storage,
           bytes,
           d_keys,
@@ -498,9 +498,9 @@ public:
     using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
     using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
+        return CUB_NS_QUALIFIER::detail::merge_sort::dispatch(
           storage,
           bytes,
           d_input_keys,
@@ -604,9 +604,9 @@ public:
     using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
     using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
+        return CUB_NS_QUALIFIER::detail::merge_sort::dispatch(
           storage,
           bytes,
           d_input_keys,
@@ -634,9 +634,9 @@ private:
     using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
     using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
+        return CUB_NS_QUALIFIER::detail::merge_sort::dispatch(
           storage,
           bytes,
           d_keys,
@@ -812,9 +812,9 @@ public:
     using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
     using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
+        return CUB_NS_QUALIFIER::detail::merge_sort::dispatch(
           storage,
           bytes,
           d_keys,
@@ -843,9 +843,9 @@ private:
     using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
     using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
+        return CUB_NS_QUALIFIER::detail::merge_sort::dispatch(
           storage,
           bytes,
           d_input_keys,
@@ -1057,9 +1057,9 @@ public:
     using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
     using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
+        return CUB_NS_QUALIFIER::detail::merge_sort::dispatch(
           storage,
           bytes,
           d_input_keys,
@@ -1260,9 +1260,9 @@ public:
     using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
     using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
+        return CUB_NS_QUALIFIER::detail::merge_sort::dispatch(
           storage,
           bytes,
           d_keys,
@@ -1440,9 +1440,9 @@ public:
     using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
     using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
+        return CUB_NS_QUALIFIER::detail::merge_sort::dispatch(
           storage,
           bytes,
           d_keys,
@@ -1653,9 +1653,9 @@ public:
     using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
     using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::merge_sort::dispatch(
+        return CUB_NS_QUALIFIER::detail::merge_sort::dispatch(
           storage,
           bytes,
           d_input_keys,

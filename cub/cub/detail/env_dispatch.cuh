@@ -58,7 +58,8 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(const EnvT& env, const Algori
   }
 
   // Allocate temporary storage
-  if (const auto error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr)))
+  if (const auto error =
+        CubDebug(CUB_NS_QUALIFIER::detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr)))
   {
     return error;
   }
@@ -68,7 +69,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(const EnvT& env, const Algori
 
   // Deallocate temporary storage (always attempt, even on error)
   const auto deallocate_error =
-    CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
+    CubDebug(CUB_NS_QUALIFIER::detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
 
   // Algorithm error takes precedence over deallocation error
   return (error != cudaSuccess) ? error : deallocate_error;
@@ -79,7 +80,7 @@ template <typename DefaultPolicySelector, typename EnvT, typename AlgorithmCalla
 CUB_RUNTIME_FUNCTION cudaError_t
 dispatch_with_env_and_tuning(const EnvT& env, const AlgorithmCallable& algorithm_callable)
 {
-  return detail::dispatch_with_env(
+  return CUB_NS_QUALIFIER::detail::dispatch_with_env(
     env,
     [&algorithm_callable](
       [[maybe_unused]] auto tuning_env, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
@@ -119,7 +120,7 @@ template <typename DefaultPolicySelector, typename EnvT, typename AlgorithmCalla
 CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_and_tuning(
   void* d_temp_storage, size_t& temp_storage_bytes, const EnvT& env, const AlgorithmCallable& algorithm_callable)
 {
-  return detail::dispatch_with_env(
+  return CUB_NS_QUALIFIER::detail::dispatch_with_env(
     d_temp_storage,
     temp_storage_bytes,
     env,

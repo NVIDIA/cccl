@@ -146,7 +146,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   const SegmentedScanPolicy active_policy = policy_selector(cc);
 
-  detail::log_dispatch("DeviceSegmentedScan", cc, active_policy);
+  CUB_NS_QUALIFIER::detail::log_dispatch("DeviceSegmentedScan", cc, active_policy);
 
   if (d_temp_storage == nullptr)
   {

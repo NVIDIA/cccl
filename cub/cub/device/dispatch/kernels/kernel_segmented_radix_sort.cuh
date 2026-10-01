@@ -33,7 +33,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector, bool AltDigitBits>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL int segmented_radix_sort_kernel_launch_bounds() noexcept
 {
-  constexpr SegmentedRadixSortPolicy policy = current_policy<PolicySelector>();
+  constexpr SegmentedRadixSortPolicy policy = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>();
   return AltDigitBits ? policy.alternate_pass.threads_per_block : policy.regular_pass.threads_per_block;
 }
 
@@ -109,7 +109,8 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_radix_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltDigitBits>())
+__launch_bounds__(CUB_NS_QUALIFIER::detail::segmented_radix_sort::
+                    segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltDigitBits>())
   _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
     const KeyT* const d_keys_in,
     KeyT* const d_keys_out,
@@ -125,7 +126,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
   // Constants
   //
 
-  static constexpr SegmentedRadixSortPolicy policy        = current_policy<PolicySelector>();
+  static constexpr SegmentedRadixSortPolicy policy        = CUB_NS_QUALIFIER::detail::current_policy<PolicySelector>();
   static constexpr RadixSortDownsweepPolicy active_policy = AltDigitBits ? policy.alternate_pass : policy.regular_pass;
 
   static constexpr int threads_per_block = active_policy.threads_per_block;

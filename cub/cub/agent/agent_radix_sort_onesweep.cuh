@@ -344,11 +344,11 @@ struct AgentRadixSortOnesweep
   {
     if (full_block)
     {
-      LoadDirectWarpStriped(threadIdx.x, d_keys_in + tile_offset, keys);
+      CUB_NS_QUALIFIER::LoadDirectWarpStriped(threadIdx.x, d_keys_in + tile_offset, keys);
     }
     else
     {
-      LoadDirectWarpStriped(
+      CUB_NS_QUALIFIER::LoadDirectWarpStriped(
         threadIdx.x, d_keys_in + tile_offset, keys, num_items - tile_offset, Twiddle::DefaultKey(decomposer));
     }
 
@@ -363,12 +363,12 @@ struct AgentRadixSortOnesweep
   {
     if (full_block)
     {
-      LoadDirectWarpStriped(threadIdx.x, d_values_in + tile_offset, values);
+      CUB_NS_QUALIFIER::LoadDirectWarpStriped(threadIdx.x, d_values_in + tile_offset, values);
     }
     else
     {
       const int tile_items = num_items - tile_offset;
-      LoadDirectWarpStriped(threadIdx.x, d_values_in + tile_offset, values, tile_items);
+      CUB_NS_QUALIFIER::LoadDirectWarpStriped(threadIdx.x, d_values_in + tile_offset, values, tile_items);
     }
   }
 
@@ -438,12 +438,12 @@ struct AgentRadixSortOnesweep
     }
     if (full_block)
     {
-      StoreDirectWarpStriped(threadIdx.x, d_keys_out + global_offset, keys);
+      CUB_NS_QUALIFIER::StoreDirectWarpStriped(threadIdx.x, d_keys_out + global_offset, keys);
     }
     else
     {
       const int tile_items = num_items - block_idx * TILE_ITEMS;
-      StoreDirectWarpStriped(threadIdx.x, d_keys_out + global_offset, keys, tile_items);
+      CUB_NS_QUALIFIER::StoreDirectWarpStriped(threadIdx.x, d_keys_out + global_offset, keys, tile_items);
     }
 
     if (!KEYS_ONLY)
@@ -453,17 +453,17 @@ struct AgentRadixSortOnesweep
       LoadValues(block_idx * TILE_ITEMS, values); // NOLINT(bugprone-misplaced-widening-cast)
       if (full_block)
       {
-        StoreDirectWarpStriped(threadIdx.x, d_values_out + global_offset, values);
+        CUB_NS_QUALIFIER::StoreDirectWarpStriped(threadIdx.x, d_values_out + global_offset, values);
       }
       else
       {
         const int tile_items = num_items - block_idx * TILE_ITEMS;
-        StoreDirectWarpStriped(threadIdx.x, d_values_out + global_offset, values, tile_items);
+        CUB_NS_QUALIFIER::StoreDirectWarpStriped(threadIdx.x, d_values_out + global_offset, values, tile_items);
       }
     }
 
     // exit early
-    ThreadExit();
+    CUB_NS_QUALIFIER::ThreadExit();
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void

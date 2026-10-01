@@ -153,7 +153,8 @@ struct policy_selector_from_types
   // from the same cc.
 
   // note: the baseline policy passed to baseline_can_cover_v must be the same as returned from operator(cc) below
-  static constexpr baseline_topk_policy baseline_policy = make_baseline_policy();
+  static constexpr baseline_topk_policy baseline_policy =
+    CUB_NS_QUALIFIER::detail::batched_topk::make_baseline_policy();
 
   struct policy_getter_17 // TODO(bgruber): remove in C++20 and pass policy by value
   {
@@ -188,7 +189,9 @@ struct policy_selector_from_types
     {
       // A deterministic result set / concrete tie-break preference, or a segment too large for the single-block
       // baseline, is served only by the cluster backend (SM 9.0+); otherwise the request cannot run here.
-      backend = cluster_capable(cc) ? topk_algorithm::cluster : topk_algorithm::unsupported;
+      backend = CUB_NS_QUALIFIER::detail::batched_topk::cluster_capable(cc)
+                ? topk_algorithm::cluster
+                : topk_algorithm::unsupported;
     }
     else
     {
@@ -196,7 +199,9 @@ struct policy_selector_from_types
       // selector constant (not read from the tunable cluster policy), so tuning the cluster policy never shifts the
       // backend choice. The threshold is applied on every cluster-capable architecture, not gated to a minimum CC.
       const bool beneficial = StaticMaxSegSize >= cluster_beneficial_min_segment_size;
-      backend               = (cluster_capable(cc) && beneficial) ? topk_algorithm::cluster : topk_algorithm::baseline;
+      backend               = (CUB_NS_QUALIFIER::detail::batched_topk::cluster_capable(cc) && beneficial)
+                              ? topk_algorithm::cluster
+                              : topk_algorithm::baseline;
     }
 
     // The SM 100 cluster tunings cover deterministic pairs requests with 4-byte keys, measured on B200 (under a
@@ -375,8 +380,8 @@ _CCCL_HOST_API ::cuda::std::expected<cluster_launch_shape, cudaError_t> select_c
     // Hardware cluster ceiling (max blocks per cluster), queried at runtime (not hardcoded) so a future device with
     // larger non-portable clusters is not capped. Probed at zero dynamic SMEM for the arch/kernel ceiling alone; each
     // candidate is re-validated against its own SMEM below.
-    const auto hw_cluster_ceiling =
-      probe_max_cluster_blocks(kernel_ptr, stream, threads_per_block, /*dynamic_smem_bytes=*/0);
+    const auto hw_cluster_ceiling = CUB_NS_QUALIFIER::detail::batched_topk::probe_max_cluster_blocks(
+      kernel_ptr, stream, threads_per_block, /*dynamic_smem_bytes=*/0);
     if (!hw_cluster_ceiling)
     {
       return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(hw_cluster_ceiling.error());
@@ -429,8 +434,8 @@ _CCCL_HOST_API ::cuda::std::expected<cluster_launch_shape, cudaError_t> select_c
           continue;
         }
 
-        const auto clusters_per_wave =
-          probe_clusters_per_wave(kernel_ptr, stream, threads_per_block, candidate_blocks, resident_smem_bytes);
+        const auto clusters_per_wave = CUB_NS_QUALIFIER::detail::batched_topk::probe_clusters_per_wave(
+          kernel_ptr, stream, threads_per_block, candidate_blocks, resident_smem_bytes);
         if (!clusters_per_wave)
         {
           return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(clusters_per_wave.error());
@@ -465,8 +470,8 @@ _CCCL_HOST_API ::cuda::std::expected<cluster_launch_shape, cudaError_t> select_c
       // Oversize (`min_blocks_per_segment > eff_max_blocks_per_cluster`) or nothing launchable: full residency
       // is impossible, so maximize residency with the largest launchable cluster at the largest SMEM and stream the
       // overflow.
-      const auto hw_max_cluster_blocks =
-        probe_max_cluster_blocks(kernel_ptr, stream, threads_per_block, max_dynamic_smem_bytes);
+      const auto hw_max_cluster_blocks = CUB_NS_QUALIFIER::detail::batched_topk::probe_max_cluster_blocks(
+        kernel_ptr, stream, threads_per_block, max_dynamic_smem_bytes);
       if (!hw_max_cluster_blocks)
       {
         return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(hw_max_cluster_blocks.error());
@@ -581,7 +586,7 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
   using key_it_t = it_value_t<KeyInputItItT>;
   using key_t    = it_value_t<key_it_t>;
   using layout_t = batched_topk_cluster::smem_block_tile_layout<key_t, chunk_bytes, load_align_bytes>;
-  static_assert(is_valid_cluster_policy(policy));
+  static_assert(CUB_NS_QUALIFIER::detail::batched_topk::is_valid_cluster_policy(policy));
   static_assert(load_align_bytes % int{sizeof(key_t)} == 0);
 
   // Tightest upper bound the segment-size argument carries -- for a static-bounded per-segment sequence a loose type
@@ -590,7 +595,7 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
   using num_segments_val_t = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
   // `num_segments > 0` and `max_seg_size > 0` here: the generic `dispatch` returns for the empty-batch cases (no
   // segments, or a non-positive max segment size) before invoking this launch arm.
-  const auto num_seg_val = detail::params::get_param(num_segments, num_segments_val_t{0});
+  const auto num_seg_val = CUB_NS_QUALIFIER::detail::params::get_param(num_segments, num_segments_val_t{0});
 
   // Opt in to non-portable cluster blocks (>8 on Hopper).
   if (const auto error = CubDebug(::cudaFuncSetAttribute(
@@ -602,7 +607,8 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
   // Usable dynamic shared-memory budget (opt-in minus the kernel's static footprint); the policy slot cap may narrow
   // it further into `max_dynamic_smem_bytes` below.
   int hw_dynamic_smem_bytes = 0;
-  if (const auto error = max_dynamic_smem_size_for_fixed(hw_dynamic_smem_bytes, kernel_ptr))
+  if (const auto error =
+        CUB_NS_QUALIFIER::detail::batched_topk::max_dynamic_smem_size_for_fixed(hw_dynamic_smem_bytes, kernel_ptr))
   {
     return error;
   }
@@ -628,7 +634,7 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
   }
 
   // Resolve the launch shape (cluster blocks + dynamic SMEM) for the max segment size.
-  const auto shape = select_cluster_launch_shape<layout_t>(
+  const auto shape = CUB_NS_QUALIFIER::detail::batched_topk::select_cluster_launch_shape<layout_t>(
     static_cast<::cuda::std::uint64_t>(max_seg_size),
     static_cast<::cuda::std::uint64_t>(num_seg_val),
     max_dynamic_smem_bytes,
@@ -679,7 +685,7 @@ _CCCL_HOST_API cudaError_t launch_cluster_arm(
     return error;
   }
 
-  return CubDebug(detail::DebugSyncStream(stream));
+  return CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream));
 }
 
 // Baseline host-launch arm of the dispatch. Launches the single kernel symbol
@@ -820,7 +826,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
                        && ::cuda::std::cmp_less_equal(
                          +num_segments_val, ::cuda::std::numeric_limits<segment_size_scan_offset_t>::max()),
                      "num_segments must be non-negative and fit the segment-size scan offset type");
-        if (const auto error = CubDebug(detail::scan::dispatch(
+        if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::scan::dispatch(
               nullptr,
               allocation_sizes[1],
               segment_size_scan_input_it,
@@ -839,8 +845,8 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
     }
 
     void* allocations[allocations_array_size] = {};
-    if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+    if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::alias_temporaries(
+          d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -908,7 +914,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
                      && ::cuda::std::cmp_less_equal(
                        +num_segments_val, ::cuda::std::numeric_limits<segment_size_scan_offset_t>::max()),
                    "num_segments must be non-negative and fit the segment-size scan offset type");
-      if (const auto error = CubDebug(detail::scan::dispatch(
+      if (const auto error = CubDebug(CUB_NS_QUALIFIER::detail::scan::dispatch(
             allocations[1],
             allocation_sizes[1],
             segment_size_scan_input_it,
@@ -925,7 +931,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
       }
     }
 
-    return CubDebug(detail::DebugSyncStream(stream));
+    return CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream));
   }
 }
 
@@ -992,8 +998,10 @@ _CCCL_HOST_API cudaError_t dispatch_select(
   // Type derived from the parameter type rather than `decltype(select_directions)`: GCC 7 rejects the latter ("use of
   // 'select_directions' before deduction of 'auto'") when it feeds the `constexpr baseline_can_cover` initializer
   // below. Declaring `select_directions` with the alias keeps its (const-qualified) type single-sourced.
-  using SelectDirectionParameterT = const decltype(wrap_select_direction(::cuda::std::declval<SelectDirectionT>()));
-  SelectDirectionParameterT select_directions = wrap_select_direction(select_direction);
+  using SelectDirectionParameterT = const decltype(CUB_NS_QUALIFIER::detail::batched_topk::wrap_select_direction(
+    ::cuda::std::declval<SelectDirectionT>()));
+  SelectDirectionParameterT select_directions =
+    CUB_NS_QUALIFIER::detail::batched_topk::wrap_select_direction(select_direction);
 
   using key_t                   = it_value_t<it_value_t<KeyInputItItT>>;
   using value_t                 = it_value_t<it_value_t<ValueInputItItT>>;
@@ -1070,12 +1078,13 @@ _CCCL_HOST_API cudaError_t dispatch_select(
   // unavailable request still fails with cudaErrorNotSupported rather than being masked into success.
   const auto empty_batch_no_launch = [&] {
     return d_temp_storage != nullptr
-        && (detail::params::get_param(num_segments, 0) == 0 || ::cuda::args::__highest_(segment_sizes) <= 0);
+        && (CUB_NS_QUALIFIER::detail::params::get_param(num_segments, 0) == 0
+            || ::cuda::args::__highest_(segment_sizes) <= 0);
   };
 
-  return detail::dispatch_compute_cap(policy_selector_t{}, cc, [&](auto policy_getter) -> cudaError_t {
+  return CUB_NS_QUALIFIER::detail::dispatch_compute_cap(policy_selector_t{}, cc, [&](auto policy_getter) -> cudaError_t {
     constexpr topk_policy active_policy = policy_getter();
-    detail::log_dispatch("DeviceBatchedTopK", cc, active_policy);
+    CUB_NS_QUALIFIER::detail::log_dispatch("DeviceBatchedTopK", cc, active_policy);
     if constexpr (active_policy.backend == topk_algorithm::baseline)
     {
       // Computed from the template parameters, not a captured function-scope constant: MSVC rejects the latter as
@@ -1112,23 +1121,20 @@ _CCCL_HOST_API cudaError_t dispatch_select(
         {
           return cudaSuccess;
         }
-        return launch_baseline_arm<policy_selector_t,
-                                   decltype(policy_getter),
-                                   LargeSegmentTileOffsetT,
-                                   Determinism,
-                                   TieBreak>(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_key_segments_it,
-          d_key_segments_out_it,
-          d_value_segments_it,
-          d_value_segments_out_it,
-          segment_sizes,
-          k,
-          select_directions,
-          num_segments,
-          stream,
-          launcher_factory);
+        return CUB_NS_QUALIFIER::detail::batched_topk::
+          launch_baseline_arm<policy_selector_t, decltype(policy_getter), LargeSegmentTileOffsetT, Determinism, TieBreak>(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_key_segments_it,
+            d_key_segments_out_it,
+            d_value_segments_it,
+            d_value_segments_out_it,
+            segment_sizes,
+            k,
+            select_directions,
+            num_segments,
+            stream,
+            launcher_factory);
       }
     }
     else if constexpr (active_policy.backend == topk_algorithm::cluster)
@@ -1148,11 +1154,12 @@ _CCCL_HOST_API cudaError_t dispatch_select(
       // `UserProvidedTuning`: false for the automatic selector, which returns `cluster` solely for a
       // `cluster_capable(cc)` and so needs no runtime re-check; a `tune`d override is a different type and keeps it.
       // Inlined as a type trait rather than a function-scope constexpr, which MSVC rejects inside this lambda.
-      return launch_cluster_arm<policy_selector_t,
-                                LargeSegmentTileOffsetT,
-                                Determinism,
-                                TieBreak,
-                                !::cuda::std::is_same_v<policy_selector_t, default_policy_selector_t>>(
+      return CUB_NS_QUALIFIER::detail::batched_topk::launch_cluster_arm<
+        policy_selector_t,
+        LargeSegmentTileOffsetT,
+        Determinism,
+        TieBreak,
+        !::cuda::std::is_same_v<policy_selector_t, default_policy_selector_t>>(
         policy_getter,
         d_temp_storage,
         temp_storage_bytes,
@@ -1231,12 +1238,13 @@ _CCCL_HOST_API cudaError_t dispatch(
                 "cub::DeviceBatchedTopK requires a host-known uniform number of segments (constant, immediate, or a "
                 "plain integral value).");
 
-  constexpr ::cuda::std::int64_t static_max_out = max_output_bound(
+  constexpr ::cuda::std::int64_t static_max_out = CUB_NS_QUALIFIER::detail::batched_topk::max_output_bound(
     ::cuda::args::__traits<KParameterT>::highest, ::cuda::args::__traits<SegmentSizeParameterT>::highest);
 
   // Both the selection and sort grids use one x-dimension entry per segment.
-  using num_segments_value_t                    = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
-  const num_segments_value_t num_segments_value = detail::params::get_param(num_segments, num_segments_value_t{0});
+  using num_segments_value_t = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
+  const num_segments_value_t num_segments_value =
+    CUB_NS_QUALIFIER::detail::params::get_param(num_segments, num_segments_value_t{0});
   // Unary `+` integer-promotes the count to a standard integer type so the sign-safe `cmp_*` comparators accept it:
   // they are constrained to `__cccl_is_integer_v`, which excludes the character count types the public API permits.
   if (::cuda::std::cmp_greater(+num_segments_value, ::cuda::std::numeric_limits<int>::max()))
@@ -1255,7 +1263,7 @@ _CCCL_HOST_API cudaError_t dispatch(
   if constexpr (OutputOrdering == ::cuda::execution::output_ordering::__output_ordering_t::__unsorted
                 || static_max_out <= 1)
   {
-    return dispatch_select<Determinism, TieBreak>(
+    return CUB_NS_QUALIFIER::detail::batched_topk::dispatch_select<Determinism, TieBreak>(
       d_temp_storage,
       temp_storage_bytes,
       d_key_segments_it,
@@ -1297,8 +1305,8 @@ _CCCL_HOST_API cudaError_t dispatch(
     }
     else
     {
-      const ::cuda::std::int64_t max_out =
-        max_output_bound(::cuda::args::__highest_(k), ::cuda::args::__highest_(segment_sizes));
+      const ::cuda::std::int64_t max_out = CUB_NS_QUALIFIER::detail::batched_topk::max_output_bound(
+        ::cuda::args::__highest_(k), ::cuda::args::__highest_(segment_sizes));
 
       const bool has_sort_work = ::cuda::std::cmp_greater(+num_segments_value, 0) && max_out > 0;
 
@@ -1333,7 +1341,7 @@ _CCCL_HOST_API cudaError_t dispatch(
         ::cuda::make_strided_iterator(::cuda::make_counting_iterator(static_cast<value_t*>(nullptr)), max_out);
 
       size_t selection_storage_bytes = 0;
-      if (const auto error = dispatch_select<Determinism, TieBreak>(
+      if (const auto error = CUB_NS_QUALIFIER::detail::batched_topk::dispatch_select<Determinism, TieBreak>(
             nullptr,
             selection_storage_bytes,
             d_key_segments_it,
@@ -1369,7 +1377,7 @@ _CCCL_HOST_API cudaError_t dispatch(
       const auto scratch_value_segments_out_it =
         ::cuda::make_strided_iterator(::cuda::make_counting_iterator(value_scratch.get()), max_out);
 
-      if (const auto error = dispatch_select<Determinism, TieBreak>(
+      if (const auto error = CUB_NS_QUALIFIER::detail::batched_topk::dispatch_select<Determinism, TieBreak>(
             selection_storage.get(),
             selection_storage_bytes,
             d_key_segments_it,
@@ -1409,7 +1417,8 @@ _CCCL_HOST_API cudaError_t dispatch(
                       ValueOutputItItT,
                       SegmentSizeParameterT,
                       KParameterT,
-                      const decltype(wrap_select_direction(::cuda::std::declval<SelectDirectionT>())),
+                      const decltype(CUB_NS_QUALIFIER::detail::batched_topk::wrap_select_direction(
+                        ::cuda::std::declval<SelectDirectionT>())),
                       NumSegmentsParameterT>,
                     key_scratch.get(),
                     value_scratch.get(),
@@ -1417,14 +1426,14 @@ _CCCL_HOST_API cudaError_t dispatch(
                     d_value_segments_out_it,
                     segment_sizes,
                     k,
-                    wrap_select_direction(select_direction),
+                    CUB_NS_QUALIFIER::detail::batched_topk::wrap_select_direction(select_direction),
                     num_segments,
                     max_out)))
       {
         return error;
       }
 
-      return CubDebug(detail::DebugSyncStream(stream));
+      return CubDebug(CUB_NS_QUALIFIER::detail::DebugSyncStream(stream));
     }
   }
 }

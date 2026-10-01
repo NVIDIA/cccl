@@ -137,7 +137,7 @@ struct DeviceFor
     using default_policy_selector = detail::for_each::policy_selector;
     using policy_selector =
       ::cuda::std::execution::__query_result_or_t<decltype(tuning_env), ForPolicy, default_policy_selector>;
-    return detail::for_each::dispatch(num_items, op, stream.get(), policy_selector{});
+    return CUB_NS_QUALIFIER::detail::for_each::dispatch(num_items, op, stream.get(), policy_selector{});
   }
 
   template <bool AllowCopy = false, class RandomAccessIteratorT, class NumItemsT, class OpT, class EnvT>
@@ -1183,7 +1183,8 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
     using extents_type = ::cuda::std::extents<IndexType, Extents...>;
-    return cub::DeviceFor::__for_each_in_extents(::cuda::std::layout_right::mapping<extents_type>{extents}, op, env);
+    return CUB_NS_QUALIFIER::DeviceFor::__for_each_in_extents(
+      ::cuda::std::layout_right::mapping<extents_type>{extents}, op, env);
   }
 
   /*********************************************************************************************************************
@@ -1283,9 +1284,9 @@ public:
     static constexpr auto seq      = ::cuda::std::make_index_sequence<extents_type::rank()>{};
     constexpr bool is_layout_right = ::cuda::std::__is_cuda_std_layout_right_mapping_v<LayoutMapping>;
     const auto extents             = layout_mapping.extents();
-    using fast_mod_array_t         = decltype(cub::detail::extents_fast_mod_div(extents, seq));
+    using fast_mod_array_t         = decltype(CUB_NS_QUALIFIER::detail::extents_fast_mod_div(extents, seq));
     using ShapeT                   = implicit_prom_t<extent_index_type>;
-    const auto shape               = static_cast<ShapeT>(cub::detail::size(extents));
+    const auto shape               = static_cast<ShapeT>(CUB_NS_QUALIFIER::detail::size(extents));
     _CCCL_DIAG_PUSH
     _CCCL_DIAG_SUPPRESS_MSVC(4127) /* conditional expression is constant, for fully static extents */
     // must precede the fast_mod_div arrays below, whose constructor asserts a positive divisor
@@ -1295,8 +1296,9 @@ public:
     }
     _CCCL_DIAG_POP
 
-    const fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_mod_div<is_layout_right>(extents, seq);
-    const fast_mod_array_t extents_div_array   = cub::detail::extents_fast_mod_div(extents, seq);
+    const fast_mod_array_t sub_sizes_div_array =
+      CUB_NS_QUALIFIER::detail::sub_sizes_fast_mod_div<is_layout_right>(extents, seq);
+    const fast_mod_array_t extents_div_array = CUB_NS_QUALIFIER::detail::extents_fast_mod_div(extents, seq);
     const for_each::op_wrapper_extents_t<OpType, extents_type, is_layout_right, fast_mod_array_t> op_wrapper{
       op, extents, sub_sizes_div_array, extents_div_array};
     return __bulk(shape, op_wrapper, env);

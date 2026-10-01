@@ -235,9 +235,9 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeftCopy");
 
-    return detail::dispatch_with_env(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Left>(
+        return CUB_NS_QUALIFIER::detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Left>(
           storage, bytes, d_input, d_output, num_items, difference_op, stream, tuning_env);
       });
   }
@@ -347,9 +347,9 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeft");
 
-    return detail::dispatch_with_env(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Left>(
+        return CUB_NS_QUALIFIER::detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Left>(
           storage, bytes, d_input, d_input, num_items, difference_op, stream, tuning_env);
       });
   }
@@ -473,9 +473,9 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRightCopy");
 
-    return detail::dispatch_with_env(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Right>(
+        return CUB_NS_QUALIFIER::detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Right>(
           storage, bytes, d_input, d_output, num_items, difference_op, stream, tuning_env);
       });
   }
@@ -574,9 +574,9 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRight");
 
-    return detail::dispatch_with_env(
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
       d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Right>(
+        return CUB_NS_QUALIFIER::detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Right>(
           storage, bytes, d_input, d_input, num_items, difference_op, stream, tuning_env);
       });
   }
@@ -665,10 +665,11 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractLeftCopy");
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-      return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Left>(
-        storage, bytes, d_input, d_output, num_items, difference_op, stream, tuning_env);
-    });
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
+      env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+        return CUB_NS_QUALIFIER::detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Left>(
+          storage, bytes, d_input, d_output, num_items, difference_op, stream, tuning_env);
+      });
   }
 
   //! @rst
@@ -742,10 +743,11 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractLeft");
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-      return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Left>(
-        storage, bytes, d_input, d_input, num_items, difference_op, stream, tuning_env);
-    });
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
+      env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+        return CUB_NS_QUALIFIER::detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Left>(
+          storage, bytes, d_input, d_input, num_items, difference_op, stream, tuning_env);
+      });
   }
 
   //! @rst
@@ -834,10 +836,11 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractRightCopy");
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-      return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Right>(
-        storage, bytes, d_input, d_output, num_items, difference_op, stream, tuning_env);
-    });
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
+      env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+        return CUB_NS_QUALIFIER::detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Right>(
+          storage, bytes, d_input, d_output, num_items, difference_op, stream, tuning_env);
+      });
   }
 
   //! @rst
@@ -911,10 +914,11 @@ struct DeviceAdjacentDifference
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractRight");
 
-    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
-      return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Right>(
-        storage, bytes, d_input, d_input, num_items, difference_op, stream, tuning_env);
-    });
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env(
+      env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+        return CUB_NS_QUALIFIER::detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Right>(
+          storage, bytes, d_input, d_input, num_items, difference_op, stream, tuning_env);
+      });
   }
 };
 

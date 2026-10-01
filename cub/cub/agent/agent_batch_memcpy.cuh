@@ -275,7 +275,7 @@ vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const vo
   const char* in_ptr = static_cast<const char*>(src);
 
   // Gets the byte range that can safely be copied using vectorized stores of type VectorT
-  auto aligned_range = GetAlignedPtrs<VectorT>(src, dest, num_bytes);
+  auto aligned_range = CUB_NS_QUALIFIER::detail::batch_memcpy::GetAlignedPtrs<VectorT>(src, dest, num_bytes);
 
   // If byte range for which we can use vectorized copies is empty -> use byte-wise copies
   if (aligned_range.out_end <= aligned_range.out_begin)
@@ -305,7 +305,7 @@ vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const vo
       // LoadVector fills the output object before it is copied.
       // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
       VectorT data_in;
-      LoadVector(in_aligned_begin, data_in);
+      CUB_NS_QUALIFIER::detail::batch_memcpy::LoadVector(in_aligned_begin, data_in);
       *aligned_range_begin = data_in;
       in_aligned_begin += sizeof(VectorT) * LogicalWarpSize;
       aligned_range_begin += LogicalWarpSize;
@@ -329,7 +329,7 @@ copy_items(InputBufferT input_buffer, OutputBufferT output_buffer, OffsetT num_i
 {
   if constexpr (IsMemcpy)
   {
-    vectorized_copy<LogicalWarpSize, uint4>(
+    CUB_NS_QUALIFIER::detail::batch_memcpy::vectorized_copy<LogicalWarpSize, uint4>(
       threadIdx.x % LogicalWarpSize,
       &reinterpret_cast<char*>(output_buffer)[offset],
       num_items,
@@ -446,7 +446,7 @@ public:
       // we use the PTX instruction `shr` to make sure behaviour is well-defined.
       // Negative bit-shift amounts wrap around in unsigned integer math and are ultimately clamped.
       const uint32_t bit_shift = target_offset - i * USED_BITS_PER_UNIT;
-      val |= detail::LogicShiftRight(data[i], bit_shift) & ITEM_MASK;
+      val |= CUB_NS_QUALIFIER::detail::LogicShiftRight(data[i], bit_shift) & ITEM_MASK;
     }
     return val;
   }
@@ -464,7 +464,7 @@ public:
       // we use the PTX instruction `shl` to make sure behaviour is well-defined.
       // Negative bit-shift amounts wrap around in unsigned integer math and are ultimately clamped.
       const uint32_t bit_shift = target_offset - i * USED_BITS_PER_UNIT;
-      data[i] += detail::LogicShiftLeft(value, bit_shift) & UNIT_MASK;
+      data[i] += CUB_NS_QUALIFIER::detail::LogicShiftLeft(value, bit_shift) & UNIT_MASK;
     }
   }
 

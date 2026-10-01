@@ -275,13 +275,13 @@ private:
     template <typename OutputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
-      StoreDirectBlocked(linear_tid, block_itr, items);
+      CUB_NS_QUALIFIER::StoreDirectBlocked(linear_tid, block_itr, items);
     }
 
     template <typename OutputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
-      StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
+      CUB_NS_QUALIFIER::StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
     }
   };
 
@@ -299,13 +299,13 @@ private:
     template <typename OutputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
-      StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items);
+      CUB_NS_QUALIFIER::StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items);
     }
 
     template <typename OutputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
-      StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items);
+      CUB_NS_QUALIFIER::StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items);
     }
   };
 
@@ -322,19 +322,19 @@ private:
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(T* block_ptr, T (&items)[ItemsPerThread])
     {
-      StoreDirectBlockedVectorized(linear_tid, block_ptr, items);
+      CUB_NS_QUALIFIER::StoreDirectBlockedVectorized(linear_tid, block_ptr, items);
     }
 
     template <typename OutputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
-      StoreDirectBlocked(linear_tid, block_itr, items);
+      CUB_NS_QUALIFIER::StoreDirectBlocked(linear_tid, block_itr, items);
     }
 
     template <typename OutputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
-      StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
+      CUB_NS_QUALIFIER::StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
     }
   };
 
@@ -361,14 +361,14 @@ private:
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
       WarpExchangeT(temp_storage).BlockedToStriped(items, items);
-      StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items);
+      CUB_NS_QUALIFIER::StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items);
     }
 
     template <typename OutputIteratorT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
       WarpExchangeT(temp_storage).BlockedToStriped(items, items);
-      StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items);
+      CUB_NS_QUALIFIER::StoreDirectStriped<LogicalWarpThreads>(linear_tid, block_itr, items, valid_items);
     }
   };
 
