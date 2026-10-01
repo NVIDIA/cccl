@@ -22,6 +22,46 @@ class _LaunchRewrite:
         seen_factory_kwargs: set[str],
         factory_kwargs: dict[str, object],
     ) -> None:
+        """Fill or check the factory block shape against exact launch metadata.
+
+        Only operations accepting ``threads_per_block`` participate. Compare
+        normalized three-dimensional shapes when both explicit and launch values
+        are available; equal thread counts alone do not imply equal shapes.
+        Malformed explicit dimensions are left for later factory validation.
+        Launch bounds are never treated as an exact shape.
+
+        An explicit dimension may still need to wait: a device helper or a
+        kernel with a launch tracker must reconcile it after inlining or after
+        the whole-function planner requests launch metadata.
+
+        Parameters
+        ----------
+        op_name : str
+            Operation name used in mismatch diagnostics.
+        allowed_factory_kwargs : set of str
+            Keywords accepted by the operation's factory.
+        seen_factory_kwargs : set of str
+            Resolved keyword names; updated when the block shape is
+            inferred.
+        factory_kwargs : dict of str to object
+            Resolved values; receives an inferred ``threads_per_block`` in
+            place.
+
+        Returns
+        -------
+        None
+            Update the inferred inputs or leave them unchanged when
+            unavailable.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            An explicit shape disagrees with the exact kernel launch shape.
+        _DeferredCoopRewrite
+            Explicit dimensions need reconciliation with pending launch
+            metadata.
+        """
+
         if "threads_per_block" not in allowed_factory_kwargs:
             return
         threads_per_block = self._infer_threads_per_block_from_launch_config()
