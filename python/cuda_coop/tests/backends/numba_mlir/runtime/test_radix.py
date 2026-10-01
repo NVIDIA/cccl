@@ -189,7 +189,7 @@ def test_rank_is_stable_signed_int32_and_composes(
         keys = coop.ThreadData(items_per_thread, dtype=compiler_dtype)
         for i in range(items_per_thread):
             keys[i] = keys_in[t * items_per_thread + i]
-        ranks = coop.radix_rank(
+        ranks = coop.radix_rank_keys(
             coop.this_block(), keys, begin_bit=begin, descending=descending
         )
         ordered = coop.radix_sort_keys(coop.this_block(), ranks)
@@ -228,7 +228,7 @@ def test_qualified_striped_keys_and_exclusive_prefix(
         for i in range(items_per_thread):
             keys[i] = keys_in[t * items_per_thread + i]
         prefix = numba_coop.ThreadData(items_per_thread=2, dtype=types.int32)
-        ranks = numba_coop.radix_rank(
+        ranks = numba_coop.radix_rank_keys(
             numba_coop.this_block(),
             keys,
             radix_bits=7,
@@ -275,7 +275,7 @@ def test_qualified_scalar_sort_and_rank():
         sorted_out[t] = numba_coop.radix_sort_keys(
             numba_coop.this_block(), source[t]
         )
-        rank_out[t] = numba_coop.radix_rank(
+        rank_out[t] = numba_coop.radix_rank_keys(
             numba_coop.this_block(), source[t], radix_bits=6
         )
 
@@ -386,7 +386,7 @@ def test_chained_sorts_and_ranks_infer_dtypes_from_indexed_writes(
         else:
             first = api.radix_sort_keys(block, keys, descending=True)
             chosen = api.radix_sort_keys(block, first)
-        ranks = api.radix_rank(block, chosen, radix_bits=8)
+        ranks = api.radix_rank_keys(block, chosen, radix_bits=8)
         sorted_ranks = api.radix_sort_keys(block, ranks)
         api.store(block, ordered_ranks, sorted_ranks)
         api.store(block, output, chosen)

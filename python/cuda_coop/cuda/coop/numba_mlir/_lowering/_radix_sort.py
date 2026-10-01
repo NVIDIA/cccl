@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from numba_cuda_mlir import types
+import numba_cuda_mlir.numba_cuda.types as numba_types
 
 from cuda.coop._core import SynchronizationScope
 from cuda.coop._core.block.radix_rank import (
@@ -28,7 +28,7 @@ def _materialize(adapter, specialization):
     return make_invocable_from_specialization(specialization)
 
 
-def radix_rank(
+def radix_rank_keys(
     dtype,
     threads_per_block,
     items_per_thread,
@@ -38,14 +38,21 @@ def radix_rank(
     with_exclusive_digit_prefix=False,
 ):
     dtype = normalize_dtype_param(dtype)
-    if dtype not in {types.int32, types.uint32, types.int64, types.uint64}:
+    if not isinstance(dtype, numba_types.Integer) or dtype not in {
+        numba_types.int32,
+        numba_types.uint32,
+        numba_types.int64,
+        numba_types.uint64,
+    }:
         raise TypeError(
-            "radix_rank keys require int32, uint32, int64, or uint64"
+            "radix_rank_keys keys require int32, uint32, int64, or uint64"
         )
     cub_dtype = dtype
     transforms = None
     if dtype.signed:
-        cub_dtype = types.uint32 if dtype.bitwidth == 32 else types.uint64
+        cub_dtype = (
+            numba_types.uint32 if dtype.bitwidth == 32 else numba_types.uint64
+        )
         expression = (
             "(static_cast<unsigned int>({value}) ^ 0x80000000u)"
             if dtype.bitwidth == 32
@@ -83,12 +90,12 @@ def radix_sort_keys(
 ):
     dtype = normalize_dtype_param(dtype)
     if dtype not in {
-        types.int32,
-        types.uint32,
-        types.int64,
-        types.uint64,
-        types.float32,
-        types.float64,
+        numba_types.int32,
+        numba_types.uint32,
+        numba_types.int64,
+        numba_types.uint64,
+        numba_types.float32,
+        numba_types.float64,
     }:
         raise TypeError(
             "radix_sort keys require 32- or 64-bit integers or floats"
@@ -126,7 +133,7 @@ def radix_sort_pairs(
     )
 
 
-for _factory in (radix_rank, radix_sort_keys, radix_sort_pairs):
+for _factory in (radix_rank_keys, radix_sort_keys, radix_sort_pairs):
     register_factory(
         _factory,
         operation=_factory.__name__,
