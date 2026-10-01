@@ -757,6 +757,40 @@ class _ProvenanceRewrite(Rewrite):
         *,
         display_name: str | None = None,
     ) -> set[str]:
+        """Collect reachable storage constructor owners.
+
+        Follow the shared descriptor-provenance traversal through aliases and
+        control-flow joins, recording constructor specifications as they are
+        found. Once backing emission has begun, previously validated constructor
+        owners still count even though their calls have been replaced by slices.
+        A join containing both a descriptor and a non-descriptor such as None is
+        invalid; returning only the descriptor branch would hide an unsafe path.
+
+        Parameters
+        ----------
+        value : ir.Var
+            Variable whose possible storage origins are needed.
+        seen : set of str
+            Names already visited by the provenance walk, used to stop
+            cycles.
+        display_name : str or None, optional
+            User-facing variable name for diagnostics. When absent, prefer
+            the current name unless it is a compiler temporary.
+
+        Returns
+        -------
+        set of str
+            Constructor owner names before canonicalization. Empty means no
+            descriptor origin was found, including when traversal stops at a
+            cycle.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            A constructor contract is invalid or inconsistent, or descriptor
+            and non-descriptor definitions reach the same variable.
+        """
+
         if not isinstance(value, ir.Var):
             return set()
         if value.name in seen:
