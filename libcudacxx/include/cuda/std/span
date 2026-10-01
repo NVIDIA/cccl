@@ -86,12 +86,6 @@ template <class _Sentinel, class _It>
 _CCCL_CONCEPT __span_compatible_sentinel_for = _CCCL_REQUIRES_EXPR((_Sentinel, _It)) //
   (requires(sized_sentinel_for<_Sentinel, _It>), requires(!is_convertible_v<_Sentinel, size_t>));
 
-template <class _Tp, bool = __integral_constant_like<_Tp>>
-inline constexpr size_t __maybe_static_ext = dynamic_extent;
-
-template <class _Tp>
-inline constexpr size_t __maybe_static_ext<_Tp, true> = {_Tp::value};
-
 template <typename _Tp, size_t _Extent>
 class _CCCL_TYPE_VISIBILITY_DEFAULT span
 {

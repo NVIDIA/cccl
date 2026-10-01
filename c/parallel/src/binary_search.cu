@@ -131,7 +131,7 @@ CUresult cccl_device_binary_search_compile(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 try
 {
   if (d_data.type == cccl_iterator_kind_t::CCCL_ITERATOR)
@@ -320,7 +320,7 @@ CUresult cccl_device_binary_search_build_ex(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 {
   CUresult r = cccl_device_binary_search_compile(
     build_ptr,

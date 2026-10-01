@@ -21,31 +21,22 @@
 #endif // no system header
 
 #include <cuda/__fwd/iterator.h>
-#include <cuda/std/__algorithm/ranges_min_element.h>
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #include <cuda/__iterator/zip_common.h>
 #include <cuda/std/__concepts/constructible.h>
-#include <cuda/std/__concepts/convertible_to.h>
-#include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/advance.h>
-#include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__ranges/compressed_movable_box.h>
-#include <cuda/std/__ranges/concepts.h>
-#include <cuda/std/__ranges/movable_box.h>
+#include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/common_type.h>
-#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/tuple>
 
 #include <cuda/std/__cccl/prologue.h>
 

@@ -21,19 +21,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/abs_diff.h>
-#include <cuda/__cmath/ceil_div.h>
-#include <cuda/__cmath/fast_modulo_division.h>
-#include <cuda/__cmath/ilog.h>
-#include <cuda/__cmath/ipow.h>
-#include <cuda/__cmath/isqrt.h>
-#include <cuda/__cmath/mul_hi.h>
-#include <cuda/__cmath/neg.h>
-#include <cuda/__cmath/pow2.h>
-#include <cuda/__cmath/round_down.h>
-#include <cuda/__cmath/round_up.h>
-#include <cuda/__cmath/sincos.h>
-#include <cuda/__cmath/uabs.h>
-#include <cuda/std/cmath>
+#include <cuda/__cmath/abs_diff.h> // IWYU pragma: export
+#include <cuda/__cmath/ceil_div.h> // IWYU pragma: export
+#include <cuda/__cmath/fast_modulo_division.h> // IWYU pragma: export
+#include <cuda/__cmath/ilog.h> // IWYU pragma: export
+#include <cuda/__cmath/ipow.h> // IWYU pragma: export
+#include <cuda/__cmath/isqrt.h> // IWYU pragma: export
+#include <cuda/__cmath/mul_hi.h> // IWYU pragma: export
+#include <cuda/__cmath/neg.h> // IWYU pragma: export
+#include <cuda/__cmath/pow2.h> // IWYU pragma: export
+#include <cuda/__cmath/round_down.h> // IWYU pragma: export
+#include <cuda/__cmath/round_up.h> // IWYU pragma: export
+#include <cuda/__cmath/sincos.h> // IWYU pragma: export
+#include <cuda/__cmath/uabs.h> // IWYU pragma: export
+#include <cuda/std/cmath> // IWYU pragma: export
 
 #endif // _CUDA_CMATH

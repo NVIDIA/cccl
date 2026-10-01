@@ -28,9 +28,9 @@
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__utility/basic_any.h>
 #  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__optional/optional.h>
 #  include <cuda/std/__utility/delegate_constructors.h>
 #  include <cuda/std/__utility/forward.h>
-#  include <cuda/std/optional>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -933,6 +933,26 @@ template <class... _Properties>
 using resource_ref = basic_resource_ref<_ResourceKind::_Asynchronous, _Properties...>;
 
 #  endif // _CCCL_DOXYGEN_INVOKED
+
+//! @brief Convenience alias for @c cuda::mr::resource_ref configured with @c cuda::mr::device_accessible.
+using device_resource_ref = resource_ref<::cuda::mr::device_accessible>;
+
+//! @brief Convenience alias for @c cuda::mr::resource_ref configured with @c cuda::mr::host_accessible.
+using host_resource_ref = resource_ref<::cuda::mr::host_accessible>;
+
+//! @brief Convenience alias for @c cuda::mr::resource_ref configured with @c cuda::mr::host_accessible and
+//! @c cuda::mr::device_accessible.
+using host_device_resource_ref = resource_ref<::cuda::mr::host_accessible, ::cuda::mr::device_accessible>;
+
+//! @brief Convenience alias for @c cuda::mr::any_resource configured with @c cuda::mr::device_accessible.
+using any_device_resource = any_resource<::cuda::mr::device_accessible>;
+
+//! @brief Convenience alias for @c cuda::mr::any_resource configured with @c cuda::mr::host_accessible.
+using any_host_resource = any_resource<::cuda::mr::host_accessible>;
+
+//! @brief Convenience alias for @c cuda::mr::any_resource configured with @c cuda::mr::host_accessible and
+//! @c cuda::mr::device_accessible.
+using any_host_device_resource = any_resource<::cuda::mr::host_accessible, ::cuda::mr::device_accessible>;
 
 template <class _Tp>
 inline constexpr bool __is_resource_ref = false;

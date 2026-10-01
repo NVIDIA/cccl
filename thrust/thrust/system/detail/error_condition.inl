@@ -35,16 +35,16 @@ error_condition ::error_condition(int val, const error_category& cat)
 } // end error_condition::error_condition()
 
 template <typename ErrorConditionEnum>
-error_condition ::error_condition(ErrorConditionEnum e
+error_condition ::error_condition(
+  ErrorConditionEnum e
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
-                                  ,
-                                  ::cuda::std::enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value, int>
+  ,
+  ::cuda::std::enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value, int>
 #endif // !_CCCL_COMPILER(MSVC)
-)
-{
-  *this = make_error_condition(e);
-} // end error_condition::error_condition()
+  )
+    : error_condition(make_error_condition(e))
+{} // end error_condition::error_condition()
 
 void error_condition ::assign(int val, const error_category& cat)
 {

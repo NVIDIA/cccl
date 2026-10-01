@@ -28,7 +28,7 @@ The function generates a bitmask of size ``width`` starting at position ``start`
 
 **Constraints**
 
-- ``T`` is an unsigned integral type.
+- ``T`` is an unsigned integer type.
 
 **Preconditions**
 

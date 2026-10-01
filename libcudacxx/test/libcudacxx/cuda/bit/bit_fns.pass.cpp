@@ -16,7 +16,8 @@
 
 #include "test_macros.h"
 
-// bit_fns must only accept unsigned integer types, not bool, signed integers, floating point, or enums.
+// bit_fns must only accept unsigned integer types, not bool, character types, signed integers, floating point, or
+// enums.
 enum class Enum
 {
   value
@@ -29,6 +30,7 @@ static_assert(can_bit_fns<unsigned char>);
 static_assert(can_bit_fns<unsigned int>);
 static_assert(can_bit_fns<unsigned long long>);
 static_assert(!can_bit_fns<bool>);
+static_assert(!can_bit_fns<char16_t>);
 static_assert(!can_bit_fns<int>);
 static_assert(!can_bit_fns<float>);
 static_assert(!can_bit_fns<Enum>);

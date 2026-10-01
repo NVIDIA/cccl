@@ -26,12 +26,10 @@
 #  include <cuda/__container/simple_vector.h>
 #  include <cuda/__device/device_ref.h>
 #  include <cuda/__device/physical_device.h>
-#  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
-#  include <cuda/std/__memory/construct_at.h>
+#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 #  include <cuda/std/span>
 
 #  include <cuda/std/__cccl/prologue.h>
