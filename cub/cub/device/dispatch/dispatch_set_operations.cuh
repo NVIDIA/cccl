@@ -123,7 +123,11 @@ __launch_bounds__(device_policy_getter<PolicySelector, current_tuning_cc().get()
     d_num_selected_out};
   agent();
 
-  vsmem_helper_t::discard_temp_storage(storage);
+  // TODO(bgruber): discarding the virtual shared memory here is correct, but was not present in the original Thrust
+  // implementation and measurably regresses some set operations (e.g. union_by_key) that fall back to global-memory-
+  // backed temp storage, since it adds a full extra pass over the temp storage on every block. Re-enable once the
+  // regression is understood/mitigated.
+  // vsmem_helper_t::discard_temp_storage(storage);
 }
 
 template <typename KeysIt1,
