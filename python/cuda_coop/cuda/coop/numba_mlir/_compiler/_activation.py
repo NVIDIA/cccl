@@ -161,7 +161,24 @@ def _initialize_runtime_hooks() -> None:
 
 
 def _initialize_runtime_hooks_transaction() -> None:
-    """Run one compiler-hook registration transaction."""
+    """Import compiler passes as one recoverable registration attempt.
+
+    Require the runtime and compatibility layer before taking snapshots of
+    the compiler registries and currently loaded backend submodules. Importing
+    the rewrite and group-planner modules registers their classes as a side
+    effect; verify that both planners and the before-inference rewrite are
+    present exactly once, including when imports reuse existing modules.
+
+    If importing or verification raises, remove this backend's new registry
+    entries and newly loaded submodules before re-raising. This lets a later
+    activation retry execute the registration code, while preserving modules
+    and registrations that predate the attempt or belong to other extensions.
+    Runtime imports and compatibility objects are outside this rollback.
+
+    The caller must hold ``_activation_lock`` to serialize this backend's
+    registration attempts. The rollback also runs for ``BaseException``
+    subclasses, including interruption of an import.
+    """
 
     _require_runtime()
     snapshot = _snapshot_registrations()
