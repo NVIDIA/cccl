@@ -336,6 +336,49 @@ class GroupPlanningContext:
         kwargs: dict[str, Any],
         common_root_operation: str | None = None,
     ) -> list[Any]:
+        """Build a provider call carrying the validated group-lowering plan.
+
+        Check the provider ABI and storage contract before embedding the plan in
+        its reserved keyword argument. The later provider rewrite consumes this
+        metadata, so it does not have to reconstruct the public group semantics.
+        The returned assignments materialize non-IR arguments and invoke the
+        factory with the original result target. The caller installs them into
+        the function; this method does not replace the original instruction.
+
+        Parameters
+        ----------
+        inst : ir.Assign
+            Original public call assignment; supplies the result target, scope,
+            and source location for generated statements.
+        lowering_plan : GroupLoweringPlan
+            Supported semantic plan to validate and attach to the provider call.
+        factory : callable
+            Registered private provider factory selected by the operation
+            family.
+        args : list of object
+            Positional provider arguments, as existing IR variables or host
+            values.
+        kwargs : dict of str to object
+            Provider keyword arguments. Copied before plan metadata is added;
+            presence of ``temp_storage`` is checked against planned ownership.
+        common_root_operation : str or None, optional
+            Common API operation name to retain for downstream validation. When
+            present, supplies the private marker unless ``kwargs`` already has
+            it.
+
+        Returns
+        -------
+        list of object
+            Ordered argument-materialization and call assignments replacing
+            ``inst``.
+
+        Raises
+        ------
+        GroupRewriteError
+            Provider-contract validation fails or ``kwargs`` uses the reserved
+            lowering-plan keyword.
+        """
+
         self._validate_provider_contract(
             lowering_plan,
             factory,
