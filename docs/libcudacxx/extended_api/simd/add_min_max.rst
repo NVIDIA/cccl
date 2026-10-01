@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-simd-add-min-max:
 
-``cuda::simd::add_min`` and ``cuda::simd::add_max``
-===================================================
+``cuda::simd::add_min``, ``cuda::simd::add_max``, ``cuda::simd::add_min_relu``, and ``cuda::simd::add_max_relu``
+================================================================================================================
 
 Defined in the ``<cuda/simd>`` header.
 
@@ -23,22 +23,31 @@ Defined in the ``<cuda/simd>`` header.
      const cuda::std::simd::basic_vec<T, Abi>& b,
      const cuda::std::simd::basic_vec<T, Abi>& c) noexcept;
 
+   template <class T, class Abi>
+   [[nodiscard]] __host__ __device__ constexpr
+   cuda::std::simd::basic_vec<T, Abi> add_max_relu(
+     const cuda::std::simd::basic_vec<T, Abi>& a,
+     const cuda::std::simd::basic_vec<T, Abi>& b,
+     const cuda::std::simd::basic_vec<T, Abi>& c) noexcept;
+
+   template <class T, class Abi>
+   [[nodiscard]] __host__ __device__ constexpr
+   cuda::std::simd::basic_vec<T, Abi> add_min_relu(
+     const cuda::std::simd::basic_vec<T, Abi>& a,
+     const cuda::std::simd::basic_vec<T, Abi>& b,
+     const cuda::std::simd::basic_vec<T, Abi>& c) noexcept;
+
    } // namespace cuda::simd
 
-The functions perform an element-wise addition followed by a minimum or maximum.
+The functions perform an element-wise addition followed by a minimum or maximum, optionally followed by ReLU.
 For each element ``i``, the functions are equivalent to:
 
 .. code:: cuda
 
-   add_max(a, b, c)[i] == cuda::std::max(a[i] + b[i], c[i])
-   add_min(a, b, c)[i] == cuda::std::min(a[i] + b[i], c[i])
-
-A ReLU form can be obtained by composing the addition with :ref:`cuda::simd::min_relu and cuda::simd::max_relu <libcudacxx-extended-api-simd-min-max-relu>`:
-
-.. code:: cuda
-
-   auto maximum_relu = cuda::simd::max_relu(a + b, c);
-   auto minimum_relu = cuda::simd::min_relu(a + b, c);
+   add_max(a, b, c)[i]      == cuda::std::max(a[i] + b[i], c[i])
+   add_min(a, b, c)[i]      == cuda::std::min(a[i] + b[i], c[i])
+   add_max_relu(a, b, c)[i] == cuda::std::max(cuda::std::max(a[i] + b[i], c[i]), T{0})
+   add_min_relu(a, b, c)[i] == cuda::std::max(cuda::std::min(a[i] + b[i], c[i]), T{0})
 
 On supported GPU architectures, the optimized device paths map to `Dynamic Programming eXtension (DPX) <https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#dynamic-programming-extension-dpx-instructions>`__ instructions.
 
@@ -53,8 +62,8 @@ Returns a ``cuda::std::simd::basic_vec<T, Abi>`` containing the element-wise res
 
 **Constraints**
 
-- ``T`` must be an integer type.
-- The composed ReLU forms require ``T`` to be a signed integer type.
+- ``add_min`` and ``add_max``: ``T`` must be an `integer type <https://eel.is/c++draft/basic.fundamental#1>`__.
+- ``add_min_relu`` and ``add_max_relu``: ``T`` must be a signed integer type.
 
 **Performance considerations**
 
@@ -62,13 +71,13 @@ On ``SM90``, ``SM100``, and ``SM103``:
 
 - Signed and unsigned 16-bit elements use one ``VIADDMNMX.S16x2`` or ``VIADDMNMX.U16x2`` instruction per two elements.
 - Signed and unsigned 32-bit elements use one ``VIADDMNMX`` instruction per element.
-- The composed signed 16-bit and 32-bit ReLU ``cuda::simd::max_relu(a + b, c)`` and ``cuda::simd::min_relu(a + b, c)`` forms use the corresponding ``VIADDMNMX.RELU`` instruction.
+- ``add_min_relu`` and ``add_max_relu`` use one ``VIADDMNMX.S16x2.RELU`` instruction per two signed 16-bit elements and one ``VIADDMNMX.RELU`` instruction per signed 32-bit element.
 
 On ``SM107`` and ``SM120``:
 
-- Signed and unsigned 16-bit elements use one ``VIADD.16x2`` and one ``VIMNMX.S16x2`` or ``VIMNMX.U16x2`` instruction.
-- Signed and unsigned 32-bit elements use one ``IADD`` and one ``VIMNMX`` instruction.
-- The composed signed 16-bit and 32-bit ReLU ``cuda::simd::max_relu(a + b, c)`` and ``cuda::simd::min_relu(a + b, c)`` forms use one addition and one of the corresponding ``VIMNMX.RELU`` instruction.
+- Signed and unsigned 16-bit elements use one ``VIADD.16x2`` and one ``VIMNMX.S16x2`` or ``VIMNMX.U16x2`` instruction per two elements.
+- Signed and unsigned 32-bit elements use one ``IADD`` and one ``VIMNMX`` instruction per element.
+- ``add_min_relu`` and ``add_max_relu`` use one addition and one ``VIMNMX.S16x2.RELU`` or ``VIMNMX.S32.RELU`` instruction per two signed 16-bit elements or per signed 32-bit element.
 
 Other element types use the portable element-wise implementation.
 
@@ -96,8 +105,8 @@ Example
 
      vec_t maximum      = cuda::simd::add_max(a, b, c);
      vec_t minimum      = cuda::simd::add_min(a, b, c);
-     vec_t maximum_relu = cuda::simd::max_relu(a + b, c);
-     vec_t minimum_relu = cuda::simd::min_relu(a + b, c);
+     vec_t maximum_relu = cuda::simd::add_max_relu(a, b, c);
+     vec_t minimum_relu = cuda::simd::add_min_relu(a, b, c);
 
      assert(maximum[0] == -2);
      assert(maximum[1] == 10);
