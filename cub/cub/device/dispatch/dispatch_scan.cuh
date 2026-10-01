@@ -1496,21 +1496,39 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke(
         kernel_source,
         launcher_factory);
     }
+    else
+    {
+      return invoke_lookback(
+        policy_getter,
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        scan_op,
+        init_value,
+        num_items,
+        stream,
+        dependent_launch,
+        kernel_source,
+        launcher_factory);
+    }
   }
-
-  return invoke_lookback(
-    policy_getter,
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in,
-    d_out,
-    scan_op,
-    init_value,
-    num_items,
-    stream,
-    dependent_launch,
-    kernel_source,
-    launcher_factory);
+  else
+  {
+    return invoke_lookback(
+      policy_getter,
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      scan_op,
+      init_value,
+      num_items,
+      stream,
+      dependent_launch,
+      kernel_source,
+      launcher_factory);
+  }
 }
 
 template <
