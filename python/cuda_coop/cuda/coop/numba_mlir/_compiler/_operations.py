@@ -471,7 +471,44 @@ def register_factory(
     execution_scope: SynchronizationScope,
     synchronization_scope: SynchronizationScope,
 ) -> _CallableT:
-    """Register a primitive provider without relying on its import path."""
+    """Record the compile-time contract of an exact lowering factory callable.
+
+    The before-inference rewrite identifies factories by object identity and
+    uses this metadata to validate provider calls and materialized invocables.
+    The factory's import path or function name is not used to infer its ABI.
+    Registration only declares metadata; the factory and source emitter must
+    implement the declared storage and synchronization behavior.
+
+    Parameters
+    ----------
+    function : callable
+        Host-side factory that creates a provider specialization or invocable.
+    operation : str
+        Non-empty operation identifier, such as ``"load"`` or ``"store"``.
+    namespace : str
+        Non-empty provider namespace, such as ``"block"`` or ``"warp"``.
+    storage_abi : StorageABI
+        Whether provider calls have a leading scratch pointer or no scratch.
+    execution_scope : SynchronizationScope
+        Scope of threads executing the cooperative operation.
+    synchronization_scope : SynchronizationScope
+        Declared synchronization scope, either ``NONE`` or the execution scope.
+
+    Returns
+    -------
+    callable
+        The original factory after registry insertion. Identical repeated
+        registration is accepted.
+
+    Raises
+    ------
+    TypeError
+        ``function`` is not callable.
+    ValueError
+        Names, enum values, or the relationship between scopes are invalid.
+    RuntimeError
+        This exact factory is already registered with different metadata.
+    """
 
     if not callable(function):
         raise TypeError("lowering factory must be callable")
