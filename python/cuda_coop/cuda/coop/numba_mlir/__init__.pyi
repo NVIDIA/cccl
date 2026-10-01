@@ -3,29 +3,29 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from .._core.api import TempStorageLike, ThreadDataLike
-from ._group_exchange import exchange
-from ._group_histogram import histogram as histogram
-from ._group_load_store import load, store
-from ._group_merge_sort import merge_sort_keys as merge_sort_keys
-from ._group_merge_sort import merge_sort_pairs as merge_sort_pairs
-from ._group_neighbors import adjacent_difference as adjacent_difference
-from ._group_neighbors import discontinuity as discontinuity
-from ._group_radix import radix_rank as radix_rank
-from ._group_radix import radix_sort_keys as radix_sort_keys
-from ._group_radix import radix_sort_pairs as radix_sort_pairs
-from ._group_reduce import reduce, sum
-from ._group_reduce_batched import reduce_batched
-from ._group_run_length import run_length_decode as run_length_decode
-from ._group_run_length import run_length_decode_into as run_length_decode_into
-from ._group_scan import (
+from ._group._exchange import exchange
+from ._group._histogram import histogram as histogram
+from ._group._load_store import load, store
+from ._group._merge_sort import merge_sort_keys as merge_sort_keys
+from ._group._merge_sort import merge_sort_pairs as merge_sort_pairs
+from ._group._neighbors import adjacent_difference as adjacent_difference
+from ._group._neighbors import discontinuity as discontinuity
+from ._group._radix_sort import radix_rank_keys as radix_rank_keys
+from ._group._radix_sort import radix_sort_keys as radix_sort_keys
+from ._group._radix_sort import radix_sort_pairs as radix_sort_pairs
+from ._group._reduce import reduce, sum
+from ._group._reduce_batched import reduce_batched
+from ._group._run_length import run_length_decode as run_length_decode
+from ._group._run_length import run_length_decode_into as run_length_decode_into
+from ._group._scan import (
     exclusive_scan,
     exclusive_sum,
     inclusive_scan,
     inclusive_sum,
     scan,
 )
-from ._group_shuffle import shuffle
-from ._group_topk import (
+from ._group._shuffle import shuffle
+from ._group._topk import (
     topk_max_keys,
     topk_max_pairs,
     topk_min_keys,
@@ -66,7 +66,7 @@ __all__ = [
     "local",
     "merge_sort_keys",
     "merge_sort_pairs",
-    "radix_rank",
+    "radix_rank_keys",
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",

@@ -71,14 +71,19 @@ def _lower_reduce_batched(
     reduce_operator = _reduce_batched.reduction_operator(
         binary_op, dtype, is_common_root=is_common_root
     )
+    from .._lowering._core import NumbaMlirCoreAdapter
+
+    adapter = NumbaMlirCoreAdapter()
     semantics = GroupReduceBatchedSemantics(
         WarpReduceBatchedSemantics(
-            dtype, batches, reduce_operator, output_layout
+            adapter.core_dtype(dtype), batches, reduce_operator, output_layout
         )
     )
     plan = plan_group_primitive(
         make_group_primitive_call(group, semantics), context.launch
     ).require_supported()
+    assert plan.participation is not None
+    assert plan.topology is not None
     width = plan.topology.logical_width
     statements = []
     result = context.typed_payload_like(

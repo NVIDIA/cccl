@@ -14,7 +14,7 @@ from cuda.coop._typing import (
     ThreadDataLike,
 )
 
-from ._thread_group import WarpGroup
+from .._thread_group import WarpGroup
 
 _ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 

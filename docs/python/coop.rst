@@ -336,7 +336,7 @@ its threads and immediate parent Warp. A mapped warps-within-block group can
 query its threads, physical Warps, and immediate parent block. Queries above
 the immediate physical parent are rejected. Mapped warps-within-block groups
 support queries and ``is_member()`` but not ``sync()`` or ``sync_aligned()``;
-their block-barrier lifetime requires a future planner-owned contract. For a
+the planner does not manage the lifetime of their block barriers. For a
 non-exhaustive partition, use ``is_member()`` to guard rank-dependent work for
 excluded threads. Do not use that branch to skip a primitive unless the
 primitive's participation contract explicitly permits it; every required
@@ -724,15 +724,15 @@ reductions also allocate internal static shared memory, even without a
 or dynamic cooperative backing in these compiler releases.
 
 With ``auto_sync=False``, a descriptor must originate from exactly one
-constructor site. Selecting between multiple manual-sync constructors is an
-MVP restriction: the compiler cannot prove that caller barriers protect the
-merged region, even when a particular program supplies sufficient barriers.
+constructor site. Selecting between multiple manual-sync constructors is unsupported:
+the compiler cannot prove that caller barriers protect the merged region,
+even when a particular program supplies sufficient barriers.
 
 Cooperative calls in device helpers must be inlined into the kernel; use
 ``@cuda.jit(device=True, inline="always")`` when selecting the helper's
 policy explicitly. Standalone primitive helpers and primitives inside
-standalone callbacks are unsupported. For the MVP, ``literal_unroll``
-values cannot determine cooperative payload extents, group dimensions,
+standalone callbacks are unsupported. ``literal_unroll`` values cannot
+determine cooperative payload extents, group dimensions,
 selectors, or descriptor constructor arguments. Write separate calls with
 explicit constants, or use an ordinary loop with one fixed cooperative shape.
 An unrelated ``literal_unroll`` loop does not add this restriction.
