@@ -1,0 +1,40 @@
+{
+  "variant": "baseline",
+  "torch": "2.7.0+cu128",
+  "cuda": "12.8",
+  "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+  "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "files": [
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/baseline/cub/cub/block/block_reduce.cuh",
+      "bytes": 26871,
+      "sha256": "8f2347cfb0cf8b9502b9c2612bcebc986ec8d3fdff2b5ed5ee7ac0e9b734d97a"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/baseline/cub/cub/block/specializations/block_reduce_warp_reductions.cuh",
+      "bytes": 8658,
+      "sha256": "7b148adbfdb5ed30b0393ea706d225959605013e681d7a47f745c6942874ea27"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/tools/consumer_torch_order/bindings.cpp",
+      "bytes": 516,
+      "sha256": "84eff6522ef789a264ec7c098637140bd333797092d3062e99a4b48e9389644a"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/tools/consumer_torch_order/normalization.cu",
+      "bytes": 5091,
+      "sha256": "12768692c5c299b02c07116a6ea3afa74366cbbee2353d6f44675515e2d978ea"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/build/probe-original-warp-A/cccl_baseline_h20.so",
+      "bytes": 464464,
+      "sha256": "d5209d48e184fedd869290c1123ecd7d35c5dc5ff03526ffa11c87d95598199d"
+    },
+    {
+      "path": "build/probe-original-warp-A/build.ninja",
+      "bytes": 2806,
+      "sha256": "6b7889398a87a8836a581bdc2683d042435df0d2f54a4c094736fdc73acba46e"
+    }
+  ],
+  "library": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/build/probe-original-warp-A/cccl_baseline_h20.so"
+}

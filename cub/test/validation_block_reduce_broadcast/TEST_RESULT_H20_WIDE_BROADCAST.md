@@ -87,30 +87,20 @@ consumes bounded int32 counts and writes FP32 probabilities; it is a separate wo
 not a replacement for Qwen attention. SASS equality confirms that apparent small default
 control differences are measurement variation rather than a changed default algorithm.
 
-## Complete-model gate and remaining runs
+## Complete-model gate and follow-up
 
-The retained-exponential full Qwen3 baseline failed the native-token gate before P.
-At prompt length 128, zero-based token 14 changes because native logits 16.875/16.75
-become an exact 16.875/16.875 tie. This result remains failed; its kernel speedups do not
-establish native model equivalence.
+The retained-exp model baseline fails native generation. The original expf
+full-model screen passes batch 1 and fails batch 16 before P. Both failures
+remain recorded. A faithful common consumer that follows native Torch reduction
+order matches all 56 fixed normalization probes and native batch-16 32-step tokens
+and logits; full candidate screening and independent model quartets remain pending.
+The checkpoint, prompts, precision and gates are unchanged.
 
-A separate fixed full-checkpoint diagnostic shows that the Torch-only wrapper matches
-all native logits and tokens exactly. Original expf A preserves all 32 native tokens at
-both prompt lengths 128/512. The independent FP64 normalization reference is applied
-inside the same BF16 network, not a full FP64 model. Full candidate model screening at
-batch sizes 1/16, followed by eight independent quartets per batch, is pending under the
-[original-consumer model protocol](results/wide_broadcast_iteration/FORMAL_MODEL_LEGACY_PROTOCOL.md).
-Prompts, native-token requirements, exact P-vs-A all-step logits and the baseline-only
-independent-reference error budget remain fixed.
-
-Original-consumer microbenchmarks and the retained/integer 65,536-row formal plans are
-also pending. The remaining runs use a replacement H20 host with the same preinstalled Torch/CUDA.
-The control/candidate sources, six libraries and all seven checkpoint files have been
-verified against the original hashes; Qwen model-module source matches exactly. A new
-private runtime reuses the preinstalled Torch/CUDA. No pending worker is counted as
-passed. The task-owned weights will be removed after all required model workers
-naturally exit. The earlier completed checkpoint
-cleanup and measurements belong to the [original report](TEST_RESULT_H20_BROADCAST.md).
+The [65,536-row follow-up](TEST_RESULT_H20_65536_BROADCAST.md) records four further
+stable consumer gains, all default controls, nine wholly invalidated quartets and
+nine clean replacements. Original expf consumer microbenchmarks remain pending.
+Kernel results do not establish model speedup. Task-owned weights will be cleaned
+after required model workers naturally exit.
 
 ## Evidence and reproduction
 
