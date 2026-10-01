@@ -69,12 +69,13 @@ lengths. The original-order and fast-exp controls match only 4/56 FP32 fixtures.
 This changes the shared validation consumer equally for A and P; it is not a
 change to the PR algorithm or a source of attributed performance improvement.
 
-Candidate full-model screens and eight fresh-process quartets per batch remain
-pending under the frozen [Torch-order protocol](results/recovery_39817/FORMAL_MODEL_TORCH_ORDER_PROTOCOL.md).
+Candidate full-model resident screens now pass for both batches, as recorded in
+the [full-screen report](TEST_RESULT_H20_ORIGINAL_MODEL.md). Eight fresh-process
+quartets per batch remain pending under the frozen [Torch-order protocol](results/recovery_39817/FORMAL_MODEL_TORCH_ORDER_PROTOCOL.md).
 The checkpoint, prompts, batches, lengths, precision and error gates are unchanged.
 The one-warp faithful consumer validates complete-model equivalence; it does not
-exercise the wider-block optimization. No model speedup is claimed. Original
-consumer microbenchmarks remain pending. Task-owned model copies remain until
+exercise the wider-block optimization. No model speedup is claimed. Original regular-exp microbenchmarks are
+now complete and reported separately in the full-screen report. Task-owned model copies remain until
 required model workers finish naturally, then will be removed.
 
 ## Evidence

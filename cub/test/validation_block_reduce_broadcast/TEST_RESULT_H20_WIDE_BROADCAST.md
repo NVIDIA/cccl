@@ -89,18 +89,20 @@ control differences are measurement variation rather than a changed default algo
 
 ## Complete-model gate and follow-up
 
-The retained-exp model baseline fails native generation. The original expf
-full-model screen passes batch 1 and fails batch 16 before P. Both failures
-remain recorded. A faithful common consumer that follows native Torch reduction
-order matches all 56 fixed normalization probes and native batch-16 32-step tokens
-and logits; full candidate screening and independent model quartets remain pending.
-The checkpoint, prompts, precision and gates are unchanged.
+The retained-exp model baseline fails native generation. Original expf screening
+passes batch 1 and fails batch 16 before P; these failures remain recorded. The
+faithful common consumer following native Torch order now passes complete batch1
+and batch16 resident APPA/PAAP screens, with exact native 32-step tokens/logits
+and stable weights at both fixed lengths. Independent model quartets remain pending.
+The [original-consumer/model report](TEST_RESULT_H20_ORIGINAL_MODEL.md) records
+those gates and the unchanged regular-exp microbenchmarks: width128 improves
+1.0271×/1.0251× at 8,192/65,536 rows. The original 8,192-row width32 default
+interval does not establish the 1% bound; a single separate validation is predeclared.
 
 The [65,536-row follow-up](TEST_RESULT_H20_65536_BROADCAST.md) records four further
-stable consumer gains, all default controls, nine wholly invalidated quartets and
-nine clean replacements. Original expf consumer microbenchmarks remain pending.
-Kernel results do not establish model speedup. Task-owned weights will be cleaned
-after required model workers naturally exit.
+stable consumer gains, all default controls, nine invalidated quartets and nine
+clean replacements. Kernel results do not establish model speedup. Task-owned
+weights will be cleaned after required model workers naturally exit.
 
 ## Evidence and reproduction
 
