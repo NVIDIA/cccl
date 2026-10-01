@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from .._core.api import TempStorageLike, ThreadDataLike
-from ._group_exchange import exchange
-from ._group_load_store import load, store
-from ._group_shuffle import shuffle
+from ._group._exchange import exchange
+from ._group._load_store import load, store
+from ._group._shuffle import shuffle
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData, local, shared
 from ._thread_group import (
