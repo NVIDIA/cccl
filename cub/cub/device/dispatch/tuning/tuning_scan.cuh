@@ -1034,6 +1034,12 @@ struct policy_selector
             // above)
             return ScanLookaheadPolicy{4, 64 - 1, 7, -2};
           case 8:
+            if (input_type == type_t::int64)
+            {
+              // retuned for the scan squad kernel (mean score 1.059, min 1.047, max 1.080 relative to the tuning
+              // below): wrps_4.lbi_5.ipt_32.lbs_2. This regresses double and complex<float>, so only use it for int64.
+              return ScanLookaheadPolicy{4, 32 - 1, 5, 2};
+            }
             // wrps_2.lbi_5.ipt_88 ()  1.085781   1.0  1.079245  1.103545
             // wrps_2.lbi_7.ipt_88.lbs_-2 ()  1.011922  0.997768  1.010818  1.039350 (score relative to the tuning
             // above)
