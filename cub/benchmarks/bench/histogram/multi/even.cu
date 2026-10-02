@@ -6,6 +6,9 @@
 #include "../histogram_common.cuh"
 #include "../histogram_inputs.cuh"
 
+// Measures interleaved multi-channel HistogramEven workloads. Input generation preserves the requested distribution
+// independently for every active channel, while inactive channels remain present in the pixel layout.
+
 // %RANGE% TUNE_ITEMS ipt 7:24:1
 // %RANGE% TUNE_THREADS tpb 128:1024:32
 // %RANGE% TUNE_RLE_COMPRESS rle 0:1:1
