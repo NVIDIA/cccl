@@ -3,17 +3,13 @@ cmake_minimum_required(VERSION 3.26.4)
 list(APPEND CMAKE_MESSAGE_CONTEXT "clang_tidy_plugins")
 
 # LLVM requires C to be enabled
-project(clang_tidy_plugins VERSION 1.0 LANGUAGES C CXX)
+project(clang_tidy_plugins LANGUAGES C CXX)
 
-if (NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Release")
-endif()
-
-option(BUILD_SHARED_LIBS "Build Shared Libs" ON)
-option(CMAKE_EXPORT_COMPILE_COMMANDS "Export compile commands" ON)
-option(CMAKE_CXX_STANDARD_REQUIRED "Force C++ standard" ON)
-if (NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
+if (PROJECT_IS_TOPLEVEL)
+  message(
+    FATAL_ERROR
+    "clang-tidy plugins must be built as part of the main CCCL build"
+  )
 endif()
 
 # Some package managers (conda) have separate LLVM and clang development packages.
@@ -77,16 +73,7 @@ function(cccl_create_clang_tidy_plugin TARGET)
   set_property(GLOBAL APPEND PROPERTY CCCL_TIDY_PLUGINS "${TARGET}")
 endfunction()
 
-include("${CMAKE_CURRENT_LIST_DIR}/../CCCLEnsureMetaTargets.cmake")
-enable_testing()
-
 # Reuse CCCLAddTidyTarget's executable, or find it for standalone builds.
-find_program(
-  CCCL_CLANG_TIDY
-  clang-tidy
-  HINTS "${LLVM_TOOLS_BINARY_DIR}"
-  REQUIRED
-)
 find_program(
   CCCL_FILECHECK
   NAMES
@@ -112,13 +99,25 @@ execute_process(
 message(STATUS "Found FileCheck: ${CCCL_FILECHECK} (${version})")
 
 function(_cccl_parse_clang_tidy_config source_file out_var)
-  set(config [==[{"Checks":["-*"],"CheckOptions":{}}]==])
+  set(config [==[{"Checks":["-*"],"CheckOptions":{},"ExtraArgs":[]}]==])
 
-  file(STRINGS "${source_file}" lines REGEX "^// (Checks|CheckOptions): ")
+  file(STRINGS "${source_file}" lines)
+  set(in_config FALSE)
   set(found_checks FALSE)
 
   foreach (line IN LISTS lines)
-    if (line MATCHES "^// Checks: (.*)$")
+    if (NOT in_config)
+      if (line MATCHES "^[ \t]*//[ \t]*CLANG_TIDY_CONFIG_BEGIN[ \t]*$")
+        set(in_config TRUE)
+      endif()
+      continue()
+    endif()
+    if (line MATCHES "^[ \t]*//[ \t]*CLANG_TIDY_CONFIG_END[ \t]*$")
+      set(in_config FALSE)
+      break()
+    endif()
+
+    if (line MATCHES "^[ \t]*//[ \t]*Checks[ \t]*:[ \t]*(.*)$")
       set(found_checks TRUE)
       string(REPLACE "," ";" enabled_checks "${CMAKE_MATCH_1}")
       list(TRANSFORM enabled_checks STRIP)
@@ -126,17 +125,33 @@ function(_cccl_parse_clang_tidy_config source_file out_var)
         string(JSON index LENGTH "${config}" Checks)
         string(JSON config SET "${config}" Checks ${index} "\"${check}\"")
       endforeach()
-    elseif (line MATCHES "^// CheckOptions: ([^=]+)=(.*)$")
+    elseif (
+      line MATCHES "^[ \t]*//[ \t]*CheckOptions[ \t]*:[ \t]*([^=]+)=(.*)$"
+    )
+      string(STRIP "${CMAKE_MATCH_1}" option_name)
+      string(STRIP "${CMAKE_MATCH_2}" option_value)
       string(
         JSON config
         SET "${config}"
         CheckOptions
-        "${CMAKE_MATCH_1}"
-        "\"${CMAKE_MATCH_2}\""
+        "${option_name}"
+        "\"${option_value}\""
+      )
+    elseif (line MATCHES "^[ \t]*//[ \t]*ExtraArgs[ \t]*:[ \t]*(.+)$")
+      string(STRIP "${CMAKE_MATCH_1}" argument)
+      string(JSON index LENGTH "${config}" ExtraArgs)
+      string(JSON config SET "${config}" ExtraArgs ${index} "\"${argument}\"")
+    else()
+      message(
+        FATAL_ERROR
+        "${source_file}: unrecognized clang-tidy config line: ${line}"
       )
     endif()
   endforeach()
 
+  if (in_config)
+    message(FATAL_ERROR "${source_file}: missing CLANG_TIDY_CONFIG_END")
+  endif()
   if (NOT found_checks)
     message(FATAL_ERROR "${source_file}: missing Checks: directive")
   endif()
@@ -148,7 +163,7 @@ endfunction()
 # specify target dependencies between tests, because tests are not actual real cmake
 # targets. So you need to create a separate "test" which actually builds the thing you
 # want and set that as the required fixture for your other tests.
-function(_cccl_ensure_plugin_for_test test_target plugin)
+function(_cccl_ensure_plugin_is_built_for_test test_target plugin)
   set(plugin_build_target "${plugin}.build")
   set(fixture "${plugin}.build_fixture")
 
@@ -184,12 +199,15 @@ Arguments
 
 ``source``
   The test source file, with an absolute path or a path relative to the current
-  source directory. Include these directives in the file:
+  source directory. Place these directives between ``// CLANG_TIDY_CONFIG_BEGIN``
+  and ``// CLANG_TIDY_CONFIG_END``. Unrecognized lines inside the block are errors.
 
   * ``// Checks: check-name[,check-name...]`` selects the checks to enable.
     At least one line is required. Multiple lines add checks.
   * ``// CheckOptions: key=value`` sets an optional check option.
     Multiple lines set multiple options. The last value for a repeated key wins.
+  * ``// ExtraArgs: argument`` appends one compiler argument.
+    Multiple lines append multiple arguments.
   * ``CHECK-MESSAGES`` FileCheck directives specify expected diagnostics.
   * ``CHECK-FIXES`` FileCheck directives specify expected replacements in the
     exported fixes YAML.
@@ -202,10 +220,13 @@ function(cccl_create_clang_tidy_test plugin source)
   cmake_path(GET source STEM test_name)
   set(target "cccl.test.tidy.${plugin}.${test_name}")
 
-  add_library("${target}.compile" OBJECT "${source}")
-  target_include_directories(
+  # We don't actually care about compiling this (and in fact, we never want to!). The
+  # point of adding this here is to get the corresponding entries into the compilation
+  # database so that clang-tidy knows how to interpret the file properly.
+  add_library("${target}.compile" OBJECT EXCLUDE_FROM_ALL "${source}")
+  target_link_libraries(
     "${target}.compile"
-    PRIVATE "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../../libcudacxx/include"
+    PRIVATE cccl.compiler_interface libcudacxx::libcudacxx
   )
 
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${source}")
@@ -221,7 +242,10 @@ function(cccl_create_clang_tidy_test plugin source)
       "-DFILECHECK=${CCCL_FILECHECK}" -P
       "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/run_filecheck.cmake"
   )
-  _cccl_ensure_plugin_for_test("${target}" "${plugin}")
+  _cccl_ensure_plugin_is_built_for_test("${target}" "${plugin}")
 endfunction()
+
+# The parent enables testing after configuring this directory.
+enable_testing()
 
 add_subdirectory(prefer_cuda_traits)

@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // clang-format off
+// CLANG_TIDY_CONFIG_BEGIN
 // Checks: cccl-prefer-cuda-traits
+// ExtraArgs: -U_CCCL_NO_SYSTEM_HEADER
+// CLANG_TIDY_CONFIG_END
 
 #include <cuda/std/type_traits>
 #include <cuda/type_traits>
@@ -32,8 +35,4 @@ void macro_uses()
   // CHECK-FIXES: Length: 34
   // CHECK-FIXES-NEXT: ReplacementText: {{'?}}cuda::is_trivially_copyable_v{{'?}}{{$}}
 }
-
-#undef COPYABLE_TRAIT
-#undef COPYABLE_VALUE
-#undef IDENTITY
 // clang-format on

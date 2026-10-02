@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // clang-format off
+// CLANG_TIDY_CONFIG_BEGIN
 // Checks: cccl-prefer-cuda-traits
 // CheckOptions: cccl-prefer-cuda-traits.Traits=::foo::bar::baz,::foo::replacement_baz
+// CLANG_TIDY_CONFIG_END
 
 namespace foo
 {
