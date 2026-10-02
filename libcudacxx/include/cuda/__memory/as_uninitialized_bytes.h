@@ -39,7 +39,7 @@ struct __uninitialized_bytes_t
   {
     static_assert(sizeof(_Tp) <= _SizeOfT, "T does not fit in uninitialized storage");
     static_assert(alignof(_Tp) <= _AlignOfT, "T is more aligned than uninitialized storage");
-    return *static_cast<_Tp*>(static_cast<void*>(__bytes));
+    return *reinterpret_cast<_Tp*>(__bytes);
   }
 
   template <class _Tp>
@@ -47,7 +47,7 @@ struct __uninitialized_bytes_t
   {
     static_assert(sizeof(_Tp) <= _SizeOfT, "T does not fit in uninitialized storage");
     static_assert(alignof(_Tp) <= _AlignOfT, "T is more aligned than uninitialized storage");
-    return *static_cast<const _Tp*>(static_cast<const void*>(__bytes));
+    return *reinterpret_cast<const _Tp*>(__bytes);
   }
 };
 

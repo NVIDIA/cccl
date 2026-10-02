@@ -14,6 +14,8 @@
 
 #include "test_macros.h"
 
+TEST_DIAG_SUPPRESS_MSVC(4324) // structure was padded due to alignment specifier
+
 struct Bytes3
 {
   char data[3];
