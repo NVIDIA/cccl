@@ -108,7 +108,7 @@ in the programming guides.
      - Available
    * - Merge Sort, keys and pairs
      - Available
-     - Not implemented
+     - Available
    * - Radix Sort, keys and pairs; Radix Rank
      - Available
      - Not implemented

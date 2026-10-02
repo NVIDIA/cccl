@@ -118,7 +118,8 @@ See :ref:`blocked and striped layouts <coop-common-layouts>`.
 Comparison sorting
 ^^^^^^^^^^^^^^^^^^
 
-See the :ref:`Numba Merge Sort examples <coop-merge-sort>`.
+See the :ref:`Numba <coop-merge-sort>` and
+:ref:`CUTLASS <coop-cutlass-merge-sort>` Merge Sort examples.
 
 .. autofunction:: merge_sort_keys
 .. autofunction:: merge_sort_pairs
@@ -335,3 +336,9 @@ Data rearrangement
 
 .. autofunction:: exchange
 .. autofunction:: shuffle
+
+Comparison sorting
+^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: merge_sort_keys
+.. autofunction:: merge_sort_pairs

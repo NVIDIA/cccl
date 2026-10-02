@@ -6,14 +6,18 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
+from ..thread_group import ThreadGroup
 from ._dispatch import (
+    _backend_module_name,
     _common_group_operation,
+    _group_primitive_marker,
 )
 from ._payload import (
     TempStorageLike,
     ThreadDataLike,
     _ReadableThreadDataLike,
+    _validate_common_numeric_value,
+    _validate_common_temp_storage,
 )
 
 
@@ -81,19 +85,46 @@ def merge_sort_keys(
 
     Notes
     -----
-    The Numba backend uses ``cub::BlockMergeSort::Sort`` or
+    Numba-CUDA-MLIR and CUTLASS use ``cub::BlockMergeSort::Sort`` or
     ``cub::WarpMergeSort::Sort`` on copies of the input payloads. Floating-point
     keys must obey the comparison's ordering requirements.
-    Use ``cuda.coop.numba_mlir`` for fixed-size Numba local-array inputs or
-    a custom comparison predicate.
+    The qualified Numba-CUDA-MLIR API accepts fixed-size local-array inputs
+    and custom comparison predicates. The qualified CUTLASS API accepts CuTe
+    register payloads and supports built-in ascending or descending ordering.
 
     See Also
     --------
     merge_sort_pairs
+    cuda.coop.numba_mlir.merge_sort_keys
+        Local-array inputs and custom comparison predicates.
+    cuda.coop.cutlass.merge_sort_keys
+        CuTe register inputs with built-in ordering.
     """
 
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.merge_sort_keys must be called from a supported GPU kernel."
+    if not isinstance(descending, bool):
+        raise TypeError("descending must be a compile-time bool")
+    if (valid_items is None) != (oob_default is None):
+        raise ValueError(
+            "valid_items and oob_default must be provided together"
+        )
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "merge_sort_keys",
+            "keys",
+            keys,
+            require_thread_data=True,
+            allow_readonly_thread_data=True,
+        )
+        if temp_storage is not None:
+            _validate_common_temp_storage("merge_sort_keys", temp_storage)
+    return _group_primitive_marker(
+        "merge_sort_keys",
+        group,
+        keys,
+        descending=descending,
+        valid_items=valid_items,
+        oob_default=oob_default,
+        temp_storage=temp_storage,
     )
 
 
@@ -166,19 +197,54 @@ def merge_sort_pairs(
 
     Notes
     -----
-    The Numba backend uses ``cub::BlockMergeSort::Sort`` or
+    Numba-CUDA-MLIR and CUTLASS use ``cub::BlockMergeSort::Sort`` or
     ``cub::WarpMergeSort::Sort`` on copies of the input payloads. Floating-point
     keys must obey the comparison's ordering requirements.
-    Use ``cuda.coop.numba_mlir`` for fixed-size Numba local-array inputs or
-    a custom comparison predicate.
+    The qualified Numba-CUDA-MLIR API accepts fixed-size local-array inputs
+    and custom comparison predicates. The qualified CUTLASS API accepts CuTe
+    register payloads and supports built-in ascending or descending ordering.
 
     See Also
     --------
     merge_sort_keys
+    cuda.coop.numba_mlir.merge_sort_pairs
+        Local-array inputs and custom comparison predicates.
+    cuda.coop.cutlass.merge_sort_pairs
+        CuTe register inputs with built-in ordering.
     """
 
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.merge_sort_pairs must be called from a supported GPU kernel."
+    if not isinstance(descending, bool):
+        raise TypeError("descending must be a compile-time bool")
+    if (valid_items is None) != (oob_default is None):
+        raise ValueError(
+            "valid_items and oob_default must be provided together"
+        )
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "merge_sort_pairs",
+            "keys",
+            keys,
+            require_thread_data=True,
+            allow_readonly_thread_data=True,
+        )
+        _validate_common_numeric_value(
+            "merge_sort_pairs",
+            "values",
+            values,
+            require_thread_data=True,
+            allow_readonly_thread_data=True,
+        )
+        if temp_storage is not None:
+            _validate_common_temp_storage("merge_sort_pairs", temp_storage)
+    return _group_primitive_marker(
+        "merge_sort_pairs",
+        group,
+        keys,
+        values,
+        descending=descending,
+        valid_items=valid_items,
+        oob_default=oob_default,
+        temp_storage=temp_storage,
     )
 
 

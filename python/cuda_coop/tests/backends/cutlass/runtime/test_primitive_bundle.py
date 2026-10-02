@@ -71,3 +71,62 @@ def test_mixed_primitives(api, items_per_thread):
     assert observed[64] == source[
         : 45 * items_per_thread : items_per_thread
     ].sum(dtype=np.int32)
+
+
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_sort_scan_shared_storage(api, items_per_thread):
+    @cute.kernel
+    def kernel(
+        source: cute.Pointer,
+        output: cute.Pointer,
+        tiles: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        group = api.this_block()
+        storage = api.TempStorage(alignment=128, auto_sync=True)
+        for tile in range(tiles):
+            keys = api.ThreadData(items_per_thread)
+            api.load(
+                group,
+                source,
+                keys,
+                algorithm="transpose",
+                offset=tile * 64 * items_per_thread,
+                temp_storage=storage,
+            )
+            ordered = api.merge_sort_keys(group, keys, temp_storage=storage)
+            prefixes = api.exclusive_sum(group, ordered, temp_storage=storage)
+            api.store(
+                group,
+                output,
+                prefixes,
+                algorithm="transpose",
+                offset=tile * 64 * items_per_thread,
+                temp_storage=storage,
+            )
+
+    @cute.jit
+    def launch(
+        source: cute.Pointer,
+        output: cute.Pointer,
+        tiles: cutlass.Int32,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        kernel(source, output, tiles, items_per_thread).launch(
+            grid=1, block=(8, 4, 2)
+        )
+
+    source = values_for(np.int32, 256 * items_per_thread, shift=19)
+    observed = np.zeros_like(source)
+    expected = np.empty_like(source)
+    for start in range(0, source.size, 64 * items_per_thread):
+        ordered = np.sort(source[start : start + 64 * items_per_thread])
+        expected[start : start + 64 * items_per_thread] = (
+            np.cumsum(ordered) - ordered
+        )
+    with device_array(source) as src, device_array(observed) as dst:
+        launch(src, dst, cutlass.Int32(4), items_per_thread)
+    np.testing.assert_array_equal(observed, expected)
