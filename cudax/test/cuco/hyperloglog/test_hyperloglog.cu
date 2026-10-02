@@ -341,6 +341,44 @@ C2H_TEST("HyperLogLog estimate preserves fractional cardinality", "[hyperloglog]
   REQUIRE(estimate < 2.0);
 }
 
+C2H_CCCLRT_TEST("HyperLogLog add preserves the caller context", "[hyperloglog]")
+{
+  using T              = int32_t;
+  using estimator_type = cudax::cuco::hyperloglog<T>;
+
+  constexpr std::size_t num_items = 1024;
+  // Exercise both shared-memory accumulation and the global-memory fallback.
+  const auto precision_value = GENERATE(8, 18);
+  CAPTURE(precision_value);
+
+  const cuda::stream stream{cuda::device_ref{0}};
+  auto mr = cuda::device_default_memory_pool(cuda::device_ref{0});
+  estimator_type estimator{stream, mr, estimator_type::precision{precision_value}};
+
+  SECTION("contiguous input")
+  {
+    auto items = cuda::make_buffer<T>(stream, mr, num_items, T{42});
+    REQUIRE(cuda::__driver::__ctxGetCurrent() == nullptr);
+
+    estimator.add_async(stream, items.data(), items.data() + num_items);
+    CHECK(cuda::__driver::__ctxGetCurrent() == nullptr);
+    stream.sync();
+  }
+
+  SECTION("noncontiguous input")
+  {
+    const auto first = cuda::constant_iterator<T>{42};
+    REQUIRE(cuda::__driver::__ctxGetCurrent() == nullptr);
+
+    estimator.add_async(stream, first, first + num_items);
+    CHECK(cuda::__driver::__ctxGetCurrent() == nullptr);
+  }
+
+  const auto estimate = estimator.estimate(stream);
+  REQUIRE(estimate >= 1.0);
+  REQUIRE(estimate < 2.0);
+}
+
 C2H_TEST("HyperLogLog ref validates sketch storage size", "[hyperloglog]")
 {
   using ref_type = cudax::cuco::hyperloglog_ref<int32_t>;

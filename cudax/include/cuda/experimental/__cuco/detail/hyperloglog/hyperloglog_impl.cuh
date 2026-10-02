@@ -23,6 +23,7 @@
 
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__container/buffer.h>
+#include <cuda/__device/attributes.h>
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__hierarchy/hierarchy_levels.h>
 #include <cuda/__launch/configuration.h>
@@ -30,6 +31,7 @@
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
 #include <cuda/__runtime/api_wrapper.h>
+#include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/__utility/in_range.h>
 #include <cuda/atomic>
@@ -162,9 +164,8 @@ public:
   //! @param __stream CUDA stream this operation is executed in
   _CCCL_HOST_API constexpr void __clear_async(::cuda::stream_ref __stream)
   {
-    [[maybe_unused]] constexpr auto __block_size = 1024;
     ::cuda::launch(__stream,
-                   ::cuda::make_config(::cuda::grid_dims<1>(), ::cuda::block_dims<__block_size>()),
+                   ::cuda::make_config(::cuda::grid_dims<1>(), ::cuda::block_dims<1024>()),
                    ::cuda::experimental::cuco::__hyperloglog_ns::__clear<__hyperloglog_impl>,
                    *this);
   }
@@ -190,13 +191,16 @@ public:
   //! @param __last End of the sequence of items
   //! @param __stream CUDA stream this operation is executed in
   template <class _InputIt>
-  _CCCL_HOST_API constexpr void __add_async(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream)
+  _CCCL_HOST_API void __add_async(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream)
   {
     const auto __num_items = ::cuda::std::distance(__first, __last);
     if (__num_items == 0)
     {
       return;
     }
+
+    // Shared-memory configuration and occupancy queries must use the stream's context.
+    const ::cuda::__ensure_current_context __ctx_guard{__stream};
 
     using __vector_kernel_type           = void (*)(const __value_type*, ::cuda::std::int64_t, __hyperloglog_impl);
     int __grid_size                      = 0;
@@ -243,7 +247,7 @@ public:
       };
     }
 
-    if (__vector_kernel != nullptr && __try_reserve_shmem(__vector_kernel, __shmem_bytes))
+    if (__vector_kernel != nullptr && __try_reserve_shmem(__vector_kernel, __shmem_bytes, __stream))
     {
       if constexpr (__can_vectorize)
       {
@@ -272,7 +276,7 @@ public:
     else
     {
       auto __kernel = ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem<_InputIt, __hyperloglog_impl>;
-      if (__try_reserve_shmem(__kernel, __shmem_bytes))
+      if (__try_reserve_shmem(__kernel, __shmem_bytes, __stream))
       {
         _CCCL_TRY_RUNTIME_API(
           ::cudaOccupancyMaxPotentialBlockSize,
@@ -602,20 +606,14 @@ private:
   //!
   //! @param __kernel The kernel function
   //! @param __shmem_bytes Number of requested dynamic shared memory bytes
+  //! @param __stream CUDA stream this operation is executed in
   //!
   //! @returns True iff kernel configuration is successful
   template <typename _Kernel>
-  [[nodiscard]] _CCCL_HOST_API constexpr bool __try_reserve_shmem(_Kernel __kernel, int __shmem_bytes) const
+  [[nodiscard]] _CCCL_HOST_API constexpr bool
+  __try_reserve_shmem(_Kernel __kernel, int __shmem_bytes, ::cuda::stream_ref __stream) const
   {
-    int __device = -1;
-    _CCCL_TRY_RUNTIME_API(::cudaGetDevice, "cudaGetDevice failed", &__device);
-    int __max_shmem_bytes = 0;
-    _CCCL_TRY_RUNTIME_API(
-      ::cudaDeviceGetAttribute,
-      "cudaDeviceGetAttribute failed",
-      &__max_shmem_bytes,
-      ::cudaDevAttrMaxSharedMemoryPerBlockOptin,
-      __device);
+    const auto __max_shmem_bytes = ::cuda::device_attributes::max_shared_memory_per_block_optin(__stream.device());
 
     if (__shmem_bytes <= __max_shmem_bytes)
     {
