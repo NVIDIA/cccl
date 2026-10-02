@@ -376,6 +376,40 @@ independent partial tiles against a CPU reference.
    :start-after: docs: start cutlass-warp-load-store
    :end-before: docs: end cutlass-warp-load-store
 
+Logical Warp Load and Store
+---------------------------
+
+``this_warp().group_by(width)`` partitions each physical warp into consecutive
+groups of 1, 2, 4, 8, 16, or 32 threads. The width and ``exhaustive`` flag must
+be compile-time constants; the default exhaustive partition covers the whole
+physical warp. The enclosing block must still contain complete 32-lane warps.
+All four Warp Load and Store algorithms support these logical groups.
+
+Each logical group receives its own tile and, for ``transpose``, independent
+implicit scratch. With group width ``W``, linear block rank ``t``, and ``I``
+items per thread, the compiler adds ``(t // W) * W * I`` to ``offset``.
+Blocked layout uses tile index ``(t % W) * I + i``; striped layout uses
+``(t % W) + i * W``. ``valid_items`` describes a prefix of at most ``W * I``
+items. Default filling and unspecified invalid items follow the same rules
+as physical Warp Load.
+
+Every member of a participating logical group must call the primitive with
+uniform controls. Complete sibling groups may take different control-flow
+paths or use different offsets and valid counts. Transpose reuse
+synchronization is masked to the participating logical group. Explicit
+``temp_storage`` remains unsupported, and nested partitions or groups of
+physical warps cannot be used for Load and Store.
+
+This example partitions the two physical warps in an ``(8, 4, 2)`` block into
+eight groups of eight threads, each loading its own partial tile.
+:download:`Download the logical Warp example
+<../../python/cuda_coop/examples/cutlass/logical_warp_load_store.py>`:
+
+.. literalinclude:: ../../python/cuda_coop/examples/cutlass/logical_warp_load_store.py
+   :language: python
+   :start-after: docs: start cutlass-logical-warp-load-store
+   :end-before: docs: end cutlass-logical-warp-load-store
+
 .. _coop-cutlass-register-payloads:
 
 Qualified register payloads
