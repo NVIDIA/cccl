@@ -99,6 +99,11 @@ def run_length_decode(
         Fresh payload with the run-value dtype and requested output extent.
         Neither input is modified. The decoded total must fit uint32; negative
         lengths, misplaced zero padding, and overflow trap before decoding.
+
+    Notes
+    -----
+    See the :doc:`Run Length Decode visualization
+    <coop/visualizations/run-length-decode>` for windows and zero-filled tails.
     """
     return _decode(
         group,
@@ -156,6 +161,11 @@ def run_length_decode_into(
         nothing. Insufficient capacity traps before any output write; elements
         outside the decoded interval remain unchanged. The total must fit
         uint32.
+
+    Notes
+    -----
+    See the :doc:`Run Length Decode visualization
+    <coop/visualizations/run-length-decode>` for bulk output and run ordering.
     """
     return _decode(
         group,

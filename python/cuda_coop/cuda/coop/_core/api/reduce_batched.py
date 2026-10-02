@@ -6,14 +6,18 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
+from ..thread_group import ThreadGroup
 from ._dispatch import (
+    _backend_module_name,
     _common_group_operation,
+    _common_selector,
+    _group_primitive_marker,
 )
 from ._payload import (
     ThreadDataLike,
     _ReadableThreadDataLike,
 )
+from .reduce import _common_reduce_operator, _validate_common_reduce_value
 
 
 @_common_group_operation(
@@ -28,9 +32,6 @@ def reduce_batched(
     output_layout: str = "striped",
 ) -> ThreadDataLike[Any]:
     """Reduce each payload slot independently across the selected warp.
-
-    Implemented by Numba-CUDA-MLIR. The CUTLASS backend does not currently
-    support this operation.
 
     Parameters
     ----------
@@ -63,17 +64,32 @@ def reduce_batched(
 
     Notes
     -----
-    Each batch reduces independently; input slots are not combined with
-    one another. The Numba-CUDA-MLIR backend supports complete physical
-    warps and logical warps of 1, 2, 4, 8, or 16 threads. The compiler manages
-    scratch per warp; this operation has no ``temp_storage`` argument.
+    Each batch reduces independently; input slots are not combined with one
+    another. Both backends support complete physical warps and logical warps of
+    1, 2, 4, 8, 16, or 32 threads. The compiler manages any provider storage;
+    this operation has no ``temp_storage`` argument.
 
     Use :func:`cuda.coop.numba_mlir.reduce_batched` for a custom stateless
-    device operator. The CUB counterpart is ``cub::WarpReduceBatched``.
+    device operator, or :func:`cuda.coop.cutlass.reduce_batched` for CuTe
+    register payloads. The CUB counterpart is ``cub::WarpReduceBatched``.
     """
 
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.reduce_batched must be called from a supported GPU kernel."
+    output_layout = _common_selector(
+        "reduce_batched", "output_layout", output_layout, {"striped", "blocked"}
+    )
+    binary_op = _common_reduce_operator(binary_op)
+    if _backend_module_name() is not None:
+        if not isinstance(value, _ReadableThreadDataLike):
+            raise TypeError(
+                "cuda.coop.reduce_batched requires a ThreadData payload"
+            )
+        _validate_common_reduce_value("reduce_batched", value, binary_op)
+    return _group_primitive_marker(
+        "reduce_batched",
+        group,
+        value,
+        binary_op=binary_op,
+        output_layout=output_layout,
     )
 
 

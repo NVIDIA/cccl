@@ -64,6 +64,11 @@ cutlass_coop.store(  # expected-error: [call-overload]
 cutlass_coop.store(  # expected-error: [call-overload]
     block, object(), values.to_register_tensor()
 )
+cutlass_coop.reduce_batched(block, values)  # expected-error: [arg-type]
+cutlass_coop.reduce_batched(warp, scalar)  # expected-error: [call-overload]
+cutlass_coop.reduce_batched(  # expected-error: [call-overload]
+    warp, values, output_layout="other"
+)
 cutlass_coop.reduce(
     block,
     scalar,

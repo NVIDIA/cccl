@@ -103,8 +103,8 @@ already imported `cuda.coop`. Both integrations can be registered in one
 process; common calls select the backend from the active compiler context.
 
 The common API in `cuda.coop` is the contract shared by Numba-CUDA-MLIR and
-CUTLASS. Each implemented operation follows the documented groups, dtypes,
-and result rules; consult backend coverage for availability. Its public entry points live in
+CUTLASS. Both implement every common kernel operation with the documented
+groups, dtypes, and result rules. Its public entry points live in
 `cuda/coop/_core/api/`; the private `_core` package also contains shared
 implementation.
 
@@ -130,7 +130,7 @@ common calls and the longer aliases for qualified calls; application code
 need not import both namespaces for one backend. Aliasing dotted imports also
 avoids rebinding `cuda`, which Numba examples use for `cuda.jit`.
 
-Each qualified API includes its supported common operations, preserving their
+Each qualified API includes all common kernel operations, preserving their
 signatures, string selectors, and inference rules. Numba-CUDA-MLIR adds
 local-array payloads, memory namespaces, and device callbacks. CUTLASS adds
 CuTe register conversions and qualified controls such
@@ -168,10 +168,9 @@ explains terms and concepts, including blocked and striped layouts.
 | Counting | `histogram` |
 | Run Length Decode | `run_length_decode`, `run_length_decode_into` |
 
-Numba-CUDA-MLIR implements every family in this table. CUTLASS coverage
-expands with its implemented families; the
-[coverage table](https://nvidia.github.io/cccl/unstable/python/coop.html#coop-backends)
-lists current support. Qualified APIs add the extensions documented in each guide.
+Both backends implement every family in this table through the common API.
+Their qualified APIs include those operations and add the extensions
+documented in each programming guide.
 
 Each operation documents its supported groups and result ownership in the
 [API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).
