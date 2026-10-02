@@ -336,7 +336,7 @@ struct AgentThreeWayPartition
           // Medium item
           const int local_selection_idx = (first_items_selection_indices - num_first_selections_prefix)
                                         + (second_items_selection_indices - num_second_selections_prefix);
-          local_scatter_offset = second_item_end + item_idx - local_selection_idx;
+          local_scatter_offset          = second_item_end + item_idx - local_selection_idx;
         }
 
         temp_storage.raw_exchange.template __alias<ItemExchangeT>()[local_scatter_offset] = items[ITEM];

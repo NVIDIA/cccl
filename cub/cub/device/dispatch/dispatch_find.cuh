@@ -71,7 +71,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block)) _CCCL
   __shared__ typename agent_find_t::TempStorage sresult;
 
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-  agent_find_t{sresult.template __alias<typename agent_find_t::_TempStorage>(), d_in, predicate, found_pos_ptr, num_items}.Process();
+  agent_find_t{
+    sresult.template __alias<typename agent_find_t::_TempStorage>(), d_in, predicate, found_pos_ptr, num_items}
+    .Process();
 }
 
 template <typename ValueType, typename OutputIteratorT>
