@@ -119,14 +119,52 @@ struct Transforms
       ::cuda::std::is_integral<T>;
 #endif // !_CCCL_HAS_INT128()
 
+    // prefer uint32 for performance reasons when possible
+    // bool, 8-bit, 16-bit, 32-bit integers -> uint32_t
+    // 64-bit integers                      -> uint64_t
+    // Other types                          -> IntArithmeticT
+    [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto FractionStorageType()
+    {
+      if constexpr (is_integral_excl_int128<CommonT>::value)
+      {
+        if constexpr (sizeof(CommonT) < sizeof(uint32_t))
+        {
+          return uint32_t{};
+        }
+        else
+        {
+          return ::cuda::std::make_unsigned_t<CommonT>{};
+        }
+      }
+      else
+      {
+        return IntArithmeticT{};
+      }
+    }
+
+    using FractionStorageT = decltype(FractionStorageType());
+
+    template <typename T>
+    [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static auto subtract_as_unsigned(T lhs, T rhs) noexcept
+    {
+      if constexpr (::cuda::std::is_same_v<T, bool>)
+      {
+        return ::cuda::__sub_as_unsigned<uint8_t>(lhs, rhs);
+      }
+      else
+      {
+        return ::cuda::__sub_as_unsigned<::cuda::std::make_unsigned_t<T>>(lhs, rhs);
+      }
+    }
+
     union ScaleT
     {
       // Used when CommonT is not floating-point to avoid intermediate
       // rounding errors (see NVIDIA/cub#489).
       struct FractionT
       {
-        CommonT bins;
-        CommonT range;
+        FractionStorageT bins;
+        FractionStorageT range;
       } fraction;
 
       // Used when CommonT is floating-point as an optimization.
@@ -155,8 +193,15 @@ struct Transforms
       // The active scale representation is assigned below.
       // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
       ScaleT result;
-      result.fraction.bins  = static_cast<T>(num_levels - 1);
-      result.fraction.range = static_cast<T>(max_level - min_level);
+      result.fraction.bins = static_cast<FractionStorageT>(num_levels - 1);
+      if constexpr (is_integral_excl_int128<T>::value)
+      {
+        result.fraction.range = FractionStorageT{subtract_as_unsigned(max_level, min_level)};
+      }
+      else
+      {
+        result.fraction.range = static_cast<FractionStorageT>(max_level) - static_cast<FractionStorageT>(min_level);
+      }
       return result;
     }
 
@@ -229,32 +274,12 @@ struct Transforms
     [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE int
     ComputeBin(T sample, T min_level, ScaleT scale) const noexcept
     {
-      return static_cast<int>((sample - min_level) * scale.reciprocal);
-    }
-
-    //! @brief Bin computation for custom types and __[u]int128
-    template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
-    ComputeBin(T sample, T min_level, ScaleT scale, ::cuda::std::false_type /* is_fp */) const
-    {
-      return static_cast<int>(((sample - min_level) * scale.fraction.bins) / scale.fraction.range);
-    }
-
-    //! @brief Bin computation for integral types of up to 64-bit types
-    template <typename T, ::cuda::std::enable_if_t<is_integral_excl_int128<T>::value, int> = 0>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
-    {
-      return static_cast<int>(
-        (static_cast<IntArithmeticT>(sample - min_level) * static_cast<IntArithmeticT>(scale.fraction.bins))
-        / static_cast<IntArithmeticT>(scale.fraction.range));
-    }
-
-    template <typename T, ::cuda::std::enable_if_t<!is_integral_excl_int128<T>::value, int> = 0>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
-    {
-      return this->ComputeBin(sample, min_level, scale, ::cuda::std::is_floating_point<T>{});
-    }
-
+      if constexpr (is_integral_excl_int128<T>::value)
+      {
+        const auto offset = subtract_as_unsigned(sample, min_level);
+        return static_cast<int>(
+          (IntArithmeticT{offset} * IntArithmeticT{scale.fraction.bins}) / IntArithmeticT{scale.fraction.range});
+      }
 #if _CCCL_HAS_NVFP16()
       else if constexpr (::cuda::std::is_same_v<T, ::__half>)
       {
