@@ -363,8 +363,8 @@ you can add the :code:`-l` option:
 It will list all selected benchmarks as well as the total number of variants (the magnitude of the search space)
 as a result of the Cartesian product of all its tuning parameter spaces.
 
-The tuning infrastructure stores the results in an SQLite database called :code:`cccl_meta_bench.db` in each build directory.
-This database persists across tuning runs.
+The tuning infrastructure stores the results in one or more SQLite databases called :code:`cccl_meta_bench.db` in the build directories.
+These databases persist across tuning runs.
 If you interrupt the benchmark script and then launch it again, only missing benchmark variants will be run.
 
 Tuning on multiple GPUs
