@@ -1,0 +1,48 @@
+{
+  "baseline_library": "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/formal-integer-A/cccl_baseline_h20.so",
+  "candidate_library": "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/formal-integer-P/cccl_patch_h20.so",
+  "baseline_sha256": "3425665ac0515afdd4713f58f5d1136b2c038a29cef9c634927107cf39fe4bc8",
+  "candidate_sha256": "518db0d3bb188b743ee9fab38c4873b98461dc2060ff61049b490452a645cd2d",
+  "default_kernels": [
+    {
+      "name": "_Z23normalize_counts_kernelILi512ELb0EEvPKiPfi",
+      "exact": true,
+      "sass_sha256": "9e23b3852cab3ac801d99b5d1ff5870a9211129c45f2c40093d4e1b1dedc6c83"
+    },
+    {
+      "name": "_Z19first_thread_kernelILi512EEvPKiPi",
+      "exact": true,
+      "sass_sha256": "04726d9eea1ed2cf51391801790388d17526200f218b93568b349bcdc761d4f9"
+    },
+    {
+      "name": "_Z23normalize_counts_kernelILi256ELb0EEvPKiPfi",
+      "exact": true,
+      "sass_sha256": "ba0ecc2465b4bfe768d357e7d0df8d633d53c150dd64f14e0915ea56686cb08e"
+    },
+    {
+      "name": "_Z19first_thread_kernelILi256EEvPKiPi",
+      "exact": true,
+      "sass_sha256": "e1db5d2eae2917fbd828004e0b00f28bd0c8477f5b93dd2675f8731d71f8357f"
+    },
+    {
+      "name": "_Z23normalize_counts_kernelILi128ELb0EEvPKiPfi",
+      "exact": true,
+      "sass_sha256": "1afa46701177b0e9b3b37c74adab64f6f08d06e52bece4d2c6558fac57995058"
+    },
+    {
+      "name": "_Z19first_thread_kernelILi128EEvPKiPi",
+      "exact": true,
+      "sass_sha256": "f2e097bcd17a8111cf260078365f205436a4e07430cbac7453e7a59b38f22d71"
+    },
+    {
+      "name": "_Z23normalize_counts_kernelILi32ELb0EEvPKiPfi",
+      "exact": true,
+      "sass_sha256": "9782bb84956fa2fa97d1afc4c15291436029b0c2d77fe9ab4d5ecab2da93aafd"
+    },
+    {
+      "name": "_Z19first_thread_kernelILi32EEvPKiPi",
+      "exact": true,
+      "sass_sha256": "4e3b613271eb351cb17e51a2761b950dac5cb3f59dc730c61ffd7268968d0e21"
+    }
+  ]
+}

@@ -1,0 +1,982 @@
+{
+  "invalid_quartets": [],
+  "cases": [
+    {
+      "experiment": "integer-8192",
+      "kind": "first-thread",
+      "width": 32,
+      "ratio": 1.0039505989513913,
+      "ci95": [
+        1.0004816841855135,
+        1.0073519514660465
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 7.179957523709699,
+          "candidate": 7.120306607243569,
+          "ratio": 1.00837757694387
+        },
+        {
+          "quartet": 1,
+          "baseline": 7.16903909060575,
+          "candidate": 7.132076332866277,
+          "ratio": 1.0051826082636188
+        },
+        {
+          "quartet": 2,
+          "baseline": 7.14597849120805,
+          "candidate": 7.138149526036126,
+          "ratio": 1.0010967779735305
+        },
+        {
+          "quartet": 3,
+          "baseline": 7.183280044769899,
+          "candidate": 7.210748047715648,
+          "ratio": 0.9961906860752885
+        },
+        {
+          "quartet": 4,
+          "baseline": 7.1730989197397035,
+          "candidate": 7.189402866623135,
+          "ratio": 0.9977322251672496
+        },
+        {
+          "quartet": 5,
+          "baseline": 7.256730233991201,
+          "candidate": 7.232159822078772,
+          "ratio": 1.003397382319652
+        },
+        {
+          "quartet": 6,
+          "baseline": 7.215359761938274,
+          "candidate": 7.145757472783439,
+          "ratio": 1.0097403654434025
+        },
+        {
+          "quartet": 7,
+          "baseline": 7.24799311801427,
+          "candidate": 7.176329885254223,
+          "ratio": 1.009986056090774
+        }
+      ],
+      "result": "within default bound"
+    },
+    {
+      "experiment": "integer-8192",
+      "kind": "first-thread",
+      "width": 128,
+      "ratio": 1.0050152742078202,
+      "ci95": [
+        1.0020614993041208,
+        1.0080519463139457
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 6.994732631209324,
+          "candidate": 6.914222193281754,
+          "ratio": 1.011644178575256
+        },
+        {
+          "quartet": 1,
+          "baseline": 6.9751425355722425,
+          "candidate": 6.937894749109808,
+          "ratio": 1.0053687448151636
+        },
+        {
+          "quartet": 2,
+          "baseline": 6.936585552360726,
+          "candidate": 6.908555372172641,
+          "ratio": 1.0040573142542926
+        },
+        {
+          "quartet": 3,
+          "baseline": 7.005093370677965,
+          "candidate": 7.019729537310763,
+          "ratio": 0.997914995648336
+        },
+        {
+          "quartet": 4,
+          "baseline": 6.9920839548858895,
+          "candidate": 6.9769013677582015,
+          "ratio": 1.0021761217949634
+        },
+        {
+          "quartet": 5,
+          "baseline": 7.074606737243701,
+          "candidate": 7.056716526444616,
+          "ratio": 1.0025352032679848
+        },
+        {
+          "quartet": 6,
+          "baseline": 7.0057383869434,
+          "candidate": 6.972717015995815,
+          "ratio": 1.004735796802284
+        },
+        {
+          "quartet": 7,
+          "baseline": 7.072485093012741,
+          "candidate": 6.99023088287043,
+          "ratio": 1.0117670233674076
+        }
+      ],
+      "result": "within default bound"
+    },
+    {
+      "experiment": "integer-8192",
+      "kind": "first-thread",
+      "width": 256,
+      "ratio": 1.002534188335513,
+      "ci95": [
+        1.0003965094241039,
+        1.0046446477881015
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 10.525143750433928,
+          "candidate": 10.49502226237715,
+          "ratio": 1.0028700737648513
+        },
+        {
+          "quartet": 1,
+          "baseline": 10.521268187558666,
+          "candidate": 10.50137170434559,
+          "ratio": 1.001894655648161
+        },
+        {
+          "quartet": 2,
+          "baseline": 10.484791426708323,
+          "candidate": 10.483836000854962,
+          "ratio": 1.0000911332315083
+        },
+        {
+          "quartet": 3,
+          "baseline": 10.564130508661627,
+          "candidate": 10.566265662684396,
+          "ratio": 0.9997979272818864
+        },
+        {
+          "quartet": 4,
+          "baseline": 10.550884641201156,
+          "candidate": 10.576017695908103,
+          "ratio": 0.9976235804979156
+        },
+        {
+          "quartet": 5,
+          "baseline": 10.650479586400147,
+          "candidate": 10.589679588752704,
+          "ratio": 1.0057414388356016
+        },
+        {
+          "quartet": 6,
+          "baseline": 10.552013111358587,
+          "candidate": 10.48223825795777,
+          "ratio": 1.0066564842053505
+        },
+        {
+          "quartet": 7,
+          "baseline": 10.615034650963443,
+          "candidate": 10.5555475881182,
+          "ratio": 1.0056356207338977
+        }
+      ],
+      "result": "within default bound"
+    },
+    {
+      "experiment": "integer-8192",
+      "kind": "first-thread",
+      "width": 512,
+      "ratio": 1.0011306747131121,
+      "ci95": [
+        0.9999043780228354,
+        1.0024008998213891
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 20.03753811603394,
+          "candidate": 19.976079735702903,
+          "ratio": 1.003076598669217
+        },
+        {
+          "quartet": 1,
+          "baseline": 19.975024265708015,
+          "candidate": 19.99183583019898,
+          "ratio": 0.9991590785041576
+        },
+        {
+          "quartet": 2,
+          "baseline": 19.95861189070508,
+          "candidate": 19.976874589828004,
+          "ratio": 0.9990858079905941
+        },
+        {
+          "quartet": 3,
+          "baseline": 20.02609815968574,
+          "candidate": 20.025917398621825,
+          "ratio": 1.0000090263562122
+        },
+        {
+          "quartet": 4,
+          "baseline": 20.048587192750006,
+          "candidate": 20.05847320055273,
+          "ratio": 0.9995071405632981
+        },
+        {
+          "quartet": 5,
+          "baseline": 20.117758049744126,
+          "candidate": 20.088799985422057,
+          "ratio": 1.0014415029440824
+        },
+        {
+          "quartet": 6,
+          "baseline": 20.041651171935346,
+          "candidate": 19.984146300709085,
+          "ratio": 1.0028775245317445
+        },
+        {
+          "quartet": 7,
+          "baseline": 20.09383826621303,
+          "candidate": 20.01573710215675,
+          "ratio": 1.0039019879037014
+        }
+      ],
+      "result": "within default bound"
+    },
+    {
+      "experiment": "integer-8192",
+      "kind": "normalization",
+      "width": 32,
+      "ratio": 1.0012364856241769,
+      "ci95": [
+        0.9982091642013946,
+        1.0045927978487308
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 7.334632009800807,
+          "candidate": 7.2809555389849345,
+          "ratio": 1.0073721739582764
+        },
+        {
+          "quartet": 1,
+          "baseline": 7.299651235335724,
+          "candidate": 7.295745695567132,
+          "ratio": 1.0005353174208038
+        },
+        {
+          "quartet": 2,
+          "baseline": 7.260075483629863,
+          "candidate": 7.28199557912164,
+          "ratio": 0.996989823015737
+        },
+        {
+          "quartet": 3,
+          "baseline": 7.326260572634645,
+          "candidate": 7.355056025047296,
+          "ratio": 0.9960849445178134
+        },
+        {
+          "quartet": 4,
+          "baseline": 7.339641625378438,
+          "candidate": 7.357503573234265,
+          "ratio": 0.997572281456878
+        },
+        {
+          "quartet": 5,
+          "baseline": 7.406621896269419,
+          "candidate": 7.423198133409473,
+          "ratio": 0.9977669682470889
+        },
+        {
+          "quartet": 6,
+          "baseline": 7.353669943525527,
+          "candidate": 7.302319771693943,
+          "ratio": 1.0070320354951632
+        },
+        {
+          "quartet": 7,
+          "baseline": 7.4071060278928424,
+          "candidate": 7.3583676142615655,
+          "ratio": 1.0066235361137454
+        }
+      ],
+      "result": "no stable >1% gain"
+    },
+    {
+      "experiment": "integer-8192",
+      "kind": "normalization",
+      "width": 128,
+      "ratio": 1.0640087020764695,
+      "ci95": [
+        1.0614574373879002,
+        1.066874977446395
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 9.052015601644788,
+          "candidate": 8.454955655599619,
+          "ratio": 1.0706165674150807
+        },
+        {
+          "quartet": 1,
+          "baseline": 9.003735709639878,
+          "candidate": 8.468554263469674,
+          "ratio": 1.0631963177562416
+        },
+        {
+          "quartet": 2,
+          "baseline": 8.960227664125263,
+          "candidate": 8.450957557785062,
+          "ratio": 1.060261822741147
+        },
+        {
+          "quartet": 3,
+          "baseline": 9.048521685783134,
+          "candidate": 8.53538963116899,
+          "ratio": 1.0601181758288247
+        },
+        {
+          "quartet": 4,
+          "baseline": 9.063243387213035,
+          "candidate": 8.54190388186714,
+          "ratio": 1.061033173933577
+        },
+        {
+          "quartet": 5,
+          "baseline": 9.095346247713687,
+          "candidate": 8.563593471893668,
+          "ratio": 1.062094584191236
+        },
+        {
+          "quartet": 6,
+          "baseline": 9.031221149588104,
+          "candidate": 8.485196970924575,
+          "ratio": 1.0643502066639747
+        },
+        {
+          "quartet": 7,
+          "baseline": 9.116446604626576,
+          "candidate": 8.516392861634431,
+          "ratio": 1.0704586733774732
+        }
+      ],
+      "result": "stable >1% gain"
+    },
+    {
+      "experiment": "integer-8192",
+      "kind": "normalization",
+      "width": 256,
+      "ratio": 1.0375281553824367,
+      "ci95": [
+        1.0357136054070655,
+        1.0395096643309967
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 15.84044705030871,
+          "candidate": 15.203360021114346,
+          "ratio": 1.0419043572150881
+        },
+        {
+          "quartet": 1,
+          "baseline": 15.793197168448941,
+          "candidate": 15.23733916291665,
+          "ratio": 1.0364799916566203
+        },
+        {
+          "quartet": 2,
+          "baseline": 15.744870032905194,
+          "candidate": 15.225356407813281,
+          "ratio": 1.0341216068232932
+        },
+        {
+          "quartet": 3,
+          "baseline": 15.832724277014641,
+          "candidate": 15.287762169359647,
+          "ratio": 1.035646950915238
+        },
+        {
+          "quartet": 4,
+          "baseline": 15.831784664776748,
+          "candidate": 15.296681108422634,
+          "ratio": 1.0349816769115672
+        },
+        {
+          "quartet": 5,
+          "baseline": 15.870552985199014,
+          "candidate": 15.308398140819833,
+          "ratio": 1.0367219900611413
+        },
+        {
+          "quartet": 6,
+          "baseline": 15.825651426215337,
+          "candidate": 15.239508771321928,
+          "ratio": 1.0384620438682661
+        },
+        {
+          "quartet": 7,
+          "baseline": 15.893017134585213,
+          "candidate": 15.25333973375019,
+          "ratio": 1.0419368749402234
+        }
+      ],
+      "result": "stable >1% gain"
+    },
+    {
+      "experiment": "integer-8192",
+      "kind": "normalization",
+      "width": 512,
+      "ratio": 1.0522714384971021,
+      "ci95": [
+        1.0514631256770388,
+        1.053005943913422
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 31.28572496785987,
+          "candidate": 29.71445594870195,
+          "ratio": 1.0528789428913155
+        },
+        {
+          "quartet": 1,
+          "baseline": 31.238316367938204,
+          "candidate": 29.724249293634806,
+          "ratio": 1.0509371005251131
+        },
+        {
+          "quartet": 2,
+          "baseline": 31.253231295232403,
+          "candidate": 29.71571869314232,
+          "ratio": 1.0517407173613103
+        },
+        {
+          "quartet": 3,
+          "baseline": 31.312878762398867,
+          "candidate": 29.75095720593415,
+          "ratio": 1.0524998757402393
+        },
+        {
+          "quartet": 4,
+          "baseline": 31.310786838158144,
+          "candidate": 29.75085158600912,
+          "ratio": 1.0524332975020658
+        },
+        {
+          "quartet": 5,
+          "baseline": 31.36894239808982,
+          "candidate": 29.864291185420925,
+          "ratio": 1.050382954121591
+        },
+        {
+          "quartet": 6,
+          "baseline": 31.323952309879026,
+          "candidate": 29.72981297647359,
+          "ratio": 1.0536209001606214
+        },
+        {
+          "quartet": 7,
+          "baseline": 31.33591952106068,
+          "candidate": 29.73943472116513,
+          "ratio": 1.0536824191469705
+        }
+      ],
+      "result": "stable >1% gain"
+    },
+    {
+      "experiment": "retained-8192",
+      "kind": "first-thread",
+      "width": 32,
+      "ratio": 0.9993400776770249,
+      "ci95": [
+        0.9934144503111989,
+        1.0050580779336757
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 7.496842564701033,
+          "candidate": 7.4451190852996945,
+          "ratio": 1.0069473004808567
+        },
+        {
+          "quartet": 1,
+          "baseline": 7.572372211695519,
+          "candidate": 7.593478171127577,
+          "ratio": 0.9972205149002327
+        },
+        {
+          "quartet": 2,
+          "baseline": 7.486306069294305,
+          "candidate": 7.442479304886548,
+          "ratio": 1.005888731780414
+        },
+        {
+          "quartet": 3,
+          "baseline": 7.480996891762712,
+          "candidate": 7.587506368498284,
+          "ratio": 0.9859625189669986
+        },
+        {
+          "quartet": 4,
+          "baseline": 7.579978216545003,
+          "candidate": 7.49539309206087,
+          "ratio": 1.0112849484270179
+        },
+        {
+          "quartet": 5,
+          "baseline": 7.433472223533686,
+          "candidate": 7.512841949709063,
+          "ratio": 0.9894354590837026
+        },
+        {
+          "quartet": 6,
+          "baseline": 7.4926238411373465,
+          "candidate": 7.459819945426055,
+          "ratio": 1.0043974111910576
+        },
+        {
+          "quartet": 7,
+          "baseline": 7.439360020823455,
+          "candidate": 7.485210736370979,
+          "ratio": 0.9938744923606848
+        }
+      ],
+      "result": "within default bound"
+    },
+    {
+      "experiment": "retained-8192",
+      "kind": "first-thread",
+      "width": 128,
+      "ratio": 0.9985865905241328,
+      "ci95": [
+        0.9926912617960795,
+        1.0041700199750847
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 7.479182660047005,
+          "candidate": 7.433024287997983,
+          "ratio": 1.0062099046445405
+        },
+        {
+          "quartet": 1,
+          "baseline": 7.577839585657271,
+          "candidate": 7.587036339922154,
+          "ratio": 0.9987878331073109
+        },
+        {
+          "quartet": 2,
+          "baseline": 7.4941330444145695,
+          "candidate": 7.43856001808146,
+          "ratio": 1.007470938756698
+        },
+        {
+          "quartet": 3,
+          "baseline": 7.473255782020065,
+          "candidate": 7.602316225844268,
+          "ratio": 0.9830235365130617
+        },
+        {
+          "quartet": 4,
+          "baseline": 7.541756659164304,
+          "candidate": 7.4726462823525965,
+          "ratio": 1.009248447497765
+        },
+        {
+          "quartet": 5,
+          "baseline": 7.420399358125244,
+          "candidate": 7.466507059948926,
+          "ratio": 0.9938247293609339
+        },
+        {
+          "quartet": 6,
+          "baseline": 7.46907475628715,
+          "candidate": 7.476895890526719,
+          "ratio": 0.9989539597241848
+        },
+        {
+          "quartet": 7,
+          "baseline": 7.422616471819253,
+          "candidate": 7.486568783081191,
+          "ratio": 0.991457727416268
+        }
+      ],
+      "result": "within default bound"
+    },
+    {
+      "experiment": "retained-8192",
+      "kind": "first-thread",
+      "width": 256,
+      "ratio": 1.0004371068944786,
+      "ci95": [
+        0.9971735705747095,
+        1.003621052238651
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 13.040682968192261,
+          "candidate": 12.978398082652838,
+          "ratio": 1.0047991196712232
+        },
+        {
+          "quartet": 1,
+          "baseline": 13.118233054432766,
+          "candidate": 13.123424673848934,
+          "ratio": 0.9996044005627195
+        },
+        {
+          "quartet": 2,
+          "baseline": 13.047056603480518,
+          "candidate": 12.972399801346855,
+          "ratio": 1.005755049433946
+        },
+        {
+          "quartet": 3,
+          "baseline": 13.06243052308817,
+          "candidate": 13.139802726688108,
+          "ratio": 0.994111616041024
+        },
+        {
+          "quartet": 4,
+          "baseline": 13.107435634464867,
+          "candidate": 13.043543362283183,
+          "ratio": 1.0048983830855682
+        },
+        {
+          "quartet": 5,
+          "baseline": 12.992703740519755,
+          "candidate": 13.061221366548036,
+          "ratio": 0.9947541180027951
+        },
+        {
+          "quartet": 6,
+          "baseline": 13.074662769692155,
+          "candidate": 13.021568816593431,
+          "ratio": 1.0040773852864078
+        },
+        {
+          "quartet": 7,
+          "baseline": 12.969039283507739,
+          "candidate": 13.026547480618882,
+          "ratio": 0.9955853078341206
+        }
+      ],
+      "result": "within default bound"
+    },
+    {
+      "experiment": "retained-8192",
+      "kind": "first-thread",
+      "width": 512,
+      "ratio": 1.0007137621089441,
+      "ci95": [
+        0.9994529182589245,
+        1.0019412000297776
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 25.706954674592417,
+          "candidate": 25.640799065759552,
+          "ratio": 1.0025800915432939
+        },
+        {
+          "quartet": 1,
+          "baseline": 25.80151523677666,
+          "candidate": 25.762601462392954,
+          "ratio": 1.0015104753470068
+        },
+        {
+          "quartet": 2,
+          "baseline": 25.674384533169377,
+          "candidate": 25.630221433067796,
+          "ratio": 1.001723086950962
+        },
+        {
+          "quartet": 3,
+          "baseline": 25.69291183764689,
+          "candidate": 25.73575857056707,
+          "ratio": 0.9983351284244179
+        },
+        {
+          "quartet": 4,
+          "baseline": 25.76447400113718,
+          "candidate": 25.67989346646288,
+          "ratio": 1.0032936481915224
+        },
+        {
+          "quartet": 5,
+          "baseline": 25.653036579631934,
+          "candidate": 25.693183041470725,
+          "ratio": 0.9984374663982274
+        },
+        {
+          "quartet": 6,
+          "baseline": 25.691882655588163,
+          "candidate": 25.66270602741351,
+          "ratio": 1.0011369271870039
+        },
+        {
+          "quartet": 7,
+          "baseline": 25.639185691167505,
+          "candidate": 25.67238815948204,
+          "ratio": 0.9987066856379596
+        }
+      ],
+      "result": "within default bound"
+    },
+    {
+      "experiment": "retained-8192",
+      "kind": "normalization",
+      "width": 32,
+      "ratio": 1.0091366281363006,
+      "ci95": [
+        1.0032370935037827,
+        1.0150483085316477
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 7.164768655911991,
+          "candidate": 7.020937689296685,
+          "ratio": 1.020486005285957
+        },
+        {
+          "quartet": 1,
+          "baseline": 7.208016896021857,
+          "candidate": 7.172479349291026,
+          "ratio": 1.0049547088252466
+        },
+        {
+          "quartet": 2,
+          "baseline": 7.13466256336105,
+          "candidate": 7.015111626697503,
+          "ratio": 1.0170419150863645
+        },
+        {
+          "quartet": 3,
+          "baseline": 7.155515526004083,
+          "candidate": 7.14912314270111,
+          "ratio": 1.0008941492789223
+        },
+        {
+          "quartet": 4,
+          "baseline": 7.204953593098208,
+          "candidate": 7.088819566566916,
+          "ratio": 1.0163827031342447
+        },
+        {
+          "quartet": 5,
+          "baseline": 7.07422205428975,
+          "candidate": 7.083962643281019,
+          "ratio": 0.9986249801866887
+        },
+        {
+          "quartet": 6,
+          "baseline": 7.157593949166162,
+          "candidate": 7.045541450395145,
+          "ratio": 1.015904029457485
+        },
+        {
+          "quartet": 7,
+          "baseline": 7.074022779646987,
+          "candidate": 7.080429689075001,
+          "ratio": 0.9990951242072357
+        }
+      ],
+      "result": "no stable >1% gain"
+    },
+    {
+      "experiment": "retained-8192",
+      "kind": "normalization",
+      "width": 128,
+      "ratio": 1.0438279502308028,
+      "ci95": [
+        1.0394097891358913,
+        1.0485932500697617
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 9.01839267814554,
+          "candidate": 8.615253463444756,
+          "ratio": 1.0467936569029963
+        },
+        {
+          "quartet": 1,
+          "baseline": 9.121397536860451,
+          "candidate": 8.734933302869132,
+          "ratio": 1.044243524316823
+        },
+        {
+          "quartet": 2,
+          "baseline": 9.049023000301412,
+          "candidate": 8.62767203777557,
+          "ratio": 1.048837155687072
+        },
+        {
+          "quartet": 3,
+          "baseline": 9.060254270082801,
+          "candidate": 8.75534978092902,
+          "ratio": 1.0348249352433556
+        },
+        {
+          "quartet": 4,
+          "baseline": 9.118221157069387,
+          "candidate": 8.634377159963027,
+          "ratio": 1.0560369309960085
+        },
+        {
+          "quartet": 5,
+          "baseline": 8.99652020931085,
+          "candidate": 8.669671769166985,
+          "ratio": 1.0377002092866163
+        },
+        {
+          "quartet": 6,
+          "baseline": 9.066409480331245,
+          "candidate": 8.666704892239059,
+          "ratio": 1.0461195567475843
+        },
+        {
+          "quartet": 7,
+          "baseline": 8.96588351338642,
+          "candidate": 8.652306050878808,
+          "ratio": 1.0362420677983024
+        }
+      ],
+      "result": "stable >1% gain"
+    },
+    {
+      "experiment": "retained-8192",
+      "kind": "normalization",
+      "width": 256,
+      "ratio": 1.0136798158936544,
+      "ci95": [
+        1.0111813601540007,
+        1.0164136220754894
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 16.70301972962997,
+          "candidate": 16.43212676154855,
+          "ratio": 1.016485569519541
+        },
+        {
+          "quartet": 1,
+          "baseline": 16.81237932178535,
+          "candidate": 16.617519645810404,
+          "ratio": 1.011726158905073
+        },
+        {
+          "quartet": 2,
+          "baseline": 16.737110236281296,
+          "candidate": 16.389838010003153,
+          "ratio": 1.0211882647080583
+        },
+        {
+          "quartet": 3,
+          "baseline": 16.725525306829674,
+          "candidate": 16.55894885569039,
+          "ratio": 1.01005960297305
+        },
+        {
+          "quartet": 4,
+          "baseline": 16.777194357340488,
+          "candidate": 16.533823524116457,
+          "ratio": 1.0147195736587515
+        },
+        {
+          "quartet": 5,
+          "baseline": 16.63686197281133,
+          "candidate": 16.500635513573396,
+          "ratio": 1.0082558310633476
+        },
+        {
+          "quartet": 6,
+          "baseline": 16.69999928246235,
+          "candidate": 16.452226392910074,
+          "ratio": 1.015060143450193
+        },
+        {
+          "quartet": 7,
+          "baseline": 16.659598815432116,
+          "candidate": 16.462042412991373,
+          "ratio": 1.012000722479298
+        }
+      ],
+      "result": "stable >1% gain"
+    },
+    {
+      "experiment": "retained-8192",
+      "kind": "normalization",
+      "width": 512,
+      "ratio": 1.0161395114534915,
+      "ci95": [
+        1.0147345143770865,
+        1.017476990241352
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 34.91430387645061,
+          "candidate": 34.32643210543702,
+          "ratio": 1.0171259211912231
+        },
+        {
+          "quartet": 1,
+          "baseline": 34.989759877786895,
+          "candidate": 34.420559991068664,
+          "ratio": 1.0165366248214998
+        },
+        {
+          "quartet": 2,
+          "baseline": 34.89867416031451,
+          "candidate": 34.30646080804438,
+          "ratio": 1.0172624438173252
+        },
+        {
+          "quartet": 3,
+          "baseline": 34.90250347306213,
+          "candidate": 34.464643846218095,
+          "ratio": 1.0127046032681428
+        },
+        {
+          "quartet": 4,
+          "baseline": 34.9875983744665,
+          "candidate": 34.32854554414841,
+          "ratio": 1.0191983907232687
+        },
+        {
+          "quartet": 5,
+          "baseline": 34.88095698711826,
+          "candidate": 34.357092839378154,
+          "ratio": 1.0152476273295068
+        },
+        {
+          "quartet": 6,
+          "baseline": 34.98043672470247,
+          "candidate": 34.37742473594904,
+          "ratio": 1.0175409296474396
+        },
+        {
+          "quartet": 7,
+          "baseline": 34.848798928300276,
+          "candidate": 34.38406763652471,
+          "ratio": 1.0135158904609034
+        }
+      ],
+      "result": "stable >1% gain"
+    }
+  ],
+  "protocol": "# Frozen formal follow-up protocol\n\nScreening palindromes select a candidate; their measurements are retained but excluded\nfrom formal estimates. Compare the candidate to the same upstream-header control in\nfresh independently built workers. Freeze both source commits, consumers, flags and\ncheckpoint hashes before formal timing. No source edits during sampling.\n\nFor each consumer and row size, run eight balanced quartets, alternating APPA/PAAP.\nThe unit of resampling is a whole quartet, never an inner CUDA-event repetition.\nUse all 20 samples per worker and report quartet ratios and medians in Markdown.\nPredeclare a 1% minimum useful normalization speedup and a 1% default-path regression\nbound. Use 10,000 fixed-seed bootstrap draws over the eight log-ratio quartets.\nDeclare stable improvement for a case only when the two-sided 95% interval lower\nbound exceeds 1.01; declare model improvement by the same criterion. Results whose\ninterval crosses 1 or falls below the 1% practical bound are reported explicitly.\nAll scheduled widths/row sizes, failed workers and invalidated groups remain visible.\nNo general claim when only selected widths improve.\n\nAny observed foreign process on the selected GPU invalidates its entire quartet.\nNo partial quartet substitution. A rerun is a separately labelled complete quartet.\nKeep raw observations, source/library/input/output/checkpoint hashes and commands.\n\nFull-checkpoint resident screening loads all 28 BF16 Qwen3 layers, uses native greedy\nHF generation, fresh KV state, exact 32 tokens against native attention, and all-step\nlogit checks against the independent FP64 normalization reference with a baseline-only\nfrozen budget. Both batch sizes 1 and 16 and prompt lengths 128/512 remain disclosed.\nThe independent FP64 reference is for normalization; it is not a full FP64 network.\nNative Torch attention timings are context, not an interchangeable upstream-CUB control.\nFormal model runs require the same validation in separate fresh workers.\n\nCommon register-retention/__expf or generation-harness changes apply equally to both\narms and cannot be attributed to the PR. Original rereading-expf results remain in\nthe report alongside the new consumer. A kernel-level useful gain does not establish\na model-level gain.\n\nFor the sink exponential follow-up, use eight balanced APPA/PAAP quartets per\nreturn-LSE mode in fresh processes. Keep all 16 shape/sink cases from each worker,\nincluding no-sink controls. The same 1% practical threshold and whole-quartet\nbootstrap apply. Compare to the already-correct published sink implementation.\nA Qwen3 checkpoint without trained sinks supplies a no-sink regression only;\nits timings cannot establish a learned-sink model speedup.\n"
+}

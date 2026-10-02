@@ -1,0 +1,77 @@
+[
+  {
+    "file": "sm120-build-integer-A.log",
+    "original_sha256": "88dc22dcd3e252c7d63dd216bacaed59c6949068bbdaba1ae412fc390a7458e1",
+    "published_sha256": "892435b1d159ba9a031be84c3fbae8b4e8e5ab5bfb711350d29255d807ed2812"
+  },
+  {
+    "file": "sm120-build-integer-P.log",
+    "original_sha256": "23db1cba798c8dd124f20b539fd4736865eae9b77b79179157a58e57170fdd71",
+    "published_sha256": "f44be2d649f8d3aa9c95197a7922826cc4c507fc2af9690b0ddc9dcb5df102f5"
+  },
+  {
+    "file": "sm120-build-legacy-A.log",
+    "original_sha256": "9b6832171a7854aec7d8387404dfee9fb77d22cf818a44830a730f9eefa7bc6a",
+    "published_sha256": "daf9a7fd145010d8f070d125b3e28033587ef1ec0a6fe76fed5adfc690af442f"
+  },
+  {
+    "file": "sm120-build-legacy-P.log",
+    "original_sha256": "8237f50e735834fc644a52ea5b92119a79a16e87fa793c86dc178a7737b69b1c",
+    "published_sha256": "8bcc77527056bd12cced33106ea181c2b9a4520cadc0d457b485a95e2896bb40"
+  },
+  {
+    "file": "sm120-build-retained-A-cuda-mismatch.log",
+    "original_sha256": "11c79e715d6040331b9ed3d7fda3fbf9b62c39e183a55ac032d689ee2dceb58b",
+    "published_sha256": "50fd3b17336e578bcd3864d484364ba2c5a5c20d1a1f1ca5bf686010174aaf10"
+  },
+  {
+    "file": "sm120-build-retained-A-header-order.log",
+    "original_sha256": "6659162bde566d32453a4105d57b612f9c0814e7f6786ab620053b79f8a6beef",
+    "published_sha256": "43ed00b4a87381d87f3eaf7c36dbbb27c2dbdcec4edc2cac265c9402ff04d533"
+  },
+  {
+    "file": "sm120-build-retained-A-library-headers.log",
+    "original_sha256": "8eef2deca08f126a7672d23882b62a672e776d3aa2a3e2047d10a79110e0194e",
+    "published_sha256": "ac536562a40db08b550a7078f8cf905af090391882f1c4926eddccb44dc29e07"
+  },
+  {
+    "file": "sm120-build-retained-A.log",
+    "original_sha256": "ca5d2faa5bd6f87d37ec3dbe4ba713b058db1294d697effdb807ff7984ddaad8",
+    "published_sha256": "62c2ced4768ed6f1ab1e44f65f9790f48668efa0b04e4882a92688c975316306"
+  },
+  {
+    "file": "sm120-build-retained-P.log",
+    "original_sha256": "dda69f4dfa8c2d64e6b04a5c42432bb07070535d8917800f002c6abbc3e60687",
+    "published_sha256": "59db336513d36e87efab0b2e36fe4759768102e81e2d320dc8fca56b9d58b562"
+  },
+  {
+    "file": "sm120-build-torch_order-A.log",
+    "original_sha256": "7a5f2fbeeadf5632020d57546867026fdb3e407a76885024d683c4bb4aed1b96",
+    "published_sha256": "e2783aad2c70a5aaa580dce3543a15560be81a2ad70008c180272aaf442aef47"
+  },
+  {
+    "file": "sm120-build-torch_order-P.log",
+    "original_sha256": "f5f7902a1835a7f3fb0fc49891c4413aeb34227632b0907cb23e571baf7b80f4",
+    "published_sha256": "1f56f9a68e5e8c56cc26e3e9f7f1a327a632ed656264b932e63965b51bdaa80e"
+  },
+  {
+    "file": "sm120-legacy-A-sass.txt",
+    "original_sha256": "b1577f56548b86e57942654b1dc8e28efcc09bc27a7934f784a79ceca9905629",
+    "published_sha256": "bbeb6d9b8bd98cf69fc55ca696e494d9e6e3b9805ecc7312ddf574e8f5fffb3d"
+  },
+  {
+    "file": "sm120-legacy-P-sass.txt",
+    "original_sha256": "277f0eebc24dc77ca527e051a663569ea05f6a61f95e9080cd5de0457251d8f3",
+    "published_sha256": "bfdb7e1c0a839c78301a0fcaa7a1b039a15133b271f106f0595d2614f0126f99"
+  },
+  {
+    "file": "sm120-retained-A-sass.txt",
+    "original_sha256": "975bae2d1a88c72d9a812250c6ea43d6c7fffe069d34544d6e097cce201ab1ed",
+    "published_sha256": "823ae6f8515b9db64bc3d56821dc7f1d4012fe10281d7af217147fcb5b714021"
+  },
+  {
+    "file": "sm120-retained-P-sass.txt",
+    "original_sha256": "5e7cbd0a667deeb00565c96ab124541c58c788e819369fa98de2cc2fe9566364",
+    "published_sha256": "482a838bbe94a91e8e177bd4b6bec06d8cbe5df0ee24b73919b13b2c76a89bbf"
+  }
+]

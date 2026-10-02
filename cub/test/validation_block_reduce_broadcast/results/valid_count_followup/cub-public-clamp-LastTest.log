@@ -1,0 +1,705 @@
+Start testing: Oct 01 18:33 CST
+----------------------------------------------------------
+1/720 Testing: generate_resource_spec
+1/720 Test: generate_resource_spec
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/generate_ctest_json" "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/resource_spec.json"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"generate_resource_spec" start time: Oct 01 18:33 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.20 sec
+----------------------------------------------------------
+Test Passed.
+"generate_resource_spec" end time: Oct 01 18:33 CST
+"generate_resource_spec" time elapsed: 00:00:00
+----------------------------------------------------------
+
+81/720 Testing: cub.test.block.reduce.dimx_1.dimyz_1
+81/720 Test: cub.test.block.reduce.dimx_1.dimyz_1
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_1.dimyz_1;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce.dimx_1.dimyz_1" start time: Oct 01 18:33 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_1.dimyz_1' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_1.dimyz_1 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 518153647
+===============================================================================
+All tests passed (5040 assertions in 120 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =  17.40 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce.dimx_1.dimyz_1" end time: Oct 01 18:33 CST
+"cub.test.block.reduce.dimx_1.dimyz_1" time elapsed: 00:00:17
+----------------------------------------------------------
+
+82/720 Testing: cub.test.block.reduce.dimx_1.dimyz_2
+82/720 Test: cub.test.block.reduce.dimx_1.dimyz_2
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_1.dimyz_2;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce.dimx_1.dimyz_2" start time: Oct 01 18:33 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_1.dimyz_2' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_1.dimyz_2 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 3775520455
+===============================================================================
+All tests passed (5040 assertions in 120 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =   5.92 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce.dimx_1.dimyz_2" end time: Oct 01 18:33 CST
+"cub.test.block.reduce.dimx_1.dimyz_2" time elapsed: 00:00:05
+----------------------------------------------------------
+
+83/720 Testing: cub.test.block.reduce.dimx_7.dimyz_1
+83/720 Test: cub.test.block.reduce.dimx_7.dimyz_1
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_7.dimyz_1;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce.dimx_7.dimyz_1" start time: Oct 01 18:33 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_7.dimyz_1' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_7.dimyz_1 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 1442589460
+===============================================================================
+All tests passed (5040 assertions in 120 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =   8.94 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce.dimx_7.dimyz_1" end time: Oct 01 18:33 CST
+"cub.test.block.reduce.dimx_7.dimyz_1" time elapsed: 00:00:08
+----------------------------------------------------------
+
+84/720 Testing: cub.test.block.reduce.dimx_7.dimyz_2
+84/720 Test: cub.test.block.reduce.dimx_7.dimyz_2
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_7.dimyz_2;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce.dimx_7.dimyz_2" start time: Oct 01 18:33 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_7.dimyz_2' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_7.dimyz_2 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 1871826966
+===============================================================================
+All tests passed (5040 assertions in 120 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =   5.98 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce.dimx_7.dimyz_2" end time: Oct 01 18:33 CST
+"cub.test.block.reduce.dimx_7.dimyz_2" time elapsed: 00:00:05
+----------------------------------------------------------
+
+85/720 Testing: cub.test.block.reduce.dimx_32.dimyz_1
+85/720 Test: cub.test.block.reduce.dimx_32.dimyz_1
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_32.dimyz_1;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce.dimx_32.dimyz_1" start time: Oct 01 18:33 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_32.dimyz_1' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_32.dimyz_1 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 3793566669
+===============================================================================
+All tests passed (5040 assertions in 120 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =  51.01 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce.dimx_32.dimyz_1" end time: Oct 01 18:34 CST
+"cub.test.block.reduce.dimx_32.dimyz_1" time elapsed: 00:00:51
+----------------------------------------------------------
+
+86/720 Testing: cub.test.block.reduce.dimx_32.dimyz_2
+86/720 Test: cub.test.block.reduce.dimx_32.dimyz_2
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_32.dimyz_2;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce.dimx_32.dimyz_2" start time: Oct 01 18:34 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_32.dimyz_2' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_32.dimyz_2 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 3100988087
+===============================================================================
+All tests passed (5040 assertions in 120 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =   7.53 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce.dimx_32.dimyz_2" end time: Oct 01 18:34 CST
+"cub.test.block.reduce.dimx_32.dimyz_2" time elapsed: 00:00:07
+----------------------------------------------------------
+
+87/720 Testing: cub.test.block.reduce.dimx_65.dimyz_1
+87/720 Test: cub.test.block.reduce.dimx_65.dimyz_1
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_65.dimyz_1;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce.dimx_65.dimyz_1" start time: Oct 01 18:34 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_65.dimyz_1' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_65.dimyz_1 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 482025798
+===============================================================================
+All tests passed (5040 assertions in 120 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =   5.91 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce.dimx_65.dimyz_1" end time: Oct 01 18:34 CST
+"cub.test.block.reduce.dimx_65.dimyz_1" time elapsed: 00:00:05
+----------------------------------------------------------
+
+88/720 Testing: cub.test.block.reduce.dimx_65.dimyz_2
+88/720 Test: cub.test.block.reduce.dimx_65.dimyz_2
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_65.dimyz_2;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce.dimx_65.dimyz_2" start time: Oct 01 18:34 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_65.dimyz_2' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_65.dimyz_2 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 2016609337
+===============================================================================
+All tests passed (5040 assertions in 120 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =   9.00 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce.dimx_65.dimyz_2" end time: Oct 01 18:35 CST
+"cub.test.block.reduce.dimx_65.dimyz_2" time elapsed: 00:00:08
+----------------------------------------------------------
+
+89/720 Testing: cub.test.block.reduce.dimx_128.dimyz_1
+89/720 Test: cub.test.block.reduce.dimx_128.dimyz_1
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_128.dimyz_1;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce.dimx_128.dimyz_1" start time: Oct 01 18:35 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_128.dimyz_1' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_128.dimyz_1 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 3151756353
+===============================================================================
+All tests passed (5040 assertions in 120 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =   5.98 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce.dimx_128.dimyz_1" end time: Oct 01 18:35 CST
+"cub.test.block.reduce.dimx_128.dimyz_1" time elapsed: 00:00:05
+----------------------------------------------------------
+
+90/720 Testing: cub.test.block.reduce.dimx_128.dimyz_2
+90/720 Test: cub.test.block.reduce.dimx_128.dimyz_2
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_128.dimyz_2;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce.dimx_128.dimyz_2" start time: Oct 01 18:35 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_128.dimyz_2' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce.dimx_128.dimyz_2 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 3506656965
+===============================================================================
+All tests passed (5040 assertions in 120 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =  52.95 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce.dimx_128.dimyz_2" end time: Oct 01 18:35 CST
+"cub.test.block.reduce.dimx_128.dimyz_2" time elapsed: 00:00:52
+----------------------------------------------------------
+
+91/720 Testing: cub.test.block.reduce_broadcast.dimx_1.dimyz_1
+91/720 Test: cub.test.block.reduce_broadcast.dimx_1.dimyz_1
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_1.dimyz_1;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce_broadcast.dimx_1.dimyz_1" start time: Oct 01 18:35 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_1.dimyz_1' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_1.dimyz_1 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 2405027674
+===============================================================================
+All tests passed (992 assertions in 8 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =   1.38 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce_broadcast.dimx_1.dimyz_1" end time: Oct 01 18:36 CST
+"cub.test.block.reduce_broadcast.dimx_1.dimyz_1" time elapsed: 00:00:01
+----------------------------------------------------------
+
+92/720 Testing: cub.test.block.reduce_broadcast.dimx_1.dimyz_2
+92/720 Test: cub.test.block.reduce_broadcast.dimx_1.dimyz_2
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_1.dimyz_2;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce_broadcast.dimx_1.dimyz_2" start time: Oct 01 18:36 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_1.dimyz_2' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_1.dimyz_2 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 1320306440
+===============================================================================
+All tests passed (992 assertions in 8 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =   1.39 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce_broadcast.dimx_1.dimyz_2" end time: Oct 01 18:36 CST
+"cub.test.block.reduce_broadcast.dimx_1.dimyz_2" time elapsed: 00:00:01
+----------------------------------------------------------
+
+93/720 Testing: cub.test.block.reduce_broadcast.dimx_7.dimyz_1
+93/720 Test: cub.test.block.reduce_broadcast.dimx_7.dimyz_1
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_7.dimyz_1;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce_broadcast.dimx_7.dimyz_1" start time: Oct 01 18:36 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_7.dimyz_1' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_7.dimyz_1 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 179038984
+===============================================================================
+All tests passed (992 assertions in 8 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =   1.39 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce_broadcast.dimx_7.dimyz_1" end time: Oct 01 18:36 CST
+"cub.test.block.reduce_broadcast.dimx_7.dimyz_1" time elapsed: 00:00:01
+----------------------------------------------------------
+
+94/720 Testing: cub.test.block.reduce_broadcast.dimx_7.dimyz_2
+94/720 Test: cub.test.block.reduce_broadcast.dimx_7.dimyz_2
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_7.dimyz_2;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce_broadcast.dimx_7.dimyz_2" start time: Oct 01 18:36 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_7.dimyz_2' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_7.dimyz_2 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 3616990388
+===============================================================================
+All tests passed (992 assertions in 8 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =   1.44 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce_broadcast.dimx_7.dimyz_2" end time: Oct 01 18:36 CST
+"cub.test.block.reduce_broadcast.dimx_7.dimyz_2" time elapsed: 00:00:01
+----------------------------------------------------------
+
+95/720 Testing: cub.test.block.reduce_broadcast.dimx_32.dimyz_1
+95/720 Test: cub.test.block.reduce_broadcast.dimx_32.dimyz_1
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_32.dimyz_1;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce_broadcast.dimx_32.dimyz_1" start time: Oct 01 18:36 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_32.dimyz_1' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_32.dimyz_1 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 2365140044
+===============================================================================
+All tests passed (992 assertions in 8 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =   1.38 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce_broadcast.dimx_32.dimyz_1" end time: Oct 01 18:36 CST
+"cub.test.block.reduce_broadcast.dimx_32.dimyz_1" time elapsed: 00:00:01
+----------------------------------------------------------
+
+96/720 Testing: cub.test.block.reduce_broadcast.dimx_32.dimyz_2
+96/720 Test: cub.test.block.reduce_broadcast.dimx_32.dimyz_2
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_32.dimyz_2;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce_broadcast.dimx_32.dimyz_2" start time: Oct 01 18:36 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_32.dimyz_2' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_32.dimyz_2 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 561878707
+===============================================================================
+All tests passed (992 assertions in 8 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =   1.39 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce_broadcast.dimx_32.dimyz_2" end time: Oct 01 18:36 CST
+"cub.test.block.reduce_broadcast.dimx_32.dimyz_2" time elapsed: 00:00:01
+----------------------------------------------------------
+
+97/720 Testing: cub.test.block.reduce_broadcast.dimx_65.dimyz_1
+97/720 Test: cub.test.block.reduce_broadcast.dimx_65.dimyz_1
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_65.dimyz_1;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce_broadcast.dimx_65.dimyz_1" start time: Oct 01 18:36 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_65.dimyz_1' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_65.dimyz_1 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 2971260866
+===============================================================================
+All tests passed (992 assertions in 8 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =   1.41 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce_broadcast.dimx_65.dimyz_1" end time: Oct 01 18:36 CST
+"cub.test.block.reduce_broadcast.dimx_65.dimyz_1" time elapsed: 00:00:01
+----------------------------------------------------------
+
+98/720 Testing: cub.test.block.reduce_broadcast.dimx_65.dimyz_2
+98/720 Test: cub.test.block.reduce_broadcast.dimx_65.dimyz_2
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_65.dimyz_2;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce_broadcast.dimx_65.dimyz_2" start time: Oct 01 18:36 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_65.dimyz_2' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_65.dimyz_2 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 1790179435
+===============================================================================
+All tests passed (992 assertions in 8 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =   1.42 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce_broadcast.dimx_65.dimyz_2" end time: Oct 01 18:36 CST
+"cub.test.block.reduce_broadcast.dimx_65.dimyz_2" time elapsed: 00:00:01
+----------------------------------------------------------
+
+99/720 Testing: cub.test.block.reduce_broadcast.dimx_128.dimyz_1
+99/720 Test: cub.test.block.reduce_broadcast.dimx_128.dimyz_1
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_128.dimyz_1;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce_broadcast.dimx_128.dimyz_1" start time: Oct 01 18:36 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_128.dimyz_1' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_128.dimyz_1 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 1760646694
+===============================================================================
+All tests passed (992 assertions in 8 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =   4.35 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce_broadcast.dimx_128.dimyz_1" end time: Oct 01 18:36 CST
+"cub.test.block.reduce_broadcast.dimx_128.dimyz_1" time elapsed: 00:00:04
+----------------------------------------------------------
+
+100/720 Testing: cub.test.block.reduce_broadcast.dimx_128.dimyz_2
+100/720 Test: cub.test.block.reduce_broadcast.dimx_128.dimyz_2
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_128.dimyz_2;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce_broadcast.dimx_128.dimyz_2" start time: Oct 01 18:36 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_128.dimyz_2' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_128.dimyz_2 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 1892659348
+===============================================================================
+All tests passed (992 assertions in 8 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =   1.40 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce_broadcast.dimx_128.dimyz_2" end time: Oct 01 18:36 CST
+"cub.test.block.reduce_broadcast.dimx_128.dimyz_2" time elapsed: 00:00:01
+----------------------------------------------------------
+
+101/720 Testing: cub.test.block.reduce_broadcast.dimx_256.dimyz_1
+101/720 Test: cub.test.block.reduce_broadcast.dimx_256.dimyz_1
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_256.dimyz_1;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce_broadcast.dimx_256.dimyz_1" start time: Oct 01 18:36 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_256.dimyz_1' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_256.dimyz_1 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 3262258035
+===============================================================================
+All tests passed (992 assertions in 8 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =   1.38 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce_broadcast.dimx_256.dimyz_1" end time: Oct 01 18:36 CST
+"cub.test.block.reduce_broadcast.dimx_256.dimyz_1" time elapsed: 00:00:01
+----------------------------------------------------------
+
+102/720 Testing: cub.test.block.reduce_broadcast.dimx_256.dimyz_2
+102/720 Test: cub.test.block.reduce_broadcast.dimx_256.dimyz_2
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_to_run=/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-Dcommand_args=-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch;-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_256.dimyz_2;-DARGS=[small-mem];-DALLOW_RUNNING_NO_TESTS=ON;-DTYPE=Catch2;-P;/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake" "-P=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/rapids-cmake/./run_gpu_test.cmake"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce_broadcast.dimx_256.dimyz_2" start time: Oct 01 18:36 CST
+Output:
+----------------------------------------------------------
+'/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake' '-DCCCL_SOURCE_DIR=/root/autodl-tmp/cccl-reduce-broadcast-h20/patch' '-DTEST=/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_256.dimyz_2' '-DARGS=[small-mem]' '-DALLOW_RUNNING_NO_TESTS=ON' '-DTYPE=Catch2' '-P' '/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/run_test.cmake'
+-- >> Running:
+	/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast.dimx_256.dimyz_2 [small-mem] --allow-running-no-tests
+Filters: [small-mem]
+Randomness seeded to: 999983578
+===============================================================================
+All tests passed (992 assertions in 8 test cases)
+
+-- >> Exit Status: 0
+<end of output>
+Test time =   1.41 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce_broadcast.dimx_256.dimyz_2" end time: Oct 01 18:36 CST
+"cub.test.block.reduce_broadcast.dimx_256.dimyz_2" time elapsed: 00:00:01
+----------------------------------------------------------
+
+551/720 Testing: cub.test.block.reduce_broadcast_fail.algo_0.clean
+551/720 Test: cub.test.block.reduce_broadcast_fail.algo_0.clean
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-E" "rm" "-f" "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast_fail.algo_0" "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test/CMakeFiles/cub.test.block.reduce_broadcast_fail.algo_0.dir/./test_block_reduce_broadcast_fail.cu.o"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce_broadcast_fail.algo_0.clean" start time: Oct 01 18:36 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce_broadcast_fail.algo_0.clean" end time: Oct 01 18:36 CST
+"cub.test.block.reduce_broadcast_fail.algo_0.clean" time elapsed: 00:00:00
+----------------------------------------------------------
+
+552/720 Testing: cub.test.block.reduce_broadcast_fail.algo_0
+552/720 Test: cub.test.block.reduce_broadcast_fail.algo_0
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "--build" "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20" "--target" "cub.test.block.reduce_broadcast_fail.algo_0" "--config" "Release"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce_broadcast_fail.algo_0" start time: Oct 01 18:36 CST
+Output:
+----------------------------------------------------------
+[0/2] Re-checking globbed directories...
+[1/3] Building CUDA object cub/test/CMakeFiles/cub.test.block.reduce_broadcast_fail.algo_0.dir/test_block_reduce_broadcast_fail.cu.o
+FAILED: [code=1] cub/test/CMakeFiles/cub.test.block.reduce_broadcast_fail.algo_0.dir/test_block_reduce_broadcast_fail.cu.o
+/usr/local/cuda-12.8/bin/nvcc -forward-unknown-to-host-compiler -ccbin=/usr/bin/c++ -DCATCH_CONFIG_PREFIX_ALL -DCCCL_ENABLE_ASSERTIONS -DTEST_ALGORITHM=0 -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CUDA -DTHRUST_HOST_SYSTEM=THRUST_HOST_SYSTEM_CPP -DVAR_IDX=0 -D_CCCL_NO_SYSTEM_HEADER -I/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test -I/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/lib/cmake/libcudacxx/../../../libcudacxx/include -I/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/lib/cmake/thrust/../../../thrust -I/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/lib/cmake/cub/../../../cub -I/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/c2h/include -isystem /root/autodl-tmp/cccl-reduce-broadcast-h20/deps/catch2/src/catch2/.. -isystem /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/_deps/catch2-build/generated-includes -O3 -DNDEBUG -std=c++20 "--generate-code=arch=compute_90,code=[sm_90]" -Xcudafe=--display_error_number -Wno-deprecated-gpu-targets -Xcudafe=--promote_warnings -Wreorder -Xcompiler=-Werror -Xcompiler=-Wall -Xcompiler=-Wextra -Xcompiler=-Wreorder -Xcompiler=-Winit-self -Xcompiler=-Woverloaded-virtual -Xcompiler=-Wcast-qual -Xcompiler=-Wpointer-arith -Xcompiler=-Wunused-local-typedefs -Xcompiler=-Wvla -Xcompiler=-Wimplicit-fallthrough -Xcompiler=-fdiagnostics-show-template-tree -Xcompiler=-Wignored-qualifiers -Xcompiler=-Wmissing-field-initializers -Xcompiler=-Wsign-compare -Xcompiler=-Walloc-zero -Xcompiler=-Wtsan -Xcompiler=-Wenum-conversion -Xcompiler=-Wpacked -Xcompiler=-ftemplate-backtrace-limit=0 -Xcompiler=-Wno-gnu-line-marker -Xcompiler=-Wno-gnu-zero-variadic-macro-arguments -Xcompiler=-Wno-unused-template -Xcompiler=-Wno-unused-function -Xcompiler=-Wno-noexcept-type -MD -MT cub/test/CMakeFiles/cub.test.block.reduce_broadcast_fail.algo_0.dir/test_block_reduce_broadcast_fail.cu.o -MF cub/test/CMakeFiles/cub.test.block.reduce_broadcast_fail.algo_0.dir/test_block_reduce_broadcast_fail.cu.o.d -x cu -c /root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/test_block_reduce_broadcast_fail.cu -o cub/test/CMakeFiles/cub.test.block.reduce_broadcast_fail.algo_0.dir/test_block_reduce_broadcast_fail.cu.o
+/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/lib/cmake/cub/../../../cub/cub/block/block_reduce.cuh(606): error: static assertion failed with "ReduceBroadcast requires BLOCK_REDUCE_WARP_REDUCTIONS"
+      static_assert(Algorithm == BLOCK_REDUCE_WARP_REDUCTIONS, "ReduceBroadcast requires BLOCK_REDUCE_WARP_REDUCTIONS");
+      ^
+          detected during:
+            instantiation of "T cub::_V_300600_SM_900::BlockReduce<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>::ReduceBroadcast(T, ReductionOp, int) [with T=int, BlockDimX=128, Algorithm=cub::_V_300600_SM_900::BLOCK_REDUCE_RAKING, BlockDimY=1, BlockDimZ=1, ReductionOp=cuda::std::__4::plus<void>]" at line 577
+            instantiation of "T cub::_V_300600_SM_900::BlockReduce<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>::ReduceBroadcast(T, ReductionOp) [with T=int, BlockDimX=128, Algorithm=cub::_V_300600_SM_900::BLOCK_REDUCE_RAKING, BlockDimY=1, BlockDimZ=1, ReductionOp=cuda::std::__4::plus<void>]" at line 20 of /root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/test_block_reduce_broadcast_fail.cu
+
+/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/lib/cmake/cub/../../../cub/cub/block/block_reduce.cuh(618): error #940-D: missing return statement at end of non-void function "cub::_V_300600_SM_900::BlockReduce<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>::ReduceBroadcast(T, ReductionOp, int) [with T=int, BlockDimX=128, Algorithm=cub::_V_300600_SM_900::BLOCK_REDUCE_RAKING, BlockDimY=1, BlockDimZ=1, ReductionOp=cuda::std::__4::plus<void>]"
+    }
+    ^
+          detected during:
+            instantiation of "T cub::_V_300600_SM_900::BlockReduce<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>::ReduceBroadcast(T, ReductionOp, int) [with T=int, BlockDimX=128, Algorithm=cub::_V_300600_SM_900::BLOCK_REDUCE_RAKING, BlockDimY=1, BlockDimZ=1, ReductionOp=cuda::std::__4::plus<void>]" at line 577
+            instantiation of "T cub::_V_300600_SM_900::BlockReduce<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>::ReduceBroadcast(T, ReductionOp) [with T=int, BlockDimX=128, Algorithm=cub::_V_300600_SM_900::BLOCK_REDUCE_RAKING, BlockDimY=1, BlockDimZ=1, ReductionOp=cuda::std::__4::plus<void>]" at line 20 of /root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/test_block_reduce_broadcast_fail.cu
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+2 errors detected in the compilation of "/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/test_block_reduce_broadcast_fail.cu".
+ninja: build stopped: subcommand failed.
+<end of output>
+Test time =   3.64 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[ReduceBroadcast requires BLOCK_REDUCE_WARP_REDUCTIONS]
+"cub.test.block.reduce_broadcast_fail.algo_0" end time: Oct 01 18:36 CST
+"cub.test.block.reduce_broadcast_fail.algo_0" time elapsed: 00:00:03
+----------------------------------------------------------
+
+553/720 Testing: cub.test.block.reduce_broadcast_fail.algo_1.clean
+553/720 Test: cub.test.block.reduce_broadcast_fail.algo_1.clean
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-E" "rm" "-f" "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast_fail.algo_1" "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test/CMakeFiles/cub.test.block.reduce_broadcast_fail.algo_1.dir/./test_block_reduce_broadcast_fail.cu.o"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce_broadcast_fail.algo_1.clean" start time: Oct 01 18:36 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce_broadcast_fail.algo_1.clean" end time: Oct 01 18:36 CST
+"cub.test.block.reduce_broadcast_fail.algo_1.clean" time elapsed: 00:00:00
+----------------------------------------------------------
+
+554/720 Testing: cub.test.block.reduce_broadcast_fail.algo_1
+554/720 Test: cub.test.block.reduce_broadcast_fail.algo_1
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "--build" "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20" "--target" "cub.test.block.reduce_broadcast_fail.algo_1" "--config" "Release"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce_broadcast_fail.algo_1" start time: Oct 01 18:36 CST
+Output:
+----------------------------------------------------------
+[0/2] Re-checking globbed directories...
+[1/3] Building CUDA object cub/test/CMakeFiles/cub.test.block.reduce_broadcast_fail.algo_1.dir/test_block_reduce_broadcast_fail.cu.o
+FAILED: [code=1] cub/test/CMakeFiles/cub.test.block.reduce_broadcast_fail.algo_1.dir/test_block_reduce_broadcast_fail.cu.o
+/usr/local/cuda-12.8/bin/nvcc -forward-unknown-to-host-compiler -ccbin=/usr/bin/c++ -DCATCH_CONFIG_PREFIX_ALL -DCCCL_ENABLE_ASSERTIONS -DTEST_ALGORITHM=1 -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CUDA -DTHRUST_HOST_SYSTEM=THRUST_HOST_SYSTEM_CPP -DVAR_IDX=1 -D_CCCL_NO_SYSTEM_HEADER -I/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test -I/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/lib/cmake/libcudacxx/../../../libcudacxx/include -I/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/lib/cmake/thrust/../../../thrust -I/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/lib/cmake/cub/../../../cub -I/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/c2h/include -isystem /root/autodl-tmp/cccl-reduce-broadcast-h20/deps/catch2/src/catch2/.. -isystem /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/_deps/catch2-build/generated-includes -O3 -DNDEBUG -std=c++20 "--generate-code=arch=compute_90,code=[sm_90]" -Xcudafe=--display_error_number -Wno-deprecated-gpu-targets -Xcudafe=--promote_warnings -Wreorder -Xcompiler=-Werror -Xcompiler=-Wall -Xcompiler=-Wextra -Xcompiler=-Wreorder -Xcompiler=-Winit-self -Xcompiler=-Woverloaded-virtual -Xcompiler=-Wcast-qual -Xcompiler=-Wpointer-arith -Xcompiler=-Wunused-local-typedefs -Xcompiler=-Wvla -Xcompiler=-Wimplicit-fallthrough -Xcompiler=-fdiagnostics-show-template-tree -Xcompiler=-Wignored-qualifiers -Xcompiler=-Wmissing-field-initializers -Xcompiler=-Wsign-compare -Xcompiler=-Walloc-zero -Xcompiler=-Wtsan -Xcompiler=-Wenum-conversion -Xcompiler=-Wpacked -Xcompiler=-ftemplate-backtrace-limit=0 -Xcompiler=-Wno-gnu-line-marker -Xcompiler=-Wno-gnu-zero-variadic-macro-arguments -Xcompiler=-Wno-unused-template -Xcompiler=-Wno-unused-function -Xcompiler=-Wno-noexcept-type -MD -MT cub/test/CMakeFiles/cub.test.block.reduce_broadcast_fail.algo_1.dir/test_block_reduce_broadcast_fail.cu.o -MF cub/test/CMakeFiles/cub.test.block.reduce_broadcast_fail.algo_1.dir/test_block_reduce_broadcast_fail.cu.o.d -x cu -c /root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/test_block_reduce_broadcast_fail.cu -o cub/test/CMakeFiles/cub.test.block.reduce_broadcast_fail.algo_1.dir/test_block_reduce_broadcast_fail.cu.o
+/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/lib/cmake/cub/../../../cub/cub/block/block_reduce.cuh(606): error: static assertion failed with "ReduceBroadcast requires BLOCK_REDUCE_WARP_REDUCTIONS"
+      static_assert(Algorithm == BLOCK_REDUCE_WARP_REDUCTIONS, "ReduceBroadcast requires BLOCK_REDUCE_WARP_REDUCTIONS");
+      ^
+          detected during:
+            instantiation of "T cub::_V_300600_SM_900::BlockReduce<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>::ReduceBroadcast(T, ReductionOp, int) [with T=int, BlockDimX=128, Algorithm=cub::_V_300600_SM_900::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY, BlockDimY=1, BlockDimZ=1, ReductionOp=cuda::std::__4::plus<void>]" at line 577
+            instantiation of "T cub::_V_300600_SM_900::BlockReduce<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>::ReduceBroadcast(T, ReductionOp) [with T=int, BlockDimX=128, Algorithm=cub::_V_300600_SM_900::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY, BlockDimY=1, BlockDimZ=1, ReductionOp=cuda::std::__4::plus<void>]" at line 20 of /root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/test_block_reduce_broadcast_fail.cu
+
+/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/lib/cmake/cub/../../../cub/cub/block/block_reduce.cuh(618): error #940-D: missing return statement at end of non-void function "cub::_V_300600_SM_900::BlockReduce<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>::ReduceBroadcast(T, ReductionOp, int) [with T=int, BlockDimX=128, Algorithm=cub::_V_300600_SM_900::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY, BlockDimY=1, BlockDimZ=1, ReductionOp=cuda::std::__4::plus<void>]"
+    }
+    ^
+          detected during:
+            instantiation of "T cub::_V_300600_SM_900::BlockReduce<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>::ReduceBroadcast(T, ReductionOp, int) [with T=int, BlockDimX=128, Algorithm=cub::_V_300600_SM_900::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY, BlockDimY=1, BlockDimZ=1, ReductionOp=cuda::std::__4::plus<void>]" at line 577
+            instantiation of "T cub::_V_300600_SM_900::BlockReduce<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>::ReduceBroadcast(T, ReductionOp) [with T=int, BlockDimX=128, Algorithm=cub::_V_300600_SM_900::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY, BlockDimY=1, BlockDimZ=1, ReductionOp=cuda::std::__4::plus<void>]" at line 20 of /root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/test_block_reduce_broadcast_fail.cu
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+2 errors detected in the compilation of "/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/test_block_reduce_broadcast_fail.cu".
+ninja: build stopped: subcommand failed.
+<end of output>
+Test time =   3.63 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[ReduceBroadcast requires BLOCK_REDUCE_WARP_REDUCTIONS]
+"cub.test.block.reduce_broadcast_fail.algo_1" end time: Oct 01 18:36 CST
+"cub.test.block.reduce_broadcast_fail.algo_1" time elapsed: 00:00:03
+----------------------------------------------------------
+
+555/720 Testing: cub.test.block.reduce_broadcast_fail.algo_2.clean
+555/720 Test: cub.test.block.reduce_broadcast_fail.algo_2.clean
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "-E" "rm" "-f" "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/bin/cub.test.block.reduce_broadcast_fail.algo_2" "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test/CMakeFiles/cub.test.block.reduce_broadcast_fail.algo_2.dir/./test_block_reduce_broadcast_fail.cu.o"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce_broadcast_fail.algo_2.clean" start time: Oct 01 18:36 CST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"cub.test.block.reduce_broadcast_fail.algo_2.clean" end time: Oct 01 18:36 CST
+"cub.test.block.reduce_broadcast_fail.algo_2.clean" time elapsed: 00:00:00
+----------------------------------------------------------
+
+556/720 Testing: cub.test.block.reduce_broadcast_fail.algo_2
+556/720 Test: cub.test.block.reduce_broadcast_fail.algo_2
+Command: "/root/autodl-tmp/cccl-reduce-broadcast-h20/deps/cmake/data/bin/cmake" "--build" "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20" "--target" "cub.test.block.reduce_broadcast_fail.algo_2" "--config" "Release"
+Directory: /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/cub/test
+"cub.test.block.reduce_broadcast_fail.algo_2" start time: Oct 01 18:36 CST
+Output:
+----------------------------------------------------------
+[0/2] Re-checking globbed directories...
+[1/3] Building CUDA object cub/test/CMakeFiles/cub.test.block.reduce_broadcast_fail.algo_2.dir/test_block_reduce_broadcast_fail.cu.o
+FAILED: [code=1] cub/test/CMakeFiles/cub.test.block.reduce_broadcast_fail.algo_2.dir/test_block_reduce_broadcast_fail.cu.o
+/usr/local/cuda-12.8/bin/nvcc -forward-unknown-to-host-compiler -ccbin=/usr/bin/c++ -DCATCH_CONFIG_PREFIX_ALL -DCCCL_ENABLE_ASSERTIONS -DTEST_ALGORITHM=2 -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CUDA -DTHRUST_HOST_SYSTEM=THRUST_HOST_SYSTEM_CPP -DVAR_IDX=2 -D_CCCL_NO_SYSTEM_HEADER -I/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test -I/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/lib/cmake/libcudacxx/../../../libcudacxx/include -I/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/lib/cmake/thrust/../../../thrust -I/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/lib/cmake/cub/../../../cub -I/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/c2h/include -isystem /root/autodl-tmp/cccl-reduce-broadcast-h20/deps/catch2/src/catch2/.. -isystem /root/autodl-tmp/cccl-reduce-broadcast-h20/build/cub-h20/_deps/catch2-build/generated-includes -O3 -DNDEBUG -std=c++20 "--generate-code=arch=compute_90,code=[sm_90]" -Xcudafe=--display_error_number -Wno-deprecated-gpu-targets -Xcudafe=--promote_warnings -Wreorder -Xcompiler=-Werror -Xcompiler=-Wall -Xcompiler=-Wextra -Xcompiler=-Wreorder -Xcompiler=-Winit-self -Xcompiler=-Woverloaded-virtual -Xcompiler=-Wcast-qual -Xcompiler=-Wpointer-arith -Xcompiler=-Wunused-local-typedefs -Xcompiler=-Wvla -Xcompiler=-Wimplicit-fallthrough -Xcompiler=-fdiagnostics-show-template-tree -Xcompiler=-Wignored-qualifiers -Xcompiler=-Wmissing-field-initializers -Xcompiler=-Wsign-compare -Xcompiler=-Walloc-zero -Xcompiler=-Wtsan -Xcompiler=-Wenum-conversion -Xcompiler=-Wpacked -Xcompiler=-ftemplate-backtrace-limit=0 -Xcompiler=-Wno-gnu-line-marker -Xcompiler=-Wno-gnu-zero-variadic-macro-arguments -Xcompiler=-Wno-unused-template -Xcompiler=-Wno-unused-function -Xcompiler=-Wno-noexcept-type -MD -MT cub/test/CMakeFiles/cub.test.block.reduce_broadcast_fail.algo_2.dir/test_block_reduce_broadcast_fail.cu.o -MF cub/test/CMakeFiles/cub.test.block.reduce_broadcast_fail.algo_2.dir/test_block_reduce_broadcast_fail.cu.o.d -x cu -c /root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/test_block_reduce_broadcast_fail.cu -o cub/test/CMakeFiles/cub.test.block.reduce_broadcast_fail.algo_2.dir/test_block_reduce_broadcast_fail.cu.o
+/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/lib/cmake/cub/../../../cub/cub/block/block_reduce.cuh(606): error: static assertion failed with "ReduceBroadcast requires BLOCK_REDUCE_WARP_REDUCTIONS"
+      static_assert(Algorithm == BLOCK_REDUCE_WARP_REDUCTIONS, "ReduceBroadcast requires BLOCK_REDUCE_WARP_REDUCTIONS");
+      ^
+          detected during:
+            instantiation of "T cub::_V_300600_SM_900::BlockReduce<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>::ReduceBroadcast(T, ReductionOp, int) [with T=int, BlockDimX=128, Algorithm=cub::_V_300600_SM_900::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC, BlockDimY=1, BlockDimZ=1, ReductionOp=cuda::std::__4::plus<void>]" at line 577
+            instantiation of "T cub::_V_300600_SM_900::BlockReduce<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>::ReduceBroadcast(T, ReductionOp) [with T=int, BlockDimX=128, Algorithm=cub::_V_300600_SM_900::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC, BlockDimY=1, BlockDimZ=1, ReductionOp=cuda::std::__4::plus<void>]" at line 20 of /root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/test_block_reduce_broadcast_fail.cu
+
+/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/lib/cmake/cub/../../../cub/cub/block/block_reduce.cuh(618): error #940-D: missing return statement at end of non-void function "cub::_V_300600_SM_900::BlockReduce<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>::ReduceBroadcast(T, ReductionOp, int) [with T=int, BlockDimX=128, Algorithm=cub::_V_300600_SM_900::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC, BlockDimY=1, BlockDimZ=1, ReductionOp=cuda::std::__4::plus<void>]"
+    }
+    ^
+          detected during:
+            instantiation of "T cub::_V_300600_SM_900::BlockReduce<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>::ReduceBroadcast(T, ReductionOp, int) [with T=int, BlockDimX=128, Algorithm=cub::_V_300600_SM_900::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC, BlockDimY=1, BlockDimZ=1, ReductionOp=cuda::std::__4::plus<void>]" at line 577
+            instantiation of "T cub::_V_300600_SM_900::BlockReduce<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>::ReduceBroadcast(T, ReductionOp) [with T=int, BlockDimX=128, Algorithm=cub::_V_300600_SM_900::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC, BlockDimY=1, BlockDimZ=1, ReductionOp=cuda::std::__4::plus<void>]" at line 20 of /root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/test_block_reduce_broadcast_fail.cu
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+2 errors detected in the compilation of "/root/autodl-tmp/cccl-reduce-broadcast-h20/patch/cub/test/test_block_reduce_broadcast_fail.cu".
+ninja: build stopped: subcommand failed.
+<end of output>
+Test time =   3.63 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[ReduceBroadcast requires BLOCK_REDUCE_WARP_REDUCTIONS]
+"cub.test.block.reduce_broadcast_fail.algo_2" end time: Oct 01 18:36 CST
+"cub.test.block.reduce_broadcast_fail.algo_2" time elapsed: 00:00:03
+----------------------------------------------------------
+
+End testing: Oct 01 18:36 CST

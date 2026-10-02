@@ -1,0 +1,32 @@
+[
+  {
+    "file": "sm120-integer-A-sass.txt",
+    "original_sha256": "36796072e4b8b59365ab0d6eb9baece0543f68573d6aa736c0de8f8f1a89b3bd",
+    "published_sha256": "576e95d382fffd00d3aa0c5d75ee7e8a227b73055a76a64c9a62e1ffe816f805"
+  },
+  {
+    "file": "sm120-integer-P-sass.txt",
+    "original_sha256": "bad1bc9e518790cb7d9eb4892f2cdfb962ae6888421d728149c554e7d170f27f",
+    "published_sha256": "db544333f78d6682d8cd3dc2a4b089012349f3c2fc3adfe5113b2d86dd64db76"
+  },
+  {
+    "file": "sm120-legacy-A-sass.txt",
+    "original_sha256": "b1577f56548b86e57942654b1dc8e28efcc09bc27a7934f784a79ceca9905629",
+    "published_sha256": "bbeb6d9b8bd98cf69fc55ca696e494d9e6e3b9805ecc7312ddf574e8f5fffb3d"
+  },
+  {
+    "file": "sm120-legacy-P-sass.txt",
+    "original_sha256": "277f0eebc24dc77ca527e051a663569ea05f6a61f95e9080cd5de0457251d8f3",
+    "published_sha256": "bfdb7e1c0a839c78301a0fcaa7a1b039a15133b271f106f0595d2614f0126f99"
+  },
+  {
+    "file": "sm120-retained-A-sass.txt",
+    "original_sha256": "975bae2d1a88c72d9a812250c6ea43d6c7fffe069d34544d6e097cce201ab1ed",
+    "published_sha256": "823ae6f8515b9db64bc3d56821dc7f1d4012fe10281d7af217147fcb5b714021"
+  },
+  {
+    "file": "sm120-retained-P-sass.txt",
+    "original_sha256": "5e7cbd0a667deeb00565c96ab124541c58c788e819369fa98de2cc2fe9566364",
+    "published_sha256": "482a838bbe94a91e8e177bd4b6bec06d8cbe5df0ee24b73919b13b2c76a89bbf"
+  }
+]
