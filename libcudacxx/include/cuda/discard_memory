@@ -26,7 +26,7 @@ _CCCL_WARNING("The <cuda/discard_memory> header is deprecated and will be remove
 contents were moved to <cuda/memory>. To ignore this message, define CCCL_IGNORE_DEPRECATED_DISCARD_MEMORY_HEADER.")
 #endif // !CCCL_IGNORE_DEPRECATED_DISCARD_MEMORY_HEADER
 
-#include <cuda/__memory/discard_memory.h>
-#include <cuda/version>
+#include <cuda/__memory/discard_memory.h> // IWYU pragma: export
+#include <cuda/version> // IWYU pragma: export
 
 #endif // _CUDA_DISCARD_MEMORY

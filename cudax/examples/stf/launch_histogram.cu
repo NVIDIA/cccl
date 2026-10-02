@@ -119,7 +119,7 @@ int main(int argc, char** argv)
     /* Each thread contributes to an histogram in shared memory */
     for (size_t k = 0; k < num_levels - 1; k++)
     {
-      atomicAdd((unsigned long long*) &smem_hist[k], local_hist[k]);
+      atomicAdd(reinterpret_cast<unsigned long long*>(&smem_hist[k]), local_hist[k]);
     }
 
     // histo was zero'ed

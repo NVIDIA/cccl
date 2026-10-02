@@ -3,98 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 ---
 Checks:
-  # enable everything first
-  - 'performance-*'
-  - 'modernize-*'
-  - 'readability-*'
-  - 'clang-analyzer-*'
-  - 'clang-diagnostic-*'
-  - 'bugprone-*'
-  - 'misc-*'
-  - 'core-*'
-  - 'mpi-*'
-  - 'cert-*'
-  - 'portability-*'
-  - 'google-*'
-  - 'cppcoreguidelines-*'
-  - 'concurrency-*'
-  # TODO: BEGIN REMOVE ME
   - '-*'
-  - 'performance-*'
-  - '-performance-enum-size'
-  - '-performance-unnecessary-value-param'
-  - 'modernize-*'
-  - '-modernize-use-integer-sign-comparison'
-  - '-modernize-use-nodiscard'
-  - '-modernize-return-braced-init-list'
-  - '-modernize-use-auto'
-  - 'clang-diagnostic-*'
-  - 'bugprone-*'
-  - '-bugprone-crtp-constructor-accessibility'
-  - '-bugprone-argument-comment'
-  # This is just noise
-  - '-bugprone-signed-char-misuse,-cert-str34-c'
-  - '-bugprone-multi-level-implicit-pointer-conversion'
-  - 'misc-*'
-  - '-misc-use-anonymous-namespace'
-  - '-misc-use-internal-linkage'
-  - 'core-*'
-  - 'mpi-*'
-  - 'cert-*'
-  - '-cert-str34-c'
-  - '-cert-err33-c'
-  - 'portability-*'
-  - '-portability-template-virtual-member-function'
-  - 'google-*'
-  # There are probably instances where this is useful, but a lot of these come from
-  # libcu++ where the types must explicitly match the CUDA intrinsics.
-  - '-google-runtime-int'
-  - '-google-explicit-constructor'
-  - '-google-runtime-operator'
-  - '-google-build-using-namespace'
-  - '-google-runtime-float'
-  # Same as misc-anonymous-namespace-in-header
-  - '-google-build-namespaces'
-  # readability-* as a whole is not enabled yet; only turn on the specific sub-checks we have
-  # vetted so far.
-  - 'readability-identifier-naming'
-  - 'cppcoreguidelines-*'
-  - '-cppcoreguidelines-pro-bounds-pointer-arithmetic'
-  - '-cppcoreguidelines-pro-bounds-constant-array-index'
-  - '-cppcoreguidelines-avoid-do-while'
-  - '-cppcoreguidelines-pro-bounds-array-to-pointer-decay'
-  - '-cppcoreguidelines-special-member-functions'
-  # Better caught by -Wmaybe-uninitialized
-  - '-cppcoreguidelines-init-variables'
-  # Many false positives
-  - '-cppcoreguidelines-avoid-non-const-global-variables'
-  - '-cppcoreguidelines-avoid-const-or-ref-data-members'
-  # Device code requires printf() and friends
-  - '-cppcoreguidelines-pro-type-vararg'
-  - '-cppcoreguidelines-rvalue-reference-param-not-moved'
-  - '-cppcoreguidelines-virtual-class-destructor'
-  - '-cppcoreguidelines-pro-type-member-init'
-  - '-cppcoreguidelines-pro-type-union-access'
-  - '-cppcoreguidelines-pro-type-const-cast'
-  - '-cppcoreguidelines-use-enum-class'
-  - '-cppcoreguidelines-non-private-member-variables-in-classes'
-  - '-cppcoreguidelines-pro-type-cstyle-cast'
-  - '-cppcoreguidelines-prefer-member-initializer'
-  - '-cppcoreguidelines-slicing'
-  - '-cppcoreguidelines-no-malloc'
-  - '-cppcoreguidelines-missing-std-forward'
-  # END REMOVE ME
-  # TODO(jfaibussowit):
-  #
-  # Enable these once we move to C++20. Normally, clang-tidy does not suggest checks for
-  # cpp N+1 if you are compiling with -std=c++N. However some subprojects like c.parallel
-  # actually require cpp N+1 so clang-tidy emits diagnostics for any headers included by
-  # it.
-  - '-modernize-use-designated-initializers'
-  - '-modernize-use-constraints'
-  - '-modernize-use-ranges'
-  # Irrelevant for GPU code
-  - '-modernize-pass-by-value'
+
   # HICPP is 99% aliased to other checks (mostly modernize-* and bugprone-*). We don't
   # want to also enable it because then we need to duplicate the NOLINT. The only 2 checks
   # that aren't aliases are:
@@ -112,31 +22,135 @@ Checks:
   # downstream users.
   #
   # - 'llvm-*'
+
+  - 'performance-*'
+  - '-performance-enum-size'
+  - '-performance-unnecessary-value-param'
+
+  - 'modernize-*'
+  - '-modernize-use-integer-sign-comparison'
+  - '-modernize-use-nodiscard'
+  - '-modernize-return-braced-init-list'
+  - '-modernize-use-auto'
+  # TODO(jfaibussowit):
   #
-  # then disable the stuff we don't want
-  - '-cert-dcl21-cpp'  # returning non-const from operator-- or operator++
-  - '-cert-dcl50-cpp'  # allow c-style variadics
-  # No reserved identifiers, both of these are aliased to bugprone-reserved-identifier,
-  # which we do enable. Leaving these enabled however, leads to needing to specify all
-  # three (bugprone-reserved-identifier, cert-dcl51-cpp, and cert-dcl37-c) in NOLINT lines
-  # which is a hassle. Since bugprone-reserved-identifier is enabled, the check still
-  # fires.
-  - '-cert-dcl51-cpp,-cert-dcl37-c,-cert-oop54-cpp'
-  # Covered by bugprone-throwing-static-initialization
-  - '-cert-err58-cpp'
+  # Enable these once we move to C++20. Normally, clang-tidy does not suggest checks for
+  # cpp N+1 if you are compiling with -std=c++N. However some subprojects like c.parallel
+  # actually require cpp N+1 so clang-tidy emits diagnostics for any headers included by
+  # it.
+  - '-modernize-use-designated-initializers'
+  - '-modernize-use-constraints'
+  - '-modernize-use-ranges'
+  # Irrelevant for GPU code
+  - '-modernize-pass-by-value'
   - '-modernize-use-trailing-return-type'
+  - '-modernize-avoid-c-arrays'
+  - '-modernize-macro-to-enum'
+  - '-modernize-avoid-c-style-cast'
+  - '-modernize-use-nullptr'
+  - '-modernize-avoid-variadic-functions'
+  - '-modernize-type-traits'
+
+  # - 'readability-*'
+  - 'readability-identifier-naming'
   - '-readability-function-cognitive-complexity'
   - '-readability-implicit-bool-conversion'
   - '-readability-braces-around-statements'
   - '-readability-qualified-auto'
   - '-readability-isolate-declaration'
-  - '-modernize-avoid-c-arrays'
-  - '-cppcoreguidelines-avoid-c-arrays'
   - '-readability-named-parameter'
   - '-readability-identifier-length'
-  - '-misc-non-private-member-variables-in-classes'
+  # Generally speaking if something is static then it has an express reason to be. 99% of
+  # the candidates identified by this check were because they just so happened not to
+  # touch any member variables, not because they are logically static. So we disable the
+  # check.
+  - '-readability-convert-member-functions-to-static'
+  # This warning will warn if you have redundant default-initializers for class
+  # members. For example:
+  #
+  # class Foo
+  # {
+  #   int x_{}; // WARNING: redundant initializer here
+  #
+  # public:
+  #   Foo(int x) : x_{x} { }
+  # };
+  #
+  # Since Foo can only ever be constructed with an explicit value for x_ via its constructor,
+  # the default initializer is technically redundant. However, if we change the definition
+  # of Foo to now allow a default ctor, then the initializer becomes non-redundant
+  # again. It is easier to just follow the rule of "always explicitly default initialize
+  # members" than to remember to change 2 places at once.
+  - '-readability-redundant-member-init'
+
+  # - 'clang-analyzer-*'
+
+  - 'clang-diagnostic-*'
+  # When running in a conda env, ignore options that may have been added by conda but are unused
+  - '-clang-diagnostic-unused-command-line-argument'
+  - '-clang-diagnostic-deprecated-attributes'
+
+  - 'bugprone-*'
+  - '-bugprone-crtp-constructor-accessibility'
+  - '-bugprone-argument-comment'
+  # This is just noise
+  - '-bugprone-signed-char-misuse'
+  - '-bugprone-multi-level-implicit-pointer-conversion'
   - '-bugprone-easily-swappable-parameters'
   - '-bugprone-implicit-widening-of-multiplication-result'
+  # This one is potentially controversial. This check warns when iterating over unordered
+  # containers of pointers:
+  #
+  # {
+  #   int a = 1, b = 2;
+  #   std::unordered_set<int *> set = {&a, &b};
+  #
+  #   for (auto *i : set) { // iteration order not deterministic
+  #     f(i);
+  #   }
+  # }
+  #
+  # On the one hand, this is a clear case of non-determinism. But on the other hand, I
+  # feel it is obvious that a user does not care about the order of iteration
+  # because... they are using unordered containers!
+  - '-bugprone-nondeterministic-pointer-iteration-order'
+  # This check does not understand more complex macro usage where brackets are not allowed
+  #
+  # error: macro replacement list should be enclosed in parentheses [bugprone-macro-parentheses]
+  # 36 | #define __THRUST_HOST_SYSTEM_INCLUDE(filename) <__THRUST_HOST_SYSTEM_ROOT/filename>
+  #    |                                                                           ^
+  #    |                                                                           (       )
+  #
+  # So better left disabled.
+  - '-bugprone-macro-parentheses'
+  - '-bugprone-signed-bitwise'
+  - '-bugprone-std-namespace-modification'
+  - '-bugprone-throwing-static-initialization'
+  - '-bugprone-unchecked-string-to-number-conversion'
+  - '-bugprone-invalid-enum-default-initialization'
+  - '-bugprone-derived-method-shadowing-base-method'
+  - '-bugprone-unsafe-to-allow-exceptions'
+  - '-bugprone-sizeof-expression'
+  - '-bugprone-std-exception-baseclass'
+  - '-bugprone-random-generator-seed'
+  - '-bugprone-command-processor'
+  # clang-tidy documentation says that for a given file, it matches the closest
+  # .clang-tidy up the directory stack and applies the configuration from it. However, by
+  # "it" `clang-tidy` means the closest `.clang-tidy` to the *source* file, not the file
+  # that was included by the source file.
+  #
+  # So `cuda/std/foo.h` included by `cccl/foo/bar/baz.cpp` will never "match" against
+  # `cccl/libcudacxx/.clang-tidy` because `clang-tidy` finds `cccl/.clang-tidy` instead.
+  #
+  # So we disable this for now. In the future we should add a custom check that bans
+  # reserved identifiers except symbols from libcu++.
+  - '-bugprone-reserved-identifier'
+  - '-bugprone-dynamic-static-initializers'
+
+  - 'misc-*'
+  - '-misc-use-anonymous-namespace'
+  - '-misc-use-internal-linkage'
+  - '-misc-non-private-member-variables-in-classes'
   - '-misc-include-cleaner'
   - '-misc-header-include-cycle'
   # Covered by -Wunused-parameter, which is the better tool here. clang-tidy analyzes a
@@ -156,18 +170,57 @@ Checks:
   # _CCCL_DECLSPEC_EMPTY_BASES macro exists solely to make this pattern pack correctly on
   # MSVC. Removing a base would add storage and break the ABI, so there is no fix to apply.
   - '-misc-multiple-inheritance'
-  - '-modernize-macro-to-enum'
-  - '-cppcoreguidelines-macro-to-enum'
   - '-misc-no-recursion'
-  - '-bugprone-dynamic-static-initializers'
+
+  - 'core-*'
+
+  - 'mpi-*'
+
+  - 'cert-*'
+  # Same as bugprone-signed-char-misuse
+  - '-cert-str34-c'
+  - '-cert-err33-c'
+  - '-cert-dcl21-cpp'  # returning non-const from operator-- or operator++
+  - '-cert-dcl50-cpp'  # allow c-style variadics
+  # Same as bugprone-reserved-identifier
+  - '-cert-dcl51-cpp,-cert-dcl37-c'
+  # Same as bugprone-unhandled-self-assignment
+  - '-cert-oop54-cpp'
+  # Same as bugprone-std-namespace-modification
+  - '-cert-dcl58-cpp'
+  # Same as bugprone-sizeof-expression
+  - '-cert-arr39-c'
+  # Same as bugprone-random-generator-seed
+  - '-cert-msc32-c'
+  # Same as bugprone-random-generator-seed
+  - '-cert-msc51-cpp'
+  # Same as bugprone-command-processor
+  - '-cert-env33-c'
+  # Same as bugprone-throwing-static-initialization
+  - '-cert-err58-cpp'
+  # Same as readability-enum-initial-value
+  - '-cert-int09-c'
+  # Same as bugprone-float-loop-counter
+  - '-cert-flp30-c'
+  # Same as misc-anonymous-namespace-in-header
+  - '-cert-dcl59-cpp'
+  # Same as readability-uppercase-literal-suffix
+  - '-cert-dcl16-c'
+
+  - 'portability-*'
+  - '-portability-template-virtual-member-function'
   - '-portability-avoid-pragma-once'
-  # Generally speaking if something is static then it has an express reason to be. 99% of
-  # the candidates identified by this check were because they just so happened not to
-  # touch any member variables, not because they are logically static. So we disable the
-  # check.
-  - '-readability-convert-member-functions-to-static'
-  # When running in a conda env, ignore options that may have been added by conda but are unused
-  - '-clang-diagnostic-unused-command-line-argument'
+
+  - 'google-*'
+  # There are probably instances where this is useful, but a lot of these come from
+  # libcu++ where the types must explicitly match the CUDA intrinsics.
+  - '-google-runtime-int'
+  - '-google-explicit-constructor'
+  - '-google-runtime-operator'
+  - '-google-build-using-namespace'
+  - '-google-runtime-float'
+  # Same as misc-anonymous-namespace-in-header
+  - '-google-build-namespaces'
   # Given
   #
   # std::make_pair<some_type, some_other_type>(...)
@@ -179,43 +232,33 @@ Checks:
   # modern google-test and b) don't have clang-tidy enabled on our testing code, we don't
   # need to enable it!
   - '-google-upgrade-googletest-case'
-  # This warning will warn if you have redundant default-initializers for class
-  # members. For example:
-  #
-  # class Foo
-  # {
-  #   int x_{}; // WARNING: redundant initializer here
-  #
-  # public:
-  #   Foo(int x) : x_{x} { }
-  # };
-  #
-  # Since Foo can only ever be constructed with an explicit value for x_ via its constructor,
-  # the default initializer is technically redundant. However, if we change the definition
-  # of Foo to now allow a default ctor, then the initializer becomes non-redundant
-  # again. It is easier to just follow the rule of "always explicitly default initialize
-  # members" than to remember to change 2 places at once.
-  - '-readability-redundant-member-init'
-  # Alias for readability-enum-initial-value, disable this one because the readability-
-  # name is easier to understand, and we don't want to silence 2 things for the same
-  # warning.
-  - '-cert-int09-c'
-  # This one is potentially controversial. This check warns when iterating over unordered
-  # containers of pointers:
-  #
-  # {
-  #   int a = 1, b = 2;
-  #   std::unordered_set<int *> set = {&a, &b};
-  #
-  #   for (auto *i : set) { // iteration order not deterministic
-  #     f(i);
-  #   }
-  # }
-  #
-  # On the one hand, this is a clear case of non-determinism. But on the other hand, I
-  # feel it is obvious that a user does not care about the order of iteration
-  # because... they are using unordered containers!
-  - '-bugprone-nondeterministic-pointer-iteration-order'
+  # TODO: ironically enough, enable this someday
+  - '-google-readability-todo'
+  # Covered by modernize-avoid-c-style-cast, and also is buggier. It seems to fire on
+  # `_v`-style constexpr bools as well sometimes.
+  - '-google-readability-casting'
+  # readability-* as a whole is not enabled yet; only turn on the specific sub-checks we have
+  # vetted so far.
+
+  - 'cppcoreguidelines-*'
+  - '-cppcoreguidelines-pro-bounds-pointer-arithmetic'
+  - '-cppcoreguidelines-pro-bounds-constant-array-index'
+  - '-cppcoreguidelines-avoid-do-while'
+  - '-cppcoreguidelines-pro-bounds-array-to-pointer-decay'
+  - '-cppcoreguidelines-special-member-functions'
+  # Better caught by -Wmaybe-uninitialized
+  - '-cppcoreguidelines-init-variables'
+  # Many false positives
+  - '-cppcoreguidelines-avoid-non-const-global-variables'
+  - '-cppcoreguidelines-avoid-const-or-ref-data-members'
+  # Device code requires printf() and friends
+  - '-cppcoreguidelines-pro-type-vararg'
+  # Unions are used far too much in CUB for this to be useful
+  - '-cppcoreguidelines-pro-type-union-access'
+  # This does not understand the concept macros
+  - '-cppcoreguidelines-missing-std-forward'
+  - '-cppcoreguidelines-avoid-c-arrays'
+  - '-cppcoreguidelines-macro-to-enum'
   - '-cppcoreguidelines-pro-type-reinterpret-cast'
   # We don't use GSL
   - '-cppcoreguidelines-owning-memory'
@@ -235,48 +278,8 @@ Checks:
   # Should be replaced by a template function, but this is not possible. We instead rely
   # on best judgment of reviewers to catch macros that can be functions.
   - '-cppcoreguidelines-macro-usage'
-  # This check does not understand more complex macro usage where brackets are not allowed
-  #
-  # error: macro replacement list should be enclosed in parentheses [bugprone-macro-parentheses]
-  # 36 | #define __THRUST_HOST_SYSTEM_INCLUDE(filename) <__THRUST_HOST_SYSTEM_ROOT/filename>
-  #    |                                                                           ^
-  #    |                                                                           (       )
-  #
-  # So better left disabled.
-  - '-bugprone-macro-parentheses'
-  # Alias for bugprone-float-loop-counter
-  - '-cert-flp30-c'
-  # Alias for misc-anonymous-namespace-in-header
-  - '-cert-dcl59-cpp'
-  # Alias for readability-uppercase-literal-suffix
-  - '-cert-dcl16-c'
-
-  # TODO: Enable for clang-tidy-22
-  - '-modernize-avoid-c-style-cast'
-  - '-bugprone-signed-bitwise'
-  - '-bugprone-std-namespace-modification,-cert-dcl58-cpp'
-  - '-clang-diagnostic-deprecated-attributes'
-  - '-bugprone-throwing-static-initialization'
-  - '-bugprone-unchecked-string-to-number-conversion'
-  - '-bugprone-invalid-enum-default-initialization'
-  - '-bugprone-derived-method-shadowing-base-method'
-  - '-bugprone-unsafe-to-allow-exceptions'
-  - '-bugprone-sizeof-expression,-cert-arr39-c'
-  - '-modernize-use-nullptr'
-  - '-bugprone-std-exception-baseclass'
-  - '-modernize-avoid-variadic-functions'
-  - '-modernize-type-traits'
-  - '-bugprone-random-generator-seed,-cert-msc32-c,-cert-msc51-cpp'
-  - '-bugprone-command-processor,-cert-env33-c'
-
-  # TODO: ironically enough, enable this someday
-  - '-google-readability-todo'
-  # Covered by modernize-avoid-c-style-cast, and also is buggier. It seems to fire on
-  # `_v`-style constexpr bools as well sometimes.
-  - '-google-readability-casting'
   # Covered by performance-noexcept-move-constructor
   - '-cppcoreguidelines-noexcept-move-operations'
-  # REVIEW ME: This warns about any usage of operator[], suggesting usage of .at() instead. Could
   - '-cppcoreguidelines-pro-bounds-avoid-unchecked-container-access'
   - '-cppcoreguidelines-narrowing-conversions'
   - '-cppcoreguidelines-c-copy-assignment-signature'
@@ -284,17 +287,9 @@ Checks:
   - '-cppcoreguidelines-noexcept-swap'
   # Covered by modernize-use-default-member-init
   - '-cppcoreguidelines-use-default-member-init'
-  # clang-tidy documentation says that for a given file, it matches the closest
-  # .clang-tidy up the directory stack and applies the configuration from it. However, by
-  # "it" `clang-tidy` means the closest `.clang-tidy` to the *source* file, not the file
-  # that was included by the source file.
-  #
-  # So `cuda/std/foo.h` included by `cccl/foo/bar/baz.cpp` will never "match" against
-  # `cccl/libcudacxx/.clang-tidy` because `clang-tidy` finds `cccl/.clang-tidy` instead.
-  #
-  # So we disable this for now. In the future we should add a custom check that bans
-  # reserved identifiers except symbols from libcu++.
-  - '-bugprone-reserved-identifier'
+
+  # - 'concurrency-*'
+
 WarningsAsErrors: '*'
 HeaderFileExtensions:
   - ''
@@ -325,25 +320,16 @@ ExtraArgs:
   - '-Wno-unknown-cuda-version'
   - '-Wno-error=unused-command-line-argument'
 CheckOptions:
-  cert-dcl16-c.NewSuffixes: 'L;LL;LU;LLU'
-  cert-err33-c.CheckedFunctions: '::aligned_alloc;::asctime_s;::at_quick_exit;::atexit;::bsearch;::bsearch_s;::btowc;::c16rtomb;::c32rtomb;::calloc;::clock;::cnd_broadcast;::cnd_init;::cnd_signal;::cnd_timedwait;::cnd_wait;::ctime_s;::fclose;::fflush;::fgetc;::fgetpos;::fgets;::fgetwc;::fopen;::fopen_s;::fprintf;::fprintf_s;::fputc;::fputs;::fputwc;::fputws;::fread;::freopen;::freopen_s;::fscanf;::fscanf_s;::fseek;::fsetpos;::ftell;::fwprintf;::fwprintf_s;::fwrite;::fwscanf;::fwscanf_s;::getc;::getchar;::getenv;::getenv_s;::gets_s;::getwc;::getwchar;::gmtime;::gmtime_s;::localtime;::localtime_s;::malloc;::mbrtoc16;::mbrtoc32;::mbsrtowcs;::mbsrtowcs_s;::mbstowcs;::mbstowcs_s;::memchr;::mktime;::mtx_init;::mtx_lock;::mtx_timedlock;::mtx_trylock;::mtx_unlock;::printf_s;::putc;::putwc;::raise;::realloc;::remove;::rename;::scanf;::scanf_s;::setlocale;::setvbuf;::signal;::snprintf;::snprintf_s;::sprintf;::sprintf_s;::sscanf;::sscanf_s;::strchr;::strerror_s;::strftime;::strpbrk;::strrchr;::strstr;::strtod;::strtof;::strtoimax;::strtok;::strtok_s;::strtol;::strtold;::strtoll;::strtoul;::strtoull;::strtoumax;::strxfrm;::swprintf;::swprintf_s;::swscanf;::swscanf_s;::thrd_create;::thrd_detach;::thrd_join;::thrd_sleep;::time;::timespec_get;::tmpfile;::tmpfile_s;::tmpnam;::tmpnam_s;::tss_create;::tss_get;::tss_set;::ungetc;::ungetwc;::vfprintf;::vfprintf_s;::vfscanf;::vfscanf_s;::vfwprintf;::vfwprintf_s;::vfwscanf;::vfwscanf_s;::vprintf_s;::vscanf;::vscanf_s;::vsnprintf;::vsnprintf_s;::vsprintf;::vsprintf_s;::vsscanf;::vsscanf_s;::vswprintf;::vswprintf_s;::vswscanf;::vswscanf_s;::vwprintf_s;::vwscanf;::vwscanf_s;::wcrtomb;::wcschr;::wcsftime;::wcspbrk;::wcsrchr;::wcsrtombs;::wcsrtombs_s;::wcsstr;::wcstod;::wcstof;::wcstoimax;::wcstok;::wcstok_s;::wcstol;::wcstold;::wcstoll;::wcstombs;::wcstombs_s;::wcstoul;::wcstoull;::wcstoumax;::wcsxfrm;::wctob;::wctrans;::wctype;::wmemchr;::wprintf_s;::wscanf;::wscanf_s;'
+  # llvm-*
   llvm-else-after-return.WarnOnUnfixable: 'false'
-  cert-str34-c.DiagnoseSignedUnsignedCharComparisons: 'false'
-  cppcoreguidelines-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: 'true'
-  google-readability-braces-around-statements.ShortStatementLines: '1'
   llvm-qualified-auto.AddConstToQualified: 'false'
   llvm-else-after-return.WarnOnConditionVariables: 'false'
-  cert-oop54-cpp.WarnOnlyIfThisHasSuspiciousField: 'false'
-  performance-move-const-arg.CheckTriviallyCopyableMove: 'false'
-  performance-inefficient-string-concatenation.StrictMode: 'true'
+  # readability-*
   readability-simplify-boolean-expr.ChainedConditionalReturn: 'true'
   readability-simplify-boolean-expr.ChainedConditionalAssignment: 'true'
-  bugprone-dangling-handle.HandleClasses: '::cuda::std::span;::cuda::std::mdspan'
-  bugprone-unused-return-value.AllowCastToVoid: 'true'
   readability-enum-initial-value.AllowExplicitZeroFirstInitialValue: 'false'
   readability-enum-initial-value.AllowExplicitSequentialInitialValues: 'false'
   readability-redundant-access-specifiers.CheckFirstDeclaration: 'true'
-  bugprone-lambda-function-name.IgnoreMacros: 'true'
   # readability-identifier-naming.ClassCase: 'lower_case'
   # readability-identifier-naming.UnionCase: 'lower_case'
   # readability-identifier-naming.ClassConstantCase: 'UPPER_CASE'
@@ -374,6 +360,15 @@ CheckOptions:
   # readability-identifier-naming.ScopedEnumCase: 'lower_case'
   # readability-identifier-naming.ScopedEnumConstantCase: 'UPPER_CASE'
   readability-magic-numbers.IgnoredIntegerValues: '0;1;2;3;4;5;6;7;8;9'
+  # performance-*
+  performance-move-const-arg.CheckTriviallyCopyableMove: 'false'
+  performance-inefficient-string-concatenation.StrictMode: 'true'
+  performance-enum-size.EnumIgnoreList: '::cuda::std::.*'
+  performance-unnecessary-value-param.AllowedTypes: '.*(_ref(erence)?|_ptr|pointer|(_)?[Ii]t(erator)?|IteratorT|__half(2)?|(__nv_bfloat.*)|_view)$'
+  # bugprone-*
+  bugprone-dangling-handle.HandleClasses: '::cuda::std::span;::cuda::std::mdspan'
+  bugprone-unused-return-value.AllowCastToVoid: 'true'
+  bugprone-lambda-function-name.IgnoreMacros: 'true'
   # There are some single-argument functions that we would not like to ignore
   # (`to_string(bool provenance = false)` comes to mind), but setting this to false makes
   # clang-tidy warn on a bunch of "obvious" calls, like `set_dim(1)` or
@@ -386,9 +381,20 @@ CheckOptions:
   bugprone-argument-comment.CommentCharacterLiterals: true
   bugprone-argument-comment.CommentUserDefinedLiterals: true
   bugprone-argument-comment.CommentNullPtrs: true
-  cppcoreguidelines-macro-usage.AllowedRegexp: '^DEBUG_.*|THRUST_PP_.*|_CCCL.*_PP_.*'
   bugprone-reserved-identifier.AllowedIdentifiers: '^_CCCL.*'
-  performance-enum-size.EnumIgnoreList: '::cuda::std::.*'
-  performance-unnecessary-value-param.AllowedTypes: '.*(_ref(erence)?|_ptr|pointer|(_)?[Ii]t(erator)?|IteratorT|__half(2)?|(__nv_bfloat.*)|_view)$'
   bugprone-exception-escape.CheckMain: false
+  # cert-*
+  cert-dcl16-c.NewSuffixes: 'L;LL;LU;LLU'
+  cert-err33-c.CheckedFunctions: '::aligned_alloc;::asctime_s;::at_quick_exit;::atexit;::bsearch;::bsearch_s;::btowc;::c16rtomb;::c32rtomb;::calloc;::clock;::cnd_broadcast;::cnd_init;::cnd_signal;::cnd_timedwait;::cnd_wait;::ctime_s;::fclose;::fflush;::fgetc;::fgetpos;::fgets;::fgetwc;::fopen;::fopen_s;::fprintf;::fprintf_s;::fputc;::fputs;::fputwc;::fputws;::fread;::freopen;::freopen_s;::fscanf;::fscanf_s;::fseek;::fsetpos;::ftell;::fwprintf;::fwprintf_s;::fwrite;::fwscanf;::fwscanf_s;::getc;::getchar;::getenv;::getenv_s;::gets_s;::getwc;::getwchar;::gmtime;::gmtime_s;::localtime;::localtime_s;::malloc;::mbrtoc16;::mbrtoc32;::mbsrtowcs;::mbsrtowcs_s;::mbstowcs;::mbstowcs_s;::memchr;::mktime;::mtx_init;::mtx_lock;::mtx_timedlock;::mtx_trylock;::mtx_unlock;::printf_s;::putc;::putwc;::raise;::realloc;::remove;::rename;::scanf;::scanf_s;::setlocale;::setvbuf;::signal;::snprintf;::snprintf_s;::sprintf;::sprintf_s;::sscanf;::sscanf_s;::strchr;::strerror_s;::strftime;::strpbrk;::strrchr;::strstr;::strtod;::strtof;::strtoimax;::strtok;::strtok_s;::strtol;::strtold;::strtoll;::strtoul;::strtoull;::strtoumax;::strxfrm;::swprintf;::swprintf_s;::swscanf;::swscanf_s;::thrd_create;::thrd_detach;::thrd_join;::thrd_sleep;::time;::timespec_get;::tmpfile;::tmpfile_s;::tmpnam;::tmpnam_s;::tss_create;::tss_get;::tss_set;::ungetc;::ungetwc;::vfprintf;::vfprintf_s;::vfscanf;::vfscanf_s;::vfwprintf;::vfwprintf_s;::vfwscanf;::vfwscanf_s;::vprintf_s;::vscanf;::vscanf_s;::vsnprintf;::vsnprintf_s;::vsprintf;::vsprintf_s;::vsscanf;::vsscanf_s;::vswprintf;::vswprintf_s;::vswscanf;::vswscanf_s;::vwprintf_s;::vwscanf;::vwscanf_s;::wcrtomb;::wcschr;::wcsftime;::wcspbrk;::wcsrchr;::wcsrtombs;::wcsrtombs_s;::wcsstr;::wcstod;::wcstof;::wcstoimax;::wcstok;::wcstok_s;::wcstol;::wcstold;::wcstoll;::wcstombs;::wcstombs_s;::wcstoul;::wcstoull;::wcstoumax;::wcsxfrm;::wctob;::wctrans;::wctype;::wmemchr;::wprintf_s;::wscanf;::wscanf_s;'
+  cert-str34-c.DiagnoseSignedUnsignedCharComparisons: 'false'
+  # google-*
+  google-readability-braces-around-statements.ShortStatementLines: '1'
+  # cppcoreguidelines-*
+  cppcoreguidelines-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: 'true'
+  cppcoreguidelines-macro-usage.AllowedRegexp: '^DEBUG_.*|THRUST_PP_.*|_CCCL.*_PP_.*'
+  # Note std::move, not ::std::move or ::cuda::std::move. This intentionally matches both
+  # cuda::std::move as well as std::move because the former is defined as the latter if we
+  # have the builtin.
+  cppcoreguidelines-rvalue-reference-param-not-moved.MoveFunction: 'std::move'
+  cppcoreguidelines-rvalue-reference-param-not-moved.AllowPartialMove: true
 ...

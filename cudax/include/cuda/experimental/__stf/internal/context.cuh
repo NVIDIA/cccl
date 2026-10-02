@@ -878,7 +878,7 @@ private:
   {
     _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     payload->*[&other](auto& self) {
-      self.import_resources(mv(other));
+      self.import_resources(::cuda::std::move(other));
     };
   }
 

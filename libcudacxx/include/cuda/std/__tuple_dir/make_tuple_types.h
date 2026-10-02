@@ -23,6 +23,7 @@
 #include <cuda/__fwd/complex.h>
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__fwd/complex.h>
+#include <cuda/std/__fwd/subrange.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
@@ -95,6 +96,12 @@ struct __make_tuple_types<::std::complex<_Tp>>
   using type _CCCL_NODEBUG = __tuple_types<_Tp, _Tp>;
 };
 #endif // _CCCL_HAS_HOST_STD_LIB()
+
+template <class _Iter, class _Sent, ::cuda::std::ranges::subrange_kind _Kind>
+struct __make_tuple_types<::cuda::std::ranges::subrange<_Iter, _Sent, _Kind>>
+{
+  using type _CCCL_NODEBUG = __tuple_types<_Iter, _Sent>;
+};
 
 template <template <class...> class _Tuple, class... _Types>
 struct __make_tuple_types<_Tuple<_Types...>>

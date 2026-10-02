@@ -41,10 +41,13 @@ _CCCL_CONCEPT __can_borrow = is_lvalue_reference_v<_Tp> || enable_borrowed_range
 // [range.access.begin]
 
 _CCCL_BEGIN_NAMESPACE_CPO(__begin)
-template <class _Tp>
-void begin(_Tp&) = delete;
-template <class _Tp>
-void begin(const _Tp&) = delete;
+
+#if _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
+// A deleted declaration suppresses ADL on these compilers.
+_CCCL_HOST_DEVICE void begin();
+#else // ^^^ _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51) ^^^ / vvv deleted declaration vvv
+_CCCL_HOST_DEVICE void begin() = delete;
+#endif // _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
@@ -146,10 +149,13 @@ using iterator_t = decltype(::cuda::std::ranges::begin(::cuda::std::declval<_Tp&
 // [range.access.end]
 
 _CCCL_BEGIN_NAMESPACE_CPO(__end)
-template <class _Tp>
-void end(_Tp&) = delete;
-template <class _Tp>
-void end(const _Tp&) = delete;
+
+#if _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
+// A deleted declaration suppresses ADL on these compilers.
+_CCCL_HOST_DEVICE void end();
+#else // ^^^ _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51) ^^^ / vvv deleted declaration vvv
+_CCCL_HOST_DEVICE void end() = delete;
+#endif // _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>

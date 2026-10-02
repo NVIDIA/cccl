@@ -26,11 +26,9 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/coop/__group/fwd.cuh>
-#include <cuda/experimental/coop/__group/implicit_hierarchy.cuh>
 #include <cuda/experimental/coop/__group/synchronizer/level_synchronizer.cuh>
 #include <cuda/experimental/coop/__group/traits.cuh>
 
@@ -309,29 +307,29 @@ _CCCL_TEMPLATE(class _Hierarchy)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_grid(const _Hierarchy&) -> this_grid<__hierarchy_type_of<_Hierarchy>>;
 
-_CCCL_TEMPLATE(class _Level, class... _Args)
-_CCCL_REQUIRES(__is_hierarchy_level_v<_Level>)
-[[nodiscard]] _CCCL_DEVICE_API auto make_this_group(const _Level&, _Args&&... __args) noexcept
+_CCCL_TEMPLATE(class _Level, class _HierarchyLike)
+_CCCL_REQUIRES(__is_hierarchy_level_v<_Level> _CCCL_AND __is_or_has_hierarchy_member_v<_HierarchyLike>)
+[[nodiscard]] _CCCL_DEVICE_API auto make_this_group(const _Level&, const _HierarchyLike& __hier_like) noexcept
 {
   if constexpr (::cuda::std::is_same_v<_Level, thread_level>)
   {
-    return this_thread{::cuda::std::forward<_Args>(__args)...};
+    return this_thread{__hier_like};
   }
   else if constexpr (::cuda::std::is_same_v<_Level, warp_level>)
   {
-    return this_warp{::cuda::std::forward<_Args>(__args)...};
+    return this_warp{__hier_like};
   }
   else if constexpr (::cuda::std::is_same_v<_Level, block_level>)
   {
-    return this_block{::cuda::std::forward<_Args>(__args)...};
+    return this_block{__hier_like};
   }
   else if constexpr (::cuda::std::is_same_v<_Level, cluster_level>)
   {
-    return this_cluster{::cuda::std::forward<_Args>(__args)...};
+    return this_cluster{__hier_like};
   }
   else if constexpr (::cuda::std::is_same_v<_Level, grid_level>)
   {
-    return this_grid{::cuda::std::forward<_Args>(__args)...};
+    return this_grid{__hier_like};
   }
   else
   {
