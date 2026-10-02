@@ -19,6 +19,7 @@
 #include <cuda/type_traits>
 
 #include <algorithm>
+#include <cstdint>
 #include <exception>
 #include <limits>
 #include <new>
@@ -1031,4 +1032,92 @@ CUB_TEST("DeviceHistogram::Histogram* bin indices survive the output decode", "[
     CHECK(d_histogram == h_fp16_expected);
   }
 #endif // TEST_HALF_T()
+}
+
+CUB_TEST("DeviceHistogram::HistogramRange byte samples with wide bins",
+         "[histogram][device]",
+         CUB_SMALL,
+         c2h::type_list<std::int8_t, std::uint8_t>,
+         c2h::enum_type_list<int, 1, 3>)
+{
+  using sample_t                    = c2h::get<0, TestType>;
+  constexpr int num_active_channels = c2h::get<1, TestType>::value;
+  constexpr int num_channels        = num_active_channels == 1 ? 1 : 4;
+  const int num_pixels              = GENERATE(0, 257, 65'536);
+  const int num_bins                = GENERATE(256, 2'097'152);
+  CAPTURE(num_pixels, num_bins);
+
+  auto d_samples = c2h::device_vector<sample_t>(num_pixels * num_channels);
+  c2h::gen(C2H_SEED(2), d_samples, std::numeric_limits<sample_t>::lowest(), std::numeric_limits<sample_t>::max());
+  c2h::host_vector<sample_t> h_samples = d_samples;
+  if (num_pixels > 0)
+  {
+    // Always include both signed/unsigned domain endpoints in every active channel.
+    for (int channel = 0; channel < num_active_channels; ++channel)
+    {
+      h_samples[channel]                = std::numeric_limits<sample_t>::lowest();
+      h_samples[num_channels + channel] = std::numeric_limits<sample_t>::max();
+    }
+    d_samples = h_samples;
+  }
+
+  array<int, num_active_channels> num_levels;
+  num_levels.fill(num_bins + 1);
+  auto h_levels    = array<c2h::host_vector<float>, num_active_channels>{};
+  auto d_levels    = array<c2h::device_vector<float>, num_active_channels>{};
+  auto d_histogram = array<c2h::device_vector<int>, num_active_channels>{};
+  for (int channel = 0; channel < num_active_channels; ++channel)
+  {
+    // Channel zero covers the whole domain; other channels also exercise out-of-range samples.
+    const float lower = static_cast<float>(std::numeric_limits<sample_t>::lowest()) + channel * 16;
+    const float upper = static_cast<float>(std::numeric_limits<sample_t>::max()) + 1 - channel * 16;
+    h_levels[channel].resize(num_bins + 1);
+    for (int i = 0; i <= num_bins; ++i)
+    {
+      h_levels[channel][i] = lower + (upper - lower) * (static_cast<float>(i) / num_bins);
+    }
+    d_levels[channel] = h_levels[channel];
+    d_histogram[channel].resize(num_bins);
+  }
+  const auto sample_to_bin_index = [&](int channel, sample_t sample) {
+    const auto& levels = h_levels[channel];
+    return static_cast<int>(std::upper_bound(levels.begin(), levels.end(), static_cast<float>(sample)) - levels.begin())
+         - 1;
+  };
+  const auto expected = compute_reference_result<num_channels, int>(
+    h_samples, sample_to_bin_index, num_levels, num_pixels, 1, num_pixels * num_channels);
+  const auto* sample_ptr = thrust::raw_pointer_cast(d_samples.data());
+  const auto outputs     = to_array_of_ptrs(d_histogram);
+  const auto levels      = to_array_of_const_ptrs(d_levels);
+  if constexpr (num_channels == 1)
+  {
+    histogram_range(sample_ptr, outputs[0], num_levels[0], levels[0], num_pixels);
+  }
+  else
+  {
+    multi_histogram_range<num_channels, num_active_channels>(sample_ptr, outputs, num_levels, levels, num_pixels);
+  }
+  for (int channel = 0; channel < num_active_channels; ++channel)
+  {
+    REQUIRE(expected[channel] == d_histogram[channel]);
+  }
+
+#if TEST_LAUNCH == 0
+  // Cover the separate environment API dispatch used by the benchmarks.
+  if constexpr (num_channels == 1)
+  {
+    REQUIRE(cudaSuccess
+            == cub::DeviceHistogram::HistogramRange(sample_ptr, outputs[0], num_levels[0], levels[0], num_pixels));
+  }
+  else
+  {
+    REQUIRE(cudaSuccess
+            == (cub::DeviceHistogram::MultiHistogramRange<num_channels, num_active_channels>(
+              sample_ptr, outputs, num_levels, levels, num_pixels)));
+  }
+  for (int channel = 0; channel < num_active_channels; ++channel)
+  {
+    REQUIRE(expected[channel] == d_histogram[channel]);
+  }
+#endif // TEST_LAUNCH == 0
 }

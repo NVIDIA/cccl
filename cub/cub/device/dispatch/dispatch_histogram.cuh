@@ -12,6 +12,7 @@
 
 #include <cub/config.cuh>
 
+#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_void.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -800,11 +801,18 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
   {
     using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
 
-    // Use the pass-thru transform op for converting samples to privatized bins
-    using PrivatizedDecodeOpT = typename TransformsT::PassThruTransform;
+    using pass_thru_transform = typename TransformsT::PassThruTransform;
+    using search_transform    = typename TransformsT::template SearchTransform<const LevelT*>;
 
-    // Use the search transform op for converting privatized bins to output bins
-    using OutputDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;
+    // Keep all 256 signed byte values in nonnegative private bins, then recover the sample before searching levels.
+    using PrivatizedDecodeOpT =
+      ::cuda::std::conditional_t<::cuda::std::is_signed_v<SampleT>,
+                                 typename TransformsT::template sample_offset_transform<pass_thru_transform, 128>,
+                                 pass_thru_transform>;
+    using OutputDecodeOpT =
+      ::cuda::std::conditional_t<::cuda::std::is_signed_v<SampleT>,
+                                 typename TransformsT::template sample_offset_transform<search_transform, -128>,
+                                 search_transform>;
 
     ::cuda::std::array<int, NumActiveChannels> num_privatized_levels;
     const ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op{};

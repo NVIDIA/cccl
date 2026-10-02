@@ -1502,10 +1502,8 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramRange");
 
-    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
-    // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.
-    using is_byte_sample_t _CCCL_NODEBUG =
-      ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
+    using SampleT                        = cub::detail::it_value_t<SampleIteratorT>;
+    using is_byte_sample_t _CCCL_NODEBUG = ::cuda::std::bool_constant<sizeof(SampleT) == 1>;
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, false>;
@@ -2531,10 +2529,8 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceHistogram::MultiHistogramRange");
 
-    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
-    // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.
-    using is_byte_sample_t _CCCL_NODEBUG =
-      ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
+    using SampleT                        = cub::detail::it_value_t<SampleIteratorT>;
+    using is_byte_sample_t _CCCL_NODEBUG = ::cuda::std::bool_constant<sizeof(SampleT) == 1>;
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, false>;
