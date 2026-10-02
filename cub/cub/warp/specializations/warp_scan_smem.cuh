@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/log2.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_store.cuh>

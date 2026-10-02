@@ -21,7 +21,9 @@
 
 #include <cub/detail/it_traits.cuh> // IWYU pragma: export
 #include <cub/detail/lazy_trait.cuh> // IWYU pragma: export
+#include <cub/detail/log2.cuh> // IWYU pragma: export
 #include <cub/detail/non_void_value.cuh> // IWYU pragma: export
+#include <cub/detail/power_of_two.cuh> // IWYU pragma: export
 #include <cub/detail/type_size.cuh> // IWYU pragma: export
 #include <cub/detail/type_traits.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
@@ -44,48 +46,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 {
-
-/******************************************************************************
- * Static math
- ******************************************************************************/
-
-/**
- * \brief Statically determine log2(N), rounded up.
- *
- * For example:
- *     Log2<8>::VALUE   // 3
- *     Log2<3>::VALUE   // 2
- */
-template <int N, int CurrentVal = N, int COUNT = 0>
-struct Log2
-{
-  /// Static logarithm value
-  static constexpr int VALUE = Log2<N, (CurrentVal >> 1), COUNT + 1>::VALUE;
-};
-
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-
-template <int N, int COUNT>
-struct Log2<N, 0, COUNT>
-{
-  static constexpr int VALUE = (1 << (COUNT - 1) < N) ? COUNT : COUNT - 1;
-};
-
-#  endif // _CCCL_DOXYGEN_INVOKED
-
-/**
- * \brief Statically determine if N is a power-of-two
- * deprecated [since 3.2]
- */
-template <int N>
-struct [[deprecated("Use cuda::is_power_of_two(N) instead")]] PowerOfTwo
-{
-  static constexpr bool VALUE = (N & (N - 1)) == 0;
-};
-
-#endif // _CCCL_DOXYGEN_INVOKED
 
 /******************************************************************************
  * Marker types

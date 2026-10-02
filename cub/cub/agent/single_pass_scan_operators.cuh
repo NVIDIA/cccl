@@ -20,6 +20,7 @@
 #endif // no system header
 
 #include <cub/detail/iket_support.cuh>
+#include <cub/detail/log2.cuh>
 #include <cub/detail/strong_load.cuh>
 #include <cub/detail/strong_store.cuh>
 #include <cub/detail/uninitialized_copy.cuh>

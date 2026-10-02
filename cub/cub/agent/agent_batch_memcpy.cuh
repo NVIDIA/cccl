@@ -27,8 +27,8 @@
 #include <cub/block/block_store.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/lazy_trait.cuh>
+#include <cub/detail/log2.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/round_up.h>

@@ -14,11 +14,11 @@
 #endif // no system header
 
 #include <cub/block/block_scan.cuh>
+#include <cub/detail/log2.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__algorithm/min.h>
