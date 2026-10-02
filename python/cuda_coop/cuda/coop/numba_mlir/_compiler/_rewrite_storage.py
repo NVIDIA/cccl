@@ -25,6 +25,7 @@ from numba_cuda_mlir.numba_cuda.types import uint8
 
 from cuda.coop._core import (
     GroupLoweringPlan,
+    GroupLoweringTarget,
     StorageOwnership,
     SynchronizationScope,
 )
@@ -732,7 +733,7 @@ class _StorageRewrite:
         return backing
 
     def _reject_conflicting_user_shared_arrays(
-        self, plan: _TempStorageGlobalPlan
+        self, plan: _TempStorageGlobalPlan | None = None
     ) -> None:
         """Reject static/dynamic overlap in supported compiler releases.
 
@@ -742,6 +743,16 @@ class _StorageRewrite:
         """
         rewrite = cast("CoopSinglePhaseRewrite", self)
 
+        uses_dynamic_smem = plan is not None and plan.uses_dynamic_smem
+        if uses_dynamic_smem and self._provider_uses_static_shared_memory:
+            raise CoopSinglePhaseRewriteError(
+                "cuda.coop temporary storage requires a dynamic shared-memory "
+                "backing, but this kernel also calls a CUDAX reduction with "
+                "internal static shared memory. The supported numba-cuda-mlir "
+                "compiler does not separate these allocations; they would "
+                "alias. Keep the cooperative backing within the static "
+                "shared-memory limit."
+            )
         saved_block = self._block
         saved_block_defs = self._block_defs
         conflicts: list[tuple[str, ir.Loc]] = []
@@ -776,7 +787,7 @@ class _StorageRewrite:
                         isinstance(extent, int) and extent > 0
                         for extent in dimensions
                     )
-                    if plan.uses_dynamic_smem or not is_static:
+                    if uses_dynamic_smem or not is_static:
                         placement = (
                             "static" if is_static else "dynamic/runtime-sized"
                         )
@@ -786,14 +797,20 @@ class _StorageRewrite:
             self._block_defs = saved_block_defs
         if not conflicts:
             return
-        placement = "dynamic" if plan.uses_dynamic_smem else "static"
+        placement = "dynamic" if uses_dynamic_smem else "static"
+        requirement = (
+            "cuda.coop temporary storage requires a "
+            f"{plan.total_size}-byte {placement} shared-memory backing"
+            if plan is not None
+            else "cuda.coop calls a CUDAX reduction with internal static "
+            "shared memory"
+        )
         where = ", ".join(
             f"{kind} cuda.shared.array(...) at {loc}"
             for kind, loc in conflicts[:3]
         )
         raise CoopSinglePhaseRewriteError(
-            "cuda.coop temporary storage requires a "
-            f"{plan.total_size}-byte {placement} shared-memory backing, but "
+            f"{requirement}, but "
             f"this kernel also declares {where}. The supported numba-cuda-mlir "
             "compiler does not separate these allocations; they would alias. "
             "Use statically sized user shared arrays and keep the combined "
@@ -1577,6 +1594,7 @@ class _StorageRewrite:
             _TempStorageRequirementSummary()
         )
         self._implicit_temp_storage_plan = None
+        self._provider_uses_static_shared_memory = False
         try:
             ctor_order = 0
             for label in sorted(func_ir.blocks):
@@ -1658,6 +1676,18 @@ class _StorageRewrite:
                         GroupLoweringPlan | None,
                         factory_kwargs.pop(_GROUP_LOWERING_PLAN_KWARG, None),
                     )
+                    # These CUDAX providers own static shared scratch even
+                    # though their call ABI takes no TempStorage pointer.
+                    if (
+                        lowering_plan is not None
+                        and lowering_plan.target
+                        is GroupLoweringTarget.CUDAX_GROUP
+                        and lowering_plan.provenance is not None
+                        and lowering_plan.provenance.method == "reduce"
+                        and lowering_plan.resolved_group.kind
+                        in {"block", "cluster", "warps_within_block"}
+                    ):
+                        self._provider_uses_static_shared_memory = True
                     family_metadata = rewrite._analyze_family_match(
                         op_name=op_name,
                         runtime_args=runtime_args,

@@ -31,7 +31,6 @@ SynchronizableGroupKind: TypeAlias = Literal[
     "block",
     "cluster",
     "threads_within_warp",
-    "warps_within_block",
 ]
 BlockLoadStoreAlgorithm: TypeAlias = Literal[
     "direct",
@@ -48,6 +47,31 @@ WarpLoadStoreAlgorithm: TypeAlias = Literal[
     "transpose",
 ]
 LoadStoreAlgorithm: TypeAlias = BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm
+ReduceAlgorithm: TypeAlias = Literal[
+    "raking_commutative_only",
+    "raking",
+    "warp_reductions",
+]
+ReduceOperator: TypeAlias = Literal[
+    "+",
+    "sum",
+    "add",
+    "plus",
+    "*",
+    "mul",
+    "multiply",
+    "multiplies",
+    "min",
+    "minimum",
+    "max",
+    "maximum",
+    "&",
+    "bit_and",
+    "|",
+    "bit_or",
+    "^",
+    "bit_xor",
+]
 ExchangeMode: TypeAlias = Literal[
     "striped_to_blocked",
     "blocked_to_striped",
@@ -111,6 +135,17 @@ SignedIntegerScalar: TypeAlias = (
     int | numpy.signedinteger[Any] | CompilerIntegerLike
 )
 IntegralScalar: TypeAlias = SignedIntegerScalar | numpy.unsignedinteger[Any]
+ThreadGroupQueryScalar: TypeAlias = (
+    numpy.int8
+    | numpy.uint8
+    | numpy.int16
+    | numpy.uint16
+    | numpy.int32
+    | numpy.uint32
+    | numpy.int64
+    | numpy.uint64
+    | CompilerIntegerLike
+)
 TraceInteger: TypeAlias = int | numpy.integer[Any]
 ValidItems: TypeAlias = IntegerValue
 
@@ -163,8 +198,11 @@ __all__ = [
     "ExchangeMode",
     "LoadStoreAlgorithm",
     "PortableShuffleMode",
+    "ReduceAlgorithm",
+    "ReduceOperator",
     "ScalarShuffleMode",
     "ShuffleMode",
+    "SynchronizableGroupKind",
     "TempStorageLike",
     "TempStorageSharing",
     "ThreadDataLike",

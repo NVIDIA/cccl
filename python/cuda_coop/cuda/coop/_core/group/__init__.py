@@ -9,6 +9,8 @@ from ._dispatch import (
 )
 from ._model import (
     ArgumentPrecondition,
+    CudaxCallDescription,
+    CudaxReturnKind,
     GroupLoweringPlan,
     GroupLoweringTarget,
     GroupOperandKind,
@@ -36,10 +38,13 @@ from .load_store import (
     GroupLoadStoreKind,
     GroupLoadStoreSemantics,
 )
+from .reduce import GroupReduceSemantics
 from .shuffle import GroupShuffleSemantics
 
 __all__ = [
     "ArgumentPrecondition",
+    "CudaxCallDescription",
+    "CudaxReturnKind",
     "GroupExchangeMode",
     "GroupExchangeSemantics",
     "GroupLoadStoreAlgorithm",
@@ -50,6 +55,7 @@ __all__ = [
     "GroupOperandKind",
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
+    "GroupReduceSemantics",
     "GroupShuffleSemantics",
     "GroupTopologyContract",
     "ImplementationProvenance",

@@ -19,6 +19,7 @@ Threads work together to :doc:`load <coop/visualizations/load>` and
 :doc:`store <coop/visualizations/store>` tiles inside a kernel.
 They rearrange values with :doc:`Exchange <coop/visualizations/exchange>`
 and :doc:`Shuffle <coop/visualizations/shuffle>`.
+They compute :doc:`reductions <coop/visualizations/reduce>` across a group.
 
 The common ``cuda.coop`` API describes those operations independently of a
 kernel compiler. Numba-CUDA-MLIR is the first supported backend; CUTLASS
@@ -95,8 +96,9 @@ The Windows checks do not compile or launch Numba-CUDA-MLIR kernels. Other
 Python versions and platform combinations need separate backend runtime
 qualification. Dependency bounds allow releases in the supported series;
 they do not mean that every patch release in that series has been tested.
-Synchronization race checking requires Compute Sanitizer. A runtime
-job that skips those tests does not qualify synchronization behavior.
+Thread-block clusters require a CC 9.0+ GPU, and synchronization race
+checking requires Compute Sanitizer. A runtime job that skips those tests
+does not qualify those features.
 
 .. _coop-numba-context-lifetime:
 
@@ -303,12 +305,33 @@ must reach its collective; complete sibling logical groups may take different
 control-flow paths.
 
 The common group vocabulary also includes thread, cluster, grid, and mapped
-groups of physical warps, but those are not targets for these operations.
-``ThreadGroup`` objects are descriptor-only in this release. ``group_by`` is
-compile-time vocabulary for describing a static partition. Runtime query,
-membership, and synchronization methods such as
-``rank``, ``count``, ``rank_as``, ``count_as``, ``sync``, ``sync_aligned``, and
-``is_member`` are not exposed.
+groups of physical warps, although those are not Load, Store, Exchange, or
+Shuffle targets. ``ThreadGroup`` exposes the C++ hierarchy query surface.
+``rank(level="thread")`` and ``count(level="thread")`` accept ``thread`` (or
+``gpu_thread``), ``warp``, ``block``, ``cluster``, and ``grid``. Their default
+result is the unsigned product type used by the corresponding C++ hierarchy
+operation: normally ``uint32``, and ``uint64`` when the group or queried outer
+level is the grid. ``rank_as(dtype, level="thread")`` and
+``count_as(dtype, level="thread")`` select an explicit signed or unsigned 8-,
+16-, 32-, or 64-bit integer dtype. ``is_member()`` returns an integer
+membership flag.
+
+``sync()`` and ``sync_aligned()`` expose the matching non-grid barriers. Every
+participating member must reach ``sync()``. ``sync_aligned()`` additionally
+requires an aligned and converged group. Grid synchronization is unavailable
+because the backend cannot request a cooperative grid launch.
+
+``group_by`` remains static compiler vocabulary: ``count`` and ``exhaustive``
+must be compile-time constants. A mapped threads-within-warp group can query
+its threads and immediate parent Warp. A mapped warps-within-block group can
+query its threads, physical Warps, and immediate parent block. Queries above
+the immediate physical parent are rejected. Mapped warps-within-block groups
+support queries and ``is_member()`` but not ``sync()`` or ``sync_aligned()``;
+the planner does not manage the lifetime of their block barriers. For a
+non-exhaustive partition, use ``is_member()`` to guard rank-dependent work for
+excluded threads. Do not use that branch to skip a collective unless the
+collective's participation contract explicitly permits it; every required
+group or parent-group participant must still reach the collective.
 
 
 Participation and synchronization
@@ -616,8 +639,10 @@ allocations reliably. A kernel using cooperative temporary storage must not
 also declare a zero-sized or runtime-sized ``cuda.shared.array``. When
 cooperative backing becomes dynamic, user static shared arrays are also
 unsupported. Keep both user arrays and cooperative backing static, or move the
-user data out of shared memory. Storage-free operations do not add this
-restriction.
+user data out of shared memory. CUDAX Block, Cluster, and mapped-Warp
+reductions also allocate internal static shared memory, even without a
+``TempStorage`` operand. They cannot coexist with user dynamic shared arrays
+or dynamic cooperative backing in these compiler releases.
 
 With ``auto_sync=False``, a descriptor must originate from exactly one
 constructor site. Selecting between multiple manual-sync constructors is unsupported:

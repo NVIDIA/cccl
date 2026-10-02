@@ -27,6 +27,7 @@ from ._thread_group import (
 
 if TYPE_CHECKING:
     from ._group._exchange import exchange
+    from ._group._reduce import reduce, sum
     from ._group._shuffle import shuffle
     from ._thread_data import local, shared
 
@@ -41,9 +42,11 @@ __all__ = [
     "exchange",
     "load",
     "local",
+    "reduce",
     "shared",
     "shuffle",
     "store",
+    "sum",
     "this_block",
     "this_cluster",
     "this_grid",
@@ -53,10 +56,12 @@ __all__ = [
 
 
 def __getattr__(name):
-    if name in {"exchange", "shuffle"}:
+    if name in {"exchange", "reduce", "shuffle", "sum"}:
         module_name = {
             "exchange": "_group._exchange",
+            "reduce": "_group._reduce",
             "shuffle": "_group._shuffle",
+            "sum": "_group._reduce",
         }[name]
         value = getattr(
             importlib.import_module(f"{__name__}.{module_name}"), name
