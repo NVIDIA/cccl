@@ -17,7 +17,11 @@ import pytest
 from cuda import coop
 
 _CONSUMER_ROOT = Path(__file__).with_name("typing")
-_VALID_CONSUMERS = ("common_consumer.py", "numba_consumer.py")
+_VALID_CONSUMERS = (
+    "common_consumer.py",
+    "numba_consumer.py",
+    "cutlass_consumer.py",
+)
 
 
 def _mypy_args(cache_dir: Path) -> list[str]:

@@ -6,6 +6,9 @@
 Radix Sort and Rank
 ===================
 
+This page describes the Numba-CUDA-MLIR implementation. See
+:ref:`backend coverage <coop-backends>` for CUTLASS availability.
+
 :func:`cuda.coop.radix_sort_keys` and :func:`cuda.coop.radix_sort_pairs`
 order a block's keys by selected bits. Sort processes digits from the
 least significant selected bits upward, moving keys after each stable pass.

@@ -655,7 +655,7 @@ def test_storage_free_provider_accepts_unused_temp_storage_descriptor():
     from numba_cuda_mlir import cuda, types
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop._core import SynchronizationScope
     from cuda.coop.numba_mlir._compiler import _operations
     from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
@@ -694,7 +694,7 @@ def test_storage_free_provider_accepts_unused_temp_storage_descriptor():
     )
 
     def kernel(value):
-        storage = coop.TempStorage()
+        storage = numba_coop.TempStorage()
         return provider(value, temp_storage=storage)
 
     func_ir = run_frontend(kernel)

@@ -17,6 +17,17 @@ _COMMON_NUMERIC_DTYPE_NAMES = (
     "float64",
 )
 
+_COMMON_INTEGER_VALUE_DTYPE_NAMES = (
+    "int8",
+    "uint8",
+    "int16",
+    "uint16",
+    "int32",
+    "uint32",
+    "int64",
+    "uint64",
+)
+
 
 def _validate_common_dtype_name(
     dtype_name: str,
@@ -51,4 +62,22 @@ def validate_common_numeric_dtype_name(
         operation=operation,
         parameter=parameter,
         supported_dtype_names=_COMMON_NUMERIC_DTYPE_NAMES,
+    )
+
+
+def validate_common_integer_value_dtype_name(
+    dtype_name: str,
+    *,
+    operation: str,
+    parameter: str = "value",
+) -> str:
+    """Validate one normalized dtype name for an integer value in the common
+    API.
+    """
+
+    return _validate_common_dtype_name(
+        dtype_name,
+        operation=operation,
+        parameter=parameter,
+        supported_dtype_names=_COMMON_INTEGER_VALUE_DTYPE_NAMES,
     )
