@@ -7,17 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
-//   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
-//   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
-// UNSUPPORTED: nvrtc
-
-// This test crashes msvc with message:
-//   Internal compiler error. Try simplifying or changing the program near the locations listed above.
-// UNSUPPORTED: msvc
-
-// NTTP may not have a class type in C++17.
-// REQUIRES: !c++17
+// nvcc + msvc + c++17 combination fails to compile with error:
+//   template instantiation resulted in unexpected function type
+// XFAIL: nvcc && msvc && c++17
 
 // constant_wrapper
 
@@ -39,15 +31,18 @@ struct S
 
 constexpr S s_value{};
 
+template <class L, class R, class = void>
+inline constexpr bool HasPtrToMem = false;
 template <class L, class R>
-concept HasPtrToMem = requires(L l, R r) {
-  { l->*r };
-};
+inline constexpr bool
+  HasPtrToMem<L, R, cuda::std::void_t<decltype(cuda::std::declval<L&>()->*cuda::std::declval<R&>())>> = true;
 
+template <class L, class R, class = void>
+inline constexpr bool HasNoexceptPtrToMem = false;
 template <class L, class R>
-concept HasNoexceptPtrToMem = requires(L l, R r) {
-  { l->*r } noexcept;
-};
+inline constexpr bool
+  HasNoexceptPtrToMem<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>()->*cuda::std::declval<R&>())>> =
+    true;
 
 struct WithOps
 {
@@ -90,7 +85,8 @@ TEST_FUNC constexpr bool test()
     // use builtin operator->*
     cuda::std::__constant_wrapper<(&s_value)> cwS;
     cuda::std::__constant_wrapper<&S::member> cwPM;
-    cuda::std::same_as<cuda::std::__constant_wrapper<42>> decltype(auto) result1 = cwS->*cwPM;
+    decltype(auto) result1 = cwS->*cwPM;
+    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<42>, decltype(result1)>);
     static_assert(result1 == 42);
   }
 
@@ -105,6 +101,7 @@ TEST_FUNC constexpr bool test()
 #endif // !_CCCL_CUDA_COMPILER(NVCC)
   }
 
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
   {
     // custom operator->*
     cuda::std::__constant_wrapper<WithOps{42}> cwWO;
@@ -121,12 +118,14 @@ TEST_FUNC constexpr bool test()
     cuda::std::same_as<NonStructural> decltype(auto) result1 = cwORNS->*cwPM;
     assert(result1.get() == 84);
   }
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   {
     // integral_constant
     cuda::std::__constant_wrapper<(&s_value)> cwS;
     cuda::std::integral_constant<int S::*, &S::member> icPM;
-    cuda::std::same_as<cuda::std::__constant_wrapper<42>> decltype(auto) result1 = cwS->*icPM;
+    decltype(auto) result1 = cwS->*icPM;
+    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<42>, decltype(result1)>);
     static_assert(result1 == 42);
   }
 
