@@ -114,7 +114,7 @@ in the programming guides.
      - Available
    * - TopK, minimum and maximum keys or pairs
      - Available
-     - Not implemented
+     - Available
    * - Adjacent Difference and Discontinuity
      - Available
      - Not implemented

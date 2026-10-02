@@ -191,7 +191,7 @@ synchronization.
 
 Numba accepts explicit descriptors for its supported block primitives;
 see :ref:`Numba storage rules <coop-temp-storage>` for the complete list.
-CUTLASS currently accepts explicit descriptors for block transpose-family Load/Store, Block Scan, Block Merge Sort, Block Radix Sort.
+CUTLASS currently accepts explicit descriptors for block transpose-family Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, TopK.
 See the :ref:`shared storage model <coop-common-storage>` and the
 :doc:`CUTLASS Programming Guide <../coop_cutlass>` for reuse rules.
 Numba's restrictions on combining cooperative backing with user static or
@@ -234,8 +234,8 @@ output prefix without promising their order. Only the first
 ``min(k, valid_items)`` positions are defined, and ties at the boundary
 have no ordering guarantee. Pair variants keep each selected key attached
 to its value. Use a sorting primitive when you need ordered output.
-See the :ref:`Numba TopK example <coop-topk>` and current
-:ref:`backend coverage <coop-backends>`.
+See the :ref:`Numba <coop-topk>` and :ref:`CUTLASS <coop-cutlass-topk>`
+TopK examples and current :ref:`backend coverage <coop-backends>`.
 
 .. _coop-faq-global-sort:
 

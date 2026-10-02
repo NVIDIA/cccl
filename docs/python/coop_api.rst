@@ -137,7 +137,8 @@ See the :ref:`Numba <coop-radix>` and
 Top-k selection
 ^^^^^^^^^^^^^^^
 
-See the :ref:`Numba TopK examples <coop-topk>`.
+See the :ref:`Numba <coop-topk>` and :ref:`CUTLASS <coop-cutlass-topk>`
+TopK examples.
 
 .. autofunction:: topk_min_keys
 .. autofunction:: topk_max_keys
@@ -350,3 +351,11 @@ Radix sorting and ranking
 .. autofunction:: radix_sort_keys
 .. autofunction:: radix_sort_pairs
 .. autofunction:: radix_rank_keys
+
+Top-k selection
+^^^^^^^^^^^^^^^
+
+.. autofunction:: topk_min_keys
+.. autofunction:: topk_max_keys
+.. autofunction:: topk_min_pairs
+.. autofunction:: topk_max_pairs

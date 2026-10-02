@@ -164,8 +164,9 @@ Numba-CUDA-MLIR:
    Numba-CUDA-MLIR integration. Some qualified controls, such as Scan
    aggregate output and block scatter, are also available in CUTLASS.
    Check the selected backend's guide before carrying a qualified call
-   between compilers. Check backend coverage before selecting Merge Sort, Radix Sort/Rank,
-   or TopK for a CuTe kernel.
+   between compilers. Both backends implement the common Merge Sort,
+   Radix Sort/Rank, and TopK families; their qualified payload adapters
+   and controls differ.
 
 For example, suppose you need both the exclusive sum and each tile's total.
 The qualified Scan can produce both in one call. Here it also consumes an
