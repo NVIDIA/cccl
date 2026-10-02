@@ -64,8 +64,29 @@ struct policy_selector
 {
   int input_type_size;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> FindIfPolicy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> FindIfPolicy
   {
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
+    {
+      // tunings from cub/benchmarks/bench/find_if/base.cu. These are the final values (threads = 1 << tpb, items
+      // already scaled by Nominal4BItemsToItems) and must not be passed through scale_mem_bound.
+      if (input_type_size == 2)
+      {
+        // ld_1.ipt_64.tpb_8  14.3% time saved, worst cell +3.9%
+        return FindIfPolicy{256, 64, 4, LOAD_LDG};
+      }
+      if (input_type_size == 8)
+      {
+        // ld_2.ipt_33.tpb_7  18.8% time saved (int64 and double), worst cell +4.0%
+        return FindIfPolicy{128, 16, 4, LOAD_CA};
+      }
+      if (input_type_size == 16)
+      {
+        // ld_1.ipt_32.tpb_6  20.3% time saved, worst cell -0.8%
+        return FindIfPolicy{64, 8, 4, LOAD_LDG};
+      }
+      // 1-byte and 4-byte inputs: no candidate clean for all types sharing the size, intentionally left untuned
+    }
     // FindIfPolicy (GTX670: 154.0 @ 48M 4B items) - single policy for all ccs
     const auto scaled = scale_mem_bound(128, 16, input_type_size);
     return FindIfPolicy{scaled.threads_per_block, scaled.items_per_thread, 4, LOAD_LDG};
