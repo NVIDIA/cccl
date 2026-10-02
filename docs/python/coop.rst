@@ -96,13 +96,13 @@ in the programming guides.
      - CUTLASS
    * - Group queries and supported synchronization
      - Available
-     - Not implemented
+     - Available
    * - Block and warp Load/Store
      - Available
      - Available
    * - Built-in Reduce/Sum and Scan
      - Available
-     - Not implemented
+     - Reduce/Sum only
    * - Block and warp Exchange; block Shuffle
      - Available
      - Not implemented
@@ -131,8 +131,9 @@ in the programming guides.
 .. _block-prefix-callbacks:
 
 Numba-CUDA-MLIR additionally supports qualified device operators and
-:ref:`Scan prefix callbacks <coop-prefix-callbacks>`. Custom operators and stateful Scan callbacks are outside CUTLASS's
-current scope.
+:ref:`Scan prefix callbacks <coop-prefix-callbacks>`. CUTLASS currently
+supports built-in operators; custom
+operators and stateful Scan callbacks are outside its current scope.
 CUTLASS qualification covers a compatible Linux/CUDA 13 environment. No
 official public runtime artifact has passed consumer qualification; see its
 programming guide before selecting a runtime.
@@ -180,7 +181,7 @@ signature and are passed positionally. Controls after ``*`` are keyword-only:
 .. code-block:: python
 
    coop.load(group, source, items, valid_items=count, offset=offset)
-   coop.store(group, destination, items, valid_items=count)
+   result = coop.reduce(group, items, binary_op="max")
 
 These conventions apply to both backends. A qualified signature can add
 operands or controls; check the :doc:`API reference <coop_api>` rather than

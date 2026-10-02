@@ -283,7 +283,8 @@ conversions, and the extensions documented below:
 
    import cuda.coop.cutlass as cutlass_coop
 
-Block construction and Load/Store follow the :ref:`Common API <coop-common-api>`. Qualified operations also accept CuTe
+Group construction, synchronization, Load/Store, and temporary storage follow
+the :ref:`Common API <coop-common-api>`. Qualified operations also accept CuTe
 register payloads where specified. Scalar results are CuTe values; multi-item
 results are ``ThreadData`` objects unless stated otherwise. A NumPy dtype
 selector does not change the compiler that owns a result.
@@ -312,3 +313,9 @@ Per-thread payloads and CuTe conversion
 .. automethod:: ThreadData.from_payload
 .. automethod:: ThreadData.to_tensor_ssa
 .. automethod:: ThreadData.to_register_tensor
+
+Reduction
+^^^^^^^^^
+
+.. autofunction:: reduce
+.. autofunction:: sum
