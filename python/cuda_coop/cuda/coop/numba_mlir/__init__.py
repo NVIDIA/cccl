@@ -27,6 +27,7 @@ from ._thread_group import (
 
 if TYPE_CHECKING:
     from ._group._exchange import exchange
+    from ._group._histogram import histogram
     from ._group._merge_sort import merge_sort_keys, merge_sort_pairs
     from ._group._neighbors import adjacent_difference, discontinuity
     from ._group._radix_sort import (
@@ -66,6 +67,7 @@ __all__ = [
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
@@ -97,6 +99,7 @@ def __getattr__(name):
     if name in {
         "adjacent_difference",
         "discontinuity",
+        "histogram",
         "merge_sort_keys",
         "merge_sort_pairs",
         "radix_rank_keys",
@@ -119,6 +122,7 @@ def __getattr__(name):
         module_name = {
             "adjacent_difference": "_group._neighbors",
             "discontinuity": "_group._neighbors",
+            "histogram": "_group._histogram",
             "merge_sort_keys": "_group._merge_sort",
             "merge_sort_pairs": "_group._merge_sort",
             "radix_rank_keys": "_group._radix_sort",

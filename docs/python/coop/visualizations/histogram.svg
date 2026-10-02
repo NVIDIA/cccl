@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 570" role="img" aria-labelledby="title desc">
+<title id="title">Fresh histogram counts with striped bin ownership</title>
+<desc id="desc">Eight threads contribute two samples each. Thirteen bins have counts 2, 1, 1, 2, 1, 1, 2, 0, 1, 2, 1, 1, 1. Each thread receives two striped counters; bins thirteen through fifteen are output padding with count zero. Inputs stay unchanged.</desc>
+<rect width="1100" height="570" rx="12" fill="#f7f9fc"/>
+<g font-family="sans-serif" fill="#203341">
+<text x="26" y="34" font-size="21" text-anchor="start" font-weight="600">Block Histogram: fresh counts, striped result</text>
+<text x="26" y="61" font-size="14" text-anchor="start" font-weight="normal">8 threads · 2 samples per thread · 13 bins · 2 counters per thread</text>
+<text x="26" y="91" font-size="16" text-anchor="start" font-weight="600">Input samples remain unchanged</text>
+<text x="87" y="116" font-size="13" text-anchor="middle" font-weight="600">T0</text>
+<rect x="28" y="128" width="56" height="50" rx="6" fill="#dceac1" stroke="#9facba"/>
+<text x="56" y="160" font-size="19" text-anchor="middle" font-weight="600">0</text>
+<rect x="90" y="128" width="56" height="50" rx="6" fill="#dceac1" stroke="#9facba"/>
+<text x="118" y="160" font-size="19" text-anchor="middle" font-weight="600">5</text>
+<text x="219" y="116" font-size="13" text-anchor="middle" font-weight="600">T1</text>
+<rect x="160" y="128" width="56" height="50" rx="6" fill="#c9eaf0" stroke="#9facba"/>
+<text x="188" y="160" font-size="19" text-anchor="middle" font-weight="600">10</text>
+<rect x="222" y="128" width="56" height="50" rx="6" fill="#c9eaf0" stroke="#9facba"/>
+<text x="250" y="160" font-size="19" text-anchor="middle" font-weight="600">3</text>
+<text x="351" y="116" font-size="13" text-anchor="middle" font-weight="600">T2</text>
+<rect x="292" y="128" width="56" height="50" rx="6" fill="#fff0bd" stroke="#9facba"/>
+<text x="320" y="160" font-size="19" text-anchor="middle" font-weight="600">8</text>
+<rect x="354" y="128" width="56" height="50" rx="6" fill="#fff0bd" stroke="#9facba"/>
+<text x="382" y="160" font-size="19" text-anchor="middle" font-weight="600">0</text>
+<text x="483" y="116" font-size="13" text-anchor="middle" font-weight="600">T3</text>
+<rect x="424" y="128" width="56" height="50" rx="6" fill="#f5d5e4" stroke="#9facba"/>
+<text x="452" y="160" font-size="19" text-anchor="middle" font-weight="600">6</text>
+<rect x="486" y="128" width="56" height="50" rx="6" fill="#f5d5e4" stroke="#9facba"/>
+<text x="514" y="160" font-size="19" text-anchor="middle" font-weight="600">11</text>
+<text x="615" y="116" font-size="13" text-anchor="middle" font-weight="600">T4</text>
+<rect x="556" y="128" width="56" height="50" rx="6" fill="#e8def7" stroke="#9facba"/>
+<text x="584" y="160" font-size="19" text-anchor="middle" font-weight="600">3</text>
+<rect x="618" y="128" width="56" height="50" rx="6" fill="#e8def7" stroke="#9facba"/>
+<text x="646" y="160" font-size="19" text-anchor="middle" font-weight="600">9</text>
+<text x="747" y="116" font-size="13" text-anchor="middle" font-weight="600">T5</text>
+<rect x="688" y="128" width="56" height="50" rx="6" fill="#fde2c9" stroke="#9facba"/>
+<text x="716" y="160" font-size="19" text-anchor="middle" font-weight="600">1</text>
+<rect x="750" y="128" width="56" height="50" rx="6" fill="#fde2c9" stroke="#9facba"/>
+<text x="778" y="160" font-size="19" text-anchor="middle" font-weight="600">6</text>
+<text x="879" y="116" font-size="13" text-anchor="middle" font-weight="600">T6</text>
+<rect x="820" y="128" width="56" height="50" rx="6" fill="#d4e2fa" stroke="#9facba"/>
+<text x="848" y="160" font-size="19" text-anchor="middle" font-weight="600">12</text>
+<rect x="882" y="128" width="56" height="50" rx="6" fill="#d4e2fa" stroke="#9facba"/>
+<text x="910" y="160" font-size="19" text-anchor="middle" font-weight="600">4</text>
+<text x="1011" y="116" font-size="13" text-anchor="middle" font-weight="600">T7</text>
+<rect x="952" y="128" width="56" height="50" rx="6" fill="#d4eee3" stroke="#9facba"/>
+<text x="980" y="160" font-size="19" text-anchor="middle" font-weight="600">9</text>
+<rect x="1014" y="128" width="56" height="50" rx="6" fill="#d4eee3" stroke="#9facba"/>
+<text x="1042" y="160" font-size="19" text-anchor="middle" font-weight="600">2</text>
+<text x="26" y="221" font-size="16" text-anchor="start" font-weight="600">Fresh counts in bin order</text>
+<text x="61" y="248" font-size="12" text-anchor="middle" font-weight="normal">bin 0</text>
+<rect x="28" y="259" width="66" height="46" rx="6" fill="#dceac1" stroke="#9facba"/>
+<text x="61" y="289" font-size="18" text-anchor="middle" font-weight="600">2</text>
+<text x="141" y="248" font-size="12" text-anchor="middle" font-weight="normal">bin 1</text>
+<rect x="108" y="259" width="66" height="46" rx="6" fill="#c9eaf0" stroke="#9facba"/>
+<text x="141" y="289" font-size="18" text-anchor="middle" font-weight="600">1</text>
+<text x="221" y="248" font-size="12" text-anchor="middle" font-weight="normal">bin 2</text>
+<rect x="188" y="259" width="66" height="46" rx="6" fill="#fff0bd" stroke="#9facba"/>
+<text x="221" y="289" font-size="18" text-anchor="middle" font-weight="600">1</text>
+<text x="301" y="248" font-size="12" text-anchor="middle" font-weight="normal">bin 3</text>
+<rect x="268" y="259" width="66" height="46" rx="6" fill="#f5d5e4" stroke="#9facba"/>
+<text x="301" y="289" font-size="18" text-anchor="middle" font-weight="600">2</text>
+<text x="381" y="248" font-size="12" text-anchor="middle" font-weight="normal">bin 4</text>
+<rect x="348" y="259" width="66" height="46" rx="6" fill="#e8def7" stroke="#9facba"/>
+<text x="381" y="289" font-size="18" text-anchor="middle" font-weight="600">1</text>
+<text x="461" y="248" font-size="12" text-anchor="middle" font-weight="normal">bin 5</text>
+<rect x="428" y="259" width="66" height="46" rx="6" fill="#fde2c9" stroke="#9facba"/>
+<text x="461" y="289" font-size="18" text-anchor="middle" font-weight="600">1</text>
+<text x="541" y="248" font-size="12" text-anchor="middle" font-weight="normal">bin 6</text>
+<rect x="508" y="259" width="66" height="46" rx="6" fill="#d4e2fa" stroke="#9facba"/>
+<text x="541" y="289" font-size="18" text-anchor="middle" font-weight="600">2</text>
+<text x="621" y="248" font-size="12" text-anchor="middle" font-weight="normal">bin 7</text>
+<rect x="588" y="259" width="66" height="46" rx="6" fill="#d4eee3" stroke="#9facba"/>
+<text x="621" y="289" font-size="18" text-anchor="middle" font-weight="600">0</text>
+<text x="701" y="248" font-size="12" text-anchor="middle" font-weight="normal">bin 8</text>
+<rect x="668" y="259" width="66" height="46" rx="6" fill="#dceac1" stroke="#9facba"/>
+<text x="701" y="289" font-size="18" text-anchor="middle" font-weight="600">1</text>
+<text x="781" y="248" font-size="12" text-anchor="middle" font-weight="normal">bin 9</text>
+<rect x="748" y="259" width="66" height="46" rx="6" fill="#c9eaf0" stroke="#9facba"/>
+<text x="781" y="289" font-size="18" text-anchor="middle" font-weight="600">2</text>
+<text x="861" y="248" font-size="12" text-anchor="middle" font-weight="normal">bin 10</text>
+<rect x="828" y="259" width="66" height="46" rx="6" fill="#fff0bd" stroke="#9facba"/>
+<text x="861" y="289" font-size="18" text-anchor="middle" font-weight="600">1</text>
+<text x="941" y="248" font-size="12" text-anchor="middle" font-weight="normal">bin 11</text>
+<rect x="908" y="259" width="66" height="46" rx="6" fill="#f5d5e4" stroke="#9facba"/>
+<text x="941" y="289" font-size="18" text-anchor="middle" font-weight="600">1</text>
+<text x="1021" y="248" font-size="12" text-anchor="middle" font-weight="normal">bin 12</text>
+<rect x="988" y="259" width="66" height="46" rx="6" fill="#e8def7" stroke="#9facba"/>
+<text x="1021" y="289" font-size="18" text-anchor="middle" font-weight="600">1</text>
+<text x="26" y="351" font-size="16" text-anchor="start" font-weight="600">Returned counters grouped by thread</text>
+<text x="87" y="379" font-size="13" text-anchor="middle" font-weight="600">T0</text>
+<rect x="28" y="390" width="118" height="94" rx="6" fill="#dceac1" stroke="#9facba"/>
+<text x="87" y="419" font-size="15" text-anchor="middle" font-weight="normal">bin 0: 2</text>
+<text x="87" y="455" font-size="15" text-anchor="middle" font-weight="normal">bin 8: 1</text>
+<text x="219" y="379" font-size="13" text-anchor="middle" font-weight="600">T1</text>
+<rect x="160" y="390" width="118" height="94" rx="6" fill="#c9eaf0" stroke="#9facba"/>
+<text x="219" y="419" font-size="15" text-anchor="middle" font-weight="normal">bin 1: 1</text>
+<text x="219" y="455" font-size="15" text-anchor="middle" font-weight="normal">bin 9: 2</text>
+<text x="351" y="379" font-size="13" text-anchor="middle" font-weight="600">T2</text>
+<rect x="292" y="390" width="118" height="94" rx="6" fill="#fff0bd" stroke="#9facba"/>
+<text x="351" y="419" font-size="15" text-anchor="middle" font-weight="normal">bin 2: 1</text>
+<text x="351" y="455" font-size="15" text-anchor="middle" font-weight="normal">bin 10: 1</text>
+<text x="483" y="379" font-size="13" text-anchor="middle" font-weight="600">T3</text>
+<rect x="424" y="390" width="118" height="94" rx="6" fill="#f5d5e4" stroke="#9facba"/>
+<text x="483" y="419" font-size="15" text-anchor="middle" font-weight="normal">bin 3: 2</text>
+<text x="483" y="455" font-size="15" text-anchor="middle" font-weight="normal">bin 11: 1</text>
+<text x="615" y="379" font-size="13" text-anchor="middle" font-weight="600">T4</text>
+<rect x="556" y="390" width="118" height="94" rx="6" fill="#e8def7" stroke="#9facba"/>
+<text x="615" y="419" font-size="15" text-anchor="middle" font-weight="normal">bin 4: 1</text>
+<text x="615" y="455" font-size="15" text-anchor="middle" font-weight="normal">bin 12: 1</text>
+<text x="747" y="379" font-size="13" text-anchor="middle" font-weight="600">T5</text>
+<rect x="688" y="390" width="118" height="94" rx="6" fill="#fde2c9" stroke="#9facba"/>
+<text x="747" y="419" font-size="15" text-anchor="middle" font-weight="normal">bin 5: 1</text>
+<text x="747" y="455" font-size="15" text-anchor="middle" font-weight="normal">padding: 0</text>
+<text x="879" y="379" font-size="13" text-anchor="middle" font-weight="600">T6</text>
+<rect x="820" y="390" width="118" height="94" rx="6" fill="#d4e2fa" stroke="#9facba"/>
+<text x="879" y="419" font-size="15" text-anchor="middle" font-weight="normal">bin 6: 2</text>
+<text x="879" y="455" font-size="15" text-anchor="middle" font-weight="normal">padding: 0</text>
+<text x="1011" y="379" font-size="13" text-anchor="middle" font-weight="600">T7</text>
+<rect x="952" y="390" width="118" height="94" rx="6" fill="#d4eee3" stroke="#9facba"/>
+<text x="1011" y="419" font-size="15" text-anchor="middle" font-weight="normal">bin 7: 0</text>
+<text x="1011" y="455" font-size="15" text-anchor="middle" font-weight="normal">padding: 0</text>
+<text x="26" y="525" font-size="14" text-anchor="start" font-weight="normal">Local slot i belongs to bin thread_rank + i × block_size. Store with algorithm="striped".</text>
+<text x="26" y="550" font-size="14" text-anchor="start" font-weight="normal">Every input slot contributes. Extra output slots are zero; input padding would change the histogram.</text>
+</g>
+</svg>

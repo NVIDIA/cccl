@@ -28,6 +28,7 @@ Blocks support :doc:`radix sorts and digit ranks <coop/visualizations/radix>`.
 Blocks compare neighboring items with :doc:`Adjacent Difference
 <coop/visualizations/adjacent-difference>` and :doc:`Discontinuity
 <coop/visualizations/discontinuity>`.
+:doc:`Histogram <coop/visualizations/histogram>` counts samples by bin.
 
 The common ``cuda.coop`` API describes those operations independently of a
 kernel compiler. Numba-CUDA-MLIR is the first supported backend; CUTLASS
