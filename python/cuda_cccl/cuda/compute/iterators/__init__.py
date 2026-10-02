@@ -13,6 +13,7 @@ from ._discard import DiscardIterator
 from ._permutation import PermutationIterator
 from ._reverse import ReverseIterator
 from ._shuffle import ShuffleIterator
+from ._strided import StridedIterator
 from ._transform import TransformIterator, TransformOutputIterator
 from ._zip import ZipIterator
 
@@ -25,6 +26,7 @@ __all__ = [
     "PermutationIterator",
     "ReverseIterator",
     "ShuffleIterator",
+    "StridedIterator",
     "TransformIterator",
     "TransformOutputIterator",
     "ZipIterator",

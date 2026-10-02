@@ -23,6 +23,14 @@ Iterators
   :undoc-members:
   :imported-members:
 
+``StridedIterator(underlying, stride)`` reads or writes every ``stride`` elements
+of an iterator or device array, starting at its current position. For example,
+``StridedIterator(values, 2)`` visits indices 0, 2, 4, and so on without copying
+the array. Advancing the iterator by ``n`` advances the underlying iterator by
+``n * stride``. Negative strides traverse backward from the supplied position;
+a zero stride repeatedly accesses the same element. Strides are signed 64-bit
+integers stored in runtime state, so changing the stride reuses compiled code.
+
 Operators
 ---------
 
