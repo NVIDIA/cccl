@@ -1504,7 +1504,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramRange");
 
-    using SampleT                        = cub::detail::it_value_t<SampleIteratorT>;
+    using SampleT _CCCL_NODEBUG          = cub::detail::it_value_t<SampleIteratorT>;
     using is_byte_sample_t _CCCL_NODEBUG = ::cuda::std::bool_constant<sizeof(SampleT) == 1>;
 
     using default_policy_selector =
@@ -2532,7 +2532,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceHistogram::MultiHistogramRange");
 
-    using SampleT                        = cub::detail::it_value_t<SampleIteratorT>;
+    using SampleT _CCCL_NODEBUG          = cub::detail::it_value_t<SampleIteratorT>;
     using is_byte_sample_t _CCCL_NODEBUG = ::cuda::std::bool_constant<sizeof(SampleT) == 1>;
 
     using default_policy_selector =
