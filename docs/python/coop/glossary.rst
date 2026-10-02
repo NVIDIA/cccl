@@ -48,6 +48,14 @@ Terms
       accept scalars or backend-specific arrays. See
       :ref:`thread data <coop-thread-data>`.
 
+   phi
+      A compiler intermediate representation (IR) operation that selects a
+      value according to the control-flow path taken into a block. For
+      example, after an ``if`` statement assigns different values to a
+      variable, a phi selects the value from the branch that ran. At a loop
+      header, it can select the initial value or the value from the previous
+      iteration. Comments refer to these alternatives as *phi inputs*.
+
    batch
       One independent reduction in :func:`cuda.coop.reduce_batched`. Each lane
       contributes the value in the same local payload slot: slot ``j``
@@ -119,14 +127,6 @@ Terms
       step. ``radix_rank_keys`` assigns ranks according to one such digit;
       ``radix_sort_keys`` and ``radix_sort_pairs`` order keys over the
       requested bit interval. See :ref:`radix sorting and ranks <coop-radix>`.
-
-   phi
-      A compiler intermediate representation (IR) operation that selects a
-      value according to the control-flow path taken into a block. For
-      example, after an ``if`` statement assigns different values to a
-      variable, a phi selects the value from the branch that ran. At a loop
-      header, it can select the initial value or the value from the previous
-      iteration. Comments refer to these alternatives as *phi inputs*.
 
    common API
       .. raw:: html
