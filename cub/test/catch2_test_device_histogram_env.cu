@@ -1517,7 +1517,7 @@ struct high_bin_histogram_tuning
     policy.high_bin_cache_bytes_per_channel          = CacheBytesPerChannel;
     policy.high_bin_cache_count_replicas             = 2;
     policy.high_bin_cache_cuckoo_max_histogram_bytes = 16384;
-    policy.high_bin_pixels_per_thread                = 2;
+    policy.high_bin_items_per_thread                 = 2;
     policy.high_bin_threads_per_block                = 128;
     policy.high_bin_min_histogram_bytes              = 0;
     return policy;
@@ -1821,9 +1821,9 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
        ", .high_bin_aggregation = HistogramAggregationAlgorithm::rle"
        ", .high_bin_cache_bytes_per_channel = 16384"
        ", .high_bin_cache_count_replicas = 1, .high_bin_cache_cuckoo_max_histogram_bytes = 1048576"
-       ", .high_bin_pixels_per_thread = 4, .high_bin_threads_per_block = 0"
+       ", .high_bin_items_per_thread = 4, .high_bin_threads_per_block = 0"
        ", .high_bin_min_histogram_bytes = 0"
-       ", .high_bin_blocks_per_sm = 0, .high_bin_grid_pixels_per_block = 0 }");
+       ", .high_bin_blocks_per_sm = 0, .high_bin_grid_items_per_block = 0 }");
 
   constexpr auto high_bin_policy = [] {
     auto policy =
@@ -1833,8 +1833,8 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
   }();
   STATIC_REQUIRE(high_bin_policy.high_bin_threads() == 512);
   STATIC_REQUIRE(p1.high_bin_threads() == p1.threads_per_block);
-  STATIC_REQUIRE(high_bin_policy.high_bin_grid_pixels() == 512 * high_bin_policy.high_bin_pixels_per_thread);
-  STATIC_REQUIRE(p1.high_bin_grid_pixels() == p1.high_bin_threads() * p1.high_bin_pixels_per_thread);
+  STATIC_REQUIRE(high_bin_policy.high_bin_grid_items() == 512 * high_bin_policy.high_bin_items_per_thread);
+  STATIC_REQUIRE(p1.high_bin_grid_items() == p1.high_bin_threads() * p1.high_bin_items_per_thread);
   STATIC_REQUIRE(cub::detail::histogram::cache_slots_from_bytes(0, 8) == 0);
   STATIC_REQUIRE(cub::detail::histogram::cache_slots_from_bytes(255, 8) == 16);
   STATIC_REQUIRE(cub::detail::histogram::cache_slots_from_bytes(256, 8) == 32);
