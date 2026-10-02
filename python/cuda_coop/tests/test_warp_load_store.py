@@ -6,16 +6,16 @@ import pytest
 
 from cuda.coop._core import ArgumentBinding
 from cuda.coop._core.warp import (
-    make_warp_load_spec,
+    make_warp_load_specialization,
     make_warp_load_store_semantics,
-    make_warp_store_spec,
+    make_warp_store_specialization,
 )
 
 
 @pytest.mark.parametrize("threads_in_warp", [True, 0, 3, 64, 8.0])
 def test_warp_load_store_rejects_unsupported_widths(threads_in_warp):
     with pytest.raises(ValueError, match="threads_in_warp in"):
-        make_warp_load_spec(
+        make_warp_load_specialization(
             dtype="i32",
             items_per_thread=2,
             threads_in_warp=threads_in_warp,
@@ -24,14 +24,15 @@ def test_warp_load_store_rejects_unsupported_widths(threads_in_warp):
 
 
 @pytest.mark.parametrize(
-    "make_spec", [make_warp_load_spec, make_warp_store_spec]
+    "make_specialization",
+    [make_warp_load_specialization, make_warp_store_specialization],
 )
 @pytest.mark.parametrize("valid_items", [-1, 17])
 def test_warp_load_store_rejects_static_valid_items_outside_tile(
-    make_spec, valid_items
+    make_specialization, valid_items
 ):
     with pytest.raises(ValueError, match="warp tile size"):
-        make_spec(
+        make_specialization(
             dtype="i32",
             items_per_thread=2,
             threads_in_warp=8,

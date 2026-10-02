@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Protocol
 
-from .._algorithm import AlgorithmSpec
+from .._algorithm import Algorithm
 from .._types import ParameterClassification
 from ..launch import Dim3, LaunchFacts
 from ..thread_group import MAPPED_GROUP_KINDS, ThreadGroup
@@ -379,7 +379,7 @@ class GroupLoweringPlan:
     target: GroupLoweringTarget
     call: GroupPrimitiveCall
     resolved_group: ThreadGroup
-    implementation: AlgorithmSpec | None
+    implementation: Algorithm | None
     topology: GroupTopologyContract | None
     participation: ParticipationContract | None
     result: None
