@@ -25,6 +25,7 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/non_void_value.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>

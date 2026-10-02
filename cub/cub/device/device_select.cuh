@@ -28,6 +28,7 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_unique_by_key.cuh>
 

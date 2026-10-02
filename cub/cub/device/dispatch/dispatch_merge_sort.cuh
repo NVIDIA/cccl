@@ -17,6 +17,7 @@
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/kernels/kernel_merge_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 #include <cub/util_device.cuh>

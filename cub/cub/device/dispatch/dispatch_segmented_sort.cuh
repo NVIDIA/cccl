@@ -17,6 +17,7 @@
 #include <cub/detail/device_double_buffer.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/device_partition.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_sort.cuh>

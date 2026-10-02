@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cub/detail/log2.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
