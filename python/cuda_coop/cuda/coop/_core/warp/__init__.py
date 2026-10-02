@@ -21,6 +21,7 @@ from .load_store import (
     make_warp_store_spec,
 )
 from .reduce import WarpReduceOperation, WarpReduceSpec, make_warp_reduce_spec
+from .scan import WarpScanMode, WarpScanSpec, make_warp_scan_spec
 
 __all__ = [
     "WarpExchangeMode",
@@ -33,11 +34,14 @@ __all__ = [
     "WarpLoadStoreSpec",
     "WarpReduceOperation",
     "WarpReduceSpec",
+    "WarpScanMode",
+    "WarpScanSpec",
     "WarpStoreAlgorithm",
     "make_warp_exchange_spec",
     "make_warp_load_spec",
     "make_warp_load_store_semantics",
     "make_warp_load_store_spec",
     "make_warp_reduce_spec",
+    "make_warp_scan_spec",
     "make_warp_store_spec",
 ]

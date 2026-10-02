@@ -52,6 +52,7 @@ ReduceAlgorithm: TypeAlias = Literal[
     "raking",
     "warp_reductions",
 ]
+ScanAlgorithm: TypeAlias = Literal["raking", "raking_memoize", "warp_scans"]
 ReduceOperator: TypeAlias = Literal[
     "+",
     "sum",
@@ -72,6 +73,25 @@ ReduceOperator: TypeAlias = Literal[
     "^",
     "bit_xor",
 ]
+SumScanOperator: TypeAlias = Literal["+", "sum", "add", "plus"]
+NonSumScanOperator: TypeAlias = Literal[
+    "*",
+    "mul",
+    "multiply",
+    "multiplies",
+    "min",
+    "minimum",
+    "max",
+    "maximum",
+    "&",
+    "bit_and",
+    "|",
+    "bit_or",
+    "^",
+    "bit_xor",
+]
+ScanOperator: TypeAlias = SumScanOperator | NonSumScanOperator
+ScanMode: TypeAlias = Literal["exclusive", "inclusive"]
 ExchangeMode: TypeAlias = Literal[
     "striped_to_blocked",
     "blocked_to_striped",
@@ -123,6 +143,15 @@ PortableNumericScalar: TypeAlias = (
     | numpy.float32
     | numpy.float64
     | CompilerScalarLike
+)
+
+class _ExactScalar(Protocol[_ItemT]):
+    # Writable __class__ makes the scalar type invariant: a seed cannot widen
+    # the input type. It also keeps NumPy float64 out of the Python-float arm.
+    __class__: type[_ItemT]  # type: ignore[assignment]
+
+ContextualInitialValue: TypeAlias = (
+    _ExactScalar[_ItemT] | _ExactScalar[int] | _ExactScalar[float]
 )
 _ReadableItemT_co = TypeVar(
     "_ReadableItemT_co", bound=PortableNumericScalar, covariant=True
@@ -195,13 +224,19 @@ class TempStorageLike(Protocol):
 __all__ = [
     "BlockExchangeMode",
     "BlockLoadStoreAlgorithm",
+    "ContextualInitialValue",
     "ExchangeMode",
     "LoadStoreAlgorithm",
+    "NonSumScanOperator",
     "PortableShuffleMode",
     "ReduceAlgorithm",
     "ReduceOperator",
     "ScalarShuffleMode",
+    "ScanAlgorithm",
+    "ScanMode",
+    "ScanOperator",
     "ShuffleMode",
+    "SumScanOperator",
     "SynchronizableGroupKind",
     "TempStorageLike",
     "TempStorageSharing",

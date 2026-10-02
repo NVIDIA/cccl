@@ -28,6 +28,13 @@ from ._thread_group import (
 if TYPE_CHECKING:
     from ._group._exchange import exchange
     from ._group._reduce import reduce, sum
+    from ._group._scan import (
+        exclusive_scan,
+        exclusive_sum,
+        inclusive_scan,
+        inclusive_sum,
+        scan,
+    )
     from ._group._shuffle import shuffle
     from ._thread_data import local, shared
 
@@ -40,9 +47,14 @@ __all__ = [
     "ThreadGroup",
     "ThreadHierarchy",
     "exchange",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
     "local",
     "reduce",
+    "scan",
     "shared",
     "shuffle",
     "store",
@@ -56,10 +68,25 @@ __all__ = [
 
 
 def __getattr__(name):
-    if name in {"exchange", "reduce", "shuffle", "sum"}:
+    if name in {
+        "exchange",
+        "exclusive_scan",
+        "exclusive_sum",
+        "inclusive_scan",
+        "inclusive_sum",
+        "reduce",
+        "scan",
+        "shuffle",
+        "sum",
+    }:
         module_name = {
             "exchange": "_group._exchange",
+            "exclusive_scan": "_group._scan",
+            "exclusive_sum": "_group._scan",
+            "inclusive_scan": "_group._scan",
+            "inclusive_sum": "_group._scan",
             "reduce": "_group._reduce",
+            "scan": "_group._scan",
             "shuffle": "_group._shuffle",
             "sum": "_group._reduce",
         }[name]

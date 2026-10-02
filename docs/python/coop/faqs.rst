@@ -159,7 +159,7 @@ barriers automatically. See :ref:`exclusive scratch slices
 <coop-faq-exclusive-storage>` for the tradeoff between memory and reuse
 synchronization.
 
-The current backend accepts explicit descriptors for block transpose-family Load/Store.
+The current backend accepts explicit descriptors for block transpose-family Load/Store, Block Scan.
 Warp operations use compiler-owned scratch. See
 :ref:`temporary storage <coop-temp-storage>` for the complete contract and
 shared-memory restrictions.

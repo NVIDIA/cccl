@@ -28,16 +28,17 @@ Terms
 
          <span id="term-collective"></span>
 
-      A cooperative operation provided by ``cuda.coop``, such as ``load``
-      or ``store``. Each primitive defines which threads
+      A cooperative operation provided by ``cuda.coop``, such as ``load``,
+      ``reduce``, or ``exclusive_sum``. Each primitive defines which threads
       participate, how it uses their data, and where its results are
       available. See
       :ref:`participation and synchronization <coop-participation>`.
 
    family
       A group of related :term:`primitives <primitive>` that share semantics
-      and implementation. The Load/Store family includes ``load`` and
-      ``store``. Families organize implementation modules; a
+      and implementation. For example, the Scan family includes ``scan``,
+      ``exclusive_scan``, ``inclusive_scan``, ``exclusive_sum``, and
+      ``inclusive_sum``. Families organize implementation modules; a
       :term:`thread group` describes the threads executing a primitive.
       See :ref:`implementation families <coop-implementation-families>`.
 
@@ -146,4 +147,4 @@ Load with a direct Store without conversion changes the output order.
 Follow the values in the :doc:`Load <visualizations/load>` and
 :doc:`Store <visualizations/store>` visualizations. :doc:`Exchange
 <visualizations/exchange>` converts between layouts; the
-:ref:`programming guide <coop-data-layouts>` explains these layouts.
+:ref:`programming guide <coop-data-layouts>` shows how layout affects Scan.
