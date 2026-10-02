@@ -10,7 +10,7 @@
 
 #include <cuda_bf16.h>
 
-#include <cub/util_type.cuh>
+#include <cub/detail/numeric_traits.cuh>
 
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/limits>

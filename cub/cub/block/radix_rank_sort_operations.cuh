@@ -19,9 +19,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__bit/bitfield.h>
 #include <cuda/__type_traits/is_floating_point.h>

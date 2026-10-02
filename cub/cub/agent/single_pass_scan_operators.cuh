@@ -22,6 +22,7 @@
 #include <cub/detail/iket_support.cuh>
 #include <cub/detail/key_value_pair.cuh>
 #include <cub/detail/log2.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/strong_load.cuh>
 #include <cub/detail/strong_store.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
