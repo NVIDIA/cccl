@@ -32,6 +32,7 @@
 #include <cub/detail/power_of_two.cuh> // IWYU pragma: export
 #include <cub/detail/type_size.cuh> // IWYU pragma: export
 #include <cub/detail/type_traits.cuh>
+#include <cub/detail/uninitialized.cuh> // IWYU pragma: export
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/detail/unit_word.cuh> // IWYU pragma: export
 
@@ -64,29 +65,6 @@ CUB_NAMESPACE_BEGIN
 /******************************************************************************
  * Wrapper types
  ******************************************************************************/
-
-//! \brief A storage-backing wrapper that allows types with non-trivial constructors to be aliased in unions. Has the
-//! same size as T.
-template <typename T>
-struct Uninitialized
-{
-  /// Largest memory-access word evenly dividing T and not increasing the alignment
-  using DeviceWord = typename UnitWord<T>::DeviceWord;
-
-  static constexpr ::cuda::std::size_t DATA_SIZE = sizeof(T);
-  static constexpr ::cuda::std::size_t WORD_SIZE = sizeof(DeviceWord);
-  static constexpr ::cuda::std::size_t WORDS     = DATA_SIZE / WORD_SIZE;
-  static_assert(DATA_SIZE % WORDS == 0);
-
-  /// Backing storage
-  alignas(T) DeviceWord storage[WORDS];
-
-  /// Alias
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T& Alias()
-  {
-    return reinterpret_cast<T&>(*this);
-  }
-};
 
 /**
  * \brief A key identifier paired with a corresponding value
