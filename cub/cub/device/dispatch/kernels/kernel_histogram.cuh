@@ -49,8 +49,6 @@ struct Transforms
       num_output_levels = num_output_levels_;
     }
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Precompute() {}
-
     template <CacheLoadModifier LoadModifier, typename SampleT>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT sample, int& bin, bool valid) const
     {
@@ -68,251 +66,6 @@ struct Transforms
         {
           bin = -1;
         }
-      }
-    }
-  };
-
-  //! @brief Finds a RANGE bin with piecewise-linear interpolation and a per-thread bracket cache.
-  //!
-  //! This transform is used by the runtime-sized shared-memory kernel and by
-  //! selected global-memory kernels. It precomputes interpolation parameters
-  //! once per thread, verifies each interpolated guess against the level array,
-  //! and falls back to binary search for irregular levels. `BinSelectState`
-  //! remembers the most recently resolved bracket so consecutive samples in
-  //! that bracket require no level loads.
-  template <typename LevelIteratorT>
-  struct CachedSearchTransform
-  {
-    //! @brief Computes a non-negative interpolation distance without signed overflow.
-    template <typename T>
-    [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto interpolation_difference(T lhs, T rhs)
-    {
-      if constexpr (::cuda::std::is_integral_v<T>)
-      {
-        using unsigned_t = ::cuda::std::make_unsigned_t<T>;
-        return static_cast<unsigned_t>(lhs) - static_cast<unsigned_t>(rhs);
-      }
-      else
-      {
-        return lhs - rhs;
-      }
-    }
-
-    struct BinSelectState
-    {
-      LevelT lo; // cached d_levels[bin]
-      LevelT hi; // cached d_levels[bin + 1]
-      int bin = -1; // cached bin; < 0 means empty
-    };
-
-    BinSelectState most_recent_bin;
-
-    LevelIteratorT d_levels; // Pointer to levels array
-    int num_output_levels; // Number of levels in array
-    // Interpolation state shared by all samples processed by a thread.
-    float inv_scale; // num_bins / (float)(last - first); valid iff have_precompute
-    LevelT first; // cached d_levels[0]
-    LevelT last; // cached d_levels[num_bins]
-    bool have_precompute; // whether the fields above are valid
-
-    // Piecewise-linear interpolation state split at the midpoint level.
-    LevelT mid; // cached d_levels[mid_bin]
-    float inv_scale_lo; // mid_bin / (float)(mid - first)
-    float inv_scale_hi; // (num_bins - mid_bin) / (float)(last - mid)
-    int mid_bin; // split bin index (num_bins / 2)
-
-    //! @brief Initializer
-    //!
-    //! @param d_levels_ Pointer to levels array
-    //! @param num_output_levels_ Number of levels in array
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(LevelIteratorT d_levels_, int num_output_levels_)
-    {
-      this->d_levels          = d_levels_;
-      this->num_output_levels = num_output_levels_;
-      this->have_precompute   = false;
-      this->inv_scale         = 0.0f;
-      this->first             = LevelT{};
-      this->last              = LevelT{};
-      this->mid               = LevelT{};
-      this->inv_scale_lo      = 0.0f;
-      this->inv_scale_hi      = 0.0f;
-      this->mid_bin           = 0;
-      this->most_recent_bin   = BinSelectState{};
-    }
-
-    //! @brief Precomputes interpolation slopes from the device level array.
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Precompute()
-    {
-      const int num_bins = num_output_levels - 1;
-      using WrappedLevelIteratorT =
-        ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
-                         CacheModifiedInputIterator<LOAD_LDG, LevelT, OffsetT>,
-                         LevelIteratorT>;
-      WrappedLevelIteratorT wrapped_levels(d_levels);
-
-      const LevelT first = wrapped_levels[0];
-      const LevelT last  = wrapped_levels[num_bins];
-      if (!(first < last))
-      {
-        have_precompute = false;
-        return;
-      }
-
-      this->first     = first;
-      this->last      = last;
-      inv_scale       = static_cast<float>(num_bins) / static_cast<float>(interpolation_difference(last, first));
-      have_precompute = true;
-
-      // Use a single secant if the midpoint does not split the level range.
-      this->mid_bin   = 0;
-      inv_scale_lo    = inv_scale;
-      inv_scale_hi    = inv_scale;
-      mid             = first;
-      const int split = num_bins >> 1;
-      if (split > 0 && split < num_bins)
-      {
-        const LevelT split_level = wrapped_levels[split];
-        if ((first < split_level) && (split_level < last))
-        {
-          mid          = split_level;
-          mid_bin      = split;
-          inv_scale_lo = static_cast<float>(split) / static_cast<float>(interpolation_difference(split_level, first));
-          inv_scale_hi =
-            static_cast<float>(num_bins - split) / static_cast<float>(interpolation_difference(last, split_level));
-        }
-      }
-    }
-
-    //! @brief Implements cached/interpolated bin selection.
-    //!
-    //! A cached-bracket hit returns immediately. Otherwise, this computes and
-    //! verifies an interpolated guess, checks one adjacent bracket, and finally
-    //! falls back to `UpperBound` for arbitrary level distributions.
-    template <CacheLoadModifier LOAD_MODIFIER, typename SampleT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT sample, int& bin, bool valid)
-    {
-      using WrappedLevelIteratorT =
-        ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
-                         CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
-                         LevelIteratorT>;
-      WrappedLevelIteratorT wrapped_levels(d_levels);
-      const int num_bins = num_output_levels - 1;
-      if (!valid)
-      {
-        return;
-      }
-
-      const LevelT s = static_cast<LevelT>(sample);
-
-      if (most_recent_bin.bin >= 0 && !(s < most_recent_bin.lo) && (s < most_recent_bin.hi))
-      {
-        bin = most_recent_bin.bin;
-        return;
-      }
-
-      const LevelT first_level = have_precompute ? first : wrapped_levels[0];
-      const LevelT last_level  = have_precompute ? last : wrapped_levels[num_bins];
-
-      if (!(first_level < last_level))
-      {
-        bin = UpperBound(wrapped_levels, num_output_levels, s) - 1;
-        if (bin >= num_bins)
-        {
-          bin = -1;
-        }
-        return;
-      }
-
-      if (s < first_level || !(s < last_level))
-      {
-        bin = -1;
-        return;
-      }
-
-      const auto delta = interpolation_difference(s, first_level);
-      int guess;
-      if (have_precompute)
-      {
-        if (mid_bin > 0)
-        {
-          if (s < mid)
-          {
-            guess = static_cast<int>(static_cast<float>(delta) * inv_scale_lo);
-          }
-          else
-          {
-            const auto delta_hi = interpolation_difference(s, mid);
-            guess               = mid_bin + static_cast<int>(static_cast<float>(delta_hi) * inv_scale_hi);
-          }
-        }
-        else
-        {
-          guess = static_cast<int>(static_cast<float>(delta) * inv_scale);
-        }
-      }
-      else
-      {
-        const auto range = interpolation_difference(last_level, first_level);
-        guess =
-          static_cast<int>((static_cast<float>(delta) * static_cast<float>(num_bins)) / static_cast<float>(range));
-      }
-      if (guess < 0)
-      {
-        guess = 0;
-      }
-      else if (guess > num_bins - 1)
-      {
-        guess = num_bins - 1;
-      }
-
-      const LevelT lvl_lo = wrapped_levels[guess];
-      const LevelT lvl_hi = wrapped_levels[guess + 1];
-
-      if (!(s < lvl_lo) && (s < lvl_hi))
-      {
-        bin             = guess;
-        most_recent_bin = BinSelectState{lvl_lo, lvl_hi, guess};
-        return;
-      }
-
-      if (s < lvl_lo)
-      {
-        const int g2 = guess - 1;
-        if (g2 >= 0)
-        {
-          const LevelT lvl2_lo = wrapped_levels[g2];
-          if (!(s < lvl2_lo))
-          {
-            bin             = g2;
-            most_recent_bin = BinSelectState{lvl2_lo, lvl_lo, g2};
-            return;
-          }
-        }
-      }
-      else
-      {
-        const int g2 = guess + 1;
-        if (g2 <= num_bins - 1)
-        {
-          const LevelT lvl2_hi = wrapped_levels[g2 + 1];
-          if (s < lvl2_hi)
-          {
-            bin             = g2;
-            most_recent_bin = BinSelectState{lvl_hi, lvl2_hi, g2};
-            return;
-          }
-        }
-      }
-
-      bin = UpperBound(wrapped_levels, num_output_levels, s) - 1;
-      if (bin >= num_bins)
-      {
-        bin = -1;
-        return;
-      }
-      if (bin >= 0)
-      {
-        most_recent_bin = BinSelectState{wrapped_levels[bin], wrapped_levels[bin + 1], bin};
       }
     }
   };
@@ -561,8 +314,6 @@ struct Transforms
       m_scale = this->ComputeScale(num_levels, m_max, m_min);
     }
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Precompute() {}
-
     // Method for converting samples to bin-ids
     template <CacheLoadModifier LOAD_MODIFIER>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(InputSampleT sample, int& bin, bool valid) const
@@ -594,8 +345,6 @@ struct Transforms
     template <typename T>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(T, int)
     {}
-
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Precompute() {}
 
     // Method for converting samples to bin-ids
     template <CacheLoadModifier LOAD_MODIFIER, typename SampleT>
@@ -829,13 +578,6 @@ __launch_bounds__(int(histogram_privatization_policy<PolicySelector, Privatizati
     dynamic_smem_privatized_histograms = reinterpret_cast<CounterT*>(dynamic_smem);
   }
 
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int channel = 0; channel < NumActiveChannels; ++channel)
-  {
-    output_decode_op_wrapper[channel].Precompute();
-    privatized_decode_op_wrapper[channel].Precompute();
-  }
-
   AgentHistogramT agent(
     static_smem,
     d_samples,
@@ -998,13 +740,6 @@ __launch_bounds__(int(histogram_privatization_policy<PolicySelector, Privatizati
       privatized_decode_op[channel].Init(levels, num_output_levels);
       output_decode_op[channel].Init(levels, num_output_levels);
     }
-  }
-
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int channel = 0; channel < NumActiveChannels; ++channel)
-  {
-    output_decode_op[channel].Precompute();
-    privatized_decode_op[channel].Precompute();
   }
 
   using AgentHistogramT =
