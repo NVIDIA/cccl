@@ -478,10 +478,10 @@ def main():
     lanes = build_lanes(gpus, lanes_per_gpu)
     print("{} gpus x {} lanes".format(len(gpus), lanes_per_gpu))
 
-    # Listing the search space only needs cccl_meta_bench.csv, which configuring a single lane
-    # already produces; configuring every lane for every GPU is wasted work for `-l`.
     list_only = bench.parse_arguments().list_benches
-    configure_lanes(lanes[:1] if list_only else lanes, cmake_args)
+    configure_lanes(
+        lanes[:1] if list_only else lanes, cmake_args
+    )  # need only one lane for list_only
     os.chdir(lanes[0].directory)
 
     if list_only:
