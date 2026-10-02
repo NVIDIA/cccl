@@ -29,6 +29,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -123,6 +124,26 @@ struct nullval final
 };
 
 /**
+ * @brief Customization point that makes `_Status` a status: a value that reports success or
+ * failure by itself, so that `on_error(policy) << status` handles it on the code channel.
+ *
+ * The primary template is undefined, and a raw integer is never a status: a C API's result is
+ * wrapped in a distinct type at the call site. A specialization provides
+ * - `static bool failed(_Status) noexcept`, whether the value reports a failure (the only work
+ *   `<<` does on success);
+ * - `static _Status success() noexcept`, the value a handled failure yields;
+ * - `static ::std::string name(_Status)`, a short name for reports (`notify`, `store` into text);
+ * - `static auto make_exception(_Status, ::cuda::std::source_location)`, the `std::exception`
+ *   derivative that `unwind` throws, `store(std::exception_ptr*)` stores, and a policy that
+ *   only handles exceptions receives.
+ *
+ * `cuda_safe_call.cuh` specializes it for `cudaError_t`, `CUresult`, and, when their headers
+ * are available, `cublasStatus_t` and `cusolverStatus_t`.
+ */
+template <class _Status>
+struct status_traits;
+
+/**
  * @brief Policy vocabulary for @ref on_throw.
  *
  * Nested and deliberately non-inline: the names are short English words, and
@@ -133,8 +154,23 @@ struct nullval final
  */
 namespace exception_policies
 {
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+namespace detail
+{
+// What a composite or the exception bridge answers on the code channel, where passing through
+// is decided at run time: the value the `<<` expression yields, and whether the status passed
+// through unhandled (`|` then offers it to its right arm).
+template <class _Status>
+struct __status_answer
+{
+  _Status __value_;
+  bool __passed_;
+};
+} // namespace detail
+#endif // _CCCL_DOXYGEN_INVOKED
+
 /**
- * @brief A suppressing handler policy that reports an exception and resumes (`std::ignore`).
+ * @brief A suppressing handler policy that reports an error and resumes (`std::ignore`).
  *
  * `on_throw(notify) << callable` reports on `stderr`. A configured copy reports elsewhere:
  * `notify(file)` writes to a `FILE*`, `notify(stream)` to a `std::ostream`. An object rather
@@ -142,7 +178,8 @@ namespace exception_policies
  *
  * The report carries the location and the exception's message, or "nonstandard exception" for
  * an exception that does not derive from `std::exception` (which reaches a handler as
- * `nullptr`). The exception hook returns `std::ignore`, marking a resuming policy.
+ * `nullptr`). On the code channel it carries `status_traits<S>::name(status)` and no exception
+ * is built. Both hooks return `std::ignore`, marking a resuming policy.
  */
 struct notify_t
 {
@@ -177,12 +214,36 @@ struct notify_t
   decltype(::std::ignore)
   operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn&) const noexcept
   {
+    __report(__exception ? __exception->what() : "nonstandard exception", __loc);
+    return ::std::ignore;
+  }
+
+  //! @brief The code-channel hook: reports `status_traits<_Status>::name(__status)` and resumes.
+  //! A name that cannot be formatted (its allocation failed) is reported as such.
+  template <class _Status, class _Fn>
+  decltype(::std::ignore) handle(const _Status __status, const ::cuda::std::source_location __loc, _Fn&) const noexcept
+  {
+    _CCCL_TRY
+    {
+      const ::std::string __name = status_traits<_Status>::name(__status);
+      __report(__name.c_str(), __loc);
+    }
+    _CCCL_CATCH_ALL
+    {
+      __report("status whose name could not be formatted", __loc);
+    }
+    return ::std::ignore;
+  }
+
+private:
+  void __report(const char* __what, const ::cuda::std::source_location __loc) const noexcept
+  {
     if (__os_)
     {
       _CCCL_TRY
       {
         *__os_ << __loc.file_name() << '(' << __loc.line() << ") on_throw violation in " << __loc.function_name()
-               << ": " << (__exception ? __exception->what() : "nonstandard exception") << '\n';
+               << ": " << __what << '\n';
         __os_->flush();
       }
       _CCCL_CATCH_ALL {}
@@ -194,10 +255,9 @@ struct notify_t
                 __loc.file_name(),
                 __loc.line(),
                 __loc.function_name(),
-                __exception ? __exception->what() : "nonstandard exception");
+                __what);
       ::fflush(__file_);
     }
-    return ::std::ignore;
   }
 };
 // const rather than constexpr: the default destination `stderr` is not a constant expression.
@@ -232,6 +292,14 @@ struct abort_t
     notify(__exception, __loc, __fn);
     ::std::abort();
   }
+
+  //! @brief The code-channel hook: report the status's name, then die.
+  template <class _Status, class _Fn>
+  [[noreturn]] nullval handle(const _Status __status, const ::cuda::std::source_location __loc, _Fn& __fn) const noexcept
+  {
+    notify.handle(__status, __loc, __fn);
+    ::std::abort();
+  }
 };
 inline constexpr abort_t abort{};
 
@@ -247,6 +315,14 @@ struct terminate_t
   operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn) const noexcept
   {
     notify(__exception, __loc, __fn);
+    ::std::terminate();
+  }
+
+  //! @brief The code-channel hook: report the status's name, then terminate.
+  template <class _Status, class _Fn>
+  [[noreturn]] nullval handle(const _Status __status, const ::cuda::std::source_location __loc, _Fn& __fn) const noexcept
+  {
+    notify.handle(__status, __loc, __fn);
     ::std::terminate();
   }
 };
@@ -291,16 +367,36 @@ struct defer_t
   {
     return ::std::current_exception();
   }
+
+  //! @brief The code-channel hook: captures `status_traits<_Status>::make_exception(__status, __loc)`.
+  //! If building that exception fails, the failure is captured instead.
+  template <class _Status, class _Fn>
+  ::std::exception_ptr handle(const _Status __status, const ::cuda::std::source_location __loc, _Fn&) const noexcept
+  {
+    _CCCL_TRY
+    {
+      return ::std::make_exception_ptr(status_traits<_Status>::make_exception(__status, __loc));
+    }
+    _CCCL_CATCH_ALL
+    {
+      return ::std::current_exception();
+    }
+    _CCCL_UNREACHABLE();
+  }
 };
 inline constexpr defer_t defer{};
 
 /**
- * @brief The identity element of `|` and the decline primitive: re-throws the in-flight
- * exception from inside the catch. Its answer type is `nullval`, so it never has to produce a
- * value; being non-`noexcept` is how it declines, handing the exception to the next `|` arm or
- * letting it propagate.
+ * @brief The identity element of `|` and the passthrough primitive: the error leaves the sink
+ * unhandled and continues on its native channel.
+ *
+ * On the exception channel it re-throws the in-flight exception from inside the catch. Its
+ * answer type is `nullval`, so it never has to produce a value; being non-`noexcept` is how it
+ * passes through, handing the exception to the next `|` arm or letting it propagate. On the code
+ * channel no exception is active, so it answers itself, a `passthrough_t` value, and the `<<`
+ * expression yields the status unchanged for the caller to propagate with `return`.
  */
-struct rethrow_t
+struct passthrough_t
 {
   //! @cond
   using __exception_sink_tag = void;
@@ -311,8 +407,53 @@ struct rethrow_t
   {
     _CCCL_RETHROW;
   }
+
+  //! @brief The code-channel hook: answers `passthrough_t`, so the status is yielded unchanged.
+  template <class _Status, class _Fn>
+  passthrough_t handle(const _Status, const ::cuda::std::source_location, _Fn&) const noexcept
+  {
+    return {};
+  }
 };
+inline constexpr passthrough_t passthrough{};
+
+//! @brief Former name of @ref passthrough_t, kept as an alias of the same type (deprecated).
+using rethrow_t = passthrough_t;
+//! @brief Former name of @ref passthrough, kept as an object of the same type (deprecated).
 inline constexpr rethrow_t rethrow{};
+
+/**
+ * @brief Forces the exception channel: the error leaves the sink as an exception.
+ *
+ * On the exception channel it re-throws the in-flight exception, which coincides with
+ * `passthrough`. On the code channel it throws `status_traits<S>::make_exception(status, loc)`
+ * (for CUDA statuses a `cuda_exception`); with exceptions disabled that throw reports and
+ * aborts. It never returns, so `unwind & p` is rejected like `abort & p`. The polling idiom
+ * `only(cudaErrorNotReady)(subst(cudaErrorNotReady)) | unwind` yields the not-ready code and
+ * throws on anything else.
+ */
+struct unwind_t
+{
+  //! @cond
+  using __exception_sink_tag = void;
+  //! @endcond
+
+  template <class _Fn>
+  [[noreturn]] nullval operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const
+  {
+    _CCCL_RETHROW;
+  }
+
+  //! @brief The code-channel hook: throws the exception the status's traits build.
+  template <class _Status, class _Fn>
+  [[noreturn]] nullval handle(const _Status __status, const ::cuda::std::source_location __loc, _Fn&) const
+  {
+    using _Exception = decltype(status_traits<_Status>::make_exception(__status, __loc));
+    _CCCL_THROW(_Exception, status_traits<_Status>::make_exception(__status, __loc));
+    _CCCL_UNREACHABLE();
+  }
+};
+inline constexpr unwind_t unwind{};
 
 /**
  * @brief Value-substitution policy; `subst(v)` is the documented spelling for what a bare
@@ -354,6 +495,27 @@ struct subst_t
       return ::cuda::std::forward<_V>(__v_);
     }
   }
+
+  //! @brief The code-channel hook: answers the stored value, or the result of invoking a stored
+  //! nullary callable. The answer must be of the status type (`subst(cudaSuccess)`, not
+  //! `subst(0)`). A stored exception-aware handler receives the status's exception instead.
+  template <class _Status,
+            class _Fn,
+            class _Self = _V,
+            ::cuda::std::enable_if_t<
+              !::cuda::std::is_invocable_v<_Self&, const ::std::exception*, ::cuda::std::source_location, _Fn&>,
+              int> = 0>
+  decltype(auto) handle(const _Status, const ::cuda::std::source_location, _Fn&) noexcept
+  {
+    if constexpr (::cuda::std::is_invocable_v<_V&>)
+    {
+      return __v_();
+    }
+    else
+    {
+      return ::cuda::std::forward<_V>(__v_);
+    }
+  }
 };
 
 //! @brief Creates a value-substitution policy; see @ref subst_t.
@@ -364,8 +526,8 @@ auto subst(_V&& __v)
 }
 
 /**
- * @brief The unit re-attempt: re-runs the callable once; if the re-run throws, declines with
- * that exception. Counts come from repetition: `retry * 3` re-attempts up to three times;
+ * @brief The unit re-attempt: re-runs the callable once; if the re-run throws, passes that
+ * exception through. Counts come from repetition: `retry * 3` re-attempts up to three times;
  * `retry * 3 | subst(fallback)` answers the spent failure. `retry` alone is `retry * 1`.
  *
  * Answers `__fn()`'s value for a non-void callable, or `std::ignore` after a successful
@@ -420,7 +582,7 @@ struct __expected_error<::cuda::std::expected<_T, _E>>
  *
  * The callable must return a `cuda::std::expected<T, E>` specialization. `E` is deduced from
  * that return type and constructed first from `std::exception_ptr`, when possible, otherwise
- * from the funneled `const std::exception&`. A nonstandard exception declines when only the
+ * from the funneled `const std::exception&`. A nonstandard exception passes through when only the
  * latter construction is available.
  */
 struct as_expected_t
@@ -475,10 +637,10 @@ inline constexpr as_expected_t as_expected{};
 /**
  * @brief Predicate guard for an exception-path sequence.
  *
- * There is no runtime "nop" answer on the exception path: a hook either accepts or declines.
- * A true predicate contributes a void effect answer so `&` continues; false declines by
+ * There is no runtime "nop" answer on the exception path: a hook either accepts or passes through.
+ * A true predicate contributes a void effect answer so `&` continues; false passes through by
  * throwing. As a `|` arm this means "not applicable, try the next arm"; inside `&`, false
- * declines the whole sequence. `catch_only` remains separate because its typed claims support
+ * passes the whole sequence through. `catch_only` remains separate because its typed claims support
  * the starved-arm theorem, while arbitrary predicates do not.
  */
 template <class _Pred>
@@ -506,14 +668,30 @@ struct when_t
         return;
       }
     }
-    _CCCL_RETHROW; // decline: the guard does not apply
+    _CCCL_RETHROW; // pass through: the guard does not apply
+  }
+
+  //! @brief The code-channel hook for a nullary predicate: true contributes an effect, false
+  //! passes the status through. A predicate over `const std::exception*` receives the status's
+  //! exception instead.
+  template <class _Status,
+            class _Fn,
+            class _Self                                                        = _Pred,
+            ::cuda::std::enable_if_t<::cuda::std::is_invocable_v<_Self&>, int> = 0>
+  detail::__status_answer<_Status> handle(const _Status __status, const ::cuda::std::source_location, _Fn&)
+  {
+    if (__pred_())
+    {
+      return {status_traits<_Status>::success(), false};
+    }
+    return {__status, true};
   }
 };
 
 /**
  * @brief Boundary translation: catches a `_From` (catch-clause rules: same or publicly
  * derived) and throws a `_To` (a `std::exception` derivative) -- constructed from the caught
- * `_From` when such a constructor exists, default-constructed otherwise. Anything that is not a `_From` declines
+ * `_From` when such a constructor exists, default-constructed otherwise. Anything that is not a `_From` passes through
  * untouched, so `translate<low, high> | ...` ladders compose; a following arm sees the `_To`.
  */
 template <class _From, class _To>
@@ -578,7 +756,7 @@ private:
 };
 
 //! @brief Translates: catches a `_From` (catch-clause rules), throws a `_To` -- constructed from
-//! the caught `_From` when possible, default-constructed otherwise. Anything else declines.
+//! the caught `_From` when possible, default-constructed otherwise. Anything else passes through.
 template <class _From, class _To>
 inline constexpr translate_t<_From, _To> translate{};
 
@@ -629,6 +807,13 @@ struct delay_t
 
   template <class _Fn>
   void operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&)
+  {
+    ::std::this_thread::sleep_for(__duration_);
+  }
+
+  //! @brief The code-channel hook: the same sleep, an effect.
+  template <class _Status, class _Fn>
+  void handle(const _Status, const ::cuda::std::source_location, _Fn&)
   {
     ::std::this_thread::sleep_for(__duration_);
   }
@@ -869,15 +1054,15 @@ inline constexpr bool __store_may_decline<::std::shared_ptr<_E>> = ::cuda::std::
  *   never substitutes its own storage problems for the exception being handled.
  * - a `std::exception` derivative `_E*` (or `shared_ptr` of one): copy-assigns the caught
  *   object when its dynamic type is EXACTLY `_E` (no slicing, same discipline as typed
- *   catches elsewhere in this file); any other type declines by rethrowing, so
+ *   catches elsewhere in this file); any other type passes through by rethrowing, so
  *   `store(&typed) | store(&eptr)` is a ladder whose fallback cannot fail. If `_E`'s
- *   copy assignment throws, the store declines with the ORIGINAL exception, never with its
+ *   copy assignment throws, the store passes through the ORIGINAL exception, never with its
  *   own bookkeeping failure.
  *
  * The hook answers `void`: store is an `&` citizen and an `always` finalizer, never a
  * final answer. The `exception_ptr`, span, and string variants are `noexcept`, so the
  * alternation dead-arm theorem correctly rejects them as non-final `|` arms; the typed
- * variant may decline and composes there deliberately.
+ * variant may pass through and composes there deliberately.
  *
  * The two canonical boundary spellings:
  * @code
@@ -953,6 +1138,59 @@ struct store_t
       }
     }
   }
+
+  //! @brief The code-channel hook for the targets that never pass through: an `exception_ptr`
+  //! target receives `status_traits<_Status>::make_exception(__status, __loc)` (or the failure to
+  //! build it), a text target receives `status_traits<_Status>::name(__status)` (best effort, as
+  //! on the exception channel). Typed-exception targets receive the status's exception instead.
+  template <class _Status,
+            class _Fn,
+            class _Self                                                        = _Target,
+            ::cuda::std::enable_if_t<!detail::__store_may_decline<_Self>, int> = 0>
+  void handle(const _Status __status, const ::cuda::std::source_location __loc, _Fn&) noexcept
+  {
+    if constexpr (::cuda::std::is_same_v<_Target, ::cuda::std::span<char>>)
+    {
+      if (!__target_.empty())
+      {
+        _CCCL_TRY
+        {
+          ::std::snprintf(__target_.data(), __target_.size(), "%s", status_traits<_Status>::name(__status).c_str());
+        }
+        _CCCL_CATCH_ALL
+        {
+          ::std::snprintf(__target_.data(), __target_.size(), "%s", "status whose name could not be formatted");
+        }
+      }
+    }
+    else
+    {
+      auto& __t   = *__target_;
+      using _Held = ::cuda::std::remove_reference_t<decltype(__t)>;
+      if constexpr (::cuda::std::is_same_v<_Held, ::std::exception_ptr>)
+      {
+        _CCCL_TRY
+        {
+          __t = ::std::make_exception_ptr(status_traits<_Status>::make_exception(__status, __loc));
+        }
+        _CCCL_CATCH_ALL
+        {
+          __t = ::std::current_exception();
+        }
+      }
+      else
+      {
+        _CCCL_TRY
+        {
+          __t = status_traits<_Status>::name(__status);
+        }
+        _CCCL_CATCH_ALL
+        {
+          // Best effort: storage failure leaves the target unchanged, the chain continues.
+        }
+      }
+    }
+  }
 };
 
 //! @brief Store the active exception, full dynamic type preserved, into `*__target`.
@@ -989,7 +1227,7 @@ inline auto store(::std::shared_ptr<::std::string> __target)
   return store_t<::std::shared_ptr<::std::string>>{::cuda::std::move(__target)};
 }
 
-//! @brief Store an exception of dynamic type exactly `_E` into `*__target`; decline otherwise.
+//! @brief Store an exception of dynamic type exactly `_E` into `*__target`; pass through otherwise.
 template <
   class _E,
   ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<::std::exception, _E> && !::cuda::std::is_const_v<_E>, int> = 0>
@@ -1099,16 +1337,89 @@ inline constexpr bool __answers_nothing_impl<true, _P, _Fn> =
 template <class _P, class _Fn = void (&)()>
 inline constexpr bool __answers_nothing = __answers_nothing_impl<__has_exception_hook<_P, _Fn>, _P, _Fn>;
 
-// Whether a policy's exception path is nothrow -- the same computation that
-// `operator<<`'s conditional noexcept uses. Declining from `|` means throwing
-// from that path, so a nothrow left side of `|` leaves the right unreachable.
+// Whether a policy never passes an exception through: its exception path is nothrow -- the same
+// computation that `operator<<`'s conditional noexcept uses. Passing through from `|` means
+// throwing from that path, so a nothrow left side of `|` leaves the right unreachable.
 template <class _P, class _Fn = void (&)()>
-inline constexpr bool __exception_path_nothrow_v =
+inline constexpr bool __never_passes_through_v =
   __has_exception_hook<_P, _Fn>
   && ::cuda::std::is_nothrow_invocable_v<::cuda::std::remove_reference_t<_P>&,
                                          const ::std::exception*,
                                          ::cuda::std::source_location,
                                          _Fn&>;
+
+// Former name of `__never_passes_through_v`.
+template <class _P, class _Fn = void (&)()>
+inline constexpr bool __exception_path_nothrow_v = __never_passes_through_v<_P, _Fn>;
+
+// --- The code channel: a status operand ----------------------------------------------------
+//
+// A status is a value whose `status_traits` say whether it failed. A failing status is offered
+// to the policy's code-channel hook `p.handle(status, source_location, Fn&)`, whose answers are
+// those of the exception hook plus `passthrough_t` (the status leaves unhandled; no exception is
+// active, so passing through is a returned value, never a throw). A policy with only an
+// exception hook is reached through the exception bridge below.
+
+template <class _Status>
+using __status_failed_of = decltype(status_traits<_Status>::failed(::cuda::std::declval<_Status>()));
+
+// Whether `_Status` is a status: `status_traits<_Status>::failed` is well-formed.
+template <class _Status>
+inline constexpr bool __is_status_v = ::cuda::std::_IsValidExpansion<__status_failed_of, _Status>::value;
+
+// The callable that legacy hooks receive for a past result: the status is already there, so
+// "running the action again" yields it again.
+template <class _Status>
+struct __past_result
+{
+  _Status __status_;
+
+  _Status operator()() const noexcept
+  {
+    return __status_;
+  }
+};
+
+template <class _P, class _Status, class _Fn>
+using __status_hook_of = decltype(::cuda::std::declval<_P&>().handle(
+  ::cuda::std::declval<_Status>(), ::cuda::std::declval<::cuda::std::source_location>(), ::cuda::std::declval<_Fn&>()));
+
+// Capability 3: the code-channel hook.
+template <class _P, class _Status, class _Fn>
+inline constexpr bool __has_status_hook =
+  ::cuda::std::_IsValidExpansion<__status_hook_of, ::cuda::std::remove_reference_t<_P>, _Status, _Fn>::value;
+
+// Whether a policy reaches a status at all: natively, or through the bridge over its exception hook.
+template <class _P, class _Status, class _Fn>
+inline constexpr bool __has_status_path = __has_status_hook<_P, _Status, _Fn> || __has_exception_hook<_P, _Fn>;
+
+// Nothrow-ness of the code channel. A policy with no path passes the status through by returning;
+// the bridge is nothrow only over a nothrow hook and a nothrow exception construction.
+template <class _P,
+          class _Status,
+          class _Fn,
+          bool = __has_status_hook<_P, _Status, _Fn>,
+          bool = __has_exception_hook<_P, _Fn>>
+inline constexpr bool __status_path_nothrow_v = true;
+
+template <class _P, class _Status, class _Fn, bool _HasHook>
+inline constexpr bool __status_path_nothrow_v<_P, _Status, _Fn, true, _HasHook> =
+  noexcept(::cuda::std::declval<::cuda::std::remove_reference_t<_P>&>().handle(
+    ::cuda::std::declval<_Status>(),
+    ::cuda::std::declval<::cuda::std::source_location>(),
+    ::cuda::std::declval<_Fn&>()));
+
+template <class _P, class _Status, class _Fn>
+inline constexpr bool __status_path_nothrow_v<_P, _Status, _Fn, false, true> =
+  __never_passes_through_v<_P, _Fn>
+  && noexcept(status_traits<_Status>::make_exception(
+    ::cuda::std::declval<_Status>(), ::cuda::std::declval<::cuda::std::source_location>()));
+
+// Offer a failing status to a policy (defined with the answer interpretation below).
+template <class _Status, bool _Final = true, class _P, class _Fn>
+__status_answer<_Status>
+__offer_status(_P& __policy, _Status __status, ::cuda::std::source_location __loc, _Fn& __fn) noexcept(
+  __status_path_nothrow_v<_P, _Status, _Fn>);
 
 // --- Adapters: normalize the historical reactions into policies ----------------------------
 
@@ -1123,6 +1434,13 @@ struct __ignore_policy
 
   template <class _Fn>
   decltype(::std::ignore) operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const noexcept
+  {
+    return ::std::ignore;
+  }
+
+  // On the code channel resuming yields `status_traits<S>::success()`, never `S{}`.
+  template <class _Status, class _Fn>
+  decltype(::std::ignore) handle(const _Status, const ::cuda::std::source_location, _Fn&) const noexcept
   {
     return ::std::ignore;
   }
@@ -1409,6 +1727,41 @@ struct __policy_and : __composite_hooks<_L, _R>
       return this->__r_(__exception, __loc, __fn);
     }
   }
+
+  // The code channel: offer the status to both sides (no short circuit); it is handled only if
+  // both handle it, and then `_R` answers. A throw from either side ends the matter.
+  template <
+    class _Status,
+    class _Fn,
+    class _LL                                                                                                   = _L,
+    class _RR                                                                                                   = _R,
+    ::cuda::std::enable_if_t<__has_status_path<_LL, _Status, _Fn> || __has_status_path<_RR, _Status, _Fn>, int> = 0>
+  __status_answer<_Status> handle(const _Status __status, const ::cuda::std::source_location __loc, _Fn& __fn) noexcept(
+    __status_path_nothrow_v<_L, _Status, _Fn> && __status_path_nothrow_v<_R, _Status, _Fn>)
+  {
+    bool __passed = false;
+    if constexpr (__has_status_path<_L, _Status, _Fn>)
+    {
+      __passed = __offer_status<_Status, false>(this->__l_, __status, __loc, __fn).__passed_;
+    }
+    if constexpr (__has_status_path<_R, _Status, _Fn>)
+    {
+      const __status_answer<_Status> __right = __offer_status<_Status>(this->__r_, __status, __loc, __fn);
+      if (__passed)
+      {
+        return {__status, true};
+      }
+      return __right;
+    }
+    else
+    {
+      if (__passed)
+      {
+        return {__status, true};
+      }
+      return {status_traits<_Status>::success(), false};
+    }
+  }
 };
 
 template <class _L, class _R>
@@ -1429,18 +1782,18 @@ inline constexpr bool __right_arm_starved = false;
 
 template <class _P1, class... _As, class _P2, class... _Bs>
 inline constexpr bool __right_arm_starved<__catch_only_t<_P1, _As...>, __catch_only_t<_P2, _Bs...>> =
-  __exception_path_nothrow_v<_P1> && (__claimed_by_any<_Bs, _As...> && ...);
+  __never_passes_through_v<_P1> && (__claimed_by_any<_Bs, _As...> && ...);
 
 // A cone on the left starves an exact entry inside it on the right; an exact entry on the
 // left starves only its own repetitions. The converse (exact left, cone right) never starves:
 // the cone always has more members.
 template <class _P1, class... _As, class _P2, class... _Bs>
 inline constexpr bool __right_arm_starved<__catch_only_t<_P1, _As...>, __catch_exactly_t<_P2, _Bs...>> =
-  __exception_path_nothrow_v<_P1> && (__claimed_by_any<_Bs, _As...> && ...);
+  __never_passes_through_v<_P1> && (__claimed_by_any<_Bs, _As...> && ...);
 
 template <class _P1, class... _As, class _P2, class... _Bs>
 inline constexpr bool __right_arm_starved<__catch_exactly_t<_P1, _As...>, __catch_exactly_t<_P2, _Bs...>> =
-  __exception_path_nothrow_v<_P1> && (__listed_exactly<_Bs, _As...> && ...);
+  __never_passes_through_v<_P1> && (__listed_exactly<_Bs, _As...> && ...);
 
 // The alternation composite `_L | _R`: `_L` claims first; if it declines by throwing, `_R`
 // handles the original (re-observed) exception. Each arm is called at the uniform 3-arg shape;
@@ -1452,8 +1805,7 @@ struct __policy_or : __composite_hooks<_L, _R>
 
   static_assert(__has_exception_hook<_L> && __has_exception_hook<_R>,
                 "both sides of | must answer the exception path (have an exception hook)");
-  static_assert(!__exception_path_nothrow_v<_L>,
-                "the left policy never declines; alternatives after it are unreachable");
+  static_assert(!__never_passes_through_v<_L>, "the left policy never declines; alternatives after it are unreachable");
   static_assert(!__right_arm_starved<_L, _R>,
                 "the left type guard already claims every exception type the right arm lists; "
                 "the right alternative is unreachable");
@@ -1511,6 +1863,20 @@ struct __policy_or : __composite_hooks<_L, _R>
       }
     }
   }
+
+  // The code channel: `_L` gets first claim; a status it passes through goes to `_R`. Passing
+  // through is a returned answer here, so there is nothing to re-observe.
+  template <class _Status, class _Fn>
+  __status_answer<_Status> handle(const _Status __status, const ::cuda::std::source_location __loc, _Fn& __fn) noexcept(
+    __status_path_nothrow_v<_L, _Status, _Fn> && __status_path_nothrow_v<_R, _Status, _Fn>)
+  {
+    const __status_answer<_Status> __left = __offer_status<_Status>(this->__l_, __status, __loc, __fn);
+    if (!__left.__passed_)
+    {
+      return __left;
+    }
+    return __offer_status<_Status>(this->__r_, __status, __loc, __fn);
+  }
 };
 
 template <class _L, class _R>
@@ -1529,7 +1895,7 @@ struct __policy_pow : __forwards_success<_P>
 
   static_assert(__has_exception_hook<_P>,
                 "the repeated policy must answer the exception path (have an exception hook)");
-  static_assert(!__exception_path_nothrow_v<_P>,
+  static_assert(!__never_passes_through_v<_P>,
                 "the repeated policy never declines; repetitions after the first are unreachable");
 
   template <class _Fn>
@@ -1585,6 +1951,23 @@ struct __policy_pow : __forwards_success<_P>
       return __go(__go, __exception, __n_);
     }
     _CCCL_DIAG_POP
+  }
+
+  // The code channel: offer the status up to `__n_` times while it passes through; `n == 0`
+  // passes it through at once.
+  template <class _Status, class _Fn>
+  __status_answer<_Status> handle(const _Status __status, const ::cuda::std::source_location __loc, _Fn& __fn) noexcept(
+    __status_path_nothrow_v<_P, _Status, _Fn>)
+  {
+    for (int __i = 0; __i < __n_; ++__i)
+    {
+      const __status_answer<_Status> __answer = __offer_status<_Status>(this->__p_, __status, __loc, __fn);
+      if (!__answer.__passed_)
+      {
+        return __answer;
+      }
+    }
+    return {__status, true};
   }
 };
 
@@ -1650,6 +2033,120 @@ constexpr bool __value_preserving_impl()
 template <class _From, class _To>
 inline constexpr bool __value_preserving_v =
   ::cuda::std::is_convertible_v<_From, _To> && __value_preserving_impl<_From, _To>();
+
+// Interpret a code-channel answer, produced by `__call()`, as what the `<<` expression yields.
+// `_Final` is false where `&` discards the answer: only "passed through" matters there.
+template <bool _Final, class _Status, class _Call>
+__status_answer<_Status> __interpret_status(const _Status __status, _Call&& __call)
+{
+  using _Answer = decltype(__call());
+  using _A      = ::cuda::std::remove_cvref_t<_Answer>;
+  if constexpr (::cuda::std::is_same_v<_A, nullval>)
+  {
+    __call();
+    _CCCL_UNREACHABLE();
+  }
+  else if constexpr (::cuda::std::is_void_v<_Answer> || __is_ignore_v<_Answer>)
+  {
+    // Resume or effect: the status is handled, and a handled status yields success.
+    static_cast<void>(__call());
+    return {status_traits<_Status>::success(), false};
+  }
+  else if constexpr (::cuda::std::is_same_v<_A, passthrough_t>)
+  {
+    static_cast<void>(__call());
+    return {__status, true};
+  }
+  else if constexpr (::cuda::std::is_same_v<_A, __status_answer<_Status>>)
+  {
+    return __call();
+  }
+  else if constexpr (!_Final)
+  {
+    static_cast<void>(__call()); // a non-final value answer is discarded
+    return {status_traits<_Status>::success(), false};
+  }
+  else
+  {
+    static_assert(::cuda::std::is_convertible_v<_Answer, _Status>,
+                  "on a status operand the policy's value answer must convert to the status type: "
+                  "subst(cudaSuccess), not subst(0)");
+    static_assert(__value_preserving_v<_Answer, _Status>,
+                  "on a status operand the policy's value answer does not preserve the status type's range");
+    return {static_cast<_Status>(__call()), false};
+  }
+}
+
+// The bridge for a policy that only handles exceptions: build the status's exception and offer it
+// to the exception hook. A nothrow hook gets it directly. A hook that may pass through runs inside
+// a handler of that exception, since passing through rethrows: a rethrow re-activates the very
+// object caught ([except.throw]), so identity tells passing through from a new exception, which
+// escapes. Exceptions that do not derive from std::exception cannot be compared and escape too.
+template <bool _Final, class _Status, class _P, class _Fn>
+__status_answer<_Status>
+__handle_via_exception(_P& __policy, const _Status __status, const ::cuda::std::source_location __loc, _Fn& __fn)
+{
+  using _Exception = decltype(status_traits<_Status>::make_exception(__status, __loc));
+  static_assert(::cuda::std::is_base_of_v<::std::exception, ::cuda::std::remove_cvref_t<_Exception>>,
+                "status_traits<S>::make_exception must return a std::exception derivative");
+  if constexpr (__never_passes_through_v<_P, _Fn>)
+  {
+    const auto __exception = status_traits<_Status>::make_exception(__status, __loc);
+    return __interpret_status<_Final>(__status, [&]() -> decltype(auto) {
+      return __policy(&__exception, __loc, __fn);
+    });
+  }
+  else
+  {
+    _CCCL_TRY
+    {
+      _CCCL_THROW(_Exception, status_traits<_Status>::make_exception(__status, __loc));
+    }
+    _CCCL_CATCH (const ::std::exception& __current)
+    {
+      _CCCL_TRY
+      {
+        return __interpret_status<_Final>(__status, [&]() -> decltype(auto) {
+          return __policy(&__current, __loc, __fn);
+        });
+      }
+      _CCCL_CATCH (const ::std::exception& __again)
+      {
+        if (&__again != &__current)
+        {
+          _CCCL_RETHROW; // a new exception (unwind, translate, nest, ...): it escapes
+        }
+      }
+      _CCCL_CATCH_FALLTHROUGH
+      return {__status, true};
+    }
+    _CCCL_CATCH_FALLTHROUGH
+    _CCCL_UNREACHABLE();
+  }
+}
+
+// Offer a failing status to a policy: its code-channel hook, else the bridge over its exception
+// hook, else nothing answers and the status passes through.
+template <class _Status, bool _Final, class _P, class _Fn>
+__status_answer<_Status>
+__offer_status(_P& __policy, const _Status __status, const ::cuda::std::source_location __loc, _Fn& __fn) noexcept(
+  __status_path_nothrow_v<_P, _Status, _Fn>)
+{
+  if constexpr (__has_status_hook<_P, _Status, _Fn>)
+  {
+    return __interpret_status<_Final>(__status, [&]() -> decltype(auto) {
+      return __policy.handle(__status, __loc, __fn);
+    });
+  }
+  else if constexpr (__has_exception_hook<_P, _Fn>)
+  {
+    return __handle_via_exception<_Final>(__policy, __status, __loc, __fn);
+  }
+  else
+  {
+    return {__status, true};
+  }
+}
 
 // Interpret the final element's answer as the expression's value, converting to `_Expr`.
 template <class _Expr, class _P, class _Fn>
@@ -1733,14 +2230,14 @@ struct __on_throw_policy
 template <class _R>
 __on_throw_policy(_R, ::cuda::std::source_location) -> __on_throw_policy<_R>;
 
-template <class _Reaction, class _Fn>
+template <class _Reaction, class _Fn, ::cuda::std::enable_if_t<!__is_status_v<::cuda::std::remove_cvref_t<_Fn>>, int> = 0>
 // A resuming chain reads neither exception nor location in some instantiations; gcc 9 flags the
 // unread policy without the attribute.
 // In clang-tidy's device pass _CCCL_TRY/_CCCL_CATCH expand to no handler, so bugprone-exception-escape
 // sees the callable's throw escape this runner in every instantiation whose policy makes it noexcept.
 // NOLINTNEXTLINE(bugprone-exception-escape)
 decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy, _Fn&& __fn) noexcept(
-  __exception_path_nothrow_v<_Reaction, _Fn> && __on_enter_nothrow_v<_Reaction>)
+  __never_passes_through_v<_Reaction, _Fn> && __on_enter_nothrow_v<_Reaction>)
 {
   // Bind as a non-const lvalue: a hook may invoke it again later, and a mutable callable needs it.
   // NOLINTNEXTLINE(misc-const-correctness)
@@ -1816,13 +2313,94 @@ decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy
     }
   }
 }
+
+// The status operand: a past result. Its expression type is the status type; a handled status
+// yields `status_traits<_Status>::success()` and a passed-through one yields itself, for the
+// caller to propagate with `return`. Success costs one `failed` test and nothing else: no entry
+// gate and no success hook run, since the action has already happened.
+template <class _Reaction, class _Status, ::cuda::std::enable_if_t<__is_status_v<_Status>, int> = 0>
+// In clang-tidy's device pass _CCCL_TRY/_CCCL_CATCH expand to no handler, so bugprone-exception-escape
+// sees a throw from the exception bridge escape this runner in instantiations whose policy makes it noexcept.
+// NOLINTNEXTLINE(bugprone-exception-escape)
+_Status operator<<(__on_throw_policy<_Reaction> __policy,
+                   const _Status __status) noexcept(__status_path_nothrow_v<_Reaction, _Status, __past_result<_Status>>)
+{
+  if (!status_traits<_Status>::failed(__status))
+  {
+    return __status;
+  }
+  __past_result<_Status> __fn{__status};
+  return __offer_status<_Status>(__policy.__reaction_, __status, __policy.__loc_, __fn).__value_;
+}
+
+// A fixed set of status values, all of one status type.
+template <class _Status, ::cuda::std::size_t _Count>
+struct __status_set
+{
+  _Status __values_[_Count];
+
+  [[nodiscard]] bool __contains(const _Status __status) const noexcept
+  {
+    for (const _Status& __value : __values_)
+    {
+      if (__value == __status)
+      {
+        return true;
+      }
+    }
+    return false;
+  }
+};
+
+// `only(values...)(p)`: offer a status to `p` when it equals one of the values, else pass it
+// through. A value selector has nothing to match on the exception channel, where it passes
+// through by rethrowing (so it can head a `|`).
+template <class _P, class _Status, ::cuda::std::size_t _Count>
+struct __only_values_t : __forwards_success<_P>
+{
+  using __exception_sink_tag = void;
+  __status_set<_Status, _Count> __set_;
+
+  template <class _Fn>
+  [[noreturn]] nullval operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const
+  {
+    _CCCL_RETHROW;
+  }
+
+  template <class _Operand, class _Fn>
+  __status_answer<_Operand> handle(const _Operand __status,
+                                   const ::cuda::std::source_location __loc,
+                                   _Fn& __fn) noexcept(__status_path_nothrow_v<_P, _Operand, _Fn>)
+  {
+    static_assert(::cuda::std::is_same_v<_Operand, _Status>,
+                  "only(values...) matches a status of the values' own type; the operand is a status of another type");
+    if (__set_.__contains(__status))
+    {
+      return __offer_status<_Operand>(this->__p_, __status, __loc, __fn);
+    }
+    return {__status, true};
+  }
+};
+
+template <class _Status, ::cuda::std::size_t _Count>
+struct __only_selector
+{
+  __status_set<_Status, _Count> __set_;
+
+  template <class _P>
+  auto operator()(_P&& __p) const
+  {
+    auto __np = __normalize(::cuda::std::forward<_P>(__p));
+    return __only_values_t<decltype(__np), _Status, _Count>{{::cuda::std::move(__np)}, __set_};
+  }
+};
 } // namespace detail
 #endif // !_CCCL_DOXYGEN_INVOKED
 
 /**
  * @brief Restricts a policy to exceptions matching any of `E1, E2, ...`: `catch_only<E...>(p)`
  * runs `p`'s exception path when the active exception matches any listed type by catch-clause
- * rules (same or publicly derived), and otherwise declines by rethrowing. The listed types may
+ * rules (same or publicly derived), and otherwise passes through by rethrowing. The listed types may
  * be anything catchable -- std::exception derivatives, user structs, even `int`. Native C++
  * has no multi-type catch clause; this adds that expressivity. A matching exception that does
  * not derive from `std::exception` reaches `p`'s hook as a null pointer. A pack where one type
@@ -1847,7 +2425,7 @@ auto catch_only(_P&& __p)
  * would slice under a cone (copy, store) are safe behind an exact gate; and the guard's
  * contract cannot drift when someone derives a new type later. Matching reads the dynamic
  * type through the `std::exception` funnel, so every listed type must derive
- * `std::exception`, and a non-std active exception always declines. Duplicates are rejected;
+ * `std::exception`, and a non-std active exception always passes through. Duplicates are rejected;
  * Base and Derived may both be listed, each matching only itself. In `|` chains,
  * `catch_exactly<E>(recover) | catch_only<E>(fallback)` layers the exact type against the
  * rest of its cone; the reverse order starves the exact arm and is a compile error.
@@ -1863,6 +2441,28 @@ auto catch_exactly(_P&& __p)
                 "catch_exactly<..., E, ..., E, ...>: a repeated entry is dead");
   auto __np = detail::__normalize(::cuda::std::forward<_P>(__p));
   return detail::__catch_exactly_t<decltype(__np), _Es...>{::cuda::std::move(__np)};
+}
+
+/**
+ * @brief Restricts a policy to failing statuses equal to any of the given values:
+ * `only(v1, v2, ...)(p)` offers a status to `p` when it equals one of the values, and otherwise
+ * passes it through. The values share one status type, and the operand must be a status of that
+ * same type. On the exception channel there is nothing to match and the exception passes
+ * through, so the selector can head a `|`:
+ * @code
+ * while (on_error(only(cudaErrorNotReady)(subst(cudaErrorNotReady)) | unwind) << cudaStreamQuery(s)) { ... }
+ * @endcode
+ *
+ * @param[in] __first The first status value to match.
+ * @param[in] __more Further status values to match, of the same type as `__first`.
+ * @return A selector; calling it with a policy `p` yields the restricted policy.
+ */
+template <class _Status, class... _More>
+auto only(const _Status __first, const _More... __more)
+{
+  static_assert((::cuda::std::is_same_v<_Status, _More> && ...),
+                "only(values...) requires all values to be of one status type");
+  return detail::__only_selector<_Status, 1 + sizeof...(_More)>{{{__first, __more...}}};
 }
 
 /**
@@ -1898,8 +2498,9 @@ auto operator&(_L&& __l, noop_t)
 }
 
 /**
- * @brief Alternation: `_L` gets first claim; if it declines by throwing, `_R` handles the
- * original exception. `rethrow` is the two-sided identity. Same operand constraint as `&`.
+ * @brief Alternation: `_L` gets first claim; if it passes through by throwing, `_R` handles the
+ * original exception; on the code channel a status `_L` passes through goes to `_R`. `passthrough`
+ * is the two-sided identity. Same operand constraint as `&`.
  */
 template <class _L,
           class _R,
@@ -1910,14 +2511,14 @@ auto operator|(_L&& __l, _R&& __r)
     detail::__normalize(::cuda::std::forward<_L>(__l)), detail::__normalize(::cuda::std::forward<_R>(__r))};
 }
 
-//! @brief Left identity of `|`: `rethrow | p` is `__normalize(p)` when that result is sink-tagged.
+//! @brief Left identity of `|`: `passthrough | p` is `__normalize(p)` when that result is sink-tagged.
 template <class _R, ::cuda::std::enable_if_t<detail::__normalizes_to_exception_sink_v<_R>, int> = 0>
 auto operator|(rethrow_t, _R&& __r)
 {
   return detail::__normalize(::cuda::std::forward<_R>(__r));
 }
 
-//! @brief Right identity of `|`. `rethrow` itself is excluded so `rethrow | rethrow` is not ambiguous.
+//! @brief Right identity of `|`. `passthrough` itself is excluded so `passthrough | passthrough` is not ambiguous.
 template <class _L,
           ::cuda::std::enable_if_t<!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_L>, rethrow_t>
                                      && detail::__normalizes_to_exception_sink_v<_L>,
@@ -1929,7 +2530,7 @@ auto operator|(_L&& __l, rethrow_t)
 
 /**
  * @brief Repetition: `p * n` is the n-fold `|` of `p` with itself -- behaviorally
- * `p | p | ... | p` (n copies). Laws: `p * 0` ≡ `rethrow` (empty fold); `p * 1` ≡ `p`
+ * `p | p | ... | p` (n copies). Laws: `p * 0` ≡ `passthrough` (empty fold); `p * 1` ≡ `p`
  * (behaviorally); `p * (m + n)` ≡ `p * m | p * n`. `*` binds tighter than `&` and `|`, so
  * `(notify & retry) * 3` notifies before each re-attempt, while `notify & retry * 3`
  * notifies once then re-attempts three times.
@@ -1959,7 +2560,7 @@ auto operator*(int __n, _P&& __p)
  * @brief Restricts a policy with a runtime predicate.
  *
  * Returns `when_t{pred} & p`: as a `|` arm, false means the next alternative gets the
- * exception; inside a larger `&`, false declines the whole sequence.
+ * exception; inside a larger `&`, false passes the whole sequence through.
  */
 template <class _Pred, class _P>
 auto when(_Pred&& __pred, _P&& __p)
@@ -1969,8 +2570,8 @@ auto when(_Pred&& __pred, _P&& __p)
 
 /**
  * @brief Runs the head, then every finalizer, on the exception path -- the finalizers run
- * whether the head accepts or declines. The composite's answer is the HEAD's; finalizers'
- * answers are discarded. If the head declines, the finalizers observe the in-flight
+ * whether the head accepts or passes through. The composite's answer is the HEAD's; finalizers'
+ * answers are discarded. If the head passes through, the finalizers observe the in-flight
  * exception and the head's exception then continues onward (a finalizer's own throw
  * replaces it, as anywhere in C++). Later arguments are increasingly unconditional.
  * A named function, not an operator: it has no left identity.
@@ -2027,6 +2628,28 @@ struct always_t
       }
       _CCCL_RETHROW;
     }
+  }
+
+  //! @brief The code-channel hook: offers the status to the head, then to every finalizer, and
+  //! answers the head's answer. If the head throws, the finalizers still run and the head's
+  //! exception continues onward.
+  template <class _Status, class _Fn>
+  detail::__status_answer<_Status>
+  handle(const _Status __status, const ::cuda::std::source_location __loc, _Fn& __fn) noexcept(
+    detail::__status_path_nothrow_v<_A, _Status, _Fn> && detail::__status_path_nothrow_v<_B, _Status, _Fn>)
+  {
+    detail::__status_answer<_Status> __answer{__status, true};
+    _CCCL_TRY
+    {
+      __answer = detail::__offer_status<_Status>(__head_, __status, __loc, __fn);
+    }
+    _CCCL_CATCH_ALL
+    {
+      static_cast<void>(detail::__offer_status<_Status, false>(__fin_, __status, __loc, __fn));
+      _CCCL_RETHROW;
+    }
+    static_cast<void>(detail::__offer_status<_Status, false>(__fin_, __status, __loc, __fn));
+    return __answer;
   }
 
   // The head's success hook is a type-preserving side-effect; forward it.
@@ -2087,8 +2710,8 @@ auto always(_A&& __a, _B&& __b, _Cs&&... __cs)
  *
  * Custom runtime policies derive from the public @ref sink_base and implement
  * `hook` (and `clone`); `on_success` defaults to identity. Hand-written models
- * default to `passthrough` and are unchecked. Erased |-composites are
- * `passthrough` (a loud, value-checked unbox on first throw is their
+ * default to `own_result` and are unchecked. Erased |-composites are
+ * `own_result` (a loud, value-checked unbox on first throw is their
  * backstop); a pure-& composite keeps its final policy's precise kind and
  * is checked at first use. A wrapped
  * success channel that cannot accept `std::any` (for example `remember`) does
@@ -2109,33 +2732,37 @@ public:
     integral, //!< a stored integral or enumeration, with a value range
     floating, //!< a stored floating value (precision loss under a floating body is tolerated)
     udt, //!< a stored class, pointer, or other exact-match type
-    passthrough //!< the boxed value is the callable's own result (`std::any`)
+    own_result //!< the boxed value is the callable's own result (`std::any`)
   };
 
   //! @brief The erasure surface. Public: custom runtime policies derive from
-  //! it and implement `hook` (rethrow by throwing; hand back `std::any`,
+  //! it and implement `hook` (pass through by throwing; hand back `std::any`,
   //! empty meaning "no value") and `clone`; `on_success` defaults to identity.
   struct sink_base
   {
     const answer_kind kind;
-    //! Whether the exception path may rethrow (`false`: alternatives after
-    //! this sink are unreachable). Conservative for hand-written models.
-    const bool may_rethrow;
+    //! Whether the policy may pass an error through (`false`: alternatives
+    //! after this sink are unreachable). Conservative for hand-written models.
+    const bool may_passthrough;
+    //! Whether the policy may throw. Equal to `may_passthrough` for now: on the
+    //! exception channel the only way out of a hook is a throw.
+    const bool may_throw;
     //! Inclusive range of a stored integral answer; unused for other kinds.
     const long long min_value;
     const unsigned long long max_value;
-    //! Exact stored type for `udt` checks; `nullptr` encodes `passthrough`.
+    //! Exact stored type for `udt` checks; `nullptr` encodes `own_result`.
     const ::std::type_info* answer_type;
     const ::std::string_view answer_name;
 
-    sink_base(answer_kind __kind                    = answer_kind::passthrough,
-              bool __may_rethrow                    = true,
+    sink_base(answer_kind __kind                    = answer_kind::own_result,
+              bool __may_passthrough                = true,
               long long __min_value                 = 0,
               unsigned long long __max_value        = 0,
               const ::std::type_info* __answer_type = nullptr,
               ::std::string_view __answer_name      = {})
         : kind(__kind)
-        , may_rethrow(__may_rethrow)
+        , may_passthrough(__may_passthrough)
+        , may_throw(__may_passthrough)
         , min_value(__min_value)
         , max_value(__max_value)
         , answer_type(__answer_type)
@@ -2176,7 +2803,7 @@ private:
     }
     else if constexpr (::cuda::std::is_same_v<_T, ::std::any>)
     {
-      return answer_kind::passthrough;
+      return answer_kind::own_result;
     }
     else if constexpr (::cuda::std::is_enum_v<_T> || ::cuda::std::is_integral_v<_T>)
     {
@@ -2266,10 +2893,10 @@ private:
     explicit __model(_P __p)
         : sink_base(
             __skind,
-            !detail::__exception_path_nothrow_v<_P, ::std::function<::std::any()>>,
+            !detail::__never_passes_through_v<_P, ::std::function<::std::any()>>,
             __stored_min<__ans_t>(),
             __stored_max<__ans_t>(),
-            (__skind == answer_kind::passthrough || __skind == answer_kind::dies || __skind == answer_kind::resumes
+            (__skind == answer_kind::own_result || __skind == answer_kind::dies || __skind == answer_kind::resumes
              || __skind == answer_kind::effects)
               ? nullptr
               : &typeid(::cuda::std::remove_cvref_t<__ans_t>),
@@ -2404,7 +3031,7 @@ private:
     [[maybe_unused]] const auto __stored =
       __p_->answer_name.empty() ? ::std::string_view{"<erased>"} : __p_->answer_name;
     if (__kind == answer_kind::dies || __kind == answer_kind::resumes || __kind == answer_kind::effects
-        || __kind == answer_kind::passthrough)
+        || __kind == answer_kind::own_result)
     {
       return;
     }
@@ -2590,9 +3217,21 @@ public:
   {
     return __p_->kind;
   }
-  [[nodiscard]] bool may_rethrow() const noexcept
+  //! @brief Whether the erased policy may pass an error through (`false`: alternatives after
+  //! this sink are unreachable).
+  [[nodiscard]] bool may_passthrough() const noexcept
   {
-    return __p_->may_rethrow;
+    return __p_->may_passthrough;
+  }
+  //! @brief Whether the erased policy may throw.
+  [[nodiscard]] bool may_throw() const noexcept
+  {
+    return __p_->may_throw;
+  }
+  //! @brief Former name of @ref may_passthrough (deprecated).
+  CCCL_DEPRECATED_BECAUSE("use may_passthrough()") bool may_rethrow() const noexcept
+  {
+    return may_passthrough();
   }
 
   //! @brief The uniform hook: answers `decltype(fn())`. A void callable answers
@@ -2685,10 +3324,10 @@ exception_sink type_erase(_P&& __p)
 // the policy expression only).
 
 /**
- * @brief Creates a policy saying how to react if a callable throws.
+ * @brief Creates a policy saying how to react if a callable throws or a status reports failure.
  *
- * Apply the policy with `on_throw(policy) << callable`. Its expression type is always
- * `decltype(callable())`; no policy changes it.
+ * Apply the policy with `on_error(policy) << callable`. Its expression type is always
+ * `decltype(callable())`; no policy changes it. `on_throw` is the former name.
  *
  * A policy is an object exposing any of two optional capabilities, discovered by compile-time
  * introspection: the exception hook
@@ -2697,17 +3336,18 @@ exception_sink type_erase(_P&& __p)
  * a success hook `on_success(...)` that observes the result while preserving its type. The named policies
  * include @ref exception_policies::notify_t "notify", @ref exception_policies::subst_t "subst", @ref
  * exception_policies::defer_t "defer",
- * @ref exception_policies::rethrow_t "rethrow", @ref exception_policies::retry_t "retry", @ref
+ * @ref exception_policies::passthrough_t "passthrough" (formerly `rethrow`), @ref exception_policies::unwind_t
+ * "unwind", @ref exception_policies::retry_t "retry", @ref
  * exception_policies::as_expected_t "as_expected", @ref exception_policies::noop_t "noop", @ref
- * exception_policies::catch_only, @ref exception_policies::catch_exactly,
+ * exception_policies::catch_only, @ref exception_policies::catch_exactly, @ref exception_policies::only,
  * @ref exception_policies::when "when",
  * @ref exception_policies::translate_t "translate" / @ref exception_policies::nest, @ref exception_policies::delay_t
  * "delay", @ref exception_policies::backoff, and
  * @ref exception_policies::remember_t "remember", @ref exception_policies::circuit_breaker_t
- * "circuit_breaker", and @ref exception_policies::always. Guards decline what they do not
- * claim; translators decline with a different exception; delay/backoff/retry re-run; remember serves the last success.
- * Policies compose with `&` (sequence; the last element answers; non-final answers are
- * discarded) and `|` (alternation; the left may decline by throwing), and with `*` (n-fold
+ * "circuit_breaker", and @ref exception_policies::always. Guards pass through what they do not
+ * claim; translators pass through with a different exception; delay/backoff/retry re-run; remember serves the last
+ * success. Policies compose with `&` (sequence; the last element answers; non-final answers are
+ * discarded) and `|` (alternation; the left may pass through by throwing), and with `*` (n-fold
  * `|`).
  *
  * For backward compatibility `on_throw` also accepts non-policy reactions: `std::ignore`
@@ -2746,8 +3386,31 @@ exception_sink type_erase(_P&& __p)
  * `source_location::current()` argument as potentially throwing, tainting the query (the
  * call itself is `noexcept` either way).
  *
+ * The right operand of `<<` may also be a status, a value for which @ref status_traits is
+ * specialized (`cudaError_t`, `CUresult`, ... once `cuda_safe_call.cuh` is included):
+ * `on_error(policy) << cudaFree(p)`. A status is a past result handled on the code channel. On
+ * success the expression yields the status after one test; a failing status the policy handles
+ * yields `status_traits<S>::success()`, one it passes through yields the status itself, and
+ * `unwind` turns it into an exception. Policies that only handle exceptions see the status's
+ * exception, `status_traits<S>::make_exception(status, loc)`.
+ *
  * @param[in] __reaction The policy (or a reaction normalized into one), owned if passed an
  *            rvalue and referred to if passed an lvalue.
+ * @param[in] __loc The location passed to exception hooks.
+ * @return A policy object consumed by `operator<<`.
+ */
+template <class _Reaction>
+auto on_error(_Reaction&& __reaction,
+              const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
+{
+  return exception_policies::detail::__on_throw_policy{
+    exception_policies::detail::__normalize(::cuda::std::forward<_Reaction>(__reaction)), __loc};
+}
+
+/**
+ * @brief Former name of @ref on_error, kept as an alias.
+ *
+ * @param[in] __reaction The policy (or a reaction normalized into one), as for @ref on_error.
  * @param[in] __loc The location passed to exception hooks.
  * @return A policy object consumed by `operator<<`.
  */
@@ -2755,8 +3418,7 @@ template <class _Reaction>
 auto on_throw(_Reaction&& __reaction,
               const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
 {
-  return exception_policies::detail::__on_throw_policy{
-    exception_policies::detail::__normalize(::cuda::std::forward<_Reaction>(__reaction)), __loc};
+  return on_error(::cuda::std::forward<_Reaction>(__reaction), __loc);
 }
 
 #ifdef ON_THROW
@@ -4596,13 +5258,13 @@ UNITTEST("type erasure")
     EXPECT(x == 0);
   }
   // Metadata: const fields, derived at erasure time.
-  EXPECT(type_erase(retry * 3).kind() == exception_sink::answer_kind::passthrough);
+  EXPECT(type_erase(retry * 3).kind() == exception_sink::answer_kind::own_result);
   EXPECT(type_erase(subst(9)).kind() == exception_sink::answer_kind::integral);
   EXPECT(type_erase(subst(1.5)).kind() == exception_sink::answer_kind::floating);
   EXPECT(type_erase(::std::ignore).kind() == exception_sink::answer_kind::resumes);
   EXPECT((type_erase(translate<::std::runtime_error, ::std::logic_error>).kind() == exception_sink::answer_kind::dies));
-  EXPECT(type_erase(retry * 3).may_rethrow());
-  EXPECT(!type_erase(::std::ignore).may_rethrow());
+  EXPECT(type_erase(retry * 3).may_passthrough());
+  EXPECT(!type_erase(::std::ignore).may_passthrough());
   // Re-erasure: passthrough composite; first-throw unbox is the backstop.
   {
     const int x = on_throw(type_erase(type_erase(subst(5)))) << []() -> int {
@@ -4635,7 +5297,7 @@ UNITTEST("type erasure")
     struct halving_sink final : exception_sink::sink_base
     {
       halving_sink()
-          : sink_base(exception_sink::answer_kind::passthrough, false)
+          : sink_base(exception_sink::answer_kind::own_result, false)
       {}
       sink_base* clone() const override
       {
@@ -4651,8 +5313,8 @@ UNITTEST("type erasure")
       throw ::std::runtime_error("x");
     };
     EXPECT(x == 21);
-    EXPECT(!custom.may_rethrow());
-    EXPECT(custom.kind() == exception_sink::answer_kind::passthrough);
+    EXPECT(!custom.may_passthrough());
+    EXPECT(custom.kind() == exception_sink::answer_kind::own_result);
   }
 
   // The passthrough backstop applies the conversion law per VALUE at first throw. Only
@@ -4974,6 +5636,292 @@ auto operator->*(success, F&& f)
 } // namespace detail::scope_guard_handler
 #endif // !_CCCL_DOXYGEN_INVOKED
 } // namespace cuda::experimental::stf
+
+#ifdef UNITTESTED_FILE
+#  include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#endif // UNITTESTED_FILE
+
+// Skipped when this header is reached from cuda_safe_call.cuh, before its status traits exist.
+#ifdef _CUDAX_STF_CUDA_STATUS_TRAITS_AVAILABLE
+// Test leaves live at namespace scope: UNITTEST bodies are lambdas, and a local class may not have
+// member templates ([temp.mem]/2).
+namespace error_sinks_test
+{
+struct spy
+{
+  int& hits;
+  using __exception_sink_tag = void;
+  template <class Fn>
+  void operator()(const ::std::exception*, ::cuda::std::source_location, Fn&) noexcept
+  {
+    ++hits;
+  }
+};
+} // namespace error_sinks_test
+
+UNITTEST("error sinks: success costs nothing")
+{
+  using namespace cuda::experimental::stf;
+  using error_sinks_test::spy;
+  int hits = 0;
+  auto r   = on_error(spy{hits}) << cudaSuccess;
+  EXPECT(r == cudaSuccess);
+  EXPECT(hits == 0);
+  auto d = on_error(spy{hits}) << CUDA_SUCCESS;
+  EXPECT(d == CUDA_SUCCESS);
+  EXPECT(hits == 0);
+};
+
+UNITTEST("error sinks: notify on a code handles it without throwing")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
+  ::std::ostringstream log;
+  auto r = on_error(notify(log)) << cudaErrorInvalidValue;
+  EXPECT(r == cudaSuccess);
+  EXPECT(log.str().find("cudaErrorInvalidValue") != ::std::string::npos);
+  auto d = on_error(notify(log)) << CUDA_ERROR_INVALID_VALUE;
+  EXPECT(d == CUDA_SUCCESS);
+  using carrier = decltype(on_error(notify(log)));
+  static_assert(noexcept(::cuda::std::declval<carrier>() << ::cuda::std::declval<cudaError_t>()),
+                "a never-passing-through policy on a code operand is noexcept");
+};
+
+UNITTEST("error sinks: passthrough yields the code")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
+  EXPECT((on_error(passthrough) << cudaErrorInvalidValue) == cudaErrorInvalidValue);
+  EXPECT((on_error(passthrough) << cudaSuccess) == cudaSuccess);
+  EXPECT((on_error(passthrough) << CUDA_ERROR_NOT_READY) == CUDA_ERROR_NOT_READY);
+  using carrier = decltype(on_error(passthrough));
+  static_assert(noexcept(::cuda::std::declval<carrier>() << ::cuda::std::declval<cudaError_t>()),
+                "passthrough on the code channel never throws");
+};
+
+UNITTEST("error sinks: unwind throws the trait's exception")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
+  bool caught = false;
+  try
+  {
+    on_error(unwind) << cudaErrorInvalidValue;
+  }
+  catch (const cuda_exception& e)
+  {
+    caught = ::std::string(e.what()).find("cudaErrorInvalidValue") != ::std::string::npos;
+  }
+  EXPECT(caught);
+  using carrier = decltype(on_error(unwind));
+  static_assert(!noexcept(::cuda::std::declval<carrier>() << ::cuda::std::declval<cudaError_t>()));
+};
+
+UNITTEST("error sinks: polling idiom")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
+  // A matched selector that passes through hands the status to the next arm (same as
+  // catch_only<E>(rethrow) | p on the exception channel), so "stop here and yield this code" is a
+  // substitution of the code by itself.
+  auto pol = only(cudaErrorNotReady)(subst(cudaErrorNotReady)) | unwind;
+  EXPECT((on_error(pol) << cudaErrorNotReady) == cudaErrorNotReady);
+  EXPECT((on_error(pol) << cudaSuccess) == cudaSuccess);
+  bool threw = false;
+  try
+  {
+    on_error(pol) << cudaErrorInvalidValue;
+  }
+  catch (const cuda_exception&)
+  {
+    threw = true;
+  }
+  EXPECT(threw);
+};
+
+UNITTEST("error sinks: subst remaps a code")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
+  auto pol = only(cudaErrorCudartUnloading)(subst(cudaSuccess)) | passthrough;
+  EXPECT((on_error(pol) << cudaErrorCudartUnloading) == cudaSuccess);
+  EXPECT((on_error(pol) << cudaErrorInvalidValue) == cudaErrorInvalidValue);
+};
+
+UNITTEST("error sinks: notify & passthrough logs and yields")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
+  ::std::ostringstream log;
+  auto r = on_error(notify(log) & passthrough) << cudaErrorInvalidValue;
+  EXPECT(r == cudaErrorInvalidValue);
+  EXPECT(log.str().find("cudaErrorInvalidValue") != ::std::string::npos);
+};
+
+UNITTEST("error sinks: store on a code stores the trait's exception")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
+  ::std::exception_ptr err;
+  auto r = on_error(store(&err)) << cudaErrorInvalidValue;
+  EXPECT(r == cudaSuccess);
+  EXPECT(static_cast<bool>(err));
+  bool typed = false;
+  try
+  {
+    ::std::rethrow_exception(err);
+  }
+  catch (const cuda_exception&)
+  {
+    typed = true;
+  }
+  EXPECT(typed);
+};
+
+namespace error_sinks_test
+{
+// Declines by rethrow: on the code channel this must become passthrough, never std::terminate.
+struct picky
+{
+  using __exception_sink_tag = void;
+  template <class Fn>
+  [[noreturn]] cuda::experimental::stf::nullval
+  operator()(const ::std::exception*, ::cuda::std::source_location, Fn&) const
+  {
+    _CCCL_RETHROW;
+  }
+};
+struct my_error : ::std::runtime_error
+{
+  using runtime_error::runtime_error;
+};
+// Throws a new exception: it must escape the runner as that type.
+struct converter
+{
+  using __exception_sink_tag = void;
+  template <class Fn>
+  [[noreturn]] cuda::experimental::stf::nullval
+  operator()(const ::std::exception* e, ::cuda::std::source_location, Fn&) const
+  {
+    throw my_error(e ? e->what() : "?");
+  }
+};
+} // namespace error_sinks_test
+
+UNITTEST("error sinks: a hook-only user leaf works on the code channel")
+{
+  using namespace cuda::experimental::stf;
+  using namespace error_sinks_test;
+  EXPECT((on_error(picky{}) << cudaErrorInvalidValue) == cudaErrorInvalidValue);
+  bool caught = false;
+  try
+  {
+    on_error(converter{}) << cudaErrorInvalidValue;
+  }
+  catch (const my_error& e)
+  {
+    caught = ::std::string(e.what()).find("cudaErrorInvalidValue") != ::std::string::npos;
+  }
+  EXPECT(caught);
+};
+
+UNITTEST("error sinks: status traits")
+{
+  using namespace cuda::experimental::stf;
+  namespace pd = cuda::experimental::stf::exception_policies::detail;
+  static_assert(pd::__is_status_v<cudaError_t>);
+  static_assert(pd::__is_status_v<CUresult>);
+  static_assert(!pd::__is_status_v<int>, "a raw integer is never a status");
+  EXPECT(status_traits<cudaError_t>::name(cudaErrorInvalidValue).find("cudaErrorInvalidValue") != ::std::string::npos);
+  EXPECT(status_traits<cudaError_t>::success() == cudaSuccess);
+  EXPECT(!status_traits<CUresult>::failed(CUDA_SUCCESS));
+  EXPECT(cuda_exception(cudaErrorInvalidValue).status<cudaError_t>() == cudaErrorInvalidValue);
+  EXPECT(cuda_exception(CUDA_ERROR_NOT_READY).status<CUresult>() == CUDA_ERROR_NOT_READY);
+};
+
+UNITTEST("error sinks: polling idiom under section 1's |")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
+  // A status that only(...)(passthrough) passes through goes on to the right arm of |; keeping the
+  // not-ready code is a substitution that handles it.
+  auto pol = only(cudaErrorNotReady)(subst(cudaErrorNotReady)) | unwind;
+  EXPECT((on_error(pol) << cudaErrorNotReady) == cudaErrorNotReady);
+  EXPECT((on_error(pol) << cudaSuccess) == cudaSuccess);
+  bool threw = false;
+  try
+  {
+    on_error(pol) << cudaErrorInvalidValue;
+  }
+  catch (const cuda_exception& e)
+  {
+    threw = e.status<cudaError_t>() == cudaErrorInvalidValue;
+  }
+  EXPECT(threw);
+};
+
+UNITTEST("error sinks: composites and the bridge on a code")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
+  // A type guard sees the status's exception through the bridge; a mismatch passes through.
+  EXPECT((on_error(catch_only<cuda_exception>(subst(cudaSuccess))) << cudaErrorInvalidValue) == cudaSuccess);
+  EXPECT((on_error(catch_only<::std::bad_alloc>(subst(cudaSuccess)) | passthrough) << cudaErrorInvalidValue)
+         == cudaErrorInvalidValue);
+  // `*` offers the status again while it passes through, then the next arm answers.
+  ::std::ostringstream log;
+  EXPECT((on_error((notify(log) & passthrough) * 3 | subst(cudaSuccess)) << cudaErrorNotReady) == cudaSuccess);
+  size_t lines = 0;
+  for (char c : log.str())
+  {
+    lines += c == '\n';
+  }
+  EXPECT(lines == 3);
+  // always: the finalizer runs whether the head handles the status or passes it through.
+  ::std::string note;
+  EXPECT((on_error(always(passthrough, store(&note))) << cudaErrorInvalidValue) == cudaErrorInvalidValue);
+  EXPECT(note.find("cudaErrorInvalidValue") != ::std::string::npos);
+  // Resuming yields the trait's success value; a nullary guard gates the sequence.
+  EXPECT((on_error(::std::ignore) << CUDA_ERROR_NOT_READY) == CUDA_SUCCESS);
+  bool open       = false;
+  const auto gate = [&] {
+    return open;
+  };
+  EXPECT((on_error(when(gate, ::std::ignore) | passthrough) << cudaErrorInvalidValue) == cudaErrorInvalidValue);
+  open = true;
+  EXPECT((on_error(when(gate, ::std::ignore) | passthrough) << cudaErrorInvalidValue) == cudaSuccess);
+  // The text targets of store take the trait's name, allocation-bounded for a span.
+  char buffer[64]{};
+  EXPECT((on_error(store(::cuda::std::span<char>(buffer))) << cudaErrorInvalidValue) == cudaSuccess);
+  EXPECT(::std::string_view{buffer}.find("cudaErrorInvalidValue") != ::std::string_view::npos);
+  // The former spellings are aliases.
+  EXPECT((on_throw(rethrow) << cudaErrorInvalidValue) == cudaErrorInvalidValue);
+  static_assert(::cuda::std::is_same_v<rethrow_t, passthrough_t>);
+  // A substitution of the status type keeps the code channel noexcept; the bridge does not, since
+  // building the exception may throw.
+  using subst_carrier = decltype(on_error(subst(cudaSuccess)));
+  static_assert(noexcept(::cuda::std::declval<subst_carrier>() << ::cuda::std::declval<cudaError_t>()));
+  using bridged_carrier = decltype(on_error(catch_only<cuda_exception>(subst(cudaSuccess))));
+  static_assert(!noexcept(::cuda::std::declval<bridged_carrier>() << ::cuda::std::declval<cudaError_t>()));
+};
+
+UNITTEST("error sinks: the callable channel is unchanged")
+{
+  using namespace cuda::experimental::stf;
+  int value = 0;
+  ON_THROW(notify)
+  {
+    value = 1;
+  };
+  EXPECT(value == 1);
+  const int answer = ON_THROW(subst(-1))->int
+  {
+    throw ::std::runtime_error("x");
+  };
+  EXPECT(answer == -1);
+};
+
+#endif // _CUDAX_STF_CUDA_STATUS_TRAITS_AVAILABLE
 
 #ifdef UNITTESTED_FILE
 UNITTEST("SCOPE(exit)")
