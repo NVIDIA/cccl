@@ -18,10 +18,10 @@
 #endif // no system header
 
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/segmented_params.cuh> // detail::params::__validate_uniform{,_or_per_segment}_integral_param
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh> // topk::select::{min, max}
-#include <cub/util_type.cuh>
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>

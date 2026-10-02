@@ -17,11 +17,11 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/non_void_value.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 

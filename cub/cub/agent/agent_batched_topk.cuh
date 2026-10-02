@@ -19,10 +19,10 @@
 #include <cub/block/block_topk.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/segmented_params.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__memory/as_uninitialized_bytes.h>

@@ -15,6 +15,7 @@
 
 #include <cub/agent/agent_segmented_radix_sort.cuh>
 #include <cub/agent/agent_sub_warp_merge_sort.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_device.cuh>
 

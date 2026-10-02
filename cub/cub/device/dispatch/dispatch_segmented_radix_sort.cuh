@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cub/detail/logging.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_radix_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_radix_sort.cuh>
 #include <cub/util_debug.cuh>

@@ -23,6 +23,7 @@
 #include <cub/detail/lazy_trait.cuh> // IWYU pragma: export
 #include <cub/detail/log2.cuh> // IWYU pragma: export
 #include <cub/detail/non_void_value.cuh> // IWYU pragma: export
+#include <cub/detail/null_type.cuh> // IWYU pragma: export
 #include <cub/detail/power_of_two.cuh> // IWYU pragma: export
 #include <cub/detail/type_size.cuh> // IWYU pragma: export
 #include <cub/detail/type_traits.cuh>
@@ -53,36 +54,6 @@ CUB_NAMESPACE_BEGIN
  ******************************************************************************/
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-
-/**
- * \brief A simple "null" marker type
- */
-struct NullType
-{
-  using value_type = NullType;
-
-  NullType() = default;
-
-  template <typename T>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE explicit NullType(const T&)
-  {}
-
-  template <typename T>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE NullType& operator=(const T&)
-  {
-    return *this;
-  }
-
-  friend _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const NullType&, const NullType&)
-  {
-    return true;
-  }
-
-  friend _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const NullType&, const NullType&)
-  {
-    return false;
-  }
-};
 
 namespace detail
 {

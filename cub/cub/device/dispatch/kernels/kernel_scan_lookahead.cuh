@@ -15,6 +15,7 @@
 
 #include <cub/agent/agent_scan.cuh>
 #include <cub/detail/iket_support.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/warpspeed/allocators/smem_allocator.cuh>
 #include <cub/detail/warpspeed/look_ahead.cuh>
 #include <cub/detail/warpspeed/resource/smem_ref.cuh>

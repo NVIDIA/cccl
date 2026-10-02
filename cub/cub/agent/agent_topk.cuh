@@ -20,6 +20,7 @@
 #include <cub/block/block_store.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>

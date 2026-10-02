@@ -15,10 +15,10 @@
 
 #include <cub/block/block_store.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_math.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 

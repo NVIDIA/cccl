@@ -14,8 +14,8 @@
 #endif // no system header
 
 #include <cub/block/block_merge_sort.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__type_traits/is_same.h>

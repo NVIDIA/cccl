@@ -14,8 +14,8 @@
 #endif // no system header
 
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_type.cuh>
 #include <cub/warp/warp_load.cuh>
 #include <cub/warp/warp_merge_sort.cuh>
 #include <cub/warp/warp_store.cuh>

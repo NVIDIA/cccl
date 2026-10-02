@@ -19,6 +19,7 @@
 
 #include <cub/block/block_exchange.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
