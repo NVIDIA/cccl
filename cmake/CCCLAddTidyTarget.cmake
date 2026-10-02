@@ -206,7 +206,7 @@ function(cccl_tidy_add_target)
   endif()
 
   cccl_tidy_make_subproject_target(subproject_target)
-  get_property(plugins GLOBAL PROPERTY CCCL_TIDY_PLUGINS)
+  get_property(plugin_targets GLOBAL PROPERTY CCCL_TIDY_PLUGINS)
 
   foreach (src IN LISTS _cccl_SOURCES)
     cmake_path(SET src NORMALIZE "${src}")
@@ -233,7 +233,10 @@ function(cccl_tidy_add_target)
       COMMAND ${CCCL_RUN_CLANG_TIDY_SCRIPT} "${src}"
       COMMENT "clang-tidy ${rel_src}"
     )
-    add_dependencies("${tidy_target}" ${plugins})
+
+    # We need to ensure the plugins have actually built before running clang-tidy. Do not
+    # quote, this is a list
+    add_dependencies("${tidy_target}" ${plugin_targets})
     add_dependencies("${subproject_target}" "${tidy_target}")
   endforeach()
 endfunction()
