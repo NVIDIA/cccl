@@ -314,14 +314,22 @@ and requires Python 3.11 to 3.13:
 
   $ pip install compileiq
 
-``search.py`` configures its own build directories, so it is run from the CCCL source root,
-and forwards any :code:`-D` options to CMake:
+``search.py`` configures its own build directories depending on the available GPUs and configured lane counts,
+so it is run from the CCCL source root:
 
 .. code:: bash
 
-  $ ./benchmarks/scripts/search.py -DCMAKE_CUDA_ARCHITECTURES=native -R '.*merge_sort.*pairs' -a 'KeyT{ct}=I128' -a 'Elements{io}[pow2]=28'
+  $ ./benchmarks/scripts/search.py -R '.*merge_sort.*pairs' -a 'KeyT{ct}=I128' -a 'Elements{io}[pow2]=28'
+  1 gpus x 4 lanes
+  configuring build/gpu0/lane0
+  configuring build/gpu0/lane1
+  configuring build/gpu0/lane2
+  configuring build/gpu0/lane3
+  ...
+  ctk:  12.6.85
+  cccl:  v2.7.0
   cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_13.tpb_6 0.6805093269929858 (gpu 0)
-  cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_11.tpb_10 1.0774560502969677 (gpu 1)
+  cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_11.tpb_10 1.0774560502969677 (gpu 0)
   ...
 
 This will search the space of merge sort for key-value pairs, for the key type :code:`int128_t` on :code:`2^28` elements.
@@ -329,6 +337,8 @@ The :code:`-R` and :code:`-a` options are optional. **If not specified, all benc
 The :code:`-R` option can select multiple benchmarks using a regular expression.
 For the axis option :code:`-a`, you can also specify a range of values like :code:`-a 'KeyT{ct}=[I32,I64]'`.
 Any axis values not supported by a selected benchmark will be ignored.
+If necessary, :code:`-D` can be used to pass additional options to CMake.
+
 The first variant :code:`cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_13.tpb_6` has a score <1 and is thus generally slower than the baseline,
 whereas the second variant :code:`cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_11.tpb_10` has a score of >1 and is thus an improvement over the baseline.
 
@@ -345,20 +355,31 @@ Sometimes, a tuning variant may lead the compiler to hang or take exceptionally 
 To keep the tuning process going, if the build time of a variant exceeds a threshold, the build is cancelled.
 The same applies to benchmarks running for too long.
 
+Each GPU gets several *lanes* (:code:`build/gpu<N>/lane<K>`), so one variant can be compiled while another
+is benchmarked on the same GPU; only one benchmark runs per GPU at a time.
+The lane count defaults to 4 and is set with :code:`--lanes-per-gpu`.
+Each lane costs roughly one CPU core while compiling and 800 MB of disk.
+
 To get quick feedback on what benchmarks are selected and how big the search space is,
 you can add the :code:`-l` option:
 
 .. code:: bash
 
   $ ./benchmarks/scripts/search.py -R '.*merge_sort.*pairs' -a 'KeyT{ct}=I128' -a 'Elements{io}[pow2]=28' -l
+  1 gpus x 4 lanes
+  configuring build/gpu0/lane0
   ctk:  12.6.85
   cccl:  v2.7.0
-  ### Benchmarks
-    * `cub.bench.merge_sort.pairs`: 540 variants:
+  ### Benchmarks (1)
+
+  #### cub / merge_sort
+    * `cub.bench.merge_sort.pairs`: 540 variants
       * `trp`: (0, 2, 1)
       * `ld`: (0, 3, 1)
       * `ipt`: (7, 25, 1)
       * `tpb`: (6, 11, 1)
+
+:code:`-l` only configures a single lane (not every GPU x lane), since listing the search space does not need to build or run anything.
 
 It will list all selected benchmarks as well as the total number of variants (the magnitude of the search space)
 as a result of the Cartesian product of all its tuning parameter spaces.
@@ -388,10 +409,19 @@ creating and configuring a build directory per GPU under :code:`build/gpu<N>/`,
 each with its own tuning database, and spreading the variants of one generation across them.
 Restrict the GPUs it uses with :code:`CUDA_VISIBLE_DEVICES`.
 
-Each GPU gets several *lanes* (:code:`build/gpu<N>/lane<K>`), so one variant can be compiled while another
-is benchmarked on the same GPU; only one benchmark runs per GPU at a time.
-The lane count defaults to 4 and is set with :code:`--lanes-per-gpu`.
-Each lane costs roughly one CPU core while compiling and 800 MB of disk.
+.. code:: bash
+
+  $ CUDA_VISIBLE_DEVICES=0,2 ./benchmarks/scripts/search.py -DCMAKE_CUDA_ARCHITECTURES=native -R '.*merge_sort.*pairs'
+  2 gpus x 4 lanes
+  configuring build/gpu0/lane0
+  configuring build/gpu2/lane0
+  configuring build/gpu0/lane1
+  configuring build/gpu2/lane1
+  ...
+
+This restricts the search to physical GPUs 0 and 2, as reported by :code:`nvidia-smi`.
+The build directories are named after the GPU indices passed in :code:`CUDA_VISIBLE_DEVICES`,
+so here they are :code:`build/gpu0/` and :code:`build/gpu2/`, not renumbered.
 
 Across multiple physical machines (e.g., on a cluster), the search space can still be separated based on
 different axis values, running one search per node with different axis values specified for each.
