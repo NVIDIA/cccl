@@ -39,7 +39,7 @@ CUB_NAMESPACE_BEGIN
 
 //! BlockReduceAlgorithm enumerates alternative algorithms for parallel reduction across a CUDA thread
 //! block.
-enum BlockReduceAlgorithm
+enum BlockReduceAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
 
   //! @rst
@@ -139,6 +139,9 @@ enum BlockReduceAlgorithm
   //!      operations to accumulate their warp aggregates into a shared location, making the final
   //!      order non-deterministic.
   //!   #. The final block-wide result is available to all threads.
+  //!
+  //! Atomic accumulation is only used with ``cuda::std::plus``. Other reduction operators combine the
+  //! warp aggregates in order, as with ``BLOCK_REDUCE_WARP_REDUCTIONS``.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -535,7 +538,7 @@ public:
     // Determine if we skip bounds checking
     if (num_valid >= BLOCK_THREADS)
     {
-      return InternalBlockReduce(temp_storage).template Reduce<true>(input, num_valid, reduction_op);
+      return InternalBlockReduce(temp_storage).template Reduce<true>(input, BLOCK_THREADS, reduction_op);
     }
     else
     {
@@ -696,7 +699,7 @@ public:
     // Determine if we skip bounds checking
     if (num_valid >= BLOCK_THREADS)
     {
-      return InternalBlockReduce(temp_storage).template Sum<true>(input, num_valid);
+      return InternalBlockReduce(temp_storage).template Sum<true>(input, BLOCK_THREADS);
     }
     else
     {

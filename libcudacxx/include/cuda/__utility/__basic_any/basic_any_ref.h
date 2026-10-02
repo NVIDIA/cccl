@@ -277,7 +277,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface&> : __basic_any<__ir
   _CCCL_REQUIRES((!::cuda::std::same_as<_SrcInterface, _Interface&>) _CCCL_AND //
                  (!__is_value_v<_SrcInterface>) _CCCL_AND //
                    __any_convertible_to<__basic_any<_SrcInterface>, __basic_any>)
-  _CCCL_HOST_DEVICE_API __basic_any(__basic_any<_SrcInterface>&& __src) noexcept
+  _CCCL_HOST_DEVICE_API
+  __basic_any(__basic_any<_SrcInterface>&& __src) noexcept // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
       : __basic_any<__ireference<_Interface>>()
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());

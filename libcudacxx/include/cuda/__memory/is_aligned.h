@@ -22,8 +22,6 @@
 #endif // no system header
 
 #include <cuda/__memory/is_valid_alignment.h>
-#include <cuda/std/cstddef>
-#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -50,6 +48,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 [[nodiscard]] _CCCL_API inline bool is_aligned(const volatile void* __ptr, ::cuda::std::size_t __alignment) noexcept
 {
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
   return ::cuda::is_aligned(const_cast<const void*>(__ptr), __alignment);
 }
 

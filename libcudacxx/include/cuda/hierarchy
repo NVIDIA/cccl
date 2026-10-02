@@ -21,14 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__hierarchy/get_launch_dimensions.h>
-#include <cuda/__hierarchy/hierarchy_dimensions.h>
-#include <cuda/__hierarchy/hierarchy_level_base.h>
-#include <cuda/__hierarchy/hierarchy_levels.h>
-#include <cuda/__hierarchy/hierarchy_query_result.h>
-#include <cuda/__hierarchy/level_dimensions.h>
-#include <cuda/__hierarchy/native_hierarchy_level_base.h>
-#include <cuda/__hierarchy/queries/extents.h>
-#include <cuda/__hierarchy/traits.h>
+#include <cuda/__hierarchy/get_launch_dimensions.h> // IWYU pragma: export
+#include <cuda/__hierarchy/hierarchy_dimensions.h> // IWYU pragma: export
+#include <cuda/__hierarchy/hierarchy_level_base.h> // IWYU pragma: export
+#include <cuda/__hierarchy/hierarchy_levels.h> // IWYU pragma: export
+#include <cuda/__hierarchy/hierarchy_query_result.h> // IWYU pragma: export
+#include <cuda/__hierarchy/level_dimensions.h> // IWYU pragma: export
+#include <cuda/__hierarchy/native_hierarchy_level_base.h> // IWYU pragma: export
+#include <cuda/__hierarchy/queries/extents.h> // IWYU pragma: export
+#include <cuda/__hierarchy/traits.h> // IWYU pragma: export
 
 #endif // _CUDA_HIERARCHY

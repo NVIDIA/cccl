@@ -55,10 +55,7 @@ inline auto& managed_pool()
 }
 
 // maximum number of entries in the host-allocated pool
-enum : size_t
-{
-  maxPoolEntries = 16 * 1024
-};
+inline constexpr size_t maxPoolEntries = 16 * 1024;
 } // namespace reserved
 
 /**
@@ -895,7 +892,7 @@ public:
     {
       if (small_length < small_cap)
       {
-        new (small_begin() + small_length) T(mv(value));
+        new (small_begin() + small_length) T(::cuda::std::move(value));
         ++small_length;
         return;
       }
@@ -903,7 +900,7 @@ public:
       assert(!is_small());
       // fall through to big case
     }
-    big().push_back(mv(value));
+    big().push_back(::cuda::std::move(value));
   }
 
   template <class... Args>
@@ -1108,7 +1105,7 @@ private:
 
   void adopt_big_vector(::std::vector<T>&& vec)
   {
-    new (&big())::std::vector<T>(mv(vec));
+    new (&big())::std::vector<T>(::cuda::std::move(vec));
     small_length = small_size_t(-1);
   }
 
@@ -1141,7 +1138,7 @@ private:
 
   union
   {
-    alignas(T) unsigned char small_[sizeof(T) * small_cap];
+    alignas(T) unsigned char small_[sizeof(T) * small_cap]{};
     alignas(::std::vector<T>) unsigned char big_[sizeof(::std::vector<T>)];
   };
   small_size_t small_length = 0;
