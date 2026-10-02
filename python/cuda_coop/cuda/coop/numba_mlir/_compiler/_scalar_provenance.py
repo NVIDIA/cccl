@@ -2,10 +2,29 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Track compile-time scalar values without losing their original numeric type.
+
+A Python literal may take the element type required by a cooperative operation,
+but a value explicitly typed as ``int64`` must not silently become ``int32``.
+``StaticScalarProvenance`` keeps the value together with any dtype already
+attached to it. Here, "provenance" means the constants, arguments, and
+forwarding assignments that establish both facts.
+
+Group planning and call rewriting share this analysis when deciding whether a
+control such as ``offset`` or ``oob_default`` can be embedded in generated code.
+The static-value resolver accepts only explicit constants and literal arguments
+whose possible definitions agree; it does not evaluate runtime expressions to
+make them static. Separate helpers infer result types for scalar operators,
+casts, and CUDA indices so runtime values can still be checked against an
+operation's numeric requirements. Neither analysis rewrites the function IR or
+requests a new compiler specialization.
+"""
+
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
+from types import ModuleType
 from typing import TYPE_CHECKING, Any
 
 import numba_cuda_mlir.numba_cuda.types as _numba_types
@@ -45,13 +64,48 @@ def _typed_static_value(scalar: StaticScalarProvenance) -> Any:
 
 
 def try_resolve_static_scalar_provenance(
-    value: Any,
+    value: object,
     *,
-    definitions: Callable[[ir.Var], Iterable[Any]],
-    argument_type: Callable[[int], Any | None],
+    definitions: Callable[[ir.Var], Iterable[object]],
+    argument_type: Callable[[int], _numba_types.Type | None],
     seen: set[str] | None = None,
 ) -> tuple[bool, StaticScalarProvenance | None]:
-    """Resolve a scalar and retain whether Numba already assigned its dtype."""
+    """Resolve an explicitly static value while retaining its compiler dtype.
+
+    Planning must distinguish a literal supplied by the user from a runtime
+    expression that general constant inference happens to evaluate. Accept
+    constants, globals, free variables, literal arguments, and arguments known
+    to be ``None``; follow only aliases, casts, and phi inputs. Every reaching
+    leaf must agree in Python value type, value, and recorded dtype. Runtime
+    expressions, unresolved paths, and cycles make the result unresolved. This
+    traversal neither evaluates scalar operators nor requests dispatcher
+    specialization.
+
+    Parameters
+    ----------
+    value : object
+        Value to inspect. Non-variable inputs are accepted directly as static;
+        callers are responsible for restricting them to the intended scalar
+        domain.
+    definitions : callable
+        Return all reaching definitions for an IR variable.
+    argument_type : callable
+        Return the compiler type for a function argument index, or ``None`` when
+        unavailable. Literal types retain their ``literal_type``.
+    seen : set of str, optional
+        Names already visited on this recursion path. The current variable is
+        added in place; recursive branches receive separate copies.
+
+    Returns
+    -------
+    resolved : bool
+        Whether all inspected definitions establish the same static value.
+    scalar : StaticScalarProvenance or None
+        Resolved value and its known dtype, or ``None`` on failure. A resolved
+        ``None`` value is represented by a provenance object and is distinct
+        from failure. NumPy scalars contribute their own dtype; ordinary Python
+        constants leave the dtype unspecified for contextual coercion.
+    """
 
     if not isinstance(value, ir.Var):
         return (True, _static_scalar(value))
@@ -138,18 +192,41 @@ def try_resolve_static_scalar_provenance(
 
 
 def try_resolve_static_scalar(
-    value: Any,
+    value: object,
     *,
-    definitions: Callable[[ir.Var], Iterable[Any]],
-    argument_type: Callable[[int], Any | None],
+    definitions: Callable[[ir.Var], Iterable[object]],
+    argument_type: Callable[[int], _numba_types.Type | None],
     seen: set[str] | None = None,
 ) -> tuple[bool, Any]:
-    """Resolve a scalar only when every reaching definition is static.
+    """Resolve a static value and preserve a known scalar width when possible.
 
-    Globals, free variables, literals, and IR constants are static. Aliases,
-    casts, and phi nodes preserve that classification only when all incoming
-    definitions resolve to the same typed value. Runtime expressions are never
-    evaluated through Numba's general constant-inference machinery here.
+    Use ``try_resolve_static_scalar_provenance`` to require agreement across all
+    reaching definitions without evaluating runtime expressions. Unwrap its
+    result, converting a value with a known compiler dtype to the matching NumPy
+    scalar when possible. If that conversion is unsupported or fails, return the
+    original value. Use the provenance-returning helper when the recorded dtype
+    itself is needed for validation.
+
+    Parameters
+    ----------
+    value : object
+        IR value or already-static Python value to resolve.
+    definitions : callable
+        Return all reaching definitions for an IR variable.
+    argument_type : callable
+        Return the compiler type for a function argument index, or ``None`` when
+        unavailable.
+    seen : set of str, optional
+        Names on the current recursion path. Passed to the provenance resolver,
+        which adds the current variable in place and copies it for branches.
+
+    Returns
+    -------
+    resolved : bool
+        Whether the value has consistent, explicitly static provenance.
+    value : object
+        Unwrapped static value, or ``None`` on failure. Consult ``resolved`` to
+        distinguish an unresolved value from a statically known ``None``.
     """
 
     resolved, scalar = try_resolve_static_scalar_provenance(
@@ -161,7 +238,10 @@ def try_resolve_static_scalar(
     return (resolved, None if scalar is None else _typed_static_value(scalar))
 
 
-def scalar_expression_dtype(definition, dtype):
+def scalar_expression_dtype(
+    definition: ir.Expr,
+    dtype: Callable[[ir.Var], object],
+) -> _numba_types.Type | None:
     """Infer a scalar operator's result from the operand types already known."""
 
     from ._parameters import _scalar_operator_result_dtype
@@ -179,7 +259,11 @@ def scalar_expression_dtype(definition, dtype):
     )
 
 
-def scalar_call_dtype(function, arguments, dtype):
+def scalar_call_dtype(
+    function: object,
+    arguments: Sequence[object],
+    dtype: Callable[[ir.Var], object],
+) -> _numba_types.Type | None:
     """Infer an explicit scalar cast, retaining the compiler's numeric rules."""
 
     from ._parameters import _scalar_cast_dtype, _scalar_operator_result_dtype
@@ -194,7 +278,11 @@ def scalar_call_dtype(function, arguments, dtype):
     return cast_dtype
 
 
-def cuda_index_dtype(definition, attribute_chain, cuda_module):
+def cuda_index_dtype(
+    definition: ir.Expr,
+    attribute_chain: Callable[[ir.Var], tuple[object, Sequence[str]] | None],
+    cuda_module: ModuleType,
+) -> _numba_types.Type | None:
     """Return the compiler dtype of CUDA launch indices and dimensions."""
 
     if definition.op != "getattr":

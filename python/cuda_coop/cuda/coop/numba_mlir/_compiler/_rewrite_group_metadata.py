@@ -2,11 +2,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Dispatch operation-specific analysis and operand preparation.
+
+The shared rewrite recognizes providers and manages storage, while
+registered primitive families handle details such as scalar Store boxing.
+Match analysis records family metadata before provider compilation; runtime-
+argument preparation uses that metadata to emit any needed IR while
+replacing the call.
+"""
+
 from typing import TYPE_CHECKING, cast
 
 from ._group_rewriting import GroupRewriteContext
 from ._operations import rewrite_operation
-from ._rewrite_support import CoopSinglePhaseRewriteError, ir
+from ._rewrite_support import CoopSinglePhaseRewriteError, _RewriteMatch, ir
 
 if TYPE_CHECKING:
     from ._rewrite import CoopSinglePhaseRewrite
@@ -39,7 +48,7 @@ class _GroupMetadataRewrite:
         self,
         block: ir.Block,
         *,
-        match,
+        match: _RewriteMatch,
         runtime_args: list[ir.Var],
         scope: ir.Scope | None,
         loc: ir.Loc,

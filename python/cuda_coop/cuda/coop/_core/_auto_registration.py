@@ -4,8 +4,27 @@
 
 """Register compatible compiler runtimes already imported by the application.
 
-Set CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION=1 to disable automatic
-registration.
+The ``cuda.coop`` root import calls this module's allowlisted registration
+probe. A runtime must already be in ``sys.modules`` before its backend is
+considered; merely installing an optional compiler does not cause the root
+import to load it. This makes compiler-first imports convenient while keeping
+the common API available without a compiler. Root-first applications can call
+``cuda.coop.register("numba-cuda-mlir")`` or import the qualified backend.
+
+``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION`` controls this probe. Unset, empty,
+``"0"``, ``"false"``, ``"no"``, and ``"off"`` leave automatic registration
+enabled; surrounding whitespace and letter case are ignored. Any other value,
+including ``"1"``, disables it. The value is read on each probe, normally
+during the first ``cuda.coop`` import. Changing it does not unregister an
+active backend or trigger another probe. Explicit registration and qualified
+backend imports remain available when automatic registration is disabled.
+
+An absent optional runtime is skipped silently. A detected runtime that fails
+activation produces ``CudaCoopAutoRegistrationWarning`` and leaves the common
+API import usable under normal warning handling. The probe removes newly
+imported modules for the failed backend. The Numba backend registers its
+planner only after its implementation modules have loaded successfully.
+Warning filters may promote the warning to an exception.
 """
 
 from __future__ import annotations
@@ -56,7 +75,42 @@ def _auto_registration_disabled(value: str | None = None) -> bool:
 
 
 def _import_optional(module_name: str, *, top_level: str) -> ModuleType:
-    """Import one optional module and distinguish absence from breakage."""
+    """Import a backend dependency while preserving evidence of broken installs.
+
+    Automatic registration may silently skip an absent optional runtime, but
+    a dependency failure inside an installed runtime should be reported. Use
+    the missing module recorded on ``ImportError`` to distinguish these cases;
+    catching every import failure as absence would hide incompatible installs.
+
+    ``_BackendUnavailable`` is an internal control signal, caught by
+    ``_auto_register_known_dsls`` around the candidate activation call. That
+    catcher cleans up newly imported backend modules and skips the candidate
+    without a warning or user-facing exception. Other import failures reach
+    the probe's general exception handler and become an incompatibility
+    warning. The public ``register`` entry point and the qualified backend's
+    activation code report import failures through their own error path.
+
+    Parameters
+    ----------
+    module_name : str
+        Fully qualified module to import.
+    top_level : str
+        Runtime module name whose absence is an expected optional dependency.
+        Only an exact match with the exception's ``name`` is treated as absent.
+
+    Returns
+    -------
+    ModuleType
+        Imported module.
+
+    Raises
+    ------
+    _BackendUnavailable
+        The import reports that ``top_level`` itself is missing. The automatic
+        registration probe consumes this private signal as a silent skip.
+    ImportError
+        Any other import failure, propagated unchanged for diagnostics.
+    """
 
     try:
         return importlib.import_module(module_name)
@@ -130,12 +184,27 @@ def _warn_incompatible(candidate: _Candidate, error: Exception) -> None:
 
 
 def _auto_register_known_dsls() -> tuple[str, ...]:
-    """Enable compatible runtimes that the application already imported.
+    """Activate allowlisted runtimes already imported by the application.
 
-    Merely importing cuda.coop must remain host-only and must not import CUDA
-    bindings. Applications that import Numba-CUDA-MLIR first get automatic
-    activation; applications that import cuda.coop first can call
-    cuda.coop.register("numba-cuda-mlir") to activate explicitly.
+    The root package import must remain usable without loading an optional
+    compiler or CUDA bindings. Inspect ``sys.modules`` first: installing a
+    runtime is insufficient to activate it. Compiler-first imports get this
+    automatic activation; root-first callers can use
+    ``cuda.coop.register("numba-cuda-mlir")`` explicitly.
+
+    Respect ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION`` and reuse qualified
+    backends already in ``sys.modules``. For a new attempt, snapshot loaded
+    modules so failure cleanup removes only newly imported backend modules.
+    An absent optional runtime is skipped silently; other activation
+    exceptions produce ``CudaCoopAutoRegistrationWarning`` and allow probing
+    to continue.
+
+    Returns
+    -------
+    tuple of str
+        Internal backend names successfully activated or already loaded, in
+        candidate order. Empty when probing is disabled or no candidate
+        qualifies. Does not include missing or unsuccessfully activated DSLs.
     """
 
     if _auto_registration_disabled():

@@ -2,23 +2,72 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Reaching definitions for opaque descriptors before and after SSA."""
+"""Find where ``ThreadData`` and ``TempStorage`` values came from in the IR.
 
-from typing import TYPE_CHECKING
+These objects describe per-thread payloads and shared scratch for the compiler;
+they do not become ordinary Python objects in a GPU kernel. To replace them with
+arrays and storage pointers, the compiler must recover their constructors and
+options even when the kernel assigns aliases, casts values, or joins branches.
+A "reaching definition" is an assignment that may supply a variable's value;
+"provenance" here means following those assignments back to their sources.
+
+The helpers trace descriptor sources, bind ``TempStorage`` constructor options,
+and collect the element types written through payload aliases. Group planning
+uses these facts to select an operation implementation; call rewriting uses
+them to materialize payloads and scratch storage. Each caller supplies its own
+definition and constant lookups because the available IR facts differ between
+those phases. The shared traversal keeps their treatment of aliases and
+control-flow joins consistent without evaluating arbitrary kernel code.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable, Iterable, Iterator
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from numba_cuda_mlir.numba_cuda.core import ir
+
+    from .._temp_storage import TempStorage
 else:
     from numba_cuda_mlir.numbair_transforms import ir
 
 
-def descriptor_definitions(value, definitions, *, seen=None):
-    """Yield (owner, leaf) pairs through aliases, casts, and conditional joins.
+def descriptor_definitions(
+    value: object,
+    definitions: Callable[[ir.Var], Iterable[object]],
+    *,
+    seen: set[str] | None = None,
+) -> Iterator[tuple[str | None, object]]:
+    """Trace a possible descriptor to the assignments that supply its value.
 
-    A backedge has no new definition and contributes no leaf. A concrete
-    non-descriptor, including a constant None, remains a leaf so callers can
-    distinguish it from an unresolved cycle. Visit sibling paths separately:
-    a constructor reached twice is still a descriptor on both paths.
+    Follow aliases, casts, iterator unpacking, and phi inputs using the caller's
+    definition lookup, so the same traversal works before and after single
+    static assignment (SSA) construction. A cycle contributes no leaf. Concrete
+    non-descriptors, including ``None``, remain leaves: callers need to reject
+    paths that mix such values with descriptors rather than accepting one valid
+    constructor. Sibling paths are independent, so a shared constructor may be
+    yielded more than once.
+
+    Parameters
+    ----------
+    value : object
+        IR value to trace. A non-variable is yielded unchanged with no owner.
+    definitions : callable
+        Lookup accepting an IR variable and returning all its reaching
+        definitions, including multiple definitions before SSA construction.
+    seen : set of str, optional
+        Variable names on the current recursion path. This traversal copies the
+        set before extending it and does not mutate the supplied set.
+
+    Yields
+    ------
+    owner : str or None
+        Name of the variable whose definition is the leaf, not necessarily the
+        original alias. ``None`` denotes a non-variable input.
+    leaf : object
+        Definition reached after following the supported forwarding forms. No
+        descriptor recognition or constructor validation is performed.
     """
 
     if not isinstance(value, ir.Var):
@@ -51,9 +100,44 @@ def descriptor_definitions(value, definitions, *, seen=None):
 
 
 def temp_storage_constructor(
-    call, constant, *, syntax_error: type[Exception] = TypeError
-):
-    """Parse a descriptor using the current phase's constant resolver."""
+    call: ir.Expr,
+    constant: Callable[..., Any],
+    *,
+    syntax_error: type[Exception] = TypeError,
+) -> TempStorage:
+    """Build a storage descriptor from an IR constructor call.
+
+    Share argument binding and descriptor validation between group planning and
+    provider rewriting while letting each phase supply its own constant
+    resolver. This creates the host-side descriptor only; it does not allocate
+    scratch or modify the call. Constructor defaults and value validation come
+    from ``TempStorage`` itself.
+
+    Parameters
+    ----------
+    call : ir.Expr
+        Call already recognized as a ``TempStorage`` constructor.
+    constant : callable
+        Resolve an argument as ``constant(value, name=parameter_name)``. The
+        callback controls constant specialization and its diagnostics.
+    syntax_error : type of Exception, optional
+        Exception class for unsupported call syntax, duplicate arguments, or
+        unknown keywords. Defaults to ``TypeError``; exceptions from the
+        resolver and descriptor constructor propagate unchanged.
+
+    Returns
+    -------
+    TempStorage
+        Descriptor with resolved, validated constructor arguments.
+
+    Raises
+    ------
+    TypeError
+        Invalid call syntax when ``syntax_error`` has its default value, or an
+        invalid descriptor option type.
+    ValueError
+        A descriptor option has an invalid value.
+    """
 
     from .._temp_storage import TempStorage
 
@@ -89,8 +173,39 @@ def temp_storage_constructor(
     )
 
 
-def payload_write_dtypes(func_ir, payload, dtype):
-    """Yield known dtypes written through a payload's reaching aliases."""
+def payload_write_dtypes(
+    func_ir: ir.FunctionIR,
+    payload: object,
+    dtype: Callable[[ir.Var], object],
+) -> Iterator[object]:
+    """Yield known element dtypes written through a payload's aliases.
+
+    Build an alias set to a fixed point across the entire function, following
+    assignments, casts, iterator unpacking, and phi inputs in both directions.
+    This lets inference start at either a constructor or a later alias. The scan
+    is flow-insensitive: it collects writes throughout the function, including
+    all connected phi inputs, without checking path feasibility or write order.
+    The caller decides whether the collected dtypes agree.
+
+    Parameters
+    ----------
+    func_ir : ir.FunctionIR
+        Function containing alias assignments and element writes. Not modified.
+    payload : object
+        Variable whose aliases are searched. Non-variable inputs yield nothing.
+    dtype : callable
+        Lookup accepting the variable assigned to an element and returning its
+        dtype, or ``None`` when unknown.
+
+    Yields
+    ------
+    object
+        Known dtype for each ``SetItem`` or ``StaticSetItem`` write through the
+        alias set, in the representation supplied by ``dtype``. This helper
+        does not normalize the callback's results. Unknown dtypes are skipped;
+        duplicates are retained. An empty result does not establish that the
+        payload has no writes.
+    """
 
     if not isinstance(payload, ir.Var):
         return

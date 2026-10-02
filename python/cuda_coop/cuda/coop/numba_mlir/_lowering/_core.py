@@ -2,6 +2,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Translate compiler-neutral operation specializations into Numba descriptors.
+
+The common core describes C++ algorithms, parameters, and template arguments
+without depending on a Python compiler. This adapter supplies the Numba types
+and calling conventions needed to turn those descriptions into an
+``Algorithm``. For example, an array parameter needs a pointer-based wrapper,
+and a runtime valid-item count can require checked integer narrowing.
+
+The adapter also carries scratch and synchronization requirements into source
+generation. It creates a specialized algorithm description; compilation and
+creation of a callable happen later in ``make_invocable_from_specialization``
+or after several descriptions have been collected for a shared compilation.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -56,8 +70,25 @@ class NumbaMlirArrayInputTransform:
             raise ValueError("array input transform must reference {value}")
 
 
-def _optional_binding(value: Any) -> ArgumentBinding:
-    """Preserve explicit bindings while retaining legacy presence sentinels."""
+def _optional_binding(value: object) -> ArgumentBinding:
+    """Translate legacy presence markers without making their values static.
+
+    Lowering factories accept both explicit binding descriptors and older
+    arguments whose mere presence requested a runtime overload. Preserve an
+    ``ArgumentBinding`` as supplied; otherwise ``None`` means omitted and every
+    other object means runtime. In particular, a plain integer here is not a
+    compile-time value. Callers must use ``ArgumentBinding.static`` to embed it.
+
+    Parameters
+    ----------
+    value : object
+        Binding descriptor, omitted sentinel, or legacy presence marker.
+
+    Returns
+    -------
+    ArgumentBinding
+        Existing descriptor or a new omitted/runtime binding.
+    """
 
     if isinstance(value, ArgumentBinding):
         return value
@@ -67,8 +98,11 @@ def _optional_binding(value: Any) -> ArgumentBinding:
 
 
 class NumbaMlirCoreAdapter(CoreBackendAdapter):
-    """Translate core descriptors while retaining Numba-CUDA-MLIR linking and
-    caching.
+    """Build Numba calling-convention descriptors from common core parameters.
+
+    Optional named overrides control scalar argument checks and elementwise
+    array conversions. The resulting ``Algorithm`` uses the backend's normal
+    source generation, compilation cache, and linking path.
     """
 
     _BUILTIN_DTYPES: ClassVar[dict[BuiltinDType, numba_types.Type]] = {
@@ -133,7 +167,50 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         parameter: Any,
         *,
         specialization: Algorithm,
-    ) -> Any:
+    ) -> backend.Parameter:
+        """Translate one core parameter into the Numba provider ABI description.
+
+        Preserve template dependencies for arrays, pointers, and references
+        until provider construction resolves them. Scalar values require a
+        concrete dtype; a named scalar ABI override can impose stricter runtime
+        typing or checked narrowing. Output ownership follows ``is_return`` when
+        explicitly set, otherwise ``is_output`` determines the backend return
+        value.
+
+        Named input transforms are different from ordinary arrays: resolve their
+        extent and target dtype now so source generation can emit a fixed local
+        array and per-element C++ conversions. Only input-only arrays may use
+        this path. Dependent C++ functors substitute bracketed type placeholders
+        only, leaving unrelated bare tokens unchanged.
+
+        Parameters
+        ----------
+        parameter : object
+            Core pointer offset, array, pointer, reference, value, or C++
+            functor descriptor. Temporary storage is handled by
+            ``lower_temp_storage``.
+        specialization : Algorithm
+            Core specialization providing template arguments for eager
+            dependency
+            resolution in transforms and C++ functors.
+
+        Returns
+        -------
+        Parameter
+            Backend descriptor; a scalar override may be the adapter's existing
+            descriptor. ``materialize`` copies descriptors before attaching
+            names.
+
+        Raises
+        ------
+        TypeError
+            The parameter kind is unsupported or a scalar value has a dependent
+            dtype.
+        ValueError
+            An input transform targets an output/inout array or lacks a positive
+            specialized integer extent.
+        """
+
         if isinstance(parameter, PointerOffset):
             return backend.PointerOffset(
                 self.normalize_dtype(parameter.dtype),
@@ -267,7 +344,7 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         parameter: TempStorageParameter,
         *,
         specialization: Algorithm,
-    ) -> Any:
+    ) -> backend.Pointer:
         del specialization
         return backend.Pointer(self.normalize_dtype(parameter.dtype))
 
@@ -280,7 +357,59 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         synchronization_scope: SynchronizationScope,
         extra_type_definitions: tuple[Any, ...] = (),
         **kwargs: Any,
-    ) -> Any:
+    ) -> backend.Algorithm:
+        """Build a backend algorithm from a specialized core specialization.
+
+        Validate named scalar ABI overrides and array input transforms against
+        all matching core parameters before lowering. Scalar overrides must
+        preserve provider dtype and output role; transforms apply only to
+        input-only arrays. Copy each lowered descriptor before attaching its
+        parameter name because an override may be reused by several parameters
+        or specializations.
+
+        Keep checked scalar overloads ahead of runtime pointer-offset overloads.
+        Numba-CUDA-MLIR selects the first convertible signature, and the offset
+        integer domain is intentionally broader than an exact scalar ABI. The
+        stable ordering otherwise preserves the core's method order. Include the
+        leading scratch parameter only for ``LEADING_POINTER`` storage,
+        translate type declarations, and finish template substitution without
+        compiling LTO.
+
+        Parameters
+        ----------
+        specialization : Algorithm
+            Core specialization with ordered template arguments and overloads.
+        storage_abi : StorageABI
+            Whether the backend receives a leading scratch pointer or no
+            scratch.
+        execution_scope : SynchronizationScope
+            Participating scope used by the source emitter to allocate scratch.
+        synchronization_scope : SynchronizationScope
+            Post-call synchronization for allocating wrappers; must be ``NONE``
+            or match ``execution_scope``.
+        extra_type_definitions : tuple, optional
+            Backend type definitions prepended to the core's declarations,
+            including any supporting link images.
+        **kwargs : dict
+            Reserved for the adapter interface; additional options are rejected.
+
+        Returns
+        -------
+        Algorithm
+            Specialized backend provider with copied, named parameter
+            descriptors and explicit storage/execution contracts.
+
+        Raises
+        ------
+        TypeError
+            Options or scalar ABI declarations are unsupported, or parameter
+            lowering encounters an unsupported descriptor.
+        ValueError
+            Named overrides/transforms do not match eligible core parameters,
+            their dtypes or output roles conflict, or scope/ABI values are
+            invalid.
+        """
+
         if kwargs:
             unexpected = ", ".join(sorted(kwargs))
             raise TypeError(
