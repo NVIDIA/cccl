@@ -4,7 +4,6 @@
 // clang-format off
 // CLANG_TIDY_CONFIG_BEGIN
 // Checks: cccl-prefer-cuda-traits
-// ExtraArgs: -U_CCCL_NO_SYSTEM_HEADER
 // CLANG_TIDY_CONFIG_END
 
 #include <cuda/std/type_traits>

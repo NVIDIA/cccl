@@ -110,7 +110,10 @@ function(_cccl_parse_clang_tidy_config source_file out_var)
     PROPERTY CMAKE_CONFIGURE_DEPENDS "${source_file}"
   )
 
-  set(config [==[{"Checks":["-*"],"CheckOptions":{},"ExtraArgs":[]}]==])
+  set(
+    config
+    [==[{"Checks":["-*","-clang-diagnostic-*"],"CheckOptions":{},"ExtraArgs":[]}]==]
+  )
 
   file(STRINGS "${source_file}" lines)
   set(in_config FALSE)
@@ -151,7 +154,7 @@ function(_cccl_parse_clang_tidy_config source_file out_var)
     elseif (line MATCHES "^[ \t]*//[ \t]*ExtraArgs[ \t]*:[ \t]*(.+)$")
       string(STRIP "${CMAKE_MATCH_1}" argument)
       string(JSON index LENGTH "${config}" ExtraArgs)
-      string(JSON config SET "${config}" ExtraArgs ${index} "\"${argument}\"")
+      #string(JSON config SET "${config}" ExtraArgs ${index} "\"${argument}\"")
     else()
       message(
         FATAL_ERROR
@@ -238,6 +241,10 @@ function(cccl_create_clang_tidy_test plugin source)
   target_link_libraries(
     "${target}.compile"
     PRIVATE cccl.compiler_interface libcudacxx::libcudacxx
+  )
+  target_compile_options(
+    "${target}.compile"
+    PRIVATE -Wno-pragma-clang-attribute
   )
 
   _cccl_parse_clang_tidy_config("${source}" config)
