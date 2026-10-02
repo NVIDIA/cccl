@@ -287,6 +287,7 @@ struct policy_selector
   int num_channels;
   int num_active_channels;
   bool is_even;
+  type_t sample_type;
 
 private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int t_scale(int nominal_items_per_thread) const
@@ -298,6 +299,30 @@ private:
 public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> HistogramPolicy
   {
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
+    {
+      if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && is_even)
+      {
+        // 1-byte samples: every searched candidate costs ~25% at 2^16/2^20, intentionally left untuned
+        if (sample_size == 2)
+        {
+          // ipt_17.tpb_128.rle_0.ws_1.mem_1.ld_0.laid_2.vec_0 1.001  0.982  1.158  1.228
+          return HistogramPolicy{128, 17, 1, BLOCK_LOAD_STRIPED, LOAD_DEFAULT, false, SMEM, true, 2048};
+        }
+        // 4-byte samples: every searched candidate regresses the 2048-bin class, intentionally left untuned
+        if (sample_size == 8)
+        {
+          if (sample_type == type_t::float64)
+          {
+            // ipt_16.tpb_512.rle_1.ws_0.mem_1.ld_0.laid_2.vec_0 0.974  0.995  1.138  1.181
+            return HistogramPolicy{512, 16, 1, BLOCK_LOAD_STRIPED, LOAD_DEFAULT, true, SMEM, false, 2048};
+          }
+          // ipt_11.tpb_512.rle_1.ws_0.mem_1.ld_2.laid_2.vec_0 0.943  1.014  1.135  1.199
+          return HistogramPolicy{512, 11, 1, BLOCK_LOAD_STRIPED, LOAD_CA, true, SMEM, false, 2048};
+        }
+      }
+    }
+
     if (cc >= ::cuda::compute_capability{10, 0})
     {
       if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && sample_size == 1)
@@ -354,7 +379,8 @@ struct policy_selector_from_types
       int{sizeof(SampleT)},
       NumChannels,
       NumActiveChannels,
-      IsEven};
+      IsEven,
+      classify_type<SampleT>};
     return policies(cc);
   }
 };
