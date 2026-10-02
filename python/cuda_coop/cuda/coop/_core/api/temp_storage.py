@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
-from ..thread_group import CoopCompilerContextRequiredError
-from ._payload import TempStorageLike
+from ._dispatch import _backend_member
+from ._payload import TempStorageLike, _normalize_alignment
 
 
 def TempStorage(
@@ -19,7 +19,7 @@ def TempStorage(
 
     Construct the descriptor inside the kernel and pass it as
     ``temp_storage`` to operations that accept explicit block scratch.
-    See :ref:`temporary storage <coop-temp-storage>` for supported operations,
+    See :ref:`temporary storage <coop-common-storage>` for supported operations,
     allocation lifetime, and launch-time shared-memory requirements.
 
     Parameters
@@ -66,10 +66,19 @@ def TempStorage(
         :start-after: # temp-storage-example-begin
         :end-before: # temp-storage-example-end
         :dedent: 4
+
+    The :ref:`CUTLASS storage example <coop-cutlass-storage>` demonstrates
+    the same shared/exclusive policies and automatic or explicit reuse
+    synchronization in a CuTe kernel.
     """
 
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.TempStorage must be called from a supported GPU kernel."
+    alignment = _normalize_alignment(alignment)
+
+    return _backend_member("TempStorage")(
+        size_in_bytes=size_in_bytes,
+        alignment=alignment,
+        auto_sync=auto_sync,
+        sharing=sharing,
     )
 
 
