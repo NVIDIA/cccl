@@ -51,9 +51,9 @@ public:
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _LauncherFactory>
+  template <class LauncherFactory>
   [[nodiscard]] _CCCL_API constexpr ::cuda::compute_capability
-  compute_capability(const _LauncherFactory& __launcher_factory) const
+  compute_capability(const LauncherFactory& __launcher_factory) const
   {
     ::cuda::compute_capability __ret{};
 
