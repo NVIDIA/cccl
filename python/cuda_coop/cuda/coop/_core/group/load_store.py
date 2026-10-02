@@ -21,15 +21,15 @@ from .._symbols import semantic_token
 from .._types import ArgumentKind, ParameterClassification, ParameterRole
 from ..block.load_store import (
     BlockLoadStoreAlgorithm,
-    make_block_load_spec,
-    make_block_store_spec,
+    make_block_load_specialization,
+    make_block_store_specialization,
 )
 from ..launch import LaunchFacts
 from ..thread_group import ThreadGroup
 from ..warp.load_store import (
     WarpLoadStoreAlgorithm,
-    make_warp_load_spec,
-    make_warp_store_spec,
+    make_warp_load_specialization,
+    make_warp_store_specialization,
 )
 from ._contracts import _contracts, _unsupported, _unsupported_cub_warp_width
 from ._dispatch import _register_group_operation_family
@@ -338,12 +338,12 @@ def _plan_load_store(
                 f"{operation.algorithm.value!r} requires a block size that is "
                 "a multiple of 32",
             )
-        make_spec = (
-            make_block_load_spec
+        make_specialization = (
+            make_block_load_specialization
             if operation.kind is GroupLoadStoreKind.LOAD
-            else make_block_store_spec
+            else make_block_store_specialization
         )
-        spec = make_spec(
+        specialization = make_specialization(
             dtype=operation.dtype,
             block_dim=launch.exact_block_dim,
             items_per_thread=operation.items_per_thread,
@@ -370,12 +370,12 @@ def _plan_load_store(
                 f"cub::Warp{operation.kind.value.title()} does not support "
                 f"algorithm {operation.algorithm.value!r}",
             )
-        make_spec = (
-            make_warp_load_spec
+        make_specialization = (
+            make_warp_load_specialization
             if operation.kind is GroupLoadStoreKind.LOAD
-            else make_warp_store_spec
+            else make_warp_store_specialization
         )
-        spec = make_spec(
+        specialization = make_specialization(
             dtype=operation.dtype,
             items_per_thread=operation.items_per_thread,
             algorithm=algorithm,
@@ -404,7 +404,7 @@ def _plan_load_store(
             "static offset plus the warp-group tile origin must fit a "
             "signed 64-bit integer"
         )
-    cpp_class = f"cub::{spec.struct_name}"
+    cpp_class = f"cub::{specialization.struct_name}"
     storage_free = operation.algorithm in _STORAGE_FREE_ALGORITHMS
     contracts = _contracts(
         resolved,
@@ -472,7 +472,7 @@ def _plan_load_store(
         target=target,
         call=call,
         resolved_group=resolved,
-        implementation=spec,
+        implementation=specialization,
         topology=contracts[0],
         participation=contracts[1],
         result=None,
@@ -482,7 +482,7 @@ def _plan_load_store(
             library="CUB",
             header=header,
             cpp_class=cpp_class,
-            method=spec.method_name,
+            method=specialization.method_name,
         ),
     )
 

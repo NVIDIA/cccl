@@ -7,12 +7,12 @@ from .load_store import (
     WarpLoadStoreAlgorithm,
     WarpLoadStoreKind,
     WarpLoadStoreSemantics,
-    WarpLoadStoreSpec,
+    WarpLoadStoreSpecialization,
     WarpStoreAlgorithm,
-    make_warp_load_spec,
+    make_warp_load_specialization,
     make_warp_load_store_semantics,
-    make_warp_load_store_spec,
-    make_warp_store_spec,
+    make_warp_load_store_specialization,
+    make_warp_store_specialization,
 )
 
 __all__ = [
@@ -20,10 +20,10 @@ __all__ = [
     "WarpLoadStoreAlgorithm",
     "WarpLoadStoreKind",
     "WarpLoadStoreSemantics",
-    "WarpLoadStoreSpec",
+    "WarpLoadStoreSpecialization",
     "WarpStoreAlgorithm",
-    "make_warp_load_spec",
+    "make_warp_load_specialization",
     "make_warp_load_store_semantics",
-    "make_warp_load_store_spec",
-    "make_warp_store_spec",
+    "make_warp_load_store_specialization",
+    "make_warp_store_specialization",
 ]

@@ -73,9 +73,14 @@ class TypeDefinition:
         return self.name, semantic_token(self.code)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class Algorithm:
-    """Unspecialized C++ cooperative primitive semantics."""
+    """A specialized C++ cooperative primitive ready for materialization.
+
+    ``specialization`` binds all template parameters and any auxiliary
+    dependency values without performing backend lowering. Both the bindings
+    and optional ``metadata`` are frozen when the algorithm is constructed.
+    """
 
     struct_name: str
     method_name: str
@@ -83,9 +88,12 @@ class Algorithm:
     includes: tuple[str, ...]
     template_parameters: tuple[TemplateParameter, ...]
     parameters: tuple[tuple[Any, ...], ...]
+    specialization: Mapping[str, Any] = field(kw_only=True)
+    metadata: Mapping[str, Any] = field(default_factory=dict, kw_only=True)
     type_definitions: tuple[TypeDefinition, ...] = ()
     fake_return: bool = False
     output_by_reference: bool = False
+    _semantic_key: tuple[Any, ...] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "includes", tuple(self.includes))
@@ -100,78 +108,37 @@ class Algorithm:
         names = self.template_parameter_names
         if len(set(names)) != len(names):
             raise ValueError("template parameter names must be unique")
-
-    @property
-    def template_parameter_names(self) -> tuple[str, ...]:
-        return tuple(parameter.name for parameter in self.template_parameters)
-
-    @property
-    def semantic_key(self) -> tuple[Any, ...]:
-        return (
-            self.struct_name,
-            self.method_name,
-            self.c_name,
-            self.includes,
-            semantic_token(self.template_parameters),
-            semantic_token(self.parameters),
-            semantic_token(self.type_definitions),
-            self.fake_return,
-            self.output_by_reference,
-        )
-
-    def specialize(
-        self,
-        template_arguments: Mapping[str, Any],
-        *,
-        metadata: Mapping[str, Any] | None = None,
-    ) -> AlgorithmSpec:
-        """Bind template/dependency values without performing backend
-        lowering.
-        """
-
-        missing = [
-            name
-            for name in self.template_parameter_names
-            if name not in template_arguments
-        ]
+        missing = [name for name in names if name not in self.specialization]
         if missing:
             joined = ", ".join(missing)
             raise ValueError(f"Template argument(s) not provided: {joined}")
-        return AlgorithmSpec(
-            algorithm=self,
-            template_arguments=template_arguments,
-            metadata={} if metadata is None else metadata,
-        )
 
-
-@dataclass(frozen=True, eq=False)
-class AlgorithmSpec:
-    """A specialized algorithm ready for backend materialization."""
-
-    algorithm: Algorithm
-    template_arguments: Mapping[str, Any]
-    metadata: Mapping[str, Any] = field(default_factory=dict)
-    _semantic_key: tuple[Any, ...] = field(init=False, repr=False)
-
-    def __post_init__(self) -> None:
         object.__setattr__(
-            self,
-            "template_arguments",
-            _freeze_mapping(self.template_arguments),
+            self, "specialization", _freeze_mapping(self.specialization)
         )
         object.__setattr__(self, "metadata", _freeze_mapping(self.metadata))
         object.__setattr__(
             self,
             "_semantic_key",
             (
-                self.algorithm.semantic_key,
+                (
+                    self.struct_name,
+                    self.method_name,
+                    self.c_name,
+                    self.includes,
+                    semantic_token(self.template_parameters),
+                    semantic_token(self.parameters),
+                    semantic_token(self.type_definitions),
+                    self.fake_return,
+                    self.output_by_reference,
+                ),
                 semantic_token(self.template_arguments),
                 semantic_token(self.metadata),
             ),
         )
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, AlgorithmSpec):
+        if not isinstance(other, Algorithm):
             return NotImplemented
         return self.semantic_key == other.semantic_key
 
@@ -179,44 +146,12 @@ class AlgorithmSpec:
         return hash(self.semantic_key)
 
     @property
-    def struct_name(self) -> str:
-        return self.algorithm.struct_name
-
-    @property
-    def method_name(self) -> str:
-        return self.algorithm.method_name
-
-    @property
-    def c_name(self) -> str:
-        return self.algorithm.c_name
-
-    @property
-    def includes(self) -> tuple[str, ...]:
-        return self.algorithm.includes
-
-    @property
-    def template_parameters(self) -> tuple[TemplateParameter, ...]:
-        return self.algorithm.template_parameters
-
-    @property
     def template_parameter_names(self) -> tuple[str, ...]:
-        return self.algorithm.template_parameter_names
+        return tuple(parameter.name for parameter in self.template_parameters)
 
     @property
-    def parameters(self) -> tuple[tuple[Any, ...], ...]:
-        return self.algorithm.parameters
-
-    @property
-    def type_definitions(self) -> tuple[TypeDefinition, ...]:
-        return self.algorithm.type_definitions
-
-    @property
-    def fake_return(self) -> bool:
-        return self.algorithm.fake_return
-
-    @property
-    def output_by_reference(self) -> bool:
-        return self.algorithm.output_by_reference
+    def template_arguments(self) -> Mapping[str, Any]:
+        return self.specialization
 
     @property
     def ordered_template_arguments(self) -> tuple[tuple[str, Any], ...]:
