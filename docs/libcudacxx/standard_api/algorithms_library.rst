@@ -72,7 +72,10 @@ The following algorithms are supported:
   * ``is_partitioned``
   * ``is_sorted``
   * ``is_sorted_until``
+  * ``max_element``
   * ``merge``
+  * ``min_element``
+  * ``minmax_element``
   * ``mismatch``
   * ``none_of``
   * ``remove``
