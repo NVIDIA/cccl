@@ -17,12 +17,16 @@ _EXPLORERS = {
     "merge-sort": "coop-merge-sort.js",
     "radix": "coop-radix.js",
     "topk": "coop-topk.js",
+    "adjacent-difference": "coop-neighbors.js",
+    "discontinuity": "coop-neighbors.js",
 }
 
 _VISUALIZATION_TITLES = {
     "merge-sort": "Merge Sort",
     "radix": "Radix Rank/Sort",
     "topk": "TopK",
+    "adjacent-difference": "Adjacent Difference",
+    "discontinuity": "Discontinuity",
 }
 
 _API_VISUALIZATIONS = {
@@ -39,7 +43,10 @@ _API_VISUALIZATIONS = {
     "merge-sort": "merge-sort",
     "radix": "radix",
     "topk": "topk",
+    "adjacent-difference": "adjacent-difference",
+    "discontinuity": "discontinuity",
     "sum": "reduce",
+    "adjacent_difference": "adjacent-difference",
     "merge_sort_keys": "merge-sort",
     "merge_sort_pairs": "merge-sort",
     "radix_sort_keys": "radix",

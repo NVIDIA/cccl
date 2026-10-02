@@ -79,6 +79,7 @@ from .block.merge_sort import (
     make_block_merge_sort_semantics,
     make_block_merge_sort_spec,
 )
+from .block.neighbors import BlockNeighborSemantics, make_block_neighbor_spec
 from .group import (
     ArgumentPrecondition,
     CudaxCallDescription,
@@ -120,6 +121,7 @@ from .group import (
 from .group.merge_sort import (
     GroupMergeSortSemantics,
 )
+from .group.neighbors import GroupNeighborSemantics
 from .launch import (
     Dim3,
     LaunchFactConflict,
@@ -212,6 +214,7 @@ __all__ = [
     "BlockMergeSortSemantics",
     "BlockMergeSortSpec",
     "BlockMergeSortTilePolicy",
+    "BlockNeighborSemantics",
     "BlockReduceAlgorithm",
     "BlockReduceOperation",
     "BlockReduceSemantics",
@@ -243,6 +246,7 @@ __all__ = [
     "GroupLoweringPlan",
     "GroupLoweringTarget",
     "GroupMergeSortSemantics",
+    "GroupNeighborSemantics",
     "GroupOperandKind",
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
@@ -310,6 +314,7 @@ __all__ = [
     "make_block_exchange_spec",
     "make_block_merge_sort_semantics",
     "make_block_merge_sort_spec",
+    "make_block_neighbor_spec",
     "make_block_reduce_semantics",
     "make_block_reduce_spec",
     "make_block_scan_spec",

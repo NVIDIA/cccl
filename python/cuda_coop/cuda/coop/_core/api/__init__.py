@@ -6,6 +6,7 @@ from .exchange import exchange
 from .load_store import load, store
 from .merge_sort import merge_sort_keys as merge_sort_keys
 from .merge_sort import merge_sort_pairs as merge_sort_pairs
+from .neighbors import adjacent_difference, discontinuity
 from .radix_sort import radix_rank_keys, radix_sort_keys, radix_sort_pairs
 from .reduce import reduce, sum
 from .scan import (
@@ -58,6 +59,8 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
+    "adjacent_difference",
+    "discontinuity",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
