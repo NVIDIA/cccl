@@ -77,6 +77,15 @@ inline constexpr bool __is_extended_floating_point_v<__float128> = true;
 template <class _Tp>
 inline constexpr bool __is_cv_extended_floating_point_v = __is_extended_floating_point_v<::cuda::std::remove_cv_t<_Tp>>;
 
+// Clang on ARM64 synthesizes the MSVC HLT intrinsic when `__hlt` is undeclared:
+// `unsigned int __hlt(unsigned int, ...)`. A function template in this namespace is
+// found by ordinary lookup, so that recovery does not run. CUDA's non-template
+// overloads, found by ADL from `<cuda_fp16.h>` and `<cuda_bf16.h>`, are a better match.
+#if _CCCL_HOST_ARCH(ARM64) && _CCCL_CUDA_COMPILER(CLANG)
+template <class _Lhs, class _Rhs>
+_CCCL_HOST_DEVICE_API bool __hlt(_Lhs, _Rhs) = delete;
+#endif // ARM64 Clang
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>

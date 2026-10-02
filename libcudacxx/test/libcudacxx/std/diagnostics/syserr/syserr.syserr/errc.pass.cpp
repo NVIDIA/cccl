@@ -10,6 +10,10 @@
 
 // UNSUPPORTED: nvrtc
 
+// libc++ deprecates these POSIX errc enumerators. The test still checks that the
+// standard names match the corresponding errno constants.
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -Wno-deprecated-declarations
+
 #include <cuda/std/__system_error_>
 #include <cuda/std/utility>
 

@@ -835,6 +835,28 @@ class Configuration(object):
         if nvcc_host_compiler and self.cxx.type == "nvcc":
             self.cxx.compile_flags += ["-ccbin={0}".format(nvcc_host_compiler)]
 
+        # Match cmake/CCCLBuildCompilerTargets.cmake. These must be separate
+        # argv tokens: a single string with spaces is passed through as one
+        # unknown compiler argument, which then breaks later -std= probes.
+        if self.cxx_stdlib_under_test == "libc++":
+            # CUDA headers reject libc++ on x86 unless this is set.
+            self.cxx.compile_flags += ["-D_ALLOW_UNSUPPORTED_LIBCPP=1"]
+            if self.cxx.type == "clang":
+                self.cxx.compile_flags += [
+                    "-Wno-unused-command-line-argument",
+                    "-Xclang",
+                    "-stdlib=libc++",
+                    "-stdlib++-isystem",
+                    "/usr/include/c++/v1",
+                ]
+            elif self.cxx.type == "nvcc":
+                self.cxx.compile_flags += [
+                    "-Xcompiler",
+                    "-stdlib=libc++",
+                    "-Xcompiler",
+                    "-stdlib++-isystem/usr/include/c++/v1",
+                ]
+
         # Try and get the std version from the command line. Fall back to
         # default given in lit.site.cfg is not present. If default is not
         # present then force c++11.
@@ -1137,6 +1159,10 @@ class Configuration(object):
 
         # Configure libraries
         if self.cxx_stdlib_under_test == "libc++":
+            if self.cxx.type == "clang":
+                self.cxx.link_flags += ["-stdlib=libc++"]
+            elif self.cxx.type == "nvcc":
+                self.cxx.link_flags += ["-Xcompiler", "-stdlib=libc++"]
             if self.get_lit_conf("name") != "libcu++":
                 if (
                     "nvhpc" not in self.config.available_features
