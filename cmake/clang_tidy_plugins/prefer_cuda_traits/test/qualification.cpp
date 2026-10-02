@@ -37,30 +37,30 @@ template <typename T>
 void qualified_names()
 {
   foo::bar::baz<T> qualified;
-  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use 'foo::replacement_baz' instead of 'foo::bar::baz<T>' for generic types [cccl-prefer-cuda-traits]
+  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use '::foo::replacement_baz' instead of 'foo::bar::baz<T>' for generic types [cccl-prefer-cuda-traits]
   // CHECK-FIXES-LABEL: - DiagnosticName: cccl-prefer-cuda-traits
   // CHECK-FIXES: Length: 13
-  // CHECK-FIXES-NEXT: ReplacementText: {{'?}}foo::replacement_baz{{'?}}{{$}}
+  // CHECK-FIXES-NEXT: ReplacementText: {{'?}}::foo::replacement_baz{{'?}}{{$}}
   ::foo::bar::baz<T> global;
   // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use '::foo::replacement_baz' instead of 'foo::bar::baz<T>' for generic types [cccl-prefer-cuda-traits]
   // CHECK-FIXES-LABEL: - DiagnosticName: cccl-prefer-cuda-traits
   // CHECK-FIXES: Length: 15
   // CHECK-FIXES-NEXT: ReplacementText: {{'?}}::foo::replacement_baz{{'?}}{{$}}
   static_assert(foo::bar::baz_v<T>);
-  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use 'foo::replacement_baz_v' instead of 'foo::bar::baz_v' for generic types [cccl-prefer-cuda-traits]
+  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use '::foo::replacement_baz_v' instead of 'foo::bar::baz_v' for generic types [cccl-prefer-cuda-traits]
   // CHECK-FIXES-LABEL: - DiagnosticName: cccl-prefer-cuda-traits
   // CHECK-FIXES: Length: 15
-  // CHECK-FIXES-NEXT: ReplacementText: {{'?}}foo::replacement_baz_v{{'?}}{{$}}
+  // CHECK-FIXES-NEXT: ReplacementText: {{'?}}::foo::replacement_baz_v{{'?}}{{$}}
   static_assert(::foo::bar::baz_v<T>);
   // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use '::foo::replacement_baz_v' instead of 'foo::bar::baz_v' for generic types [cccl-prefer-cuda-traits]
   // CHECK-FIXES-LABEL: - DiagnosticName: cccl-prefer-cuda-traits
   // CHECK-FIXES: Length: 17
   // CHECK-FIXES-NEXT: ReplacementText: {{'?}}::foo::replacement_baz_v{{'?}}{{$}}
   using qualified_alias [[maybe_unused]] = foo::bar::baz_t<T>;
-  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use 'foo::replacement_baz_t' instead of 'T' for generic types [cccl-prefer-cuda-traits]
+  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use '::foo::replacement_baz_t' instead of 'T' for generic types [cccl-prefer-cuda-traits]
   // CHECK-FIXES-LABEL: - DiagnosticName: cccl-prefer-cuda-traits
   // CHECK-FIXES: Length: 15
-  // CHECK-FIXES-NEXT: ReplacementText: {{'?}}foo::replacement_baz_t{{'?}}{{$}}
+  // CHECK-FIXES-NEXT: ReplacementText: {{'?}}::foo::replacement_baz_t{{'?}}{{$}}
   using global_alias [[maybe_unused]] = ::foo::bar::baz_t<T>;
   // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use '::foo::replacement_baz_t' instead of 'T' for generic types [cccl-prefer-cuda-traits]
   // CHECK-FIXES-LABEL: - DiagnosticName: cccl-prefer-cuda-traits

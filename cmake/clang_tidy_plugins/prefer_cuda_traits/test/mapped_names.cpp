@@ -39,29 +39,29 @@ template <typename T>
 void collisions()
 {
   [[maybe_unused]] first::foo<T> first_type;
-  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use 'first::bar'
+  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use '::first::bar'
   // CHECK-MESSAGES-NOT: warning:
-  // CHECK-FIXES: ReplacementText: {{'?}}first::bar{{'?}}{{$}}
+  // CHECK-FIXES: ReplacementText: {{'?}}::first::bar{{'?}}{{$}}
   [[maybe_unused]] second::foo<T> second_type;
-  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use 'second::bar'
+  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use '::second::bar'
   // CHECK-MESSAGES-NOT: warning:
-  // CHECK-FIXES: ReplacementText: {{'?}}second::bar{{'?}}{{$}}
+  // CHECK-FIXES: ReplacementText: {{'?}}::second::bar{{'?}}{{$}}
   static_assert(first::foo_v<T>);
-  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use 'first::bar_v'
+  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use '::first::bar_v'
   // CHECK-MESSAGES-NOT: warning:
-  // CHECK-FIXES: ReplacementText: {{'?}}first::bar_v{{'?}}{{$}}
+  // CHECK-FIXES: ReplacementText: {{'?}}::first::bar_v{{'?}}{{$}}
   static_assert(second::foo_v<T>);
-  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use 'second::bar_v'
+  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use '::second::bar_v'
   // CHECK-MESSAGES-NOT: warning:
-  // CHECK-FIXES: ReplacementText: {{'?}}second::bar_v{{'?}}{{$}}
+  // CHECK-FIXES: ReplacementText: {{'?}}::second::bar_v{{'?}}{{$}}
   using first_alias [[maybe_unused]] = first::foo_t<T>;
-  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use 'first::bar_t'
+  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use '::first::bar_t'
   // CHECK-MESSAGES-NOT: warning:
-  // CHECK-FIXES: ReplacementText: {{'?}}first::bar_t{{'?}}{{$}}
+  // CHECK-FIXES: ReplacementText: {{'?}}::first::bar_t{{'?}}{{$}}
   using second_alias [[maybe_unused]] = second::foo_t<T>;
-  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use 'second::bar_t'
+  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use '::second::bar_t'
   // CHECK-MESSAGES-NOT: warning:
-  // CHECK-FIXES: ReplacementText: {{'?}}second::bar_t{{'?}}{{$}}
+  // CHECK-FIXES: ReplacementText: {{'?}}::second::bar_t{{'?}}{{$}}
 }
 
 template <typename T>
@@ -70,17 +70,17 @@ void unqualified_names()
   using first::foo;
   using second::foo_v;
   [[maybe_unused]] foo<T> value;
-  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use 'first::bar'
+  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use '::first::bar'
   // CHECK-MESSAGES-NOT: warning:
-  // CHECK-FIXES: ReplacementText: {{'?}}first::bar{{'?}}{{$}}
+  // CHECK-FIXES: ReplacementText: {{'?}}::first::bar{{'?}}{{$}}
   static_assert(foo_v<T>);
-  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use 'second::bar_v'
+  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use '::second::bar_v'
   // CHECK-MESSAGES-NOT: warning:
-  // CHECK-FIXES: ReplacementText: {{'?}}second::bar_v{{'?}}{{$}}
+  // CHECK-FIXES: ReplacementText: {{'?}}::second::bar_v{{'?}}{{$}}
   [[maybe_unused]] plain<T> global;
-  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use 'replaced_plain'
+  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use '::replaced_plain'
   // CHECK-MESSAGES-NOT: warning:
-  // CHECK-FIXES: ReplacementText: {{'?}}replaced_plain{{'?}}{{$}}
+  // CHECK-FIXES: ReplacementText: {{'?}}::replaced_plain{{'?}}{{$}}
 }
 
 namespace cuda::std

@@ -19,19 +19,19 @@ template <typename T>
 void macro_uses()
 {
   static_assert(COPYABLE_TRAIT<T>::value);
-  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use 'cuda::is_trivially_copyable' instead of 'cuda::std::is_trivially_copyable<T>' for generic types [cccl-prefer-cuda-traits]
+  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use '::cuda::is_trivially_copyable' instead of 'cuda::std::is_trivially_copyable<T>' for generic types [cccl-prefer-cuda-traits]
   // CHECK-FIXES-LABEL: - DiagnosticName: cccl-prefer-cuda-traits
   // CHECK-FIXES: Length: 14
-  // CHECK-FIXES-NEXT: ReplacementText: {{'?}}cuda::is_trivially_copyable{{'?}}{{$}}
+  // CHECK-FIXES-NEXT: ReplacementText: {{'?}}::cuda::is_trivially_copyable{{'?}}{{$}}
   static_assert(COPYABLE_VALUE(T));
-  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use 'cuda::is_trivially_copyable_v' instead of 'cuda::std::is_trivially_copyable_v' for generic types [cccl-prefer-cuda-traits]
+  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use '::cuda::is_trivially_copyable_v' instead of 'cuda::std::is_trivially_copyable_v' for generic types [cccl-prefer-cuda-traits]
   // CHECK-FIXES-LABEL: - DiagnosticName: cccl-prefer-cuda-traits
   // CHECK-FIXES: FileOffset:
   // CHECK-FIXES-NEXT: Replacements: []
   static_assert(IDENTITY(cuda::std::is_trivially_copyable_v<T>));
-  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use 'cuda::is_trivially_copyable_v' instead of 'cuda::std::is_trivially_copyable_v' for generic types [cccl-prefer-cuda-traits]
+  // CHECK-MESSAGES: :[[@LINE-1]]:{{[0-9]+}}: warning: use '::cuda::is_trivially_copyable_v' instead of 'cuda::std::is_trivially_copyable_v' for generic types [cccl-prefer-cuda-traits]
   // CHECK-FIXES-LABEL: - DiagnosticName: cccl-prefer-cuda-traits
   // CHECK-FIXES: Length: 34
-  // CHECK-FIXES-NEXT: ReplacementText: {{'?}}cuda::is_trivially_copyable_v{{'?}}{{$}}
+  // CHECK-FIXES-NEXT: ReplacementText: {{'?}}::cuda::is_trivially_copyable_v{{'?}}{{$}}
 }
 // clang-format on

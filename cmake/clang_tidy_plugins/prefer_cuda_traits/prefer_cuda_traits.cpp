@@ -197,25 +197,25 @@ public:
     auto qualified_name           = declaration->getQualifiedNameAsString();
     const auto& replacement       = replacements_.at(qualified_name);
 
-    NestedNameSpecifierLoc qualifier;
+    NestedNameSpecifierLoc qualifier_loc;
     SourceLocation name_loc;
     std::string original = std::move(qualified_name);
 
     if (const auto* const type = nodes.getNodeAs<TemplateSpecializationTypeLoc>(USE_BIND))
     {
-      qualifier = type->getQualifierLoc();
-      name_loc  = type->getTemplateNameLoc();
-      original  = TypeName::getFullyQualifiedName(type->getType().getDesugaredType(ctx), ctx, ctx.getPrintingPolicy());
+      qualifier_loc = type->getQualifierLoc();
+      name_loc      = type->getTemplateNameLoc();
+      original = TypeName::getFullyQualifiedName(type->getType().getDesugaredType(ctx), ctx, ctx.getPrintingPolicy());
     }
     else if (const auto* const reference = nodes.getNodeAs<DeclRefExpr>(USE_BIND))
     {
-      qualifier = reference->getQualifierLoc();
-      name_loc  = reference->getLocation();
+      qualifier_loc = reference->getQualifierLoc();
+      name_loc      = reference->getLocation();
     }
     else if (const auto* const lookup = nodes.getNodeAs<UnresolvedLookupExpr>(USE_BIND))
     {
-      qualifier = lookup->getQualifierLoc();
-      name_loc  = lookup->getNameLoc();
+      qualifier_loc = lookup->getQualifierLoc();
+      name_loc      = lookup->getNameLoc();
     }
     else
     {
@@ -228,27 +228,30 @@ public:
     // TRAIT<T>   generic;
     // TRAIT<int> concrete; // Also becomes cuda::foo<int>.
     //
-    // We accept this side effect for macro fixes, although the check otherwise excludes concrete arguments.
-    const auto begin_loc = qualifier ? qualifier.getBeginLoc() : name_loc;
+    // We accept this side effect for macro fixes, although the check otherwise excludes
+    // concrete arguments.
+    const auto begin_loc = qualifier_loc ? qualifier_loc.getBeginLoc() : name_loc;
 
-    // Given cuda::foo -> cuda::std::foo, preserve the template arguments and member access:
+    const auto target =
+      make_replacement_(ctx, declaration, use_context, qualifier_loc.getNestedNameSpecifier(), name_loc, replacement);
+    auto diagnostic = diag(name_loc, "use '%0' instead of '%1' for generic types") << target << original;
+
+    // Replacing the trait name must preserve its template arguments and member access:
     //
-    // cuda::foo<T>::value
-    // ^-------^
-    //   range
+    // cuda::std::is_floating_point<T>::value
+    //           becomes
+    // ::cuda::is_floating_point<T>::value
     const auto range = Lexer::makeFileCharRange(
       CharSourceRange::getTokenRange(begin_loc, name_loc), *result.SourceManager, ctx.getLangOpts());
-    const auto target = make_replacement_(ctx, declaration, use_context, qualifier, name_loc, replacement);
-    auto diagnostic   = diag(name_loc, "use '%0' instead of '%1' for generic types") << target << original;
 
     // A partial macro expansion can have no corresponding file range:
     //
     // #define VALUE(T) cuda::foo_v<T>
     // static_assert(VALUE(T));
     //
-    // The name range covers cuda::foo_v, but VALUE(T) expands to cuda::foo_v<T>.
-    // Replacing the whole invocation discards <T>, so makeFileCharRange returns an invalid range.
-    // Keep the warning even when no safe replacement exists.
+    // The name range covers cuda::foo_v, but VALUE(T) expands to cuda::foo_v<T>. Replacing the
+    // whole invocation discards <T>, so makeFileCharRange returns an invalid range. Keep the
+    // warning even when no safe replacement exists.
     if (range.isValid())
     {
       diagnostic << FixItHint::CreateReplacement(range, target);
@@ -266,50 +269,78 @@ private:
     ASTContext& ctx,
     const NamedDecl* declaration,
     const DeclContext* use_context,
-    NestedNameSpecifierLoc qualifier,
+    NestedNameSpecifier original_spec,
     SourceLocation name_loc,
     StringRef target)
   {
-    auto scope = qualifier.getNestedNameSpecifier();
-
-    if (scope.isFullyQualified())
+    if (!original_spec)
     {
-      // Given the mapping cuda::foo -> cuda::std::foo:
+      // An empty scope makes replaceNestedName() assume that another fix updates the original
+      // using declaration:
       //
-      // namespace cuda {
-      //   ::cuda::foo<T> v;  // Must become ::cuda::std::foo<T> v;
-      // }
+      // using cuda::std::is_floating_point;
+      // is_floating_point<T> v; // Keeping this name still selects the original trait.
       //
-      // replaceNestedName() returns "std::foo" here, so use the target directly to preserve the leading ::.
-      return target.str();
-    }
-
-    if (!scope)
-    {
-      // Given the mapping cuda::foo -> cuda::std::foo:
-      //
-      // using cuda::foo;
-      // foo<T> v;  // Must become cuda::std::foo<T> v;
-      //
-      // With an empty scope, replaceNestedName() returns "foo", which still names the original trait.
-      // It assumes another fix updates the using declaration:
+      // This check leaves using declarations unchanged. A nonempty specifier bypasses that
+      // assumption and makes the helper compute qualification from the use context instead.
       //
       // https://github.com/llvm/llvm-project/blob/main/clang/lib/Tooling/Refactoring/Lookup.cpp
-      //
-      // We leave using declarations unchanged, so supply the trait's namespace instead.
       if (const auto* const ns = dyn_cast<NamespaceDecl>(declaration->getDeclContext()->getEnclosingNamespaceContext()))
       {
-        // namespace cuda {
-        //   foo<T> v;  // Must become std::foo<T> v;
-        // }
-        //
-        // Supply cuda:: without a leading :: so the helper can omit the enclosing namespace.
-        scope = NestedNameSpecifier{ctx, ns, /*Prefix=*/std::nullopt};
+        original_spec = NestedNameSpecifier{ctx, ns, /*Prefix=*/std::nullopt};
       }
       // A trait at global scope has no NamespaceDecl. replaceNestedName() handles its empty scope directly.
     }
 
-    return tooling::replaceNestedName(scope, name_loc, use_context, declaration, target);
+    // The comparison below must treat cuda's inline ABI namespaces as cuda itself. Otherwise,
+    // cuda::abi_v1 differs from the target namespace cuda, and we unnecessarily keep ::cuda::
+    // on the replacement.
+    //
+    // We must skip inline levels before comparing, but stop at an ordinary namespace such as
+    // cuda::experimental:
+    //
+    // cuda::abi_v1::abi_v2 -> cuda (both ABI namespaces are inline)
+    // cuda::experimental::abi_v1 -> cuda::experimental (only abi_v1 is inline)
+    const auto* context = use_context->getEnclosingNamespaceContext();
+
+    while (context->isInlineNamespace())
+    {
+      context = context->getParent()->getEnclosingNamespaceContext();
+    }
+
+    // replaceNestedName() can shorten through ordinary enclosing namespaces. For example,
+    // inside cuda::experimental it can omit cuda:: and return is_floating_point. Our rule
+    // permits this only directly inside namespace cuda.
+    //
+    // Compare namespace names first; elsewhere, return the configured target, which already
+    // starts with ::.
+    //
+    // Inside cuda:                std::is_floating_point<T> -> is_floating_point<T>
+    // Inside cuda::std:           is_floating_point<T>      -> ::cuda::is_floating_point<T>
+    // Inside cuda::experimental:  std::is_floating_point<T> -> ::cuda::is_floating_point<T>
+    // Inside cub or global scope: cuda::std::is_floating_point<T> -> ::cuda::is_floating_point<T>
+    if (const auto* ns = dyn_cast<NamespaceDecl>(context);
+        !ns || ns->getQualifiedNameAsString() != target.rsplit("::").first.drop_front(2))
+    {
+      return target.str();
+    }
+
+    // We are inside the target namespace, but an unqualified name can still refer to another
+    // declaration:
+    //
+    // namespace cuda {
+    //   using std::is_floating_point; // The bare name refers to cuda::std's trait.
+    // }
+    //
+    // Let replaceNestedName() check for conflicting declarations before accepting the bare
+    // name. If it adds qualification, we should spell out the complete target, including the
+    // leading ::.
+    //
+    // For example, we should turn "cuda::is_floating_point" into "::cuda::is_floating_point",
+    // but keep "is_floating_point" unchanged.
+    auto spelling = tooling::replaceNestedName(original_spec, name_loc, context, declaration, target);
+
+    return StringRef{spelling}.contains("::") ? target.str() : spelling;
   }
 
   StringRef traits_option_{};
