@@ -144,6 +144,9 @@ enum BlockReduceAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
   //!   #. The final block-wide result is available to all threads for arithmetic addition, and is
   //!      only valid in thread 0 for other types or reduction operators.
   //!
+  //! Atomic accumulation is only used with ``cuda::std::plus``. Other reduction operators combine the
+  //! warp aggregates in order, as with ``BLOCK_REDUCE_WARP_REDUCTIONS``.
+  //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
   //!
@@ -539,7 +542,7 @@ public:
     // Determine if we skip bounds checking
     if (num_valid >= BLOCK_THREADS)
     {
-      return InternalBlockReduce(temp_storage).template Reduce<true>(input, num_valid, reduction_op);
+      return InternalBlockReduce(temp_storage).template Reduce<true>(input, BLOCK_THREADS, reduction_op);
     }
     else
     {
@@ -700,7 +703,7 @@ public:
     // Determine if we skip bounds checking
     if (num_valid >= BLOCK_THREADS)
     {
-      return InternalBlockReduce(temp_storage).template Sum<true>(input, num_valid);
+      return InternalBlockReduce(temp_storage).template Sum<true>(input, BLOCK_THREADS);
     }
     else
     {

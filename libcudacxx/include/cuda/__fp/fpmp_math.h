@@ -377,7 +377,6 @@
 */
 #include <cuda/__fp/fpmp.h>
 #include <cuda/std/cassert>
-#include <cuda/std/cmath>
 
 // Header-mode implementations are provided by the per-family implementation
 // headers below (see docs/libcudacxx/fp/fpmp_spec.rst, "Function Families").

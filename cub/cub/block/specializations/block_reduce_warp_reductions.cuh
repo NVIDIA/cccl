@@ -124,13 +124,8 @@ struct BlockReduceWarpReductions
     if (lane_id == 0 && warp_id != 0)
     {
       // TODO: replace this with other atomic operations when specified
-      NV_IF_ELSE_TARGET(
-        NV_PROVIDES_SM_60,
-        ({
-          const ::cuda::atomic_ref<T, ::cuda::thread_scope_block> atomic_target(temp_storage.warp_aggregates[0]);
-          atomic_target.fetch_add(warp_aggregate, ::cuda::memory_order_relaxed);
-        }),
-        (atomicAdd(&temp_storage.warp_aggregates[0], warp_aggregate);));
+      const ::cuda::atomic_ref<T, ::cuda::thread_scope_block> atomic_target(temp_storage.warp_aggregates[0]);
+      atomic_target.fetch_add(warp_aggregate, ::cuda::memory_order_relaxed);
     }
 
     __syncthreads();
@@ -229,13 +224,15 @@ struct BlockReduceWarpReductions
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
     // Atomic accumulation of warp aggregates requires arithmetic addition.
-    if constexpr (IsDeterministic || !::cuda::std::is_arithmetic_v<T> || !is_cuda_std_plus_v<ReductionOp, T>)
+    if constexpr (IsDeterministic || !::cuda::std::is_arithmetic_v<T> || !::cuda::__is_cuda_std_plus_v<ReductionOp, T>)
     {
       return ApplyWarpAggregates<FullTile>(reduction_op, warp_aggregate, num_valid);
     }
     else
     {
-      return ApplyWarpAggregatesNonDeterministic(reduction_op, warp_aggregate);
+      // Warps without valid items contribute the additive identity
+      const T add_value = (FullTile || warp_offset < num_valid) ? warp_aggregate : T{};
+      return ApplyWarpAggregatesNonDeterministic(reduction_op, add_value);
     }
   }
 };

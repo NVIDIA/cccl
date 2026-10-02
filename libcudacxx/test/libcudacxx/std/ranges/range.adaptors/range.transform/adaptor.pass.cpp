@@ -33,6 +33,40 @@ struct NonCopyableFunction
   }
 };
 
+struct CopyOnlyFn
+{
+  int offset_;
+
+  TEST_FUNC constexpr explicit CopyOnlyFn(int offset)
+      : offset_(offset)
+  {}
+  constexpr CopyOnlyFn(const CopyOnlyFn&) = default;
+  CopyOnlyFn(CopyOnlyFn&&)                = delete;
+
+  TEST_FUNC constexpr int operator()(int i) const
+  {
+    return i + offset_;
+  }
+};
+
+struct ThrowingMoveFn
+{
+  int offset_;
+
+  TEST_FUNC constexpr explicit ThrowingMoveFn(int offset)
+      : offset_(offset)
+  {}
+  constexpr ThrowingMoveFn(const ThrowingMoveFn&) = default;
+  TEST_FUNC constexpr ThrowingMoveFn(ThrowingMoveFn&& other) noexcept(false)
+      : offset_(other.offset_)
+  {}
+
+  TEST_FUNC constexpr int operator()(int i) const
+  {
+    return i + offset_;
+  }
+};
+
 TEST_FUNC constexpr bool test()
 {
   int buff[8] = {0, 1, 2, 3, 4, 5, 6, 7};
@@ -154,6 +188,21 @@ TEST_FUNC constexpr bool test()
   {
     static_assert(
       cuda::std::is_same_v<decltype(cuda::std::ranges::views::transform), decltype(cuda::std::views::transform)>);
+  }
+
+  // A copy-only function, and a function whose move may throw, can form a partial `views::transform`.
+  {
+    CopyOnlyFn copy_only{10};
+    static_assert(noexcept(cuda::std::views::transform(copy_only)));
+    [[maybe_unused]] auto copy_only_partial = cuda::std::views::transform(copy_only);
+
+    ThrowingMoveFn throwing_move{10};
+    static_assert(noexcept(cuda::std::views::transform(throwing_move)));
+    auto throwing_partial          = cuda::std::views::transform(throwing_move);
+    decltype(auto) throwing_result = MoveOnlyView{buff} | throwing_partial;
+    assert(throwing_result[0] == 10);
+    assert(throwing_result[1] == 11);
+    assert(throwing_result[2] == 12);
   }
 
   return true;

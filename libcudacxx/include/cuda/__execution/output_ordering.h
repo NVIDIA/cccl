@@ -25,7 +25,6 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_one_of.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

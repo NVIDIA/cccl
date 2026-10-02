@@ -477,7 +477,7 @@ struct WarpScanSmem
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   UpdatePartial([[maybe_unused]] T input, T& inclusive, T& exclusive, [[maybe_unused]] ScanOpT scan_op, int valid_items)
   {
-    if constexpr (::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>)
+    if constexpr (::cuda::std::is_integral_v<T> && ::cuda::__is_cuda_std_plus_v<ScanOpT, T>)
     {
       // initial value presumed 0
       if (static_cast<int>(lane_id) < valid_items)
@@ -533,7 +533,7 @@ struct WarpScanSmem
     }
     // Get exclusive
     UpdatePartial(input, inclusive, exclusive, scan_op, valid_items);
-    if constexpr (!(::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>) )
+    if constexpr (!(::cuda::std::is_integral_v<T> && ::cuda::__is_cuda_std_plus_v<ScanOpT, T>) )
     {
       if ((lane_id == 0u) && (valid_items > 0))
       {
@@ -581,7 +581,7 @@ struct WarpScanSmem
     const int last_valid_lane = ::cuda::std::clamp(valid_items - 1, 0, LogicalWarpThreads - 1);
     warp_aggregate            = temp_storage[HALF_WARP_THREADS + last_valid_lane];
     // Compute exclusive
-    if constexpr (::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>)
+    if constexpr (::cuda::std::is_integral_v<T> && ::cuda::__is_cuda_std_plus_v<ScanOpT, T>)
     {
       UpdatePartial(input, inclusive, exclusive, scan_op, valid_items);
     }

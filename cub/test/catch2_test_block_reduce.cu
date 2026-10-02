@@ -3,6 +3,7 @@
 
 #include <cub/block/block_reduce.cuh>
 
+#include <algorithm>
 #include <limits>
 #include <numeric>
 
@@ -16,7 +17,7 @@ template <cub::BlockReduceAlgorithm Algorithm,
           class T,
           class ActionT>
 __launch_bounds__(BlockDimX * BlockDimY * BlockDimZ) __global__
-  void block_reduce_kernel(T* in, T* out, int valid_items, ActionT action)
+  void block_reduce_kernel(T* in, T* out, int valid_items, T poison, ActionT action)
 {
   using block_reduce_t = cub::BlockReduce<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>;
   using storage_t      = typename block_reduce_t::TempStorage;
@@ -31,7 +32,7 @@ __launch_bounds__(BlockDimX * BlockDimY * BlockDimZ) __global__
   for (int item = 0; item < ItemsPerThread; item++)
   {
     const int idx     = thread_offset + item;
-    thread_data[item] = idx < valid_items ? in[idx] : T();
+    thread_data[item] = idx < valid_items ? in[idx] : poison;
   }
   __syncthreads();
 
@@ -52,12 +53,16 @@ template <cub::BlockReduceAlgorithm Algorithm,
           int BlockDimZ,
           class T,
           class ActionT>
-void block_reduce(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT action)
+void block_reduce(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT action, T poison = T())
 {
   const dim3 block_dims(BlockDimX, BlockDimY, BlockDimZ);
 
   block_reduce_kernel<Algorithm, ItemsPerThread, BlockDimX, BlockDimY, BlockDimZ, T, ActionT><<<1, block_dims>>>(
-    thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), static_cast<int>(in.size()), action);
+    thrust::raw_pointer_cast(in.data()),
+    thrust::raw_pointer_cast(out.data()),
+    static_cast<int>(in.size()),
+    poison,
+    action);
 
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
@@ -114,6 +119,16 @@ struct max_full_tile_op_t
   __device__ T operator()(BlockReduceT& reduce, T (&thread_data)[ItemsPerThread], int /* valid_items */) const
   {
     return reduce.Reduce(thread_data, cuda::maximum<>{});
+  }
+};
+
+// num_valid larger than the block size must behave like a full tile
+struct min_oversized_tile_op_t
+{
+  template <int ItemsPerThread, class BlockReduceT, class T>
+  __device__ T operator()(BlockReduceT& reduce, T (&thread_data)[ItemsPerThread], int valid_items) const
+  {
+    return reduce.Reduce(thread_data[0], cuda::minimum<>{}, valid_items + 32);
   }
 };
 
@@ -214,7 +229,7 @@ CUB_TEST("Block reduce works with sum in partial tiles",
                params::block_dim_x,
                params::block_dim_y,
                params::block_dim_z,
-               type>(d_in, d_out, sum_partial_tile_op_t{});
+               type>(d_in, d_out, sum_partial_tile_op_t{}, type{1});
 
   REQUIRE_APPROX_EQ(h_reference, d_out);
 }
@@ -278,7 +293,7 @@ CUB_TEST("Block reduce works with custom op in partial tiles",
                params::block_dim_x,
                params::block_dim_y,
                params::block_dim_z,
-               type>(d_in, d_out, max_partial_tile_op_t{});
+               type>(d_in, d_out, max_partial_tile_op_t{}, cuda::std::numeric_limits<type>::max());
 
   REQUIRE_APPROX_EQ(h_reference, d_out);
 }
@@ -311,6 +326,35 @@ CUB_TEST("Block reduce respects a differently typed plus operator", "[reduce][bl
   {
     check(65);
   }
+}
+
+CUB_TEST("Block reduce treats num_valid larger than the block size as a full tile",
+         "[reduce][block]",
+         CUB_SMALL,
+         types,
+         single_item_per_thread,
+         block_dim_xs,
+         block_dim_yzs,
+         arithmetic_algorithm)
+{
+  using params = params_t<TestType>;
+  using type   = typename params::type;
+
+  c2h::device_vector<type> d_out(1);
+  c2h::device_vector<type> d_in(params::tile_size);
+  c2h::gen(C2H_SEED(10), d_in, type{1});
+
+  c2h::host_vector<type> h_in = d_in;
+  const c2h::host_vector<type> h_reference(1, *std::min_element(h_in.begin(), h_in.end()));
+
+  block_reduce<params::algorithm,
+               params::items_per_thread,
+               params::block_dim_x,
+               params::block_dim_y,
+               params::block_dim_z,
+               type>(d_in, d_out, min_oversized_tile_op_t{});
+
+  REQUIRE(h_reference == d_out);
 }
 
 CUB_TEST("Block reduce works with custom types",
