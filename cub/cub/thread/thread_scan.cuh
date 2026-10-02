@@ -19,6 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh>
 #include <cub/thread/thread_operators.cuh>
 
 #include <cuda/std/__type_traits/is_callable.h>
