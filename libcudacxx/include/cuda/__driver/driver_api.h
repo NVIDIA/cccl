@@ -41,8 +41,10 @@
 #  define _CCCL_TRY_DRIVER_API(_NAME, _MSG, ...)                                                \
     do                                                                                          \
     {                                                                                           \
-      const auto __cccl_try_driver_api_status = static_cast<::cudaError_t>(_NAME(__VA_ARGS__)); \
-      if (__cccl_try_driver_api_status != ::cudaSuccess)                                        \
+      /* keeps the callee's status type (CUresult, or cudaError_t from a NoThrow wrapper), */  \
+      /* which selects the error's domain; both families use 0 for success */                   \
+      const auto __cccl_try_driver_api_status = _NAME(__VA_ARGS__);                             \
+      if (__cccl_try_driver_api_status != 0)                                                    \
       {                                                                                         \
         _CCCL_THROW(::cuda::cuda_error, __cccl_try_driver_api_status, _MSG, #_NAME);            \
       }                                                                                         \
@@ -285,9 +287,7 @@ __ctxGetCurrentNoThrow(::CUcontext& __ctx) noexcept // NOLINT(bugprone-exception
       const ::CUresult __status = _FN(__VA_ARGS__);                          \
       if (__status != ::CUDA_SUCCESS)                                        \
       {                                                                      \
-        _CCCL_THROW(::cuda::cuda_error,                                      \
-                    static_cast<::cudaError_t>(__status),                    \
-                    _CCCLRT_STREAM_ERROR_MESSAGE(_DIAGNOSTIC_STREAM, _MSG)); \
+        _CCCL_THROW(::cuda::cuda_error, __status, _CCCLRT_STREAM_ERROR_MESSAGE(_DIAGNOSTIC_STREAM, _MSG)); \
       }                                                                      \
     } while (0)
 
