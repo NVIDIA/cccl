@@ -18,6 +18,46 @@ cccl_get_nvtx()
 cccl_get_rapids_test()
 rapids_test_init()
 
+set(_cub_test_install_component cub-tests)
+set(_cub_test_install_destination "${CMAKE_INSTALL_BINDIR}/cub-tests")
+# RAPIDS relocates its launcher, but not a nested CMake command path. Resolve
+# the CUB runner's `cmake` command from PATH so installed tests remain relocatable.
+set(
+  _cub_test_install_cccl_dir
+  "${CMAKE_CURRENT_BINARY_DIR}/${_cub_test_install_destination}/cccl"
+)
+
+# Stage the support files under their source-tree layout so the same command
+# works from both the build tree and the relocatable test installation.
+file(
+  MAKE_DIRECTORY
+    "${_cub_test_install_cccl_dir}/cub/test"
+    "${_cub_test_install_cccl_dir}/ci"
+)
+configure_file(
+  "${CUB_SOURCE_DIR}/test/run_test.cmake"
+  "${_cub_test_install_cccl_dir}/cub/test/run_test.cmake"
+  COPYONLY
+)
+configure_file(
+  "${CCCL_SOURCE_DIR}/ci/compute-sanitizer-suppressions.xml"
+  "${_cub_test_install_cccl_dir}/ci/compute-sanitizer-suppressions.xml"
+  COPYONLY
+)
+
+install(
+  FILES "${CUB_SOURCE_DIR}/test/run_test.cmake"
+  DESTINATION "${_cub_test_install_destination}/cccl/cub/test"
+  COMPONENT ${_cub_test_install_component}
+  EXCLUDE_FROM_ALL
+)
+install(
+  FILES "${CCCL_SOURCE_DIR}/ci/compute-sanitizer-suppressions.xml"
+  DESTINATION "${_cub_test_install_destination}/cccl/ci"
+  COMPONENT ${_cub_test_install_component}
+  EXCLUDE_FROM_ALL
+)
+
 # GCC 7 does not ship <filesystem> (it arrived in GCC 8), which the
 # rapids-cmake resource-spec detector includes. Shadow the header with a
 # minimal local shim on that compiler. Remove when GCC 7 support ends.
@@ -204,16 +244,18 @@ function(
       NAME ${test_target}
       # gersemi: off
       COMMAND
-        "${CMAKE_COMMAND}"
-           "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
+        cmake
+           "-DCCCL_SOURCE_DIR=${_cub_test_install_cccl_dir}"
            "-DTEST=$<TARGET_FILE:${test_target}>"
            "-DARGS=[small-mem]"
            "-DALLOW_RUNNING_NO_TESTS=ON"
            "-DTYPE=Catch2"
-           -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
+           -P "${_cub_test_install_cccl_dir}/cub/test/run_test.cmake"
       # gersemi: on
       GPUS 1
       PERCENT ${CCCL_TEST_GPU_PERCENT_SMALL}
+      INSTALL_COMPONENT_SET ${_cub_test_install_component}
+      INSTALL_TARGET ${test_target}
     )
     set_tests_properties(
       ${test_target}
@@ -225,16 +267,17 @@ function(
         NAME ${test_target}.large
         # gersemi: off
         COMMAND
-          "${CMAKE_COMMAND}"
-             "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
+          cmake
+             "-DCCCL_SOURCE_DIR=${_cub_test_install_cccl_dir}"
              "-DTEST=$<TARGET_FILE:${test_target}>"
              "-DARGS=[large-mem]"
              "-DALLOW_RUNNING_NO_TESTS=ON"
              "-DTYPE=Catch2"
-             -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
+             -P "${_cub_test_install_cccl_dir}/cub/test/run_test.cmake"
         # gersemi: on
         GPUS 1
         PERCENT ${CCCL_TEST_GPU_PERCENT_LARGE}
+        INSTALL_COMPONENT_SET ${_cub_test_install_component}
       )
       set_tests_properties(
         ${test_target}.large
@@ -376,13 +419,15 @@ function(
         NAME ${test_target}
         # gersemi: off
         COMMAND
-          "${CMAKE_COMMAND}"
-            "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
+          cmake
+            "-DCCCL_SOURCE_DIR=${_cub_test_install_cccl_dir}"
             "-DTEST=$<TARGET_FILE:${test_target}>"
-            -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
+            -P "${_cub_test_install_cccl_dir}/cub/test/run_test.cmake"
         # gersemi: on
         GPUS 1
         PERCENT ${_cub_gpu_percent}
+        INSTALL_COMPONENT_SET ${_cub_test_install_component}
+        INSTALL_TARGET ${test_target}
       )
       set_tests_properties(
         ${test_target}
@@ -571,6 +616,11 @@ foreach (test_src IN LISTS test_srcs)
     endforeach() # Variant
   endif() # Has variants
 endforeach() # Source file
+
+rapids_test_install_relocatable(
+  INSTALL_COMPONENT_SET ${_cub_test_install_component}
+  DESTINATION ${_cub_test_install_destination}
+)
 
 add_subdirectory(cmake)
 add_subdirectory(cubin-check)
