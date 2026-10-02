@@ -703,9 +703,8 @@ struct lookahead_scan_closure
 
       warpspeed::squadStoreSmem(
         squad, reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.smemStartSkipBytes), regAggrInclusive);
-      // The store squad issues the TMA store once all threads of this squad released refInOutRW. Fence the shared
-      // memory writes to the async proxy before releasing.
-      refInOutRW.setFenceLdsToAsyncProxy();
+      // The store squad issues the TMA store once all threads of this squad released refInOutRW. No fence to the async
+      // proxy is needed here, because squadStoreBulkSync fences before issuing the store.
     }
     else
     {
