@@ -305,24 +305,15 @@ public:
       {
         if (sample_size == 1)
         {
-          // ipt_28.tpb_1024.rle_0.ws_0.mem_1.ld_1.laid_0.vec_2 0.987  0.957  1.138  1.411
-          return HistogramPolicy{1024, 28, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 2048};
+          // ipt_28.tpb_960.rle_0.ws_0.mem_1.ld_1.laid_2.vec_2 0.991  0.975  1.139  1.307
+          return HistogramPolicy{960, 28, 1 << 2, BLOCK_LOAD_STRIPED, LOAD_LDG, false, SMEM, false, 2048};
         }
         if (sample_size == 2)
         {
           // ipt_17.tpb_128.rle_0.ws_1.mem_1.ld_0.laid_2.vec_0 1.001  0.982  1.158  1.228
           return HistogramPolicy{128, 17, 1, BLOCK_LOAD_STRIPED, LOAD_DEFAULT, false, SMEM, true, 2048};
         }
-        if (sample_size == 4)
-        {
-          if (sample_type == type_t::float32)
-          {
-            // ipt_15.tpb_1024.rle_1.ws_0.mem_1.ld_1.laid_2.vec_1 0.974  0.966  1.039  1.175
-            return HistogramPolicy{1024, 15, 1 << 1, BLOCK_LOAD_STRIPED, LOAD_LDG, true, SMEM, false, 2048};
-          }
-          // ipt_12.tpb_448.rle_1.ws_0.mem_1.ld_1.laid_1.vec_0 1.006  1.053  1.074  1.016
-          return HistogramPolicy{448, 12, 1, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_LDG, true, SMEM, false, 2048};
-        }
+        // 4-byte samples: every searched candidate regresses the 2048-bin class, intentionally left untuned
         if (sample_size == 8)
         {
           if (sample_type == type_t::float64)
