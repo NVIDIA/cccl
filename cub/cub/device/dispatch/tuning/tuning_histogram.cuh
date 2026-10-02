@@ -303,11 +303,6 @@ public:
     {
       if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && !is_even)
       {
-        if (sample_size == 1)
-        {
-          // ipt_20.tpb_128.rle_0.ws_0.mem_1.ld_1.laid_0.vec_2 1.006  0.989  1.110  1.302
-          return HistogramPolicy{128, 20, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 2048};
-        }
         if (sample_size == 2)
         {
           // ipt_9.tpb_1024.rle_1.ws_0.mem_1.ld_0.laid_2.vec_2 1.035  1.036  1.064  1.051
