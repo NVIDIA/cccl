@@ -132,8 +132,8 @@ struct nullval final
  * - `static bool failed(_Status) noexcept`, whether the value reports a failure (the only work
  *   `<<` does on success);
  * - `static _Status success() noexcept`, the value a handled failure yields;
- * - `static ::std::string name(_Status)`, a short name for reports (`notify`, `store` into text);
- * - `static auto make_exception(_Status, ::cuda::std::source_location)`, the `std::exception`
+ * - `static std::string name(_Status)`, a short name for reports (`notify`, `store` into text);
+ * - `static auto make_exception(_Status, cuda::std::source_location)`, the `std::exception`
  *   derivative that `unwind` throws, `store(std::exception_ptr*)` stores, and a policy that
  *   only handles exceptions receives.
  *
@@ -1147,7 +1147,8 @@ struct store_t
             class _Fn,
             class _Self                                                        = _Target,
             ::cuda::std::enable_if_t<!detail::__store_may_decline<_Self>, int> = 0>
-  void handle(const _Status __status, const ::cuda::std::source_location __loc, _Fn&) noexcept
+  // maybe_unused: only the exception_ptr target reads the location; gcc 9 flags the others.
+  void handle(const _Status __status, [[maybe_unused]] const ::cuda::std::source_location __loc, _Fn&) noexcept
   {
     if constexpr (::cuda::std::is_same_v<_Target, ::cuda::std::span<char>>)
     {
@@ -2036,8 +2037,9 @@ inline constexpr bool __value_preserving_v =
 
 // Interpret a code-channel answer, produced by `__call()`, as what the `<<` expression yields.
 // `_Final` is false where `&` discards the answer: only "passed through" matters there.
+// maybe_unused: only the passthrough answer reads the status; gcc 9 flags the other instantiations.
 template <bool _Final, class _Status, class _Call>
-__status_answer<_Status> __interpret_status(const _Status __status, _Call&& __call)
+__status_answer<_Status> __interpret_status([[maybe_unused]] const _Status __status, _Call&& __call)
 {
   using _Answer = decltype(__call());
   using _A      = ::cuda::std::remove_cvref_t<_Answer>;
@@ -2126,11 +2128,14 @@ __handle_via_exception(_P& __policy, const _Status __status, const ::cuda::std::
 }
 
 // Offer a failing status to a policy: its code-channel hook, else the bridge over its exception
-// hook, else nothing answers and the status passes through.
+// hook, else nothing answers and the status passes through (reading only the status, which gcc 9
+// flags without the attributes).
 template <class _Status, bool _Final, class _P, class _Fn>
-__status_answer<_Status>
-__offer_status(_P& __policy, const _Status __status, const ::cuda::std::source_location __loc, _Fn& __fn) noexcept(
-  __status_path_nothrow_v<_P, _Status, _Fn>)
+__status_answer<_Status> __offer_status(
+  [[maybe_unused]] _P& __policy,
+  const _Status __status,
+  [[maybe_unused]] const ::cuda::std::source_location __loc,
+  [[maybe_unused]] _Fn& __fn) noexcept(__status_path_nothrow_v<_P, _Status, _Fn>)
 {
   if constexpr (__has_status_hook<_P, _Status, _Fn>)
   {
