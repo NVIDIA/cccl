@@ -33,7 +33,7 @@ namespace detail::set_ops
 // probe toward @p begin (shift==1 is unbiased), which helps when the searched run is expected to be short.
 template <bool UpperBound, typename IntT, typename Offset, typename It, typename T, typename CompareOp>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-binary_search_iteration(It data, Offset& begin, Offset& end, T key, int shift, CompareOp compare_op)
+binary_search_iteration(It data, Offset& begin, Offset& end, const T& key, int shift, const CompareOp& compare_op)
 {
   // scale is at most 511 (shift <= 9), so `scale * end` overflows a 32-bit Offset once end exceeds ~4.2M. The caller
   // controls the arithmetic width through IntT (the type of the `levels` argument to balanced_path): the global
@@ -58,7 +58,8 @@ binary_search_iteration(It data, Offset& begin, Offset& end, T key, int shift, C
 // TODO(bgruber): this can be replaced by cuda::std::lower_bound/upper_bound. But cuda::std::upper_bound has been
 // reported to be slow and the change may affect the generated code size, so it needs a follow-up investigation.
 template <bool UpperBound, typename Offset, typename T, typename It, typename CompareOp>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE Offset binary_search(It data, Offset count, T key, CompareOp compare_op)
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE Offset
+binary_search(It data, Offset count, const T& key, const CompareOp& compare_op)
 {
   Offset begin = 0;
   Offset end   = count;
@@ -73,7 +74,7 @@ template <bool UpperBound, typename Offset, typename T, typename It, typename Co
 // Binary search that first probes near @p begin for up to @p levels steps, accelerating runs that start near the front.
 template <bool UpperBound, typename IntT, typename Offset, typename T, typename It, typename CompareOp>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE Offset
-biased_binary_search(It data, Offset count, T key, IntT levels, CompareOp compare_op)
+biased_binary_search(It data, Offset count, const T& key, IntT levels, const CompareOp& compare_op)
 {
   Offset begin = 0;
   Offset end   = count;
@@ -106,8 +107,8 @@ biased_binary_search(It data, Offset count, T key, IntT levels, CompareOp compar
 //! inputs so set operations see consistent multiplicities. Returns (index into @p keys1, index into @p keys2); the
 //! latter may gain one (the "star") to break ties at an equal-run boundary.
 template <typename It1, typename It2, typename Offset, typename IntT, typename CompareOp>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::pair<Offset, Offset>
-balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset diag, IntT levels, CompareOp compare_op)
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::pair<Offset, Offset> balanced_path(
+  It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset diag, IntT levels, const CompareOp& compare_op)
 {
   using key_t = it_value_t<It1>;
 
@@ -143,7 +144,7 @@ balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset d
 
     index1 = start1 + advance1;
   }
-  return ::cuda::std::make_pair(index1, (diag - index1) + Offset{star});
+  return {index1, (diag - index1) + Offset{star}};
 }
 
 // Serial set operations. Each functor walks the two per-thread sub-ranges of the shared [keys1 | keys2] buffer, writes
@@ -163,7 +164,7 @@ struct serial_set_intersection
     int keys2_count,
     T (&output)[ItemsPerThread],
     int (&indices)[ItemsPerThread],
-    CompareOp compare_op) const
+    const CompareOp& compare_op) const
   {
     unsigned active_mask = 0;
 
@@ -216,7 +217,7 @@ struct serial_set_symmetric_difference
     int keys2_count,
     T (&output)[ItemsPerThread],
     int (&indices)[ItemsPerThread],
-    CompareOp compare_op) const
+    const CompareOp& compare_op) const
   {
     unsigned active_mask = 0;
 
@@ -275,7 +276,7 @@ struct serial_set_difference
     int keys2_count,
     T (&output)[ItemsPerThread],
     int (&indices)[ItemsPerThread],
-    CompareOp compare_op) const
+    const CompareOp& compare_op) const
   {
     unsigned active_mask = 0;
 
@@ -335,7 +336,7 @@ struct serial_set_union
     int keys2_count,
     T (&output)[ItemsPerThread],
     int (&indices)[ItemsPerThread],
-    CompareOp compare_op) const
+    const CompareOp& compare_op) const
   {
     unsigned active_mask = 0;
 
