@@ -256,9 +256,12 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<!42>, decltype(result4)>);
     static_assert(result4 == !42);
 
-    decltype(auto) result5 = &cw42;
+    [[maybe_unused]] decltype(auto) result5 = &cw42;
     static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<&cw42.value>, decltype(result5)>);
+    // msvc crashes/reports this is not a valid constant expression when compiled in C++17 dialect.
+#if !(TEST_COMPILER(MSVC) && TEST_STD_VER == 2017)
     static_assert(result5 == &cw42.value);
+#endif // !(TEST_COMPILER(MSVC) && TEST_STD_VER == 2017)
   }
 
 #if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
