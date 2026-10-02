@@ -6,11 +6,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
+from ..dtype_policy import validate_common_integer_value_dtype_name
+from ..thread_group import ThreadGroup
 from ._dispatch import (
+    _backend_module_name,
     _common_group_operation,
+    _group_primitive_marker,
 )
-from ._payload import TempStorageLike
+from ._payload import TempStorageLike, _validate_common_numeric_value
 
 
 @_common_group_operation("run_length_decode", group_kinds=("block",))
@@ -25,9 +28,6 @@ def run_length_decode(
     temp_storage: TempStorageLike | None = None,
 ) -> Any:
     """Return a fresh blocked window of the decoded run stream.
-
-    Implemented by Numba-CUDA-MLIR. The CUTLASS backend does not currently
-    support this operation.
 
     Parameters
     ----------
@@ -76,11 +76,36 @@ def run_length_decode(
     :func:`cuda.coop.run_length_decode_into` to write a full stream while
     preparing that table once, or :func:`cuda.coop.numba_mlir.run_length_decode`
     for total-size and relative run-offset outputs. The qualified Numba
-    operation also accepts local-array run inputs.
+    operation also accepts local-array run inputs. The CUTLASS-qualified form
+    :func:`cuda.coop.cutlass.run_length_decode` also accepts CuTe register
+    payloads.
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.run_length_decode must be called from a supported "
-        "GPU kernel."
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "run_length_decode",
+            "run_values",
+            run_values,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+        length_dtype = _validate_common_numeric_value(
+            "run_length_decode",
+            "run_lengths",
+            run_lengths,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+        validate_common_integer_value_dtype_name(
+            length_dtype, operation="run_length_decode", parameter="run_lengths"
+        )
+    return _group_primitive_marker(
+        "run_length_decode",
+        group,
+        run_values,
+        run_lengths,
+        decoded_items_per_thread=decoded_items_per_thread,
+        decoded_window_offset=decoded_window_offset,
+        temp_storage=temp_storage,
     )
 
 
@@ -97,9 +122,6 @@ def run_length_decode_into(
     temp_storage: TempStorageLike | None = None,
 ) -> Any:
     """Decode a complete run stream into an array and return its total size.
-
-    Implemented by Numba-CUDA-MLIR. The CUTLASS backend does not currently
-    support this operation.
 
     Parameters
     ----------
@@ -146,10 +168,38 @@ def run_length_decode_into(
 
     :func:`cuda.coop.numba_mlir.run_length_decode_into` also accepts local-array
     run inputs and can write relative run offsets to a separate output array.
+    :func:`cuda.coop.cutlass.run_length_decode_into` takes a contiguous CuTe
+    global-memory tensor as its destination and returns a CuTe ``Uint32``.
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.run_length_decode_into must be called from a supported "
-        "GPU kernel."
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "run_length_decode_into",
+            "run_values",
+            run_values,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+        length_dtype = _validate_common_numeric_value(
+            "run_length_decode_into",
+            "run_lengths",
+            run_lengths,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+        validate_common_integer_value_dtype_name(
+            length_dtype,
+            operation="run_length_decode_into",
+            parameter="run_lengths",
+        )
+    return _group_primitive_marker(
+        "run_length_decode_into",
+        group,
+        run_values,
+        run_lengths,
+        destination,
+        decoded_items_per_thread=decoded_items_per_thread,
+        destination_offset=destination_offset,
+        temp_storage=temp_storage,
     )
 
 
