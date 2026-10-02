@@ -72,9 +72,14 @@ public:
     if (memory_node.is_host())
     {
       cuda_try(cudaMallocHost(&result, s));
+      // If adding the node throws, the buffer is released with that exception in flight: a failing
+      // free leaks it and is reported, it cannot become a second exception.
       SCOPE(fail)
       {
-        cuda_safe_call(cudaFreeHost(result));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaFreeHost>(result);
+        };
       };
       out = cuda_try<cudaGraphAddEmptyNode>(graph, nodes.data(), nodes.size());
     }
@@ -87,7 +92,10 @@ public:
         cuda_try(cudaMalloc(&result, s));
         SCOPE(fail)
         {
-          cuda_safe_call(cudaFree(result));
+          ON_THROW(notify)
+          {
+            cuda_try<cudaFree>(result);
+          };
         };
         out = cuda_try<cudaGraphAddEmptyNode>(graph, nodes.data(), nodes.size());
       }
@@ -415,8 +423,6 @@ public:
     // Only for the latest graph ... Will also do write-back and cleanup
     instantiate();
 
-    // cuda_safe_call(cudaStreamSynchronize(state.submitted_stream));
-
     cuda_try(cudaGraphLaunch(*state.exec_graph, state.submitted_stream));
 
     state.submitted = true;
@@ -637,10 +643,15 @@ private:
     // Custom deleter specifically for cudaGraphExec_t. The handle is
     // value-initialized and stays null if instantiation throws: do not
     // destroy it in that case (that would mask the instantiation error).
+    // A deleter cannot throw; a failing destroy leaks the handle and is
+    // reported, with its location, rather than dropped silently.
     auto cudaGraphExecDeleter = [](cudaGraphExec_t* pGraphExec) {
       if (*pGraphExec)
       {
-        cuda_safe_call(cudaGraphExecDestroy(*pGraphExec));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaGraphExecDestroy>(*pGraphExec);
+        };
       }
       delete pGraphExec;
     };
@@ -655,18 +666,20 @@ private:
   // Creates a new CUDA graph and wrap it into a shared_ptr
   static ::std::shared_ptr<cudaGraph_t> shared_cuda_graph()
   {
-    // Same two precautions as cudaGraphExecDeleter above, for the same reasons. A custom
-    // deleter replaces the default `delete`, so it has to free the cell itself. And the handle
-    // is value-initialized so it stays null if cudaGraphCreate throws, since destroying an
+    // Same precautions as cudaGraphExecDeleter above, for the same reasons. A custom deleter
+    // replaces the default `delete`, so it has to free the cell itself. And the handle is
+    // value-initialized so it stays null if cudaGraphCreate throws, since destroying an
     // indeterminate handle is undefined behaviour rather than a no-op.
     //
-    // cuda_safe_call, not a bare call: a failed destroy would otherwise be dropped silently and
-    // leave a sticky error to surface at some later, unrelated CUDA call. It aborts rather than
-    // throws, which is what a shared_ptr deleter needs.
+    // Not a bare call: a failed destroy would otherwise be dropped silently and leave a sticky
+    // error to surface at some later, unrelated CUDA call. Reported here, with its location.
     auto cudaGraphDeleter = [](cudaGraph_t* pGraph) {
       if (*pGraph)
       {
-        cuda_safe_call(cudaGraphDestroy(*pGraph));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaGraphDestroy>(*pGraph);
+        };
       }
       delete pGraph;
     };
@@ -698,8 +711,6 @@ private:
       state.submitted_stream = pick_stream();
       assert(state.submitted_stream != nullptr);
     }
-    //        cuda_safe_call(cudaStreamSynchronize(state.submitted_stream));
-
     size_t nedges;
     size_t nnodes;
 
