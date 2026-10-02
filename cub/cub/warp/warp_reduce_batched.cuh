@@ -20,7 +20,6 @@
 #endif // no system header
 
 #include <cub/detail/type_traits.cuh>
-#include <cub/util_type.cuh>
 #include <cub/warp/specializations/warp_reduce_batched_wspro.cuh>
 
 #include <cuda/__cmath/ceil_div.h>

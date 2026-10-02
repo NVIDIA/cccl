@@ -19,7 +19,6 @@
 
 #include <cub/util_device.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/round_down.h>
 #include <cuda/__cmath/round_up.h>

@@ -18,7 +18,6 @@
 #include <cub/block/block_store.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_namespace.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/system/cuda/detail/core/util.h>
 
