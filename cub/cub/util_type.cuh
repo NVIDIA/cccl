@@ -25,6 +25,7 @@
 #include <cub/detail/future_value.cuh> // IWYU pragma: export
 #include <cub/detail/input_value.cuh> // IWYU pragma: export
 #include <cub/detail/it_traits.cuh> // IWYU pragma: export
+#include <cub/detail/key_value_pair.cuh> // IWYU pragma: export
 #include <cub/detail/lazy_trait.cuh> // IWYU pragma: export
 #include <cub/detail/log2.cuh> // IWYU pragma: export
 #include <cub/detail/non_void_value.cuh> // IWYU pragma: export
@@ -65,47 +66,6 @@ CUB_NAMESPACE_BEGIN
 /******************************************************************************
  * Wrapper types
  ******************************************************************************/
-
-/**
- * \brief A key identifier paired with a corresponding value
- */
-template <typename KeyT, typename ValueT>
-struct KeyValuePair
-{
-  using Key   = KeyT; ///< Key data type
-  using Value = ValueT; ///< Value data type
-
-  Key key; ///< Item key
-  Value value; ///< Item value
-
-  /// Constructor
-  _CCCL_FORCEINLINE KeyValuePair() = default;
-
-  /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair(Key const& key, Value const& value)
-      : key(key)
-      , value(value)
-  {}
-
-  /// Equality operator
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const KeyValuePair& b) const
-  {
-    return (value == b.value) && (key == b.key);
-  }
-
-  /// Inequality operator
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const KeyValuePair& b) const
-  {
-    return (value != b.value) || (key != b.key);
-  }
-
-#  if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const KeyValuePair& pair)
-  {
-    return os << '(' << pair.key << ',' << pair.value << ')';
-  }
-#  endif // _CCCL_HOSTED()
-};
 
 /**
  * \brief Double-buffer storage wrapper for multi-pass stream transformations that require more than one storage array

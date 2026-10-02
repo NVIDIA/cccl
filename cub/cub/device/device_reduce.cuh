@@ -30,6 +30,7 @@
 #include <cub/detail/device_memory_resource.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/key_value_pair.cuh>
 #include <cub/detail/non_void_value.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
@@ -37,7 +38,6 @@
 #include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
 #include <cub/thread/thread_operators.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>

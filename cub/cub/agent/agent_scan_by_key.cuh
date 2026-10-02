@@ -26,9 +26,9 @@
 #include <cub/block/block_store.cuh>
 #include <cub/detail/constant.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/key_value_pair.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__type_traits/conditional.h>

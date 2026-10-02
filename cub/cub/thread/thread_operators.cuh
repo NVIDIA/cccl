@@ -23,7 +23,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_type.cuh>
+#include <cub/detail/key_value_pair.cuh>
 
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
