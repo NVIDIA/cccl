@@ -303,11 +303,7 @@ public:
     {
       if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && is_even)
       {
-        if (sample_size == 1)
-        {
-          // ipt_28.tpb_960.rle_0.ws_0.mem_1.ld_1.laid_2.vec_2 0.991  0.975  1.139  1.307
-          return HistogramPolicy{960, 28, 1 << 2, BLOCK_LOAD_STRIPED, LOAD_LDG, false, SMEM, false, 2048};
-        }
+        // 1-byte samples: every searched candidate costs ~25% at 2^16/2^20, intentionally left untuned
         if (sample_size == 2)
         {
           // ipt_17.tpb_128.rle_0.ws_1.mem_1.ld_0.laid_2.vec_0 1.001  0.982  1.158  1.228
