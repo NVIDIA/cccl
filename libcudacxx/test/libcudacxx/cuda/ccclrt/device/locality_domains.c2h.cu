@@ -14,6 +14,7 @@
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/devices>
+#include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/memory>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
