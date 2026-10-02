@@ -666,11 +666,8 @@ CUB_TEST("DeviceHistogram::MultiHistogramEven handles the device-launch dynamic-
          "[histogram][device]",
          CUB_SMALL)
 {
-  int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
-
   cuda::compute_capability cc{};
-  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc, current_device));
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
   if (cc < cuda::compute_capability{10, 0})
   {
     SKIP("The runtime-sized shared-memory histogram policy is currently tuned for SM100");
@@ -1577,11 +1574,8 @@ static_assert(cuda::std::is_same_v<cub::detail::histogram::local_counter_t<histo
 
 CUB_TEST("DeviceHistogram supports narrower local counters than output counters", "[histogram][device]", CUB_SMALL)
 {
-  int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
-
   cuda::compute_capability cc{};
-  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc, current_device));
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
   if (cc < cuda::compute_capability{10, 0})
   {
     SKIP("The runtime-sized shared-memory histogram policy is currently tuned for SM100");
