@@ -724,3 +724,36 @@ def check_histogram_surface() -> None:
         coop.histogram(block, np.int64(3), bins=33),
         coop.ThreadDataLike[np.int32],
     )
+
+
+def check_run_length_surface(destination: object, offsets: object) -> None:
+    block = coop.this_block()
+    values = coop.ThreadData(items_per_thread=2, dtype=np.float32)
+    lengths = coop.ThreadData(items_per_thread=2, dtype=np.uint64)
+    total = coop.ThreadData(items_per_thread=1, dtype=np.uint64)
+    relative = coop.ThreadData(items_per_thread=4, dtype=np.uint64)
+    assert_type(
+        coop.run_length_decode(
+            block,
+            values,
+            lengths,
+            decoded_items_per_thread=4,
+            decoded_window_offset=np.uint64(2**32),
+            decoded_offset_dtype=np.uint64,
+            total_decoded_size=total,
+            relative_offsets=relative,
+        ),
+        coop.ThreadDataLike[np.float32],
+    )
+    assert_type(
+        coop.run_length_decode_into(
+            block,
+            values,
+            lengths,
+            destination,
+            decoded_items_per_thread=4,
+            relative_offsets=offsets,
+            decoded_offset_dtype=np.uint64,
+        ),
+        np.uint32 | np.uint64,
+    )

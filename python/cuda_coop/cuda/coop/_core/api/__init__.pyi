@@ -11,6 +11,8 @@ from .neighbors import adjacent_difference as adjacent_difference
 from .neighbors import discontinuity as discontinuity
 from .radix_sort import radix_rank_keys, radix_sort_keys, radix_sort_pairs
 from .reduce import reduce, sum
+from .run_length import run_length_decode as run_length_decode
+from .run_length import run_length_decode_into as run_length_decode_into
 from .scan import (
     exclusive_scan,
     exclusive_sum,
@@ -56,6 +58,8 @@ __all__ = [
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
+    "run_length_decode",
+    "run_length_decode_into",
     "scan",
     "shuffle",
     "store",

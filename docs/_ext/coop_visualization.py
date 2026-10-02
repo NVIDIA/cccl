@@ -20,6 +20,7 @@ _EXPLORERS = {
     "adjacent-difference": "coop-neighbors.js",
     "discontinuity": "coop-neighbors.js",
     "histogram": "coop-histogram.js",
+    "run-length-decode": "coop-run-length-decode.js",
 }
 
 _VISUALIZATION_TITLES = {
@@ -29,6 +30,7 @@ _VISUALIZATION_TITLES = {
     "adjacent-difference": "Adjacent Difference",
     "discontinuity": "Discontinuity",
     "histogram": "Histogram",
+    "run-length-decode": "Run Length Decode",
 }
 
 _API_VISUALIZATIONS = {
@@ -48,8 +50,11 @@ _API_VISUALIZATIONS = {
     "adjacent-difference": "adjacent-difference",
     "discontinuity": "discontinuity",
     "histogram": "histogram",
+    "run-length-decode": "run-length-decode",
     "sum": "reduce",
     "adjacent_difference": "adjacent-difference",
+    "run_length_decode": "run-length-decode",
+    "run_length_decode_into": "run-length-decode",
     "merge_sort_keys": "merge-sort",
     "merge_sort_pairs": "merge-sort",
     "radix_sort_keys": "radix",

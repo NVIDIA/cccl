@@ -1327,6 +1327,11 @@ result tuple for a call. Record that information during planning so scalar
 indexing and subsequent primitives can infer the result without a later
 Store call supplying its type.
 
+Keep prepared implementation state within the operation when its lifetime
+does not need to cross Python calls. The bulk Run Length Decode provider
+prepares a CUB run table once and uses it through an internal window loop.
+Its storage contract covers the whole call. Reusing a ``TempStorage``
+descriptor in a later call reuses allocation, not the prepared table.
 
 Use tests that exercise the part you changed. A result-ownership change
 needs a check of the operation's documented mutation behavior. A storage change needs repeated calls

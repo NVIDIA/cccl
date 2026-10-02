@@ -47,6 +47,8 @@ _PORTABLE_EXPORTS = [
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
+    "run_length_decode",
+    "run_length_decode_into",
     "scan",
     "shuffle",
     "store",
