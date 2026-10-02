@@ -51,6 +51,7 @@ benchmarks:
     # - "l4"         # sm_89, 24 GB
     # - "rtx4090"    # sm_89, 24 GB
     # - "h100"       # sm_90, 80 GB
+    # - "gb300"      # sm_103, ARM64
     # - "rtxpro6000" # sm_120
 
   # Extra .devcontainer/launch.sh -d args

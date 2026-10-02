@@ -123,7 +123,7 @@ on:
 jobs:
   run:
     name: "Bench: ${{inputs.gpu}} ${{inputs.arch}} ${{inputs.launch_args}}"
-    runs-on: linux-amd64-gpu-${{ inputs.gpu }}-latest-1
+    runs-on: linux-${{ inputs.gpu == 'gb300' && 'arm64' || 'amd64' }}-gpu-${{ inputs.gpu }}-latest-1
     permissions:
       id-token: write
       contents: read
@@ -343,7 +343,7 @@ jobs:
           mapfile -d '' -t bench_args < "/bench_args.txt"
 
           # NVBench compare deps:
-          ./ci/util/retry.sh 5 30 python3 -m pip install 'cuda-bench[compare]>=0.3.0'
+          ./ci/util/retry.sh 5 30 python3 -m pip install colorama jsondiff numpy tabulate
 
           ./ci/bench/bench.sh "${bench_args[@]}"
           EOF
