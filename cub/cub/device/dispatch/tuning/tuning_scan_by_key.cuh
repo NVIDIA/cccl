@@ -163,7 +163,7 @@ constexpr primitive_accum is_primitive_accum()
 template <class ScanOpT>
 constexpr primitive_op is_primitive_op()
 {
-  return basic_binary_op_t<ScanOpT>::value ? primitive_op::yes : primitive_op::no;
+  return basic_binary_op_v<ScanOpT> ? primitive_op::yes : primitive_op::no;
 }
 
 template <class ValueT>
