@@ -5,14 +5,17 @@
 
 from __future__ import annotations
 
-import math
 from typing import Union
 
 import numpy as np
 
 from .. import _bindings, types
 from .. import _cccl_interop as cccl
-from .._caching import cache_build_results, cache_with_registered_key_functions
+from .._caching import (
+    USING_V2,
+    cache_build_results,
+    cache_with_registered_key_functions,
+)
 from .._cccl_interop import set_cccl_iterator_state, to_cccl_value_state
 from .._serialization import BUILD_RESULTS, ITER, U64, VALUE, Serializable
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
@@ -144,19 +147,16 @@ class _Histogram(Serializable):
 def _make_histogram_even_impl(
     d_samples: DeviceArrayLike | IteratorT,
     d_histogram: DeviceArrayLike,
-    num_output_levels_val: int,
     level_dtype,
     uses_64bit_offset: bool,
     uses_privatized_smem: bool,
     compute_capability=None,
 ):
-    """Internal cached implementation of make_histogram_even.
-
-    The uses_64bit_offset and uses_privatized_smem parameters ensure
-    kernels compiled for different offset and bin count regimes aren't reused.
-    """
+    # Only v1 specializes kernels by offset width and bin-count regime.
     # Reconstruct the numpy arrays expected by _Histogram
-    h_num_output_levels = np.array([num_output_levels_val], dtype=np.int32)
+    h_num_output_levels = np.array(
+        [257 if uses_privatized_smem else 258], dtype=np.int32
+    )
 
     # Bounds are runtime values. These placeholders only provide storage for
     # cccl_value_t wrappers; build receives only the level type.
@@ -170,7 +170,7 @@ def _make_histogram_even_impl(
         int_max = np.iinfo(np.int32).max
         # Smallest representative sample count that still selects long long
         # offsets in v1's build-time offset type check.
-        build_num_samples = math.ceil(int_max / sample_size)
+        build_num_samples = (int_max + sample_size - 1) // sample_size
     else:
         build_num_samples = 1
 
@@ -247,23 +247,22 @@ def make_histogram_even(
     # so row_stride_samples is num_samples.
     sample_size = sample_value_type.size
     int_max = np.iinfo(np.int32).max
-    uses_64bit_offset = num_samples * sample_size >= int_max
+    uses_64bit_offset = not USING_V2 and num_samples * sample_size >= int_max
 
     # Mirrors CUB's even-histogram dispatch:
     # detail::histogram::max_privatized_smem_bins is 256, and
     # dispatch_histogram.cuh uses PRIVATIZED_SMEM_BINS=256 for <=256 bins
     # and 0 for >256 bins.
     num_bins = num_output_levels_val - 1
-    uses_privatized_smem = num_bins <= 256
+    uses_privatized_smem = not USING_V2 and num_bins <= 256
 
     # TODO: Once v2 is the default, remove uses_64bit_offset,
-    # num_output_levels_val, and uses_privatized_smem from this cache key;
+    # and uses_privatized_smem from this cache key;
     # v2 passes row sizing and num_output_levels at runtime.
 
     return _make_histogram_even_impl(
         d_samples,
         d_histogram,
-        num_output_levels_val,
         level_dtype,
         uses_64bit_offset,
         uses_privatized_smem,
