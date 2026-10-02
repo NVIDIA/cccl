@@ -1,0 +1,25 @@
+name: Check documentation links
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check-links:
+    name: Check documentation links
+    runs-on: ${{ github.repository == 'NVIDIA/cccl' && 'linux-amd64-cpu32' || 'ubuntu-latest' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check documentation links
+        run: ./docs/gen_docs.bash --allow-dep-install --linkcheck
