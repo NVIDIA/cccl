@@ -15,6 +15,7 @@
 
 #include <cub/agent/agent_adjacent_difference.cuh>
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/type_traits.cuh>

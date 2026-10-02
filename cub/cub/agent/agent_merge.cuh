@@ -17,13 +17,15 @@
 #include <cub/block/block_load_to_shared.cuh>
 #include <cub/block/block_merge_sort.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_namespace.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -96,7 +98,7 @@ struct agent_t
   using temp_storages = ::cuda::std::
     conditional_t<UseBl2ShForKeys || UseBl2ShForItems, temp_storages_with_bl2sh, temp_storages_without_bl2sh>;
 
-  using TempStorage = Uninitialized<temp_storages>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<temp_storages>;
 
   // Per thread data
   temp_storages& storage;

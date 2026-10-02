@@ -18,10 +18,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/null_type.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_policy_wrapper_t.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__memory/discard_memory.h>
 #include <cuda/std/__type_traits/conditional.h>

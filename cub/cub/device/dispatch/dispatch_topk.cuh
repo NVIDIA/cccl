@@ -19,7 +19,11 @@
 
 #include <cub/agent/agent_topk.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/double_buffer.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_topk.cuh>
 #include <cub/util_arch.cuh>

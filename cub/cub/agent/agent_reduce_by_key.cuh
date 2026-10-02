@@ -23,9 +23,14 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/key_value_pair.cuh>
+#include <cub/detail/non_void_value.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
 #include <cuda/__functional/operator_properties.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
@@ -258,11 +263,11 @@ struct AgentReduceByKey
 
     // Smem needed for compacting key value pairs(allows non POD items in this
     // union)
-    Uninitialized<KeyValuePairT[TILE_ITEMS + 1]> raw_exchange;
+    ::cuda::__as_uninitialized_bytes<KeyValuePairT[TILE_ITEMS + 1]> raw_exchange;
   };
 
   // Alias wrapper allowing storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per-thread fields
@@ -341,7 +346,7 @@ struct AgentReduceByKey
     EqualityOpT equality_op,
     ReductionOpT reduction_op,
     StreamingContext streaming_context)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , d_keys_in(d_keys_in)
       , d_unique_out(d_unique_out + streaming_context.num_uniques())
       , d_values_in(d_values_in)
@@ -363,7 +368,7 @@ struct AgentReduceByKey
     EqualityOpT equality_op,
     ReductionOpT reduction_op,
     NullType streaming_context)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , d_keys_in(d_keys_in)
       , d_unique_out(d_unique_out)
       , d_values_in(d_values_in)
@@ -421,7 +426,9 @@ struct AgentReduceByKey
     {
       if (segment_flags[ITEM])
       {
-        temp_storage.raw_exchange.Alias()[segment_indices[ITEM] - num_tile_segments_prefix] = scatter_items[ITEM];
+        temp_storage.raw_exchange
+          .template __alias<KeyValuePairT[TILE_ITEMS + 1]>()[segment_indices[ITEM] - num_tile_segments_prefix] =
+          scatter_items[ITEM];
       }
     }
 
@@ -429,7 +436,7 @@ struct AgentReduceByKey
 
     for (int item = static_cast<int>(threadIdx.x); item < num_tile_segments; item += BLOCK_THREADS)
     {
-      const KeyValuePairT pair                          = temp_storage.raw_exchange.Alias()[item];
+      const KeyValuePairT pair = temp_storage.raw_exchange.template __alias<KeyValuePairT[TILE_ITEMS + 1]>()[item];
       d_unique_out[num_tile_segments_prefix + item]     = pair.key; // NOLINT(bugprone-misplaced-widening-cast)
       d_aggregates_out[num_tile_segments_prefix + item] = pair.value; // NOLINT(bugprone-misplaced-widening-cast)
     }

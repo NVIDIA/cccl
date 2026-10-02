@@ -25,11 +25,14 @@
 #include <cub/block/block_run_length_decode.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/lazy_trait.cuh>
+#include <cub/detail/log2.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/round_up.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/type_identity.h>
@@ -681,7 +684,7 @@ private:
   //-----------------------------------------------------------------------------
 
 public:
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //-----------------------------------------------------------------------------
   // PRIVATE MEMBER FUNCTIONS
@@ -1124,7 +1127,7 @@ public:
     BlevBufferTileOffsetsOutItT blev_buffer_tile_offsets,
     BLevBufferOffsetTileState blev_buffer_scan_state,
     BLevBlockOffsetTileState blev_block_scan_state)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , input_buffer_it(input_buffer_it)
       , output_buffer_it(output_buffer_it)
       , buffer_sizes_it(buffer_sizes_it)

@@ -4,14 +4,15 @@
 #pragma once
 #include <cub/config.cuh>
 
+#include <cub/detail/cub_vector.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -55,7 +56,7 @@ struct agent_t
   };
 
   // Alias wrapper allowing storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   _TempStorage& temp_storage;
   InputIteratorT d_in;

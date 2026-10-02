@@ -13,8 +13,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/null_type.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>

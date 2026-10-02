@@ -11,7 +11,7 @@
 
 #include <cuda_fp16.h>
 
-#include <cub/util_type.cuh>
+#include <cub/detail/numeric_traits.cuh>
 
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>

@@ -21,11 +21,13 @@
 #endif // no system header
 
 #include <cub/block/block_raking_layout.cuh>
+#include <cub/detail/constant.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -96,7 +98,7 @@ struct BlockReduceRaking
   };
 
   /// Alias wrapper allowing storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   // Thread fields
   _TempStorage& temp_storage;
@@ -104,7 +106,7 @@ struct BlockReduceRaking
 
   /// Constructor
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduceRaking(TempStorage& temp_storage)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 

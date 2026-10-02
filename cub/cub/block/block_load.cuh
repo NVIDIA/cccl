@@ -20,10 +20,14 @@
 #endif // no system header
 
 #include <cub/block/block_exchange.cuh>
+#include <cub/detail/cub_vector.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/unit_word.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
@@ -917,7 +921,7 @@ class BlockLoad
 
 public:
   /// @smemstorage{BlockLoad}
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -942,7 +946,7 @@ public:
   //!
   //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockLoad(TempStorage& temp_storage)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 

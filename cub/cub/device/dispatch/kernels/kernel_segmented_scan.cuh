@@ -21,13 +21,15 @@
 #include <cub/block/block_reduce.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/segmented_scan_helpers.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_macro.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/iterator>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -162,7 +164,7 @@ private:
 
 public:
   // Alias wrapper allowing storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Constructor
@@ -170,7 +172,7 @@ public:
 
   _CCCL_DEVICE _CCCL_FORCEINLINE agent_segmented_scan(
     TempStorage& temp_storage, InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, InitValueT initial_value)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , d_in(d_in)
       , d_out(d_out)
       , scan_op(scan_op)

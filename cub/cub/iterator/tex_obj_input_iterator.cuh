@@ -19,6 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/unit_word.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_debug.cuh>

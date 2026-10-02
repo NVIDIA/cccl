@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/double_buffer.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
 #include <cub/device/device_radix_sort.cuh>
 
@@ -21,7 +22,6 @@
 #include <vector>
 
 #include "cccl/c/types.h"
-#include "cub/util_type.cuh"
 #include "kernels/operators.h"
 #include "util/context.h"
 #include "util/errors.h"

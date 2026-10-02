@@ -24,6 +24,7 @@
 #include <cub/block/specializations/block_histogram_sort.cuh>
 #include <cub/util_ptx.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__type_traits/conditional.h>
 
 CUB_NAMESPACE_BEGIN
@@ -193,7 +194,7 @@ private:
 
 public:
   /// @smemstorage{BlockHistogram}
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -221,7 +222,7 @@ public:
    *   Reference to memory allocation having layout type TempStorage
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogram(TempStorage& temp_storage)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 

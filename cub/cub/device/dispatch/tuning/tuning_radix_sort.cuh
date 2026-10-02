@@ -19,6 +19,7 @@
 #include <cub/agent/agent_radix_sort_upsweep.cuh>
 #include <cub/agent/agent_scan.cuh>
 #include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/util_device.cuh>
@@ -482,7 +483,6 @@ template <typename ValueT> struct sm100_small_key_tuning<ValueT, 1,  4, 8> { sta
 // same as previous tuning
 template <typename ValueT> struct sm100_small_key_tuning<ValueT, 1,  16, 8> : sm90_small_key_tuning<1, 16, 8> {};
 
-
 // pairs 2-byte key
 
 // ipt_20.tpb_448  1.031929  0.936849  1.023411  1.075172
@@ -514,7 +514,6 @@ template <typename ValueT> struct sm100_small_key_tuning<ValueT, 2,  4, 8> { sta
 
 // same as previous tuning
 template <typename ValueT> struct sm100_small_key_tuning<ValueT, 2,  16, 8> : sm90_small_key_tuning<2, 16, 8> {};
-
 
 // pairs 4-byte key
 

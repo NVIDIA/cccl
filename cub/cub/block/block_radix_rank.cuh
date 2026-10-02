@@ -19,11 +19,13 @@
 
 #include <cub/block/block_scan.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/log2.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/thread/thread_scan.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/countl.h>
@@ -416,7 +418,7 @@ private:
 
 public:
   /// @smemstorage{BlockScan}
-  struct TempStorage : Uninitialized<_TempStorage>
+  struct TempStorage : ::cuda::__as_uninitialized_bytes<_TempStorage>
   {};
 
   //! @name Collective constructors
@@ -435,7 +437,7 @@ public:
    *   Reference to memory allocation having layout type TempStorage
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixRank(TempStorage& temp_storage)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
@@ -633,7 +635,7 @@ private:
 
 public:
   /// @smemstorage{BlockRadixRankMatch}
-  struct TempStorage : Uninitialized<_TempStorage>
+  struct TempStorage : ::cuda::__as_uninitialized_bytes<_TempStorage>
   {};
 
   //! @name Collective constructors
@@ -646,7 +648,7 @@ public:
    *   Reference to memory allocation having layout type TempStorage
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixRankMatch(TempStorage& temp_storage)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 

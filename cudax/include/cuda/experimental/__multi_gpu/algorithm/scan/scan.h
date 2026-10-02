@@ -22,9 +22,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/future_value.cuh>
 #include <cub/device/device_reduce.cuh>
 #include <cub/device/device_scan.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__argument/argument.h>
 #include <cuda/__functional/operator_properties.h>

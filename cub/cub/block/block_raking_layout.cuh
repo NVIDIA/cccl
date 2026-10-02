@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_type.cuh>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -91,7 +91,7 @@ struct BlockRakingLayout
   };
 
   /// Alias wrapper allowing storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   /**
    * @brief Returns the location for the calling thread to place data into the grid
@@ -108,7 +108,7 @@ struct BlockRakingLayout
     }
 
     // Incorporating a block of padding partials every shared memory segment
-    return temp_storage.Alias().buff + offset;
+    return temp_storage.template __alias<_TempStorage>().buff + offset;
   }
 
   /**
@@ -116,7 +116,7 @@ struct BlockRakingLayout
    */
   static _CCCL_DEVICE _CCCL_FORCEINLINE T* RakingPtr(TempStorage& temp_storage, unsigned int linear_tid)
   {
-    return temp_storage.Alias().buff + (linear_tid * (SEGMENT_LENGTH + USE_SEGMENT_PADDING));
+    return temp_storage.template __alias<_TempStorage>().buff + (linear_tid * (SEGMENT_LENGTH + USE_SEGMENT_PADDING));
   }
 };
 

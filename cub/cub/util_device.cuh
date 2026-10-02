@@ -20,7 +20,6 @@
 #include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_policy_wrapper_t.cuh>
-#include <cub/util_type.cuh>
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 

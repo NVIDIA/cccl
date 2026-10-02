@@ -20,12 +20,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh>
+#include <cub/detail/log2.cuh>
+#include <cub/detail/uninitialized_copy.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_store.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__functional/operator_properties.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__utility/static_for.h>
 #include <cuda/std/__algorithm/clamp.h>
@@ -69,7 +72,7 @@ struct WarpScanSmem
   using _TempStorage = T[WARP_SMEM_ELEMENTS];
 
   // Alias wrapper allowing storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   /******************************************************************************
    * Thread fields
@@ -85,7 +88,7 @@ struct WarpScanSmem
 
   /// Constructor
   explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpScanSmem(TempStorage& temp_storage)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       ,
 
       lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LogicalWarpThreads)

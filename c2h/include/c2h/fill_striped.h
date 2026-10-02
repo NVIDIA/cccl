@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <cub/detail/it_traits.cuh>
+
 #include <cuda/std/type_traits>
 
 template <typename VectorT, typename = void>

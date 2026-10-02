@@ -19,6 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_scan.cuh>

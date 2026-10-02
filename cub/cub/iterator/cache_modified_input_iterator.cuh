@@ -19,6 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/it_traits.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
 

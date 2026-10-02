@@ -24,9 +24,13 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/key_value_pair.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_type.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -188,7 +192,7 @@ struct AgentScanByKey
     typename BlockStoreValuesT::TempStorage store_values;
   };
 
-  struct TempStorage : cub::Uninitialized<TempStorage_>
+  struct TempStorage : ::cuda::__as_uninitialized_bytes<TempStorage_>
   {};
 
   //---------------------------------------------------------------------
@@ -418,7 +422,7 @@ struct AgentScanByKey
     EqualityOp equality_op,
     ScanOpT scan_op,
     InitValueT init_value)
-      : storage(storage.Alias())
+      : storage(storage.template __alias<TempStorage_>())
       , d_keys_in(d_keys_in)
       , d_keys_prev_in(d_keys_prev_in)
       , d_values_in(d_values_in)

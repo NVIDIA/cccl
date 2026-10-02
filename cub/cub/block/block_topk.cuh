@@ -14,8 +14,8 @@
 #endif // no system header
 
 #include <cub/block/specializations/block_topk_air.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
-#include <cub/util_type.cuh>
 
 CUB_NAMESPACE_BEGIN
 

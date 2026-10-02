@@ -46,12 +46,13 @@
 #include <cub/agent/agent_topk.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/segmented_params.cuh>
 #include <cub/detail/warpspeed/optimize_smem_ptr.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_topk.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
@@ -63,6 +64,7 @@
 #include <cuda/__execution/tie_break.h>
 #include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__memory/align_up.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__memory/ptr_rebind.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
@@ -617,7 +619,7 @@ struct agent_batched_topk_cluster
     load_phase ^= (::cuda::std::uint32_t{1} << stage);
   }
 
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   // Per-segment, per-rank geometry computed once by `compute_segment_layout` at the top of `run`: the head-aligned
   // chunking, the logical (non-idle) cluster width and this rank's partition of it, the leader/idle roles, and the
@@ -716,7 +718,7 @@ struct agent_batched_topk_cluster
     NumSegmentsParameterT num_segments_,
     char* key_slots_,
     offset_t max_block_resident_items_)
-      : temp_storage(temp_storage_.Alias())
+      : temp_storage(temp_storage_.template __alias<_TempStorage>())
       , d_key_segments_it(d_key_segments_it_)
       , d_key_segments_out_it(d_key_segments_out_it_)
       , d_value_segments_it(d_value_segments_it_)

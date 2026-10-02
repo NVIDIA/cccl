@@ -14,10 +14,12 @@
 #endif // no system header
 
 #include <cub/block/block_merge_sort.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/non_void_value.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_namespace.cuh>
-#include <cub/util_type.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__utility/forward.h>
 
@@ -97,7 +99,7 @@ struct agent_t
     needles_type needles[tile_size];
   };
 
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   _TempStorage& storage;
   HaystackIt d_range;

@@ -21,7 +21,6 @@
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>

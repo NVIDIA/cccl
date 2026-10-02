@@ -16,8 +16,11 @@
 #include <cub/agent/agent_radix_sort_downsweep.cuh>
 #include <cub/agent/agent_radix_sort_upsweep.cuh>
 #include <cub/block/block_radix_sort.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/util_namespace.cuh>
-#include <cub/util_type.cuh>
+
+#include <cuda/__memory/as_uninitialized_bytes.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -102,7 +105,7 @@ struct AgentSegmentedRadixSort
     typename BlockRadixSortT::TempStorage sort;
   };
 
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
   _TempStorage& temp_storage;
 
   DecomposerT decomposer;
@@ -110,7 +113,7 @@ struct AgentSegmentedRadixSort
   _CCCL_DEVICE _CCCL_FORCEINLINE
   AgentSegmentedRadixSort(OffsetT num_items, TempStorage& temp_storage, DecomposerT decomposer = {})
       : num_items(num_items)
-      , temp_storage(temp_storage.Alias())
+      , temp_storage(temp_storage.template __alias<_TempStorage>())
       , decomposer(decomposer)
   {}
 

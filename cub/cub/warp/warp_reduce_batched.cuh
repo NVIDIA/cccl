@@ -20,11 +20,11 @@
 #endif // no system header
 
 #include <cub/detail/type_traits.cuh>
-#include <cub/util_type.cuh>
 #include <cub/warp/specializations/warp_reduce_batched_wspro.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -137,7 +137,7 @@ private:
 
 public:
   //! \smemstorage{WarpReduceBatched}
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -149,7 +149,7 @@ public:
   //!
   //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
   _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpReduceBatched(TempStorage& temp_storage)
-      : temp_storage{temp_storage.Alias()}
+      : temp_storage{temp_storage.template __alias<_TempStorage>()}
   {}
 
   //! @}

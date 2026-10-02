@@ -23,9 +23,11 @@
 #include <cub/block/block_exchange.cuh>
 #include <cub/block/block_radix_rank.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -497,7 +499,7 @@ public:
 #endif // _CCCL_DOXYGEN_INVOKED
 
   /// @smemstorage{BlockRadixSort}
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -525,7 +527,7 @@ public:
    *   Reference to memory allocation having layout type TempStorage
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixSort(TempStorage& temp_storage)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 

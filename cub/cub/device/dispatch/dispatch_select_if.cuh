@@ -22,6 +22,7 @@
 
 #include <cub/agent/agent_select_if.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>

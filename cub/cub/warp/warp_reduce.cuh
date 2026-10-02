@@ -20,17 +20,18 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_type.cuh>
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
 #include <cub/warp/specializations/warp_reduce_smem.cuh>
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -177,7 +178,7 @@ private:
 
 public:
   /// \smemstorage{WarpReduce}
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -189,7 +190,7 @@ public:
   //!
   //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage& temp_storage)
-      : temp_storage{temp_storage.Alias()}
+      : temp_storage{temp_storage.template __alias<_TempStorage>()}
   {}
 
   //! @}
@@ -729,7 +730,7 @@ private:
 public:
   struct InternalWarpReduce
   {
-    using TempStorage = Uninitialized<_TempStorage>;
+    using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
     _CCCL_DEVICE _CCCL_FORCEINLINE InternalWarpReduce(TempStorage& /*temp_storage */) {}
 

@@ -9,6 +9,8 @@
 #include <cub/util_type.cuh>
 #include <cub/util_vsmem.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
+
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
@@ -77,7 +79,7 @@ struct agent_dummy_algorithm_t
     typename block_store_t::TempStorage store;
   };
 
-  struct TempStorage : cub::Uninitialized<_temp_storage_t>
+  struct TempStorage : ::cuda::__as_uninitialized_bytes<_temp_storage_t>
   {};
 
   _temp_storage_t& temp_storage; ///< Reference to temp_storage
@@ -86,7 +88,7 @@ struct agent_dummy_algorithm_t
 
   __device__ __forceinline__
   agent_dummy_algorithm_t(TempStorage& temp_storage, InputIteratorT d_in, OutputIteratorT d_out)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_temp_storage_t>())
       , d_in(d_in)
       , d_out(d_out)
   {}

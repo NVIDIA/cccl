@@ -20,20 +20,22 @@
 #include <thrust/detail/config.h>
 
 #include <cub/agent/agent_find.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/type_size.cuh>
 #include <cub/device/dispatch/tuning/tuning_find.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__iterator/transform_iterator.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__host_stdlib/sstream>
 
@@ -70,7 +72,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block)) _CCCL
   __shared__ typename agent_find_t::TempStorage sresult;
 
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-  agent_find_t{sresult.Alias(), d_in, predicate, found_pos_ptr, num_items}.Process();
+  agent_find_t{
+    sresult.template __alias<typename agent_find_t::_TempStorage>(), d_in, predicate, found_pos_ptr, num_items}
+    .Process();
 }
 
 template <typename ValueType, typename OutputIteratorT>

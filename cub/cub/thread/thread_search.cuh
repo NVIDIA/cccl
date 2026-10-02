@@ -19,8 +19,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/it_traits.cuh>
 #include <cub/util_namespace.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>

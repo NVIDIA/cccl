@@ -19,9 +19,12 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
-#include <cub/util_type.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/numeric_traits.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -277,7 +280,7 @@ struct AgentTopK
     OffsetT histogram[num_buckets];
   };
   /// Alias wrapper allowing storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per-thread fields
@@ -337,7 +340,7 @@ struct AgentTopK
     OffsetT buffer_length,
     ExtractBinOpT extract_bin_op,
     IdentifyCandidatesOpT identify_candidates_op)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , d_keys_in(d_keys_in)
       , d_keys_out(d_keys_out)
       , d_values_in(d_values_in)

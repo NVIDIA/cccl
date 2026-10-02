@@ -19,7 +19,6 @@
 #endif // no system header
 
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 CUB_NAMESPACE_BEGIN
 

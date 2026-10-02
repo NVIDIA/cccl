@@ -29,6 +29,8 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/non_void_value.cuh>
 #include <cub/device/dispatch/dispatch_rle.cuh>
 #include <cub/device/dispatch/dispatch_rle_encode.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce_by_key.cuh>
