@@ -2,8 +2,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Provide operation planners with group, payload, and storage facts.
+
+Each supported operation needs some of the same information: the participating
+threads, a payload's element type and item count, compile-time scalar controls,
+and the options of a ``TempStorage`` descriptor. ``GroupPlanningContext``
+exposes those queries to operation-specific code without direct access to all
+of ``_GroupCallPlanner``'s bookkeeping.
+
+This context belongs to the group-resolution phase of the single whole-function
+planner, before provider calls are materialized. It follows IR assignments to
+recover facts that ordinary type inference has not established yet and records
+element types inferred by earlier ``load()`` operations for later calls. Once an
+operation has chosen a provider, it also checks that the provider's storage and
+synchronization declarations agree with the group plan and builds the call IR
+that carries that plan to the rewriting phase.
+"""
+
 from __future__ import annotations
 
+from collections.abc import Callable
 from numbers import Integral
 from typing import TYPE_CHECKING, Any
 
@@ -47,7 +65,13 @@ if TYPE_CHECKING:
 
 
 class GroupPlanningContext:
-    """Stable cross-family view of one whole-function planner."""
+    """Share one group planner's analysis with operation-specific lowering.
+
+    Parameters
+    ----------
+    planner : _GroupCallPlanner
+        Active group planner supplying IR definitions and launch facts.
+    """
 
     __slots__ = ("__planner", "__thread_data_dtypes")
 
@@ -144,10 +168,61 @@ class GroupPlanningContext:
     @staticmethod
     def _validate_provider_contract(
         lowering_plan: GroupLoweringPlan,
-        factory: Any,
+        factory: Callable[..., Any],
         *,
         runtime_temp_storage_supplied: bool | None = None,
     ) -> None:
+        """Check the selected provider against planned storage and execution.
+
+        This is the boundary between compiler-neutral planning and the private
+        provider call. Require complete topology, participation,
+        synchronization, and storage facts, then compare them with the
+        registered factory's ABI and scopes.
+
+        Some algorithms need temporary shared memory to exchange values between
+        threads. A block ``load()`` operation with ``algorithm="transpose"``
+        uses one scratch region for the block; a warp ``load()`` operation with
+        that algorithm needs a separate region for each participating physical
+        or logical warp.
+        For such plans, require exact block dimensions, groups that cover the
+        block, and one shared-memory slice per group instance. Direct algorithms
+        for ``load()`` and ``store()`` need no scratch and skip those checks. An
+        explicit ``temp_storage`` argument is supported only for a single
+        block-scoped instance.
+
+        Normally the provider's declared reuse barrier must match the plan.
+        Caller-owned storage with ``auto_sync=False`` also permits the
+        provider's execution-scope barrier declaration: the pointer rewrite
+        bypasses its allocating wrapper and controls synchronization itself.
+        This exception does not apply to implementation-owned storage. No IR is
+        mutated here.
+
+        Parameters
+        ----------
+        lowering_plan : GroupLoweringPlan
+            Supported plan whose storage and execution requirements are checked.
+        factory : callable
+            Selected host-side provider factory registered with operation
+            metadata. It is not invoked here.
+        runtime_temp_storage_supplied : bool or None, optional
+            Whether the proposed provider call supplies ``temp_storage``. When
+            the plan needs scratch, this flag must agree with caller ownership.
+            ``None`` skips this argument-presence check only.
+
+        Returns
+        -------
+        None
+            The provider metadata and supported storage contracts agree.
+
+        Raises
+        ------
+        TypeError
+            ``lowering_plan`` is not a ``GroupLoweringPlan``.
+        GroupRewriteError
+            The plan is unsupported or incomplete, the provider is unregistered,
+            or its ABI, scopes, storage ownership, or layout are incompatible.
+        """
+
         if not isinstance(lowering_plan, GroupLoweringPlan):
             raise TypeError("lowering_plan must be a GroupLoweringPlan")
         if lowering_plan.unsupported is not None:
@@ -290,11 +365,54 @@ class GroupPlanningContext:
         inst: ir.Assign,
         *,
         lowering_plan: GroupLoweringPlan,
-        factory: Any,
+        factory: Callable[..., Any],
         args: list[Any],
         kwargs: dict[str, Any],
         common_root_operation: str | None = None,
     ) -> list[Any]:
+        """Build a provider call carrying the validated group-lowering plan.
+
+        Check the provider ABI and storage contract before embedding the plan in
+        its reserved keyword argument. The later provider rewrite consumes this
+        metadata, so it does not have to reconstruct the public group semantics.
+        The returned assignments materialize non-IR arguments and invoke the
+        factory with the original result target. The caller installs them into
+        the function; this method does not replace the original instruction.
+
+        Parameters
+        ----------
+        inst : ir.Assign
+            Original public call assignment; supplies the result target, scope,
+            and source location for generated statements.
+        lowering_plan : GroupLoweringPlan
+            Supported semantic plan to validate and attach to the provider call.
+        factory : callable
+            Registered host-side provider factory selected by the operation
+            family. Embedded as the generated call target, not invoked here.
+        args : list of object
+            Positional provider arguments, as existing IR variables or host
+            values.
+        kwargs : dict of str to object
+            Provider keyword arguments. Copied before plan metadata is added;
+            presence of ``temp_storage`` is checked against planned ownership.
+        common_root_operation : str or None, optional
+            Common API operation name to retain for downstream validation. When
+            present, supplies the private marker unless ``kwargs`` already has
+            it.
+
+        Returns
+        -------
+        list of object
+            Ordered argument-materialization and call assignments replacing
+            ``inst``.
+
+        Raises
+        ------
+        GroupRewriteError
+            Provider-contract validation fails or ``kwargs`` uses the reserved
+            lowering-plan keyword.
+        """
+
         self._validate_provider_contract(
             lowering_plan,
             factory,
@@ -318,6 +436,29 @@ class GroupPlanningContext:
         )
 
     def planning_binding(self, value: Any) -> ArgumentBinding:
+        """Classify a scalar control from its explicit static provenance.
+
+        Use explicit static provenance rather than general constant inference. A
+        runtime expression remains a runtime binding even if another compiler
+        analysis could fold it. The original runtime operand is retained by the
+        operation family, not inside the returned binding.
+
+        Parameters
+        ----------
+        value : ir.Var or object
+            Optional scalar control such as ``valid_items``, ``offset``, or a
+            ``load()`` fill value, represented by an IR variable or a value
+            already known during compilation.
+
+        Returns
+        -------
+        ArgumentBinding
+            ``OMITTED`` for statically known ``None``, ``STATIC`` with the
+            resolved value otherwise, or ``RUNTIME`` when static provenance is
+            not established. Numeric validity and operation-specific constraints
+            are checked later.
+        """
+
         resolved, constant = self.try_static_scalar(value)
         if not resolved:
             return ArgumentBinding.runtime()
@@ -326,7 +467,7 @@ class GroupPlanningContext:
         return ArgumentBinding.static(constant)
 
     @staticmethod
-    def _dtype_from_numba_type(value: Any) -> Any | None:
+    def _dtype_from_numba_type(value: object) -> _numba_types.Type | None:
         if isinstance(value, _numba_types.Array):
             value = value.dtype
         elif not isinstance(value, _numba_types.Type):
@@ -351,9 +492,42 @@ class GroupPlanningContext:
             return None
         return cls._one_dtype(set(resolved), message=message)
 
-    def record_thread_data_dtype(self, value: Any, dtype: Any) -> None:
-        """Keep an output's inferred dtype available to subsequent group
-        calls.
+    def record_thread_data_dtype(
+        self, value: Any, dtype: _numba_types.Type
+    ) -> None:
+        """Record a producer's element dtype at the payload's constructor sites.
+
+        Group planning precedes the provider rewrite that materializes payloads.
+        A load into untyped ``ThreadData`` therefore records its inferred dtype
+        here so subsequent group calls can recover it. Follow descriptor
+        aliases, casts, phi inputs, and constant tuple projections to
+        constructor calls, keying the cache by call-expression identity so
+        aliases share the fact. Explicit constructor dtypes and earlier inferred
+        dtypes must agree.
+
+        Only recognized constructors reached by this traversal are updated;
+        unresolved tuple projections and other leaves contribute no cache entry.
+        This updates the planning context, not constructor arguments in the IR.
+
+        Parameters
+        ----------
+        value : ir.Var
+            Producer's output payload, possibly reached through supported
+            aliases or tuple projections.
+        dtype : numba_types.Type
+            Normalized element dtype inferred by the producer.
+
+        Returns
+        -------
+        None
+            Any recognized constructor sites now carry the inferred dtype.
+
+        Raises
+        ------
+        GroupRewriteError
+            A reached constructor already has a different explicit or inferred
+            dtype. Cache entries recorded before the conflict are not rolled
+            back.
         """
 
         def payload_definitions(current, seen):
@@ -549,7 +723,46 @@ class GroupPlanningContext:
         attributes.reverse()
         return current.value, tuple(attributes)
 
-    def dtype(self, value: Any, *, seen: set[str] | None = None) -> Any | None:
+    def dtype(
+        self, value: object, *, seen: set[str] | None = None
+    ) -> _numba_types.Type | None:
+        """Infer a normalized dtype from facts available during group planning.
+
+        Use argument types, scalar constants and operators, supported CUDA index
+        attributes, local-array constructors, and ``ThreadData`` declarations or
+        recorded producer dtypes. Follow aliases, casts, phi inputs, and tuple
+        projections; array indexing contributes the source element dtype. This
+        is a limited pre-typing analysis, not full Numba type inference.
+
+        Every reaching definition must produce a dtype before agreement is
+        checked. Unknown definitions and cycles return ``None`` even when
+        another path has a known type; fully known but inconsistent paths are
+        rejected.
+
+        Parameters
+        ----------
+        value : object
+            IR variable to inspect, or a Numba compiler type to normalize
+            directly. Array types contribute their element dtype. Other inputs
+            are accepted as probes and return ``None``; a raw Python scalar is
+            not treated as an IR constant by this entry point.
+        seen : set of str, optional
+            Recursion-path variable names and tuple-projection keys. The current
+            name is added in place; definitions are visited with separate
+            copies.
+
+        Returns
+        -------
+        numba_types.Type or None
+            Normalized compiler dtype when every relevant path is known and
+            agrees, or ``None`` when inference is incomplete.
+
+        Raises
+        ------
+        GroupRewriteError
+            Fully resolved aliases or tuple projections disagree on the dtype.
+        """
+
         if not isinstance(value, ir.Var):
             return self._dtype_from_numba_type(value)
         if seen is None:
@@ -592,6 +805,47 @@ class GroupPlanningContext:
         *,
         seen: set[str] | None = None,
     ) -> tuple[int | None, int | None, bool, str] | None:
+        """Recover one storage contract from reaching descriptor definitions.
+
+        Parse each recognized constructor with the planning constant resolver,
+        then require its normalized contract to agree with the others. A
+        concrete non-descriptor path, including a ``None`` initializer,
+        invalidates a value that also reaches a descriptor. Backedges contribute
+        no new leaf.
+
+        Equivalent constructors may merge when automatic synchronization is
+        used. With ``auto_sync=False``, all aliases must reach exactly one call
+        expression: merging separately constructed regions would lose the origin
+        needed to reason about caller-managed synchronization. This checks
+        provenance and constructor options, not backing storage or capacity.
+
+        Parameters
+        ----------
+        value : ir.Var or object
+            Value expected to name a storage descriptor. Non-variables return
+            ``None`` without parsing.
+        seen : set of str, optional
+            Recursion-path names passed to ``descriptor_definitions``. The
+            supplied set is not mutated.
+
+        Returns
+        -------
+        tuple or None
+            ``(size_in_bytes, alignment, auto_sync, sharing)`` for the unique
+            contract, or ``None`` if no recognized constructor is reached. The
+            first two fields may be ``None`` to defer size or alignment
+            selection.
+
+        Raises
+        ------
+        GroupRewriteError
+            Contracts conflict, descriptor and non-descriptor paths mix,
+            multiple constructor sites use manual synchronization, or call
+            syntax is invalid.
+        ForceLiteralArg
+            A constructor option requires literal argument specialization.
+        """
+
         if not isinstance(value, ir.Var):
             return None
         candidates = set()
@@ -624,17 +878,17 @@ class GroupPlanningContext:
             sites.add(id(definition))
         if len(candidates) > 1:
             raise GroupRewriteError(
-                "cuda.coop.numba_mlir TempStorage "
-                "aliases have inconsistent contracts"
+                "cuda.coop.numba_mlir TempStorage aliases have "
+                "inconsistent contracts"
             )
         descriptor = next(iter(candidates), None)
         if descriptor is not None and non_descriptor:
             raise GroupRewriteError(
                 "cuda.coop.numba_mlir TempStorage variables must be bound to "
                 f"a TempStorage descriptor on every path; {value.name!r} is "
-                "also bound to a non-descriptor value such as None. Remove "
-                "the None initializer or construct "
-                "the descriptor unconditionally."
+                "also bound to a non-descriptor value such as None. "
+                "Remove the None initializer or construct the descriptor "
+                "unconditionally."
             )
         if descriptor is not None and descriptor[2] is False and len(sites) > 1:
             raise GroupRewriteError(

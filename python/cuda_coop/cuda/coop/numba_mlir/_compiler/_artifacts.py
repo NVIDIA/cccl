@@ -6,12 +6,33 @@ import os
 import re
 import tempfile
 from collections import namedtuple
+from typing import IO
 
 version = namedtuple("version", ("major", "minor"))
 
 
-def make_binary_tempfile(content: bytes, suffix: str):
-    """Write content to a closed, unbuffered temporary binary file."""
+def make_binary_tempfile(content: bytes, suffix: str) -> IO[bytes]:
+    """Write a persistent link-input file and return its closed handle.
+
+    Compiler link inputs are consumed by filename after provider construction,
+    so flush and close the file before returning while leaving its path intact.
+    The caller must arrange successful-file cleanup, normally through an
+    ``Invocable`` or shared-bundle owner. If writing raises, remove the
+    partially written file before propagating the exception.
+
+    Parameters
+    ----------
+    content : bytes
+        Binary image to write without buffering.
+    suffix : str
+        Filename suffix used by the linker to recognize the image format.
+
+    Returns
+    -------
+    IO[bytes]
+        Closed ``NamedTemporaryFile`` wrapper whose ``name`` identifies the
+        persistent file. It is not an open stream for subsequent writes.
+    """
 
     with tempfile.NamedTemporaryFile(
         mode="w+b", suffix=suffix, buffering=0, delete=False
@@ -36,8 +57,33 @@ def check_in(name, arg, values):
         raise ValueError(f"{name} must be in {values} ; got {name} = {arg}")
 
 
-def find_unsigned(name, txt):
-    """Read one optional-initialized unsigned global from PTX text."""
+def find_unsigned(name: str, txt: str) -> int:
+    """Read an emitted unsigned storage-metadata global from PTX text.
+
+    Provider compilation emits C++ ``sizeof`` and ``alignof`` constants, then
+    links to PTX to inspect their values without executing a GPU kernel. Match
+    the compiler's aligned 32-bit unsigned global declaration for the requested
+    symbol. A declaration without an initializer denotes zero. This is a narrow
+    metadata extractor, not a general PTX parser.
+
+    Parameters
+    ----------
+    name : str
+        Exact global symbol name, escaped before constructing the search
+        pattern.
+    txt : str
+        PTX containing the provider's metadata globals.
+
+    Returns
+    -------
+    int
+        Decimal initializer value, or zero for an uninitialized declaration.
+
+    Raises
+    ------
+    ValueError
+        No recognized declaration for ``name`` is present.
+    """
 
     escaped_name = re.escape(name)
     regex = re.compile(

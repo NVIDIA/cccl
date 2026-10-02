@@ -2,10 +2,28 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Choose and prepare the implementation of a group ``load()`` or ``store()``.
+
+The group planner delegates these two operations here after resolving which
+threads participate. Recover the per-thread item count and element type, check
+memory and payload compatibility, and classify optional controls as omitted,
+static, or runtime values. Pass those facts to the compiler-neutral planner,
+then translate its decision into a call to the matching private CUB factory.
+
+The returned IR carries both the runtime operands and the complete lowering
+plan. Later in the same whole-function planner, call rewriting specializes the
+factory and supplies payload arrays and any shared scratch it needs. Warp
+operations may also need an offset for their particular warp within the block;
+this module emits that arithmetic because it depends on runtime thread indices.
+It builds replacement statements without installing them, so the caller can
+validate every group descriptor use before changing the function's blocks.
+"""
+
 import inspect
 import operator
 from typing import Any, cast
 
+import numba_cuda_mlir.numba_cuda.types as numba_types
 from numba_cuda_mlir import cuda as _cuda_module
 
 from cuda.coop._core import (
@@ -184,8 +202,41 @@ class _LoadStorePlanning:
         self,
         value: Any,
         *,
-        payload_dtype: Any,
+        payload_dtype: numba_types.Type,
     ) -> ArgumentBinding:
+        """Validate the ``load()`` operation's out-of-bounds fill value.
+
+        Classify ``oob_default`` as omitted, static, or runtime. A runtime value
+        with a known dtype must match the payload exactly; an unknown dtype is
+        left for later validation. Static values retain their original dtype
+        information during coercion, preserving the distinction between Python
+        literals whose type is determined by the operation and values whose
+        numeric width is already established.
+
+        Parameters
+        ----------
+        value : ir.Var or object
+            Bound ``oob_default`` argument, including ``None`` for omission.
+        payload_dtype : numba_types.Type
+            Normalized element dtype selected for the load.
+
+        Returns
+        -------
+        ArgumentBinding
+            Omitted or runtime binding, or a static binding containing the
+            validated, coerced default.
+
+        Raises
+        ------
+        DefaultDtypeMismatchError
+            A runtime default has a known dtype different from the payload.
+        TypeError
+            A known scalar dtype is unsupported or incompatible with the
+            payload.
+        ValueError
+            A static default is nonfinite or outside the payload dtype range.
+        """
+
         binding = self._context.planning_binding(value)
         if binding.kind is BindingKind.OMITTED:
             return binding
@@ -235,6 +286,57 @@ class _LoadStorePlanning:
         group: ThreadGroup,
         bound: inspect.BoundArguments,
     ) -> GroupLoweringPlan:
+        """Translate a bound group memory operation into a supported core plan.
+
+        Recover payload shape and element type before selecting a provider.
+        Memory dtype takes precedence when known, but a known payload dtype must
+        match it. For a ``store()`` operation with an untyped array payload,
+        inspect values written to its elements first; for a static scalar
+        payload, check whether its value and original dtype can be used with
+        the destination dtype. A ``load()`` operation records the inferred
+        output dtype in the planning context for later group calls.
+
+        Classify optional scalar controls by provenance, parse caller storage,
+        and pass compiler-neutral load/store semantics plus exact launch facts
+        to the core planner. Warp groups reject explicit storage here. The
+        result selects topology, storage, synchronization, and implementation
+        metadata; it does not yet construct provider-call IR. The dtype cache
+        may already be updated if a later validation fails.
+
+        Parameters
+        ----------
+        operation : {"load", "store"}
+            Public operation being planned.
+        group : ThreadGroup
+            Group already resolved against this kernel's launch facts.
+        bound : inspect.BoundArguments
+            Public call arguments with defaults applied; values may be IR
+            variables or host constants. The mapping is read without
+            modification.
+
+        Returns
+        -------
+        GroupLoweringPlan
+            Supported core plan containing the inferred semantic operation and
+            the selected provider implementation.
+
+        Raises
+        ------
+        GroupRewriteError
+            Payload extent or dtype is unknown, or storage provenance is
+            invalid.
+        TypeError
+            A payload or scalar control has an unsupported type, or known
+            payload and memory dtypes disagree.
+        ValueError
+            A scalar or algorithm is invalid, or explicit storage is supplied
+            for a warp group.
+        ForceLiteralArg
+            A shape, algorithm, or storage option needs literal specialization.
+        NotImplementedError
+            The core planner cannot lower the requested group operation.
+        """
+
         from .._lowering._core import NumbaMlirCoreAdapter
 
         payload_name = "output" if operation == "load" else "value"
@@ -359,7 +461,7 @@ class _LoadStorePlanning:
 
     def _warp_group_effective_offset(
         self,
-        statements: list[Any],
+        statements: list[ir.Assign],
         *,
         inst: ir.Assign,
         plan: GroupLoweringPlan,
@@ -367,7 +469,45 @@ class _LoadStorePlanning:
         runtime_value: Any,
         items_per_thread: int,
     ) -> ir.Var:
-        """Add this physical or logical Warp group's tile origin."""
+        """Build IR that computes the starting element for this warp's tile.
+
+        Each physical or logical warp must access its own tile within the
+        block's data. Compute the current thread's x-fastest linear rank as
+        ``x + block_x * (y + block_y * z)``. Divide by the logical group width,
+        then multiply by ``width * items_per_thread``. Add the user's base
+        offset to that tile origin. The arithmetic remains
+        runtime IR because the warp's position in the block depends on
+        ``threadIdx``, even when the user's base offset is static. For a
+        one-dimensional block, the linear rank is simply ``threadIdx.x``.
+
+        Parameters
+        ----------
+        statements : list of ir.Assign
+            Output list extended in place with constants, CUDA attribute reads,
+            and arithmetic assignments in dependency order.
+        inst : ir.Assign
+            Original public call; supplies scope and source locations.
+        plan : GroupLoweringPlan
+            Plan with a physical or logical warp topology, supported
+            power-of-two width, and exact enclosing block dimensions.
+        binding : ArgumentBinding
+            Planned user offset. Omission supplies zero; a static binding
+            supplies its value; a runtime binding selects ``runtime_value``.
+        runtime_value : object
+            Original offset operand, used only for a runtime binding.
+        items_per_thread : int
+            Planned payload extent used to determine the group's tile size.
+
+        Returns
+        -------
+        ir.Var
+            Variable holding the effective element offset for the provider call.
+
+        Raises
+        ------
+        GroupRewriteError
+            The plan lacks the required exact warp topology or block dimensions.
+        """
 
         topology = plan.topology
         participation = plan.participation
@@ -476,6 +616,59 @@ class _LoadStorePlanning:
         bound: inspect.BoundArguments,
         is_common_root: bool,
     ) -> list[Any]:
+        """Build replacement IR for a public ``load()`` or ``store()`` call.
+
+        Validate common-API payload restrictions, obtain a semantic lowering
+        plan, and select the matching private factory by provider provenance and
+        scope. Translate planned dtype, shape, algorithm, and scalar bindings
+        into the provider's arguments. Warp plans that require a tile origin
+        first emit the effective-offset arithmetic. Other static controls retain
+        their ``ArgumentBinding`` objects; runtime controls retain their
+        original IR operands.
+
+        The final provider call carries the complete plan for the subsequent
+        provider rewrite. Planning may record inferred payload dtypes, but this
+        method only returns replacement statements; the whole-function planner
+        installs them after validating all descriptor uses.
+
+        Parameters
+        ----------
+        inst : ir.Assign
+            Public call assignment whose result target and location are
+            preserved.
+        operation : {"load", "store"}
+            Registered public operation to lower.
+        group : ThreadGroup
+            Group resolved against the current kernel launch.
+        bound : inspect.BoundArguments
+            Public call arguments with defaults applied. Runtime operands are
+            forwarded; the argument mapping is not modified.
+        is_common_root : bool
+            Whether the call uses the common API, requiring its payload contract
+            and a retained common-operation marker on the provider call.
+
+        Returns
+        -------
+        list of object
+            Ordered IR statements computing any warp offset, materializing
+            factory arguments, and calling the selected provider with the
+            original target.
+
+        Raises
+        ------
+        GroupRewriteError
+            Planning cannot resolve the payload, provider provenance selects the
+            wrong operation, or its contract is incompatible with the plan.
+        TypeError
+            A common-API payload is unsupported or known dtypes disagree.
+        ValueError
+            A scalar, algorithm, or explicit storage argument is invalid.
+        ForceLiteralArg
+            A planning argument needs literal specialization.
+        NotImplementedError
+            The requested group operation has no supported lowering.
+        """
+
         from .._lowering._core import NumbaMlirCoreAdapter
 
         if is_common_root:

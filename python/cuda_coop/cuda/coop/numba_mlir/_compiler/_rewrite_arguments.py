@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Separate provider specialization inputs from device-call operands.
+
+After group resolution selects a provider, argument validation applies its
+registered grammar, infers missing payload and launch facts, and
+distinguishes static scalar bindings from runtime controls. The result
+supplies host-side factory keywords and device-side IR operands to the
+remaining rewrite helpers; this module does not replace the call or allocate
+its storage.
+"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
@@ -30,6 +40,61 @@ class _ArgumentRewrite:
         dict[str, object],
         tuple[ir.Var, ...],
     ]:
+        """Partition provider arguments into static and runtime inputs.
+
+        The operation registry defines positional arity, factory keywords,
+        scalar bindings, and optional runtime controls. Static scalar controls
+        become ``ArgumentBinding.static`` values; unresolved controls stay in
+        the runtime argument list in registry order. A resolved ``None`` omits
+        an optional control, whereas ``_UNRESOLVED`` preserves its runtime
+        operand. Temporary storage is returned separately for later ABI-specific
+        insertion.
+
+        Infer missing factory inputs from payloads and exact launch metadata,
+        validate runtime controls, and normalize the ``dim`` alias. The private
+        group lowering plan is carried in the factory dictionary for the caller
+        to remove before invoking the provider. Record the variables that
+        supplied compile-time inputs so ``apply`` can remove their assignments
+        if unused. The call expression itself is not rewritten here.
+
+        Parameters
+        ----------
+        op_name : str
+            Registered operation whose argument contract governs the call.
+        call : ir.Expr
+            Provider call with positional and keyword operands in untyped
+            IR.
+        getitem_temp_storage : ir.Var or None
+            Storage operand discovered in a subscripted callee. Argument
+            splitting recognizes it, but descriptor-use validation decides
+            whether that syntax is permitted.
+
+        Returns
+        -------
+        runtime_args : tuple of ir.Var
+            Operands in provider order, without the leading storage pointer.
+        runtime_temp_storage : ir.Var or None
+            Explicit storage operand, or None for implementation-owned
+            storage.
+        factory_kwargs : dict
+            Resolved specialization values, bindings, and optional lowering
+            plan.
+        factory_kw_value_vars : tuple of ir.Var
+            Variables consumed as compile-time inputs and candidates for
+            cleanup.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            Arguments are invalid, factory values cannot be resolved, or
+            required inputs remain unavailable when deferral is disabled.
+        _DeferredCoopRewrite
+            Internal signal that exact launch metadata is still needed.
+            ``CoopSinglePhaseRewrite.match`` catches it and preserves the
+            call while ``_CallRewriting._rewrite_calls`` obtains the kernel
+            launch shape and retries within ``CoopWholeFunctionPlanner``.
+        """
+
         rewrite = cast("CoopSinglePhaseRewrite", self)
         spec = rewrite_operation(op_name)
         if spec is None:

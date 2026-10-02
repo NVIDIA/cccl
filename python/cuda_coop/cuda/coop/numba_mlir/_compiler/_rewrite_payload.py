@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Infer provider specialization inputs from the payloads they consume.
+
+Primitive-family hooks use ``PayloadInference`` to inspect runtime operands
+and merge inferred dtype and extent values with explicit factory keywords.
+Inference updates the pending specialization and payload metadata before
+provider creation; it does not replace the compiler's later type inference
+or emit array IR.
+"""
+
 from typing import TYPE_CHECKING, cast
 
 from ._group_rewriting import GroupRewriteContext
@@ -34,10 +43,12 @@ class PayloadInference:
         self.factory_kwargs = factory_kwargs
         self.dtype_factory_kwargs = dtype_factory_kwargs
 
-    def factory_value(self, name: str):
+    def factory_value(self, name: str) -> object:
         return self.factory_kwargs.get(name)
 
-    def _factory_kwarg_matches(self, name: str, actual, expected) -> bool:
+    def _factory_kwarg_matches(
+        self, name: str, actual: object, expected: object
+    ) -> bool:
         if name in self.dtype_factory_kwargs:
             try:
                 actual = normalize_dtype_param(actual)
@@ -46,7 +57,34 @@ class PayloadInference:
                 pass
         return actual == expected
 
-    def infer_kwarg(self, name: str, value) -> None:
+    def infer_kwarg(self, name: str, value: object) -> None:
+        """Merge a payload-derived value into the factory specialization inputs.
+
+        Ignore unavailable values and keywords the operation does not accept. An
+        already resolved keyword must agree with the payload; dtype keywords are
+        compared after normalization when possible so equivalent dtype spellings
+        do not conflict. Never overwrite a conflicting explicit value.
+
+        Parameters
+        ----------
+        name : str
+            Factory keyword to infer or check.
+        value : object
+            Value inferred from a payload. None means no inference is
+            available.
+
+        Returns
+        -------
+        None
+            Update ``factory_kwargs`` and ``seen_factory_kwargs`` in place
+            when this supplies a previously missing keyword.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            The inferred value conflicts with an already resolved keyword.
+        """
+
         if name not in self.allowed_factory_kwargs or value is None:
             return
         if name in self.seen_factory_kwargs:
@@ -75,7 +113,7 @@ class PayloadInference:
 
 
 class _PayloadRewrite:
-    """Dispatch payload inference to the owning primitive-family mixin."""
+    """Dispatch payload inference to the registered primitive-family hook."""
 
     def _infer_factory_kwargs_from_payload(
         self,

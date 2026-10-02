@@ -2,9 +2,23 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Expose per-thread payload construction to the Numba-CUDA-MLIR compiler.
+
+``ThreadData`` is a kernel-language marker: the rewrite replaces a supported
+call with a fixed-size local array, inferring its dtype from the surrounding
+operations when possible. Calling the Python function directly raises a
+compiler-context error. Its alignment helper reconciles the common API's
+requested minimum with the compiler's pointer-alignment requirement.
+
+``local`` and ``shared`` expose the active runtime's array namespaces. They
+are loaded on first attribute access so importing this module does not itself
+require those runtime namespaces to be initialized.
+"""
+
 from __future__ import annotations
 
 import struct
+from typing import SupportsIndex
 
 from .._core.api._payload import _normalize_alignment
 from .._core.thread_group import CoopCompilerContextRequiredError
@@ -16,7 +30,37 @@ local: object
 shared: object
 
 
-def _normalize_thread_data_alignment(alignment: int | None) -> int | None:
+def _normalize_thread_data_alignment(
+    alignment: SupportsIndex | None,
+) -> int | None:
+    """Convert a requested payload alignment to the compiler's minimum.
+
+    The common API accepts a positive power-of-two byte alignment, while the
+    Numba local-array representation also requires pointer alignment. Raise
+    smaller explicit requests to the host pointer size used by this adapter;
+    this still satisfies the caller's requested minimum. Leave unspecified
+    alignment for the compiler to choose.
+
+    Parameters
+    ----------
+    alignment : SupportsIndex or None
+        Requested minimum in bytes. Integer-index values are normalized by
+        the common helper; booleans are rejected. ``None`` means unspecified.
+
+    Returns
+    -------
+    int or None
+        At least ``struct.calcsize("P")`` for an explicit request, otherwise
+        ``None``.
+
+    Raises
+    ------
+    TypeError
+        The request is a boolean or cannot be interpreted as an integer.
+    ValueError
+        The request is not a positive power of two.
+    """
+
     alignment = _normalize_alignment(alignment)
     # The compiler requires pointer-aligned arrays. Stronger alignment also
     # satisfies smaller minimum-alignment requests from the common API.
