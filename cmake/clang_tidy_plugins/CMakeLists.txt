@@ -5,7 +5,7 @@ list(APPEND CMAKE_MESSAGE_CONTEXT "clang_tidy_plugins")
 # LLVM requires C to be enabled
 project(clang_tidy_plugins LANGUAGES C CXX)
 
-if (PROJECT_IS_TOPLEVEL)
+if (PROJECT_IS_TOP_LEVEL)
   message(
     FATAL_ERROR
     "clang-tidy plugins must be built as part of the main CCCL build"
