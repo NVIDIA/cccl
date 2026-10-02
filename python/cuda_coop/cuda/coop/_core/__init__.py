@@ -8,7 +8,7 @@ Importing this package requires only the Python standard library.
 """
 
 from ._adapter import CoreBackendAdapter, lower_method_parameters
-from ._algorithm import Algorithm, AlgorithmSpec, TypeDefinition
+from ._algorithm import Algorithm, TypeDefinition
 from ._bindings import ArgumentBinding, BindingKind, binding, i32_parameter
 from ._symbols import semantic_token
 from ._types import (
@@ -115,7 +115,6 @@ __all__ = [
     "UINT32",
     "UINT64",
     "Algorithm",
-    "AlgorithmSpec",
     "ArgumentBinding",
     "ArgumentKind",
     "ArgumentPrecondition",
