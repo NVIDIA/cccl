@@ -63,9 +63,9 @@ public:
       , traits_option_{Options.get(TRAITS_OPTION, TRAITS_OPTION_DEFAULT)}
   {
     llvm::SmallVector<StringRef> entries;
+
     traits_option_.split(entries, /*Separator=*/';', /*MaxSplit=*/-1, /*KeepEmpty=*/false);
     sources_.reserve(entries.size() * 3);
-
     for (auto&& entry : entries)
     {
       auto&& [from, to] = entry.split(',');
