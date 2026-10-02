@@ -106,8 +106,7 @@ TEST_FUNC constexpr bool test()
     // custom operator->*
     cuda::std::__constant_wrapper<WithOps{42}> cwWO;
     cuda::std::__constant_wrapper<&WithOps::value> cwPM;
-    decltype(auto) result1 = cwWO->*cwPM;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<84>, decltype(result1)>);
+    cuda::std::same_as<cuda::std::__constant_wrapper<84>> decltype(auto) result1 = cwWO->*cwPM;
     static_assert(result1 == 84);
   }
 
