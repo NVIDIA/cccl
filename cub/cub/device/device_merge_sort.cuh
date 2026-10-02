@@ -27,6 +27,7 @@
 
 #include <cuda/__execution/require.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__type_traits/decay.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -134,7 +135,7 @@ private:
             typename ValueIteratorT,
             typename NumItemsT,
             typename CompareOpT,
-            typename TuningEnvT = ::cuda::std::execution::env<>>
+            typename TuningEnvT>
   CUB_RUNTIME_FUNCTION static auto select_tuning_and_dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -145,11 +146,11 @@ private:
     NumItemsT num_items,
     CompareOpT compare_op,
     cudaStream_t stream,
-    TuningEnvT = {})
+    TuningEnvT)
   {
     using default_policy_selector_t = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
-    using policy_selector_t =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, MergeSortPolicy, default_policy_selector_t>;
+    using policy_selector_t         = ::cuda::std::decay_t<
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT, MergeSortPolicy, default_policy_selector_t>>;
     return detail::merge_sort::dispatch(
       d_temp_storage,
       temp_storage_bytes,
@@ -249,7 +250,7 @@ public:
    *   is a model of [Random Access Iterator], and `ValueIteratorT` is mutable.
    *
    * @tparam NumItemsT
-   *   is an integer type for global offsets.
+   *   is an integer type for the number of items.
    *
    * @tparam CompareOpT
    *   is a type of callable object with the signature
@@ -341,7 +342,7 @@ public:
   //!   **[inferred]** Random-access iterator type for values @iterator
   //!
   //! @tparam NumItemsT
-  //!   **[inferred]** Integer type for offsets
+  //!   **[inferred]** Integer type for the number of items
   //!
   //! @tparam CompareOpT
   //!   **[inferred]** Comparison function object type
@@ -460,7 +461,7 @@ public:
    *   is a model of [Random Access Iterator], and `ValueIteratorT` is mutable.
    *
    * @tparam NumItemsT
-   *   is an integer type for global offsets.
+   *   is an integer type for the number of items.
    *
    * @tparam CompareOpT
    *   is a type of callable object with the signature
@@ -586,7 +587,7 @@ public:
   //!   **[inferred]** Random-access iterator type for output values @iterator
   //!
   //! @tparam NumItemsT
-  //!   **[inferred]** Integer type for offsets
+  //!   **[inferred]** Integer type for the number of items
   //!
   //! @tparam CompareOpT
   //!   **[inferred]** Comparison function object type
@@ -730,7 +731,7 @@ public:
    *   the [LessThan Comparable] requirements.
    *
    * @tparam NumItemsT
-   *   is an integer type for global offsets.
+   *   is an integer type for the number of items.
    *
    * @tparam CompareOpT
    *   is a type of callable object with the signature
@@ -811,7 +812,7 @@ public:
   //!   **[inferred]** Random-access iterator type for keys @iterator
   //!
   //! @tparam NumItemsT
-  //!   **[inferred]** Integer type for offsets
+  //!   **[inferred]** Integer type for the number of items
   //!
   //! @tparam CompareOpT
   //!   **[inferred]** Comparison function object type
@@ -946,7 +947,7 @@ public:
    *   the [LessThan Comparable] requirements.
    *
    * @tparam NumItemsT
-   *   is an integer type for global offsets.
+   *   is an integer type for the number of items.
    *
    * @tparam CompareOpT
    *   is a type of callable object with the signature
@@ -1041,7 +1042,7 @@ public:
   //!   **[inferred]** Random-access iterator type for output keys @iterator
   //!
   //! @tparam NumItemsT
-  //!   **[inferred]** Integer type for offsets
+  //!   **[inferred]** Integer type for the number of items
   //!
   //! @tparam CompareOpT
   //!   **[inferred]** Comparison function object type
@@ -1151,7 +1152,7 @@ public:
    *   is a model of [Random Access Iterator], and `ValueIteratorT` is mutable.
    *
    * @tparam NumItemsT
-   *   is an integer type for global offsets.
+   *   is an integer type for the number of items.
    *
    * @tparam CompareOpT
    *   is a type of callable object with the signature
@@ -1245,7 +1246,7 @@ public:
   //!   **[inferred]** Random-access iterator type for values @iterator
   //!
   //! @tparam NumItemsT
-  //!   **[inferred]** Integer type for offsets
+  //!   **[inferred]** Integer type for the number of items
   //!
   //! @tparam CompareOpT
   //!   **[inferred]** Comparison function object type
@@ -1346,7 +1347,7 @@ public:
    *   the [LessThan Comparable] requirements.
    *
    * @tparam NumItemsT
-   *   is an integer type for global offsets.
+   *   is an integer type for the number of items.
    *
    * @tparam CompareOpT
    *   is a type of callable object with the signature
@@ -1429,7 +1430,7 @@ public:
   //!   **[inferred]** Random-access iterator type for keys @iterator
   //!
   //! @tparam NumItemsT
-  //!   **[inferred]** Integer type for offsets
+  //!   **[inferred]** Integer type for the number of items
   //!
   //! @tparam CompareOpT
   //!   **[inferred]** Comparison function object type
@@ -1533,7 +1534,7 @@ public:
    *   the [LessThan Comparable] requirements.
    *
    * @tparam NumItemsT
-   *   is an integer type for global offsets.
+   *   is an integer type for the number of items.
    *
    * @tparam CompareOpT
    *   is a type of callable object with the signature
@@ -1628,7 +1629,7 @@ public:
   //!   **[inferred]** Random-access iterator type for output keys @iterator
   //!
   //! @tparam NumItemsT
-  //!   **[inferred]** Integer type for offsets
+  //!   **[inferred]** Integer type for the number of items
   //!
   //! @tparam CompareOpT
   //!   **[inferred]** Comparison function object type
