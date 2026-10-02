@@ -25,6 +25,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__algorithm/clamp.h>
@@ -781,7 +782,7 @@ struct WarpScanShfl
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   UpdatePartial([[maybe_unused]] T input, T& inclusive, T& exclusive, [[maybe_unused]] ScanOpT scan_op, int valid_items)
   {
-    if constexpr (::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>)
+    if constexpr (::cuda::std::is_integral_v<T> && ::cuda::__is_cuda_std_plus_v<ScanOpT, T>)
     {
       // initial value presumed 0
       if (static_cast<int>(lane_id) < valid_items)
@@ -835,7 +836,7 @@ struct WarpScanShfl
     // Get exclusive
     UpdatePartial(input, inclusive, exclusive, scan_op, valid_items);
 
-    if constexpr (!(::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>) )
+    if constexpr (!(::cuda::std::is_integral_v<T> && ::cuda::__is_cuda_std_plus_v<ScanOpT, T>) )
     {
       // Correct first element of exclusive
       if ((lane_id == 0u) && (valid_items > 0))

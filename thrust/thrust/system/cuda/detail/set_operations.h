@@ -178,7 +178,6 @@ balanced_path(It1 keys1, It2 keys2, Size num_keys1, Size num_keys2, Size diag, S
 
 template <int BlockThreads,
           int ItemsPerThread                    = 1,
-          cub::BlockLoadAlgorithm LoadAlgorithm = cub::BLOCK_LOAD_DIRECT,
           cub::CacheLoadModifier LoadModifier   = cub::LOAD_LDG,
           cub::BlockScanAlgorithm ScanAlgorithm = cub::BLOCK_SCAN_WARP_SCANS>
 struct PtxPolicy
@@ -187,7 +186,6 @@ struct PtxPolicy
   static constexpr int items_per_thread = ItemsPerThread;
   static constexpr int items_per_tile   = BlockThreads * ItemsPerThread - 1;
 
-  static const cub::BlockLoadAlgorithm load_algorithm = LoadAlgorithm;
   static const cub::CacheLoadModifier load_modifier   = LoadModifier;
   static const cub::BlockScanAlgorithm scan_algorithm = ScanAlgorithm;
 }; // PtxPolicy
@@ -208,8 +206,7 @@ struct Tuning<core::detail::sm52, T, U>
                                               ((nominal_4b_items_per_thread * 4) + combined_input_bytes - 1)
                                               / combined_input_bytes)));
 
-  using type =
-    PtxPolicy<256, items_per_thread, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
+  using type = PtxPolicy<256, items_per_thread, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
 }; // tuning sm52
 
 template <class T, class U>
@@ -225,13 +222,8 @@ struct Tuning<core::detail::sm60, T, U>
                                               ((nominal_4b_items_per_thread * 4) + combined_input_bytes - 1)
                                               / combined_input_bytes)));
 
-  using type =
-    PtxPolicy<512, items_per_thread, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
+  using type = PtxPolicy<512, items_per_thread, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
 }; // tuning sm60
-
-// a helper metaprogram that returns type of a block loader
-template <class PtxPlan, class It, class T = thrust::detail::it_value_t<It>>
-using BlockLoad = cub::BlockLoad<T, PtxPlan::block_threads, PtxPlan::items_per_thread, PtxPlan::load_algorithm, 1, 1>;
 
 template <class KeysIt1,
           class KeysIt2,
@@ -265,11 +257,6 @@ struct SetOpAgent
     using ValuesLoadIt1 = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::load_modifier, ValuesIt1>;
     using ValuesLoadIt2 = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::load_modifier, ValuesIt2>;
 
-    using BlockLoadKeys1   = BlockLoad<PtxPlan, KeysLoadIt1>;
-    using BlockLoadKeys2   = BlockLoad<PtxPlan, KeysLoadIt2>;
-    using BlockLoadValues1 = BlockLoad<PtxPlan, ValuesLoadIt1>;
-    using BlockLoadValues2 = BlockLoad<PtxPlan, ValuesLoadIt2>;
-
     using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, ::cuda::std::plus<>, ScanTileState>;
 
     using BlockScan = cub::BlockScan<Size, PtxPlan::block_threads, PtxPlan::scan_algorithm, 1, 1>;
@@ -289,12 +276,6 @@ struct SetOpAgent
         ::cuda::__uninitialized_array<int, PtxPlan::block_threads> offset;
         union
         {
-          // FIXME These don't appear to be used anywhere?
-          typename BlockLoadKeys1::TempStorage load_keys1;
-          typename BlockLoadKeys2::TempStorage load_keys2;
-          typename BlockLoadValues1::TempStorage load_values1;
-          typename BlockLoadValues2::TempStorage load_values2;
-
           // Allocate extra shmem than truly necessary
           // This will permit to avoid range checks in
           // serial set operations, e.g. serial_set_difference
@@ -312,11 +293,6 @@ struct SetOpAgent
   using KeysLoadIt2   = typename ptx_plan::KeysLoadIt2;
   using ValuesLoadIt1 = typename ptx_plan::ValuesLoadIt1;
   using ValuesLoadIt2 = typename ptx_plan::ValuesLoadIt2;
-
-  using BlockLoadKeys1   = typename ptx_plan::BlockLoadKeys1;
-  using BlockLoadKeys2   = typename ptx_plan::BlockLoadKeys2;
-  using BlockLoadValues1 = typename ptx_plan::BlockLoadValues1;
-  using BlockLoadValues2 = typename ptx_plan::BlockLoadValues2;
 
   using TilePrefixCallback = typename ptx_plan::TilePrefixCallback;
   using BlockScan          = typename ptx_plan::BlockScan;

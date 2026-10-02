@@ -223,7 +223,7 @@ struct BlockReduceWarpReductions
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
     // The atomic accumulation of warp aggregates is only valid for addition
-    if constexpr (IsDeterministic || !is_cuda_std_plus_v<ReductionOp, T>)
+    if constexpr (IsDeterministic || !::cuda::__is_cuda_std_plus_v<ReductionOp, T>)
     {
       return ApplyWarpAggregates<FullTile>(reduction_op, warp_aggregate, num_valid);
     }

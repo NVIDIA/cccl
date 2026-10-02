@@ -273,7 +273,7 @@ constexpr _CCCL_HOST_DEVICE primitive_accum is_primitive_accum()
 template <class ScanOpT>
 constexpr _CCCL_HOST_DEVICE primitive_op is_primitive_op()
 {
-  return basic_binary_op_t<ScanOpT>::value ? primitive_op::yes : primitive_op::no;
+  return basic_binary_op_v<ScanOpT> ? primitive_op::yes : primitive_op::no;
 }
 
 // TODO(bgruber): remove this in CCCL 4.0 when we remove the public scan dispatcher
