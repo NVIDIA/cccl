@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_three_way_partition.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_three_way_partition.cuh>

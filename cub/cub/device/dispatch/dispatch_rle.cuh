@@ -21,7 +21,9 @@
 #endif // no system header
 
 #include <cub/agent/agent_rle.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/non_void_value.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_non_trivial_runs.cuh>
 #include <cub/thread/thread_operators.cuh>

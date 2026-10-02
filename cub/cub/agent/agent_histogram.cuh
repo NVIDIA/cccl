@@ -19,6 +19,7 @@
 #endif // no system header
 
 #include <cub/block/block_load.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>

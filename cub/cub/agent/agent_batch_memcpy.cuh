@@ -25,6 +25,8 @@
 #include <cub/block/block_run_length_decode.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/lazy_trait.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 

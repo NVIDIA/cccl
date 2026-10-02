@@ -19,11 +19,11 @@
 
 #include <cub/agent/agent_find_bound_sorted_values.cuh>
 #include <cub/block/block_merge_sort.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/tuning/tuning_find_bound_sorted_values.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 

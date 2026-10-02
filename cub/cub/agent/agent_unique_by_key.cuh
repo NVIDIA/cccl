@@ -23,6 +23,7 @@
 #include <cub/block/block_discontinuity.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/thread/thread_operators.cuh>
 
 #include <cuda/__memory/as_uninitialized_bytes.h>

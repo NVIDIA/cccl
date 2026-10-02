@@ -19,6 +19,8 @@
 
 #include <cub/agent/agent_batch_memcpy.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/lazy_trait.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>

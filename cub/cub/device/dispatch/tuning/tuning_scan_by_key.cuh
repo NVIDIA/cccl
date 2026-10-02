@@ -19,6 +19,7 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_device.cuh>

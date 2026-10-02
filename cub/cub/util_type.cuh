@@ -19,6 +19,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/it_traits.cuh> // IWYU pragma: export
+#include <cub/detail/lazy_trait.cuh> // IWYU pragma: export
+#include <cub/detail/non_void_value.cuh> // IWYU pragma: export
 #include <cub/detail/type_traits.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 
@@ -47,23 +50,6 @@ CUB_NAMESPACE_BEGIN
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
-// the following iterator helpers are not named iter_value_t etc, like the C++20 facilities, because they are defined in
-// terms of C++17 iterator_traits and not the new C++20 indirectly_readable trait etc. This allows them to detect nested
-// value_type, difference_type and reference aliases, which the new C+20 traits do not consider (they only consider
-// specializations of iterator_traits). Also, a value_type of void remains supported (needed by some output iterators).
-
-template <typename It>
-using it_value_t = typename ::cuda::std::iterator_traits<It>::value_type;
-
-template <typename It>
-using it_reference_t = typename ::cuda::std::iterator_traits<It>::reference;
-
-template <typename It>
-using it_difference_t = typename ::cuda::std::iterator_traits<It>::difference_type;
-
-template <typename It>
-using it_pointer_t = typename ::cuda::std::iterator_traits<It>::pointer;
-
 // Like sizeof(T) but works for void (yields 0)
 template <typename T>
 inline constexpr size_t size_of = sizeof(T);
@@ -77,39 +63,6 @@ inline constexpr size_t align_of = alignof(T);
 
 template <>
 inline constexpr size_t align_of<void> = 0;
-
-// use this whenever you need to lazily evaluate a trait. E.g., as an alternative in replace_if_use_default.
-template <template <typename...> typename Trait, typename... Args>
-struct lazy_trait
-{
-  using type = Trait<Args...>;
-};
-
-template <typename It, typename FallbackT, bool = ::cuda::std::is_void_v<::cuda::std::remove_pointer_t<It>>>
-struct non_void_value_impl
-{
-  using type = FallbackT;
-};
-
-template <typename It, typename FallbackT>
-struct non_void_value_impl<It, FallbackT, false>
-{
-  // we consider thrust::discard_iterator's value_type (`any_assign`) as `void` as well, so users can switch from
-  // cub::DiscardInputIterator to thrust::discard_iterator.
-  using type = ::cuda::std::_If<::cuda::std::is_void_v<it_value_t<It>>
-                                  || ::cuda::std::is_same_v<it_value_t<It>, THRUST_NS_QUALIFIER::detail::any_assign>,
-                                FallbackT,
-                                it_value_t<It>>;
-};
-
-/**
- * The output value type
- * type = (if IteratorT's value type is void) ?
- * ... then the FallbackT,
- * ... else the IteratorT's value type
- */
-template <typename It, typename FallbackT>
-using non_void_value_t = typename non_void_value_impl<It, FallbackT>::type;
 } // namespace detail
 
 /******************************************************************************

@@ -14,11 +14,11 @@
 #endif // no system header
 
 #include <cub/detail/deferred_parameter.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/rfa.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 

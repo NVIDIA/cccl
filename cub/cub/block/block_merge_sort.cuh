@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/it_traits.cuh>
 #include <cub/thread/thread_sort.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
