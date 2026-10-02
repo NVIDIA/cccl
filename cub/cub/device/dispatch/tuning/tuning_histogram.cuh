@@ -129,7 +129,6 @@ struct HistogramPolicy
   int high_bin_cache_cuckoo_max_histogram_bytes      = 1048576;
   int high_bin_pixels_per_thread                     = 4;
   int high_bin_threads_per_block                     = 0; //!< High-bin block size; 0 inherits threads_per_block
-  int high_bin_interpolation_min_level_bytes         = 2052;
   int high_bin_min_histogram_bytes                   = 0;
   //! Target resident cooperative blocks per SM. Zero keeps the occupancy-derived grid and a one-block launch bound.
   int high_bin_blocks_per_sm = 0;
@@ -168,7 +167,6 @@ struct HistogramPolicy
         && lhs.high_bin_cache_cuckoo_max_histogram_bytes == rhs.high_bin_cache_cuckoo_max_histogram_bytes
         && lhs.high_bin_pixels_per_thread == rhs.high_bin_pixels_per_thread
         && lhs.high_bin_threads_per_block == rhs.high_bin_threads_per_block
-        && lhs.high_bin_interpolation_min_level_bytes == rhs.high_bin_interpolation_min_level_bytes
         && lhs.high_bin_min_histogram_bytes == rhs.high_bin_min_histogram_bytes
         && lhs.high_bin_blocks_per_sm == rhs.high_bin_blocks_per_sm
         && lhs.high_bin_grid_pixels_per_block == rhs.high_bin_grid_pixels_per_block;
@@ -194,10 +192,8 @@ struct HistogramPolicy
         << ", .high_bin_cache_bytes_per_channel = " << p.high_bin_cache_bytes_per_channel
         << ", .high_bin_cache_count_replicas = " << p.high_bin_cache_count_replicas
         << ", .high_bin_cache_cuckoo_max_histogram_bytes = " << p.high_bin_cache_cuckoo_max_histogram_bytes
-        << ", .high_bin_pixels_per_thread = " << p.high_bin_pixels_per_thread
-        << ", .high_bin_threads_per_block = " << p.high_bin_threads_per_block
-        << ", .high_bin_interpolation_min_level_bytes = " << p.high_bin_interpolation_min_level_bytes
-        << ", .high_bin_min_histogram_bytes = " << p.high_bin_min_histogram_bytes
+        << ", .high_bin_pixels_per_thread = " << p.high_bin_pixels_per_thread << ", .high_bin_threads_per_block = "
+        << p.high_bin_threads_per_block << ", .high_bin_min_histogram_bytes = " << p.high_bin_min_histogram_bytes
         << ", .high_bin_blocks_per_sm = " << p.high_bin_blocks_per_sm
         << ", .high_bin_grid_pixels_per_block = " << p.high_bin_grid_pixels_per_block << " }";
   }

@@ -1195,15 +1195,12 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
     if (max_num_output_bins > max_privatized_smem_bins)
     {
       // Too many bins to keep in shared memory.
-      constexpr int PrivatizedSmemBins     = 0;
-      using PrivatizedDecodeOpT            = typename TransformsT::template SearchTransform<const LevelT*>;
-      using CooperativePrivatizedDecodeOpT = typename TransformsT::template CachedSearchTransform<const LevelT*>;
+      constexpr int PrivatizedSmemBins = 0;
+      using PrivatizedDecodeOpT        = typename TransformsT::template SearchTransform<const LevelT*>;
       ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op{};
-      ::cuda::std::array<CooperativePrivatizedDecodeOpT, NumActiveChannels> cooperative_privatized_decode_op{};
       for (int channel = 0; channel < NumActiveChannels; ++channel)
       {
         privatized_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
-        cooperative_privatized_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
       }
 
       if (const auto error = CubDebug(
@@ -1221,7 +1218,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
               num_output_levels,
               output_decode_op,
               privatized_decode_op,
-              cooperative_privatized_decode_op,
+              privatized_decode_op,
               max_num_output_bins,
               num_row_pixels,
               num_rows,
