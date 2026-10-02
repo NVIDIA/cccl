@@ -63,6 +63,22 @@ void test_allocator_custom_copy_construct(size_t n)
 }
 DECLARE_VARIABLE_UNITTEST(test_allocator_custom_copy_construct);
 
+template <typename T>
+void test_allocator_custom_emplace_back(size_t n)
+{
+  // expected result
+  const thrust::device_vector<T> ref(n, 13);
+  thrust::device_vector<T, my_allocator_with_custom_construct2<T>> vec;
+
+  for (size_t i = 0; i < n; ++i)
+  {
+    // emplace back with custom allocator overwrites the value (7) with 13.
+    vec.emplace_back(T(7));
+  }
+  REQUIRE(ref == vec);
+}
+DECLARE_VARIABLE_UNITTEST(test_allocator_custom_emplace_back);
+
 #endif // !WAR_BUG_1731
 
 // The has_member_destroy trait depends on has_member_function:
