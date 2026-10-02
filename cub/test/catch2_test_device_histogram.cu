@@ -1069,12 +1069,13 @@ CUB_TEST("DeviceHistogram::HistogramRange byte samples with wide bins",
   for (int channel = 0; channel < num_active_channels; ++channel)
   {
     // Channel zero covers the whole domain; other channels also exercise out-of-range samples.
-    const float lower = static_cast<float>(std::numeric_limits<sample_t>::lowest()) + channel * 16;
-    const float upper = static_cast<float>(std::numeric_limits<sample_t>::max()) + 1 - channel * 16;
+    const float channel_offset = static_cast<float>(channel * 16);
+    const float lower          = static_cast<float>(std::numeric_limits<sample_t>::lowest()) + channel_offset;
+    const float upper          = static_cast<float>(std::numeric_limits<sample_t>::max()) + 1.0f - channel_offset;
     h_levels[channel].resize(num_bins + 1);
     for (int i = 0; i <= num_bins; ++i)
     {
-      h_levels[channel][i] = lower + (upper - lower) * (static_cast<float>(i) / num_bins);
+      h_levels[channel][i] = lower + (upper - lower) * (static_cast<float>(i) / static_cast<float>(num_bins));
     }
     d_levels[channel] = h_levels[channel];
     d_histogram[channel].resize(num_bins);

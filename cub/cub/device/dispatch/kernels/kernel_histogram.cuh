@@ -309,16 +309,16 @@ struct Transforms
     }
   };
 
-  // Shift signed byte samples into [0, 256) for privatization, and undo the shift before output decoding.
-  template <typename TransformT, int SampleOffset>
-  struct sample_offset_transform : TransformT
+  // Cast byte samples to nonnegative private bins and back to the sample type before output decoding.
+  template <typename TransformT, typename CastT>
+  struct sample_cast_transform : TransformT
   {
     template <CacheLoadModifier LoadModifier, typename Sample>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
     {
       if (valid)
       {
-        TransformT::template BinSelect<LoadModifier>(static_cast<int>(sample) + SampleOffset, bin, valid);
+        TransformT::template BinSelect<LoadModifier>(static_cast<CastT>(sample), bin, valid);
       }
     }
   };

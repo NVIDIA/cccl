@@ -804,14 +804,14 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
     using pass_thru_transform = typename TransformsT::PassThruTransform;
     using search_transform    = typename TransformsT::template SearchTransform<const LevelT*>;
 
-    // Keep all 256 signed byte values in nonnegative private bins, then recover the sample before searching levels.
-    using PrivatizedDecodeOpT =
-      ::cuda::std::conditional_t<::cuda::std::is_signed_v<SampleT>,
-                                 typename TransformsT::template sample_offset_transform<pass_thru_transform, 128>,
-                                 pass_thru_transform>;
+    // Store signed byte samples in unsigned byte bins, then recover signed values before searching levels.
+    using PrivatizedDecodeOpT = ::cuda::std::conditional_t<
+      ::cuda::std::is_signed_v<SampleT>,
+      typename TransformsT::template sample_cast_transform<pass_thru_transform, unsigned char>,
+      pass_thru_transform>;
     using OutputDecodeOpT =
       ::cuda::std::conditional_t<::cuda::std::is_signed_v<SampleT>,
-                                 typename TransformsT::template sample_offset_transform<search_transform, -128>,
+                                 typename TransformsT::template sample_cast_transform<search_transform, SampleT>,
                                  search_transform>;
 
     ::cuda::std::array<int, NumActiveChannels> num_privatized_levels;
