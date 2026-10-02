@@ -42,6 +42,12 @@ if TYPE_CHECKING:
         scan,
     )
     from ._group._shuffle import shuffle
+    from ._group._topk import (
+        topk_max_keys,
+        topk_max_pairs,
+        topk_min_keys,
+        topk_min_pairs,
+    )
     from ._stateful_function import StatefulFunction
     from ._thread_data import local, shared
 
@@ -77,6 +83,10 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]
 
 
@@ -96,6 +106,10 @@ def __getattr__(name):
         "scan",
         "shuffle",
         "sum",
+        "topk_max_keys",
+        "topk_max_pairs",
+        "topk_min_keys",
+        "topk_min_pairs",
     }:
         module_name = {
             "merge_sort_keys": "_group._merge_sort",
@@ -112,6 +126,10 @@ def __getattr__(name):
             "scan": "_group._scan",
             "shuffle": "_group._shuffle",
             "sum": "_group._reduce",
+            "topk_max_keys": "_group._topk",
+            "topk_max_pairs": "_group._topk",
+            "topk_min_keys": "_group._topk",
+            "topk_min_pairs": "_group._topk",
         }[name]
         value = getattr(
             importlib.import_module(f"{__name__}.{module_name}"), name

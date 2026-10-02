@@ -28,6 +28,12 @@ from .thread_group import (
     this_thread,
     this_warp,
 )
+from .topk import (
+    topk_max_keys,
+    topk_max_pairs,
+    topk_min_keys,
+    topk_min_pairs,
+)
 
 # Descriptor constructors and group factories do not use the family
 # registration decorator. The Numba rewrite recognizes their exact exported
@@ -73,4 +79,8 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]

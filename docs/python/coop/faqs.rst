@@ -159,7 +159,7 @@ barriers automatically. See :ref:`exclusive scratch slices
 <coop-faq-exclusive-storage>` for the tradeoff between memory and reuse
 synchronization.
 
-The current backend accepts explicit descriptors for block transpose-family Load/Store, Block Scan, Block Merge Sort, Block Radix Sort.
+The current backend accepts explicit descriptors for block transpose-family Load/Store, Block Scan, Block Merge Sort, Block Radix Sort, TopK.
 Warp operations use compiler-owned scratch. See
 :ref:`temporary storage <coop-temp-storage>` for the complete contract and
 shared-memory restrictions.
@@ -188,6 +188,17 @@ It works regardless of import order, is safe to repeat, and also accepts
 ``"numba_cuda_mlir"``. The backend dependencies must already be installed.
 See :ref:`backend registration <coop-backend-registration>`.
 
+.. _coop-faq-topk-order:
+
+Does TopK return sorted results?
+--------------------------------
+
+No. It selects the smallest or largest keys and places them in a blocked
+output prefix without promising their order. Only the first
+``min(k, valid_items)`` positions are defined, and ties at the boundary
+have no ordering guarantee. Pair variants keep each selected key attached
+to its value. Use a sorting primitive when you need ordered output.
+See :ref:`the TopK example <coop-topk>`.
 
 .. _coop-faq-global-sort:
 
