@@ -703,8 +703,6 @@ struct lookahead_scan_closure
 
       warpspeed::squadStoreSmem(
         squad, reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.smemStartSkipBytes), regAggrInclusive);
-      // The store squad issues the TMA store once all threads of this squad released refInOutRW. No fence to the async
-      // proxy is needed here, because squadStoreBulkSync fences before issuing the store.
     }
     else
     {
@@ -740,8 +738,8 @@ struct lookahead_scan_closure
       }
     }
 
-    // Release refInOut. The store squad (or this squad for chunked stores) issues the TMA stores, which are async
-    // proxy like the TMA load in the load squad.
+    // Release refInOut. Will be reused by the load squad for another tile in the async proxy as well, so no fence
+    // needed.
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void store_tile(
