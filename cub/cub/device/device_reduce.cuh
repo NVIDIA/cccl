@@ -33,6 +33,7 @@
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
+#include <cub/device/dispatch/dispatch_reduce_non_commutative.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_type.cuh>
@@ -401,7 +402,7 @@ public:
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //!
-  //! - Does not support binary reduction operators that are non-commutative.
+  //! - Does not support binary reduction operators that are non-commutative. Use ``ReduceNonCommutative`` for those.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
   //!   However, results for pseudo-associative reduction may be inconsistent
@@ -529,7 +530,7 @@ public:
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //!
-  //! - Does not support binary reduction operators that are non-commutative.
+  //! - Does not support binary reduction operators that are non-commutative. Use ``ReduceNonCommutative`` for those.
   //! - By default, provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
   //!   However, results for pseudo-associative reduction may be inconsistent
@@ -613,6 +614,250 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Reduce");
     return __transform_reduce(d_in, d_out, num_items, reduction_op, ::cuda::std::identity{}, init, env);
+  }
+
+private:
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename T,
+            typename NumItemsT,
+            typename EnvT>
+  CUB_RUNTIME_FUNCTION static cudaError_t __reduce_non_commutative(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumItemsT num_items,
+    ReductionOpT reduction_op,
+    T init,
+    const EnvT& env)
+  {
+    static_assert(__validate_determinism_streaming_reduce<EnvT>(), "gpu_to_gpu determinism is not supported");
+
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using accum_t  = decltype(detail::reduce::select_accum_t<InputIteratorT, T, ReductionOpT, ::cuda::std::identity>(
+      static_cast<detail::use_default*>(nullptr)));
+    using default_policy_selector = detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::reduce_non_commutative::dispatch(
+          storage,
+          bytes,
+          d_in,
+          d_out,
+          static_cast<offset_t>(num_items),
+          reduction_op,
+          init,
+          stream,
+          ::cuda::std::identity{},
+          policy_selector);
+      });
+  }
+
+public:
+  //! @rst
+  //! Computes a device-wide reduction using a binary ``reduction_op`` functor that is associative but not necessarily
+  //! commutative, and an initial value ``init``.
+  //!
+  //! .. versionadded:: 3.6.0
+  //!
+  //! - The result is the left fold
+  //!   ``reduction_op(...reduction_op(reduction_op(init, d_in[0]), d_in[1])..., d_in[num_items - 1])``,
+  //!   computed in parallel by grouping the operands differently, so ``reduction_op`` must be associative.
+  //!   Every application of ``reduction_op`` combines two neighboring runs of the input with the earlier run as its
+  //!   first argument, so ``reduction_op`` does not need to be commutative (e.g., matrix multiplication or function
+  //!   composition).
+  //! - For commutative operators, ``Reduce`` may be faster.
+  //! - Provides "run-to-run" determinism for pseudo-associative reduction
+  //!   (e.g., addition of floating point types) on the same GPU device.
+  //!   However, results for pseudo-associative reduction may be inconsistent
+  //!   from one device to another device of a different compute-capability
+  //!   because CUB can employ different tile-sizing for different architectures.
+  //!   Requesting ``cuda::execution::determinism::gpu_to_gpu`` is not supported.
+  //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below parses a sequence of decimal digits into a number. Each item is a number together with
+  //! the power of ten it spans, and appending one to another depends on which comes first.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_non_commutative_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin reduce-non-commutative-op
+  //!     :end-before: example-end reduce-non-commutative-op
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_non_commutative_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin reduce-non-commutative-two-phase
+  //!     :end-before: example-end reduce-non-commutative-two-phase
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @tparam ReductionOpT
+  //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam T
+  //!   **[inferred]** Data element type that is convertible to the `value` type of `InputIteratorT`
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in] d_temp_storage
+  //!   @devicestorage
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of ``d_in``)
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction functor
+  //!
+  //! @param[in] init
+  //!   Initial value of the reduction, applied as the first operand
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename T,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static cudaError_t ReduceNonCommutative(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumItemsT num_items,
+    ReductionOpT reduction_op,
+    T init,
+    const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ReduceNonCommutative");
+    return __reduce_non_commutative(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, env);
+  }
+
+  //! @rst
+  //! Computes a device-wide reduction using a binary ``reduction_op`` functor that is associative but not necessarily
+  //! commutative, and an initial value ``init``.
+  //!
+  //! .. versionadded:: 3.6.0
+  //!
+  //! - The result is the left fold
+  //!   ``reduction_op(...reduction_op(reduction_op(init, d_in[0]), d_in[1])..., d_in[num_items - 1])``,
+  //!   computed in parallel by grouping the operands differently, so ``reduction_op`` must be associative.
+  //!   Every application of ``reduction_op`` combines two neighboring runs of the input with the earlier run as its
+  //!   first argument, so ``reduction_op`` does not need to be commutative (e.g., matrix multiplication or function
+  //!   composition).
+  //! - For commutative operators, ``Reduce`` may be faster.
+  //! - Provides "run-to-run" determinism for pseudo-associative reduction
+  //!   (e.g., addition of floating point types) on the same GPU device.
+  //!   However, results for pseudo-associative reduction may be inconsistent
+  //!   from one device to another device of a different compute-capability
+  //!   because CUB can employ different tile-sizing for different architectures.
+  //!   Requesting ``cuda::execution::determinism::gpu_to_gpu`` is not supported.
+  //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below parses a sequence of decimal digits into a number. Each item is a number together with
+  //! the power of ten it spans, and appending one to another depends on which comes first.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_non_commutative_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin reduce-non-commutative-op
+  //!     :end-before: example-end reduce-non-commutative-op
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_non_commutative_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin reduce-non-commutative-env
+  //!     :end-before: example-end reduce-non-commutative-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @tparam ReductionOpT
+  //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam T
+  //!   **[inferred]** Data element type that is convertible to the `value` type of `InputIteratorT`
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of ``d_in``)
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction functor
+  //!
+  //! @param[in] init
+  //!   Initial value of the reduction, applied as the first operand
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename T,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ReduceNonCommutative(
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumItemsT num_items,
+    ReductionOpT reduction_op,
+    T init,
+    const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ReduceNonCommutative");
+    return detail::dispatch_with_env(env, [&](auto, void* storage, size_t& bytes, cudaStream_t) {
+      return __reduce_non_commutative(storage, bytes, d_in, d_out, num_items, reduction_op, init, env);
+    });
   }
 
   //! @rst
