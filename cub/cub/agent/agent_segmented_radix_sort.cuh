@@ -16,9 +16,9 @@
 #include <cub/agent/agent_radix_sort_downsweep.cuh>
 #include <cub/agent/agent_radix_sort_upsweep.cuh>
 #include <cub/block/block_radix_sort.cuh>
+#include <cub/detail/constant.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/util_namespace.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__memory/as_uninitialized_bytes.h>
 

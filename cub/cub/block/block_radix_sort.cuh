@@ -23,9 +23,9 @@
 #include <cub/block/block_exchange.cuh>
 #include <cub/block/block_radix_rank.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/constant.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__algorithm/min.h>

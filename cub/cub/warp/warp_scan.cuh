@@ -20,8 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh>
 #include <cub/thread/thread_operators.cuh>
-#include <cub/util_type.cuh>
 #include <cub/warp/specializations/warp_scan_shfl.cuh>
 #include <cub/warp/specializations/warp_scan_smem.cuh>
 

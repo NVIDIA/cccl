@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cub/block/block_raking_layout.cuh>
+#include <cub/detail/constant.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/thread/thread_scan.cuh>

@@ -17,6 +17,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 

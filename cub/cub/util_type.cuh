@@ -19,6 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh> // IWYU pragma: export
 #include <cub/detail/it_traits.cuh> // IWYU pragma: export
 #include <cub/detail/lazy_trait.cuh> // IWYU pragma: export
 #include <cub/detail/log2.cuh> // IWYU pragma: export
@@ -54,18 +55,6 @@ CUB_NAMESPACE_BEGIN
  ******************************************************************************/
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-
-namespace detail
-{
-template <bool Value>
-inline constexpr auto bool_constant_v = ::cuda::std::bool_constant<Value>{};
-
-template <auto Value>
-using constant_t = ::cuda::std::integral_constant<decltype(Value), Value>;
-
-template <auto Value>
-inline constexpr auto constant_v = constant_t<Value>{};
-} // namespace detail
 
 /**
  * \brief Allows algorithms that take a value as input to take a future value that is not computed yet at launch time.
