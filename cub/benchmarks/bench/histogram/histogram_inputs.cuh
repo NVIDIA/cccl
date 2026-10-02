@@ -3,6 +3,9 @@
 
 #pragma once
 
+// Deterministic input distributions shared by the single- and multi-channel histogram benchmarks. Each shape targets
+// a distinct cache or contention behavior while keeping generation outside the timed region.
+
 // Input generators for CUB histogram benchmarks. Each shape chooses a bin and
 // emits a sample from that bin's interval, allowing the benchmark verifier to
 // independently recover and validate the result.

@@ -80,6 +80,7 @@ SampleT get_lower_level()
   return SampleT{0};
 }
 
+//! Returns an upper level that leaves room for distinct integral bins while retaining a broad floating-point range.
 template <class SampleT, class OffsetT>
 SampleT get_upper_level(OffsetT bins, OffsetT elements)
 {
@@ -106,8 +107,10 @@ int64_t max_representable_bins()
   return ::cuda::std::numeric_limits<int64_t>::max();
 }
 
-// Optional benchmark correctness checks. Set CUB_BENCH_HISTOGRAM_VERIFY to
-// 1, true, yes, or on to compare each result with an independent reference.
+//! Returns whether the opt-in, untimed benchmark correctness pass is enabled.
+//!
+//! Set `CUB_BENCH_HISTOGRAM_VERIFY` to `1`, `true`, `yes`, or `on` to compare each result against an independent
+//! reference before NVBench starts timing the operation.
 
 inline bool bench_correctness_checks_enabled()
 {

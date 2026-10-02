@@ -10,6 +10,9 @@
 #include "../histogram_common.cuh"
 #include "../histogram_inputs.cuh"
 
+// Measures interleaved multi-channel HistogramRange workloads with deterministic, channel-specific nonuniform levels.
+// This covers both the search cost and contention patterns that are hidden by uniform random inputs.
+
 // %RANGE% TUNE_ITEMS ipt 7:24:1
 // %RANGE% TUNE_THREADS tpb 128:1024:32
 // %RANGE% TUNE_RLE_COMPRESS rle 0:1:1

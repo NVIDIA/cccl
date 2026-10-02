@@ -6,6 +6,9 @@
 #include "histogram_common.cuh"
 #include "histogram_inputs.cuh"
 
+// Measures single-channel HistogramEven across representative element counts, bin counts, and input distributions.
+// Optional correctness checking runs once outside the timed NVBench region.
+
 // %RANGE% TUNE_ITEMS ipt 4:28:1
 // %RANGE% TUNE_THREADS tpb 128:1024:32
 // %RANGE% TUNE_RLE_COMPRESS rle 0:1:1

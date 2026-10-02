@@ -10,6 +10,9 @@
 #include "histogram_common.cuh"
 #include "histogram_inputs.cuh"
 
+// Measures single-channel HistogramRange with deterministic nonuniform levels and representative input distributions.
+// Nonuniform levels ensure the benchmark exercises range search rather than the evenly-spaced fast path.
+
 // %RANGE% TUNE_ITEMS ipt 7:24:1
 // %RANGE% TUNE_THREADS tpb 128:1024:32
 // %RANGE% TUNE_RLE_COMPRESS rle 0:1:1
