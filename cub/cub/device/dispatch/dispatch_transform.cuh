@@ -18,13 +18,13 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/type_size.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/device/dispatch/dispatch_transform_tile_config.cuh>
 #include <cub/device/dispatch/kernels/kernel_transform.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>

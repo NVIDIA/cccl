@@ -23,13 +23,13 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/type_size.cuh>
 #include <cub/device/dispatch/tuning/tuning_find.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>

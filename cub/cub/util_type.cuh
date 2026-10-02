@@ -22,6 +22,7 @@
 #include <cub/detail/it_traits.cuh> // IWYU pragma: export
 #include <cub/detail/lazy_trait.cuh> // IWYU pragma: export
 #include <cub/detail/non_void_value.cuh> // IWYU pragma: export
+#include <cub/detail/type_size.cuh> // IWYU pragma: export
 #include <cub/detail/type_traits.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 
@@ -43,27 +44,8 @@
 
 CUB_NAMESPACE_BEGIN
 
-/******************************************************************************
- * Conditional types
- ******************************************************************************/
-
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-namespace detail
 {
-// Like sizeof(T) but works for void (yields 0)
-template <typename T>
-inline constexpr size_t size_of = sizeof(T);
-
-template <>
-inline constexpr size_t size_of<void> = 0;
-
-// Like alignof(T) but works for void (yields 0)
-template <typename T>
-inline constexpr size_t align_of = alignof(T);
-
-template <>
-inline constexpr size_t align_of<void> = 0;
-} // namespace detail
 
 /******************************************************************************
  * Static math
