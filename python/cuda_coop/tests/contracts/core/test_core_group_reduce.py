@@ -490,7 +490,7 @@ def test_grid_reduce_has_a_stable_hidden_workspace_rejection():
     )
 
 
-def test_portable_root_exports_reduce_and_sum():
+def test_common_root_exports_reduce_and_sum():
     from cuda import coop
 
     api = import_module("cuda.coop._core.api.reduce")

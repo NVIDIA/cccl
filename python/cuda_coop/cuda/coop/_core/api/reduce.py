@@ -8,10 +8,10 @@ from typing import Any
 
 from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
 from ._dispatch import (
-    _portable_group_operation,
+    _common_group_operation,
 )
 
-_PORTABLE_REDUCTION_GROUP_KINDS = (
+_COMMON_REDUCTION_GROUP_KINDS = (
     "thread",
     "warp",
     "threads_within_warp",
@@ -21,9 +21,9 @@ _PORTABLE_REDUCTION_GROUP_KINDS = (
 )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "reduce",
-    group_kinds=_PORTABLE_REDUCTION_GROUP_KINDS,
+    group_kinds=_COMMON_REDUCTION_GROUP_KINDS,
 )
 def reduce(
     group: ThreadGroup,
@@ -110,9 +110,9 @@ def reduce(
     )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "sum",
-    group_kinds=_PORTABLE_REDUCTION_GROUP_KINDS,
+    group_kinds=_COMMON_REDUCTION_GROUP_KINDS,
 )
 def sum(
     group: ThreadGroup,

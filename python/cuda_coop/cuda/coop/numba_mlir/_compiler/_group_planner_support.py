@@ -20,8 +20,8 @@ from __future__ import annotations
 from itertools import count
 from typing import TYPE_CHECKING, Any
 
-import cuda.coop._core.api as _portable_api
-import cuda.coop._core.api._dispatch as _portable_dispatch
+import cuda.coop._core.api as _common_api
+import cuda.coop._core.api._dispatch as _common_dispatch
 
 from .. import _thread_group as _thread_groups
 from ._operations import group_operation_name
@@ -45,19 +45,19 @@ _GROUP_CONSTRUCTORS = {
     _thread_groups.this_block: _thread_groups.this_block,
     _thread_groups.this_cluster: _thread_groups.this_cluster,
     _thread_groups.this_grid: _thread_groups.this_grid,
-    _portable_api.this_thread: _thread_groups.this_thread,
-    _portable_api.this_warp: _thread_groups.this_warp,
-    _portable_api.this_block: _thread_groups.this_block,
-    _portable_api.this_cluster: _thread_groups.this_cluster,
-    _portable_api.this_grid: _thread_groups.this_grid,
+    _common_api.this_thread: _thread_groups.this_thread,
+    _common_api.this_warp: _thread_groups.this_warp,
+    _common_api.this_block: _thread_groups.this_block,
+    _common_api.this_cluster: _thread_groups.this_cluster,
+    _common_api.this_grid: _thread_groups.this_grid,
 }
-_PORTABLE_GROUP_CONSTRUCTORS = frozenset(
+_COMMON_GROUP_CONSTRUCTORS = frozenset(
     {
-        _portable_api.this_thread,
-        _portable_api.this_warp,
-        _portable_api.this_block,
-        _portable_api.this_cluster,
-        _portable_api.this_grid,
+        _common_api.this_thread,
+        _common_api.this_warp,
+        _common_api.this_block,
+        _common_api.this_cluster,
+        _common_api.this_grid,
     }
 )
 _GROUP_METHODS = frozenset(
@@ -83,14 +83,12 @@ def _group_operation_name(function: object) -> str | None:
 
     operation = group_operation_name(function)
     if operation is None:
-        operation = _portable_dispatch._portable_group_operation_name(function)
+        operation = _common_dispatch._common_group_operation_name(function)
     return operation
 
 
 def _is_common_root_operation(function: object, operation: str) -> bool:
-    return (
-        _portable_dispatch._portable_group_operation_name(function) == operation
-    )
+    return _common_dispatch._common_group_operation_name(function) == operation
 
 
 def _typed_group_payload_like(

@@ -11,7 +11,7 @@ import numpy as np
 from typing_extensions import assert_type
 
 import cuda.coop.numba_mlir as coop
-from cuda import coop as portable_coop
+from cuda import coop as common_coop
 
 _ItemT = TypeVar("_ItemT")
 
@@ -191,7 +191,7 @@ def check_numba_surface(
     uint16_prefix_state = coop.ThreadData(items_per_thread=1, dtype=np.uint16)
     int64_prefix_state = coop.ThreadData(items_per_thread=1, dtype=np.int64)
     storage = coop.TempStorage(alignment=16, sharing="shared")
-    portable_storage = portable_coop.TempStorage(sharing="shared")
+    common_storage = common_coop.TempStorage(sharing="shared")
 
     assert_type(block, coop.ThreadGroup[Literal["block"]])
     assert_type(warp, coop.ThreadGroup[Literal["warp"]])
@@ -457,7 +457,7 @@ def check_numba_surface(
             block,
             readonly_values,
             algorithm="raking",
-            temp_storage=portable_storage,
+            temp_storage=common_storage,
         ),
         coop.ThreadDataLike[np.uint16],
     )

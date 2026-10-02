@@ -10,7 +10,7 @@ from typing import Any
 from ..block.radix import make_radix_bit_range
 from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
 from ._dispatch import (
-    _portable_group_operation,
+    _common_group_operation,
 )
 from ._payload import (
     TempStorageLike,
@@ -47,7 +47,7 @@ def _radix_bounds(operation, key_width, begin_bit, end_bit, radix_bits=None):
     return int(begin_bit), int(end_bit)
 
 
-@_portable_group_operation("radix_sort_keys", group_kinds=("block",))
+@_common_group_operation("radix_sort_keys", group_kinds=("block",))
 def radix_sort_keys(
     group: ThreadGroup,
     keys: Any,
@@ -102,7 +102,7 @@ def radix_sort_keys(
     )
 
 
-@_portable_group_operation("radix_sort_pairs", group_kinds=("block",))
+@_common_group_operation("radix_sort_pairs", group_kinds=("block",))
 def radix_sort_pairs(
     group: ThreadGroup,
     keys: Any,
@@ -158,7 +158,7 @@ def radix_sort_pairs(
     )
 
 
-@_portable_group_operation("radix_rank_keys", group_kinds=("block",))
+@_common_group_operation("radix_rank_keys", group_kinds=("block",))
 def radix_rank_keys(
     group: ThreadGroup,
     keys: Any,

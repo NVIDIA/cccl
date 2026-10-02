@@ -131,9 +131,9 @@ def test_scan_registers_all_spellings_results_and_provider_abis():
     )
 
 
-def test_public_signatures_keep_portable_surface_narrow_and_add_n6_callbacks():
+def test_public_signatures_keep_common_surface_narrow_and_add_n6_callbacks():
     import cuda.coop.numba_mlir as qualified
-    from cuda import coop as portable
+    from cuda import coop as common
 
     shared = {
         "scan": (
@@ -164,13 +164,11 @@ def test_public_signatures_keep_portable_surface_narrow_and_add_n6_callbacks():
         "inclusive_sum": ("group", "value", "algorithm", "temp_storage"),
     }
     for name, expected in shared.items():
-        portable_parameters = tuple(
-            signature(getattr(portable, name)).parameters
-        )
+        common_parameters = tuple(signature(getattr(common, name)).parameters)
         qualified_parameters = tuple(
             signature(getattr(qualified, name)).parameters
         )
-        assert portable_parameters == expected
+        assert common_parameters == expected
         assert qualified_parameters == (
             "group",
             "value",
@@ -555,7 +553,7 @@ def test_scan_prefix_validation_fails_during_planning(case: str, match: str):
         planner.run()
 
 
-@pytest.mark.parametrize("api", ("portable", "qualified"))
+@pytest.mark.parametrize("api", ("common", "qualified"))
 @pytest.mark.parametrize(
     ("parameter", "token"),
     (
@@ -575,10 +573,10 @@ def test_scan_planning_rejects_non_string_selectors_before_provider(
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as qualified
-    from cuda import coop as portable
+    from cuda import coop as common
     from cuda.coop.numba_mlir._compiler import _group_scan
 
-    coop = portable if api == "portable" else qualified
+    coop = common if api == "common" else qualified
     selector = (
         SimpleNamespace(value=token)
         if selector_kind == "object"
@@ -632,7 +630,7 @@ def test_private_scan_selector_validation_does_not_unwrap_value_objects():
             validate(value)
 
 
-@pytest.mark.parametrize("api", ("portable", "qualified"))
+@pytest.mark.parametrize("api", ("common", "qualified"))
 @pytest.mark.parametrize(
     ("alias", "canonical"),
     (
@@ -652,16 +650,16 @@ def test_shared_scan_operator_aliases_normalize_identically(
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as qualified
-    from cuda import coop as portable
+    from cuda import coop as common
     from cuda.coop.numba_mlir._lowering import _scan
 
-    coop = portable if api == "portable" else qualified
+    coop = common if api == "common" else qualified
 
     def kernel(value):
         return coop.inclusive_scan(coop.this_block(), value, scan_op=alias)
 
     func_ir, planner = _plan(kernel, arg_types=(types.int32,))
-    if api == "portable" and callable(alias):
+    if api == "common" and callable(alias):
         with pytest.raises(TypeError, match="scan_op must be a string"):
             planner.run()
         return
@@ -825,7 +823,7 @@ def test_block_thread_data_and_local_array_plan_out_of_place_with_storage(
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
+    "qualified", (False, True), ids=("common", "qualified")
 )
 def test_untyped_thread_data_scan_infers_writes_and_chains_into_store(
     qualified,
@@ -834,10 +832,10 @@ def test_untyped_thread_data_scan_infers_writes_and_chains_into_store(
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as qualified_coop
-    from cuda import coop as portable_coop
+    from cuda import coop as common_coop
     from cuda.coop.numba_mlir._lowering import _scan
 
-    coop = qualified_coop if qualified else portable_coop
+    coop = qualified_coop if qualified else common_coop
 
     def kernel(value, destination, items_per_thread):
         items = coop.ThreadData(items_per_thread)
@@ -891,11 +889,11 @@ def test_warp_planning_preserves_width_runtime_prefix_and_aggregate_position():
     )
 
 
-def test_qualified_callback_plans_for_block_and_warp_but_portable_rejects_it():
+def test_qualified_callback_plans_for_block_and_warp_but_common_rejects_it():
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as qualified
-    from cuda import coop as portable
+    from cuda import coop as common
     from cuda.coop.numba_mlir._lowering import _scan
 
     def combine(left, right):
@@ -919,12 +917,12 @@ def test_qualified_callback_plans_for_block_and_warp_but_portable_rejects_it():
     assert planner.run()
     assert _provider_call(func_ir, _scan.warp_scan)
 
-    def portable_kernel(value):
-        return portable.inclusive_scan(
-            portable.this_block(), value, scan_op=combine
+    def common_kernel(value):
+        return common.inclusive_scan(
+            common.this_block(), value, scan_op=combine
         )
 
-    _, planner = _plan(portable_kernel, arg_types=(types.int32,))
+    _, planner = _plan(common_kernel, arg_types=(types.int32,))
     with pytest.raises(TypeError, match="scan_op must be a string"):
         planner.run()
 

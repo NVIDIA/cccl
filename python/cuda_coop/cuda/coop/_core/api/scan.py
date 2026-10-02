@@ -8,16 +8,16 @@ from typing import Any
 
 from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
 from ._dispatch import (
-    _portable_group_operation,
+    _common_group_operation,
 )
 from ._payload import (
     TempStorageLike,
 )
 
-_PORTABLE_SCAN_GROUP_KINDS = ("block", "warp", "threads_within_warp")
+_COMMON_SCAN_GROUP_KINDS = ("block", "warp", "threads_within_warp")
 
 
-@_portable_group_operation("scan", group_kinds=_PORTABLE_SCAN_GROUP_KINDS)
+@_common_group_operation("scan", group_kinds=_COMMON_SCAN_GROUP_KINDS)
 def scan(
     group: ThreadGroup,
     value: object,
@@ -112,9 +112,9 @@ def scan(
     )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "exclusive_sum",
-    group_kinds=_PORTABLE_SCAN_GROUP_KINDS,
+    group_kinds=_COMMON_SCAN_GROUP_KINDS,
 )
 def exclusive_sum(
     group: ThreadGroup,
@@ -186,9 +186,9 @@ def exclusive_sum(
     )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "inclusive_sum",
-    group_kinds=_PORTABLE_SCAN_GROUP_KINDS,
+    group_kinds=_COMMON_SCAN_GROUP_KINDS,
 )
 def inclusive_sum(
     group: ThreadGroup,
@@ -262,9 +262,9 @@ def inclusive_sum(
     )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "exclusive_scan",
-    group_kinds=_PORTABLE_SCAN_GROUP_KINDS,
+    group_kinds=_COMMON_SCAN_GROUP_KINDS,
 )
 def exclusive_scan(
     group: ThreadGroup,
@@ -351,9 +351,9 @@ def exclusive_scan(
     )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "inclusive_scan",
-    group_kinds=_PORTABLE_SCAN_GROUP_KINDS,
+    group_kinds=_COMMON_SCAN_GROUP_KINDS,
 )
 def inclusive_scan(
     group: ThreadGroup,

@@ -429,7 +429,7 @@ def test_common_direct_block_load_store_lowers_to_private_factories(
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
+    "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("operation", ("load", "store"))
 @pytest.mark.parametrize(
@@ -498,7 +498,7 @@ def test_group_planner_selects_algorithm_storage_provider(
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
+    "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("operation", ("load", "store"))
 def test_group_planner_normalizes_algorithm_strings(
@@ -552,7 +552,7 @@ def test_group_planner_normalizes_algorithm_strings(
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
+    "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize(
     "logical_width", (None, 8), ids=("physical", "logical")
@@ -842,7 +842,7 @@ def test_qualified_store_recovers_keyword_local_array_extent():
 
 
 @pytest.mark.parametrize(
-    "qualified", [False, True], ids=["portable", "qualified"]
+    "qualified", [False, True], ids=["common", "qualified"]
 )
 @pytest.mark.parametrize(
     "group_factory",
@@ -888,7 +888,7 @@ def test_unsupported_load_group_returns_typed_plan_before_compile(
 
 
 @pytest.mark.parametrize(
-    "qualified", [False, True], ids=["portable", "qualified"]
+    "qualified", [False, True], ids=["common", "qualified"]
 )
 @pytest.mark.parametrize("operation", ["load", "store"])
 @pytest.mark.parametrize(
@@ -946,7 +946,7 @@ def test_warp_rejects_explicit_temp_storage_before_provider(
 
 
 @pytest.mark.parametrize(
-    "qualified", [False, True], ids=["portable", "qualified"]
+    "qualified", [False, True], ids=["common", "qualified"]
 )
 def test_incomplete_physical_warp_fails_before_provider_selection(
     monkeypatch, qualified
@@ -1082,7 +1082,7 @@ def test_storage_free_load_store_accept_temp_storage_without_using_it(
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
+    "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("alignment", (1, 16, 32))
 @pytest.mark.parametrize(
@@ -1251,7 +1251,7 @@ def test_transpose_storage_contract_reaches_whole_function_rewrite(
 
 
 @pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
+    "qualified", (False, True), ids=("common", "qualified")
 )
 def test_transpose_storage_contract_rejects_insufficient_capacity_before_codegen(  # noqa: E501 - Preserve descriptive test name.
     qualified,

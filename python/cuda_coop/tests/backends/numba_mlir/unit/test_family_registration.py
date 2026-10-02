@@ -12,14 +12,14 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
 @pytest.fixture(autouse=True)
 def _restore_private_registries():
-    from cuda.coop._core.api import _dispatch as portable_dispatch
+    from cuda.coop._core.api import _dispatch as common_dispatch
     from cuda.coop._core.group import _dispatch as core_dispatch
     from cuda.coop.numba_mlir._compiler import _operations
 
     registries = (
         core_dispatch._GROUP_OPERATION_FAMILIES,
-        portable_dispatch._PORTABLE_GROUP_OPERATIONS_BY_NAME,
-        portable_dispatch._PORTABLE_GROUP_OPERATIONS_BY_FUNCTION,
+        common_dispatch._COMMON_GROUP_OPERATIONS_BY_NAME,
+        common_dispatch._COMMON_GROUP_OPERATIONS_BY_FUNCTION,
         _operations._GROUP_OPERATIONS,
         _operations._GROUP_FAMILY_MODULES,
         _operations._FACTORY_OPERATIONS,

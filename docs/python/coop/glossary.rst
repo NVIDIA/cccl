@@ -48,6 +48,16 @@ Terms
       accept scalars or backend-specific arrays. See
       :ref:`thread data <coop-thread-data>`.
 
+   phi
+      A compiler intermediate representation (IR) operation that selects a
+      value where control-flow paths meet. If an ``if`` statement assigns
+      ``a`` to a variable on one branch and ``b`` on the other, a subsequent
+      use can be represented as ``phi(a, b)``: the value comes from the branch
+      that ran. This notation describes compiler IR, not a Python function
+      to call in a kernel. The Numba-CUDA-MLIR backend follows each incoming
+      value to check whether a thread-group or payload descriptor can still
+      be determined unambiguously after the branches join.
+
    batch
       One independent reduction in :func:`cuda.coop.reduce_batched`.
       Each lane contributes the value in the same local payload slot:

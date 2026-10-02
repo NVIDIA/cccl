@@ -8,7 +8,7 @@ from typing import Any
 
 from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
 from ._dispatch import (
-    _portable_group_operation,
+    _common_group_operation,
 )
 from ._payload import (
     TempStorageLike,
@@ -16,7 +16,7 @@ from ._payload import (
 )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "load",
     group_kinds=("block", "warp", "threads_within_warp"),
 )
@@ -115,7 +115,7 @@ def load(
     )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "store",
     group_kinds=("block", "warp", "threads_within_warp"),
 )

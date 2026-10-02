@@ -29,7 +29,7 @@ from numba_cuda_mlir.cuda.shared import array as _cuda_shared_array
 from numba_cuda_mlir.numba_cuda.core.errors import ForceLiteralArg
 
 from cuda.coop._core import StorageOwnership, SynchronizationScope
-from cuda.coop._core import api as _portable_api
+from cuda.coop._core import api as _common_api
 
 from .._temp_storage import TempStorage
 from .._thread_data import ThreadData, _normalize_thread_data_alignment
@@ -300,7 +300,7 @@ class _ProvenanceRewrite(Rewrite):
         return obj
 
     def _is_common_root_member(self, value, name: str) -> bool:
-        member = getattr(_portable_api, name)
+        member = getattr(_common_api, name)
         return (
             self._resolve_python_value(value) is member
             and getattr(member, "__cuda_coop_backend_member__", None) == name

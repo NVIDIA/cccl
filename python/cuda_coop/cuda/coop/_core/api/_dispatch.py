@@ -16,19 +16,19 @@ _CallableT = TypeVar("_CallableT", bound=Callable[..., object])
 
 
 @dataclass(frozen=True)
-class _PortableGroupOperation:
+class _CommonGroupOperation:
     name: str
     group_kinds: tuple[str, ...]
     function: Callable[..., object]
 
 
-_PORTABLE_GROUP_OPERATIONS_BY_NAME: dict[str, _PortableGroupOperation] = {}
-_PORTABLE_GROUP_OPERATIONS_BY_FUNCTION: dict[
-    Callable[..., object], _PortableGroupOperation
+_COMMON_GROUP_OPERATIONS_BY_NAME: dict[str, _CommonGroupOperation] = {}
+_COMMON_GROUP_OPERATIONS_BY_FUNCTION: dict[
+    Callable[..., object], _CommonGroupOperation
 ] = {}
 
 
-def _portable_group_operation(
+def _common_group_operation(
     name: str,
     *,
     group_kinds: tuple[str, ...],
@@ -43,33 +43,31 @@ def _portable_group_operation(
 
     if not name or not group_kinds:
         raise ValueError(
-            "portable group operations require a name and group kinds"
+            "common group operations require a name and group kinds"
         )
 
     def decorate(function: _CallableT) -> _CallableT:
-        registration = _PortableGroupOperation(
-            name, tuple(group_kinds), function
-        )
-        existing = _PORTABLE_GROUP_OPERATIONS_BY_NAME.get(name)
+        registration = _CommonGroupOperation(name, tuple(group_kinds), function)
+        existing = _COMMON_GROUP_OPERATIONS_BY_NAME.get(name)
         if existing is not None and existing != registration:
             raise RuntimeError(
-                f"portable group operation {name!r} is already registered"
+                f"common group operation {name!r} is already registered"
             )
-        existing_function = _PORTABLE_GROUP_OPERATIONS_BY_FUNCTION.get(function)
+        existing_function = _COMMON_GROUP_OPERATIONS_BY_FUNCTION.get(function)
         if existing_function is not None and existing_function != registration:
             raise RuntimeError(
-                f"portable group marker {function!r} is already registered"
+                f"common group marker {function!r} is already registered"
             )
-        _PORTABLE_GROUP_OPERATIONS_BY_NAME[name] = registration
-        _PORTABLE_GROUP_OPERATIONS_BY_FUNCTION[function] = registration
+        _COMMON_GROUP_OPERATIONS_BY_NAME[name] = registration
+        _COMMON_GROUP_OPERATIONS_BY_FUNCTION[function] = registration
         function.__cuda_coop_backend_member__ = name
         return function
 
     return decorate
 
 
-def _portable_group_operation_name(function: object) -> str | None:
-    registration = _PORTABLE_GROUP_OPERATIONS_BY_FUNCTION.get(function)
+def _common_group_operation_name(function: object) -> str | None:
+    registration = _COMMON_GROUP_OPERATIONS_BY_FUNCTION.get(function)
     return None if registration is None else registration.name
 
 
@@ -85,13 +83,13 @@ class UnsupportedCoopBackendOperationError(NotImplementedError):
         )
 
 
-def _portable_group_name(kind: str) -> str:
+def _common_group_name(kind: str) -> str:
     """Return the common API spelling for one internal group kind."""
 
     return "physical_warp" if kind == "warp" else kind
 
 
-def _validate_portable_operation_group(
+def _validate_common_operation_group(
     operation: str,
     group: ThreadGroup,
 ) -> None:
@@ -99,11 +97,11 @@ def _validate_portable_operation_group(
 
     Compiler adapters call this after reconstructing a symbolic group
     descriptor and before lowering a recognized common operation. The registry
-    defines the portable set of group kinds; a backend-qualified operation can
+    defines the common set of group kinds; a backend-qualified operation can
     support more kinds without broadening that common contract.
 
     The descriptor may still have unresolved launch dimensions. This check
-    validates only its type and group kind, not launch dimensions, collective
+    validates only its type and group kind, not launch dimensions, primitive
     participation, or backend implementation.
 
     Parameters
@@ -127,17 +125,17 @@ def _validate_portable_operation_group(
 
     if not isinstance(group, ThreadGroup):
         raise TypeError(f"cuda.coop.{operation} group must be a ThreadGroup")
-    registration = _PORTABLE_GROUP_OPERATIONS_BY_NAME.get(operation)
+    registration = _COMMON_GROUP_OPERATIONS_BY_NAME.get(operation)
     if registration is None:
         raise UnsupportedCoopBackendOperationError("cuda.coop", operation)
     supported = registration.group_kinds
     if group.kind in supported:
         return
-    group_name = _portable_group_name(group.kind)
-    supported_names = ", ".join(map(_portable_group_name, supported))
+    group_name = _common_group_name(group.kind)
+    supported_names = ", ".join(map(_common_group_name, supported))
     raise NotImplementedError(
         f"cuda.coop.{operation} does not support group kind {group_name!r} in "
-        f"the portable API; supported group kinds: {supported_names}; use a "
+        f"the common API; supported group kinds: {supported_names}; use a "
         "backend-qualified import for backend-specific group support"
     )
 

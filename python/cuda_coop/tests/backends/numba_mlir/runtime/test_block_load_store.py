@@ -92,7 +92,7 @@ def _sentinel(dtype: np.dtype) -> object:
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "module", (root_coop, qualified_coop), ids=("portable", "qualified")
+    "module", (root_coop, qualified_coop), ids=("common", "qualified")
 )
 def test_runtime_payload_index_reuses_one_specialization(
     module, *, items_per_thread
@@ -615,7 +615,7 @@ def _expected_stored_tile(
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
+    "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize(
@@ -656,7 +656,7 @@ def test_each_block_load_algorithm_matches_its_layout_oracle(
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
+    "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize(
@@ -801,7 +801,7 @@ def _partial_transpose_load_kernel(algorithm: str, qualified: bool):
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
+    "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize(
     "algorithm",
@@ -895,7 +895,7 @@ def _unguarded_wide_load_store_kernel(algorithm: str, qualified: bool):
 
 
 @pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
+    "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize(
     "algorithm", ("vectorize", "warp_transpose_timesliced")
@@ -1015,7 +1015,7 @@ def test_transpose_algorithms_reuse_caller_storage(
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "module", (root_coop, qualified_coop), ids=("portable", "qualified")
+    "module", (root_coop, qualified_coop), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("alignment", (1, np.int64(32)))
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
@@ -1052,7 +1052,7 @@ def test_transpose_storage_honors_minimum_alignment(
 
 
 @cuda.jit
-def _portable_grid_stride_load_store(source, destination, items_per_thread):
+def _common_grid_stride_load_store(source, destination, items_per_thread):
     tile_offset = cuda.blockIdx.x * (_THREADS * items_per_thread)
     grid_stride = cuda.gridDim.x * (_THREADS * items_per_thread)
     while tile_offset < source.size:
@@ -1112,7 +1112,7 @@ def _qualified_grid_stride_load_store(source, destination, items_per_thread):
 @pytest.mark.parametrize(
     "kernel",
     (
-        pytest.param(_portable_grid_stride_load_store, id="portable"),
+        pytest.param(_common_grid_stride_load_store, id="common"),
         pytest.param(_qualified_grid_stride_load_store, id="qualified"),
     ),
 )
@@ -1252,7 +1252,7 @@ def test_runtime_valid_items_out_of_range_traps_in_an_isolated_context(
 
 
 @cuda.jit
-def _portable_scalar_transpose_store(source, destination):
+def _common_scalar_transpose_store(source, destination):
     thread = cuda.threadIdx.x
     root_coop.store(
         root_coop.this_block(),
@@ -1262,11 +1262,11 @@ def _portable_scalar_transpose_store(source, destination):
     )
 
 
-def test_portable_scalar_transpose_store_matches_an_independent_oracle():
+def test_common_scalar_transpose_store_matches_an_independent_oracle():
     source = _values(np.dtype(np.int32), _THREADS, shift=23)
     destination = np.full(_THREADS, -1, dtype=np.int32)
 
-    _portable_scalar_transpose_store[1, _THREADS](source, destination)
+    _common_scalar_transpose_store[1, _THREADS](source, destination)
 
     np.testing.assert_array_equal(destination, source)
 
@@ -1586,7 +1586,7 @@ def test_direct_store_accepts_one_shared_descriptor_in_a_loop(
 
 
 @cuda.jit(device=True, inline=True)
-def _inlined_portable_load(source, observed, items_per_thread):
+def _inlined_common_load(source, observed, items_per_thread):
     thread = cuda.threadIdx.x
     payload = root_coop.ThreadData(items_per_thread, dtype=types.int32)
     root_coop.load(
@@ -1601,11 +1601,11 @@ def _inlined_portable_load(source, observed, items_per_thread):
 
 @cuda.jit
 def _load_through_inlined_device_helper(source, observed, items_per_thread):
-    _inlined_portable_load(source, observed, items_per_thread)
+    _inlined_common_load(source, observed, items_per_thread)
 
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_portable_load_is_planned_after_device_helper_inlining(
+def test_common_load_is_planned_after_device_helper_inlining(
     *, items_per_thread
 ):
     source = _values(

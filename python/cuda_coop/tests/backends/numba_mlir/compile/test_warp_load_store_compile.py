@@ -314,7 +314,7 @@ def test_logical_warp_widths_have_distinct_specializations_and_cache_keys(
 
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_production_routes_compile_portable_and_qualified_warp_kernels(
+def test_production_routes_compile_common_and_qualified_warp_kernels(
     monkeypatch: pytest.MonkeyPatch, items_per_thread
 ) -> None:
     import cuda.coop.numba_mlir as qualified_coop
@@ -365,7 +365,7 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
 
         return kernel
 
-    def portable_kernel(algorithm: str):
+    def common_kernel(algorithm: str):
         @compiler_cuda.jit(chip="sm_90")
         def kernel(
             load_source,
@@ -411,7 +411,7 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
     dispatchers = [
         (qualified, algorithm, factory(algorithm))
         for qualified, factory in (
-            (False, portable_kernel),
+            (False, common_kernel),
             (True, qualified_kernel),
         )
         for algorithm in ("direct", "transpose")
@@ -447,7 +447,7 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
 
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_production_routes_compile_portable_and_qualified_logical_warp_kernels(
+def test_production_routes_compile_common_and_qualified_logical_warp_kernels(
     monkeypatch: pytest.MonkeyPatch, items_per_thread
 ) -> None:
     import cuda.coop.numba_mlir as qualified_coop
@@ -483,7 +483,7 @@ def test_production_routes_compile_portable_and_qualified_logical_warp_kernels(
 
         return kernel
 
-    def portable_kernel(algorithm: str):
+    def common_kernel(algorithm: str):
         @compiler_cuda.jit(chip="sm_90")
         def kernel(source, destination, valid_items, offset, items_per_thread):
             group = root_coop.this_warp().group_by(8)
@@ -520,7 +520,7 @@ def test_production_routes_compile_portable_and_qualified_logical_warp_kernels(
     )
     launch_config_key = _production_launch_config_key()
     for algorithm in ("direct", "transpose"):
-        for factory in (portable_kernel, qualified_kernel):
+        for factory in (common_kernel, qualified_kernel):
             dispatcher = factory(algorithm)
             result = dispatcher._compile_launch_config_signature(
                 signature,
@@ -538,7 +538,7 @@ def test_production_routes_compile_portable_and_qualified_logical_warp_kernels(
 
 
 @pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
+    "qualified", (False, True), ids=("common", "qualified")
 )
 def test_warp_scalar_literal_store_compiles_with_destination_dtype(
     monkeypatch: pytest.MonkeyPatch,
@@ -579,7 +579,7 @@ def test_warp_scalar_literal_store_compiles_with_destination_dtype(
 
 
 @pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
+    "qualified", (False, True), ids=("common", "qualified")
 )
 def test_warp_scalar_runtime_expression_rejects_implicit_narrowing(
     monkeypatch: pytest.MonkeyPatch,

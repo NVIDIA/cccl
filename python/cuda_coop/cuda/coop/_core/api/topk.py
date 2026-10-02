@@ -8,12 +8,12 @@ from typing import Any
 
 from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
 from ._dispatch import (
-    _portable_group_operation,
+    _common_group_operation,
 )
 from ._payload import TempStorageLike
 
 
-@_portable_group_operation("topk_min_keys", group_kinds=("block",))
+@_common_group_operation("topk_min_keys", group_kinds=("block",))
 def topk_min_keys(
     group: ThreadGroup,
     keys: Any,
@@ -77,7 +77,7 @@ def topk_min_keys(
     )
 
 
-@_portable_group_operation("topk_min_pairs", group_kinds=("block",))
+@_common_group_operation("topk_min_pairs", group_kinds=("block",))
 def topk_min_pairs(
     group: ThreadGroup,
     keys: Any,
@@ -147,7 +147,7 @@ def topk_min_pairs(
     )
 
 
-@_portable_group_operation("topk_max_keys", group_kinds=("block",))
+@_common_group_operation("topk_max_keys", group_kinds=("block",))
 def topk_max_keys(
     group: ThreadGroup,
     keys: Any,
@@ -211,7 +211,7 @@ def topk_max_keys(
     )
 
 
-@_portable_group_operation("topk_max_pairs", group_kinds=("block",))
+@_common_group_operation("topk_max_pairs", group_kinds=("block",))
 def topk_max_pairs(
     group: ThreadGroup,
     keys: Any,

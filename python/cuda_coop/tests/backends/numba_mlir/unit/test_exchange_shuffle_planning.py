@@ -131,7 +131,7 @@ def test_exchange_and_shuffle_register_declarative_result_and_rewrite_contracts(
 
 def test_public_shuffle_markers_do_not_advertise_boundary_outputs():
     import cuda.coop.numba_mlir as qualified
-    from cuda import coop as portable
+    from cuda import coop as common
 
     assert tuple(signature(qualified.shuffle).parameters) == (
         "group",
@@ -139,7 +139,7 @@ def test_public_shuffle_markers_do_not_advertise_boundary_outputs():
         "mode",
         "distance",
     )
-    assert tuple(signature(portable.shuffle).parameters) == (
+    assert tuple(signature(common.shuffle).parameters) == (
         "group",
         "value",
         "mode",
@@ -147,7 +147,7 @@ def test_public_shuffle_markers_do_not_advertise_boundary_outputs():
     )
 
 
-@pytest.mark.parametrize("api", ("portable", "qualified"))
+@pytest.mark.parametrize("api", ("common", "qualified"))
 @pytest.mark.parametrize("mode_kind", ("value_object", "string_enum"))
 @pytest.mark.parametrize(
     ("operation", "valid_mode"),
@@ -163,10 +163,10 @@ def test_public_modes_reject_non_plain_strings_before_provider(
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as qualified
-    from cuda import coop as portable
+    from cuda import coop as common
     from cuda.coop.numba_mlir._compiler import _group_exchange, _group_shuffle
 
-    coop = portable if api == "portable" else qualified
+    coop = common if api == "common" else qualified
     mode = (
         SimpleNamespace(value=valid_mode)
         if mode_kind == "value_object"

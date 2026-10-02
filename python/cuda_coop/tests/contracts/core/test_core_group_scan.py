@@ -388,7 +388,7 @@ def test_static_warp_prefix_is_bounded_to_group_width(valid_items):
             _plan(this_warp().group_by(8), operation)
 
 
-def test_portable_scan_defers_to_compiler_activation_and_exports_root():
+def test_common_scan_defers_to_compiler_activation_and_exports_root():
     from cuda import coop
 
     api = import_module("cuda.coop._core.api.scan")
@@ -406,7 +406,7 @@ def test_portable_scan_defers_to_compiler_activation_and_exports_root():
         assert name in coop.__all__
 
 
-def test_portable_surface_keeps_qualified_only_scan_controls_out():
+def test_common_surface_keeps_qualified_only_scan_controls_out():
     api = import_module("cuda.coop._core.api.scan")
 
     with pytest.raises(TypeError, match="aggregate_output"):

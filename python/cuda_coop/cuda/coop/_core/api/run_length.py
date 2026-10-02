@@ -8,12 +8,12 @@ from typing import Any
 
 from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
 from ._dispatch import (
-    _portable_group_operation,
+    _common_group_operation,
 )
 from ._payload import TempStorageLike
 
 
-@_portable_group_operation("run_length_decode", group_kinds=("block",))
+@_common_group_operation("run_length_decode", group_kinds=("block",))
 def run_length_decode(
     group: ThreadGroup,
     run_values: Any,
@@ -80,7 +80,7 @@ def run_length_decode(
     )
 
 
-@_portable_group_operation("run_length_decode_into", group_kinds=("block",))
+@_common_group_operation("run_length_decode_into", group_kinds=("block",))
 def run_length_decode_into(
     group: ThreadGroup,
     run_values: Any,

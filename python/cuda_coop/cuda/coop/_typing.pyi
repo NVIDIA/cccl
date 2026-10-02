@@ -108,9 +108,9 @@ BlockExchangeMode: TypeAlias = (
     ]
 )
 WarpExchangeMode: TypeAlias = ExchangeMode
-PortableShuffleMode: TypeAlias = Literal["down", "up"]
+CommonShuffleMode: TypeAlias = Literal["down", "up"]
 ScalarShuffleMode: TypeAlias = Literal["offset", "rotate"]
-ShuffleMode: TypeAlias = PortableShuffleMode | ScalarShuffleMode
+ShuffleMode: TypeAlias = CommonShuffleMode | ScalarShuffleMode
 TempStorageSharing: TypeAlias = Literal["shared", "exclusive"]
 
 class CompilerScalarLike(Protocol):
@@ -129,7 +129,7 @@ class CompilerIntegerLike(CompilerScalarLike, Protocol):
 
     signed: bool
 
-PortableNumericScalar: TypeAlias = (
+CommonNumericScalar: TypeAlias = (
     int
     | float
     | numpy.int8
@@ -154,7 +154,7 @@ ContextualInitialValue: TypeAlias = (
     _ExactScalar[_ItemT] | _ExactScalar[int] | _ExactScalar[float]
 )
 _ReadableItemT_co = TypeVar(
-    "_ReadableItemT_co", bound=PortableNumericScalar, covariant=True
+    "_ReadableItemT_co", bound=CommonNumericScalar, covariant=True
 )
 ScalarValue: TypeAlias = (
     bool | int | float | complex | numpy.number | CompilerScalarLike
@@ -199,7 +199,7 @@ class ThreadDataLike(Protocol[_ItemT]):
     def __setitem__(self, index: int, value: _ItemT, /) -> None:
         """Replace one thread-local item."""
 
-class PortableThreadDataLike(Protocol[_ReadableItemT_co]):
+class CommonThreadDataLike(Protocol[_ReadableItemT_co]):
     """Thread payload whose readable items use the common API's numeric
     types.
     """
@@ -224,11 +224,11 @@ class TempStorageLike(Protocol):
 __all__ = [
     "BlockExchangeMode",
     "BlockLoadStoreAlgorithm",
+    "CommonShuffleMode",
     "ContextualInitialValue",
     "ExchangeMode",
     "LoadStoreAlgorithm",
     "NonSumScanOperator",
-    "PortableShuffleMode",
     "ReduceAlgorithm",
     "ReduceOperator",
     "ScalarShuffleMode",

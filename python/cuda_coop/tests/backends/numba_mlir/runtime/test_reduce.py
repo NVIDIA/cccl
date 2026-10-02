@@ -227,7 +227,7 @@ def _mixed_thread_data_builtins(source, observed, preserved, items_per_thread):
     for item in range(items_per_thread):
         payload[item] = source[thread * items_per_thread + item]
 
-    portable_sum = root_coop.sum(root_coop.this_block(), payload)
+    common_sum = root_coop.sum(root_coop.this_block(), payload)
     qualified_maximum = qualified_coop.reduce(
         qualified_coop.this_block(), payload, binary_op="max"
     )
@@ -241,7 +241,7 @@ def _mixed_thread_data_builtins(source, observed, preserved, items_per_thread):
         qualified_coop.this_block(), source[thread], binary_op="min"
     )
 
-    observed[0 * _BLOCK_THREADS + thread] = portable_sum
+    observed[0 * _BLOCK_THREADS + thread] = common_sum
     observed[1 * _BLOCK_THREADS + thread] = qualified_maximum
     observed[2 * _BLOCK_THREADS + thread] = qualified_xor
     observed[3 * _BLOCK_THREADS + thread] = qualified_or
@@ -252,7 +252,7 @@ def _mixed_thread_data_builtins(source, observed, preserved, items_per_thread):
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("dtype", _INTEGER_DTYPES)
-def test_consecutive_portable_and_qualified_builtins_preserve_thread_data(
+def test_consecutive_common_and_qualified_builtins_preserve_thread_data(
     dtype, *, items_per_thread
 ):
     source = _dtype_values(dtype, _BLOCK_THREADS * items_per_thread)

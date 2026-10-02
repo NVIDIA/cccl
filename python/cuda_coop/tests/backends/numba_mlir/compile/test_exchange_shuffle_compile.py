@@ -441,7 +441,7 @@ def test_production_kernel_compile_links_shared_storage_and_barriers(
     compiler_cuda = _production_compile_environment(monkeypatch)
 
     import cuda.coop.numba_mlir as qualified_coop
-    from cuda import coop as portable_coop
+    from cuda import coop as common_coop
 
     @compiler_cuda.jit(chip="sm_90")
     def kernel(source, destination, distance, items_per_thread):
@@ -449,13 +449,13 @@ def test_production_kernel_compile_links_shared_storage_and_barriers(
         payload = qualified_coop.ThreadData(items_per_thread, dtype=types.int32)
         for item in range(items_per_thread):
             payload[item] = source[thread * items_per_thread + item]
-        exchanged = portable_coop.exchange(
-            portable_coop.this_block(),
+        exchanged = common_coop.exchange(
+            common_coop.this_block(),
             payload,
             mode="blocked_to_striped",
         )
-        shifted = portable_coop.shuffle(
-            portable_coop.this_block(),
+        shifted = common_coop.shuffle(
+            common_coop.this_block(),
             exchanged,
             mode="up",
         )
@@ -505,20 +505,20 @@ def test_untyped_load_composes_directly_into_exchange(
     compiler_cuda = _production_compile_environment(monkeypatch)
 
     import cuda.coop.numba_mlir as qualified_coop
-    from cuda import coop as portable_coop
+    from cuda import coop as common_coop
 
     @compiler_cuda.jit(chip="sm_90")
     def kernel(source, destination, items_per_thread):
         thread = compiler_cuda.threadIdx.x
         payload = qualified_coop.ThreadData(items_per_thread)
-        portable_coop.load(
-            portable_coop.this_block(),
+        common_coop.load(
+            common_coop.this_block(),
             source,
             payload,
             algorithm="direct",
         )
-        exchanged = portable_coop.exchange(
-            portable_coop.this_block(),
+        exchanged = common_coop.exchange(
+            common_coop.this_block(),
             payload,
             mode="blocked_to_striped",
         )

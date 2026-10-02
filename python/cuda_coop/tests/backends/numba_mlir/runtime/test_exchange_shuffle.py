@@ -343,7 +343,7 @@ def _structured_exchange_kernel(
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
+    "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("mode", ("striped_to_blocked", "blocked_to_striped"))
 @pytest.mark.parametrize(
@@ -774,7 +774,7 @@ def test_warp_exchange_inverse_round_trip(
 def _array_shuffle_kernel(
     mode: str, api: str, array_items_per_thread: int, numba_dtype=types.int32
 ):
-    if api == "portable":
+    if api == "common":
 
         @cuda.jit
         def kernel(source, observed, preserved, items_per_thread):
@@ -846,7 +846,7 @@ def _array_shuffle_kernel(
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
     "api",
-    ("portable", "qualified-thread-data", "qualified-local-array"),
+    ("common", "qualified-thread-data", "qualified-local-array"),
 )
 @pytest.mark.parametrize("mode", ("up", "down"))
 def test_array_shuffle_matches_a_flattened_oracle_and_preserves_input(
@@ -878,7 +878,7 @@ def test_array_shuffle_preserves_each_dtype(dtype, mode, *, items_per_thread):
     source = _dtype_values(dtype, (_BLOCK_THREADS * items_per_thread))
     observed = np.zeros_like(source)
     preserved = np.zeros_like(source)
-    api = "portable" if mode == "up" else "qualified-local-array"
+    api = "common" if mode == "up" else "qualified-local-array"
 
     _array_shuffle_kernel(
         mode, api, items_per_thread, getattr(types, np.dtype(dtype).name)

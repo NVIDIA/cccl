@@ -35,8 +35,8 @@ from numba_cuda_mlir.cuda.local import array as _cuda_local_array
 from numba_cuda_mlir.extending import require_launch_config
 from numba_cuda_mlir.numba_cuda.core.errors import ForceLiteralArg
 
-import cuda.coop._core.api as _portable_api
-import cuda.coop._core.api._dispatch as _portable_dispatch
+import cuda.coop._core.api as _common_api
+import cuda.coop._core.api._dispatch as _common_dispatch
 from cuda.coop._core import (
     LaunchFactOrigin,
     LaunchFacts,
@@ -61,11 +61,11 @@ from ._group_errors import (
     UnknownResultExtentError,
 )
 from ._group_planner_support import (
+    _COMMON_GROUP_CONSTRUCTORS,
     _GROUP_CONSTRUCTORS,
     _GROUP_METHODS,
     _NAME_COUNTER,
     _PAYLOAD_DTYPE_LIKE,
-    _PORTABLE_GROUP_CONSTRUCTORS,
     GroupRewriteError,
     _group_operation_name,
     _is_common_root_operation,
@@ -255,9 +255,9 @@ class _GroupCallPlanner:
             *_GROUP_CONSTRUCTORS,
             ThreadHierarchy,
             ThreadData,
-            _portable_api.ThreadData,
+            _common_api.ThreadData,
             TempStorage,
-            _portable_api.TempStorage,
+            _common_api.TempStorage,
         }
         for block in self.func_ir.blocks.values():
             for inst in block.body:
@@ -446,7 +446,7 @@ class _GroupCallPlanner:
         parents. Constructor identity matters; matching a callable's name is
         insufficient. Arguments are resolved through ``_constant``, which may
         request literal specialization. Common-API constructors retain
-        ``common_root`` provenance so later validation applies the portable
+        ``common_root`` provenance so later validation applies the common API
         contract.
 
         Cache newly constructed descriptors by variable name for this planner.
@@ -507,7 +507,7 @@ class _GroupCallPlanner:
                 elif parameter.kind is inspect.Parameter.KEYWORD_ONLY:
                     kwargs[name] = argument
             group = _GROUP_CONSTRUCTORS[function](*args, **kwargs)
-            if function in _PORTABLE_GROUP_CONSTRUCTORS:
+            if function in _COMMON_GROUP_CONSTRUCTORS:
                 assert group.hierarchy is not None
                 group = group.with_hierarchy(
                     group.hierarchy, source="common_root"
@@ -814,7 +814,7 @@ class _GroupCallPlanner:
         if definition.op != "call":
             return False
         function = self._callable(definition.func)
-        if function in {ThreadData, _portable_api.ThreadData}:
+        if function in {ThreadData, _common_api.ThreadData}:
             return True
         if function is _typed_group_payload_like:
             return self._is_array_value(
@@ -1113,7 +1113,7 @@ class _GroupCallPlanner:
             if is_array is False:
                 return 1
             return self._array_extent(definition.args[0], seen=seen)
-        if function in {ThreadData, _portable_api.ThreadData}:
+        if function in {ThreadData, _common_api.ThreadData}:
             bound = self._bind(function, definition)
             extent_argument = bound.arguments["items_per_thread"]
             self._reject_literal_unroll_value(extent_argument, "payload extent")
@@ -1314,9 +1314,7 @@ class _GroupCallPlanner:
             raise NonConstantThreadGroupError(operation)
         is_common_root = _is_common_root_operation(function, operation)
         if is_common_root:
-            _portable_dispatch._validate_portable_operation_group(
-                operation, group
-            )
+            _common_dispatch._validate_common_operation_group(operation, group)
         group = self._resolve_group(group, feature=operation)
         registration = group_primitive(operation)
         if registration is None:
@@ -1827,8 +1825,7 @@ class _GroupPlanning:
             raise GroupRewriteError(
                 "cuda.coop.numba_mlir cooperative calls in device function "
                 f"{function_name!r} must be inlined into a kernel. Standalone "
-                "collective helpers and collectives inside standalone "
-                "callbacks "
+                "primitive helpers and primitives inside standalone callbacks "
                 "are unsupported; use inline='always' for a kernel helper or "
                 "move the cooperative calls into the kernel."
             )

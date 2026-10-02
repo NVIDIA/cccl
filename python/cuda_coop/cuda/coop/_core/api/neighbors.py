@@ -8,7 +8,7 @@ from typing import Any
 
 from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
 from ._dispatch import (
-    _portable_group_operation,
+    _common_group_operation,
 )
 from ._payload import (
     TempStorageLike,
@@ -17,7 +17,7 @@ from ._payload import (
 )
 
 
-@_portable_group_operation("adjacent_difference", group_kinds=("block",))
+@_common_group_operation("adjacent_difference", group_kinds=("block",))
 def adjacent_difference(
     group: ThreadGroup,
     values: _ReadableThreadDataLike[Any],
@@ -77,7 +77,7 @@ def adjacent_difference(
     )
 
 
-@_portable_group_operation("discontinuity", group_kinds=("block",))
+@_common_group_operation("discontinuity", group_kinds=("block",))
 def discontinuity(
     group: ThreadGroup,
     values: _ReadableThreadDataLike[Any],

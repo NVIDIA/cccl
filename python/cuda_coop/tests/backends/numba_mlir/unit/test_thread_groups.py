@@ -4,7 +4,7 @@
 
 import pytest
 
-import cuda.coop as portable_coop
+import cuda.coop as common_coop
 import cuda.coop.numba_mlir as coop
 import cuda.coop.numba_mlir._thread_group as numba_mlir_groups
 from cuda.coop._core import ThreadHierarchy as CoreThreadHierarchy
@@ -113,7 +113,7 @@ def test_group_method_marker_fails_clearly_outside_compilation():
 
 
 @pytest.mark.parametrize(
-    "api", (portable_coop, coop), ids=("portable", "qualified")
+    "api", (common_coop, coop), ids=("common", "qualified")
 )
 def test_thread_group_surface_exposes_hierarchy_operations(api):
     group = api.this_block()
