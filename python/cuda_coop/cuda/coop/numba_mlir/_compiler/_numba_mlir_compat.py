@@ -4,8 +4,8 @@
 
 """Validate the optional Numba backend's version before compiler integration.
 
-Why package requirements and an activation check both exist
----------------------------------------------------------
+.. rubric:: Why package requirements and an activation check both exist
+
 The Numba extras in ``pyproject.toml`` declare the supported
 ``numba-cuda-mlir`` version range. When an application installs
 ``cuda-coop[numba-cuda-mlir-cu12]`` or ``cuda-coop[numba-cuda-mlir-cu13]``,
@@ -24,8 +24,8 @@ be outside our supported range, even though installing ``cuda-coop`` succeeds.
 The activation check gives that application a useful error containing the
 required range, detected version, and installation instructions.
 
-Why validation belongs to backend activation
--------------------------------------------
+.. rubric:: Why validation belongs to backend activation
+
 An application using another backend, such as CUTLASS, should not need to
 upgrade an unrelated Numba installation. We check only when activating
 ``cuda.coop.numba_mlir``, through its qualified import or
@@ -40,8 +40,8 @@ If that optional activation fails, the common import emits a warning and
 continues; explicit activation raises the error. Merely installing an old
 Numba version has no effect on an application using another backend.
 
-Why there is no feature-by-feature compatibility layer
------------------------------------------------------
+.. rubric:: Why there is no feature-by-feature compatibility layer
+
 The supported version range is the compiler contract. Checking that an
 attribute exists cannot establish the semantics of launch specialization,
 inlining, or generated code. Accepting older releases based on selected
@@ -57,8 +57,8 @@ a missing launch-metadata API is different from a supported API reporting
 that a particular compilation has no configured launch metadata. The latter
 is a compilation/usage error, not evidence of an old compiler.
 
-Maintenance
------------
+.. rubric:: Maintenance
+
 Keep the range below aligned with both Numba extras in ``pyproject.toml``.
 Use packaging's version semantics, including local and development versions,
 instead of a string prefix check. Already-installed prereleases within the
@@ -72,7 +72,7 @@ than to a registry of capabilities in this module.
 from __future__ import annotations
 
 import importlib.metadata
-from typing import Any
+from types import ModuleType
 
 _REQUIRED_RUNTIME_VERSION = ">=0.5.0,<0.6"
 _RUNTIME_INSTALL_HINT = (
@@ -81,10 +81,40 @@ _RUNTIME_INSTALL_HINT = (
 )
 
 
-class _NumbaMlirBackendImportError(ImportError):
-    """Qualified-backend import failure with its original cause preserved."""
+class NumbaMlirBackendImportError(ImportError):
+    """Report a Numba backend activation failure to the application.
 
-    def __init__(self, reason_code, message, *, cause=None, **details):
+    Explicit registration and qualified backend imports propagate this error;
+    applications can catch it as ``ImportError``. Automatic registration
+    catches activation failures and emits ``CudaCoopAutoRegistrationWarning``
+    instead, allowing the common import to complete. This is a diagnostic
+    exception, rather than an internal signal for compiler control flow.
+
+    ``backend`` identifies the compiler, ``reason_code`` classifies the failure,
+    and ``details`` carries diagnostic context. When supplied, the original
+    import failure is preserved as ``__cause__``.
+
+    Parameters
+    ----------
+    reason_code : str
+        Category used to distinguish activation failures.
+    message : str
+        Human-readable failure description and recovery guidance.
+    cause : BaseException or None, optional
+        Original failure to retain as the explicit exception cause.
+    **details : object
+        Named diagnostic values, such as detected and required versions,
+        stored in the exception's ``details`` dictionary.
+    """
+
+    def __init__(
+        self,
+        reason_code: str,
+        message: str,
+        *,
+        cause: BaseException | None = None,
+        **details: object,
+    ) -> None:
         super().__init__(message)
         self.backend = "numba-cuda-mlir"
         self.reason_code = reason_code
@@ -93,7 +123,7 @@ class _NumbaMlirBackendImportError(ImportError):
             self.__cause__ = cause
 
 
-def _detected_version(runtime: Any) -> str | None:
+def _detected_version(runtime: ModuleType | None) -> str | None:
     version = getattr(runtime, "__version__", None)
     if isinstance(version, str) and version:
         return version
@@ -103,8 +133,21 @@ def _detected_version(runtime: Any) -> str | None:
         return None
 
 
-def _runtime_requirement(runtime: Any = None) -> str:
-    """Describe the supported range and detected compiler installation."""
+def _runtime_requirement(runtime: ModuleType | None = None) -> str:
+    """Describe the supported range and detected compiler installation.
+
+    Parameters
+    ----------
+    runtime : module, optional
+        Imported compiler package whose ``__version__`` is preferred. With
+        ``None`` or no usable version attribute, consult distribution metadata.
+
+    Returns
+    -------
+    str
+        Required version range, detected version or an unavailable-version
+        notice, and an installation command for the supported compiler.
+    """
 
     version = _detected_version(runtime)
     detected = "the installed numba-cuda-mlir version could not be determined"
@@ -117,8 +160,29 @@ def _runtime_requirement(runtime: Any = None) -> str:
     )
 
 
-def _require_numba_mlir_version(runtime: Any) -> None:
-    """Reject unsupported installations before accessing compiler APIs."""
+def _require_numba_mlir_version(runtime: ModuleType) -> None:
+    """Reject unsupported installations before accessing compiler APIs.
+
+    Activation calls this after importing the top-level compiler package and
+    before loading its CUDA integration. Import ``packaging`` here so a bare
+    ``cuda-coop`` installation can use the common API without that dependency.
+    The declared range accepts installed prereleases within its bounds; it
+    does not admit versions below the minimum or in the excluded next series.
+
+    Parameters
+    ----------
+    runtime : module
+        Imported ``numba_cuda_mlir`` package. Prefer its nonempty
+        ``__version__`` string, falling back to distribution metadata when
+        that attribute is unavailable.
+
+    Raises
+    ------
+    NumbaMlirBackendImportError
+        ``packaging`` is missing, the compiler version cannot be determined
+        or parsed, or it lies outside the supported range. The diagnostic
+        includes installation instructions and relevant version details.
+    """
 
     # Packaging is a backend dependency. Import it here so a missing runtime
     # still gets its own diagnostic, including in a base-only installation.
@@ -128,7 +192,7 @@ def _require_numba_mlir_version(runtime: Any) -> None:
     except ModuleNotFoundError as exc:
         if exc.name != "packaging":
             raise
-        raise _NumbaMlirBackendImportError(
+        raise NumbaMlirBackendImportError(
             "backend-dependency-missing",
             "cuda.coop.numba_mlir requires packaging to validate its compiler "
             f"version. Install with {_RUNTIME_INSTALL_HINT}.",
@@ -144,7 +208,7 @@ def _require_numba_mlir_version(runtime: Any) -> None:
     except InvalidVersion:
         supported = False
     if not supported:
-        raise _NumbaMlirBackendImportError(
+        raise NumbaMlirBackendImportError(
             "unsupported-runtime-version",
             _runtime_requirement(runtime),
             detected_version=version,

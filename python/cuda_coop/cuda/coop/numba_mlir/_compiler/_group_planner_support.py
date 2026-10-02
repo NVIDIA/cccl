@@ -2,10 +2,23 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Identify the public group calls understood by the Numba planner.
+
+Common and backend-qualified constructors use different Python callables. The
+tables here map both spellings to the backend's descriptor constructors, while
+retaining which calls came through the common API and need its restrictions.
+Operation lookup likewise uses registered callable identity, so an unrelated
+function with the same name is not mistaken for a cooperative operation.
+
+The planner helpers also share an IR import, temporary-name counter, and base
+exception here. Keeping these definitions separate lets group planning and its
+operation modules use them without importing each other during initialization.
+"""
+
 from __future__ import annotations
 
 from itertools import count
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import cuda.coop._core.api as _portable_api
 import cuda.coop._core.api._dispatch as _portable_dispatch
@@ -50,7 +63,7 @@ class GroupRewriteError(Exception):
     """A group-first call was recognized but could not be lowered safely."""
 
 
-def _group_operation_name(function: Any) -> str | None:
+def _group_operation_name(function: object) -> str | None:
     """Return the group-first operation represented by one marker callable."""
 
     operation = group_operation_name(function)
@@ -59,7 +72,7 @@ def _group_operation_name(function: Any) -> str | None:
     return operation
 
 
-def _is_common_root_operation(function: Any, operation: str) -> bool:
+def _is_common_root_operation(function: object, operation: str) -> bool:
     return (
         _portable_dispatch._portable_group_operation_name(function) == operation
     )
