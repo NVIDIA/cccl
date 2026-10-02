@@ -1,6 +1,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
 #include <thrust/execution_policy.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/reduce.h>
 
@@ -8,6 +9,13 @@
 #include <cuda/std/functional>
 
 #include <cstdint>
+
+#if _CCCL_HAS_NVFP16()
+#  include <cuda_fp16.h>
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+#  include <cuda_bf16.h>
+#endif // _CCCL_HAS_NVBF16()
 
 #include <unittest/unittest.h>
 
@@ -565,3 +573,36 @@ TEST_CASE("TestReduceByKeyWithDifferentAccumulatorT", "[reduce_by_key]")
   constexpr auto expected_aggregate = static_cast<val_t>(sum % mod_val);
   REQUIRE(aggregates_out[0] == expected_aggregate);
 }
+
+// https://github.com/NVIDIA/cccl/issues/11816
+template <typename T>
+void test_reduce_by_key_extended_fp()
+{
+  thrust::device_vector<int> keys{0, 0, 1, 1, 1};
+  thrust::device_vector<T> values(5, T{1.5f});
+  thrust::device_vector<int> keys_out(2);
+  thrust::device_vector<T> values_out(2);
+
+  auto [keys_end, values_end] =
+    thrust::reduce_by_key(keys.begin(), keys.end(), values.begin(), keys_out.begin(), values_out.begin());
+
+  REQUIRE(keys_end - keys_out.begin() == 2);
+  REQUIRE(values_end - values_out.begin() == 2);
+  thrust::host_vector<T> h_values_out = values_out;
+  REQUIRE(static_cast<float>(h_values_out[0]) == 3.0f);
+  REQUIRE(static_cast<float>(h_values_out[1]) == 4.5f);
+}
+
+#if _CCCL_HAS_NVFP16()
+TEST_CASE("TestReduceByKeyHalf", "[reduce_by_key]")
+{
+  test_reduce_by_key_extended_fp<__half>();
+}
+#endif // _CCCL_HAS_NVFP16()
+
+#if _CCCL_HAS_NVBF16()
+TEST_CASE("TestReduceByKeyBFloat16", "[reduce_by_key]")
+{
+  test_reduce_by_key_extended_fp<__nv_bfloat16>();
+}
+#endif // _CCCL_HAS_NVBF16()
