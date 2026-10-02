@@ -263,6 +263,15 @@ def test_rewrite_operation_spec_rejects_inconsistent_contracts(
         _rewrite_spec(**override)
 
 
+def test_group_result_source_rejects_invalid_parameter_names():
+    from cuda.coop.numba_mlir._compiler._operations import GroupResultSource
+
+    with pytest.raises(ValueError, match="dtype_parameter"):
+        GroupResultSource("", None)
+    with pytest.raises(ValueError, match="array_parameter"):
+        GroupResultSource(None, 7)
+
+
 @pytest.mark.parametrize(
     ("struct_name", "scope_name", "sync_token"),
     [

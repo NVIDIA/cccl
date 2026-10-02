@@ -11,11 +11,15 @@ from ._model import (
     ArgumentPrecondition,
     GroupLoweringPlan,
     GroupLoweringTarget,
+    GroupOperandKind,
     GroupPrimitiveCall,
     GroupTopologyContract,
     ImplementationProvenance,
+    LogicalResultContract,
     ParticipationContract,
     PreconditionEnforcement,
+    ResultContract,
+    ResultOwnership,
     ResultVisibility,
     StorageOwnership,
     SynchronizationContract,
@@ -26,25 +30,34 @@ from ._model import (
     UnsupportedReasonCode,
 )
 from ._resolution import resolve_thread_group
+from .exchange import GroupExchangeMode, GroupExchangeSemantics
 from .load_store import (
     GroupLoadStoreAlgorithm,
     GroupLoadStoreKind,
     GroupLoadStoreSemantics,
 )
+from .shuffle import GroupShuffleSemantics
 
 __all__ = [
     "ArgumentPrecondition",
+    "GroupExchangeMode",
+    "GroupExchangeSemantics",
     "GroupLoadStoreAlgorithm",
     "GroupLoadStoreKind",
     "GroupLoadStoreSemantics",
     "GroupLoweringPlan",
     "GroupLoweringTarget",
+    "GroupOperandKind",
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
+    "GroupShuffleSemantics",
     "GroupTopologyContract",
     "ImplementationProvenance",
+    "LogicalResultContract",
     "ParticipationContract",
     "PreconditionEnforcement",
+    "ResultContract",
+    "ResultOwnership",
     "ResultVisibility",
     "StorageOwnership",
     "SynchronizationContract",

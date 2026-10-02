@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from .exchange import (
+    WarpExchangeMode,
+    WarpExchangeSpec,
+    WarpExchangeValueForm,
+    make_warp_exchange_spec,
+)
 from .load_store import (
     WarpLoadAlgorithm,
     WarpLoadStoreAlgorithm,
@@ -16,12 +22,16 @@ from .load_store import (
 )
 
 __all__ = [
+    "WarpExchangeMode",
+    "WarpExchangeSpec",
+    "WarpExchangeValueForm",
     "WarpLoadAlgorithm",
     "WarpLoadStoreAlgorithm",
     "WarpLoadStoreKind",
     "WarpLoadStoreSemantics",
     "WarpLoadStoreSpec",
     "WarpStoreAlgorithm",
+    "make_warp_exchange_spec",
     "make_warp_load_spec",
     "make_warp_load_store_semantics",
     "make_warp_load_store_spec",

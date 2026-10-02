@@ -1603,6 +1603,16 @@ class _StorageRewrite:
                                 rewrite._extract_thread_data_spec(call),
                             )
                         )
+                    elif rewrite._is_typed_group_payload_ctor_call(call):
+                        rewrite._thread_data_like_vars.add(inst.target.name)
+                        rewrite._thread_data_specs[inst.target.name] = (
+                            rewrite._merge_thread_data_specs(
+                                rewrite._thread_data_specs.get(
+                                    inst.target.name
+                                ),
+                                rewrite._extract_typed_group_payload_spec(call),
+                            )
+                        )
                     elif rewrite._is_temp_storage_ctor_call(call):
                         rewrite._record_temp_storage_ctor(inst, call)
                         self._temp_storage_ctor_order.setdefault(

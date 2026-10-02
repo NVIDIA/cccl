@@ -104,8 +104,86 @@
     };
   }
 
+  const exchanges = [
+    {id: "striped_to_blocked", label: "Striped to blocked", tag: "Common API", input: "striped", output: "blocked"},
+    {id: "blocked_to_striped", label: "Blocked to striped", tag: "Common API", input: "blocked", output: "striped"},
+    {id: "warp_striped_to_blocked", label: "Warp-striped to blocked", tag: "Qualified block API", input: "warp-striped", output: "blocked"},
+    {id: "blocked_to_warp_striped", label: "Blocked to warp-striped", tag: "Qualified block API", input: "blocked", output: "warp-striped"},
+    {id: "scatter_to_blocked", label: "Scatter to blocked", tag: "Ranked destinations", input: "blocked", output: "blocked", scatter: true},
+    {id: "scatter_to_striped", label: "Scatter to striped", tag: "Ranked destinations", input: "blocked", output: "striped", scatter: true},
+    {id: "scatter_to_striped_guarded", label: "Guarded scatter", tag: "Negative ranks suppress writes", input: "blocked", output: "striped", scatter: true, guarded: true},
+    {id: "scatter_to_striped_flagged", label: "Flagged scatter", tag: "Flags suppress writes", input: "blocked", output: "striped", scatter: true, flagged: true},
+  ];
+
+  function build_exchange(state) {
+    const option = exchanges.find((entry) => entry.id === state.algorithm);
+    const items = Number(state.items);
+    const count = threads * items;
+    const is_suppressed = (value) => (option.guarded && value % 5 === 0) || (option.flagged && value % 4 === 0);
+    const destination = (value) => option.scatter ? (5 * value) % count : value;
+    const suppressed = Array.from({length: count}, (_, value) => value).filter(is_suppressed);
+    const holes = suppressed.map(destination);
+    const rows = [
+      thread_row("input", `${option.input} input registers`, items),
+      {id: "scratch", label: option.scatter ? "Shared scratch · destination ranks" : "Shared scratch · logical positions, padding omitted", count},
+      thread_row("output", `${option.output} result registers`, items),
+    ];
+    if (suppressed.length) rows.push({id: "suppressed", label: "Suppressed inputs · no destination write", count: suppressed.length});
+
+    function tokens_for(row) {
+      const tokens = Array.from({length: count}, (_, value) => {
+        const target = destination(value);
+        const suppressed_value = is_suppressed(value);
+        const location = row !== "input" && suppressed_value ? "suppressed" : row;
+        let index = target;
+        if (location === "input") index = register_index(option.input, value, items);
+        if (location === "output") index = register_index(option.output, target, items);
+        if (location === "suppressed") index = suppressed.indexOf(value);
+        const route = suppressed_value
+          ? option.guarded ? "rank −1 suppresses its write" : `rank ${target}, valid flag 0 suppresses its write`
+          : `${option.scatter ? `rank ${target} → ` : ""}result ${owner_text(option.output, target, items)}`;
+        return {
+          id: `v${value}`, label: String(value), value, row: location, index,
+          color: owner(option.input, value, items)[0], muted: location === "suppressed",
+          detail: `Value ${value}: input ${owner_text(option.input, value, items)} → ${route}.`,
+        };
+      });
+      if (row === "output") {
+        for (const target of holes) tokens.push({
+          id: `undefined${target}`, label: "?", row: "output", index: register_index(option.output, target, items), color: 7, muted: true,
+          detail: `Logical output ${target}, ${owner_text(option.output, target, items)}: no input wrote this destination. Its value is unspecified and must not be consumed.`,
+        });
+      }
+      return tokens;
+    }
+
+    const common = ["striped_to_blocked", "blocked_to_striped"].includes(option.id);
+    const detail = option.scatter
+      ? `The rank attached to each input selects its logical destination. This example starts with rank[p] = (5 × p) mod ${count}, a permutation of the tile.${option.guarded ? " Every fifth input instead has rank −1." : option.flagged ? " Every fourth input has valid flag 0." : ""}`
+      : `The shared-memory exchange converts ${option.input} input to ${option.output} ownership while preserving the logical value sequence.`;
+    return {
+      detail, rows,
+      phases: [
+        {label: "Input registers", description: "Each thread contributes its fixed-size input payload. Exchange returns a new payload without modifying this input.", tokens: tokens_for("input")},
+        {label: option.scatter ? "Scatter by rank" : "Shared exchange", description: option.scatter ? "Each participating input writes to its rank in shared scratch. The demonstrated ranks have no competing writes." : "Values enter shared scratch at their logical positions; the result layout determines which thread reads each position.", tokens: tokens_for("scratch")},
+        {label: "Result registers", description: suppressed.length ? `${count - suppressed.length} destinations are defined. The ${suppressed.length} question-mark slots were not written and have unspecified values.` : `The result uses ${option.output} ownership. Exchange itself performs no global-memory load or store.`, tokens: tokens_for("output")},
+      ],
+      notes: [
+        common ? "Available through cuda.coop.exchange for block and warp groups." : "Use cuda.coop.numba_mlir.exchange with a block group for this mode; it is not available through the common API.",
+        option.scatter ? "Ranks must be signed integer payloads with the same item count. Active destinations must be in range and unique; guarded mode only tests whether a rank is negative." : "Shared scratch and synchronization connect the layouts. The diagram omits padding and uses the default non-timesliced exchange.",
+        suppressed.length ? "Suppressed writes do not initialize their output slots. A zero shown as an input is a real value; '?' marks an unspecified result." : "Input and output payloads have the same shape. The mode changes ownership rather than the payload extent.",
+      ],
+      summary: option.scatter ? `Values scatter to logical positions (5 × p) mod ${count}; the output exposes those positions in ${option.output} registers.${suppressed.length ? " Only written destinations may be read." : " Every destination is written once."}` : `Logical order is unchanged. T0 receives [${Array.from({length: count}, (_, value) => value).filter((value) => owner(option.output, value, items)[0] === 0).join(", ")}] in the result.`,
+      caption: "Eight illustrative threads, with four lanes per teaching warp for warp-striped layouts. CUDA physical warps have 32 lanes. Colors identify the original source thread. Select a value to inspect its input and result slots.",
+    };
+  }
+
   window.CoopExplorer.register("store", {
     title: "Follow a cooperative store", eyebrow: "Registers to memory", defaultAlgorithm: "transpose",
     algorithms: stores.map(({id, label, tag}) => ({id, label, tag})), controls: [item_control], build: build_store,
+  });
+  window.CoopExplorer.register("exchange", {
+    title: "Follow a cooperative exchange", eyebrow: "Changing register ownership", defaultAlgorithm: "striped_to_blocked",
+    algorithms: exchanges.map(({id, label, tag}) => ({id, label, tag})), controls: [item_control], build: build_exchange,
   });
 })();

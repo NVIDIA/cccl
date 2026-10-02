@@ -132,3 +132,54 @@ coop.BlockLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018
 coop.BlockStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018
 coop.WarpLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018
 coop.WarpStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018
+portable.exchange(
+    portable.this_block(),
+    portable_values,
+    mode="scatter_to_striped",  # expected-error: [arg-type]
+)
+portable.shuffle(
+    portable.this_block(),
+    portable_values,
+    distance=2,  # expected-error: [arg-type]
+)
+coop.exchange(  # expected-error: [call-overload]
+    coop.this_block(),
+    values,
+    mode="scatter_to_blocked",
+)
+coop.exchange(  # expected-error: [call-overload]
+    coop.this_warp(),
+    values,
+    mode="warp_striped_to_blocked",
+)
+coop.exchange(  # expected-error: [call-overload]
+    coop.this_warp(),
+    values,
+    mode="scatter_to_striped",
+    ranks=coop.ThreadData(items_per_thread=2, dtype=np.int32),
+)
+coop.shuffle(  # expected-error: [call-overload]
+    coop.this_block(),
+    values,
+    mode="offset",
+)
+coop.shuffle(  # expected-error: [call-overload]
+    coop.this_block(),
+    np.int32(1),
+    mode="up",
+)
+floating_ranks = coop.ThreadData(items_per_thread=2, dtype=np.float32)
+floating_flags = coop.ThreadData(items_per_thread=2, dtype=np.float32)
+coop.exchange(  # expected-error: [call-overload]
+    coop.this_block(),
+    values,
+    mode="scatter_to_blocked",
+    ranks=floating_ranks,
+)
+coop.exchange(  # expected-error: [call-overload]
+    coop.this_block(),
+    values,
+    mode="scatter_to_striped_flagged",
+    ranks=values,
+    valid_flags=floating_flags,
+)

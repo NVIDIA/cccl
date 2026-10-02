@@ -76,6 +76,15 @@ Memory operations
 .. autofunction:: store
 
 
+Data rearrangement
+^^^^^^^^^^^^^^^^^^
+
+See :ref:`blocked and striped layouts <coop-data-layouts>`.
+
+.. autofunction:: exchange
+.. autofunction:: shuffle
+
+
 .. _coop-numba-extensions:
 
 Numba-CUDA-MLIR-qualified API
@@ -110,3 +119,10 @@ Memory operations
 
 .. autofunction:: load
 .. autofunction:: store
+
+
+Data rearrangement
+^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: exchange
+.. autofunction:: shuffle

@@ -4,12 +4,34 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Generic, Literal, TypeVar
 
 import numpy as np
 from typing_extensions import assert_type
 
 from cuda import coop
+
+_ItemT = TypeVar("_ItemT")
+
+
+class _ReadOnlyThreadData(Generic[_ItemT]):
+    """Structural readable payload without mutable item access."""
+
+    items_per_thread: int
+    dtype: object | None
+
+    def __init__(self, value: _ItemT) -> None:
+        self.items_per_thread = 1
+        self.dtype = type(value)
+        self._value = value
+
+    def __len__(self) -> int:
+        return self.items_per_thread
+
+    def __getitem__(self, index: int, /) -> _ItemT:
+        if index != 0:
+            raise IndexError(index)
+        return self._value
 
 
 def check_portable_surface(source: object, destination: object) -> None:
@@ -19,6 +41,7 @@ def check_portable_surface(source: object, destination: object) -> None:
     warp = coop.this_warp()
     logical_warp = warp.group_by(8)
     values = coop.ThreadData(items_per_thread=2, dtype=np.int16, alignment=16)
+    read_only_values = _ReadOnlyThreadData(np.int16(1))
     storage = coop.TempStorage(64, alignment=16, sharing="shared")
 
     assert_type(block, coop.ThreadGroup[Literal["block"]])
@@ -73,4 +96,24 @@ def check_portable_surface(source: object, destination: object) -> None:
     assert_type(
         coop.store(logical_warp, destination, values, algorithm="striped"),
         None,
+    )
+    assert_type(
+        coop.exchange(block, values, mode="blocked_to_striped"),
+        coop.ThreadDataLike[np.int16],
+    )
+    assert_type(
+        coop.exchange(logical_warp, values, mode="striped_to_blocked"),
+        coop.ThreadDataLike[np.int16],
+    )
+    assert_type(
+        coop.shuffle(block, values, mode="up", distance=1),
+        coop.ThreadDataLike[np.int16],
+    )
+    assert_type(
+        coop.exchange(block, read_only_values, mode="blocked_to_striped"),
+        coop.ThreadDataLike[np.int16],
+    )
+    assert_type(
+        coop.shuffle(block, read_only_values, mode="down"),
+        coop.ThreadDataLike[np.int16],
     )

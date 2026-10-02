@@ -18,7 +18,7 @@ operation modules use them without importing each other during initialization.
 from __future__ import annotations
 
 from itertools import count
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import cuda.coop._core.api as _portable_api
 import cuda.coop._core.api._dispatch as _portable_dispatch
@@ -35,7 +35,9 @@ else:
         ir as ir,  # noqa: PLC0414 - Re-export for typing.
     )
 
+
 _NAME_COUNTER = count()
+_PAYLOAD_DTYPE_LIKE = "like"
 _GROUP_CONSTRUCTORS = {
     _thread_groups.this_thread: _thread_groups.this_thread,
     _thread_groups.this_warp: _thread_groups.this_warp,
@@ -75,4 +77,15 @@ def _group_operation_name(function: object) -> str | None:
 def _is_common_root_operation(function: object, operation: str) -> bool:
     return (
         _portable_dispatch._portable_group_operation_name(function) == operation
+    )
+
+
+def _typed_group_payload_like(
+    _prototype: Any,
+    _is_array: bool,
+    _dtype_policy: str,
+    _items_per_thread: int | None = None,
+) -> Any:
+    raise GroupRewriteError(
+        "typed group payload markers must be lowered before device compilation"
     )

@@ -44,7 +44,11 @@ from ._descriptor_provenance import (
     payload_write_dtypes,
     temp_storage_constructor,
 )
-from ._group_planner_support import GroupRewriteError, ir
+from ._group_planner_support import (
+    GroupRewriteError,
+    _typed_group_payload_like,
+    ir,
+)
 from ._operations import (
     _GROUP_LOWERING_PLAN_KWARG,
     StorageABI,
@@ -368,6 +372,7 @@ class GroupPlanningContext:
         factory: Callable[..., Any],
         args: list[Any],
         kwargs: dict[str, Any],
+        return_alias: ir.Var | tuple[ir.Var, ...] | None = None,
         common_root_operation: str | None = None,
     ) -> list[Any]:
         """Build a provider call carrying the validated group-lowering plan.
@@ -375,9 +380,10 @@ class GroupPlanningContext:
         Check the provider ABI and storage contract before embedding the plan in
         its reserved keyword argument. The later provider rewrite consumes this
         metadata, so it does not have to reconstruct the public group semantics.
-        The returned assignments materialize non-IR arguments and invoke the
-        factory with the original result target. The caller installs them into
-        the function; this method does not replace the original instruction.
+        The returned assignments materialize non-IR arguments, invoke the
+        factory, and assign the public result or requested payload alias. The
+        caller installs them into the function; this method does not replace
+        the original instruction.
 
         Parameters
         ----------
@@ -395,6 +401,9 @@ class GroupPlanningContext:
         kwargs : dict of str to object
             Provider keyword arguments. Copied before plan metadata is added;
             presence of ``temp_storage`` is checked against planned ownership.
+        return_alias : ir.Var or tuple of ir.Var or None, optional
+            Existing payload or payload tuple to assign to the public result
+            after the provider call. ``None`` uses the provider's result.
         common_root_operation : str or None, optional
             Common API operation name to retain for downstream validation. When
             present, supplies the private marker unless ``kwargs`` already has
@@ -432,8 +441,15 @@ class GroupPlanningContext:
             factory=factory,
             args=args,
             kwargs=kwargs,
+            return_alias=return_alias,
             common_root_operation=common_root_operation,
         )
+
+    def copy_array_payload(self, *args: Any, **kwargs: Any) -> None:
+        self.__planner._copy_array_payload(*args, **kwargs)
+
+    def typed_payload_like(self, *args: Any, **kwargs: Any) -> ir.Var:
+        return self.__planner._typed_payload_like(*args, **kwargs)
 
     def planning_binding(self, value: Any) -> ArgumentBinding:
         """Classify a scalar control from its explicit static provenance.
@@ -491,6 +507,21 @@ class GroupPlanningContext:
         if not resolved or any(dtype is None for dtype in resolved):
             return None
         return cls._one_dtype(set(resolved), message=message)
+
+    def _result_dtype(
+        self,
+        definition: ir.Expr,
+        *,
+        index: int | None,
+        seen: set[str],
+    ) -> Any | None:
+        resolved = self.__planner._result_source(definition, index)
+        if resolved is None:
+            return None
+        result, bound = resolved
+        if result.dtype_parameter is None:
+            return None
+        return self.dtype(bound.arguments[result.dtype_parameter], seen=seen)
 
     def record_thread_data_dtype(
         self, value: Any, dtype: _numba_types.Type
@@ -631,6 +662,8 @@ class GroupPlanningContext:
             if not -len(items) <= index < len(items):
                 return None
             return self.dtype(items[index], seen=seen)
+        if definition.op == "call":
+            return self._result_dtype(definition, index=index, seen=seen)
         return None
 
     def _dtype_definition(
@@ -704,6 +737,11 @@ class GroupPlanningContext:
                 if resolved:
                     return normalize_dtype_param(dtype)
             return None
+        if function is _typed_group_payload_like and definition.args:
+            return self.dtype(definition.args[0], seen=seen)
+        result_dtype = self._result_dtype(definition, index=None, seen=seen)
+        if result_dtype is not None:
+            return result_dtype
         return scalar_call_dtype(
             function,
             definition.args,
@@ -730,9 +768,11 @@ class GroupPlanningContext:
 
         Use argument types, scalar constants and operators, supported CUDA index
         attributes, local-array constructors, and ``ThreadData`` declarations or
-        recorded producer dtypes. Follow aliases, casts, phi inputs, and tuple
-        projections; array indexing contributes the source element dtype. This
-        is a limited pre-typing analysis, not full Numba type inference.
+        recorded producer dtypes. Operation result policies and planner-created
+        payload markers supply the types of returned payloads. Follow aliases,
+        casts, phi inputs, and tuple projections; array indexing contributes the
+        source element dtype. This is a limited pre-typing analysis, not full
+        Numba type inference.
 
         Every reaching definition must produce a dtype before agreement is
         checked. Unknown definitions and cycles return ``None`` even when

@@ -26,6 +26,8 @@ from ._thread_group import (
 )
 
 if TYPE_CHECKING:
+    from ._group._exchange import exchange
+    from ._group._shuffle import shuffle
     from ._thread_data import local, shared
 
 __all__ = [
@@ -36,9 +38,11 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
+    "exchange",
     "load",
     "local",
     "shared",
+    "shuffle",
     "store",
     "this_block",
     "this_cluster",
@@ -49,6 +53,16 @@ __all__ = [
 
 
 def __getattr__(name):
+    if name in {"exchange", "shuffle"}:
+        module_name = {
+            "exchange": "_group._exchange",
+            "shuffle": "_group._shuffle",
+        }[name]
+        value = getattr(
+            importlib.import_module(f"{__name__}.{module_name}"), name
+        )
+        globals()[name] = value
+        return value
     if name in {"local", "shared"}:
         value = getattr(
             importlib.import_module(f"{__name__}._thread_data"), name

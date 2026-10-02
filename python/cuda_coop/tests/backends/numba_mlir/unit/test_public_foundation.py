@@ -32,7 +32,9 @@ _PORTABLE_EXPORTS = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "exchange",
     "load",
+    "shuffle",
     "store",
 ]
 _QUALIFIED_EXPORTS = [
@@ -61,7 +63,7 @@ _EXCLUDED_BACKEND_MODULES = (
 )
 
 
-def test_public_exports_are_only_the_load_store_foundation():
+def test_public_exports_are_only_the_supported_group_families():
     assert sorted(portable_coop.__all__) == sorted(_PORTABLE_EXPORTS)
     assert dir(portable_coop) == sorted(_PORTABLE_EXPORTS)
     assert sorted(coop.__all__) == sorted(_QUALIFIED_EXPORTS)
@@ -112,10 +114,28 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
             ).parameters.items()
         )
 
-    for operation in ("load", "store"):
+    for operation in ("load", "shuffle", "store"):
         assert call_shape(getattr(coop, operation)) == call_shape(
             getattr(portable_coop, operation)
         )
+
+    portable_exchange = inspect.signature(portable_coop.exchange)
+    qualified_exchange = inspect.signature(coop.exchange)
+    for name, parameter in portable_exchange.parameters.items():
+        qualified_parameter = qualified_exchange.parameters[name]
+        assert qualified_parameter.kind == parameter.kind
+        assert qualified_parameter.default == parameter.default
+    assert (
+        qualified_exchange.return_annotation
+        == portable_exchange.return_annotation
+    )
+    assert tuple(qualified_exchange.parameters)[
+        len(portable_exchange.parameters) :
+    ] == (
+        "ranks",
+        "valid_flags",
+        "warp_time_slicing",
+    )
 
     assert call_shape(coop.TempStorage) == call_shape(portable_coop.TempStorage)
     for constructor in (
@@ -226,7 +246,7 @@ def test_python_operator_compilation_remains_absent():
     ) == ("numba_type",)
 
 
-@pytest.mark.parametrize("operation", ("load", "store"))
+@pytest.mark.parametrize("operation", ("exchange", "load", "shuffle", "store"))
 def test_group_markers_use_exact_callable_identity(operation):
     from cuda.coop.numba_mlir._compiler._operations import group_operation_name
 

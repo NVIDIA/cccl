@@ -147,6 +147,7 @@ class CoopSinglePhaseRewrite(
         self._temp_storage_assigns = set()
         self._temp_storage_func_vars = set()
         self._thread_data_func_vars = set()
+        self._typed_group_payload_func_vars = set()
         for inst in block.body:
             if not isinstance(inst, ir.Assign):
                 continue
@@ -178,6 +179,16 @@ class CoopSinglePhaseRewrite(
                     self._merge_thread_data_specs(
                         self._thread_data_specs.get(inst.target.name),
                         self._extract_thread_data_spec(call),
+                    )
+                )
+                continue
+            if self._is_typed_group_payload_ctor_call(call):
+                self._typed_group_payload_func_vars.add(call.func.name)
+                self._thread_data_like_vars.add(inst.target.name)
+                self._thread_data_specs[inst.target.name] = (
+                    self._merge_thread_data_specs(
+                        self._thread_data_specs.get(inst.target.name),
+                        self._extract_typed_group_payload_spec(call),
                     )
                 )
                 continue
@@ -230,6 +241,7 @@ class CoopSinglePhaseRewrite(
             bool(self._matches)
             or bool(self._temp_storage_assigns)
             or bool(self._thread_data_func_vars)
+            or bool(self._typed_group_payload_func_vars)
             or bool(self._thread_data_extents)
         )
 
@@ -243,8 +255,9 @@ class CoopSinglePhaseRewrite(
         typing and lowering passes can process.
 
         Materialize the selected invocables, turn ``ThreadData`` constructors
-        into local arrays, and replace consumed ``TempStorage`` descriptors with
-        views of one function-wide shared allocation. Calls receive the
+        and planner-created result payloads into local arrays, and replace
+        consumed ``TempStorage`` descriptors with views of one function-wide
+        shared allocation. Calls receive the
         family-specific runtime operands and, when required by the provider ABI,
         a leading scratch view. Automatic reuse barriers follow calls whose
         storage plan requests synchronization.
@@ -320,8 +333,14 @@ class CoopSinglePhaseRewrite(
                 isinstance(inst, ir.Assign)
                 and isinstance(inst.value, ir.Expr)
                 and (inst.value.op == "call")
-                and (self._is_thread_data_ctor_call(inst.value))
+                and (
+                    self._is_thread_data_ctor_call(inst.value)
+                    or self._is_typed_group_payload_ctor_call(inst.value)
+                )
             ):
+                is_typed_group_payload = self._is_typed_group_payload_ctor_call(
+                    inst.value
+                )
                 thread_data_spec = self._thread_data_specs.get(inst.target.name)
                 if (
                     thread_data_spec is not None
@@ -332,9 +351,13 @@ class CoopSinglePhaseRewrite(
                         inst.target.name
                     )
                 if thread_data_spec is None or thread_data_spec.dtype is None:
+                    subject = (
+                        "typed group payload"
+                        if is_typed_group_payload
+                        else "coop.ThreadData(...)"
+                    )
                     raise CoopSinglePhaseRewriteError(
-                        "Failed to infer dtype for coop.ThreadData(...). "
-                        "Use it with a "
+                        f"Failed to infer dtype for {subject}. Use it with a "
                         "cooperative group operation "
                         "that provides dtype context."
                     )
@@ -363,8 +386,12 @@ class CoopSinglePhaseRewrite(
                         inst.loc,
                     )
                 )
-                rewritten_args = list(inst.value.args)
-                rewritten_kws = list(inst.value.kws)
+                rewritten_args = (
+                    [] if is_typed_group_payload else list(inst.value.args)
+                )
+                rewritten_kws = (
+                    [] if is_typed_group_payload else list(inst.value.kws)
+                )
                 rewritten_kws = [
                     ("shape" if name == "items_per_thread" else name, value)
                     for name, value in rewritten_kws
@@ -655,7 +682,9 @@ class CoopSinglePhaseRewrite(
             new_block if block is self._block else block
             for block in self._func_ir.blocks.values()
         ]
-        candidates = self._thread_data_func_vars
+        candidates = (
+            self._thread_data_func_vars | self._typed_group_payload_func_vars
+        )
         while candidates:
             used_names = set()
             for block in blocks:
