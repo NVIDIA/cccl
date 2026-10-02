@@ -22,6 +22,7 @@
 #include <cub/detail/type_traits.cuh>
 #include <cub/thread/thread_operators.cuh>
 
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/std/__floating_point/cast.h> // IWYU pragma: keep
 #include <cuda/std/__optional/optional.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -42,7 +43,8 @@ namespace detail
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
 inline constexpr bool is_warp_redux_op_supported_sm80 =
   ::cuda::std::is_integral_v<T> && sizeof(T) <= sizeof(unsigned)
-  && (is_cuda_minimum_maximum_v<ReduceOp, T> || is_cuda_std_plus_v<ReduceOp, T> || is_cuda_std_bitwise_v<ReduceOp, T>);
+  && (is_cuda_minimum_maximum_v<ReduceOp, T> || ::cuda::__is_cuda_std_plus_v<ReduceOp, T>
+      || is_cuda_std_bitwise_v<ReduceOp, T>);
 
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
 inline constexpr bool is_warp_redux_bitwise_large_supported =
@@ -50,11 +52,11 @@ inline constexpr bool is_warp_redux_bitwise_large_supported =
 
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
 inline constexpr bool is_warp_redux_plus_64bit_supported =
-  ::cuda::std::is_integral_v<T> && (sizeof(T) == sizeof(unsigned) * 2) && is_cuda_std_plus_v<ReduceOp, T>;
+  ::cuda::std::is_integral_v<T> && (sizeof(T) == sizeof(unsigned) * 2) && ::cuda::__is_cuda_std_plus_v<ReduceOp, T>;
 
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
 inline constexpr bool is_warp_redux_plus_128bit_supported =
-  ::cuda::std::is_integral_v<T> && (sizeof(T) == sizeof(unsigned) * 4) && is_cuda_std_plus_v<ReduceOp, T>;
+  ::cuda::std::is_integral_v<T> && (sizeof(T) == sizeof(unsigned) * 4) && ::cuda::__is_cuda_std_plus_v<ReduceOp, T>;
 
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
 inline constexpr bool is_warp_redux_min_max_f32_supported =
@@ -81,27 +83,27 @@ warp_redux_sm80(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
 
   using promotion_t = ::cuda::std::conditional_t<::cuda::std::is_signed_v<T>, int, unsigned>;
   const auto value  = static_cast<promotion_t>(input);
-  if constexpr (is_cuda_maximum_v<ReductionOp, T>)
+  if constexpr (::cuda::__is_cuda_maximum_v<ReductionOp, T>)
   {
     return static_cast<T>(__reduce_max_sync(mask, value));
   }
-  else if constexpr (is_cuda_minimum_v<ReductionOp, T>)
+  else if constexpr (::cuda::__is_cuda_minimum_v<ReductionOp, T>)
   {
     return static_cast<T>(__reduce_min_sync(mask, value));
   }
-  else if constexpr (is_cuda_std_plus_v<ReductionOp, T>)
+  else if constexpr (::cuda::__is_cuda_std_plus_v<ReductionOp, T>)
   {
     return static_cast<T>(__reduce_add_sync(mask, value));
   }
-  else if constexpr (is_cuda_std_bit_and_v<ReductionOp, T>)
+  else if constexpr (::cuda::__is_cuda_std_bit_and_v<ReductionOp, T>)
   {
     return static_cast<T>(__reduce_and_sync(mask, value));
   }
-  else if constexpr (is_cuda_std_bit_or_v<ReductionOp, T>)
+  else if constexpr (::cuda::__is_cuda_std_bit_or_v<ReductionOp, T>)
   {
     return static_cast<T>(__reduce_or_sync(mask, value));
   }
-  else if constexpr (is_cuda_std_bit_xor_v<ReductionOp, T>)
+  else if constexpr (::cuda::__is_cuda_std_bit_xor_v<ReductionOp, T>)
   {
     return static_cast<T>(__reduce_xor_sync(mask, value));
   }
@@ -250,7 +252,7 @@ _CCCL_FORCEINLINE T warp_redux_min_max_f32(const T input, const ::cuda::std::uin
 
   const float value = ::cuda::std::__fp_cast<float>(input);
   float result;
-  if constexpr (is_cuda_minimum_v<ReductionOp, T>)
+  if constexpr (::cuda::__is_cuda_minimum_v<ReductionOp, T>)
   {
     result = cub::detail::redux_min_max_f32_min_ptx(value, mask);
   }
