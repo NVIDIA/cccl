@@ -418,3 +418,191 @@ def test_retired_source_dump_setting_is_ignored(
 
     assert result == b"cached"
     assert not list(tmp_path.iterdir())
+
+
+def _layout_nvrtc(*, failure=None, lowered_name=None):
+    events = []
+    expressions = []
+    sources = []
+    program = object()
+    layouts = ((24, 8), (64, 16))
+
+    def create(source, *_args):
+        events.append("create")
+        sources.append(source.decode())
+        return 0, program
+
+    def register(prog, expression):
+        assert prog is program
+        events.append("register")
+        expressions.append(expression.decode())
+        return (1 if failure == "register" else 0,)
+
+    def compile_program(prog, *_args):
+        assert prog is program
+        events.append("compile")
+        return (1 if failure == "compile" else 0,)
+
+    def get_name(prog, expression):
+        assert prog is program
+        assert "compile" in events
+        events.append("name")
+        if failure == "name":
+            return 1, b""
+        if lowered_name is not None:
+            return 0, lowered_name
+        expression = expression.decode()
+        symbol = expression.split("<", 1)[0].lstrip("&")
+        size, alignment = layouts[expressions.index(expression) % len(layouts)]
+        return 0, f"_Z{len(symbol)}{symbol}ILy{size}ELy{alignment}EE".encode()
+
+    def get_image(prog, image):
+        assert prog is program
+        events.append("image")
+        image[:] = b"ltoir"
+        return (0,)
+
+    def destroy(prog):
+        assert prog is program
+        events.append("destroy")
+        return (0,)
+
+    nvrtc = _fake_nvrtc((13, 3))
+    nvrtc.nvrtcCreateProgram = create
+    nvrtc.nvrtcAddNameExpression = register
+    nvrtc.nvrtcCompileProgram = compile_program
+    nvrtc.nvrtcGetLoweredName = get_name
+    nvrtc.nvrtcGetLTOIRSize = lambda prog: (0, 5)
+    nvrtc.nvrtcGetLTOIR = get_image
+    nvrtc.nvrtcDestroyProgram = destroy
+    nvrtc.nvrtcGetProgramLogSize = lambda prog: (0, 0)
+    nvrtc.nvrtcGetProgramLog = lambda prog, log: (0,)
+    return nvrtc, events, expressions, sources
+
+
+@pytest.mark.parametrize("repeated_type", (False, True))
+def test_layout_queries_share_the_provider_compilation(
+    monkeypatch, repeated_type
+):
+    nvrtc, events, expressions, sources = _layout_nvrtc()
+    monkeypatch.setattr(_nvrtc, "_load_nvrtc", lambda: nvrtc)
+    monkeypatch.setattr(
+        _nvrtc, "compile_impl", inspect.unwrap(_nvrtc.compile_impl)
+    )
+
+    runtime_version, result = _nvrtc.compile_with_layouts(
+        cpp="struct Small {}; struct Large {};",
+        layout_types=("Small", "Large", "Small")
+        if repeated_type
+        else ("Small", "Large"),
+        cc=90,
+        rdc=True,
+        context=_context(),
+    )
+
+    assert runtime_version == _context().nvrtc_version
+    expected = (
+        ((24, 8), (64, 16), (24, 8)) if repeated_type else ((24, 8), (64, 16))
+    )
+    assert result == (b"ltoir", expected)
+    assert events == [
+        "create",
+        "register",
+        "register",
+        "compile",
+        "name",
+        "name",
+        "image",
+        "destroy",
+    ]
+    assert len(sources) == 1
+    assert "sizeof(Small)" in expressions[0]
+    assert "alignof(Small)" in expressions[0]
+    assert "sizeof(Large)" in expressions[1]
+    assert "alignof(Large)" in expressions[1]
+
+
+@pytest.mark.parametrize("failure", ("register", "compile", "name"))
+def test_layout_query_failures_destroy_the_program(monkeypatch, failure):
+    nvrtc, events, _, _ = _layout_nvrtc(failure=failure)
+    monkeypatch.setattr(_nvrtc, "_load_nvrtc", lambda: nvrtc)
+    monkeypatch.setattr(
+        _nvrtc, "compile_impl", inspect.unwrap(_nvrtc.compile_impl)
+    )
+
+    with pytest.raises(RuntimeError, match="NVRTC"):
+        _nvrtc.compile_with_layouts(
+            cpp="struct Storage {};",
+            layout_types=("Storage",),
+            cc=90,
+            rdc=True,
+            context=_context(),
+        )
+
+    assert events[-1] == "destroy"
+    assert events.count("destroy") == 1
+    assert "image" not in events
+
+
+def test_malformed_layout_name_destroys_the_program(monkeypatch):
+    nvrtc, events, _, _ = _layout_nvrtc(lowered_name=b"unexpected_lowered_name")
+    monkeypatch.setattr(_nvrtc, "_load_nvrtc", lambda: nvrtc)
+    monkeypatch.setattr(
+        _nvrtc, "compile_impl", inspect.unwrap(_nvrtc.compile_impl)
+    )
+
+    with pytest.raises(ValueError, match="(?i)(layout|lowered)"):
+        _nvrtc.compile_with_layouts(
+            cpp="struct Storage {};",
+            layout_types=("Storage",),
+            cc=90,
+            rdc=True,
+            context=_context(),
+        )
+
+    assert events[-1] == "destroy"
+    assert events.count("destroy") == 1
+
+
+@pytest.mark.parametrize("layout_types", ((), ("Storage",)))
+def test_layout_queries_partition_the_memory_cache(monkeypatch, layout_types):
+    from cuda.coop.numba_mlir._compiler import _caching
+
+    nvrtc, events, _, sources = _layout_nvrtc()
+    monkeypatch.setattr(_nvrtc, "_load_nvrtc", lambda: nvrtc)
+    monkeypatch.setattr(_caching, "_CACHE_USABLE", False)
+    _nvrtc.compile_impl.cache_clear()
+    arguments = {
+        "cpp": "struct Storage {}; struct Other {};",
+        "cc": 90,
+        "rdc": True,
+        "context": _context(),
+    }
+    try:
+        first = _nvrtc.compile_with_layouts(
+            layout_types=layout_types, **arguments
+        )
+        repeated = _nvrtc.compile_with_layouts(
+            layout_types=layout_types, **arguments
+        )
+        _nvrtc.compile_with_layouts(layout_types=("Other",), **arguments)
+        assert first == repeated
+        assert events.count("compile") == 2
+        assert sources[0] != sources[1]
+        if not layout_types:
+            assert first[1] == (b"ltoir", ())
+            assert events[:4] == ["create", "compile", "image", "destroy"]
+    finally:
+        _nvrtc.compile_impl.cache_clear()
+
+
+@pytest.mark.parametrize("size,alignment", ((0, 8), (8, 0), (24, 3), (24, 16)))
+def test_invalid_layout(size, alignment):
+    from cuda.coop.numba_mlir._compiler._layout import decode_layout_name
+
+    with pytest.raises(ValueError, match="(?i)layout"):
+        decode_layout_name(
+            f"_Z5probeILy{size}ELy{alignment}EE",
+            symbol="probe",
+            expression="&probe<(sizeof(Storage)), (alignof(Storage))>",
+        )

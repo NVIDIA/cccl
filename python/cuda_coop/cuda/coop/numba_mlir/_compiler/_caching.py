@@ -51,7 +51,7 @@ _ENABLE_CACHE = (
     and _CACHE_ENV_VALUE.strip().lower() not in _FALSE_CACHE_VALUES
 )
 _CACHE_USABLE = _ENABLE_CACHE
-_CACHE_SCHEMA_VERSION = 5
+_CACHE_SCHEMA_VERSION = 6
 _CACHE_MISS = object()
 
 
@@ -192,6 +192,11 @@ def _encode_cache_value(value: object) -> object:
             "__cuda_coop_numba_mlir_cache_type__": "bytes",
             "data": b64encode(value).decode("ascii"),
         }
+    if isinstance(value, tuple):
+        return {
+            "__cuda_coop_numba_mlir_cache_type__": "tuple",
+            "items": [_encode_cache_value(item) for item in value],
+        }
     return value
 
 
@@ -200,7 +205,12 @@ def _decode_cache_value(value: object) -> object:
         isinstance(value, dict)
         and value.get("__cuda_coop_numba_mlir_cache_type__") == "bytes"
     ):
-        return b64decode(value["data"].encode("ascii"))
+        return b64decode(value["data"].encode("ascii"), validate=True)
+    if (
+        isinstance(value, dict)
+        and value.get("__cuda_coop_numba_mlir_cache_type__") == "tuple"
+    ):
+        return tuple(_decode_cache_value(item) for item in value["items"])
     return value
 
 
@@ -244,9 +254,10 @@ def _write_cache(path: str | os.PathLike[str], value: object) -> None:
     """Serialize a result and atomically replace its cache entry.
 
     Write a schema and top-level type tag alongside the value, encoding bytes
-    as base64. Use a temporary file in the destination directory, flush and
-    fsync it, then replace the destination so readers do not see a partially
-    written JSON document. Concurrent writers may replace the same entry.
+    as base64 and recursively tagging tuples. Use a temporary file in the
+    destination directory, flush and fsync it, then replace the destination
+    so readers do not see a partially written JSON document. Concurrent
+    writers may replace the same entry.
     On a write or replacement failure, attempt to remove the temporary file
     and propagate the error for ``disk_cache`` to handle.
 
@@ -255,8 +266,9 @@ def _write_cache(path: str | os.PathLike[str], value: object) -> None:
     path : str or os.PathLike[str]
         Destination entry. Its parent directory must already exist.
     value : object
-        Result to persist: bytes or a JSON-serializable value. A later read
-        also requires the decoded top-level type to match the saved type tag.
+        Result to persist: bytes, recursively supported tuples, or a
+        JSON-serializable value. A later read also requires the decoded
+        top-level type to match the saved type tag.
 
     Raises
     ------
