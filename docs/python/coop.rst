@@ -99,7 +99,7 @@ in the programming guides.
      - Not implemented
    * - Block and warp Load/Store
      - Available
-     - Block only
+     - Block and physical warp
    * - Built-in Reduce/Sum and Scan
      - Available
      - Not implemented

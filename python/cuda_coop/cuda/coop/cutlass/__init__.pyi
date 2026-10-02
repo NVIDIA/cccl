@@ -20,3 +20,4 @@ from ._thread_group import (
 from ._thread_group import (
     this_block as this_block,
 )
+from ._thread_group import this_warp as this_warp
