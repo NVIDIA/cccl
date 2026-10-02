@@ -1030,7 +1030,8 @@ struct policy_selector
             }
             // wrps_4.lbi_3.ipt_80 ()  1.019078  0.999708  1.017346  1.052592
             // retuned for the store-squad scan kernel:
-            // wrps_4.lbi_7.ipt_64.lbs_-2 ()  1.011009  0.994440  1.010186  1.061934 (score relative to the tuning above)
+            // wrps_4.lbi_7.ipt_64.lbs_-2 ()  1.011009  0.994440  1.010186  1.061934 (score relative to the tuning
+            // above)
             return ScanLookaheadPolicy{4, 64 - 1, 7, -2};
           case 8:
             // wrps_2.lbi_5.ipt_88 ()  1.085781   1.0  1.079245  1.103545
