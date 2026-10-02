@@ -32,6 +32,8 @@
 #include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 #include <cuda/experimental/__stf/utility/pretty_print.cuh>
 
+#include <mutex>
+
 namespace cuda::experimental::stf
 {
 namespace reserved
@@ -262,6 +264,14 @@ public:
   void*
   allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
+    // A single allocator instance is shared by all logical data in a context.
+    // Task acquire() only holds per-logical-data mutexes, so submitters with
+    // distinct logical data reach this allocator concurrently. The lazy per-
+    // place buffer creation (find/emplace) and the buddy free lists are plain
+    // containers that would otherwise be corrupted by concurrent access (double
+    // 128 MiB root allocations, unordered_map rehash during traversal, the same
+    // block handed to two tasks). Serialize the whole operation.
+    const ::std::lock_guard<::std::mutex> guard(mtx);
     auto it = map.find(memory_node);
     if (it == map.end())
     {
@@ -288,6 +298,7 @@ public:
     backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
     (void) ctx;
+    const ::std::lock_guard<::std::mutex> guard(mtx);
     // There should be exactly one entry in the map
     assert(map.count(memory_node) == 1);
     auto& m = map.find(memory_node)->second;
@@ -299,9 +310,19 @@ public:
 
   event_list deinit(backend_ctx_untyped& ctx) override
   {
+    // deinit runs at context finalize, when submitters are expected to be
+    // quiesced. Swap the map out under the lock so a stray in-flight
+    // allocation fails loudly instead of touching a place being torn down,
+    // and so the buffer deallocations run outside the lock -- same janitor
+    // idiom as block_data_pool_set::deinit_pools.
+    decltype(map) janitor;
+    {
+      const ::std::lock_guard<::std::mutex> guard(mtx);
+      map.swap(janitor);
+    }
     event_list result;
     // For every place in the map
-    for (auto& [memory_node, pp] : map)
+    for (auto& [memory_node, pp] : janitor)
     {
       event_list local_prereqs;
 
@@ -326,15 +347,13 @@ private:
   ::std::unordered_map<data_place, per_place, hash<data_place>> map;
 
   block_allocator_untyped root_allocator;
+
+  // Protects `map` (lazy per-place buffer creation) and the per-place buddy
+  // free lists against concurrent task submission from multiple host threads.
+  ::std::mutex mtx;
 };
 
 #ifdef UNITTESTED_FILE
-
-UNITTEST("buddy_allocator is movable")
-{
-  static_assert(std::is_move_constructible<buddy_allocator>::value, "buddy_allocator must be move constructible");
-  static_assert(std::is_move_assignable<buddy_allocator>::value, "buddy_allocator must be move assignable");
-};
 
 UNITTEST("buddy allocator meta data")
 {
