@@ -3,6 +3,8 @@
 
 #include <thrust/sequence.h>
 
+#include <cuda/std/type_traits>
+
 #include <nvbench_helper.cuh>
 
 #include "histogram_common.cuh"
@@ -27,12 +29,15 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   const SampleT lower_level = 0;
   const SampleT upper_level = get_upper_level<SampleT>(num_bins, elements);
 
-  SampleT step = (upper_level - lower_level) / num_bins;
-  thrust::device_vector<SampleT> levels(num_bins + 1);
+  // Narrow integer samples need floating-point levels to represent more bins than sample values.
+  using level_t =
+    cuda::std::conditional_t<cuda::std::is_integral_v<SampleT> && (sizeof(SampleT) < sizeof(float)), float, SampleT>;
+  const level_t step = static_cast<level_t>(upper_level - lower_level) / static_cast<level_t>(num_bins);
+  thrust::device_vector<level_t> levels(num_bins + 1);
 
   // TODO Extract sequence to the helper TU
-  thrust::sequence(levels.begin(), levels.end(), lower_level, step);
-  SampleT* d_levels = thrust::raw_pointer_cast(levels.data());
+  thrust::sequence(levels.begin(), levels.end(), static_cast<level_t>(lower_level), step);
+  level_t* d_levels = thrust::raw_pointer_cast(levels.data());
 
   thrust::device_vector<SampleT> input = generate(elements, entropy, lower_level, upper_level);
   thrust::device_vector<CounterT> hist(num_bins);
