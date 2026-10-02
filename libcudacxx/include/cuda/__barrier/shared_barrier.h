@@ -542,9 +542,11 @@ public:
 
   //! @brief Arrives at the current barrier phase.
   //!
+  //! The returned token may be discarded when waits use an explicitly tracked phase number.
+  //!
   //! @param __update Arrival count update.
   //! @return An arrival token that can be waited on.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API arrival_token arrive(::cuda::std::ptrdiff_t __update = 1)
+  _CCCL_HOST_DEVICE_API arrival_token arrive(::cuda::std::ptrdiff_t __update = 1)
   {
     _CCCL_ASSERT(1 <= __update, "Arrival count update must be at least one.");
     _CCCL_ASSERT(__update <= __max_expected_count(),
@@ -571,10 +573,12 @@ public:
 
   //! @brief Arrives at the current phase and increases the expected transaction count.
   //!
+  //! The returned token may be discarded when waits use an explicitly tracked phase number.
+  //!
   //! @param __arrive_count_update Arrival count update.
   //! @param __transaction_count_update Transaction count update.
   //! @return An arrival token that can be waited on.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API arrival_token
+  _CCCL_HOST_DEVICE_API arrival_token
   arrive_tx(::cuda::std::ptrdiff_t __arrive_count_update, ::cuda::std::ptrdiff_t __transaction_count_update)
   {
     _CCCL_ASSERT(1 <= __arrive_count_update, "Arrival count update must be at least one.");

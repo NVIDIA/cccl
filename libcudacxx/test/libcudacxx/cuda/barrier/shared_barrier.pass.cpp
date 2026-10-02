@@ -185,8 +185,7 @@ TEST_DEVICE_FUNC void test_concurrent_wait_phase()
   concurrent_threads_launch(awaiter, arriver);
 
   execute_on_thread_zero([&] {
-    auto token = bar->arrive(2);
-    unused(token);
+    (void) bar->arrive(2);
     bar->wait(phase + 1, cuda::ignore_status);
   });
 }
@@ -395,11 +394,9 @@ TEST_DEVICE_FUNC void test_test_waits(cuda::shared_barrier* bar)
     }
   });
 
-  __syncthreads();
-
   if (threadIdx.x != 0)
   {
-    unused(bar->arrive());
+    (void) bar->arrive();
   }
 
   __syncthreads();
@@ -410,8 +407,6 @@ TEST_DEVICE_FUNC void test_test_waits(cuda::shared_barrier* bar)
     auto status = bar->test_wait(token, cuda::return_status);
     check_success_status(status);
   });
-
-  __syncthreads();
 }
 
 TEST_DEVICE_FUNC void test_ignore_status_waits(cuda::shared_barrier* bar)
@@ -447,8 +442,7 @@ TEST_DEVICE_FUNC void test_status_waits(cuda::shared_barrier* bar)
 
 TEST_DEVICE_FUNC void test_phase_waits(cuda::shared_barrier* bar)
 {
-  auto token = bar->arrive();
-  unused(token);
+  (void) bar->arrive();
   bar->wait(0, cuda::ignore_status);
 
   assert(bar->test_wait(0, cuda::ignore_status));
