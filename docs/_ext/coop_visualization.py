@@ -21,6 +21,7 @@ _EXPLORERS = {
     "discontinuity": "coop-neighbors.js",
     "histogram": "coop-histogram.js",
     "run-length-decode": "coop-run-length-decode.js",
+    "reduce-batched": "coop-reduce-batched.js",
 }
 
 _VISUALIZATION_TITLES = {
@@ -31,6 +32,7 @@ _VISUALIZATION_TITLES = {
     "discontinuity": "Discontinuity",
     "histogram": "Histogram",
     "run-length-decode": "Run Length Decode",
+    "reduce-batched": "Batched Warp Reduction",
 }
 
 _API_VISUALIZATIONS = {
@@ -51,10 +53,12 @@ _API_VISUALIZATIONS = {
     "discontinuity": "discontinuity",
     "histogram": "histogram",
     "run-length-decode": "run-length-decode",
+    "reduce-batched": "reduce-batched",
     "sum": "reduce",
     "adjacent_difference": "adjacent-difference",
     "run_length_decode": "run-length-decode",
     "run_length_decode_into": "run-length-decode",
+    "reduce_batched": "reduce-batched",
     "merge_sort_keys": "merge-sort",
     "merge_sort_pairs": "merge-sort",
     "radix_sort_keys": "radix",

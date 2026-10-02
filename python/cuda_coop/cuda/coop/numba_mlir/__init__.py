@@ -36,6 +36,7 @@ if TYPE_CHECKING:
         radix_sort_pairs,
     )
     from ._group._reduce import reduce, sum
+    from ._group._reduce_batched import reduce_batched
     from ._group._run_length import run_length_decode, run_length_decode_into
     from ._group._scan import (
         exclusive_scan,
@@ -79,6 +80,7 @@ __all__ = [
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
+    "reduce_batched",
     "run_length_decode",
     "run_length_decode_into",
     "scan",
@@ -114,6 +116,7 @@ def __getattr__(name):
         "inclusive_scan",
         "inclusive_sum",
         "reduce",
+        "reduce_batched",
         "run_length_decode",
         "run_length_decode_into",
         "scan",
@@ -139,6 +142,7 @@ def __getattr__(name):
             "inclusive_scan": "_group._scan",
             "inclusive_sum": "_group._scan",
             "reduce": "_group._reduce",
+            "reduce_batched": "_group._reduce_batched",
             "run_length_decode": "_group._run_length",
             "run_length_decode_into": "_group._run_length",
             "scan": "_group._scan",

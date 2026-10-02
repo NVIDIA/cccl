@@ -17,6 +17,7 @@ from ._core.api.radix_sort import (
     radix_sort_pairs,
 )
 from ._core.api.reduce import reduce, sum
+from ._core.api.reduce_batched import reduce_batched
 from ._core.api.run_length import run_length_decode as run_length_decode
 from ._core.api.run_length import (
     run_length_decode_into as run_length_decode_into,
@@ -78,6 +79,7 @@ __all__ = [
     "radix_sort_keys",
     "radix_sort_pairs",
     "reduce",
+    "reduce_batched",
     "register",
     "run_length_decode",
     "run_length_decode_into",
