@@ -68,9 +68,7 @@ public:
       , graph_mutex(graph_mutex)
       , stage(stage)
       , ctx(mv(ctx))
-  {
-    this->ctx.increment_task_count();
-  }
+  {}
 
   graph_task(graph_task&&)            = default;
   graph_task& operator=(graph_task&&) = default;
@@ -307,20 +305,12 @@ public:
 
   void populate_deps_scheduling_info() const
   {
-    // Error checking copied from acquire() in acquire_release()
-
-    int index        = 0;
     const auto& deps = get_task_deps();
+    reserved::ensure_task_deps_initialized(deps);
     for (const auto& dep : deps)
     {
-      if (!dep.get_data().is_initialized())
-      {
-        fprintf(stderr, "Error: dependency number %d is an uninitialized logical data.\n", index);
-        abort();
-      }
       dep.set_symbol(dep.get_data().get_symbol());
       dep.set_data_footprint(dep.get_data().get_data_interface().data_footprint());
-      index++;
     }
   }
 

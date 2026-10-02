@@ -586,17 +586,15 @@ UNITTEST("empty box<1>")
 
   auto it_end   = shape.end();
   auto it_begin = shape.begin();
-  if (it_end != it_begin)
-  {
-    fprintf(stderr, "Error: begin() != end()\n");
-    abort();
-  }
+  EXPECT(!(it_end != it_begin));
 
   // There should be no entry in this range
+  size_t cnt = 0;
   for ([[maybe_unused]] const auto& pos : shape)
   {
-    abort();
+    cnt++;
   }
+  EXPECT(cnt == 0);
 };
 
 UNITTEST("empty box<2>")

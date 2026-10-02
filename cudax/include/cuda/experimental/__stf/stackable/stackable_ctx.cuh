@@ -27,12 +27,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
+
 #include <algorithm>
 #include <atomic>
 #include <iostream>
 #include <memory>
 #include <shared_mutex>
 #include <stack>
+#include <stdexcept>
+#include <string>
 #include <thread>
 #include <tuple>
 
@@ -326,11 +330,11 @@ public:
         const access_mode parent_frozen_mode = data().get_frozen_mode(parent_offset);
         if (!access_mode_permits(parent_frozen_mode, m))
         {
-          fprintf(stderr,
-                  "Error: Invalid access mode transition - parent frozen with %s, requesting %s\n",
-                  access_mode_string(parent_frozen_mode),
-                  access_mode_string(m));
-          abort();
+          _CCCL_THROW(::std::logic_error,
+                      ::std::string("invalid access mode transition: parent frozen with ")
+                        .append(access_mode_string(parent_frozen_mode))
+                        .append(", requesting ")
+                        .append(access_mode_string(m)));
         }
       }
 
@@ -661,6 +665,25 @@ private:
 
     auto& from_data_node = st.data_nodes[static_cast<size_t>(parent_offset)].value();
 
+    // The parent scope holds this data with the mode its own import was granted, i.e. the mode
+    // the grandparent froze it with. A nested import cannot ask for more: a scope that only reads
+    // cannot hand out write access, since its own write-back would violate its grant. Checked
+    // here, before anything is frozen, so the misuse surfaces at push() and not at pop() inside a
+    // destructor.
+    if (const int grandparent_offset = st.sctx.get_parent_offset(parent_offset);
+        grandparent_offset >= 0 && st.is_frozen(grandparent_offset))
+    {
+      const access_mode granted = st.get_frozen_mode(grandparent_offset);
+      if (!access_mode_permits(granted, m))
+      {
+        _CCCL_THROW(::std::logic_error,
+                    ::std::string("invalid access mode escalation: the enclosing scope holds the data with mode ")
+                      .append(access_mode_string(granted))
+                      .append(", requested ")
+                      .append(access_mode_string(m)));
+      }
+    }
+
     if (where.is_invalid())
     {
       where = from_ctx.default_exec_place().affine_data_place();
@@ -687,11 +710,11 @@ private:
 
       if (!access_mode_permits(existing_frozen_mode, m))
       {
-        fprintf(stderr,
-                "Error: Incompatible access mode - existing frozen mode %s conflicts with requested mode %s\n",
-                access_mode_string(existing_frozen_mode),
-                access_mode_string(m));
-        abort();
+        _CCCL_THROW(::std::logic_error,
+                    ::std::string("incompatible access mode: existing frozen mode ")
+                      .append(access_mode_string(existing_frozen_mode))
+                      .append(" conflicts with requested mode ")
+                      .append(access_mode_string(m)));
       }
     }
 
