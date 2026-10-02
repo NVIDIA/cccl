@@ -1,0 +1,1729 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Allocate shared scratch and insert reuse barriers for cooperative calls.
+
+The call rewrite scans every block before replacing descriptors so all
+provider scratch requirements contribute to one function-wide allocation.
+Explicit ``TempStorage`` descriptors and implementation-owned scratch
+receive aligned regions and per-call views, partitioned where separate group
+instances require independent storage. Emission places the backing
+allocation before its consumers and adds the synchronization required by
+each plan's reuse contract.
+"""
+
+from __future__ import annotations
+
+import operator
+from dataclasses import replace
+from typing import TYPE_CHECKING, cast
+
+from numba_cuda_mlir import cuda as _cuda_module
+from numba_cuda_mlir.extending import set_required_dynamic_shared_memory
+from numba_cuda_mlir.numba_cuda.types import uint8
+
+from cuda.coop._core import (
+    GroupLoweringPlan,
+    StorageOwnership,
+    SynchronizationScope,
+)
+
+from ._operations import _GROUP_LOWERING_PLAN_KWARG, StorageABI
+from ._rewrite_support import (
+    _DEFAULT_STATIC_SHARED_MEMORY_BYTES,
+    _DYNAMIC_SHARED_MEMORY_ALIGNMENT,
+    _GLOBAL_NAME_COUNTER,
+    _INFERENCE_EXCEPTIONS,
+    CoopSinglePhaseRewriteError,
+    _align_up,
+    _next_global_name,
+    _normalize_temp_storage_alignment,
+    _phi_incoming_values,
+    _query_device_shared_memory_limits,
+    _RewriteMatch,
+    _TempStorageGlobalPlan,
+    _TempStoragePlan,
+    _TempStorageRequirementSummary,
+    _TempStorageSlice,
+    _TempStorageUseRequirement,
+    ir,
+)
+
+if TYPE_CHECKING:
+    from cuda.coop._core import GroupTopologyContract
+
+    from ._rewrite import CoopSinglePhaseRewrite
+
+
+class _StorageRewrite:
+    def _validate_storage_match_plan(
+        self, match: _RewriteMatch, *, ctor_key: str | None = None
+    ) -> None:
+        """Check storage contracts before allocating slices and barriers.
+
+        Validate the provider registry contract against the group planner's
+        execution topology, storage ownership, shared address space, and reuse
+        barrier. Explicit caller-owned storage is supported only for a single
+        block instance. With manual synchronization, that caller-owned case may
+        retain the provider's execution-scope synchronization declaration even
+        though this rewrite emits no automatic reuse barrier.
+
+        The group planner and this rewrite parse descriptors independently. When
+        a constructor key is available, compare their effective contracts so a
+        parser disagreement cannot silently suppress synchronization. Calls
+        without a lowering plan retain only the legacy block execution and block
+        synchronization contract. Requirement collection runs these checks
+        before materializing storage-bearing invocables.
+
+        Parameters
+        ----------
+        match : _RewriteMatch
+            Validated call whose provider ABI requires a leading storage
+            pointer.
+        ctor_key : str or None, optional
+            Explicit descriptor owner used to cross-check constructor
+            metadata. None applies to implicit storage or when no owner was
+            resolved.
+
+        Returns
+        -------
+        None
+            Successful return permits subsequent requirement collection.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            The plan cannot be emitted or any provider, ownership,
+            synchronization, or constructor contract disagrees.
+        """
+
+        rewrite = cast("CoopSinglePhaseRewrite", self)
+        cls = type(self)
+        lowering_plan = match.lowering_plan
+        if lowering_plan is None:
+            if (
+                match.factory_metadata.execution_scope
+                is not SynchronizationScope.BLOCK
+                or match.factory_metadata.synchronization_scope
+                is not SynchronizationScope.BLOCK
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    "storage-bearing providers without a group lowering plan "
+                    "require block execution and block synchronization scopes"
+                )
+            return
+        if lowering_plan.unsupported is not None:
+            raise CoopSinglePhaseRewriteError(
+                "cooperative provider storage received an unsupported "
+                "group lowering plan."
+            )
+        topology = cls._validate_emittable_topology(lowering_plan)
+        synchronization = lowering_plan.synchronization
+        storage = lowering_plan.temp_storage
+        if topology is None or synchronization is None or storage is None:
+            raise CoopSinglePhaseRewriteError(
+                "cooperative provider storage requires complete group "
+                "topology, synchronization, and storage contracts."
+            )
+        if (
+            match.factory_metadata.execution_scope
+            is not topology.execution_scope
+        ):
+            raise CoopSinglePhaseRewriteError(
+                "cooperative provider execution scope disagrees with its "
+                "group topology."
+            )
+        if storage.ownership is StorageOwnership.NONE:
+            raise CoopSinglePhaseRewriteError(
+                "a storage-bearing cooperative provider received a "
+                "storage-free lowering plan."
+            )
+        if storage.address_space != "shared":
+            raise CoopSinglePhaseRewriteError(
+                "storage-bearing cooperative providers require "
+                "shared-address-space TempStorage."
+            )
+        if storage.instances != topology.instances or (
+            storage.instance_index != topology.instance_index
+        ):
+            raise CoopSinglePhaseRewriteError(
+                "cooperative provider storage layout "
+                "disagrees with its group topology."
+            )
+        caller_owned = storage.ownership is StorageOwnership.CALLER
+        if caller_owned != (match.runtime_temp_storage_var is not None):
+            raise CoopSinglePhaseRewriteError(
+                "cooperative provider TempStorage ownership disagrees with "
+                "its runtime arguments."
+            )
+        if caller_owned and (
+            topology.execution_scope is not SynchronizationScope.BLOCK
+            or topology.instances != 1
+        ):
+            if topology.execution_scope is SynchronizationScope.WARP:
+                raise CoopSinglePhaseRewriteError(
+                    "cuda.coop.numba_mlir caller-owned TempStorage is not "
+                    "supported for warp-scoped cooperative primitives; omit "
+                    "temp_storage so the implementation can provide one "
+                    "aligned slice per group instance"
+                )
+            raise CoopSinglePhaseRewriteError(
+                "cuda.coop.numba_mlir caller-owned TempStorage is supported "
+                "only for single-instance block-scoped cooperative primitives"
+            )
+        expected_reuse_barrier = (
+            topology.execution_scope
+            if storage.auto_sync
+            else SynchronizationScope.NONE
+        )
+        planned_reuse_barrier = synchronization.storage_reuse_barrier
+        if planned_reuse_barrier is not expected_reuse_barrier:
+            raise CoopSinglePhaseRewriteError(
+                "cooperative provider TempStorage automatic synchronization "
+                "disagrees with its planned storage-reuse barrier."
+            )
+        allowed_provider_barriers = {planned_reuse_barrier}
+        if caller_owned and not storage.auto_sync:
+            allowed_provider_barriers.add(topology.execution_scope)
+        if (
+            match.factory_metadata.synchronization_scope
+            not in allowed_provider_barriers
+        ):
+            raise CoopSinglePhaseRewriteError(
+                "cooperative provider synchronization scope disagrees with "
+                "its group lowering plan."
+            )
+        if caller_owned and ctor_key is not None:
+            # The group planner and this rewrite parse the same constructor
+            # independently. The barrier is emitted only when both agree, so
+            # any drift must fail loudly rather than drop the barrier.
+            specification = self._temp_storage_ctor_specifications.get(
+                rewrite._canonical_temp_storage_ctor_key(ctor_key)
+            )
+            if specification is not None:
+                size, alignment, auto_sync, sharing = (
+                    rewrite._temp_storage_contract(specification)
+                )
+                planned_alignment = storage.requested_alignment
+                if planned_alignment is not None:
+                    planned_alignment = _normalize_temp_storage_alignment(
+                        planned_alignment
+                    )
+                planned = (
+                    storage.requested_size_in_bytes,
+                    planned_alignment,
+                    storage.auto_sync,
+                    storage.sharing,
+                )
+                if (size, alignment, auto_sync, sharing) != planned:
+                    raise CoopSinglePhaseRewriteError(
+                        "cooperative provider TempStorage contract disagrees "
+                        "between the group lowering plan "
+                        f"{planned!r} and the descriptor "
+                        f"{(size, alignment, auto_sync, sharing)!r}."
+                    )
+
+    @staticmethod
+    def _emit_integer_constant(
+        block: ir.Block,
+        *,
+        scope: ir.Scope | None,
+        loc: ir.Loc,
+        stem: str,
+        value: int,
+    ) -> ir.Var:
+        result = ir.Var(
+            scope,
+            f"__coop_{stem}_{next(_GLOBAL_NAME_COUNTER)}__",
+            loc,
+        )
+        block.append(ir.Assign(ir.Const(int(value), loc), result, loc))
+        return result
+
+    @staticmethod
+    def _emit_integer_binop(
+        block: ir.Block,
+        *,
+        scope: ir.Scope | None,
+        loc: ir.Loc,
+        stem: str,
+        fn,
+        lhs: ir.Var,
+        rhs: ir.Var,
+    ) -> ir.Var:
+        result = ir.Var(
+            scope,
+            f"__coop_{stem}_{next(_GLOBAL_NAME_COUNTER)}__",
+            loc,
+        )
+        block.append(ir.Assign(ir.Expr.binop(fn, lhs, rhs, loc), result, loc))
+        return result
+
+    def _emit_linear_thread_rank(
+        self,
+        block: ir.Block,
+        *,
+        scope: ir.Scope | None,
+        loc: ir.Loc,
+    ) -> ir.Var:
+        """Append IR for the CUDA thread's linear rank within its block.
+
+        Compute ``threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y *
+        threadIdx.z)`` from runtime CUDA indices. Storage instance selection and
+        logical-warp barrier masks need this rank rather than ``threadIdx.x`` so
+        the same topology works for multidimensional launches.
+
+        Parameters
+        ----------
+        block : ir.Block
+            Destination receiving index reads and integer arithmetic in
+            place.
+        scope : ir.Scope or None
+            Scope assigned to generated variables.
+        loc : ir.Loc
+            Source location assigned to generated statements and variables.
+
+        Returns
+        -------
+        ir.Var
+            Variable containing the linear block rank, with the x dimension
+            varying fastest.
+        """
+
+        module_var = ir.Var(
+            scope,
+            f"__coop_group_topology_module_{next(_GLOBAL_NAME_COUNTER)}__",
+            loc,
+        )
+        thread_idx_var = ir.Var(
+            scope,
+            f"__coop_group_topology_thread_idx_{next(_GLOBAL_NAME_COUNTER)}__",
+            loc,
+        )
+        block_dim_var = ir.Var(
+            scope,
+            f"__coop_group_topology_block_dim_{next(_GLOBAL_NAME_COUNTER)}__",
+            loc,
+        )
+        block.append(
+            ir.Assign(
+                ir.Global(
+                    _next_global_name("group_topology_module"),
+                    _cuda_module,
+                    loc,
+                ),
+                module_var,
+                loc,
+            )
+        )
+        block.append(
+            ir.Assign(
+                ir.Expr.getattr(module_var, "threadIdx", loc),
+                thread_idx_var,
+                loc,
+            )
+        )
+        block.append(
+            ir.Assign(
+                ir.Expr.getattr(module_var, "blockDim", loc), block_dim_var, loc
+            )
+        )
+
+        components = {}
+        for aggregate_name, aggregate in (
+            ("thread_idx", thread_idx_var),
+            ("block_dim", block_dim_var),
+        ):
+            for component in ("x", "y", "z"):
+                value = ir.Var(
+                    scope,
+                    f"__coop_group_topology_{aggregate_name}_{component}_"
+                    f"{next(_GLOBAL_NAME_COUNTER)}__",
+                    loc,
+                )
+                block.append(
+                    ir.Assign(
+                        ir.Expr.getattr(aggregate, component, loc), value, loc
+                    )
+                )
+                components[aggregate_name, component] = value
+
+        y_stride = self._emit_integer_binop(
+            block,
+            scope=scope,
+            loc=loc,
+            stem="group_topology_y_stride",
+            fn=operator.mul,
+            lhs=components["block_dim", "y"],
+            rhs=components["thread_idx", "z"],
+        )
+        yz_rank = self._emit_integer_binop(
+            block,
+            scope=scope,
+            loc=loc,
+            stem="group_topology_yz_rank",
+            fn=operator.add,
+            lhs=components["thread_idx", "y"],
+            rhs=y_stride,
+        )
+        x_stride = self._emit_integer_binop(
+            block,
+            scope=scope,
+            loc=loc,
+            stem="group_topology_x_stride",
+            fn=operator.mul,
+            lhs=components["block_dim", "x"],
+            rhs=yz_rank,
+        )
+        return self._emit_integer_binop(
+            block,
+            scope=scope,
+            loc=loc,
+            stem="group_topology_linear_thread_rank",
+            fn=operator.add,
+            lhs=components["thread_idx", "x"],
+            rhs=x_stride,
+        )
+
+    @staticmethod
+    def _validate_emittable_topology(
+        lowering_plan: GroupLoweringPlan | None,
+    ) -> GroupTopologyContract | None:
+        """Require the canonical group ranks understood by storage IR emitters.
+
+        A plan must cover the exact block dimensions with its logical width and
+        instance count. Accept a single block, contiguous power-of-two logical
+        warps dividing 32, or individual threads. Check the symbolic instance
+        and rank expressions against those forms; emitters implement these
+        specific formulas rather than evaluating arbitrary topology expression
+        strings.
+
+        Parameters
+        ----------
+        lowering_plan : GroupLoweringPlan or None
+            Plan whose topology and participation contracts govern storage.
+            None preserves the legacy block-provider path.
+
+        Returns
+        -------
+        GroupTopologyContract or None
+            Validated topology, or None when no plan was supplied.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            Exact dimensions or required contracts are missing, coverage is
+            inconsistent, or the scope and rank formulas lack an emitter.
+        """
+
+        if lowering_plan is None:
+            return None
+        topology = lowering_plan.topology
+        participation = lowering_plan.participation
+        if topology is None or participation is None:
+            raise CoopSinglePhaseRewriteError(
+                "cooperative provider storage requires group topology and "
+                "participation contracts."
+            )
+        exact_block_dim = participation.exact_block_dim
+        if exact_block_dim is None:
+            raise CoopSinglePhaseRewriteError(
+                "cooperative provider storage requires exact block dimensions."
+            )
+        block_threads = (
+            exact_block_dim[0] * exact_block_dim[1] * exact_block_dim[2]
+        )
+        if topology.logical_width * topology.instances != block_threads:
+            raise CoopSinglePhaseRewriteError(
+                "cooperative provider topology does not cover the exact block "
+                "dimensions."
+            )
+        scope = topology.execution_scope
+        if scope is SynchronizationScope.BLOCK:
+            if (
+                topology.instances != 1
+                or topology.logical_width != block_threads
+                or topology.instance_index != "cta"
+                or topology.thread_rank != "linear_thread_rank"
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    "block-scoped cooperative storage requires canonical "
+                    "single-CTA ranks."
+                )
+        elif scope is SynchronizationScope.WARP:
+            width = topology.logical_width
+            if (
+                width < 1
+                or width > 32
+                or width & (width - 1)
+                or 32 % width != 0
+                or topology.instance_index != f"linear_thread_rank / {width}"
+                or topology.thread_rank != f"linear_thread_rank % {width}"
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    "warp-scoped cooperative storage requires a power-of-two "
+                    "logical width dividing 32 and canonical contiguous ranks."
+                )
+        elif scope is SynchronizationScope.NONE:
+            if (
+                topology.logical_width != 1
+                or topology.instance_index != "linear_thread_rank"
+                or topology.thread_rank != "0"
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    "thread-scoped cooperative storage requires canonical "
+                    "per-thread ranks."
+                )
+        else:
+            raise CoopSinglePhaseRewriteError(
+                "cuda.coop.numba_mlir provider execution scope "
+                f"{scope.value!r} has no storage emitter"
+            )
+        return topology
+
+    def _emit_storage_instance_index(
+        self,
+        block: ir.Block,
+        *,
+        lowering_plan: GroupLoweringPlan | None,
+        scope: ir.Scope | None,
+        loc: ir.Loc,
+    ) -> ir.Var:
+        topology = self._validate_emittable_topology(lowering_plan)
+        if (
+            topology is None
+            or topology.execution_scope is SynchronizationScope.BLOCK
+        ):
+            return self._emit_integer_constant(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_instance_index",
+                value=0,
+            )
+        linear_rank = self._emit_linear_thread_rank(block, scope=scope, loc=loc)
+        if topology.execution_scope is SynchronizationScope.NONE:
+            return linear_rank
+        logical_width = self._emit_integer_constant(
+            block,
+            scope=scope,
+            loc=loc,
+            stem="group_topology_logical_width",
+            value=topology.logical_width,
+        )
+        return self._emit_integer_binop(
+            block,
+            scope=scope,
+            loc=loc,
+            stem="group_topology_instance_index",
+            fn=operator.floordiv,
+            lhs=linear_rank,
+            rhs=logical_width,
+        )
+
+    def _has_temp_storage_requirements(self) -> bool:
+        rewrite = cast("CoopSinglePhaseRewrite", self)
+        implicit = getattr(self, "_implicit_temp_storage_requirements", None)
+        return bool(rewrite._func_temp_storage_requirements) or bool(
+            implicit is not None and implicit.uses
+        )
+
+    def _get_device_shared_memory_limits(
+        self, required_bytes: int
+    ) -> tuple[int, int]:
+        conservative_default = _DEFAULT_STATIC_SHARED_MEMORY_BYTES
+        if required_bytes <= conservative_default:
+            return (conservative_default, conservative_default)
+        try:
+            limits = _query_device_shared_memory_limits()
+            max_default = int(limits["max_default_shared_memory_per_block"])
+            max_optin = int(limits["max_optin_shared_memory_per_block"])
+        except (
+            AttributeError,
+            KeyError,
+            OSError,
+            RuntimeError,
+            TypeError,
+            ValueError,
+        ) as exc:
+            raise CoopSinglePhaseRewriteError(
+                "TempStorage requirements above the conservative 49152-byte "
+                "static shared-memory limit require an exact current-device "
+                "shared-memory query"
+            ) from exc
+        if max_default <= 0 or max_optin <= 0 or max_optin < max_default:
+            raise CoopSinglePhaseRewriteError(
+                "The current device reported invalid shared-memory limits: "
+                f"default={max_default}, opt-in={max_optin}."
+            )
+        return (max_default, max_optin)
+
+    def _ensure_temp_storage_global_plan(self) -> _TempStorageGlobalPlan:
+        """Plan one shared backing for explicit and implicit scratch.
+
+        Finalize canonical explicit descriptors in constructor order and assign
+        aligned base offsets, then append the implementation-owned region. Calls
+        within each region have already been assigned reusable or exclusive
+        slices. Round the total size to the greatest alignment so the backing
+        can satisfy every region with one allocation.
+
+        Use static shared memory when the total fits the default device limit;
+        otherwise request the exact dynamic byte count in compiler metadata.
+        Small allocations use the conservative limit without querying a device.
+        Dynamic placement must fit the opt-in limit and the compiler's dynamic
+        window alignment guarantee. Cache the plan and updated region offsets;
+        this method does not emit the allocation or check user shared arrays.
+
+        Returns
+        -------
+        _TempStorageGlobalPlan
+            Cached or newly computed total size, maximum alignment,
+            placement, and required dynamic byte count.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            A descriptor cannot be finalized, exact device limits are
+            required but unavailable, or size/alignment requirements exceed
+            supported limits.
+        """
+
+        rewrite = cast("CoopSinglePhaseRewrite", self)
+        cached = self._temp_storage_global_plan
+        if cached is not None:
+            return cached
+        ordered_keys = sorted(
+            {
+                rewrite._canonical_temp_storage_ctor_key(key)
+                for key in rewrite._func_temp_storage_requirements
+            },
+            key=lambda name: (
+                self._temp_storage_ctor_order.get(name, 1 << 30),
+                name,
+            ),
+        )
+        offset = 0
+        max_alignment = 1
+        for key in ordered_keys:
+            plan = rewrite._finalize_temp_storage_plan_for_var(key)
+            alignment = max(1, int(plan.alignment))
+            offset = _align_up(offset, alignment)
+            rewrite._temp_storage_plans[key] = replace(plan, base_offset=offset)
+            offset += int(plan.size_in_bytes)
+            max_alignment = max(max_alignment, alignment)
+        implicit = getattr(
+            self,
+            "_implicit_temp_storage_requirements",
+            _TempStorageRequirementSummary(),
+        )
+        if implicit.uses:
+            (
+                implicit_size,
+                implicit_alignment,
+                implicit_slices,
+            ) = rewrite._layout_temp_storage_uses(
+                implicit.uses,
+                sharing="shared",
+            )
+            offset = _align_up(offset, implicit_alignment)
+            implicit_base_offset = offset
+            self._implicit_temp_storage_plan = _TempStoragePlan(
+                size_in_bytes=implicit_size,
+                alignment=implicit_alignment,
+                sharing="shared",
+                auto_sync=True,
+                slices_by_call_id=implicit_slices,
+                base_offset=implicit_base_offset,
+            )
+            offset += implicit_size
+            max_alignment = max(max_alignment, implicit_alignment)
+        else:
+            self._implicit_temp_storage_plan = None
+        total_size = _align_up(offset, max_alignment)
+        max_default, max_optin = self._get_device_shared_memory_limits(
+            total_size
+        )
+        uses_dynamic_smem = total_size > max_default
+        if (
+            uses_dynamic_smem
+            and max_alignment > _DYNAMIC_SHARED_MEMORY_ALIGNMENT
+        ):
+            # The static path honors the requested alignment through the
+            # shared array declaration; the dynamic window only guarantees
+            # its declared alignment, and telling the optimizer otherwise
+            # would be a false assumption.
+            raise CoopSinglePhaseRewriteError(
+                f"TempStorage requires {max_alignment}-byte alignment, but the "
+                f"{total_size}-byte backing exceeds the {max_default}-byte "
+                "static shared-memory limit and dynamic shared memory "
+                f"guarantees only {_DYNAMIC_SHARED_MEMORY_ALIGNMENT}-byte "
+                "alignment; reduce the requested alignment or the storage size."
+            )
+        dynamic_shared_bytes = total_size if uses_dynamic_smem else 0
+        if dynamic_shared_bytes > max_optin:
+            raise CoopSinglePhaseRewriteError(
+                f"TempStorage requires {dynamic_shared_bytes} bytes dynamic "
+                f"shared memory, but device max opt-in is {max_optin} bytes."
+            )
+        if dynamic_shared_bytes > 0:
+            set_required_dynamic_shared_memory(
+                rewrite._state, dynamic_shared_bytes
+            )
+        plan = _TempStorageGlobalPlan(
+            total_size=total_size,
+            max_alignment=max_alignment,
+            uses_dynamic_smem=uses_dynamic_smem,
+            dynamic_shared_bytes=dynamic_shared_bytes,
+        )
+        self._temp_storage_global_plan = plan
+        return plan
+
+    def _stage_temp_storage_backing(self) -> ir.Var:
+        """Stage the scratch allocation before rewriting consumers.
+
+        Place generated allocation statements in the entry block immediately
+        after argument assignments. Block rewrite visitation need not follow
+        control flow; emitting next to the first visited consumer could leave
+        other consumers without a dominating definition. Reject conflicting user
+        shared-memory declarations before inserting the unified backing.
+
+        Repeated calls return the existing backing variable without inserting a
+        second allocation. The function's entry block is mutated directly, even
+        when ``apply`` is currently rewriting a different block.
+
+        Returns
+        -------
+        ir.Var
+            Unified shared byte array available to every rewritten consumer.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            Allocation planning fails, user shared arrays would overlap, or
+            the emission state claims a backing exists without recording its
+            variable.
+        """
+        rewrite = cast("CoopSinglePhaseRewrite", self)
+
+        if self._temp_storage_backing_emitted:
+            if self._temp_storage_backing_var is None:
+                raise CoopSinglePhaseRewriteError(
+                    "TempStorage backing was marked "
+                    "emitted without an IR value."
+                )
+            return self._temp_storage_backing_var
+        plan = self._ensure_temp_storage_global_plan()
+        self._reject_conflicting_user_shared_arrays(plan)
+        entry_block = rewrite._func_ir.blocks[min(rewrite._func_ir.blocks)]
+        staged = ir.Block(entry_block.scope, entry_block.loc)
+        backing = self._emit_temp_storage_backing(staged, plan=plan)
+        insert_at = 0
+        while insert_at < len(entry_block.body):
+            statement = entry_block.body[insert_at]
+            if not (
+                isinstance(statement, ir.Assign)
+                and isinstance(statement.value, ir.Arg)
+            ):
+                break
+            insert_at += 1
+        entry_block.body[insert_at:insert_at] = staged.body
+        entry_block.verify()
+        return backing
+
+    def _reject_conflicting_user_shared_arrays(
+        self, plan: _TempStorageGlobalPlan
+    ) -> None:
+        """Reject static/dynamic overlap in supported compiler releases.
+
+        Runtime-sized arrays and zero-sized views use the dynamic window.
+        Static globals currently overlap that window as well, so coexistence
+        is safe only when both user and cooperative allocations are static.
+        """
+        rewrite = cast("CoopSinglePhaseRewrite", self)
+
+        saved_block = self._block
+        saved_block_defs = self._block_defs
+        conflicts: list[tuple[str, ir.Loc]] = []
+        try:
+            for label in sorted(rewrite._func_ir.blocks):
+                scan_block = rewrite._func_ir.blocks[label]
+                self._block = scan_block
+                self._block_defs = {
+                    inst.target.name: inst.value
+                    for inst in scan_block.body
+                    if isinstance(inst, ir.Assign)
+                }
+                for inst in scan_block.body:
+                    if not isinstance(inst, ir.Assign):
+                        continue
+                    call = inst.value
+                    if not isinstance(call, ir.Expr) or call.op != "call":
+                        continue
+                    if not rewrite._is_shared_array_ctor_call(call):
+                        continue
+                    shape_ref = (
+                        call.args[0]
+                        if call.args
+                        else dict(call.kws).get("shape")
+                    )
+                    try:
+                        shape = rewrite._infer_constant(shape_ref)
+                    except _INFERENCE_EXCEPTIONS:
+                        shape = None
+                    dimensions = shape if isinstance(shape, tuple) else (shape,)
+                    is_static = bool(dimensions) and all(
+                        isinstance(extent, int) and extent > 0
+                        for extent in dimensions
+                    )
+                    if plan.uses_dynamic_smem or not is_static:
+                        placement = (
+                            "static" if is_static else "dynamic/runtime-sized"
+                        )
+                        conflicts.append((placement, inst.loc))
+        finally:
+            self._block = saved_block
+            self._block_defs = saved_block_defs
+        if not conflicts:
+            return
+        placement = "dynamic" if plan.uses_dynamic_smem else "static"
+        where = ", ".join(
+            f"{kind} cuda.shared.array(...) at {loc}"
+            for kind, loc in conflicts[:3]
+        )
+        raise CoopSinglePhaseRewriteError(
+            "cuda.coop temporary storage requires a "
+            f"{plan.total_size}-byte {placement} shared-memory backing, but "
+            f"this kernel also declares {where}. The supported numba-cuda-mlir "
+            "compiler does not separate these allocations; they would alias. "
+            "Use statically sized user shared arrays and keep the combined "
+            "cooperative backing within the static shared-memory limit, or "
+            "move the user data out of shared memory."
+        )
+
+    def _emit_temp_storage_backing(
+        self, block: ir.Block, *, plan: _TempStorageGlobalPlan
+    ) -> ir.Var:
+        if self._temp_storage_backing_emitted:
+            if self._temp_storage_backing_var is None:
+                raise CoopSinglePhaseRewriteError(
+                    "TempStorage backing was marked "
+                    "emitted without an IR value."
+                )
+            return self._temp_storage_backing_var
+        loc = block.loc
+        scope = block.scope
+        module_var = ir.Var(
+            scope,
+            f"__coop_temp_storage_module_{next(_GLOBAL_NAME_COUNTER)}__",
+            loc,
+        )
+        shared_var = ir.Var(
+            scope,
+            f"__coop_temp_storage_shared_{next(_GLOBAL_NAME_COUNTER)}__",
+            loc,
+        )
+        array_fn_var = ir.Var(
+            scope,
+            f"__coop_temp_storage_array_{next(_GLOBAL_NAME_COUNTER)}__",
+            loc,
+        )
+        bytes_var = ir.Var(
+            scope,
+            f"__coop_temp_storage_bytes_{next(_GLOBAL_NAME_COUNTER)}__",
+            loc,
+        )
+        align_var = ir.Var(
+            scope,
+            f"__coop_temp_storage_alignment_{next(_GLOBAL_NAME_COUNTER)}__",
+            loc,
+        )
+        dtype_var = ir.Var(
+            scope,
+            f"__coop_temp_storage_dtype_{next(_GLOBAL_NAME_COUNTER)}__",
+            loc,
+        )
+        backing_var = ir.Var(
+            scope,
+            f"__coop_temp_storage_backing_{next(_GLOBAL_NAME_COUNTER)}__",
+            loc,
+        )
+        block.append(
+            ir.Assign(
+                ir.Global(
+                    _next_global_name("temp_storage_module"),
+                    _cuda_module,
+                    loc,
+                ),
+                module_var,
+                loc,
+            )
+        )
+        block.append(
+            ir.Assign(
+                ir.Expr.getattr(module_var, "shared", loc), shared_var, loc
+            )
+        )
+        block.append(
+            ir.Assign(
+                ir.Expr.getattr(shared_var, "array", loc), array_fn_var, loc
+            )
+        )
+        alloc_size = 0 if plan.uses_dynamic_smem else int(plan.total_size)
+        block.append(ir.Assign(ir.Const(alloc_size, loc), bytes_var, loc))
+        block.append(
+            ir.Assign(ir.Const(plan.max_alignment, loc), align_var, loc)
+        )
+        block.append(
+            ir.Assign(
+                ir.Global(
+                    _next_global_name("temp_storage_dtype"),
+                    uint8,
+                    loc,
+                ),
+                dtype_var,
+                loc,
+            )
+        )
+        block.append(
+            ir.Assign(
+                ir.Expr.call(
+                    array_fn_var,
+                    [bytes_var, dtype_var],
+                    (("alignment", align_var),),
+                    loc,
+                ),
+                backing_var,
+                loc,
+            )
+        )
+        self._temp_storage_backing_var = backing_var
+        self._temp_storage_backing_emitted = True
+        return backing_var
+
+    def _emit_array_slice(
+        self,
+        block: ir.Block,
+        *,
+        source_var: ir.Var,
+        target_var: ir.Var,
+        start: int | ir.Var,
+        stop: int | ir.Var,
+        loc: ir.Loc,
+    ) -> None:
+        slice_ctor_global_name = _next_global_name("temp_storage_slice_ctor")
+        slice_ctor_var = ir.Var(
+            target_var.scope,
+            f"__coop_temp_storage_slice_ctor_var_{next(_GLOBAL_NAME_COUNTER)}__",
+            loc,
+        )
+        start_var = start
+        if not isinstance(start_var, ir.Var):
+            start_var = self._emit_integer_constant(
+                block,
+                scope=target_var.scope,
+                loc=loc,
+                stem="temp_storage_slice_start",
+                value=start_var,
+            )
+        stop_var = stop
+        if not isinstance(stop_var, ir.Var):
+            stop_var = self._emit_integer_constant(
+                block,
+                scope=target_var.scope,
+                loc=loc,
+                stem="temp_storage_slice_stop",
+                value=stop_var,
+            )
+        slice_obj_var = ir.Var(
+            target_var.scope,
+            f"__coop_temp_storage_slice_obj_{next(_GLOBAL_NAME_COUNTER)}__",
+            loc,
+        )
+        block.append(
+            ir.Assign(
+                ir.Global(slice_ctor_global_name, slice, loc),
+                slice_ctor_var,
+                loc,
+            )
+        )
+        block.append(
+            ir.Assign(
+                ir.Expr.call(slice_ctor_var, [start_var, stop_var], (), loc),
+                slice_obj_var,
+                loc,
+            )
+        )
+        block.append(
+            ir.Assign(
+                ir.Expr.getitem(source_var, slice_obj_var, loc), target_var, loc
+            )
+        )
+
+    def _emit_temp_storage_slice_for_call(
+        self,
+        block: ir.Block,
+        *,
+        source_var: ir.Var,
+        target_var: ir.Var,
+        slice_info: _TempStorageSlice,
+        base_offset: int,
+        loc: ir.Loc,
+    ) -> None:
+        """Append IR selecting one call's scratch view for the executing group.
+
+        A single-instance view has constant bounds. Multiple instances add the
+        emitted group index times the aligned instance stride to the region's
+        static offset. The view length remains the call's byte requirement, even
+        when its stride includes padding or space required by another consumer.
+
+        Parameters
+        ----------
+        block : ir.Block
+            Destination receiving bound calculations and the slice
+            assignment.
+        source_var : ir.Var
+            Shared byte array or descriptor view from which to take the
+            slice.
+        target_var : ir.Var
+            Variable assigned the generated view; also supplies the IR
+            scope.
+        slice_info : _TempStorageSlice
+            Region-relative offset, per-call size, instance layout, and
+            topology.
+        base_offset : int
+            Region origin relative to ``source_var``. Use zero for an
+            already sliced explicit descriptor and the region base for the
+            unified backing.
+        loc : ir.Loc
+            Source location for generated statements.
+
+        Returns
+        -------
+        None
+            ``target_var`` is defined by statements appended to ``block``.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            A multi-instance slice lacks a lowering plan or has unsupported
+            topology.
+        """
+
+        static_start = int(base_offset) + int(slice_info.offset)
+        if slice_info.instances == 1:
+            start: int | ir.Var = static_start
+            stop: int | ir.Var = static_start + int(slice_info.size_in_bytes)
+        else:
+            if slice_info.lowering_plan is None:
+                raise CoopSinglePhaseRewriteError(
+                    "multi-instance cooperative storage "
+                    "requires a group lowering plan."
+                )
+            instance_index = self._emit_storage_instance_index(
+                block,
+                lowering_plan=slice_info.lowering_plan,
+                scope=target_var.scope,
+                loc=loc,
+            )
+            stride = self._emit_integer_constant(
+                block,
+                scope=target_var.scope,
+                loc=loc,
+                stem="temp_storage_instance_stride",
+                value=(
+                    int(slice_info.size_in_bytes)
+                    if slice_info.stride is None
+                    else int(slice_info.stride)
+                ),
+            )
+            instance_offset = self._emit_integer_binop(
+                block,
+                scope=target_var.scope,
+                loc=loc,
+                stem="temp_storage_instance_offset",
+                fn=operator.mul,
+                lhs=instance_index,
+                rhs=stride,
+            )
+            domain_offset = self._emit_integer_constant(
+                block,
+                scope=target_var.scope,
+                loc=loc,
+                stem="temp_storage_domain_offset",
+                value=static_start,
+            )
+            start = self._emit_integer_binop(
+                block,
+                scope=target_var.scope,
+                loc=loc,
+                stem="temp_storage_slice_start",
+                fn=operator.add,
+                lhs=domain_offset,
+                rhs=instance_offset,
+            )
+            slice_size = self._emit_integer_constant(
+                block,
+                scope=target_var.scope,
+                loc=loc,
+                stem="temp_storage_slice_size",
+                value=slice_info.size_in_bytes,
+            )
+            stop = self._emit_integer_binop(
+                block,
+                scope=target_var.scope,
+                loc=loc,
+                stem="temp_storage_slice_stop",
+                fn=operator.add,
+                lhs=start,
+                rhs=slice_size,
+            )
+        self._emit_array_slice(
+            block,
+            source_var=source_var,
+            target_var=target_var,
+            start=start,
+            stop=stop,
+            loc=loc,
+        )
+
+    def _runtime_temp_storage_arg_for_call(
+        self, block: ir.Block, *, source_var: ir.Var, call_assign: ir.Assign
+    ) -> tuple[ir.Var, _TempStoragePlan | None]:
+        rewrite = cast("CoopSinglePhaseRewrite", self)
+        temp_storage_arg = source_var
+        temp_storage_plan = rewrite._resolve_temp_storage_plan(source_var)
+        if temp_storage_plan is not None:
+            slice_info = temp_storage_plan.slices_by_call_id.get(
+                id(call_assign)
+            )
+            if slice_info is None:
+                raise CoopSinglePhaseRewriteError(
+                    f"Could not resolve TempStorage "
+                    f"slice for call at {call_assign.loc}."
+                )
+            if (
+                temp_storage_plan.sharing == "exclusive"
+                or slice_info.offset != 0
+            ):
+                sliced_var = ir.Var(
+                    call_assign.target.scope,
+                    f"__coop_temp_storage_slice_{next(_GLOBAL_NAME_COUNTER)}__",
+                    call_assign.loc,
+                )
+                self._emit_temp_storage_slice_for_call(
+                    block,
+                    source_var=source_var,
+                    target_var=sliced_var,
+                    slice_info=slice_info,
+                    base_offset=0,
+                    loc=call_assign.loc,
+                )
+                temp_storage_arg = sliced_var
+        return (temp_storage_arg, temp_storage_plan)
+
+    def _implicit_temp_storage_arg_for_call(
+        self, block: ir.Block, *, call_assign: ir.Assign
+    ) -> tuple[ir.Var, _TempStoragePlan]:
+        plan = self._implicit_temp_storage_plan
+        backing = self._temp_storage_backing_var
+        if plan is None or backing is None:
+            raise CoopSinglePhaseRewriteError(
+                "Missing implementation-owned "
+                "TempStorage plan for an implicit call."
+            )
+        slice_info = plan.slices_by_call_id.get(id(call_assign))
+        if slice_info is None:
+            raise CoopSinglePhaseRewriteError(
+                f"Could not resolve implicit TempStorage "
+                f"slice for call at {call_assign.loc}."
+            )
+        sliced_var = ir.Var(
+            call_assign.target.scope,
+            f"__coop_implicit_temp_storage_slice_{next(_GLOBAL_NAME_COUNTER)}__",
+            call_assign.loc,
+        )
+        self._emit_temp_storage_slice_for_call(
+            block,
+            source_var=backing,
+            target_var=sliced_var,
+            slice_info=slice_info,
+            base_offset=plan.base_offset,
+            loc=call_assign.loc,
+        )
+        return (sliced_var, plan)
+
+    def _emit_temp_storage_auto_sync(
+        self,
+        block: ir.Block,
+        *,
+        scope: ir.Scope | None,
+        loc: ir.Loc,
+        synchronization_scope: SynchronizationScope,
+        lowering_plan: GroupLoweringPlan | None = None,
+    ) -> None:
+        """Emit the post-call barrier required for automatic scratch reuse.
+
+        Emit ``syncthreads`` for block scope and ``syncwarp`` for warp scope;
+        ``NONE`` emits nothing. A logical warp smaller than 32 receives a mask
+        covering only its contiguous lanes within the physical warp, computed
+        from the linear block rank. Full warps use the default warp mask.
+
+        This is the post-call storage-reuse barrier selected by the lowering
+        contract. It neither establishes uniform participation nor decides
+        whether a call needs synchronization; the caller has already checked the
+        storage policy and invokes this emitter when automatic sync is
+        requested.
+
+        Parameters
+        ----------
+        block : ir.Block
+            Destination receiving mask calculations and the barrier call.
+        scope : ir.Scope or None
+            Scope assigned to generated variables.
+        loc : ir.Loc
+            Source location for generated statements and variables.
+        synchronization_scope : SynchronizationScope
+            Requested reuse-barrier scope, converted to the enum on entry.
+        lowering_plan : GroupLoweringPlan or None, optional
+            Group topology for validation and logical-warp mask
+            construction. None uses the legacy scope-only emission path.
+
+        Returns
+        -------
+        None
+            Barrier IR is appended in place, unless the requested scope is
+            NONE.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            The topology is unsupported or disagrees with the requested
+            scope.
+        """
+
+        synchronization_scope = SynchronizationScope(synchronization_scope)
+        if synchronization_scope is SynchronizationScope.NONE:
+            return
+        topology = self._validate_emittable_topology(lowering_plan)
+        if topology is not None and (
+            synchronization_scope is not topology.execution_scope
+        ):
+            raise CoopSinglePhaseRewriteError(
+                "cooperative provider synchronization scope disagrees with "
+                "its group topology."
+            )
+        sync_attr = {
+            SynchronizationScope.WARP: "syncwarp",
+            SynchronizationScope.BLOCK: "syncthreads",
+        }.get(synchronization_scope)
+        if sync_attr is None:
+            raise CoopSinglePhaseRewriteError(
+                "cuda.coop.numba_mlir provider synchronization scope "
+                f"{SynchronizationScope(synchronization_scope).value!r} "
+                "has no emitter"
+            )
+        sync_args = []
+        if (
+            synchronization_scope is SynchronizationScope.WARP
+            and topology is not None
+            and topology.logical_width < 32
+        ):
+            linear_rank = self._emit_linear_thread_rank(
+                block,
+                scope=scope,
+                loc=loc,
+            )
+            lane_mask = self._emit_integer_constant(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_lane_mask",
+                value=31,
+            )
+            lane = self._emit_integer_binop(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_lane",
+                fn=operator.and_,
+                lhs=linear_rank,
+                rhs=lane_mask,
+            )
+            logical_width = self._emit_integer_constant(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_logical_width",
+                value=topology.logical_width,
+            )
+            logical_group = self._emit_integer_binop(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_logical_group",
+                fn=operator.floordiv,
+                lhs=lane,
+                rhs=logical_width,
+            )
+            shift = self._emit_integer_binop(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_mask_shift",
+                fn=operator.mul,
+                lhs=logical_group,
+                rhs=logical_width,
+            )
+            base_mask = self._emit_integer_constant(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_base_mask",
+                value=(1 << topology.logical_width) - 1,
+            )
+            sync_args.append(
+                self._emit_integer_binop(
+                    block,
+                    scope=scope,
+                    loc=loc,
+                    stem="group_topology_sync_mask",
+                    fn=operator.lshift,
+                    lhs=base_mask,
+                    rhs=shift,
+                )
+            )
+        sync_module_global_name = _next_global_name("temp_storage_sync_mod")
+        sync_module_var = ir.Var(
+            scope, f"__coop_sync_mod_var_{next(_GLOBAL_NAME_COUNTER)}__", loc
+        )
+        sync_fn_var = ir.Var(
+            scope, f"__coop_sync_fn_{next(_GLOBAL_NAME_COUNTER)}__", loc
+        )
+        sync_result_var = ir.Var(
+            scope, f"__coop_sync_result_{next(_GLOBAL_NAME_COUNTER)}__", loc
+        )
+        block.append(
+            ir.Assign(
+                ir.Global(sync_module_global_name, _cuda_module, loc),
+                sync_module_var,
+                loc,
+            )
+        )
+        block.append(
+            ir.Assign(
+                ir.Expr.getattr(sync_module_var, sync_attr, loc),
+                sync_fn_var,
+                loc,
+            )
+        )
+        block.append(
+            ir.Assign(
+                ir.Expr.call(sync_fn_var, sync_args, (), loc),
+                sync_result_var,
+                loc,
+            )
+        )
+
+    def _temp_storage_alias_ctor_key(self, inst: ir.Assign) -> str | None:
+        rewrite = cast("CoopSinglePhaseRewrite", self)
+        value = inst.value
+        if isinstance(value, ir.Var):
+            sources = (value,)
+        elif isinstance(value, ir.Expr) and value.op == "cast":
+            sources = (getattr(value, "value", None),)
+        elif isinstance(value, ir.Expr) and value.op == "phi":
+            sources = _phi_incoming_values(value)
+        else:
+            return None
+        if not sources or any(
+            not isinstance(source, ir.Var) for source in sources
+        ):
+            return None
+        keys = [
+            rewrite._resolve_temp_storage_ctor_key(cast(ir.Var, source))
+            for source in sources
+        ]
+        if any(key is None for key in keys):
+            return None
+        return rewrite._resolve_temp_storage_ctor_key(inst.target)
+
+    def _validate_temp_storage_uses(
+        self, func_ir: ir.FunctionIR, matches: dict[ir.Assign, _RewriteMatch]
+    ) -> None:
+        """Reject storage descriptors that escape their compile-time role.
+
+        After recording all constructors and matches, inspect every use through
+        its alias provenance. Allow simple alias, cast, and phi assignments and
+        one ``temp_storage=`` keyword on a recognized primitive; descriptor
+        values cannot be ordinary runtime operands, returned objects, or
+        arbitrary call arguments. Subscripted-provider syntax is not an accepted
+        descriptor use. Every canonical constructor must have a primitive
+        consumer.
+
+        Validation runs after device-helper inlining. If a call that passes a
+        descriptor to a helper remains, report that the helper was not inlined.
+        Perform these checks before compiling providers so invalid descriptor
+        escapes fail without materialization.
+        The scan updates the current block lookup state; its caller restores it.
+
+        Parameters
+        ----------
+        func_ir : FunctionIR
+            Entire function whose constructors have been recorded.
+        matches : dict of ir.Assign to _RewriteMatch
+            Recognized primitive calls keyed by their original assignments.
+
+        Returns
+        -------
+        None
+            All descriptor uses and constructor consumers satisfy the
+            contract.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            A storage argument lacks local constructor provenance, a
+            descriptor escapes to runtime, or a constructor has no primitive
+            consumer.
+        """
+        rewrite = cast("CoopSinglePhaseRewrite", self)
+
+        if not self._temp_storage_ctor_specifications:
+            for match in matches.values():
+                if match.runtime_temp_storage_var is not None:
+                    raise CoopSinglePhaseRewriteError(
+                        "cooperative group temp_storage= must originate from a "
+                        "TempStorage constructor in the compiled function."
+                    )
+            return
+
+        consumed_ctor_keys: set[str] = set()
+        for label in sorted(func_ir.blocks):
+            scan_block = func_ir.blocks[label]
+            self._block = scan_block
+            self._block_defs = {
+                inst.target.name: inst.value
+                for inst in scan_block.body
+                if isinstance(inst, ir.Assign)
+            }
+            for inst in scan_block.body:
+                used_vars = list(inst.list_vars())
+                if isinstance(inst, ir.Assign):
+                    used_vars = [
+                        var for var in used_vars if var.name != inst.target.name
+                    ]
+                descriptor_vars = []
+                for value in used_vars:
+                    if (
+                        rewrite._resolve_temp_storage_ctor_key(value)
+                        is not None
+                    ):
+                        descriptor_vars.append(value)
+                if not descriptor_vars:
+                    match = matches.get(inst)
+                    if (
+                        match is not None
+                        and match.runtime_temp_storage_var is not None
+                    ):
+                        raise CoopSinglePhaseRewriteError(
+                            "cooperative group temp_storage= "
+                            "must originate from a "
+                            "TempStorage constructor in the compiled function."
+                        )
+                    continue
+                if isinstance(inst, ir.Assign) and (
+                    self._temp_storage_alias_ctor_key(inst) is not None
+                ):
+                    continue
+                match = matches.get(inst)
+                if (
+                    match is not None
+                    and match.runtime_temp_storage_var is not None
+                ):
+                    storage_var = match.runtime_temp_storage_var
+                    storage_key = rewrite._resolve_temp_storage_ctor_key(
+                        storage_var
+                    )
+                    assert isinstance(inst.value, ir.Expr)
+                    keyword_storage_vars = [
+                        value
+                        for name, value in inst.value.kws
+                        if name == "temp_storage"
+                    ]
+                    descriptor_runtime_args = [
+                        value
+                        for value in match.runtime_args
+                        if rewrite._resolve_temp_storage_ctor_key(value)
+                        is not None
+                    ]
+                    if (
+                        storage_key is not None
+                        and len(keyword_storage_vars) == 1
+                        and keyword_storage_vars[0].name == storage_var.name
+                        and not descriptor_runtime_args
+                        and all(
+                            value.name == storage_var.name
+                            for value in descriptor_vars
+                        )
+                    ):
+                        consumed_ctor_keys.add(storage_key)
+                        continue
+                names = ", ".join(
+                    sorted({value.name for value in descriptor_vars})
+                )
+                if (
+                    isinstance(inst, ir.Assign)
+                    and isinstance(inst.value, ir.Expr)
+                    and inst.value.op == "call"
+                    and (
+                        helper := rewrite._resolve_python_value(inst.value.func)
+                    )
+                    is not None
+                    and rewrite._is_jitted_dispatcher(helper)
+                ):
+                    helper_name = helper.py_func.__qualname__
+                    raise CoopSinglePhaseRewriteError(
+                        f"TempStorage descriptor "
+                        f"{names!r} is passed to a device "
+                        "function that was not inlined into this kernel "
+                        f"({helper_name!r}); let Numba-CUDA-MLIR inline the "
+                        "collective helper (inline='always') or move its "
+                        "cooperative calls into the kernel."
+                    )
+                raise CoopSinglePhaseRewriteError(
+                    "TempStorage values are opaque "
+                    "compile-time descriptors and "
+                    "may only be passed as temp_storage= to a registered "
+                    "cooperative primitive; a use involving "
+                    f"{names!r} would escape to runtime."
+                )
+
+        constructor_keys = {
+            rewrite._canonical_temp_storage_ctor_key(key)
+            for key in self._temp_storage_ctor_specifications
+        }
+        consumed_ctor_keys = {
+            rewrite._canonical_temp_storage_ctor_key(key)
+            for key in consumed_ctor_keys
+        }
+        unconsumed = constructor_keys - consumed_ctor_keys
+        if unconsumed:
+            names = ", ".join(sorted(unconsumed))
+            raise CoopSinglePhaseRewriteError(
+                "TempStorage values are opaque compile-time descriptors and "
+                "must be passed as temp_storage= to a registered cooperative "
+                "primitive; constructor(s) "
+                f"{names!r} have no primitive consumer."
+            )
+
+    def _compute_func_temp_storage_requirements(
+        self, func_ir: ir.FunctionIR
+    ) -> dict[str, _TempStorageRequirementSummary]:
+        """Collect function-wide scratch requirements before rewriting.
+
+        Scan the entire function in two passes: record payload and storage
+        constructors first, then resolve provider arguments, family metadata,
+        and storage ownership. Knowing every constructor before resolving
+        aliases allows branch and loop origins to be checked together. Validate
+        descriptor uses and storage contracts before requesting specialization
+        bundles or materializing storage-bearing providers.
+
+        Use each invocable's byte and alignment requirements, with a minimum of
+        one for the leading-pointer ABI, and retain original assignment identity
+        for later slice lookup. Explicit descriptors accumulate under canonical
+        owner names; calls with implementation-owned storage accumulate in a
+        separate summary. This collects requirements, not allocation offsets.
+
+        Constructor tables and implicit requirements are rebuilt, payload facts
+        and invocable caches may be updated, and the prior block lookup state is
+        restored even if collection fails. Source order is sorted block labels
+        followed by statement order, not a claim about runtime execution order.
+
+        Parameters
+        ----------
+        func_ir : FunctionIR
+            Function after group markers have been consumed and, when
+            necessary, device helpers have been inlined.
+
+        Returns
+        -------
+        dict of str to _TempStorageRequirementSummary
+            Explicit-descriptor requirements keyed by canonical constructor
+            owner. Implicit requirements are stored on the rewrite object
+            separately.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            Calls, descriptor uses, provider contracts, or materialization
+            are invalid.
+        _DeferredCoopRewrite
+            Internal signal that required launch metadata is unavailable.
+            ``CoopSinglePhaseRewrite.match`` catches it and leaves the IR
+            intact while ``_CallRewriting._rewrite_calls`` requests the kernel
+            launch shape and retries within ``CoopWholeFunctionPlanner``.
+        """
+
+        rewrite = cast("CoopSinglePhaseRewrite", self)
+        requirements: dict[str, _TempStorageRequirementSummary] = {}
+        saved_block_defs = self._block_defs
+        saved_block = self._block
+        self._temp_storage_ctor_specifications = {}
+        self._temp_storage_ctor_order = {}
+        self._temp_storage_ctor_roots = {}
+        self._temp_storage_ctor_sites = {}
+        self._implicit_temp_storage_requirements = (
+            _TempStorageRequirementSummary()
+        )
+        self._implicit_temp_storage_plan = None
+        try:
+            ctor_order = 0
+            for label in sorted(func_ir.blocks):
+                scan_block = func_ir.blocks[label]
+                self._block = scan_block
+                self._block_defs = {
+                    inst.target.name: inst.value
+                    for inst in scan_block.body
+                    if isinstance(inst, ir.Assign)
+                }
+                for inst in scan_block.body:
+                    if not isinstance(inst, ir.Assign):
+                        continue
+                    call = inst.value
+                    if not isinstance(call, ir.Expr) or call.op != "call":
+                        continue
+                    if rewrite._is_thread_data_ctor_call(call):
+                        rewrite._thread_data_like_vars.add(inst.target.name)
+                        rewrite._thread_data_specifications[
+                            inst.target.name
+                        ] = rewrite._merge_thread_data_specifications(
+                            rewrite._thread_data_specifications.get(
+                                inst.target.name
+                            ),
+                            rewrite._extract_thread_data_specification(call),
+                        )
+                    elif rewrite._is_temp_storage_ctor_call(call):
+                        rewrite._record_temp_storage_ctor(inst, call)
+                        self._temp_storage_ctor_order.setdefault(
+                            inst.target.name, ctor_order
+                        )
+                        ctor_order += 1
+            rewrite._validate_temp_storage_ctor_sites()
+            all_matches: list[_RewriteMatch] = []
+            matches_by_assign: dict[ir.Assign, _RewriteMatch] = {}
+            storage_uses: list[
+                tuple[int, ir.Assign, _RewriteMatch, str | None]
+            ] = []
+            source_order = 0
+            for label in sorted(func_ir.blocks):
+                scan_block = func_ir.blocks[label]
+                self._block = scan_block
+                self._block_defs = {
+                    inst.target.name: inst.value
+                    for inst in scan_block.body
+                    if isinstance(inst, ir.Assign)
+                }
+                for inst in scan_block.body:
+                    current_order = source_order
+                    source_order += 1
+                    if not isinstance(inst, ir.Assign):
+                        continue
+                    call = inst.value
+                    if not isinstance(call, ir.Expr) or call.op != "call":
+                        continue
+                    target = rewrite._resolve_call_target(call)
+                    if target is None:
+                        continue
+                    op_name = target.operation
+                    (
+                        runtime_args,
+                        runtime_temp_storage_var,
+                        factory_kwargs,
+                        factory_kw_value_vars,
+                    ) = rewrite._validate_and_split_args(
+                        op_name, call, target.getitem_temp_storage
+                    )
+                    lowering_plan = cast(
+                        GroupLoweringPlan | None,
+                        factory_kwargs.pop(_GROUP_LOWERING_PLAN_KWARG, None),
+                    )
+                    family_metadata = rewrite._analyze_family_match(
+                        op_name=op_name,
+                        runtime_args=runtime_args,
+                        factory_kwargs=factory_kwargs,
+                    )
+                    match = _RewriteMatch(
+                        op_name=op_name,
+                        factory=target.factory,
+                        factory_metadata=target.factory_metadata,
+                        func_var_name=target.func_var_name,
+                        func_var_name_extra=target.func_var_name_extra,
+                        runtime_args=runtime_args,
+                        runtime_temp_storage_var=runtime_temp_storage_var,
+                        factory_kwargs=factory_kwargs,
+                        factory_kw_value_vars=factory_kw_value_vars,
+                        loc=inst.loc,
+                        family_metadata=family_metadata,
+                        lowering_plan=lowering_plan,
+                    )
+                    all_matches.append(match)
+                    matches_by_assign[inst] = match
+                    ctor_key = (
+                        None
+                        if runtime_temp_storage_var is None
+                        else rewrite._resolve_temp_storage_ctor_key(
+                            runtime_temp_storage_var
+                        )
+                    )
+                    if (
+                        match.factory_metadata.storage_abi
+                        is StorageABI.LEADING_POINTER
+                    ):
+                        self._validate_storage_match_plan(
+                            match, ctor_key=ctor_key
+                        )
+                        storage_uses.append(
+                            (current_order, inst, match, ctor_key)
+                        )
+            self._validate_temp_storage_uses(func_ir, matches_by_assign)
+            rewrite._prepare_ltoir_bundle_for_matches(all_matches)
+            for use_order, inst, match, ctor_key in storage_uses:
+                if ctor_key is not None:
+                    ctor_key = rewrite._canonical_temp_storage_ctor_key(
+                        ctor_key
+                    )
+                invocable, _ = rewrite._materialize_invocable(match)
+                size_in_bytes = max(
+                    1, int(getattr(invocable, "temp_storage_bytes", 0) or 0)
+                )
+                alignment = max(
+                    1, int(getattr(invocable, "temp_storage_alignment", 0) or 0)
+                )
+                summary = (
+                    self._implicit_temp_storage_requirements
+                    if ctor_key is None
+                    else requirements.setdefault(
+                        ctor_key, _TempStorageRequirementSummary()
+                    )
+                )
+                summary.max_size_in_bytes = max(
+                    summary.max_size_in_bytes, size_in_bytes
+                )
+                summary.max_alignment = max(summary.max_alignment, alignment)
+                summary.uses.append(
+                    _TempStorageUseRequirement(
+                        call_assign=inst,
+                        order=use_order,
+                        size_in_bytes=size_in_bytes,
+                        alignment=alignment,
+                        lowering_plan=match.lowering_plan,
+                    )
+                )
+        finally:
+            self._block_defs = saved_block_defs
+            self._block = saved_block
+        return requirements
+
+
+__all__ = ["_StorageRewrite"]

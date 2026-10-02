@@ -74,3 +74,39 @@ Memory operations
 
 .. autofunction:: load
 .. autofunction:: store
+
+
+.. _coop-numba-extensions:
+
+Numba-CUDA-MLIR-qualified API
+-----------------------------
+
+.. py:module:: cuda.coop.numba_mlir
+
+Use this module for the extensions below. Shared parameters and behavior
+follow the :ref:`Common API <coop-common-api>`.
+
+.. code-block:: python
+
+   import cuda.coop.numba_mlir as coop
+
+Qualified calls also accept fixed-size, one-dimensional local arrays where
+the operation accepts per-thread payloads. ``local`` and ``shared`` expose
+Numba-CUDA-MLIR's memory namespaces.
+
+.. currentmodule:: cuda.coop.numba_mlir
+
+Payloads and temporary storage
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: ThreadData
+
+.. autoclass:: TempStorage
+   :no-members:
+   :no-special-members:
+
+Memory operations
+^^^^^^^^^^^^^^^^^
+
+.. autofunction:: load
+.. autofunction:: store

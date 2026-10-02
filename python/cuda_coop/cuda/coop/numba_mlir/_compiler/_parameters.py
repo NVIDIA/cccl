@@ -1,0 +1,417 @@
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Normalize specialization inputs and check scalar conversion rules.
+
+Provider construction and pre-typing payload inference share these helpers
+so dimension shapes, dtype spellings, and scalar controls have one
+interpretation. Normalization produces compiler types; common-API validation
+further restricts them to the portable numeric profile. Static scalar
+conversion preserves explicit dtype provenance, while operator-result
+inference delegates promotion rules to the compiler and leaves unresolved
+expressions for its later typing pass.
+"""
+
+import math
+import operator
+from collections import namedtuple
+from numbers import Real
+from typing import Any, cast
+
+import numba_cuda_mlir.numba_cuda.types as numba_types
+import numpy as np
+from numba_cuda_mlir import types as numba_mlir_types
+
+from cuda.coop._core.dtype_policy import (
+    validate_portable_numeric_dtype_name,
+)
+
+dim3 = namedtuple("dim3", ("x", "y", "z"))
+
+
+def normalize_dim_param(dim) -> dim3:
+    """Normalize a positive one-, two-, or three-dimensional extent."""
+
+    if isinstance(dim, dim3):
+        values = tuple(dim)
+    elif isinstance(dim, tuple):
+        if not 1 <= len(dim) <= 3:
+            raise ValueError(
+                f"Tuple dimension must have one, two, "
+                f"or three elements; got {len(dim)}"
+            )
+        values = dim
+    else:
+        values = (dim,)
+
+    normalized = []
+    for value in values:
+        if isinstance(value, bool):
+            raise TypeError("Dimension values must be integers")
+        try:
+            value = operator.index(value)
+        except TypeError as exc:
+            raise TypeError("Dimension values must be integers") from exc
+        if value <= 0:
+            raise ValueError(f"Dimension values must be positive, got {dim!r}")
+        normalized.append(value)
+
+    normalized.extend([1] * (3 - len(normalized)))
+    return dim3(*normalized)
+
+
+_NP_DTYPE_TO_NUMBA_MLIR_TYPE = {
+    np.dtype(np.bool_): numba_types.boolean,
+    np.dtype(np.int8): numba_types.int8,
+    np.dtype(np.int16): numba_types.int16,
+    np.dtype(np.int32): numba_types.int32,
+    np.dtype(np.int64): numba_types.int64,
+    np.dtype(np.uint8): numba_types.uint8,
+    np.dtype(np.uint16): numba_types.uint16,
+    np.dtype(np.uint32): numba_types.uint32,
+    np.dtype(np.uint64): numba_types.uint64,
+    np.dtype(np.float16): numba_types.float16,
+    np.dtype(np.float32): numba_types.float32,
+    np.dtype(np.float64): numba_types.float64,
+    np.dtype(np.complex64): numba_types.complex64,
+    np.dtype(np.complex128): numba_types.complex128,
+}
+
+_NUMBA_MLIR_TYPE_NAME_ALIASES = {
+    "bool_": "boolean",
+    "bool": "boolean",
+}
+
+
+def _normalize_numba_mlir_type_name(type_name: str) -> str:
+    return _NUMBA_MLIR_TYPE_NAME_ALIASES.get(type_name, type_name)
+
+
+def _dtype_from_numpy(np_dtype: np.dtype) -> numba_types.Type:
+    canonical = np.dtype(np_dtype)
+    if canonical in _NP_DTYPE_TO_NUMBA_MLIR_TYPE:
+        return _NP_DTYPE_TO_NUMBA_MLIR_TYPE[canonical]
+
+    type_name = _normalize_numba_mlir_type_name(canonical.name)
+    if hasattr(numba_mlir_types, type_name):
+        resolved = getattr(numba_mlir_types, type_name)
+        if isinstance(resolved, numba_types.Type):
+            return resolved
+
+    raise ValueError(f"Unsupported numpy dtype: {canonical}")
+
+
+def normalize_dtype_param(
+    dtype: object,
+) -> "numba_types.Type":
+    """Normalize a dtype parameter into a Numba-CUDA-MLIR type object."""
+
+    if dtype is bool:
+        return numba_types.boolean
+    if dtype is int:
+        return numba_types.int32
+    if dtype is float:
+        return numba_types.float32
+    if dtype is complex:
+        return numba_types.complex128
+    if isinstance(dtype, numba_types.Type):
+        return dtype
+    if isinstance(dtype, np.dtype):
+        return _dtype_from_numpy(dtype)
+    if isinstance(dtype, type) and issubclass(dtype, np.generic):
+        return _dtype_from_numpy(np.dtype(dtype))
+    if isinstance(dtype, str):
+        if dtype.startswith("np."):
+            np_type_name = dtype[3:]
+            if not hasattr(np, np_type_name):
+                raise ValueError(f"Invalid numpy dtype: {np_type_name}")
+            return _dtype_from_numpy(np.dtype(getattr(np, np_type_name)))
+
+        for prefix in ("numba_cuda_mlir.types.", "types."):
+            if dtype.startswith(prefix):
+                dtype = dtype[len(prefix) :]
+                break
+
+        type_name = _normalize_numba_mlir_type_name(dtype)
+        if hasattr(numba_mlir_types, type_name):
+            resolved = getattr(numba_mlir_types, type_name)
+            if isinstance(resolved, numba_types.Type):
+                return resolved
+        raise ValueError(f"Invalid Numba-CUDA-MLIR type name: {dtype}")
+
+    raise ValueError(f"Unrecognized dtype format: {dtype}")
+
+
+_NUMBA_MLIR_DTYPE_NAMES = {
+    numba_mlir_type: np_dtype.name
+    for np_dtype, numba_mlir_type in _NP_DTYPE_TO_NUMBA_MLIR_TYPE.items()
+}
+
+
+def _normalize_common_dtype(dtype: object) -> tuple[numba_types.Type, str]:
+    """Return a backend dtype and its common normalized name."""
+
+    dtype = normalize_dtype_param(dtype)
+    return dtype, _NUMBA_MLIR_DTYPE_NAMES.get(dtype, str(dtype))
+
+
+def _validate_common_numeric_dtype(
+    dtype: object,
+    *,
+    operation: str,
+    parameter: str | None = None,
+) -> numba_types.Type:
+    """Return one normalized dtype from the common API's numeric profile."""
+
+    dtype, dtype_name = _normalize_common_dtype(dtype)
+    validate_portable_numeric_dtype_name(
+        dtype_name,
+        operation=operation,
+        parameter=parameter,
+    )
+    return dtype
+
+
+def _python_scalar_dtype(value: object) -> numba_types.Type | None:
+    """Return the compiler dtype of an ordinary or NumPy scalar."""
+
+    if type(value) not in {bool, int, float, complex} and not isinstance(
+        value, np.generic
+    ):
+        return None
+    try:
+        return normalize_dtype_param(np.asarray(value).dtype)
+    except (TypeError, ValueError):
+        return None
+
+
+def _scalar_cast_dtype(function: Any) -> numba_types.Type | None:
+    """Return the dtype named by a scalar cast callable, if any."""
+
+    if isinstance(function, numba_types.Type):
+        try:
+            return normalize_dtype_param(function)
+        except (TypeError, ValueError):
+            return None
+    try:
+        np_dtype = np.dtype(function)
+    except (TypeError, ValueError):
+        return None
+    if np_dtype.subdtype is not None or np_dtype.fields is not None:
+        return None
+    try:
+        return normalize_dtype_param(np_dtype)
+    except (TypeError, ValueError):
+        return None
+
+
+def _scalar_operator_result_dtype(
+    function: object, *operand_dtypes: object
+) -> numba_types.Type | None:
+    """Infer a scalar expression's result dtype using compiler rules.
+
+    Payload inference uses this probe before the authoritative typing pass.
+    Resolve the operator through the active Numba-CUDA-MLIR typing context so
+    integer promotion and result widths follow compiler rules rather than Python
+    evaluation. Initialize that context lazily when a usable set of operand
+    dtypes is available.
+
+    All resolution failures become ``None``. This intentionally leaves
+    unsupported expressions for later typing diagnostics rather than making a
+    best-effort provenance query reject the kernel.
+
+    Parameters
+    ----------
+    function : callable or None
+        Operator or scalar function whose result is being inferred.
+    *operand_dtypes : object
+        Operand compiler dtypes, each accepted by ``normalize_dtype_param``. Any
+        unknown (``None``) operand prevents inference.
+
+    Returns
+    -------
+    numba_types.Type or None
+        Normalized result dtype, or ``None`` for missing inputs, no typing
+        signature, or an exception during normalization or resolution.
+    """
+
+    if (
+        function is None
+        or not operand_dtypes
+        or any(dtype is None for dtype in operand_dtypes)
+    ):
+        return None
+    try:
+        normalized = tuple(
+            normalize_dtype_param(dtype) for dtype in operand_dtypes
+        )
+        from numba_cuda_mlir.descriptor import mlir_target
+
+        mlir_target.ensure_initialized()
+        signature = mlir_target.typing_context.resolve_function_type(
+            function,
+            normalized,
+            {},
+        )
+        if signature is None:
+            return None
+        return normalize_dtype_param(signature.return_type)
+    except Exception:  # noqa: BLE001 - authoritative typing reports failures later.
+        # This is best-effort provenance, not the authoritative typing pass.
+        return None
+
+
+def _validate_runtime_integer_dtype(
+    dtype: object, *, operation: str, parameter: str
+) -> numba_types.Integer:
+    """Validate the runtime integer domain accepted by Load/Store controls."""
+
+    if isinstance(dtype, numba_types.Literal):
+        dtype = dtype.literal_type
+    if isinstance(dtype, numba_types.Boolean) or not isinstance(
+        dtype, numba_types.Integer
+    ):
+        raise TypeError(
+            f"coop {operation} {parameter} must be an integer, not bool "
+            "or a noninteger scalar"
+        )
+    if dtype.bitwidth > 64 or (not dtype.signed and dtype.bitwidth > 32):
+        raise TypeError(
+            f"coop {operation} {parameter} must be a signed integer up to "
+            "64 bits or an unsigned integer up to 32 bits"
+        )
+    return dtype
+
+
+def coerce_static_scalar(
+    value: object,
+    dtype: object,
+    *,
+    operation: str,
+    parameter: str,
+    source_dtype: object = None,
+) -> np.generic:
+    """Normalize a compile-time scalar without erasing its dtype provenance.
+
+    Ordinary Python ``int``/``float`` literals take the payload's dtype after
+    range and finiteness checks; float-to-integer conversion is forbidden.
+    Floating conversion may round a finite in-range literal. NumPy scalars and
+    values with an explicit compiler ``source_dtype`` instead require an exact
+    dtype match, even if their numeric value would fit another payload dtype.
+    This keeps a typed default or Store value from silently changing width.
+
+    The explicit-source path treats ``source_dtype`` as authoritative
+    provenance: the caller is responsible for pairing it with a value of that
+    dtype. This helper handles static values only; runtime arguments use
+    provider typing and generated ABI checks.
+
+    Parameters
+    ----------
+    value : object
+        Compile-time scalar value to normalize.
+    dtype : object
+        Target payload dtype from the common numeric profile.
+    operation : str
+        Public operation name used in diagnostics, such as ``"load"``.
+    parameter : str
+        Argument name used in diagnostics, such as ``"oob_default"``.
+    source_dtype : object, optional
+        Known compiler dtype of ``value``. When absent, a NumPy scalar's dtype
+        is used; ordinary Python numeric literals remain contextually typed.
+
+    Returns
+    -------
+    numpy.generic
+        Scalar in the normalized target dtype.
+
+    Raises
+    ------
+    TypeError
+        The target is outside the common numeric profile, a value is boolean or
+        non-numeric, typed provenance differs from the target, or an ordinary
+        float would be converted to an integer.
+    ValueError
+        The dtype cannot be normalized, an ordinary literal is out of range, or
+        a checked scalar is non-finite.
+    """
+
+    target_dtype = _validate_common_numeric_dtype(
+        dtype,
+        operation=operation,
+        parameter=parameter,
+    )
+    target_numpy_dtype = np.dtype(_NUMBA_MLIR_DTYPE_NAMES[target_dtype])
+
+    if source_dtype is None and isinstance(value, np.generic):
+        source_dtype = value.dtype
+    if source_dtype is not None:
+        try:
+            normalized_source = normalize_dtype_param(source_dtype)
+        except (TypeError, ValueError) as exc:
+            raise TypeError(
+                f"cuda.coop.{operation} {parameter} must be a numeric scalar"
+            ) from exc
+        if normalized_source != target_dtype:
+            raise TypeError(
+                f"cuda.coop.{operation} {parameter} dtype "
+                f"{normalized_source} does not "
+                f"match payload dtype {target_dtype}"
+            )
+        scalar = value.item() if isinstance(value, np.generic) else value
+        if isinstance(scalar, Real) and not math.isfinite(float(scalar)):
+            raise ValueError(
+                f"cuda.coop.{operation} {parameter} must be finite"
+            )
+        return target_numpy_dtype.type(value)
+
+    if isinstance(value, bool) or type(value) is bool:
+        raise TypeError(f"cuda.coop.{operation} {parameter} must not be bool")
+    if type(value) not in {int, float}:
+        raise TypeError(
+            f"cuda.coop.{operation} {parameter} must be an ordinary Python "
+            "numeric literal or an exactly typed NumPy/compiler scalar"
+        )
+
+    value = cast(int | float, value)
+    if np.issubdtype(target_numpy_dtype, np.integer):
+        if type(value) is float:
+            raise TypeError(
+                f"cuda.coop.{operation} {parameter} does not permit "
+                "float-to-integer conversion"
+            )
+        bounds = np.iinfo(target_numpy_dtype)
+        if not bounds.min <= value <= bounds.max:
+            raise ValueError(
+                f"cuda.coop.{operation} {parameter} value {value} is outside "
+                f"the range of {target_numpy_dtype.name}"
+            )
+        return target_numpy_dtype.type(value)
+
+    if type(value) is float and not math.isfinite(value):
+        raise ValueError(f"cuda.coop.{operation} {parameter} must be finite")
+    maximum = float(np.finfo(target_numpy_dtype).max)
+    if not -maximum <= value <= maximum:
+        raise ValueError(
+            f"cuda.coop.{operation} {parameter} value {value} is outside "
+            f"the finite range of {target_numpy_dtype.name}"
+        )
+    with np.errstate(over="ignore", invalid="ignore"):
+        result = target_numpy_dtype.type(value)
+    if not np.isfinite(result):
+        raise ValueError(
+            f"cuda.coop.{operation} {parameter} value {value} is outside "
+            f"the finite range of {target_numpy_dtype.name}"
+        )
+    return result
+
+
+def _validate_static_oob_default(value: object, dtype: object) -> np.generic:
+    """Normalize one compile-time Load default before provider construction."""
+
+    return coerce_static_scalar(
+        value,
+        dtype,
+        operation="load",
+        parameter="oob_default",
+    )
