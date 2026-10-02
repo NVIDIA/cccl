@@ -1793,6 +1793,8 @@ class _GroupPlanning:
 
         Pass the returned configuration to ``_GroupCallPlanner`` to resolve
         the group topology and replace public operations with provider calls.
+        Check explicit launch bounds against the exact block size, or infer
+        bounds for this compilation when no explicit register limit is set.
 
         Returns
         -------
@@ -1805,7 +1807,8 @@ class _GroupPlanning:
         ------
         GroupRewriteError
             Cooperative calls remain in a standalone device function, or group
-            planning finds invalid calls or escaping descriptors.
+            planning finds invalid calls or escaping descriptors, or the exact
+            block exceeds explicit launch bounds.
         ForceLiteralArg
             A group or operation needs a compile-time argument value. The
             dispatcher consumes this compiler signal and retries with the
@@ -1830,7 +1833,26 @@ class _GroupPlanning:
                 "move the cooperative calls into the kernel."
             )
         launch_config = require_launch_config(planner.state)
-        return _GroupCallPlanner(planner.state, launch_config).run()
+        group_planner = _GroupCallPlanner(planner.state, launch_config)
+        changed = group_planner.run()
+        assert isinstance(group_planner.launch.exact_block_dim, tuple)
+        x, y, z = group_planner.launch.exact_block_dim
+        threads = x * y * z
+        # Configured compiles own these options; never write inferred bounds
+        # into the dispatcher's persistent user options. An explicit register
+        # limit keeps its original compiler/resource tradeoff.
+        options = planner.state.metadata["targetoptions"]
+        bounds = options.get("launch_bounds")
+        if bounds is not None:
+            maximum = bounds[0] if isinstance(bounds, tuple) else bounds
+            if threads > maximum:
+                raise GroupRewriteError(
+                    f"cuda.coop exact launch block {(x, y, z)!r} has {threads} "
+                    f"threads, exceeding explicit launch_bounds={bounds!r}."
+                )
+        elif options.get("max_registers") is None:
+            options["launch_bounds"] = threads
+        return changed
 
 
 __all__ = [
