@@ -19,6 +19,7 @@
 
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_reduce.cuh>
+#include <cub/detail/cub_vector.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/grid/grid_even_share.cuh>

@@ -4,10 +4,10 @@
 #pragma once
 #include <cub/config.cuh>
 
+#include <cub/detail/cub_vector.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>

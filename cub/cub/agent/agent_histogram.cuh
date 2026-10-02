@@ -20,10 +20,10 @@
 
 #include <cub/block/block_load.cuh>
 #include <cub/detail/constant.cuh>
+#include <cub/detail/cub_vector.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__concepts/same_as.h>

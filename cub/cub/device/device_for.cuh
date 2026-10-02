@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/cub_vector.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/device/dispatch/dispatch_for.cuh>
 #include <cub/util_namespace.cuh>
