@@ -21,13 +21,13 @@
 #endif // no system header
 
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/double_buffer.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/kernels/kernel_radix_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/max.h>

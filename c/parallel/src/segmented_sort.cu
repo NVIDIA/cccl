@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cub/detail/choose_offset.cuh> // cub::detail::choose_offset_t
+#include <cub/detail/double_buffer.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh> // cub::detail::CudaDriverLauncherFactory
 #include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh> // cub::DispatchSegmentedSort
