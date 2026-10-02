@@ -79,13 +79,44 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator remove_if(
-  sequential::execution_policy<DerivedPolicy>& exec,
+  sequential::execution_policy<DerivedPolicy>&,
   ForwardIterator first,
   ForwardIterator last,
   InputIterator stencil,
   Predicate pred)
 {
-  return sequential::remove_copy_if(exec, first, last, stencil, first, pred);
+  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
+
+  // advance iterators until wrapped_pred(*stencil) is true or we reach the end of input
+  while (first != last && !wrapped_pred(*stencil))
+  {
+    ++first;
+    ++stencil;
+  }
+
+  if (first == last)
+  {
+    return first;
+  }
+
+  // result always trails first
+  ForwardIterator result = first;
+
+  ++first;
+  ++stencil;
+
+  while (first != last)
+  {
+    if (!wrapped_pred(*stencil))
+    {
+      *result = *first;
+      ++result;
+    }
+    ++first;
+    ++stencil;
+  }
+
+  return result;
 }
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END
