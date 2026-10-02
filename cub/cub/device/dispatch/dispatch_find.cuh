@@ -20,6 +20,7 @@
 #include <thrust/detail/config.h>
 
 #include <cub/agent/agent_find.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/tuning/tuning_find.cuh>

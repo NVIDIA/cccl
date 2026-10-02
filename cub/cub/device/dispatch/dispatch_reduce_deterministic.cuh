@@ -19,6 +19,7 @@
 
 #include <cub/agent/agent_reduce.cuh>
 #include <cub/detail/deferred_parameter.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/rfa.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>

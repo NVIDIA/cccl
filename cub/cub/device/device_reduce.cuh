@@ -29,6 +29,8 @@
 #include <cub/detail/deferred_parameter.cuh>
 #include <cub/detail/device_memory_resource.cuh>
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/non_void_value.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>

@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_scan_by_key.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan_by_key.cuh>

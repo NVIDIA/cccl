@@ -16,6 +16,7 @@
 #include <cub/detail/binary_search_helpers.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/device/device_for.cuh>
 #include <cub/device/device_transform.cuh>
 #include <cub/device/dispatch/dispatch_find.cuh>

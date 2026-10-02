@@ -21,6 +21,7 @@
 #include <cub/block/block_reduce.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/segmented_scan_helpers.cuh>
 #include <cub/detail/uninitialized.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
