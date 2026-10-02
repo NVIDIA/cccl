@@ -5,14 +5,15 @@ list(APPEND CMAKE_MESSAGE_CONTEXT "clang_tidy_plugins")
 # LLVM requires C to be enabled
 project(clang_tidy_plugins LANGUAGES C CXX)
 
-option(CMAKE_EXPORT_COMPILE_COMMANDS "Export compile commands" ON)
-
 if (PROJECT_IS_TOP_LEVEL)
   message(
     FATAL_ERROR
     "clang-tidy plugins must be built as part of the main CCCL build"
   )
 endif()
+
+# We need compile-commands in all cases so that clang-tidy tests work
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Some package managers (conda) have separate LLVM and clang development packages.
 # Finding just LLVM or just clang does not guarantee that the other is installed, so need
