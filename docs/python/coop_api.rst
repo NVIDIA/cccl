@@ -329,3 +329,9 @@ Scan
 .. autofunction:: inclusive_sum
 .. autofunction:: exclusive_scan
 .. autofunction:: inclusive_scan
+
+Data rearrangement
+^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: exchange
+.. autofunction:: shuffle
