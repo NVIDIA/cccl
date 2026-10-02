@@ -20,6 +20,7 @@
 #endif // no system header
 
 #include <cub/detail/align_bytes.cuh> // IWYU pragma: export
+#include <cub/detail/binary_op_has_idx_param.cuh> // IWYU pragma: export
 #include <cub/detail/constant.cuh> // IWYU pragma: export
 #include <cub/detail/cub_vector.cuh> // IWYU pragma: export
 #include <cub/detail/detect_nested_type.cuh> // IWYU pragma: export
@@ -64,25 +65,6 @@ CUB_NAMESPACE_BEGIN
  ******************************************************************************/
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-
-/******************************************************************************
- * Typedef-detection
- ******************************************************************************/
-
-/**
- * \brief Determine whether or not BinaryOp's functor is of the form <tt>bool operator()(const T& a, const T&b)</tt> or
- * <tt>bool operator()(const T& a, const T&b, unsigned int idx)</tt>
- */
-template <typename T, typename BinaryOp, typename = void>
-struct BinaryOpHasIdxParam : ::cuda::std::false_type
-{};
-
-template <typename T, typename BinaryOp>
-struct BinaryOpHasIdxParam<T,
-                           BinaryOp,
-                           ::cuda::std::void_t<decltype(::cuda::std::declval<BinaryOp>()(
-                             ::cuda::std::declval<T>(), ::cuda::std::declval<T>(), int{}))>> : ::cuda::std::true_type
-{};
 
 /******************************************************************************
  * Simple type traits utilities.

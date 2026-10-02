@@ -20,8 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/binary_op_has_idx_param.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__memory/as_uninitialized_bytes.h>
 
