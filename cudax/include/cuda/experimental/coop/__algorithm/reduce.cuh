@@ -381,7 +381,7 @@ _CCCL_REQUIRES(::cuda::std::is_same_v<warp_level, typename _Group::unit_type>
   struct _Scratch
   {
     typename _WarpReduce::TempStorage __warp_reduce_[__nwarps_in_block];
-    alignas(_Tp)::cuda::__as_uninitialized_bytes<_Tp[__nwarps_in_block]> __values_;
+    ::cuda::__as_uninitialized_bytes<_Tp[__nwarps_in_block]> __values_;
   };
   __shared__ _Scratch __scratch;
 

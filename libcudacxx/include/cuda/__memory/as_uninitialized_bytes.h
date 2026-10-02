@@ -39,7 +39,15 @@ struct __uninitialized_bytes_t
   {
     static_assert(sizeof(_Tp) <= _SizeOfT, "T does not fit in uninitialized storage");
     static_assert(alignof(_Tp) <= _AlignOfT, "T is more aligned than uninitialized storage");
-    return reinterpret_cast<_Tp&>(*this);
+    return *static_cast<_Tp*>(static_cast<void*>(__bytes));
+  }
+
+  template <class _Tp>
+  [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE const _Tp& __alias() const noexcept
+  {
+    static_assert(sizeof(_Tp) <= _SizeOfT, "T does not fit in uninitialized storage");
+    static_assert(alignof(_Tp) <= _AlignOfT, "T is more aligned than uninitialized storage");
+    return *static_cast<const _Tp*>(static_cast<const void*>(__bytes));
   }
 };
 

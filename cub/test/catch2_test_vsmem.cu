@@ -79,8 +79,7 @@ struct agent_dummy_algorithm_t
     typename block_store_t::TempStorage store;
   };
 
-  struct TempStorage : ::cuda::__as_uninitialized_bytes<_temp_storage_t>
-  {};
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_temp_storage_t>;
 
   _temp_storage_t& temp_storage; ///< Reference to temp_storage
   InputIteratorT d_in; ///< Input data
