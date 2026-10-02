@@ -6,8 +6,9 @@
 Discontinuity
 =============
 
-This page describes the Numba-CUDA-MLIR implementation. See
-:ref:`backend coverage <coop-backends>` for CUTLASS availability.
+Both Numba-CUDA-MLIR and CUTLASS implement Discontinuity with the built-in
+inequality predicate. The :ref:`CuTe example <coop-cutlass-neighbors>`
+computes both head and tail flags while preserving its input.
 
 :func:`cuda.coop.discontinuity` flags changes between adjacent values in a
 full block tile. A head marks the start of a run; a tail marks its end.

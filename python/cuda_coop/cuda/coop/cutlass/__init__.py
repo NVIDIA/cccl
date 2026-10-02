@@ -9,6 +9,7 @@ from ._compiler._activation import register_trace_context
 from ._group_exchange import exchange
 from ._group_load_store import load, store
 from ._group_merge_sort import merge_sort_keys, merge_sort_pairs
+from ._group_neighbors import adjacent_difference, discontinuity
 from ._group_radix_sort import (
     radix_rank_keys,
     radix_sort_keys,
@@ -50,6 +51,8 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
+    "adjacent_difference",
+    "discontinuity",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
