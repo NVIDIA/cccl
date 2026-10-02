@@ -478,8 +478,15 @@ def main():
     lanes = build_lanes(gpus, lanes_per_gpu)
     print("{} gpus x {} lanes".format(len(gpus), lanes_per_gpu))
 
-    configure_lanes(lanes, cmake_args)
+    # Listing the search space only needs cccl_meta_bench.csv, which configuring a single lane
+    # already produces; configuring every lane for every GPU is wasted work for `-l`.
+    list_only = bench.parse_arguments().list_benches
+    configure_lanes(lanes[:1] if list_only else lanes, cmake_args)
     os.chdir(lanes[0].directory)
+
+    if list_only:
+        bench.search(None)  # the seeker is never called on the listing path
+        return
 
     manager = multiprocessing.Manager()
     LaneWorker.lane_queue = manager.Queue()
