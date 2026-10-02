@@ -321,10 +321,10 @@ so it is run from the CCCL source root:
 
   $ ./benchmarks/scripts/search.py -R '.*merge_sort.*pairs' -a 'KeyT{ct}=I128' -a 'Elements{io}[pow2]=28'
   1 gpus x 4 lanes
-  configuring build/gpu0/lane0
-  configuring build/gpu0/lane1
-  configuring build/gpu0/lane2
-  configuring build/gpu0/lane3
+  configuring .../build/gpu0/lane0
+  configuring .../build/gpu0/lane1
+  configuring .../build/gpu0/lane2
+  configuring .../build/gpu0/lane3
   ...
   ctk:  12.6.85
   cccl:  v2.7.0
@@ -367,7 +367,7 @@ you can add the :code:`-l` option:
 
   $ ./benchmarks/scripts/search.py -R '.*merge_sort.*pairs' -a 'KeyT{ct}=I128' -a 'Elements{io}[pow2]=28' -l
   1 gpus x 4 lanes
-  configuring build/gpu0/lane0
+  configuring .../build/gpu0/lane0
   ctk:  12.6.85
   cccl:  v2.7.0
   ### Benchmarks (1)
@@ -413,10 +413,10 @@ Restrict the GPUs it uses with :code:`CUDA_VISIBLE_DEVICES`.
 
   $ CUDA_VISIBLE_DEVICES=0,2 ./benchmarks/scripts/search.py -DCMAKE_CUDA_ARCHITECTURES=native -R '.*merge_sort.*pairs'
   2 gpus x 4 lanes
-  configuring build/gpu0/lane0
-  configuring build/gpu2/lane0
-  configuring build/gpu0/lane1
-  configuring build/gpu2/lane1
+  configuring .../build/gpu0/lane0
+  configuring .../build/gpu2/lane0
+  configuring .../build/gpu0/lane1
+  configuring .../build/gpu2/lane1
   ...
 
 This restricts the search to physical GPUs 0 and 2, as reported by :code:`nvidia-smi`.
