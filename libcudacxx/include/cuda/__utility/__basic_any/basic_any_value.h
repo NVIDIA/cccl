@@ -32,10 +32,8 @@
 #include <cuda/__utility/__basic_any/virtual_tables.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_class.h>
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>

@@ -23,7 +23,6 @@
 
 #include <cuda/__memory/aligned_size.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/cstdint>
 

@@ -19,7 +19,9 @@
 #include <thrust/detail/type_deduction.h>
 
 #include <cuda/__functional/address_stability.h>
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/tuple>
@@ -103,28 +105,54 @@ THRUST_NAMESPACE_BEGIN
 template <typename Function>
 class zip_function
 {
+  template <class Function2, class Tuple>
+  static constexpr bool is_nothrow_invocable =
+    noexcept(::cuda::std::apply(::cuda::std::declval<Function2>(), ::cuda::std::declval<Tuple>()));
+
 public:
   //! Default constructs the contained function object.
   zip_function() = default;
 
-  _CCCL_HOST_DEVICE zip_function(Function func)
+  _CCCL_API zip_function(Function func)
       : func(::cuda::std::move(func))
   {}
 
-  template <typename Tuple>
-  _CCCL_HOST_DEVICE decltype(auto) operator()(Tuple&& args) const
+  //! @brief Applies a tuple to the stored functor
+  //! @param args The tuple of arguments to be passed
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class Tuple)
+  _CCCL_REQUIRES((::cuda::std::__can_apply<const Function&, Tuple>) )
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator()(Tuple&& args) const
+    noexcept(is_nothrow_invocable<const Function&, Tuple>)
+  {
+    return ::cuda::std::apply(func, ::cuda::std::forward<Tuple>(args));
+  }
+
+  //! @overload
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class Tuple)
+  _CCCL_REQUIRES((::cuda::std::__can_apply<Function&, Tuple>) )
+  [[nodiscard]] _CCCL_API constexpr decltype(auto)
+  operator()(Tuple&& args) noexcept(is_nothrow_invocable<Function&, Tuple>)
   {
     return ::cuda::std::apply(func, ::cuda::std::forward<Tuple>(args));
   }
 
   //! Returns a reference to the underlying function.
-  _CCCL_HOST_DEVICE Function& underlying_function() const
+  _CCCL_API Function& underlying_function() const
+  {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+    return const_cast<Function&>(func);
+  }
+
+  //! @overload
+  _CCCL_API Function& underlying_function()
   {
     return func;
   }
 
 private:
-  mutable Function func;
+  Function func;
 };
 
 /*! \p make_zip_function creates a \p zip_function from a function object.
@@ -139,7 +167,7 @@ private:
  *  \endverbatim
  */
 template <typename Function>
-_CCCL_HOST_DEVICE zip_function<::cuda::std::decay_t<Function>> make_zip_function(Function&& fun)
+_CCCL_API zip_function<::cuda::std::decay_t<Function>> make_zip_function(Function&& fun)
 {
   using func_t = ::cuda::std::decay_t<Function>;
   return zip_function<func_t>(THRUST_FWD(fun));
