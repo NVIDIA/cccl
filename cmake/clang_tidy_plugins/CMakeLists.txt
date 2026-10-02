@@ -99,6 +99,14 @@ execute_process(
 message(STATUS "Found FileCheck: ${CCCL_FILECHECK} (${version})")
 
 function(_cccl_parse_clang_tidy_config source_file out_var)
+  # Since the clang-tidy config is parsed at configure-time we need to rerun cmake if the
+  # file changes.
+  set_property(
+    DIRECTORY
+    APPEND
+    PROPERTY CMAKE_CONFIGURE_DEPENDS "${source_file}"
+  )
+
   set(config [==[{"Checks":["-*"],"CheckOptions":{},"ExtraArgs":[]}]==])
 
   file(STRINGS "${source_file}" lines)
@@ -229,9 +237,7 @@ function(cccl_create_clang_tidy_test plugin source)
     PRIVATE cccl.compiler_interface libcudacxx::libcudacxx
   )
 
-  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${source}")
   _cccl_parse_clang_tidy_config("${source}" config)
-
   add_test(
     NAME "${target}"
     COMMAND
