@@ -5,6 +5,8 @@ list(APPEND CMAKE_MESSAGE_CONTEXT "clang_tidy_plugins")
 # LLVM requires C to be enabled
 project(clang_tidy_plugins LANGUAGES C CXX)
 
+option(CMAKE_EXPORT_COMPILE_COMMANDS "Export compile commands" ON)
+
 if (PROJECT_IS_TOP_LEVEL)
   message(
     FATAL_ERROR
