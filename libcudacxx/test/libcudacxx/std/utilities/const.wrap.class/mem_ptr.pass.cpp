@@ -92,13 +92,13 @@ TEST_FUNC constexpr bool test()
 
   {
     // todo(dabayer): Try to make this work with nvcc
-#if !_CCCL_CUDA_COMPILER(NVCC)
+#if !TEST_CUDA_COMPILER(NVCC) && !TEST_COMPILER(NVRTC)
     // mix runtime and constant_wrapper parameters, will use built-in operator
     cuda::std::__constant_wrapper<(&s_value)> cwS;
     int S::* pm                                           = &S::member;
     cuda::std::same_as<const int&> decltype(auto) result1 = cwS->*pm;
     assert(result1 == 42);
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
+#endif // !TEST_CUDA_COMPILER(NVCC) && !TEST_COMPILER(NVRTC)
   }
 
 #if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
@@ -106,7 +106,8 @@ TEST_FUNC constexpr bool test()
     // custom operator->*
     cuda::std::__constant_wrapper<WithOps{42}> cwWO;
     cuda::std::__constant_wrapper<&WithOps::value> cwPM;
-    cuda::std::same_as<cuda::std::__constant_wrapper<84>> decltype(auto) result1 = cwWO->*cwPM;
+    decltype(auto) result1 = cwWO->*cwPM;
+    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<84>, decltype(result1)>);
     static_assert(result1 == 84);
   }
 
