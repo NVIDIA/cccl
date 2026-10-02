@@ -162,13 +162,7 @@ class cuda_error : public ::std::runtime_error
     const char* __msg,
     const char* __api,
     const ::cuda::std::source_location& __loc)
-      : cuda_error{static_cast<int>(__status),
-                   __detail::__cuda_runtime_domain,
-                   "CUDA",
-                   __error_str,
-                   __msg,
-                   __api,
-                   __loc}
+      : cuda_error{static_cast<int>(__status), __detail::__cuda_runtime_domain, "CUDA", __error_str, __msg, __api, __loc}
   {}
 
 public:
@@ -190,10 +184,10 @@ public:
 
   //! @brief Constructs from a status of another domain: `CUresult`, or any type with a
   //! @ref cuda_status_domain specialization.
-  template <class _Status,
-            ::cuda::std::enable_if_t<__detail::__is_cuda_status_v<_Status>
-                                       && !::cuda::std::is_same_v<_Status, __cuda_error_t>,
-                                     int> = 0>
+  template <
+    class _Status,
+    ::cuda::std::enable_if_t<__detail::__is_cuda_status_v<_Status> && !::cuda::std::is_same_v<_Status, __cuda_error_t>,
+                             int> = 0>
   _CCCL_HOST_API cuda_error(const _Status __status,
                             const char* __msg,
                             const char* __api                         = nullptr,
