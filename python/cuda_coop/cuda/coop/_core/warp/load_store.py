@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
-from .._algorithm import Algorithm, AlgorithmSpec
+from .._algorithm import Algorithm
 from .._bindings import (
     ArgumentBinding,
     BindingKind,
@@ -235,10 +235,10 @@ class WarpLoadStoreSemantics:
 
 
 @dataclass(frozen=True)
-class WarpLoadStoreSpec:
+class WarpLoadStoreSpecialization:
     """Fully specialized CUB physical or logical Warp Load/Store semantics."""
 
-    specialization: AlgorithmSpec
+    specialization: Algorithm
     call: WarpLoadStoreSemantics
 
     @property
@@ -389,7 +389,7 @@ def make_warp_load_store_semantics(
     )
 
 
-def make_warp_load_store_spec(
+def make_warp_load_store_specialization(
     *,
     kind: str | WarpLoadStoreKind,
     dtype: Any,
@@ -400,7 +400,7 @@ def make_warp_load_store_spec(
     oob_default: bool | ArgumentBinding = False,
     include_full_tile: bool = False,
     include_pointer_offset: bool | ArgumentBinding = False,
-) -> WarpLoadStoreSpec:
+) -> WarpLoadStoreSpecialization:
     """Build a fully specialized CUB Warp Load/Store description."""
 
     call = make_warp_load_store_semantics(
@@ -422,8 +422,7 @@ def make_warp_load_store_spec(
         includes=(f"cub/warp/warp_{call.kind.value}.cuh",),
         template_parameters=_TEMPLATE_PARAMETERS,
         parameters=call.parameters,
-    ).specialize(
-        {
+        specialization={
             "T": dtype,
             "ITEMS_PER_THREAD": call.items_per_thread,
             "ALGORITHM": call.algorithm_cpp,
@@ -446,15 +445,21 @@ def make_warp_load_store_spec(
             ),
         },
     )
-    return WarpLoadStoreSpec(specialization=specialization, call=call)
+    return WarpLoadStoreSpecialization(specialization=specialization, call=call)
 
 
-def make_warp_load_spec(**kwargs: Any) -> WarpLoadStoreSpec:
-    return make_warp_load_store_spec(kind=WarpLoadStoreKind.LOAD, **kwargs)
+def make_warp_load_specialization(**kwargs: Any) -> WarpLoadStoreSpecialization:
+    return make_warp_load_store_specialization(
+        kind=WarpLoadStoreKind.LOAD, **kwargs
+    )
 
 
-def make_warp_store_spec(**kwargs: Any) -> WarpLoadStoreSpec:
-    return make_warp_load_store_spec(kind=WarpLoadStoreKind.STORE, **kwargs)
+def make_warp_store_specialization(
+    **kwargs: Any,
+) -> WarpLoadStoreSpecialization:
+    return make_warp_load_store_specialization(
+        kind=WarpLoadStoreKind.STORE, **kwargs
+    )
 
 
 __all__ = [
@@ -462,10 +467,10 @@ __all__ = [
     "WarpLoadStoreAlgorithm",
     "WarpLoadStoreKind",
     "WarpLoadStoreSemantics",
-    "WarpLoadStoreSpec",
+    "WarpLoadStoreSpecialization",
     "WarpStoreAlgorithm",
-    "make_warp_load_spec",
+    "make_warp_load_specialization",
     "make_warp_load_store_semantics",
-    "make_warp_load_store_spec",
-    "make_warp_store_spec",
+    "make_warp_load_store_specialization",
+    "make_warp_store_specialization",
 ]

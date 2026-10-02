@@ -7,14 +7,14 @@ import pytest
 
 from cuda.coop._core import ArgumentBinding, ArgumentKind
 from cuda.coop._core.block import (
-    make_block_load_spec,
+    make_block_load_specialization,
     make_block_load_store_semantics,
-    make_block_store_spec,
+    make_block_store_specialization,
 )
 
 
 def test_block_load_partial_default_and_pointer_offset_overloads():
-    spec = make_block_load_spec(
+    specialization = make_block_load_specialization(
         dtype="f32",
         block_dim=(32, 1, 1),
         items_per_thread=2,
@@ -28,7 +28,7 @@ def test_block_load_partial_default_and_pointer_offset_overloads():
     # Each optional overload must preserve CUB's argument order.
     assert [
         [parameter.name for parameter in method[3:]]
-        for method in spec.specialization.parameters
+        for method in specialization.specialization.parameters
     ] == [
         [],
         ["num_valid_items", "oob_default"],
@@ -38,7 +38,7 @@ def test_block_load_partial_default_and_pointer_offset_overloads():
 
 
 def test_block_load_static_controls_stay_out_of_the_runtime_abi():
-    spec = make_block_load_spec(
+    specialization = make_block_load_specialization(
         dtype="f32",
         block_dim=(32, 1, 1),
         items_per_thread=2,
@@ -48,18 +48,21 @@ def test_block_load_static_controls_stay_out_of_the_runtime_abi():
         include_pointer_offset=ArgumentBinding.static(4),
     )
 
-    assert len(spec.specialization.parameters) == 1
-    controls = spec.specialization.parameters[0][-3:]
+    assert len(specialization.specialization.parameters) == 1
+    controls = specialization.specialization.parameters[0][-3:]
     assert all(p.argument_kind is ArgumentKind.STATIC for p in controls)
     assert controls[-1].static_value == 4
 
 
 @pytest.mark.parametrize(
-    "make_spec", [make_block_load_spec, make_block_store_spec]
+    "make_specialization",
+    [make_block_load_specialization, make_block_store_specialization],
 )
-def test_numpy_integer_controls_share_the_same_specialization(make_spec):
+def test_numpy_integer_controls_share_the_same_specialization(
+    make_specialization,
+):
     def build(integer):
-        return make_spec(
+        return make_specialization(
             dtype="i32",
             block_dim=(32, 1, 1),
             items_per_thread=integer(2),
@@ -109,11 +112,12 @@ def test_block_load_store_rejects_invalid_options(overrides, message):
 
 
 @pytest.mark.parametrize(
-    "make_spec", [make_block_load_spec, make_block_store_spec]
+    "make_specialization",
+    [make_block_load_specialization, make_block_store_specialization],
 )
-def test_block_valid_items_bounds_use_all_three_dimensions(make_spec):
+def test_block_valid_items_bounds_use_all_three_dimensions(make_specialization):
     def build(value):
-        return make_spec(
+        return make_specialization(
             dtype="i32",
             block_dim=(8, 2, 2),
             items_per_thread=2,
@@ -129,16 +133,17 @@ def test_block_valid_items_bounds_use_all_three_dimensions(make_spec):
 
 
 @pytest.mark.parametrize(
-    "make_spec", [make_block_load_spec, make_block_store_spec]
+    "make_specialization",
+    [make_block_load_specialization, make_block_store_specialization],
 )
 @pytest.mark.parametrize(
     "algorithm", ["warp_transpose", "warp_transpose_timesliced"]
 )
 def test_direct_block_warp_transpose_requires_complete_physical_warps(
-    make_spec, algorithm
+    make_specialization, algorithm
 ):
     with pytest.raises(ValueError, match="multiple of 32"):
-        make_spec(
+        make_specialization(
             dtype="i32",
             block_dim=(16, 3, 1),
             items_per_thread=2,
@@ -157,7 +162,7 @@ def test_direct_block_warp_transpose_requires_complete_physical_warps(
     ],
 )
 def test_block_load_renders_static_oob_default_as_cpp_scalar(value, literal):
-    spec = make_block_load_spec(
+    specialization = make_block_load_specialization(
         dtype="f32",
         block_dim=(32, 1, 1),
         items_per_thread=2,
@@ -166,7 +171,7 @@ def test_block_load_renders_static_oob_default_as_cpp_scalar(value, literal):
         oob_default=ArgumentBinding.static(value),
     )
 
-    assert spec.specialization.parameters[0][-1].cpp == literal
+    assert specialization.specialization.parameters[0][-1].cpp == literal
 
 
 @pytest.mark.parametrize(
@@ -181,7 +186,7 @@ def test_block_load_renders_static_oob_default_as_cpp_scalar(value, literal):
 )
 def test_block_load_rejects_unrepresentable_static_oob_default(value, message):
     with pytest.raises(ValueError, match=message):
-        make_block_load_spec(
+        make_block_load_specialization(
             dtype="f32",
             block_dim=(32, 1, 1),
             items_per_thread=2,

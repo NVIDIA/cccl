@@ -9,7 +9,7 @@ from enum import Enum
 from numbers import Integral
 from typing import Any
 
-from .._algorithm import Algorithm, AlgorithmSpec
+from .._algorithm import Algorithm
 from .._bindings import (
     ArgumentBinding,
     BindingKind,
@@ -214,10 +214,10 @@ class BlockLoadStoreSemantics:
 
 
 @dataclass(frozen=True)
-class BlockLoadStoreSpec:
+class BlockLoadStoreSpecialization:
     """Fully specialized CUB BlockLoad or BlockStore semantics."""
 
-    specialization: AlgorithmSpec
+    specialization: Algorithm
     call: BlockLoadStoreSemantics
     block_dim: tuple[int, int, int]
 
@@ -354,7 +354,7 @@ def make_block_load_store_semantics(
     )
 
 
-def make_block_load_store_spec(
+def make_block_load_store_specialization(
     *,
     kind: str | BlockLoadStoreKind,
     dtype: Any,
@@ -365,7 +365,7 @@ def make_block_load_store_spec(
     oob_default: bool | ArgumentBinding = False,
     include_full_tile: bool = False,
     include_pointer_offset: bool | ArgumentBinding = False,
-) -> BlockLoadStoreSpec:
+) -> BlockLoadStoreSpecialization:
     """Build a fully specialized CUB BlockLoad or BlockStore description."""
 
     block_dim = normalize_block_dim(block_dim)
@@ -414,8 +414,7 @@ def make_block_load_store_spec(
         includes=(f"cub/block/block_{call.kind.value}.cuh",),
         template_parameters=_TEMPLATE_PARAMETERS,
         parameters=call.parameters,
-    ).specialize(
-        {
+        specialization={
             "T": dtype,
             "BLOCK_DIM_X": block_dim[0],
             "ITEMS_PER_THREAD": call.items_per_thread,
@@ -433,16 +432,24 @@ def make_block_load_store_spec(
             "pointer_offset": call.has_pointer_offset,
         },
     )
-    return BlockLoadStoreSpec(
+    return BlockLoadStoreSpecialization(
         specialization=specialization,
         call=call,
         block_dim=block_dim,
     )
 
 
-def make_block_load_spec(**kwargs: Any) -> BlockLoadStoreSpec:
-    return make_block_load_store_spec(kind=BlockLoadStoreKind.LOAD, **kwargs)
+def make_block_load_specialization(
+    **kwargs: Any,
+) -> BlockLoadStoreSpecialization:
+    return make_block_load_store_specialization(
+        kind=BlockLoadStoreKind.LOAD, **kwargs
+    )
 
 
-def make_block_store_spec(**kwargs: Any) -> BlockLoadStoreSpec:
-    return make_block_load_store_spec(kind=BlockLoadStoreKind.STORE, **kwargs)
+def make_block_store_specialization(
+    **kwargs: Any,
+) -> BlockLoadStoreSpecialization:
+    return make_block_load_store_specialization(
+        kind=BlockLoadStoreKind.STORE, **kwargs
+    )

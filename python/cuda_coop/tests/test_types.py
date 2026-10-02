@@ -17,8 +17,10 @@ from cuda.coop._core import (
 )
 
 
-def _algorithm():
+def _algorithm(*, specialization, metadata=None):
     return Algorithm(
+        specialization=specialization,
+        metadata={} if metadata is None else metadata,
         struct_name="BlockExample",
         method_name="Run",
         c_name="block_example",
@@ -29,18 +31,17 @@ def _algorithm():
 
 
 def test_algorithm_identity_distinguishes_specializations():
-    algorithm = _algorithm()
-    base = algorithm.specialize({"T": "int"}, metadata={"mode": "base"})
+    base = _algorithm(specialization={"T": "int"}, metadata={"mode": "base"})
     variants = (
-        algorithm.specialize({"T": "float"}, metadata={"mode": "base"}),
-        algorithm.specialize({"T": "int"}, metadata={"mode": "alternate"}),
-        replace(algorithm, method_name="Other").specialize(
-            {"T": "int"}, metadata={"mode": "base"}
-        ),
+        replace(base, specialization={"T": "float"}),
+        replace(base, metadata={"mode": "alternate"}),
+        replace(base, method_name="Other"),
     )
 
     cache = {base: "compiled"}
-    equivalent = algorithm.specialize({"T": "int"}, metadata={"mode": "base"})
+    equivalent = _algorithm(
+        specialization={"T": "int"}, metadata={"mode": "base"}
+    )
     assert cache[equivalent] == "compiled"
     for variant in variants:
         assert variant not in cache
@@ -48,10 +49,11 @@ def test_algorithm_identity_distinguishes_specializations():
 
 @pytest.mark.parametrize("value", (False, True))
 def test_algorithm_identity_distinguishes_boolean_and_integer_settings(value):
-    algorithm = _algorithm()
-    boolean = algorithm.specialize({"T": "int", "settings": {"flag": (value,)}})
-    integer = algorithm.specialize(
-        {"T": "int", "settings": {"flag": (int(value),)}}
+    boolean = _algorithm(
+        specialization={"T": "int", "settings": {"flag": (value,)}}
+    )
+    integer = _algorithm(
+        specialization={"T": "int", "settings": {"flag": (int(value),)}}
     )
 
     assert len({boolean: "boolean", integer: "integer"}) == 2
@@ -59,8 +61,8 @@ def test_algorithm_identity_distinguishes_boolean_and_integer_settings(value):
 
 def test_algorithm_specialization_freezes_nested_semantic_containers():
     nested = {"values": [1], "modes": {"direct"}}
-    specialization = _algorithm().specialize({"T": "int", "settings": nested})
-    equivalent = _algorithm().specialize({"T": "int", "settings": nested})
+    specialization = _algorithm(specialization={"T": "int", "settings": nested})
+    equivalent = _algorithm(specialization={"T": "int", "settings": nested})
     cache = {specialization: "compiled"}
 
     nested["values"].append(2)
@@ -78,7 +80,14 @@ def test_algorithm_specialization_rejects_container_cycles():
     cyclic.append(cyclic)
 
     with pytest.raises(ValueError, match="container cycles"):
-        _algorithm().specialize({"T": "int", "settings": cyclic})
+        _algorithm(specialization={"T": "int", "settings": cyclic})
+
+
+def test_algorithm_requires_all_template_arguments():
+    with pytest.raises(
+        ValueError, match="Template argument\\(s\\) not provided: T"
+    ):
+        _algorithm(specialization={})
 
 
 @pytest.mark.parametrize(
