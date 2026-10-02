@@ -18,7 +18,7 @@ struct plus_mod_10
 };
 
 template <class Vector>
-void TestReduceSimple()
+void test_reduce_simple()
 {
   using T = typename Vector::value_type;
 
@@ -30,7 +30,7 @@ void TestReduceSimple()
   // with initializer
   REQUIRE(thrust::reduce(v.begin(), v.end(), (T) 10) == 12);
 }
-DECLARE_VECTOR_UNITTEST(TestReduceSimple);
+DECLARE_VECTOR_UNITTEST(test_reduce_simple);
 
 template <typename InputIterator>
 int reduce(my_system& system, InputIterator, InputIterator)
@@ -83,7 +83,7 @@ struct TestReduce
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduce, IntegralTypes);
 
 template <class IntVector, class FloatVector>
-void TestReduceMixedTypes()
+void test_reduce_mixed_types()
 {
   // make sure we get types for default args and operators correct
   IntVector int_input{1, 2, 3, 4};
@@ -98,11 +98,11 @@ void TestReduceMixedTypes()
 }
 TEST_CASE("TestReduceMixedTypesHost", "[reduce]")
 {
-  TestReduceMixedTypes<thrust::host_vector<int>, thrust::host_vector<float>>();
+  test_reduce_mixed_types<thrust::host_vector<int>, thrust::host_vector<float>>();
 }
 TEST_CASE("TestReduceMixedTypesDevice", "[reduce]")
 {
-  TestReduceMixedTypes<thrust::device_vector<int>, thrust::device_vector<float>>();
+  test_reduce_mixed_types<thrust::device_vector<int>, thrust::device_vector<float>>();
 }
 
 template <typename T>
@@ -139,7 +139,7 @@ struct plus_mod3
 };
 
 template <typename Vector>
-void TestReduceWithIndirection()
+void test_reduce_with_indirection()
 {
   // add numbers modulo 3 with external lookup table
   using T = typename Vector::value_type;
@@ -152,10 +152,10 @@ void TestReduceWithIndirection()
 
   REQUIRE(result == T(1));
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestReduceWithIndirection);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_reduce_with_indirection);
 
 template <typename T>
-void TestReduceCountingIterator()
+void test_reduce_counting_iterator()
 {
   size_t const n = 15 * sizeof(T);
 
@@ -172,9 +172,9 @@ void TestReduceCountingIterator()
   // we use ASSERT_ALMOST_EQUAL because we're testing floating point types
   ASSERT_ALMOST_EQUAL(h_result, d_result);
 }
-DECLARE_GENERIC_UNITTEST(TestReduceCountingIterator);
+DECLARE_GENERIC_UNITTEST(test_reduce_counting_iterator);
 
-void TestReduceWithBigIndexesHelper(int magnitude)
+void test_reduce_with_big_indexes_helper(int magnitude)
 {
   const cuda::constant_iterator<long long> begin(1);
   const cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
@@ -187,10 +187,10 @@ void TestReduceWithBigIndexesHelper(int magnitude)
 
 TEST_CASE("TestReduceWithBigIndexes", "[reduce]")
 {
-  TestReduceWithBigIndexesHelper(30);
+  test_reduce_with_big_indexes_helper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
-  TestReduceWithBigIndexesHelper(31);
-  TestReduceWithBigIndexesHelper(32);
-  TestReduceWithBigIndexesHelper(33);
+  test_reduce_with_big_indexes_helper(31);
+  test_reduce_with_big_indexes_helper(32);
+  test_reduce_with_big_indexes_helper(33);
 #endif
 }

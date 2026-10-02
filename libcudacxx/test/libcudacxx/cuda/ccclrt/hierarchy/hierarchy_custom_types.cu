@@ -23,7 +23,7 @@ struct custom_level : public cuda::hierarchy_level_base<custom_level>
 template <typename Level, typename Dims>
 struct custom_level_dims : public cuda::hierarchy_level_desc<Level, Dims>
 {
-  int dummy;
+  int dummy{};
   constexpr custom_level_dims()
       : cuda::hierarchy_level_desc<Level, Dims>() {};
 };

@@ -21,11 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__simd/abs_diff.h>
-#include <cuda/__simd/add_min_max.h>
-#include <cuda/__simd/dot.h>
-#include <cuda/__simd/min_max_relu.h>
-#include <cuda/__simd/saturating_add.h>
-#include <cuda/std/__simd_>
+#include <cuda/__simd/abs_diff.h> // IWYU pragma: export
+#include <cuda/__simd/add_min_max.h> // IWYU pragma: export
+#include <cuda/__simd/dot.h> // IWYU pragma: export
+#include <cuda/__simd/min_max_relu.h> // IWYU pragma: export
+#include <cuda/__simd/saturating_add.h> // IWYU pragma: export
+#include <cuda/std/__simd_> // IWYU pragma: export
 
 #endif // _CUDA_SIMD

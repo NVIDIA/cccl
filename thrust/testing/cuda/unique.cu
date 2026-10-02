@@ -113,7 +113,7 @@ TEST_CASE("TestUniqueDeviceNoSync", "[unique]")
 #endif
 
 template <typename ExecutionPolicy>
-void TestUniqueCudaStreams(ExecutionPolicy policy)
+void test_unique_cuda_streams(ExecutionPolicy policy)
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -149,12 +149,12 @@ void TestUniqueCudaStreams(ExecutionPolicy policy)
 
 TEST_CASE("TestUniqueCudaStreamsSync", "[unique]")
 {
-  TestUniqueCudaStreams(thrust::cuda::par);
+  test_unique_cuda_streams(thrust::cuda::par);
 }
 
 TEST_CASE("TestUniqueCudaStreamsNoSync", "[unique]")
 {
-  TestUniqueCudaStreams(thrust::cuda::par_nosync);
+  test_unique_cuda_streams(thrust::cuda::par_nosync);
 }
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -230,7 +230,7 @@ TEST_CASE("TestUniqueCopyDeviceNoSync", "[unique]")
 #endif
 
 template <typename ExecutionPolicy>
-void TestUniqueCopyCudaStreams(ExecutionPolicy policy)
+void test_unique_copy_cuda_streams(ExecutionPolicy policy)
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -268,12 +268,12 @@ void TestUniqueCopyCudaStreams(ExecutionPolicy policy)
 
 TEST_CASE("TestUniqueCopyCudaStreamsSync", "[unique]")
 {
-  TestUniqueCopyCudaStreams(thrust::cuda::par);
+  test_unique_copy_cuda_streams(thrust::cuda::par);
 }
 
 TEST_CASE("TestUniqueCopyCudaStreamsNoSync", "[unique]")
 {
-  TestUniqueCopyCudaStreams(thrust::cuda::par_nosync);
+  test_unique_copy_cuda_streams(thrust::cuda::par_nosync);
 }
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -334,7 +334,7 @@ TEST_CASE("TestUniqueCountDeviceNoSync", "[unique]")
 #endif
 
 template <typename ExecutionPolicy>
-void TestUniqueCountCudaStreams(ExecutionPolicy policy)
+void test_unique_count_cuda_streams(ExecutionPolicy policy)
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -361,15 +361,15 @@ void TestUniqueCountCudaStreams(ExecutionPolicy policy)
 
 TEST_CASE("TestUniqueCountCudaStreamsSync", "[unique]")
 {
-  TestUniqueCountCudaStreams(thrust::cuda::par);
+  test_unique_count_cuda_streams(thrust::cuda::par);
 }
 
 TEST_CASE("TestUniqueCountCudaStreamsNoSync", "[unique]")
 {
-  TestUniqueCountCudaStreams(thrust::cuda::par_nosync);
+  test_unique_count_cuda_streams(thrust::cuda::par_nosync);
 }
 
-void TestUniqueWithMagnitude(int magnitude)
+void test_unique_with_magnitude(int magnitude)
 {
   using offset_t      = std::int64_t;
   using equality_op_t = div_n_equality_op<offset_t>;
@@ -404,7 +404,7 @@ TEST_CASE("TestUniqueWithLargeNumberOfItems", "[unique]")
   {
     for (const int mag : {30, 31, 32, 33})
     {
-      TestUniqueWithMagnitude(mag);
+      test_unique_with_magnitude(mag);
     }
   }
   catch (std::bad_alloc&)

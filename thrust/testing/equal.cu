@@ -7,7 +7,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestEqualSimple()
+void test_equal_simple()
 {
   using T = typename Vector::value_type;
 
@@ -26,10 +26,10 @@ void TestEqualSimple()
   REQUIRE(thrust::equal(v1.begin(), v1.end(), v2.begin(), ::cuda::std::less_equal<T>()));
   REQUIRE_FALSE(thrust::equal(v1.begin(), v1.end(), v2.begin(), ::cuda::std::greater<T>()));
 }
-DECLARE_VECTOR_UNITTEST(TestEqualSimple);
+DECLARE_VECTOR_UNITTEST(test_equal_simple);
 
 template <typename T>
-void TestEqual(const size_t n)
+void test_equal(const size_t n)
 {
   thrust::host_vector<T> h_data1   = unittest::random_samples<T>(n);
   thrust::host_vector<T> h_data2   = unittest::random_samples<T>(n);
@@ -62,7 +62,7 @@ void TestEqual(const size_t n)
     REQUIRE_FALSE(thrust::equal(d_data1.begin(), d_data1.begin() + 1, d_data2.begin(), ::cuda::std::greater<T>()));
   }
 }
-DECLARE_VARIABLE_UNITTEST(TestEqual);
+DECLARE_VARIABLE_UNITTEST(test_equal);
 
 template <typename InputIterator1, typename InputIterator2>
 bool equal(my_system& system, InputIterator1 /*first*/, InputIterator1, InputIterator2)
@@ -114,7 +114,7 @@ struct only_set_when_both_expected
   }
 };
 
-void TestEqualWithBigIndexesHelper(int magnitude)
+void test_equal_with_big_indexes_helper(int magnitude)
 {
   const thrust::counting_iterator<long long> begin(1);
   const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
@@ -136,9 +136,9 @@ void TestEqualWithBigIndexesHelper(int magnitude)
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
 TEST_CASE("TestEqualWithBigIndexes", "[equal]")
 {
-  TestEqualWithBigIndexesHelper(30);
-  TestEqualWithBigIndexesHelper(31);
-  TestEqualWithBigIndexesHelper(32);
-  TestEqualWithBigIndexesHelper(33);
+  test_equal_with_big_indexes_helper(30);
+  test_equal_with_big_indexes_helper(31);
+  test_equal_with_big_indexes_helper(32);
+  test_equal_with_big_indexes_helper(33);
 }
 #endif // THRUST_FORCE_32_BIT_OFFSET_TYPE

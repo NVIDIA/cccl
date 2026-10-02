@@ -31,18 +31,18 @@
 #  include <cuda/__ptx/instructions/mbarrier_wait.h>
 #  include <cuda/__ptx/ptx_dot_variants.h>
 #  include <cuda/__ptx/ptx_helper_functions.h>
+#  include <cuda/std/__bit/popcount.h>
+#  include <cuda/std/__chrono/high_resolution_clock.h>
+
 #endif // _CCCL_CUDA_COMPILATION()
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__barrier/barrier.h>
 #include <cuda/std/__barrier/empty_completion.h>
 #include <cuda/std/__barrier/poll_tester.h>
-#include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__chrono/duration.h>
-#include <cuda/std/__chrono/high_resolution_clock.h>
 #include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__host_stdlib/new>
-#include <cuda/std/__new/device_new.h>
+#include <cuda/std/__host_stdlib/new> // IWYU pragma: keep
 #include <cuda/std/cstdint>
 
 #include <nv/target>
@@ -70,6 +70,7 @@ class barrier<thread_scope_block, ::cuda::std::__empty_completion> : public __bl
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint64_t* __native_handle() const
   {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     return ::cuda::device::barrier_native_handle(const_cast<barrier&>(*this));
   }
 

@@ -226,7 +226,7 @@ workflows:
     # Standard being exactly "min" is required. clang-tidy may emit additional diagnostics
     # for later C++ versions (for example, warning that you should use designated
     # initializers in C++20 or higher).
-    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang'], cudacxx: ['clang'], ctk: 'clang-cuda', sm: '75' }
+    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang_preview-cuda'], cudacxx: ['clang'], ctk: 'clang_preview-cuda', sm: '75' }
 
   # Used when an upstream project changes to reduce time spent smoke testing dependencies.
   pull_request_lite:
@@ -407,7 +407,7 @@ workflows:
     - {jobs: ['build'], project: 'libcudacxx', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda',  std: 23, sm: '75;80;90;100;120'}
     - {jobs: ['build'], project: 'libcudacxx', cudacxx: 'clang', ctk: 'clang_preview-cuda', cxx: 'clang_preview-cuda', std: 23, sm: '75;80;90;100;120'}
     # clang-tidy
-    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang'], cudacxx: ['clang'], ctk: 'clang-cuda', sm: '75' }
+    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang_preview-cuda'], cudacxx: ['clang'], ctk: 'clang_preview-cuda', sm: '75' }
     # arch-specific and family-specific arch builds
     - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '90a;100a;103a;110a;120a;121a'}
     - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '100f;103f;110f;120f;121f'}
@@ -527,7 +527,7 @@ workflows:
     # compute-sanitizer
     - {jobs: ['compute_sanitizer'], project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
     # clang-tidy
-    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang'], cudacxx: ['clang'], ctk: 'clang-cuda', sm: '75' }
+    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang_preview-cuda'], cudacxx: ['clang'], ctk: 'clang_preview-cuda', sm: '75' }
     # arch-specific and family-specific arch builds
     - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '90a;100a;103a;110a;120a;121a'}
     - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '100f;103f;110f;120f;121f'}
@@ -579,7 +579,7 @@ workflows:
 
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
-devcontainer_version: '26.10'
+devcontainer_version: '26.12'
 
 # Devcontainer image configuration.
 #
@@ -635,12 +635,11 @@ all_stds: [17, 20, 23]
 # - nvhpc-prev: CTK shipped in previous NVHPC
 # - pybuild: Selects image to use for python wheel builds' outer docker instance
 ctk_versions:
-  12.0: { stds: [17, 20] }
-  12.9: { stds: [17, 20], alias: ['12.X', 'pybuild', 'clang-cuda', 'clang_preview-cuda'] }
-  13.0: { stds: [17, 20] }
-  13.1: { stds: [17, 20], alias: ['nvhpc-prev']}
-  13.2: { stds: [17, 20], alias: ['nvhpc']}
-  13.3: { stds: [17, 20, 23], alias: ['13.X'] }
+  '12.0': { stds: [17, 20] }
+  '12.9': { stds: [17, 20], alias: ['12.X', 'pybuild', 'clang-cuda', 'clang_preview-cuda'] }
+  '13.0': { stds: [17, 20] }
+  '13.2': { stds: [17, 20], alias: ['nvhpc-prev']}
+  '13.3': { stds: [17, 20, 23], alias: ['13.X', 'nvhpc'] }
 
 device_compilers:
   nvcc: # Version / stds are taken from CTK
@@ -700,8 +699,9 @@ host_compilers:
     exe: nvc++
     versions:
       # !! Update the ctk_versions 'nvhpc*' aliases when updating NVHPC versions:
-      26.3: { stds: [17, 20, 23], alias: 'prev' }
-      26.5: { stds: [17, 20, 23] }
+      # nvc++ is not supported by nvcc in c++23 mode (as of CTK 13.4)
+      26.5: { stds: [17, 20], alias: 'prev' }
+      26.9: { stds: [17, 20] }
 
 # Jobs support the following properties:
 #
@@ -711,7 +711,7 @@ host_compilers:
 #   - These jobs are automatically added if needed:
 #     - Eg. "jobs: ['test']" in the workflow def will also create the required 'build' jobs.
 # - gpu: Whether the job requires a GPU runner. Default is false.
-# - cuda_ext: Whether the job requires a devcontainer with extra CUDA libraries. Default is false.
+# - ext: Devcontainer extensions [cuda, tidy]. Defaults to the project's ext; [] disables extensions.
 # - invoke:
 #   - Map the job type to the script invocation spec:
 #     - prefix: The script invocation prefix. Default is the job name.
@@ -786,7 +786,7 @@ jobs:
 
   # Only used for generating devcontainers. No scripts actually exist for these:
   dc:     { gpu: false }
-  dc_ext: { gpu: false, cuda_ext: true }
+  dc_ext: { gpu: false, ext: [cuda] }
 
 codegen_targets:
   atomics-ptx: { name: 'Atomics PTX', cmake_target: 'libcudacxx.test.atomics.ptx' }
@@ -899,6 +899,7 @@ projects:
   tidy:
     name: 'clang-tidy'
     stds: [17]
+    ext: [tidy]
 
 # name -> Display name for generated job labels.
 # runner -> GPU/driver/count segment of the GHA runner label.

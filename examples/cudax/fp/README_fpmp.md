@@ -207,6 +207,17 @@ So `fp64mp2 acc = 0;` and `fp32mp2 t = some_float;` compile as expected, while
 implicit. The cast is `constexpr`, so full-precision coefficient tables can be built at
 compile time.
 
+Quad interchange is a separate path. `fp64mp2` converts both ways with the
+library's 128-bit type `__fpmp_fp128` (`__float128` on x86, IEEE `long double`
+on aarch64). Both directions are explicit, and both are deleted on `fp32mp2`,
+which cannot hold a 128-bit significand.
+
+On GCC, `_Float128` is often a second binary128 type, distinct from
+`__fpmp_fp128`, with no implicit conversion between the two spellings. The
+same explicit conversions exist for `_Float128` when it is not already
+`__fpmp_fp128`, so `static_cast<_Float128>(fp64mp2_value)` compiles on
+aarch64 as well as on x86.
+
 The same rule reaches the scalar accumulate path: `+=` and `-=` have an optimized overload
 taking a single component, worth about six operations over a full pair addition, and it is
 constrained the same way. `acc += 1.5f` on an `fp32mp2` is fine; `acc += 1.5` is not, because

@@ -254,7 +254,7 @@ int main()
       e(x, y) = 7;
     };
 
-    box interior({1ul, nx - 1}, {1ul, ny - 1});
+    const box interior({1ul, nx - 1}, {1ul, ny - 1});
     ctx.parallel_for(part, grid, interior, lE.rw())->*[] _CCCL_DEVICE(size_t x, size_t y, auto e) {
       e(x, y) = 100 + x + y;
     };
@@ -293,7 +293,7 @@ int main()
     };
 
     // Face update: classic iteration over the thin box, same placement
-    box face({0ul, nx}, {0ul, 1ul});
+    const box face({0ul, nx}, {0ul, 1ul});
     ctx.parallel_for(blocked_partition(), grid, face, lF.rw(dist))->*[] _CCCL_DEVICE(size_t x, size_t y, auto f) {
       f(x, y) = 42;
     };

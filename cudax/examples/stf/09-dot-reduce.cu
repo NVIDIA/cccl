@@ -47,7 +47,7 @@ int main()
             sum += dX(i) * dY(i);
           };
 
-  double res = ctx.wait(lsum);
+  const double res = ctx.wait(lsum);
 
   ctx.finalize();
 

@@ -12,8 +12,8 @@
 
 #include <algorithm>
 
+#include "catch2_test_custom_streams.cuh"
 #include "cub_test_macros.h"
-#include <c2h/device_and_stream.h>
 
 template <class T>
 inline T to_bound(const unsigned long long bound)
@@ -163,43 +163,7 @@ CUB_TEST("DeviceSelect::UniqueByKey works with user provided memory and environm
     REQUIRE(reference_vals == vals_out);
   };
 
-  SECTION("DeviceSelect::UniqueByKey works with cudaStream_t")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_unique_by_key(stream.get());
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_unique_by_key(stream);
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::stream_ref")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const cuda::stream_ref stream_ref{stream};
-    test_unique_by_key(stream_ref);
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_unique_by_key(env);
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_unique_by_key(policy);
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_unique_by_key(policy);
-  }
+  test_with_custom_streams(test_unique_by_key);
 }
 
 CUB_TEST("DeviceSelect::UniqueByKey works with user provided operator, memory and environment",
@@ -291,41 +255,5 @@ CUB_TEST("DeviceSelect::UniqueByKey works with user provided operator, memory an
     REQUIRE(reference_vals == vals_out);
   };
 
-  SECTION("DeviceSelect::UniqueByKey works with cudaStream_t")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_unique_by_key(stream.get());
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_unique_by_key(stream);
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::stream_ref")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const cuda::stream_ref stream_ref{stream};
-    test_unique_by_key(stream_ref);
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_unique_by_key(env);
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_unique_by_key(policy);
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_unique_by_key(policy);
-  }
+  test_with_custom_streams(test_unique_by_key);
 }

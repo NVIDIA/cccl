@@ -33,7 +33,7 @@ CUB_NAMESPACE_BEGIN
 //! ``cub::WarpStoreAlgorithm`` enumerates alternative algorithms for :cpp:struct:`cub::WarpStore`
 //! to write a blocked arrangement of items across a CUDA warp to a linear segment of memory.
 //! @endrst
-enum WarpStoreAlgorithm
+enum WarpStoreAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
   //! @rst
   //! Overview
@@ -346,8 +346,7 @@ private:
     struct _TempStorage : WarpExchangeT::TempStorage
     {};
 
-    struct TempStorage : Uninitialized<_TempStorage>
-    {};
+    using TempStorage = Uninitialized<_TempStorage>;
 
     _TempStorage& temp_storage;
 
@@ -390,8 +389,7 @@ private:
   int linear_tid;
 
 public:
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{

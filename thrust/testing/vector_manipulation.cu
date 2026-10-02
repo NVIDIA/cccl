@@ -5,7 +5,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestVectorManipulation(size_t n)
+void test_vector_manipulation(size_t n)
 {
   using Iterator = typename Vector::iterator;
   using T        = typename Vector::value_type;
@@ -87,15 +87,15 @@ void TestVectorManipulation(size_t n)
 }
 
 template <typename T>
-void TestVectorManipulationHost(size_t n)
+void test_vector_manipulation_host(size_t n)
 {
-  TestVectorManipulation<thrust::host_vector<T>>(n);
+  test_vector_manipulation<thrust::host_vector<T>>(n);
 }
-DECLARE_VARIABLE_UNITTEST(TestVectorManipulationHost);
+DECLARE_VARIABLE_UNITTEST(test_vector_manipulation_host);
 
 template <typename T>
-void TestVectorManipulationDevice(size_t n)
+void test_vector_manipulation_device(size_t n)
 {
-  TestVectorManipulation<thrust::device_vector<T>>(n);
+  test_vector_manipulation<thrust::device_vector<T>>(n);
 }
-DECLARE_VARIABLE_UNITTEST(TestVectorManipulationDevice);
+DECLARE_VARIABLE_UNITTEST(test_vector_manipulation_device);

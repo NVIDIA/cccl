@@ -29,13 +29,13 @@ int main(int argc, char** argv)
   size_t height = 1000;
 
   // Complex plane boundaries
-  double xMin = -2.0;
-  double xMax = 1.0;
-  double yMin = -1.5;
-  double yMax = 1.5;
+  const double xMin = -2.0;
+  const double xMax = 1.0;
+  const double yMin = -1.5;
+  const double yMax = 1.5;
 
   // Maximum number of iterations
-  int maxIterations = 256;
+  const int maxIterations = 256;
 
   // Describe a 2D array of integers of size (width x height)
   auto lbuffer = ctx.logical_data(shape_of<slice<int, 2>>(width, height));
@@ -51,8 +51,8 @@ int main(int argc, char** argv)
       ->*[=] _CCCL_DEVICE(size_t x, size_t y, auto buffer) {
             // Map pixel coordinates to complex plane
             // c = cr + i ci
-            double cr = x * (xMax - xMin) / width + xMin;
-            double ci = y * (yMax - yMin) / height + yMin;
+            const double cr = static_cast<double>(x) * (xMax - xMin) / static_cast<double>(width) + xMin;
+            const double ci = static_cast<double>(y) * (yMax - yMin) / static_cast<double>(height) + yMin;
 
             // z = zr + i zi
             double zr = 0.0;
@@ -69,10 +69,10 @@ int main(int argc, char** argv)
               // z = zr zr - zi zi + 2 i zi zr + cr + i ci
               // zr = (zr zr - zi zi + cr)
               // zi = (2 zi zr + ci)
-              double zr_prev = zr;
-              double zi_prev = zi;
-              zr             = zr_prev * zr_prev - zi_prev * zi_prev + cr;
-              zi             = 2.0 * zr_prev * zi_prev + ci;
+              const double zr_prev = zr;
+              const double zi_prev = zi;
+              zr                   = zr_prev * zr_prev - zi_prev * zi_prev + cr;
+              zi                   = 2.0 * zr_prev * zi_prev + ci;
 
               iterations++;
             }
@@ -103,11 +103,11 @@ int main(int argc, char** argv)
       {
         for (size_t x = 0; x < width; x++)
         {
-          int iterations = buffer(x, y);
+          const int iterations = buffer(x, y);
           // Convert iterations to RGB values
-          unsigned char r = (iterations % 8) * 32;
-          unsigned char g = (iterations % 16) * 16;
-          unsigned char b = (iterations % 32) * 8;
+          const unsigned char r = (iterations % 8) * 32;
+          const unsigned char g = (iterations % 16) * 16;
+          const unsigned char b = (iterations % 32) * 8;
 
           // Write pixel data to file
           imageFile << r << g << b;

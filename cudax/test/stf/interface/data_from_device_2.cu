@@ -16,8 +16,8 @@ using namespace cuda::experimental::stf;
 template <typename T>
 __global__ void axpy(int N, T a, const T* x, T* y)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int ind = tid; ind < N; ind += nthreads)
   {
@@ -28,8 +28,8 @@ __global__ void axpy(int N, T a, const T* x, T* y)
 template <typename T>
 __global__ void setup_vectors(int N, T* x, T* y, T* z)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int ind = tid; ind < N; ind += nthreads)
   {
@@ -48,9 +48,9 @@ void run()
   const int N        = 12;
 
   double *dX, *dY, *dZ;
-  cuda_safe_call(cudaMalloc((void**) &dX, N * sizeof(double)));
-  cuda_safe_call(cudaMalloc((void**) &dY, N * sizeof(double)));
-  cuda_safe_call(cudaMalloc((void**) &dZ, N * sizeof(double)));
+  cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dX), N * sizeof(double)));
+  cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dY), N * sizeof(double)));
+  cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dZ), N * sizeof(double)));
 
   // Use a kernel to setup values
   setup_vectors<<<16, 16>>>(N, dX, dY, dZ);

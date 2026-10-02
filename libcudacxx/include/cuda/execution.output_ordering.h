@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__execution/output_ordering.h>
+#include <cuda/__execution/output_ordering.h> // IWYU pragma: export
 
 #endif // _CUDA_EXECUTION_EXECUTION_OUTPUT_ORDERING_H

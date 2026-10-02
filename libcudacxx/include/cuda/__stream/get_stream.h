@@ -27,7 +27,6 @@
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__concepts/convertible_to.h>
 #  include <cuda/std/__execution/env.h>
-#  include <cuda/std/__type_traits/is_convertible.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 

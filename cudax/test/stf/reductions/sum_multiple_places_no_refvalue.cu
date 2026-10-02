@@ -42,7 +42,7 @@ __global__ void add_val(T* inout_addr, T val)
 
 class scalar_sum_t : public stream_reduction_operator<scalar_t>
 {
-public:
+private:
   void op(const scalar_t& in, scalar_t& inout, const exec_place& e, cudaStream_t s) override
   {
     if (e.affine_data_place().is_host())
@@ -109,8 +109,8 @@ int main()
   // Check result
   ctx.task(exec_place::host(), var_handle.read())->*[&](cudaStream_t s, auto var) {
     cuda_safe_call(cudaStreamSynchronize(s));
-    int value    = *var.data_handle();
-    int expected = (N * (N - 1)) / 2 * (ndevs + 1);
+    const int value    = *var.data_handle();
+    const int expected = (N * (N - 1)) / 2 * (ndevs + 1);
     EXPECT(value == expected);
   };
 

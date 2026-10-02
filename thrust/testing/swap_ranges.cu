@@ -40,7 +40,7 @@ TEST_CASE("TestSwapRangesDispatchImplicit", "[swap_ranges]")
 }
 
 template <class Vector>
-void TestSwapRangesSimple()
+void test_swap_ranges_simple()
 {
   Vector v1{0, 1, 2, 3, 4};
   Vector v2{5, 6, 7, 8, 9};
@@ -53,10 +53,10 @@ void TestSwapRangesSimple()
   Vector ref2{0, 1, 2, 3, 4};
   REQUIRE(v2 == ref2);
 }
-DECLARE_VECTOR_UNITTEST(TestSwapRangesSimple);
+DECLARE_VECTOR_UNITTEST(test_swap_ranges_simple);
 
 template <typename T>
-void TestSwapRanges(const size_t n)
+void test_swap_ranges(const size_t n)
 {
   const thrust::host_vector<T> a1 = unittest::random_integers<T>(n);
   const thrust::host_vector<T> a2 = unittest::random_integers<T>(n);
@@ -74,7 +74,7 @@ void TestSwapRanges(const size_t n)
   REQUIRE(h2 == a1);
   REQUIRE(d2 == a1);
 }
-DECLARE_VARIABLE_UNITTEST(TestSwapRanges);
+DECLARE_VARIABLE_UNITTEST(test_swap_ranges);
 
 #if (THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_OMP)
 TEST_CASE("TestSwapRangesForcedIterator", "[swap_ranges]")

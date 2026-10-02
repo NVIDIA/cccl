@@ -118,8 +118,20 @@ public:
   interpreted_execution_policy()  = default;
   ~interpreted_execution_policy() = default;
 
+private:
   /* A substem that contains sync() related functionality for the thread hierarchy */
   reserved::cooperative_group_system cg_system;
+
+public:
+  reserved::cooperative_group_system& get_cg_system()
+  {
+    return cg_system;
+  }
+
+  const reserved::cooperative_group_system& get_cg_system() const
+  {
+    return cg_system;
+  }
 
   template <typename Fun>
   interpreted_execution_policy(const thread_hierarchy_spec<spec...>& p, const exec_place& where, const Fun& f);
@@ -220,9 +232,9 @@ public:
      * is the product of the number of blocks,and the number of threads per
      * block. */
     ::std::array<size_t, 3> config = get_config();
-    size_t system_scope_size       = config[0] * config[1] * config[2];
-    size_t device_scope_size       = config[1] * config[2];
-    size_t block_scope_size        = config[2];
+    const size_t system_scope_size = config[0] * config[1] * config[2];
+    const size_t device_scope_size = config[1] * config[2];
+    const size_t block_scope_size  = config[2];
 
     ::std::array<size_t, 3> mem_config = {0, 0, 0};
 
@@ -272,7 +284,7 @@ public:
   bool need_cooperative_kernel_launch() const
   {
     ::std::array<size_t, 3> config = get_config();
-    size_t block_scope_size        = config[2];
+    const size_t block_scope_size  = config[2];
     size_t width_product           = 1;
 
     // Scan all levels in reversed order

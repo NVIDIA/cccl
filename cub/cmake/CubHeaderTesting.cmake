@@ -12,7 +12,15 @@ endif()
 function(cub_add_header_test label definitions)
   set(headertest_target cub.headers.${label})
 
-  cccl_generate_header_tests(${headertest_target} cub GLOBS "cub/*.cuh")
+  cccl_generate_header_tests(
+    ${headertest_target}
+    cub
+    GLOBS "cub/*.cuh"
+    PER_HEADER_DEFINES
+      DEFINE
+      CCCL_DISABLE_CUB_UMBRELLA_HEADER_WARNING
+      "cub/cub\\.cuh"
+  )
   cub_configure_cuda_target(${headertest_target} RDC ${CUB_FORCE_RDC})
   target_link_libraries(${headertest_target} PUBLIC cub.compiler_interface)
   target_compile_definitions(${headertest_target} PRIVATE ${definitions})

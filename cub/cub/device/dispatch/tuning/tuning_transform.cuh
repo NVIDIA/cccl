@@ -207,6 +207,7 @@ struct TransformAsyncCopyPolicy
 };
 
 //! The tuning policy for all algorithms in @ref cub::DeviceTransform "DeviceTransform".
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct TransformPolicy
 {
   int min_bytes_in_flight; //!< Minimum number of bytes in flight per SM to reach by scaling the items per thread. Has

@@ -47,11 +47,18 @@ struct SquadDesc
     return 32 * warpCount();
   }
 
+  // Taking by value instead of const-ref is deliberate. Squads definitions are declarative, so
+  // SquadDesc's are typically static constexpr values. CUDA prohibits device references to
+  // host storage (even if constexpr). See
+  // https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-support.html#constexpr-variables
+  //
+  // NOLINTNEXTLINE(cppcoreguidelines-slicing)
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool operator==(SquadDesc lhs, SquadDesc rhs) noexcept
   {
     return lhs.mSquadIdx == rhs.mSquadIdx;
   }
 
+  // NOLINTNEXTLINE(cppcoreguidelines-slicing)
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(SquadDesc lhs, SquadDesc rhs) noexcept
   {
     return lhs.mSquadIdx != rhs.mSquadIdx;

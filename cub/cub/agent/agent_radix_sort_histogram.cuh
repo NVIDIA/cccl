@@ -120,8 +120,7 @@ struct AgentRadixSortHistogram
     ShmemAtomicCounterT bins[MAX_NUM_PASSES][RADIX_DIGITS][NUM_PARTS];
   };
 
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   // thread fields
   // shared memory storage

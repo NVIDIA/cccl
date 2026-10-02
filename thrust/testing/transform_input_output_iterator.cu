@@ -37,7 +37,7 @@ TEST_CASE("TestTransformInputOutputIteratorTraits", "[transform_input_output_ite
 }
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformInputOutputIterator()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_transform_input_output_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -71,10 +71,10 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformInputOutputIterator()
 
   REQUIRE(negated == gold_negated);
 }
-DECLARE_VECTOR_UNITTEST(TestTransformInputOutputIterator);
+DECLARE_VECTOR_UNITTEST(test_transform_input_output_iterator);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMakeTransformInputOutputIterator()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_make_transform_input_output_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -106,7 +106,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMakeTransformInputOutputIterator()
 
   REQUIRE(squared == gold_squared);
 }
-DECLARE_VECTOR_UNITTEST(TestMakeTransformInputOutputIterator);
+DECLARE_VECTOR_UNITTEST(test_make_transform_input_output_iterator);
 
 template <typename T>
 struct TestTransformInputOutputIteratorScan

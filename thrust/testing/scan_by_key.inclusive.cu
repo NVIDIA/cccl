@@ -8,7 +8,7 @@
 #include <unittest/unittest.h>
 
 template <typename Vector>
-void TestInclusiveScanByKeySimple()
+void test_inclusive_scan_by_key_simple()
 {
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
@@ -35,7 +35,7 @@ void TestInclusiveScanByKeySimple()
   ref = {1, 2, 5, 9, 5, 6, 13};
   REQUIRE(output == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestInclusiveScanByKeySimple);
+DECLARE_VECTOR_UNITTEST(test_inclusive_scan_by_key_simple);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator
@@ -85,7 +85,7 @@ struct head_flag_predicate
 };
 
 template <typename Vector>
-void TestScanByKeyHeadFlags()
+void test_scan_by_key_head_flags()
 {
   using T = typename Vector::value_type;
 
@@ -100,10 +100,10 @@ void TestScanByKeyHeadFlags()
   Vector ref{1, 2, 5, 9, 5, 6, 13};
   REQUIRE(output == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestScanByKeyHeadFlags);
+DECLARE_VECTOR_UNITTEST(test_scan_by_key_head_flags);
 
 template <typename Vector>
-void TestInclusiveScanByKeyTransformIterator()
+void test_inclusive_scan_by_key_transform_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -117,10 +117,10 @@ void TestInclusiveScanByKeyTransformIterator()
   Vector ref{-1, -2, -5, -9, -5, -6, -13};
   REQUIRE(output == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestInclusiveScanByKeyTransformIterator);
+DECLARE_VECTOR_UNITTEST(test_inclusive_scan_by_key_transform_iterator);
 
 template <typename Vector>
-void TestScanByKeyReusedKeys()
+void test_scan_by_key_reused_keys()
 {
   Vector keys{0, 1, 1, 1, 0, 1, 1};
   Vector vals{1, 2, 3, 4, 5, 6, 7};
@@ -131,10 +131,10 @@ void TestScanByKeyReusedKeys()
   Vector ref{1, 2, 5, 9, 5, 6, 13};
   REQUIRE(output == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestScanByKeyReusedKeys);
+DECLARE_VECTOR_UNITTEST(test_scan_by_key_reused_keys);
 
 template <typename T>
-void TestInclusiveScanByKey(const size_t n)
+void test_inclusive_scan_by_key(const size_t n)
 {
   thrust::host_vector<int> h_keys(n);
   thrust::default_random_engine rng;
@@ -162,10 +162,10 @@ void TestInclusiveScanByKey(const size_t n)
   thrust::inclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_output.begin());
   REQUIRE(d_output == h_output);
 }
-DECLARE_VARIABLE_UNITTEST(TestInclusiveScanByKey);
+DECLARE_VARIABLE_UNITTEST(test_inclusive_scan_by_key);
 
 template <typename T>
-void TestInclusiveScanByKeyInPlace(const size_t n)
+void test_inclusive_scan_by_key_in_place(const size_t n)
 {
   thrust::host_vector<int> h_keys(n);
   thrust::default_random_engine rng;
@@ -201,7 +201,7 @@ void TestInclusiveScanByKeyInPlace(const size_t n)
   thrust::inclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_keys.begin());
   REQUIRE(d_keys == h_keys);
 }
-DECLARE_VARIABLE_UNITTEST(TestInclusiveScanByKeyInPlace);
+DECLARE_VARIABLE_UNITTEST(test_inclusive_scan_by_key_in_place);
 
 TEST_CASE("TestScanByKeyMixedTypes", "[scan_by_key.inclusive]")
 {
@@ -238,7 +238,7 @@ TEST_CASE("TestScanByKeyMixedTypes", "[scan_by_key.inclusive]")
 }
 
 template <typename T>
-void TestScanByKeyDiscardOutput(std::size_t n)
+void test_scan_by_key_discard_output(std::size_t n)
 {
   thrust::host_vector<T> h_keys(n);
   thrust::default_random_engine rng;
@@ -268,7 +268,7 @@ void TestScanByKeyDiscardOutput(std::size_t n)
   thrust::inclusive_scan_by_key(
     d_keys.cbegin(), d_keys.cend(), d_vals.cbegin(), out, ::cuda::std::equal_to<T>{}, ::cuda::std::multiplies<T>{});
 }
-DECLARE_VARIABLE_UNITTEST(TestScanByKeyDiscardOutput);
+DECLARE_VARIABLE_UNITTEST(test_scan_by_key_discard_output);
 
 TEST_CASE("TestScanByKeyLargeInput", "[scan_by_key.inclusive]")
 {
@@ -306,7 +306,7 @@ TEST_CASE("TestScanByKeyLargeInput", "[scan_by_key.inclusive]")
 }
 
 template <typename T, unsigned int N>
-void _TestScanByKeyWithLargeTypes()
+void test_scan_by_key_with_large_types()
 {
   const size_t n = (64 * 1024) / sizeof(FixedVector<T, N>);
 
@@ -337,19 +337,19 @@ void _TestScanByKeyWithLargeTypes()
 
 TEST_CASE("TestScanByKeyWithLargeTypes", "[scan_by_key.inclusive]")
 {
-  _TestScanByKeyWithLargeTypes<int, 1>();
-  _TestScanByKeyWithLargeTypes<int, 2>();
-  _TestScanByKeyWithLargeTypes<int, 4>();
-  _TestScanByKeyWithLargeTypes<int, 8>();
+  test_scan_by_key_with_large_types<int, 1>();
+  test_scan_by_key_with_large_types<int, 2>();
+  test_scan_by_key_with_large_types<int, 4>();
+  test_scan_by_key_with_large_types<int, 8>();
 
   // too many resources requested for launch:
-  //_TestScanByKeyWithLargeTypes<int,   16>();
-  //_TestScanByKeyWithLargeTypes<int,   32>();
+  // test_scan_by_key_with_large_types<int,   16>();
+  // test_scan_by_key_with_large_types<int,   32>();
 
   // too large to pass as argument
-  //_TestScanByKeyWithLargeTypes<int,   64>();
-  //_TestScanByKeyWithLargeTypes<int,  128>();
-  //_TestScanByKeyWithLargeTypes<int,  256>();
-  //_TestScanByKeyWithLargeTypes<int,  512>();
-  //_TestScanByKeyWithLargeTypes<int, 1024>();
+  // test_scan_by_key_with_large_types<int,   64>();
+  // test_scan_by_key_with_large_types<int,  128>();
+  // test_scan_by_key_with_large_types<int,  256>();
+  // test_scan_by_key_with_large_types<int,  512>();
+  // test_scan_by_key_with_large_types<int, 1024>();
 }

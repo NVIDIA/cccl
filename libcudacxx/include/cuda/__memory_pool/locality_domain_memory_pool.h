@@ -23,12 +23,12 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__container/simple_vector.h>
 #  include <cuda/__device/logical_device_ref.h>
 #  include <cuda/__device/physical_device.h>
 #  include <cuda/__memory_pool/device_memory_pool.h>
 #  include <cuda/__utility/call_once.h>
-#  include <cuda/__utility/raw_storage.h>
-#  include <cuda/std/__memory/unique_ptr.h>
+#  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__utility/move.h>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -43,19 +43,17 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 class __per_device_locality_pools
 {
   __once_flag __once_{};
-  __raw_storage_array<device_memory_pool_ref> __pools_{};
+  ::cuda::__simple_vector<device_memory_pool_ref> __pools_{0, ::cuda::no_init};
 
   static_assert(::cuda::std::is_trivially_destructible_v<device_memory_pool_ref>);
-
-  ::cuda::std::size_t __num_domains_{};
 
   _CCCL_HOST_API void __init(::cuda::device_ref __device)
   {
     const auto __num_domains = __device.__locality_domains().size();
 
     // `device_memory_pool_ref` is not default constructible, so the array is built element by
-    // element in raw storage.
-    auto __tmp = ::cuda::__make_raw_storage_array<device_memory_pool_ref>(__num_domains);
+    // element in uninitialized storage.
+    auto __tmp = ::cuda::__simple_vector<device_memory_pool_ref>{__num_domains, ::cuda::no_init};
 
     for (auto&& __domain : __device.__locality_domains())
     {
@@ -74,17 +72,14 @@ class __per_device_locality_pools
       _CCCL_VERIFY(false, "We should have taken the full-device memory pool path earlier.");
 #  endif // ^^^ 13.3- ^^^
 
-      ::cuda::std::__construct_at(
-        __tmp.get() + __domain_id, ::cuda::__get_default_memory_pool(__location, ::CU_MEM_ALLOCATION_TYPE_PINNED));
+      __tmp.emplace_back(::cuda::__get_default_memory_pool(__location, ::CU_MEM_ALLOCATION_TYPE_PINNED));
       // This only works if __locality_domains() iterates with monotonically increasing domain
       // ID without holes. Otherwise we will need a more complicated strategy for remember
       // which domains to delete.
-      __tmp.get_deleter().__count_ = __domain_id + 1;
     }
 
     // Commit only once every step succeeds, so a throw leaves this object as it was.
-    __pools_       = ::cuda::std::move(__tmp);
-    __num_domains_ = __num_domains;
+    __pools_ = ::cuda::std::move(__tmp);
   }
 
 public:
@@ -94,10 +89,22 @@ public:
       this->__init(__device);
     });
 
-    _CCCL_ASSERT(__domain < __num_domains_, "locality domain id out of range");
-    return __pools_[__domain];
+    _CCCL_ASSERT(__domain < __pools_.size(), "locality domain id out of range");
+    return __pools_.data()[__domain];
   }
 };
+
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::__simple_vector<__per_device_locality_pools>
+__make_per_device_locality_pools()
+{
+  const auto __count = ::cuda::__physical_devices_count();
+  ::cuda::__simple_vector<__per_device_locality_pools> __pools{__count, ::cuda::no_init};
+  for (::cuda::std::size_t __i = 0; __i < __count; ++__i)
+  {
+    __pools.emplace_back();
+  }
+  return __pools;
+}
 
 [[nodiscard]] _CCCL_HOST_API inline device_memory_pool_ref& __device_default_memory_pool(__logical_device_ref __device)
 {
@@ -110,10 +117,10 @@ public:
     return ::cuda::device_default_memory_pool(__underlying);
   }
 
-  static const auto __pools_ =
-    ::cuda::std::make_unique<__per_device_locality_pools[]>(::cuda::__physical_devices_count());
+  // Not `const`: `__simple_vector::data() const` returns a `const` pointer, but `__get` mutates cached pool state.
+  static auto __pools_ = ::cuda::__make_per_device_locality_pools();
 
-  return __pools_[static_cast<::cuda::std::size_t>(__underlying.get())].__get(__underlying, __domain.domain_id);
+  return __pools_.data()[static_cast<::cuda::std::size_t>(__underlying.get())].__get(__underlying, __domain.domain_id);
 }
 
 _CCCL_END_NAMESPACE_CUDA

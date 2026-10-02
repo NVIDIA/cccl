@@ -26,24 +26,31 @@
 #include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Fn, class _Tuple>
+template <class _Fn, class _Tuple, class _TupleIndices>
 inline constexpr bool __can_apply_impl = false;
 
-template <class _Fn, class... _Types>
-inline constexpr bool __can_apply_impl<_Fn, __tuple_types<_Types...>> = is_invocable_v<_Fn, _Types...>;
+template <class _Fn, class _Tuple, size_t... _Indices>
+inline constexpr bool __can_apply_impl<_Fn, _Tuple, __tuple_indices<_Indices...>> =
+  is_invocable_v<_Fn, decltype(::cuda::std::get<_Indices>(::cuda::std::declval<_Tuple>()))...>;
 
-template <class _Fn, class _Tuple, bool = __tuple_like<_Tuple>>
+// tuple_of_iterator_references provides tuple_size and get, but it is not __tuple_like.
+template <class _Fn,
+          class _Tuple,
+          bool = __tuple_like<_Tuple> || __is_tuple_of_iterator_references_v<remove_cvref_t<_Tuple>>>
 inline constexpr bool __can_apply = false;
 
 template <class _Fn, class _Tuple>
-inline constexpr bool __can_apply<_Fn, _Tuple, true> = __can_apply_impl<_Fn, __make_tuple_types_t<_Tuple>>;
+inline constexpr bool __can_apply<_Fn, _Tuple, true> =
+  __can_apply_impl<_Fn, _Tuple, __make_tuple_indices_t<tuple_size_v<remove_reference_t<_Tuple>>>>;
 
 #define _LIBCUDACXX_NOEXCEPT_RETURN(...) \
   noexcept(noexcept(__VA_ARGS__))        \
@@ -57,8 +64,10 @@ _CCCL_API constexpr decltype(auto) __apply_tuple_impl(_Fn&& __f, _Tuple&& __t, _
   _LIBCUDACXX_NOEXCEPT_RETURN(
     // clang-tidy incorrectly reports "'__t' used after it was forwarded".
     // Each expansion forwards the tuple only to select get<I>'s cvref-qualified overload for a distinct element.
-    // NOLINTNEXTLINE(bugprone-use-after-move)
-    ::cuda::std::__invoke(::cuda::std::forward<_Fn>(__f), ::cuda::std::get<_Id>(::cuda::std::forward<_Tuple>(__t))...))
+    // NOLINTBEGIN(bugprone-use-after-move)
+    ::cuda::std::__invoke(::cuda::std::forward<_Fn>(__f), ::cuda::std::get<_Id>(::cuda::std::forward<_Tuple>(__t))...)
+    // NOLINTEND(bugprone-use-after-move)
+    )
 
     _CCCL_EXEC_CHECK_DISABLE
 template <class _Fn, class _Tuple>
@@ -70,10 +79,13 @@ _CCCL_API constexpr decltype(auto) apply(_Fn&& __f, _Tuple&& __t)
 
     _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Tuple, size_t... _Idx>
-_CCCL_API constexpr _Tp __make_from_tuple_impl(_Tuple&& __t, __tuple_indices<_Idx...>)
-  _LIBCUDACXX_NOEXCEPT_RETURN(_Tp(::cuda::std::get<_Idx>(::cuda::std::forward<_Tuple>(__t))...))
+_CCCL_API constexpr _Tp __make_from_tuple_impl(_Tuple&& __t, __tuple_indices<_Idx...>) _LIBCUDACXX_NOEXCEPT_RETURN(
+  // NOLINTBEGIN(bugprone-use-after-move)
+  _Tp(::cuda::std::get<_Idx>(::cuda::std::forward<_Tuple>(__t))...)
+  // NOLINTEND(bugprone-use-after-move)
+  )
 
-    _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Tuple>
 _CCCL_API constexpr _Tp make_from_tuple(_Tuple&& __t)
   _LIBCUDACXX_NOEXCEPT_RETURN(::cuda::std::__make_from_tuple_impl<_Tp>(

@@ -15,6 +15,8 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <random>
+
 #if !_CCCL_COMPILER(MSVC)
 #  include <unistd.h> // access(), unlink()
 #endif // !_CCCL_COMPILER(MSVC)
@@ -26,10 +28,10 @@ int main()
 // TODO (miscco): Make it work for windows
 #if !_CCCL_COMPILER(MSVC)
   // Generate a random filename
-  int r = rand();
+  const auto r = ::std::random_device{}();
 
   char filename[64];
-  snprintf(filename, 64, "output_%d.dot", r);
+  snprintf(filename, 64, "output_%u.dot", r);
   // fprintf(stderr, "filename %s\n", filename);
   setenv("CUDASTF_DOT_FILE", filename, 1);
   setenv("CUDASTF_DOT_IGNORE_PREREQS", "0", 1);

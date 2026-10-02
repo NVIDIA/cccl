@@ -18,6 +18,7 @@
 #include <cuda/std/array>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 template <class It>
 class forward_iterator
@@ -48,7 +49,7 @@ public:
 
   template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
   TEST_FUNC constexpr forward_iterator(forward_iterator<U>&& other)
-      : it_(other.it_)
+      : it_(cuda::std::move(other.it_))
   {
     other.it_ = U();
   }

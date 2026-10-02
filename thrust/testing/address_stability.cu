@@ -80,7 +80,7 @@ TEST_CASE("TestAddressStabilityUserDefinedFunctionObject", "[address_stability]"
   static_assert(proclaims_copyable_arguments<decltype(proclaim_copyable_arguments(my_plus<const int&&>{}))>::value);
 }
 
-void TestAddressStabilityLambda()
+void test_address_stability_lambda()
 {
   using ::cuda::proclaim_copyable_arguments;
   using ::cuda::proclaims_copyable_arguments;
@@ -114,7 +114,7 @@ void TestAddressStabilityLambda()
     static_assert(proclaims_copyable_arguments<decltype(pr_l)>::value);
   }
 }
-TEST_CASE("TestAddressStabilityLambda", "[address_stability]")
+TEST_CASE("test_address_stability_lambda", "[address_stability]")
 {
-  TestAddressStabilityLambda();
+  test_address_stability_lambda();
 }

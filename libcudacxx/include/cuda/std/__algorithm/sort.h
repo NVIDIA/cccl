@@ -164,10 +164,7 @@ inline constexpr bool __use_branchless_sort =
 namespace __detail
 {
 // Size in bits for the bitset in use.
-enum
-{
-  __block_size = sizeof(uint64_t) * 8
-};
+inline constexpr int __block_size = sizeof(uint64_t) * 8;
 } // namespace __detail
 
 // Ensures that __c(*__x, *__y) is true by swapping *__x and *__y if necessary.
@@ -1002,8 +999,8 @@ _CCCL_API _Number __log2i(_Number __n)
   return __log2;
 }
 
-template <class Comp, class RandomAccessIterator>
-_CCCL_API void __sort(RandomAccessIterator first, RandomAccessIterator last, Comp comp)
+template <class _Comp, class _RandomAccessIterator>
+_CCCL_API void __sort(_RandomAccessIterator first, _RandomAccessIterator last, _Comp comp)
 {
   auto depth_limit = 2 * ::cuda::std::__bit_log2(static_cast<size_t>(last - first));
 
@@ -1011,7 +1008,7 @@ _CCCL_API void __sort(RandomAccessIterator first, RandomAccessIterator last, Com
   // that the default comparator is in use so that we are sure that there are no
   // branches in the comparator.
   ::cuda::std::
-    __introsort<_ClassicAlgPolicy, Comp, RandomAccessIterator, __use_branchless_sort<Comp, RandomAccessIterator>>(
+    __introsort<_ClassicAlgPolicy, _Comp, _RandomAccessIterator, __use_branchless_sort<_Comp, _RandomAccessIterator>>(
       first, last, comp, depth_limit);
 }
 

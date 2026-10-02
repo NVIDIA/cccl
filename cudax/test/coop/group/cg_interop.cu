@@ -95,7 +95,10 @@ __device__ void test_cg_interop(Config config)
 
     static_assert(
       cuda::std::is_same_v<decltype(cudax::coop::generic_group{
-                             cuda::gpu_thread, this_warp, cudax::coop::group_by<n>{}, cudax::coop::lane_synchronizer{}}),
+                             cuda::gpu_thread,
+                             this_warp,
+                             cudax::coop::group_by{cuda::std::integral_constant<cuda::std::size_t, n>{}},
+                             cudax::coop::lane_synchronizer{}}),
                            decltype(cccl_group)>);
     REQUIRE(cuda::gpu_thread.count(cccl_group) == cg_group.size());
     REQUIRE(cuda::gpu_thread.rank(cccl_group) == cg_group.thread_rank());

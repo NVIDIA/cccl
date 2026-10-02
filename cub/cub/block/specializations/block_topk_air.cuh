@@ -577,8 +577,7 @@ private:
   }
 
 public:
-  struct TempStorage : Uninitialized<TempStorage_>
-  {};
+  using TempStorage = Uninitialized<TempStorage_>;
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE block_topk_air(TempStorage& storage)
       : storage(storage.Alias())

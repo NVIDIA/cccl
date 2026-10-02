@@ -61,7 +61,7 @@ struct thrust_shuffle_copy
 };
 
 template <class ShuffleFunc, typename Vector>
-void TestShuffleSimpleBase()
+void test_shuffle_simple_base()
 {
   Vector data{0, 1, 2, 3, 4};
   Vector shuffled(data.begin(), data.end());
@@ -73,20 +73,20 @@ void TestShuffleSimpleBase()
   REQUIRE(shuffled == data);
 }
 template <typename Vector>
-void TestShuffleSimple()
+void test_shuffle_simple()
 {
-  TestShuffleSimpleBase<thrust_shuffle, Vector>();
+  test_shuffle_simple_base<thrust_shuffle, Vector>();
 }
 template <typename Vector>
-void TestShuffleSimpleIterator()
+void test_shuffle_simple_iterator()
 {
-  TestShuffleSimpleBase<iterator_shuffle, Vector>();
+  test_shuffle_simple_base<iterator_shuffle, Vector>();
 }
-DECLARE_VECTOR_UNITTEST(TestShuffleSimple);
-DECLARE_VECTOR_UNITTEST(TestShuffleSimpleIterator);
+DECLARE_VECTOR_UNITTEST(test_shuffle_simple);
+DECLARE_VECTOR_UNITTEST(test_shuffle_simple_iterator);
 
 template <typename ShuffleFunc, typename ShuffleCopyFunc, typename Vector>
-void TestShuffleCopySimpleBase()
+void test_shuffle_copy_simple_base()
 {
   Vector data{0, 1, 2, 3, 4};
   Vector shuffled(5);
@@ -97,20 +97,20 @@ void TestShuffleCopySimpleBase()
   REQUIRE(shuffled == data);
 }
 template <typename Vector>
-void TestShuffleCopySimple()
+void test_shuffle_copy_simple()
 {
-  TestShuffleCopySimpleBase<thrust_shuffle, thrust_shuffle_copy, Vector>();
+  test_shuffle_copy_simple_base<thrust_shuffle, thrust_shuffle_copy, Vector>();
 }
 template <typename Vector>
-void TestShuffleCopySimpleIterator()
+void test_shuffle_copy_simple_iterator()
 {
-  TestShuffleCopySimpleBase<iterator_shuffle, iterator_shuffle_copy, Vector>();
+  test_shuffle_copy_simple_base<iterator_shuffle, iterator_shuffle_copy, Vector>();
 }
-DECLARE_VECTOR_UNITTEST(TestShuffleCopySimple);
-DECLARE_VECTOR_UNITTEST(TestShuffleCopySimpleIterator);
+DECLARE_VECTOR_UNITTEST(test_shuffle_copy_simple);
+DECLARE_VECTOR_UNITTEST(test_shuffle_copy_simple_iterator);
 
 template <typename Vector>
-void TestShuffleCudaStdPhilox()
+void test_shuffle_cuda_std_philox()
 {
   Vector data{0, 1, 2, 3, 4};
   Vector shuffled(data.begin(), data.end());
@@ -120,10 +120,10 @@ void TestShuffleCudaStdPhilox()
 
   REQUIRE(shuffled == data);
 }
-DECLARE_VECTOR_UNITTEST(TestShuffleCudaStdPhilox);
+DECLARE_VECTOR_UNITTEST(test_shuffle_cuda_std_philox);
 
 template <typename Vector>
-void TestShuffleCopyCudaStdPhilox()
+void test_shuffle_copy_cuda_std_philox()
 {
   Vector data{0, 1, 2, 3, 4};
   Vector shuffled(5);
@@ -136,10 +136,10 @@ void TestShuffleCopyCudaStdPhilox()
 
   REQUIRE(shuffled == in_place);
 }
-DECLARE_VECTOR_UNITTEST(TestShuffleCopyCudaStdPhilox);
+DECLARE_VECTOR_UNITTEST(test_shuffle_copy_cuda_std_philox);
 
 template <typename ShuffleFunc, typename T>
-void TestHostDeviceIdenticalBase(size_t m)
+void test_host_device_identical_base(size_t m)
 {
   thrust::host_vector<T> host_result(m);
   thrust::device_vector<T> device_result(m);
@@ -155,20 +155,20 @@ void TestHostDeviceIdenticalBase(size_t m)
   REQUIRE(device_result == host_result);
 }
 template <typename T>
-void TestHostDeviceIdentical(size_t m)
+void test_host_device_identical(size_t m)
 {
-  TestHostDeviceIdenticalBase<thrust_shuffle, T>(m);
+  test_host_device_identical_base<thrust_shuffle, T>(m);
 }
 template <typename T>
-void TestHostDeviceIdenticalIterator(size_t m)
+void test_host_device_identical_iterator(size_t m)
 {
-  TestHostDeviceIdenticalBase<iterator_shuffle, T>(m);
+  test_host_device_identical_base<iterator_shuffle, T>(m);
 }
-DECLARE_VARIABLE_UNITTEST(TestHostDeviceIdentical);
-DECLARE_VARIABLE_UNITTEST(TestHostDeviceIdenticalIterator);
+DECLARE_VARIABLE_UNITTEST(test_host_device_identical);
+DECLARE_VARIABLE_UNITTEST(test_host_device_identical_iterator);
 
 template <typename BijectionFunc, typename T>
-void TestFunctionIsBijectionBase(size_t m)
+void test_function_is_bijection_base(size_t m)
 {
   thrust::default_random_engine device_g(0xD5);
   BijectionFunc device_f(m, device_g);
@@ -194,17 +194,17 @@ void TestFunctionIsBijectionBase(size_t m)
   REQUIRE(thrust::equal(unpermuted.begin(), unpermuted.end(), thrust::make_counting_iterator(T(0))));
 }
 template <typename T>
-void TestFunctionIsBijection(size_t m)
+void test_function_is_bijection(size_t m)
 {
-  TestFunctionIsBijectionBase<thrust::detail::feistel_bijection, T>(m);
+  test_function_is_bijection_base<thrust::detail::feistel_bijection, T>(m);
 }
 template <typename T>
-void TestFunctionIsBijectionIterator(size_t m)
+void test_function_is_bijection_iterator(size_t m)
 {
-  TestFunctionIsBijectionBase<thrust::detail::random_bijection<uint64_t>, T>(m);
+  test_function_is_bijection_base<thrust::detail::random_bijection<uint64_t>, T>(m);
 }
-DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestFunctionIsBijection);
-DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestFunctionIsBijectionIterator);
+DECLARE_INTEGRAL_VARIABLE_UNITTEST(test_function_is_bijection);
+DECLARE_INTEGRAL_VARIABLE_UNITTEST(test_function_is_bijection_iterator);
 
 TEST_CASE("TestFeistelBijectionLength", "[shuffle]")
 {
@@ -287,7 +287,7 @@ double inverse_erf(double x)
 // Individual input keys should be permuted to output locations with uniform
 // probability. Perform chi-squared test with confidence 95%.
 template <typename ShuffleFunc, typename Vector>
-void TestShuffleKeyPositionBase()
+void test_shuffle_key_position_base()
 {
   using T               = typename Vector::value_type;
   const int num_samples = 1000;
@@ -322,17 +322,17 @@ void TestShuffleKeyPositionBase()
   REQUIRE(zmax < zcrit);
 }
 template <typename Vector>
-void TestShuffleKeyPosition()
+void test_shuffle_key_position()
 {
-  TestShuffleKeyPositionBase<thrust_shuffle, Vector>();
+  test_shuffle_key_position_base<thrust_shuffle, Vector>();
 }
 template <typename Vector>
-void TestShuffleKeyPositionIterator()
+void test_shuffle_key_position_iterator()
 {
-  TestShuffleKeyPositionBase<iterator_shuffle, Vector>();
+  test_shuffle_key_position_base<iterator_shuffle, Vector>();
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestShuffleKeyPosition);
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestShuffleKeyPositionIterator);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_shuffle_key_position);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_shuffle_key_position_iterator);
 
 struct vector_compare
 {
@@ -358,7 +358,7 @@ struct vector_compare
 // Uses a chi-squared test indicating 99% confidence the output is uniformly
 // random
 template <typename ShuffleFunc, typename Vector>
-void TestShuffleUniformPermutationBase()
+void test_shuffle_uniform_permutation_base()
 {
   using T = typename Vector::value_type;
 
@@ -389,14 +389,14 @@ void TestShuffleUniformPermutationBase()
   REQUIRE(chi_squared < critical_value);
 }
 template <typename Vector>
-void TestShuffleUniformPermutation()
+void test_shuffle_uniform_permutation()
 {
-  TestShuffleUniformPermutationBase<thrust_shuffle, Vector>();
+  test_shuffle_uniform_permutation_base<thrust_shuffle, Vector>();
 }
 template <typename Vector>
-void TestShuffleUniformPermutationIterator()
+void test_shuffle_uniform_permutation_iterator()
 {
-  TestShuffleUniformPermutationBase<iterator_shuffle, Vector>();
+  test_shuffle_uniform_permutation_base<iterator_shuffle, Vector>();
 }
-DECLARE_VECTOR_UNITTEST(TestShuffleUniformPermutation);
-DECLARE_VECTOR_UNITTEST(TestShuffleUniformPermutationIterator);
+DECLARE_VECTOR_UNITTEST(test_shuffle_uniform_permutation);
+DECLARE_VECTOR_UNITTEST(test_shuffle_uniform_permutation_iterator);

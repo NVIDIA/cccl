@@ -1062,6 +1062,8 @@ public:
   {
     InternalWarpScan internal(temp_storage);
 
+    // InclusiveScan fills the output before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     T inclusive_output;
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
@@ -1294,7 +1296,8 @@ public:
   {
     InternalWarpScan internal(temp_storage);
 
-    T inclusive_output;
+    // InclusiveScanPartial supplies the scan result for valid lanes.
+    T inclusive_output; // NOLINT(cppcoreguidelines-pro-type-member-init)
     internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
 
     internal.UpdatePartial(input, inclusive_output, exclusive_output, scan_op, valid_items);

@@ -28,7 +28,7 @@ __device__ void test_make_this_group(const Level& level, const Config& config)
   static_assert(cuda::std::is_same_v<GroupTempl<Hierarchy>, decltype(cudax::coop::make_this_group(level, config))>);
   static_assert(noexcept(cudax::coop::make_this_group(level, config)));
 
-  auto group = cudax::coop::make_this_group(level, config);
+  const auto group = cudax::coop::make_this_group(level, config);
   group.sync();
 }
 

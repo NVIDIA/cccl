@@ -6,7 +6,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestMinMaxElementSimple()
+void test_min_max_element_simple()
 {
   Vector data{3, 5, 1, 2, 5, 1};
 
@@ -15,10 +15,10 @@ void TestMinMaxElementSimple()
   REQUIRE(thrust::minmax_element(data.begin(), data.end()).first - data.begin() == 2);
   REQUIRE(thrust::minmax_element(data.begin(), data.end()).second - data.begin() == 1);
 }
-DECLARE_VECTOR_UNITTEST(TestMinMaxElementSimple);
+DECLARE_VECTOR_UNITTEST(test_min_max_element_simple);
 
 template <class Vector>
-void TestMinMaxElementWithTransform()
+void test_min_max_element_with_transform()
 {
   using T = typename Vector::value_type;
 
@@ -33,10 +33,10 @@ void TestMinMaxElementWithTransform()
              .second
           == -1);
 }
-DECLARE_VECTOR_UNITTEST(TestMinMaxElementWithTransform);
+DECLARE_VECTOR_UNITTEST(test_min_max_element_with_transform);
 
 template <typename T>
-void TestMinMaxElement(const size_t n)
+void test_min_max_element(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -62,7 +62,7 @@ void TestMinMaxElement(const size_t n)
   REQUIRE(h_min - h_data.begin() == d_min - d_data.begin());
   REQUIRE(h_max - h_data.begin() == d_max - d_data.begin());
 }
-DECLARE_VARIABLE_UNITTEST(TestMinMaxElement);
+DECLARE_VARIABLE_UNITTEST(test_min_max_element);
 
 template <typename ForwardIterator>
 cuda::std::pair<ForwardIterator, ForwardIterator>
@@ -98,7 +98,7 @@ TEST_CASE("TestMinMaxElementDispatchImplicit", "[minmax_element]")
   REQUIRE(13 == vec.front());
 }
 
-void TestMinMaxElementWithBigIndexesHelper(int magnitude)
+void test_min_max_element_with_big_indexes_helper(int magnitude)
 {
   using Iter = thrust::counting_iterator<long long>;
   const Iter begin(1);
@@ -116,11 +116,11 @@ void TestMinMaxElementWithBigIndexesHelper(int magnitude)
 
 TEST_CASE("TestMinMaxElementWithBigIndexes", "[minmax_element]")
 {
-  TestMinMaxElementWithBigIndexesHelper(30);
+  test_min_max_element_with_big_indexes_helper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
-  TestMinMaxElementWithBigIndexesHelper(31);
-  TestMinMaxElementWithBigIndexesHelper(32);
-  TestMinMaxElementWithBigIndexesHelper(33);
+  test_min_max_element_with_big_indexes_helper(31);
+  test_min_max_element_with_big_indexes_helper(32);
+  test_min_max_element_with_big_indexes_helper(33);
 #endif
 }
 

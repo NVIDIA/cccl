@@ -83,9 +83,8 @@ inline __host__ __device__ BFloat16::operator float() const
 }
 
 inline __host__ __device__ BFloat16::BFloat16(const __nv_bfloat16& value)
-{
-  x = *reinterpret_cast<const unsigned short*>(&value);
-}
+    : x(*reinterpret_cast<const unsigned short*>(&value))
+{}
 inline __host__ __device__ BFloat16::operator __nv_bfloat16() const
 {
   return *reinterpret_cast<const __nv_bfloat16*>(&x);

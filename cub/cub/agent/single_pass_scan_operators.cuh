@@ -95,7 +95,7 @@ struct BlockScanRunningPrefixOp
 /**
  * Enumerations of tile status
  */
-enum ScanTileStatus
+enum ScanTileStatus // NOLINT(cppcoreguidelines-use-enum-class)
 {
   SCAN_TILE_OOB, // Out-of-bounds (e.g., padding)
   SCAN_TILE_INVALID = 99, // Not yet processed
@@ -627,6 +627,8 @@ struct ScanTileState<T, true>
   static_assert(sizeof(TxnWord) <= detail::largest_atomic_message_size);
 
   // Device word type
+  // Tile operations supply both fields while preserving triviality.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   struct TileDescriptor
   {
     StatusWord status;
@@ -736,9 +738,7 @@ public:
   template <MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
   {
-    TileDescriptor tile_descriptor;
-    tile_descriptor.status = SCAN_TILE_INCLUSIVE;
-    tile_descriptor.value  = tile_inclusive;
+    const TileDescriptor tile_descriptor{SCAN_TILE_INCLUSIVE, tile_inclusive};
 
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
@@ -749,9 +749,7 @@ public:
   template <MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
   {
-    TileDescriptor tile_descriptor;
-    tile_descriptor.status = SCAN_TILE_PARTIAL;
-    tile_descriptor.value  = tile_partial;
+    const TileDescriptor tile_descriptor{SCAN_TILE_PARTIAL, tile_partial};
 
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
@@ -766,6 +764,8 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   WaitForValid(int tile_idx, StatusWord& status, T& value, DelayT delay_or_prevent_hoisting = {})
   {
+    // The descriptor is loaded before any field is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     TileDescriptor tile_descriptor;
 
     _CCCL_IKET_RANGE_PUSH(LoadTileStates);
@@ -1028,7 +1028,8 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     _If<TXN_WORD_SIZE == 16, ulonglong2, ::cuda::std::_If<TXN_WORD_SIZE == 8, unsigned long long, unsigned int>>;
 
   // Device word type (for when sizeof(ValueT) == sizeof(KeyT))
-  struct TileDescriptorBigStatus
+  // Preserve default construction for packed transaction storage.
+  struct TileDescriptorBigStatus // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     KeyT key;
     ValueT value;
@@ -1036,7 +1037,8 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
   };
 
   // Device word type (for when sizeof(ValueT) != sizeof(KeyT))
-  struct TileDescriptorLittleStatus
+  // Preserve default construction for packed transaction storage.
+  struct TileDescriptorLittleStatus // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     ValueT value;
     StatusWord status;
@@ -1227,8 +1229,7 @@ struct TilePrefixCallbackOp
   };
 
   // Alias wrapper allowing temporary storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   // Type of status word
   using StatusWord = typename ScanTileStateT::StatusWord;
@@ -1276,6 +1277,8 @@ struct TilePrefixCallbackOp
   ProcessWindow(int predecessor_idx, StatusWord& predecessor_status, T& window_aggregate, DelayT delay = {})
   {
     _CCCL_IKET_RANGE_PUSH(ProcessWindow);
+    // WaitForValid fills value before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     T value;
 
     _CCCL_IKET_RANGE_PUSH(WaitForValid);
@@ -1310,6 +1313,8 @@ private:
 
     int predecessor_idx = tile_idx - threadIdx.x - 1;
     StatusWord predecessor_status;
+    // ProcessWindow fills the aggregate before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     T window_aggregate;
 
     // Wait for the warp-wide window of predecessor tiles to become valid

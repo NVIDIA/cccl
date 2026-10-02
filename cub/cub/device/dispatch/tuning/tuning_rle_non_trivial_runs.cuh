@@ -32,6 +32,8 @@
 CUB_NAMESPACE_BEGIN
 
 //! The lookback tuning policy for @ref DeviceRunLengthEncode::NonTrivialRuns.
+// Tuning selectors provide every policy field.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct RleNonTrivialRunsLookbackPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
@@ -98,6 +100,8 @@ inline ::std::ostream& operator<<(::std::ostream& os, RleNonTrivialRunsAlgorithm
 #endif // _CCCL_HOSTED()
 
 //! The tuning policy for @ref DeviceRunLengthEncode::NonTrivialRuns.
+// Tuning selectors provide every policy field.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct RleNonTrivialRunsPolicy
 {
   RleNonTrivialRunsAlgorithm algorithm; //!< The non-trivial-runs algorithm to use

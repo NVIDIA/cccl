@@ -31,14 +31,14 @@ struct my_allocator_with_custom_construct1 : thrust::device_malloc_allocator<T>
 };
 
 template <typename T>
-void TestAllocatorCustomDefaultConstruct(size_t n)
+void test_allocator_custom_default_construct(size_t n)
 {
   const thrust::device_vector<T> ref(n, 13);
   const thrust::device_vector<T, my_allocator_with_custom_construct1<T>> vec(n);
 
   REQUIRE(ref == vec);
 }
-DECLARE_VARIABLE_UNITTEST(TestAllocatorCustomDefaultConstruct);
+DECLARE_VARIABLE_UNITTEST(test_allocator_custom_default_construct);
 
 template <typename T>
 struct my_allocator_with_custom_construct2 : thrust::device_malloc_allocator<T>
@@ -53,7 +53,7 @@ struct my_allocator_with_custom_construct2 : thrust::device_malloc_allocator<T>
 };
 
 template <typename T>
-void TestAllocatorCustomCopyConstruct(size_t n)
+void test_allocator_custom_copy_construct(size_t n)
 {
   const thrust::device_vector<T> ref(n, 13);
   thrust::device_vector<T> copy_from(n, 7);
@@ -61,7 +61,7 @@ void TestAllocatorCustomCopyConstruct(size_t n)
 
   REQUIRE(ref == vec);
 }
-DECLARE_VARIABLE_UNITTEST(TestAllocatorCustomCopyConstruct);
+DECLARE_VARIABLE_UNITTEST(test_allocator_custom_copy_construct);
 
 #endif // !WAR_BUG_1731
 
@@ -125,7 +125,7 @@ template <typename T>
 bool my_allocator_with_custom_destroy<T>::g_state = false;
 
 template <typename T>
-void TestAllocatorCustomDestroy(size_t n)
+void test_allocator_custom_destroy(size_t n)
 {
   my_allocator_with_custom_destroy<T>::g_state = false;
 
@@ -136,7 +136,7 @@ void TestAllocatorCustomDestroy(size_t n)
   // state should only be true when there are values to destroy:
   REQUIRE((n > 0) == my_allocator_with_custom_destroy<T>::g_state);
 }
-DECLARE_VARIABLE_UNITTEST(TestAllocatorCustomDestroy);
+DECLARE_VARIABLE_UNITTEST(test_allocator_custom_destroy);
 
 #endif // !WAR_BUG_1731
 
@@ -171,7 +171,7 @@ struct my_minimal_allocator
 };
 
 template <typename T>
-void TestAllocatorMinimal(size_t n)
+void test_allocator_minimal(size_t n)
 {
   thrust::cpp::vector<int, my_minimal_allocator<int>> vec(n, 13);
 
@@ -181,7 +181,7 @@ void TestAllocatorMinimal(size_t n)
 
   REQUIRE(ref == h_vec);
 }
-DECLARE_VARIABLE_UNITTEST(TestAllocatorMinimal);
+DECLARE_VARIABLE_UNITTEST(test_allocator_minimal);
 
 TEST_CASE("TestAllocatorTraitsRebind", "[allocator]")
 {

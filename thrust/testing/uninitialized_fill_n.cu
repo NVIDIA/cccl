@@ -49,7 +49,7 @@ TEST_CASE("TestUninitializedFillNDispatchImplicit", "[uninitialized_fill_n]")
 }
 
 template <class Vector>
-void TestUninitializedFillNPOD()
+void test_uninitialized_fill_npod()
 {
   using T = typename Vector::value_type;
 
@@ -87,7 +87,7 @@ void TestUninitializedFillNPOD()
   REQUIRE(v.end() == iter);
   REQUIRE(v == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestUninitializedFillNPOD);
+DECLARE_VECTOR_UNITTEST(test_uninitialized_fill_npod);
 
 TEST_CASE("TestUninitializedFillNNonPOD", "[uninitialized_fill_n]")
 {

@@ -16,10 +16,10 @@
 
 #include <algorithm>
 
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
-#include <c2h/device_and_stream.h>
 
 template <class T, class FlagT>
 static c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags)
@@ -256,43 +256,7 @@ CUB_TEST("DeviceSelect::Flagged works with user provided memory and environment"
     REQUIRE(reference == out);
   };
 
-  SECTION("DeviceSelect::Flagged works with cudaStream_t")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_flagged(stream.get());
-  }
-
-  SECTION("DeviceSelect::Flagged works with cuda::stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_flagged(stream);
-  }
-
-  SECTION("DeviceSelect::Flagged works with cuda::stream_ref")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const cuda::stream_ref stream_ref{stream};
-    test_flagged(stream_ref);
-  }
-
-  SECTION("DeviceSelect::Flagged works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_flagged(env);
-  }
-
-  SECTION("DeviceSelect::Flagged works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_flagged(policy);
-  }
-
-  SECTION("DeviceSelect::Flagged works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_flagged(policy);
-  }
+  test_with_custom_streams(test_flagged);
 }
 #endif // TEST_LAUNCH == 0
 

@@ -24,7 +24,7 @@ struct return_value
 };
 
 template <class Vector>
-void TestGenerateSimple()
+void test_generate_simple()
 {
   using T = typename Vector::value_type;
 
@@ -39,7 +39,7 @@ void TestGenerateSimple()
   Vector ref(result.size(), value);
   REQUIRE(result == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestGenerateSimple);
+DECLARE_VECTOR_UNITTEST(test_generate_simple);
 
 template <typename ForwardIterator, typename Generator>
 void generate(my_system& system, ForwardIterator /*first*/, ForwardIterator, Generator)
@@ -73,7 +73,7 @@ TEST_CASE("TestGenerateDispatchImplicit", "[generate]")
 }
 
 template <typename T>
-void TestGenerate(const size_t n)
+void test_generate(const size_t n)
 {
   thrust::host_vector<T> h_result(n);
   thrust::device_vector<T> d_result(n);
@@ -86,10 +86,10 @@ void TestGenerate(const size_t n)
 
   REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestGenerate);
+DECLARE_VARIABLE_UNITTEST(test_generate);
 
 template <typename T>
-void TestGenerateToDiscardIterator(const size_t)
+void test_generate_to_discard_iterator(const size_t)
 {
   T value = 13;
   const return_value<T> f(value);
@@ -102,10 +102,10 @@ void TestGenerateToDiscardIterator(const size_t)
 
   // there's nothing to actually check except that it compiles
 }
-DECLARE_VARIABLE_UNITTEST(TestGenerateToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_generate_to_discard_iterator);
 
 template <class Vector>
-void TestGenerateNSimple()
+void test_generate_n_simple()
 {
   using T = typename Vector::value_type;
 
@@ -120,7 +120,7 @@ void TestGenerateNSimple()
   Vector ref(result.size(), value);
   REQUIRE(result == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestGenerateNSimple);
+DECLARE_VECTOR_UNITTEST(test_generate_n_simple);
 
 template <typename ForwardIterator, typename Size, typename Generator>
 ForwardIterator generate_n(my_system& system, ForwardIterator first, Size, Generator)
@@ -156,7 +156,7 @@ TEST_CASE("TestGenerateNDispatchImplicit", "[generate]")
 }
 
 template <typename T>
-void TestGenerateNToDiscardIterator(const size_t n)
+void test_generate_n_to_discard_iterator(const size_t n)
 {
   T value = 13;
   const return_value<T> f(value);
@@ -172,10 +172,10 @@ void TestGenerateNToDiscardIterator(const size_t n)
   REQUIRE((reference == h_result));
   REQUIRE((reference == d_result));
 }
-DECLARE_VARIABLE_UNITTEST(TestGenerateNToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_generate_n_to_discard_iterator);
 
 template <typename Vector>
-void TestGenerateZipIterator()
+void test_generate_zip_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -191,7 +191,7 @@ void TestGenerateZipIterator()
   REQUIRE(v1 == ref1);
   REQUIRE(v2 == ref2);
 };
-DECLARE_VECTOR_UNITTEST(TestGenerateZipIterator);
+DECLARE_VECTOR_UNITTEST(test_generate_zip_iterator);
 
 TEST_CASE("TestGenerateTuple", "[generate]")
 {
