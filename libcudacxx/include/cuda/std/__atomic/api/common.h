@@ -192,6 +192,22 @@
     return fetch_xor(__op) ^ __op;                                                                          \
   }
 
+// API definitions for atomic minimum/maximum (P0493R5). Shared by the integral and pointer
+// specializations; the operand is _Tp for both (unlike fetch_add, whose pointer form takes ptrdiff_t).
+#define _LIBCUDACXX_ATOMIC_MINMAX_IMPL(_CONST, _VOLATILE)                                     \
+  _LIBCUDACXX_ATOMIC_MUTATING_CONSTRAINT()                                                    \
+  _CCCL_HOST_DEVICE_API inline remove_cv_t<_Tp> fetch_max(                                    \
+    remove_cv_t<_Tp> __op, memory_order __m = memory_order_seq_cst) _CONST _VOLATILE noexcept \
+  {                                                                                           \
+    return ::cuda::std::__atomic_fetch_max_dispatch(&__a, __op, __m, _Sco{});                 \
+  }                                                                                           \
+  _LIBCUDACXX_ATOMIC_MUTATING_CONSTRAINT()                                                    \
+  _CCCL_HOST_DEVICE_API inline remove_cv_t<_Tp> fetch_min(                                    \
+    remove_cv_t<_Tp> __op, memory_order __m = memory_order_seq_cst) _CONST _VOLATILE noexcept \
+  {                                                                                           \
+    return ::cuda::std::__atomic_fetch_min_dispatch(&__a, __op, __m, _Sco{});                 \
+  }
+
 // API definitions for atomics with pointers
 #define _LIBCUDACXX_ATOMIC_POINTER_IMPL(_CONST, _VOLATILE)                                                         \
   _LIBCUDACXX_ATOMIC_MUTATING_CONSTRAINT()                                                                         \

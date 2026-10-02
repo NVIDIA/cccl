@@ -54,6 +54,23 @@ struct __atomic_ref_common
 };
 
 template <typename _Tp, typename _Sco>
+struct __atomic_ref_extended_floating_point
+{
+  _CCCL_HOST_DEVICE_API constexpr __atomic_ref_extended_floating_point(_Tp& __v)
+      : __a(&__v)
+  {}
+
+  __atomic_ref_storage<_Tp> __a;
+
+#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+  static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), nullptr);
+#endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(const, )
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(const, )
+};
+
+template <typename _Tp, typename _Sco>
 struct __atomic_ref_arithmetic
 {
   _CCCL_HOST_DEVICE_API constexpr __atomic_ref_arithmetic(_Tp& __v)
@@ -68,6 +85,7 @@ struct __atomic_ref_arithmetic
 
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(const, )
   _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(const, )
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(const, )
 };
 
 template <typename _Tp, typename _Sco>
@@ -86,6 +104,7 @@ struct __atomic_ref_bitwise
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(const, )
   _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(const, )
   _LIBCUDACXX_ATOMIC_BITWISE_IMPL(const, )
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(const, )
 };
 
 template <typename _Tp, typename _Sco>
@@ -103,6 +122,7 @@ struct __atomic_ref_pointer
 
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(const, )
   _LIBCUDACXX_ATOMIC_POINTER_IMPL(const, )
+  _LIBCUDACXX_ATOMIC_MINMAX_IMPL(const, )
 };
 
 template <typename _Tp, thread_scope _Sco = thread_scope_system>
@@ -113,7 +133,9 @@ using __atomic_ref_impl =
           __atomic_ref_arithmetic<_Tp, __scope_to_tag<_Sco>>,
           _If<is_integral_v<_Tp>,
               __atomic_ref_bitwise<_Tp, __scope_to_tag<_Sco>>,
-              __atomic_ref_common<_Tp, __scope_to_tag<_Sco>>>>>;
+              _If<__atomic_is_minmax_extended_floating_point_v<_Tp>,
+                  __atomic_ref_extended_floating_point<_Tp, __scope_to_tag<_Sco>>,
+                  __atomic_ref_common<_Tp, __scope_to_tag<_Sco>>>>>>;
 
 #undef _LIBCUDACXX_ATOMIC_MUTATING_CONSTRAINT
 

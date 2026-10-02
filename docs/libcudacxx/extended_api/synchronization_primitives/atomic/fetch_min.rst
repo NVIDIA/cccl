@@ -9,13 +9,15 @@ Defined in header ``<cuda/atomic>``:
 
    template <typename T, cuda::thread_scope Scope>
    __host__ __device__
-   T cuda::atomic<T, Scope>::fetch_min(T const& val,
+   T cuda::atomic<T, Scope>::fetch_min(T val,
                                        cuda::std::memory_order order
                                          = cuda::std::memory_order_seq_cst);
 
 Atomically find the minimum of the value stored in the ``cuda::atomic``
 and ``val``. The minimum is found using
 `cuda::std::min <https://en.cppreference.com/w/cpp/algorithm/min>`_.
+
+``fetch_min`` is only available when ``T`` is an integral or pointer type.
 
 Example
 -------

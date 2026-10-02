@@ -29,11 +29,17 @@
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/cstring>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+// Extended floating-point types whose atomic min/max is emulated on the 32-bit proxy below.
+template <class _Tp>
+inline constexpr bool __atomic_is_minmax_extended_floating_point_v =
+  __is_extended_floating_point_v<remove_cv_t<_Tp>> && sizeof(_Tp) == 2;
 
 // manipulated by PTX without any performance overhead
 template <typename _Tp>
@@ -216,10 +222,9 @@ template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_max_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
-  using _Tp                                             = __atomic_underlying_t<_Sto>;
-  constexpr bool __is_supported_extended_floating_point = __is_extended_floating_point_v<_Tp> && sizeof(_Tp) == 2;
-  static_assert(is_integral_v<_Tp> || __is_supported_extended_floating_point);
-  if constexpr (__is_supported_extended_floating_point)
+  using _Tp = __atomic_underlying_t<_Sto>;
+  static_assert(is_integral_v<_Tp> || __atomic_is_minmax_extended_floating_point_v<_Tp>);
+  if constexpr (__atomic_is_minmax_extended_floating_point_v<_Tp>)
   {
     auto __expected = ::cuda::std::__atomic_load_dispatch(&__a->__a_value, memory_order_relaxed, _Sco{});
     while (true)
@@ -244,10 +249,9 @@ template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<
 _CCCL_HOST_DEVICE_API auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
-  using _Tp                                             = __atomic_underlying_t<_Sto>;
-  constexpr bool __is_supported_extended_floating_point = __is_extended_floating_point_v<_Tp> && sizeof(_Tp) == 2;
-  static_assert(is_integral_v<_Tp> || __is_supported_extended_floating_point);
-  if constexpr (__is_supported_extended_floating_point)
+  using _Tp = __atomic_underlying_t<_Sto>;
+  static_assert(is_integral_v<_Tp> || __atomic_is_minmax_extended_floating_point_v<_Tp>);
+  if constexpr (__atomic_is_minmax_extended_floating_point_v<_Tp>)
   {
     auto __expected = ::cuda::std::__atomic_load_dispatch(&__a->__a_value, memory_order_relaxed, _Sco{});
     while (true)
