@@ -36,7 +36,6 @@
 
 #  include <cuda/__functional/operator_properties.h>
 #  include <cuda/__memory/uninitialized_array.h>
-#  include <cuda/__type_traits/is_floating_point.h>
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__cmath/fpclassify.h>
@@ -190,16 +189,8 @@ struct ReduceByKeyAgent
   static constexpr bool has_identity_zero = []() constexpr {
     if constexpr (::cuda::has_identity_element_v<ReductionOp, value_type>)
     {
-      constexpr auto identity = ::cuda::identity_element<ReductionOp, value_type>();
-      if constexpr (::cuda::is_floating_point_v<value_type>)
-      {
-        // avoid comparing extended floating-point types (e.g., __half) against an int literal, which is ambiguous
-        return ::cuda::std::fpclassify(identity) == FP_ZERO;
-      }
-      else
-      {
-        return identity == 0;
-      }
+      // not `== 0`, which is ambiguous for __half and __nv_bfloat16
+      return ::cuda::std::fpclassify(::cuda::identity_element<ReductionOp, value_type>()) == FP_ZERO;
     }
     else
     {
