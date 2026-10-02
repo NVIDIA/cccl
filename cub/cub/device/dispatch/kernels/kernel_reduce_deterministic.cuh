@@ -16,6 +16,7 @@
 #include <cub/detail/deferred_parameter.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/rfa.cuh>
+#include <cub/detail/uninitialized_copy.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/util_arch.cuh>
