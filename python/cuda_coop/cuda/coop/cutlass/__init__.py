@@ -7,6 +7,7 @@
 from .._core.api import TempStorageLike, ThreadDataLike
 from ._compiler._activation import register_trace_context
 from ._group_exchange import exchange
+from ._group_histogram import histogram
 from ._group_load_store import load, store
 from ._group_merge_sort import merge_sort_keys, merge_sort_pairs
 from ._group_neighbors import adjacent_difference, discontinuity
@@ -56,6 +57,7 @@ __all__ = [
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
