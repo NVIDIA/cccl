@@ -22,6 +22,7 @@
 
 #include <cub/detail/constant.cuh>
 #include <cub/detail/log2.cuh>
+#include <cub/detail/uninitialized_copy.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_store.cuh>
