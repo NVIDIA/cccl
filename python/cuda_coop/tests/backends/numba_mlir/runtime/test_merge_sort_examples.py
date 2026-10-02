@@ -1,0 +1,61 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+import pytest
+
+cuda = pytest.importorskip("numba_cuda_mlir.cuda")
+if not cuda.is_available():
+    pytest.skip("requires a CUDA-capable runtime", allow_module_level=True)
+
+pytestmark = [
+    pytest.mark.backend_numba_mlir,
+    pytest.mark.runtime,
+    pytest.mark.gpu,
+    pytest.mark.filterwarnings(
+        "ignore::numba_cuda_mlir.numba_cuda.core.errors.NumbaPerformanceWarning"
+    ),
+]
+
+
+def test_merge_sort_pairs_example():
+    # merge-sort-example-begin
+    import numpy as np
+    from numba_cuda_mlir import cuda, types
+
+    from cuda import coop
+
+    @cuda.jit
+    def order_tile(source, sorted_keys, original_positions, items_per_thread):
+        block = coop.this_block()
+        keys = coop.ThreadData(items_per_thread)
+        positions = coop.ThreadData(items_per_thread)
+        coop.load(block, source, keys)
+        for item in range(items_per_thread):
+            positions[item] = types.int32(
+                cuda.threadIdx.x * items_per_thread + item
+            )
+        ordered_keys, ordered_positions = coop.merge_sort_pairs(
+            block, keys, positions
+        )
+        coop.store(block, sorted_keys, ordered_keys)
+        coop.store(block, original_positions, ordered_positions)
+
+    for items_per_thread in (1, 4):
+        values = (
+            np.random.default_rng(42)
+            .permutation(64 * items_per_thread)
+            .astype(np.int32)
+            - 64
+        )
+        source = cuda.to_device(values)
+        sorted_keys = cuda.device_array_like(source)
+        original_positions = cuda.device_array_like(source)
+        order_tile[1, 64](
+            source, sorted_keys, original_positions, items_per_thread
+        )
+        actual = sorted_keys.copy_to_host()
+        indices = original_positions.copy_to_host()
+        np.testing.assert_array_equal(actual, np.sort(values))
+        np.testing.assert_array_equal(actual, values[indices])
+    # merge-sort-example-end

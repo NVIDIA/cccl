@@ -27,6 +27,7 @@ from ._thread_group import (
 
 if TYPE_CHECKING:
     from ._group._exchange import exchange
+    from ._group._merge_sort import merge_sort_keys, merge_sort_pairs
     from ._group._reduce import reduce, sum
     from ._group._scan import (
         exclusive_scan,
@@ -55,6 +56,8 @@ __all__ = [
     "inclusive_sum",
     "load",
     "local",
+    "merge_sort_keys",
+    "merge_sort_pairs",
     "reduce",
     "scan",
     "shared",
@@ -71,6 +74,8 @@ __all__ = [
 
 def __getattr__(name):
     if name in {
+        "merge_sort_keys",
+        "merge_sort_pairs",
         "exchange",
         "exclusive_scan",
         "exclusive_sum",
@@ -82,6 +87,8 @@ def __getattr__(name):
         "sum",
     }:
         module_name = {
+            "merge_sort_keys": "_group._merge_sort",
+            "merge_sort_pairs": "_group._merge_sort",
             "exchange": "_group._exchange",
             "exclusive_scan": "_group._scan",
             "exclusive_sum": "_group._scan",

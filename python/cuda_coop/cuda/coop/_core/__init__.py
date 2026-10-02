@@ -69,6 +69,14 @@ from .block import (
     normalize_block_reduce_algorithm,
     normalize_block_scan_algorithm,
 )
+from .block.merge_sort import (
+    BlockMergeSortPayload,
+    BlockMergeSortSemantics,
+    BlockMergeSortSpec,
+    BlockMergeSortTilePolicy,
+    make_block_merge_sort_semantics,
+    make_block_merge_sort_spec,
+)
 from .group import (
     ArgumentPrecondition,
     CudaxCallDescription,
@@ -105,6 +113,9 @@ from .group import (
     make_group_primitive_call,
     plan_group_primitive,
     resolve_thread_group,
+)
+from .group.merge_sort import (
+    GroupMergeSortSemantics,
 )
 from .launch import (
     Dim3,
@@ -159,6 +170,12 @@ from .warp import (
     make_warp_reduce_spec,
     make_warp_scan_spec,
 )
+from .warp.merge_sort import (
+    WarpMergeSortPayload,
+    WarpMergeSortSpec,
+    WarpMergeSortTilePolicy,
+    make_warp_merge_sort_spec,
+)
 
 __all__ = [
     "COMPLETE_WARP_GROUP_KINDS",
@@ -188,6 +205,10 @@ __all__ = [
     "BlockExchangeSemantics",
     "BlockExchangeSpec",
     "BlockExchangeValueForm",
+    "BlockMergeSortPayload",
+    "BlockMergeSortSemantics",
+    "BlockMergeSortSpec",
+    "BlockMergeSortTilePolicy",
     "BlockReduceAlgorithm",
     "BlockReduceOperation",
     "BlockReduceSemantics",
@@ -217,6 +238,7 @@ __all__ = [
     "GroupLoadStoreSemantics",
     "GroupLoweringPlan",
     "GroupLoweringTarget",
+    "GroupMergeSortSemantics",
     "GroupOperandKind",
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
@@ -267,6 +289,9 @@ __all__ = [
     "WarpExchangeMode",
     "WarpExchangeSpec",
     "WarpExchangeValueForm",
+    "WarpMergeSortPayload",
+    "WarpMergeSortSpec",
+    "WarpMergeSortTilePolicy",
     "WarpReduceOperation",
     "WarpReduceSpec",
     "WarpScanMode",
@@ -278,6 +303,8 @@ __all__ = [
     "lower_method_parameters",
     "make_block_exchange_semantics",
     "make_block_exchange_spec",
+    "make_block_merge_sort_semantics",
+    "make_block_merge_sort_spec",
     "make_block_reduce_semantics",
     "make_block_reduce_spec",
     "make_block_scan_spec",
@@ -288,6 +315,7 @@ __all__ = [
     "make_scan_semantics",
     "make_thread_group",
     "make_warp_exchange_spec",
+    "make_warp_merge_sort_spec",
     "make_warp_reduce_spec",
     "make_warp_scan_spec",
     "merge_launch_facts",

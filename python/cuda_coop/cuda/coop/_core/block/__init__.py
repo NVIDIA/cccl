@@ -24,6 +24,14 @@ from .load_store import (
     make_block_load_store_spec,
     make_block_store_spec,
 )
+from .merge_sort import (
+    BlockMergeSortPayload,
+    BlockMergeSortSemantics,
+    BlockMergeSortSpec,
+    BlockMergeSortTilePolicy,
+    make_block_merge_sort_semantics,
+    make_block_merge_sort_spec,
+)
 from .reduce import (
     BlockReduceAlgorithm,
     BlockReduceOperation,
@@ -61,6 +69,10 @@ __all__ = [
     "BlockLoadStoreKind",
     "BlockLoadStoreSemantics",
     "BlockLoadStoreSpec",
+    "BlockMergeSortPayload",
+    "BlockMergeSortSemantics",
+    "BlockMergeSortSpec",
+    "BlockMergeSortTilePolicy",
     "BlockReduceAlgorithm",
     "BlockReduceOperation",
     "BlockReduceSemantics",
@@ -79,6 +91,8 @@ __all__ = [
     "make_block_load_spec",
     "make_block_load_store_semantics",
     "make_block_load_store_spec",
+    "make_block_merge_sort_semantics",
+    "make_block_merge_sort_spec",
     "make_block_reduce_semantics",
     "make_block_reduce_spec",
     "make_block_scan_spec",

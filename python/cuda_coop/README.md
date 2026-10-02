@@ -124,6 +124,7 @@ explains terms and concepts, including blocked and striped layouts.
 | Reduction | `reduce`, `sum` |
 | Scan | `scan`, `inclusive_scan`, `exclusive_scan`, `inclusive_sum`, `exclusive_sum` |
 | Data rearrangement | `exchange`, `shuffle` |
+| Comparison sorting | `merge_sort_keys`, `merge_sort_pairs` |
 
 Each operation documents its supported groups and result ownership in the
 [API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).

@@ -109,6 +109,14 @@ See :ref:`blocked and striped layouts <coop-data-layouts>`.
 .. autofunction:: exchange
 .. autofunction:: shuffle
 
+Comparison sorting
+^^^^^^^^^^^^^^^^^^
+
+See :ref:`sorting keys and associated values <coop-merge-sort>`.
+
+.. autofunction:: merge_sort_keys
+.. autofunction:: merge_sort_pairs
+
 
 .. _coop-numba-extensions:
 
@@ -169,3 +177,9 @@ Data rearrangement
 
 .. autofunction:: exchange
 .. autofunction:: shuffle
+
+Comparison sorting
+^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: merge_sort_keys
+.. autofunction:: merge_sort_pairs
