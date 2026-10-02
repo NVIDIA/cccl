@@ -7,6 +7,9 @@ from ._group._exchange import exchange
 from ._group._load_store import load, store
 from ._group._merge_sort import merge_sort_keys as merge_sort_keys
 from ._group._merge_sort import merge_sort_pairs as merge_sort_pairs
+from ._group._radix_sort import radix_rank_keys as radix_rank_keys
+from ._group._radix_sort import radix_sort_keys as radix_sort_keys
+from ._group._radix_sort import radix_sort_pairs as radix_sort_pairs
 from ._group._reduce import reduce, sum
 from ._group._scan import (
     exclusive_scan,
@@ -48,6 +51,9 @@ __all__ = [
     "local",
     "merge_sort_keys",
     "merge_sort_pairs",
+    "radix_rank_keys",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "scan",
     "shared",

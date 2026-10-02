@@ -38,6 +38,7 @@ else:
 
 _NAME_COUNTER = count()
 _PAYLOAD_DTYPE_LIKE = "like"
+_PAYLOAD_DTYPE_INT32 = "int32"
 _GROUP_CONSTRUCTORS = {
     _thread_groups.this_thread: _thread_groups.this_thread,
     _thread_groups.this_warp: _thread_groups.this_warp,

@@ -28,6 +28,11 @@ from ._thread_group import (
 if TYPE_CHECKING:
     from ._group._exchange import exchange
     from ._group._merge_sort import merge_sort_keys, merge_sort_pairs
+    from ._group._radix_sort import (
+        radix_rank_keys,
+        radix_sort_keys,
+        radix_sort_pairs,
+    )
     from ._group._reduce import reduce, sum
     from ._group._scan import (
         exclusive_scan,
@@ -58,6 +63,9 @@ __all__ = [
     "local",
     "merge_sort_keys",
     "merge_sort_pairs",
+    "radix_rank_keys",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "scan",
     "shared",
@@ -76,6 +84,9 @@ def __getattr__(name):
     if name in {
         "merge_sort_keys",
         "merge_sort_pairs",
+        "radix_rank_keys",
+        "radix_sort_keys",
+        "radix_sort_pairs",
         "exchange",
         "exclusive_scan",
         "exclusive_sum",
@@ -89,6 +100,9 @@ def __getattr__(name):
         module_name = {
             "merge_sort_keys": "_group._merge_sort",
             "merge_sort_pairs": "_group._merge_sort",
+            "radix_rank_keys": "_group._radix_sort",
+            "radix_sort_keys": "_group._radix_sort",
+            "radix_sort_pairs": "_group._radix_sort",
             "exchange": "_group._exchange",
             "exclusive_scan": "_group._scan",
             "exclusive_sum": "_group._scan",
