@@ -127,7 +127,8 @@ See the :ref:`Numba <coop-merge-sort>` and
 Radix sorting and ranking
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-See the :ref:`Numba Radix Sort and Rank examples <coop-radix>`.
+See the :ref:`Numba <coop-radix>` and
+:ref:`CUTLASS <coop-cutlass-radix>` Radix Sort and Rank examples.
 
 .. autofunction:: radix_sort_keys
 .. autofunction:: radix_sort_pairs
@@ -342,3 +343,10 @@ Comparison sorting
 
 .. autofunction:: merge_sort_keys
 .. autofunction:: merge_sort_pairs
+
+Radix sorting and ranking
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: radix_sort_keys
+.. autofunction:: radix_sort_pairs
+.. autofunction:: radix_rank_keys

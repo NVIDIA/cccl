@@ -111,7 +111,7 @@ in the programming guides.
      - Available
    * - Radix Sort, keys and pairs; Radix Rank
      - Available
-     - Not implemented
+     - Available
    * - TopK, minimum and maximum keys or pairs
      - Available
      - Not implemented

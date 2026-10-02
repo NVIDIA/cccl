@@ -7,13 +7,21 @@ from __future__ import annotations
 from numbers import Integral
 from typing import Any
 
+from .._bindings import ArgumentBinding
 from ..block.radix import make_radix_bit_range
-from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
+from ..thread_group import ThreadGroup
 from ._dispatch import (
+    _backend_module_name,
     _common_group_operation,
+    _group_primitive_marker,
+    _validate_common_operation_group,
 )
 from ._payload import (
     TempStorageLike,
+    _common_thread_data_extent,
+    _validate_common_integer_value,
+    _validate_common_numeric_value,
+    _validate_common_temp_storage,
 )
 
 
@@ -45,6 +53,71 @@ def _radix_bounds(operation, key_width, begin_bit, end_bit, radix_bits=None):
     if operation == "radix_rank_keys" and end_bit - begin_bit > 8:
         raise ValueError("radix_rank_keys bit width must be <= 8")
     return int(begin_bit), int(end_bit)
+
+
+def _validate(
+    operation,
+    group,
+    keys,
+    values,
+    begin_bit,
+    end_bit,
+    descending,
+    temp_storage,
+    radix_bits=None,
+):
+    if _backend_module_name() is None:
+        return
+    _validate_common_operation_group(operation, group)
+    name = _validate_common_numeric_value(
+        operation,
+        "keys",
+        keys,
+        require_thread_data=True,
+        allow_readonly_thread_data=True,
+    )
+    if name not in {"int32", "uint32", "int64", "uint64"}:
+        raise TypeError(
+            f"cuda.coop.{operation} keys require "
+            "int32, uint32, int64, or uint64"
+        )
+    if operation == "radix_sort_pairs":
+        _validate_common_numeric_value(
+            operation,
+            "values",
+            values,
+            require_thread_data=True,
+            allow_readonly_thread_data=True,
+        )
+        if _common_thread_data_extent(
+            operation, "keys", keys
+        ) != _common_thread_data_extent(operation, "values", values):
+            raise ValueError(
+                "keys and values must have the same items_per_thread"
+            )
+    if not isinstance(descending, bool):
+        raise TypeError(
+            f"cuda.coop.{operation} descending must be a compile-time bool"
+        )
+    width = int(name[-2:])
+    if operation == "radix_rank_keys":
+        _radix_bounds(operation, width, begin_bit, end_bit, radix_bits)
+    else:
+        begin = _validate_common_integer_value(
+            operation, "begin_bit", begin_bit
+        )
+        end = (
+            width
+            if end_bit is None
+            else _validate_common_integer_value(operation, "end_bit", end_bit)
+        )
+        make_radix_bit_range(
+            begin_bit=ArgumentBinding.runtime() if begin is None else begin,
+            end_bit=ArgumentBinding.runtime() if end is None else end,
+            bit_width=width,
+        )
+    if temp_storage is not None:
+        _validate_common_temp_storage(operation, temp_storage)
 
 
 @_common_group_operation("radix_sort_keys", group_kinds=("block",))
@@ -94,11 +167,36 @@ def radix_sort_keys(
     -----
     Wraps CUB ``BlockRadixSort::Sort`` or ``SortDescending``. For signed
     integers, the sign bit is inverted before selecting the bit interval,
-    then restored in the returned keys. Use ``cuda.coop.numba_mlir`` for
-    floating-point keys, scalar or local-array payloads, and striped output.
+    then restored in the returned keys. Qualified ``cuda.coop.numba_mlir``
+    and ``cuda.coop.cutlass`` calls also support floating-point keys, scalar
+    payloads, and striped output. Numba-CUDA-MLIR additionally accepts local
+    arrays; CUTLASS accepts CuTe register tensors.
+
+    See Also
+    --------
+    cuda.coop.numba_mlir.radix_sort_keys
+        Numba-CUDA-MLIR payloads and qualified controls.
+    cuda.coop.cutlass.radix_sort_keys
+        CuTe payloads and qualified controls.
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.radix_sort_keys must be called from a supported GPU kernel."
+    _validate(
+        "radix_sort_keys",
+        group,
+        keys,
+        None,
+        begin_bit,
+        end_bit,
+        descending,
+        temp_storage,
+    )
+    return _group_primitive_marker(
+        "radix_sort_keys",
+        group,
+        keys,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        descending=descending,
+        temp_storage=temp_storage,
     )
 
 
@@ -150,11 +248,36 @@ def radix_sort_pairs(
     Notes
     -----
     Wraps the key/value overload of CUB ``BlockRadixSort::Sort`` or
-    ``SortDescending``. Qualified Numba-CUDA-MLIR calls additionally support
-    floating-point keys, scalar or local-array payloads, and striped output.
+    ``SortDescending``. Both qualified backends also support floating-point
+    keys, scalar payloads, and striped output. Numba-CUDA-MLIR additionally
+    accepts local arrays; CUTLASS accepts CuTe register tensors.
+
+    See Also
+    --------
+    cuda.coop.numba_mlir.radix_sort_pairs
+        Numba-CUDA-MLIR payloads and qualified controls.
+    cuda.coop.cutlass.radix_sort_pairs
+        CuTe payloads and qualified controls.
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.radix_sort_pairs must be called from a supported GPU kernel."
+    _validate(
+        "radix_sort_pairs",
+        group,
+        keys,
+        values,
+        begin_bit,
+        end_bit,
+        descending,
+        temp_storage,
+    )
+    return _group_primitive_marker(
+        "radix_sort_pairs",
+        group,
+        keys,
+        values,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        descending=descending,
+        temp_storage=temp_storage,
     )
 
 
@@ -202,11 +325,37 @@ def radix_rank_keys(
     Uses CUB ``BlockRadixRank::RankKeys`` with a digit extractor. Signed keys
     invert their sign bit before digit extraction, matching radix sort's
     ordered representation. Scratch allocation and its reuse barrier are
-    automatic. The qualified API also accepts scalars and local arrays and
-    can write exclusive digit prefixes into a caller-provided output array.
+    automatic. Both qualified backends also accept scalars and can write
+    exclusive digit prefixes into a caller-provided output payload.
+    Numba-CUDA-MLIR additionally accepts local arrays; CUTLASS accepts CuTe
+    register tensors.
+
+    See Also
+    --------
+    cuda.coop.numba_mlir.radix_rank_keys
+        Numba-CUDA-MLIR payloads and qualified controls.
+    cuda.coop.cutlass.radix_rank_keys
+        CuTe payloads and qualified controls.
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.radix_rank_keys must be called from a supported GPU kernel."
+    _validate(
+        "radix_rank_keys",
+        group,
+        keys,
+        None,
+        begin_bit,
+        end_bit,
+        descending,
+        None,
+        radix_bits,
+    )
+    return _group_primitive_marker(
+        "radix_rank_keys",
+        group,
+        keys,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        radix_bits=radix_bits,
+        descending=descending,
     )
 
 
