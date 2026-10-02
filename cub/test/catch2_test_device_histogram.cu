@@ -646,11 +646,8 @@ CUB_TEST_LIST("DeviceHistogram::Histogram* channel configs",
 
 CUB_TEST("DeviceHistogram::Histogram* dynamic shared-memory privatization", "[histogram][device]", CUB_SMALL)
 {
-  int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
-
   cuda::compute_capability cc{};
-  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc, current_device));
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
   if (cc < cuda::compute_capability{10, 0})
   {
     SKIP("The runtime-sized shared-memory histogram policy is currently tuned for SM100");
@@ -748,11 +745,8 @@ CUB_TEST("DeviceHistogram::HistogramRange levels/samples aliasing", "[histogram_
 
 CUB_TEST("DeviceHistogram::HistogramRange interpolation avoids signed overflow", "[histogram_range][device]", CUB_SMALL)
 {
-  int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
-
   cuda::compute_capability cc{};
-  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc, current_device));
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
   if (cc < cuda::compute_capability{10, 0})
   {
     SKIP("The runtime-sized shared-memory histogram policy is currently tuned for SM100");
