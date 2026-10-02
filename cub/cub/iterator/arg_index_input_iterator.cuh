@@ -20,7 +20,7 @@
 #endif // no system header
 
 #include <cub/detail/it_traits.cuh>
-#include <cub/util_type.cuh>
+#include <cub/detail/key_value_pair.cuh>
 
 #include <thrust/iterator/iterator_facade.h>
 

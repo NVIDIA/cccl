@@ -20,6 +20,7 @@
 #endif // no system header
 
 #include <cub/detail/constant.cuh>
+#include <cub/detail/type_traits.cuh>
 #include <cub/thread/thread_operators.cuh>
 
 #include <cuda/std/__type_traits/is_callable.h>
