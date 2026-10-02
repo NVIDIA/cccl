@@ -127,13 +127,13 @@ struct HistogramPolicy
   int high_bin_cache_bytes_per_channel               = 16384;
   int high_bin_cache_count_replicas                  = 1;
   int high_bin_cache_cuckoo_max_histogram_bytes      = 1048576;
-  int high_bin_pixels_per_thread                     = 4;
+  int high_bin_items_per_thread                      = 4;
   int high_bin_threads_per_block                     = 0; //!< High-bin block size; 0 inherits threads_per_block
   int high_bin_min_histogram_bytes                   = 0;
   //! Target resident cooperative blocks per SM. Zero keeps the occupancy-derived grid and a one-block launch bound.
   int high_bin_blocks_per_sm = 0;
   //! Input pixels represented by one block when limiting the cooperative grid. Zero uses the kernel tile size.
-  int high_bin_grid_pixels_per_block = 0;
+  int high_bin_grid_items_per_block = 0;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int high_bin_threads() const noexcept
   {
@@ -145,11 +145,11 @@ struct HistogramPolicy
     return high_bin_blocks_per_sm != 0 ? high_bin_blocks_per_sm : 1;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int high_bin_grid_pixels() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int high_bin_grid_items() const noexcept
   {
-    return high_bin_grid_pixels_per_block != 0
-           ? high_bin_grid_pixels_per_block
-           : high_bin_threads() * high_bin_pixels_per_thread;
+    return high_bin_grid_items_per_block != 0
+           ? high_bin_grid_items_per_block
+           : high_bin_threads() * high_bin_items_per_thread;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -165,11 +165,11 @@ struct HistogramPolicy
         && lhs.high_bin_cache_bytes_per_channel == rhs.high_bin_cache_bytes_per_channel
         && lhs.high_bin_cache_count_replicas == rhs.high_bin_cache_count_replicas
         && lhs.high_bin_cache_cuckoo_max_histogram_bytes == rhs.high_bin_cache_cuckoo_max_histogram_bytes
-        && lhs.high_bin_pixels_per_thread == rhs.high_bin_pixels_per_thread
+        && lhs.high_bin_items_per_thread == rhs.high_bin_items_per_thread
         && lhs.high_bin_threads_per_block == rhs.high_bin_threads_per_block
         && lhs.high_bin_min_histogram_bytes == rhs.high_bin_min_histogram_bytes
         && lhs.high_bin_blocks_per_sm == rhs.high_bin_blocks_per_sm
-        && lhs.high_bin_grid_pixels_per_block == rhs.high_bin_grid_pixels_per_block;
+        && lhs.high_bin_grid_items_per_block == rhs.high_bin_grid_items_per_block;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -192,10 +192,10 @@ struct HistogramPolicy
         << ", .high_bin_cache_bytes_per_channel = " << p.high_bin_cache_bytes_per_channel
         << ", .high_bin_cache_count_replicas = " << p.high_bin_cache_count_replicas
         << ", .high_bin_cache_cuckoo_max_histogram_bytes = " << p.high_bin_cache_cuckoo_max_histogram_bytes
-        << ", .high_bin_pixels_per_thread = " << p.high_bin_pixels_per_thread << ", .high_bin_threads_per_block = "
+        << ", .high_bin_items_per_thread = " << p.high_bin_items_per_thread << ", .high_bin_threads_per_block = "
         << p.high_bin_threads_per_block << ", .high_bin_min_histogram_bytes = " << p.high_bin_min_histogram_bytes
         << ", .high_bin_blocks_per_sm = " << p.high_bin_blocks_per_sm
-        << ", .high_bin_grid_pixels_per_block = " << p.high_bin_grid_pixels_per_block << " }";
+        << ", .high_bin_grid_items_per_block = " << p.high_bin_grid_items_per_block << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -494,13 +494,13 @@ public:
       // The raw occupancy-sized cache resolves to two resident blocks for four-byte multi-channel RANGE samples.
       const int high_bin_blocks_per_sm  = num_active_channels == 1 || (!is_even && sample_size == 4) ? 2 : 1;
       const bool use_ordinary_grid_tile = num_active_channels == 1 && sample_size == 1;
-      const int high_bin_grid_pixels_per_block =
+      const int high_bin_grid_items_per_block =
         num_active_channels == 1 ? 768 * t_scale(12) : 1024 * (is_even ? t_scale(8) : t_scale(16));
       const auto with_high_bin_threshold = [=](HistogramPolicy policy) {
         policy.high_bin_min_histogram_bytes = high_bin_min_histogram_bytes;
         policy.high_bin_blocks_per_sm       = high_bin_blocks_per_sm;
-        policy.high_bin_grid_pixels_per_block =
-          use_ordinary_grid_tile ? policy.threads_per_block * policy.pixels_per_thread : high_bin_grid_pixels_per_block;
+        policy.high_bin_grid_items_per_block =
+          use_ordinary_grid_tile ? policy.threads_per_block * policy.pixels_per_thread : high_bin_grid_items_per_block;
         return policy;
       };
 
