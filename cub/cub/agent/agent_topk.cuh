@@ -21,8 +21,8 @@
 #include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/uninitialized.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 
