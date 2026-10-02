@@ -181,8 +181,8 @@ struct DeviceHistogramKernelSource
                   "The output histogram counter must be at least as wide as the local counter");
     return &DeviceHistogramCooperativeKernel<
       PolicyT,
-      NUM_CHANNELS,
-      NUM_ACTIVE_CHANNELS,
+      NumChannels,
+      NumActiveChannels,
       SampleIteratorT,
       LocalCounterT,
       CounterT,
@@ -316,9 +316,9 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   SampleIteratorT d_samples,
-  ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms,
-  ::cuda::std::array<int, NumActiveChannels> num_privatized_levels,
-  ::cuda::std::array<int, NumActiveChannels> num_output_levels,
+  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
+  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels,
+  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
   FirstLevelArrayT first_level_array,
   SecondLevelArrayT second_level_array,
   [[maybe_unused]] CooperativeSecondLevelArrayT cooperative_second_level_array,
@@ -349,7 +349,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     {
       return kernel_source.template HistogramSweepKernelDeviceInit<
         PolicySelector,
-        PrivatizedSmemBins,
+        PRIVATIZED_SMEM_BINS,
         FirstLevelArrayT,
         SecondLevelArrayT,
         IsEven,
@@ -360,7 +360,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       using output_decode_op_t     = typename FirstLevelArrayT::value_type;
       using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
       return kernel_source
-        .template HistogramSweepKernel<PolicySelector, PrivatizedSmemBins, privatized_decode_op_t, output_decode_op_t>();
+        .template HistogramSweepKernel<PolicySelector, PRIVATIZED_SMEM_BINS, privatized_decode_op_t, output_decode_op_t>();
     }
   }();
 
@@ -479,12 +479,12 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }))
 #endif // _CCCL_HOSTED()
 
-  if (num_row_pixels * NumChannels == row_stride_samples)
+  if (num_row_pixels * NUM_CHANNELS == row_stride_samples)
   {
     // Treat as a single linear array of samples
     num_row_pixels *= num_rows;
     num_rows           = 1;
-    row_stride_samples = num_row_pixels * NumChannels;
+    row_stride_samples = num_row_pixels * NUM_CHANNELS;
   }
 
   // Get grid dimensions, trying to keep total blocks ~histogram_sweep_occupancy
@@ -508,11 +508,11 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   sweep_grid_dims.z = 1;
 
   // Temporary storage allocation requirements
-  constexpr int NUM_ALLOCATIONS      = NumActiveChannels + 1;
+  constexpr int NUM_ALLOCATIONS      = NUM_ACTIVE_CHANNELS + 1;
   void* allocations[NUM_ALLOCATIONS] = {};
   size_t allocation_sizes[NUM_ALLOCATIONS];
 
-  for (int CHANNEL = 0; CHANNEL < NumActiveChannels; ++CHANNEL)
+  for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
   {
     const bool needs_privatized_storage =
       !use_cooperative || active_policy.high_bin_spill == HistogramSpillAlgorithm::global_memory_privatized;
@@ -1179,7 +1179,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
     // Use the pass-thru transform op for converting privatized bins to output bins
     using OutputDecodeOpT = typename TransformsT::PassThruTransform;
 
-    const ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
+    const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op{};
     int max_levels = num_output_levels[0];
 
     for (int channel = 0; channel < NumActiveChannels; ++channel)
@@ -1195,12 +1195,12 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
     if (max_num_output_bins > max_privatized_smem_bins)
     {
       // Too many bins to keep in shared memory.
-      constexpr int PRIVATIZED_SMEM_BINS   = 0;
+      constexpr int PrivatizedSmemBins     = 0;
       using PrivatizedDecodeOpT            = typename TransformsT::template SearchTransform<const LevelT*>;
       using CooperativePrivatizedDecodeOpT = typename TransformsT::template CachedSearchTransform<const LevelT*>;
-      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
-      ::cuda::std::array<CooperativePrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> cooperative_privatized_decode_op{};
-      for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+      ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op{};
+      ::cuda::std::array<CooperativePrivatizedDecodeOpT, NumActiveChannels> cooperative_privatized_decode_op{};
+      for (int channel = 0; channel < NumActiveChannels; ++channel)
       {
         privatized_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
         cooperative_privatized_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
@@ -1237,10 +1237,10 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
     else
     {
       // Dispatch shared-privatized approach
-      constexpr int PRIVATIZED_SMEM_BINS = max_privatized_smem_bins;
-      using PrivatizedDecodeOpT          = typename TransformsT::template SearchTransform<const LevelT*>;
-      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
-      for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+      constexpr int PrivatizedSmemBins = max_privatized_smem_bins;
+      using PrivatizedDecodeOpT        = typename TransformsT::template SearchTransform<const LevelT*>;
+      ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op{};
+      for (int channel = 0; channel < NumActiveChannels; ++channel)
       {
         privatized_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
       }
@@ -1387,7 +1387,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
 
     using CommonT = typename TransformsT::ScaleTransform::CommonT;
 
-    const ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
+    const ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op{};
     int max_levels = num_output_levels[0];
 
     for (int channel = 0; channel < NumActiveChannels; ++channel)
@@ -1411,10 +1411,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
 
     if (max_num_output_bins > max_privatized_smem_bins)
     {
-      constexpr int PRIVATIZED_SMEM_BINS = 0;
-      using PrivatizedDecodeOpT          = typename TransformsT::ScaleTransform;
-      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
-      for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+      constexpr int PrivatizedSmemBins = 0;
+      using PrivatizedDecodeOpT        = typename TransformsT::ScaleTransform;
+      ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op{};
+      for (int channel = 0; channel < NumActiveChannels; ++channel)
       {
         privatized_decode_op[channel].Init(num_output_levels[channel], upper_level[channel], lower_level[channel]);
       }
@@ -1449,10 +1449,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
     }
     else
     {
-      constexpr int PRIVATIZED_SMEM_BINS = max_privatized_smem_bins;
-      using PrivatizedDecodeOpT          = typename TransformsT::ScaleTransform;
-      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
-      for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+      constexpr int PrivatizedSmemBins = max_privatized_smem_bins;
+      using PrivatizedDecodeOpT        = typename TransformsT::ScaleTransform;
+      ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op{};
+      for (int channel = 0; channel < NumActiveChannels; ++channel)
       {
         privatized_decode_op[channel].Init(num_output_levels[channel], upper_level[channel], lower_level[channel]);
       }
