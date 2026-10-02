@@ -182,7 +182,7 @@ _CCCL_HOST_DEVICE_API constexpr primitive_accum is_primitive_accum()
 template <class ReductionOpT>
 _CCCL_HOST_DEVICE_API constexpr primitive_op is_primitive_op()
 {
-  return basic_binary_op_t<ReductionOpT>::value ? primitive_op::yes : primitive_op::no;
+  return basic_binary_op_v<ReductionOpT> ? primitive_op::yes : primitive_op::no;
 }
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
@@ -1808,7 +1808,7 @@ struct policy_selector_from_types
       is_primitive_v<KeyT>,
       ::cuda::is_trivially_copyable_v<KeyT>,
       is_primitive_v<AccumT>,
-      basic_binary_op_t<ReductionOpT>::value}(cc);
+      basic_binary_op_v<ReductionOpT>}(cc);
   }
 };
 } // namespace detail::reduce_by_key

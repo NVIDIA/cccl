@@ -24,13 +24,12 @@
 #include <cuda/__annotated_ptr/createpolicy.h>
 #include <cuda/__cmath/ilog.h>
 #include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__numeric/saturating_sub.h>
 #include <cuda/std/__utility/to_underlying.h>
-#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 

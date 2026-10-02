@@ -425,14 +425,9 @@ struct __constant_wrapper : __cw_operators
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(__fold_and_v<__is_constexpr_param_v<remove_cvref_t<_Args>>...> _CCCL_AND
                    __cw_is_constexpr_indexable_v<__constant_wrapper, void, remove_cvref_t<_Args>...>)
-#  if _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR()
-  [[nodiscard]]
-  _CCCL_HOST_DEVICE_API constexpr static __constant_wrapper<
-    _LIBCUDACXX_AUTO_CAST(value[remove_cvref_t<_Args>::value...])> operator[](_Args&&...) noexcept
-#  else // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() vvv
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __constant_wrapper<
-    _LIBCUDACXX_AUTO_CAST(value[remove_cvref_t<_Args>::value...])> operator[](_Args&&...) const noexcept
-#  endif // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^
+    _LIBCUDACXX_AUTO_CAST(value[remove_cvref_t<_Args>::value...])>
+  _CCCL_STATIC_SUBSCRIPT_OPERATOR(_Args&&...) noexcept
   {
     return {};
   }
@@ -440,12 +435,8 @@ struct __constant_wrapper : __cw_operators
   _CCCL_REQUIRES((!(__fold_and_v<__is_constexpr_param_v<remove_cvref_t<_Args>>...>
                     && __cw_is_constexpr_indexable_v<__constant_wrapper, void, remove_cvref_t<_Args>...>) )
                    _CCCL_AND __cw_is_indexable_v<__constant_wrapper, void, _Args...>)
-#  if _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR()
-  _CCCL_HOST_DEVICE_API static constexpr decltype(auto) operator[](_Args&&... __args)
-#  else // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() vvv
-  _CCCL_HOST_DEVICE_API constexpr decltype(auto) operator[](_Args&&... __args) const
-#  endif // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^
-    noexcept(noexcept(value[::cuda::std::forward<_Args>(__args)...]))
+  _CCCL_HOST_DEVICE_API constexpr decltype(auto)
+  _CCCL_STATIC_SUBSCRIPT_OPERATOR(_Args&&... __args) noexcept(noexcept(value[::cuda::std::forward<_Args>(__args)...]))
   {
     return __get()[::cuda::std::forward<_Args>(__args)...];
   }
@@ -453,14 +444,9 @@ struct __constant_wrapper : __cw_operators
   _CCCL_TEMPLATE(class _Arg)
   _CCCL_REQUIRES(__is_constexpr_param_v<remove_cvref_t<_Arg>> _CCCL_AND
                    __cw_is_constexpr_indexable_v<__constant_wrapper, void, remove_cvref_t<_Arg>>)
-#  if _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR()
   [[nodiscard]]
-  _CCCL_HOST_DEVICE_API constexpr static __constant_wrapper<_LIBCUDACXX_AUTO_CAST(value[remove_cvref_t<_Arg>::value])>
-  operator[](_Arg&&) noexcept
-#  else // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() vvv
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __constant_wrapper<
-    _LIBCUDACXX_AUTO_CAST(value[remove_cvref_t<_Arg>::value])> operator[](_Arg&&) const noexcept
-#  endif // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^
+  _CCCL_HOST_DEVICE_API constexpr __constant_wrapper<_LIBCUDACXX_AUTO_CAST(value[remove_cvref_t<_Arg>::value])>
+  _CCCL_STATIC_SUBSCRIPT_OPERATOR(_Arg&&) noexcept
   {
     return {};
   }
@@ -468,12 +454,8 @@ struct __constant_wrapper : __cw_operators
   _CCCL_REQUIRES((!(__is_constexpr_param_v<remove_cvref_t<_Arg>>
                     && __cw_is_constexpr_indexable_v<__constant_wrapper, void, remove_cvref_t<_Arg>>) )
                    _CCCL_AND __cw_is_indexable_v<__constant_wrapper, void, _Arg>)
-#  if _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR()
-  _CCCL_HOST_DEVICE_API static constexpr decltype(auto) operator[](_Arg&& __arg)
-#  else // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() vvv
-  _CCCL_HOST_DEVICE_API constexpr decltype(auto) operator[](_Arg&& __arg) const
-#  endif // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^
-    noexcept(noexcept(value[::cuda::std::forward<_Arg>(__arg)]))
+  _CCCL_HOST_DEVICE_API constexpr decltype(auto)
+  _CCCL_STATIC_SUBSCRIPT_OPERATOR(_Arg&& __arg) noexcept(noexcept(value[::cuda::std::forward<_Arg>(__arg)]))
   {
     return __get()[::cuda::std::forward<_Arg>(__arg)];
   }

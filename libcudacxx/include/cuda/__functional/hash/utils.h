@@ -24,7 +24,6 @@
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__memory/assume_aligned.h>
-#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 

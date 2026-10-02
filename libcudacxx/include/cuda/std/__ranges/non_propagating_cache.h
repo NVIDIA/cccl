@@ -84,7 +84,7 @@ struct __npc_destruct_base
   {
     if (__engaged_)
     {
-      __val_.~_Tp();
+      ::cuda::std::__destroy_at(::cuda::std::addressof(__val_));
     }
   }
 
@@ -93,7 +93,7 @@ struct __npc_destruct_base
   {
     if (__engaged_)
     {
-      __val_.~_Tp();
+      ::cuda::std::__destroy_at(::cuda::std::addressof(__val_));
       __engaged_ = false;
     }
   }

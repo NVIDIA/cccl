@@ -20,19 +20,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__numeric/add_overflow.h>
-#include <cuda/__numeric/div_overflow.h>
-#include <cuda/__numeric/isclose.h>
-#include <cuda/__numeric/mul_overflow.h>
-#include <cuda/__numeric/narrow.h>
-#include <cuda/__numeric/overflow_cast.h>
-#include <cuda/__numeric/overflow_result.h>
-#include <cuda/__numeric/saturating_add_overflow.h>
-#include <cuda/__numeric/saturating_div_overflow.h>
-#include <cuda/__numeric/saturating_mul_overflow.h>
-#include <cuda/__numeric/saturating_overflow_cast.h>
-#include <cuda/__numeric/saturating_sub_overflow.h>
-#include <cuda/__numeric/sub_overflow.h>
-#include <cuda/std/numeric>
+#include <cuda/__numeric/add_overflow.h> // IWYU pragma: export
+#include <cuda/__numeric/div_overflow.h> // IWYU pragma: export
+#include <cuda/__numeric/isclose.h> // IWYU pragma: export
+#include <cuda/__numeric/mul_overflow.h> // IWYU pragma: export
+#include <cuda/__numeric/narrow.h> // IWYU pragma: export
+#include <cuda/__numeric/overflow_cast.h> // IWYU pragma: export
+#include <cuda/__numeric/overflow_result.h> // IWYU pragma: export
+#include <cuda/__numeric/saturating_add_overflow.h> // IWYU pragma: export
+#include <cuda/__numeric/saturating_div_overflow.h> // IWYU pragma: export
+#include <cuda/__numeric/saturating_mul_overflow.h> // IWYU pragma: export
+#include <cuda/__numeric/saturating_overflow_cast.h> // IWYU pragma: export
+#include <cuda/__numeric/saturating_sub_overflow.h> // IWYU pragma: export
+#include <cuda/__numeric/sub_overflow.h> // IWYU pragma: export
+#include <cuda/std/numeric> // IWYU pragma: export
 
 #endif // _CUDA_NUMERIC
