@@ -25,6 +25,7 @@
 #endif // no system header
 
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/input_value.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/type_traits.cuh>

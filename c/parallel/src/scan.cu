@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/future_value.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
@@ -16,7 +17,6 @@
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
 

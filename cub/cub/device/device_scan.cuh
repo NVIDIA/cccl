@@ -28,6 +28,8 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/device_memory_resource.cuh>
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/future_value.cuh>
+#include <cub/detail/input_value.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/temporary_storage.cuh>

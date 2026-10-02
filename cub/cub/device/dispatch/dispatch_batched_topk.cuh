@@ -20,6 +20,7 @@
 #include <cub/agent/agent_batched_topk_cluster.cuh>
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/input_value.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
@@ -34,7 +35,6 @@
 #include <cub/util_macro.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
