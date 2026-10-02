@@ -129,6 +129,26 @@ bool DynamicLibrary::load(const std::string& library_path)
   // constructors (e.g. CUDA fatbin registration) haven't run yet.
   runStaticInitializers(static_cast<HMODULE>(handle_));
 #else
+  // The generated library is linked with --allow-shlib-undefined: symbols
+  // like __cxa_guard_acquire (needed for thread-safe static-local
+  // initialization, e.g. CUB's kernel-config caches) are left unresolved,
+  // to be satisfied at load time by libraries already present in the host
+  // process (libc, libstdc++, cudart, ...) instead of requiring system CRT
+  // dev packages on the target machine. But libstdc++ commonly first enters
+  // the process as a *transitive* dependency of some other RTLD_LOCAL
+  // dlopen() (e.g. Python's own C++ extension modules), which keeps its
+  // symbols out of the global scope our own RTLD_LOCAL load below searches.
+  // Promote it (and libgcc_s, which some libstdc++ builds split runtime
+  // support into) to RTLD_GLOBAL first; if already loaded this only flips
+  // its scope, it doesn't reload it. Best-effort: ignore failure so
+  // environments without libstdc++ preinstalled see the same unresolved-
+  // symbol error as before instead of a new, confusing one here.
+  for (const char* runtime_lib : {"libstdc++.so.6", "libgcc_s.so.1"})
+  {
+    dlerror();
+    dlopen(runtime_lib, RTLD_LAZY | RTLD_GLOBAL);
+  }
+
   dlerror();
   handle_ = dlopen(library_path.c_str(), RTLD_LAZY | RTLD_LOCAL);
 
