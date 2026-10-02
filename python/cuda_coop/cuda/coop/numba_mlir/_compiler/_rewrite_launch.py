@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Reconcile provider block dimensions with the configured kernel launch.
+
+Provider specialization needs the exact block shape; a launch bound only
+gives an upper limit. These helpers read launch metadata, normalize explicit
+shapes, and mark work that must wait for the planner to request a launch
+configuration. Device helpers retain unresolved calls until inlining
+supplies their caller's launch context.
+"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
@@ -22,6 +31,49 @@ class _LaunchRewrite:
         seen_factory_kwargs: set[str],
         factory_kwargs: dict[str, object],
     ) -> None:
+        """Fill or check the factory block shape against exact launch metadata.
+
+        Only operations accepting ``threads_per_block`` participate. Compare
+        normalized three-dimensional shapes when both explicit and launch values
+        are available; equal thread counts alone do not imply equal shapes.
+        Malformed explicit dimensions are left for later factory validation.
+        Launch bounds are never treated as an exact shape.
+
+        An explicit dimension may still need to wait: a device helper or a
+        kernel with a launch tracker must reconcile it after inlining or after
+        the whole-function planner requests launch metadata.
+
+        Parameters
+        ----------
+        op_name : str
+            Operation name used in mismatch diagnostics.
+        allowed_factory_kwargs : set of str
+            Keywords accepted by the operation's factory.
+        seen_factory_kwargs : set of str
+            Resolved keyword names; updated when the block shape is
+            inferred.
+        factory_kwargs : dict of str to object
+            Resolved values; receives an inferred ``threads_per_block`` in
+            place.
+
+        Returns
+        -------
+        None
+            Update the inferred inputs or leave them unchanged when
+            unavailable.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            An explicit shape disagrees with the exact kernel launch shape.
+        _DeferredCoopRewrite
+            Internal signal that explicit dimensions need pending launch
+            metadata. It propagates through argument validation to
+            ``CoopSinglePhaseRewrite.match``, which preserves the IR for
+            ``_CallRewriting._rewrite_calls`` to request the kernel launch
+            shape and retry within ``CoopWholeFunctionPlanner``.
+        """
+
         if "threads_per_block" not in allowed_factory_kwargs:
             return
         threads_per_block = self._infer_threads_per_block_from_launch_config()
@@ -55,6 +107,24 @@ class _LaunchRewrite:
         seen_factory_kwargs.add("threads_per_block")
 
     def _can_defer_explicit_launch_dim_reconciliation(self) -> bool:
+        """Record whether explicit dimensions need pending launch metadata.
+
+        Device functions acquire their launch shape from the caller after
+        inlining. Configured kernels retain a launch tracker until the planner
+        requests an exact shape. Either case permits deferral when enabled on
+        this rewrite object; without either signal, this helper returns False.
+
+        This predicate has a side effect: a positive result latches
+        ``_deferred_launch_dim_inference`` so matching preserves descriptors and
+        the whole-function planner knows that it must retry.
+
+        Returns
+        -------
+        bool
+            Whether the caller should defer reconciliation of explicit
+            dimensions.
+        """
+
         rewrite = cast("CoopSinglePhaseRewrite", self)
         metadata = getattr(rewrite._state, "metadata", {}) or {}
         targetoptions = metadata.get("targetoptions", {}) or {}
@@ -68,7 +138,9 @@ class _LaunchRewrite:
         self._deferred_launch_dim_inference |= should_defer
         return should_defer
 
-    def _launch_block_from_context(self):
+    def _launch_block_from_context(self) -> object:
+        """Read the raw launch block shape, or ``None`` if unavailable."""
+
         rewrite = cast("CoopSinglePhaseRewrite", self)
         metadata = getattr(rewrite._state, "metadata", {}) or {}
         targetoptions = metadata.get("targetoptions", {}) or {}
@@ -107,7 +179,15 @@ class _LaunchRewrite:
             )
         return detail
 
-    def _infer_threads_per_block_from_launch_config(self):
+    def _infer_threads_per_block_from_launch_config(
+        self,
+    ) -> int | tuple[int, int] | tuple[int, int, int] | None:
+        """Normalize a launch shape and omit trailing unit dimensions.
+
+        Invalid or missing metadata yields ``None`` so the caller can decide
+        whether to request a configured launch or report a diagnostic.
+        """
+
         block = self._launch_block_from_context()
         if isinstance(block, list):
             block = tuple(block)
@@ -122,6 +202,8 @@ class _LaunchRewrite:
         return x
 
     def _can_defer_launch_dim_inference(self) -> bool:
+        """Flag unresolved launch dimensions for the call rewrite to retry."""
+
         rewrite = cast("CoopSinglePhaseRewrite", self)
         should_defer = (
             rewrite._allow_launch_dim_deferral

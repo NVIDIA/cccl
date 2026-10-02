@@ -2,12 +2,21 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Report unsupported group, payload, and storage choices during planning.
+
+Each exception names the kernel argument or missing fact that prevents a
+cooperative operation from being lowered. Keeping their message construction
+here lets the planner's branches focus on the condition being checked and keeps
+related diagnostics consistent. These errors leave planning with a diagnostic;
+they are not requests for another compiler pass or literal specialization.
+"""
+
 from textwrap import fill
 
 from ._group_planner_support import GroupRewriteError
 
 
-def _wrap_diagnostic(message):
+def _wrap_diagnostic(message: str) -> str:
     return fill(
         message, width=80, break_long_words=False, break_on_hyphens=False
     )

@@ -2,7 +2,21 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compile generated CUDA source to LTO IR or PTX with NVRTC."""
+"""Compile generated CUDA wrappers with an identified toolkit and header set.
+
+The backend generates C++ wrappers around CUB operations, but those wrappers
+must become device code before a Numba kernel can call them. This module
+resolves the compiler libraries and headers, invokes NVRTC, and returns an
+LTO IR image or PTX text for later linking. It does not launch GPU work.
+
+The same source can produce different code with different headers, compiler
+versions, targets, or options. ``CompileContext`` records the header and
+library dependencies; the target and options also participate in cache keys
+and private provider symbol identities. Context resolution preloads the chosen
+toolkit's libraries before importing the CUDA bindings. ``compile`` dumps
+source before cache lookup, so developers can inspect generated code even
+when compilation is reused.
+"""
 
 from __future__ import annotations
 
@@ -162,22 +176,76 @@ def compiler_identity(
 @functools.lru_cache(maxsize=8)
 @disk_cache
 def compile_impl(
-    cpp,
-    cc,
-    rdc,
-    code,
-    toolkit_root,
-    toolkit_version,
-    nvrtc_path,
-    nvrtc_builtins_path,
-    nvjitlink_path,
-    nvrtc_version,
-    nvjitlink_version,
-    include_dirs,
-    header_identity,
-    compiler_options,
-):
-    """Compile one cache-key-complete source unit."""
+    cpp: str,
+    cc: int,
+    rdc: bool,
+    code: str,
+    toolkit_root: str,
+    toolkit_version: tuple[int, int],
+    nvrtc_path: str,
+    nvrtc_builtins_path: str,
+    nvjitlink_path: str,
+    nvrtc_version: version,
+    nvjitlink_version: tuple[int, int],
+    include_dirs: tuple[str, ...],
+    header_identity: str,
+    compiler_options: tuple[bytes, ...],
+) -> bytes | str:
+    """Compile one source unit using a complete, explicit cache identity.
+
+    The memory and disk cache decorators key all arguments, including toolkit
+    paths and header identity that are not otherwise read by the function body.
+    Those fields prevent artifacts from different compiler installations or
+    header sets from sharing an entry. Callers must resolve and preload the
+    matching compiler context before entering this function.
+
+    On a cache miss, verify that the supplied option tuple matches the request
+    and that the loaded NVRTC version still matches the context. Compile the
+    source, retrieve the requested image, and destroy the NVRTC program on both
+    success and failure. A cleanup error does not replace an earlier compilation
+    error. Cache hits bypass these body-level checks.
+
+    Parameters
+    ----------
+    cpp : str
+        Complete CUDA C++ translation unit.
+    cc : int
+        Compute capability encoded as major times ten plus minor.
+    rdc : bool
+        Whether to enable relocatable device code.
+    code : {"lto", "ptx"}
+        Requested output format.
+    toolkit_root : str
+        Selected toolkit root, retained in cache identity.
+    toolkit_version : tuple of int
+        Selected toolkit version, retained in cache identity.
+    nvrtc_path, nvrtc_builtins_path, nvjitlink_path : str
+        Exact compiler-library paths from the preloaded context.
+    nvrtc_version : version
+        Expected loaded NVRTC version.
+    nvjitlink_version : tuple of int
+        Selected linker version, retained in cache identity.
+    include_dirs : tuple of str
+        Ordered header search roots.
+    header_identity : str
+        Header-content identity supplied by context resolution.
+    compiler_options : tuple of bytes
+        Exact ordered options produced by ``_compiler_options`` for this
+        request.
+
+    Returns
+    -------
+    bytes or str
+        LTO image bytes for ``"lto"`` or ASCII-decoded source for ``"ptx"``.
+
+    Raises
+    ------
+    RuntimeError
+        Options or loaded compiler version disagree with the request, or NVRTC
+        compilation, image retrieval, or program cleanup fails.
+    ValueError
+        The requested output format or relocatable-code option is invalid.
+    """
 
     del (
         toolkit_root,
@@ -239,7 +307,36 @@ def compile_impl(
 
 
 def resolve_compile_context() -> CompileContext:
-    """Resolve headers and exact same-root compiler libraries lazily."""
+    """Resolve one header/toolkit identity and preload its compiler libraries.
+
+    ``CUDA_COOP_CCCL_ROOT`` optionally selects a CCCL source checkout or
+    packaged header bundle instead of automatic source-tree/wheel discovery.
+    Read it on each call; unset or empty uses discovery. The header resolver
+    expands ``~`` and resolves relative paths from the current working
+    directory. A configured root must supply all required CCCL headers; an
+    invalid or incomplete selection raises rather than falling back. This
+    variable selects CCCL headers, not the CUDA Toolkit installation.
+
+    Resolve CUDA headers separately, then preload NVRTC, its builtins, and
+    nvJitLink from that toolkit before importing the CUDA NVRTC bindings.
+    Check that the loaded NVRTC version matches the selected toolkit. This
+    ordering keeps wrapper compilation and subsequent linking tied to the same
+    installation.
+
+    Hash the resolved header roots and their contents into the returned context.
+    The context is used both for artifact cache keys and provider symbol
+    qualification. Resolution is lazy at its callers; this function itself is
+    not memoized and may load process-wide compiler libraries. Algorithms
+    retain their resolved context, so changing ``CUDA_COOP_CCCL_ROOT`` affects
+    subsequent resolutions, not contexts already held by providers or supplied
+    explicitly to ``compile``.
+
+    Returns
+    -------
+    CompileContext
+        Frozen snapshot of exact library paths/versions, ordered include roots,
+        and header identity for a provider compilation.
+    """
 
     include_paths = resolve_include_paths(
         start=Path(__file__),
@@ -264,7 +361,41 @@ def resolve_compile_context() -> CompileContext:
     )
 
 
-def compile(*, context: CompileContext | None = None, **kwargs):
+def compile(
+    *, context: CompileContext | None = None, **kwargs: Any
+) -> tuple[version, bytes | str]:
+    """Compile generated provider source with resolved compiler/cache identity.
+
+    Build the ordered options from the selected context, optionally dump the
+    source through the shared source-dump hook, and pass every context field to
+    ``compile_impl``. Dumping occurs before cache lookup so source inspection
+    also works when artifact compilation is reused from memory or disk.
+
+    Parameters
+    ----------
+    context : CompileContext, optional
+        Previously resolved and preloaded compiler context. ``None`` resolves
+        one now. Supplying a context reuses its identity; it does not reload the
+        library paths stored in it.
+    **kwargs : dict
+        Required ``cpp`` source string, integer ``cc`` target, boolean ``rdc``,
+        and ``code`` equal to ``"lto"`` or ``"ptx"``. These are forwarded to
+        ``compile_impl`` with the context and generated compiler options.
+
+    Returns
+    -------
+    tuple
+        ``(nvrtc_version, image)`` with LTO bytes or PTX text according to
+        ``code``. The version is taken from the selected context.
+
+    Raises
+    ------
+    RuntimeError
+        Compiler identity checks or NVRTC compilation fail.
+    ValueError
+        An output format or relocatable-code option is invalid.
+    """
+
     context = resolve_compile_context() if context is None else context
     compiler_options = _compiler_options(
         cc=kwargs["cc"],

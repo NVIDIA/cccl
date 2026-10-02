@@ -2,11 +2,22 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Normalize specialization inputs and check scalar conversion rules.
+
+Provider construction and pre-typing payload inference share these helpers
+so dimension shapes, dtype spellings, and scalar controls have one
+interpretation. Normalization produces compiler types; common-API validation
+further restricts them to the portable numeric profile. Static scalar
+conversion preserves explicit dtype provenance, while operator-result
+inference delegates promotion rules to the compiler and leaves unresolved
+expressions for its later typing pass.
+"""
+
 import math
 import operator
 from collections import namedtuple
 from numbers import Real
-from typing import cast
+from typing import Any, cast
 
 import numba_cuda_mlir.numba_cuda.types as numba_types
 import numpy as np
@@ -138,7 +149,7 @@ _NUMBA_MLIR_DTYPE_NAMES = {
 }
 
 
-def _normalize_common_dtype(dtype):
+def _normalize_common_dtype(dtype: object) -> tuple[numba_types.Type, str]:
     """Return a backend dtype and its common normalized name."""
 
     dtype = normalize_dtype_param(dtype)
@@ -146,11 +157,11 @@ def _normalize_common_dtype(dtype):
 
 
 def _validate_common_numeric_dtype(
-    dtype,
+    dtype: object,
     *,
     operation: str,
     parameter: str | None = None,
-):
+) -> numba_types.Type:
     """Return one normalized dtype from the common API's numeric profile."""
 
     dtype, dtype_name = _normalize_common_dtype(dtype)
@@ -162,7 +173,7 @@ def _validate_common_numeric_dtype(
     return dtype
 
 
-def _python_scalar_dtype(value):
+def _python_scalar_dtype(value: object) -> numba_types.Type | None:
     """Return the compiler dtype of an ordinary or NumPy scalar."""
 
     if type(value) not in {bool, int, float, complex} and not isinstance(
@@ -175,7 +186,7 @@ def _python_scalar_dtype(value):
         return None
 
 
-def _scalar_cast_dtype(function):
+def _scalar_cast_dtype(function: Any) -> numba_types.Type | None:
     """Return the dtype named by a scalar cast callable, if any."""
 
     if isinstance(function, numba_types.Type):
@@ -195,8 +206,35 @@ def _scalar_cast_dtype(function):
         return None
 
 
-def _scalar_operator_result_dtype(function, *operand_dtypes):
-    """Ask the active Numba typing context for an expression result dtype."""
+def _scalar_operator_result_dtype(
+    function: object, *operand_dtypes: object
+) -> numba_types.Type | None:
+    """Infer a scalar expression's result dtype using compiler rules.
+
+    Payload inference uses this probe before the authoritative typing pass.
+    Resolve the operator through the active Numba-CUDA-MLIR typing context so
+    integer promotion and result widths follow compiler rules rather than Python
+    evaluation. Initialize that context lazily when a usable set of operand
+    dtypes is available.
+
+    All resolution failures become ``None``. This intentionally leaves
+    unsupported expressions for later typing diagnostics rather than making a
+    best-effort provenance query reject the kernel.
+
+    Parameters
+    ----------
+    function : callable or None
+        Operator or scalar function whose result is being inferred.
+    *operand_dtypes : object
+        Operand compiler dtypes, each accepted by ``normalize_dtype_param``. Any
+        unknown (``None``) operand prevents inference.
+
+    Returns
+    -------
+    numba_types.Type or None
+        Normalized result dtype, or ``None`` for missing inputs, no typing
+        signature, or an exception during normalization or resolution.
+    """
 
     if (
         function is None
@@ -224,7 +262,9 @@ def _scalar_operator_result_dtype(function, *operand_dtypes):
         return None
 
 
-def _validate_runtime_integer_dtype(dtype, *, operation: str, parameter: str):
+def _validate_runtime_integer_dtype(
+    dtype: object, *, operation: str, parameter: str
+) -> numba_types.Integer:
     """Validate the runtime integer domain accepted by Load/Store controls."""
 
     if isinstance(dtype, numba_types.Literal):
@@ -246,13 +286,55 @@ def _validate_runtime_integer_dtype(dtype, *, operation: str, parameter: str):
 
 def coerce_static_scalar(
     value: object,
-    dtype,
+    dtype: object,
     *,
     operation: str,
     parameter: str,
-    source_dtype=None,
-):
-    """Validate and normalize one trace-static scalar for a target dtype."""
+    source_dtype: object = None,
+) -> np.generic:
+    """Normalize a compile-time scalar without erasing its dtype provenance.
+
+    Ordinary Python ``int``/``float`` literals take the payload's dtype after
+    range and finiteness checks; float-to-integer conversion is forbidden.
+    Floating conversion may round a finite in-range literal. NumPy scalars and
+    values with an explicit compiler ``source_dtype`` instead require an exact
+    dtype match, even if their numeric value would fit another payload dtype.
+    This keeps a typed default or Store value from silently changing width.
+
+    The explicit-source path treats ``source_dtype`` as authoritative
+    provenance: the caller is responsible for pairing it with a value of that
+    dtype. This helper handles static values only; runtime arguments use
+    provider typing and generated ABI checks.
+
+    Parameters
+    ----------
+    value : object
+        Compile-time scalar value to normalize.
+    dtype : object
+        Target payload dtype from the common numeric profile.
+    operation : str
+        Public operation name used in diagnostics, such as ``"load"``.
+    parameter : str
+        Argument name used in diagnostics, such as ``"oob_default"``.
+    source_dtype : object, optional
+        Known compiler dtype of ``value``. When absent, a NumPy scalar's dtype
+        is used; ordinary Python numeric literals remain contextually typed.
+
+    Returns
+    -------
+    numpy.generic
+        Scalar in the normalized target dtype.
+
+    Raises
+    ------
+    TypeError
+        The target is outside the common numeric profile, a value is boolean or
+        non-numeric, typed provenance differs from the target, or an ordinary
+        float would be converted to an integer.
+    ValueError
+        The dtype cannot be normalized, an ordinary literal is out of range, or
+        a checked scalar is non-finite.
+    """
 
     target_dtype = _validate_common_numeric_dtype(
         dtype,
@@ -324,7 +406,7 @@ def coerce_static_scalar(
     return result
 
 
-def _validate_static_oob_default(value: object, dtype):
+def _validate_static_oob_default(value: object, dtype: object) -> np.generic:
     """Normalize one compile-time Load default before provider construction."""
 
     return coerce_static_scalar(
