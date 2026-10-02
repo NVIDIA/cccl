@@ -94,7 +94,14 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 
   __shared__ typename AgentT::TempStorage temp_storage;
 
-  AgentT{temp_storage.template __alias<typename AgentT::_TempStorage>(), d_range, d_values, d_output, range_count, values_count, range_beg_offsets, comp}();
+  AgentT{temp_storage.template __alias<typename AgentT::_TempStorage>(),
+         d_range,
+         d_values,
+         d_output,
+         range_count,
+         values_count,
+         range_beg_offsets,
+         comp}();
 }
 
 template <typename Mode,

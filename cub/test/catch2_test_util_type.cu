@@ -196,10 +196,7 @@ struct alignas(64) Overaligned64
 
 struct NonTrivialUninitializedPayload
 {
-  int value;
-  NonTrivialUninitializedPayload()
-      : value{1}
-  {}
+  int value{1};
 };
 
 template <typename T>
@@ -237,7 +234,7 @@ CUB_TEST("Test Uninitialized storage word", "[util][type]", CUB_SMALL)
   STATIC_REQUIRE(uninitialized_layout_matches<float4>());
   STATIC_REQUIRE(uninitialized_layout_matches<NonTrivialUninitializedPayload>());
 
-  cub::Uninitialized<int> value;
+  cub::Uninitialized<int> value{};
   value.Alias() = 7;
   CHECK(value.Alias() == 7);
   value.Alias() = 11;
