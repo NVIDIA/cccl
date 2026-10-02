@@ -98,7 +98,8 @@ See :ref:`reduction and result ownership <coop-common-results>`.
 Scan
 ^^^^
 
-See Scan in the :ref:`Numba guide <coop-scans>`.
+See Scan in the :ref:`Numba guide <coop-scans>` and
+:ref:`CUTLASS guide <coop-cutlass-scan>`.
 
 .. autofunction:: scan
 .. autofunction:: exclusive_sum
@@ -319,3 +320,12 @@ Reduction
 
 .. autofunction:: reduce
 .. autofunction:: sum
+
+Scan
+^^^^
+
+.. autofunction:: scan
+.. autofunction:: exclusive_sum
+.. autofunction:: inclusive_sum
+.. autofunction:: exclusive_scan
+.. autofunction:: inclusive_scan

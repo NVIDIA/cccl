@@ -8,6 +8,13 @@ from .._core.api import TempStorageLike, ThreadDataLike
 from ._compiler._activation import register_trace_context
 from ._group_load_store import load, store
 from ._group_reduce import reduce, sum
+from ._group_scan import (
+    exclusive_scan,
+    exclusive_sum,
+    inclusive_scan,
+    inclusive_sum,
+    scan,
+)
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData
 from ._thread_group import (
@@ -29,8 +36,13 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
     "reduce",
+    "scan",
     "store",
     "sum",
     "this_block",

@@ -5,10 +5,19 @@
 from __future__ import annotations
 
 import operator
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
-from cutlass import Float64, Int16, Int32, Uint8, Uint16, Uint32, Uint64
+from cutlass import (
+    Float32,
+    Float64,
+    Int16,
+    Int32,
+    Uint8,
+    Uint16,
+    Uint32,
+    Uint64,
+)
 from typing_extensions import assert_type
 
 import cuda.coop.cutlass as cutlass_coop
@@ -254,4 +263,232 @@ def check_cutlass_reduce_surface(scalar: Uint32) -> None:
     assert_type(
         cutlass_coop.sum(cutlass_coop.this_cluster(), values, broadcast=False),
         np.int32,
+    )
+
+
+def check_cutlass_scan_surface(scalar: Uint32) -> None:
+    block = cutlass_coop.this_block()
+    logical = cutlass_coop.this_warp().group_by(8)
+    values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
+    aggregate = cutlass_coop.ThreadData(items_per_thread=1, dtype=Uint32)
+    common_aggregate = common_coop.ThreadData(items_per_thread=1, dtype=Uint32)
+    assert_type(
+        cutlass_coop.exclusive_sum(
+            block, scalar, aggregate_output=common_aggregate
+        ),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.scan(block, values), cutlass_coop.ThreadData[np.int32]
+    )
+    assert_type(
+        cutlass_coop.exclusive_scan(block, values),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.inclusive_scan(block, values),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.exclusive_sum(block, values),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.inclusive_sum(block, values),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.scan(
+            block, values, scan_op="max", initial_value=np.int32(-8)
+        ),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.scan(block, values, scan_op=np.add),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.exclusive_scan(
+            block, scalar, scan_op=operator.mul, initial_value=1
+        ),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.inclusive_sum(block, values, algorithm="raking_memoize"),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    storage = cutlass_coop.TempStorage(sharing="exclusive")
+    assert_type(
+        cutlass_coop.scan(
+            block, values, algorithm="warp_scans", temp_storage=storage
+        ),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.scan(
+            logical, scalar, valid_items=7, aggregate_output=aggregate
+        ),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.exclusive_scan(
+            logical, scalar, valid_items=7, aggregate_output=aggregate
+        ),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.inclusive_scan(
+            logical, scalar, valid_items=7, aggregate_output=aggregate
+        ),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.exclusive_sum(
+            logical, scalar, valid_items=7, aggregate_output=aggregate
+        ),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.inclusive_sum(
+            logical, scalar, valid_items=7, aggregate_output=aggregate
+        ),
+        Uint32,
+    )
+    assert_type(common_coop.inclusive_sum(logical, scalar), Uint32)
+    assert_type(
+        cutlass_coop.inclusive_sum(common_coop.this_warp(), scalar), Uint32
+    )
+    assert_type(
+        cutlass_coop.inclusive_sum(block, values.to_register_tensor()),
+        cutlass_coop.ThreadData[Any],
+    )
+    assert_type(
+        cutlass_coop.exclusive_sum(block, values.to_tensor_ssa()),
+        cutlass_coop.ThreadData[Any],
+    )
+
+
+def check_cutlass_scan_seeds(integer_seed: int, floating_seed: float) -> None:
+    block = cutlass_coop.this_block()
+    warp = cutlass_coop.this_warp()
+    numpy_values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
+    cute_values = cutlass_coop.ThreadData(items_per_thread=2, dtype=Float32)
+    assert_type(
+        cutlass_coop.exclusive_scan(block, Int32(4), initial_value=Int32(0)),
+        Int32,
+    )
+    assert_type(
+        cutlass_coop.scan(
+            warp, Float32(4), mode="exclusive", initial_value=Float32(0)
+        ),
+        Float32,
+    )
+    assert_type(
+        cutlass_coop.exclusive_scan(block, Int32(4), initial_value=np.int32(0)),
+        Int32,
+    )
+    assert_type(
+        cutlass_coop.scan(
+            warp, Float32(4), mode="exclusive", initial_value=np.float32(0)
+        ),
+        Float32,
+    )
+    assert_type(
+        cutlass_coop.exclusive_scan(
+            warp, Float64(4), initial_value=np.float64(0)
+        ),
+        Float64,
+    )
+    assert_type(
+        cutlass_coop.scan(
+            block, np.int32(4), mode="exclusive", initial_value=Int32(0)
+        ),
+        np.int32,
+    )
+    assert_type(
+        cutlass_coop.exclusive_scan(
+            warp, np.float32(4), initial_value=Float32(0)
+        ),
+        np.float32,
+    )
+    assert_type(
+        cutlass_coop.scan(
+            warp, np.float64(4), mode="exclusive", initial_value=Float64(0)
+        ),
+        np.float64,
+    )
+    assert_type(
+        cutlass_coop.scan(
+            block, numpy_values, mode="exclusive", initial_value=Int32(0)
+        ),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.exclusive_scan(
+            block, cute_values, initial_value=np.float32(0)
+        ),
+        cutlass_coop.ThreadData[Float32],
+    )
+    assert_type(
+        common_coop.exclusive_scan(block, Int32(4), initial_value=np.int32(0)),
+        Int32,
+    )
+    assert_type(
+        common_coop.scan(
+            warp, Float32(4), mode="exclusive", initial_value=np.float32(0)
+        ),
+        Float32,
+    )
+    assert_type(
+        common_coop.exclusive_scan(
+            warp, Float64(4), initial_value=np.float64(0)
+        ),
+        Float64,
+    )
+    assert_type(
+        common_coop.exclusive_scan(block, np.int32(4), initial_value=Int32(0)),
+        np.int32,
+    )
+    assert_type(
+        common_coop.scan(
+            warp, np.float32(4), mode="exclusive", initial_value=Float32(0)
+        ),
+        np.float32,
+    )
+    assert_type(
+        common_coop.exclusive_scan(
+            warp, np.float64(4), initial_value=Float64(0)
+        ),
+        np.float64,
+    )
+    assert_type(
+        common_coop.exclusive_scan(block, numpy_values, initial_value=Int32(0)),
+        common_coop.ThreadDataLike[np.int32],
+    )
+    assert_type(
+        common_coop.scan(
+            block, cute_values, mode="exclusive", initial_value=np.float32(0)
+        ),
+        common_coop.ThreadDataLike[Float32],
+    )
+    assert_type(
+        cutlass_coop.exclusive_scan(
+            block, Int32(4), initial_value=integer_seed
+        ),
+        Int32,
+    )
+    assert_type(
+        cutlass_coop.scan(
+            warp, Float32(4), mode="exclusive", initial_value=floating_seed
+        ),
+        Float32,
+    )
+    assert_type(
+        common_coop.exclusive_scan(block, Int32(4), initial_value=0), Int32
+    )
+    assert_type(
+        common_coop.exclusive_scan(
+            warp, Float32(4), initial_value=floating_seed
+        ),
+        Float32,
     )

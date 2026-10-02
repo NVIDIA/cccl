@@ -102,7 +102,7 @@ in the programming guides.
      - Available
    * - Built-in Reduce/Sum and Scan
      - Available
-     - Reduce/Sum only
+     - Available
    * - Block and warp Exchange; block Shuffle
      - Available
      - Not implemented
