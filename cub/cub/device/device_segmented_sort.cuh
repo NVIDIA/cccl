@@ -25,6 +25,7 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/double_buffer.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh>
