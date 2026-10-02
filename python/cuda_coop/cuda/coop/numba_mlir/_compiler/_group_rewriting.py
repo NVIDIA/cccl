@@ -2,6 +2,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Expose payload and scalar facts to operation-specific call rewriting.
+
+After group resolution has selected implementations, ``CoopSinglePhaseRewrite``
+uses primitive-specific hooks to infer factory arguments and prepare runtime
+operands. ``GroupRewriteContext`` gives those hooks access to the active
+rewrite's array descriptions, compiler types, and recorded ``ThreadData``
+element types. It forwards queries and updates to the rewrite so all operations
+use the same analysis and caches.
+
+This context is used during the second phase of ``CoopWholeFunctionPlanner``.
+It does not register a separate Numba rewrite or own the IR; its returned facts
+are limited to what the active helper has established before type inference.
+"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -13,7 +27,13 @@ if TYPE_CHECKING:
 
 
 class GroupRewriteContext:
-    """Stable cross-family view of one before-inference rewrite."""
+    """Share the active call rewrite's analysis with primitive-specific hooks.
+
+    Parameters
+    ----------
+    rewrite : CoopSinglePhaseRewrite
+        Active rewrite supplying the IR facts used by primitive-family hooks.
+    """
 
     __slots__ = ("__rewrite",)
 
