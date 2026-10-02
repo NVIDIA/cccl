@@ -36,10 +36,12 @@ if TYPE_CHECKING:
         scan,
     )
     from ._group._shuffle import shuffle
+    from ._stateful_function import StatefulFunction
     from ._thread_data import local, shared
 
 __all__ = [
     "Hierarchy",
+    "StatefulFunction",
     "TempStorage",
     "TempStorageLike",
     "ThreadData",
@@ -98,6 +100,12 @@ def __getattr__(name):
     if name in {"local", "shared"}:
         value = getattr(
             importlib.import_module(f"{__name__}._thread_data"), name
+        )
+        globals()[name] = value
+        return value
+    if name == "StatefulFunction":
+        value = getattr(
+            importlib.import_module(f"{__name__}._stateful_function"), name
         )
         globals()[name] = value
         return value

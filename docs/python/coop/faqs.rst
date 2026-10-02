@@ -23,7 +23,7 @@ its groups, ``ThreadData`` payloads, and built-in operators cover your needs:
 
 ``cuda.coop.numba_mlir`` exposes that backend's API, including extensions
 specific to Numba-CUDA-MLIR. Use it for features such as fixed-size Numba
-local-array payloads, or supported device callbacks:
+local-array payloads, device callbacks, or Scan prefix callbacks:
 
 .. code-block:: python
 

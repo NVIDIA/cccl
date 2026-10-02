@@ -32,6 +32,7 @@ from .._types import (
     make_invocable_from_specialization,
     prepare_ltoir_bundle,
 )
+from ._group_planner_support import GroupRewriteError
 from ._operations import FactoryOperation
 from ._rewrite_support import CoopSinglePhaseRewriteError, _RewriteMatch
 
@@ -280,9 +281,12 @@ class _InvocableRewrite:
 
         Raises
         ------
+        GroupRewriteError
+            A callback reaches unsupported cooperative group planning while
+            its provider is materialized. The original diagnostic propagates.
         CoopSinglePhaseRewriteError
-            Construction fails or the result violates the registered
-            contract.
+            Other construction failures occur or the result violates the
+            registered contract.
         """
 
         rewrite = cast("CoopSinglePhaseRewrite", self)
@@ -310,6 +314,10 @@ class _InvocableRewrite:
                 )
             else:
                 invocable = match.factory(**match.factory_kwargs)
+        except GroupRewriteError:
+            # A callback can reach cooperative planning while its provider is
+            # materialized. Preserve the helper name and actionable diagnostic.
+            raise
         except Exception as e:
             raise CoopSinglePhaseRewriteError(
                 f"Failed to evaluate coop single-phase factory at compile time "
