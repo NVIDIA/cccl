@@ -19,6 +19,9 @@
 #include <thrust/detail/function.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
+#include <cuda/std/__algorithm/remove_copy_if.h>
+#include <cuda/std/__algorithm/remove_if.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
@@ -27,33 +30,47 @@ template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator
 remove_if(sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, Predicate pred)
 {
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  return ::cuda::std::remove_if(first, last, thrust::detail::wrapped_function<Predicate>{pred});
+}
 
-  // advance iterators until wrapped_pred(*first) is true or we reach the end of input
-  while (first != last && !wrapped_pred(*first))
-  {
-    ++first;
-  }
+_CCCL_EXEC_CHECK_DISABLE
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
+_CCCL_HOST_DEVICE OutputIterator remove_copy_if(
+  sequential::execution_policy<DerivedPolicy>&,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  Predicate pred)
+{
+  return ::cuda::std::remove_copy_if(first, last, result, thrust::detail::wrapped_function<Predicate>{pred});
+}
 
-  if (first == last)
-  {
-    return first;
-  }
-
-  // result always trails first
-  ForwardIterator result = first;
-
-  ++first;
+_CCCL_EXEC_CHECK_DISABLE
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator,
+          typename Predicate>
+_CCCL_HOST_DEVICE OutputIterator remove_copy_if(
+  sequential::execution_policy<DerivedPolicy>&,
+  InputIterator1 first,
+  InputIterator1 last,
+  InputIterator2 stencil,
+  OutputIterator result,
+  Predicate pred)
+{
+  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   while (first != last)
   {
-    if (!wrapped_pred(*first))
+    if (!wrapped_pred(*stencil))
     {
       *result = *first;
       ++result;
     }
+
     ++first;
+    ++stencil;
   }
 
   return result;
@@ -68,8 +85,7 @@ _CCCL_HOST_DEVICE ForwardIterator remove_if(
   InputIterator stencil,
   Predicate pred)
 {
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   // advance iterators until wrapped_pred(*stencil) is true or we reach the end of input
   while (first != last && !wrapped_pred(*stencil))
@@ -96,64 +112,6 @@ _CCCL_HOST_DEVICE ForwardIterator remove_if(
       *result = *first;
       ++result;
     }
-    ++first;
-    ++stencil;
-  }
-
-  return result;
-}
-
-_CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator remove_copy_if(
-  sequential::execution_policy<DerivedPolicy>&,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator result,
-  Predicate pred)
-{
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
-
-  while (first != last)
-  {
-    if (!wrapped_pred(*first))
-    {
-      *result = *first;
-      ++result;
-    }
-
-    ++first;
-  }
-
-  return result;
-}
-
-_CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename OutputIterator,
-          typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator remove_copy_if(
-  sequential::execution_policy<DerivedPolicy>&,
-  InputIterator1 first,
-  InputIterator1 last,
-  InputIterator2 stencil,
-  OutputIterator result,
-  Predicate pred)
-{
-  // wrap pred
-  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
-
-  while (first != last)
-  {
-    if (!wrapped_pred(*stencil))
-    {
-      *result = *first;
-      ++result;
-    }
-
     ++first;
     ++stencil;
   }

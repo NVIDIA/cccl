@@ -50,8 +50,8 @@ inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __
 {
   if (__first != __last)
   {
-    typename iterator_traits<_InputIterator>::value_type __init = *__first;
-    *__result++                                                 = __init;
+    const typename iterator_traits<_InputIterator>::value_type __init = *__first;
+    *__result++                                                       = __init;
     if (++__first != __last)
     {
       return ::cuda::std::inclusive_scan(__first, __last, __result, __b, __init);
