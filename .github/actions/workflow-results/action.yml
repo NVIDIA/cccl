@@ -159,6 +159,8 @@ runs:
           echo "### $(cat execution/heading.txt)"
           echo ""
           echo "See results [here]($(cat workflow/summary_url.txt))."
+          echo ""
+          echo "New to CCCL? See the [contributing guide](https://github.com/NVIDIA/cccl/blob/main/CONTRIBUTING.md) and [CI overview](https://github.com/NVIDIA/cccl/blob/main/docs/infrastructure/ci/references/ci_overview.rst)."
         ) | tee pr_comment.md
         echo "::endgroup::"
 
