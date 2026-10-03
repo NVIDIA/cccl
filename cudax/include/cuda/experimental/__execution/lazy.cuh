@@ -98,6 +98,21 @@ struct __lazy_tupl<::cuda::std::index_sequence<_Idx...>, _Ts...> : __detail::__l
     return *::cuda::std::launder(__value_);
   }
 
+  // Construct the _Ny-th element directly from the result of `__fn(__us...)`,
+  // without materializing it first (so an immovable result type is fine).
+  template <size_t _Ny, class _Fn, class... _Us>
+  _CCCL_HOST_DEVICE_API __at<_Ny>& __emplace_from(_Fn&& __fn, _Us&&... __us) //
+    noexcept(__nothrow_callable<_Fn, _Us...>)
+  {
+    using _Ty _CCCL_NODEBUG = __at<_Ny>;
+    static_assert(__same_as<__call_result_t<_Fn, _Us...>, _Ty>,
+                  "__emplace_from: the callable must return the element type");
+    _Ty* __value_ = ::new (static_cast<void*>(__get<_Ny, _Ty>()))
+      _Ty(static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)...));
+    __engaged_[_Ny] = true;
+    return *::cuda::std::launder(__value_);
+  }
+
   template <class _Fn, class _Self, class... _Us>
   _CCCL_HOST_DEVICE_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
     noexcept(__nothrow_callable<_Fn, _Us..., ::cuda::std::__copy_cvref_t<_Self, _Ts>...>)
