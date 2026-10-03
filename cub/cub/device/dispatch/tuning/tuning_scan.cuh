@@ -147,7 +147,7 @@ struct ScanLookaheadPolicy
   // Therefore, a value of 0 just takes the number of stages.
 
   // We do not need too many stages for lookahead since the lookahead warp is the bottleneck. As soon as it produces a
-  // new value, it will be consumed by the scanStore squad, releasing the stage. So just always use 2 stages.
+  // new value, it will be consumed by the scan squad, releasing the stage. So just always use 2 stages.
   int lookahead_stages = 2; //!< Number of pipeline stages for the lookahead squad
 
   //! Deprecated [Since CCCL 3.6]
@@ -752,7 +752,7 @@ _CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_reduce(const ScanLook
   return warpspeed::SquadDesc{0, policy.reduce_and_scan_warps};
 }
 
-_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_scan_store(const ScanLookaheadPolicy& policy)
+_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_scan(const ScanLookaheadPolicy& policy)
 {
   return warpspeed::SquadDesc{1, policy.reduce_and_scan_warps};
 }
@@ -765,6 +765,11 @@ _CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_load_and_next_idx(con
 _CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_lookahead(const ScanLookaheadPolicy&)
 {
   return warpspeed::SquadDesc{3, 1}; // must have 1 warp
+}
+
+_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_store(const ScanLookaheadPolicy&)
+{
+  return warpspeed::SquadDesc{4, 1}; // issues the bulk store, so 1 warp is enough
 }
 
 // TODO(bgruber): put this somewhere else
@@ -813,22 +818,24 @@ _CCCL_HOST_DEVICE_API constexpr void setup_scan_resources(
 {
   const warpspeed::SquadDesc scanSquads[] = {
     squad_reduce(policy),
-    squad_scan_store(policy),
+    squad_scan(policy),
     squad_load_and_next_idx(policy),
     squad_lookahead(policy),
+    squad_store(policy),
   };
 
   smemInOut.addPhase(syncHandler, smemAllocator, squad_load_and_next_idx(policy));
-  smemInOut.addPhase(syncHandler, smemAllocator, {squad_reduce(policy), squad_scan_store(policy)});
+  smemInOut.addPhase(syncHandler, smemAllocator, {squad_reduce(policy), squad_scan(policy)});
+  smemInOut.addPhase(syncHandler, smemAllocator, squad_store(policy));
 
   smemNextBlockIdx.addPhase(syncHandler, smemAllocator, squad_load_and_next_idx(policy));
   smemNextBlockIdx.addPhase(syncHandler, smemAllocator, scanSquads);
 
   smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_lookahead(policy));
-  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_scan_store(policy));
+  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_scan(policy));
 
   smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, squad_reduce(policy));
-  smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, squad_scan_store(policy));
+  smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, squad_scan(policy));
 }
 
 _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
@@ -1022,8 +1029,10 @@ struct policy_selector
               return ScanLookaheadPolicy{4, 88 - 1, 3};
             }
             // wrps_4.lbi_3.ipt_80 ()  1.019078  0.999708  1.017346  1.052592
-            // wrps_8.lbi_5.ipt_32.lbs_1 ()  1.014739  0.976501  1.013290  1.062500 (score relative to the tuning above)
-            return ScanLookaheadPolicy{8, 32 - 1, 5, 1};
+            // retuned for the store-squad scan kernel:
+            // wrps_4.lbi_7.ipt_64.lbs_-2 ()  1.011009  0.994440  1.010186  1.061934 (score relative to the tuning
+            // above)
+            return ScanLookaheadPolicy{4, 64 - 1, 7, -2};
           case 8:
             // wrps_2.lbi_5.ipt_88 ()  1.085781   1.0  1.079245  1.103545
             // wrps_2.lbi_7.ipt_88.lbs_-2 ()  1.011922  0.997768  1.010818  1.039350 (score relative to the tuning
