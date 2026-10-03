@@ -36,7 +36,7 @@ TEST_FUNC void adl_function(MyType) {}
 
 TEST_FUNC void test()
 {
-  cuda::std::__constant_wrapper<MyNamespace::MyType{}> cw_mt;
+  cuda::std::constant_wrapper<MyNamespace::MyType{}> cw_mt;
   adl_function(cw_mt);
 }
 
