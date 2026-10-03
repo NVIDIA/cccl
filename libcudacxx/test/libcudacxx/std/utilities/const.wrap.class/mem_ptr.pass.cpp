@@ -76,37 +76,37 @@ struct OpsReturnNonStructural
 struct NoOps
 {};
 
-static_assert(HasPtrToMem<cuda::std::__constant_wrapper<&s_value>, cuda::std::__constant_wrapper<&S::member>>);
-static_assert(HasNoexceptPtrToMem<cuda::std::__constant_wrapper<&s_value>, cuda::std::__constant_wrapper<&S::member>>);
+static_assert(HasPtrToMem<cuda::std::constant_wrapper<&s_value>, cuda::std::constant_wrapper<&S::member>>);
+static_assert(HasNoexceptPtrToMem<cuda::std::constant_wrapper<&s_value>, cuda::std::constant_wrapper<&S::member>>);
 
-static_assert(HasPtrToMem<cuda::std::__constant_wrapper<&s_value>, int S::*>);
-static_assert(!HasPtrToMem<cuda::std::__constant_wrapper<&s_value>, int>);
+static_assert(HasPtrToMem<cuda::std::constant_wrapper<&s_value>, int S::*>);
+static_assert(!HasPtrToMem<cuda::std::constant_wrapper<&s_value>, int>);
 
 // Runtime data-member pointers must preserve all pointee cv-qualifiers.
 template <class T>
-using RuntimeMemberResult = decltype(cuda::std::declval<cuda::std::__constant_wrapper<static_cast<T*>(nullptr)>>()
-                                       ->*cuda::std::declval<int S::*>());
+using RuntimeMemberResult =
+  decltype(cuda::std::declval<cuda::std::constant_wrapper<static_cast<T*>(nullptr)>>()->*cuda::std::declval<int S::*>());
 
 static_assert(cuda::std::same_as<int&, RuntimeMemberResult<S>>);
 static_assert(cuda::std::same_as<const int&, RuntimeMemberResult<const S>>);
 static_assert(cuda::std::same_as<volatile int&, RuntimeMemberResult<volatile S>>);
 static_assert(cuda::std::same_as<const volatile int&, RuntimeMemberResult<const volatile S>>);
-static_assert(!HasPtrToMem<cuda::std::__constant_wrapper<&s_value>, int NoOps::*>);
+static_assert(!HasPtrToMem<cuda::std::constant_wrapper<&s_value>, int NoOps::*>);
 
 TEST_FUNC constexpr bool test()
 {
   {
     // use builtin operator->*
-    cuda::std::__constant_wrapper<(&s_value)> cwS{};
-    cuda::std::__constant_wrapper<&S::member> cwPM{};
+    cuda::std::constant_wrapper<(&s_value)> cwS{};
+    cuda::std::constant_wrapper<&S::member> cwPM{};
     decltype(auto) result1 = cwS->*cwPM;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<42>, decltype(result1)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<42>, decltype(result1)>);
     static_assert(result1 == 42);
   }
 
   {
     // mix runtime and constant_wrapper parameters
-    cuda::std::__constant_wrapper<(&s_value)> cwS{};
+    cuda::std::constant_wrapper<(&s_value)> cwS{};
     int S::* pm            = &S::member;
     decltype(auto) result1 = cwS->*pm;
     static_assert(cuda::std::same_as<const int&, decltype(result1)>);
@@ -116,17 +116,17 @@ TEST_FUNC constexpr bool test()
 #if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
   {
     // custom operator->*
-    cuda::std::__constant_wrapper<WithOps{42}> cwWO;
-    cuda::std::__constant_wrapper<&WithOps::value> cwPM;
-    cuda::std::same_as<cuda::std::__constant_wrapper<84>> decltype(auto) result1 = cwWO->*cwPM;
+    cuda::std::constant_wrapper<WithOps{42}> cwWO;
+    cuda::std::constant_wrapper<&WithOps::value> cwPM;
+    cuda::std::same_as<cuda::std::constant_wrapper<84>> decltype(auto) result1 = cwWO->*cwPM;
     static_assert(result1 == 84);
   }
 
   {
     // Return non-structural type
     // Will use underlying type's runtime operators
-    cuda::std::__constant_wrapper<OpsReturnNonStructural{42}> cwORNS;
-    cuda::std::__constant_wrapper<&OpsReturnNonStructural::value> cwPM;
+    cuda::std::constant_wrapper<OpsReturnNonStructural{42}> cwORNS;
+    cuda::std::constant_wrapper<&OpsReturnNonStructural::value> cwPM;
     cuda::std::same_as<NonStructural> decltype(auto) result1 = cwORNS->*cwPM;
     assert(result1.get() == 84);
   }
@@ -134,10 +134,10 @@ TEST_FUNC constexpr bool test()
 
   {
     // integral_constant
-    cuda::std::__constant_wrapper<(&s_value)> cwS{};
+    cuda::std::constant_wrapper<(&s_value)> cwS{};
     cuda::std::integral_constant<int S::*, &S::member> icPM{};
     decltype(auto) result1 = cwS->*icPM;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<42>, decltype(result1)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<42>, decltype(result1)>);
     static_assert(result1 == 42);
   }
 

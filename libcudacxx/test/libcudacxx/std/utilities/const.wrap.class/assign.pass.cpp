@@ -69,14 +69,14 @@ inline constexpr bool
   HasNoexceptAssign<T, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<const T&>() = cuda::std::declval<R&>())>> =
     true;
 
-static_assert(!HasAssign<cuda::std::__constant_wrapper<5>, cuda::std::__constant_wrapper<3>>);
-static_assert(!HasNoexceptAssign<cuda::std::__constant_wrapper<5>, cuda::std::__constant_wrapper<3>>);
+static_assert(!HasAssign<cuda::std::constant_wrapper<5>, cuda::std::constant_wrapper<3>>);
+static_assert(!HasNoexceptAssign<cuda::std::constant_wrapper<5>, cuda::std::constant_wrapper<3>>);
 
 #if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
-static_assert(HasAssign<cuda::std::__constant_wrapper<WithOps{5}>, cuda::std::__constant_wrapper<3>>);
-static_assert(HasNoexceptAssign<cuda::std::__constant_wrapper<WithOps{5}>, cuda::std::__constant_wrapper<3>>);
+static_assert(HasAssign<cuda::std::constant_wrapper<WithOps{5}>, cuda::std::constant_wrapper<3>>);
+static_assert(HasNoexceptAssign<cuda::std::constant_wrapper<WithOps{5}>, cuda::std::constant_wrapper<3>>);
 
-static_assert(!HasAssign<cuda::std::__constant_wrapper<OpsReturnNonStructural{5}>, cuda::std::__constant_wrapper<5>>);
+static_assert(!HasAssign<cuda::std::constant_wrapper<OpsReturnNonStructural{5}>, cuda::std::constant_wrapper<5>>);
 #endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 TEST_FUNC constexpr bool test()
@@ -87,19 +87,19 @@ TEST_FUNC constexpr bool test()
 #  if !(_CCCL_CUDA_COMPILER(NVCC, ==, 13, 0) && _CCCL_HOST_COMPILATION())
   {
     // WithOps assignment
-    const cuda::std::__constant_wrapper<WithOps{5}> cwOps5;
-    cuda::std::__constant_wrapper<3> cw3;
+    const cuda::std::constant_wrapper<WithOps{5}> cwOps5;
+    cuda::std::constant_wrapper<3> cw3;
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{8}>> decltype(auto) result = cwOps5 = cw3;
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{8}>> decltype(auto) result = cwOps5 = cw3;
     static_assert(result.__get().value == 8);
   }
 
   {
     // with integral_constant
-    const cuda::std::__constant_wrapper<WithOps{5}> cwOps5;
+    const cuda::std::constant_wrapper<WithOps{5}> cwOps5;
     cuda::std::integral_constant<int, 3> ic3;
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{8}>> decltype(auto) result = cwOps5 = ic3;
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{8}>> decltype(auto) result = cwOps5 = ic3;
     static_assert(result.__get().value == 8);
   }
 #  endif // !(_CCCL_CUDA_COMPILER(NVCC, ==, 13, 0) && _CCCL_HOST_COMPILATION())
