@@ -218,36 +218,36 @@ class BlockLoadStoreSpecialization:
     """Fully specialized CUB BlockLoad or BlockStore semantics."""
 
     specialization: Algorithm
-    call: BlockLoadStoreSemantics
+    semantics: BlockLoadStoreSemantics
     block_dim: tuple[int, int, int]
 
     @property
     def kind(self) -> BlockLoadStoreKind:
-        return self.call.kind
+        return self.semantics.kind
 
     @property
     def algorithm(self) -> BlockLoadStoreAlgorithm:
-        return self.call.algorithm
+        return self.semantics.algorithm
 
     @property
     def items_per_thread(self) -> int:
-        return self.call.items_per_thread
+        return self.semantics.items_per_thread
 
     @property
     def has_valid_items(self) -> bool:
-        return self.call.has_valid_items
+        return self.semantics.has_valid_items
 
     @property
     def has_oob_default(self) -> bool:
-        return self.call.has_oob_default
+        return self.semantics.has_oob_default
 
     @property
     def has_full_tile(self) -> bool:
-        return self.call.has_full_tile
+        return self.semantics.has_full_tile
 
     @property
     def has_pointer_offset(self) -> bool:
-        return self.call.has_pointer_offset
+        return self.semantics.has_pointer_offset
 
     @property
     def method_name(self) -> str:
@@ -255,7 +255,7 @@ class BlockLoadStoreSpecialization:
 
     @property
     def algorithm_cpp(self) -> str:
-        return self.call.algorithm_cpp
+        return self.semantics.algorithm_cpp
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
@@ -369,7 +369,7 @@ def make_block_load_store_specialization(
     """Build a fully specialized CUB BlockLoad or BlockStore description."""
 
     block_dim = normalize_block_dim(block_dim)
-    call = make_block_load_store_semantics(
+    semantics = make_block_load_store_semantics(
         kind=kind,
         dtype=dtype,
         items_per_thread=items_per_thread,
@@ -379,13 +379,16 @@ def make_block_load_store_specialization(
         include_full_tile=include_full_tile,
         include_pointer_offset=include_pointer_offset,
     )
-    if call.valid_items.kind is BindingKind.STATIC:
-        value = call.valid_items.value
+    if semantics.valid_items.kind is BindingKind.STATIC:
+        value = semantics.valid_items.value
         if isinstance(value, bool) or not isinstance(value, Integral):
             raise TypeError("static valid_items must be an integer")
         value = int(value)
         tile_items = (
-            call.items_per_thread * block_dim[0] * block_dim[1] * block_dim[2]
+            semantics.items_per_thread
+            * block_dim[0]
+            * block_dim[1]
+            * block_dim[2]
         )
         if not 0 <= value <= tile_items:
             raise ValueError(
@@ -394,7 +397,7 @@ def make_block_load_store_specialization(
             )
     block_threads = block_dim[0] * block_dim[1] * block_dim[2]
     if (
-        call.algorithm
+        semantics.algorithm
         in {
             BlockLoadStoreAlgorithm.WARP_TRANSPOSE,
             BlockLoadStoreAlgorithm.WARP_TRANSPOSE_TIMESLICED,
@@ -402,39 +405,39 @@ def make_block_load_store_specialization(
         and block_threads % 32 != 0
     ):
         raise ValueError(
-            f"Block{call.kind.value.title()} algorithm "
-            f"{call.algorithm.value!r} "
+            f"Block{semantics.kind.value.title()} algorithm "
+            f"{semantics.algorithm.value!r} "
             "requires a block size that is a multiple of 32"
         )
-    title = call.kind.value.title()
+    title = semantics.kind.value.title()
     specialization = Algorithm(
         struct_name=f"Block{title}",
         method_name=title,
-        c_name=f"block_{call.kind.value}",
-        includes=(f"cub/block/block_{call.kind.value}.cuh",),
+        c_name=f"block_{semantics.kind.value}",
+        includes=(f"cub/block/block_{semantics.kind.value}.cuh",),
         template_parameters=_TEMPLATE_PARAMETERS,
-        parameters=call.parameters,
+        parameters=semantics.parameters,
         specialization={
             "T": dtype,
             "BLOCK_DIM_X": block_dim[0],
-            "ITEMS_PER_THREAD": call.items_per_thread,
-            "ALGORITHM": call.algorithm_cpp,
+            "ITEMS_PER_THREAD": semantics.items_per_thread,
+            "ALGORITHM": semantics.algorithm_cpp,
             "BLOCK_DIM_Y": block_dim[1],
             "BLOCK_DIM_Z": block_dim[2],
         },
         metadata={
             "scope": "block",
-            "primitive": call.kind.value,
-            "algorithm": call.algorithm.value,
-            "valid_items": call.has_valid_items,
-            "oob_default": call.has_oob_default,
-            "full_tile": call.has_full_tile,
-            "pointer_offset": call.has_pointer_offset,
+            "primitive": semantics.kind.value,
+            "algorithm": semantics.algorithm.value,
+            "valid_items": semantics.has_valid_items,
+            "oob_default": semantics.has_oob_default,
+            "full_tile": semantics.has_full_tile,
+            "pointer_offset": semantics.has_pointer_offset,
         },
     )
     return BlockLoadStoreSpecialization(
         specialization=specialization,
-        call=call,
+        semantics=semantics,
         block_dim=block_dim,
     )
 
