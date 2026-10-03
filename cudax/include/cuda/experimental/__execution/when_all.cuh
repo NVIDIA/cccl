@@ -82,17 +82,24 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
   /// their environment. Its `get_stop_token` query returns the token from
   /// when_all's stop source. All other queries are forwarded to the outer
   /// receiver's environment.
-  template <class _StateZip>
+  ///
+  /// It holds the outer receiver and the stop token directly, not the when_all's
+  /// state: the state computes its children's completion signatures with this
+  /// environment inside its own class definition, and a child whose completions
+  /// depend on a query (read_env) evaluates `query` right there. Reaching into
+  /// the state from here would be a member access into an incomplete type --
+  /// rejected by clang, and very expensive for nvcc's front end.
+  template <class _Rcvr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   {
-    using __state_t _CCCL_NODEBUG = __unzip<_StateZip>;
-    using __rcvr_t _CCCL_NODEBUG  = __rcvr_from_state_t<__state_t>;
+    using __rcvr_t _CCCL_NODEBUG = _Rcvr;
 
-    __state_t& __state_;
+    const _Rcvr& __rcvr_;
+    inplace_stop_token __stop_token_;
 
     [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto query(get_stop_token_t) const noexcept -> inplace_stop_token
     {
-      return __state_.__stop_token_;
+      return __stop_token_;
     }
 
     _CCCL_EXEC_CHECK_DISABLE
@@ -102,7 +109,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
       noexcept(__nothrow_queryable_with<env_of_t<__rcvr_t>, _Query, _Args...>)
         -> __query_result_t<env_of_t<__rcvr_t>, _Query, _Args...>
     {
-      return execution::get_env(__state_.__rcvr_).query(_Query{}, static_cast<_Args&&>(__args)...);
+      return execution::get_env(__rcvr_).query(_Query{}, static_cast<_Args&&>(__args)...);
     }
   };
 
@@ -135,9 +142,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
       __state_.__arrive();
     }
 
-    _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __env_t<_StateZip>
+    _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __env_t<__rcvr_from_state_t<__state_t>>
     {
-      return {__state_};
+      return {__state_.__rcvr_, __state_.__stop_token_};
     }
   };
 
@@ -159,7 +166,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
   template <class _Rcvr, class _CvFn, class _Ign0, class _Ign1, class... _Sndrs>
   struct __state_t<_Rcvr, _CvFn, ::cuda::std::__tuple<_Ign0, _Ign1, _Sndrs...>>
   {
-    using __env_t _CCCL_NODEBUG     = when_all_t::__env_t<__zip<__state_t>>;
+    using __env_t _CCCL_NODEBUG     = when_all_t::__env_t<_Rcvr>;
     using __sndr_t _CCCL_NODEBUG    = when_all_t::__sndr_t<_Sndrs...>;
     using __cv_sndr_t _CCCL_NODEBUG = ::cuda::std::__type_call1<_CvFn, __sndr_t>;
 
