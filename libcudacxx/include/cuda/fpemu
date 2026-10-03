@@ -21,8 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__fp/fpemu.h> // IWYU pragma: export
+// IWYU pragma: begin_keep
+#include <cuda/__fp/fpemu.h>
 // cuda::std::numeric_limits<> specializations for the fpemu types.
-#include <cuda/__fp/fpemu_limits.h> // IWYU pragma: export
+#include <cuda/__fp/fpemu_limits.h>
+// IWYU pragma: end_keep
 
 #endif // _CUDA_FPEMU

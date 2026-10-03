@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__simd/bit/scalar.h>
+#include <cuda/std/__simd/bit/scalar.h> // IWYU pragma: keep
 
 #endif // _CUDA_STD___SIMD_BIT_H

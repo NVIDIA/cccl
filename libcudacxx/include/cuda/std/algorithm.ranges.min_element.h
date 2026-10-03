@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/ranges_min_element.h>
+#include <cuda/std/__algorithm/ranges_min_element.h> // IWYU pragma: keep
 
 #endif // _CUDA_STD_ALGORITHM_ALGORITHM_RANGES_MIN_ELEMENT_H

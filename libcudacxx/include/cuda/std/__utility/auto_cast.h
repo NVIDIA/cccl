@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/decay.h> // IWYU pragma: keep
 
 #if _CCCL_STD_VER >= 2023 && __cpp_auto_cast >= 202110L && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC)
 #  define _LIBCUDACXX_AUTO_CAST(expr) auto(expr)

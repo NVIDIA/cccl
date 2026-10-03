@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_keep
 #include <cuda/std/__memory/allocate_at_least.h>
 #include <cuda/std/__memory/allocation_guard.h>
 #include <cuda/std/__memory/allocator.h>
@@ -30,5 +31,6 @@
 #include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/__memory/uses_allocator.h>
 #include <cuda/std/memory>
+// IWYU pragma: end_keep
 
 #endif // _CUDA_STD___MEMORY_

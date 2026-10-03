@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/adjacent_find.h>
+#include <cuda/std/__algorithm/adjacent_find.h> // IWYU pragma: keep
 
 #endif // _CUDA_STD_ALGORITHM_ALGORITHM_ADJACENT_FIND_H

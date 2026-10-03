@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/ranges_find_if_not.h>
+#include <cuda/std/__algorithm/ranges_find_if_not.h> // IWYU pragma: keep
 
 #endif // _CUDA_STD_ALGORITHM_ALGORITHM_RANGES_FIND_IF_NOT_H

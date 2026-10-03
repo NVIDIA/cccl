@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/find_first_of.h>
+#include <cuda/std/__algorithm/find_first_of.h> // IWYU pragma: keep
 
 #endif // _CUDA_STD_ALGORITHM_ALGORITHM_FIND_FIRST_OF_H

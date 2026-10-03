@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/is_heap_until.h>
+#include <cuda/std/__algorithm/is_heap_until.h> // IWYU pragma: keep
 
 #endif // _CUDA_STD_ALGORITHM_ALGORITHM_IS_HEAP_UNTIL_H
