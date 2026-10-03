@@ -67,10 +67,10 @@ CUB_NAMESPACE_BEGIN
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! The ``Encode`` algorithm that accepts an environment can be tuned by passing a custom
+//! The ``Encode`` algorithm can be tuned by passing a custom
 //! :ref:`policy selector <cub-policy-selectors>` that returns an :cpp:struct:`cub::RleEncodePolicy`.
 //!
-//! The ``NonTrivialRuns`` algorithm that accepts an environment can be tuned by passing a custom
+//! The ``NonTrivialRuns`` algorithm can be tuned by passing a custom
 //! :ref:`policy selector <cub-policy-selectors>` that returns an :cpp:struct:`cub::RleNonTrivialRunsPolicy`, as shown
 //! in the example below:
 //!
@@ -162,6 +162,11 @@ struct DeviceRunLengthEncode
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -183,15 +188,16 @@ struct DeviceRunLengthEncode
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename UniqueOutputIteratorT,
             typename LengthsOutputIteratorT,
             typename NumRunsOutputIteratorT,
-            typename NumItemsT>
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Encode(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -200,7 +206,7 @@ struct DeviceRunLengthEncode
     LengthsOutputIteratorT d_counts_out,
     NumRunsOutputIteratorT d_num_runs_out,
     NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::Encode");
 
@@ -218,7 +224,7 @@ struct DeviceRunLengthEncode
 
     using accum_t = ::cuda::std::__accumulator_t<reduction_op, length_t>;
     using key_t   = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
-    using policy_selector_t = detail::rle::encode::policy_selector_from_types<
+    using default_policy_selector = detail::rle::encode::policy_selector_from_types<
       accum_t,
       key_t,
       InputIteratorT,
@@ -227,16 +233,19 @@ struct DeviceRunLengthEncode
       NumRunsOutputIteratorT,
       offset_t>;
 
-    return detail::rle::encode::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_unique_out,
-      d_counts_out,
-      d_num_runs_out,
-      static_cast<offset_t>(num_items),
-      stream,
-      policy_selector_t{});
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::rle::encode::dispatch(
+          storage,
+          bytes,
+          d_in,
+          d_unique_out,
+          d_counts_out,
+          d_num_runs_out,
+          static_cast<offset_t>(num_items),
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -432,6 +441,11 @@ struct DeviceRunLengthEncode
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -454,15 +468,16 @@ struct DeviceRunLengthEncode
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename OffsetsOutputIteratorT,
             typename LengthsOutputIteratorT,
             typename NumRunsOutputIteratorT,
-            typename NumItemsT>
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t NonTrivialRuns(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -471,22 +486,30 @@ struct DeviceRunLengthEncode
     LengthsOutputIteratorT d_lengths_out,
     NumRunsOutputIteratorT d_num_runs_out,
     NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::NonTrivialRuns");
 
-    using global_offset_t = detail::choose_signed_offset_t<NumItemsT>;
-    using equality_op     = ::cuda::std::equal_to<>;
-    return detail::rle::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_offsets_out,
-      d_lengths_out,
-      d_num_runs_out,
-      equality_op{},
-      static_cast<global_offset_t>(num_items),
-      stream);
+    using global_offset_t         = detail::choose_signed_offset_t<NumItemsT>;
+    using equality_op             = ::cuda::std::equal_to<>;
+    using length_t                = detail::non_void_value_t<LengthsOutputIteratorT, global_offset_t>;
+    using key_t                   = detail::it_value_t<InputIteratorT>;
+    using default_policy_selector = detail::rle::non_trivial_runs::policy_selector_from_types<length_t, key_t>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::rle::dispatch(
+          storage,
+          bytes,
+          d_in,
+          d_offsets_out,
+          d_lengths_out,
+          d_num_runs_out,
+          equality_op{},
+          static_cast<global_offset_t>(num_items),
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
