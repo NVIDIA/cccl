@@ -63,13 +63,11 @@ void test_exceptions()
 TEST_FUNC constexpr bool test()
 {
   {
-    const optional<X> opt{};
-    unused(opt);
+    [[maybe_unused]] const optional<X> opt{};
     static_assert(!noexcept(cuda::std::move(opt).value()));
     static_assert(cuda::std::is_same_v<decltype(cuda::std::move(opt).value()), const X&&>);
 
-    const optional<X&> optref;
-    unused(optref);
+    [[maybe_unused]] const optional<X&> optref;
     static_assert(!noexcept(cuda::std::move(optref).value()));
     static_assert(cuda::std::is_same_v<decltype(cuda::std::move(optref).value()), X&>);
   }

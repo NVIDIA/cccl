@@ -19,8 +19,7 @@ bool managed_accessor_test()
 {
   int* managed_ptr;
   assert(cudaMallocManaged(&managed_ptr, 4) == cudaSuccess);
-  cuda::device_mdspan<int, ext_t> m_md{managed_ptr, ext_t{}};
-  unused(m_md);
+  [[maybe_unused]] cuda::device_mdspan<int, ext_t> m_md{managed_ptr, ext_t{}};
   return true;
 }
 

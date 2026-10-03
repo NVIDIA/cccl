@@ -33,71 +33,66 @@ TEST_FUNC constexpr bool test()
 
     { // [mdspan.sub.extents-4.1]
       // S_k convertible_to<IndexType>
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == 0);
       static_assert(subextents_t::rank_dynamic() == 0);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.1]
       // S_k is_convertible<full_extent>
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, cuda::std::full_extent);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, cuda::std::full_extent);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank());
       static_assert(subextents_t::rank_dynamic() == extents_t::rank_dynamic());
       assert(sub_ext.static_extent(0) == ext.static_extent(0));
       assert(sub_ext.extent(0) == ext.extent(0));
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.2]
       // S_k models index-pair-like<IndexType> and both model integral-constant-like
       const auto slice =
         cuda::std::pair{cuda::std::integral_constant<size_t, 1>{}, cuda::std::integral_constant<size_t, 2>{}};
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank());
       static_assert(subextents_t::rank_dynamic() == extents_t::rank_dynamic());
       assert(sub_ext.extent(0) == 1);
       assert(sub_ext.static_extent(0) == 1);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.2]
       // S_k models index-pair-like<IndexType> and one does not model integral-constant-like
-      const auto slice           = cuda::std::pair{cuda::std::integral_constant<size_t, 1>{}, 2};
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
+      const auto slice                            = cuda::std::pair{cuda::std::integral_constant<size_t, 1>{}, 2};
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank());
       static_assert(subextents_t::rank_dynamic() == extents_t::rank_dynamic() + 1);
       assert(sub_ext.extent(0) == 1);
       assert(sub_ext.static_extent(0) == cuda::std::dynamic_extent);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.3]
       // S_k models index-pair-like<IndexType> and one does not model integral-constant-like
-      const auto slice           = cuda::std::pair{1, cuda::std::integral_constant<size_t, 2>{}};
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
+      const auto slice                            = cuda::std::pair{1, cuda::std::integral_constant<size_t, 2>{}};
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank());
       static_assert(subextents_t::rank_dynamic() == extents_t::rank_dynamic() + 1);
       assert(sub_ext.extent(0) == 1);
       assert(sub_ext.static_extent(0) == cuda::std::dynamic_extent);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.3]
       // S_k is a specialization of strided_slice and extent_type models integral-constant-like and is zero
       const auto slice = cuda::std::strided_slice{0, cuda::std::integral_constant<size_t, 0>{}, 1};
       static_assert(cuda::std::__integral_constant_like<decltype(slice)::extent_type>);
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank());
@@ -106,21 +101,19 @@ TEST_FUNC constexpr bool test()
       // S_k.extent == 0 ? 0 : 1 + (de-ice(S_k.extent) - 1) / de-ice(S_k.stride)
       assert(sub_ext.extent(0) == 0);
       assert(sub_ext.static_extent(0) == 0);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.3]
       // S_k is a specialization of strided_slice and extent_type models integral-constant-like and is not zero
       const auto slice = cuda::std::strided_slice{0, cuda::std::integral_constant<size_t, 2>{}, 1};
       static_assert(cuda::std::__integral_constant_like<decltype(slice)::extent_type>);
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank());
       static_assert(subextents_t::rank_dynamic() == extents_t::rank_dynamic() + 1);
       assert(sub_ext.extent(0) == 2);
       assert(sub_ext.static_extent(0) == cuda::std::dynamic_extent);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.4]
@@ -130,7 +123,7 @@ TEST_FUNC constexpr bool test()
         0, cuda::std::integral_constant<size_t, 0>{}, cuda::std::integral_constant<size_t, 2>{}};
       static_assert(cuda::std::__integral_constant_like<decltype(slice)::extent_type>);
       static_assert(cuda::std::__integral_constant_like<decltype(slice)::stride_type>);
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank());
@@ -139,7 +132,6 @@ TEST_FUNC constexpr bool test()
       // S_k.extent == 0 ? 0 : 1 + (de-ice(S_k.extent) - 1) / de-ice(S_k.stride)
       assert(sub_ext.extent(0) == 0);
       assert(sub_ext.static_extent(0) == 0);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.4]
@@ -148,7 +140,7 @@ TEST_FUNC constexpr bool test()
         0, cuda::std::integral_constant<size_t, 2>{}, cuda::std::integral_constant<size_t, 2>{}};
       static_assert(cuda::std::__integral_constant_like<typename decltype(slice)::extent_type>);
       static_assert(cuda::std::__integral_constant_like<typename decltype(slice)::stride_type>);
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank());
@@ -157,7 +149,6 @@ TEST_FUNC constexpr bool test()
       // S_k.extent == 0 ? 0 : 1 + (de-ice(S_k.extent) - 1) / de-ice(S_k.stride)
       assert(sub_ext.extent(0) == 1);
       assert(sub_ext.static_extent(0) == 1);
-      unused(sub_ext);
     }
 
     { // Constraints: sizeof...(slices) == Extents::rank
@@ -178,70 +169,65 @@ TEST_FUNC constexpr bool test()
 
     { // [mdspan.sub.extents-4.1]
       // S_k convertible_to<IndexType>
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == 0);
       static_assert(subextents_t::rank_dynamic() == extents_t::rank_dynamic() - 1);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.1]
       // S_k is_convertible<full_extent>
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, cuda::std::full_extent);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, cuda::std::full_extent);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank());
       static_assert(subextents_t::rank_dynamic() == extents_t::rank_dynamic());
       assert(sub_ext.static_extent(0) == ext.static_extent(0));
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.2]
       // S_k models index-pair-like<IndexType> and both model integral-constant-like
       const auto slice =
         cuda::std::pair{cuda::std::integral_constant<size_t, 1>{}, cuda::std::integral_constant<size_t, 2>{}};
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank());
       static_assert(subextents_t::rank_dynamic() == extents_t::rank_dynamic() - 1);
       assert(sub_ext.extent(0) == 1);
       assert(sub_ext.static_extent(0) == 1);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.2]
       // S_k models index-pair-like<IndexType> and one does not model integral-constant-like
-      const auto slice           = cuda::std::pair{cuda::std::integral_constant<size_t, 1>{}, 2};
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
+      const auto slice                            = cuda::std::pair{cuda::std::integral_constant<size_t, 1>{}, 2};
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank());
       static_assert(subextents_t::rank_dynamic() == extents_t::rank_dynamic());
       assert(sub_ext.extent(0) == 1);
       assert(sub_ext.static_extent(0) == cuda::std::dynamic_extent);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.3]
       // S_k models index-pair-like<IndexType> and one does not model integral-constant-like
-      const auto slice           = cuda::std::pair{1, cuda::std::integral_constant<size_t, 2>{}};
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
+      const auto slice                            = cuda::std::pair{1, cuda::std::integral_constant<size_t, 2>{}};
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank());
       static_assert(subextents_t::rank_dynamic() == extents_t::rank_dynamic());
       assert(sub_ext.extent(0) == 1);
       assert(sub_ext.static_extent(0) == cuda::std::dynamic_extent);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.3]
       // S_k is a specialization of strided_slice and extent_type models integral-constant-like and is zero
       const auto slice = cuda::std::strided_slice{0, cuda::std::integral_constant<size_t, 0>{}, 1};
       static_assert(cuda::std::__integral_constant_like<decltype(slice)::extent_type>);
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank());
@@ -250,21 +236,19 @@ TEST_FUNC constexpr bool test()
       // S_k.extent == 0 ? 0 : 1 + (de-ice(S_k.extent) - 1) / de-ice(S_k.stride)
       assert(sub_ext.extent(0) == 0);
       assert(sub_ext.static_extent(0) == 0);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.3]
       // S_k is a specialization of strided_slice and extent_type models integral-constant-like and is not zero
       const auto slice = cuda::std::strided_slice{0, cuda::std::integral_constant<size_t, 2>{}, 1};
       static_assert(cuda::std::__integral_constant_like<decltype(slice)::extent_type>);
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank());
       static_assert(subextents_t::rank_dynamic() == extents_t::rank_dynamic());
       assert(sub_ext.extent(0) == 2);
       assert(sub_ext.static_extent(0) == cuda::std::dynamic_extent);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.4]
@@ -274,7 +258,7 @@ TEST_FUNC constexpr bool test()
         0, cuda::std::integral_constant<size_t, 0>{}, cuda::std::integral_constant<size_t, 2>{}};
       static_assert(cuda::std::__integral_constant_like<decltype(slice)::extent_type>);
       static_assert(cuda::std::__integral_constant_like<decltype(slice)::stride_type>);
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank());
@@ -283,7 +267,6 @@ TEST_FUNC constexpr bool test()
       // S_k.extent == 0 ? 0 : 1 + (de-ice(S_k.extent) - 1) / de-ice(S_k.stride)
       assert(sub_ext.extent(0) == 0);
       assert(sub_ext.static_extent(0) == 0);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.4]
@@ -292,7 +275,7 @@ TEST_FUNC constexpr bool test()
         0, cuda::std::integral_constant<size_t, 2>{}, cuda::std::integral_constant<size_t, 2>{}};
       static_assert(cuda::std::__integral_constant_like<typename decltype(slice)::extent_type>);
       static_assert(cuda::std::__integral_constant_like<typename decltype(slice)::stride_type>);
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, slice);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank());
@@ -301,7 +284,6 @@ TEST_FUNC constexpr bool test()
       // S_k.extent == 0 ? 0 : 1 + (de-ice(S_k.extent) - 1) / de-ice(S_k.stride)
       assert(sub_ext.extent(0) == 1);
       assert(sub_ext.static_extent(0) == 1);
-      unused(sub_ext);
     }
 
     { // Constraints: sizeof...(slices) == Extents::rank
@@ -326,70 +308,65 @@ TEST_FUNC constexpr bool test()
 
     { // [mdspan.sub.extents-4.1]
       // S_k convertible_to<IndexType>
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, 2, 1);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, 2, 1);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == 0);
       static_assert(subextents_t::rank_dynamic() == 0);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.1]
       // S_k is_convertible<full_extent>
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, cuda::std::full_extent, 1);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, cuda::std::full_extent, 1);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == 1);
       static_assert(subextents_t::rank_dynamic() == extents_t::rank_dynamic());
       assert(sub_ext.extent(0) == ext.extent(1));
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.2]
       // S_k models index-pair-like<IndexType> and both model integral-constant-like
       const auto slice =
         cuda::std::pair{cuda::std::integral_constant<size_t, 1>{}, cuda::std::integral_constant<size_t, 2>{}};
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, slice, 1);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, slice, 1);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == 1);
       static_assert(subextents_t::rank_dynamic() == extents_t::rank_dynamic() - 1);
       assert(sub_ext.extent(0) == 1);
       assert(sub_ext.static_extent(0) == 1);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.2]
       // S_k models index-pair-like<IndexType> and one does not model integral-constant-like
-      const auto slice           = cuda::std::pair{cuda::std::integral_constant<size_t, 1>{}, 2};
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, slice, 1);
+      const auto slice                            = cuda::std::pair{cuda::std::integral_constant<size_t, 1>{}, 2};
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, slice, 1);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank() - 2);
       static_assert(subextents_t::rank_dynamic() == extents_t::rank_dynamic());
       assert(sub_ext.extent(0) == 1);
       assert(sub_ext.static_extent(0) == cuda::std::dynamic_extent);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.3]
       // S_k models index-pair-like<IndexType> and one does not model integral-constant-like
-      const auto slice           = cuda::std::pair{1, cuda::std::integral_constant<size_t, 2>{}};
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, slice, 1);
+      const auto slice                            = cuda::std::pair{1, cuda::std::integral_constant<size_t, 2>{}};
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, slice, 1);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank() - 2);
       static_assert(subextents_t::rank_dynamic() == extents_t::rank_dynamic());
       assert(sub_ext.extent(0) == 1);
       assert(sub_ext.static_extent(0) == cuda::std::dynamic_extent);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.3]
       // S_k is a specialization of strided_slice and extent_type models integral-constant-like and is zero
       const auto slice = cuda::std::strided_slice{0, cuda::std::integral_constant<size_t, 0>{}, 1};
       static_assert(cuda::std::__integral_constant_like<decltype(slice)::extent_type>);
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, slice, 1);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, slice, 1);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank() - 2);
@@ -398,21 +375,19 @@ TEST_FUNC constexpr bool test()
       // S_k.extent == 0 ? 0 : 1 + (de-ice(S_k.extent) - 1) / de-ice(S_k.stride)
       assert(sub_ext.extent(0) == 0);
       assert(sub_ext.static_extent(0) == 0);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.3]
       // S_k is a specialization of strided_slice and extent_type models integral-constant-like and is not zero
       const auto slice = cuda::std::strided_slice{0, cuda::std::integral_constant<size_t, 2>{}, 1};
       static_assert(cuda::std::__integral_constant_like<decltype(slice)::extent_type>);
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, slice, 1);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, slice, 1);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank() - 2);
       static_assert(subextents_t::rank_dynamic() == extents_t::rank_dynamic());
       assert(sub_ext.extent(0) == 2);
       assert(sub_ext.static_extent(0) == cuda::std::dynamic_extent);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.4]
@@ -422,7 +397,7 @@ TEST_FUNC constexpr bool test()
         0, cuda::std::integral_constant<size_t, 0>{}, cuda::std::integral_constant<size_t, 2>{}};
       static_assert(cuda::std::__integral_constant_like<decltype(slice)::extent_type>);
       static_assert(cuda::std::__integral_constant_like<decltype(slice)::stride_type>);
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, slice, 1);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, slice, 1);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank() - 2);
@@ -431,7 +406,6 @@ TEST_FUNC constexpr bool test()
       // S_k.extent == 0 ? 0 : 1 + (de-ice(S_k.extent) - 1) / de-ice(S_k.stride)
       assert(sub_ext.extent(0) == 0);
       assert(sub_ext.static_extent(0) == 0);
-      unused(sub_ext);
     }
 
     { // [mdspan.sub.extents-4.2.4]
@@ -440,7 +414,7 @@ TEST_FUNC constexpr bool test()
         0, cuda::std::integral_constant<size_t, 2>{}, cuda::std::integral_constant<size_t, 2>{}};
       static_assert(cuda::std::__integral_constant_like<typename decltype(slice)::extent_type>);
       static_assert(cuda::std::__integral_constant_like<typename decltype(slice)::stride_type>);
-      cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, slice, 1);
+      [[maybe_unused]] cuda::std::extents sub_ext = cuda::std::submdspan_extents(ext, 1, slice, 1);
 
       using subextents_t = decltype(sub_ext);
       static_assert(subextents_t::rank() == extents_t::rank() - 2);
@@ -449,7 +423,6 @@ TEST_FUNC constexpr bool test()
       // S_k.extent == 0 ? 0 : 1 + (de-ice(S_k.extent) - 1) / de-ice(S_k.stride)
       assert(sub_ext.extent(0) == 1);
       assert(sub_ext.static_extent(0) == 1);
-      unused(sub_ext);
     }
 
     { // Constraints: sizeof...(slices) == Extents::rank

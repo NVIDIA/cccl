@@ -25,9 +25,8 @@ template <class T>
 TEST_FUNC constexpr void test_construction()
 {
   static_assert(noexcept(cuda::std::default_accessor<T>{}));
-  cuda::std::default_accessor<T> acc{};
+  [[maybe_unused]] cuda::std::default_accessor<T> acc{};
   static_assert(cuda::std::is_trivially_default_constructible<cuda::std::default_accessor<T>>::value);
-  unused(acc);
 }
 
 TEST_FUNC constexpr bool test()

@@ -174,8 +174,7 @@ void test_exception(const optional<U>& rhs)
 {
   try
   {
-    optional<T> lhs = rhs;
-    unused(lhs);
+    [[maybe_unused]] optional<T> lhs = rhs;
     assert(false);
   }
   catch (int i)

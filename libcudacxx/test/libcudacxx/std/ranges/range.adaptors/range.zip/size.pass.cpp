@@ -119,10 +119,9 @@ TEST_FUNC constexpr bool test()
 
   {
     // underlying range not sized
-    cuda::std::ranges::zip_view v(InputCommonView{buffer});
+    [[maybe_unused]] cuda::std::ranges::zip_view v(InputCommonView{buffer});
     static_assert(!cuda::std::ranges::sized_range<decltype(v)>);
     static_assert(!cuda::std::ranges::sized_range<decltype(cuda::std::as_const(v))>);
-    unused(v);
   }
   return true;
 }

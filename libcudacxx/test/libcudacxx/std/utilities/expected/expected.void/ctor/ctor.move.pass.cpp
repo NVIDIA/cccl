@@ -120,8 +120,7 @@ void test_exceptions()
     cuda::std::expected<void, Throwing> e1(cuda::std::unexpect);
     try
     {
-      auto e2 = cuda::std::move(e1);
-      unused(e2);
+      [[maybe_unused]] auto e2 = cuda::std::move(e1);
       assert(false);
     }
     catch (Except)

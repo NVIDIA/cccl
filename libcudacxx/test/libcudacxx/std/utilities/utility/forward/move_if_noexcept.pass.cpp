@@ -42,17 +42,12 @@ struct legacy
 
 int main(int, char**)
 {
-  int i        = 0;
-  const int ci = 0;
-  unused(i);
-  unused(ci);
+  [[maybe_unused]] int i        = 0;
+  [[maybe_unused]] const int ci = 0;
 
-  legacy l;
-  A a;
-  const A ca;
-  unused(l);
-  unused(a);
-  unused(ca);
+  [[maybe_unused]] legacy l;
+  [[maybe_unused]] A a;
+  [[maybe_unused]] const A ca;
 
   static_assert((cuda::std::is_same<decltype(cuda::std::move_if_noexcept(i)), int&&>::value));
   static_assert((cuda::std::is_same<decltype(cuda::std::move_if_noexcept(ci)), const int&&>::value));

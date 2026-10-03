@@ -22,7 +22,7 @@ struct Empty
 
 int main(int, char**)
 {
-  Empty empty{};
+  [[maybe_unused]] Empty empty{};
 
   // clang-format off
   static_assert(cuda::std::same_as<decltype(cuda::std::ranges::repeat_view(Empty{})), cuda::std::ranges::repeat_view<Empty>>);
@@ -34,8 +34,6 @@ int main(int, char**)
   static_assert(cuda::std::same_as<decltype(cuda::std::ranges::repeat_view(10, 1U)), cuda::std::ranges::repeat_view<int, unsigned>>);
   static_assert(cuda::std::same_as<decltype(cuda::std::ranges::repeat_view(10, 1UL)), cuda::std::ranges::repeat_view<int, unsigned long>>);
   // clang-format on
-
-  unused(empty);
 
   return 0;
 }

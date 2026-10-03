@@ -95,8 +95,7 @@ static_assert(HasGreaterOrEqual<cuda::std::reverse_iterator<NoEqualityCompIter>>
 
 TEST_FUNC void Foo()
 {
-  cuda::std::reverse_iterator<NoEqualityCompIter> i;
-  unused(i);
+  [[maybe_unused]] cuda::std::reverse_iterator<NoEqualityCompIter> i;
 }
 
 // operator !=

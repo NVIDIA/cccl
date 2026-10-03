@@ -73,10 +73,9 @@ TEST_FUNC constexpr bool test()
 {
   cuda::std::ranges::transform_view<MoveOnlyView, PlusOne> transformView{};
   auto iter = cuda::std::move(transformView).begin();
-  cuda::std::ranges::iterator_t<cuda::std::ranges::transform_view<MoveOnlyView, PlusOne>> i2(iter);
-  unused(i2);
-  cuda::std::ranges::iterator_t<const cuda::std::ranges::transform_view<MoveOnlyView, PlusOne>> constIter(iter);
-  unused(constIter);
+  [[maybe_unused]] cuda::std::ranges::iterator_t<cuda::std::ranges::transform_view<MoveOnlyView, PlusOne>> i2(iter);
+  [[maybe_unused]] cuda::std::ranges::iterator_t<const cuda::std::ranges::transform_view<MoveOnlyView, PlusOne>>
+    constIter(iter);
 
   static_assert(cuda::std::default_initializable<
                 cuda::std::ranges::iterator_t<cuda::std::ranges::transform_view<MoveOnlyView, PlusOne>>>);

@@ -47,16 +47,14 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   // has value
   {
-    cuda::std::expected<void, TrackedDestroy> e(cuda::std::in_place);
-    unused(e);
+    [[maybe_unused]] cuda::std::expected<void, TrackedDestroy> e(cuda::std::in_place);
   }
 
   // has error
   {
     bool errorDestroyed = false;
     {
-      cuda::std::expected<void, TrackedDestroy> e(cuda::std::unexpect, errorDestroyed);
-      unused(e);
+      [[maybe_unused]] cuda::std::expected<void, TrackedDestroy> e(cuda::std::unexpect, errorDestroyed);
     }
     assert(errorDestroyed);
   }

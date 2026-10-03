@@ -75,10 +75,9 @@ TEST_FUNC constexpr bool test()
 
   // __simple_view<V> && sized_range<V> && !size_range<!V>
   {
-    cuda::std::ranges::take_view<NonCommonSimpleView> tv{};
+    [[maybe_unused]] cuda::std::ranges::take_view<NonCommonSimpleView> tv{};
     static_assert(cuda::std::is_same_v<decltype(tv.begin()), cuda::std::counted_iterator<int*>>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::as_const(tv).begin()), cuda::std::counted_iterator<int*>>);
-    unused(tv);
   }
 
   return true;

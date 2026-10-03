@@ -30,8 +30,7 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_reset_pointer()
   const int expect_alive = IsArray ? 3 : 1;
   {
     using U = cuda::std::unique_ptr<VT>;
-    U u;
-    unused(u);
+    [[maybe_unused]] U u;
     static_assert(noexcept(u.reset((A*) nullptr)));
   }
   {
@@ -91,8 +90,7 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_reset_nullptr()
   const int expect_alive = IsArray ? 3 : 1;
   {
     using U = cuda::std::unique_ptr<VT>;
-    U u;
-    unused(u);
+    [[maybe_unused]] U u;
     static_assert(noexcept(u.reset(nullptr)));
   }
   {
@@ -123,8 +121,7 @@ TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_reset_no_arg()
   const int expect_alive = IsArray ? 3 : 1;
   {
     using U = cuda::std::unique_ptr<VT>;
-    U u;
-    unused(u);
+    [[maybe_unused]] U u;
     static_assert(noexcept(u.reset()));
   }
   {

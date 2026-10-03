@@ -42,16 +42,23 @@ bool test_ranks()
   tensor.strides     = const_cast<int64_t*>(strides_storage);
   tensor.byte_offset = 0;
   // test 5D tensor
-  unused(cuda::make_tma_descriptor(tensor, box_sizes));
+  {
+    [[maybe_unused]] auto&& discarded = cuda::make_tma_descriptor(tensor, box_sizes);
+  }
 
   tensor.ndim    = 3;
   tensor.strides = const_cast<int64_t*>(strides_storage + 2);
   cuda::std::span<const int, 3> box_sizes_3D{box_sizes_storage};
   // test 3D tensor + interleave layout 16B
-  unused(cuda::make_tma_descriptor(tensor, box_sizes_3D, cuda::tma_interleave_layout::bytes16));
+  {
+    [[maybe_unused]] auto&& discarded =
+      cuda::make_tma_descriptor(tensor, box_sizes_3D, cuda::tma_interleave_layout::bytes16);
+  }
   // test 3D tensor + interleave layout 32B + swizzle 32B
-  unused(
-    cuda::make_tma_descriptor(tensor, box_sizes_3D, cuda::tma_interleave_layout::bytes32, cuda::tma_swizzle::bytes32));
+  {
+    [[maybe_unused]] auto&& discarded =
+      cuda::make_tma_descriptor(tensor, box_sizes_3D, cuda::tma_interleave_layout::bytes32, cuda::tma_swizzle::bytes32);
+  }
   assert(cudaFree(data) == cudaSuccess);
   return true;
 }
@@ -80,12 +87,16 @@ bool test_address_alignment()
   tensor.data = data_16B;
   for (auto interleave_layout : {cuda::tma_interleave_layout::none, cuda::tma_interleave_layout::bytes16})
   {
-    unused(cuda::make_tma_descriptor(tensor, box_sizes, interleave_layout));
+    {
+      [[maybe_unused]] auto&& discarded = cuda::make_tma_descriptor(tensor, box_sizes, interleave_layout);
+    }
   }
   // test 32B alignment
   tensor.data = data_32B;
-  unused(
-    cuda::make_tma_descriptor(tensor, box_sizes, cuda::tma_interleave_layout::bytes32, cuda::tma_swizzle::bytes32));
+  {
+    [[maybe_unused]] auto&& discarded =
+      cuda::make_tma_descriptor(tensor, box_sizes, cuda::tma_interleave_layout::bytes32, cuda::tma_swizzle::bytes32);
+  }
   assert(cudaFree(data_32B) == cudaSuccess);
   return true;
 }
@@ -110,7 +121,9 @@ bool test_sizes()
   int box_sizes_storage[] = {16, 16};
   cuda::std::span<const int, 2> box_sizes{box_sizes_storage};
   // test largest tensor size
-  unused(cuda::make_tma_descriptor(tensor, box_sizes));
+  {
+    [[maybe_unused]] auto&& discarded = cuda::make_tma_descriptor(tensor, box_sizes);
+  }
   assert(cudaFree(data) == cudaSuccess);
   return true;
 }
@@ -135,10 +148,14 @@ bool test_strides()
   tensor.strides     = const_cast<int64_t*>(strides_storage);
   tensor.byte_offset = 0;
   // normal case
-  unused(cuda::make_tma_descriptor(tensor, box_sizes));
+  {
+    [[maybe_unused]] auto&& discarded = cuda::make_tma_descriptor(tensor, box_sizes);
+  }
   // stride is 0
   strides_storage[0] = 0;
-  unused(cuda::make_tma_descriptor(tensor, box_sizes));
+  {
+    [[maybe_unused]] auto&& discarded = cuda::make_tma_descriptor(tensor, box_sizes);
+  }
   assert(cudaFree(data) == cudaSuccess);
   return true;
 }
@@ -163,7 +180,9 @@ bool test_box_sizes()
   tensor.strides     = const_cast<int64_t*>(strides_storage);
   tensor.byte_offset = 0;
   // test largest box size
-  unused(cuda::make_tma_descriptor(tensor, box_sizes));
+  {
+    [[maybe_unused]] auto&& discarded = cuda::make_tma_descriptor(tensor, box_sizes);
+  }
 
   // Test that non-1 inner most stride throws.
 #if TEST_HAS_EXCEPTIONS()
@@ -171,7 +190,9 @@ bool test_box_sizes()
   tensor.strides                     = invalid_strides_storage;
   try
   {
-    unused(cuda::make_tma_descriptor(tensor, box_sizes));
+    {
+      [[maybe_unused]] auto&& discarded = cuda::make_tma_descriptor(tensor, box_sizes);
+    }
     assert(false);
   }
   catch (const std::invalid_argument& e)
@@ -210,8 +231,13 @@ bool test_elem_strides()
   tensor.shape       = const_cast<int64_t*>(shape_storage);
   tensor.strides     = const_cast<int64_t*>(strides_storage);
   tensor.byte_offset = 0;
-  unused(cuda::make_tma_descriptor(tensor, box_sizes, elem_strides, no_interleave));
-  unused(cuda::make_tma_descriptor(tensor, box_sizes, elem_strides, cuda::tma_interleave_layout::bytes16));
+  {
+    [[maybe_unused]] auto&& discarded = cuda::make_tma_descriptor(tensor, box_sizes, elem_strides, no_interleave);
+  }
+  {
+    [[maybe_unused]] auto&& discarded =
+      cuda::make_tma_descriptor(tensor, box_sizes, elem_strides, cuda::tma_interleave_layout::bytes16);
+  }
   assert(cudaFree(data) == cudaSuccess);
   return true;
 }
@@ -268,7 +294,10 @@ bool test_enums()
       box_sizes_storage[0] = /*min_align=*/16 * /*bits=*/8 / tensor.dtype.bits;
       box_sizes_storage[1] = /*min_align=*/16 * /*bits=*/8 / tensor.dtype.bits;
       box_sizes_storage[2] = /*min_align=*/16 * /*bits=*/8 / tensor.dtype.bits;
-      unused(cuda::make_tma_descriptor(tensor, box_sizes, layout, swizzle, l2_fetch_size, oobfill));
+      {
+        [[maybe_unused]] auto&& discarded =
+          cuda::make_tma_descriptor(tensor, box_sizes, layout, swizzle, l2_fetch_size, oobfill);
+      }
     };
 
   for (auto oobfill : tma_oob_fill_array)

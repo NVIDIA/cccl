@@ -36,16 +36,13 @@
 TEST_FUNC void test_primary_template()
 {
   const cuda::std::allocator<int> A;
-  const auto AT = cuda::std::allocator_arg;
-  unused(AT);
+  [[maybe_unused]] const auto AT = cuda::std::allocator_arg;
   { // Testing (1)
     int x = 101;
-    cuda::std::tuple t1(42);
+    [[maybe_unused]] cuda::std::tuple t1(42);
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<int>>);
-    cuda::std::tuple t2(x, 0.0, nullptr);
+    [[maybe_unused]] cuda::std::tuple t2(x, 0.0, nullptr);
     static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<int, double, decltype(nullptr)>>);
-    unused(t1);
-    unused(t2);
   }
   { // Testing (2)
     cuda::std::pair<int, char> p1(1, 'c');
@@ -129,31 +126,27 @@ TEST_FUNC void test_primary_template()
     using Tup = cuda::std::tuple<int, decltype(nullptr)>;
     const Tup t(42, nullptr);
 
-    cuda::std::tuple t1(t);
+    [[maybe_unused]] cuda::std::tuple t1(t);
     static_assert(cuda::std::is_same_v<decltype(t1), Tup>);
-    unused(t1);
   }
 #if !TEST_CUDA_COMPILER(NVCC, >, 13, 2) // nvbug6075893: NVCC fails to properly deduce prvalue input
   { // Testing (8)
     using Tup = cuda::std::tuple<void*, unsigned, char>;
-    cuda::std::tuple t1(Tup(nullptr, 42, 'a'));
+    [[maybe_unused]] cuda::std::tuple t1(Tup(nullptr, 42, 'a'));
     static_assert(cuda::std::is_same_v<decltype(t1), Tup>);
-    unused(t1);
   }
 #endif // !TEST_CUDA_COMPILER(NVCC, >, 13, 2)
   { // Testing (9)
     using Tup = cuda::std::tuple<int, decltype(nullptr)>;
     const Tup t(42, nullptr);
 
-    cuda::std::tuple t1(AT, A, t);
+    [[maybe_unused]] cuda::std::tuple t1(AT, A, t);
     static_assert(cuda::std::is_same_v<decltype(t1), Tup>);
-    unused(t1);
   }
   { // Testing (10)
     using Tup = cuda::std::tuple<void*, unsigned, char>;
-    cuda::std::tuple t1(AT, A, Tup(nullptr, 42, 'a'));
+    [[maybe_unused]] cuda::std::tuple t1(AT, A, Tup(nullptr, 42, 'a'));
     static_assert(cuda::std::is_same_v<decltype(t1), Tup>);
-    unused(t1);
   }
 }
 
@@ -170,8 +163,7 @@ TEST_FUNC void test_primary_template()
 TEST_FUNC void test_empty_specialization()
 {
   cuda::std::allocator<int> A;
-  const auto AT = cuda::std::allocator_arg;
-  unused(AT);
+  [[maybe_unused]] const auto AT = cuda::std::allocator_arg;
   { // Testing (1)
     [[maybe_unused]] cuda::std::tuple t1{};
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<>>);

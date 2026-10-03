@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <class Iter>
-_CCCL_CONCEPT SubscriptEnabled = _CCCL_REQUIRES_EXPR((Iter), Iter& iter)(unused(iter[1]));
+_CCCL_CONCEPT SubscriptEnabled = _CCCL_REQUIRES_EXPR((Iter), Iter& iter)(iter[1]);
 
 TEST_FUNC constexpr bool test()
 {

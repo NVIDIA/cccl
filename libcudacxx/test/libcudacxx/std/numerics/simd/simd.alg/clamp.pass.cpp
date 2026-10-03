@@ -31,10 +31,9 @@ template <typename T, int N>
 TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
-  Vec v(T{2});
-  Vec lo(T{1});
-  Vec hi(T{3});
-  unused(v, lo, hi);
+  [[maybe_unused]] Vec v(T{2});
+  [[maybe_unused]] Vec lo(T{1});
+  [[maybe_unused]] Vec hi(T{3});
 
   static_assert(cuda::std::is_same_v<decltype(simd::clamp(v, lo, hi)), Vec>);
 

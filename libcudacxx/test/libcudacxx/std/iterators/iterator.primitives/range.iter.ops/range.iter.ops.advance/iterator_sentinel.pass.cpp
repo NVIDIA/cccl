@@ -73,8 +73,7 @@ TEST_FUNC constexpr void check_sized_sentinel(int* first, int* last, int* expect
 template <bool Count, class It>
 TEST_FUNC constexpr void check_sentinel(int* first, int* last, int* expected)
 {
-  auto size = (last - first);
-  unused(size);
+  [[maybe_unused]] auto size = (last - first);
 
   {
     It it(first);

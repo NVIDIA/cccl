@@ -50,9 +50,8 @@ TEST_FUNC constexpr bool tests()
     assert(cuda::std::get<2>(array) == 5.5);
   }
   {
-    cuda::std::array<double, 1> array = {3.3};
+    [[maybe_unused]] cuda::std::array<double, 1> array = {3.3};
     static_assert(cuda::std::is_same<double&, decltype(cuda::std::get<0>(array))>::value);
-    unused(array);
   }
   {
     assert(cuda::std::get<0>(tempArray(1, 2, 3)) == 1);
