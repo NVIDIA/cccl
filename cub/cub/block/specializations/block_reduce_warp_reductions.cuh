@@ -188,8 +188,7 @@ struct BlockReduceWarpReductions
     constexpr bool use_warp_redux_path =
       (WarpAggregateThreshold == -1)
       && is_warp_redux_op_supported_sm80<ReductionOp, T> && ::cuda::has_identity_element_v<ReductionOp, T>;
-    constexpr int effective_threshold =
-      WarpAggregateThreshold > 0 ? WarpAggregateThreshold : (use_warp_redux_path ? 4 : warps + 1);
+    constexpr int effective_threshold     = WarpAggregateThreshold > 0 ? WarpAggregateThreshold : warps + 1;
     constexpr bool use_parallel_reduction = (warps >= effective_threshold) && (threads_per_block >= warp_threads);
 
     // TODO(WarpShuffle PR): replace with cub::WarpReduce<T, warps>.
