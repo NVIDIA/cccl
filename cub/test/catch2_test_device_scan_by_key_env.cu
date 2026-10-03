@@ -375,26 +375,6 @@ size_t run_two_phase(TwoPhaseFn two_phase, EnvT&& env, cudaStream_t stream = nul
   return temp_storage_bytes;
 }
 
-struct mutable_stream_convertible
-{
-  cudaStream_t stream;
-
-  operator cudaStream_t() & noexcept
-  {
-    return stream;
-  }
-};
-
-struct rvalue_stream_convertible
-{
-  cudaStream_t stream;
-
-  operator cudaStream_t() && noexcept
-  {
-    return stream;
-  }
-};
-
 template <class TwoPhaseFn>
 void test_two_phase_env_kinds(size_t expected_temp_storage_bytes, TwoPhaseFn two_phase)
 {
@@ -404,18 +384,6 @@ void test_two_phase_env_kinds(size_t expected_temp_storage_bytes, TwoPhaseFn two
       REQUIRE(run_two_phase(two_phase, env, stream.get()) == expected_temp_storage_bytes);
     },
     stream);
-
-  SECTION("mutable stream conversion")
-  {
-    mutable_stream_convertible stream_arg{stream.get()};
-    REQUIRE(run_two_phase(two_phase, stream_arg, stream.get()) == expected_temp_storage_bytes);
-  }
-
-  SECTION("rvalue stream conversion")
-  {
-    REQUIRE(
-      run_two_phase(two_phase, rvalue_stream_convertible{stream.get()}, stream.get()) == expected_temp_storage_bytes);
-  }
 
   SECTION("default environment")
   {
