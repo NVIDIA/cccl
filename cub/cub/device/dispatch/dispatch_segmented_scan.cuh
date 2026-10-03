@@ -29,6 +29,7 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__host_stdlib/sstream>
@@ -36,6 +37,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -75,6 +77,39 @@ struct device_segmented_scan_kernel_source
       InitValueT,
       AccumT,
       EnforceInclusive == ForceInclusive::Yes>);
+};
+
+// The same kernel with the several-segments path of scan_segments_walked.
+template <typename PolicySelector,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename BeginOffsetIteratorInputT,
+          typename EndOffsetIteratorInputT,
+          typename BeginOffsetIteratorOutputT,
+          typename OffsetT,
+          typename ScanOpT,
+          typename InitValueT,
+          typename AccumT,
+          ForceInclusive EnforceInclusive>
+struct device_segmented_scan_walked_kernel_source
+{
+  static_assert(::cuda::std::is_empty_v<PolicySelector>);
+
+  CUB_DEFINE_KERNEL_GETTER(
+    segmented_scan_kernel,
+    device_segmented_scan_kernel<
+      PolicySelector,
+      InputIteratorT,
+      OutputIteratorT,
+      BeginOffsetIteratorInputT,
+      EndOffsetIteratorInputT,
+      BeginOffsetIteratorOutputT,
+      OffsetT,
+      ScanOpT,
+      InitValueT,
+      AccumT,
+      EnforceInclusive == ForceInclusive::Yes,
+      true>);
 };
 
 template <typename ScanOpT, typename InitValueT, typename InputValueT>
@@ -249,6 +284,145 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   return cudaSuccess;
+}
+
+// Consecutive segments one block takes: as many segments of the mean size num_items / num_segments as fit in a
+// tile, at least one.
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int segments_per_block_for_mean(
+  int tile_items,
+  int max_segments,
+  ::cuda::std::int64_t num_segments,
+  ::cuda::std::int64_t num_items) noexcept
+{
+  if (num_items <= 0)
+  {
+    return 1;
+  }
+
+  const auto numerator =
+    static_cast<::cuda::std::uint64_t>(tile_items) * static_cast<::cuda::std::uint64_t>(num_segments);
+  const auto denominator = static_cast<::cuda::std::uint64_t>(num_items);
+  const auto segments = numerator / denominator; // round down; ::cuda::ceil_div(numerator, denominator) rounds up
+  const auto positive_segments = (::cuda::std::max) (segments, ::cuda::std::uint64_t{1});
+  return static_cast<int>((::cuda::std::min) (positive_segments, static_cast<::cuda::std::uint64_t>(max_segments)));
+}
+
+// The one-segment-per-block dispatch with block b taking segments [b * n, (b + 1) * n), where n is selected from
+// the supplied total item count. An incorrect num_items changes only n, so it changes performance but not results.
+template <
+  ForceInclusive EnforceInclusive = ForceInclusive::No,
+  typename InputIteratorT,
+  typename OutputIteratorT,
+  typename BeginOffsetIteratorInputT,
+  typename EndOffsetIteratorInputT,
+  typename BeginOffsetIteratorOutputT,
+  typename ScanOpT,
+  typename InitValueT,
+  typename AccumT = deduced_accum_t<ScanOpT, InitValueT, it_value_t<InputIteratorT>>,
+  typename OffsetT =
+    common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>,
+  typename PolicySelector = policy_selector_from_types<AccumT>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+#if _CCCL_HAS_CONCEPTS()
+  requires segmented_scan_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_with_num_items(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  ::cuda::std::int64_t num_segments,
+  BeginOffsetIteratorInputT input_begin_offsets,
+  EndOffsetIteratorInputT input_end_offsets,
+  BeginOffsetIteratorOutputT output_begin_offsets,
+  ScanOpT scan_op,
+  InitValueT init_value,
+  ::cuda::std::int64_t num_items,
+  cudaStream_t stream,
+  PolicySelector policy_selector         = {},
+  KernelLauncherFactory launcher_factory = {})
+{
+  if (num_items < 0)
+  {
+    return cudaErrorInvalidValue;
+  }
+
+  int segments_per_block = 1;
+  if (num_segments > 0)
+  {
+    ::cuda::compute_capability cc{};
+    if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+    {
+      return error;
+    }
+    const SegmentedScanPolicy active_policy = policy_selector(cc);
+    segments_per_block                      = segments_per_block_for_mean(
+      active_policy.block.threads_per_block * active_policy.block.items_per_thread,
+      active_policy.block.max_segments,
+      num_segments,
+      num_items);
+  }
+
+  if (segments_per_block > 1)
+  {
+    return dispatch<EnforceInclusive>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      input_begin_offsets,
+      input_end_offsets,
+      output_begin_offsets,
+      scan_op,
+      init_value,
+      segments_per_block,
+      worker::block,
+      stream,
+      policy_selector,
+      device_segmented_scan_walked_kernel_source<
+        PolicySelector,
+        InputIteratorT,
+        OutputIteratorT,
+        BeginOffsetIteratorInputT,
+        EndOffsetIteratorInputT,
+        BeginOffsetIteratorOutputT,
+        OffsetT,
+        ScanOpT,
+        InitValueT,
+        AccumT,
+        EnforceInclusive>{},
+      launcher_factory);
+  }
+
+  return dispatch<EnforceInclusive>(
+    d_temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_out,
+    num_segments,
+    input_begin_offsets,
+    input_end_offsets,
+    output_begin_offsets,
+    scan_op,
+    init_value,
+    1,
+    worker::block,
+    stream,
+    policy_selector,
+    device_segmented_scan_kernel_source<
+      PolicySelector,
+      InputIteratorT,
+      OutputIteratorT,
+      BeginOffsetIteratorInputT,
+      EndOffsetIteratorInputT,
+      BeginOffsetIteratorOutputT,
+      OffsetT,
+      ScanOpT,
+      InitValueT,
+      AccumT,
+      EnforceInclusive>{},
+    launcher_factory);
 }
 } // namespace detail::segmented_scan
 
