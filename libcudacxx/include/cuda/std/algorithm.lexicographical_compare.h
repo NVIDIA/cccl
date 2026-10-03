@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/lexicographical_compare.h>
+#include <cuda/std/__algorithm/lexicographical_compare.h> // IWYU pragma: keep
 
 #endif // _CUDA_STD_ALGORITHM_ALGORITHM_LEXICOGRAPHICAL_COMPARE_H

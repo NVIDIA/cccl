@@ -484,7 +484,7 @@
 //! populated with the correct function pointers. In the `__basic_any`
 //! constructor, a pointer to that vtable is saved in its `__vptr_` member.
 
-// IWYU pragma: begin_exports
+// IWYU pragma: begin_keep
 #include <cuda/__utility/__basic_any/any_cast.h>
 #include <cuda/__utility/__basic_any/basic_any_from.h>
 #include <cuda/__utility/__basic_any/basic_any_ptr.h>
@@ -502,6 +502,6 @@
 #include <cuda/__utility/__basic_any/virtcall.h>
 #include <cuda/__utility/__basic_any/virtual_functions.h>
 #include <cuda/__utility/__basic_any/virtual_tables.h>
-// IWYU pragma: end_exports
+// IWYU pragma: end_keep
 
 #endif // _CUDA___UTILITY_BASIC_ANY_H

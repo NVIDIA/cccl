@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_keep
 #include <cuda/std/__format/buffer.h>
 #include <cuda/std/__format/concepts.h>
 #include <cuda/std/__format/dynamic_format.h>
@@ -49,5 +50,6 @@
 #include <cuda/std/__format/validation.h>
 #include <cuda/std/__format/vformat_to.h>
 #include <cuda/std/version>
+// IWYU pragma: end_keep
 
 #endif // _CUDA_STD_FORMAT

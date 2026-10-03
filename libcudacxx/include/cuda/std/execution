@@ -21,10 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__execution/policy.h> // IWYU pragma: export
-#include <cuda/std/__execution/env.h> // IWYU pragma: export
-#include <cuda/std/__execution/policy.h> // IWYU pragma: export
-#include <cuda/std/__type_traits/is_execution_policy.h> // IWYU pragma: export
+// IWYU pragma: begin_keep
+#include <cuda/__execution/policy.h>
+#include <cuda/std/__execution/env.h>
+#include <cuda/std/__execution/policy.h>
+#include <cuda/std/__type_traits/is_execution_policy.h>
 
 // parallel algorithms
 #if _CCCL_HAS_PSTL_BACKEND()
@@ -88,5 +89,6 @@
 #endif // _CCCL_HAS_PSTL_BACKEND
 
 #include <cuda/std/version>
+// IWYU pragma: end_keep
 
 #endif //_CUDA_STD_EXECUTION

@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/rotate_copy.h>
+#include <cuda/std/__algorithm/rotate_copy.h> // IWYU pragma: keep
 
 #endif // _CUDA_STD_ALGORITHM_ALGORITHM_ROTATE_COPY_H
