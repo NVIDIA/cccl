@@ -391,10 +391,7 @@ struct TestUniqueCopyByKeyToDiscardIterator
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueCopyByKeyToDiscardIterator, IntegralTypes);
 
-// OpenMP has issues with these tests, NVIDIA/cccl#1715
-#if THRUST_DEVICE_SYSTEM != THRUST_DEVICE_SYSTEM_OMP
-
-#  ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
+#ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
 
 template <typename K>
 struct TestUniqueCopyByKeyLargeInput
@@ -453,9 +450,7 @@ struct TestUniqueCopyByKeyLargeOutCount
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestUniqueCopyByKeyLargeOutCount, IntegralTypes);
 
-#  endif // THRUST_FORCE_32_BIT_OFFSET_TYPE
-
-#endif // non-OpenMP backend
+#endif // THRUST_FORCE_32_BIT_OFFSET_TYPE
 
 // This test fails only on GCC 6
 #if !defined(__GNUC__) || __GNUC__ != 6
