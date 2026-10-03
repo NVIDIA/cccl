@@ -34,9 +34,11 @@
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/__functional/operator_properties.h>
 #  include <cuda/__memory/uninitialized_array.h>
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
+#  include <cuda/std/__cmath/fpclassify.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__type_traits/conditional.h>
@@ -184,7 +186,17 @@ struct ReduceByKeyAgent
 
   // Whether or not the scan operation has a zero-valued identity value (true
   // if we're performing addition on a primitive type)
-  static constexpr int has_identity_zero = ::cuda::identity_element<ReductionOp, value_type>() == 0;
+  static constexpr bool has_identity_zero = []() constexpr {
+    if constexpr (::cuda::has_identity_element_v<ReductionOp, value_type>)
+    {
+      // not `== 0`, which is ambiguous for __half and __nv_bfloat16
+      return ::cuda::std::fpclassify(::cuda::identity_element<ReductionOp, value_type>()) == FP_ZERO;
+    }
+    else
+    {
+      return false;
+    }
+  }();
 
   struct impl
   {
