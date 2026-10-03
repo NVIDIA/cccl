@@ -49,6 +49,9 @@
 #include <cuda_occupancy.h>
 #include <cuda_runtime.h>
 
+#if __has_include(<cublas_v2.h>)
+#  include <cublas_v2.h>
+#endif
 #if __has_include(<cusolverDn.h>)
 #  include <cusolverDn.h>
 #endif
