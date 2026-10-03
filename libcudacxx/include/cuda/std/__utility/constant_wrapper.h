@@ -26,6 +26,7 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -333,6 +334,19 @@ struct __cw_operators
   {
     return {};
   }
+
+#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC)
+  // EDG loses the pointee's cv-qualifiers when built-in operator->* uses a user-defined conversion. Apply the operator
+  // to the stored pointer directly for runtime data-member pointers.
+  _CCCL_TEMPLATE(class _Lp, class _Mp, class _Cp)
+  _CCCL_REQUIRES(
+    __is_cuda_std_constant_wrapper_v<_Lp> _CCCL_AND is_pointer_v<decltype(_Lp::value)> _CCCL_AND is_object_v<_Mp>)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr auto operator->*(_Lp, _Mp _Cp::* __pm) noexcept
+    -> decltype(_Lp::value->*__pm)
+  {
+    return _Lp::value->*__pm;
+  }
+#endif // _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC)
 };
 
 template <class _Fn, class _Void, class... _Args>
