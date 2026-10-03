@@ -15,6 +15,7 @@ set(
   es_wrong_status_type.cu
   es_uncovered_channel.cu
   es_int_is_not_status.cu
+  es_and_over_claims.cu
 )
 
 ## cudax_add_stf_static_assert_test

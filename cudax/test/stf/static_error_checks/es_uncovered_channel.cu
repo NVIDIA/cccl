@@ -12,7 +12,7 @@
  * @file
  * @brief Static error check: the policy must cover every kind of failure the operand can produce.
  *
- * The callable is not `noexcept`, so it can throw, but `when_one_of` only treats failing statuses.
+ * The callable is not `noexcept`, so it can throw, but `when_equal` only treats failing statuses.
  */
 
 #include <cuda/experimental/stf.cuh>
@@ -24,7 +24,7 @@ void may_throw();
 
 int main()
 {
-  on_error(when_one_of(cudaErrorNotReady)(::std::ignore))->*[] {
+  on_error(when_equal(cudaErrorNotReady)(::std::ignore))->*[] {
     may_throw();
     return cudaSuccess;
   };

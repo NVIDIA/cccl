@@ -247,6 +247,10 @@ constexpr bool __either(const bool __a, const bool __b) noexcept
 {
   return __a || __b;
 }
+constexpr unsigned __both(const unsigned __a, const unsigned __b) noexcept
+{
+  return __a & __b;
+}
 } // namespace detail
 #endif // _CCCL_DOXYGEN_INVOKED
 
@@ -421,6 +425,16 @@ struct noop_t
   //! @cond
   using __exception_sink_tag = void;
   //! @endcond
+
+  //! @brief The code-channel hook: "keep". The status is handled and yielded unchanged, so a `|`
+  //! stops here: `when_equal(cudaErrorNotReady)(noop) | unwind` yields the not-ready code. On the
+  //! exception channel `noop` has no hook, which keeps it the identity of `&`.
+  template <class _Status, class _Fn>
+  detail::__status_answer<_Status>
+  handle(const _Status __status, const ::cuda::std::source_location, _Fn&) const noexcept
+  {
+    return {__status, false};
+  }
 };
 inline constexpr noop_t noop{};
 
@@ -492,7 +506,7 @@ inline constexpr passthrough_t passthrough{};
  * `passthrough`. On the code channel it throws `status_traits<S>::to_exception(status, loc)`
  * (for CUDA statuses a `cuda_exception`); with exceptions disabled that throw reports and
  * aborts. It never returns, so `unwind & p` is rejected like `abort & p`. The polling idiom
- * `when_one_of(cudaErrorNotReady)(subst(cudaErrorNotReady)) | unwind` yields the not-ready code and
+ * `when_equal(cudaErrorNotReady)(noop) | unwind` yields the not-ready code and
  * throws on anything else.
  */
 struct unwind_t
@@ -1173,6 +1187,8 @@ template <>
 inline constexpr bool __produces_value_v<as_expected_t> = true;
 template <>
 inline constexpr bool __produces_value_v<defer_t> = true;
+template <>
+inline constexpr unsigned __domain_v<defer_t> = __on_thrown;
 template <class _Ptr>
 inline constexpr bool __produces_value_v<remember_t<_Ptr>> = true;
 } // namespace detail
@@ -1976,9 +1992,14 @@ struct __policy_and : __composite_hooks<_L, _R>
 {
   using __exception_sink_tag = void;
 
-  static_assert(!__answers_nothing<_L>, "policies after a never-returning policy are unreachable");
+  // A code-channel selector never returns on the exception channel (it passes through by
+  // rethrowing) but may handle a status, so the right side is reachable there.
+  static_assert(!__answers_nothing<_L> || __selects_returned_v<_L>,
+                "policies after a never-returning policy are unreachable");
   static_assert(!(__produces_value_v<_L> && __produces_value_v<_R>),
-                "both sides of & produce a value, and & discards the left one; keep a single value-producing policy");
+                "both sides of & produce a value (subst, as_expected, defer, remember, a converter), and & discards "
+                "the "
+                "left one; keep a single value-producing policy");
 
   // Present iff either side has a hook. `_L` fires (answer discarded), then `_R` answers; with
   // no `_R` hook the composite's answer is `void`, which `__interpret_answer` rejects in final
@@ -2034,7 +2055,8 @@ template <class _L, class _R>
 __policy_and(_L, _R) -> __policy_and<_L, _R>;
 
 template <class _L, class _R>
-inline constexpr unsigned __domain_v<__policy_and<_L, _R>> = __either(__domain_v<_L>, __domain_v<_R>);
+// `&` stops at the left's passthrough, so it treats only the channels both sides treat.
+inline constexpr unsigned __domain_v<__policy_and<_L, _R>> = __both(__domain_v<_L>, __domain_v<_R>);
 template <class _L, class _R>
 inline constexpr bool __needs_future_v<__policy_and<_L, _R>> = __either(__needs_future_v<_L>, __needs_future_v<_R>);
 template <class _L, class _R>
@@ -2634,6 +2656,34 @@ struct __on_throw_policy
 template <class _R>
 __on_throw_policy(_R, ::cuda::std::source_location) -> __on_throw_policy<_R>;
 
+// A re-run, on the code channel, of an action that can throw: it runs under the same dispatch as
+// the first attempt, so a throw is offered to the policy's exception path, whose answer stands in
+// for the re-run's result (and whose passthrough rethrows).
+template <class _Reaction, class _Fn>
+struct __guarded_action
+{
+  using _Expr = decltype(::cuda::std::declval<_Fn&>()());
+
+  __on_throw_policy<_Reaction>& __policy_;
+  _Fn& __fn_;
+
+  _Expr operator()() const
+  {
+    _CCCL_TRY
+    {
+      return __fn_();
+    }
+    _CCCL_CATCH (const ::std::exception& __exception)
+    {
+      return __on_exception<_Expr>(__policy_.__reaction_, &__exception, __policy_.__loc_, __fn_);
+    }
+    _CCCL_CATCH_ALL
+    {
+      return __on_exception<_Expr>(__policy_.__reaction_, nullptr, __policy_.__loc_, __fn_);
+    }
+  }
+};
+
 // Nothrow-ness of the callable runner: the exception path matters only for a callable that can
 // throw, the code path only for one that returns a status.
 template <class _Reaction, class _Fn, class _Expr = decltype(::cuda::std::declval<_Fn&>()()), bool = __is_status_v<_Expr>>
@@ -2644,7 +2694,12 @@ inline constexpr bool __callable_runner_nothrow_v =
 template <class _Reaction, class _Fn, class _Expr>
 inline constexpr bool __callable_runner_nothrow_v<_Reaction, _Fn, _Expr, true> =
   __callable_runner_nothrow_v<_Reaction, _Fn, _Expr, false>
-  && __status_path_nothrow_v<_Reaction, _Expr, ::cuda::std::remove_reference_t<_Fn>>;
+  && __status_path_nothrow_v<
+    _Reaction,
+    _Expr,
+    ::cuda::std::conditional_t<noexcept(::cuda::std::declval<_Fn&>()()),
+                               ::cuda::std::remove_reference_t<_Fn>,
+                               __guarded_action<_Reaction, ::cuda::std::remove_reference_t<_Fn>>>>;
 
 // A status the action returned: success costs one test (and the success hook, if any), a failure
 // goes to the policy's code channel with the action itself, which re-running policies call again.
@@ -2700,7 +2755,7 @@ decltype(auto) __run_under([[maybe_unused]] __on_throw_policy<_Reaction>& __poli
                 "on_error has nothing to do for a noexcept callable, which terminates rather than "
                 "throws; call such a callable directly");
   static_assert(__may_return_status || !__selects_returned_v<_P>,
-                "a status selector (when_one_of, returned) never matches an operand that returns no status; "
+                "a status selector (when_equal, returned) never matches an operand that returns no status; "
                 "remove it, or make the callable return a status");
   static_assert(!__may_throw || (__domain_v<_P> & __on_thrown) != 0,
                 "the callable can throw, but the policy has no treatment for exceptions; add a thrown(...) arm "
@@ -2761,7 +2816,9 @@ decltype(auto) __run_under([[maybe_unused]] __on_throw_policy<_Reaction>& __poli
       {
         return detail::__on_exception<_Expr>(__policy.__reaction_, nullptr, __policy.__loc_, __f);
       }
-      return detail::__on_returned_status(__policy.__reaction_, __status, __policy.__loc_, __f);
+      // Re-runs go through the same dispatch as this first attempt.
+      __guarded_action<_Reaction, ::cuda::std::remove_reference_t<_Fn>> __rerun{__policy, __f};
+      return detail::__on_returned_status(__policy.__reaction_, __status, __policy.__loc_, __rerun);
     }
     else
     {
@@ -2809,10 +2866,10 @@ _Status __run_under(__on_throw_policy<_Reaction>& __policy, const _Status __stat
 {
   static_assert(!__selects_thrown_v<_Reaction>,
                 "a type selector (when_is_a, when_exactly, thrown) never matches a status operand, which cannot "
-                "throw; select statuses with when_one_of or returned");
+                "throw; select statuses with when_equal or returned");
   static_assert((__domain_v<_Reaction> & __on_returned) != 0,
-                "a status operand needs a policy with a treatment for a failing status; thrown(...) applies to "
-                "exceptions only");
+                "a status operand needs a policy with a treatment for a failing status; thrown(...) and defer "
+                "apply to exceptions only (store(&eptr) keeps a status's exception)");
   if (!__status_failed(__status))
   {
     return __status;
@@ -2873,10 +2930,12 @@ void __feed(__on_throw_policy<_Reaction>& __sink, _X&& __x)
     if constexpr (__is_status_v<::cuda::std::remove_cvref_t<_Expr>>)
     {
       // A callable that returns a status: the runner already offered a failing one to the policy.
-      const ::cuda::std::remove_cvref_t<_Expr> __yield = __run_under(__sink, ::cuda::std::forward<_X>(__x));
+      using _Status = ::cuda::std::remove_cvref_t<_Expr>;
+      __sink.__chain_.template __fix_type<_Status>();
+      const _Status __yield = __run_under(__sink, ::cuda::std::forward<_X>(__x));
       if (__status_failed(__yield))
       {
-        __sink.__first_.__record(__yield);
+        __sink.__chain_.__record(__yield);
       }
     }
     else
@@ -2920,11 +2979,11 @@ struct __status_set
   }
 };
 
-// `when_one_of(values...)(p)`: offer a status to `p` when it equals one of the values, else pass it
+// `when_equal(values...)(p)`: offer a status to `p` when it equals one of the values, else pass it
 // through. A value selector has nothing to match on the exception channel, where it passes
 // through by rethrowing (so it can head a `|`).
 template <class _P, class _Status, ::cuda::std::size_t _Count>
-struct __when_one_of_t : __forwards_success<_P>
+struct __when_equal_t : __forwards_success<_P>
 {
   using __exception_sink_tag = void;
   __status_set<_Status, _Count> __set_;
@@ -2941,7 +3000,7 @@ struct __when_one_of_t : __forwards_success<_P>
                                    _Fn& __fn) noexcept(__status_path_nothrow_v<_P, _Operand, _Fn>)
   {
     static_assert(::cuda::std::is_same_v<_Operand, _Status>,
-                  "when_one_of(values...) matches a status of the values' own type; the operand is a status of another "
+                  "when_equal(values...) matches a status of the values' own type; the operand is a status of another "
                   "type");
     if (__set_.__contains(__status))
     {
@@ -2952,7 +3011,7 @@ struct __when_one_of_t : __forwards_success<_P>
 };
 
 template <class _Status, ::cuda::std::size_t _Count>
-struct __when_one_of_selector
+struct __when_equal_selector
 {
   __status_set<_Status, _Count> __set_;
 
@@ -2960,20 +3019,20 @@ struct __when_one_of_selector
   auto operator()(_P&& __p) const
   {
     auto __np = __normalize(::cuda::std::forward<_P>(__p));
-    return __when_one_of_t<decltype(__np), _Status, _Count>{{::cuda::std::move(__np)}, __set_};
+    return __when_equal_t<decltype(__np), _Status, _Count>{{::cuda::std::move(__np)}, __set_};
   }
 };
 
 template <class _P, class _Status, ::cuda::std::size_t _Count>
-inline constexpr unsigned __domain_v<__when_one_of_t<_P, _Status, _Count>> = __on_returned & __domain_v<_P>;
+inline constexpr unsigned __domain_v<__when_equal_t<_P, _Status, _Count>> = __on_returned & __domain_v<_P>;
 template <class _P, class _Status, ::cuda::std::size_t _Count>
-inline constexpr bool __needs_future_v<__when_one_of_t<_P, _Status, _Count>> = __needs_future_v<_P>;
+inline constexpr bool __needs_future_v<__when_equal_t<_P, _Status, _Count>> = __needs_future_v<_P>;
 template <class _P, class _Status, ::cuda::std::size_t _Count>
-inline constexpr bool __produces_value_v<__when_one_of_t<_P, _Status, _Count>> = __produces_value_v<_P>;
+inline constexpr bool __produces_value_v<__when_equal_t<_P, _Status, _Count>> = __produces_value_v<_P>;
 template <class _P, class _Status, ::cuda::std::size_t _Count>
-inline constexpr bool __selects_thrown_v<__when_one_of_t<_P, _Status, _Count>> = __selects_thrown_v<_P>;
+inline constexpr bool __selects_thrown_v<__when_equal_t<_P, _Status, _Count>> = __selects_thrown_v<_P>;
 template <class _P, class _Status, ::cuda::std::size_t _Count>
-inline constexpr bool __selects_returned_v<__when_one_of_t<_P, _Status, _Count>> = true;
+inline constexpr bool __selects_returned_v<__when_equal_t<_P, _Status, _Count>> = true;
 
 // `thrown(p)`: `p` on the exception channel only; on the code channel a status passes through.
 template <class _P>
@@ -3184,12 +3243,12 @@ auto when_exactly(_P&& __p)
 
 /**
  * @brief Restricts a policy to failing statuses equal to any of the given values:
- * `when_one_of(v1, v2, ...)(p)` offers a status to `p` when it equals one of the values, and otherwise
+ * `when_equal(v1, v2, ...)(p)` offers a status to `p` when it equals one of the values, and otherwise
  * passes it through. The values share one status type, and the operand must be a status of that
  * same type. On the exception channel there is nothing to match and the exception passes
  * through, so the selector can head a `|`:
  * @code
- * while (on_error(when_one_of(cudaErrorNotReady)(subst(cudaErrorNotReady)) | unwind) ->* cudaStreamQuery(s)) { ... }
+ * while (on_error(when_equal(cudaErrorNotReady)(noop) | unwind) ->* cudaStreamQuery(s)) { ... }
  * @endcode
  *
  * @param[in] __first The first status value to match.
@@ -3197,11 +3256,11 @@ auto when_exactly(_P&& __p)
  * @return A selector; calling it with a policy `p` yields the restricted policy.
  */
 template <class _Status, class... _More>
-auto when_one_of(const _Status __first, const _More... __more)
+auto when_equal(const _Status __first, const _More... __more)
 {
   static_assert((::cuda::std::is_same_v<_Status, _More> && ...),
-                "when_one_of(values...) requires all values to be of one status type");
-  return detail::__when_one_of_selector<_Status, 1 + sizeof...(_More)>{{{__first, __more...}}};
+                "when_equal(values...) requires all values to be of one status type");
+  return detail::__when_equal_selector<_Status, 1 + sizeof...(_More)>{{{__first, __more...}}};
 }
 
 /**
@@ -3209,7 +3268,9 @@ auto when_one_of(const _Status __first, const _More... __more)
  *
  * Given a policy, `thrown(p)` applies `p` to exceptions only, and a failing status passes
  * through it. For a callable that can fail both ways, it pairs with @ref returned:
- * `returned(subst(cudaSuccess)) | thrown(notify & passthrough)`.
+ * `returned(subst(cudaSuccess)) | thrown(notify & passthrough)`. Such a policy is built for that
+ * callable: on a bare status operand the `thrown` arm can never match, which is a compile error
+ * (a type selector on a status), so the same policy variable cannot be reused there.
  *
  * Given a function, `thrown<E>(f)` converts: for an exception matching `E` by catch-clause
  * rules (same or publicly derived), the answer is `f(e)`, with `e` the caught `const E&`;
@@ -3263,6 +3324,8 @@ auto returned(_X&& __x)
 {
   if constexpr (::cuda::std::is_void_v<_S>)
   {
+    static_assert(detail::__is_policy_argument_v<_X>,
+                  "returned(f) needs the status type: write returned<S>(f); returned(p) takes a policy");
     auto __np = detail::__normalize(::cuda::std::forward<_X>(__x));
     return detail::__returned_t<decltype(__np)>{{::cuda::std::move(__np)}};
   }
@@ -3497,7 +3560,8 @@ struct always_t
 namespace detail
 {
 template <class _A, class _B>
-inline constexpr unsigned __domain_v<always_t<_A, _B>> = __either(__domain_v<_A>, __domain_v<_B>);
+// Finalizers never handle: the head alone decides what is treated.
+inline constexpr unsigned __domain_v<always_t<_A, _B>> = __domain_v<_A>;
 template <class _A, class _B>
 inline constexpr bool __needs_future_v<always_t<_A, _B>> = __either(__needs_future_v<_A>, __needs_future_v<_B>);
 template <class _A, class _B>
@@ -4183,7 +4247,8 @@ exception_sink type_erase(_P&& __p)
  * @ref exception_policies::passthrough_t "passthrough", @ref exception_policies::unwind_t
  * "unwind", @ref exception_policies::retry_t "retry", @ref
  * exception_policies::as_expected_t "as_expected", @ref exception_policies::noop_t "noop", @ref
- * exception_policies::when_is_a, @ref exception_policies::when_exactly, @ref exception_policies::only,
+ * exception_policies::when_is_a, @ref exception_policies::when_exactly, @ref exception_policies::when_equal,
+ * @ref exception_policies::thrown, @ref exception_policies::returned,
  * @ref exception_policies::when "when",
  * @ref exception_policies::translate_t "translate" / @ref exception_policies::nest, @ref exception_policies::delay_t
  * "delay", @ref exception_policies::backoff, and
@@ -6556,9 +6621,10 @@ UNITTEST("error sinks: polling idiom")
   // A matched selector that passes through hands the status to the next arm (same as
   // when_is_a<E>(passthrough) | p on the exception channel), so "stop here and yield this code" is a
   // substitution of the code by itself.
-  auto pol = when_one_of(cudaErrorNotReady)(subst(cudaErrorNotReady)) | unwind;
+  auto pol = when_equal(cudaErrorNotReady)(noop) | unwind; // noop on a code: handled, status unchanged
   EXPECT((on_error(pol)->*cudaErrorNotReady) == cudaErrorNotReady);
   EXPECT((on_error(pol)->*cudaSuccess) == cudaSuccess);
+  EXPECT((on_error(when_equal(cudaErrorNotReady)(noop) | unwind)->*cudaErrorNotReady) == cudaErrorNotReady);
   bool threw = false;
   try
   {
@@ -6575,7 +6641,7 @@ UNITTEST("error sinks: subst remaps a code")
 {
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::exception_policies;
-  auto pol = when_one_of(cudaErrorCudartUnloading)(subst(cudaSuccess)) | passthrough;
+  auto pol = when_equal(cudaErrorCudartUnloading)(subst(cudaSuccess)) | passthrough;
   EXPECT((on_error(pol)->*cudaErrorCudartUnloading) == cudaSuccess);
   EXPECT((on_error(pol)->*cudaErrorInvalidValue) == cudaErrorInvalidValue);
 };
@@ -6790,13 +6856,13 @@ UNITTEST("error sinks: retry on a status-returning action")
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::exception_policies;
   int n  = 0;
-  auto r = on_error(when_one_of(cudaErrorNotReady)(retry(3)))->*[&]() noexcept {
+  auto r = on_error(when_equal(cudaErrorNotReady)(retry(3)))->*[&]() noexcept {
     return ++n < 3 ? cudaErrorNotReady : cudaSuccess;
   };
   EXPECT(r == cudaSuccess);
   EXPECT(n == 3);
   n = 0;
-  r = on_error(when_one_of(cudaErrorNotReady)(retry(2)))->*[&]() noexcept {
+  r = on_error(when_equal(cudaErrorNotReady)(retry(2)))->*[&]() noexcept {
     ++n;
     return cudaErrorNotReady;
   };
@@ -6903,13 +6969,29 @@ UNITTEST("error sinks: a noexcept status-returning action is legal")
   EXPECT(r == cudaErrorInvalidValue);
 };
 
+UNITTEST("error sinks: a re-run that throws is offered to the policy")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::exception_policies;
+  int n        = 0;
+  const auto r = on_error(when_equal(cudaErrorNotReady)(retry(3)) | thrown(subst(cudaSuccess)))->*[&]() -> cudaError_t {
+    if (++n == 2)
+    {
+      throw ::std::runtime_error("second attempt");
+    }
+    return cudaErrorNotReady;
+  };
+  EXPECT(r == cudaSuccess); // the throw on the second attempt was handled by the thrown(...) arm
+  EXPECT(n == 2);
+};
+
 UNITTEST("error sinks: polling idiom under section 1's |")
 {
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::exception_policies;
-  // A status that when_one_of(...)(passthrough) passes through goes on to the right arm of |; keeping the
+  // A status that when_equal(...)(passthrough) passes through goes on to the right arm of |; keeping the
   // not-ready code is a substitution that handles it.
-  auto pol = when_one_of(cudaErrorNotReady)(subst(cudaErrorNotReady)) | unwind;
+  auto pol = when_equal(cudaErrorNotReady)(subst(cudaErrorNotReady)) | unwind;
   EXPECT((on_error(pol)->*cudaErrorNotReady) == cudaErrorNotReady);
   EXPECT((on_error(pol)->*cudaSuccess) == cudaSuccess);
   bool threw = false;

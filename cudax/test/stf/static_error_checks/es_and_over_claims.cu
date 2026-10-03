@@ -10,9 +10,10 @@
 
 /**
  * @file
- * @brief Static error check: `when_equal` must match a status of the values' own type.
+ * @brief Static error check: `&` treats only the channels both of its sides treat.
  *
- * The values are `cudaError_t`; the operand is a `CUresult`.
+ * On an exception, `when_equal` passes through and `&` stops there, so `thrown(...)` never runs:
+ * the composite has no treatment for exceptions although the callable can throw.
  */
 
 #include <cuda/experimental/stf.cuh>
@@ -20,8 +21,13 @@
 using namespace cuda::experimental::stf;
 using namespace cuda::experimental::stf::exception_policies;
 
+void may_throw();
+
 int main()
 {
-  on_error(when_equal(cudaErrorNotReady)(::std::ignore))->*CUDA_ERROR_NOT_READY;
+  on_error(when_equal(cudaErrorNotReady)(::std::ignore) & thrown(::std::ignore))->*[&] {
+    may_throw();
+    return cudaErrorNotReady;
+  };
   return EXIT_FAILURE;
 }
