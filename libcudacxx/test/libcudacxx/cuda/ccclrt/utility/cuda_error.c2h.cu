@@ -129,7 +129,8 @@ C2H_TEST("cuda_error: a registered struct status is carried whole", "[cuda_error
   CCCLRT_REQUIRE(!error.holds<plain_status>());
   CCCLRT_REQUIRE(error.raw_code() == 5);
   const struct_status back = error.status<struct_status>(); // the whole object, not just its code
-  CCCLRT_REQUIRE(back.err == 5 && back.extra == 99);
+  CCCLRT_REQUIRE(back.err == 5);
+  CCCLRT_REQUIRE(back.extra == 99);
   CCCLRT_REQUIRE(error.status() == cudaErrorUnknown);
   CCCLRT_REQUIRE(std::string(error.what()).find("(5): struct failure: disk") != std::string::npos);
   CCCLRT_REQUIRE(cuda::cuda_status_traits<struct_status>::failed(struct_status{5, 0}));
