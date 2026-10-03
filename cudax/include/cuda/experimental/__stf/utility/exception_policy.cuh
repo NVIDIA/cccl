@@ -53,6 +53,7 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/typeid.h>
 
 #include <cuda/experimental/__stf/utility/source_location.cuh>
 #include <cuda/experimental/__stf/utility/traits.cuh>
@@ -356,6 +357,9 @@ inline constexpr noop_t noop{};
  * Inside a catch block, `on_error(defer)` captures the exception thrown by its own guarded
  * body (the newest exception, current inside its own catch), never the exception the
  * surrounding handler is handling; for that one, call `std::current_exception()` directly.
+ *
+ * `defer` applies to exceptions only: no status expression can take an `exception_ptr`. To keep
+ * a failing status's exception, use `store(&eptr)`.
  */
 struct defer_t
 {
@@ -368,22 +372,6 @@ struct defer_t
   ::std::exception_ptr operator()(const ::std::exception*, const ::cuda::std::source_location, _Fn&) const noexcept
   {
     return ::std::current_exception();
-  }
-
-  //! @brief The code-channel hook: captures `status_traits<_Status>::to_exception(__status, __loc)`.
-  //! If building that exception fails, the failure is captured instead.
-  template <class _Status, class _Fn>
-  ::std::exception_ptr handle(const _Status __status, const ::cuda::std::source_location __loc, _Fn&) const noexcept
-  {
-    _CCCL_TRY
-    {
-      return ::std::make_exception_ptr(status_traits<_Status>::to_exception(__status, __loc));
-    }
-    _CCCL_CATCH_ALL
-    {
-      return ::std::current_exception();
-    }
-    _CCCL_UNREACHABLE();
   }
 };
 inline constexpr defer_t defer{};
@@ -2149,6 +2137,9 @@ __status_answer<_Status> __offer_status(
 {
   static_assert(!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_P>, retry_t>,
                 "retry needs an action to repeat; pass a lambda");
+  static_assert(!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_P>, defer_t>,
+                "defer answers an exception_ptr, which no status expression can take; store(&eptr) keeps a "
+                "status's exception");
   if constexpr (__has_status_hook<_P, _Status, _Fn>)
   {
     return __interpret_status<_Final>(__status, [&]() -> decltype(auto) {
@@ -2236,74 +2227,59 @@ _Expr __on_exception(_P& __policy,
   }
 }
 
-// The first status a `<<` chain passed through, kept type-erased: `<<` returns the carrier by
-// reference so that a named sink works across statements, and the carrier's type is fixed before
-// the first status arrives. Reading it as another status type than the one recorded is a
-// programming error; reading an empty one yields that type's success value.
-class __chain_status
+// The status side of a `<<` chain, kept type-erased: `<<` hands back the carrier, so a named sink
+// works across statements and the carrier's type is fixed before any status arrives. The first
+// feed fixes the chain's status type and every later feed verifies it; the first failing status
+// is kept.
+class __chain_state
 {
-  template <class _Status>
-  static constexpr char __tag = 0;
-
-  alignas(long long) unsigned char __bytes_[sizeof(long long)] = {};
-  const void* __type_                                          = nullptr;
-
-  template <class _Status>
-  [[nodiscard]] _Status __get() const noexcept
-  {
-    if (__type_ == nullptr)
-    {
-      return status_traits<_Status>::success();
-    }
-    _CCCL_VERIFY(__type_ == &__tag<_Status>, "a chain's status is read as another status type than it holds");
-    _Status __status = status_traits<_Status>::success();
-    ::std::memcpy(&__status, __bytes_, sizeof(_Status));
-    return __status;
-  }
+  alignas(long long) unsigned char __bytes_[16] = {};
+  ::cuda::std::__type_info_ptr __type_          = nullptr;
+  bool __passed_                                = false;
 
 public:
-  // Keeps the first failing status a chain yields; later ones only have to share its type.
   template <class _Status>
-  void __record(const _Status __status) noexcept
+  void __fix_type() noexcept
   {
-    static_assert(::cuda::std::is_trivially_copyable_v<_Status> && sizeof(_Status) <= sizeof(long long),
-                  "a chained status must be trivially copyable and at most as large as a long long");
+    static_assert(
+      ::cuda::std::is_trivially_copyable_v<_Status> && sizeof(_Status) <= sizeof(__bytes_)
+        && alignof(_Status) <= alignof(long long),
+      "a chained status must be trivially copyable, at most 16 bytes, and aligned no more than a long long");
     if (__type_ == nullptr)
     {
-      ::std::memcpy(__bytes_, &__status, sizeof(_Status));
-      __type_ = &__tag<_Status>;
+      __type_ = &_CCCL_TYPEID(_Status);
       return;
     }
-    _CCCL_VERIFY(__type_ == &__tag<_Status>,
+    _CCCL_VERIFY(*__type_ == _CCCL_TYPEID(_Status),
                  "a chain is homogeneous; use ->* or a second sink for another status family");
   }
 
-  //! @brief The recorded status, as the status type it was recorded with.
-  template <class _Status, ::cuda::std::enable_if_t<__is_status_v<_Status>, int> = 0>
-  explicit operator _Status() const noexcept
+  template <class _Status>
+  void __record(const _Status __status) noexcept
   {
-    return __get<_Status>();
+    if (!__passed_)
+    {
+      ::std::memcpy(__bytes_, &__status, sizeof(_Status));
+      __passed_ = true;
+    }
   }
 
-  template <class _Status, ::cuda::std::enable_if_t<__is_status_v<_Status>, int> = 0>
-  friend bool operator==(const __chain_status& __lhs, const _Status __rhs) noexcept
+  template <class _Status>
+  [[nodiscard]] _Status __first() const noexcept
   {
-    return __lhs.__get<_Status>() == __rhs;
+    _CCCL_VERIFY(__type_ == nullptr || *__type_ == _CCCL_TYPEID(_Status),
+                 "status<S>(): S is not the chain's status type");
+    _Status __status = status_traits<_Status>::success();
+    if (__passed_)
+    {
+      ::std::memcpy(&__status, __bytes_, sizeof(_Status));
+    }
+    return __status;
   }
-  template <class _Status, ::cuda::std::enable_if_t<__is_status_v<_Status>, int> = 0>
-  friend bool operator==(const _Status __lhs, const __chain_status& __rhs) noexcept
+
+  [[nodiscard]] bool __passed() const noexcept
   {
-    return __lhs == __rhs.__get<_Status>();
-  }
-  template <class _Status, ::cuda::std::enable_if_t<__is_status_v<_Status>, int> = 0>
-  friend bool operator!=(const __chain_status& __lhs, const _Status __rhs) noexcept
-  {
-    return !(__lhs == __rhs);
-  }
-  template <class _Status, ::cuda::std::enable_if_t<__is_status_v<_Status>, int> = 0>
-  friend bool operator!=(const _Status __lhs, const __chain_status& __rhs) noexcept
-  {
-    return !(__lhs == __rhs);
+    return __passed_;
   }
 };
 
@@ -2314,7 +2290,7 @@ struct __on_throw_policy
 {
   _Reaction __reaction_;
   const ::cuda::std::source_location __loc_;
-  __chain_status __first_;
+  __chain_state __chain_;
 
   __on_throw_policy(_Reaction __reaction, const ::cuda::std::source_location __loc)
       : __reaction_(::cuda::std::move(__reaction))
@@ -2322,10 +2298,19 @@ struct __on_throw_policy
   {}
 
   //! @brief The first status a `<<` chain passed through, or the success value if none did.
-  //! @return A value comparable with, and explicitly convertible to, the chain's status type.
-  [[nodiscard]] __chain_status status() const noexcept
+  //! @tparam _Status The chain's status type, verified with `_CCCL_VERIFY`.
+  //! @return The first passed-through status, or `status_traits<_Status>::success()`.
+  template <class _Status>
+  [[nodiscard]] _Status status() const noexcept
   {
-    return __first_;
+    return __chain_.template __first<_Status>();
+  }
+
+  //! @brief Whether any status fed to the chain passed through.
+  //! @return `true` if one did.
+  [[nodiscard]] bool passed_through() const noexcept
+  {
+    return __chain_.__passed();
   }
 };
 
@@ -2461,10 +2446,12 @@ void __feed(__on_throw_policy<_Reaction>& __sink, _X&& __x)
 {
   if constexpr (__is_status_v<::cuda::std::remove_cvref_t<_X>>)
   {
-    const auto __yield = __run_under(__sink, static_cast<::cuda::std::remove_cvref_t<_X>>(__x));
+    using _Status = ::cuda::std::remove_cvref_t<_X>;
+    __sink.__chain_.template __fix_type<_Status>();
+    const _Status __yield = __run_under(__sink, static_cast<_Status>(__x));
     if (__status_failed(__yield))
     {
-      __sink.__first_.__record(__yield);
+      __sink.__chain_.__record(__yield);
     }
   }
   else
@@ -2490,8 +2477,9 @@ __on_throw_policy<_Reaction>& operator<<(__on_throw_policy<_Reaction>& __sink, _
   return __sink;
 }
 
+// A temporary carrier is handed back by value, so that `auto&& c = on_error(p) << a;` does not dangle.
 template <class _Reaction, class _X>
-__on_throw_policy<_Reaction>&& operator<<(__on_throw_policy<_Reaction>&& __sink, _X&& __x)
+__on_throw_policy<_Reaction> operator<<(__on_throw_policy<_Reaction>&& __sink, _X&& __x)
 {
   __feed(__sink, ::cuda::std::forward<_X>(__x));
   return ::cuda::std::move(__sink);
@@ -3499,13 +3487,15 @@ exception_sink type_erase(_P&& __p)
  *   carrier itself (an lvalue for a named sink, so `auto s = on_error(p); s << a; s << b;` works
  *   across statements). C++17 sequences the left side of `<<`, its handling included, before the
  *   right, so each operand runs after the previous one was handled. The carrier records the first
- *   status that passed through, read with `.status()` (the success value if none did); a chain is
- *   homogeneous in its status type. A callable operand runs under the policy, and a status it
- *   returns is fed in turn. The carrier converts to nothing implicitly, and a `<<` statement whose
- *   `.status()` nobody reads drops a passed-through status: write `->*` to keep it.
+ *   status that passed through, read with `status<S>()` (the success value if none did), and
+ *   `passed_through()` says whether one did. The first `<<` fixes the chain's status type, and a
+ *   later operand of another status type, or `status<S>()` with another `S`, is a programming error
+ *   checked with `_CCCL_VERIFY`. A callable operand runs under the policy, and a status it returns
+ *   is fed in turn. The carrier converts to nothing implicitly, and a `<<` statement whose
+ *   `status<S>()` nobody reads drops a passed-through status: write `->*` to keep it.
  *
  * `->*` binds tighter than `<<`, so `s << a ->* b` parses as `s << (a ->* b)` and does not compile;
- * write `(s << a).status()`, or split the statement.
+ * write `(s << a).status<S>()`, or split the statement.
  *
  * A policy is an object exposing any of two optional capabilities, discovered by compile-time
  * introspection: the exception hook
@@ -6043,18 +6033,22 @@ UNITTEST("error sinks: << chains, each operand after the previous was handled")
   auto chain = on_error(notify(log) & passthrough)
             << step("a", cudaErrorInvalidValue) << step("b", cudaSuccess) << step("c", cudaErrorNotReady);
   EXPECT(trace == "abc");
-  EXPECT(chain.status() == cudaErrorInvalidValue); // the first passed-through status
+  EXPECT(chain.status<cudaError_t>() == cudaErrorInvalidValue); // the first passed-through status
   // the first failure was logged before the second operand ran: the log has "InvalidValue" before "NotReady"
   const auto text = log.str();
   EXPECT(text.find("cudaErrorInvalidValue") < text.find("cudaErrorNotReady"));
   // a fully handled chain reads as success
-  EXPECT((on_error(notify(log)) << cudaErrorInvalidValue << cudaErrorNotReady).status() == cudaSuccess);
+  EXPECT((on_error(notify(log)) << cudaErrorInvalidValue << cudaErrorNotReady).status<cudaError_t>() == cudaSuccess);
   // a named sink works across statements
   auto cleanup = on_error(passthrough);
   cleanup << cudaSuccess;
   cleanup << cudaErrorNotReady;
   cleanup << cudaErrorInvalidValue;
-  EXPECT(cleanup.status() == cudaErrorNotReady);
+  EXPECT(cleanup.status<cudaError_t>() == cudaErrorNotReady);
+  EXPECT(cleanup.passed_through());
+  // a temporary carrier comes back by value, so binding it does not dangle
+  auto&& c = on_error(passthrough) << cudaErrorNotReady;
+  EXPECT(c.status<cudaError_t>() == cudaErrorNotReady);
 };
 
 UNITTEST("error sinks: ->* yields, << does not convert")
