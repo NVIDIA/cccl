@@ -2453,7 +2453,7 @@ _Status operator->*(__on_throw_policy<_Reaction> __policy, const _Status __statu
   return __run_under(__policy, __status);
 }
 
-// `on_error(p) ->* x`: feed and chain. The operand is offered to the policy exactly as `->*` does;
+// `on_error(p) << x`: feed and chain. The operand is offered to the policy exactly as `->*` does;
 // a failing status that comes out (a status operand, or the status a callable returned, fed in
 // turn) is recorded if it is the chain's first. Returns the carrier itself.
 template <class _Reaction, class _X>
