@@ -95,6 +95,15 @@ struct reduce_sum_partial_tile_op_t
   }
 };
 
+struct reduce_transparent_sum_partial_tile_op_t
+{
+  template <int ItemsPerThread, class BlockReduceT, class T>
+  __device__ T operator()(BlockReduceT& reduce, T (&thread_data)[ItemsPerThread], int valid_items) const
+  {
+    return reduce.Reduce(thread_data[0], cuda::std::plus<>{}, valid_items);
+  }
+};
+
 struct reduce_narrow_sum_partial_tile_op_t
 {
   template <int ItemsPerThread, class BlockReduceT, class T>
@@ -296,6 +305,35 @@ CUB_TEST("Block reduce works with custom op in partial tiles",
                type>(d_in, d_out, max_partial_tile_op_t{}, cuda::std::numeric_limits<type>::max());
 
   REQUIRE_APPROX_EQ(h_reference, d_out);
+}
+
+CUB_TEST("Block reduce preserves bool addition", "[reduce][block]", CUB_SMALL)
+{
+  constexpr int block_size = 128;
+  const int valid_items    = GENERATE_COPY(1, 33, 65, block_size);
+  const bool value         = GENERATE(false, true);
+
+  c2h::device_vector<bool> d_in(valid_items, value);
+  c2h::device_vector<bool> d_out(1);
+  const c2h::host_vector<bool> h_reference(1, value);
+
+  SECTION("Sum")
+  {
+    block_reduce<cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC, 1, block_size, 1, 1, bool>(
+      d_in, d_out, sum_partial_tile_op_t{}, !value);
+  }
+  SECTION("Typed plus")
+  {
+    block_reduce<cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC, 1, block_size, 1, 1, bool>(
+      d_in, d_out, reduce_sum_partial_tile_op_t{}, !value);
+  }
+  SECTION("Transparent plus")
+  {
+    block_reduce<cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC, 1, block_size, 1, 1, bool>(
+      d_in, d_out, reduce_transparent_sum_partial_tile_op_t{}, !value);
+  }
+
+  REQUIRE(h_reference == d_out);
 }
 
 CUB_TEST("Block reduce respects a differently typed plus operator", "[reduce][block]", CUB_SMALL)

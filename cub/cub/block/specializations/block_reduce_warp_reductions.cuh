@@ -30,6 +30,7 @@
 #include <cuda/atomic>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -223,8 +224,9 @@ struct BlockReduceWarpReductions
                                .template Reduce<(FullTile && even_warp_multiple)>(input, warp_num_valid, reduction_op);
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
-    // Atomic accumulation of warp aggregates requires arithmetic addition.
-    if constexpr (IsDeterministic || !::cuda::std::is_arithmetic_v<T> || !::cuda::__is_cuda_std_plus_v<ReductionOp, T>)
+    // Atomic addition does not preserve the conversion back to bool after each sum.
+    if constexpr (IsDeterministic || !::cuda::std::is_arithmetic_v<T> || ::cuda::std::is_same_v<T, bool>
+                  || !::cuda::__is_cuda_std_plus_v<ReductionOp, T>)
     {
       return ApplyWarpAggregates<FullTile>(reduction_op, warp_aggregate, num_valid);
     }
