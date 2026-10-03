@@ -50,12 +50,9 @@
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_null_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_reference.h>
-#include <cuda/std/__utility/forward.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -2853,40 +2850,6 @@ public:
       });
   }
 
-  //! @cond
-  // Preserve legacy stream conversions that require a mutable lvalue or an rvalue.
-  template <typename KeysInputIteratorT,
-            typename ValuesInputIteratorT,
-            typename ValuesOutputIteratorT,
-            typename EqualityOpT,
-            typename NumItemsT,
-            typename StreamT,
-            ::cuda::std::enable_if_t<
-              ::cuda::std::is_convertible_v<StreamT&&, cudaStream_t>
-                && !::cuda::std::is_convertible_v<const ::cuda::std::remove_reference_t<StreamT>&, cudaStream_t>,
-              int> = 0>
-  CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSumByKey(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeysInputIteratorT d_keys_in,
-    ValuesInputIteratorT d_values_in,
-    ValuesOutputIteratorT d_values_out,
-    NumItemsT num_items,
-    EqualityOpT equality_op,
-    StreamT&& stream)
-  {
-    return ExclusiveSumByKey(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_values_out,
-      num_items,
-      equality_op,
-      static_cast<cudaStream_t>(::cuda::std::forward<StreamT>(stream)));
-  }
-  //! @endcond
-
   //! @rst
   //! Computes a device-wide exclusive prefix scan-by-key using the
   //! specified binary associative ``scan_op`` functor. The key equality is defined by
@@ -3061,46 +3024,6 @@ public:
       });
   }
 
-  //! @cond
-  // Preserve legacy stream conversions that require a mutable lvalue or an rvalue.
-  template <typename KeysInputIteratorT,
-            typename ValuesInputIteratorT,
-            typename ValuesOutputIteratorT,
-            typename ScanOpT,
-            typename InitValueT,
-            typename EqualityOpT,
-            typename NumItemsT,
-            typename StreamT,
-            ::cuda::std::enable_if_t<
-              ::cuda::std::is_convertible_v<StreamT&&, cudaStream_t>
-                && !::cuda::std::is_convertible_v<const ::cuda::std::remove_reference_t<StreamT>&, cudaStream_t>,
-              int> = 0>
-  CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScanByKey(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeysInputIteratorT d_keys_in,
-    ValuesInputIteratorT d_values_in,
-    ValuesOutputIteratorT d_values_out,
-    ScanOpT scan_op,
-    InitValueT init_value,
-    NumItemsT num_items,
-    EqualityOpT equality_op,
-    StreamT&& stream)
-  {
-    return ExclusiveScanByKey(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_values_out,
-      scan_op,
-      init_value,
-      num_items,
-      equality_op,
-      static_cast<cudaStream_t>(::cuda::std::forward<StreamT>(stream)));
-  }
-  //! @endcond
-
   //! @rst
   //! Computes a device-wide inclusive prefix sum-by-key with key equality defined by ``equality_op``.
   //!
@@ -3236,40 +3159,6 @@ public:
           stream);
       });
   }
-
-  //! @cond
-  // Preserve legacy stream conversions that require a mutable lvalue or an rvalue.
-  template <typename KeysInputIteratorT,
-            typename ValuesInputIteratorT,
-            typename ValuesOutputIteratorT,
-            typename EqualityOpT,
-            typename NumItemsT,
-            typename StreamT,
-            ::cuda::std::enable_if_t<
-              ::cuda::std::is_convertible_v<StreamT&&, cudaStream_t>
-                && !::cuda::std::is_convertible_v<const ::cuda::std::remove_reference_t<StreamT>&, cudaStream_t>,
-              int> = 0>
-  CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSumByKey(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeysInputIteratorT d_keys_in,
-    ValuesInputIteratorT d_values_in,
-    ValuesOutputIteratorT d_values_out,
-    NumItemsT num_items,
-    EqualityOpT equality_op,
-    StreamT&& stream)
-  {
-    return InclusiveSumByKey(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_values_out,
-      num_items,
-      equality_op,
-      static_cast<cudaStream_t>(::cuda::std::forward<StreamT>(stream)));
-  }
-  //! @endcond
 
   //! @rst
   //! Computes a device-wide inclusive prefix scan-by-key using the
@@ -3429,43 +3318,6 @@ public:
           storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, NullType{}, num_items, stream);
       });
   }
-
-  //! @cond
-  // Preserve legacy stream conversions that require a mutable lvalue or an rvalue.
-  template <typename KeysInputIteratorT,
-            typename ValuesInputIteratorT,
-            typename ValuesOutputIteratorT,
-            typename ScanOpT,
-            typename EqualityOpT,
-            typename NumItemsT,
-            typename StreamT,
-            ::cuda::std::enable_if_t<
-              ::cuda::std::is_convertible_v<StreamT&&, cudaStream_t>
-                && !::cuda::std::is_convertible_v<const ::cuda::std::remove_reference_t<StreamT>&, cudaStream_t>,
-              int> = 0>
-  CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanByKey(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeysInputIteratorT d_keys_in,
-    ValuesInputIteratorT d_values_in,
-    ValuesOutputIteratorT d_values_out,
-    ScanOpT scan_op,
-    NumItemsT num_items,
-    EqualityOpT equality_op,
-    StreamT&& stream)
-  {
-    return InclusiveScanByKey(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_values_out,
-      scan_op,
-      num_items,
-      equality_op,
-      static_cast<cudaStream_t>(::cuda::std::forward<StreamT>(stream)));
-  }
-  //! @endcond
 
   //! @rst
   //! Computes a device-wide exclusive prefix sum-by-key with key equality
