@@ -121,6 +121,7 @@ CUB device-level single-problem parallel algorithms:
 * :cpp:struct:`cub::DeviceMergeSort` sorts items residing within device-accessible memory
 * :cpp:struct:`cub::DeviceRadixSort` sorts items residing within device-accessible memory using radix sorting method
 * :cpp:struct:`cub::DeviceReduce` computes reduction of items residing within device-accessible memory
+* :cpp:struct:`cub::DeviceRunLengthDecode` expands run-length encoded sequences into device-accessible memory
 * :cpp:struct:`cub::DeviceRunLengthEncode` demarcating "runs" of same-valued items within a sequence residing within device-accessible memory
 * :cpp:struct:`cub::DeviceScan` computes a prefix scan across a sequence of data items residing within device-accessible memory
 * :cpp:struct:`cub::DeviceSelect` compacts data residing within device-accessible memory
