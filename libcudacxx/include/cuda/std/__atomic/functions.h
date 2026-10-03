@@ -21,7 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_keep
 #include <cuda/std/__atomic/functions/dispatch.h>
 #include <cuda/std/__atomic/platform.h>
+// IWYU pragma: end_keep
 
 #endif // __CUDA_STD___ATOMIC_FUNCTIONS_H

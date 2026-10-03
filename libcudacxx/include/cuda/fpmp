@@ -27,8 +27,10 @@
 // The large set of transcendental math functions (exp, log, trig, pow, ...)
 // lives in a separate umbrella header, <cuda/fpmp_math>, so translation units
 // that only need the core type do not pay its compile-time cost.
-#include <cuda/__fp/fpmp.h> // IWYU pragma: export
+// IWYU pragma: begin_keep
+#include <cuda/__fp/fpmp.h>
 // cuda::std::numeric_limits<> specialization for the fpmp2 types.
-#include <cuda/__fp/fpmp_limits.h> // IWYU pragma: export
+#include <cuda/__fp/fpmp_limits.h>
+// IWYU pragma: end_keep
 
 #endif // _CUDA_FPMP

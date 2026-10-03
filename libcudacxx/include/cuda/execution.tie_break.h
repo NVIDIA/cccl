@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__execution/tie_break.h> // IWYU pragma: export
+#include <cuda/__execution/tie_break.h> // IWYU pragma: keep
 
 #endif // _CUDA_EXECUTION_EXECUTION_TIE_BREAK_H

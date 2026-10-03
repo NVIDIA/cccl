@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/move_backward.h>
+#include <cuda/std/__algorithm/move_backward.h> // IWYU pragma: keep
 
 #endif // _CUDA_STD_ALGORITHM_ALGORITHM_MOVE_BACKWARD_H

@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_keep
 #include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__mdspan/aligned_accessor.h>
 #include <cuda/std/__mdspan/concepts.h>
@@ -37,5 +38,6 @@
 #include <cuda/std/__mdspan/submdspan_mapping.h>
 #include <cuda/std/__pstl/mdspan/copy.h>
 #include <cuda/std/version>
+// IWYU pragma: end_keep
 
 #endif // _CUDA_STD_MDSPAN

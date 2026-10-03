@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/binary_search.h>
+#include <cuda/std/__algorithm/binary_search.h> // IWYU pragma: keep
 
 #endif // _CUDA_STD_ALGORITHM_ALGORITHM_BINARY_SEARCH_H

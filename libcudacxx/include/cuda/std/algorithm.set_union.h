@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/set_union.h>
+#include <cuda/std/__algorithm/set_union.h> // IWYU pragma: keep
 
 #endif // _CUDA_STD_ALGORITHM_ALGORITHM_SET_UNION_H

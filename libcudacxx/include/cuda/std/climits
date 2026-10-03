@@ -22,7 +22,7 @@
 #endif // no system header
 
 #if _CCCL_HOSTED()
-#  include <climits>
+#  include <climits> // IWYU pragma: keep
 #else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
 #  define _CCCL_CHAR_IS_UNSIGNED() ('\xff' > 0) // CURSED
 

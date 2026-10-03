@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__system_error/errc.h>
+#include <cuda/std/__system_error/errc.h> // IWYU pragma: keep
 
 #endif // _CUDA_STD_SYSTEM_ERROR

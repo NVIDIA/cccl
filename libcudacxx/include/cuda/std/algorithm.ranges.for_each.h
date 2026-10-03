@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/ranges_for_each.h>
+#include <cuda/std/__algorithm/ranges_for_each.h> // IWYU pragma: keep
 
 #endif // _CUDA_STD_ALGORITHM_ALGORITHM_RANGES_FOR_EACH_H

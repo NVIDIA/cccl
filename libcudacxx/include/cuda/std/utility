@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_keep
 #include <cuda/std/__functional/binary_function.h>
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/__functional/reference_wrapper.h>
@@ -67,5 +68,6 @@
 // [tuple.helper]
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
+// IWYU pragma: end_keep
 
 #endif // _CUDA_STD_UTILITY
