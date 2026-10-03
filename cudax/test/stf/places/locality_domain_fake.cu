@@ -70,11 +70,7 @@ int main()
 #  endif // _CCCL_CTK_AT_LEAST(13, 4)
 
   int ndevs = 0;
-  if (cudaGetDeviceCount(&ndevs) != cudaSuccess || ndevs == 0)
-  {
-    fprintf(stderr, "No CUDA device: test waived.\n");
-    return 0;
-  }
+  cuda_safe_call(cudaGetDeviceCount(&ndevs));
 
   // The override must take precedence over the compile-time backend, and it
   // is strict: it reports exactly the requested count, or throws when the
