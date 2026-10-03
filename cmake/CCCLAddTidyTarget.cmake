@@ -28,14 +28,10 @@ function(_cccl_create_tidy_plugins ret_var)
 
   get_property(plugins GLOBAL PROPERTY CCCL_TIDY_PLUGINS)
   if (NOT plugins)
-    # TODO (jfaibussowit):
-    #
-    # Enable this check once we actually have clang-tidy plugins
-    #
-    # message(
-    #   FATAL_ERROR
-    #   "clang-tidy plugins failed to propagate the list of configured plugins."
-    # )
+    message(
+      FATAL_ERROR
+      "clang-tidy plugins failed to propagate the list of configured plugins."
+    )
   endif()
   set(${ret_var} "${plugins}" PARENT_SCOPE)
 endfunction()
@@ -210,6 +206,7 @@ function(cccl_tidy_add_target)
   endif()
 
   cccl_tidy_make_subproject_target(subproject_target)
+  get_property(plugin_targets GLOBAL PROPERTY CCCL_TIDY_PLUGINS)
 
   foreach (src IN LISTS _cccl_SOURCES)
     cmake_path(SET src NORMALIZE "${src}")
@@ -237,6 +234,9 @@ function(cccl_tidy_add_target)
       COMMENT "clang-tidy ${rel_src}"
     )
 
+    # We need to ensure the plugins have actually built before running clang-tidy. Do not
+    # quote, this is a list
+    add_dependencies("${tidy_target}" ${plugin_targets})
     add_dependencies("${subproject_target}" "${tidy_target}")
   endforeach()
 endfunction()
