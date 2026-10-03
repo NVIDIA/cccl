@@ -24,6 +24,9 @@
 #include "helpers.h"
 #include "test_macros.h"
 
+// gcc warns about some unnecessary parentheses being emitted by cudefe++.
+TEST_DIAG_SUPPRESS_GCC("-Wparentheses")
+
 struct S
 {
   int member = 42;
