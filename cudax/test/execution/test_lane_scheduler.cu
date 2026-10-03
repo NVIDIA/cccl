@@ -56,6 +56,20 @@ struct null_rcvr
   }
 };
 
+// A per-test observer: counts the event joins issued by continues_on onto a lane.
+struct join_counter
+{
+  int joins = 0;
+  auto env()
+  {
+    auto observer = [this](cudaStream_t, cudaStream_t) {
+      ++joins;
+    };
+    const auto prop = ::cuda::std::execution::prop{ex::get_lane_join_observer, observer};
+    return ::cuda::std::execution::env{prop};
+  }
+};
+
 struct fixture
 {
   static constexpr int n    = 1 << 20;
@@ -94,7 +108,7 @@ struct fixture
 C2H_TEST("lane_scheduler: a single-lane chain issues no event", "[lane_scheduler]")
 {
   fixture f;
-  ex::__lane::joins_issued() = 0;
+  join_counter jc;
   auto chain = ex::schedule(f.la) //
              | ex::then([&] {
                  fill_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n, 1);
@@ -103,8 +117,8 @@ C2H_TEST("lane_scheduler: a single-lane chain issues no event", "[lane_scheduler
                  fill_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n, 2);
                });
   static_assert(ex::get_completion_behavior<decltype(chain)>() == ex::completion_behavior::synchronous);
-  ex::sync_wait(std::move(chain));
-  CHECK(ex::__lane::joins_issued() == 0);
+  ex::sync_wait(std::move(chain) | ex::write_env(jc.env()));
+  CHECK(jc.joins == 0);
 }
 
 C2H_TEST("lane_scheduler: when_all of two lanes + continues_on issues exactly one event", "[lane_scheduler]")
@@ -112,7 +126,7 @@ C2H_TEST("lane_scheduler: when_all of two lanes + continues_on issues exactly on
   fixture f;
   for (int target = 0; target < 2; ++target)
   {
-    ex::__lane::joins_issued() = 0;
+    join_counter jc;
     auto lane_a = ex::schedule(f.la) | ex::then([&] {
                     spin_k<<<1, 1, 0, f.sa.get()>>>(2000000);
                     fill_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n, 3);
@@ -128,8 +142,8 @@ C2H_TEST("lane_scheduler: when_all of two lanes + continues_on issues exactly on
                 | ex::then([&, stream] {
                     sum2_k<<<f.grid, 256, 0, stream>>>(f.a, f.b, f.out, f.n);
                   });
-    ex::sync_wait(std::move(joined));
-    CHECK(ex::__lane::joins_issued() == 1);
+    ex::sync_wait(std::move(joined), jc.env());
+    CHECK(jc.joins == 1);
     CHECK(f.count_not(7) == 0);
   }
 }

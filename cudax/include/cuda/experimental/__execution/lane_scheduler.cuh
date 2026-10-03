@@ -49,6 +49,12 @@
 //! returned to the pool right after the wait is enqueued, since
 //! `cudaStreamWaitEvent` captures the event's state at call time.
 //!
+//! The receiver's environment may carry a `get_lane_join_observer` query: a
+//! callable invoked as `observer(from_stream, to_stream)` once per event join
+//! issued. It is a forwarding query, so `sndr | write_env(env{prop{
+//! get_lane_join_observer, fn}})` or `sync_wait(sndr, env)` reaches every join in
+//! the chain. Tests use it to assert how many events a composition issues.
+//!
 //! `when_all` over two different lanes has no completion scheduler by design: a
 //! continuation after it must `continues_on(some_lane)` before enqueuing
 //! stream work.
@@ -91,6 +97,28 @@
 
 namespace cuda::experimental::execution
 {
+//! @brief Environment query for an optional observer of lane event joins.
+//!
+//! If the receiver's environment answers this query, the result is invoked as
+//! `observer(cudaStream_t from, cudaStream_t to)` each time `continues_on` onto a
+//! `lane_scheduler` records an event on `from` and makes `to` wait on it.
+struct get_lane_join_observer_t
+{
+  _CCCL_TEMPLATE(class _Env)
+  _CCCL_REQUIRES(__queryable_with<_Env, get_lane_join_observer_t>)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Env& __env) const noexcept
+    -> __query_result_t<_Env, get_lane_join_observer_t>
+  {
+    return __env.query(*this);
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  {
+    return true;
+  }
+};
+_CCCL_GLOBAL_CONSTANT get_lane_join_observer_t get_lane_join_observer{};
+
 namespace __lane
 {
 
@@ -116,7 +144,6 @@ struct event_pool
     {
       throw ::cuda::cuda_error(st, "lane_scheduler: cudaEventCreateWithFlags failed");
     }
-    ++created_;
     return e;
   }
   void put(cudaEvent_t e)
@@ -124,23 +151,11 @@ struct event_pool
     ::std::lock_guard<::std::mutex> g{mu_};
     free_.push_back(e);
   }
-  int created() const
-  {
-    return created_;
-  }
 
 private:
   ::std::mutex mu_;
   ::std::vector<cudaEvent_t> free_;
-  int created_ = 0;
 };
-
-// Instrumentation: how many event joins were actually issued (tests read it).
-inline int& joins_issued()
-{
-  static int n = 0;
-  return n;
-}
 
 // ------------------------------------------------------- stream set ----------
 struct stream_set
@@ -165,8 +180,10 @@ struct stream_set
 };
 
 // Record an event on every stream of `from` that is not `to`, and make `to`
-// wait on it. The lazy join.
-inline void join_into(const stream_set& from, cudaStream_t to)
+// wait on it. The lazy join. `env` is the receiver's environment; if it carries
+// a get_lane_join_observer, the observer is told about each event.
+template <class Env>
+void join_into(const stream_set& from, cudaStream_t to, [[maybe_unused]] const Env& env)
 {
   auto& pool = event_pool::instance();
   for (int i = 0; i < from.n; ++i)
@@ -185,7 +202,10 @@ inline void join_into(const stream_set& from, cudaStream_t to)
       throw ::cuda::cuda_error(st, "lane_scheduler: cudaStreamWaitEvent failed");
     }
     pool.put(e);
-    ++joins_issued();
+    if constexpr (__queryable_with<Env, get_lane_join_observer_t>)
+    {
+      get_lane_join_observer(env)(from.s[i], to);
+    }
   }
 }
 
@@ -372,7 +392,7 @@ struct on_t
     template <class... Ts>
     void set_value(Ts&&... ts) noexcept
     {
-      join_into(st_->upstream_, st_->sch_.stream());
+      join_into(st_->upstream_, st_->sch_.stream(), execution::get_env(st_->rcvr_));
       execution::set_value(static_cast<Rcvr&&>(st_->rcvr_), static_cast<Ts&&>(ts)...);
     }
     template <class E>
