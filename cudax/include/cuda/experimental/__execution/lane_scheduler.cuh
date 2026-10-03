@@ -233,7 +233,14 @@ struct scheduler
     return stream_;
   }
 
-  // Queries on the scheduler itself (used by get_completion_domain checks).
+  // Queries on the scheduler itself. A scheduler is its own completion
+  // scheduler; answering this lets adaptors whose attrs defer to their target
+  // scheduler (continues_on, ...) report the lane they complete on, which the
+  // upstream walk in `collect` relies on.
+  [[nodiscard]] constexpr auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> scheduler
+  {
+    return *this;
+  }
   [[nodiscard]] constexpr auto query(get_completion_domain_t<set_value_t>) const noexcept -> domain;
   [[nodiscard]] auto query(::cuda::get_stream_t) const noexcept -> ::cuda::stream_ref
   {

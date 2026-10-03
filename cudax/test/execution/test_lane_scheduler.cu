@@ -16,7 +16,9 @@
 
 namespace ex = cuda::experimental::execution;
 
-namespace
+// nvcc cannot place __global__ kernels in the same anonymous namespace as the
+// Catch2-generated test templates, so helpers live in a named namespace.
+namespace lane_scheduler_test
 {
 __global__ void fill_k(int* p, int n, int v)
 {
@@ -103,7 +105,15 @@ struct fixture
     return bad;
   }
 };
-} // namespace
+
+} // namespace lane_scheduler_test
+
+// C2H_TEST names its generated test by line number; keep the cases in an
+// anonymous namespace (as the other execution tests do) so they cannot collide
+// with same-line cases from other translation units.
+namespace
+{
+using namespace lane_scheduler_test;
 
 C2H_TEST("lane_scheduler: a single-lane chain issues no event", "[lane_scheduler]")
 {
@@ -148,19 +158,20 @@ C2H_TEST("lane_scheduler: when_all of two lanes + continues_on issues exactly on
   }
 }
 
-C2H_TEST("lane_scheduler: the lazy join becomes a graph edge under stream capture", "[lane_scheduler]")
+C2H_TEST("lane_scheduler: fork and join are both continues_on, and become graph edges under capture",
+         "[lane_scheduler]")
 {
   fixture f;
   cudaGraph_t g{};
-  cudaEvent_t fork{};
-  REQUIRE(cudaEventCreateWithFlags(&fork, cudaEventDisableTiming) == cudaSuccess);
+  // The capture origin is lane a. Lane b's work is forked from it with a plain
+  // continues_on(lb): the lane domain records the a -> b event lazily, so no
+  // hand-written cudaEventRecord/cudaStreamWaitEvent is needed to bring stream b
+  // into the capture. The join back onto lane a is the same primitive.
   REQUIRE(cudaStreamBeginCapture(f.sa.get(), cudaStreamCaptureModeThreadLocal) == cudaSuccess);
-  REQUIRE(cudaEventRecord(fork, f.sa.get()) == cudaSuccess);
-  REQUIRE(cudaStreamWaitEvent(f.sb.get(), fork, 0) == cudaSuccess);
   auto lane_a = ex::schedule(f.la) | ex::then([&] {
                   fill_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n, 1);
                 });
-  auto lane_b = ex::schedule(f.lb) | ex::then([&] {
+  auto lane_b = ex::schedule(f.la) | ex::continues_on(f.lb) | ex::then([&] {
                   fill_k<<<f.grid, 256, 0, f.sb.get()>>>(f.b, f.n, 2);
                 });
   auto joined = ex::when_all(std::move(lane_a), std::move(lane_b)) | ex::continues_on(f.la) | ex::then([&] {
@@ -182,7 +193,6 @@ C2H_TEST("lane_scheduler: the lazy join becomes a graph edge under stream captur
   CHECK(f.count_not(3) == 0);
   cudaGraphExecDestroy(ge);
   cudaGraphDestroy(g);
-  cudaEventDestroy(fork);
 }
 
 C2H_TEST("lane_scheduler: sync_wait waits for the lane's stream", "[lane_scheduler]")
@@ -200,3 +210,4 @@ C2H_TEST("lane_scheduler: sync_wait waits for the lane's stream", "[lane_schedul
   REQUIRE(cudaStreamSynchronize(sc.get()) == cudaSuccess);
   CHECK(h0 == 9);
 }
+} // namespace
