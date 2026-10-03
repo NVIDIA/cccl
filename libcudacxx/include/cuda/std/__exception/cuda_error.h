@@ -29,10 +29,10 @@
 #include <cuda/std/__host_stdlib/cstdio>
 #include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__type_traits/always_false.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/typeid.h>
 #include <cuda/std/source_location>
+#include <cuda/std/string_view>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -46,201 +46,213 @@ using __cuda_error_t = int;
 
 #if _CCCL_HOSTED()
 /**
- * @brief Describes a family of status codes that `cuda_error` can carry.
- *
- * The primary template is undefined. libcu++ specializes it for `cudaError_t` and `CUresult`. A library
- * whose API reports failures through its own status enumeration (cuBLAS, cuSOLVER, ...) specializes it
- * for that type, which makes `cuda_error` constructible from such a status and lets a handler recover
- * it exactly with `cuda_error::status<Status>()`. A specialization provides:
+ * @brief The rules `cuda_error` applies to a status value of type `_Status`. The defaults are the rules
+ * every CUDA library's status enumeration follows: zero is success, the value is the code, and no text is
+ * known. A library whose status is a struct, or that can describe its codes, specializes
+ * @ref cuda_status_traits and may inherit these defaults for the members it keeps.
+ */
+template <class _Status>
+struct cuda_status_defaults
+{
+  [[nodiscard]] _CCCL_HOST_API static constexpr bool failed(const _Status __status) noexcept
+  {
+    return static_cast<long long>(__status) != 0;
+  }
+  [[nodiscard]] _CCCL_HOST_API static constexpr long long raw_code(const _Status __status) noexcept
+  {
+    return static_cast<long long>(__status);
+  }
+  [[nodiscard]] _CCCL_HOST_API static constexpr const char* text(const _Status) noexcept
+  {
+    return nullptr;
+  }
+};
+
+/**
+ * @brief Customization point for status types that `cuda_error` can carry. The primary template applies
+ * @ref cuda_status_defaults, so any status enumeration works unchanged. Specialize it to supply text, or
+ * to carry a struct status such as cuFile's:
  *
  * @code
- * static constexpr unsigned id;                 // unique among domains; 0 and 1 belong to libcu++
- * static constexpr const char* name;            // e.g. "CUDA", "CUDA driver", "cuBLAS"
- * static const char* description(Status);      // human-readable text for a status, never null
+ * template <> struct cuda::cuda_status_traits<cufftResult> : cuda::cuda_status_defaults<cufftResult>
+ * {
+ *   static const char* text(cufftResult r) noexcept { return my_cufft_text(r); }
+ * };
+ * template <> struct cuda::cuda_status_traits<CUfileError_t>
+ * {
+ *   static bool failed(CUfileError_t s) noexcept { return s.err != CU_FILE_SUCCESS; }
+ *   static long long raw_code(CUfileError_t s) noexcept { return s.err; }
+ *   static const char* text(CUfileError_t s) noexcept { return cufileop_status_error(s.err); }
+ * };
  * @endcode
  */
 template <class _Status>
-struct cuda_status_domain;
-
-namespace __detail
-{
-inline constexpr unsigned __cuda_runtime_domain = 0;
-inline constexpr unsigned __cuda_driver_domain  = 1;
-inline constexpr int __cuda_error_unknown       = 999; // ::cudaErrorUnknown, spelled out so the header needs no CTK
-
-template <class _Status, class = void>
-inline constexpr bool __is_cuda_status_v = false;
-template <class _Status>
-inline constexpr bool
-  __is_cuda_status_v<_Status, ::cuda::std::void_t<decltype(::cuda::cuda_status_domain<_Status>::id)>> = true;
-
-[[nodiscard]] _CCCL_HOST_API inline char* __format_cuda_error(
-  ::cuda::__msg_storage& __msg_buffer,
-  const ::cuda::std::source_location& __loc,
-  const char* __api,
-  const char* __error_str,
-  const int __status,
-  const char* __msg) noexcept
-{
-  ::snprintf(
-    __msg_buffer.__buffer,
-    512,
-    "%s:%d %s%s%s(%d): %s",
-    __loc.file_name(),
-    __loc.line(),
-    __api ? __api : "",
-    __api ? " " : "",
-    (__error_str != nullptr) ? __error_str : "cudaError",
-    __status,
-    __msg);
-  return __msg_buffer.__buffer;
-}
-} // namespace __detail
+struct cuda_status_traits : cuda_status_defaults<_Status>
+{};
 
 #  if _CCCL_HAS_CTK()
 template <>
-struct cuda_status_domain<::cudaError_t>
+struct cuda_status_traits<::cudaError_t> : cuda_status_defaults<::cudaError_t>
 {
-  static constexpr unsigned id      = __detail::__cuda_runtime_domain;
-  static constexpr const char* name = "CUDA";
-  [[nodiscard]] _CCCL_HOST_API static const char* description(const ::cudaError_t __status)
+  [[nodiscard]] _CCCL_HOST_API static const char* text(const ::cudaError_t __status)
   {
     return ::cuda::__driver::__getErrorString(__status);
   }
 };
 
 template <>
-struct cuda_status_domain<::CUresult>
+struct cuda_status_traits<::CUresult> : cuda_status_defaults<::CUresult>
 {
-  static constexpr unsigned id      = __detail::__cuda_driver_domain;
-  static constexpr const char* name = "CUDA driver";
-  [[nodiscard]] _CCCL_HOST_API static const char* description(const ::CUresult __status)
+  [[nodiscard]] _CCCL_HOST_API static const char* text(const ::CUresult __status)
   {
     return ::cuda::__driver::__getErrorString(__status);
   }
 };
 #  endif // _CCCL_HAS_CTK()
 
+namespace __detail
+{
+inline constexpr long long __cuda_error_unknown = 999; // ::cudaErrorUnknown, spelled out so the header needs no CTK
+
+[[nodiscard]] _CCCL_HOST_API inline char* __format_cuda_error(
+  ::cuda::__msg_storage& __msg_buffer,
+  const ::cuda::std::source_location& __loc,
+  const char* __api,
+  const ::cuda::std::string_view __status_type,
+  const char* __text,
+  const long long __raw_code,
+  const char* __msg) noexcept
+{
+  // file:line api status_type(code): text: msg   -- the `api ` and `text: ` parts appear only when known
+  ::snprintf(
+    __msg_buffer.__buffer,
+    ::cuda::__msg_storage::__size,
+    "%s:%d %s%s%.*s(%lld): %s%s%s",
+    __loc.file_name(),
+    __loc.line(),
+    __api ? __api : "",
+    __api ? " " : "",
+    static_cast<int>(__status_type.size()),
+    __status_type.data(),
+    __raw_code,
+    __text ? __text : "",
+    __text ? ": " : "",
+    __msg);
+  return __msg_buffer.__buffer;
+}
+} // namespace __detail
+
 /**
  * @brief Exception thrown when a CUDA error is encountered.
  *
- * The exception carries the failing status as reported by the API that produced it, together with
- * the domain that status belongs to (CUDA Runtime, CUDA driver, or a library domain registered
- * through @ref cuda_status_domain) and the source location of the failure. `status()` keeps its
- * historical meaning, the status seen as a CUDA Runtime error code; `status<Status>()` recovers the
- * exact value.
+ * The exception carries the failing status as the API reported it (`raw_code()`), the type it came from
+ * (`status_type()`, `holds<Status>()`, `status<Status>()`), and where it was raised (`location()`).
+ * Any status enumeration can be thrown; see @ref cuda_status_traits for text and for struct statuses.
+ * `status()` keeps its historical meaning: the status seen as a CUDA Runtime error code.
  */
 class cuda_error : public ::std::runtime_error
 {
-  int __raw_status_;
-  unsigned __domain_;
-  const char* __domain_name_;
+  long long __raw_code_;
+  ::cuda::std::__type_info_ptr __type_;
+  ::cuda::std::string_view __status_type_;
   ::cuda::std::source_location __loc_;
 
   _CCCL_HOST_API cuda_error(
-    const int __raw_status,
-    const unsigned __domain,
-    const char* __domain_name,
-    const char* __error_str,
+    const long long __raw_code,
+    const ::cuda::std::__type_info_ptr __type,
+    const ::cuda::std::string_view __status_type,
+    const char* __text,
     const char* __msg,
     const char* __api,
     const ::cuda::std::source_location& __loc,
     __msg_storage __msg_buffer = {})
       : ::std::runtime_error(
-          ::cuda::__detail::__format_cuda_error(__msg_buffer, __loc, __api, __error_str, __raw_status, __msg))
-      , __raw_status_(__raw_status)
-      , __domain_(__domain)
-      , __domain_name_(__domain_name)
+          ::cuda::__detail::__format_cuda_error(__msg_buffer, __loc, __api, __status_type, __text, __raw_code, __msg))
+      , __raw_code_(__raw_code)
+      , __type_(__type)
+      , __status_type_(__status_type)
       , __loc_(__loc)
   {}
 
-  // A runtime status with a caller-supplied description: `__throw_cuda_error<_Error>` uses it where the
-  // driver may not be loadable yet.
+  template <class _Status>
+  [[nodiscard]] _CCCL_HOST_API static ::cuda::std::string_view __name_of() noexcept
+  {
+    const auto __pretty = ::cuda::std::__pretty_nameof<_Status>();
+    return ::cuda::std::string_view(__pretty.data(), __pretty.size());
+  }
+
+  // A runtime status with a caller-supplied text: `__throw_cuda_error<_Error>` uses it where the driver may
+  // not be loadable yet.
   _CCCL_HOST_API cuda_error(
     const __cuda_error_t __status,
-    const char* __error_str,
+    const char* __text,
     const char* __msg,
     const char* __api,
     const ::cuda::std::source_location& __loc)
-      : cuda_error{static_cast<int>(__status), __detail::__cuda_runtime_domain, "CUDA", __error_str, __msg, __api, __loc}
-  {}
-
-public:
-  //! @brief Constructs from a CUDA Runtime status.
-  _CCCL_HOST_API cuda_error(const __cuda_error_t __status,
-                            const char* __msg,
-                            const char* __api                         = nullptr,
-                            const ::cuda::std::source_location& __loc = ::cuda::std::source_location::current())
-      : cuda_error{__status,
-#  if _CCCL_HAS_CTK()
-                   ::cuda::__driver::__getErrorString(static_cast<::cudaError_t>(__status)),
-#  else // ^^^ _CCCL_HAS_CTK() ^^^ / vvv !_CCCL_HAS_CTK() vvv
-                   "cudaError",
-#  endif // ^^^ !_CCCL_HAS_CTK() ^^^
+      : cuda_error{static_cast<long long>(__status),
+                   &_CCCL_TYPEID(__cuda_error_t),
+                   __name_of<__cuda_error_t>(),
+                   __text,
                    __msg,
                    __api,
                    __loc}
   {}
 
-  //! @brief Constructs from a status of another domain: `CUresult`, or any type with a
-  //! @ref cuda_status_domain specialization.
-  template <
-    class _Status,
-    ::cuda::std::enable_if_t<__detail::__is_cuda_status_v<_Status> && !::cuda::std::is_same_v<_Status, __cuda_error_t>,
-                             int> = 0>
+public:
+  //! @brief Constructs from a status of any type with usable @ref cuda_status_traits: `cudaError_t`,
+  //! `CUresult`, any other CUDA library's status enumeration, or a struct status with a specialization.
+  template <class _Status>
   _CCCL_HOST_API cuda_error(const _Status __status,
                             const char* __msg,
                             const char* __api                         = nullptr,
                             const ::cuda::std::source_location& __loc = ::cuda::std::source_location::current())
-      : cuda_error{static_cast<int>(__status),
-                   cuda_status_domain<_Status>::id,
-                   cuda_status_domain<_Status>::name,
-                   cuda_status_domain<_Status>::description(__status),
+      : cuda_error{cuda_status_traits<_Status>::raw_code(__status),
+                   &_CCCL_TYPEID(_Status),
+                   __name_of<_Status>(),
+                   cuda_status_traits<_Status>::text(__status),
                    __msg,
                    __api,
                    __loc}
   {}
 
-  //! @brief The status seen as a CUDA Runtime error code. Exact for a runtime status. A driver status is
-  //! converted numerically, which is how the runtime itself reports driver-originated failures. A status
-  //! of any other domain reports `cudaErrorUnknown`; use `status<Status>()` for the exact value.
-  [[nodiscard]] _CCCL_HOST_API constexpr auto status() const noexcept -> __cuda_error_t
+  //! @brief The status seen as a CUDA Runtime error code. Exact for a `cudaError_t`. A `CUresult` is converted
+  //! numerically, which is how the runtime reports driver-originated failures. Any other status type reports
+  //! `cudaErrorUnknown`; use `status<Status>()` or `raw_code()` for the exact value.
+  [[nodiscard]] _CCCL_HOST_API __cuda_error_t status() const noexcept
   {
-    return static_cast<__cuda_error_t>(
-      __domain_ <= __detail::__cuda_driver_domain ? __raw_status_ : __detail::__cuda_error_unknown);
+#  if _CCCL_HAS_CTK()
+    const bool __cuda_family = holds<::cudaError_t>() || holds<::CUresult>();
+#  else // ^^^ _CCCL_HAS_CTK() ^^^ / vvv !_CCCL_HAS_CTK() vvv
+    const bool __cuda_family = holds<int>();
+#  endif // ^^^ !_CCCL_HAS_CTK() ^^^
+    return static_cast<__cuda_error_t>(__cuda_family ? __raw_code_ : __detail::__cuda_error_unknown);
   }
 
-  //! @brief Whether the stored status belongs to the domain of `_Status`.
+  //! @brief Whether the stored status came from a value of type `_Status`.
   template <class _Status>
-  [[nodiscard]] _CCCL_HOST_API constexpr bool holds() const noexcept
+  [[nodiscard]] _CCCL_HOST_API bool holds() const noexcept
   {
-    return __domain_ == cuda_status_domain<_Status>::id;
+    return *__type_ == _CCCL_TYPEID(_Status);
   }
 
-  //! @brief The stored status as its own type. Precondition: `holds<_Status>()`.
+  //! @brief The stored status as its own type. Precondition: `holds<_Status>()`. For enumeration statuses.
   template <class _Status>
   [[nodiscard]] _CCCL_HOST_API _Status status() const noexcept
   {
-    _CCCL_VERIFY(holds<_Status>(), "cuda_error::status<Status>(): the stored status belongs to another domain");
-    return static_cast<_Status>(__raw_status_);
+    _CCCL_VERIFY(holds<_Status>(), "cuda_error::status<Status>(): the stored status is of another type");
+    return static_cast<_Status>(__raw_code_);
   }
 
-  //! @brief The stored status as the API reported it, without interpretation.
-  [[nodiscard]] _CCCL_HOST_API constexpr int raw_status() const noexcept
+  //! @brief The status code as the API reported it, through `cuda_status_traits<Status>::raw_code`.
+  [[nodiscard]] _CCCL_HOST_API constexpr long long raw_code() const noexcept
   {
-    return __raw_status_;
+    return __raw_code_;
   }
 
-  //! @brief The domain of the stored status, `cuda_status_domain<Status>::id`.
-  [[nodiscard]] _CCCL_HOST_API constexpr unsigned domain() const noexcept
+  //! @brief The name of the type the status came from, e.g. "CUresult".
+  [[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::string_view status_type() const noexcept
   {
-    return __domain_;
-  }
-
-  //! @brief The name of the stored status's domain, e.g. "CUDA driver".
-  [[nodiscard]] _CCCL_HOST_API constexpr const char* domain_name() const noexcept
-  {
-    return __domain_name_;
+    return __status_type_;
   }
 
   //! @brief Where the error was raised.
