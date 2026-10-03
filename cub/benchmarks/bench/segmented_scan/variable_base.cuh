@@ -142,6 +142,6 @@ NVBENCH_BENCH_TYPES(skewed_size_segments, NVBENCH_TYPE_AXES(value_types, some_of
   .set_name("skewed_size_segments")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", {22, 26})
-  .add_int64_axis("MeanSegmentSize{io}", {32, 64, 128, 256, 512, 1024, 2048})
+  .add_int64_axis("MeanSegmentSize{io}", {32, 64, 128, 192, 256, 384, 512, 768, 1024, 2048})
   .add_float64_axis("Alpha{io}", {2.5, 2.0, 1.75, 1.5, 1.3})
   .add_int64_axis("ShuffleSeed{io}", {42});
