@@ -21,7 +21,7 @@ from ._model import (
     SynchronizationContract,
     SynchronizationScope,
     TempStorageContract,
-    ThreadGroupResolution,
+    ThreadGroupLaunchResolution,
     UnsupportedReason,
     UnsupportedReasonCode,
 )
@@ -50,7 +50,7 @@ __all__ = [
     "SynchronizationContract",
     "SynchronizationScope",
     "TempStorageContract",
-    "ThreadGroupResolution",
+    "ThreadGroupLaunchResolution",
     "UnsupportedReason",
     "UnsupportedReasonCode",
     "make_group_primitive_call",

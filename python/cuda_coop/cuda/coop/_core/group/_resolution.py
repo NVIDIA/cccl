@@ -15,7 +15,7 @@ from ._contracts import _unsupported
 from ._model import (
     GroupLoweringPlan,
     GroupPrimitiveCall,
-    ThreadGroupResolution,
+    ThreadGroupLaunchResolution,
     UnsupportedReason,
     UnsupportedReasonCode,
 )
@@ -38,8 +38,8 @@ def _resolution_failure(
     group: ThreadGroup,
     code: UnsupportedReasonCode,
     message: str,
-) -> ThreadGroupResolution:
-    return ThreadGroupResolution(
+) -> ThreadGroupLaunchResolution:
+    return ThreadGroupLaunchResolution(
         group=group,
         unsupported=UnsupportedReason(code=code, message=message),
     )
@@ -50,7 +50,7 @@ def resolve_thread_group(
     launch: LaunchFacts,
     *,
     through_level: str | None = None,
-) -> ThreadGroupResolution:
+) -> ThreadGroupLaunchResolution:
     """Resolve a group against exact launch facts through a hierarchy level.
 
     ``through_level`` requests the enclosing hierarchy needed by group queries.
@@ -79,7 +79,7 @@ def resolve_thread_group(
         group.kind in COMPLETE_WARP_GROUP_KINDS or through_level == "warp"
     )
     if required_level == "thread":
-        return ThreadGroupResolution(group)
+        return ThreadGroupLaunchResolution(group)
 
     exact_block_dim = launch.exact_block_dim
     if exact_block_dim is None:
@@ -221,7 +221,7 @@ def resolve_thread_group(
         resolved_hierarchy,
         source="launch_facts",
     )
-    return ThreadGroupResolution(resolved)
+    return ThreadGroupLaunchResolution(resolved)
 
 
 def _resolve_group(
