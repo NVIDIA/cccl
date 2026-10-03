@@ -293,6 +293,57 @@ def _plan_load_store(
     launch: LaunchFacts,
     operation: GroupLoadStoreSemantics,
 ) -> GroupLoweringPlan:
+    """Choose a CUB Load/Store specialization for a resolved thread group.
+
+    Called by ``plan_group_primitive`` after group resolution. Select the block
+    or warp implementation and describe its participation, scratch storage,
+    and storage-reuse synchronization requirements for later compilation and
+    lowering. Direct, striped, and vectorized algorithms require no scratch
+    storage or storage-reuse barrier; other algorithms retain the requested
+    storage ownership, layout constraints, sharing, and automatic sync policy.
+
+    Validate static ``valid_items`` against the group tile size and check that
+    pointer offsets fit signed 64-bit arithmetic. Runtime bounds remain caller
+    preconditions recorded in the plan. Each physical or logical warp handles
+    a consecutive tile, so its specialization always takes a runtime pointer
+    offset. The backend combines that tile's origin with the user offset
+    preserved in ``operation``; the plan limits the user offset accordingly.
+
+    Parameters
+    ----------
+    call : GroupPrimitiveCall
+        Original group call, retained in the plan and unsupported diagnostics.
+    resolved : ThreadGroup
+        Group resolved against ``launch``. Supported block, physical-warp, and
+        logical-warp groups must have a static size and complete membership.
+    launch : LaunchFacts
+        Launch facts used during group resolution, including exact block
+        dimensions for specialization and counting warp-group instances.
+    operation : GroupLoadStoreSemantics
+        Normalized load or store semantics from ``call.operation``, including
+        dtype, item count, algorithm, argument bindings, and storage requests.
+
+    Returns
+    -------
+    GroupLoweringPlan
+        CUB specialization, execution contracts, and implementation provenance,
+        or an ``UNSUPPORTED`` plan with a reason when the group kind, warp
+        width, or algorithm variant is unsupported. This builds metadata;
+        compilation and device-storage allocation happen during later lowering.
+
+    Raises
+    ------
+    TypeError
+        Static ``valid_items`` is not an integer or is a boolean.
+    ValueError
+        Static ``valid_items`` is outside the group tile, a warp tile origin or
+        its sum with the user offset exceeds signed 64-bit range, or the
+        specialization builder rejects an argument binding.
+    AssertionError
+        A supported group lacks a static size or exact block dimensions are
+        missing from ``launch``; group resolution must establish these first.
+    """
+
     if resolved.kind not in {"block", "warp", "threads_within_warp"}:
         return _unsupported(
             call,
