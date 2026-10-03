@@ -14,6 +14,7 @@
 #include <cuda/memory_resource>
 #include <cuda/std/functional>
 #include <cuda/std/tuple>
+#include <cuda/std/utility>
 
 #include <cuda/experimental/execution.cuh>
 #include <cuda/experimental/stream.cuh>
@@ -60,6 +61,20 @@ struct times3
   __host__ __device__ int operator()(int x) const
   {
     return 3 * x;
+  }
+};
+struct times2
+{
+  __host__ __device__ int operator()(int x) const
+  {
+    return 2 * x;
+  }
+};
+struct plus1
+{
+  __host__ __device__ int operator()(int x) const
+  {
+    return x + 1;
   }
 };
 
@@ -201,6 +216,106 @@ auto allocate(size_t n)
          });
 }
 } // namespace lane
+
+// ---------------------------------------------------------------------------
+// A mock-up of sharded algorithms as senders. A sharded_view<N> is N shards,
+// each a span plus the lane it lives on. A verb takes and returns a *bundle* of
+// per-shard senders, one per lane: elementwise verbs map shard-wise, so a chain
+// of transforms is one stream-ordered chain per lane and needs no event at all;
+// only a reduce has a when_all (fork) and a continues_on (join). Making each verb
+// its own when_all chained through let_value would instead fork every verb from
+// the origin lane's tail, a spurious cross-shard dependency.
+namespace sharded_mock
+{
+template <size_t N>
+struct sharded_view
+{
+  int* data[N];
+  int shard_n;
+  ex::lane_scheduler lane[N];
+};
+
+template <class... S>
+struct bundle
+{
+  cuda::std::tuple<S...> s;
+};
+template <class... S>
+bundle(cuda::std::tuple<S...>) -> bundle<S...>;
+
+template <class Tuple, class F, size_t... I>
+auto map_bundle(Tuple&& t, F&& f, cuda::std::index_sequence<I...>)
+{
+  return bundle{
+    cuda::std::make_tuple(f(cuda::std::get<I>(static_cast<Tuple&&>(t)), cuda::std::integral_constant<size_t, I>{})...)};
+}
+
+// start(view): one `schedule(lane_k)` per shard.
+template <size_t N, size_t... I>
+auto start(const sharded_view<N>& v, cuda::std::index_sequence<I...>)
+{
+  return bundle{cuda::std::make_tuple(ex::schedule(v.lane[I])...)};
+}
+template <size_t N>
+auto start(const sharded_view<N>& v)
+{
+  return start(v, cuda::std::make_index_sequence<N>{});
+}
+
+// transform(bundle, in, out, op): per shard, CUB Transform on the shard's lane.
+template <class... S, size_t N, class Op>
+auto transform(bundle<S...> b, const sharded_view<N>& in, const sharded_view<N>& out, Op op)
+{
+  static_assert(sizeof...(S) == N);
+  return map_bundle(
+    ::std::move(b.s),
+    [=](auto s, auto k) {
+      return ::std::move(s) | ex::then([=] {
+               auto env =
+                 cuda::std::execution::env{cuda::std::execution::prop{::cuda::get_stream, in.lane[k].stream()}};
+               REQUIRE(
+                 cub::DeviceTransform::Transform(cuda::std::make_tuple(in.data[k]), out.data[k], in.shard_n, op, env)
+                 == cudaSuccess);
+             });
+    },
+    cuda::std::make_index_sequence<N>{});
+}
+
+// reduce(bundle, in, partials, result): per shard, CUB Reduce into partials[k] on
+// the shard's lane; when_all (the fork, if under a lane) ; continues_on(lane 0)
+// (the join) ; one kernel adds the partials into result.
+__global__ void sum_k(const int* partials, int n, int* result)
+{
+  int acc = 0;
+  for (int i = 0; i < n; ++i)
+  {
+    acc += partials[i];
+  }
+  *result = acc;
+}
+template <class... S, size_t N, size_t... I>
+auto reduce(bundle<S...> b, const sharded_view<N>& in, int* partials, int* result, cuda::std::index_sequence<I...>)
+{
+  static_assert(sizeof...(S) == N);
+  auto stage = [=](auto s, auto k) {
+    return ::std::move(s) | ex::then([=] {
+             auto env = cuda::std::execution::env{cuda::std::execution::prop{::cuda::get_stream, in.lane[k].stream()}};
+             REQUIRE(cub::DeviceReduce::Reduce(in.data[k], partials + k, in.shard_n, cuda::std::plus<>{}, 0, env)
+                     == cudaSuccess);
+           });
+  };
+  return ex::when_all(stage(cuda::std::get<I>(::std::move(b.s)), cuda::std::integral_constant<size_t, I>{})...)
+       | ex::continues_on(in.lane[0]) //
+       | ex::then([=] {
+           sum_k<<<1, 1, 0, in.lane[0].stream()>>>(partials, static_cast<int>(N), result);
+         });
+}
+template <class... S, size_t N>
+auto reduce(bundle<S...> b, const sharded_view<N>& in, int* partials, int* result)
+{
+  return reduce(::std::move(b), in, partials, result, cuda::std::make_index_sequence<N>{});
+}
+} // namespace sharded_mock
 
 // A per-test observer: counts the event joins issued by continues_on onto a lane.
 struct join_counter
@@ -441,4 +556,44 @@ C2H_TEST("lane_scheduler: transform then reduce over lane-resident spans, alloca
   CAPTURE(allocs);
   // partials + 2 scratch buffers + 1 CUB Reduce scratch per lane; Transform needs none.
   CHECK(allocs == 5);
+}
+
+C2H_TEST("lane_scheduler: sharded mock-up, three transforms then a reduce: one fork, one join, no other event",
+         "[lane_scheduler]")
+{
+  using namespace sharded_mock;
+  // Two shards: the first and second halves of fixture a (and of b, used as the
+  // transforms' ping-pong buffer), on lanes a and b.
+  fixture f;
+  join_counter jc;
+  constexpr size_t N = 2;
+  const int half     = f.n / 2;
+  sharded_view<N> x{{f.a, f.a + half}, half, {f.la, f.lb}};
+  sharded_view<N> y{{f.b, f.b + half}, half, {f.la, f.lb}};
+  fill_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n, 1);
+  REQUIRE(cudaStreamSynchronize(f.sa.get()) == cudaSuccess);
+
+  int allocs = 0;
+  auto whole =
+    ex::schedule(f.la) | ex::let_value([&] {
+      return lane::allocate<int>(N) | ex::let_value([&](lane::buffer<int>& partials) {
+               auto b = start(x);
+               auto t = transform(transform(transform(::std::move(b), x, y, times2{}), y, x, plus1{}), x, y, times3{});
+               return reduce(::std::move(t), y, partials.data(), f.out);
+             });
+    });
+  ex::sync_wait(std::move(whole),
+                cuda::std::execution::env{
+                  jc.env(), cuda::std::execution::prop{::cuda::mr::get_memory_resource, counting_mr{&allocs}}});
+
+  int result = 0;
+  REQUIRE(cudaMemcpy(&result, f.out, sizeof(int), cudaMemcpyDeviceToHost) == cudaSuccess);
+  CHECK(result == ((1 * 2) + 1) * 3 * f.n); // 9 per element
+  // The three transforms are stream-ordered per lane and cost nothing. The
+  // reduce's when_all forks lane b from lane a (where the chain and the
+  // partials allocation started), and its continues_on joins b back: 2 events.
+  CHECK(jc.joins == 2);
+  CAPTURE(allocs);
+  // partials, plus CUB Reduce's scratch on each lane. Transform allocates nothing.
+  CHECK(allocs == 1 + N);
 }
