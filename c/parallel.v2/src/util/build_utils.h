@@ -79,6 +79,77 @@ inline std::string parse_ctk_root(const char* ctk_path)
   return fp.string();
 }
 
+// Looks for `relative_marker` under `ctk_root`; if not found there, scans
+// `ctk_root`'s sibling directories for one containing it. Returns the full
+// path to the marker if found anywhere, or `ctk_root / relative_marker`
+// (the default, possibly nonexistent, location) otherwise.
+//
+// CUDA 13.x pip wheels merge every CTK component into one shared
+// nvidia/cu13/ tree, so markers rooted under `ctk_root` (the layout used by
+// the flat `/usr/local/cuda` install and by
+// `/usr/local/cuda/targets/<arch>/include` too) resolve directly. CUDA 12.x
+// pip wheels instead install each CTK component into its own isolated
+// package directory — e.g. cudart headers/libs under nvidia/cuda_runtime/,
+// but nvcc-provided content (libdevice, crt/ headers, ...) under the
+// sibling nvidia/cuda_nvcc/ — so `ctk_root` (derived from the cudart
+// include path) never contains those markers directly.
+inline std::string find_in_ctk_or_siblings(const std::string& ctk_root, const std::filesystem::path& relative_marker)
+{
+  if (ctk_root.empty())
+  {
+    return {};
+  }
+  std::filesystem::path default_path = std::filesystem::path(ctk_root) / relative_marker;
+  if (std::filesystem::exists(default_path))
+  {
+    return default_path.string();
+  }
+  std::filesystem::path parent = std::filesystem::path(ctk_root).parent_path();
+  std::error_code ec;
+  for (const auto& entry : std::filesystem::directory_iterator(parent, ec))
+  {
+    if (!entry.is_directory(ec))
+    {
+      continue;
+    }
+    std::filesystem::path candidate = entry.path() / relative_marker;
+    if (std::filesystem::exists(candidate))
+    {
+      return candidate.string();
+    }
+  }
+  // Not found anywhere; return the default location so callers get the same
+  // "file not found" error they would have gotten before this fallback.
+  return default_path.string();
+}
+
+// Returns the full path to libdevice.10.bc given a CTK root (as returned by
+// parse_ctk_root()). See find_in_ctk_or_siblings() for why this needs to
+// look outside `ctk_root` on CUDA 12.x pip installs.
+inline std::string find_libdevice_bc(const std::string& ctk_root)
+{
+  return find_in_ctk_or_siblings(ctk_root, std::filesystem::path("nvvm") / "libdevice" / "libdevice.10.bc");
+}
+
+// Returns the include directory containing the nvcc-provided compiler-support
+// headers (crt/host_defines.h and friends) that cudart's own headers
+// `#include "crt/..."` relatively — empty if they're already reachable under
+// `<ctk_root>/include` (no extra -isystem entry needed), non-empty (the
+// package's include dir) when they live in a CUDA 12.x pip sibling package
+// (nvidia-cuda-nvcc-cu12) instead. See find_in_ctk_or_siblings().
+inline std::string find_extra_ctk_include_dir(const std::string& ctk_root)
+{
+  if (ctk_root.empty()
+      || std::filesystem::exists(std::filesystem::path(ctk_root) / "include" / "crt" / "host_defines.h"))
+  {
+    return {};
+  }
+  std::string found = find_in_ctk_or_siblings(ctk_root, std::filesystem::path("include") / "crt" / "host_defines.h");
+  // find_in_ctk_or_siblings() falls back to the (nonexistent) default
+  // location when the marker isn't found anywhere; only trust a real hit.
+  return std::filesystem::exists(found) ? std::filesystem::path(found).parent_path().parent_path().string() : "";
+}
+
 // In source-tree (dev) builds, cub/ and thrust/ live at sibling paths to
 // libcudacxx/include rather than under a single CCCL_INCLUDE_PATH. The test
 // harness passes them as `-I`-prefixed strings; hostjit's
