@@ -1,3 +1,6 @@
+#include <thrust/count.h>
+#include <thrust/device_free.h>
+#include <thrust/device_malloc.h>
 #include <thrust/execution_policy.h>
 #include <thrust/uninitialized_fill.h>
 
@@ -197,3 +200,72 @@ TEST_CASE("TestUninitializedFillNCudaStreams", "[uninitialized_fill]")
 
   cudaStreamDestroy(s);
 }
+
+// Exceeds the kernel parameter limit, see https://github.com/NVIDIA/cccl/issues/2777. The copy constructor makes the
+// type not trivially copyable, so uninitialized_fill must invoke it for each element.
+struct LargeNonTrivialCopy
+{
+  static constexpr int size = 10000;
+
+  int data[size];
+  bool copy_constructed = false;
+
+  // data holds 0, 1, 2, ...
+  LargeNonTrivialCopy()
+  {
+    for (int i = 0; i < size; ++i)
+    {
+      data[i] = i;
+    }
+  }
+
+  _CCCL_HOST_DEVICE LargeNonTrivialCopy(const LargeNonTrivialCopy& other)
+      : copy_constructed{true}
+  {
+    for (int i = 0; i < size; ++i)
+    {
+      data[i] = other.data[i];
+    }
+  }
+};
+
+struct is_copy_of_exemplar
+{
+  _CCCL_HOST_DEVICE bool operator()(const LargeNonTrivialCopy& x) const
+  {
+    for (int i = 0; i < LargeNonTrivialCopy::size; ++i)
+    {
+      if (x.data[i] != i)
+      {
+        return false;
+      }
+    }
+    return x.copy_constructed;
+  }
+};
+
+TEST_CASE("TestUninitializedFillLargeValue", "[uninitialized_fill]")
+{
+  using T                       = LargeNonTrivialCopy;
+  const thrust::device_ptr<T> v = thrust::device_malloc<T>(3);
+
+  const T exemplar;
+  REQUIRE_FALSE(exemplar.copy_constructed);
+
+  thrust::uninitialized_fill(v, v + 3, exemplar);
+
+  // raw pointers, so the predicate reads the elements in place instead of copying them out of a device_reference
+  T* const raw = thrust::raw_pointer_cast(v);
+  REQUIRE(thrust::count_if(thrust::device, raw, raw + 3, is_copy_of_exemplar{}) == 3);
+
+  thrust::device_free(v);
+}
+
+#ifdef THRUST_TEST_DEVICE_SIDE
+// Compile-only check of the device-side fallback; launching it would reserve ~30 GiB of local memory on a GH200
+__global__ void
+uninitialized_fill_large_value_kernel(thrust::device_ptr<LargeNonTrivialCopy> first, const LargeNonTrivialCopy* value)
+{
+  thrust::uninitialized_fill(thrust::device, first, first + 3, *value);
+}
+#endif
