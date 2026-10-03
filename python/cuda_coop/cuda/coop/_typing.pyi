@@ -1,0 +1,146 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+from typing import Any, Literal, Protocol, TypeAlias, TypeVar
+
+import numpy
+
+_ItemT = TypeVar("_ItemT")
+
+ThreadLevel: TypeAlias = Literal[
+    "thread",
+    "gpu_thread",
+    "warp",
+    "block",
+    "cluster",
+    "grid",
+]
+ThreadGroupKind: TypeAlias = Literal[
+    "thread",
+    "warp",
+    "block",
+    "cluster",
+    "grid",
+    "threads_within_warp",
+    "warps_within_block",
+]
+SynchronizableGroupKind: TypeAlias = Literal[
+    "thread",
+    "warp",
+    "block",
+    "cluster",
+    "threads_within_warp",
+    "warps_within_block",
+]
+BlockLoadStoreAlgorithm: TypeAlias = Literal[
+    "direct",
+    "striped",
+    "vectorize",
+    "transpose",
+    "warp_transpose",
+    "warp_transpose_timesliced",
+]
+WarpLoadStoreAlgorithm: TypeAlias = Literal[
+    "direct",
+    "striped",
+    "vectorize",
+    "transpose",
+]
+LoadStoreAlgorithm: TypeAlias = BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm
+TempStorageSharing: TypeAlias = Literal["shared", "exclusive"]
+
+class CompilerScalarLike(Protocol):
+    """Backend-optional structural view of one compiler numeric scalar."""
+
+    width: int
+
+    @property
+    def dtype(self) -> object:
+        """Return this value's compiler dtype."""
+    def ir_value(self) -> object:
+        """Return this scalar's compiler IR value."""
+
+class CompilerIntegerLike(CompilerScalarLike, Protocol):
+    """Compiler scalar carrying the signedness metadata of an integer."""
+
+    signed: bool
+
+PortableNumericScalar: TypeAlias = (
+    int
+    | float
+    | numpy.int8
+    | numpy.uint8
+    | numpy.int16
+    | numpy.uint16
+    | numpy.int32
+    | numpy.uint32
+    | numpy.int64
+    | numpy.uint64
+    | numpy.float32
+    | numpy.float64
+    | CompilerScalarLike
+)
+_ReadableItemT_co = TypeVar(
+    "_ReadableItemT_co", bound=PortableNumericScalar, covariant=True
+)
+ScalarValue: TypeAlias = (
+    bool | int | float | complex | numpy.number | CompilerScalarLike
+)
+IntegerValue: TypeAlias = int | numpy.integer[Any] | CompilerIntegerLike
+TraceInteger: TypeAlias = int | numpy.integer[Any]
+ValidItems: TypeAlias = IntegerValue
+
+class ThreadDataLike(Protocol[_ItemT]):
+    """Common mutable, indexable per-thread payload contract.
+
+    Concrete compiler backends may attach additional helpers and metadata, but
+    common operations rely only on this payload shape and item access contract.
+    Structural type compatibility does not register arbitrary user classes with
+    a compiler; kernels must use payloads that their active backend recognizes.
+    """
+
+    items_per_thread: int
+    dtype: object | None
+
+    def __len__(self) -> int:
+        """Return the number of logical items owned by this thread."""
+
+    def __getitem__(self, index: int, /) -> _ItemT:
+        """Return one thread-local item."""
+
+    def __setitem__(self, index: int, value: _ItemT, /) -> None:
+        """Replace one thread-local item."""
+
+class PortableThreadDataLike(Protocol[_ReadableItemT_co]):
+    """Thread payload whose readable items use the common API's numeric
+    types.
+    """
+
+    items_per_thread: int
+    dtype: object | None
+
+    def __len__(self) -> int:
+        """Return the number of items owned by this thread."""
+
+    def __getitem__(self, index: int, /) -> _ReadableItemT_co:
+        """Return one numeric register value supported by the common API."""
+
+class TempStorageLike(Protocol):
+    """Common explicit scratch-storage descriptor contract."""
+
+    size_in_bytes: int | None
+    alignment: int | None
+    auto_sync: bool
+    sharing: TempStorageSharing
+
+__all__ = [
+    "BlockLoadStoreAlgorithm",
+    "LoadStoreAlgorithm",
+    "TempStorageLike",
+    "TempStorageSharing",
+    "ThreadDataLike",
+    "ThreadGroupKind",
+    "ThreadLevel",
+    "WarpLoadStoreAlgorithm",
+]
