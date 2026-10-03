@@ -21,6 +21,7 @@
 #include <cuda/hierarchy>
 #include <cuda/launch>
 #include <cuda/std/cstdint>
+#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include <cuda/experimental/coop/group>
@@ -102,7 +103,10 @@ struct GroupsKernel
 
     // Create a half_warp group that splits every warp into 2 groups.
     const cudax::coop::generic_group half_warp{
-      cuda::gpu_thread, cudax::coop::this_warp{config}, cudax::coop::group_by<16>{}, cudax::coop::lane_synchronizer{}};
+      cuda::gpu_thread,
+      cudax::coop::this_warp{config},
+      cudax::coop::group_by{cuda::std::integral_constant<cuda::std::size_t, 16>{}},
+      cudax::coop::lane_synchronizer{}};
 
     // This offset allows each group to have its own unique area in the scratch
     // array
