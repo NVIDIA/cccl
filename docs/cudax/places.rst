@@ -404,6 +404,57 @@ green-context places) ignore the registry and return their own embedded pool
 instead, so the user-provided ``cudaStream_t`` / ``CUgreenCtx`` must outlive
 any place that wraps it.
 
+.. _places-place-group:
+
+Place groups
+------------
+
+A grid of places (or a ``std::vector<exec_place>``) is a pure value naming
+*where* things can run. ``place_group`` bundles a set of places with *what it
+takes* to run there: lazily created per-place stream pools and per-place
+memory resources, with a well-defined teardown order. Two groups over the same
+places are two deliberately distinct isolation scopes — mirroring the MPI
+precedent of ``MPI_Group`` (membership) versus ``MPI_Comm`` (membership plus
+attached state).
+
+.. code:: cpp
+
+    #include <cuda/experimental/places.cuh>
+    using namespace cuda::experimental::places;
+
+    // WHERE is spelled with the usual place vocabulary (grids, partitions);
+    // the group only attaches resources to it. One place per locality domain
+    // of every device (whole devices where domains are unsupported):
+    place_group group{exec_place::all_locality_domains()};
+
+    // Alternatives: one place per device, a single device, or an explicit vector
+    place_group by_dev{exec_place::all_devices()};
+    place_group one_dev{make_locality_domain_grid(0)};
+
+    // WHEN is spelled with lanes: one ordering domain across the group (one
+    // stream per place, the same lane id everywhere). group.lane(k) is the
+    // group on lane k; plain `group` is lane 0. Ids are [0, num_lanes()) and
+    // never wrap: out of range throws instead of aliasing another lane.
+    auto l1        = group.lane(1);
+    cudaStream_t s = l1.stream(/*place_idx=*/0); // == group.get_stream(0, 1)
+
+    // Environments for CUB single-call algorithms: stream + the place's
+    // memory resource (temporaries land where the work runs) + the lane id
+    // (places::get_lane_id, an optional). envs() is one per place on a lane.
+    auto env  = group.env(0);      // lane 0
+    auto envs = l1.envs();         // lane 1, one per place
+    auto mr   = group.memory_resource(0);
+
+A standalone ``place_group`` owns its stream-pool registry. When it coexists
+with a CUDASTF context, it can *borrow* the context's
+``async_resources_handle`` pools instead, so exactly one pool owner exists:
+
+.. code:: cpp
+
+    cuda::experimental::stf::context ctx;
+    std::vector<exec_place> places{exec_place::device(0)};
+    place_group group{places, ctx.async_resources()};
+
 .. _places-memory-allocation:
 
 Memory allocation with data places

@@ -156,15 +156,9 @@ public:
                   locality_domain_sm_split ld_split = locality_domain_sm_split::backfill)
       : ld_split_(mv(ld_split))
   {
-    ::std::vector<::std::shared_ptr<exec_place>> places;
-    places.reserve(grid.size());
-    for (size_t i = 0; i < grid.size(); ++i)
+    for (auto& place : grid.places())
     {
-      places.push_back(::std::make_shared<exec_place>(grid.get_place(i)));
-    }
-    for (const auto& place : places)
-    {
-      compute_subplaces(handle, *place, scope);
+      compute_subplaces(handle, mv(place), scope);
     }
   }
 
@@ -331,9 +325,9 @@ private:
 
     if (scope == place_partition_scope::cuda_device)
     {
-      for (size_t i = 0; i < place.size(); ++i)
+      for (auto& p : place.places())
       {
-        sub_places.push_back(place.get_place(i));
+        sub_places.push_back(mv(p));
       }
       return;
     }
@@ -342,9 +336,8 @@ private:
     {
       // No handle needed: locality-domain green contexts are cached in a
       // process-wide registry keyed by (device, split method).
-      for (auto i : each(place.size()))
+      for (auto& p : place.places())
       {
-        exec_place p = place.get_place(i);
         if (!p.is_device())
         {
           // Host or other non-device place: nothing to partition into
