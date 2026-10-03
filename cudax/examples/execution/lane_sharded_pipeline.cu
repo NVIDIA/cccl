@@ -31,6 +31,13 @@
 // allocates on the lane the reduce joins on, held by a `let_value` scope inside
 // the verb and freed when the reduce is done. The caller never sees them.
 //
+// The verbs take the memory resource as a parameter. Reading it from the sender
+// environment instead (`read_env(get_memory_resource) | let_value(...)` at the
+// root of the pipeline) works and is the intended design, but it makes the whole
+// pipeline below it environment-dependent, and the device-side front end then
+// spends 6x longer on this file (cicc: 131 s -> 785 s). That variant is kept on
+// branch senders/lane-scheduler-slow-compile-repro with a reproducer script.
+//
 // Run with `--graph` to capture the pipeline into a CUDA graph instead and
 // write it as `lane_sharded_pipeline.dot`: N independent chains out of one root,
 // joined once at the sum. (`dot -Tpdf lane_sharded_pipeline.dot -o pipeline.pdf`)
