@@ -457,6 +457,12 @@ template <class... _Completions>
 
 _CCCL_DIAG_POP
 
+template <class _Tp>
+inline constexpr bool __is_completions_and_offsets = false;
+
+template <class _Completions, class _Offsets>
+inline constexpr bool __is_completions_and_offsets<::cuda::std::__pair<_Completions, _Offsets>> = true;
+
 // The sender for when_all
 template <class... _Sndrs>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
@@ -474,7 +480,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
   template <class _Self, class... _Env>
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
-    return __get_completions_and_offsets<_Self, _Env...>().first;
+    // __merge_completions returns a (completions, offsets) pair, or, when a child
+    // is a dependent sender queried without an environment (or has invalid
+    // completions), the error object itself; pass that through unchanged.
+    using __result_t _CCCL_NODEBUG = decltype(__get_completions_and_offsets<_Self, _Env...>());
+    if constexpr (__is_completions_and_offsets<__result_t>)
+    {
+      return __get_completions_and_offsets<_Self, _Env...>().first;
+    }
+    else
+    {
+      return __get_completions_and_offsets<_Self, _Env...>();
+    }
   }
 
   template <class _Rcvr>
