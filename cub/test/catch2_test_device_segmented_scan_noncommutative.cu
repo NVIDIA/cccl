@@ -3,6 +3,7 @@
 
 #include <cub/device/device_segmented_scan.cuh>
 
+#include <thrust/fill.h>
 #include <thrust/tabulate.h>
 
 #include "cub_test_macros.h"
@@ -138,4 +139,56 @@ CUB_TEST("Device inclusive segmented scan works with non-commutative operator", 
   }
 
   REQUIRE(h_expected == h_output);
+}
+
+CUB_TEST("Device inclusive segmented scan with schedule properties works with non-commutative operator",
+         "[segmented][scan][device]",
+         CUB_SMALL)
+{
+  using op_t   = impl::bicyclic_monoid_op<unsigned>;
+  using pair_t = typename op_t::pair_t;
+
+  // Segments of 1 to 40 items over the first half of the input, then one segment that holds the other half.
+  const unsigned num_items = 300'000;
+  c2h::host_vector<unsigned> h_offsets{0};
+  while (h_offsets.back() < num_items / 2)
+  {
+    h_offsets.push_back(h_offsets.back() + static_cast<unsigned>(h_offsets.size() * 7 % 40) + 1);
+  }
+  h_offsets.push_back(num_items);
+  const c2h::device_vector<unsigned> offsets = h_offsets;
+  const auto num_segments                    = static_cast<::cuda::std::int64_t>(h_offsets.size() - 1);
+
+  c2h::device_vector<pair_t> input(num_items);
+  thrust::tabulate(input.begin(), input.end(), impl::populate_input<unsigned>{});
+  c2h::device_vector<pair_t> output(num_items);
+
+  const pair_t* d_input     = thrust::raw_pointer_cast(input.data());
+  pair_t* d_output          = thrust::raw_pointer_cast(output.data());
+  const unsigned* d_offsets = thrust::raw_pointer_cast(offsets.data());
+
+  const c2h::host_vector<pair_t> h_input(input);
+  c2h::host_vector<pair_t> h_expected(num_items);
+  for (::cuda::std::int64_t segment_id = 0; segment_id < num_segments; ++segment_id)
+  {
+    compute_inclusive_scan_reference(
+      h_input.begin() + h_offsets[segment_id],
+      h_input.begin() + h_offsets[segment_id + 1],
+      h_expected.begin() + h_offsets[segment_id],
+      op_t{},
+      pair_t{0, 0});
+  }
+
+  // No scan of this input reaches the canary.
+  const pair_t canary{~0u, ~0u};
+  const auto run = [&](const auto& env) {
+    thrust::fill(c2h::device_policy, output.begin(), output.end(), canary);
+    REQUIRE(cudaSuccess
+            == cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+              d_input, d_output, d_offsets, d_offsets + 1, num_segments, op_t{}, env));
+    REQUIRE(h_expected == c2h::host_vector<pair_t>(output));
+  };
+  run(cuda::std::execution::env{cub::segmented_scan_num_items(num_items)});
+  run(cuda::std::execution::env{cub::segmented_scan_load_balancing});
+  run(cuda::std::execution::env{cub::segmented_scan_num_items(num_items), cub::segmented_scan_load_balancing});
 }

@@ -327,6 +327,62 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit (separate offsets
   REQUIRE(d_out == expected);
 }
 
+CUB_TEST("cub::DeviceSegmentedScan accepts the number of items", "[segmented_scan][env]", CUB_SMALL)
+{
+  // example-begin segmented-scan-num-items
+  ::cuda::std::int64_t num_segments    = 3;
+  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  thrust::device_vector<int> d_out(d_in.size());
+
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
+  const auto env = cuda::std::execution::env{stream_ref, cub::segmented_scan_num_items(9)};
+
+  const auto error = cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
+    d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedScan::ExclusiveSegmentedSum failed with status: " << error << '\n';
+  }
+
+  const thrust::device_vector<int> expected{0, 8, 14, 21, 0, 3, 3, 0, 1};
+  // example-end segmented-scan-num-items
+  stream.sync();
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_out == expected);
+}
+
+CUB_TEST("cub::DeviceSegmentedScan accepts load balancing", "[segmented_scan][env]", CUB_SMALL)
+{
+  // example-begin segmented-scan-load-balancing
+  ::cuda::std::int64_t num_segments    = 3;
+  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  thrust::device_vector<int> d_out(d_in.size());
+
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
+  const auto env = cuda::std::execution::env{stream_ref, cub::segmented_scan_load_balancing};
+
+  const auto error = cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
+    d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedScan::ExclusiveSegmentedSum failed with status: " << error << '\n';
+  }
+
+  const thrust::device_vector<int> expected{0, 8, 14, 21, 0, 3, 3, 0, 1};
+  // example-end segmented-scan-load-balancing
+  stream.sync();
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_out == expected);
+}
+
 #if _CCCL_STD_VER >= 2020
 
 // example-begin segmented-scan-policy-selector
@@ -372,6 +428,53 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts a custom poli
 
   thrust::device_vector<int> expected{0, 8, 14, 21, 0, 3, 3, 0, 1};
   // example-end segmented-scan-tuning
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_out == expected);
+}
+
+// example-begin segmented-scan-load-balanced-policy-selector
+struct SegmentedScanLoadBalancedPolicySelector
+{
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability) const -> cub::SegmentedScanLoadBalancedPolicy
+  {
+    return {.threads_per_block       = 128,
+            .items_per_thread        = 4,
+            .load_algorithm          = cub::BLOCK_LOAD_WARP_TRANSPOSE,
+            .load_modifier           = cub::LOAD_DEFAULT,
+            .store_algorithm         = cub::BLOCK_STORE_WARP_TRANSPOSE,
+            .scan_algorithm          = cub::BLOCK_SCAN_WARP_SCANS,
+            .min_tiles_per_block     = 16,
+            .max_subscription_factor = 5};
+  }
+};
+// example-end segmented-scan-load-balanced-policy-selector
+
+CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan with load balancing accepts a custom policy selector",
+         "[segmented_scan][env]",
+         CUB_SMALL)
+{
+  // example-begin segmented-scan-load-balanced-tuning
+  ::cuda::std::int64_t num_segments    = 3;
+  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  thrust::device_vector<int> d_out(d_in.size());
+
+  // Each selector tunes the algorithm whose policy type it returns.
+  const auto env = cuda::std::execution::env{
+    cub::segmented_scan_load_balancing,
+    cuda::execution::tune(SegmentedScanPolicySelector{}, SegmentedScanLoadBalancedPolicySelector{})};
+
+  const auto error = cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
+    d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}, 0, env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedScan::ExclusiveSegmentedScan failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected{0, 8, 14, 21, 0, 3, 3, 0, 1};
+  // example-end segmented-scan-load-balanced-tuning
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_out == expected);

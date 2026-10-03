@@ -1,9 +1,15 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// Should precede any includes
+struct stream_registry_factory_t;
+#define CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY stream_registry_factory_t
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_segmented_scan.cuh>
+
+#include <thrust/fill.h>
 
 #include <cstdint>
 #include <iostream>
@@ -11,6 +17,7 @@
 
 #include "catch2_test_device_reduce.cuh" // for reference_extended_fp
 #include "catch2_test_device_scan.cuh"
+#include "catch2_test_device_segmented_scan_schedules.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/custom_type.h>
@@ -22,6 +29,11 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::ExclusiveSegmentedSum, device_e
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::InclusiveSegmentedScan, device_inclusive_segmented_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::ExclusiveSegmentedScan, device_exclusive_segmented_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::InclusiveSegmentedScanInit, device_inclusive_segmented_scan_with_init);
+
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedScan::InclusiveSegmentedScan, device_inclusive_segmented_scan_env);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedScan::ExclusiveSegmentedScan, device_exclusive_segmented_scan_env);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedScan::InclusiveSegmentedScanInit,
+                           device_inclusive_segmented_scan_with_init_env);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 // %PARAM% TEST_TYPES types 0:1:2:3
@@ -382,4 +394,204 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
     }
   }
 #endif
+}
+
+CUB_TEST("Device segmented scan gives the same result with every schedule",
+         "[segmented][scan][device]",
+         CUB_SMALL,
+         full_type_list,
+         offsets)
+{
+  using params   = params_t<TestType>;
+  using input_t  = typename params::item_t;
+  using output_t = typename params::output_t;
+  using offset_t = typename c2h::get<1, TestType>;
+
+  constexpr offset_t num_items  = 384 * 1024;
+  constexpr offset_t large_size = num_items / 16;
+
+  // The first row gives segments short enough to share a block for every value type, the second puts most items in a
+  // few segments.
+  const std::tuple<offset_t, offset_t> seg_size_range =
+    GENERATE_COPY(table<offset_t, offset_t>({{0, 32}, {large_size, num_items}}));
+  INFO("Test seg_size_range: [" << std::get<0>(seg_size_range) << ", " << std::get<1>(seg_size_range) << ")");
+
+  c2h::device_vector<offset_t> d_segment_offsets = c2h::gen_uniform_offsets<offset_t>(
+    C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
+  const offset_t num_segments = static_cast<offset_t>(d_segment_offsets.size() - 1);
+  auto d_offsets_it           = thrust::raw_pointer_cast(d_segment_offsets.data());
+
+  INFO("Num segments: " << num_segments);
+  CAPTURE(c2h::type_name<input_t>(), c2h::type_name<output_t>(), c2h::type_name<offset_t>());
+
+  c2h::device_vector<input_t> in_items(num_items);
+  c2h::gen(C2H_SEED(2), in_items);
+  auto d_in_it = thrust::raw_pointer_cast(in_items.data());
+
+  c2h::device_vector<output_t> output_vec(num_items);
+  auto d_out_it = thrust::raw_pointer_cast(output_vec.data());
+
+  const c2h::host_vector<offset_t> h_segment_offsets = d_segment_offsets;
+  const c2h::host_vector<input_t> h_input            = in_items;
+  c2h::host_vector<output_t> h_ref(num_items);
+
+  const auto total             = static_cast<::cuda::std::int64_t>(num_items);
+  const auto num_items_env     = cuda::std::execution::env{cub::segmented_scan_num_items(total)};
+  const auto load_balanced_env = cuda::std::execution::env{cub::segmented_scan_load_balancing};
+  const auto both_env =
+    cuda::std::execution::env{cub::segmented_scan_num_items(total), cub::segmented_scan_load_balancing};
+
+  const auto require_reference = [&] {
+    const c2h::host_vector<output_t> h_output = output_vec;
+    for (offset_t i = 0; i < num_segments; ++i)
+    {
+      const bool correct = check_segment(
+        h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
+      REQUIRE(correct);
+    }
+  };
+
+  SECTION("exclusive segmented scan")
+  {
+    using op_t = ::cuda::minimum<>;
+
+    // A minimum scan never yields a value above its initial value, so the output is reset to one.
+    output_t init_value{};
+    init_default_constant(init_value, 2);
+    output_t above_init{};
+    init_default_constant(above_init, 3);
+
+    for (offset_t i = 0; i < num_segments; ++i)
+    {
+      compute_exclusive_scan_reference(
+        h_input.cbegin() + h_segment_offsets[i],
+        h_input.cbegin() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
+        h_ref.begin() + h_segment_offsets[i],
+        init_value,
+        op_t{});
+    }
+
+    const auto run = [&](const auto& schedule_env) {
+      const size_t bytes = schedule_allocation_size<cub::ForceInclusive::No, true>(
+        schedule_env,
+        d_in_it,
+        d_out_it,
+        num_segments,
+        d_offsets_it,
+        d_offsets_it + 1,
+        d_offsets_it,
+        op_t{},
+        cub::detail::InputValue<output_t>{init_value});
+      thrust::fill(c2h::device_policy, output_vec.begin(), output_vec.end(), above_init);
+      device_exclusive_segmented_scan_env(
+        d_in_it,
+        d_out_it,
+        d_offsets_it,
+        d_offsets_it + 1,
+        num_segments,
+        op_t{},
+        init_value,
+        cuda::std::execution::env{expected_allocation_size(bytes), schedule_env});
+      require_reference();
+    };
+    run(num_items_env);
+    run(load_balanced_env);
+    run(both_env);
+  }
+
+  SECTION("inclusive segmented scan")
+  {
+    using op_t      = ::cuda::std::plus<>;
+    using h_accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
+
+    auto scan_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
+
+    for (offset_t i = 0; i < num_segments; ++i)
+    {
+      compute_inclusive_scan_reference(
+        h_input.cbegin() + h_segment_offsets[i],
+        h_input.cbegin() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
+        h_ref.begin() + h_segment_offsets[i],
+        scan_op,
+        h_accum_t{});
+    }
+
+    const auto run = [&](const auto& schedule_env) {
+      const size_t bytes = schedule_allocation_size<cub::ForceInclusive::No, true>(
+        schedule_env,
+        unwrap_it(d_in_it),
+        unwrap_it(d_out_it),
+        num_segments,
+        d_offsets_it,
+        d_offsets_it + 1,
+        d_offsets_it,
+        scan_op,
+        cub::NullType{});
+      thrust::fill(c2h::device_policy, output_vec.begin(), output_vec.end(), output_t{});
+      device_inclusive_segmented_scan_env(
+        unwrap_it(d_in_it),
+        unwrap_it(d_out_it),
+        d_offsets_it,
+        d_offsets_it + 1,
+        num_segments,
+        scan_op,
+        cuda::std::execution::env{expected_allocation_size(bytes), schedule_env});
+      require_reference();
+    };
+    run(num_items_env);
+    run(load_balanced_env);
+    run(both_env);
+  }
+
+  SECTION("inclusive segmented scan with init")
+  {
+    using op_t              = cuda::std::plus<>;
+    using unwrapped_input_t = typename cuda::std::iterator_traits<decltype(unwrap_it(d_in_it))>::value_type;
+    using accum_t           = cuda::std::__accumulator_t<op_t, unwrapped_input_t, unwrapped_input_t>;
+    using h_accum_t         = cuda::std::__accumulator_t<op_t, input_t, input_t>;
+
+    auto scan_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
+
+    accum_t init_value{};
+    init_default_constant(init_value);
+
+    for (offset_t i = 0; i < num_segments; ++i)
+    {
+      compute_inclusive_scan_reference(
+        h_input.cbegin() + h_segment_offsets[i],
+        h_input.cbegin() + h_segment_offsets[i + 1], // NOLINT(bugprone-misplaced-widening-cast)
+        h_ref.begin() + h_segment_offsets[i],
+        scan_op,
+        h_accum_t{init_value});
+    }
+
+    // 3 offset iterators API
+    const auto run = [&](const auto& schedule_env) {
+      const size_t bytes = schedule_allocation_size<cub::ForceInclusive::Yes, false>(
+        schedule_env,
+        unwrap_it(d_in_it),
+        unwrap_it(d_out_it),
+        num_segments,
+        d_offsets_it,
+        d_offsets_it + 1,
+        d_offsets_it,
+        scan_op,
+        cub::detail::InputValue<accum_t>{init_value});
+      thrust::fill(c2h::device_policy, output_vec.begin(), output_vec.end(), output_t{});
+      device_inclusive_segmented_scan_with_init_env(
+        unwrap_it(d_in_it),
+        unwrap_it(d_out_it),
+        d_offsets_it,
+        d_offsets_it + 1,
+        d_offsets_it,
+        num_segments,
+        scan_op,
+        init_value,
+        cuda::std::execution::env{expected_allocation_size(bytes), schedule_env});
+      require_reference();
+    };
+    run(num_items_env);
+    run(load_balanced_env);
+    run(both_env);
+  }
 }
