@@ -18,6 +18,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_topk.cuh>
+#include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
@@ -74,7 +75,8 @@ struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, true>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int operator()(T key) const
   {
     auto bits = reinterpret_cast<typename Traits<T>::UnsignedBits&>(key);
-    bits      = Traits<T>::TwiddleIn(bits);
+    // Rank -0.0 as +0.0 so that both zeros compare equal, as in DeviceRadixSort and BlockTopK
+    bits = BaseDigitExtractor<T>::ProcessFloatMinusZero(Traits<T>::TwiddleIn(bits));
     if constexpr (SelectDirection != select::min)
     {
       bits = ~bits;
@@ -135,7 +137,8 @@ struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, tr
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE candidate_class operator()(T key) const
   {
     auto bits = reinterpret_cast<unsigned_bits_t&>(key);
-    bits      = Traits<T>::TwiddleIn(bits);
+    // Must match the normalization in extract_bin_op_t, which produced kth_key_bits
+    bits = BaseDigitExtractor<T>::ProcessFloatMinusZero(Traits<T>::TwiddleIn(bits));
 
     if constexpr (SelectDirection != select::min)
     {
