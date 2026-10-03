@@ -10,6 +10,9 @@
 #include <cuda/experimental/execution.cuh>
 #include <cuda/experimental/stream.cuh>
 
+#include <algorithm>
+#include <set>
+#include <string>
 #include <vector>
 
 #include "testing.cuh" // IWYU pragma: keep
@@ -58,6 +61,44 @@ struct null_rcvr
   }
 };
 
+// Names a captured kernel node after the kernel it launches: "fill_a" / "fill_b"
+// by the fill value, "sum" for sum2_k.
+std::string node_name(cudaGraphNode_t node)
+{
+  cudaGraphNodeType type{};
+  REQUIRE(cudaGraphNodeGetType(node, &type) == cudaSuccess);
+  if (type != cudaGraphNodeTypeKernel)
+  {
+    return "other";
+  }
+  cudaKernelNodeParams p{};
+  REQUIRE(cudaGraphKernelNodeGetParams(node, &p) == cudaSuccess);
+  if (p.func == reinterpret_cast<const void*>(&sum2_k))
+  {
+    return "sum";
+  }
+  if (p.func == reinterpret_cast<const void*>(&fill_k))
+  {
+    return *static_cast<const int*>(p.kernelParams[2]) == 1 ? "fill_a" : "fill_b";
+  }
+  return "other";
+}
+
+// The dependency edges of a graph as "from->to" strings.
+std::multiset<std::string> graph_edges(cudaGraph_t g)
+{
+  size_t n = 0;
+  REQUIRE(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &n) == cudaSuccess);
+  std::vector<cudaGraphNode_t> from(n), to(n);
+  REQUIRE(cudaGraphGetEdges(g, from.data(), to.data(), nullptr, &n) == cudaSuccess);
+  std::multiset<std::string> edges;
+  for (size_t i = 0; i < n; ++i)
+  {
+    edges.insert(node_name(from[i]) + "->" + node_name(to[i]));
+  }
+  return edges;
+}
+
 // A per-test observer: counts the event joins issued by continues_on onto a lane.
 struct join_counter
 {
@@ -93,19 +134,16 @@ struct fixture
     cudaFree(b);
     cudaFree(out);
   }
-  int count_not(int v) const
+  // Copies `out` back to the host and checks that every element equals `v`.
+  bool all_equal(int v) const
   {
     std::vector<int> h(n);
     REQUIRE(cudaMemcpy(h.data(), out, n * sizeof(int), cudaMemcpyDeviceToHost) == cudaSuccess);
-    int bad = 0;
-    for (int x : h)
-    {
-      bad += (x != v);
-    }
-    return bad;
+    return ::std::all_of(h.begin(), h.end(), [v](int x) {
+      return x == v;
+    });
   }
 };
-
 } // namespace lane_scheduler_test
 
 // C2H_TEST names its generated test by line number; keep the cases in an
@@ -119,13 +157,14 @@ C2H_TEST("lane_scheduler: a single-lane chain issues no event", "[lane_scheduler
 {
   fixture f;
   join_counter jc;
-  auto chain = ex::schedule(f.la) //
-             | ex::then([&] {
-                 fill_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n, 1);
-               })
-             | ex::then([&] {
-                 fill_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n, 2);
-               });
+  auto chain =
+    ex::schedule(f.la) //
+    | ex::then([&] {
+        fill_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n, 1);
+      })
+    | ex::then([&] {
+        fill_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n, 2);
+      });
   static_assert(ex::get_completion_behavior<decltype(chain)>() == ex::completion_behavior::synchronous);
   ex::sync_wait(std::move(chain) | ex::write_env(jc.env()));
   CHECK(jc.joins == 0);
@@ -137,24 +176,26 @@ C2H_TEST("lane_scheduler: when_all of two lanes + continues_on issues exactly on
   for (int target = 0; target < 2; ++target)
   {
     join_counter jc;
-    auto lane_a = ex::schedule(f.la) | ex::then([&] {
+    auto lane_a         = ex::schedule(f.la) | ex::then([&] {
                     spin_k<<<1, 1, 0, f.sa.get()>>>(2000000);
                     fill_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n, 3);
-                  });
-    auto lane_b = ex::schedule(f.lb) | ex::then([&] {
+                          });
+    auto lane_b         = ex::schedule(f.lb) | ex::then([&] {
                     spin_k<<<1, 1, 0, f.sb.get()>>>(4000000);
                     fill_k<<<f.grid, 256, 0, f.sb.get()>>>(f.b, f.n, 4);
-                  });
+                          });
     auto& to            = target == 0 ? f.la : f.lb;
     cudaStream_t stream = target == 0 ? f.sa.get() : f.sb.get();
     auto joined         = ex::when_all(std::move(lane_a), std::move(lane_b)) //
-                | ex::continues_on(to) //
-                | ex::then([&, stream] {
+                        | ex::continues_on(to) //
+                        | ex::then([&, stream] {
                     sum2_k<<<f.grid, 256, 0, stream>>>(f.a, f.b, f.out, f.n);
-                  });
+                          });
     ex::sync_wait(std::move(joined), jc.env());
     CHECK(jc.joins == 1);
-    CHECK(f.count_not(7) == 0);
+    // a = 3 and b = 4 were filled on different lanes; out = a + b is only 7
+    // everywhere if the single event ordered both fills before the sum.
+    CHECK(f.all_equal(7));
   }
 }
 
@@ -181,16 +222,28 @@ C2H_TEST("lane_scheduler: fork and join are both continues_on, and become graph 
   auto op = ex::connect(std::move(joined), null_rcvr{});
   ex::start(op);
   REQUIRE(cudaStreamEndCapture(f.sa.get(), &g) == cudaSuccess);
-  size_t nodes = 0, edges = 0;
+  // Expected dependencies: when_all starts lane_a first, so lane a's fill is
+  // already captured when lane_b forks off it (fill_a -> fill_b), and the join
+  // makes the sum wait on lane b (fill_b -> sum). Whether the transitive
+  // fill_a -> sum edge is also reported depends on the driver, so check the
+  // relation rather than the edge count.
+  size_t nodes = 0;
   REQUIRE(cudaGraphGetNodes(g, nullptr, &nodes) == cudaSuccess);
-  REQUIRE(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &edges) == cudaSuccess);
   CHECK(nodes == 3);
-  CHECK(edges == 2);
+  const auto edges = graph_edges(g);
+  CAPTURE(edges);
+  CHECK(edges.count("fill_a->fill_b") == 1);
+  CHECK(edges.count("fill_b->sum") == 1);
+  for (const auto& e : edges)
+  {
+    CHECK((e == "fill_a->fill_b" || e == "fill_b->sum" || e == "fill_a->sum"));
+  }
   cudaGraphExec_t ge{};
   REQUIRE(cudaGraphInstantiate(&ge, g, 0) == cudaSuccess);
   REQUIRE(cudaGraphLaunch(ge, f.sa.get()) == cudaSuccess);
   REQUIRE(cudaStreamSynchronize(f.sa.get()) == cudaSuccess);
-  CHECK(f.count_not(3) == 0);
+  // a = 1 on lane a, b = 2 on the forked lane b, out = a + b after the join.
+  CHECK(f.all_equal(3));
   cudaGraphExecDestroy(ge);
   cudaGraphDestroy(g);
 }
