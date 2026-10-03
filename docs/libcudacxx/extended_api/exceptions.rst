@@ -40,7 +40,7 @@ way), and ``cudaErrorUnknown`` for any other type. ``status<Status>()`` recovers
 
         cudaError_t status() const noexcept;                      // runtime view
         template <class Status> bool holds() const noexcept;      // did the status come from a Status?
-        template <class Status> Status status() const noexcept;   // exact; precondition: holds<Status>()
+        template <class Status> Status status() const noexcept;   // the status object itself; precondition: holds<Status>()
         long long raw_code() const noexcept;                      // the code as reported
         cuda::std::string_view status_type() const noexcept;      // e.g. "CUresult"
         const cuda::std::source_location& location() const noexcept;

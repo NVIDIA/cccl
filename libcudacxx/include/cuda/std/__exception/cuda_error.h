@@ -24,12 +24,14 @@
 #endif // no system header
 
 #include <cuda/__driver/entry_point.h>
+#include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__exception/msg_storage.h>
 #include <cuda/std/__host_stdlib/cstdio>
 #include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__utility/typeid.h>
 #include <cuda/std/source_location>
 #include <cuda/std/string_view>
@@ -145,17 +147,30 @@ inline constexpr long long __cuda_error_unknown = 999; // ::cudaErrorUnknown, sp
 /**
  * @brief Exception thrown when a CUDA error is encountered.
  *
- * The exception carries the failing status as the API reported it (`raw_code()`), the type it came from
- * (`status_type()`, `holds<Status>()`, `status<Status>()`), and where it was raised (`location()`).
- * Any status enumeration can be thrown; see @ref cuda_status_traits for text and for struct statuses.
- * `status()` keeps its historical meaning: the status seen as a CUDA Runtime error code.
+ * The exception carries the failing status object itself (`status<Status>()`, with `holds<Status>()` and
+ * `status_type()` to ask what it is), its code as the API reported it (`raw_code()`), and where it was
+ * raised (`location()`). Any status enumeration can be thrown; a struct status up to sixteen trivially
+ * copyable bytes as well, see @ref cuda_status_traits. `status()` keeps its historical meaning: the
+ * status seen as a CUDA Runtime error code.
  */
 class cuda_error : public ::std::runtime_error
 {
+  static constexpr ::cuda::std::size_t __status_capacity = 16;
+
   long long __raw_code_;
   ::cuda::std::__type_info_ptr __type_;
   ::cuda::std::string_view __status_type_;
   ::cuda::std::source_location __loc_;
+  alignas(8) unsigned char __status_bytes_[__status_capacity] = {}; // the status object, byte for byte
+
+  template <class _Status>
+  _CCCL_HOST_API void __store(const _Status& __status) noexcept
+  {
+    static_assert(::cuda::std::is_trivially_copyable_v<_Status>,
+                  "cuda_error: a status type must be trivially copyable");
+    static_assert(sizeof(_Status) <= __status_capacity, "cuda_error: a status type must fit in sixteen bytes");
+    ::cuda::std::memcpy(__status_bytes_, &__status, sizeof(_Status));
+  }
 
   _CCCL_HOST_API cuda_error(
     const long long __raw_code,
@@ -196,7 +211,9 @@ class cuda_error : public ::std::runtime_error
                    __msg,
                    __api,
                    __loc}
-  {}
+  {
+    __store(__status);
+  }
 
 public:
   //! @brief Constructs from a status of any type with usable @ref cuda_status_traits: `cudaError_t`,
@@ -213,7 +230,9 @@ public:
                    __msg,
                    __api,
                    __loc}
-  {}
+  {
+    __store(__status);
+  }
 
   //! @brief The status seen as a CUDA Runtime error code. Exact for a `cudaError_t`. A `CUresult` is converted
   //! numerically, which is how the runtime reports driver-originated failures. Any other status type reports
@@ -235,12 +254,14 @@ public:
     return *__type_ == _CCCL_TYPEID(_Status);
   }
 
-  //! @brief The stored status as its own type. Precondition: `holds<_Status>()`. For enumeration statuses.
+  //! @brief The stored status object, exactly as it was passed in. Precondition: `holds<_Status>()`.
   template <class _Status>
   [[nodiscard]] _CCCL_HOST_API _Status status() const noexcept
   {
     _CCCL_VERIFY(holds<_Status>(), "cuda_error::status<Status>(): the stored status is of another type");
-    return static_cast<_Status>(__raw_code_);
+    _Status __status;
+    ::cuda::std::memcpy(&__status, __status_bytes_, sizeof(_Status));
+    return __status;
   }
 
   //! @brief The status code as the API reported it, through `cuda_status_traits<Status>::raw_code`.
