@@ -140,7 +140,7 @@ try
   const auto device = cuda::devices[0];
 
   // Create a stream.
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
 
   // Create 1D kernel configuration with 64 threads and the necessary shared memory allocated.
   const auto threadsPerBlock = 64;
