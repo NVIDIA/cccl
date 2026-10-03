@@ -17,22 +17,51 @@
 
 namespace
 {
-// A status enumeration from an imaginary library, registered as its own domain.
-enum class fake_status : int
+// A status enumeration from an imaginary library: works with no registration at all.
+enum class plain_status : int
 {
   fine = 0,
   bad  = 7,
 };
+
+// Another one, registered to supply text.
+enum described_status
+{
+  described_fine = 0,
+  described_bad  = 11,
+};
+
+// A struct status, like cuFile's: registered to say what failure and code mean.
+struct struct_status
+{
+  int err;
+  int extra;
+};
 } // namespace
 
 template <>
-struct cuda::cuda_status_domain<fake_status>
+struct cuda::cuda_status_traits<described_status> : cuda::cuda_status_defaults<described_status>
 {
-  static constexpr unsigned id      = 42;
-  static constexpr const char* name = "fake";
-  static const char* description(const fake_status status) noexcept
+  static const char* text(const described_status status) noexcept
   {
-    return status == fake_status::bad ? "bad thing" : "fine";
+    return status == described_bad ? "described badly" : "fine";
+  }
+};
+
+template <>
+struct cuda::cuda_status_traits<struct_status>
+{
+  static bool failed(const struct_status status) noexcept
+  {
+    return status.err != 0;
+  }
+  static long long raw_code(const struct_status status) noexcept
+  {
+    return status.err;
+  }
+  static const char* text(const struct_status) noexcept
+  {
+    return "struct failure";
   }
 };
 
@@ -45,9 +74,8 @@ C2H_TEST("cuda_error: a runtime status keeps its historical interface", "[cuda_e
   CCCLRT_REQUIRE(error.holds<cudaError_t>());
   CCCLRT_REQUIRE(!error.holds<CUresult>());
   CCCLRT_REQUIRE(error.status<cudaError_t>() == cudaErrorInvalidValue);
-  CCCLRT_REQUIRE(error.raw_status() == static_cast<int>(cudaErrorInvalidValue));
-  CCCLRT_REQUIRE(error.domain() == cuda::cuda_status_domain<cudaError_t>::id);
-  CCCLRT_REQUIRE(std::string(error.domain_name()) == "CUDA");
+  CCCLRT_REQUIRE(error.raw_code() == 1);
+  CCCLRT_REQUIRE(error.status_type().find("cudaError") != cuda::std::string_view::npos);
   CCCLRT_REQUIRE(error.location().line() == loc.line());
   CCCLRT_REQUIRE(std::string(error.location().file_name()) == loc.file_name());
 
@@ -66,21 +94,44 @@ C2H_TEST("cuda_error: a driver status is kept exactly and still reads as a runti
   CCCLRT_REQUIRE(error.status<CUresult>() == CUDA_ERROR_NOT_READY);
   // The numeric view the runtime wrappers have always produced for driver failures.
   CCCLRT_REQUIRE(error.status() == cudaErrorNotReady);
-  CCCLRT_REQUIRE(std::string(error.domain_name()) == "CUDA driver");
+  CCCLRT_REQUIRE(error.status_type().find("cudaError_enum") != cuda::std::string_view::npos); // CUresult is a typedef
+                                                                                              // of enum cudaError_enum
   CCCLRT_REQUIRE(std::string(error.what()).find("still running") != std::string::npos);
 }
 
-C2H_TEST("cuda_error: a registered library status is carried with its own domain", "[cuda_error]")
+C2H_TEST("cuda_error: any status enumeration works without registration", "[cuda_error]")
 {
-  const cuda::cuda_error error(fake_status::bad, "boom");
+  const cuda::cuda_error error(plain_status::bad, "boom");
 
-  CCCLRT_REQUIRE(error.holds<fake_status>());
-  CCCLRT_REQUIRE(error.status<fake_status>() == fake_status::bad);
+  CCCLRT_REQUIRE(error.holds<plain_status>());
+  CCCLRT_REQUIRE(error.status<plain_status>() == plain_status::bad);
   CCCLRT_REQUIRE(error.status() == cudaErrorUnknown);
-  CCCLRT_REQUIRE(error.raw_status() == 7);
-  CCCLRT_REQUIRE(error.domain() == 42);
-  CCCLRT_REQUIRE(std::string(error.domain_name()) == "fake");
-  CCCLRT_REQUIRE(std::string(error.what()).find("bad thing(7): boom") != std::string::npos);
+  CCCLRT_REQUIRE(error.raw_code() == 7);
+  CCCLRT_REQUIRE(error.status_type().find("plain_status") != cuda::std::string_view::npos);
+  CCCLRT_REQUIRE(std::string(error.what()).find("(7): boom") != std::string::npos);
+}
+
+C2H_TEST("cuda_error: a registered enumeration contributes its text", "[cuda_error]")
+{
+  const cuda::cuda_error error(described_bad, "boom");
+
+  CCCLRT_REQUIRE(error.holds<described_status>());
+  CCCLRT_REQUIRE(error.status<described_status>() == described_bad);
+  CCCLRT_REQUIRE(error.raw_code() == 11);
+  CCCLRT_REQUIRE(std::string(error.what()).find("(11): described badly: boom") != std::string::npos);
+}
+
+C2H_TEST("cuda_error: a registered struct status is carried by its code", "[cuda_error]")
+{
+  const cuda::cuda_error error(struct_status{5, 99}, "disk");
+
+  CCCLRT_REQUIRE(error.holds<struct_status>());
+  CCCLRT_REQUIRE(!error.holds<plain_status>());
+  CCCLRT_REQUIRE(error.raw_code() == 5);
+  CCCLRT_REQUIRE(error.status() == cudaErrorUnknown);
+  CCCLRT_REQUIRE(std::string(error.what()).find("(5): struct failure: disk") != std::string::npos);
+  CCCLRT_REQUIRE(cuda::cuda_status_traits<struct_status>::failed(struct_status{5, 0}));
+  CCCLRT_REQUIRE(!cuda::cuda_status_traits<struct_status>::failed(struct_status{0, 3}));
 }
 
 #if TEST_HAS_EXCEPTIONS()

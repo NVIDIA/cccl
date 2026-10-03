@@ -42,9 +42,9 @@
     do                                                                                        \
     {                                                                                         \
       /* keeps the callee's status type (CUresult, or cudaError_t from a NoThrow wrapper), */ \
-      /* which selects the error's domain; both families use 0 for success */                 \
+      /* so the thrown error records which one it was; both use 0 for success */              \
       const auto __cccl_try_driver_api_status = _NAME(__VA_ARGS__);                           \
-      if (__cccl_try_driver_api_status != 0)                                                  \
+      if (static_cast<int>(__cccl_try_driver_api_status) != 0)                                \
       {                                                                                       \
         _CCCL_THROW(::cuda::cuda_error, __cccl_try_driver_api_status, _MSG, #_NAME);          \
       }                                                                                       \
