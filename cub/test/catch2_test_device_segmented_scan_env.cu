@@ -564,14 +564,24 @@ struct segmented_scan_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::SegmentedScanPolicy
   {
-    return cub::SegmentedScanPolicy{cub::SegmentedScanBlockPolicy{
-      static_cast<int>(BlockThreads),
-      1,
-      cub::BLOCK_LOAD_DIRECT,
-      cub::LOAD_DEFAULT,
-      cub::BLOCK_STORE_DIRECT,
-      cub::BLOCK_SCAN_WARP_SCANS,
-      512}};
+    return cub::SegmentedScanPolicy{
+      cub::SegmentedScanBlockPolicy{
+        static_cast<int>(BlockThreads),
+        1,
+        cub::BLOCK_LOAD_DIRECT,
+        cub::LOAD_DEFAULT,
+        cub::BLOCK_STORE_DIRECT,
+        cub::BLOCK_SCAN_WARP_SCANS,
+        512},
+      cub::SegmentedScanLoadBalancedPolicy{
+        static_cast<int>(BlockThreads),
+        1,
+        cub::BLOCK_LOAD_DIRECT,
+        cub::LOAD_DEFAULT,
+        cub::BLOCK_STORE_DIRECT,
+        cub::BLOCK_SCAN_WARP_SCANS,
+        16,
+        5}};
   }
 };
 
@@ -681,6 +691,8 @@ CUB_TEST("Test SegmentedScanPolicy properties", "[segmented_scan][device]", CUB_
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedScanPolicy>);
   STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedScanBlockPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedScanBlockPolicy>);
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedScanLoadBalancedPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedScanLoadBalancedPolicy>);
 
   // aggregate init
   constexpr auto block1 = cub::SegmentedScanBlockPolicy{
@@ -691,7 +703,16 @@ CUB_TEST("Test SegmentedScanPolicy properties", "[segmented_scan][device]", CUB_
     cub::BLOCK_STORE_WARP_TRANSPOSE,
     cub::BLOCK_SCAN_WARP_SCANS,
     512};
-  constexpr auto p1 = cub::SegmentedScanPolicy{block1};
+  constexpr auto load_balanced1 = cub::SegmentedScanLoadBalancedPolicy{
+    128,
+    9,
+    cub::BLOCK_LOAD_WARP_TRANSPOSE,
+    cub::LOAD_DEFAULT,
+    cub::BLOCK_STORE_WARP_TRANSPOSE,
+    cub::BLOCK_SCAN_WARP_SCANS,
+    16,
+    5};
+  constexpr auto p1 = cub::SegmentedScanPolicy{block1, load_balanced1};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
@@ -703,15 +724,28 @@ CUB_TEST("Test SegmentedScanPolicy properties", "[segmented_scan][device]", CUB_
     .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
     .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
     .max_segments      = 512};
-  constexpr auto p2 = cub::SegmentedScanPolicy{.block = block2};
+  constexpr auto load_balanced2 = cub::SegmentedScanLoadBalancedPolicy{
+    .threads_per_block       = 128,
+    .items_per_thread        = 9,
+    .load_algorithm          = cub::BLOCK_LOAD_WARP_TRANSPOSE,
+    .load_modifier           = cub::LOAD_DEFAULT,
+    .store_algorithm         = cub::BLOCK_STORE_WARP_TRANSPOSE,
+    .scan_algorithm          = cub::BLOCK_SCAN_WARP_SCANS,
+    .min_tiles_per_block     = 16,
+    .max_subscription_factor = 5};
+  constexpr auto p2 = cub::SegmentedScanPolicy{.block = block2, .load_balanced = load_balanced2};
 #  else // _CCCL_STD_VER >= 2020
-  constexpr auto block2 = block1;
-  constexpr auto p2     = p1;
+  constexpr auto block2         = block1;
+  constexpr auto load_balanced2 = load_balanced1;
+  constexpr auto p2             = p1;
 #  endif // _CCCL_STD_VER >= 2020
 
   // comparison
   STATIC_REQUIRE(block1 == block2);
   STATIC_REQUIRE_FALSE(block1 != block2);
+
+  STATIC_REQUIRE(load_balanced1 == load_balanced2);
+  STATIC_REQUIRE_FALSE(load_balanced1 != load_balanced2);
 
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
@@ -726,10 +760,22 @@ CUB_TEST("Test SegmentedScanPolicy properties", "[segmented_scan][device]", CUB_
              ", .load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE, .load_modifier = LOAD_DEFAULT"
              ", .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE, .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
              ", .max_segments_per_block = 512 }");
-  REQUIRE(to_string(p1)
-          == "SegmentedScanPolicy { .block = SegmentedScanBlockPolicy { .threads_per_block = 128"
-             ", .items_per_thread = 9, .load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE"
-             ", .load_modifier = LOAD_DEFAULT, .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE"
-             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS, .max_segments_per_block = 512 } }");
+  REQUIRE(
+    to_string(load_balanced1)
+    == "SegmentedScanLoadBalancedPolicy { .threads_per_block = 128, .items_per_thread = 9"
+       ", .load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE, .load_modifier = LOAD_DEFAULT"
+       ", .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE, .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
+       ", .min_tiles_per_block = 16, .max_subscription_factor = 5 }");
+  REQUIRE(
+    to_string(p1)
+    == "SegmentedScanPolicy { .block = SegmentedScanBlockPolicy { .threads_per_block = 128"
+       ", .items_per_thread = 9, .load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE"
+       ", .load_modifier = LOAD_DEFAULT, .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE"
+       ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS, .max_segments_per_block = 512 }"
+       ", .load_balanced = SegmentedScanLoadBalancedPolicy { .threads_per_block = 128"
+       ", .items_per_thread = 9, .load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE"
+       ", .load_modifier = LOAD_DEFAULT, .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE"
+       ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS, .min_tiles_per_block = 16"
+       ", .max_subscription_factor = 5 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
