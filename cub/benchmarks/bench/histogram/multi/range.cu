@@ -3,6 +3,8 @@
 
 #include <thrust/sequence.h>
 
+#include <cuda/std/type_traits>
+
 #include <nvbench_helper.cuh>
 
 #include "../histogram_common.cuh"
@@ -32,17 +34,20 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   const SampleT lower_level = 0;
   const SampleT upper_level = get_upper_level<SampleT>(num_bins, elements);
 
-  SampleT step = (upper_level - lower_level) / num_bins;
-  thrust::device_vector<SampleT> levels_r(num_bins + 1);
+  // Narrow integer samples need floating-point levels to represent more bins than sample values.
+  using level_t =
+    cuda::std::conditional_t<cuda::std::is_integral_v<SampleT> && (sizeof(SampleT) < sizeof(float)), float, SampleT>;
+  const level_t step = static_cast<level_t>(upper_level - lower_level) / static_cast<level_t>(num_bins);
+  thrust::device_vector<level_t> levels_r(num_bins + 1);
 
   // TODO Extract sequence to the helper TU
-  thrust::sequence(levels_r.begin(), levels_r.end(), lower_level, step);
-  thrust::device_vector<SampleT> levels_g = levels_r;
-  thrust::device_vector<SampleT> levels_b = levels_g;
+  thrust::sequence(levels_r.begin(), levels_r.end(), static_cast<level_t>(lower_level), step);
+  thrust::device_vector<level_t> levels_g = levels_r;
+  thrust::device_vector<level_t> levels_b = levels_g;
 
-  SampleT* d_levels_r = thrust::raw_pointer_cast(levels_r.data());
-  SampleT* d_levels_g = thrust::raw_pointer_cast(levels_g.data());
-  SampleT* d_levels_b = thrust::raw_pointer_cast(levels_b.data());
+  level_t* d_levels_r = thrust::raw_pointer_cast(levels_r.data());
+  level_t* d_levels_g = thrust::raw_pointer_cast(levels_g.data());
+  level_t* d_levels_b = thrust::raw_pointer_cast(levels_b.data());
 
   thrust::device_vector<CounterT> hist_r(num_bins);
   thrust::device_vector<CounterT> hist_g(num_bins);
@@ -74,7 +79,7 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
       d_input,
       cuda::std::array<CounterT*, num_active_channels>{d_histogram_r, d_histogram_g, d_histogram_b},
       cuda::std::array<int, num_active_channels>{num_levels_r, num_levels_g, num_levels_b},
-      cuda::std::array<const SampleT*, num_active_channels>{d_levels_r, d_levels_g, d_levels_b},
+      cuda::std::array<const level_t*, num_active_channels>{d_levels_r, d_levels_g, d_levels_b},
       static_cast<OffsetT>(elements),
       env);
   });
