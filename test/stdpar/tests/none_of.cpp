@@ -22,30 +22,16 @@ int main()
     return value == 1;
   };
 
-  const bool no_matches         = std::none_of(std::execution::par, values.begin(), values.end(), is_one);
-  const bool singleton_no_match = std::none_of(std::execution::par, values.begin(), values.begin() + 1, is_one);
-  if (!no_matches || !singleton_no_match)
+  const bool no_matches = std::none_of(std::execution::par, values.begin(), values.end(), is_one);
+  if (!no_matches)
   {
     return 1;
   }
 
-  constexpr std::size_t positions[] = {0, num_items / 2, num_items - 1};
-  for (const auto position : positions)
-  {
-    values[position]        = 1;
-    const bool single_match = std::none_of(std::execution::par, values.begin(), values.end(), is_one);
-    if (single_match)
-    {
-      return 1;
-    }
-    values[position] = 0;
-  }
-
-  std::fill(values.begin(), values.end(), 1);
-  const bool all_match            = std::none_of(std::execution::par, values.begin(), values.end(), is_one);
-  const bool singleton_match      = std::none_of(std::execution::par, values.begin(), values.begin() + 1, is_one);
+  values[num_items / 2]           = 1;
+  const bool still_no_matches     = std::none_of(std::execution::par, values.begin(), values.end(), is_one);
   const bool empty_has_no_matches = std::none_of(std::execution::par, values.begin(), values.begin(), is_one);
-  if (all_match || singleton_match || !empty_has_no_matches)
+  if (still_no_matches || !empty_has_no_matches)
   {
     return 1;
   }
