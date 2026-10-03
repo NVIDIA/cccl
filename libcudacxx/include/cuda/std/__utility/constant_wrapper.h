@@ -349,6 +349,15 @@ struct __cw_operators
 #endif // _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC)
 };
 
+// MSVC rejects some constant invocations in partial specializations. Probe a default template argument instead.
+#if _CCCL_COMPILER(MSVC)
+template <class _Fn, class... _Args, auto = _LIBCUDACXX_AUTO_CAST(::cuda::std::invoke(_Fn::value, _Args::value...))>
+_CCCL_HOST_DEVICE_API true_type __cw_is_constexpr_callable(int);
+template <class, class...>
+_CCCL_HOST_DEVICE_API false_type __cw_is_constexpr_callable(...);
+template <class _Fn, class _Void, class... _Args>
+inline constexpr bool __cw_is_constexpr_callable_v = decltype(__cw_is_constexpr_callable<_Fn, _Args...>(0))::value;
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <class _Fn, class _Void, class... _Args>
 inline constexpr bool __cw_is_constexpr_callable_v = false;
 template <class _Fn, class... _Args>
@@ -356,6 +365,7 @@ inline constexpr bool __cw_is_constexpr_callable_v<
   _Fn,
   void_t<__constant_wrapper<_LIBCUDACXX_AUTO_CAST(::cuda::std::invoke(_Fn::value, _Args::value...))>>,
   _Args...> = true;
+#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
 template <class _Vp, class _Void, class... _Args>
 inline constexpr bool __cw_is_constexpr_indexable_v = false;
@@ -456,11 +466,9 @@ struct __constant_wrapper : __cw_operators
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(__fold_and_v<__is_constexpr_param_v<remove_cvref_t<_Args>>...> _CCCL_AND
                    __cw_is_constexpr_indexable_v<__constant_wrapper, void, remove_cvref_t<_Args>...>)
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __constant_wrapper<
-    _LIBCUDACXX_AUTO_CAST(value[remove_cvref_t<_Args>::value...])>
-  _CCCL_STATIC_SUBSCRIPT_OPERATOR(_Args&&...) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_SUBSCRIPT_OPERATOR(_Args&&...) noexcept
   {
-    return {};
+    return __constant_wrapper<_LIBCUDACXX_AUTO_CAST(__get()[remove_cvref_t<_Args>::value...])>{};
   }
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES((!(__fold_and_v<__is_constexpr_param_v<remove_cvref_t<_Args>>...>
@@ -475,11 +483,9 @@ struct __constant_wrapper : __cw_operators
   _CCCL_TEMPLATE(class _Arg)
   _CCCL_REQUIRES(__is_constexpr_param_v<remove_cvref_t<_Arg>> _CCCL_AND
                    __cw_is_constexpr_indexable_v<__constant_wrapper, void, remove_cvref_t<_Arg>>)
-  [[nodiscard]]
-  _CCCL_HOST_DEVICE_API constexpr __constant_wrapper<_LIBCUDACXX_AUTO_CAST(value[remove_cvref_t<_Arg>::value])>
-  _CCCL_STATIC_SUBSCRIPT_OPERATOR(_Arg&&) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_SUBSCRIPT_OPERATOR(_Arg&&) noexcept
   {
-    return {};
+    return __constant_wrapper<_LIBCUDACXX_AUTO_CAST(__get()[remove_cvref_t<_Arg>::value])>{};
   }
   _CCCL_TEMPLATE(class _Arg)
   _CCCL_REQUIRES((!(__is_constexpr_param_v<remove_cvref_t<_Arg>>

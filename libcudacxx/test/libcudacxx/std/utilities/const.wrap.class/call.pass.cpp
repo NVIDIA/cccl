@@ -7,14 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Enable for msvc. It has problems selecting the constexpr path.
-// UNSUPPORTED: msvc
-
 // todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
 //   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
 //   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
-
-// todo(dabayer): It seems that msvc has problems picking up the consteval invoke path. Investigate.
 
 // constant_wrapper
 
@@ -190,8 +185,6 @@ TEST_FUNC constexpr bool test()
   }
 
   {
-    // todo(dabayer): This is failing with msvc.
-#  if !_CCCL_COMPILER(MSVC)
     // nullary
     constexpr auto lambda = [] {
       return 42;
@@ -199,7 +192,6 @@ TEST_FUNC constexpr bool test()
     using T                                                                     = cuda::std::__constant_wrapper<lambda>;
     cuda::std::same_as<cuda::std::__constant_wrapper<42>> decltype(auto) result = TEST_CALL(T, );
     static_assert(result == 42);
-#  endif // !_CCCL_COMPILER(MSVC)
   }
 
   {
@@ -269,8 +261,8 @@ TEST_FUNC constexpr bool test()
     assert(&result == &s1.member);
   }
 
-  // todo: Try to make this work with nvcc
-#  if !_CCCL_CUDA_COMPILER(NVCC)
+  // NVCC cannot select the constexpr data-member pointer path in C++17 device code.
+#  if TEST_STD_VER >= 2020 || !TEST_CUDA_COMPILER(NVCC)
   {
     // member ptr with constexpr param
     using T               = cuda::std::__constant_wrapper<&S::member>;
@@ -278,7 +270,7 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<42>, decltype(result)>);
     static_assert(result == 42);
   }
-#  endif // !_CCCL_CUDA_COMPILER(NVCC)
+#  endif // TEST_STD_VER >= 2020 || !TEST_CUDA_COMPILER(NVCC)
 
   {
     // member function ptr with runtime param
@@ -290,14 +282,11 @@ TEST_FUNC constexpr bool test()
   }
 
   {
-    // todo(dabayer): This is failing with msvc.
-#  if !_CCCL_COMPILER(MSVC)
     // member function ptr with constexpr param
     using T               = cuda::std::__constant_wrapper<&S::mem_fun>;
     decltype(auto) result = TEST_CALL(T, cuda::std::__cw<&s_value>, cuda::std::__cw<8>);
     static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<50>, decltype(result)>);
     static_assert(result == 50);
-#  endif // !_CCCL_COMPILER(MSVC)
   }
 
 #  if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
@@ -353,15 +342,12 @@ TEST_FUNC constexpr bool test()
   }
 
   {
-// todo(dabayer): This is failing with msvc.
-#  if !_CCCL_COMPILER(MSVC)
     // with integral_constant, will still call the constexpr path
     using T = cuda::std::__constant_wrapper<cuda::std::plus<>{}>;
     cuda::std::integral_constant<int, 1> ic1;
     cuda::std::integral_constant<int, 2> ic2;
     cuda::std::same_as<cuda::std::__constant_wrapper<3>> decltype(auto) result = TEST_CALL(T, ic1, ic2);
     static_assert(result == 3);
-#  endif // !_CCCL_COMPILER(MSVC)
   }
 
   {
