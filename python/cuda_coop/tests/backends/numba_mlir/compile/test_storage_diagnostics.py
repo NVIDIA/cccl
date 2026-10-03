@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import inspect
 import os
 from types import SimpleNamespace
 
@@ -50,6 +51,54 @@ def _compile(kernel, *arg_types, block=(32, 1, 1)):
             ("cluster", None),
         ),
     )
+
+
+@pytest.mark.parametrize(
+    "qualified", (False, True), ids=("portable", "qualified")
+)
+@pytest.mark.parametrize("operation", ("load", "store"))
+@pytest.mark.parametrize(
+    "inlined_helper", (False, True), ids=("kernel", "helper")
+)
+def test_load_store_unexpected_keyword_raises_type_error(
+    qualified, operation, inlined_helper
+):
+    from cuda import coop as portable_coop
+
+    module = coop if qualified else portable_coop
+    primitive = module.load if operation == "load" else module.store
+
+    def copy(data, items_per_thread):
+        block = module.this_block()
+        items = module.ThreadData(items_per_thread)
+        primitive(block, data, items, make_fast=True)
+
+    if inlined_helper:
+        helper = cuda.jit(device=True, inline="always")(copy)
+
+        @cuda.jit(chip="sm_90")
+        def kernel(data, items_per_thread):
+            helper(data, items_per_thread)
+
+    else:
+        kernel = cuda.jit(chip="sm_90")(copy)
+
+    with pytest.raises(
+        TypeError, match="unexpected keyword argument 'make_fast'"
+    ) as exc_info:
+        _compile(kernel, types.int32[::1], types.IntegerLiteral(2))
+
+    lines, first_line = inspect.getsourcelines(copy)
+    call_line = first_line + next(
+        index for index, line in enumerate(lines) if "make_fast=True" in line
+    )
+    message = str(exc_info.value)
+    assert (
+        f"{operation}() got an unexpected keyword argument 'make_fast'"
+        in message
+    )
+    assert f'File "{os.path.relpath(__file__)}", line {call_line}:' in message
+    assert "primitive(block, data, items, make_fast=True)" in message
 
 
 @pytest.mark.parametrize(
