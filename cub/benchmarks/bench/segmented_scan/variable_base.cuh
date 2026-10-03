@@ -13,11 +13,37 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/iterator>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
 #include <cuda/std/random>
 
 #include <nvbench_helper.cuh>
+
+enum class schedule
+{
+  default_,
+  num_items,
+  load_balancing
+};
+
+NVBENCH_DECLARE_ENUM_TYPE_STRINGS(
+  schedule,
+  [](schedule value) {
+    switch (value)
+    {
+      case schedule::default_:
+        return "default";
+      case schedule::num_items:
+        return "num_items";
+      case schedule::load_balancing:
+        return "load_balancing";
+    }
+    return "unknown";
+  },
+  [](auto) {
+    return std::string{};
+  })
 
 namespace
 {
@@ -81,13 +107,32 @@ generate_pareto_segment_offsets(OffsetT elements, OffsetT num_segments, double a
   return offsets;
 }
 
-template <typename T, typename OffsetT>
-void skewed_size_segments(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+template <typename OffsetT>
+struct uniform_offset
+{
+  OffsetT elements;
+  OffsetT segment_size;
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API OffsetT operator()(OffsetT segment) const noexcept
+  {
+    return (::cuda::std::min) (elements, segment * segment_size);
+  }
+};
+
+template <typename OffsetT>
+[[nodiscard]] thrust::device_vector<OffsetT>
+generate_uniform_segment_offsets(OffsetT elements, OffsetT num_segments, OffsetT segment_size)
+{
+  auto offsets = thrust::device_vector<OffsetT>(num_segments + 1, thrust::no_init);
+  thrust::tabulate(offsets.begin(), offsets.end(), uniform_offset<OffsetT>{elements, segment_size});
+  return offsets;
+}
+
+template <bool Uniform, typename T, typename OffsetT, schedule Schedule>
+void variable_size_segments(nvbench::state& state, nvbench::type_list<T, OffsetT, nvbench::enum_type<Schedule>>)
 {
   const auto elements          = static_cast<OffsetT>(state.get_int64("Elements{io}"));
   const auto mean_segment_size = static_cast<OffsetT>(state.get_int64("MeanSegmentSize{io}"));
-  const auto alpha             = state.get_float64("Alpha{io}");
-  const auto shuffle_seed      = static_cast<seed_type>(state.get_int64("ShuffleSeed{io}"));
   const auto num_segments      = ::cuda::ceil_div(elements, mean_segment_size);
 
   auto& summary = state.add_summary("user/derived/segment_count");
@@ -96,7 +141,20 @@ void skewed_size_segments(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   const thrust::device_vector<T> input = generate(elements);
   thrust::device_vector<T> output(elements, thrust::default_init);
-  const auto offsets = generate_pareto_segment_offsets(elements, num_segments, alpha, shuffle_seed);
+  const auto offsets = [&] {
+    if constexpr (Uniform)
+    {
+      return generate_uniform_segment_offsets(elements, num_segments, mean_segment_size);
+    }
+    else
+    {
+      return generate_pareto_segment_offsets(
+        elements,
+        num_segments,
+        state.get_float64("Alpha{io}"),
+        static_cast<seed_type>(state.get_int64("ShuffleSeed{io}")));
+    }
+  }();
 
   const T* d_input         = thrust::raw_pointer_cast(input.data());
   T* d_output              = thrust::raw_pointer_cast(output.data());
@@ -109,20 +167,49 @@ void skewed_size_segments(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    auto env = cub_bench_env(alloc, launch);
-    _CCCL_TRY_RUNTIME_API(
-      cub::DeviceSegmentedScan::ExclusiveSegmentedScan,
-      "ExclusiveSegmentedScan failed",
-      d_input,
-      d_output,
-      d_offsets,
-      d_offsets + 1,
-      d_offsets,
-      num_segments,
-      op_t{},
-      T{},
-      env);
+    const auto run = [&](const auto& env) {
+      _CCCL_TRY_RUNTIME_API(
+        cub::DeviceSegmentedScan::ExclusiveSegmentedScan,
+        "ExclusiveSegmentedScan failed",
+        d_input,
+        d_output,
+        d_offsets,
+        d_offsets + 1,
+        d_offsets,
+        num_segments,
+        op_t{},
+        T{},
+        env);
+    };
+
+    if constexpr (Schedule == schedule::default_)
+    {
+      const auto env = cub_bench_env(alloc, launch);
+      run(env);
+    }
+    else if constexpr (Schedule == schedule::num_items)
+    {
+      const auto env = cub_bench_env(alloc, launch, cub::segmented_scan_num_items(elements));
+      run(env);
+    }
+    else
+    {
+      const auto env = cub_bench_env(alloc, launch, cub::segmented_scan_load_balancing);
+      run(env);
+    }
   });
+}
+
+template <typename T, typename OffsetT, schedule Schedule>
+void skewed_size_segments(nvbench::state& state, nvbench::type_list<T, OffsetT, nvbench::enum_type<Schedule>> types)
+{
+  variable_size_segments<false>(state, types);
+}
+
+template <typename T, typename OffsetT, schedule Schedule>
+void uniform_size_segments(nvbench::state& state, nvbench::type_list<T, OffsetT, nvbench::enum_type<Schedule>> types)
+{
+  variable_size_segments<true>(state, types);
 }
 } // namespace
 
@@ -138,10 +225,18 @@ using some_offset_types = nvbench::type_list<TUNE_OffsetT>;
 using some_offset_types = nvbench::type_list<int32_t>;
 #endif
 
-NVBENCH_BENCH_TYPES(skewed_size_segments, NVBENCH_TYPE_AXES(value_types, some_offset_types))
+using schedules = nvbench::enum_type_list<schedule::default_, schedule::num_items, schedule::load_balancing>;
+
+NVBENCH_BENCH_TYPES(skewed_size_segments, NVBENCH_TYPE_AXES(value_types, some_offset_types, schedules))
   .set_name("skewed_size_segments")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}", "Schedule{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", {22, 26})
   .add_int64_axis("MeanSegmentSize{io}", {32, 64, 128, 192, 256, 384, 512, 768, 1024, 2048})
   .add_float64_axis("Alpha{io}", {2.5, 2.0, 1.75, 1.5, 1.3})
   .add_int64_axis("ShuffleSeed{io}", {42});
+
+NVBENCH_BENCH_TYPES(uniform_size_segments, NVBENCH_TYPE_AXES(value_types, some_offset_types, schedules))
+  .set_name("uniform_size_segments")
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}", "Schedule{ct}"})
+  .add_int64_power_of_two_axis("Elements{io}", {22, 26})
+  .add_int64_axis("MeanSegmentSize{io}", {32, 64, 128, 192, 256, 384, 512, 768, 1024, 2048});
