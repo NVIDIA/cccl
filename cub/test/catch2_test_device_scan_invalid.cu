@@ -22,7 +22,6 @@
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_with_init);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -205,7 +204,7 @@ CUB_TEST(
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
     const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    device_inclusive_scan_with_init(d_in_it, d_out_it, scan_op, init_value, num_items);
+    device_inclusive_scan(d_in_it, d_out_it, scan_op, init_value, num_items);
 
     const counts h_counts = error_counts.front();
     // The actual core requirements currently expected to fail

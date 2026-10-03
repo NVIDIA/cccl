@@ -32,7 +32,7 @@
 
 namespace
 {
-// `inclusive_scan` forwards the environment to `cub::DeviceScan::InclusiveScanInit` and to the
+// `inclusive_scan` forwards the environment to `cub::DeviceScan::InclusiveScan` with initialization and to the
 // two `cub::DeviceReduce::Reduce` calls that build the per-rank prefix. A requirement is supported
 // only where both CUB algorithms support it. Every other combination is a compile-time error, so
 // it cannot appear here.

@@ -28,7 +28,6 @@ DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::ExclusiveScan, device_scan_exclusive
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::ExclusiveSum, device_scan_exclusive_sum);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::InclusiveScan, device_scan_inclusive);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::InclusiveSum, device_scan_inclusive_sum);
-DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::InclusiveScanInit, device_scan_inclusive_init);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -120,7 +119,7 @@ CUB_TEST_CASE("Device scan inclusive-scan-init works with default environment", 
 
   const value_t init{10};
 
-  REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScanInit(d_in, d_out.begin(), cuda::std::plus{}, init, num_items));
+  REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScan(d_in, d_out.begin(), cuda::std::plus{}, init, num_items));
 
   REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init + 1)));
 }
@@ -279,8 +278,7 @@ CUB_TEST("Device scan inclusive-scan-init can be tuned", "[scan][device]", CUB_S
   // We are expecting that `unrelated_tuning` is ignored
   auto env = cuda::execution::tune(scan_tuning<target_block_size>{}, unrelated_tuning{});
 
-  REQUIRE(
-    cudaSuccess == cub::DeviceScan::InclusiveScanInit(d_in, d_out.begin(), block_size_check, init, num_items, env));
+  REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScan(d_in, d_out.begin(), block_size_check, init, num_items, env));
 
   REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init + 1)));
   REQUIRE(d_block_size[0] == target_block_size);
@@ -479,12 +477,12 @@ CUB_TEST("Device scan inclusive-scan-init uses environment", "[scan][device]", C
 
   size_t expected_bytes_allocated{};
   REQUIRE(cudaSuccess
-          == cub::DeviceScan::InclusiveScanInit(
+          == cub::DeviceScan::InclusiveScan(
             nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), cuda::std::plus{}, init, num_items));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
-  device_scan_inclusive_init(d_in.begin(), d_out.begin(), cuda::std::plus{}, init, num_items, env);
+  device_scan_inclusive(d_in.begin(), d_out.begin(), cuda::std::plus{}, init, num_items, env);
 
   auto expected = c2h::device_vector<float>{11.0f, 13.0f, 16.0f, 20.0f};
   REQUIRE(d_out == expected);

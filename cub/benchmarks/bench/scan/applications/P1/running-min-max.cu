@@ -126,7 +126,7 @@ void validate(const thrust::device_vector<ValueT>& input,
   auto d_input  = thrust::raw_pointer_cast(input.data());
   auto d_output = thrust::raw_pointer_cast(output.data());
 
-  cub::DeviceScan::InclusiveScanInit(
+  cub::DeviceScan::InclusiveScan(
     nullptr,
     tmp_size,
     d_input,
@@ -139,7 +139,7 @@ void validate(const thrust::device_vector<ValueT>& input,
   thrust::device_vector<nvbench::uint8_t> tmp1(tmp_size, thrust::no_init);
   nvbench::uint8_t* d_tmp1 = thrust::raw_pointer_cast(tmp1.data());
 
-  cub::DeviceScan::InclusiveScanInit(
+  cub::DeviceScan::InclusiveScan(
     d_tmp1,
     tmp_size,
     d_input,
@@ -149,7 +149,7 @@ void validate(const thrust::device_vector<ValueT>& input,
     input.size(),
     stream);
 
-  cub::DeviceScan::InclusiveScanInit(
+  cub::DeviceScan::InclusiveScan(
     nullptr,
     tmp_size,
     d_input,
@@ -162,7 +162,7 @@ void validate(const thrust::device_vector<ValueT>& input,
   thrust::device_vector<nvbench::uint8_t> tmp2(tmp_size, thrust::no_init);
   nvbench::uint8_t* d_tmp2 = thrust::raw_pointer_cast(tmp2.data());
 
-  cub::DeviceScan::InclusiveScanInit(
+  cub::DeviceScan::InclusiveScan(
     d_tmp2,
     tmp_size,
     d_input,
