@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__bit/integral.h>
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/fpclassify.h>
 #include <cuda/std/__cmath/isinf.h>
@@ -228,6 +229,24 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 // ilogb
 
+//! @brief Returns the unbiased exponent of a nonzero finite value, normalising subnormals
+template <class _Tp>
+[[nodiscard]] _CCCL_API inline constexpr int __fp_get_exp_normalized(_Tp __x) noexcept
+{
+  constexpr auto __fmt = __fp_format_of_v<_Tp>;
+  const auto __storage = ::cuda::std::__fp_get_storage(__x);
+  if (::cuda::std::__fp_get_exp_biased<__fmt>(__storage) == 0)
+  {
+    // A subnormal has no implicit leading one, so its exponent is set by the highest set bit of the mantissa.
+    const auto __mant = static_cast<__fp_storage_t<__fmt>>(__storage & __fp_mant_mask_v<__fmt>);
+    if (__mant != 0)
+    {
+      return __fp_exp_min_v<__fmt> + ::cuda::std::bit_width(__mant) - __fp_digits_v<__fmt>;
+    }
+  }
+  return ::cuda::std::__fp_get_exp<__fmt>(__storage);
+}
+
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline constexpr int __ilogb_impl(_Tp __x) noexcept
 {
@@ -249,14 +268,10 @@ template <class _Tp>
   }
 
   constexpr auto __fmt = __fp_format_of_v<_Tp>;
-  const int __exp      = ::cuda::std::__fp_get_exp(__x);
+  const int __exp      = ::cuda::std::__fp_get_exp_normalized(__x);
   if (__exp > __fp_exp_max_v<__fmt>)
   {
     return numeric_limits<int>::max();
-  }
-  else if (__exp < __fp_exp_min_v<__fmt>)
-  {
-    return numeric_limits<int>::min();
   }
   else
   {
@@ -484,23 +499,28 @@ template <class _Tp>
   }
 
 #if _CCCL_HAS_CONSTEXPR_BIT_CAST()
-  return static_cast<_Tp>(::cuda::std::__fp_get_exp(__x));
+  return static_cast<_Tp>(::cuda::std::__fp_get_exp_normalized(__x));
 #else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv
   // We need to go through the slow emulation for old GCC
   if constexpr (__fp_is_native_type_v<_Tp>)
   {
-    __x                      = ::cuda::std::fabs(__x);
-    unsigned long long __exp = 0;
+    __x             = ::cuda::std::fabs(__x);
+    long long __exp = 0;
     while (__x >= _Tp(numeric_limits<_Tp>::radix))
     {
       __x /= numeric_limits<_Tp>::radix;
       __exp += 1;
     }
+    while (__x < _Tp(1))
+    {
+      __x *= numeric_limits<_Tp>::radix;
+      __exp -= 1;
+    }
     return static_cast<_Tp>(__exp);
   }
   else
   {
-    return static_cast<_Tp>(::cuda::std::__fp_get_exp(__x));
+    return static_cast<_Tp>(::cuda::std::__fp_get_exp_normalized(__x));
   }
 #endif // !_CCCL_HAS_CONSTEXPR_BIT_CAST()
 }
