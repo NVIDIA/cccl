@@ -7,6 +7,12 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+#include <cub/device/device_reduce.cuh>
+#include <cub/device/device_transform.cuh>
+
+#include <cuda/std/functional>
+#include <cuda/std/tuple>
+
 #include <cuda/experimental/execution.cuh>
 #include <cuda/experimental/stream.cuh>
 
@@ -46,6 +52,14 @@ __global__ void spin_k(long long cycles)
   {
   }
 }
+
+struct times3
+{
+  __host__ __device__ int operator()(int x) const
+  {
+    return 3 * x;
+  }
+};
 
 struct null_rcvr
 {
@@ -98,6 +112,40 @@ std::multiset<std::string> graph_edges(cudaGraph_t g)
   }
   return edges;
 }
+
+// A memory resource that forwards to CUB's default (cudaMallocAsync on the stream)
+// and counts the allocations, so a test can see the scratch allocations a CUB
+// call makes when it is handed an environment.
+struct counting_mr
+{
+  int* allocs;
+  void* allocate_sync(size_t bytes, size_t align)
+  {
+    ++*allocs;
+    return cub::detail::device_memory_resource{}.allocate(bytes, align);
+  }
+  void deallocate_sync(void* p, size_t bytes, size_t)
+  {
+    cub::detail::device_memory_resource{}.deallocate(p, bytes);
+  }
+  void* allocate(::cuda::stream_ref s, size_t bytes, size_t align)
+  {
+    ++*allocs;
+    return cub::detail::device_memory_resource{}.allocate(s, bytes, align);
+  }
+  void deallocate(::cuda::stream_ref s, void* p, size_t bytes, size_t align)
+  {
+    cub::detail::device_memory_resource{}.deallocate(s, p, bytes, align);
+  }
+  bool operator==(const counting_mr& o) const
+  {
+    return allocs == o.allocs;
+  }
+  bool operator!=(const counting_mr& o) const
+  {
+    return !(*this == o);
+  }
+};
 
 // A per-test observer: counts the event joins issued by continues_on onto a lane.
 struct join_counter
@@ -264,3 +312,65 @@ C2H_TEST("lane_scheduler: sync_wait waits for the lane's stream", "[lane_schedul
   CHECK(h0 == 9);
 }
 } // namespace
+
+C2H_TEST("lane_scheduler: transform then reduce over lane-resident spans, CUB called through the lane's env",
+         "[lane_scheduler]")
+{
+  // Two lanes, each owning one span (fixture a on lane a, fixture b on lane b).
+  // Each lane runs CUB's Transform into a per-lane scratch span, then CUB's Reduce
+  // into its slot of `partials`; the join onto lane a adds the two partials.
+  // CUB gets the lane's stream from the environment: a let_value scope reads the
+  // scheduler back out of the receiver's environment, and the lane_scheduler
+  // answers cuda::get_stream. The same env carries a counting memory resource,
+  // so the test can see which allocations the sender chain itself hides and
+  // which CUB still makes for its own scratch storage.
+  fixture f;
+  join_counter jc;
+  int* tmp[2]{};
+  int* partials = nullptr;
+  for (int*& t : tmp)
+  {
+    REQUIRE(cudaMalloc(&t, f.n * sizeof(int)) == cudaSuccess);
+  }
+  REQUIRE(cudaMalloc(&partials, 2 * sizeof(int)) == cudaSuccess);
+  fill_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n, 1);
+  fill_k<<<f.grid, 256, 0, f.sb.get()>>>(f.b, f.n, 2);
+
+  int allocs      = 0;
+  const int n     = f.n;
+  auto lane_stage = [&](auto& lane, const int* in, int* scratch, int* partial) {
+    return ex::schedule(lane) | ex::let_value([=, &allocs] {
+             return ex::read_env(ex::get_scheduler) | ex::then([=, &allocs](auto sched) {
+                      auto env = cuda::std::execution::env{
+                        cuda::std::execution::prop{::cuda::get_stream, sched.query(::cuda::get_stream)},
+                        cuda::std::execution::prop{::cuda::mr::get_memory_resource, counting_mr{&allocs}}};
+                      REQUIRE(cub::DeviceTransform::Transform(cuda::std::make_tuple(in), scratch, n, times3{}, env)
+                              == cudaSuccess);
+                      REQUIRE(
+                        cub::DeviceReduce::Reduce(scratch, partial, n, cuda::std::plus<>{}, 0, env) == cudaSuccess);
+                    });
+           });
+  };
+  auto whole = ex::when_all(lane_stage(f.la, f.a, tmp[0], partials), lane_stage(f.lb, f.b, tmp[1], partials + 1))
+             | ex::continues_on(f.la) //
+             | ex::then([&] {
+                 sum2_k<<<1, 1, 0, f.sa.get()>>>(partials, partials + 1, f.out, 1);
+               });
+  ex::sync_wait(std::move(whole), jc.env());
+
+  int result = 0;
+  REQUIRE(cudaMemcpy(&result, f.out, sizeof(int), cudaMemcpyDeviceToHost) == cudaSuccess);
+  CHECK(result == 3 * 1 * f.n + 3 * 2 * f.n);
+  CHECK(jc.joins == 1); // the only event: lane b -> lane a at the join
+  CAPTURE(allocs);
+  // The sender chain allocates nothing (one operation state on the stack), but
+  // each CUB Reduce still allocates its scratch storage through the env's memory
+  // resource. Transform needs none.
+  CHECK(allocs == 2);
+
+  for (int* t : tmp)
+  {
+    cudaFree(t);
+  }
+  cudaFree(partials);
+}
