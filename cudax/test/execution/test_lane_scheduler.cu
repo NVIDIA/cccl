@@ -10,6 +10,8 @@
 #include <cub/device/device_reduce.cuh>
 #include <cub/device/device_transform.cuh>
 
+#include <cuda/buffer>
+#include <cuda/memory_resource>
 #include <cuda/std/functional>
 #include <cuda/std/tuple>
 
@@ -137,6 +139,7 @@ struct counting_mr
   {
     cub::detail::device_memory_resource{}.deallocate(s, p, bytes, align);
   }
+  friend constexpr void get_property(const counting_mr&, ::cuda::mr::device_accessible) noexcept {}
   bool operator==(const counting_mr& o) const
   {
     return allocs == o.allocs;
@@ -146,6 +149,55 @@ struct counting_mr
     return !(*this == o);
   }
 };
+
+namespace lane
+{
+// cudax operation states are host/device, and nvcc's execution-space check
+// rejects cuda::buffer's host-only destructor when it is reached from one. A
+// buffer that travels as a sender value is therefore wrapped so that its
+// (host-only) move and destruction happen inside functions exempted with the
+// pragma cudax uses for its own tuples.
+template <class T>
+struct buffer
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE explicit buffer(::cuda::device_buffer<T>&& b)
+      : buf_(::std::move(b))
+  {}
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE buffer(buffer&& o) noexcept
+      : buf_(::std::move(o.buf_))
+  {}
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE ~buffer() {}
+  T* data()
+  {
+    return buf_.data();
+  }
+  ::cuda::stream_ref stream() const
+  {
+    return buf_.stream();
+  }
+
+private:
+  ::cuda::device_buffer<T> buf_;
+};
+
+// Allocation as a sender. Completes with a cuda::device_buffer<T> of n
+// uninitialized elements allocated, stream-ordered, on the stream of the lane
+// the sender runs on (read back from the environment), through `mr`. Hold it
+// with let_value: the buffer lives in the let_value's operation state for the
+// inner scope and is freed on the same stream when the scope ends. A buffer
+// must therefore be allocated on the lane that is ordered after all of its
+// readers -- the join target for shared data, the lane itself for scratch.
+template <class T, class Mr>
+auto allocate(size_t n, Mr mr)
+{
+  return ex::read_env(ex::get_scheduler) | ex::then([n, mr](auto sched) {
+           return buffer<T>{::cuda::device_buffer<T>{sched.query(::cuda::get_stream), mr, n, ::cuda::no_init}};
+         });
+}
+} // namespace lane
 
 // A per-test observer: counts the event joins issued by continues_on onto a lane.
 struct join_counter
@@ -313,48 +365,51 @@ C2H_TEST("lane_scheduler: sync_wait waits for the lane's stream", "[lane_schedul
 }
 } // namespace
 
-C2H_TEST("lane_scheduler: transform then reduce over lane-resident spans, CUB called through the lane's env",
-         "[lane_scheduler]")
+C2H_TEST("lane_scheduler: transform then reduce over lane-resident spans, allocations are senders", "[lane_scheduler]")
 {
   // Two lanes, each owning one span (fixture a on lane a, fixture b on lane b).
-  // Each lane runs CUB's Transform into a per-lane scratch span, then CUB's Reduce
-  // into its slot of `partials`; the join onto lane a adds the two partials.
-  // CUB gets the lane's stream from the environment: a let_value scope reads the
-  // scheduler back out of the receiver's environment, and the lane_scheduler
-  // answers cuda::get_stream. The same env carries a counting memory resource,
-  // so the test can see which allocations the sender chain itself hides and
-  // which CUB still makes for its own scratch storage.
+  // Every allocation is a sender held by a let_value scope:
+  //  - `partials` (one slot per lane) is allocated on lane a, the join target,
+  //    so that its free on lane a's stream is ordered after the sum that reads it;
+  //  - each lane's transform scratch is allocated on that lane and only used there.
+  // Each lane runs CUB's Transform into its scratch, then CUB's Reduce into its
+  // partial; CUB gets the stream and the memory resource from an env built off
+  // the scratch buffer's own stream. The join onto lane a adds the partials.
+  // Nothing in the chain calls cudaMalloc/cudaFree; the counting resource sees
+  // every allocation: the three buffers and one CUB Reduce scratch per lane.
   fixture f;
   join_counter jc;
-  int* tmp[2]{};
-  int* partials = nullptr;
-  for (int*& t : tmp)
-  {
-    REQUIRE(cudaMalloc(&t, f.n * sizeof(int)) == cudaSuccess);
-  }
-  REQUIRE(cudaMalloc(&partials, 2 * sizeof(int)) == cudaSuccess);
   fill_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n, 1);
   fill_k<<<f.grid, 256, 0, f.sb.get()>>>(f.b, f.n, 2);
 
-  int allocs      = 0;
-  const int n     = f.n;
-  auto lane_stage = [&](auto& lane, const int* in, int* scratch, int* partial) {
+  int allocs  = 0;
+  const int n = f.n;
+  auto stage  = [=, &allocs](auto& lane, const int* in, int* partial) {
     return ex::schedule(lane) | ex::let_value([=, &allocs] {
-             return ex::read_env(ex::get_scheduler) | ex::then([=, &allocs](auto sched) {
-                      auto env = cuda::std::execution::env{
-                        cuda::std::execution::prop{::cuda::get_stream, sched.query(::cuda::get_stream)},
-                        cuda::std::execution::prop{::cuda::mr::get_memory_resource, counting_mr{&allocs}}};
-                      REQUIRE(cub::DeviceTransform::Transform(cuda::std::make_tuple(in), scratch, n, times3{}, env)
-                              == cudaSuccess);
-                      REQUIRE(
-                        cub::DeviceReduce::Reduce(scratch, partial, n, cuda::std::plus<>{}, 0, env) == cudaSuccess);
+             return lane::allocate<int>(n, counting_mr{&allocs})
+                  | ex::let_value([=, &allocs](lane::buffer<int>& scratch) {
+                      return ex::just() | ex::then([=, &allocs, &scratch] {
+                               auto env = cuda::std::execution::env{
+                                 cuda::std::execution::prop{::cuda::get_stream, scratch.stream()},
+                                 cuda::std::execution::prop{::cuda::mr::get_memory_resource, counting_mr{&allocs}}};
+                               REQUIRE(cub::DeviceTransform::Transform(
+                                         cuda::std::make_tuple(in), scratch.data(), n, times3{}, env)
+                                       == cudaSuccess);
+                               REQUIRE(
+                                 cub::DeviceReduce::Reduce(scratch.data(), partial, n, cuda::std::plus<>{}, 0, env)
+                                 == cudaSuccess);
+                             });
                     });
            });
   };
-  auto whole = ex::when_all(lane_stage(f.la, f.a, tmp[0], partials), lane_stage(f.lb, f.b, tmp[1], partials + 1))
-             | ex::continues_on(f.la) //
-             | ex::then([&] {
-                 sum2_k<<<1, 1, 0, f.sa.get()>>>(partials, partials + 1, f.out, 1);
+  auto whole = ex::schedule(f.la) | ex::let_value([&] {
+                 return lane::allocate<int>(2, counting_mr{&allocs}) | ex::let_value([&](lane::buffer<int>& partials) {
+                          return ex::when_all(stage(f.la, f.a, partials.data()), stage(f.lb, f.b, partials.data() + 1))
+                               | ex::continues_on(f.la) //
+                               | ex::then([&] {
+                                   sum2_k<<<1, 1, 0, f.sa.get()>>>(partials.data(), partials.data() + 1, f.out, 1);
+                                 });
+                        });
                });
   ex::sync_wait(std::move(whole), jc.env());
 
@@ -363,14 +418,6 @@ C2H_TEST("lane_scheduler: transform then reduce over lane-resident spans, CUB ca
   CHECK(result == 3 * 1 * f.n + 3 * 2 * f.n);
   CHECK(jc.joins == 1); // the only event: lane b -> lane a at the join
   CAPTURE(allocs);
-  // The sender chain allocates nothing (one operation state on the stack), but
-  // each CUB Reduce still allocates its scratch storage through the env's memory
-  // resource. Transform needs none.
-  CHECK(allocs == 2);
-
-  for (int* t : tmp)
-  {
-    cudaFree(t);
-  }
-  cudaFree(partials);
+  // partials + 2 scratch buffers + 1 CUB Reduce scratch per lane; Transform needs none.
+  CHECK(allocs == 5);
 }
