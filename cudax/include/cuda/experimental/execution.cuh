@@ -25,6 +25,7 @@
 #include <cuda/experimental/__execution/inline_scheduler.cuh>
 #include <cuda/experimental/__execution/just.cuh>
 #include <cuda/experimental/__execution/just_from.cuh>
+#include <cuda/experimental/__execution/lane_scheduler.cuh>
 #include <cuda/experimental/__execution/let_value.cuh>
 #include <cuda/experimental/__execution/on.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
