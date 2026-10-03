@@ -360,6 +360,7 @@ class _GroupCallPlanner:
         )
 
     def _bind(self, function: Any, call: ir.Expr) -> inspect.BoundArguments:
+        """Bind arguments and report invalid calls at their source location."""
         if call.vararg is not None or call.varkwarg is not None:
             raise GroupRewriteError(
                 "cuda.coop.numba_mlir group calls do not support *args/**kwargs"
@@ -369,7 +370,9 @@ class _GroupCallPlanner:
                 *call.args, **dict(call.kws)
             )
         except TypeError as exc:
-            raise GroupRewriteError(str(exc)) from exc
+            raise TypeError(
+                f"{function.__name__}() {exc}\n{call.loc.strformat()}"
+            ) from None
         bound.apply_defaults()
         return bound
 
@@ -457,9 +460,11 @@ class _GroupCallPlanner:
         ------
         ForceLiteralArg
             A constructor or subgroup argument needs literal specialization.
+        TypeError
+            A recognized constructor call does not match its Python signature.
         GroupRewriteError
-            A recognized constructor or subgroup call cannot be bound or its
-            arguments cannot be resolved as required compile-time values.
+            A recognized constructor or subgroup call uses unsupported syntax or
+            its arguments cannot be resolved as required compile-time values.
         """
 
         if isinstance(value, ThreadGroup):
