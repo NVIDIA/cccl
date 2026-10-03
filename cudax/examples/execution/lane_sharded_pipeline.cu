@@ -15,7 +15,8 @@
 // an array, `transform` and `reduce`, as senders, and runs three transforms
 // back to back followed by a reduce:
 //
-//     x --*2--> y --+1--> x --*3--> y --sum--> result
+//     start(x) | transform(x, y, *2) | transform(y, x, +1) | transform(x, y, *3)
+//              | reduce(y, result)
 //
 // The composition rule is the point of the example. A verb takes and returns a
 // *bundle* of per-shard senders, one per lane (`start(x) | transform(...) | ...`). Elementwise verbs map over the
@@ -26,8 +27,9 @@
 // `continues_on(lane 0)` (the join, one event per other lane). For the whole
 // pipeline, that is N-1 fork waits and N-1 join waits, and nothing else.
 //
-// The reduce's partials are a scoped allocation: a sender that allocates on the
-// lane it runs on, held by a `let_value` scope and freed when the scope ends.
+// The reduce's partials are its own scratch: a scoped allocation, a sender that
+// allocates on the lane the reduce joins on, held by a `let_value` scope inside
+// the verb and freed when the reduce is done. The caller never sees them.
 //
 // Run with `--graph` to capture the pipeline into a CUDA graph instead and
 // write it as `lane_sharded_pipeline.dot`: N independent chains out of one root,
@@ -198,29 +200,35 @@ __global__ void sum_partials(const int* partials, int n, int* result)
   *result = acc;
 }
 
-// reduce(in, partials, result): each shard reduces into its own partial on its
-// own lane; then the lanes meet once, on lane 0, where the partials are added.
+// reduce(in, result): each shard reduces into its own partial on its own lane;
+// then the lanes meet once, on lane 0, where the partials are added into
+// `result`. The partials are the reduce's own scratch: a scoped allocation on
+// lane 0 -- the join target, so that their free is ordered after the sum that
+// reads them -- held for exactly the duration of the reduce.
 template <class Bundle, size_t N, class Mr, size_t... I>
-auto reduce_impl(Bundle b, const sharded_view<N>& in, int* partials, int* result, Mr mr, cuda::std::index_sequence<I...>)
+auto reduce_impl(Bundle b, const sharded_view<N>& in, int* result, Mr mr, cuda::std::index_sequence<I...>)
 {
-  auto shard_reduce = [=](auto shard, size_t k) {
-    return std::move(shard) | ex::then([=] {
-             check(cub::DeviceReduce::Reduce(
-                     in.data[k], partials + k, in.shard_size, cuda::std::plus<>{}, 0, cub_env(in.lane[k], mr)),
-                   "DeviceReduce::Reduce");
-           });
-  };
-  return ex::when_all(shard_reduce(cuda::std::get<I>(std::move(b.shards)), I)...) // the fork
-       | ex::continues_on(in.lane[0]) // the join
-       | ex::then([=] {
-           sum_partials<<<1, 1, 0, in.lane[0].stream()>>>(partials, static_cast<int>(N), result);
+  return allocate_on<int>(N, mr) //
+       | ex::let_value([b = std::move(b), in, result, mr](scoped_buffer<int>& partials) mutable {
+           auto shard_reduce = [=, p = partials.data()](auto shard, size_t k) {
+             return std::move(shard) | ex::then([=] {
+                      check(cub::DeviceReduce::Reduce(
+                              in.data[k], p + k, in.shard_size, cuda::std::plus<>{}, 0, cub_env(in.lane[k], mr)),
+                            "DeviceReduce::Reduce");
+                    });
+           };
+           return ex::when_all(shard_reduce(cuda::std::get<I>(std::move(b.shards)), I)...) // the fork
+                | ex::continues_on(in.lane[0]) // the join
+                | ex::then([=, p = partials.data()] {
+                    sum_partials<<<1, 1, 0, in.lane[0].stream()>>>(p, static_cast<int>(N), result);
+                  });
          });
 }
 template <size_t N, class Mr>
-auto reduce(const sharded_view<N>& in, int* partials, int* result, Mr mr)
+auto reduce(const sharded_view<N>& in, int* result, Mr mr)
 {
   return verb{[=](auto b) {
-    return reduce_impl(std::move(b), in, partials, result, mr, cuda::std::make_index_sequence<N>{});
+    return reduce_impl(std::move(b), in, result, mr, cuda::std::make_index_sequence<N>{});
   }};
 }
 
@@ -301,18 +309,14 @@ int main(int argc, char** argv)
     fill<<<(n + 255) / 256, 256, 0, streams[0].get()>>>(xbuf.data(), n, 1);
     streams[0].sync();
 
-    // The pipeline. It begins on lane 0: that is where the partials are
-    // allocated (lane 0 is the join target, so their free is ordered after the
-    // sum that reads them) and where the reduce's when_all forks the other lanes
-    // from.
+    // The pipeline. It begins on lane 0: that is the lane the reduce allocates
+    // its partials on and forks the other lanes from.
     auto pipeline = ex::schedule(lanes[0]) | ex::let_value([&] {
-                      return allocate_on<int>(N, mr) | ex::let_value([&](scoped_buffer<int>& partials) {
-                               return start(x) //
-                                    | transform(x, y, times2{}, mr) //
-                                    | transform(y, x, plus1{}, mr) //
-                                    | transform(x, y, times3{}, mr) //
-                                    | reduce(y, partials.data(), result.data(), mr);
-                             });
+                      return start(x) //
+                           | transform(x, y, times2{}, mr) //
+                           | transform(y, x, plus1{}, mr) //
+                           | transform(x, y, times3{}, mr) //
+                           | reduce(y, result.data(), mr);
                     });
 
     const int expected = 3 * (2 * 1 + 1) * n; // 9 per element
