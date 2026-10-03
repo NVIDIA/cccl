@@ -1220,7 +1220,7 @@ public:
       _pop_epilogue(finalize_prereqs, err);
       if (err)
       {
-        on_error(policy) << [&] {
+        on_error(policy)->*[&] {
           ::std::rethrow_exception(err);
         };
       }
@@ -1319,7 +1319,7 @@ public:
       pending_epilogue_node_offset_ = -1;
       if (err)
       {
-        on_error(policy) << [&] {
+        on_error(policy)->*[&] {
           ::std::rethrow_exception(err);
         };
       }

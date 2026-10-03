@@ -23,6 +23,6 @@ using namespace cuda::experimental::stf::exception_policies;
 
 int main()
 {
-  on_error(retry) << cudaErrorInvalidValue;
+  on_error(retry)->*cudaErrorInvalidValue;
   return EXIT_FAILURE;
 }
