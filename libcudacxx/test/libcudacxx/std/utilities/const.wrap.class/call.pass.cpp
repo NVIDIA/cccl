@@ -46,7 +46,7 @@ struct OverloadSet
     return 1;
   }
 
-  TEST_FUNC constexpr int operator()(cuda::std::__constant_wrapper<42>) const
+  TEST_FUNC constexpr int operator()(cuda::std::constant_wrapper<42>) const
   {
     return 2;
   }
@@ -62,7 +62,7 @@ struct ReturnNonStructural
 
 struct CWOnly
 {
-  TEST_FUNC constexpr int operator()(cuda::std::__constant_wrapper<42>) const
+  TEST_FUNC constexpr int operator()(cuda::std::constant_wrapper<42>) const
   {
     return 42;
   }
@@ -101,34 +101,34 @@ struct S
 // clang-format off
 #if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 constexpr auto get_42_lambda = []() { return 42; };
-static_assert(cuda::std::is_invocable_v<cuda::std::__constant_wrapper<get_42_lambda>>);
-static_assert(!cuda::std::is_invocable_v<cuda::std::__constant_wrapper<get_42_lambda>, int>);
+static_assert(cuda::std::is_invocable_v<cuda::std::constant_wrapper<get_42_lambda>>);
+static_assert(!cuda::std::is_invocable_v<cuda::std::constant_wrapper<get_42_lambda>, int>);
 #endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
-static_assert(!cuda::std::is_invocable_v<cuda::std::__constant_wrapper<5>>);
+static_assert(!cuda::std::is_invocable_v<cuda::std::constant_wrapper<5>>);
 
 #if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
-static_assert(!cuda::std::is_invocable_v<cuda::std::__constant_wrapper<cuda::std::plus<>{}>, int>);
-static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<cuda::std::plus<>{}>, int, int>);
+static_assert(!cuda::std::is_invocable_v<cuda::std::constant_wrapper<cuda::std::plus<>{}>, int>);
+static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::constant_wrapper<cuda::std::plus<>{}>, int, int>);
 
 // nvcc < 13.1 and gcc < 14 think this is not a constant expression.
 #if !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_COMPILER(GCC, <, 14)
-static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<cuda::std::plus<>{}>, cuda::std::__constant_wrapper<42>, int>);
+static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::constant_wrapper<cuda::std::plus<>{}>, cuda::std::constant_wrapper<42>, int>);
 #endif // !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_COMPILER(GCC, <, 14)
-static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<cuda::std::plus<>{}>, cuda::std::__constant_wrapper<42>, cuda::std::__constant_wrapper<42>>);
+static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::constant_wrapper<cuda::std::plus<>{}>, cuda::std::constant_wrapper<42>, cuda::std::constant_wrapper<42>>);
 #endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 // gcc < 13 fails this test with error:
 //   'nothrow_call'/'throwing_call' is not a valid template argument of type 'int (*)(int) noexcept' because it is not
 //   a variable
 #if !_CCCL_COMPILER(GCC, <, 13)
-static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<nothrow_call>, int>);
-static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<nothrow_call>, cuda::std::__constant_wrapper<42>>);
+static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::constant_wrapper<nothrow_call>, int>);
+static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::constant_wrapper<nothrow_call>, cuda::std::constant_wrapper<42>>);
 
-static_assert(cuda::std::is_invocable_v<cuda::std::__constant_wrapper<throwing_call>, int>);
-static_assert(!cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<throwing_call>, int>);
+static_assert(cuda::std::is_invocable_v<cuda::std::constant_wrapper<throwing_call>, int>);
+static_assert(!cuda::std::is_nothrow_invocable_v<cuda::std::constant_wrapper<throwing_call>, int>);
 // Old msvc doesn't evaluate noexcept properly.
 #if !TEST_COMPILER(MSVC, <, 19, 30)
-static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<throwing_call>, cuda::std::__constant_wrapper<42>>,
+static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::constant_wrapper<throwing_call>, cuda::std::constant_wrapper<42>>,
               "the call expression is still nothrow because the constexpr path is taken");
 #endif // !TEST_COMPILER(MSVC, <, 19, 30)
 #endif // !_CCCL_COMPILER(GCC, <, 13)
@@ -161,7 +161,7 @@ TEST_FUNC constexpr bool test()
 
   {
     // with runtime param
-    using T                                       = cuda::std::__constant_wrapper<cuda::std::plus<>{}>;
+    using T                                       = cuda::std::constant_wrapper<cuda::std::plus<>{}>;
     cuda::std::same_as<int> decltype(auto) result = TEST_CALL(T, 1, 2);
     assert(result == 3);
   }
@@ -170,17 +170,17 @@ TEST_FUNC constexpr bool test()
 #  if !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_COMPILER(GCC, <, 14)
   {
     // with runtime param and constexpr param
-    using T                                       = cuda::std::__constant_wrapper<cuda::std::plus<>{}>;
-    cuda::std::same_as<int> decltype(auto) result = TEST_CALL(T, cuda::std::__cw<1>, 2);
+    using T                                       = cuda::std::constant_wrapper<cuda::std::plus<>{}>;
+    cuda::std::same_as<int> decltype(auto) result = TEST_CALL(T, cuda::std::cw<1>, 2);
     assert(result == 3);
   }
 #  endif // !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_COMPILER(GCC, <, 14)
 
   {
     // with only constexpr param
-    using T = cuda::std::__constant_wrapper<cuda::std::plus<>{}>;
-    cuda::std::same_as<cuda::std::__constant_wrapper<3>> decltype(auto) result =
-      TEST_CALL(T, cuda::std::__cw<1>, cuda::std::__cw<2>);
+    using T = cuda::std::constant_wrapper<cuda::std::plus<>{}>;
+    cuda::std::same_as<cuda::std::constant_wrapper<3>> decltype(auto) result =
+      TEST_CALL(T, cuda::std::cw<1>, cuda::std::cw<2>);
     static_assert(result == 3);
   }
 
@@ -189,15 +189,15 @@ TEST_FUNC constexpr bool test()
     constexpr auto lambda = [] {
       return 42;
     };
-    using T                                                                     = cuda::std::__constant_wrapper<lambda>;
-    cuda::std::same_as<cuda::std::__constant_wrapper<42>> decltype(auto) result = TEST_CALL(T, );
+    using T                                                                   = cuda::std::constant_wrapper<lambda>;
+    cuda::std::same_as<cuda::std::constant_wrapper<42>> decltype(auto) result = TEST_CALL(T, );
     static_assert(result == 42);
   }
 
   {
     // return void with runtime param
     constexpr auto lambda = [](int) {};
-    using T               = cuda::std::__constant_wrapper<lambda>;
+    using T               = cuda::std::constant_wrapper<lambda>;
     TEST_CALL(T, 5);
     static_assert(cuda::std::same_as<void, decltype(TEST_CALL(T, 5))>);
   }
@@ -207,23 +207,23 @@ TEST_FUNC constexpr bool test()
   {
     // return void with constexpr param
     constexpr auto lambda = [](int) {};
-    using T               = cuda::std::__constant_wrapper<lambda>;
-    TEST_CALL(T, cuda::std::__cw<5>);
-    static_assert(cuda::std::same_as<void, decltype(TEST_CALL(T, cuda::std::__cw<5>))>);
+    using T               = cuda::std::constant_wrapper<lambda>;
+    TEST_CALL(T, cuda::std::cw<5>);
+    static_assert(cuda::std::same_as<void, decltype(TEST_CALL(T, cuda::std::cw<5>))>);
   }
 #  endif // !_CCCL_COMPILER(GCC, <, 14)
 
   {
     // nullary return void
     constexpr auto lambda = []() {};
-    using T               = cuda::std::__constant_wrapper<lambda>;
+    using T               = cuda::std::constant_wrapper<lambda>;
     TEST_CALL(T, );
     static_assert(cuda::std::same_as<void, decltype(TEST_CALL(T, ))>);
   }
 
   {
     // move only
-    using T = cuda::std::__constant_wrapper<MoveOnlyFn{}>;
+    using T = cuda::std::constant_wrapper<MoveOnlyFn{}>;
     MoveOnly m1(1), m2(2), m3(3);
     cuda::std::same_as<MoveOnly> decltype(auto) result = TEST_CALL(T, m1, cuda::std::move(m2), cuda::std::move(m3));
     assert(result.get() == 6);
@@ -234,7 +234,7 @@ TEST_FUNC constexpr bool test()
 #if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   {
     // function pointer
-    using T               = cuda::std::__constant_wrapper<fun_ptr>;
+    using T               = cuda::std::constant_wrapper<fun_ptr>;
     decltype(auto) result = TEST_CALL(T, 5);
     static_assert(cuda::std::same_as<bool, decltype(result)>);
     assert(result);
@@ -244,16 +244,16 @@ TEST_FUNC constexpr bool test()
 #  if !TEST_COMPILER(MSVC, <, 19, 30)
   {
     // function pointer with constexpr param
-    using T                                = cuda::std::__constant_wrapper<fun_ptr>;
-    [[maybe_unused]] decltype(auto) result = TEST_CALL(T, cuda::std::__cw<5>);
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<true>, decltype(result)>);
+    using T                                = cuda::std::constant_wrapper<fun_ptr>;
+    [[maybe_unused]] decltype(auto) result = TEST_CALL(T, cuda::std::cw<5>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<true>, decltype(result)>);
     static_assert(result);
   }
 #  endif // !TEST_COMPILER(MSVC, <, 19, 30)
 
   {
     // member ptr with runtime param
-    using T = cuda::std::__constant_wrapper<&S::member>;
+    using T = cuda::std::constant_wrapper<&S::member>;
     S s1;
     decltype(auto) result = TEST_CALL(T, s1);
     static_assert(cuda::std::same_as<int&, decltype(result)>);
@@ -265,16 +265,16 @@ TEST_FUNC constexpr bool test()
 #  if TEST_STD_VER >= 2020 || !TEST_CUDA_COMPILER(NVCC)
   {
     // member ptr with constexpr param
-    using T               = cuda::std::__constant_wrapper<&S::member>;
-    decltype(auto) result = TEST_CALL(T, cuda::std::__cw<&s_value>);
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<42>, decltype(result)>);
+    using T               = cuda::std::constant_wrapper<&S::member>;
+    decltype(auto) result = TEST_CALL(T, cuda::std::cw<&s_value>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<42>, decltype(result)>);
     static_assert(result == 42);
   }
 #  endif // TEST_STD_VER >= 2020 || !TEST_CUDA_COMPILER(NVCC)
 
   {
     // member function ptr with runtime param
-    using T = cuda::std::__constant_wrapper<&S::mem_fun>;
+    using T = cuda::std::constant_wrapper<&S::mem_fun>;
     S s1;
     decltype(auto) result = TEST_CALL(T, s1, 8);
     static_assert(cuda::std::same_as<int, decltype(result)>);
@@ -283,9 +283,9 @@ TEST_FUNC constexpr bool test()
 
   {
     // member function ptr with constexpr param
-    using T               = cuda::std::__constant_wrapper<&S::mem_fun>;
-    decltype(auto) result = TEST_CALL(T, cuda::std::__cw<&s_value>, cuda::std::__cw<8>);
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<50>, decltype(result)>);
+    using T               = cuda::std::constant_wrapper<&S::mem_fun>;
+    decltype(auto) result = TEST_CALL(T, cuda::std::cw<&s_value>, cuda::std::cw<8>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<50>, decltype(result)>);
     static_assert(result == 50);
   }
 
@@ -295,10 +295,10 @@ TEST_FUNC constexpr bool test()
 #    if !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
     // overload set
     // will always unwrap the constexpr params and call the non-constexpr overload
-    using T                                        = cuda::std::__constant_wrapper<OverloadSet{}>;
+    using T                                        = cuda::std::constant_wrapper<OverloadSet{}>;
     cuda::std::same_as<int> decltype(auto) result1 = TEST_CALL(T, 42);
     assert(result1 == 1);
-    cuda::std::same_as<cuda::std::__constant_wrapper<1>> decltype(auto) result2 = TEST_CALL(T, cuda::std::__cw<42>);
+    cuda::std::same_as<cuda::std::constant_wrapper<1>> decltype(auto) result2 = TEST_CALL(T, cuda::std::cw<42>);
     static_assert(result2 == 1);
 #    endif // !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
   }
@@ -309,7 +309,7 @@ TEST_FUNC constexpr bool test()
 
   {
     // return non-structural type
-    using T                                                 = cuda::std::__constant_wrapper<ReturnNonStructural{}>;
+    using T                                                 = cuda::std::constant_wrapper<ReturnNonStructural{}>;
     cuda::std::same_as<NonStructural> decltype(auto) result = TEST_CALL(T, 5);
     assert(result.get() == 5);
   }
@@ -318,8 +318,8 @@ TEST_FUNC constexpr bool test()
 #  if !_CCCL_COMPILER(GCC, <, 14)
   {
     // return non-structural type with constexpr param
-    using T                                                 = cuda::std::__constant_wrapper<ReturnNonStructural{}>;
-    cuda::std::same_as<NonStructural> decltype(auto) result = TEST_CALL(T, cuda::std::__cw<5>);
+    using T                                                 = cuda::std::constant_wrapper<ReturnNonStructural{}>;
+    cuda::std::same_as<NonStructural> decltype(auto) result = TEST_CALL(T, cuda::std::cw<5>);
     assert(result.get() == 5);
   }
 #  endif // !_CCCL_COMPILER(GCC, <, 14)
@@ -327,8 +327,8 @@ TEST_FUNC constexpr bool test()
   {
     // cw only
     // the upwrapping case doesn't work so it falls back to the normal invoke path
-    using T                                       = cuda::std::__constant_wrapper<CWOnly{}>;
-    cuda::std::same_as<int> decltype(auto) result = TEST_CALL(T, cuda::std::__cw<42>);
+    using T                                       = cuda::std::constant_wrapper<CWOnly{}>;
+    cuda::std::same_as<int> decltype(auto) result = TEST_CALL(T, cuda::std::cw<42>);
     assert(result == 42);
   }
 
@@ -337,23 +337,23 @@ TEST_FUNC constexpr bool test()
     constexpr auto lamda = [](int i) {
       return i + 1;
     };
-    assert(cuda::std::__cw<lamda>(42) == 43);
-    assert(cuda::std::__cw<lamda>(cuda::std::__cw<42>) == 43);
+    assert(cuda::std::cw<lamda>(42) == 43);
+    assert(cuda::std::cw<lamda>(cuda::std::cw<42>) == 43);
   }
 
   {
     // with integral_constant, will still call the constexpr path
-    using T = cuda::std::__constant_wrapper<cuda::std::plus<>{}>;
+    using T = cuda::std::constant_wrapper<cuda::std::plus<>{}>;
     cuda::std::integral_constant<int, 1> ic1;
     cuda::std::integral_constant<int, 2> ic2;
-    cuda::std::same_as<cuda::std::__constant_wrapper<3>> decltype(auto) result = TEST_CALL(T, ic1, ic2);
+    cuda::std::same_as<cuda::std::constant_wrapper<3>> decltype(auto) result = TEST_CALL(T, ic1, ic2);
     static_assert(result == 3);
   }
 
   {
-    using T = cuda::std::__constant_wrapper<Poison{}>;
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<MustBeInt<int>{}>> decltype(auto) result =
-      TEST_CALL(T, cuda::std::__cw<5>);
+    using T = cuda::std::constant_wrapper<Poison{}>;
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<MustBeInt<int>{}>> decltype(auto) result =
+      TEST_CALL(T, cuda::std::cw<5>);
   }
 
 #endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)

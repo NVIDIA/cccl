@@ -178,58 +178,58 @@ inline constexpr bool HasNoexceptDeref<T, cuda::std::enable_if_t<noexcept(*cuda:
 
 #if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
-static_assert(HasPlus<cuda::std::__constant_wrapper<WithOps{42}>>);
-static_assert(HasMinus<cuda::std::__constant_wrapper<WithOps{42}>>);
-static_assert(HasBitNot<cuda::std::__constant_wrapper<WithOps{42}>>);
-static_assert(HasNot<cuda::std::__constant_wrapper<WithOps{42}>>);
-static_assert(HasBitAnd<cuda::std::__constant_wrapper<WithOps{42}>>);
-static_assert(HasDeref<cuda::std::__constant_wrapper<WithOps{42}>>);
+static_assert(HasPlus<cuda::std::constant_wrapper<WithOps{42}>>);
+static_assert(HasMinus<cuda::std::constant_wrapper<WithOps{42}>>);
+static_assert(HasBitNot<cuda::std::constant_wrapper<WithOps{42}>>);
+static_assert(HasNot<cuda::std::constant_wrapper<WithOps{42}>>);
+static_assert(HasBitAnd<cuda::std::constant_wrapper<WithOps{42}>>);
+static_assert(HasDeref<cuda::std::constant_wrapper<WithOps{42}>>);
 
-static_assert(HasNoexceptPlus<cuda::std::__constant_wrapper<WithOps{42}>>);
-static_assert(HasNoexceptMinus<cuda::std::__constant_wrapper<WithOps{42}>>);
-static_assert(HasNoexceptBitNot<cuda::std::__constant_wrapper<WithOps{42}>>);
-static_assert(HasNoexceptNot<cuda::std::__constant_wrapper<WithOps{42}>>);
-static_assert(HasNoexceptBitAnd<cuda::std::__constant_wrapper<WithOps{42}>>);
-static_assert(HasNoexceptDeref<cuda::std::__constant_wrapper<WithOps{42}>>);
+static_assert(HasNoexceptPlus<cuda::std::constant_wrapper<WithOps{42}>>);
+static_assert(HasNoexceptMinus<cuda::std::constant_wrapper<WithOps{42}>>);
+static_assert(HasNoexceptBitNot<cuda::std::constant_wrapper<WithOps{42}>>);
+static_assert(HasNoexceptNot<cuda::std::constant_wrapper<WithOps{42}>>);
+static_assert(HasNoexceptBitAnd<cuda::std::constant_wrapper<WithOps{42}>>);
+static_assert(HasNoexceptDeref<cuda::std::constant_wrapper<WithOps{42}>>);
 
 #endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 // Old msvc doesn't evaluate noexcept properly.
 #if !TEST_COMPILER(MSVC, <, 19, 30)
-static_assert(HasNoexceptPlus<cuda::std::__constant_wrapper<42>>);
-static_assert(HasNoexceptMinus<cuda::std::__constant_wrapper<42>>);
-static_assert(HasNoexceptBitNot<cuda::std::__constant_wrapper<42>>);
-static_assert(HasNoexceptNot<cuda::std::__constant_wrapper<42>>);
-static_assert(HasNoexceptBitAnd<cuda::std::__constant_wrapper<42>>);
+static_assert(HasNoexceptPlus<cuda::std::constant_wrapper<42>>);
+static_assert(HasNoexceptMinus<cuda::std::constant_wrapper<42>>);
+static_assert(HasNoexceptBitNot<cuda::std::constant_wrapper<42>>);
+static_assert(HasNoexceptNot<cuda::std::constant_wrapper<42>>);
+static_assert(HasNoexceptBitAnd<cuda::std::constant_wrapper<42>>);
 #endif // !TEST_COMPILER(MSVC, <, 19, 30)
-static_assert(!HasDeref<cuda::std::__constant_wrapper<42>>);
+static_assert(!HasDeref<cuda::std::constant_wrapper<42>>);
 
 #if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
-static_assert(!HasPlus<cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasMinus<cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasBitNot<cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasNot<cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(HasBitAnd<cuda::std::__constant_wrapper<NoOps{}>>);
-static_assert(!HasDeref<cuda::std::__constant_wrapper<NoOps{}>>);
+static_assert(!HasPlus<cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasMinus<cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasBitNot<cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasNot<cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(HasBitAnd<cuda::std::constant_wrapper<NoOps{}>>);
+static_assert(!HasDeref<cuda::std::constant_wrapper<NoOps{}>>);
 
 // The operators from constant_wrapper do not exist, but they can be implicited converted
 // to the underlying type and use its operators instead.
-static_assert(HasPlus<cuda::std::__constant_wrapper<OpsReturnNonStructural{42}>>);
-static_assert(HasMinus<cuda::std::__constant_wrapper<OpsReturnNonStructural{42}>>);
-static_assert(HasBitNot<cuda::std::__constant_wrapper<OpsReturnNonStructural{42}>>);
-static_assert(HasNot<cuda::std::__constant_wrapper<OpsReturnNonStructural{42}>>);
-static_assert(HasBitAnd<cuda::std::__constant_wrapper<OpsReturnNonStructural{42}>>);
-static_assert(HasDeref<cuda::std::__constant_wrapper<OpsReturnNonStructural{42}>>);
+static_assert(HasPlus<cuda::std::constant_wrapper<OpsReturnNonStructural{42}>>);
+static_assert(HasMinus<cuda::std::constant_wrapper<OpsReturnNonStructural{42}>>);
+static_assert(HasBitNot<cuda::std::constant_wrapper<OpsReturnNonStructural{42}>>);
+static_assert(HasNot<cuda::std::constant_wrapper<OpsReturnNonStructural{42}>>);
+static_assert(HasBitAnd<cuda::std::constant_wrapper<OpsReturnNonStructural{42}>>);
+static_assert(HasDeref<cuda::std::constant_wrapper<OpsReturnNonStructural{42}>>);
 
-static_assert(!HasNoexceptPlus<cuda::std::__constant_wrapper<OpsReturnNonStructural{42}>>);
-static_assert(!HasNoexceptMinus<cuda::std::__constant_wrapper<OpsReturnNonStructural{42}>>);
-static_assert(!HasNoexceptBitNot<cuda::std::__constant_wrapper<OpsReturnNonStructural{42}>>);
-static_assert(!HasNoexceptNot<cuda::std::__constant_wrapper<OpsReturnNonStructural{42}>>);
-static_assert(!HasNoexceptBitAnd<cuda::std::__constant_wrapper<OpsReturnNonStructural{42}>>);
+static_assert(!HasNoexceptPlus<cuda::std::constant_wrapper<OpsReturnNonStructural{42}>>);
+static_assert(!HasNoexceptMinus<cuda::std::constant_wrapper<OpsReturnNonStructural{42}>>);
+static_assert(!HasNoexceptBitNot<cuda::std::constant_wrapper<OpsReturnNonStructural{42}>>);
+static_assert(!HasNoexceptNot<cuda::std::constant_wrapper<OpsReturnNonStructural{42}>>);
+static_assert(!HasNoexceptBitAnd<cuda::std::constant_wrapper<OpsReturnNonStructural{42}>>);
 // todo(dabayer): This is failing with MSVC.
 #  if !_CCCL_COMPILER(MSVC)
-static_assert(!HasNoexceptDeref<cuda::std::__constant_wrapper<OpsReturnNonStructural{42}>>);
+static_assert(!HasNoexceptDeref<cuda::std::constant_wrapper<OpsReturnNonStructural{42}>>);
 #  endif // !_CCCL_COMPILER(MSVC)
 
 #endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
@@ -238,26 +238,26 @@ TEST_FUNC constexpr bool test()
 {
   {
     // int
-    cuda::std::__constant_wrapper<42> cw42{};
+    cuda::std::constant_wrapper<42> cw42{};
 
     decltype(auto) result = +cw42;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<42>, decltype(result)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<42>, decltype(result)>);
     static_assert(result == 42);
 
     decltype(auto) result2 = -cw42;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<-42>, decltype(result2)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<-42>, decltype(result2)>);
     static_assert(result2 == -42);
 
     decltype(auto) result3 = ~cw42;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<~42>, decltype(result3)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<~42>, decltype(result3)>);
     static_assert(result3 == ~42);
 
     decltype(auto) result4 = !cw42;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<!42>, decltype(result4)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<!42>, decltype(result4)>);
     static_assert(result4 == !42);
 
     [[maybe_unused]] decltype(auto) result5 = &cw42;
-    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<&cw42.value>, decltype(result5)>);
+    static_assert(cuda::std::same_as<cuda::std::constant_wrapper<&cw42.value>, decltype(result5)>);
     // msvc crashes/reports this is not a valid constant expression when compiled in C++17 dialect.
 #if !(TEST_COMPILER(MSVC) && TEST_STD_VER == 2017)
     static_assert(result5 == &cw42.value);
@@ -268,34 +268,31 @@ TEST_FUNC constexpr bool test()
 
   {
     // WithOps
-    cuda::std::__constant_wrapper<WithOps{42}> cwWithOps;
+    cuda::std::constant_wrapper<WithOps{42}> cwWithOps;
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{42}>> decltype(auto) result = +cwWithOps;
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{42}>> decltype(auto) result = +cwWithOps;
     static_assert(result.__get().value == 42);
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{-42}>> decltype(auto) result2 =
-      -cwWithOps;
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{-42}>> decltype(auto) result2 = -cwWithOps;
     static_assert(result2.__get().value == -42);
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{~42}>> decltype(auto) result3 =
-      ~cwWithOps;
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{~42}>> decltype(auto) result3 = ~cwWithOps;
     static_assert(result3.__get().value == ~42);
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{!42}>> decltype(auto) result4 =
-      !cwWithOps;
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{!42}>> decltype(auto) result4 = !cwWithOps;
     static_assert(result4.__get().value == !42);
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{84}>> decltype(auto) result5 = &cwWithOps;
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{84}>> decltype(auto) result5 = &cwWithOps;
     static_assert(result5.__get().value == 84);
 
-    [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{0}>> decltype(auto) result6 = *cwWithOps;
+    [[maybe_unused]] cuda::std::same_as<cuda::std::constant_wrapper<WithOps{0}>> decltype(auto) result6 = *cwWithOps;
     static_assert(result6.__get().value == 0);
   }
 
   {
     // Return non-structural type
     // Will use underlying type's runtime operators
-    cuda::std::__constant_wrapper<OpsReturnNonStructural{42}> cwOpsReturnNonStructural;
+    cuda::std::constant_wrapper<OpsReturnNonStructural{42}> cwOpsReturnNonStructural;
 
     cuda::std::same_as<NonStructural> decltype(auto) result = +cwOpsReturnNonStructural;
     assert(result.get() == 42);

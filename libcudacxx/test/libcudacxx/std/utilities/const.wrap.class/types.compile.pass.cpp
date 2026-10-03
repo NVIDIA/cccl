@@ -23,10 +23,10 @@
 
 #include "test_macros.h"
 
-static_assert(cuda::std::__constant_wrapper<42>::value == 42);
-static_assert(cuda::std::same_as<decltype(cuda::std::__constant_wrapper<42>::value), const int>);
-static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<42>::type, cuda::std::__constant_wrapper<42>>);
-static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<42>::value_type, int>);
+static_assert(cuda::std::constant_wrapper<42>::value == 42);
+static_assert(cuda::std::same_as<decltype(cuda::std::constant_wrapper<42>::value), const int>);
+static_assert(cuda::std::same_as<cuda::std::constant_wrapper<42>::type, cuda::std::constant_wrapper<42>>);
+static_assert(cuda::std::same_as<cuda::std::constant_wrapper<42>::value_type, int>);
 
 #if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
@@ -35,7 +35,7 @@ struct S
   int member = 42;
 };
 
-constexpr cuda::std::__constant_wrapper<S{5}> s_value;
+constexpr cuda::std::constant_wrapper<S{5}> s_value;
 using SValue = cuda::std::remove_const_t<decltype(s_value)>;
 
 static_assert(s_value.value.member == 5);
@@ -57,9 +57,9 @@ TEST_FUNC constexpr bool value_ref_to_template_parameter_object()
 {
 // gcc < 13 evaluates this as taking address of rvalue. msvc crashes.
 #  if !TEST_COMPILER(GCC, <, 13) && !_CCCL_COMPILER(MSVC)
-  return &V == &cuda::std::__constant_wrapper<V>{};
+  return &V == &cuda::std::constant_wrapper<V>{};
 #  else // ^^^ !TEST_COMPILER(GCC, <, 13) ^^^ / vvv TEST_COMPILER(GCC, <, 13) vvv
-  return &V == &cuda::std::__constant_wrapper<V>::__get();
+  return &V == &cuda::std::constant_wrapper<V>::__get();
 #  endif // ^^^ TEST_COMPILER(GCC, <, 13) ^^^
 }
 
@@ -69,12 +69,12 @@ static_assert(value_ref_to_template_parameter_object<S{5}>());
 
 constexpr int arr[] = {1, 2, 3, 4, 5};
 
-static_assert(cuda::std::__constant_wrapper<arr>{} == arr);
-static_assert(cuda::std::same_as<typename cuda::std::__constant_wrapper<arr>::type, cuda::std::__constant_wrapper<arr>>);
+static_assert(cuda::std::constant_wrapper<arr>{} == arr);
+static_assert(cuda::std::same_as<typename cuda::std::constant_wrapper<arr>::type, cuda::std::constant_wrapper<arr>>);
 
 // nvcc < 13.3 incorrectly generates input file for host compiler.
 #if !(TEST_CUDA_COMPILER(NVCC, <, 13, 3) && _CCCL_HOST_COMPILATION())
-static_assert(cuda::std::same_as<typename cuda::std::__constant_wrapper<arr>::value_type, const int*>);
+static_assert(cuda::std::same_as<typename cuda::std::constant_wrapper<arr>::value_type, const int*>);
 #endif // !(TEST_CUDA_COMPILER(NVCC, <, 13, 3) && _CCCL_HOST_COMPILATION())
 
 int main(int, char**)
