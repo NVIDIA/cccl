@@ -352,7 +352,7 @@ class UnsupportedReason:
 
 
 @dataclass(frozen=True)
-class ThreadGroupResolution:
+class ThreadGroupLaunchResolution:
     """One launch-reconciled static group or a typed unsupported reason."""
 
     group: ThreadGroup
@@ -360,12 +360,15 @@ class ThreadGroupResolution:
 
     def __post_init__(self) -> None:
         if not isinstance(self.group, ThreadGroup):
-            raise TypeError("ThreadGroupResolution group must be a ThreadGroup")
+            raise TypeError(
+                "ThreadGroupLaunchResolution group must be a ThreadGroup"
+            )
         if self.unsupported is not None and not isinstance(
             self.unsupported, UnsupportedReason
         ):
             raise TypeError(
-                "ThreadGroupResolution unsupported must be an UnsupportedReason"
+                "ThreadGroupLaunchResolution unsupported must be an "
+                "UnsupportedReason"
             )
 
     def require_supported(self) -> ThreadGroup:
@@ -537,7 +540,7 @@ __all__ = [
     "SynchronizationContract",
     "SynchronizationScope",
     "TempStorageContract",
-    "ThreadGroupResolution",
+    "ThreadGroupLaunchResolution",
     "UnsupportedReason",
     "UnsupportedReasonCode",
 ]
