@@ -24,6 +24,7 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__host_stdlib/sstream>
 
@@ -175,7 +176,7 @@ __launch_bounds__(
   __shared__ typename vsmem_helper_t::static_temp_storage_t shared_temp_storage;
   auto& temp_storage = vsmem_helper_t::get_temp_storage(shared_temp_storage, global_temp_storage);
   MergeAgent{
-    temp_storage.Alias(),
+    temp_storage.template __alias<typename MergeAgent::temp_storages>(),
     keys1,
     items1,
     num_keys1,

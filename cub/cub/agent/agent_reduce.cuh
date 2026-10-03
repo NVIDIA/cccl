@@ -26,6 +26,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/identity.h>
@@ -237,7 +238,7 @@ struct AgentReduceImpl
   };
 
   /// Alias wrapper allowing storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per-thread fields
@@ -280,7 +281,7 @@ struct AgentReduceImpl
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduceImpl(
     TempStorage& temp_storage, InputIteratorT d_in, ReductionOp reduction_op, TransformOp transform_op, int lane_id)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , d_in(d_in)
       , d_wrapped_in(d_in)
       , reduction_op(reduction_op)

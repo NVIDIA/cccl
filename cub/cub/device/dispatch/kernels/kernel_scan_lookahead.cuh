@@ -32,6 +32,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__ptx/instructions/clusterlaunchcontrol.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
@@ -164,7 +165,7 @@ template <typename Tp, typename ScanOpT>
 _CCCL_DEVICE_API Tp warpReduce(const Tp input, ScanOpT& scan_op)
 {
   using warp_reduce_t = WarpReduce<Tp>;
-  static_assert(::cuda::std::is_same_v<typename warp_reduce_t::TempStorage, Uninitialized<NullType>>,
+  static_assert(::cuda::std::is_same_v<typename warp_reduce_t::TempStorage, ::cuda::__as_uninitialized_bytes<NullType>>,
                 "WarpReduce for a full warp must not require temporary storage");
   typename warp_reduce_t::TempStorage temp_storage;
   return warp_reduce_t{temp_storage}.Reduce(input, scan_op);
@@ -174,7 +175,7 @@ template <typename Tp, typename ScanOpT>
 _CCCL_DEVICE_API Tp warpReducePartial(const Tp input, ScanOpT& scan_op, const int num_items)
 {
   using warp_reduce_t = WarpReduce<Tp>;
-  static_assert(::cuda::std::is_same_v<typename warp_reduce_t::TempStorage, Uninitialized<NullType>>,
+  static_assert(::cuda::std::is_same_v<typename warp_reduce_t::TempStorage, ::cuda::__as_uninitialized_bytes<NullType>>,
                 "WarpReduce for a full warp must not require temporary storage");
   typename warp_reduce_t::TempStorage temp_storage;
   return warp_reduce_t{temp_storage}.Reduce(input, scan_op, num_items);
@@ -184,7 +185,7 @@ template <typename Tp, typename ScanOpT>
 _CCCL_DEVICE_API Tp warpScanExclusive(const Tp regInput, ScanOpT& scan_op)
 {
   using warp_scan_t = WarpScan<Tp>;
-  static_assert(::cuda::std::is_same_v<typename warp_scan_t::TempStorage, Uninitialized<NullType>>,
+  static_assert(::cuda::std::is_same_v<typename warp_scan_t::TempStorage, ::cuda::__as_uninitialized_bytes<NullType>>,
                 "WarpScan for a full warp must not require temporary storage");
   typename warp_scan_t::TempStorage temp_storage;
   Tp result;
@@ -208,7 +209,7 @@ warpScanExclusivePartial(Tp regInput, ScanOpT& scan_op, const int num_items, boo
   else
   {
     using warp_scan_t = WarpScan<Tp>;
-    static_assert(::cuda::std::is_same_v<typename warp_scan_t::TempStorage, Uninitialized<NullType>>,
+    static_assert(::cuda::std::is_same_v<typename warp_scan_t::TempStorage, ::cuda::__as_uninitialized_bytes<NullType>>,
                   "WarpScan for a full warp must not require temporary storage");
     Tp result;
     typename warp_scan_t::TempStorage temp_storage;

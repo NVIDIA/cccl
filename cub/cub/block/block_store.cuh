@@ -23,6 +23,7 @@
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
@@ -740,7 +741,7 @@ class BlockStore
 
 public:
   //! @smemstorage{BlockStore}
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -770,7 +771,7 @@ public:
    *   Reference to memory allocation having layout type TempStorage
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockStore(TempStorage& temp_storage)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 

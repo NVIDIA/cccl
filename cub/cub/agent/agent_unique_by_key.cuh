@@ -25,6 +25,8 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/thread/thread_operators.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
+
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -176,12 +178,12 @@ struct AgentUniqueByKey
     typename BlockLoadValues::TempStorage load_values;
 
     // Smem needed for compacting items (allows non POD items in this union)
-    Uninitialized<KeyExchangeT> shared_keys;
-    Uninitialized<ValueExchangeT> shared_values;
+    ::cuda::__as_uninitialized_bytes<KeyExchangeT> shared_keys;
+    ::cuda::__as_uninitialized_bytes<ValueExchangeT> shared_values;
   };
 
   // Alias wrapper allowing storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per-thread fields
@@ -208,7 +210,7 @@ struct AgentUniqueByKey
     ValueOutputIteratorT d_values_out_,
     EqualityOpT equality_op_,
     OffsetT num_items_)
-      : temp_storage(temp_storage_.Alias())
+      : temp_storage(temp_storage_.template __alias<_TempStorage>())
       , d_keys_in(d_keys_in_)
       , d_values_in(d_values_in_)
       , d_keys_out(d_keys_out_)
@@ -228,11 +230,11 @@ struct AgentUniqueByKey
 
   _CCCL_DEVICE _CCCL_FORCEINLINE KeyExchangeT& GetShared(KeyTagT)
   {
-    return temp_storage.shared_keys.Alias();
+    return temp_storage.shared_keys.template __alias<KeyExchangeT>();
   }
   _CCCL_DEVICE _CCCL_FORCEINLINE ValueExchangeT& GetShared(ValueTagT)
   {
-    return temp_storage.shared_values.Alias();
+    return temp_storage.shared_values.template __alias<ValueExchangeT>();
   }
 
   //---------------------------------------------------------------------

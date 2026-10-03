@@ -22,6 +22,8 @@
 
 #include <thrust/system/cuda/detail/core/util.h>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -80,7 +82,7 @@ struct AgentDifference
   };
 
   /// Alias wrapper allowing storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   static constexpr int BLOCK_THREADS      = Policy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD   = Policy::ITEMS_PER_THREAD;
@@ -102,7 +104,7 @@ struct AgentDifference
     OutputIteratorT result,
     DifferenceOpT difference_op,
     OffsetT num_items)
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , input_it(input_it)
       , load_it(try_make_cache_modified_iterator<Policy::LOAD_MODIFIER>(input_it))
       , first_tile_previous(first_tile_previous)

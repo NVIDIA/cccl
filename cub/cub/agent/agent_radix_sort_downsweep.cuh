@@ -30,6 +30,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/cstdint>
 
@@ -212,13 +213,13 @@ struct AgentRadixSortDownsweep
       OffsetT relative_bin_offsets[RADIX_DIGITS];
     } keys_and_offsets;
 
-    Uninitialized<ValueExchangeT> exchange_values;
+    ::cuda::__as_uninitialized_bytes<ValueExchangeT> exchange_values;
 
     OffsetT exclusive_digit_prefix[RADIX_DIGITS];
   };
 
   /// Alias wrapper allowing storage to be unioned
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Thread fields
@@ -301,7 +302,7 @@ struct AgentRadixSortDownsweep
   {
     __syncthreads();
 
-    ValueExchangeT& exchange_values = temp_storage.exchange_values.Alias();
+    ValueExchangeT& exchange_values = temp_storage.exchange_values.template __alias<ValueExchangeT>();
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
@@ -585,7 +586,7 @@ struct AgentRadixSortDownsweep
     int current_bit,
     int num_bits,
     DecomposerT decomposer = {})
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , d_keys_in(reinterpret_cast<const bit_ordered_type*>(d_keys_in))
       , d_values_in(d_values_in)
       , d_keys_out(reinterpret_cast<bit_ordered_type*>(d_keys_out))
@@ -625,7 +626,7 @@ struct AgentRadixSortDownsweep
     int current_bit,
     int num_bits,
     DecomposerT decomposer = {})
-      : temp_storage(temp_storage.Alias())
+      : temp_storage(temp_storage.template __alias<_TempStorage>())
       , d_keys_in(reinterpret_cast<const bit_ordered_type*>(d_keys_in))
       , d_values_in(d_values_in)
       , d_keys_out(reinterpret_cast<bit_ordered_type*>(d_keys_out))

@@ -27,6 +27,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__memory/as_uninitialized_bytes.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
@@ -120,7 +121,7 @@ struct AgentRadixSortHistogram
     ShmemAtomicCounterT bins[MAX_NUM_PASSES][RADIX_DIGITS][NUM_PARTS];
   };
 
-  using TempStorage = Uninitialized<_TempStorage>;
+  using TempStorage = ::cuda::__as_uninitialized_bytes<_TempStorage>;
 
   // thread fields
   // shared memory storage
@@ -151,7 +152,7 @@ struct AgentRadixSortHistogram
     int begin_bit,
     int end_bit,
     DecomposerT decomposer = {})
-      : s(temp_storage.Alias())
+      : s(temp_storage.template __alias<_TempStorage>())
       , d_bins_out(d_bins_out)
       , d_keys_in(reinterpret_cast<const bit_ordered_type*>(d_keys_in))
       , num_items(num_items)
