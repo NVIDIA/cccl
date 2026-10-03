@@ -22,6 +22,7 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <cstdio>
 #include <cstdlib>
 
 using namespace cuda::experimental::stf;
@@ -40,6 +41,20 @@ __global__ void scale(double a, slice<double> x)
 
 int main()
 {
+#if _CCCL_CTK_AT_LEAST(13, 4)
+  // The locality-domain driver APIs exercised below need a CUDA 13.4+ driver
+  {
+    int driver_version = 0;
+    cuda_safe_call(cudaDriverGetVersion(&driver_version));
+    if (driver_version < 13040)
+    {
+      fprintf(stderr,
+              "Driver is too old for locality domain tests (requires CUDA 13.4 / R615 or later): test waived.\n");
+      return 0;
+    }
+  }
+#endif // _CCCL_CTK_AT_LEAST(13, 4)
+
 #if _CCCL_COMPILER(MSVC)
   EXPECT(_putenv_s("CUDASTF_DISABLE_LOCALIZED_MEMORY", "1") == 0);
 #else // ^^^ MSVC ^^^ / vvv POSIX vvv

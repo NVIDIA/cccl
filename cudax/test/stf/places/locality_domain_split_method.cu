@@ -41,6 +41,20 @@ __global__ void axpy(double a, slice<const double> x, slice<double> y)
 
 int main()
 {
+#if _CCCL_CTK_AT_LEAST(13, 4)
+  // The locality-domain driver APIs exercised below need a CUDA 13.4+ driver
+  {
+    int driver_version = 0;
+    cuda_safe_call(cudaDriverGetVersion(&driver_version));
+    if (driver_version < 13040)
+    {
+      fprintf(stderr,
+              "Driver is too old for locality domain tests (requires CUDA 13.4 / R615 or later): test waived.\n");
+      return 0;
+    }
+  }
+#endif // _CCCL_CTK_AT_LEAST(13, 4)
+
   const int dev               = 0;
   const unsigned int ndomains = locality_domain_count(dev);
 
