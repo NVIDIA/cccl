@@ -29,8 +29,11 @@ If($CURRENT_PATH -ne "ci") {
 Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS, $ENABLE_TILE)
 
 $PRESET = "cudax"
-test_preset "CUDA Experimental" "$PRESET"
 
-If($CURRENT_PATH -ne "ci") {
-    popd
+try {
+    test_preset "CUDA Experimental" "$PRESET"
+} finally {
+    If($CURRENT_PATH -ne "ci") {
+        popd
+    }
 }

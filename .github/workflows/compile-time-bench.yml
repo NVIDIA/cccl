@@ -15,10 +15,6 @@ on:
         description: "Display name."
         required: true
         type: string
-      gpu:
-        description: "GPU selector."
-        required: true
-        type: string
       launch_args:
         description: "'.devcontainer/launch.sh -d' additional args."
         required: true
@@ -67,7 +63,7 @@ on:
 jobs:
   run:
     name: "Compile-time: ${{ inputs.name }}"
-    runs-on: linux-amd64-gpu-${{ inputs.gpu }}-latest-1
+    runs-on: linux-amd64-cpu16
     permissions:
       id-token: write
       contents: read
@@ -109,7 +105,6 @@ jobs:
         env:
           CONFIG_ID: ${{ inputs.id }}
           CONFIG_NAME: ${{ inputs.name }}
-          GPU: ${{ inputs.gpu }}
           LAUNCH_ARGS: ${{ inputs.launch_args }}
           BASELINE_REF: ${{ inputs.baseline_ref }}
           PRESET: ${{ inputs.preset }}
@@ -123,7 +118,6 @@ jobs:
           jq -n \
             --arg id "${CONFIG_ID}" \
             --arg name "${CONFIG_NAME}" \
-            --arg gpu "${GPU}" \
             --arg launch_args "${LAUNCH_ARGS}" \
             --arg baseline_ref "${BASELINE_REF}" \
             --arg preset "${PRESET}" \
@@ -131,7 +125,6 @@ jobs:
             '{
               id: $id,
               name: $name,
-              gpu: $gpu,
               launch_args: $launch_args,
               baseline_ref: $baseline_ref,
               preset: $preset,
@@ -153,13 +146,25 @@ jobs:
           AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
           BASELINE_REF: ${{ inputs.baseline_ref }}
           CONFIG_ID: ${{ inputs.id }}
-          GPU_NAME: ${{ inputs.gpu }}
           LAUNCH_ARGS: ${{ inputs.launch_args }}
           PRESET: ${{ inputs.preset }}
           SLICES_PATH: ${{ steps.inputs.outputs.slices }}
           TARGETS_PATH: ${{ steps.inputs.outputs.targets }}
           WRAPPER_ARGS: ${{ inputs.args }}
         run: |
+          # Create a swapfile
+          DISK_SIZE="$(df --output=size / | tail -n1 | tr -d 'K' | awk '{ print $1 * 1024 }')"
+          MEM_BYTES="$(free -b | head -n 2 | tail -n 1 | tr -s '[:blank:]' | cut -d' ' -f2)"
+          SWAP_SIZE="$(swapon --show=SIZE --noheadings --bytes | head -n 1 || echo 0)"
+          if [[ "${SWAP_SIZE:-0}" -eq 0 ]]; then
+            SWAP_SIZE="$(((DISK_SIZE / 4) > MEM_BYTES ? MEM_BYTES : (DISK_SIZE / 4)))"
+            sudo fallocate -l "$((SWAP_SIZE / 1024 / 1024 / 1024))G" /swapfile
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile
+            sudo swapon /swapfile
+          fi
+          sudo sysctl vm.swappiness=10
+
           ci_script="${RUNNER_TEMP}/compile-time-ci-${CONFIG_ID}.sh"
           artifact_root="compile-time-artifacts/${CONFIG_ID}"
           build_infix="compile-time-${CONFIG_ID}"
@@ -201,11 +206,6 @@ jobs:
           EOF
           chmod +x "${ci_script}"
 
-          GPU_ARGS=""
-          if [[ ! "${LAUNCH_ARGS}" =~ "--gpus" ]]; then
-            GPU_ARGS="--gpus all"
-          fi
-
           {
             echo "artifact_root=${artifact_root}"
             echo "report_root=${report_root}"
@@ -214,7 +214,7 @@ jobs:
 
           rc=0
           .devcontainer/launch.sh \
-            -d ${LAUNCH_ARGS} ${GPU_ARGS} \
+            -d ${LAUNCH_ARGS} \
             --env "AWS_ROLE_ARN=" \
             --env "AWS_REGION=${AWS_REGION:-}" \
             --env "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}" \
@@ -225,6 +225,7 @@ jobs:
             --env "PRESET=${PRESET}" \
             --env "SCCACHE_REGION=${AWS_REGION:-}" \
             --env "WRAPPER_ARGS=${WRAPPER_ARGS}" \
+            --env "USE_SCCACHE_DIST=false" \
             --volume "${ci_script}:/compile-time-ci.sh" \
             --volume "${TARGETS_PATH}:/compile-time-targets.json" \
             --volume "${SLICES_PATH}:/compile-time-slices.json" \

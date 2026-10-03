@@ -188,6 +188,8 @@ set -- "${common_args[@]}"
 # shellcheck source=ci/build_common.sh
 source "${ci_dir}/build_common.sh"
 
+print_environment_details
+
 current_build_root="${BUILD_ROOT}"
 current_build_dir="${BUILD_DIR}"
 

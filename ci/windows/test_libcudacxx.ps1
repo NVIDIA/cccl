@@ -40,15 +40,18 @@ if ($env:GITHUB_ACTIONS) {
     & "$PSScriptRoot/build_libcudacxx.ps1" @PSBoundParameters
 }
 
-if ($env:GITHUB_ACTIONS) {
-    test_preset "libcudacxx (CTest)" "libcudacxx-ctest"
-    $env:LIT_OPTS = "$env:LIT_OPTS -Dtest_executable_mode=replay".Trim()
-    test_preset "libcudacxx (lit replay)" "libcudacxx-lit"
-} else {
-    test_preset "libcudacxx (CTest)" "libcudacxx-ctest-cpp${CXX_STANDARD}"
-    test_preset "libcudacxx (lit)"   "libcudacxx-lit-cpp${CXX_STANDARD}"
-}
 
-If($CURRENT_PATH -ne "ci") {
-    popd
+try {
+    if ($env:GITHUB_ACTIONS) {
+        test_preset "libcudacxx (CTest)" "libcudacxx-ctest"
+        $env:LIT_OPTS = "$env:LIT_OPTS -Dtest_executable_mode=replay".Trim()
+        test_preset "libcudacxx (lit replay)" "libcudacxx-lit"
+    } else {
+        test_preset "libcudacxx (CTest)" "libcudacxx-ctest-cpp${CXX_STANDARD}"
+        test_preset "libcudacxx (lit)"   "libcudacxx-lit-cpp${CXX_STANDARD}"
+    }
+} finally {
+    If($CURRENT_PATH -ne "ci") {
+        popd
+    }
 }
