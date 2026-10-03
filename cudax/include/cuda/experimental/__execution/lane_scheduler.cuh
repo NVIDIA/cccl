@@ -88,6 +88,7 @@
 #include <cuda/experimental/__execution/sync_wait.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
+#include <cuda/experimental/__execution/when_all.cuh>
 
 #include <type_traits>
 #include <utility>
@@ -120,6 +121,37 @@ struct get_lane_join_observer_t
 };
 _CCCL_GLOBAL_CONSTANT get_lane_join_observer_t get_lane_join_observer{};
 
+//! @brief The fork point of the enclosing `when_all`: an event recorded on the
+//! lane the `when_all` started on (`origin`), before any child was started.
+//!
+//! A `when_all` under a lane records it once and hands it to its children through
+//! their environment (this is a forwarding query). A child that begins on another
+//! lane -- `schedule(lane)`, or `schedule(origin) | continues_on(lane)` -- makes
+//! that lane wait on this event instead of on the origin's tail at the time the
+//! child happens to start, which would include the siblings' work.
+struct lane_fork_point
+{
+  cudaStream_t origin{nullptr};
+  cudaEvent_t event{nullptr};
+};
+
+struct get_lane_fork_t
+{
+  _CCCL_TEMPLATE(class _Env)
+  _CCCL_REQUIRES(__queryable_with<_Env, get_lane_fork_t>)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Env& __env) const noexcept
+    -> __query_result_t<_Env, get_lane_fork_t>
+  {
+    return __env.query(*this);
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  {
+    return true;
+  }
+};
+_CCCL_GLOBAL_CONSTANT get_lane_fork_t get_lane_fork{};
+
 namespace __lane
 {
 // ------------------------------------------------------- stream set ----------
@@ -144,6 +176,16 @@ struct stream_set
   }
 };
 
+// Tell the observer, if any, about one cross-lane dependency (fork or join).
+template <class Env>
+void notify(cudaStream_t from, cudaStream_t to, [[maybe_unused]] const Env& env)
+{
+  if constexpr (__queryable_with<Env, get_lane_join_observer_t>)
+  {
+    get_lane_join_observer(env)(from, to);
+  }
+}
+
 // Make `to` wait on every stream of `from` that is not `to`. The lazy join.
 // `env` is the receiver's environment; if it carries a get_lane_join_observer,
 // the observer is told about each event.
@@ -159,11 +201,29 @@ void join_into(const stream_set& from, cudaStream_t to, [[maybe_unused]] const E
     // Event created in from.s[i]'s context (timing disabled), recorded, waited
     // on by `to`, destroyed on scope exit; throws cuda::cuda_error on failure.
     ::cuda::stream_ref{to}.wait(::cuda::stream_ref{from.s[i]});
-    if constexpr (__queryable_with<Env, get_lane_join_observer_t>)
+    notify(from.s[i], to, env);
+  }
+}
+
+// If the environment carries a fork point whose origin is another lane, make
+// `lane` wait on it. Returns true if it did.
+template <class Env>
+bool wait_fork(cudaStream_t lane, [[maybe_unused]] const Env& env)
+{
+  if constexpr (__queryable_with<Env, get_lane_fork_t>)
+  {
+    const lane_fork_point f = get_lane_fork(env);
+    if (f.event != nullptr && f.origin != lane)
     {
-      get_lane_join_observer(env)(from.s[i], to);
+      if (auto st = cudaStreamWaitEvent(lane, f.event, 0); st != cudaSuccess)
+      {
+        throw ::cuda::cuda_error(st, "lane_scheduler: cudaStreamWaitEvent on fork point failed");
+      }
+      notify(f.origin, lane, env);
+      return true;
     }
   }
+  return false;
 }
 
 // ---------------------------------------------------------------- domain ----
@@ -234,8 +294,15 @@ struct scheduler
   {
     using operation_state_concept = operation_state_t;
     Rcvr rcvr_;
+    cudaStream_t s_;
     void start() noexcept
     {
+      // Beginning on this lane inside a when_all that started on another lane:
+      // depend on the when_all's fork point, not on the origin's current tail.
+      wait_fork(s_, execution::get_env(rcvr_));
+      // Everything downstream runs on the host right now and enqueues onto this
+      // lane; make the lane's device/context current for all of it.
+      const ::cuda::__ensure_current_context guard{::cuda::stream_ref{s_}};
       execution::set_value(static_cast<Rcvr&&>(rcvr_));
     }
   };
@@ -253,7 +320,7 @@ struct scheduler
     template <class Rcvr>
     [[nodiscard]] auto connect(Rcvr rcvr) const noexcept -> opstate_t<Rcvr>
     {
-      return {{}, static_cast<Rcvr&&>(rcvr)};
+      return {{}, static_cast<Rcvr&&>(rcvr), s_};
     }
     [[nodiscard]] constexpr auto get_env() const noexcept -> attrs_t
     {
@@ -344,6 +411,10 @@ struct on_t
     Rcvr rcvr_;
     scheduler sch_;
     stream_set upstream_;
+    // The child is a bare schedule(lane): no work of its own between the lane's
+    // fork point and this transfer, so a fork point for that lane is the right
+    // thing to wait on (a fresh event would also capture the siblings' work).
+    bool bare_schedule_ = false;
   };
 
   template <class Sndr, class Rcvr>
@@ -355,7 +426,30 @@ struct on_t
     template <class... Ts>
     void set_value(Ts&&... ts) noexcept
     {
-      join_into(st_->upstream_, st_->sch_.stream(), execution::get_env(st_->rcvr_));
+      const auto& env       = execution::get_env(st_->rcvr_);
+      const cudaStream_t to = st_->sch_.stream();
+      bool forked           = false;
+      if (st_->bare_schedule_ && st_->upstream_.n == 1 && st_->upstream_.s[0] != to)
+      {
+        if constexpr (__queryable_with<decltype(env), get_lane_fork_t>)
+        {
+          const lane_fork_point f = get_lane_fork(env);
+          if (f.event != nullptr && f.origin == st_->upstream_.s[0])
+          {
+            if (auto st = cudaStreamWaitEvent(to, f.event, 0); st != cudaSuccess)
+            {
+              throw ::cuda::cuda_error(st, "lane_scheduler: cudaStreamWaitEvent on fork point failed");
+            }
+            notify(f.origin, to, env);
+            forked = true;
+          }
+        }
+      }
+      if (!forked)
+      {
+        join_into(st_->upstream_, to, env);
+      }
+      const ::cuda::__ensure_current_context guard{::cuda::stream_ref{to}};
       execution::set_value(static_cast<Rcvr&&>(st_->rcvr_), static_cast<Ts&&>(ts)...);
     }
     template <class E>
@@ -382,7 +476,7 @@ struct on_t
     connect_result_t<CvSndr, rcvr_t<Sndr, Rcvr>> op_;
 
     opstate_t(CvSndr&& s, scheduler sch, Rcvr r)
-        : st_{static_cast<Rcvr&&>(r), sch, {}}
+        : st_{static_cast<Rcvr&&>(r), sch, {}, ::std::is_same_v<Sndr, scheduler::sndr_t>}
         , op_{execution::connect((collect(s, st_.upstream_), static_cast<CvSndr&&>(s)), rcvr_t<Sndr, Rcvr>{&st_})}
     {}
     opstate_t(opstate_t&&) = delete;
@@ -464,6 +558,168 @@ struct on_t
 };
 inline constexpr on_t on{};
 
+// ------------------------------------------------------ fork at when_all -----
+// A when_all whose children run on lanes, started on a lane: record one event on
+// the origin lane *before* any child starts, and give it to the children through
+// their environment (get_lane_fork). The event is destroyed right after the
+// children have started: every wait on it has been enqueued by then, since lane
+// senders complete synchronously.
+struct fork_tag_t
+{};
+
+struct fork_when_all_t
+{
+  // Marks the environment the inner when_all is connected with, so that the
+  // domain does not wrap it a second time. Not a forwarding query: the
+  // children's when_alls are wrapped with forks of their own.
+  struct no_wrap_t
+  {};
+
+  // The two queries this receiver adds to its environment. Answered by value:
+  // the environment object itself is a temporary built on each get_env().
+  struct fork_props_t
+  {
+    const lane_fork_point* fork_;
+    [[nodiscard]] lane_fork_point query(get_lane_fork_t) const noexcept
+    {
+      return *fork_;
+    }
+    [[nodiscard]] constexpr bool query(no_wrap_t) const noexcept
+    {
+      return true;
+    }
+  };
+
+  template <class Rcvr>
+  struct rcvr_t
+  {
+    using receiver_concept = receiver_t;
+    Rcvr* rcvr_;
+    lane_fork_point* fork_;
+
+    template <class... Ts>
+    void set_value(Ts&&... ts) noexcept
+    {
+      execution::set_value(static_cast<Rcvr&&>(*rcvr_), static_cast<Ts&&>(ts)...);
+    }
+    template <class E>
+    void set_error(E&& e) noexcept
+    {
+      execution::set_error(static_cast<Rcvr&&>(*rcvr_), static_cast<E&&>(e));
+    }
+    void set_stopped() noexcept
+    {
+      execution::set_stopped(static_cast<Rcvr&&>(*rcvr_));
+    }
+    [[nodiscard]] auto get_env() const noexcept
+    {
+      return env{fork_props_t{fork_}, execution::__fwd_env(execution::get_env(*rcvr_))};
+    }
+  };
+
+  template <class CvSndr, class Rcvr>
+  struct opstate_t
+  {
+    using operation_state_concept = operation_state_t;
+    using Sndr                    = ::std::decay_t<CvSndr>;
+    Rcvr rcvr_;
+    lane_fork_point fork_{};
+    cudaStream_t origin_{nullptr};
+    bool needs_fork_ = false;
+    connect_result_t<CvSndr, rcvr_t<Rcvr>> op_;
+
+    opstate_t(CvSndr&& s, Rcvr r)
+        : rcvr_{static_cast<Rcvr&&>(r)}
+        , op_{execution::connect((prepare(s), static_cast<CvSndr&&>(s)), rcvr_t<Rcvr>{&rcvr_, &fork_})}
+    {}
+    opstate_t(opstate_t&&) = delete;
+
+    // At connect: the origin lane (the environment's scheduler, if it is a lane)
+    // and whether any child touches another lane. If every lane the children
+    // complete on is the origin, no fork point is needed.
+    void prepare(const Sndr& s)
+    {
+      const auto& env = execution::get_env(rcvr_);
+      if constexpr (__callable<get_scheduler_t, decltype(env)>)
+      {
+        if constexpr (::std::is_same_v<::std::decay_t<decltype(get_scheduler(env))>, scheduler>)
+        {
+          origin_ = get_scheduler(env).stream();
+          stream_set lanes{};
+          collect(s, lanes);
+          needs_fork_ = lanes.n == 0; // unknown lanes (e.g. inside let_value): be safe
+          for (int i = 0; i < lanes.n; ++i)
+          {
+            needs_fork_ = needs_fork_ || lanes.s[i] != origin_;
+          }
+        }
+      }
+    }
+
+    void start() noexcept
+    {
+      if (needs_fork_)
+      {
+        const ::cuda::__ensure_current_context guard{::cuda::stream_ref{origin_}};
+        cudaEvent_t e{};
+        if (auto st = cudaEventCreateWithFlags(&e, cudaEventDisableTiming); st != cudaSuccess)
+        {
+          throw ::cuda::cuda_error(st, "lane fork: cudaEventCreateWithFlags failed");
+        }
+        if (auto st = cudaEventRecord(e, origin_); st != cudaSuccess)
+        {
+          cudaEventDestroy(e);
+          throw ::cuda::cuda_error(st, "lane fork: cudaEventRecord failed");
+        }
+        fork_ = {origin_, e};
+        execution::start(op_); // children start; their waits on the fork point are enqueued now
+        fork_ = {};
+        cudaEventDestroy(e);
+      }
+      else
+      {
+        execution::start(op_);
+      }
+    }
+  };
+
+  template <class Sndr>
+  struct sndr_t
+  {
+    using sender_concept = sender_t;
+    fork_tag_t tag_;
+    ::cuda::std::__ignore_t data_;
+    Sndr sndr_;
+
+    template <class Self, class... Env>
+    [[nodiscard]] static constexpr auto get_completion_signatures()
+    {
+      // The inner when_all's own member, not the dispatcher: the dispatcher would run
+      // transform_sender on it and wrap it a second time.
+      return Sndr::template get_completion_signatures<::cuda::std::__copy_cvref_t<Self, Sndr>, __fwd_env_t<Env>...>();
+    }
+    template <class Rcvr>
+    [[nodiscard]] auto connect(Rcvr r) && -> opstate_t<Sndr, Rcvr>
+    {
+      return {static_cast<Sndr&&>(sndr_), static_cast<Rcvr&&>(r)};
+    }
+    template <class Rcvr>
+    [[nodiscard]] auto connect(Rcvr r) const& -> opstate_t<const Sndr&, Rcvr>
+    {
+      return {sndr_, static_cast<Rcvr&&>(r)};
+    }
+    [[nodiscard]] decltype(auto) get_env() const noexcept
+    {
+      return execution::get_env(sndr_);
+    }
+  };
+};
+
+template <class S>
+inline constexpr bool is_when_all = false;
+template <class... Children>
+inline constexpr bool is_when_all<when_all_t::__sndr_t<Children...>> = true;
+
 // ---------------------------------------------------------------- domain ----
 template <class S>
 inline constexpr bool is_continues_on_to_lane = false;
@@ -523,6 +779,11 @@ struct domain
       auto&& [tag, sch, child] = static_cast<Sndr&&>(sndr);
       return on_t{}(unwrap_schedule_from(static_cast<decltype(child)&&>(child)), sch);
     }
+    else if constexpr (is_when_all<::std::decay_t<Sndr>> && !__queryable_with<Env, fork_when_all_t::no_wrap_t>)
+    {
+      // when_all under a lane: fork point recorded before the children start.
+      return fork_when_all_t::sndr_t<::std::decay_t<Sndr>>{{}, {}, static_cast<Sndr&&>(sndr)};
+    }
     else
     {
       return default_domain{}.transform_sender(OpTag{}, static_cast<Sndr&&>(sndr), env);
@@ -555,6 +816,8 @@ using lane_domain    = __lane::domain;
 
 template <class Sndr>
 inline constexpr int structured_binding_size<__lane::on_t::sndr_t<Sndr>> = 3;
+template <class Sndr>
+inline constexpr int structured_binding_size<__lane::fork_when_all_t::sndr_t<Sndr>> = 3;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

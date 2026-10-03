@@ -95,7 +95,7 @@ std::string node_name(cudaGraphNode_t node)
   }
   if (p.func == reinterpret_cast<const void*>(&fill_k))
   {
-    return *static_cast<const int*>(p.kernelParams[2]) == 1 ? "fill_a" : "fill_b";
+    return *static_cast<const int*>(p.kernelParams[2]) == 1 ? "fill_a" : "fill_b"; // 2 and 0 are lane b's fills
   }
   return "other";
 }
@@ -302,50 +302,62 @@ C2H_TEST("lane_scheduler: when_all of two lanes + continues_on issues exactly on
   }
 }
 
-C2H_TEST("lane_scheduler: fork and join are both continues_on, and become graph edges under capture",
+C2H_TEST("lane_scheduler: a when_all under a lane forks from the when_all's start; fork and join become graph edges",
          "[lane_scheduler]")
 {
   fixture f;
   cudaGraph_t g{};
-  // The capture origin is lane a. Lane b's work is forked from it with a plain
-  // continues_on(lb): the lane domain records the a -> b event lazily, so no
-  // hand-written cudaEventRecord/cudaStreamWaitEvent is needed to bring stream b
-  // into the capture. The join back onto lane a is the same primitive.
+  // The capture origin is lane a and the chain starts on it. The when_all is
+  // under that lane, so it records one fork point on lane a before starting any
+  // child; both forms of "begin on another lane" consume it: lane_b1 is a plain
+  // schedule(lb), lane_b2 is schedule(la) | continues_on(lb). Neither depends on
+  // lane a's own fill, which when_all starts first. The join back onto lane a is
+  // continues_on. No hand-written cudaEventRecord/cudaStreamWaitEvent anywhere.
   REQUIRE(cudaStreamBeginCapture(f.sa.get(), cudaStreamCaptureModeThreadLocal) == cudaSuccess);
-  auto lane_a = ex::schedule(f.la) | ex::then([&] {
-                  fill_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n, 1);
-                });
-  auto lane_b = ex::schedule(f.la) | ex::continues_on(f.lb) | ex::then([&] {
-                  fill_k<<<f.grid, 256, 0, f.sb.get()>>>(f.b, f.n, 2);
-                });
-  auto joined = ex::when_all(std::move(lane_a), std::move(lane_b)) | ex::continues_on(f.la) | ex::then([&] {
-                  sum2_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.b, f.out, f.n);
-                });
+  auto whole = ex::schedule(f.la) | ex::let_value([&] {
+                 auto lane_a  = ex::schedule(f.la) | ex::then([&] {
+                                 fill_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n, 1);
+                                });
+                 auto lane_b1 = ex::schedule(f.lb) | ex::then([&] {
+                                  fill_k<<<f.grid, 256, 0, f.sb.get()>>>(f.b, f.n, 2);
+                                });
+                 auto lane_b2 = ex::schedule(f.la) | ex::continues_on(f.lb) | ex::then([&] {
+                                  fill_k<<<f.grid, 256, 0, f.sb.get()>>>(f.out, f.n, 0);
+                                });
+                 return ex::when_all(std::move(lane_a), std::move(lane_b1), std::move(lane_b2))
+                      | ex::continues_on(f.la) //
+                      | ex::then([&] {
+                          sum2_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.b, f.out, f.n);
+                        });
+               });
   // sync_wait would synchronize inside the capture; connect and start by hand.
-  auto op = ex::connect(std::move(joined), null_rcvr{});
+  auto op = ex::connect(std::move(whole), null_rcvr{});
   ex::start(op);
   REQUIRE(cudaStreamEndCapture(f.sa.get(), &g) == cudaSuccess);
-  // Expected dependencies: when_all starts lane_a first, so lane a's fill is
-  // already captured when lane_b forks off it (fill_a -> fill_b), and the join
-  // makes the sum wait on lane b (fill_b -> sum). Whether the transitive
-  // fill_a -> sum edge is also reported depends on the driver, so check the
-  // relation rather than the edge count.
+  // Expected: fill_a is a root, and so is the first lane-b fill (the fork point
+  // on an empty capturing stream carries no node). The two lane-b fills share a
+  // lane, so they serialize (fill_b -> fill_b): sharing a lane means ordering.
+  // The sum depends on lane a and on lane b's tail. Nothing makes lane b wait
+  // for lane a's fill, which when_all started first. Driver versions differ on
+  // reporting transitive edges, so check the relation.
   size_t nodes = 0;
   REQUIRE(cudaGraphGetNodes(g, nullptr, &nodes) == cudaSuccess);
-  CHECK(nodes == 3);
+  CHECK(nodes == 4);
   const auto edges = graph_edges(g);
   CAPTURE(edges);
-  CHECK(edges.count("fill_a->fill_b") == 1);
-  CHECK(edges.count("fill_b->sum") == 1);
+  CHECK(edges.count("fill_a->sum") == 1);
+  CHECK(edges.count("fill_b->fill_b") == 1);
+  CHECK(edges.count("fill_b->sum") >= 1);
+  CHECK(edges.count("fill_a->fill_b") == 0); // the fork did not serialize lane b behind lane a
   for (const auto& e : edges)
   {
-    CHECK((e == "fill_a->fill_b" || e == "fill_b->sum" || e == "fill_a->sum"));
+    CHECK((e == "fill_a->sum" || e == "fill_b->sum" || e == "fill_b->fill_b"));
   }
   cudaGraphExec_t ge{};
   REQUIRE(cudaGraphInstantiate(&ge, g, 0) == cudaSuccess);
   REQUIRE(cudaGraphLaunch(ge, f.sa.get()) == cudaSuccess);
   REQUIRE(cudaStreamSynchronize(f.sa.get()) == cudaSuccess);
-  // a = 1 on lane a, b = 2 on the forked lane b, out = a + b after the join.
+  // a = 1 on lane a, b = 2 on lane b, out = a + b after the join.
   CHECK(f.all_equal(3));
   cudaGraphExecDestroy(ge);
   cudaGraphDestroy(g);
@@ -378,9 +390,11 @@ C2H_TEST("lane_scheduler: transform then reduce over lane-resident spans, alloca
   // Each lane runs CUB's Transform into its scratch, then CUB's Reduce into its
   // partial; CUB gets the stream from the scratch buffer and the memory resource
   // from the environment. The join onto lane a adds the partials.
-  // The memory resource (a counting one) and the join observer are both given
-  // once, as the environment of sync_wait; being forwarding queries they reach
-  // every allocation and every join in the chain. Nothing in the chain calls
+  // The memory resource (a counting one) and the dependency observer are both
+  // given once, as the environment of sync_wait; being forwarding queries they
+  // reach every allocation and every cross-lane dependency in the chain: the
+  // when_all under lane a forks lane b from its start (one event), and the
+  // continues_on joins lane b back (one event). Nothing in the chain calls
   // cudaMalloc/cudaFree, and the counting resource sees every allocation: the
   // three buffers and one CUB Reduce scratch per lane.
   fixture f;
@@ -423,7 +437,7 @@ C2H_TEST("lane_scheduler: transform then reduce over lane-resident spans, alloca
   int result = 0;
   REQUIRE(cudaMemcpy(&result, f.out, sizeof(int), cudaMemcpyDeviceToHost) == cudaSuccess);
   CHECK(result == 3 * 1 * f.n + 3 * 2 * f.n);
-  CHECK(jc.joins == 1); // the only event: lane b -> lane a at the join
+  CHECK(jc.joins == 2); // the fork point a -> b at the when_all, and the join b -> a
   CAPTURE(allocs);
   // partials + 2 scratch buffers + 1 CUB Reduce scratch per lane; Transform needs none.
   CHECK(allocs == 5);
