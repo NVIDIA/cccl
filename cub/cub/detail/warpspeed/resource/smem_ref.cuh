@@ -24,7 +24,7 @@ namespace detail::warpspeed
 {
 _CCCL_IKET_CREATE_PUSH_POP_RANGE(SmemRef);
 
-template <typename _Tp>
+template <typename Tp>
 struct SmemRef
 {
   SmemResourceRaw& mSmemResourceRaw;
@@ -65,9 +65,9 @@ struct SmemRef
     _CCCL_IKET_RANGE_POP();
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API _Tp& data() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API Tp& data() noexcept
   {
-    return *static_cast<_Tp*>(mSmemResourceRaw.data());
+    return *static_cast<Tp*>(mSmemResourceRaw.data());
   }
 
   [[nodiscard]] _CCCL_DEVICE_API int sizeBytes() const noexcept

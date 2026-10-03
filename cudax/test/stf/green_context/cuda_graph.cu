@@ -19,10 +19,10 @@ using namespace cuda::experimental::stf;
 #if _CCCL_CTK_AT_LEAST(12, 4)
 __global__ void axpy(double a, slice<const double> x, slice<double> y)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
-  size_t n = x.extent(0);
+  const size_t n = x.extent(0);
   for (int ind = tid; ind < n; ind += nthreads)
   {
     y(ind) += a * x(ind);

@@ -53,7 +53,7 @@ _CCCL_WARNING("The <cuda/stream_ref> header is deprecated and will be removed in
 contents were moved to <cuda/stream>. To ignore this message, define CCCL_IGNORE_DEPRECATED_STREAM_REF_HEADER.")
 #endif // !CCCL_IGNORE_DEPRECATED_STREAM_REF_HEADER
 
-#include <cuda/__stream/get_stream.h>
-#include <cuda/__stream/stream_ref.h>
+#include <cuda/__stream/get_stream.h> // IWYU pragma: export
+#include <cuda/__stream/stream_ref.h> // IWYU pragma: export
 
 #endif //_CUDA_STREAM_REF

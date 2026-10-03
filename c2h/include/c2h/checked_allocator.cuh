@@ -62,7 +62,7 @@ struct checked_host_memory_resource final : public THRUST_NS_QUALIFIER::mr::new_
     // integrated systems.
     int device = 0;
     CubDebugExit(cudaGetDevice(&device));
-    cudaDeviceProp prop;
+    cudaDeviceProp prop{};
     CubDebugExit(cudaGetDeviceProperties(&prop, device));
     if (prop.integrated)
     {

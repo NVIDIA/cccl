@@ -24,10 +24,10 @@ struct TestZipIteratorStableSortByKey
     thrust::stable_sort_by_key(
       thrust::make_zip_iterator(d1.begin(), d2.begin()), thrust::make_zip_iterator(d1.end(), d2.end()), d3.begin());
 
-    ASSERT_EQUAL_QUIET(h1, d1);
-    ASSERT_EQUAL_QUIET(h2, d2);
-    ASSERT_EQUAL_QUIET(h3, d3);
-    ASSERT_EQUAL_QUIET(h4, d4);
+    REQUIRE(h1 == d1);
+    REQUIRE(h2 == d2);
+    REQUIRE(h3 == d3);
+    REQUIRE(h4 == d4);
 
     // sort with (scalar, tuple)
     thrust::stable_sort_by_key(h1.begin(), h1.end(), thrust::make_zip_iterator(h3.begin(), h4.begin()));
@@ -41,10 +41,10 @@ struct TestZipIteratorStableSortByKey
                                thrust::make_zip_iterator(d1.end(), d2.end()),
                                thrust::make_zip_iterator(d3.begin(), d4.begin()));
 
-    ASSERT_EQUAL_QUIET(h1, d1);
-    ASSERT_EQUAL_QUIET(h2, d2);
-    ASSERT_EQUAL_QUIET(h3, d3);
-    ASSERT_EQUAL_QUIET(h4, d4);
+    REQUIRE(h1 == d1);
+    REQUIRE(h2 == d2);
+    REQUIRE(h3 == d3);
+    REQUIRE(h4 == d4);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipIteratorStableSortByKey,

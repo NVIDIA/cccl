@@ -29,7 +29,7 @@ void initialize_values(Vector& values)
 }
 
 template <typename Vector>
-void TestReduceByKeySimple()
+void test_reduce_by_key_simple()
 {
   using T = typename Vector::value_type;
 
@@ -103,7 +103,7 @@ void TestReduceByKeySimple()
   ref_values = {1, 2, 3, 15, 15};
   REQUIRE(output_values == ref_values);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestReduceByKeySimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_reduce_by_key_simple);
 
 template <typename K>
 struct TestReduceByKey
@@ -207,7 +207,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   return cuda::std::make_pair(keys_output, values_output);
 }
 
-void TestReduceByKeyDispatchExplicit()
+TEST_CASE("TestReduceByKeyDispatchExplicit", "[reduce_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -216,7 +216,6 @@ void TestReduceByKeyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReduceByKeyDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
 cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
@@ -226,7 +225,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   return cuda::std::make_pair(keys_output, values_output);
 }
 
-void TestReduceByKeyDispatchImplicit()
+TEST_CASE("TestReduceByKeyDispatchImplicit", "[reduce_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -239,4 +238,3 @@ void TestReduceByKeyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestReduceByKeyDispatchImplicit);

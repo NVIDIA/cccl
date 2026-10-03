@@ -119,15 +119,17 @@ _CCCL_API _ForwardIterator __stable_partition_impl(
   {
     if (++__m1 == __last)
     {
-      goto __second_half_done;
+      break;
     }
     --__len_half;
   }
-  // TTTFFFFFTTTF??????
-  // f  ff   m  m1     l
-  __second_false =
-    ::cuda::std::__stable_partition_impl<_AlgPolicy, _Predicate&>(__m1, __last, __pred, __len_half, __p, __fit);
-__second_half_done:
+  if (__m1 != __last)
+  {
+    // TTTFFFFFTTTF??????
+    // f  ff   m  m1     l
+    __second_false =
+      ::cuda::std::__stable_partition_impl<_AlgPolicy, _Predicate&>(__m1, __last, __pred, __len_half, __p, __fit);
+  }
   // TTTFFFFFTTTTTFFFFF
   // f  ff   m    sf   l
   return ::cuda::std::__rotate<_AlgPolicy>(__first_false, __m, __second_false).first;
@@ -255,15 +257,17 @@ _CCCL_API _BidirectionalIterator __stable_partition_impl(
   {
     if (__m1 == __first)
     {
-      goto __first_half_done;
+      break;
     }
     --__len_half;
   }
-  // F???TFFF?????????T
-  // f   m1  m        l
-  __first_false =
-    ::cuda::std::__stable_partition_impl<_AlgPolicy, _Predicate&>(__first, __m1, __pred, __len_half, __p, __bit);
-__first_half_done:
+  if (__m1 != __first)
+  {
+    // F???TFFF?????????T
+    // f   m1  m        l
+    __first_false =
+      ::cuda::std::__stable_partition_impl<_AlgPolicy, _Predicate&>(__first, __m1, __pred, __len_half, __p, __bit);
+  }
   // TTTFFFFF?????????T
   // f  ff   m        l
   // recurse on [__m, __last], except increase __m until *(__m) is false, *__last know to be true
@@ -275,15 +279,17 @@ __first_half_done:
   {
     if (++__m1 == __last)
     {
-      goto __second_half_done;
+      break;
     }
     --__len_half;
   }
-  // TTTFFFFFTTTF?????T
-  // f  ff   m  m1    l
-  __second_false =
-    ::cuda::std::__stable_partition_impl<_AlgPolicy, _Predicate&>(__m1, __last, __pred, __len_half, __p, __bit);
-__second_half_done:
+  if (__m1 != __last)
+  {
+    // TTTFFFFFTTTF?????T
+    // f  ff   m  m1    l
+    __second_false =
+      ::cuda::std::__stable_partition_impl<_AlgPolicy, _Predicate&>(__m1, __last, __pred, __len_half, __p, __bit);
+  }
   // TTTFFFFFTTTTTFFFFF
   // f  ff   m    sf  l
   return ::cuda::std::__rotate<_AlgPolicy>(__first_false, __m, __second_false).first;

@@ -48,7 +48,7 @@ struct TestTupleReduce
     // sum on device
     const cuda::std::tuple<T, T> d_result = thrust::reduce(d_tuples.begin(), d_tuples.end(), zero, SumTupleFunctor());
 
-    ASSERT_EQUAL_QUIET(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTupleReduce, IntegralTypes);

@@ -38,7 +38,7 @@
 #define _CCCL_FP64EMU_DMUL_FP32_FAST_ENABLE 1
 
 #include <cuda/__fp/fpemu_impl.h>
-#include <cuda/__fp/fpemu_impl_unpack.h>
+#include <cuda/__fp/fpemu_impl_unpack.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

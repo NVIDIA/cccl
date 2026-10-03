@@ -11,6 +11,7 @@
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
 #include <iostream>
+#include <string>
 
 /*
  * The goal of this test is to ensure that using read access modes actually
@@ -21,8 +22,8 @@ using namespace cuda::experimental::stf;
 
 static __global__ void cuda_sleep_kernel(long long int clock_cnt)
 {
-  long long int start_clock  = clock64();
-  long long int clock_offset = 0;
+  const long long int start_clock = clock64();
+  long long int clock_offset      = 0;
   while (clock_offset < clock_cnt)
   {
     clock_offset = clock64() - start_clock;
@@ -36,18 +37,18 @@ int main(int argc, char** argv)
 
   if (argc > 1)
   {
-    NTASKS = atoi(argv[1]);
+    NTASKS = ::std::stoi(argv[1]);
   }
 
   if (argc > 2)
   {
-    ms = atoi(argv[2]);
+    ms = ::std::stoi(argv[2]);
   }
 
   // cudaDevAttrClockRate: Peak clock frequency in kilohertz;
   int clock_rate;
   cuda_safe_call(cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, 0));
-  long long int clock_cnt = (long long int) (ms * clock_rate);
+  const long long int clock_cnt = static_cast<long long int>(ms) * clock_rate;
 
   graph_ctx ctx;
 

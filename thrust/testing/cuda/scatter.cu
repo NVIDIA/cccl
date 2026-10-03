@@ -43,17 +43,15 @@ void TestScatterDevice(ExecutionPolicy exec)
   REQUIRE(h_output == d_output);
 }
 
-void TestScatterDeviceSeq()
+TEST_CASE("TestScatterDeviceSeq", "[scatter]")
 {
   TestScatterDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestScatterDeviceSeq);
 
-void TestScatterDeviceDevice()
+TEST_CASE("TestScatterDeviceDevice", "[scatter]")
 {
   TestScatterDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestScatterDeviceDevice);
 
 template <typename ExecutionPolicy,
           typename Iterator1,
@@ -120,20 +118,18 @@ void TestScatterIfDevice(ExecutionPolicy exec)
   REQUIRE(h_output == d_output);
 }
 
-void TestScatterIfDeviceSeq()
+TEST_CASE("TestScatterIfDeviceSeq", "[scatter]")
 {
   TestScatterIfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestScatterIfDeviceSeq);
 
-void TestScatterIfDeviceDevice()
+TEST_CASE("TestScatterIfDeviceDevice", "[scatter]")
 {
   TestScatterIfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestScatterIfDeviceDevice);
 #endif
 
-void TestScatterCudaStreams()
+TEST_CASE("TestScatterCudaStreams", "[scatter]")
 {
   using Vector = thrust::device_vector<int>;
 
@@ -153,9 +149,8 @@ void TestScatterCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestScatterCudaStreams);
 
-void TestScatterIfCudaStreams()
+TEST_CASE("TestScatterIfCudaStreams", "[scatter]")
 {
   using Vector = thrust::device_vector<int>;
 
@@ -175,4 +170,3 @@ void TestScatterIfCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestScatterIfCudaStreams);

@@ -56,8 +56,9 @@ struct referencing_operator_t
   {
     if (i == magic_value)
     {
-      const std::size_t* d_ptr    = &i;
-      const auto offset           = static_cast<std::size_t>(d_ptr - d_input);
+      const std::size_t* d_ptr = &i;
+      const auto offset        = static_cast<std::size_t>(d_ptr - d_input);
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
       const_cast<std::size_t&>(i) = offset;
     }
   }

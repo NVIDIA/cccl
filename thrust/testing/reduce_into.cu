@@ -16,7 +16,7 @@ struct plus_mod_10
 };
 
 template <class Vector>
-void TestReduceIntoSimple()
+void test_reduce_into_simple()
 {
   using T = typename Vector::value_type;
 
@@ -31,7 +31,7 @@ void TestReduceIntoSimple()
   thrust::reduce_into(i.begin(), i.end(), o.begin(), T(10));
   REQUIRE(o[0] == 12);
 }
-DECLARE_VECTOR_UNITTEST(TestReduceIntoSimple);
+DECLARE_VECTOR_UNITTEST(test_reduce_into_simple);
 
 template <typename InputIterator, typename OutputIterator>
 void reduce_into(my_system& system, InputIterator, InputIterator, OutputIterator output)
@@ -40,7 +40,7 @@ void reduce_into(my_system& system, InputIterator, InputIterator, OutputIterator
   *output = 13;
 }
 
-void TestReduceIntoDispatchExplicit()
+TEST_CASE("TestReduceIntoDispatchExplicit", "[reduce_into]")
 {
   thrust::device_vector<int> i;
   thrust::device_vector<int> o(1);
@@ -51,7 +51,6 @@ void TestReduceIntoDispatchExplicit()
   REQUIRE(sys.is_valid());
   REQUIRE(o[0] == 13);
 }
-DECLARE_UNITTEST(TestReduceIntoDispatchExplicit);
 
 template <typename InputIterator, typename OutputIterator>
 void reduce_into(my_tag, InputIterator, InputIterator, OutputIterator output)
@@ -59,7 +58,7 @@ void reduce_into(my_tag, InputIterator, InputIterator, OutputIterator output)
   *output = 13;
 }
 
-void TestReduceIntoDispatchImplicit()
+TEST_CASE("TestReduceIntoDispatchImplicit", "[reduce_into]")
 {
   thrust::device_vector<int> i;
   thrust::device_vector<int> o(1);
@@ -69,7 +68,6 @@ void TestReduceIntoDispatchImplicit()
 
   REQUIRE(o[0] == 13);
 }
-DECLARE_UNITTEST(TestReduceIntoDispatchImplicit);
 
 template <typename T>
 struct TestReduceInto
@@ -91,7 +89,7 @@ struct TestReduceInto
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduceInto, IntegralTypes);
 
-void TestReduceIntoMixedTypesHost()
+TEST_CASE("TestReduceIntoMixedTypesHost", "[reduce_into]")
 {
   // make sure we get types for default args and operators correct
   thrust::host_vector<int> int_input{1, 2, 3, 4};
@@ -108,8 +106,7 @@ void TestReduceIntoMixedTypesHost()
   thrust::reduce_into(int_input.begin(), int_input.end(), float_output.begin(), float(0.5));
   REQUIRE(float_output[0] == 10.5);
 }
-DECLARE_UNITTEST(TestReduceIntoMixedTypesHost);
-void TestReduceIntoMixedTypesDevice()
+TEST_CASE("TestReduceIntoMixedTypesDevice", "[reduce_into]")
 {
   // make sure we get types for default args and operators correct
   thrust::device_vector<int> int_input{1, 2, 3, 4};
@@ -126,7 +123,6 @@ void TestReduceIntoMixedTypesDevice()
   thrust::reduce_into(int_input.begin(), int_input.end(), float_output.begin(), float(0.5));
   REQUIRE(float_output[0] == 10.5);
 }
-DECLARE_UNITTEST(TestReduceIntoMixedTypesDevice);
 
 template <typename T>
 struct TestReduceIntoWithOperator
@@ -164,7 +160,7 @@ struct plus_mod3
 };
 
 template <typename Vector>
-void TestReduceIntoWithIndirection()
+void test_reduce_into_with_indirection()
 {
   // add numbers modulo 3 with external lookup table
   using T = typename Vector::value_type;
@@ -179,10 +175,10 @@ void TestReduceIntoWithIndirection()
 
   REQUIRE(result[0] == T(1));
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestReduceIntoWithIndirection);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_reduce_into_with_indirection);
 
 template <typename T>
-void TestReduceIntoCountingIterator()
+void test_reduce_into_counting_iterator()
 {
   size_t const n = 15 * sizeof(T);
 
@@ -201,4 +197,4 @@ void TestReduceIntoCountingIterator()
   // we use ASSERT_ALMOST_EQUAL because we're testing floating point types
   ASSERT_ALMOST_EQUAL(h_result, d_result);
 }
-DECLARE_GENERIC_UNITTEST(TestReduceIntoCountingIterator);
+DECLARE_GENERIC_UNITTEST(test_reduce_into_counting_iterator);

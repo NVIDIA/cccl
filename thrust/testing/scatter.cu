@@ -10,7 +10,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestScatterSimple()
+void test_scatter_simple()
 {
   Vector map{6, 3, 1, 7, 2};
   Vector src{0, 1, 2, 3, 4};
@@ -21,7 +21,7 @@ void TestScatterSimple()
   Vector ref{0, 2, 4, 1, 0, 0, 0, 3};
   REQUIRE(dst == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestScatterSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_scatter_simple);
 
 template <typename InputIterator1, typename InputIterator2, typename RandomAccessIterator>
 void scatter(my_system& system, InputIterator1, InputIterator1, InputIterator2, RandomAccessIterator)
@@ -29,7 +29,7 @@ void scatter(my_system& system, InputIterator1, InputIterator1, InputIterator2, 
   system.validate_dispatch();
 }
 
-void TestScatterDispatchExplicit()
+TEST_CASE("TestScatterDispatchExplicit", "[scatter]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -38,7 +38,6 @@ void TestScatterDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestScatterDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename RandomAccessIterator>
 void scatter(my_tag, InputIterator1, InputIterator1, InputIterator2, RandomAccessIterator output)
@@ -46,7 +45,7 @@ void scatter(my_tag, InputIterator1, InputIterator1, InputIterator2, RandomAcces
   *output = 13;
 }
 
-void TestScatterDispatchImplicit()
+TEST_CASE("TestScatterDispatchImplicit", "[scatter]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -57,10 +56,9 @@ void TestScatterDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestScatterDispatchImplicit);
 
 template <typename T>
-void TestScatter(const size_t n)
+void test_scatter(const size_t n)
 {
   const size_t output_size = std::min((size_t) 10, 2 * n);
 
@@ -84,10 +82,10 @@ void TestScatter(const size_t n)
 
   REQUIRE(h_output == d_output);
 }
-DECLARE_VARIABLE_UNITTEST(TestScatter);
+DECLARE_VARIABLE_UNITTEST(test_scatter);
 
 template <typename T>
-void TestScatterToDiscardIterator(const size_t n)
+void test_scatter_to_discard_iterator(const size_t n)
 {
   const size_t output_size = std::min((size_t) 10, 2 * n);
 
@@ -108,10 +106,10 @@ void TestScatterToDiscardIterator(const size_t n)
 
   // there's nothing to check -- just make sure it compiles
 }
-DECLARE_VARIABLE_UNITTEST(TestScatterToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_scatter_to_discard_iterator);
 
 template <class Vector>
-void TestScatterIfSimple()
+void test_scatter_if_simple()
 {
   Vector flg{0, 1, 0, 1, 0};
   Vector map{6, 3, 1, 7, 2};
@@ -123,7 +121,7 @@ void TestScatterIfSimple()
   Vector ref{0, 0, 0, 1, 0, 0, 0, 3};
   REQUIRE(dst == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestScatterIfSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_scatter_if_simple);
 
 template <typename InputIterator1, typename InputIterator2, typename InputIterator3, typename RandomAccessIterator>
 void scatter_if(my_system& system, InputIterator1, InputIterator1, InputIterator2, InputIterator3, RandomAccessIterator)
@@ -131,7 +129,7 @@ void scatter_if(my_system& system, InputIterator1, InputIterator1, InputIterator
   system.validate_dispatch();
 }
 
-void TestScatterIfDispatchExplicit()
+TEST_CASE("TestScatterIfDispatchExplicit", "[scatter]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -140,7 +138,6 @@ void TestScatterIfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestScatterIfDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename InputIterator3, typename RandomAccessIterator>
 void scatter_if(my_tag, InputIterator1, InputIterator1, InputIterator2, InputIterator3, RandomAccessIterator output)
@@ -148,7 +145,7 @@ void scatter_if(my_tag, InputIterator1, InputIterator1, InputIterator2, InputIte
   *output = 13;
 }
 
-void TestScatterIfDispatchImplicit()
+TEST_CASE("TestScatterIfDispatchImplicit", "[scatter]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -161,7 +158,6 @@ void TestScatterIfDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestScatterIfDispatchImplicit);
 
 template <typename T>
 class is_even_scatter_if
@@ -174,7 +170,7 @@ public:
 };
 
 template <typename T>
-void TestScatterIf(const size_t n)
+void test_scatter_if(const size_t n)
 {
   const size_t output_size = std::min((size_t) 10, 2 * n);
 
@@ -200,10 +196,10 @@ void TestScatterIf(const size_t n)
 
   REQUIRE(h_output == d_output);
 }
-DECLARE_VARIABLE_UNITTEST(TestScatterIf);
+DECLARE_VARIABLE_UNITTEST(test_scatter_if);
 
 template <typename T>
-void TestScatterIfToDiscardIterator(const size_t n)
+void test_scatter_if_to_discard_iterator(const size_t n)
 {
   const size_t output_size = std::min((size_t) 10, 2 * n);
 
@@ -234,10 +230,10 @@ void TestScatterIfToDiscardIterator(const size_t n)
     thrust::make_discard_iterator(),
     is_even_scatter_if<unsigned int>());
 }
-DECLARE_VARIABLE_UNITTEST(TestScatterIfToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_scatter_if_to_discard_iterator);
 
 template <typename Vector>
-void TestScatterCountingIterator()
+void test_scatter_counting_iterator()
 {
   Vector source(10);
   thrust::sequence(source.begin(), source.end(), 0);
@@ -268,10 +264,10 @@ void TestScatterCountingIterator()
 
   REQUIRE(output == map);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestScatterCountingIterator);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_scatter_counting_iterator);
 
 template <typename Vector>
-void TestScatterIfCountingIterator()
+void test_scatter_if_counting_iterator()
 {
   Vector source(10);
   thrust::sequence(source.begin(), source.end(), 0);
@@ -307,4 +303,4 @@ void TestScatterIfCountingIterator()
 
   REQUIRE(output == map);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestScatterIfCountingIterator);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_scatter_if_counting_iterator);

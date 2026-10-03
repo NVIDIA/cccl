@@ -98,7 +98,7 @@ public:
   }
   _CCCL_HOST_DEVICE_API void wait(arrival_token&& __old_phase) const
   {
-    __phase.wait(__old_phase, memory_order_acquire);
+    __phase.wait(::cuda::std::move(__old_phase), memory_order_acquire);
   }
   _CCCL_HOST_DEVICE_API void arrive_and_wait()
   {

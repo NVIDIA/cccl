@@ -70,6 +70,21 @@ TEST_FUNC constexpr bool test()
     assert(t2.first.constMoveAssign == 1);
     assert(t2.second.constCopyAssign == 1);
   }
+  { // A const pair of references copy-assigns the referents.
+    TracedAssignment lhs_first{};
+    TracedAssignment lhs_second{};
+    TracedAssignment rhs_first{};
+    TracedAssignment rhs_second{};
+    cuda::std::pair<TracedAssignment&, TracedAssignment&> rhs(rhs_first, rhs_second);
+    const cuda::std::pair<TracedAssignment&, TracedAssignment&> lhs(lhs_first, lhs_second);
+    lhs = cuda::std::move(rhs);
+    assert(lhs_first.copyAssign == 1);
+    assert(lhs_first.moveAssign == 0);
+    assert(lhs_second.copyAssign == 1);
+    assert(lhs_second.moveAssign == 0);
+    assert(rhs_first.moveAssign == 0);
+    assert(rhs_second.moveAssign == 0);
+  }
 
   return true;
 }

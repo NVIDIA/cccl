@@ -67,19 +67,19 @@ private:
 
 public:
   /// Total number of input items
-  OffsetT num_items{0};
+  OffsetT num_items{0}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   /// Grid size in thread blocks
-  int grid_size{0};
+  int grid_size{0}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   /// OffsetT into input marking the beginning of the owning thread block's segment of input tiles
-  OffsetT block_offset{0};
+  OffsetT block_offset{0}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   /// OffsetT into input of marking the end (one-past) of the owning thread block's segment of input tiles
-  OffsetT block_end{0};
+  OffsetT block_end{0}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   /// Stride between input tiles
-  OffsetT block_stride{0};
+  OffsetT block_stride{0}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   /**
    * \brief Constructor.
@@ -129,10 +129,10 @@ public:
    *        for a "raking" access pattern in which each thread block is assigned a
    *        consecutive sequence of input tiles.
    */
-  template <int TILE_ITEMS>
+  template <int TileItems>
   _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(int block_id, detail::constant_t<GRID_MAPPING_RAKE> /*strategy_tag*/)
   {
-    block_stride = TILE_ITEMS;
+    block_stride = TileItems;
     if (block_id < big_shares)
     {
       // This thread block gets a big share of grains (avg_tiles_per_block + 1)
@@ -154,12 +154,12 @@ public:
    *        pattern in which each thread block is assigned a consecutive sequence
    *        of input tiles.
    */
-  template <int TILE_ITEMS>
+  template <int TileItems>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   BlockInit(int block_id, detail::constant_t<GRID_MAPPING_STRIP_MINE> /*strategy_tag*/)
   {
-    block_stride = grid_size * OffsetT{TILE_ITEMS};
-    block_offset = block_id * OffsetT{TILE_ITEMS};
+    block_stride = grid_size * OffsetT{TileItems};
+    block_offset = block_id * OffsetT{TileItems};
     block_end    = num_items;
   }
 
@@ -168,10 +168,10 @@ public:
    *        pattern in which the input tiles assigned to each thread block are
    *        separated by a stride equal to the the extent of the grid.
    */
-  template <int TILE_ITEMS, GridMappingStrategy STRATEGY>
+  template <int TileItems, GridMappingStrategy STRATEGY>
   _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit()
   {
-    BlockInit<TILE_ITEMS>(blockIdx.x, detail::constant_v<STRATEGY>);
+    BlockInit<TileItems>(blockIdx.x, detail::constant_v<STRATEGY>);
   }
 
   /**
@@ -185,12 +185,12 @@ public:
    * @param[in] block_end
    *   Threadblock end offset (exclusive)
    */
-  template <int TILE_ITEMS, typename OffsetT1 = OffsetT>
+  template <int TileItems, typename OffsetT1 = OffsetT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(OffsetT1 block_offset, OffsetT1 block_end)
   {
     this->block_offset = block_offset;
     this->block_end    = block_end;
-    this->block_stride = TILE_ITEMS;
+    this->block_stride = TileItems;
   }
 };
 

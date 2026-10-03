@@ -24,12 +24,10 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__fwd/hierarchy.h>
-#  include <cuda/std/__tuple_dir/get.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/__type_traits/type_list.h>
 #  include <cuda/std/__type_traits/void_t.h>
-#  include <cuda/std/cstdint>
 
 #  include <cuda/std/__cccl/prologue.h>
 

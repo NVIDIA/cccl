@@ -18,15 +18,15 @@ _CCCL_DIAG_SUPPRESS_GCC("-Warray-bounds")
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestVectorZeroSize()
+void test_vector_zero_size()
 {
   Vector v;
   REQUIRE(v.size() == 0lu);
   REQUIRE(v.begin() == v.end());
 }
-DECLARE_VECTOR_UNITTEST(TestVectorZeroSize);
+DECLARE_VECTOR_UNITTEST(test_vector_zero_size);
 
-void TestVectorBool()
+TEST_CASE("TestVectorBool", "[vector]")
 {
   const thrust::host_vector<bool> h{true, false, true};
   const thrust::device_vector<bool> d{true, false, true};
@@ -36,10 +36,9 @@ void TestVectorBool()
   REQUIRE(h == h_ref);
   REQUIRE(d == d_ref);
 }
-DECLARE_UNITTEST(TestVectorBool);
 
 template <class Vector>
-void TestVectorInitializerList()
+void test_vector_initializer_list()
 {
   Vector v{1, 2, 3};
   REQUIRE(v.size() == 3lu);
@@ -57,10 +56,10 @@ void TestVectorInitializerList()
   Vector v2_ref = {1, 2, 3};
   REQUIRE(v2 == v2_ref);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorInitializerList);
+DECLARE_VECTOR_UNITTEST(test_vector_initializer_list);
 
 template <class Vector>
-void TestVectorFrontBack()
+void test_vector_front_back()
 {
   using T = typename Vector::value_type;
 
@@ -69,10 +68,10 @@ void TestVectorFrontBack()
   REQUIRE(v.front() == T(0));
   REQUIRE(v.back() == T(2));
 }
-DECLARE_VECTOR_UNITTEST(TestVectorFrontBack);
+DECLARE_VECTOR_UNITTEST(test_vector_front_back);
 
 template <class Vector>
-void TestVectorData()
+void test_vector_data()
 {
   using PointerT      = typename Vector::pointer;
   using PointerConstT = typename Vector::const_pointer;
@@ -95,10 +94,10 @@ void TestVectorData()
   REQUIRE(PointerConstT(&*c_v.begin()) == c_v.data());
   REQUIRE(PointerConstT(&c_v[0]) == c_v.data());
 }
-DECLARE_VECTOR_UNITTEST(TestVectorData);
+DECLARE_VECTOR_UNITTEST(test_vector_data);
 
 template <class Vector>
-void TestVectorElementAssignment()
+void test_vector_element_assignment()
 {
   Vector v{0, 1, 2};
 
@@ -112,10 +111,10 @@ void TestVectorElementAssignment()
   Vector w = v;
   REQUIRE(v == w);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorElementAssignment);
+DECLARE_VECTOR_UNITTEST(test_vector_element_assignment);
 
 template <class Vector>
-void TestVectorFromSTLVector()
+void test_vector_from_stl_vector()
 {
   using T = typename Vector::value_type;
 
@@ -132,10 +131,10 @@ void TestVectorFromSTLVector()
   REQUIRE(v.size() == 3lu);
   REQUIRE(v == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorFromSTLVector);
+DECLARE_VECTOR_UNITTEST(test_vector_from_stl_vector);
 
 template <class Vector>
-void TestVectorFillAssign()
+void test_vector_fill_assign()
 {
   using T = typename Vector::value_type;
 
@@ -146,10 +145,10 @@ void TestVectorFillAssign()
   const thrust::host_vector<T> ref{13, 13, 13};
   REQUIRE(v == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorFillAssign);
+DECLARE_VECTOR_UNITTEST(test_vector_fill_assign);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestVectorFillInsert()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_vector_fill_insert()
 {
   { // Insert into empty vector
     Vector v;
@@ -274,10 +273,10 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestVectorFillInsert()
     REQUIRE(v == ref);
   }
 }
-DECLARE_VECTOR_UNITTEST(TestVectorFillInsert);
+DECLARE_VECTOR_UNITTEST(test_vector_fill_insert);
 
 template <class Vector>
-void TestVectorAssignFromSTLVector()
+void test_vector_assign_from_stl_vector()
 {
   using T = typename Vector::value_type;
 
@@ -290,10 +289,10 @@ void TestVectorAssignFromSTLVector()
   const thrust::host_vector<T> ref{0, 1, 2};
   REQUIRE(v == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorAssignFromSTLVector);
+DECLARE_VECTOR_UNITTEST(test_vector_assign_from_stl_vector);
 
 template <class Vector>
-void TestVectorFromBiDirectionalIterator()
+void test_vector_from_bi_directional_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -308,10 +307,10 @@ void TestVectorFromBiDirectionalIterator()
   Vector ref{0, 1, 2};
   REQUIRE(v == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorFromBiDirectionalIterator);
+DECLARE_VECTOR_UNITTEST(test_vector_from_bi_directional_iterator);
 
 template <class Vector>
-void TestVectorAssignFromBiDirectionalIterator()
+void test_vector_assign_from_bi_directional_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -327,10 +326,10 @@ void TestVectorAssignFromBiDirectionalIterator()
   Vector ref{0, 1, 2};
   REQUIRE(v == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorAssignFromBiDirectionalIterator);
+DECLARE_VECTOR_UNITTEST(test_vector_assign_from_bi_directional_iterator);
 
 template <class Vector>
-void TestVectorAssignFromHostVector()
+void test_vector_assign_from_host_vector()
 {
   using T = typename Vector::value_type;
 
@@ -341,13 +340,13 @@ void TestVectorAssignFromHostVector()
 
   REQUIRE(v == h);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorAssignFromHostVector);
+DECLARE_VECTOR_UNITTEST(test_vector_assign_from_host_vector);
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wself-assign")
 
 template <class Vector>
-void TestVectorToAndFromHostVector()
+void test_vector_to_and_from_host_vector()
 {
   using T = typename Vector::value_type;
 
@@ -379,12 +378,12 @@ void TestVectorToAndFromHostVector()
 
   REQUIRE(v == h);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorToAndFromHostVector);
+DECLARE_VECTOR_UNITTEST(test_vector_to_and_from_host_vector);
 
 _CCCL_DIAG_POP
 
 template <class Vector>
-void TestVectorAssignFromDeviceVector()
+void test_vector_assign_from_device_vector()
 {
   using T = typename Vector::value_type;
 
@@ -395,13 +394,13 @@ void TestVectorAssignFromDeviceVector()
 
   REQUIRE(v == d);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorAssignFromDeviceVector);
+DECLARE_VECTOR_UNITTEST(test_vector_assign_from_device_vector);
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wself-assign")
 
 template <class Vector>
-void TestVectorToAndFromDeviceVector()
+void test_vector_to_and_from_device_vector()
 {
   using T = typename Vector::value_type;
 
@@ -433,11 +432,11 @@ void TestVectorToAndFromDeviceVector()
 
   REQUIRE(v == h);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorToAndFromDeviceVector);
+DECLARE_VECTOR_UNITTEST(test_vector_to_and_from_device_vector);
 _CCCL_DIAG_POP
 
 template <class Vector>
-void TestVectorWithInitialValue()
+void test_vector_with_initial_value()
 {
   using T = typename Vector::value_type;
 
@@ -449,10 +448,10 @@ void TestVectorWithInitialValue()
   Vector ref(3, init);
   REQUIRE(v == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorWithInitialValue);
+DECLARE_VECTOR_UNITTEST(test_vector_with_initial_value);
 
 template <class Vector>
-void TestVectorSwap()
+void test_vector_swap()
 {
   Vector v{0, 1, 2};
   Vector u{10, 11, 12};
@@ -465,10 +464,10 @@ void TestVectorSwap()
   Vector v_ref{10, 11, 12};
   REQUIRE(v == v_ref);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorSwap);
+DECLARE_VECTOR_UNITTEST(test_vector_swap);
 
 template <class Vector>
-void TestVectorErasePosition()
+void test_vector_erase_position()
 {
   Vector v{0, 1, 2, 3, 4};
 
@@ -499,10 +498,10 @@ void TestVectorErasePosition()
 
   REQUIRE(v.size() == 0lu);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorErasePosition);
+DECLARE_VECTOR_UNITTEST(test_vector_erase_position);
 
 template <class Vector>
-void TestVectorEraseRange()
+void test_vector_erase_range()
 {
   Vector v{0, 1, 2, 3, 4, 5};
 
@@ -527,9 +526,9 @@ void TestVectorEraseRange()
 
   REQUIRE(v.size() == 0lu);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorEraseRange);
+DECLARE_VECTOR_UNITTEST(test_vector_erase_range);
 
-void TestVectorEquality()
+TEST_CASE("TestVectorEquality", "[vector]")
 {
   const thrust::host_vector<int> h_a{0, 1, 2};
   const thrust::host_vector<int> h_b{0, 1, 3};
@@ -625,9 +624,8 @@ void TestVectorEquality()
   REQUIRE_FALSE(s_c == h_b);
   REQUIRE_FALSE(h_c == s_b);
 }
-DECLARE_UNITTEST(TestVectorEquality);
 
-void TestVectorInequality()
+TEST_CASE("TestVectorInequality", "[vector]")
 {
   const thrust::host_vector<int> h_a{0, 1, 2};
   const thrust::host_vector<int> h_b{0, 1, 3};
@@ -723,10 +721,9 @@ void TestVectorInequality()
   REQUIRE(s_c != h_b);
   REQUIRE(h_c != s_b);
 }
-DECLARE_UNITTEST(TestVectorInequality);
 
 template <class Vector>
-void TestVectorResizing()
+void test_vector_resizing()
 {
   Vector v;
 
@@ -756,10 +753,10 @@ void TestVectorResizing()
 
   REQUIRE(v.size() == 0lu);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorResizing);
+DECLARE_VECTOR_UNITTEST(test_vector_resizing);
 
 template <class Vector>
-void TestVectorReserving()
+void test_vector_reserving()
 {
   Vector v;
 
@@ -773,10 +770,10 @@ void TestVectorReserving()
 
   REQUIRE(v.capacity() == old_capacity);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorReserving)
+DECLARE_VECTOR_UNITTEST(test_vector_reserving)
 
 template <class Vector>
-void TestVectorUninitialisedCopy()
+void test_vector_uninitialised_copy()
 {
   thrust::device_vector<int> v;
   const std::vector<int> std_vector;
@@ -785,10 +782,10 @@ void TestVectorUninitialisedCopy()
 
   REQUIRE(v.size() == static_cast<size_t>(0));
 }
-DECLARE_VECTOR_UNITTEST(TestVectorUninitialisedCopy);
+DECLARE_VECTOR_UNITTEST(test_vector_uninitialised_copy);
 
 template <class Vector>
-void TestVectorShrinkToFit()
+void test_vector_shrink_to_fit()
 {
   using T = typename Vector::value_type;
 
@@ -810,7 +807,7 @@ void TestVectorShrinkToFit()
   REQUIRE(3lu == v.size());
   REQUIRE(3lu == v.capacity());
 }
-DECLARE_VECTOR_UNITTEST(TestVectorShrinkToFit)
+DECLARE_VECTOR_UNITTEST(test_vector_shrink_to_fit)
 
 template <int N>
 struct LargeStruct
@@ -830,7 +827,7 @@ struct LargeStruct
   }
 };
 
-void TestVectorContainingLargeType()
+TEST_CASE("TestVectorContainingLargeType", "[vector]")
 {
   // Thrust issue #5
   // http://code.google.com/p/thrust/issues/detail?id=5
@@ -840,12 +837,12 @@ void TestVectorContainingLargeType()
   const thrust::device_vector<T> dv1;
   const thrust::host_vector<T> hv1;
 
-  ASSERT_EQUAL_QUIET(dv1, hv1);
+  REQUIRE((dv1 == hv1));
 
   const thrust::device_vector<T> dv2(20);
   const thrust::host_vector<T> hv2(20);
 
-  ASSERT_EQUAL_QUIET(dv2, hv2);
+  REQUIRE((dv2 == hv2));
 
   // initialize tofirst element to something nonzero
   T ls;
@@ -858,7 +855,7 @@ void TestVectorContainingLargeType()
   thrust::device_vector<T> dv3(20, ls);
   thrust::host_vector<T> hv3(20, ls);
 
-  ASSERT_EQUAL_QUIET(dv3, hv3);
+  REQUIRE((dv3 == hv3));
 
   // change first element
   ls.data[0] = -13;
@@ -866,12 +863,11 @@ void TestVectorContainingLargeType()
   dv3[2] = ls;
   hv3[2] = ls;
 
-  ASSERT_EQUAL_QUIET(dv3, hv3);
+  REQUIRE((dv3 == hv3));
 }
-DECLARE_UNITTEST(TestVectorContainingLargeType);
 
 template <typename Vector>
-void TestVectorReversed()
+void test_vector_reversed()
 {
   Vector v{0, 1, 2};
 
@@ -889,10 +885,10 @@ void TestVectorReversed()
   REQUIRE(0 == *(v.rend() - 1));
   REQUIRE(1 == *(v.rend() - 2));
 }
-DECLARE_VECTOR_UNITTEST(TestVectorReversed);
+DECLARE_VECTOR_UNITTEST(test_vector_reversed);
 
 template <class Vector>
-void TestVectorMove()
+void test_vector_move()
 {
   // test move construction
   Vector v1{0, 1, 2};
@@ -936,14 +932,14 @@ void TestVectorMove()
   // ensure v2 received the pointer from before
   REQUIRE(ptr3 == ptr4);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorMove);
+DECLARE_VECTOR_UNITTEST(test_vector_move);
 
 struct IntWithInit
 {
   int value = 42;
 };
 
-void TestVectorDefaultInitCtor()
+TEST_CASE("TestVectorDefaultInitCtor", "[vector]")
 {
   // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
   {
@@ -966,9 +962,8 @@ void TestVectorDefaultInitCtor()
     }
   }
 }
-DECLARE_UNITTEST(TestVectorDefaultInitCtor);
 
-void TestVectorNoInitCtor()
+TEST_CASE("TestVectorNoInitCtor", "[vector]")
 {
   // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
   {
@@ -980,9 +975,8 @@ void TestVectorNoInitCtor()
   // thrust::host_vector<IntWithInit> hv(10, thrust::no_init);
   // thrust::device_vector<IntWithInit> dv(10, thrust::no_init);
 }
-DECLARE_UNITTEST(TestVectorNoInitCtor);
 
-void TestVectorDefaultInitResize()
+TEST_CASE("TestVectorDefaultInitResize", "[vector]")
 {
   // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
   {
@@ -1012,9 +1006,8 @@ void TestVectorDefaultInitResize()
     }
   }
 }
-DECLARE_UNITTEST(TestVectorDefaultInitResize);
 
-void TestVectorNoInitResize()
+TEST_CASE("TestVectorNoInitResize", "[vector]")
 {
   // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
   {
@@ -1030,4 +1023,3 @@ void TestVectorNoInitResize()
   // thrust::host_vector<IntWithInit>(5).resize(10, thrust::no_init);
   // thrust::device_vector<IntWithInit>(5).resize(10, thrust::no_init);
 }
-DECLARE_UNITTEST(TestVectorNoInitResize);

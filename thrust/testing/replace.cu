@@ -10,7 +10,7 @@
 #endif
 
 template <class Vector>
-void TestReplaceSimple()
+void test_replace_simple()
 {
   using T = typename Vector::value_type;
 
@@ -23,7 +23,7 @@ void TestReplaceSimple()
 
   REQUIRE(data == result);
 }
-DECLARE_VECTOR_UNITTEST(TestReplaceSimple);
+DECLARE_VECTOR_UNITTEST(test_replace_simple);
 
 template <typename ForwardIterator, typename T>
 void replace(my_system& system, ForwardIterator, ForwardIterator, const T&, const T&)
@@ -31,7 +31,7 @@ void replace(my_system& system, ForwardIterator, ForwardIterator, const T&, cons
   system.validate_dispatch();
 }
 
-void TestReplaceDispatchExplicit()
+TEST_CASE("TestReplaceDispatchExplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -40,7 +40,6 @@ void TestReplaceDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReplaceDispatchExplicit);
 
 template <typename ForwardIterator, typename T>
 void replace(my_tag, ForwardIterator first, ForwardIterator, const T&, const T&)
@@ -48,7 +47,7 @@ void replace(my_tag, ForwardIterator first, ForwardIterator, const T&, const T&)
   *first = 13;
 }
 
-void TestReplaceDispatchImplicit()
+TEST_CASE("TestReplaceDispatchImplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -56,10 +55,9 @@ void TestReplaceDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestReplaceDispatchImplicit);
 
 template <typename T>
-void TestReplace(const size_t n)
+void test_replace(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -72,11 +70,11 @@ void TestReplace(const size_t n)
 
   ASSERT_ALMOST_EQUAL(h_data, d_data);
 }
-DECLARE_VARIABLE_UNITTEST(TestReplace);
+DECLARE_VARIABLE_UNITTEST(test_replace);
 
 #ifndef THRUST_GCC13_TBB_MISCOMPILE
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopySimple()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_replace_copy_simple()
 {
   using T = typename Vector::value_type;
 
@@ -90,7 +88,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopySimple()
   Vector result{4, 5, 4, 3, 5};
   REQUIRE(dest == result);
 }
-DECLARE_VECTOR_UNITTEST(TestReplaceCopySimple);
+DECLARE_VECTOR_UNITTEST(test_replace_copy_simple);
 #endif
 
 template <typename InputIterator, typename OutputIterator, typename T>
@@ -100,7 +98,7 @@ OutputIterator replace_copy(my_system& system, InputIterator, InputIterator, Out
   return result;
 }
 
-void TestReplaceCopyDispatchExplicit()
+TEST_CASE("TestReplaceCopyDispatchExplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -109,7 +107,6 @@ void TestReplaceCopyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReplaceCopyDispatchExplicit);
 
 template <typename InputIterator, typename OutputIterator, typename T>
 OutputIterator replace_copy(my_tag, InputIterator, InputIterator, OutputIterator result, const T&, const T&)
@@ -118,7 +115,7 @@ OutputIterator replace_copy(my_tag, InputIterator, InputIterator, OutputIterator
   return result;
 }
 
-void TestReplaceCopyDispatchImplicit()
+TEST_CASE("TestReplaceCopyDispatchImplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -127,10 +124,9 @@ void TestReplaceCopyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestReplaceCopyDispatchImplicit);
 
 template <typename T>
-void TestReplaceCopy(const size_t n)
+void test_replace_copy(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -147,10 +143,10 @@ void TestReplaceCopy(const size_t n)
   ASSERT_ALMOST_EQUAL(h_data, d_data);
   ASSERT_ALMOST_EQUAL(h_dest, d_dest);
 }
-DECLARE_VARIABLE_UNITTEST(TestReplaceCopy);
+DECLARE_VARIABLE_UNITTEST(test_replace_copy);
 
 template <typename T>
-void TestReplaceCopyToDiscardIterator(const size_t n)
+void test_replace_copy_to_discard_iterator(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -166,10 +162,10 @@ void TestReplaceCopyToDiscardIterator(const size_t n)
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestReplaceCopyToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_replace_copy_to_discard_iterator);
 
 template <typename T>
 struct less_than_five
@@ -181,7 +177,7 @@ struct less_than_five
 };
 
 template <class Vector>
-void TestReplaceIfSimple()
+void test_replace_if_simple()
 {
   using T = typename Vector::value_type;
 
@@ -193,7 +189,7 @@ void TestReplaceIfSimple()
 
   REQUIRE(data == result);
 }
-DECLARE_VECTOR_UNITTEST(TestReplaceIfSimple);
+DECLARE_VECTOR_UNITTEST(test_replace_if_simple);
 
 template <typename ForwardIterator, typename Predicate, typename T>
 void replace_if(my_system& system, ForwardIterator, ForwardIterator, Predicate, const T&)
@@ -201,7 +197,7 @@ void replace_if(my_system& system, ForwardIterator, ForwardIterator, Predicate, 
   system.validate_dispatch();
 }
 
-void TestReplaceIfDispatchExplicit()
+TEST_CASE("TestReplaceIfDispatchExplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -210,7 +206,6 @@ void TestReplaceIfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReplaceIfDispatchExplicit);
 
 template <typename ForwardIterator, typename Predicate, typename T>
 void replace_if(my_tag, ForwardIterator first, ForwardIterator, Predicate, const T&)
@@ -218,7 +213,7 @@ void replace_if(my_tag, ForwardIterator first, ForwardIterator, Predicate, const
   *first = 13;
 }
 
-void TestReplaceIfDispatchImplicit()
+TEST_CASE("TestReplaceIfDispatchImplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -226,10 +221,9 @@ void TestReplaceIfDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestReplaceIfDispatchImplicit);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceIfStencilSimple()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_replace_if_stencil_simple()
 {
   using T = typename Vector::value_type;
 
@@ -242,7 +236,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceIfStencilSimple()
 
   REQUIRE(data == result);
 }
-DECLARE_VECTOR_UNITTEST(TestReplaceIfStencilSimple);
+DECLARE_VECTOR_UNITTEST(test_replace_if_stencil_simple);
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate, typename T>
 void replace_if(my_system& system, ForwardIterator, ForwardIterator, InputIterator, Predicate, const T&)
@@ -250,7 +244,7 @@ void replace_if(my_system& system, ForwardIterator, ForwardIterator, InputIterat
   system.validate_dispatch();
 }
 
-void TestReplaceIfStencilDispatchExplicit()
+TEST_CASE("TestReplaceIfStencilDispatchExplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -259,7 +253,6 @@ void TestReplaceIfStencilDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReplaceIfStencilDispatchExplicit);
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate, typename T>
 void replace_if(my_tag, ForwardIterator first, ForwardIterator, InputIterator, Predicate, const T&)
@@ -267,7 +260,7 @@ void replace_if(my_tag, ForwardIterator first, ForwardIterator, InputIterator, P
   *first = 13;
 }
 
-void TestReplaceIfStencilDispatchImplicit()
+TEST_CASE("TestReplaceIfStencilDispatchImplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -276,10 +269,9 @@ void TestReplaceIfStencilDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestReplaceIfStencilDispatchImplicit);
 
 template <typename T>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceIf(const size_t n)
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_replace_if(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -289,10 +281,10 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceIf(const size_t n)
 
   ASSERT_ALMOST_EQUAL(h_data, d_data);
 }
-DECLARE_VARIABLE_UNITTEST(TestReplaceIf);
+DECLARE_VARIABLE_UNITTEST(test_replace_if);
 
 template <typename T>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceIfStencil(const size_t n)
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_replace_if_stencil(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -305,10 +297,10 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceIfStencil(const size_t n)
 
   ASSERT_ALMOST_EQUAL(h_data, d_data);
 }
-DECLARE_VARIABLE_UNITTEST(TestReplaceIfStencil);
+DECLARE_VARIABLE_UNITTEST(test_replace_if_stencil);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfSimple()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_replace_copy_if_simple()
 {
   using T = typename Vector::value_type;
 
@@ -321,7 +313,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfSimple()
   Vector result{0, 0, 0, 6, 5};
   REQUIRE(dest == result);
 }
-DECLARE_VECTOR_UNITTEST(TestReplaceCopyIfSimple);
+DECLARE_VECTOR_UNITTEST(test_replace_copy_if_simple);
 
 template <typename InputIterator, typename OutputIterator, typename Predicate, typename T>
 OutputIterator
@@ -331,7 +323,7 @@ replace_copy_if(my_system& system, InputIterator, InputIterator, OutputIterator 
   return result;
 }
 
-void TestReplaceCopyIfDispatchExplicit()
+TEST_CASE("TestReplaceCopyIfDispatchExplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -340,7 +332,6 @@ void TestReplaceCopyIfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReplaceCopyIfDispatchExplicit);
 
 template <typename InputIterator, typename OutputIterator, typename Predicate, typename T>
 OutputIterator replace_copy_if(my_tag, InputIterator, InputIterator, OutputIterator result, Predicate, const T&)
@@ -349,7 +340,7 @@ OutputIterator replace_copy_if(my_tag, InputIterator, InputIterator, OutputItera
   return result;
 }
 
-void TestReplaceCopyIfDispatchImplicit()
+TEST_CASE("TestReplaceCopyIfDispatchImplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -358,10 +349,9 @@ void TestReplaceCopyIfDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestReplaceCopyIfDispatchImplicit);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfStencilSimple()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_replace_copy_if_stencil_simple()
 {
   using T = typename Vector::value_type;
 
@@ -376,7 +366,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfStencilSimple()
 
   REQUIRE(dest == result);
 }
-DECLARE_VECTOR_UNITTEST(TestReplaceCopyIfStencilSimple);
+DECLARE_VECTOR_UNITTEST(test_replace_copy_if_stencil_simple);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate, typename T>
 OutputIterator replace_copy_if(
@@ -386,7 +376,7 @@ OutputIterator replace_copy_if(
   return result;
 }
 
-void TestReplaceCopyIfStencilDispatchExplicit()
+TEST_CASE("TestReplaceCopyIfStencilDispatchExplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -395,7 +385,6 @@ void TestReplaceCopyIfStencilDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReplaceCopyIfStencilDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate, typename T>
 OutputIterator
@@ -405,7 +394,7 @@ replace_copy_if(my_tag, InputIterator1, InputIterator1, InputIterator2, OutputIt
   return result;
 }
 
-void TestReplaceCopyIfStencilDispatchImplicit()
+TEST_CASE("TestReplaceCopyIfStencilDispatchImplicit", "[replace]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -419,10 +408,9 @@ void TestReplaceCopyIfStencilDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestReplaceCopyIfStencilDispatchImplicit);
 
 template <typename T>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIf(const size_t n)
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_replace_copy_if(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -436,10 +424,10 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIf(const size_t n)
   ASSERT_ALMOST_EQUAL(h_data, d_data);
   ASSERT_ALMOST_EQUAL(h_dest, d_dest);
 }
-DECLARE_VARIABLE_UNITTEST(TestReplaceCopyIf);
+DECLARE_VARIABLE_UNITTEST(test_replace_copy_if);
 
 template <typename T>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfToDiscardIterator(const size_t n)
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_replace_copy_if_to_discard_iterator(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -452,13 +440,13 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfToDiscardIterator(con
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestReplaceCopyIfToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_replace_copy_if_to_discard_iterator);
 
 template <typename T>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfStencil(const size_t n)
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_replace_copy_if_stencil(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -475,10 +463,10 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfStencil(const size_t 
   ASSERT_ALMOST_EQUAL(h_data, d_data);
   ASSERT_ALMOST_EQUAL(h_dest, d_dest);
 }
-DECLARE_VARIABLE_UNITTEST(TestReplaceCopyIfStencil);
+DECLARE_VARIABLE_UNITTEST(test_replace_copy_if_stencil);
 
 template <typename T>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfStencilToDiscardIterator(const size_t n)
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_replace_copy_if_stencil_to_discard_iterator(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -494,7 +482,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfStencilToDiscardItera
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE(reference == h_result);
+  REQUIRE(reference == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestReplaceCopyIfStencilToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_replace_copy_if_stencil_to_discard_iterator);

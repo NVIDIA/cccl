@@ -41,7 +41,7 @@ CUresult cccl_device_reduce_build_ex(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* build_config)
+  const cccl_build_config* build_config)
 try
 {
   if (init_kind == CCCL_FUTURE_VALUE_INIT)

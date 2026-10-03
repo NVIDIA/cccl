@@ -16,7 +16,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/warp>
 
-#include <cuda/experimental/group.cuh>
+#include <cuda/experimental/coop/group>
 
 #include "testing.cuh"
 
@@ -34,7 +34,7 @@ __device__ T global_barriers_storage;
 template <cuda::std::size_t N, cuda::std::size_t Id = 0, class Level>
 __device__ auto& get_barriers(const Level& level) noexcept
 {
-  constexpr auto scope = cudax::__minimum_required_scope_for<Level>();
+  constexpr auto scope = cudax::coop::__minimum_required_scope_for<Level>();
 
   using Barrier         = cuda::barrier<scope>;
   using BarriersStorage = cuda::std::aligned_storage_t<N * sizeof(Barrier), alignof(Barrier)>;

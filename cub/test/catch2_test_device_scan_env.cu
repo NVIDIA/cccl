@@ -619,7 +619,7 @@ CUB_TEST("Test ScanPolicy properties", "[scan][device]", CUB_SMALL)
     cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT,
     cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
     cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}};
-  constexpr auto p1_la = cub::ScanLookaheadPolicy{3, 8, 4, 2, -1};
+  constexpr auto p1_la = cub::ScanLookaheadPolicy{3, 8, 4, 2};
   constexpr auto p1    = cub::ScanPolicy{cub::ScanAlgorithm::lookback, p1_lb, p1_la};
 
 #  if _CCCL_STD_VER >= 2020
@@ -634,11 +634,7 @@ CUB_TEST("Test ScanPolicy properties", "[scan][device]", CUB_SMALL)
     .lookback_delay    = cub::LookbackDelayPolicy{
       .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 832, .l2_write_latency = 1165}};
   constexpr auto p2_la = cub::ScanLookaheadPolicy{
-    .reduce_and_scan_warps      = 3,
-    .items_per_thread           = 8,
-    .lookahead_items_per_thread = 4,
-    .lookahead_stages           = 2,
-    .block_idx_stages           = -1};
+    .reduce_and_scan_warps = 3, .items_per_thread = 8, .lookahead_items_per_thread = 4, .lookahead_stages = 2};
 
   constexpr auto p2 = cub::ScanPolicy{.algorithm = cub::ScanAlgorithm::lookback, .lookback = p2_lb, .lookahead = p2_la};
 #  else // _CCCL_STD_VER >= 2020

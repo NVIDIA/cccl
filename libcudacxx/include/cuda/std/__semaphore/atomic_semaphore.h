@@ -124,9 +124,9 @@ public:
     return __fetch_sub_if();
   }
 
-  template <class Clock, class Duration>
+  template <class _Clock, class _Duration>
   [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool
-  try_acquire_until(chrono::time_point<Clock, Duration> const& __abs_time)
+  try_acquire_until(chrono::time_point<_Clock, _Duration> const& __abs_time)
   {
     if (try_acquire())
     {
@@ -134,12 +134,12 @@ public:
     }
     else
     {
-      return __acquire_slow_timed(__abs_time - Clock::now());
+      return __acquire_slow_timed(__abs_time - _Clock::now());
     }
   }
 
-  template <class Rep, class Period>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool try_acquire_for(chrono::duration<Rep, Period> const& __rel_time)
+  template <class _Rep, class _Period>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool try_acquire_for(chrono::duration<_Rep, _Period> const& __rel_time)
   {
     if (try_acquire())
     {
@@ -201,9 +201,9 @@ public:
     return 1 == __available.exchange(0, memory_order_acquire);
   }
 
-  template <class Clock, class Duration>
+  template <class _Clock, class _Duration>
   [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool
-  try_acquire_until(chrono::time_point<Clock, Duration> const& __abs_time)
+  try_acquire_until(chrono::time_point<_Clock, _Duration> const& __abs_time)
   {
     if (try_acquire())
     {
@@ -211,12 +211,12 @@ public:
     }
     else
     {
-      return __acquire_slow_timed(__abs_time - Clock::now());
+      return __acquire_slow_timed(__abs_time - _Clock::now());
     }
   }
 
-  template <class Rep, class Period>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool try_acquire_for(chrono::duration<Rep, Period> const& __rel_time)
+  template <class _Rep, class _Period>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API inline bool try_acquire_for(chrono::duration<_Rep, _Period> const& __rel_time)
   {
     if (try_acquire())
     {

@@ -89,18 +89,14 @@ struct __decay_impl<__decay_choice::__decay_function>
   using type _CCCL_NODEBUG = add_pointer_t<_Up>;
 };
 
-template <class _Up>
-inline constexpr __decay_choice __decay_select =
-  !__referenceable<_Up> ? __decay_choice::__default
-  : is_array_v<_Up>     ? __decay_choice::__decay_array
-  : is_function_v<_Up>  ? __decay_choice::__decay_function
-                        : __decay_choice::__default;
-
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT decay
 {
-  using type _CCCL_NODEBUG =
-    typename __decay_impl<__decay_select<remove_reference_t<_Tp>>>::template type<remove_reference_t<_Tp>>;
+  using type _CCCL_NODEBUG = typename __decay_impl<
+    !__referenceable<remove_reference_t<_Tp>> ? __decay_choice::__default
+    : is_array_v<remove_reference_t<_Tp>>     ? __decay_choice::__decay_array
+    : is_function_v<remove_reference_t<_Tp>>  ? __decay_choice::__decay_function
+                                              : __decay_choice::__default>::template type<remove_reference_t<_Tp>>;
 };
 
 template <class _Tp>

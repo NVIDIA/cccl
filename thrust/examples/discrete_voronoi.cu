@@ -37,7 +37,7 @@ struct voronoi_site_selector
   {}
 
   // To decide I have to change my current Voronoi site
-  __host__ __device__ int minVoro(int x_i, int y_i, int p, int q)
+  __host__ __device__ int min_voro(int x_i, int y_i, int p, int q)
   {
     if (q == m * n)
     {
@@ -78,40 +78,40 @@ struct voronoi_site_selector
 
     if (x >= k)
     {
-      v = minVoro(x, y, v, cuda::std::get<3>(t));
+      v = min_voro(x, y, v, cuda::std::get<3>(t));
 
       if (y >= k)
       {
-        v = minVoro(x, y, v, cuda::std::get<8>(t));
+        v = min_voro(x, y, v, cuda::std::get<8>(t));
       }
 
       if (y + k < n)
       {
-        v = minVoro(x, y, v, cuda::std::get<7>(t));
+        v = min_voro(x, y, v, cuda::std::get<7>(t));
       }
     }
 
     if (x + k < m)
     {
-      v = minVoro(x, y, v, cuda::std::get<1>(t));
+      v = min_voro(x, y, v, cuda::std::get<1>(t));
 
       if (y >= k)
       {
-        v = minVoro(x, y, v, cuda::std::get<6>(t));
+        v = min_voro(x, y, v, cuda::std::get<6>(t));
       }
       if (y + k < n)
       {
-        v = minVoro(x, y, v, cuda::std::get<5>(t));
+        v = min_voro(x, y, v, cuda::std::get<5>(t));
       }
     }
 
     if (y >= k)
     {
-      v = minVoro(x, y, v, cuda::std::get<4>(t));
+      v = min_voro(x, y, v, cuda::std::get<4>(t));
     }
     if (y + k < n)
     {
-      v = minVoro(x, y, v, cuda::std::get<2>(t));
+      v = min_voro(x, y, v, cuda::std::get<2>(t));
     }
 
     // global return

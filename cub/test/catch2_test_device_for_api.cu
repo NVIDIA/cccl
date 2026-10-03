@@ -452,12 +452,20 @@ CUB_TEST("DeviceFor::ForEachInLayout two-phase size-query is unambiguous", "[for
     cudaSuccess == cub::DeviceFor::ForEachInLayout(d_temp_storage, temp_storage_bytes, mapping, noop_extents_t{}));
 }
 
-// fast_div_mod asserts a positive divisor, so an empty extent must return before those arrays are
-// built. Reaches the compute path, unlike the size-query guards above.
+// fast_mod_div asserts a positive divisor, so an empty extent must return before those arrays are built. Reaches the
+// compute path, unlike the size-query guards above.
 CUB_TEST("DeviceFor::ForEachInExtents handles an empty extent", "[for][device]", CUB_SMALL)
 {
   // NOLINTNEXTLINE(misc-const-correctness)
   const cuda::std::extents<int, cuda::std::dynamic_extent> extents{0};
+
+  REQUIRE(cudaSuccess == cub::DeviceFor::ForEachInExtents(extents, noop_extents_t{}));
+}
+
+CUB_TEST("DeviceFor::ForEachInExtents handles promoted index types", "[for][device]", CUB_SMALL)
+{
+  // NOLINTNEXTLINE(misc-const-correctness)
+  const cuda::std::extents<unsigned char, cuda::std::dynamic_extent> extents{2};
 
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachInExtents(extents, noop_extents_t{}));
 }

@@ -23,9 +23,9 @@
 // GCC -Warray-bounds false positive for high-rank (20+) __raw_tensor instantiations
 _CCCL_DIAG_SUPPRESS_GCC("-Warray-bounds")
 
-template <size_t Rank, typename idx_t>
+template <size_t Rank, typename IdxT>
 size_t
-compute_alloc(size_t offset, const cuda::std::array<idx_t, Rank>& shape, const cuda::std::array<idx_t, Rank>& strides)
+compute_alloc(size_t offset, const cuda::std::array<IdxT, Rank>& shape, const cuda::std::array<IdxT, Rank>& strides)
 {
   int64_t max_pos = static_cast<int64_t>(offset);
   for (size_t i = 0; i < Rank; ++i)
@@ -39,19 +39,19 @@ compute_alloc(size_t offset, const cuda::std::array<idx_t, Rank>& shape, const c
   return max_pos + 1;
 }
 
-template <typename data_t = int, typename idx_t = int, size_t Rank>
+template <typename DataT = int, typename IdxT = int, size_t Rank>
 void bench_copy(nvbench::state& state,
                 size_t src_offset,
-                const cuda::std::array<idx_t, Rank>& shape,
-                const cuda::std::array<idx_t, Rank>& src_strides,
+                const cuda::std::array<IdxT, Rank>& shape,
+                const cuda::std::array<IdxT, Rank>& src_strides,
                 size_t dst_offset,
-                const cuda::std::array<idx_t, Rank>& dst_strides)
+                const cuda::std::array<IdxT, Rank>& dst_strides)
 {
   const auto src_alloc = compute_alloc(src_offset, shape, src_strides);
   const auto dst_alloc = compute_alloc(dst_offset, shape, dst_strides);
 
-  thrust::device_vector<data_t> d_src(src_alloc);
-  thrust::device_vector<data_t> d_dst(dst_alloc);
+  thrust::device_vector<DataT> d_src(src_alloc);
+  thrust::device_vector<DataT> d_dst(dst_alloc);
 
   size_t num_items = 1;
   for (size_t i = 0; i < Rank; ++i)
@@ -59,11 +59,11 @@ void bench_copy(nvbench::state& state,
     num_items *= shape[i];
   }
   state.add_element_count(num_items);
-  state.add_global_memory_reads<data_t>(num_items);
-  state.add_global_memory_writes<data_t>(num_items);
+  state.add_global_memory_reads<DataT>(num_items);
+  state.add_global_memory_writes<DataT>(num_items);
 
-  using extents_t = cuda::std::dextents<idx_t, Rank>;
-  using strides_t = cuda::dstrides<idx_t, Rank>;
+  using extents_t = cuda::std::dextents<IdxT, Rank>;
+  using strides_t = cuda::dstrides<IdxT, Rank>;
   using mapping_t = cuda::layout_stride_relaxed::mapping<extents_t>;
 
   const extents_t ext(shape);
@@ -72,8 +72,8 @@ void bench_copy(nvbench::state& state,
   const mapping_t src_map(ext, strides_t(src_strides));
   const mapping_t dst_map(ext, strides_t(dst_strides));
 
-  cuda::device_mdspan<data_t, extents_t, cuda::layout_stride_relaxed> src(src_ptr, src_map);
-  cuda::device_mdspan<data_t, extents_t, cuda::layout_stride_relaxed> dst(dst_ptr, dst_map);
+  cuda::device_mdspan<DataT, extents_t, cuda::layout_stride_relaxed> src(src_ptr, src_map);
+  cuda::device_mdspan<DataT, extents_t, cuda::layout_stride_relaxed> dst(dst_ptr, dst_map);
 
   state.exec([&](nvbench::launch& launch) {
     const cuda::stream_ref stream{launch.get_stream()};
@@ -81,13 +81,13 @@ void bench_copy(nvbench::state& state,
   });
 }
 
-template <typename data_t = int, typename idx_t = int, size_t Rank>
+template <typename DataT = int, typename IdxT = int, size_t Rank>
 void bench_copy(nvbench::state& state,
                 size_t offset,
-                const cuda::std::array<idx_t, Rank>& shape,
-                const cuda::std::array<idx_t, Rank>& strides)
+                const cuda::std::array<IdxT, Rank>& shape,
+                const cuda::std::array<IdxT, Rank>& strides)
 {
-  bench_copy<data_t>(state, offset, shape, strides, offset, strides);
+  bench_copy<DataT>(state, offset, shape, strides, offset, strides);
 }
 
 /***********************************************************************************************************************

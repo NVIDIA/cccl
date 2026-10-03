@@ -111,7 +111,27 @@ struct key_value
 
   friend std::ostream& operator<<(std::ostream& os, const key_value& kv)
   {
-    return os << "(" << kv.key << ", " << kv.value << ")";
+    // cast 1-byte integral (char) types so they print as numbers, not characters
+    // (clang-tidy bugprone-unintended-char-ostream-output)
+    os << "(";
+    if constexpr (::cuda::std::is_integral_v<key_type> && sizeof(key_type) == 1)
+    {
+      os << static_cast<int>(kv.key);
+    }
+    else
+    {
+      os << kv.key;
+    }
+    os << ", ";
+    if constexpr (::cuda::std::is_integral_v<value_type> && sizeof(value_type) == 1)
+    {
+      os << static_cast<int>(kv.value);
+    }
+    else
+    {
+      os << kv.value;
+    }
+    return os << ")";
   }
 
   key_type key;
@@ -144,7 +164,8 @@ struct user_swappable
 class custom_numeric
 {
 public:
-  _CCCL_HOST_DEVICE custom_numeric()
+  // fill() initializes every element.
+  _CCCL_HOST_DEVICE custom_numeric() // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     fill(0);
   }
@@ -159,13 +180,15 @@ public:
 #endif // _CCCL_COMPILER(MSVC2019)
 
   // Allow construction from any integral numeric.
+  // fill() initializes every element.
   template <typename T, typename = typename ::cuda::std::enable_if<::cuda::std::is_integral<T>::value>::type>
-  _CCCL_HOST_DEVICE custom_numeric(const T& i)
+  _CCCL_HOST_DEVICE custom_numeric(const T& i) // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     fill(static_cast<int>(i));
   }
 
-  _CCCL_HOST_DEVICE custom_numeric(const custom_numeric& other)
+  // fill() initializes every element.
+  _CCCL_HOST_DEVICE custom_numeric(const custom_numeric& other) // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     fill(other.value[0]);
   }

@@ -233,8 +233,7 @@ struct AgentScan
   };
 
   // Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per-thread fields
@@ -324,7 +323,7 @@ struct AgentScan
 
   /**
    * Process a tile of input (dynamic chained scan)
-   * @tparam IS_LAST_TILE
+   * @tparam IsLastTile
    *   Whether the current tile is the last tile
    *
    * @param num_remaining
@@ -339,7 +338,7 @@ struct AgentScan
    * @param tile_state
    *   Global tile state descriptor
    */
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ConsumeTile(OffsetT num_remaining, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state)
   {
@@ -347,7 +346,7 @@ struct AgentScan
     AccumT items[ITEMS_PER_THREAD];
 
     _CCCL_IKET_RANGE_PUSH(Load);
-    if constexpr (IS_LAST_TILE)
+    if constexpr (IsLastTile)
     {
       // Fill last element with the first element because collectives are
       // not suffix guarded.
@@ -366,10 +365,12 @@ struct AgentScan
     if (tile_idx == 0)
     {
       // Scan first tile
+      // ScanFirstTile fills the aggregate before it is read.
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
       AccumT block_aggregate;
       ScanFirstTile(items, init_value, scan_op, block_aggregate);
 
-      if ((!IS_LAST_TILE) && (threadIdx.x == 0))
+      if ((!IsLastTile) && (threadIdx.x == 0))
       {
         tile_state.SetInclusive(0, block_aggregate);
       }
@@ -391,7 +392,7 @@ struct AgentScan
 
     // Store items
     _CCCL_IKET_RANGE_PUSH(Store);
-    if constexpr (IS_LAST_TILE)
+    if constexpr (IsLastTile)
     {
       BlockStoreT(temp_storage.store).Store(d_out + tile_offset, items, num_remaining);
     }
@@ -456,7 +457,7 @@ struct AgentScan
    * @param valid_items
    *   Number of valid items in the tile
    */
-  template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
+  template <bool IsFirstTile, bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ConsumeTile(OffsetT tile_offset, RunningPrefixCallbackOp& prefix_op, int valid_items = TILE_ITEMS)
   {
@@ -464,7 +465,7 @@ struct AgentScan
     AccumT items[ITEMS_PER_THREAD];
 
     _CCCL_IKET_RANGE_PUSH(Load);
-    if constexpr (IS_LAST_TILE)
+    if constexpr (IsLastTile)
     {
       // Fill last element with the first element because collectives are
       // not suffix guarded.
@@ -480,7 +481,7 @@ struct AgentScan
 
     // Block scan
     _CCCL_IKET_RANGE_PUSH(Scan);
-    if constexpr (IS_FIRST_TILE)
+    if constexpr (IsFirstTile)
     {
       AccumT block_aggregate;
       ScanFirstTile(items, init_value, scan_op, block_aggregate);
@@ -496,7 +497,7 @@ struct AgentScan
 
     // Store items
     _CCCL_IKET_RANGE_PUSH(Store);
-    if constexpr (IS_LAST_TILE)
+    if constexpr (IsLastTile)
     {
       BlockStoreT(temp_storage.store).Store(d_out + tile_offset, items, valid_items);
     }

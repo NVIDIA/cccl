@@ -32,7 +32,7 @@ namespace cuda::experimental::stf::reserved
 /**
  * @brief Provides flags for instantiating the `handle` class (below).
  */
-enum handle_flags : unsigned
+enum class handle_flags : unsigned
 {
   defaults, ///< The default `handle` flags; no special features.
   non_null, ///< Specifies that the pointer underlying the `handle` object cannot be null.
@@ -82,7 +82,6 @@ public:
   handle(handle&)                  = default;
   handle(const handle&)            = default;
   handle(handle&&)                 = default;
-  handle& operator=(handle&)       = default;
   handle& operator=(const handle&) = default;
   handle& operator=(handle&&)      = default;
   /// @}
@@ -91,7 +90,7 @@ public:
   handle()
   {
     static_assert(!::cuda::std::is_constructible_v<T>, "T's default constructor must be protected.");
-    if constexpr (f & handle_flags::non_null)
+    if constexpr ((f & handle_flags::non_null) != handle_flags::defaults)
     {
       static_assert(!::cuda::std::is_abstract_v<T>,
                     "A non-nullable handle of an abstract type cannot have a default constructor.");
@@ -104,9 +103,10 @@ public:
   handle(handle<T1, f1> rhs)
       : impl(mv(rhs.impl))
   {
-    if constexpr (f & handle_flags::non_null)
+    if constexpr ((f & handle_flags::non_null) != handle_flags::defaults)
     {
-      static_assert(f1 & handle_flags::non_null, "Cannot initialize a non-nullable handle from a nullable one.");
+      static_assert((f1 & handle_flags::non_null) != handle_flags::defaults,
+                    "Cannot initialize a non-nullable handle from a nullable one.");
     }
   }
 
@@ -129,7 +129,7 @@ public:
   handle(const handle<T1, f1>& src, decltype(use_static_cast))
       : handle(::std::static_pointer_cast<T>(src.impl))
   {
-    if constexpr (f & handle_flags::non_null)
+    if constexpr ((f & handle_flags::non_null) != handle_flags::defaults)
     {
       EXPECT(src.impl, "Pointer of static type ", type_name<T1>, " was null upon construction of non-null handle.");
       assert(impl);
@@ -147,7 +147,7 @@ public:
   handle(const handle<T1, f1>& src, decltype(use_dynamic_cast))
       : handle(::std::dynamic_pointer_cast<T>(src.impl))
   {
-    if constexpr (f & handle_flags::non_null)
+    if constexpr ((f & handle_flags::non_null) != handle_flags::defaults)
     {
       EXPECT(src.impl, "Pointer of static type ", type_name<T1>, " was null upon construction of non-null handle.");
       EXPECT(impl, "dynamic_cast<", type_name<T>, "> failed for pointer of static type ", type_name<T1>);
@@ -164,9 +164,10 @@ public:
   template <typename T1, handle_flags f1>
   handle& operator=(handle<T1, f1> rhs)
   {
-    if constexpr (f & handle_flags::non_null)
+    if constexpr ((f & handle_flags::non_null) != handle_flags::defaults)
     {
-      static_assert(f1 & handle_flags::non_null, "Cannot assign a non-nullable handle from a nullable one.");
+      static_assert((f1 & handle_flags::non_null) != handle_flags::defaults,
+                    "Cannot assign a non-nullable handle from a nullable one.");
     }
     impl = mv(rhs.impl);
     return *this;
@@ -273,14 +274,13 @@ UNITTEST("Weak handle")
   {
   protected:
     test(int x)
-    {
-      a = x;
-    }
+        : a(x)
+    {}
 
   public:
     int a;
   };
-  handle<test> h(42);
+  const handle<test> h(42);
   EXPECT(h->a == 42);
   auto w = h.weak();
   handle<test>::if_valid(w, [](handle<test> x) {

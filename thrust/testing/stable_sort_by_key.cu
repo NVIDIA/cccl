@@ -10,7 +10,7 @@ void stable_sort_by_key(my_system& system, RandomAccessIterator1, RandomAccessIt
   system.validate_dispatch();
 }
 
-void TestStableSortByKeyDispatchExplicit()
+TEST_CASE("TestStableSortByKeyDispatchExplicit", "[stable_sort_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -19,7 +19,6 @@ void TestStableSortByKeyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestStableSortByKeyDispatchExplicit);
 
 template <typename RandomAccessIterator1, typename RandomAccessIterator2>
 void stable_sort_by_key(my_tag, RandomAccessIterator1 keys_first, RandomAccessIterator1, RandomAccessIterator2)
@@ -27,7 +26,7 @@ void stable_sort_by_key(my_tag, RandomAccessIterator1 keys_first, RandomAccessIt
   *keys_first = 13;
 }
 
-void TestStableSortByKeyDispatchImplicit()
+TEST_CASE("TestStableSortByKeyDispatchImplicit", "[stable_sort_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -36,7 +35,6 @@ void TestStableSortByKeyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestStableSortByKeyDispatchImplicit);
 
 template <typename T>
 struct less_div_10
@@ -48,7 +46,7 @@ struct less_div_10
 };
 
 template <class Vector>
-void InitializeSimpleStableKeyValueSortTest(
+void initialize_simple_stable_key_value_sort_test(
   Vector& unsorted_keys, Vector& unsorted_values, Vector& sorted_keys, Vector& sorted_values)
 {
   unsorted_keys.resize(9);
@@ -63,21 +61,21 @@ void InitializeSimpleStableKeyValueSortTest(
 }
 
 template <class Vector>
-void TestStableSortByKeySimple()
+void test_stable_sort_by_key_simple()
 {
   using T = typename Vector::value_type;
 
   Vector unsorted_keys, unsorted_values;
   Vector sorted_keys, sorted_values;
 
-  InitializeSimpleStableKeyValueSortTest(unsorted_keys, unsorted_values, sorted_keys, sorted_values);
+  initialize_simple_stable_key_value_sort_test(unsorted_keys, unsorted_values, sorted_keys, sorted_values);
 
   thrust::stable_sort_by_key(unsorted_keys.begin(), unsorted_keys.end(), unsorted_values.begin(), less_div_10<T>());
 
   REQUIRE(unsorted_keys == sorted_keys);
   REQUIRE(unsorted_values == sorted_values);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestStableSortByKeySimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_stable_sort_by_key_simple);
 
 template <typename T>
 struct TestStableSortByKey

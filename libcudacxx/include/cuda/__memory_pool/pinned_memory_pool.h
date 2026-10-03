@@ -27,8 +27,8 @@
 #  include <cuda/__memory_pool/memory_pool_base.h>
 #  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__utility/no_init.h>
-#  include <cuda/std/__concepts/concept_macros.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
