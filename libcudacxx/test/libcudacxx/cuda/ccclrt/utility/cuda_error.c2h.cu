@@ -25,10 +25,10 @@ enum class plain_status : int
 };
 
 // Another one, registered to supply text.
-enum described_status
+enum class described_status : int
 {
-  described_fine = 0,
-  described_bad  = 11,
+  fine = 0,
+  bad  = 11,
 };
 
 // A struct status, like cuFile's: registered to say what failure and code mean.
@@ -44,7 +44,7 @@ struct cuda::cuda_status_traits<described_status> : cuda::cuda_status_defaults<d
 {
   static const char* text(const described_status status) noexcept
   {
-    return status == described_bad ? "described badly" : "fine";
+    return status == described_status::bad ? "described badly" : "fine";
   }
 };
 
@@ -113,10 +113,10 @@ C2H_TEST("cuda_error: any status enumeration works without registration", "[cuda
 
 C2H_TEST("cuda_error: a registered enumeration contributes its text", "[cuda_error]")
 {
-  const cuda::cuda_error error(described_bad, "boom");
+  const cuda::cuda_error error(described_status::bad, "boom");
 
   CCCLRT_REQUIRE(error.holds<described_status>());
-  CCCLRT_REQUIRE(error.status<described_status>() == described_bad);
+  CCCLRT_REQUIRE(error.status<described_status>() == described_status::bad);
   CCCLRT_REQUIRE(error.raw_code() == 11);
   CCCLRT_REQUIRE(std::string(error.what()).find("(11): described badly: boom") != std::string::npos);
 }

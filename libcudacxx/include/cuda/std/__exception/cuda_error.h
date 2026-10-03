@@ -259,7 +259,7 @@ public:
   [[nodiscard]] _CCCL_HOST_API _Status status() const noexcept
   {
     _CCCL_VERIFY(holds<_Status>(), "cuda_error::status<Status>(): the stored status is of another type");
-    _Status __status;
+    _Status __status{};
     ::cuda::std::memcpy(&__status, __status_bytes_, sizeof(_Status));
     return __status;
   }
