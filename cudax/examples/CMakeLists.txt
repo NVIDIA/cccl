@@ -54,3 +54,6 @@ endif()
 if (cudax_ENABLE_PLACES AND NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   add_subdirectory(places)
 endif()
+
+# Examples for cudax::execution:
+add_subdirectory(execution)

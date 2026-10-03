@@ -26,6 +26,9 @@
 // `continues_on(lane 0)` (the join, one event per other lane). For the whole
 // pipeline, that is N-1 fork waits and N-1 join waits, and nothing else.
 //
+// The reduce's partials are a scoped allocation: a sender that allocates on the
+// lane it runs on, held by a `let_value` scope and freed when the scope ends.
+//
 // Run with `--graph` to capture the pipeline into a CUDA graph instead and
 // write it as `lane_sharded_pipeline.dot`: N independent chains out of one root,
 // joined once at the sum. (`dot -Tpdf lane_sharded_pipeline.dot -o pipeline.pdf`)
@@ -81,6 +84,50 @@ template <class Tuple, class Fn, size_t... I>
 auto map(Tuple&& t, Fn&& fn, cuda::std::index_sequence<I...>)
 {
   return bundle{cuda::std::make_tuple(fn(cuda::std::get<I>(static_cast<Tuple&&>(t)), I)...)};
+}
+
+// ----------------------------------------------------------------------------
+// Scoped allocation as a sender.
+//
+// `allocate_on<T>(n, mr)` completes with a buffer of n elements allocated,
+// stream-ordered, on the lane the sender runs on. Held by a `let_value` scope,
+// the buffer lives in the operation state for the inner work and is freed on
+// the same lane when the scope ends. The lane it is allocated on must be ordered
+// after all of its readers: for data shared by every shard, that is the lane the
+// pipeline joins on.
+//
+// cudax operation states are host/device, and nvcc's execution-space check
+// rejects `cuda::device_buffer`'s host-only destructor reached from one; the
+// buffer travels in this thin wrapper whose move and destructor are exempted,
+// as cudax does for its own tuples.
+template <class T>
+struct scoped_buffer
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE explicit scoped_buffer(cuda::device_buffer<T>&& b)
+      : buf_(std::move(b))
+  {}
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE scoped_buffer(scoped_buffer&& o) noexcept
+      : buf_(std::move(o.buf_))
+  {}
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE ~scoped_buffer() {}
+  T* data()
+  {
+    return buf_.data();
+  }
+
+private:
+  cuda::device_buffer<T> buf_;
+};
+
+template <class T, class Mr>
+auto allocate_on(size_t n, Mr mr)
+{
+  return ex::read_env(ex::get_scheduler) | ex::then([=](auto lane) {
+           return scoped_buffer<T>{cuda::device_buffer<T>{lane.query(cuda::get_stream), mr, n, cuda::no_init}};
+         });
 }
 
 // ----------------------------------------------------------------------------
@@ -241,10 +288,9 @@ int main(int argc, char** argv)
       lanes[k] = ex::lane_scheduler{streams[k]};
     }
 
-    // Two sharded arrays x and y, shard k of each on lane k, and the partials.
+    // Two sharded arrays x and y, shard k of each on lane k, and the result.
     cuda::device_buffer<int> xbuf{streams[0], mr, static_cast<size_t>(n), cuda::no_init};
     cuda::device_buffer<int> ybuf{streams[0], mr, static_cast<size_t>(n), cuda::no_init};
-    cuda::device_buffer<int> partials{streams[0], mr, N, cuda::no_init};
     cuda::device_buffer<int> result{streams[0], mr, 1, cuda::no_init};
     sharded_view<N> x{{xbuf.data(), xbuf.data() + shard_size, xbuf.data() + 2 * shard_size},
                       shard_size,
@@ -255,14 +301,18 @@ int main(int argc, char** argv)
     fill<<<(n + 255) / 256, 256, 0, streams[0].get()>>>(xbuf.data(), n, 1);
     streams[0].sync();
 
-    // The pipeline. It begins on lane 0, which is where the reduce's when_all
-    // forks the other lanes from.
+    // The pipeline. It begins on lane 0: that is where the partials are
+    // allocated (lane 0 is the join target, so their free is ordered after the
+    // sum that reads them) and where the reduce's when_all forks the other lanes
+    // from.
     auto pipeline = ex::schedule(lanes[0]) | ex::let_value([&] {
-                      return start(x) //
-                           | transform(x, y, times2{}, mr) //
-                           | transform(y, x, plus1{}, mr) //
-                           | transform(x, y, times3{}, mr) //
-                           | reduce(y, partials.data(), result.data(), mr);
+                      return allocate_on<int>(N, mr) | ex::let_value([&](scoped_buffer<int>& partials) {
+                               return start(x) //
+                                    | transform(x, y, times2{}, mr) //
+                                    | transform(y, x, plus1{}, mr) //
+                                    | transform(x, y, times3{}, mr) //
+                                    | reduce(y, partials.data(), result.data(), mr);
+                             });
                     });
 
     const int expected = 3 * (2 * 1 + 1) * n; // 9 per element
@@ -283,7 +333,7 @@ int main(int argc, char** argv)
       {
         auto op = ex::connect(std::move(pipeline), no_op_receiver{});
         ex::start(op);
-      }
+      } // the operation state dies here: the partials' free is captured too
       // Every lane's tail must be joined back into the capturing stream before
       // the capture ends. The pipeline's own join covers the reduce; CUB's
       // scratch frees were enqueued on each lane after it.
