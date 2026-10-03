@@ -58,7 +58,7 @@ int main()
   _CCCL_ASSERT(v == 42, "ON_THROW(abort) must compile and pass the value through");
 
   // The function form with qualified policies.
-  const int w = on_error(exception_policies::terminate) << [] {
+  const int w = on_error(exception_policies::terminate)->*[] {
     return 5;
   };
   _CCCL_ASSERT(w == 5, "on_error(exception_policies::terminate) must compile");
