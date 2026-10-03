@@ -16,6 +16,7 @@
 
 #include <cuda/__functional/call_or.h>
 #include <cuda/memory_resource>
+#include <cuda/std/execution>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
@@ -317,6 +318,10 @@ TEST_HOST_DEVICE_FUNC void test()
 
 int main(int argc, char** argv)
 {
+  // get_memory_resource is a forwarding query: sender adaptors pass it on to the
+  // environments of their child operations.
+  static_assert(cuda::std::execution::forwarding_query(::cuda::mr::get_memory_resource_t{}));
+
   test();
 
   return 0;
