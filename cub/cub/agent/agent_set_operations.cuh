@@ -203,6 +203,65 @@ struct serial_set_intersection
   }
 };
 
+//! Emit A when A < B and B when B < A.
+struct serial_set_symmetric_difference
+{
+  // max_input_size <= 32
+  template <typename T, typename CompareOp, int ItemsPerThread>
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE int operator()(
+    const T* keys,
+    int keys1_beg,
+    int keys2_beg,
+    int keys1_count,
+    int keys2_count,
+    T (&output)[ItemsPerThread],
+    int (&indices)[ItemsPerThread],
+    CompareOp compare_op) const
+  {
+    unsigned active_mask = 0;
+
+    int a_begin     = keys1_beg;
+    int b_begin     = keys2_beg;
+    const int a_end = keys1_beg + keys1_count;
+    const int b_end = keys2_beg + keys2_count;
+    const int end   = a_end + b_end;
+
+    T a_key = keys[a_begin];
+    T b_key = keys[b_begin];
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < ItemsPerThread; ++i)
+    {
+      bool p_b = a_begin >= a_end;
+      bool p_a = !p_b && b_begin >= b_end;
+
+      if (!p_a && !p_b)
+      {
+        p_a = compare_op(a_key, b_key);
+        p_b = !p_a && compare_op(b_key, a_key);
+      }
+
+      output[i]  = p_a ? a_key : b_key;
+      indices[i] = p_a ? a_begin : b_begin;
+
+      if (a_begin + b_begin < end && p_a != p_b)
+      {
+        active_mask |= 1u << i;
+      }
+
+      if (!p_b)
+      {
+        a_key = keys[++a_begin];
+      }
+      if (!p_a)
+      {
+        b_key = keys[++b_begin];
+      }
+    }
+    return static_cast<int>(active_mask);
+  }
+};
+
 //! Emit A when A < B.
 struct serial_set_difference
 {
