@@ -80,6 +80,14 @@ struct get_memory_resource_t
                   "get_memory_resource_t query must return a cuda::mr::resource");
     return __env.query(get_memory_resource_t{});
   }
+
+  // A forwarding query: the memory resource describes the whole operation, so
+  // sender adaptors pass it on to the environments of their child operations,
+  // as they do for cuda::get_stream.
+  [[nodiscard]] _CCCL_API static constexpr auto query(::cuda::std::execution::forwarding_query_t) noexcept -> bool
+  {
+    return true;
+  }
 };
 
 _CCCL_GLOBAL_CONSTANT auto get_memory_resource = get_memory_resource_t{};

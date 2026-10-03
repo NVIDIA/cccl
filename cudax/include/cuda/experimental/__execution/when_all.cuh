@@ -315,30 +315,42 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     using __sndrs_t _CCCL_NODEBUG = ::cuda::std::__type_call<_CvFn, ::cuda::std::__tuple<_Ign0, _Ign1, _Sndrs...>>;
     using __state_t _CCCL_NODEBUG = when_all_t::__state_t<_Rcvr, _CvFn, ::cuda::std::__tuple<_Ign0, _Ign1, _Sndrs...>>;
 
+    // When there are no offsets, the when_all sender has no value
+    // completions. All child senders can be connected to receivers
+    // of the same type, saving template instantiations.
+    static constexpr bool __no_values = __same_as<decltype(__state_t::__completions_and_offsets.second), __nil>;
+
+    // The receiver for the _Jdx-th child. The offsets are used to determine
+    // which elements in the values tuple each receiver is responsible for setting.
+    template <size_t _Jdx>
+    using __sub_rcvr_t _CCCL_NODEBUG = __rcvr_t<__zip<__state_t>, __no_values ? 0 : _Jdx>;
+
+    // The operation states of the sub-operations, constructed in place. An
+    // aggregate `__tuple{connect(...)...}` would initialize [[no_unique_address]]
+    // members from prvalues; gcc refuses to elide that copy when the operation
+    // state has tail padding (gcc#98995) and then needs the move constructor,
+    // which operation states deliberately do not define.
+    using __sub_opstates_t _CCCL_NODEBUG =
+      __lazy_tuple<connect_result_t<::cuda::std::__copy_cvref_t<__sndrs_t, _Sndrs>, __sub_rcvr_t<_Idx>>...>;
+
     // This function object is used to connect all the sub-operations with
     // receivers, each of which knows which elements in the values tuple it
     // is responsible for setting.
     struct __connect_subs_fn
     {
       template <class... _CvSndrs>
-      _CCCL_HOST_DEVICE_API constexpr auto
-      operator()(__state_t& __state, ::cuda::std::__ignore_t, ::cuda::std::__ignore_t, _CvSndrs&&... __sndrs_) const
+      _CCCL_HOST_DEVICE_API constexpr void operator()(
+        __sub_opstates_t& __sub_ops,
+        __state_t& __state,
+        ::cuda::std::__ignore_t,
+        ::cuda::std::__ignore_t,
+        _CvSndrs&&... __sndrs_) const
       {
-        using __state_ref_t _CCCL_NODEBUG = __zip<__state_t>;
-        // When there are no offsets, the when_all sender has no value
-        // completions. All child senders can be connected to receivers
-        // of the same type, saving template instantiations.
-        [[maybe_unused]] constexpr bool __no_values =
-          __same_as<decltype(__state_t::__completions_and_offsets.second), __nil>;
-        // The offsets are used to determine which elements in the values
-        // tuple each receiver is responsible for setting.
-        return ::cuda::std::__tuple{execution::connect(
-          static_cast<_CvSndrs&&>(__sndrs_), __rcvr_t<__state_ref_t, __no_values ? 0 : _Idx>{__state})...};
+        (__sub_ops.template __emplace_from<_Idx>(
+           execution::connect, static_cast<_CvSndrs&&>(__sndrs_), __sub_rcvr_t<_Idx>{__state}),
+         ...);
       }
     };
-
-    // This is a tuple of operation states for the sub-operations.
-    using __sub_opstates_t _CCCL_NODEBUG = ::cuda::std::__apply_result_t<__connect_subs_fn, __sndrs_t, __state_t&>;
 
     __state_t __state_;
     __sub_opstates_t __sub_ops_;
@@ -347,8 +359,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     /// save the resulting operation states in __sub_ops_.
     _CCCL_HOST_DEVICE_API constexpr explicit __opstate_t(__sndrs_t&& __sndrs_, _Rcvr __rcvr)
         : __state_{static_cast<_Rcvr&&>(__rcvr), sizeof...(_Sndrs)}
-        , __sub_ops_{::cuda::std::__apply(__connect_subs_fn(), static_cast<__sndrs_t&&>(__sndrs_), __state_)}
-    {}
+        , __sub_ops_{}
+    {
+      ::cuda::std::__apply(__connect_subs_fn(), static_cast<__sndrs_t&&>(__sndrs_), __sub_ops_, __state_);
+    }
 
     _CCCL_IMMOVABLE(__opstate_t);
 
@@ -372,7 +386,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
       else
       {
         // Start all the sub-operations.
-        ::cuda::std::__apply(__start_all{}, __sub_ops_);
+        __sub_opstates_t::__apply(__start_all{}, __sub_ops_);
 
         // If there are no sub-operations, we're done.
         if constexpr (sizeof...(_Sndrs) == 0)
@@ -457,6 +471,12 @@ template <class... _Completions>
 
 _CCCL_DIAG_POP
 
+template <class _Tp>
+inline constexpr bool __is_completions_and_offsets = false;
+
+template <class _Completions, class _Offsets>
+inline constexpr bool __is_completions_and_offsets<::cuda::std::__pair<_Completions, _Offsets>> = true;
+
 // The sender for when_all
 template <class... _Sndrs>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
@@ -474,7 +494,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
   template <class _Self, class... _Env>
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
-    return __get_completions_and_offsets<_Self, _Env...>().first;
+    // __merge_completions returns a (completions, offsets) pair, or, when a child
+    // is a dependent sender queried without an environment (or has invalid
+    // completions), the error object itself; pass that through unchanged.
+    using __result_t _CCCL_NODEBUG = decltype(__get_completions_and_offsets<_Self, _Env...>());
+    if constexpr (__is_completions_and_offsets<__result_t>)
+    {
+      return __get_completions_and_offsets<_Self, _Env...>().first;
+    }
+    else
+    {
+      return __get_completions_and_offsets<_Self, _Env...>();
+    }
   }
 
   template <class _Rcvr>

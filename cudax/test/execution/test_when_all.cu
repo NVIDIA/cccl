@@ -258,4 +258,27 @@ C2H_TEST("when_all has the sends_stopped == true", "[when_all]")
   check_sends_stopped<true>(ex::when_all(ex::just(3), ex::just(0.14)));
   check_sends_stopped<true>(ex::when_all(ex::just(3), ex::just_error(-1), ex::just_stopped()));
 }
+
+constexpr struct test_query_t : ex::forwarding_query_t
+{
+  template <class Env>
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(const Env& env) const noexcept -> decltype(env.query(*this))
+  {
+    return env.query(*this);
+  }
+} test_query{};
+
+C2H_TEST("when_all works when a child is a dependent sender", "[when_all]")
+{
+  // read_env cannot know its completions without an environment, so the when_all
+  // is itself a dependent sender. Adaptors downstream of it (here `then`) query
+  // dependent_sender<...> with no environment; when_all must report "dependent"
+  // rather than fail to compile.
+  auto sndr = ex::when_all(ex::just(1), ex::read_env(test_query)) | ex::then([](int a, int b) {
+                return a + b;
+              });
+  static_assert(ex::dependent_sender<decltype(sndr)>);
+  auto [result] = ex::sync_wait(ex::write_env(std::move(sndr), ex::prop{test_query, 41})).value();
+  CHECK(result == 42);
+}
 } // namespace

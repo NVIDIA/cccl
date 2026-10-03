@@ -62,6 +62,7 @@ cudax_add_catch2_test(test_target execution ${cudax_target}
     execution/test_conditional.cu
     execution/test_continues_on.cu
     execution/test_just.cu
+    execution/test_lane_scheduler.cu
     execution/test_let_value.cu
     execution/test_on.cu
     execution/test_sequence.cu
