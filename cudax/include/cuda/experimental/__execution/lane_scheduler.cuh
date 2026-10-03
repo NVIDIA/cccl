@@ -45,9 +45,12 @@
 //!  * `sync_wait(sndr)`: the generic host completion, then `cudaStreamSynchronize`
 //!    on every lane the sender completes on.
 //!
-//! Events come from a small pool created once (timing disabled); an event is
-//! returned to the pool right after the wait is enqueued, since
-//! `cudaStreamWaitEvent` captures the event's state at call time.
+//! Each join is the usual non-blocking stream-to-stream dependency
+//! (`cuda::stream_ref::wait(stream_ref)`): a timing-disabled event created in the
+//! upstream stream's context, recorded there, waited on by the target, and
+//! destroyed right away -- `cudaStreamWaitEvent` captures the event's state at
+//! call time, and the runtime defers the release. No shared state, and correct
+//! when lanes live on different devices.
 //!
 //! The receiver's environment may carry a `get_lane_join_observer` query: a
 //! callable invoked as `observer(from_stream, to_stream)` once per event join
@@ -86,12 +89,10 @@
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
 
-#include <cuda_runtime_api.h>
-
-#include <mutex>
 #include <type_traits>
 #include <utility>
-#include <vector>
+
+#include <cuda_runtime_api.h>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -121,42 +122,6 @@ _CCCL_GLOBAL_CONSTANT get_lane_join_observer_t get_lane_join_observer{};
 
 namespace __lane
 {
-
-// ---------------------------------------------------------------- events ----
-struct event_pool
-{
-  static event_pool& instance()
-  {
-    static event_pool p;
-    return p;
-  }
-  cudaEvent_t get()
-  {
-    ::std::lock_guard<::std::mutex> g{mu_};
-    if (!free_.empty())
-    {
-      auto e = free_.back();
-      free_.pop_back();
-      return e;
-    }
-    cudaEvent_t e{};
-    if (auto st = cudaEventCreateWithFlags(&e, cudaEventDisableTiming); st != cudaSuccess)
-    {
-      throw ::cuda::cuda_error(st, "lane_scheduler: cudaEventCreateWithFlags failed");
-    }
-    return e;
-  }
-  void put(cudaEvent_t e)
-  {
-    ::std::lock_guard<::std::mutex> g{mu_};
-    free_.push_back(e);
-  }
-
-private:
-  ::std::mutex mu_;
-  ::std::vector<cudaEvent_t> free_;
-};
-
 // ------------------------------------------------------- stream set ----------
 struct stream_set
 {
@@ -179,29 +144,21 @@ struct stream_set
   }
 };
 
-// Record an event on every stream of `from` that is not `to`, and make `to`
-// wait on it. The lazy join. `env` is the receiver's environment; if it carries
-// a get_lane_join_observer, the observer is told about each event.
+// Make `to` wait on every stream of `from` that is not `to`. The lazy join.
+// `env` is the receiver's environment; if it carries a get_lane_join_observer,
+// the observer is told about each event.
 template <class Env>
 void join_into(const stream_set& from, cudaStream_t to, [[maybe_unused]] const Env& env)
 {
-  auto& pool = event_pool::instance();
   for (int i = 0; i < from.n; ++i)
   {
     if (from.s[i] == to)
     {
       continue;
     }
-    cudaEvent_t e = pool.get();
-    if (auto st = cudaEventRecord(e, from.s[i]); st != cudaSuccess)
-    {
-      throw ::cuda::cuda_error(st, "lane_scheduler: cudaEventRecord failed");
-    }
-    if (auto st = cudaStreamWaitEvent(to, e, 0); st != cudaSuccess)
-    {
-      throw ::cuda::cuda_error(st, "lane_scheduler: cudaStreamWaitEvent failed");
-    }
-    pool.put(e);
+    // Event created in from.s[i]'s context (timing disabled), recorded, waited
+    // on by `to`, destroyed on scope exit; throws cuda::cuda_error on failure.
+    ::cuda::stream_ref{to}.wait(::cuda::stream_ref{from.s[i]});
     if constexpr (__queryable_with<Env, get_lane_join_observer_t>)
     {
       get_lane_join_observer(env)(from.s[i], to);
@@ -265,8 +222,7 @@ struct scheduler
       return scheduler{s_};
     }
     template <class... Env>
-    [[nodiscard]] constexpr auto query(get_completion_domain_t<set_value_t>, const Env&...) const noexcept
-      -> domain;
+    [[nodiscard]] constexpr auto query(get_completion_domain_t<set_value_t>, const Env&...) const noexcept -> domain;
     [[nodiscard]] auto query(::cuda::get_stream_t) const noexcept -> ::cuda::stream_ref
     {
       return ::cuda::stream_ref{s_};
@@ -451,8 +407,7 @@ struct on_t
       return self_->sch_;
     }
     template <class... Env>
-    [[nodiscard]] constexpr auto query(get_completion_domain_t<set_value_t>, const Env&...) const noexcept
-      -> domain;
+    [[nodiscard]] constexpr auto query(get_completion_domain_t<set_value_t>, const Env&...) const noexcept -> domain;
     [[nodiscard]] auto query(::cuda::get_stream_t) const noexcept -> ::cuda::stream_ref
     {
       return ::cuda::stream_ref{self_->sch_.stream()};
@@ -592,7 +547,6 @@ inline constexpr auto on_t::attrs_t<Sndr>::query(get_completion_domain_t<set_val
 {
   return {};
 }
-
 } // namespace __lane
 
 //! The public names.
@@ -601,7 +555,6 @@ using lane_domain    = __lane::domain;
 
 template <class Sndr>
 inline constexpr int structured_binding_size<__lane::on_t::sndr_t<Sndr>> = 3;
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
