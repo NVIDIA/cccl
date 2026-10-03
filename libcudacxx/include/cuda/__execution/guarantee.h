@@ -82,7 +82,7 @@ template <class... _Guarantees>
   static_assert((::cuda::std::is_nothrow_copy_constructible_v<_Guarantees> && ...),
                 "Guarantees must be nothrow copy constructible");
 
-  ::cuda::std::execution::env<_Guarantees...> __env{__guarantees...};
+  const ::cuda::std::execution::env<_Guarantees...> __env{__guarantees...};
 
   return ::cuda::std::execution::prop{__get_guarantees_t{}, __env};
 }
