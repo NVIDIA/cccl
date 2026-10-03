@@ -15,7 +15,6 @@
 #include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/devices>
 #include <cuda/std/__memory/unique_ptr.h>
-#include <cuda/std/memory>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
@@ -75,6 +74,15 @@ C2H_CCCLRT_TEST("locality domains", "[device][locality_domain]")
     SUCCEED("Driver is too old for green context tests");
     return;
   }
+
+#  if _CCCL_CTK_AT_LEAST(13, 4)
+  // locality domains require CUDA 13.4 driver
+  if (test::cuda_driver_version() < 13040)
+  {
+    SUCCEED("Driver is too old for locality domain tests (requires CUDA 13.4 / R615 or later)");
+    return;
+  }
+#  endif // _CCCL_CTK_AT_LEAST(13, 4)
 
   SECTION("Returns at least one domain per device")
   {
