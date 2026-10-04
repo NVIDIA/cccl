@@ -58,4 +58,8 @@ class TempStorageLike(Protocol):
     sharing: str
 
 
-__all__ = ["TempStorageLike", "ThreadDataLike"]
+__all__ = [
+    "TempStorageLike",
+    "ThreadDataLike",
+    "_ReadableThreadDataLike",
+]
