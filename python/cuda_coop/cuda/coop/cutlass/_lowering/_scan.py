@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Translate shared Scan plans into CUB wrappers and CuTe calls.
+
+A request binds the algorithm, dtype, optional arguments, and scratch ABI. The
+renderer emits C++ source; materialization emits the matching CuTe
+foreign-function call and retains the request for bundle compilation. Block
+scratch uses deferred layout queries and allocation. Warp wrappers declare
+their own shared storage, with one slice per logical group.
+"""
+
 from __future__ import annotations
 
 import dataclasses
@@ -76,7 +85,47 @@ def _make_group_scan_plan(
     valid_items: Any = None,
     algorithm: Any = None,
 ) -> GroupLoweringPlan:
-    """Build the canonical shared-core plan for one CUTLASS scan."""
+    """Describe Scan semantics before choosing a CUB call and group layout.
+
+    Every explicit ``initial_value`` becomes a typed runtime reference in the
+    call description, including a Python literal. Its value is converted when
+    the call is emitted, not included in specialization identity. In contrast,
+    ``valid_items`` can be omitted, static, or runtime. Shared planning
+    supplies a typed C++ zero for partial exclusive sum when no initial value
+    is given.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        Symbolic block, physical warp, or logical warp to resolve.
+    launch : LaunchFacts
+        Exact launch dimensions used to check group participation.
+    dtype : object
+        Resolved CUTLASS scalar type used for input and output.
+    value_kind : ScanValueKind
+        Scalar or per-thread array form.
+    items_per_thread : int
+        Payload extent; scalar form has one item.
+    mode : str
+        Exclusive or inclusive scan.
+    op : str
+        Normalized built-in operator name.
+    initial_value : object, optional
+        Presence selects an explicit seed operand. Inclusive mode rejects it;
+        non-sum exclusive mode requires it.
+    aggregate : bool, optional
+        Whether the CUB call must produce a separate input aggregate.
+    valid_items : object, optional
+        Warp prefix count: omitted, static, or a runtime operand.
+    algorithm : object, optional
+        Block algorithm selector; ``None`` chooses raking for blocks.
+
+    Returns
+    -------
+    GroupLoweringPlan
+        Shared operation, participation, result, and storage contracts. The
+        caller must require support before constructing a provider request.
+    """
 
     mode = ScanMode(mode).value
     if group.kind == "block" and algorithm is None:
@@ -146,6 +195,19 @@ def _validate_scan_request_plan(
     value_type: type,
     external_scratch: bool,
 ) -> GroupScanSemantics:
+    """Check that a request can use this renderer's CUB calling conventions.
+
+    Require a supported ``plan`` and reconcile its operator, dtype, method,
+    array extent, group shape, scratch ownership, and aggregate result. ``op``
+    and ``value_type`` must agree with the plan. ``external_scratch`` selects
+    address operands supplied by CuTe and is restricted to blocks.
+
+    Return the plan's ``GroupScanSemantics``. Unsupported descriptor kinds
+    raise ``TypeError`` or ``NotImplementedError``; conflicting contracts
+    raise ``ValueError``. The only embedded initial value accepted here is the
+    typed zero that shared planning inserts for partial exclusive sum.
+    """
+
     plan.require_supported()
     if plan.target not in {
         GroupLoweringTarget.CUB_BLOCK,
@@ -287,6 +349,20 @@ def _validate_scan_request_plan(
 
 @dataclasses.dataclass(frozen=True, eq=False)
 class _CubScanRequest:
+    """Bind a supported Scan plan to one generated CUB wrapper.
+
+    ``op`` and ``value_type`` identify the built-in operator and scalar ABI.
+    ``external_scratch`` distinguishes a wrapper receiving scratch operands
+    from one declaring scratch internally, so they cannot share an artifact
+    identity. It describes the wrapper boundary, not user ownership: ordinary
+    block calls use external scratch even when the compiler owns the
+    allocation.
+
+    The layout-query key names the instantiated CUB class, not the full call.
+    Calls that use the same class share one query even when their mode, item
+    count, seed, aggregate, or barrier settings differ.
+    """
+
     plan: GroupLoweringPlan
     op: str
     value_type: type
@@ -447,6 +523,13 @@ def _render_cub_template_argument(
 
 
 def _storage_reuse_barrier_line(plan: GroupLoweringPlan) -> str:
+    """Render the plan's block barrier or exact logical-warp mask.
+
+    Warp masks use linear thread rank in the physical warp. Each logical group
+    synchronizes only its own lanes, matching its separate scratch slice. A
+    plan with no reuse barrier returns an empty source line.
+    """
+
     synchronization = plan.synchronization
     if synchronization is None:
         raise ValueError("Scan plan requires a synchronization contract")
@@ -468,6 +551,12 @@ def _storage_reuse_barrier_line(plan: GroupLoweringPlan) -> str:
 
 
 def _warp_instances(plan: GroupLoweringPlan) -> tuple[int, int]:
+    """Return the scratch-instance count and width of each logical warp.
+
+    The enclosing block must divide into complete groups. The wrapper uses
+    linear thread rank divided by this width to select its scratch instance.
+    """
+
     participation = plan.participation
     if participation is None:
         raise ValueError("WarpScan plan requires a participation contract")
@@ -486,6 +575,20 @@ def _warp_instances(plan: GroupLoweringPlan) -> tuple[int, int]:
 
 
 def _render_cub_scan(request: _CubScanRequest) -> list[str]:
+    """Emit a CUB wrapper with the same operand order as materialization.
+
+    Array inputs arrive as scalar arguments and use separate C++ input/output
+    arrays; an output pointer carries the result back. Scalar scans return one
+    value directly. An optional aggregate uses its own output pointer in both
+    forms, so it does not replace the scan result.
+
+    Static prefix counts and canonical typed zero appear in source. Runtime
+    counts and explicit initial values are operands. The wrapper traps if a
+    runtime count is outside 1 through the group size, or if external block
+    scratch is too small or misaligned. Internal warp scratch has one slice
+    per group. The plan controls the trailing storage-reuse barrier.
+    """
+
     operation = _validate_scan_request_plan(
         request.plan,
         op=request.op,
@@ -666,6 +769,12 @@ def _render_cub_scan(request: _CubScanRequest) -> list[str]:
 def _cub_scan_scratch_layout_probe(
     request: _CubScanRequest,
 ) -> _provider_types.ScratchLayoutProbe | None:
+    """Query layout only when CuTe must allocate the wrapper's scratch.
+
+    Internally allocated storage has its layout resolved by C++ directly and
+    needs no query result for the deferred CuTe allocation planner.
+    """
+
     if not request.external_scratch:
         return None
     return _provider_rendering.make_scratch_layout_probe(
@@ -702,6 +811,15 @@ _resolve_type = _provider_types.make_provider_type_resolver(
 
 
 def _typed_value(value, value_type, *, name="value", initial=False):
+    """Convert an input or initial value to the resolved CuTe scalar type.
+
+    ``value`` is converted to ``value_type``; ``name`` identifies errors.
+    Python literals and NumPy values receive range checks. With
+    ``initial=True``, NumPy and CuTe scalars must already have ``value_type``
+    and Python or NumPy floats must be finite. Tracing cannot see a runtime
+    CuTe value, so an initial CuTe scalar is checked only for dtype.
+    """
+
     if isinstance(value, np.generic):
         if (
             initial
@@ -731,6 +849,13 @@ def _typed_value(value, value_type, *, name="value", initial=False):
 
 
 def _validate_aggregate_output(output, *, value_type):
+    """Check the optional aggregate payload before emitting a provider call.
+
+    ``output`` must be one-item ThreadData with either an unspecified dtype or
+    ``value_type``. Its existing item value is irrelevant: materialization
+    writes the aggregate and resolved dtype after the call.
+    """
+
     if output is None:
         return
     if not isinstance(output, ThreadData):
@@ -752,6 +877,14 @@ def _validate_aggregate_output(output, *, value_type):
 
 
 def _with_block_storage(plan, descriptor):
+    """Apply a block descriptor's storage and barrier policy to the plan.
+
+    ``descriptor=None`` leaves ownership with the compiler and enables a block
+    reuse barrier. An explicit descriptor supplies capacity, alignment,
+    sharing, and synchronization settings. Both paths require an exact C++
+    layout for the deferred allocation outside the provider wrapper.
+    """
+
     storage, synchronization = plan.temp_storage, plan.synchronization
     if (
         plan.target is not GroupLoweringTarget.CUB_BLOCK
@@ -795,6 +928,45 @@ def _materialize_scan(
     valid_items,
     temp_storage,
 ):
+    """Emit the provider call and reconstruct its scalar or payload result.
+
+    Parameters
+    ----------
+    request : _CubScanRequest
+        Validated plan and the ABI that the C++ renderer must match.
+    value : object
+        Original input. Array input supplies result dtype and alignment.
+    values : sequence
+        Input items flattened into scalar call operands.
+    initial_value : object or None
+        Explicit seed, converted only when the plan has a seed reference.
+    aggregate_output : ThreadData or None
+        Optional one-item destination, written separately from the result.
+    valid_items : object or None
+        Runtime count operand; static counts stay in generated source.
+    temp_storage : TempStorage or None
+        Block descriptor, or ``None`` for a fresh compiler-owned allocation
+        identity with automatic reuse synchronization.
+
+    Returns
+    -------
+    CuTe numeric scalar or ThreadData
+        The scan result. Array form returns fresh writable storage and leaves
+        its input intact; scalar form wraps the foreign call's return value.
+
+    Notes
+    -----
+    The ABI orders input items, explicit seed, runtime count, external scratch
+    (shared address, byte count, auto-sync flag), aggregate pointer, then
+    array-result pointer. Scalar form has no result pointer. Temporary tensors
+    receive pointer outputs before they are copied into the public payloads.
+
+    The provider request and its deferred scratch use are recorded together.
+    If lowering fails, restore the session's request and scratch records. This
+    restores bookkeeping; it does not undo emitted MLIR or payload updates
+    already made.
+    """
+
     value_type = request.value_type
     _validate_aggregate_output(aggregate_output, value_type=value_type)
     initial_args = []
@@ -907,8 +1079,19 @@ def provider_scan(
     valid_items: Any = None,
     temp_storage: Any = None,
 ) -> Any:
-    """Materialize one current-plan CUB Scan with exact scratch and launch
-    facts.
+    """Plan one Scan input and emit its CUB call into a CuTe trace.
+
+    Resolve the homogeneous scalar dtype and preserve scalar versus array
+    form. Validate the built-in operator, then use ``group`` and ``launch`` to
+    obtain the shared plan. All block calls use deferred external scratch;
+    warp calls use storage declared inside the wrapper. ``temp_storage`` can
+    override only the block allocation policy.
+
+    ``mode``, ``op``, and ``algorithm`` select the scan variant. An explicit
+    ``initial_value`` becomes a typed call operand. ``valid_items`` selects a
+    static or runtime warp prefix, and ``aggregate_output`` requests a
+    separate input aggregate. Return a CuTe scalar or new ThreadData for
+    ``value``'s form.
     """
     if not isinstance(group, ThreadGroup):
         raise TypeError("cuda.coop.cutlass.scan group must be a ThreadGroup")

@@ -51,10 +51,13 @@ _ALGORITHMS = frozenset(
 
 
 def _classify_valid_items(value, *, primitive="reduce"):
-    """Separate omitted, static, and runtime prefix counts.
+    """Separate omitted, static, and runtime counts for Reduce and Scan.
 
-    Reject booleans before integer classification. The shared plan checks
-    static bounds and whether the operand form can use a valid prefix.
+    Python and NumPy integral values bind a static count; CuTe integer values
+    supply runtime operands. Booleans are rejected. ``primitive`` selects the
+    diagnostic name. Group planning checks static bounds, and generated
+    wrappers check runtime bounds; classification alone does not establish a
+    valid count.
     """
 
     if value is None:

@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check Scan plans, typed seeds, aggregate outputs, and emission rollback.
+
+Block plans use deferred scratch with an exact CUB layout. Warp plans have
+their own prefix and synchronization requirements. These tests inspect
+those contracts before compilation. They also cover scalar conversion and
+the request and scratch records restored after a failed call through
+CuTe's foreign-function interface (FFI).
+"""
+
 from dataclasses import replace
 
 import numpy as np
@@ -77,6 +86,14 @@ def test_block_contracts(algorithm, array, mode):
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
 @pytest.mark.parametrize("mode", ("inclusive", "exclusive"))
 def test_warp_prefix_contracts(width, mode):
+    """Check logical-warp prefix bounds and the typed zero for partial sums.
+
+    Every group accepts a prefix count from one through its width. CUB's
+    partial exclusive scan needs an explicit seed. Shared planning embeds a
+    typed C++ zero, which needs no runtime operand. Warp requests also skip
+    deferred block-layout probes.
+    """
+
     plan = _plan(
         this_warp().group_by(width),
         mode=mode,
@@ -112,6 +129,13 @@ def test_request_dtype_profile(dtype, op):
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
 @pytest.mark.parametrize("auto_sync", (True, False))
 def test_descriptor_contract(sharing, auto_sync):
+    """Separate caller storage policy from the native CUB scratch layout.
+
+    The descriptor sets capacity, alignment, sharing, and synchronization.
+    Different options can change the wrapper symbol while retaining the same
+    scratch requirement key, because the CUB storage type is unchanged.
+    """
+
     descriptor = TempStorage(
         8192, alignment=128, sharing=sharing, auto_sync=auto_sync
     )
@@ -145,6 +169,13 @@ def test_prefix_bounds(valid):
 
 
 def test_request_plan_mismatch():
+    """Reject inconsistent request or plan data before rendering Scan.
+
+    The request dtype and operator must match the plan. The plan's CUB method
+    must also match its own inclusive or exclusive mode. Any mismatch fails
+    before a wrapper is rendered for a different operation.
+    """
+
     plan = _plan()
     with pytest.raises(ValueError, match="dtype"):
         _scan._CubScanRequest(plan, "sum", cutlass.Uint32)
@@ -203,6 +234,13 @@ def test_numpy_payload_dtype_mismatch():
 
 @pytest.mark.parametrize("block", (False, True))
 def test_failed_ffi_rolls_back(block, monkeypatch):
+    """Restore request and scratch records after a failed foreign call.
+
+    Both routes register a provider request; only blocks record a deferred
+    scratch event. When the CuTe foreign-function (FFI) call fails, the spies
+    check that the saved request and scratch snapshot is restored.
+    """
+
     snapshot = object()
     registered, restored, events = [], [], []
     monkeypatch.setattr(

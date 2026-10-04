@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check Scan values, types, aggregates, and which lanes may use results.
+
+NumPy prefix folds provide an independent oracle with the input dtype.
+Payload cases also check that Scan preserves its input. Partial warp scans
+consume primary results only inside their valid prefix, while aggregates
+remain available to all group members and exclude the exclusive seed.
+"""
+
 import importlib.util
 import os
 import re
@@ -63,6 +71,12 @@ _SEEDS = {
 
 
 def _prefix(values, *, inclusive, operation="sum", seed=0):
+    """Build the host prefix oracle without widening the accumulator dtype.
+
+    Inclusive mode folds the input directly. Exclusive mode starts with the
+    seed and omits the final input, giving one result per original element.
+    """
+
     if inclusive:
         return _UFUNCS[operation].accumulate(values, dtype=values.dtype)
     initial = np.array([seed], dtype=values.dtype)
@@ -77,6 +91,13 @@ def _prefix(values, *, inclusive, operation="sum", seed=0):
     "items_per_thread", (0, 1, 4), ids=("scalar", "one-item", "payload")
 )
 def test_spellings_types(api, dtype, items_per_thread):
+    """Compare every public Scan spelling while preserving the original input.
+
+    The same scalar or payload passes through all five entry points. Results
+    must retain scalar type or payload extent and minimum alignment. Copying
+    the input after the calls checks that none of them modifies it.
+    """
+
     value_type = cutlass_dtype(dtype)
     extent = max(items_per_thread, 1)
     size = _THREADS * extent
@@ -162,6 +183,12 @@ def test_spellings_types(api, dtype, items_per_thread):
 @pytest.mark.parametrize("dtype", NUMPY_DTYPES)
 @pytest.mark.parametrize("runtime", (False, True), ids=("literal", "typed"))
 def test_initial_type(api, dtype, runtime):
+    """Use an exclusive seed as a Python literal or typed runtime operand.
+
+    Each input dtype must produce its own scalar result type. Comparing both
+    paths with the same prefix oracle exposes seed conversion differences.
+    """
+
     value_type = cutlass_dtype(dtype)
 
     @cute.kernel
@@ -208,6 +235,13 @@ def test_initial_type(api, dtype, runtime):
     "numpy_seed", (False, True), ids=("cute-seed", "numpy-seed")
 )
 def test_numpy_input(api, dtype, items_per_thread, numpy_seed):
+    """Convert NumPy scalar values and payload items into typed Scan operands.
+
+    The seed comes either from NumPy or the matching CuTe scalar constructor.
+    Scanning ones makes every expected position explicit, so both conversion
+    paths must produce the same sequence starting at seven.
+    """
+
     value_type = cutlass_dtype(dtype)
     size = _THREADS * max(items_per_thread, 1)
 
@@ -257,6 +291,13 @@ def test_numpy_input(api, dtype, items_per_thread, numpy_seed):
     "inclusive", (False, True), ids=("exclusive", "inclusive")
 )
 def test_builtins(api, operation, inclusive):
+    """Fold two items per thread in blocked order for every built-in operator.
+
+    Exclusive cases use an operator-specific runtime seed; inclusive cases
+    start from the input. Products use positive and negative ones so the test
+    can check ordering and seed behavior without large intermediate values.
+    """
+
     seed = _SEEDS[operation]
     size = 2 * _THREADS
 
@@ -372,6 +413,13 @@ def test_block_algorithm(api, algorithm, items_per_thread):
     ),
 )
 def test_warp_forms(api, width):
+    """Check that each Scan spelling restarts at its physical or logical warp.
+
+    The host splits the input into independent rows of the selected width.
+    Comparing all five forms with those row prefixes catches results carried
+    across a group boundary.
+    """
+
     group_width = width or 32
     functions = tuple(getattr(api, name) for name in _FORMS)
 
@@ -415,6 +463,13 @@ def test_warp_forms(api, width):
 @pytest.mark.parametrize("form", _FORMS)
 @pytest.mark.parametrize("runtime", (False, True), ids=("static", "runtime"))
 def test_prefix_aggregate(width, form, runtime):
+    """Check valid prefixes and the aggregate available to all members.
+
+    Only lanes below the prefix count write their primary result. All members
+    record the aggregate, which folds valid inputs without the exclusive seed.
+    Static and runtime counts must preserve these two different output rules.
+    """
+
     count = max(1, width - 3)
     function = getattr(cutlass_coop, form)
     seeded = form in {"scan", "exclusive_scan"}
@@ -495,6 +550,13 @@ def test_prefix_aggregate(width, form, runtime):
 
 @pytest.mark.parametrize("operation", tuple(_UFUNCS))
 def test_block_aggregate(operation):
+    """Keep the exclusive seed out of the block aggregate for every operator.
+
+    Every member records its seeded prefix and the block-wide input fold.
+    The host computes the aggregate from the input alone. It uses the seed
+    only when building the expected exclusive prefixes.
+    """
+
     seed = _SEEDS[operation]
 
     @cute.kernel
@@ -555,6 +617,15 @@ def test_block_aggregate(operation):
 
 @pytest.mark.parametrize("value", (-1, 0, 9, (1 << 32) + 1))
 def test_bad_prefix(tmp_path, value):
+    """Check runtime prefix traps in a separate CUDA process for each case.
+
+    A device trap can leave its context unusable. The child confirms that it
+    imports the same package source as the parent, then launches with an Int64
+    count and reports a CUDA trap status. A value above 32 bits would look
+    valid if truncated, so it checks that validation sees the full count. An
+    unrelated child-process failure is not enough to satisfy the test.
+    """
+
     path = tmp_path / "invalid_prefix.py"
     path.write_text(f"""import numpy as np
 import cutlass
@@ -607,6 +678,13 @@ raise AssertionError("invalid Scan prefix did not trap")
 
 @pytest.mark.parametrize("ssa", (False, True), ids=("rmem", "tensor-ssa"))
 def test_register_aggregate(ssa):
+    """Check Scan results, aggregates, and preservation of register inputs.
+
+    Both a register tensor and the TensorSSA value loaded from it use the
+    qualified API. Separate outputs check the seeded prefix, the unseeded
+    aggregate at every thread, and the original register contents after Scan.
+    """
+
     size = 2 * _THREADS
 
     @cute.kernel
@@ -675,6 +753,14 @@ def test_register_aggregate(ssa):
 
 @pytest.mark.parametrize("warp", (False, True), ids=("block", "logical-warp"))
 def test_final_cubin(tmp_path, warp):
+    """Check Scan inlining and the absence of block barriers in warp kernels.
+
+    After checking the prefix values, inspect the linked cubin. A provider
+    symbol or CALL instruction in the machine code means the CUB wrapper was
+    not inlined. The logical-warp path must contain no block barrier (BAR).
+    Resource reports are saved for inspection but have no assertions here.
+    """
+
     cuobjdump = shutil.which("cuobjdump")
     if cuobjdump is None:
         pytest.skip(
@@ -738,6 +824,13 @@ def test_example(api, items_per_thread):
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("algorithm", ("raking", "raking_memoize"))
 def test_partial_block(api, algorithm):
+    """Scan a complete block that ends in a partial physical warp.
+
+    The raking algorithms support all 48 threads of this block. This differs
+    from the warp_scans and logical-warp routes, whose launch checks require
+    complete physical warps.
+    """
+
     @cute.kernel
     def kernel(source: cute.Pointer, observed: cute.Pointer):
         x, y, z = cute.arch.thread_idx()

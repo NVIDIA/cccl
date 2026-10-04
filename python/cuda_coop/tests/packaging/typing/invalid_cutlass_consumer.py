@@ -7,7 +7,7 @@
 The runner compares each marked line and error code with mypy output. These
 calls are static inputs, not kernels to execute. They cover query levels and
 dtypes, synchronization, Load/Store groups and controls, payload forms, and
-reduction controls.
+Reduce and Scan controls.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ cutlass_coop.this_grid().sync_aligned()  # expected-error: [misc]
 
 
 def callback(left: Int32, right: Int32) -> Int32:
-    """Supply a typed callback that CUTLASS Reduce must still reject."""
+    """Supply a typed callback that CUTLASS Reduce and Scan must reject."""
 
     del right
     return left
@@ -159,7 +159,7 @@ common.scan(  # expected-error: [call-overload]
     aggregate_output=cutlass_coop.ThreadData(items_per_thread=1, dtype=Int32),
 )
 
-# Discard results so an assignment cannot constrain seed inference.
+# Discard results so an assignment cannot constrain the initial-value type.
 cutlass_coop.exclusive_scan(  # expected-error: [misc]
     block, scalar, initial_value=Float32(0)
 )

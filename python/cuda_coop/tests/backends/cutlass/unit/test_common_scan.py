@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check common Scan validation and selector normalization before dispatch.
+
+A marker spy returns an identity sentinel in place of a compiler result.
+Small payload and storage objects satisfy the common structural protocols.
+The tests distinguish accepted controls from errors that the common API
+must report before delegating to a backend.
+"""
+
 from enum import Enum
 from importlib import import_module
 from types import SimpleNamespace
@@ -43,6 +51,14 @@ class _StringSelector(str, Enum):
 
 
 def test_common_scan_validates_payload_and_option_matrix(monkeypatch):
+    """Normalize supported options and return the delegated Scan result.
+
+    The spy records canonical operator and algorithm names. Accepted calls
+    cover block payloads, warp scalars, and block storage. Group, payload, and
+    seed checks run before dispatch; the final call count confirms that
+    rejected inputs never reach the marker.
+    """
+
     dispatch = import_module("cuda.coop._core.api._dispatch")
     api = import_module("cuda.coop._core.api.scan")
     delegated = object()

@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile Scan types and controls without executing the generated kernels.
+
+Typed null pointers and an explicit SM80 target exercise specialization and
+provider compilation. Unconditional stores and use of results outside a
+valid prefix are compile inputs only. Runtime tests separately check which
+lanes may consume a result and whether its value is correct.
+"""
+
 import numpy as np
 import pytest
 
@@ -60,6 +68,13 @@ def test_block_forms(api, algorithm, array):
 
 @pytest.mark.parametrize("dtype", tuple(ALL_PROVIDER_TYPES))
 def test_typed_zero_partial(dtype):
+    """Propagate types from an inferred zero seed and a partial aggregate.
+
+    Each type uses a partial logical-warp ``exclusive_sum``. Its result feeds
+    ThreadData and a block ``sum``. The initially untyped aggregate also
+    acquires the input dtype, checking type propagation across both outputs.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         aggregate = cutlass_coop.ThreadData(items_per_thread, alignment=64)
@@ -89,6 +104,12 @@ def test_typed_zero_partial(dtype):
     "dtype", (cutlass.Int32, cutlass.Int64, cutlass.Uint32, cutlass.Uint64)
 )
 def test_dynamic_prefix(dtype):
+    """Accept runtime prefix counts in signed and unsigned wide integer types.
+
+    Both 32- and 64-bit operands must compile for the logical-warp path. The
+    runtime trap tests separately check values outside the valid range.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer, count: dtype):
         result = cutlass_coop.exclusive_sum(
@@ -238,6 +259,13 @@ def test_invalid_controls(case, expected):
     "api", (coop, cutlass_coop), ids=("common", "qualified")
 )
 def test_register_payload(ssa, api):
+    """Accept CuTe register inputs only through the qualified Scan API.
+
+    Both a register tensor and the TensorSSA value loaded from it produce an
+    indexed result. The common API requires a scalar or fixed-size ThreadData
+    input, so it must reject these backend-specific representations.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer):
         fragment = cute.make_rmem_tensor((2,), cutlass.Int32)

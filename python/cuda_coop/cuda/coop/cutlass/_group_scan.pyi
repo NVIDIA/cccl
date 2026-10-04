@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe CUTLASS Scan result shapes and compatible initial-value types.
+
+Block payloads return writable ThreadData; warp calls return scalars. Paired
+NumPy/CUTLASS overloads keep typed initial values at the input dtype. The
+generic keyword TypedDicts used with ``Unpack`` also keep aggregate outputs
+at that dtype. Register-tensor overloads leave the element type to compiler
+validation. Callable annotations admit operator aliases; the compiler still
+accepts only recognized built-in identities, not arbitrary callbacks.
+"""
+
 from collections.abc import Callable
 from typing import Any, Generic, Literal, Protocol, TypeAlias, overload
 

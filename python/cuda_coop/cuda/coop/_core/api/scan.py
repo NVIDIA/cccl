@@ -2,13 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Declare common Scan calls for an activated compiler backend.
+"""Provide common Scan functions and validate calls during backend tracing.
 
-The decorators register each public spelling and its supported group kinds.
-A backend recognizes these calls while compiling a kernel and supplies the
-implementation. Direct Python calls raise the compiler-context diagnostic.
-The function docstrings define input order, result ownership, and controls
-shared by the supported backends.
+Numba-CUDA-MLIR recognizes the registered function objects and does not run
+these bodies. A tracing compiler such as CuTe runs them in Python. Common
+validation then rejects inputs that only a backend-specific API accepts, such
+as register tensors or ``operator.add``. Each function calls the backend
+function with the same name and passes only the keywords that function
+accepts.
 """
 
 from __future__ import annotations
@@ -42,6 +43,16 @@ _WARP_GROUP_KINDS = frozenset({"warp", "threads_within_warp"})
 
 
 def _common_scan_operator(operation: str, value: Any) -> Any:
+    """Map a built-in operator string to its canonical name while tracing.
+
+    Accept spellings such as ``"+"``, ``"add"``, and ``"maximum"``. ``None``
+    keeps the default sum. Without an active backend, return ``value``
+    unchanged; dispatch then reports the missing compiler context. Reject
+    enums and non-string operators such as ``operator.add`` or a custom
+    function. Use a backend-specific API for the non-string operators it
+    supports. ``operation`` names the public function in diagnostics.
+    """
+
     if _backend_module_name() is None or value is None:
         return value
     if not isinstance(value, str) or isinstance(value, Enum):
@@ -64,6 +75,14 @@ def _validate_common_scan_value(
     value: object,
     scan_op: Any,
 ) -> str:
+    """Check the common input form and return its canonical dtype name.
+
+    Readable per-thread payloads are allowed here; group-specific checks later
+    restrict warp inputs to scalars. ``scan_op`` adds the integer-only rule
+    for bitwise operators. ``operation`` and ``value`` identify the call and
+    input.
+    """
+
     dtype_name = _validate_common_numeric_value(
         operation,
         "value",
@@ -91,6 +110,17 @@ def _validate_common_scan_options(
     algorithm: Any,
     temp_storage: Any,
 ) -> None:
+    """Check common Scan option combinations before backend dispatch.
+
+    Return at once when no backend is active. Otherwise check the group kind,
+    forbid ``initial_value`` for inclusive scans, and require it for exclusive
+    scans other than sum. A supplied initial value must be a numeric scalar.
+    Warp groups accept only scalar inputs and reject ``algorithm`` and
+    ``temp_storage``; block groups validate any ``temp_storage`` descriptor.
+    The backend later checks that the initial value matches the input dtype
+    and checks launch participation.
+    """
+
     if _backend_module_name() is None:
         return
     _validate_common_operation_group(operation, group)
@@ -143,6 +173,14 @@ def _scan_call(
     algorithm: Any,
     temp_storage: Any,
 ) -> Any:
+    """Validate one common call and dispatch it under its own public name.
+
+    The five entry points share validation but accept different keywords. The
+    sum forms omit ``scan_op``; only ``scan`` and ``exclusive_scan`` pass
+    ``initial_value``; only ``scan`` passes ``mode``. The dispatch marker
+    records the common API context while the backend runs the operation.
+    """
+
     scan_op = _common_scan_operator(operation, scan_op)
     if _backend_module_name() is not None:
         _validate_common_scan_value(operation, value, scan_op)

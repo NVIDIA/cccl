@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Convert integer literals to a floating-point payload dtype while tracing.
+
+A partial Load fills its 13-item tail with the literal 0. ``exclusive_scan``
+then starts from the literal 2. Quarter-step inputs show that Float32 and
+Float64 results keep their fractions through Load, Scan, and Store.
+"""
+
 import numpy as np
 import pytest
 

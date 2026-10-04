@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Exercise Scan scratch reuse between operations and across runtime loops.
+
+Block cases mix Load, Scan, and Store with implicit or explicit storage.
+Warp cases keep complete selected groups active while their siblings may
+skip the loop. Distinct input tiles and iteration-dependent values expose
+incorrect reuse or group indexing in the numerical results.
+"""
+
 import numpy as np
 import pytest
 
@@ -50,6 +58,15 @@ _SETUP_NAMES = (
     "sharing,capacity,auto_sync,alignment", _SETUPS, ids=_SETUP_NAMES
 )
 def test_mixed_loop(api, sharing, capacity, auto_sync, alignment):
+    """Reuse Load, Scan, and Store scratch for eight independent tiles.
+
+    Manual mode places a reuse barrier after each operation. Each call site
+    has its own slice with ``sharing="exclusive"``, but reuses it on the next
+    iteration, so a barrier is still needed. A separate output preserves the
+    original loaded payload while the primary output checks the seeded scan
+    for every tile.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,
@@ -152,6 +169,14 @@ def test_mixed_loop(api, sharing, capacity, auto_sync, alignment):
     "divergent", (False, True), ids=("all-groups", "selected-group")
 )
 def test_warp_loop(api, width, divergent):
+    """Repeat Scan while complete sibling groups may stay inactive.
+
+    Widths one and eight select the third subgroup within each physical warp.
+    Width 32 selects the second physical warp. Each synchronization must stay
+    inside its active group. The oracle includes eight changing inputs, while
+    skipped groups retain their sentinel values.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer, observed: cute.Pointer, iterations: cutlass.Int32
