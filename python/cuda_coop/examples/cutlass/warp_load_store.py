@@ -19,14 +19,23 @@ _DESTINATION_OFFSET = 5
 
 
 def _check(result):
+    """Raise on Driver errors and unwrap a single returned handle or value."""
+
     if int(result[0]):
         raise RuntimeError(f"CUDA Driver call failed: {result[0]}")
     return result[1] if len(result) == 2 else result[1:]
 
 
 def run_example(api="common", items_per_thread=4):
-    """Run both independent warp tiles and verify their prefixes and
-    defaults.
+    """Check two warp tiles with different valid prefixes in one block.
+
+    Each warp loads a different count, then stores its entire tile. The CPU
+    comparison therefore checks copied values, fill values and each warp's
+    automatic tile origin. Sentinels outside the two stored tiles must remain
+    untouched. ``items_per_thread`` sets each thread's payload size.
+
+    ``api="common"`` uses ``cuda.coop``; ``api="qualified"`` uses
+    ``cuda.coop.cutlass``. Return the verified destination array.
     """
 
     warp_tile = 32 * items_per_thread

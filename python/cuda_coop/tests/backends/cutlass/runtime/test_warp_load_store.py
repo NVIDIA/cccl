@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check independent physical-warp tiles, layouts, and synchronization.
+
+Two warps in a three-dimensional block use different counts, offsets, and
+defaults. Plain CuTe accesses observe Load and supply Store independently.
+Other cases exercise scratch reuse across runtime iterations, whole-warp
+divergence, and the instructions in the final linked kernel.
+"""
+
 import importlib.util
 import re
 import shutil
@@ -38,6 +46,12 @@ _BLOCK_TILE = _THREADS * _ITEMS
 
 
 def _index(algorithm, lane, item):
+    """Return an item's memory index relative to its warp's tile origin.
+
+    Striped operations interleave lanes; other algorithms expose blocked
+    items, including transpose after its internal redistribution.
+    """
+
     return (
         lane + item * _WIDTH if algorithm == "striped" else lane * _ITEMS + item
     )
@@ -53,6 +67,13 @@ def _index(algorithm, lane, item):
 def test_group_local_load_counts_offsets_and_defaults(
     api, algorithm, base_valid
 ):
+    """Observe Load with different uniform controls in each physical warp.
+
+    A warp's count, offset, and default differ from its neighbor's values but
+    remain uniform across its own lanes. Plain CuTe output preserves each
+    thread's payload, so the host can check its layout without using Store.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,
@@ -117,6 +138,13 @@ def test_group_local_load_counts_offsets_and_defaults(
     ids=("zero", "partial", "full-first-warp"),
 )
 def test_group_local_store_counts_and_offsets(api, algorithm, base_valid):
+    """Check Store with independently filled payloads and per-warp bounds.
+
+    Plain CuTe reads fill the payloads. Host-side indexing predicts the stored
+    positions for each warp, while sentinels expose writes into tile gaps or
+    past the selected counts.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,
@@ -178,6 +206,13 @@ def test_group_local_store_counts_and_offsets(api, algorithm, base_valid):
 def test_warp_layout_for_every_dtype(
     api, dtype, operation, algorithm, items_per_thread
 ):
+    """Check Load and Store separately for each supported scalar type.
+
+    Each kernel uses only one collective direction. Plain CuTe supplies or
+    observes the other side, so matching errors in Load and Store cannot hide
+    an incorrect payload layout or scalar conversion.
+    """
+
     value_type = cutlass_dtype(dtype)
 
     @cute.kernel
@@ -234,6 +269,13 @@ def test_warp_layout_for_every_dtype(
 def test_partial_transpose_loads_each_warps_valid_items_without_default(
     api, static_count
 ):
+    """Observe only defined entries after a partial transpose load.
+
+    No default initializes the invalid tail. The kernel therefore writes only
+    items inside its warp's count, leaving sentinels elsewhere. Runtime counts
+    also differ between warps to check that one warp's bound stays local.
+    """
+
     valid = _WARP_TILE - 19
 
     @cute.kernel
@@ -298,6 +340,16 @@ def test_partial_transpose_loads_each_warps_valid_items_without_default(
     "divergent", (False, True), ids=("all-warps", "second-warp-only")
 )
 def test_transpose_runtime_loop_and_whole_warp_divergence(api, divergent):
+    """Reuse transpose scratch while a neighboring warp may skip every call.
+
+    A reuse barrier prevents later calls from overwriting scratch that lanes
+    still read. It must cover only the warp; a block barrier would require the
+    skipped warp to participate. The branch selects whole warps, so all lanes
+    in a participating warp take the same path. Eight runtime iterations add
+    tile- and warp-based increments. The skipped warp's output must keep its
+    sentinel values.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,
@@ -360,6 +412,16 @@ def test_transpose_runtime_loop_and_whole_warp_divergence(api, divergent):
 
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 def test_final_warp_cubin_has_no_block_barrier(tmp_path, algorithm):
+    """Inspect the final machine code after verifying the copy.
+
+    The SASS must contain no Load or Store wrapper symbol and no CALL
+    instruction, so the wrappers are fully inlined. It must contain no block
+    barrier (BAR), which would require other warps to participate. Resource
+    metadata must show shared memory only for transpose. Storage-free paths
+    must omit the warp synchronization instruction WARPSYNC. Transpose permits
+    warp synchronization without requiring a particular instruction or mask.
+    """
+
     cuobjdump = shutil.which("cuobjdump")
     if cuobjdump is None:
         pytest.skip(

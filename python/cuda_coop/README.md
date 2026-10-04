@@ -453,11 +453,12 @@ compiler-owned allocation, see the
 [CUTLASS Programming Guide](https://nvidia.github.io/cccl/unstable/python/coop_cutlass.html)
 and [Developer Guide](https://nvidia.github.io/cccl/unstable/python/coop/cutlass_developer_guide.html).
 
-In Numba-CUDA-MLIR, Warp `transpose` uses compiler-owned storage with one
-disjoint slice per physical or logical group and masked synchronization for
-reuse. Numba-CUDA-MLIR rejects explicit `TempStorage` for every Warp Load and
-Store algorithm, including the storage-free modes. CUTLASS does not yet
-implement Warp Load/Store.
+Numba-CUDA-MLIR supports physical and logical Warp Load/Store. CUTLASS
+supports physical Warp Load/Store; logical Warp groups are not yet supported.
+Warp `transpose` uses compiler-owned storage with one disjoint slice per
+supported group and masked synchronization for reuse. Both integrations
+reject explicit `TempStorage` for every supported Warp Load and Store
+algorithm, including the storage-free modes.
 
 ## Reduce and Sum
 

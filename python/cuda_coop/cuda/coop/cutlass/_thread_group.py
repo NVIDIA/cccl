@@ -2,11 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Resolve shared group descriptors against exact CuTe launch facts.
+"""Construct symbolic groups and resolve their CuTe launch dimensions.
 
-Constructing a descriptor records intent without querying a device. Primitive
-lowering validates required dimensions through the shared resolver; the public
-factory exposes the current block.
+``this_block()`` and ``this_warp()`` record the requested group without
+querying a device. Primitive lowering resolves the group through the shared
+resolver, adds CUTLASS operation context to failures, and checks complete
+physical-warp membership in the launch.
 """
 
 from __future__ import annotations
@@ -93,7 +94,13 @@ def this_block() -> ThreadGroup:
 
 
 def this_warp() -> ThreadGroup:
-    """Describe the calling complete 32-thread physical warp."""
+    """Describe the calling complete 32-thread physical warp.
+
+    A primitive resolves this symbolic group from the enclosing launch. The
+    block must contain only complete physical warps, and all 32 lanes of each
+    participating warp must reach the call.
+    """
+
     return make_thread_group(
         "warp", group_type=ThreadGroup, scope="cuda.coop.cutlass"
     )

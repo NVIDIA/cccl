@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check physical-warp topology, bounds, and storage before compilation.
+
+The plan separates a warp's tile width from the number of warps in a block.
+Counts apply to one tile, while scratch sizing and shaped-memory extents
+must account for every instance. Rendered-source checks also keep block
+barriers out of warp providers.
+"""
+
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
@@ -64,6 +72,13 @@ def test_warp_storage_free_contract(algorithm, kind):
 
 
 def test_scratch_probe_counts_instances():
+    """Keep provider semantics separate from launch-dependent scratch size.
+
+    One and two warps use the same semantic operation, but need distinct
+    scratch probes and wrapper symbols. Transpose owns its storage and uses
+    warp synchronization so other warps need not reach a block barrier.
+    """
+
     one = _request(algorithm="transpose", block=(32, 1, 1))
     two = _request(algorithm="transpose", block=(8, 4, 2))
     assert one.implementation.semantic_key == two.implementation.semantic_key
@@ -90,6 +105,13 @@ def test_scratch_probe_counts_instances():
     "algorithm", ("direct", "striped", "vectorize", "transpose")
 )
 def test_extent_includes_all_group_tiles(valid, algorithm):
+    """Add full strides for earlier warps before the final warp's valid count.
+
+    Three warps start 64 elements apart. Even an empty valid range retains the
+    last warp's starting offset; a partial range does not pack the tiles
+    closer together.
+    """
+
     request = _request(
         algorithm=algorithm,
         block=(8, 4, 3),
@@ -116,6 +138,12 @@ def test_valid_count_is_group_local(valid):
 
 
 def test_offset_headroom():
+    """Reserve signed-offset headroom for the later warp's tile origin.
+
+    The second warp adds 64 elements to the user offset. Accept the largest
+    offset whose sum still fits Int64, and reject the next integer.
+    """
+
     maximum = (1 << 63) - 1 - 64
     request = _request(offset=ArgumentBinding.static(maximum))
     assert request.operation.offset.value == maximum
