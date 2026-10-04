@@ -79,22 +79,96 @@ if TYPE_CHECKING:
 
 
 class _GroupCallPlanner:
-    """Resolve groups and collect replacement statements for one function."""
+    """Resolve group descriptions before ordinary type inference.
+
+    A group such as ``this_block()`` describes which threads cooperate; it
+    is not an object that the device should construct. For one compiler
+    attempt, this planner recovers those descriptions and payload facts
+    from IR, asks each operation's registered planner to choose a
+    provider, then replaces the public calls with calls that the next
+    rewriting phase understands.
+
+    Analysis and mutation are separate. Helpers collect descriptor
+    assignments and replacement statements while the original reaching
+    definitions remain available. ``run()`` installs the replacements only
+    after every operation and remaining descriptor use has passed
+    validation. Create a fresh planner for each attempt; its caches and
+    pending replacements belong to that IR.
+
+    Parameters
+    ----------
+    state : compiler state
+        Numba state containing ``func_ir`` and argument types in ``args``.
+        Device helpers must already be inlined into this function.
+    launch_config : dict of str to object
+        Normalized configuration returned by ``require_launch_config``.
+        Its exact dimensions let group resolution choose a supported
+        topology.
+
+    Attributes
+    ----------
+    func_ir : ir.FunctionIR
+        Function being analyzed and, after successful planning, rewritten.
+    launch : LaunchFacts
+        Shared-core representation of the configured launch, including
+        where its dimensions came from.
+    descriptor_assigns : set of ir.Assign
+        Group and hierarchy construction, alias, and cast assignments
+        whose compile-time meaning has been consumed. Their targets become
+        ``None``.
+    dead_func_names : set of str
+        Callable-variable names consumed by descriptor or operation
+        rewriting. Their old assignments also become ``None`` so Numba
+        need not type the removed Python callables.
+    replacements : dict of ir.Assign to list
+        Original operation assignments mapped to pending provider-call IR.
+        Building this map does not yet replace the function's block
+        bodies.
+    context : GroupPlanningContext
+        Restricted analysis interface passed to operation planners. It
+        exposes group, payload, scalar, and storage facts and retains
+        inferred payload dtypes for later calls in this planning attempt.
+    """
 
     def __init__(self, state, launch_config: dict[str, Any]) -> None:
         self.state = state
         self.func_ir = state.func_ir
         self.launch_config = launch_config
         self.launch = self._make_launch_facts(launch_config)
+        # Pending edits refer to the original IR until all calls validate.
         self.dead_func_names: set[str] = set()
         self.descriptor_assigns: set[ir.Assign] = set()
         self.replacements: dict[ir.Assign, list[Any]] = {}
+        # These descriptors are host planning values, keyed by IR names.
         self._group_cache: dict[str, ThreadGroup] = {}
         self._hierarchy_cache: dict[str, ThreadHierarchy] = {}
         self.context = GroupPlanningContext(self)
 
     @staticmethod
     def _make_launch_facts(config: dict[str, Any]) -> LaunchFacts:
+        """Convert the configured launch to shared group-planning facts.
+
+        The shared resolver consumes ``LaunchFacts`` rather than Numba
+        metadata. Record the configured block, grid, and optional cluster
+        dimensions with origins identifying the backend launch configuration.
+        Supplying a cluster is also the evidence for ``cluster_launch``. This
+        launch interface does not establish cooperative-grid launch support,
+        so that fact stays false.
+
+        Parameters
+        ----------
+        config : dict of str to object
+            Normalized launch configuration supplied by the compiler
+            dispatcher. Other entries, such as dynamic shared-memory bytes,
+            are not topology facts and do not enter this record.
+
+        Returns
+        -------
+        LaunchFacts
+            Dimensions and their origins for resolving a requested thread
+            group.
+        """
+
         block = config.get("block")
         grid = config.get("grid")
         cluster = config.get("cluster")
@@ -134,6 +208,15 @@ class _GroupCallPlanner:
         )
 
     def _definition(self, value: Any) -> Any:
+        """Look up one variable definition, returning ``None`` if
+        unavailable.
+
+        Non-variable inputs pass through unchanged. Return ``None`` when
+        Numba's single-definition lookup raises ``KeyError``, including
+        ambiguous or missing definitions. Analyses that merge control-flow
+        paths must use ``_all_definitions`` instead.
+        """
+
         if not isinstance(value, ir.Var):
             return value
         try:
@@ -142,6 +225,14 @@ class _GroupCallPlanner:
             return None
 
     def _all_definitions(self, value: ir.Var) -> tuple[Any, ...]:
+        """Find all recorded definitions for a variable.
+
+        Payload and provenance analysis must inspect all possible sources
+        rather than accept whichever assignment is encountered first. Prefer
+        Numba's definition table, fall back to single-definition lookup, and
+        return an empty tuple when neither supplies a definition.
+        """
+
         definitions = getattr(self.func_ir, "_definitions", {}).get(
             value.name, ()
         )
@@ -151,6 +242,16 @@ class _GroupCallPlanner:
         return () if definition is None else (definition,)
 
     def _callable(self, value: Any) -> Any:
+        """Recover the Python object behind a call target or attribute chain.
+
+        Resolve globals, captured values, constants, and their attributes
+        without calling the resulting object. Operation recognition compares
+        the returned object's identity with registered constructors and
+        operations. Return ``None`` for an unresolved base or failed attribute
+        lookup. Despite this helper's name, the recovered object is not
+        required to be callable.
+        """
+
         current = self._definition(value)
         attrs: list[str] = []
         while isinstance(current, ir.Expr) and current.op == "getattr":
@@ -237,6 +338,15 @@ class _GroupCallPlanner:
             )
 
     def _reject_literal_unroll_constructors(self) -> None:
+        """Check constructor controls before building any group replacements.
+
+        Inspect recognized group, hierarchy, payload, and storage
+        constructors. Their arguments must be usable before Numba expands
+        ``literal_unroll``; ``_reject_literal_unroll_value`` supplies the
+        diagnostic for a detected dependency. Ordinary loops and unrelated
+        unrolls remain available.
+        """
+
         constructors = {
             *_GROUP_CONSTRUCTORS,
             ThreadHierarchy,
@@ -314,7 +424,23 @@ class _GroupCallPlanner:
             raise NonConstantGroupArgumentError(value.name) from exc
 
     def _try_constant(self, value: Any) -> tuple[bool, Any]:
-        """Resolve a constant without requesting dispatcher specialization."""
+        """Probe for a constant without requesting dispatcher specialization.
+
+        Literal arguments and arguments known to be ``None`` resolve directly.
+        Other inputs use ``_constant``; its specialization requests and group
+        resolution failures become an unresolved result. This broad constant
+        probe may use Numba constant inference. Use ``_try_static_scalar``
+        when an operation needs evidence that a scalar was explicitly supplied
+        as a compile-time value.
+
+        Returns
+        -------
+        resolved : bool
+            Whether a constant was recovered without another compiler attempt.
+        value : object
+            Recovered value, or ``None`` on failure. Check ``resolved`` to
+            distinguish failure from a known ``None``.
+        """
         if isinstance(value, ir.Var):
             definition = self._definition(value)
             if isinstance(definition, ir.Arg):
@@ -336,7 +462,14 @@ class _GroupCallPlanner:
         self,
         value: Any,
     ) -> tuple[bool, Any]:
-        """Resolve only values whose IR provenance is explicitly static."""
+        """Resolve an explicitly static scalar with its known numeric width.
+
+        Delegate to the shared provenance walker with this function's reaching
+        definitions and argument types. Constants and literal arguments must
+        agree across all paths; runtime expressions are not evaluated to turn
+        them into constants. The result is ``(resolved, value)``; an
+        unresolved value is ``(False, None)``. No specialization is requested.
+        """
 
         return try_resolve_static_scalar(
             value,
@@ -349,6 +482,16 @@ class _GroupCallPlanner:
         )
 
     def _try_static_scalar_provenance(self, value: Any) -> tuple[bool, Any]:
+        """Resolve a static scalar and retain its dtype provenance.
+
+        Use the same conservative traversal as ``_try_static_scalar``,
+        retaining the provenance record so callers can distinguish an untyped
+        Python literal from an explicitly typed value. Return ``(True,
+        provenance)`` when every path agrees, otherwise ``(False, None)``. A
+        known ``None`` is contained in a provenance record and is distinct
+        from failure.
+        """
+
         return try_resolve_static_scalar_provenance(
             value,
             definitions=self._all_definitions,
@@ -360,7 +503,34 @@ class _GroupCallPlanner:
         )
 
     def _bind(self, function: Any, call: ir.Expr) -> inspect.BoundArguments:
-        """Bind arguments and report invalid calls at their source location."""
+        """Bind IR arguments to the API signature and apply its defaults.
+
+        Explicit arguments remain IR values; defaults are ordinary Python
+        values. This lets operation planners use parameter names independently
+        of the caller's positional or keyword spelling. Argument unpacking is
+        rejected because its contents are not available to this binding step.
+
+        Parameters
+        ----------
+        function : callable
+            Recognized constructor or operation whose signature defines the
+            call.
+        call : ir.Expr
+            Call expression to validate and bind.
+
+        Returns
+        -------
+        inspect.BoundArguments
+            Named arguments with Python defaults applied, ready for planning.
+
+        Raises
+        ------
+        GroupRewriteError
+            The call uses ``*args`` or ``**kwargs``.
+        TypeError
+            Arguments do not match the signature. The diagnostic includes the
+            function name and the IR call's source location.
+        """
         if call.vararg is not None or call.varkwarg is not None:
             raise GroupRewriteError(
                 "cuda.coop.numba_mlir group calls do not support *args/**kwargs"
@@ -385,7 +555,44 @@ class _GroupCallPlanner:
         *,
         allow_none: bool = False,
     ) -> Any:
-        """Validate one common-root selector bypassed by identity rewriting."""
+        """Validate selector tokens for a rewritten common-API call.
+
+        Rewriting recognizes a public operation by identity and does not
+        execute its host wrapper. Repeat the selector validation here so
+        compiled calls retain that API's accepted strings and diagnostics. The
+        value must be constant and independent of pending literal unrolling.
+
+        Parameters
+        ----------
+        operation : str
+            Public operation name used in diagnostics.
+        parameter : str
+            Selector parameter name used in diagnostics.
+        value : object
+            IR argument or an already-resolved default.
+        allowed : frozenset of str
+            Accepted normalized selector tokens.
+        allow_none : bool, optional
+            Whether ``None`` is an accepted omission value.
+
+        Returns
+        -------
+        str or None
+            Token with whitespace stripped, lowercased, and hyphens replaced
+            by underscores, or an explicitly allowed ``None``.
+
+        Raises
+        ------
+        TypeError
+            The value is not a string, or is an enum instead of a string
+            token.
+        InvalidGroupSelectorError
+            The normalized token is not supported.
+        ForceLiteralArg
+            Resolving the selector requires a literal function argument.
+        GroupRewriteError
+            The selector cannot be resolved or depends on literal unrolling.
+        """
         self._reject_literal_unroll_value(value, f"{operation} {parameter}")
         token = self._constant(value)
         if token is None and allow_none:
@@ -401,6 +608,16 @@ class _GroupCallPlanner:
         return token
 
     def _hierarchy(self, value: Any) -> ThreadHierarchy | None:
+        """Reconstruct a hierarchy descriptor for host-side planning.
+
+        Accept an existing ``ThreadHierarchy``, or follow an IR variable
+        through aliases, casts, constants, and the recognized constructor.
+        Validate a constructor's signature and cache the resulting host
+        descriptor by variable name. Return ``None`` for an unrecognized
+        definition; descriptor arguments requiring a group or hierarchy are
+        diagnosed by their caller.
+        """
+
         if isinstance(value, ThreadHierarchy):
             return value
         if not isinstance(value, ir.Var):
@@ -559,6 +776,37 @@ class _GroupCallPlanner:
         feature: str,
         through_level: str | None = None,
     ) -> ThreadGroup:
+        """Resolve a group request against the configured launch.
+
+        Descriptor reconstruction records what the kernel requested.
+        Resolution fills the launch-dependent hierarchy and verifies that the
+        requested composition can be represented. Preserve common-API origin
+        information so operation validation can still enforce that contract
+        afterward.
+
+        Parameters
+        ----------
+        group : ThreadGroup
+            Reconstructed or supplied group description.
+        feature : str
+            Operation or group-method name prepended to unsupported
+            diagnostics.
+        through_level : str, optional
+            Hierarchy level through which resolution is required, for example
+            when a query needs enclosing group counts.
+
+        Returns
+        -------
+        ThreadGroup
+            Supported group with launch-dependent topology resolved.
+
+        Raises
+        ------
+        NotImplementedError
+            Shared group resolution reports an unsupported request. The
+            message identifies the Numba operation that needed the group.
+        """
+
         resolution = resolve_thread_group(
             group, self.launch, through_level=through_level
         )
@@ -576,11 +824,22 @@ class _GroupCallPlanner:
         return resolved
 
     def _is_none(self, value: Any) -> bool:
+        """Return whether a value is known to be ``None``."""
+
         resolved, constant = self._try_constant(value)
         return resolved and constant is None
 
     @staticmethod
     def _merge_array_states(states: tuple[bool | None, ...]) -> bool | None:
+        """Combine payload-origin evidence across alternative definitions.
+
+        ``False`` vetoes an unsupported path, ``True`` establishes a
+        recognized payload origin, and ``None`` represents a recursion
+        backedge with no new evidence. A known origin may therefore survive
+        loop backedges, but a cycle alone stays unresolved. An empty set of
+        definitions is rejected.
+        """
+
         if not states or any(state is False for state in states):
             return False
         if any(state is True for state in states):
@@ -595,6 +854,16 @@ class _GroupCallPlanner:
         seen: set[str],
         thread_data_only: bool = False,
     ) -> bool | None:
+        """Classify a tuple element across its possible definitions.
+
+        Track ``variable[index]`` separately from the container variable so a
+        loop-carried tuple does not hide a concrete payload origin. Inspect
+        each reaching definition with its own recursion path, then merge the
+        same ``True``/``False``/``None`` states used by ``_is_array_value``.
+        The ``thread_data_only`` restriction is carried through to payload
+        leaves.
+        """
+
         if not isinstance(value, ir.Var):
             return False
         seen_key = f"{value.name}[{index}]"
@@ -621,6 +890,15 @@ class _GroupCallPlanner:
         seen: set[str],
         thread_data_only: bool,
     ) -> bool | None:
+        """Trace a tuple-producing definition to one payload item.
+
+        Aliases, casts, iterator exhaustion, and phi inputs preserve the
+        selected index. A literal tuple selects one element for ordinary
+        payload-origin analysis; an invalid index or unsupported definition
+        returns ``False``. Branch recursion sets remain separate so one path
+        does not hide another.
+        """
+
         if isinstance(definition, ir.Var):
             return self._is_array_tuple_item(
                 definition, index, seen=seen, thread_data_only=thread_data_only
@@ -726,6 +1004,15 @@ class _GroupCallPlanner:
     def _is_array_definition(
         self, definition: Any, *, seen: set[str], thread_data_only: bool
     ) -> bool | None:
+        """Classify the payload origin of one reaching definition.
+
+        Follow aliases, casts, phi inputs, and tuple projections whose index
+        is a known non-boolean integer. Recognized payload constructors
+        establish an array origin; CUDA local arrays are accepted only when
+        ``thread_data_only`` is false. Unsupported sources return ``False``;
+        recursive paths retain the unresolved state from ``_is_array_value``.
+        """
+
         if isinstance(definition, ir.Var):
             return self._is_array_value(
                 definition, seen=seen, thread_data_only=thread_data_only
@@ -773,6 +1060,13 @@ class _GroupCallPlanner:
 
     @staticmethod
     def _new_var(scope: Any, loc: ir.Loc, stem: str) -> ir.Var:
+        """Create a fresh temporary with the original call's scope and
+        location.
+
+        A shared counter keeps names distinct across rewritten calls. The stem
+        makes the generated IR recognizable when inspecting compiler dumps.
+        """
+
         return ir.Var(
             scope, f"__cuda_coop_group_{stem}_{next(_NAME_COUNTER)}__", loc
         )
@@ -786,6 +1080,15 @@ class _GroupCallPlanner:
         stem: str,
         value: Any,
     ) -> ir.Var:
+        """Make an argument available as an IR variable for a generated call.
+
+        Reuse existing variables. Otherwise append an assignment to
+        ``statements``: simple Python values become ``ir.Const`` and objects
+        such as provider metadata become ``ir.Global``. Return the assigned
+        temporary. This only builds replacement statements; it does not insert
+        them into a block.
+        """
+
         if isinstance(value, ir.Var):
             return value
         result = self._new_var(scope, loc, stem)
@@ -805,6 +1108,37 @@ class _GroupCallPlanner:
         kwargs: dict[str, Any],
         common_root_operation: str | None = None,
     ) -> list[Any]:
+        """Build replacement IR calling the selected provider.
+
+        Bind the host factory and any non-variable arguments to fresh
+        temporaries, then emit a call at the original source location.
+        Existing argument variables are reused, and the replacement preserves
+        the original result target. Nothing is installed in a block until
+        ``run()`` accepts the whole rewrite.
+
+        Parameters
+        ----------
+        inst : ir.Assign
+            Original operation assignment whose target, scope, and location
+            are retained by the replacement.
+        factory : callable
+            Selected private provider callable for the next rewriting phase.
+        args : list of object
+            Positional IR variables or Python values supplied to the provider.
+        kwargs : dict of str to object
+            Named IR variables or Python values supplied to the provider.
+        common_root_operation : str, optional
+            Public operation identity forwarded to provider validation. It
+            keeps common-API rules available after the public wrapper has been
+            removed.
+
+        Returns
+        -------
+        list
+            Ordered assignments defining the callable and arguments and making
+            the replacement call.
+        """
+
         statements: list[Any] = []
         scope = inst.target.scope
         loc = inst.loc
@@ -846,6 +1180,14 @@ class _GroupCallPlanner:
         return statements
 
     def _array_operand_state(self, operation: str, value: Any) -> bool:
+        """Classify an operand or diagnose unresolved payload provenance.
+
+        A false result still needs scalar validation by the operation planner;
+        only unresolved provenance raises ``CyclicArrayProvenanceError`` here.
+        The operation name identifies the failing public call in that
+        diagnostic.
+        """
+
         state = self._is_array_value(value)
         if state is None:
             raise CyclicArrayProvenanceError(operation)
@@ -854,6 +1196,15 @@ class _GroupCallPlanner:
     def _thread_data_operand_state(
         self, operation: str, parameter: str, value: Any
     ) -> bool:
+        """Classify a parameter that requires a ``ThreadData`` payload.
+
+        Apply the constructor restriction used by the common API. Return
+        whether the operand has a recognized ``ThreadData`` origin; an
+        unresolved cycle raises ``GroupRewriteError`` naming the operation and
+        parameter. A false result lets the caller issue its parameter-specific
+        type diagnostic.
+        """
+
         state = self._is_array_value(value, thread_data_only=True)
         if state is None:
             raise GroupRewriteError(
@@ -916,6 +1267,15 @@ class _GroupCallPlanner:
     def _array_extent_tuple_item(
         self, value: Any, index: int, *, seen: set[str]
     ) -> int | None:
+        """Find a consistent known item count for one element of a tuple.
+
+        Trace all container definitions using a ``variable[index]`` recursion
+        key. Unknown paths and backedges contribute no extent; conflicting
+        known counts raise ``InconsistentTupleExtentError``. Return ``None``
+        when no count is known. This recovers shape information without
+        proving that every path supplies a supported payload.
+        """
+
         if not isinstance(value, ir.Var):
             return None
         seen_key = f"{value.name}[{index}]"
@@ -939,6 +1299,15 @@ class _GroupCallPlanner:
     def _array_extent_tuple_item_definition(
         self, definition: Any, index: int, *, seen: set[str]
     ) -> int | None:
+        """Recover a tuple element's extent from one reaching definition.
+
+        Follow tuple aliases, casts, iterator exhaustion, and phi inputs.
+        Known counts on phi inputs must agree or
+        ``InconsistentLoopTupleExtentError`` is raised. Unsupported sources
+        and invalid tuple indices produce no known extent; payload-kind
+        validation is performed separately.
+        """
+
         if isinstance(definition, ir.Var):
             return self._array_extent_tuple_item(definition, index, seen=seen)
         if not isinstance(definition, ir.Expr):
@@ -973,6 +1342,17 @@ class _GroupCallPlanner:
     def _array_extent_definition(
         self, definition: Any, *, seen: set[str]
     ) -> int | None:
+        """Extract payload shape from one reaching definition.
+
+        Aliases, casts, phi inputs, and constant tuple projections delegate
+        back to extent traversal. At a recognized constructor, resolve the
+        item count or scalar local-array shape as a compile-time integer,
+        excluding booleans. Unsupported or unknown shapes return ``None``;
+        conflicting phi extents raise ``InconsistentLoopPayloadExtentError``.
+        Literal specialization requests and forbidden literal-unroll
+        dependencies propagate.
+        """
+
         if isinstance(definition, ir.Var):
             return self._array_extent(definition, seen=seen)
         if not isinstance(definition, ir.Expr):
@@ -1035,6 +1415,42 @@ class _GroupCallPlanner:
     def _lower_root_operation(
         self, inst: ir.Assign, call: ir.Expr, function: Any, operation: str
     ) -> None:
+        """Validate a public call and queue its registered provider rewrite.
+
+        Bind the public signature, reconstruct and resolve its group, and
+        apply common-API group and argument rules when the call came from that
+        API. Then delegate operation-specific choices to its registration
+        using ``GroupPlanningContext``. Record the returned statements and
+        mark the old callable variable for removal; the original IR remains
+        available while other calls are planned.
+
+        Parameters
+        ----------
+        inst : ir.Assign
+            Assignment to replace after the complete function passes
+            validation.
+        call : ir.Expr
+            Public operation call stored in ``inst``.
+        function : callable
+            Recognized public callable whose signature and API origin apply.
+        operation : str
+            Canonical name used to look up the registered operation planner.
+
+        Raises
+        ------
+        GroupRewriteError
+            Call arguments or group reconstruction are invalid, no planner is
+            registered, or operation-specific validation rejects the request.
+        TypeError
+            Arguments do not match the public signature or accepted parameter
+            types.
+        ForceLiteralArg
+            Planning needs a function argument specialized as a literal.
+        NotImplementedError
+            Group resolution or the operation planner finds no supported
+            lowering.
+        """
+
         bound = self._bind(function, call)
         if bound.arguments.get("kwargs"):
             names = ", ".join(sorted(bound.arguments["kwargs"]))
@@ -1073,6 +1489,16 @@ class _GroupCallPlanner:
         self.replacements[inst] = replacement
 
     def _mark_descriptor_calls(self) -> None:
+        """Mark descriptor construction and forwarding IR for removal.
+
+        Recognize hierarchy and group constructors by callable identity, and
+        ``group_by`` only when its receiver resolves to a group. Then
+        repeatedly follow aliases and casts until every reachable descriptor
+        assignment is marked. Record consumed callable names too. This is
+        bookkeeping only: ``_validate_descriptor_uses`` must approve removal
+        before blocks change.
+        """
+
         for block in self.func_ir.blocks.values():
             for inst in block.body:
                 if not isinstance(inst, ir.Assign):
@@ -1120,6 +1546,16 @@ class _GroupCallPlanner:
                         changed = True
 
     def _validate_descriptor_uses(self) -> None:
+        """Reject runtime uses of descriptors that planning intends to erase.
+
+        A descriptor may feed another descriptor assignment, an operation with
+        a queued replacement, or a consumed method lookup. Any other remaining
+        use, such as returning it or passing it to an unrelated call, raises
+        ``EscapingGroupDescriptorError`` with the descriptor variable names.
+        Run this after collecting all replacements so valid compile-time uses
+        are recognized before ``run()`` rewrites any block bodies.
+        """
+
         descriptor_names = {
             inst.target.name for inst in self.descriptor_assigns
         }
@@ -1268,6 +1704,7 @@ def has_group_markers(func_ir: ir.FunctionIR) -> bool:
     bool
         Whether at least one recognized group-planning marker remains.
     """
+    # Detection needs definition lookup only, before launch facts exist.
     analyzer = object.__new__(_GroupCallPlanner)
     analyzer.func_ir = func_ir
     analyzer._group_cache = {}
@@ -1340,7 +1777,15 @@ def has_group_markers(func_ir: ir.FunctionIR) -> bool:
 
 
 class _GroupPlanning:
-    """Resolve cooperative group calls against one exact configured launch."""
+    """Provide the whole-function planner with group resolution.
+
+    This mixin expects ``CoopWholeFunctionPlanner`` to provide ``state``
+    and ``is_device_function``. It gates launch-metadata requests on
+    marker detection, rejects standalone device functions that still
+    contain group calls, and delegates the actual analysis and rewrite to
+    a fresh ``_GroupCallPlanner``. Its Boolean result tells the caller
+    whether to repair IR before provider rewriting.
+    """
 
     def _resolve_groups(self) -> bool:
         """Resolve group calls using launch metadata and report IR changes.
