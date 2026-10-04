@@ -20,7 +20,9 @@ values; every subtraction fits in that dtype.
    .. only:: html
 
       .. figure:: adjacent-difference.svg
-         :alt: With five valid inputs and predecessor zero, left differences of 2, 2, 5, 5, 9, 9, 9, 3 are 2, 0, 3, 0, 4, 9, 9, 3. The last three items are copied unchanged.
+         :alt: With five valid inputs and predecessor zero, left differences
+               of 2, 2, 5, 5, 9, 9, 9, 3 are 2, 0, 3, 0, 4, 9, 9, 3. The last
+               three items are copied unchanged.
          :width: 100%
 
          Left differences for five valid items. The invalid suffix is copied
@@ -63,8 +65,9 @@ explicit :ref:`TempStorage <coop-temp-storage>`.
 
 For a partial tile, ``valid_items`` must agree across the block. Only
 positions below that count compute a difference. Every later position
-copies its input, so those slots must also be initialized. A count of zero copies the entire tile. A count equal to the
-tile capacity processes the entire tile.
+copies its input, so those slots must also be initialized. A count of zero
+copies the entire tile. A count equal to the tile capacity processes the
+entire tile.
 
 Right partial tiles do not accept ``tile_successor_item``, even when the
 supplied count equals the capacity. The last valid item is copied
@@ -74,9 +77,10 @@ combination, matching the API's rejection of that CUB overload.
 Encoding deltas across block tiles
 ----------------------------------
 
-This tested kernel uses 128 threads and full 512-item tiles. Import
-``cuda`` from ``numba_cuda_mlir``, ``numpy as np``, and ``coop`` from
-``cuda``. The previous tile's final source item supplies the left boundary.
+With four items per thread, this kernel uses 128 threads to process each
+full 512-item tile. Import ``cuda`` from ``numba_cuda_mlir``, ``numpy as np``,
+and ``coop`` from ``cuda``. The previous tile's final source item supplies
+the left boundary.
 The first tile uses zero so its first result retains the first input.
 An inclusive sum of the resulting deltas reconstructs the original sequence
 when the first delta is the first original value.

@@ -2,7 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""CUB neighbor operations that preserve their inputs."""
+"""Describe input-preserving CUB operations on neighboring tile items.
+
+Adjacent Difference writes differences; Discontinuity writes head or tail
+flags. Both use separate input and output arrays. This module validates the
+operation choices and describes a C++ adapter for the selected CUB overload.
+The adapter has one argument shape per output count, even when a selected
+overload ignores the valid count or outside-tile neighbor arguments.
+"""
 
 from __future__ import annotations
 
@@ -28,6 +35,15 @@ from .._types import (
 def validate_neighbor_options(
     operation, mode, *, partial=False, predecessor=False, successor=False
 ):
+    """Reject mode and boundary combinations that CUB cannot provide.
+
+    Left differences and heads can use a predecessor; right differences and
+    tails can use a successor. Discontinuity requires a full tile. Partial
+    right differences have no successor overload. These checks select a valid
+    CUB call; the frontend separately checks the runtime values and their
+    dtypes.
+    """
+
     modes = (
         ("left", "right")
         if operation == "adjacent_difference"
@@ -51,6 +67,16 @@ def validate_neighbor_options(
 
 @dataclass(frozen=True)
 class BlockNeighborSemantics:
+    """Keep neighbor-operation choices separate from runtime tile values.
+
+    The record fixes the operation, mode, input dtype, per-thread extent, and
+    binary operator. The three flags select overloads with a partial tile or
+    outside-tile neighbors; they do not store the count or neighbor values.
+    Differences keep the input dtype. Discontinuity returns one or two int32
+    flag arrays. The semantic key identifies these choices for provider
+    caching.
+    """
+
     operation: str
     dtype: Any
     items_per_thread: int
@@ -61,6 +87,8 @@ class BlockNeighborSemantics:
     successor: bool = False
 
     def __post_init__(self):
+        """Check overload choices, payload extent and the operator record."""
+
         validate_neighbor_options(
             self.operation,
             self.mode,
@@ -111,6 +139,19 @@ class BlockNeighborSemantics:
 def make_block_neighbor_specialization(
     call: BlockNeighborSemantics, *, block_dim: tuple[int, int, int]
 ) -> Algorithm:
+    """Describe the CUB adapter and its arguments for one fixed block shape.
+
+    Select the CUB class and method from the operation, mode, and boundary
+    flags. The wrapper always accepts a count, predecessor, and successor so
+    frontends can use a regular call shape; only selected arguments reach the
+    CUB overload. Partial calls check the wide count before converting it to
+    CUB's integer.
+
+    The input array remains separate from result arrays. Result parameters are
+    inout wrapper arguments, so frontends allocate them and expose them as the
+    public return value. Creating this Algorithm does not compile GPU code.
+    """
+
     block_dim = tuple(block_dim)
     if len(block_dim) != 3 or any(
         not isinstance(d, int) or isinstance(d, bool) or d < 1

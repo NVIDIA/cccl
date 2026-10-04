@@ -2,7 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Allocate separate result payloads for block neighbor operations."""
+"""Plan block neighbor calls and emit markers for their result payloads.
+
+Difference results retain the input dtype; discontinuity flags use int32.
+Record that distinction before ordinary typing so later group operations can
+consume either result. The provider rewrite materializes the marked arrays.
+"""
 
 from dataclasses import replace
 
@@ -39,6 +44,13 @@ from ._rewrite_support import CoopSinglePhaseRewriteError
 
 
 def _infer_payload(context, inference):
+    """Infer matching payload extents and the provider's element dtype.
+
+    All input and output arrays have the same fixed extent. Difference outputs
+    use the input dtype; discontinuity outputs use int32. Record each dtype
+    so inferred ThreadData can be materialized consistently.
+    """
+
     both = inference.factory_value("mode") == "heads_and_tails"
     extent = None
     for index in range(3 if both else 2):
@@ -74,6 +86,12 @@ def _infer_payload(context, inference):
 
 
 def _cast(context, statements, inst, value, dtype, name):
+    """Append an IR cast and return its temporary for a provider argument.
+
+    Counts use int64 before range checks; boundary items use the input dtype.
+    The cast runs in the kernel after compilation, not during group planning.
+    """
+
     scope, loc = inst.target.scope, inst.loc
     cast = context.value_var(
         statements, scope=scope, loc=loc, stem="neighbor_type", value=dtype
@@ -89,6 +107,23 @@ def _cast(context, statements, inst, value, dtype, name):
 
 
 def _lower_neighbors(context, inst, *, operation, group, bound, is_common_root):
+    """Validate a neighbor call and emit its provider call and result markers.
+
+    Resolve the fixed input extent, dtype, selector, count binding, and
+    boundary values, then build the core plan. An explicit ``temp_storage``
+    descriptor then replaces implementation-owned scratch with caller-owned
+    storage and selects the reuse barrier from ``auto_sync``.
+
+    Static boundary values go through ``coerce_static_scalar``. Finite,
+    in-range Python literals take the input dtype; float literals cannot
+    become integers. NumPy scalars must already match the input dtype. Runtime
+    boundaries need an inferred dtype that exactly matches the input dtype.
+
+    Each result marker describes a fresh array with the input extent. Preserve
+    the source payload and record int32 flag results for later consumers. The
+    provider rewrite allocates these arrays and lowers the emitted call.
+    """
+
     from .._lowering import _neighbors
 
     arguments = bound.arguments
@@ -216,6 +251,7 @@ def _lower_neighbors(context, inst, *, operation, group, bound, is_common_root):
             output, dtype if adjacent else numba_types.int32
         )
         outputs.append(output)
+    # Full-tile overloads ignore the count slot; zero is an ABI placeholder.
     count = (
         valid_raw
         if valid.kind is BindingKind.RUNTIME
@@ -268,6 +304,13 @@ def _lower_neighbors(context, inst, *, operation, group, bound, is_common_root):
 
 
 def _discontinuity_results(context, bound):
+    """Resolve the selector to one flag payload or a heads/tails pair.
+
+    Both results inherit the input extent and use int32. Resolve the mode
+    before ordinary typing so tuple projections and chained calls see the
+    correct number of results.
+    """
+
     mode = context.constant(bound.arguments["mode"])
     result = GroupResultSource(None, "values", fixed_dtype=numba_types.int32)
     return (result, result) if mode == "heads_and_tails" else (result,)

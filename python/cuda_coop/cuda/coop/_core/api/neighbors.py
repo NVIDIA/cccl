@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Expose block differences and run-boundary flags for compiled kernels.
+
+Adjacent Difference subtracts neighboring values. Discontinuity identifies
+unequal neighbors as run heads or tails. Both preserve the source payload and
+return separate blocked results. Decorators register each function so a
+supported compiler can recognize calls to it. Ordinary Python calls raise
+a context error. Custom binary operations use the qualified API.
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -50,7 +59,10 @@ def adjacent_difference(
         copied unchanged. For right differences, this argument cannot be
         combined with ``tile_successor_item``.
     tile_predecessor_item, tile_successor_item : scalar, optional
-        Block-uniform neighbor outside the tile, matching the input dtype.
+        Block-uniform neighbor outside the tile. A runtime or NumPy scalar
+        must match the input dtype. Finite Python int or float literals take
+        the input dtype when in range; conversion to float may round. A float
+        literal cannot become an integer.
         Left differences accept only a predecessor; right differences accept
         only a successor. Without that neighbor, the boundary input is
         copied unchanged.
@@ -104,7 +116,10 @@ def discontinuity(
         item with the next item. Unequal neighbors produce one, otherwise
         zero.
     tile_predecessor_item, tile_successor_item : scalar, optional
-        Block-uniform neighbor outside the tile, matching the input dtype.
+        Block-uniform neighbor outside the tile. A runtime or NumPy scalar
+        must match the input dtype. Finite Python int or float literals take
+        the input dtype when in range; conversion to float may round. A float
+        literal cannot become an integer.
         Heads accept a predecessor, tails accept a successor, and
         ``"heads_and_tails"`` accepts both. Without a predecessor the first
         head is one; without a successor the last tail is one.

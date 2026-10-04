@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Build and register Numba invocables for the core block neighbor wrappers.
+
+Factory metadata supplies the scratch-pointer ABI and block synchronization
+scope. The factories specialize wrappers and adapt device callbacks; kernel
+execution happens later through the resulting invocables.
+"""
+
 from cuda.coop._core import (
     INT8,
     CxxOperator,
@@ -29,6 +36,14 @@ from ._core import NumbaMlirCoreAdapter
 
 
 def neighbor_operator(operation, op):
+    """Describe a built-in functor or a stateless Python device callback.
+
+    Both callback arguments use the input dtype. Difference callbacks return
+    that dtype; flag callbacks use an int8 ABI for the predicate result.
+    The public discontinuity payload stores flags as int32. Callable identity
+    includes nested device helpers and captured values through the tokenizer.
+    """
+
     dtype = Dependency("T")
     if op is None:
         name = "minus" if operation == "adjacent_difference" else "not_equal_to"
@@ -47,6 +62,12 @@ def neighbor_operator(operation, op):
 
 
 def _make_provider(operation, *, both=False):
+    """Register a block factory with one output or a heads/tails output pair.
+
+    The two-output form needs a distinct factory name: its provider call has
+    an extra result-array argument. All forms use block-scoped scratch.
+    """
+
     def provider(
         dtype,
         threads_per_block,
@@ -57,6 +78,13 @@ def _make_provider(operation, *, both=False):
         successor=False,
         op=None,
     ):
+        """Build a numeric specialization and adapt it to the call ABI.
+
+        The core factory chooses the neighbor overload and scratch layout.
+        Attach Numba operator types and storage metadata before creating the
+        invocable that the kernel will call.
+        """
+
         dtype = _validate_common_numeric_dtype(
             dtype, operation=operation, parameter="values"
         )

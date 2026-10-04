@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Test result metadata without compiling a provider or running a kernel.
+
+A synthetic primitive accepts a scalar but declares array results. This
+separates output shape, dtype override, and selector-dependent arity from
+input metadata; it does not extend the inputs accepted by real operations.
+"""
+
 from types import SimpleNamespace
 
 import pytest
@@ -10,6 +17,8 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
 
 def test_declared_result_dtype_extent_and_arity(monkeypatch):
+    """Resolve fixed and overridden dtypes for direct and unpacked results."""
+
     from numba_cuda_mlir import types
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
     from numba_cuda_mlir.numbair_transforms import ir

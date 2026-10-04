@@ -23,7 +23,9 @@ outside the tile.
    .. only:: html
 
       .. figure:: discontinuity.svg
-         :alt: Input 2, 2, 5, 5, 9, 9, 9, 3 produces heads 1, 0, 1, 0, 1, 0, 0, 1 and tails 0, 1, 0, 1, 0, 0, 1, 1. The first head and last tail are one when no outside neighbors are supplied.
+         :alt: Input 2, 2, 5, 5, 9, 9, 9, 3 produces heads 1, 0, 1, 0, 1, 0,
+               0, 1 and tails 0, 1, 0, 1, 0, 0, 1, 1. The first head and last
+               tail are one when no outside neighbors are supplied.
          :width: 100%
 
          Head and tail flags for a full tile with no supplied boundary
@@ -69,8 +71,8 @@ Turning heads into run IDs
 --------------------------
 
 An inclusive sum of head flags counts how many runs have started. Subtract
-one to obtain zero-based IDs. This tested kernel launches 128 threads per
-block and processes full 512-item tiles. Import ``cuda`` from
+one to obtain zero-based IDs. With four items per thread, this kernel uses
+128 threads to process each full 512-item tile. Import ``cuda`` from
 ``numba_cuda_mlir``, ``numpy as np``, and ``coop`` from ``cuda``.
 
 .. literalinclude:: ../../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_neighbors.py
