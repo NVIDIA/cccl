@@ -1144,10 +1144,23 @@ is rejected.
 or both. Its default predicate marks unequal neighbors. Both operations
 interpret inputs in blocked order, but Discontinuity always processes a
 full tile. Arbitrary padding can change the last valid item's tail flag.
-See :doc:`neighbor operations <neighbor-operations>` for tested delta and
-run-boundary examples, or explore
-:doc:`Adjacent Difference <visualizations/adjacent-difference>` and
-:doc:`Discontinuity <visualizations/discontinuity>` interactively.
+The :doc:`Adjacent Difference <visualizations/adjacent-difference>` and
+:doc:`Discontinuity <visualizations/discontinuity>` pages explain tile
+boundaries and include tested delta-encoding and run-ID examples.
+
+The qualified functions in ``cuda.coop.numba_mlir`` also accept fixed-size
+local arrays and stateless device-compilable binary callables.
+``difference_op(current, neighbor)`` returns the input dtype. Its argument
+order stays the same for left and right differences.
+
+For Discontinuity, ``flag_op(previous, current)`` determines heads and
+``flag_op(current, next)`` determines tails. The distinction matters for a
+predicate such as ``<``. Without a supplied tile boundary, the first head
+or last tail remains one regardless of the predicate. Returned flags have
+``int32`` dtype and the same per-thread extent as the input.
+
+See :func:`cuda.coop.numba_mlir.adjacent_difference` and
+:func:`cuda.coop.numba_mlir.discontinuity` for the qualified API reference.
 
 
 Checking and tuning a kernel
