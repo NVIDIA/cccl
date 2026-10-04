@@ -325,7 +325,9 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
   fflush(stdout);
 #endif
 
-  const bool is_byte_sample = d_samples.value_type.size == 1;
+  // Signed byte samples cannot use the pass-through byte specialization: negative
+  // values are valid inputs whose bin is determined by the configured levels.
+  const bool is_byte_sample = d_samples.value_type.size == 1 && d_samples.value_type.type != CCCL_INT8;
   const int num_privatized_bins =
     is_byte_sample ? cub::detail::histogram::byte_sample_privatized_levels - 1 : num_output_levels_val - 1;
   const int counter_size_bytes = static_cast<int>(d_output_histograms.value_type.size);
