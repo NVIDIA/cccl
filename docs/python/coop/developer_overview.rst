@@ -560,6 +560,41 @@ each primitive. An ABI helper for aggregate values does not imply that
 public payload operations accept arbitrary structures. The current
 common payload APIs require their supported numeric dtypes.
 
+Inferring scalar types across loops
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The group planner needs a scalar's dtype before ordinary Numba type inference
+runs. Following assignments works directly for an array element or an explicit
+scalar cast. A loop can introduce a cycle: the next iteration's input depends
+on a result computed from that same input. Stopping at the cycle would lose
+the known dtype of the value that entered the loop.
+
+For example, this fragment carries a value from a ``float32`` source array
+through arithmetic that preserves its type:
+
+.. code-block:: python
+
+   value = source[cuda.threadIdx.x]
+   for _ in range(repetitions):
+       value = value + np.float32(1)
+   coop.store(coop.this_block(), destination, value)
+
+``GroupPlanningContext.dtype`` first tries its ordinary recursive analysis.
+If that cannot resolve the value, ``_loop_dtype`` propagates candidate types
+from known definitions until they stop changing. A loop backedge means an
+assignment that supplies the next iteration's value; it may temporarily use
+the candidate for that variable. The planner then repeats the analysis with
+strict checks on every reaching definition before accepting the candidate.
+
+That final check is essential. A known initial value does not establish the
+type of a later opaque helper result. Such a path remains unresolved, and
+conflicting known types are rejected. Candidate facts are discarded after
+each query, including failed queries, so they cannot supply a type to a later
+unrelated operation. This analysis supports type-preserving loops; general
+type promotion remains the compiler's responsibility. The separate
+:ref:`ThreadData inference guidance <coop-faq-thread-data-dtype>` still applies
+to payload construction and unsupported helper producers.
+
 Shared memory and reuse
 -----------------------
 
