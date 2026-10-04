@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Select a Merge Sort implementation and describe the group result.
+
+A shared call record supplies payloads and the comparator. The group plan
+adds exact launch dimensions, static prefix validation, result ownership,
+and scratch reuse rules. The group API treats inputs as read-only even
+though the selected CUB primitive mutates arrays; the backend allocates and
+sorts copies to implement the returned payloads.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -41,6 +50,16 @@ from ._model import (
 
 @dataclass(frozen=True, eq=False)
 class GroupMergeSortSemantics:
+    """Add valid-prefix binding information to a shape-independent call.
+
+    ``primitive`` is the shared BlockMergeSortSemantics record, also used
+    when planning a Warp call. Its tile policy must be partial exactly when
+    valid_items is bound, either statically or at run time. A static count
+    must fit in a signed 32-bit integer and is stored as a Python int; runtime
+    bindings pass through unchanged. The planner later checks static counts
+    against the tile size.
+    """
+
     primitive: BlockMergeSortSemantics
     valid_items: ArgumentBinding = field(
         default_factory=ArgumentBinding.omitted
@@ -89,6 +108,14 @@ class GroupMergeSortSemantics:
 
 
 def _classifications(operation):
+    """Describe public operands independently of CUB's inout arrays.
+
+    Keys and values are inputs at the group API. The backend later copies
+    them for CUB. The comparator is static, while a partial call also carries
+    its count binding and runtime padding key. This classification supports
+    shared planning and diagnostics without choosing a wrapper signature.
+    """
+
     result = [
         ParameterClassification(
             "keys", ArgumentKind.RUNTIME, ParameterRole.INPUT
@@ -127,6 +154,46 @@ def _plan_merge_sort(
     launch: LaunchFacts,
     operation: GroupMergeSortSemantics,
 ) -> GroupLoweringPlan:
+    """Choose a block or Warp Sort and record tile and result contracts.
+
+    The group width times items_per_thread sets the tile capacity. Exact
+    launch dimensions select the block specialization and participation.
+    Check static counts now and retain runtime bounds and uniformity
+    requirements in the plan. Each member receives a keys payload and, for
+    pairs, a corresponding values payload.
+
+    Parameters
+    ----------
+    call : GroupPrimitiveCall
+        Group and Merge Sort semantics requested by the frontend.
+    resolved : ThreadGroup
+        Group resolved against the launch dimensions by shared dispatch.
+    launch : LaunchFacts
+        Exact block shape needed for participation and specialization.
+    operation : GroupMergeSortSemantics
+        Payload, comparator, and valid-prefix binding for this call.
+
+    Returns
+    -------
+    GroupLoweringPlan
+        CUB implementation with per-member results and implementation-owned
+        scratch, or an unsupported plan for a block/warp shape restriction.
+        The backend resolves scratch size and emits the reuse barrier.
+
+    Raises
+    ------
+    ValueError
+        A static valid count is outside zero through the tile capacity, or
+        primitive factory arguments fail validation.
+
+    Notes
+    -----
+    Partial-tile factories select their overload from the presence of both
+    controls. The zero placeholders below select that overload; they are not
+    replacements for the caller's count or padding key. Runtime checking is
+    performed by the checked C++ provider selected by those factories.
+    """
+
     primitive = operation.primitive
     kwargs = {
         "key_dtype": primitive.key_dtype,

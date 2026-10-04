@@ -12,7 +12,7 @@ constants. Construct TempStorage inside each kernel. During compilation, the
 compiler rebuilds the descriptor from its compile-time constant arguments
 and validates them. The compiler rejects a descriptor that comes from a
 module global. The ``local`` and ``shared`` namespaces,
-markers load on first access.
+Merge Sort markers load on first access.
 """
 
 import importlib
