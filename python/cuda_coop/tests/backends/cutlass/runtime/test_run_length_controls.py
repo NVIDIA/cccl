@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check decoding traps, scratch limits, wrapper inlining, and scratch races.
+
+Trap cases run in separate processes because a device trap leaves the CUDA
+context unusable. Successful host checks precede final-code inspection.
+Compute-sanitizer coverage is opt-in and limited to two reuse profiles.
+"""
+
 import os
 import re
 import shutil
@@ -35,6 +42,15 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
     ),
 )
 def test_invalid_runtime_controls_trap(arguments):
+    """Reject invalid lengths, offsets, and capacity in child processes.
+
+    Cases include negative lengths, a positive run after zero padding, and
+    lengths above the Uint32 total limit. Window and destination offsets must
+    not be negative. Bulk decoding also rejects offsets beyond the destination
+    and destinations too small for the stream. A nonzero exit must include a
+    CUDA trap or launch error. No check reads the destination after failure.
+    """
+
     script = (
         "import cutlass, numpy as np\n"
         "from tests.backends.cutlass.runtime.test_run_length import _run\n"
@@ -75,6 +91,12 @@ def test_undersized_storage():
 
 @pytest.mark.parametrize("bulk", (False, True))
 def test_final_cubin(tmp_path, bulk):
+    """Check that each generated window or bulk wrapper is fully inlined.
+
+    After successful execution, the retained SASS must contain no generated
+    Run Length Decode wrapper symbol and no CALL instruction.
+    """
+
     tool = shutil.which("cuobjdump")
     if tool is None:
         pytest.skip("cuobjdump is required for final linked code inspection")
@@ -90,6 +112,13 @@ def test_final_cubin(tmp_path, bulk):
 
 
 def test_scratch_reuse_racecheck():
+    """Run two scratch-reuse profiles under opt-in race detection.
+
+    Shared window storage uses automatic barriers. Exclusive bulk storage uses
+    manual barriers. Each profile repeats three times in a child process, and
+    the sanitizer must report zero hazards as well as a successful exit.
+    """
+
     if os.environ.get("CUDA_COOP_RUN_RACECHECK") != "1":
         pytest.skip("set CUDA_COOP_RUN_RACECHECK=1 to run compute-sanitizer")
     tool = shutil.which("compute-sanitizer")

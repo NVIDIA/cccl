@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile decoding profiles without executing their null-pointer kernels.
+
+Window output has its own per-thread extent. Bulk decoding needs a
+contiguous one-dimensional global-memory tensor with a known or runtime
+capacity. Every kernel targets SM80, so compilation needs no GPU. Each
+integer type compiles as a runtime offset; static offsets outside the
+Uint64 range are rejected. Other cases check input and destination
+contracts. Runtime tests cover offset limits during execution.
+"""
+
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
@@ -33,6 +43,13 @@ def _compile(
     static_offset=None,
     dynamic_capacity=False,
 ):
+    """Compile window or bulk decoding while varying one input constraint.
+
+    Values and lengths retain separate types. Destination variants isolate
+    shape, stride, address space, and dtype errors. Returned items or totals
+    are consumed to check their types, not to demonstrate safe runtime output.
+    """
+
     @cute.kernel
     def kernel(
         memory: cute.Pointer,

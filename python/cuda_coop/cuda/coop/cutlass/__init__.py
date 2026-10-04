@@ -4,17 +4,19 @@
 
 """Cooperative primitives for the CUTLASS CuTe DSL compiler.
 
-Importing this namespace validates the optional runtime and lets the common
-API recognize the active CuTe DSL compiler environment. Calls inside that
+Importing this namespace raises an error if a compatible CUTLASS CuTe DSL
+runtime is unavailable. It lets common ``cuda.coop`` calls recognize the
+active CuTe DSL compiler environment. Common calls traced inside that
 environment use these implementations. The namespace provides Load/Store,
 Reduce, Sum, Scan, Exchange, Shuffle, Merge Sort, Radix Sort, Radix Rank,
-TopK, Adjacent Difference, Discontinuity, Histogram, and thread-group handles
-such as ``this_block()`` with rank/count queries and synchronization. Reduce
-and Scan accept only built-in operators.
+TopK, Adjacent Difference, Discontinuity, Histogram, Run Length Decode, and
+thread-group handles such as ``this_block()`` with rank/count queries and
+synchronization. Reduce and Scan accept only built-in operators.
 
-Qualified calls also accept the CuTe payload forms documented by each
-operation. The per-operation docs describe which block calls accept a
-TempStorage descriptor to control their temporary shared-memory storage.
+Calls through ``cuda.coop.cutlass`` (qualified calls) also accept the CuTe
+payload forms documented by each operation. The per-operation docs describe
+which block calls accept a TempStorage descriptor to control their temporary
+shared-memory storage.
 """
 
 from .._core.api import TempStorageLike, ThreadDataLike

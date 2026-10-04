@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Execute the documented window and bulk decoding example.
+
+One scratch descriptor serves both calls. Their input extent is shared,
+but output extents and offsets differ. Host checks cover zero-filled window
+tails, untouched bulk destination edges, and totals returned to all threads.
+"""
+
 import numpy as np
 import pytest
 
@@ -14,6 +21,15 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 @pytest.mark.parametrize("items_per_thread", (1, 4))
 def test_decode_example(items_per_thread):
+    """Check the marked example against an independently expanded run stream.
+
+    Each input value repeats twice. Both items_per_thread cases use the same
+    64-item window starting inside a run. With one run per thread, the stream
+    ends inside the window and the last three items must be zero. The bulk
+    destination has room for the complete stream plus 16 sentinel slots: five
+    before the output and eleven after it.
+    """
+
     # example-begin
     import cutlass
     from cutlass import cute

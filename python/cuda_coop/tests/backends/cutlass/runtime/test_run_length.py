@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compare decoded windows and complete streams with a host repeat oracle.
+
+Each block owns independent runs and output space. Window results have a
+separate extent and zero-filled tails. Bulk results preserve destination
+sentinels outside the decoded stream and return its total to every thread.
+Original values and run lengths must survive both forms unchanged.
+"""
+
 from contextlib import ExitStack
 
 import numpy as np
@@ -24,6 +32,12 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
 class _Readonly:
+    """Expose run items and metadata without a writable payload interface.
+
+    Both values and lengths can use this tuple snapshot. Original payloads
+    remain available for preservation checks after decoding.
+    """
+
     def __init__(self, source):
         self.items_per_thread = source.items_per_thread
         self.dtype = source.dtype
@@ -63,6 +77,19 @@ def _run(
     compile_options=(),
     dynamic_capacity=False,
 ):
+    """Check each block with independent run and output extents.
+
+    The host expands positive lengths followed by trailing zero padding.
+    Window output is compared bitwise, including zero-filled positions beyond
+    the stream. Bulk output retains sentinels before and after the stream;
+    every thread must report the same total length.
+
+    The kernel decodes the same inputs ``repeats`` times. Explicit barriers
+    protect shared or exclusive scratch when automatic synchronization is
+    disabled. Invalid variants serve child-process trap tests and must fail
+    before reaching the host expansion checks.
+    """
+
     value_type, length_type = cutlass_dtype(dtype), cutlass_dtype(length_dtype)
     run_tile, window = threads * items_per_thread, threads * decoded
     output_size = capacity if bulk else window
@@ -311,11 +338,24 @@ def test_length_types(length_dtype):
 
 @pytest.mark.parametrize("offset", (0, 1, 17, 275, 289, 1000, (1 << 64) - 1))
 def test_window_offsets_and_tails(offset):
+    """Keep wide window offsets intact through range checks and decoding.
+
+    Offsets cover stream starts, boundaries, partial tails, and positions far
+    beyond the end. Even the largest Uint64 offset must yield a zero window
+    instead of wrapping to a valid position.
+    """
+
     _run(offset=offset)
 
 
 @pytest.mark.parametrize("bulk", (False, True))
 def test_empty_runs(bulk):
+    """Reuse scratch when every run length is zero.
+
+    Windows must be all zero. Bulk calls must return zero to every thread and
+    leave the destination sentinel intact across repeated calls.
+    """
+
     _run(bulk=bulk, empty=True, repeats=3, sharing="shared")
 
 
@@ -328,6 +368,12 @@ def test_readonly_and_inferred(bulk):
 @pytest.mark.parametrize("auto_sync", (False, True))
 @pytest.mark.parametrize("bulk", (False, True))
 def test_scratch_reuse(sharing, auto_sync, bulk):
+    """Repeat decoding with both scratch ownership and reuse-barrier policies.
+
+    The same call site executes three times. Manual barriers follow each call
+    when automatic synchronization is disabled, including the final iteration.
+    """
+
     _run(
         bulk=bulk,
         repeats=3,
@@ -339,6 +385,13 @@ def test_scratch_reuse(sharing, auto_sync, bulk):
 
 @pytest.mark.parametrize("bulk", (False, True))
 def test_alignment_minimum(bulk):
+    """Allow native scratch alignment to exceed a one-byte request.
+
+    The 32 KiB scratch size keeps size limits from masking alignment errors.
+    Repeated window and bulk calls still pass their complete output and
+    input-preservation checks.
+    """
+
     _run(
         bulk=bulk, repeats=3, sharing="shared", alignment=1, storage_bytes=32768
     )

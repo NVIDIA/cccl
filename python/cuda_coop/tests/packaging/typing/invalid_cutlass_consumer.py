@@ -15,7 +15,8 @@ and the different controls accepted by Sort, Rank, and common calls. TopK
 checks block-only groups, integer counts, and payload-only inputs. Neighbor
 operations reject warp groups, scalar inputs, and unsupported modes or
 callbacks. Histogram rejects warp groups, scalar samples, floating counters,
-and unknown algorithms.
+and unknown algorithms. Run Length Decode rejects warp groups, a missing
+decoded_items_per_thread, and scalar run values.
 """
 
 from __future__ import annotations

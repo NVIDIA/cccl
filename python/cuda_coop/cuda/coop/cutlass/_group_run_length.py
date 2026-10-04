@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""CUTLASS entry points for block run-length decoding.
+
+Each call copies the per-thread run values and lengths from ThreadData, CuTe
+register tensors, or TensorSSA values, so inputs stay unchanged. Values and
+lengths must have the same per-thread count. run_length_decode returns one
+decoded window as ThreadData. run_length_decode_into writes the whole stream
+to a global tensor and returns its length.
+"""
+
 from cuda.coop._core.thread_group import ThreadGroup
 
 from ._temp_storage import TempStorage
@@ -19,6 +28,13 @@ def _decode(
     bulk,
     temp_storage,
 ):
+    """Validate the group and snapshot matching run payloads.
+
+    Keep input run extent independent of decoded output extent. The provider
+    resolves value/length types, the offset ABI, and the destination contract
+    before selecting the shared window or bulk specialization.
+    """
+
     if not isinstance(group, ThreadGroup):
         raise TypeError("run_length_decode group must be a ThreadGroup")
     if group.kind != "block":
