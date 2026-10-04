@@ -223,7 +223,22 @@ def provider_synchronization_matches(
 
 @dataclass(frozen=True)
 class GroupResultSource:
-    """Arguments that determine one logical result's dtype and shape."""
+    """Name the arguments that determine one public result's type and shape.
+
+    Group planning reads these policies before a call is lowered. This lets a
+    later group call inspect an earlier call's result without requiring normal
+    Numba type inference first. Names refer to the bound public call
+    signature, not positions in the private provider ABI.
+
+    Attributes
+    ----------
+    dtype_parameter : str or None
+        Argument whose dtype the result inherits. ``None`` supplies no dtype
+        inference through this policy.
+    array_parameter : str or None
+        Argument whose scalar/array form and array extent the result inherits.
+        ``None`` describes a scalar result with one item.
+    """
 
     dtype_parameter: str | None
     array_parameter: str | None
@@ -237,13 +252,18 @@ class GroupResultSource:
 
 @dataclass(frozen=True)
 class GroupPrimitiveRegistration:
-    """Connect a public operation to whole-function planning.
+    """Connect a public operation to its planner and result policies.
 
-    ``lower`` returns replacement IR after the planner has bound public
-    arguments and resolved the group. ``validate_common_arguments`` checks
-    calls made through the common ``cuda.coop`` API before that replacement;
-    backend-qualified calls skip it. ``None`` omits the check. Both hooks
-    receive the active planning context.
+    ``lower`` returns replacement IR after the planner binds public arguments
+    and resolves the group. ``validate_common_arguments`` checks calls through
+    the common ``cuda.coop`` API first; backend-qualified calls skip it.
+    ``None`` omits that check. Both hooks receive the active planning context.
+
+    ``results`` describes return values in order so dtype and extent analysis
+    can follow a call before rewriting. One result is returned directly;
+    multiple result policies describe a tuple. An empty tuple supplies no
+    result provenance. These policies aid inference; they do not allocate or
+    validate returned values.
     """
 
     lower: Callable[..., list[Any]]
@@ -622,6 +642,11 @@ def register_group_primitive(
     lower : callable
         Hook that receives the planning context, call assignment, resolved
         group, and bound arguments, and returns replacement IR statements.
+    results : tuple of GroupResultSource, optional
+        Result policies in return order, used to infer dtypes and per-thread
+        element counts before replacement statements exist. One policy
+        describes a direct result; several describe a tuple. An empty tuple
+        supplies no result provenance.
     validate_common_arguments : callable or None
         Optional check for calls through the common ``cuda.coop`` API. It runs
         before ``lower`` with the planning context and bound arguments;
@@ -629,8 +654,10 @@ def register_group_primitive(
 
     Raises
     ------
+    TypeError
+        A hook is not callable or a result entry is not a ``GroupResultSource``.
     RuntimeError
-        Different hooks are already registered under this operation name.
+        Different hooks or result policies already use this operation name.
         Repeating the same registration is allowed.
     """
 
