@@ -321,9 +321,6 @@ def test_removed_prefix_keyword_is_rejected_during_binding():
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as coop
-    from cuda.coop.numba_mlir._compiler._group_planner_support import (
-        GroupRewriteError,
-    )
 
     def prefix_from_aggregate(block_aggregate):
         return block_aggregate
@@ -336,7 +333,7 @@ def test_removed_prefix_keyword_is_rejected_during_binding():
         )
 
     _, planner = _plan(kernel, arg_types=(types.int32,))
-    with pytest.raises(GroupRewriteError, match="unexpected keyword argument"):
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
         planner.run()
 
 
