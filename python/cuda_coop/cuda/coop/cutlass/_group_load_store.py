@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Validate block Load/Store calls before emitting CuTe extern calls.
+"""Validate block and physical-warp Load/Store calls for CuTe lowering.
 
-Use exact compiler launch facts and shared group planning. Calls accept all
-six CUB block algorithms on contiguous memory. Transpose algorithms use
-shared scratch from an implicit or explicit TempStorage. Binding records
-separate embedded constants from device-time arguments.
+Exact launch facts and shared group planning determine participation and
+algorithm support. Binding records separate embedded constants from runtime
+arguments. Block calls can use explicit scratch descriptors; physical warps
+use compiler-managed scratch when their selected algorithm needs it.
 """
 
 from __future__ import annotations
@@ -19,17 +19,7 @@ from typing import Any
 from cuda.coop._core import ArgumentBinding, GroupLoadStoreAlgorithm
 from cuda.coop._core.api._payload import _validate_common_temp_storage
 from cuda.coop._core.thread_group import ThreadGroup as CommonThreadGroup
-from cuda.coop._typing import (
-    BlockLoadStoreAlgorithm,
-    CommonThreadDataLike,
-    IntegerValue,
-    TempStorageLike,
-    ThreadDataLike,
-    ValidItems,
-    _CommonNumericT,
-)
 
-from .._core.api.thread_group import BlockGroup
 from ._thread_data import ThreadData
 from ._thread_group import (
     _require_complete_warp_partition,
@@ -41,11 +31,11 @@ _MAX_STATIC_OFFSET = (1 << 63) - 1
 
 
 def _resolve_group(group, algorithm, temp_storage, operation):
-    """Require a block group and resolve exact launch dimensions.
+    """Resolve launch dimensions and reject unsupported group/storage pairs.
 
-    Normalize the algorithm and apply the common checks to an explicit scratch
-    descriptor. The shared planner later decides whether the algorithm uses
-    that descriptor.
+    Physical warps need complete 32-thread membership. Their scratch is
+    compiler-owned; only block calls can use a caller's descriptor. Return the
+    resolved group, exact launch facts and normalized algorithm for planning.
     """
 
     if not isinstance(group, CommonThreadGroup):
@@ -75,58 +65,49 @@ def _resolve_group(group, algorithm, temp_storage, operation):
 
 
 def load(
-    group: BlockGroup,
-    source: object,
-    output: ThreadDataLike[_CommonNumericT],
+    group: CommonThreadGroup,
+    source: Any,
+    output: ThreadData,
     /,
     *,
-    algorithm: BlockLoadStoreAlgorithm = "direct",
-    valid_items: ValidItems | None = None,
-    oob_default: _CommonNumericT | float | None = None,
-    offset: IntegerValue | None = None,
-    temp_storage: TempStorageLike | None = None,
+    algorithm: Any = "direct",
+    valid_items: Any = None,
+    oob_default: Any = None,
+    offset: Any = None,
+    temp_storage: Any = None,
 ) -> None:
     """Load a contiguous group tile into a writable per-thread payload.
 
     Shared parameters and participation follow :func:`cuda.coop.load`. This
-    implementation accepts block groups and all six block Load algorithms.
-    The output must be CUTLASS ThreadData; its dtype is inferred from the
-    source, or must agree with it when already declared.
+    implementation accepts block groups and physical warps. The output must be
+    CUTLASS ThreadData; its dtype is inferred from the source, or must agree
+    with it when already declared.
 
-    Load populates the payload in place in the selected algorithm's layout.
-    Beyond ``valid_items``, slots have unspecified values unless
-    ``oob_default`` is supplied, even if initialized before Load. Supplying a
-    default also requires ``valid_items``. A runtime default must have the
-    memory dtype.
+    Load populates the payload in the selected algorithm's layout. Beyond
+    ``valid_items``, slots have unspecified values unless ``oob_default`` is
+    supplied, even if initialized before Load. A default requires
+    ``valid_items``. A runtime default must have the memory dtype.
 
-    The count ranges from zero through the full tile size. ``offset`` is a
-    nonnegative element offset. Counts, offsets, and supplied defaults must
-    agree across the block. The caller must provide enough accessible memory
-    for the selected prefix at that offset.
+    The count ranges from zero through the group's full tile size. ``offset``
+    is a nonnegative element offset. Counts, offsets, and supplied defaults
+    must agree within the group. For a physical warp, the compiler also adds
+    that warp's tile origin within the block. Different warps can use
+    different controls. The caller must provide enough accessible memory for
+    the selected prefix at the resulting offset.
 
-    The source must expose a raw pointer and a provably compact layout, or a
-    bare pointer conversion without layout metadata. Register or local-memory
-    tensors are rejected. Load reads addressable memory, such as global or
-    shared memory. DIRECT, STRIPED, and VECTORIZE need no shared scratch or
-    reuse barrier; an accepted explicit descriptor does not change that.
+    The source must expose a raw pointer and a provably compact layout. A bare
+    pointer object with no shape or stride metadata is also accepted, but its
+    capacity is not checked. Register or local-memory tensors are rejected.
+    Load reads addressable memory, such as global or shared memory. DIRECT,
+    STRIPED, and VECTORIZE need no shared scratch or reuse barrier; an
+    accepted block descriptor does not change that.
 
     Transpose algorithms use shared scratch. With no ``temp_storage``, the
     compiler allocates it and inserts a trailing reuse barrier. An explicit
-    :class:`cuda.coop.cutlass.TempStorage` sets sharing and synchronization
-    policy. Its default ``auto_sync=False`` requires a barrier before reuse.
-
-    Examples
-    --------
-    Copy a partial tile between different source and destination offsets.
-    The launcher accepts device pointers and a compile-time
-    ``items_per_thread`` value.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_load_store_examples.py
-        :language: python
-        :start-after: # qualified-load-store-example-begin
-        :end-before: # qualified-load-store-example-end
-        :dedent: 4
+    :class:`cuda.coop.cutlass.TempStorage` is supported only for block calls.
+    It sets sharing and synchronization policy; its default
+    ``auto_sync=False`` requires a barrier before reuse. Physical warps use
+    independent scratch slices and a warp barrier.
     """
 
     if not isinstance(output, ThreadData):
@@ -157,49 +138,38 @@ def load(
 
 
 def store(
-    group: BlockGroup,
-    destination: object,
-    value: _CommonNumericT | CommonThreadDataLike[_CommonNumericT],
+    group: CommonThreadGroup,
+    destination: Any,
+    value: Any,
     /,
     *,
-    algorithm: BlockLoadStoreAlgorithm = "direct",
-    valid_items: ValidItems | None = None,
-    offset: IntegerValue | None = None,
-    temp_storage: TempStorageLike | None = None,
+    algorithm: Any = "direct",
+    valid_items: Any = None,
+    offset: Any = None,
+    temp_storage: Any = None,
 ) -> None:
     """Store per-thread values into a contiguous group tile.
 
     Shared parameters and participation follow :func:`cuda.coop.store`. This
-    implementation accepts block groups and all six block Store algorithms.
-    Each thread supplies a scalar or an initialized CUTLASS ThreadData
-    payload whose dtype matches the destination. As with
-    :func:`cuda.coop.store`, do not rely on the payload's contents after a
-    transpose Store; copy values that are needed later.
+    implementation accepts block groups and physical warps. Each thread
+    supplies a scalar or an initialized CUTLASS ThreadData payload whose dtype
+    matches the destination. As with :func:`cuda.coop.store`, do not rely on
+    the payload's contents after a transpose Store; copy values needed later.
 
-    ``valid_items`` selects a prefix from zero through the full tile size.
-    ``offset`` is a nonnegative element offset. Both must agree across the
-    block, and the caller must provide enough accessible destination memory
-    for that prefix. Items outside it are not written. The destination has the
-    same raw-pointer and compact-layout requirements as :func:`load`.
+    ``valid_items`` selects a prefix from zero through the group's full tile
+    size. ``offset`` is a nonnegative element offset. Both must agree within
+    the group. For a physical warp, the compiler also adds that warp's tile
+    origin within the block. Different warps can use different controls. The
+    caller must provide enough accessible destination memory for the prefix
+    at the resulting offset. Items outside it are not written. The destination
+    has the same raw-pointer and compact-layout requirements as :func:`load`.
 
     Transpose algorithms use shared scratch. With no ``temp_storage``, the
     compiler allocates it and inserts a trailing reuse barrier. An explicit
-    descriptor controls allocation and reuse; the caller must synchronize
-    before reuse unless ``auto_sync=True``. DIRECT, STRIPED, and VECTORIZE do
-    not need scratch or a reuse barrier.
-
-    Examples
-    --------
-    Copy a partial tile between different source and destination offsets.
-    The launcher accepts device pointers and a compile-time
-    ``items_per_thread`` value.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_load_store_examples.py
-        :language: python
-        :start-after: # qualified-load-store-example-begin
-        :end-before: # qualified-load-store-example-end
-        :dedent: 4
+    descriptor is supported only for block calls and controls allocation and
+    reuse. The caller must synchronize before reuse unless ``auto_sync=True``.
+    Physical warps use independent scratch slices and a warp barrier. DIRECT,
+    STRIPED, and VECTORIZE need no scratch or reuse barrier.
     """
 
     group, launch, algorithm = _resolve_group(

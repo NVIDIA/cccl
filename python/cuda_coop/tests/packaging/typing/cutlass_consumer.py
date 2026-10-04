@@ -2,11 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Type-check CUTLASS payloads shared with common Load and Store calls.
+"""Check public CUTLASS stubs as a typed consumer program.
 
-The checks confirm that payload construction, register-tensor conversions, and
-immutable-vector conversions keep the scalar dtype. This module is a mypy
-input; it does not trace or launch a kernel.
+``test_typing.py`` runs ``mypy --strict`` on this file against copied
+``.pyi`` stubs. This prevents implementation modules from supplying missing
+declarations. Checks cover block and warp group kinds, Load/Store returns,
+descriptor attributes and calls across namespaces, and dtype-preserving
+payload constructors and conversions.
+
+The test neither imports this file nor traces or launches a kernel.
 """
 
 from __future__ import annotations
@@ -53,8 +57,6 @@ def check_cutlass_surface(source: object, destination: object) -> None:
     common_coop.load(common_coop.this_block(), source, values)
     common_coop.store(common_coop.this_block(), destination, values)
 
-    # Common and qualified calls accept either descriptor type, and sync()
-    # returns None. These checks exercise annotations, not execution.
     storage = cutlass_coop.TempStorage(alignment=1, sharing="exclusive")
     assert_type(storage, cutlass_coop.TempStorage)
     assert_type(storage.auto_sync, bool)
@@ -116,6 +118,12 @@ def check_cutlass_surface(source: object, destination: object) -> None:
 
 
 def check_cutlass_warp_surface(source: object, destination: object) -> None:
+    """Check Warp Load/Store types across both API namespaces.
+
+    All four physical Warp algorithms accept prefix controls. Groups from
+    either namespace must work with common and qualified calls.
+    """
+
     warp = cutlass_coop.this_warp()
     values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
     assert_type(warp, cutlass_coop.ThreadGroup[Literal["warp"]])

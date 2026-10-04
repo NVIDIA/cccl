@@ -330,9 +330,10 @@ insert trailing reuse synchronization after each storage-using call. Without
 an explicit descriptor, the compiler manages scratch and its reuse
 synchronization automatically.
 
-The following example transforms eight independent tiles. It uses a shared
-descriptor with ``auto_sync=True`` by default. Its options select exclusive
-slices or manual ``storage.sync()`` calls.
+By default, the following example transforms eight independent tiles with
+``sharing="shared"`` and ``auto_sync=True``. The ``sharing`` option selects
+shared or exclusive slices. The ``manual_sync`` option replaces automatic
+synchronization with ``storage.sync()`` calls.
 :download:`Download the storage example
 <../../python/cuda_coop/examples/cutlass/block_storage.py>`:
 
