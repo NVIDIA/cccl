@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Resolve group Scan requests into CUB calls and execution contracts.
+
+Primitive semantics describe the values. This layer adds the resolved group,
+launch dimensions, valid-prefix controls, and result ownership. Canonicalize
+default choices before forming a plan so equivalent requests share identity.
+The plan records required scratch and synchronization without compiling code
+or allocating memory.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
@@ -63,12 +72,44 @@ def _plus_operator() -> CxxOperator:
 
 
 def _typed_zero() -> CxxFunction:
+    """Provide the payload-typed seed needed by a partial exclusive sum.
+
+    Keep this descriptor in the canonical group call so planning identity and
+    the later CUB signature agree on the inserted initial value.
+    """
+
     return CxxFunction("{T}{0}", Dependency("T"), name="initial_value")
 
 
 @dataclass(frozen=True, eq=False)
 class GroupScanSemantics:
-    """Out-of-place CUB scan semantics selected after group resolution."""
+    """Add group-specific controls to a validated Scan operation.
+
+    Construct ``primitive`` with ``make_scan_semantics``. This wrapper
+    normalizes the optional CUB algorithm and static count representation;
+    group planning checks whether those controls apply to the resolved group.
+    A prefix bound limits contributing inputs while all group members still
+    call the operation.
+
+    Attributes
+    ----------
+    primitive : ScanSemantics
+        Input shape, mode, operator, initial value, and aggregate request.
+    cub_algorithm : BlockScanAlgorithm or str or None
+        Optional block strategy. Construction normalizes a supplied spelling.
+        Blocks default to ``RAKING``. Warps reject this option.
+    valid_items : ArgumentBinding
+        Omitted for all inputs, or an embedded/runtime count for a warp
+        prefix. Construction normalizes static payloads to signed i32.
+        Planning checks them against the logical width. Runtime counts must
+        meet the same bounds and be uniform across the group.
+
+    Notes
+    -----
+    Each member owns its prefix result, with the input shape and dtype. For a
+    partial scan, only results in the valid prefix are defined. The aggregate
+    is a separate scalar for every member and excludes the seed.
+    """
 
     primitive: ScanSemantics
     cub_algorithm: BlockScanAlgorithm | str | None = None
@@ -155,6 +196,15 @@ class GroupScanSemantics:
 def _call_classifications(
     operation: GroupScanSemantics,
 ) -> tuple[ParameterClassification, ...]:
+    """Describe logical call arguments for planning and diagnostics.
+
+    Record whether the operator, seed, and prefix count are static or runtime.
+    An aggregate buffer is an output. Mode and algorithm are static choices.
+    These records describe the group call. The block or warp specialization
+    factory builds CUB's parameter order, including its scratch and
+    output-reference arguments.
+    """
+
     classifications = [
         ParameterClassification(
             "value", ArgumentKind.RUNTIME, ParameterRole.INPUT
@@ -218,6 +268,14 @@ def _call_classifications(
 def _canonical_cub_scan_operation(
     operation: GroupScanSemantics,
 ) -> GroupScanSemantics:
+    """Make implicit addition explicit when the CUB overload needs it.
+
+    Seeded exclusive addition needs a plus operator. A partial exclusive sum
+    also needs a typed zero because the no-initial overload leaves rank zero
+    undefined. Keep these choices in the operation used for call identity.
+    The warp factory can complete normalization for other partial forms.
+    """
+
     primitive = operation.primitive
     if (
         operation.mode is GroupScanMode.EXCLUSIVE
@@ -240,6 +298,14 @@ def _canonical_cub_scan_operation(
 
 
 def _result_contract(operation: GroupScanSemantics) -> ResultContract:
+    """Describe per-member prefixes and a group-wide aggregate.
+
+    Prefixes retain the operand's scalar or array shape. The aggregate always
+    has one item per member, even when each input contains several items.
+    Participation constraints separately limit which partial-prefix results
+    have defined values.
+    """
+
     results = [
         LogicalResultContract(
             name="value",
@@ -270,6 +336,53 @@ def _plan_scan(
     launch: LaunchFacts,
     operation: GroupScanSemantics,
 ) -> GroupLoweringPlan:
+    """Choose a CUB scan and record its results, participation, and scratch.
+
+    Group dispatch has already resolved the group against exact launch
+    dimensions. Canonicalize seeded sums and default algorithms before
+    building the call so equivalent requests share plan identity. Reject
+    custom exclusive scans without a seed: the public group result must be
+    defined at rank zero.
+
+    Parameters
+    ----------
+    call : GroupPrimitiveCall
+        Requested group and operation. A new call records canonical choices
+        when normalization changes the operation.
+    resolved : ThreadGroup
+        Block or warp group resolved against the launch dimensions.
+    launch : LaunchFacts
+        Exact block dimensions used to specialize CUB and count the
+        independent scratch instances.
+    operation : GroupScanSemantics
+        Validated semantics plus the algorithm and prefix controls.
+
+    Returns
+    -------
+    GroupLoweringPlan
+        A CUB implementation with result and execution contracts, or an
+        unsupported plan with a specific reason. Supported plans use
+        implementation-owned shared scratch for each group instance and
+        request a reuse barrier at the group's execution scope. The backend
+        determines the scratch layout.
+
+    Raises
+    ------
+    TypeError
+        A scalar control or primitive descriptor has an invalid type.
+    ValueError
+        A static count is outside ``[1, logical_width]``, or a descriptor
+        violates the selected CUB factory's validation rules.
+
+    Notes
+    -----
+    Block scans support scalar and blocked-array inputs. Warp scans accept one
+    scalar per lane. ``valid_items`` applies to warps, and algorithm selection
+    applies to blocks. Initial values and runtime counts must be uniform.
+    Planning checks static counts. Runtime bounds remain caller preconditions;
+    runtime checking belongs to the backend.
+    """
+
     if (
         operation.valid_items.kind is not BindingKind.OMITTED
         and resolved.kind == "block"
@@ -310,9 +423,8 @@ def _plan_scan(
                 call,
                 resolved,
                 UnsupportedReasonCode.OPERATION_VARIANT,
-                "BLOCK_SCAN_WARP_SCANS requires a block size "
-                "that is a multiple "
-                "of the 32-thread architectural warp",
+                "BLOCK_SCAN_WARP_SCANS requires a block size that is a "
+                "multiple of the 32-thread architectural warp",
             )
         if operation.cub_algorithm is None:
             operation = replace(operation, cub_algorithm=algorithm)

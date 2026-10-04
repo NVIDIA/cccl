@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Run the common Scan examples with independent NumPy references.
+
+The marked source regions are included in the API documentation. References
+cover seeded exclusive scans, per-group prefix order, and preservation of
+the input payload when a scan returns a separate result.
+"""
+
 import pytest
 
 cuda = pytest.importorskip("numba_cuda_mlir.cuda")
