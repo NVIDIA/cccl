@@ -277,6 +277,11 @@ def _referenced_paths_token(
 ) -> tuple[tuple[tuple[str, ...], Any], ...]:
     """Describe names and immediate attribute paths loaded by the bytecode.
 
+    Callback identity construction calls this for global and captured
+    dependencies. For example, a callback using ``helpers.combine`` must
+    change identity when that referenced helper changes, even if the
+    callback bytecode and module name stay the same.
+
     ``load_opnames`` selects global-name or closure-cell loads. For each load,
     record the root name and each following attribute or method prefix. Read
     those paths from ``namespace`` with static attribute lookup so descriptors
@@ -287,6 +292,25 @@ def _referenced_paths_token(
     This scan follows explicit bytecode paths, not computed lookups. It avoids
     including unrelated namespace entries while retaining the loaded root
     objects as well as their attributes.
+
+    Parameters
+    ----------
+    code : types.CodeType
+        Callback implementation whose explicit global or closure
+        references are being inspected.
+    namespace : mapping of str to object
+        Values bound to the selected root names: globals for global
+        loads, or named closure contents for closure loads.
+    state : _TokenState
+        Mutable traversal state shared with the caller: backend
+        normalization, active recursion paths, and reusable
+        completed tokens. It belongs to one semantic-token query.
+    load_opnames : frozenset of str
+        Bytecode load instructions that introduce the root names to
+        inspect.
+    include_nested : bool
+        Whether to inspect code objects stored in constants, such as
+        nested helper functions, using the same namespace.
     """
 
     paths: set[tuple[str, ...]] = set()
@@ -440,10 +464,25 @@ def _descriptor_token(value: Any, state: _TokenState) -> Any:
 def _type_dependency_token(value: type, state: _TokenState) -> Any:
     """Describe a class's members, bases, and metaclass for a callback.
 
+    Dependency traversal calls this when naming a class alone would hide
+    changes to code or state used by a callback. It contributes to
+    specialization identity; it does not instantiate the class or
+    compile its methods.
+
     Definitions can refer back to their class or to other active dependencies.
     Use path-relative cycle markers for those references. Reuse completed work
     only when it contains no cycle marker; its depth would have a different
     meaning if reused from another traversal path.
+
+    Parameters
+    ----------
+    value : type
+        Class reached through a callback dependency, including its
+        own bases and metaclass.
+    state : _TokenState
+        Mutable traversal state shared with the caller: backend
+        normalization, active recursion paths, and reusable
+        completed tokens. It belongs to one semantic-token query.
     """
 
     value_id = id(value)
@@ -514,6 +553,11 @@ def _dataclass_fields_token(value, state, tokenize):
 def _dependency_token(value: Any, state: _TokenState) -> Any:
     """Describe a callable dependency, including nested class definitions.
 
+    The callback encoder uses this traversal so a captured container of
+    helper classes retains their definitions. Ordinary specialization
+    values can use a narrower description; that distinction is why
+    dependency traversal keeps a separate memoization mode.
+
     The ordinary value encoder names a type without inspecting its definition.
     Callbacks need more detail: methods, class attributes, and descriptors can
     change their behavior. Keep this dependency mode through containers and
@@ -521,6 +565,16 @@ def _dependency_token(value: Any, state: _TokenState) -> Any:
 
     Apply backend normalization first. It runs before cycle tracking, so
     replacements must stop changing or the recursion will not end.
+
+    Parameters
+    ----------
+    value : object
+        Value reached through callback globals, closure contents,
+        defaults, stored state, or another dependency container.
+    state : _TokenState
+        Mutable traversal state shared with the caller: backend
+        normalization, active recursion paths, and reusable
+        completed tokens. It belongs to one semantic-token query.
     """
 
     if state.normalize is not None:
@@ -608,6 +662,11 @@ def _dependency_token(value: Any, state: _TokenState) -> Any:
 def _callable_token(value: Any, state: _TokenState) -> tuple[Any, ...]:
     """Identify a callable from its implementation and captured dependencies.
 
+    ``_semantic_token`` calls this when it encounters a callable while
+    building an algorithm or operator identity. The description must
+    notice changes to captured inputs before a compiled callback or
+    provider can be reused.
+
     Functions contribute bytecode, defaults, closure contents, and referenced
     globals. Bound methods also include the instance's stored state. Callable
     objects use their exposed function metadata or their ``__call__`` method;
@@ -619,6 +678,16 @@ def _callable_token(value: Any, state: _TokenState) -> tuple[Any, ...]:
     library internals. Other callable tokens include a digest of the inspected
     dependencies. Unexpected metadata is included as data rather than silently
     discarded, so it can still distinguish callable objects.
+
+    Parameters
+    ----------
+    value : callable
+        Function, bound method, partial application, or callable
+        instance whose behavior contributes to a specialization.
+    state : _TokenState
+        Mutable traversal state shared with the caller: backend
+        normalization, active recursion paths, and reusable
+        completed tokens. It belongs to one semantic-token query.
     """
 
     if isinstance(value, partial):
