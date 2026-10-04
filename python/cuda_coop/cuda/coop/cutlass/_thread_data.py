@@ -936,10 +936,21 @@ class ThreadData:
         self._values[idx] = value
 
     def _dynamic_values(self) -> tuple[type, tuple[Any, ...]]:
-        """Resolve all items to one dtype for CuTe control-flow operands.
+        """Resolve payload items to typed scalars for CuTe IR operations.
+
+        CuTe uses ``__extract_mlir_values__`` and ``__new_from_mlir_values__``
+        when a payload crosses a function boundary or runtime branch or loop.
+        Those hooks call this helper because IR uses separate typed scalar
+        operands, rather than a Python ThreadData object.
 
         Convert host literals to scalar expressions. A declared dtype supplies
         the signedness for raw integer IR values of matching width.
+
+        Returns
+        -------
+        tuple
+            Common CUTLASS scalar type and the initialized item expressions in
+            payload order. Uninitialized or incompatible items raise an error.
         """
 
         from ._compiler import _types
