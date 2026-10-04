@@ -44,10 +44,12 @@ def _deferred_temp_storage_capability_error(
 
 
 def _active_cuda_kernel_op() -> Any:
-    """Walk from the insertion point to the enclosing ``cuda.kernel``.
+    """Find the kernel that must own scratch for the active insertion point.
 
-    Scratch is planned per kernel. A call inside a loop or branch must map to
-    that kernel so its allocation can be placed at kernel entry.
+    Calls can occur in nested regions, so walk outward to ``cuda.kernel`` or
+    a ``lir.func`` marked ``gpu.kernel`` directly inside ``gpu.module``. A
+    device helper or a function with launch attributes alone is not enough:
+    scratch planning and allocation must be attached to the enclosing kernel.
     """
 
     try:
@@ -133,6 +135,13 @@ def register_deferred_temp_storage_event(
         Provider operands: a Uint32 shared-memory address, an Int32 capacity,
         and an Int32 automatic-barrier flag. Finalization replaces the first
         two; the flag is fixed by the descriptor's ``auto_sync`` policy.
+
+    Raises
+    ------
+    TypeError
+        ``requirement_key`` is not hashable.
+    DSLRuntimeError
+        No kernel trace is active, or no enclosing kernel owns the call.
     """
 
     try:

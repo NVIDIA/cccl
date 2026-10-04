@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Plan deferred scratch from call events and exact native layout facts.
+"""Test scratch planning from traced calls and exact C++ layouts.
 
-Synthetic events stand in for traced collective calls. The tests supply
-size and alignment directly, then inspect shared slots, exclusive slices,
-and isolation by kernel and descriptor. Separate session checks cover
-rollback and the operands that final allocation will replace.
+Synthetic events stand in for traced collective calls. The tests supply size
+and alignment directly, then check shared slots, exclusive slices, and
+isolation by kernel and descriptor. Other tests cover session rollback, fresh
+placeholder operands, and kernel discovery.
 """
 
 from dataclasses import replace
@@ -50,6 +50,8 @@ def _event(storage, key, kernel):
 
 
 def _region_op(name, attributes=None):
+    """Build one region and block for a synthetic MLIR nesting test."""
+
     operation = ir.Operation.create(name, attributes=attributes, regions=1)
     operation.regions[0].blocks.append()
     return operation
@@ -221,11 +223,13 @@ def test_event_rollback():
     "nested", (False, True), ids=("entry", "nested-region")
 )
 def test_registration_uses_fresh_operands(kernel_name, nested):
-    """Give each call its own operands for deferred storage replacement.
+    """Give each traced call fresh operands and its enclosing kernel.
 
-    Calls may share storage but still need distinct address and size operands.
-    An MLIR context permits operand creation here without tracing or launching
-    a GPU kernel.
+    One descriptor is reused in two kernels on purpose. Each call needs its
+    own address and size placeholders, and planning groups the calls by
+    kernel. A call in a nested region must resolve to the same kernel as a
+    call in the entry block. Unregistered MLIR operations test the traversal
+    without compiling a kernel.
     """
 
     session = _state.BundleSession()
@@ -296,6 +300,13 @@ def test_registration_uses_fresh_operands(kernel_name, nested):
 def test_kernel_discovery_rejects_non_kernel_functions(
     parent_name, function_name, attribute_names
 ):
+    """Reject functions that resemble a kernel but are not one.
+
+    Only ``cuda.kernel``, or an ``lir.func`` that has ``gpu.kernel`` and sits
+    directly in ``gpu.module``, owns scratch. Launch attributes alone must not
+    make a device helper own kernel scratch.
+    """
+
     with ir.Context() as context, ir.Location.unknown():
         context.allow_unregistered_dialects = True
         module = ir.Module.create()
