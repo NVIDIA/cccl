@@ -2,7 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Resolve the CCCL headers used to compile cooperative primitives."""
+"""Select the CCCL and CUDA headers used to compile cooperative primitives.
+
+CCCL headers come from an explicit root, this package's source checkout, or
+the installed wheel. CUDA runtime headers are selected separately. Keeping
+these choices separate prevents a compiler from using the toolkit's bundled
+CUB in place of the CCCL headers that belong to ``cuda.coop``.
+"""
 
 from __future__ import annotations
 
@@ -28,13 +34,25 @@ class HeaderResolutionError(RuntimeError):
 
 @dataclass(frozen=True)
 class CoopIncludePaths:
-    """Ordered CCCL and CUDA include paths with their provenance."""
+    """Keep the selected header paths and a description of their source.
+
+    ``cccl`` lists the include roots in search order. ``cuda`` contains at
+    most one CUDA runtime include directory. If it is empty, :meth:`as_tuple`
+    raises an error because compilation needs CUDA headers. ``origin`` names
+    the selected CCCL source for diagnostics.
+    """
 
     cccl: tuple[Path, ...]
     cuda: tuple[Path, ...]
     origin: str
 
     def as_tuple(self) -> tuple[Path, ...]:
+        """Require CUDA headers and put the selected CCCL roots first.
+
+        This order gives the selected CCCL headers priority over the copies
+        shipped with the CUDA toolkit.
+        """
+
         if not self.cuda:
             raise HeaderResolutionError(
                 "Unable to locate one CUDA include directory containing "
@@ -47,6 +65,8 @@ class CoopIncludePaths:
 def _unique_existing_dirs(
     paths: Iterable[Path | str | None],
 ) -> tuple[Path, ...]:
+    """Resolve existing directories and remove duplicates in input order."""
+
     result: list[Path] = []
     seen: set[Path] = set()
     for raw_path in paths:
@@ -61,6 +81,12 @@ def _unique_existing_dirs(
 
 
 def _source_checkout_paths(root: Path) -> tuple[Path, ...]:
+    """Find the separate library roots in a CCCL source checkout.
+
+    Return an empty tuple if the CUB marker is absent. Once that marker is
+    present, require all library roots so an incomplete checkout is an error.
+    """
+
     if not (root / "cub" / _CUB_PROBE).is_file():
         return ()
     candidates = (
@@ -82,6 +108,12 @@ def _source_checkout_paths(root: Path) -> tuple[Path, ...]:
 
 
 def _packaged_header_paths(root: Path) -> tuple[Path, ...]:
+    """Find a bundled include tree at ``root`` or directly below it.
+
+    A CUDA runtime header in the same tree identifies a toolkit include
+    directory, which cannot serve as the package's CCCL header bundle.
+    """
+
     candidates = (
         root,
         root / "include",
@@ -99,6 +131,11 @@ def _packaged_header_paths(root: Path) -> tuple[Path, ...]:
 
 
 def _configured_cccl_paths(root: Path) -> tuple[Path, ...]:
+    """Require an explicit root to contain a checkout or header bundle.
+
+    Invalid configuration raises an error instead of selecting another source.
+    """
+
     resolved_root = root.expanduser().resolve()
     paths = _source_checkout_paths(resolved_root)
     if paths:
@@ -113,6 +150,12 @@ def _configured_cccl_paths(root: Path) -> tuple[Path, ...]:
 
 
 def _find_source_checkout(start: Path) -> tuple[Path, tuple[Path, ...]] | None:
+    """Find the checkout that contains this Python source package.
+
+    Search above ``start``, normally a module's file path. A wheel installed
+    inside an unrelated checkout must still use its own bundled headers.
+    """
+
     current = start.expanduser().resolve()
     if current.is_file():
         current = current.parent
@@ -138,11 +181,19 @@ def _belongs_to_source_package(start: Path, root: Path) -> bool:
 
 @cache
 def _installed_header_root() -> Path:
+    """Keep the wheel's header resource available for the process lifetime.
+
+    Resource access can extract files to a temporary directory. The shared
+    context stack keeps that directory alive for later compiler invocations.
+    """
+
     resource = files(__package__).joinpath("include")
     return Path(_INSTALLED_HEADER_CONTEXTS.enter_context(as_file(resource)))
 
 
 def _installed_include_paths() -> CoopIncludePaths:
+    """Require the wheel's CUB bundle and discover CUDA headers separately."""
+
     cccl = _packaged_header_paths(_installed_header_root())
 
     if not any((path / _CUB_PROBE).is_file() for path in cccl):
@@ -160,6 +211,8 @@ def _installed_include_paths() -> CoopIncludePaths:
 def _select_cuda_include_path(
     paths: Iterable[Path | str | None],
 ) -> tuple[Path, ...]:
+    """Select only the first directory that contains CUDA runtime headers."""
+
     candidates = _unique_existing_dirs(paths)
     for candidate in candidates:
         if (candidate / _CUDA_PROBE).is_file():
@@ -168,6 +221,12 @@ def _select_cuda_include_path(
 
 
 def _cuda_include_paths() -> tuple[Path, ...]:
+    """Find one CUDA include directory without mixing toolkit installations.
+
+    Prefer Pathfinder's result, then the configured toolkit roots, then the
+    conventional Unix installation. Return an empty tuple if none is usable.
+    """
+
     try:
         from cuda.pathfinder import find_nvidia_header_directory
 
@@ -175,9 +234,8 @@ def _cuda_include_paths() -> tuple[Path, ...]:
     except (ImportError, RuntimeError):
         cuda_include = None
 
-    # Pathfinder already applies its own ordered discovery policy.  A valid
-    # result is authoritative so headers from another Toolkit cannot be mixed
-    # into the same provider compilation.
+    # Pathfinder applies its own search order. Use its result alone so headers
+    # from another toolkit cannot enter the same provider compilation.
     discovered = _select_cuda_include_path((cuda_include,))
     if discovered:
         return discovered
@@ -199,6 +257,12 @@ def _validate_required_headers(
     cccl_paths: tuple[Path, ...],
     origin: str,
 ) -> None:
+    """Check required relative paths only within the selected CCCL roots.
+
+    Reject parent traversal and absolute paths. A missing header is an error.
+    Searching CUDA roots could substitute headers from another CCCL version.
+    """
+
     missing: list[str] = []
     for header in dict.fromkeys(required_headers):
         relative = Path(header)
@@ -224,7 +288,18 @@ def resolve_include_paths(
     configured_roots: Iterable[Path | str | None] = (),
     required_headers: Iterable[str] = (),
 ) -> CoopIncludePaths:
-    """Resolve source-tree or wheel-bundled CCCL headers, never toolkit CUB."""
+    """Select one CCCL header source and discover CUDA runtime headers.
+
+    The first nonempty entry in ``configured_roots`` takes precedence. Without
+    one, use the checkout containing ``start`` if it is inside this package's
+    source directory. Otherwise, use the installed wheel's header bundle.
+    An invalid explicit root raises :class:`HeaderResolutionError`.
+
+    ``required_headers`` contains paths relative to the CCCL include roots.
+    Require each file in the selected source; do not fill gaps with toolkit
+    headers. The returned object can have no CUDA include directory. Its
+    :meth:`CoopIncludePaths.as_tuple` method requires one before compilation.
+    """
 
     configured = next((Path(root) for root in configured_roots if root), None)
     if configured is not None:

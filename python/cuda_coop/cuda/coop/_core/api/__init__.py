@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Collect the common kernel API and identify its constructor functions.
+
+The root package exports these names. Compiler adapters use their identities
+to recognize cooperative operations without changing the public call syntax.
+"""
+
 from .load_store import load, store
 from .temp_storage import TempStorage, TempStorageLike
 from .thread_data import ThreadData, ThreadDataLike
@@ -16,9 +22,9 @@ from .thread_group import (
     this_warp,
 )
 
-# Descriptor constructors and group factories do not use the family
-# registration decorator. Compiler rewrites recognize their exact exported
-# identity plus this tag, which rejects same-named impostor callables.
+# Constructors and group factories bypass the operation registration decorator.
+# Compiler rewrites require this tag and the exported function identity, so
+# an unrelated callable with the same name is not treated as a constructor.
 for _member_name in (
     "TempStorage",
     "ThreadData",

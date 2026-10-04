@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check CUDA Toolkit library selection with temporary files and fake loaders.
+
+The selected libraries must come from the header installation and have
+compatible versions. The fakes record load order and emulate version queries
+so the tests can cover Linux and Windows without loading CUDA.
+"""
+
 from __future__ import annotations
 
 import os
@@ -15,6 +22,12 @@ from cuda.coop._headers import _toolkit
 
 
 class _VersionFunction:
+    """Emulate a C version query that writes through two integer pointers.
+
+    Assert the ctypes signature because NVRTC and nvJitLink use different
+    integer types for their version outputs.
+    """
+
     def __init__(self, version, integer_type):
         self.version = version
         self.pointer_type = _toolkit.ctypes.POINTER(integer_type)
@@ -31,6 +44,7 @@ class _VersionFunction:
 
 @pytest.fixture(autouse=True)
 def _isolated_process_toolkit_state():
+    """Reset fake library handles and toolkit selection around each test."""
     with _toolkit._PRELOAD_LOCK:
         _toolkit._EXACT_LIBRARY_HANDLES.clear()
         _toolkit._PROCESS_TOOLKIT_SELECTION = None
@@ -75,6 +89,7 @@ def _write_complete_toolkit(
     *,
     library_dir_name: str = "lib",
 ) -> dict[str, Path]:
+    """Create a version header and empty libraries under one toolkit root."""
     major = encoded_version // 1000
     minor = (encoded_version % 1000) // 10
     include_dir = root / "include"
@@ -99,6 +114,7 @@ def _write_split_wheel_toolkit(
     *,
     library_dir_name: str = "lib",
 ) -> dict[str, Path]:
+    """Create sibling runtime, NVRTC, and nvJitLink wheel directories."""
     major = encoded_version // 1000
     minor = (encoded_version % 1000) // 10
     include_dir = nvidia_root / "cuda_runtime" / "include"
@@ -129,6 +145,12 @@ def _patch_compiler_loaders(
     actual_nvjitlink: Path | None = None,
     failures: dict[Path, str] | None = None,
 ) -> tuple[list[Path], list[str]]:
+    """Replace compiler loaders and return their call logs for assertions.
+
+    The ctypes fake uses the requested versions and optional load failures.
+    The pathfinder fake can report a different loaded path to test a mismatch
+    with the selected toolkit. Neither fake opens a native library.
+    """
     attempts: list[Path] = []
     pathfinder_calls: list[str] = []
     failures = failures or {}

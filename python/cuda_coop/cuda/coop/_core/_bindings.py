@@ -2,6 +2,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Carry scalar option choices from a frontend into a primitive factory.
+
+A value alone cannot tell a factory which call to build. An omitted count can
+select an unguarded overload; a known count can be embedded in C++ source; a
+runtime count needs a device-call argument. ``ArgumentBinding`` keeps that
+choice separate from the backend expression that supplies a runtime value.
+
+The helpers here validate scalar representations and build parameter records.
+Operation factories apply further rules, such as keeping a count within one
+tile. In these helpers, i32 and i64 mean signed 32-bit and 64-bit integers.
+"""
+
 from __future__ import annotations
 
 import math
@@ -58,7 +70,7 @@ class BindingKind(str, Enum):
 
 @dataclass(frozen=True, eq=False)
 class ArgumentBinding:
-    """A scalar option's supply mode and, when static, its known value.
+    """Record how a scalar option is supplied and retain its static value.
 
     Frontends use this record to pass argument decisions into shared
     planning code without carrying backend-specific runtime expressions.
@@ -79,15 +91,15 @@ class ArgumentBinding:
         Whether the option is omitted, known statically, or runtime-provided.
     value : Any, optional
         Payload for ``STATIC``; must be ``None`` for the other two modes.
-        Payload types, integer widths, and operation-specific bounds are
-        validated by consuming helpers and factories, not by this record.
+        Consuming helpers and factories validate payload types, integer
+        widths, and operation-specific bounds.
 
     Notes
     -----
     Equality and hashing use ``semantic_key`` rather than Python numeric
     equality, so static ``True`` and ``1``, or ``0.0`` and ``-0.0``, remain
-    distinct requests. Integer normalization can deliberately merge equivalent
-    integral types before they enter an operation's specialization key.
+    distinct requests. Integer normalization can give equivalent integral
+    types the same representation before they enter a specialization key.
     """
 
     kind: BindingKind
@@ -111,7 +123,7 @@ class ArgumentBinding:
 
     @classmethod
     def runtime(cls) -> ArgumentBinding:
-        """Request a device-call argument without storing its runtime value."""
+        """Request an argument without storing its runtime value."""
 
         return cls(BindingKind.RUNTIME)
 
@@ -119,7 +131,7 @@ class ArgumentBinding:
     def semantic_key(self) -> tuple[str, ...]:
         """Return the binding identity used by equality and hashing.
 
-        Omitted and runtime bindings are identified solely by their kind.
+        The kind alone identifies omitted and runtime bindings.
         Static bindings also include the payload type's module and qualified
         name and the payload's ``repr``. This distinguishes values that
         Python considers numerically equal but may generate different code.
@@ -227,11 +239,11 @@ def i32_parameter(
     Raises
     ------
     TypeError
-        A used static value or omitted default is not integral or is a boolean.
+        A used static value or omitted default is a boolean or non-integer.
     ValueError
         A used static value or omitted default does not fit signed i32.
-        Operation-specific bounds, such as a tile's item count, are checked
-        separately by the consuming factory or planner.
+        The consuming factory or planner checks operation-specific bounds,
+        such as a tile's item count.
     """
 
     if option.kind is BindingKind.OMITTED:
@@ -266,7 +278,7 @@ def normalize_i32_binding(
     *,
     name: str,
 ) -> ArgumentBinding:
-    """Validate a static i32 binding and normalize its specialization identity.
+    """Validate a static i32 binding and normalize its identity.
 
     Equivalent integral values, such as Python ``1`` and NumPy ``int32(1)``,
     become the same Python ``int`` payload. This avoids separate semantic
@@ -283,8 +295,8 @@ def normalize_i32_binding(
     -------
     ArgumentBinding
         A new static binding with a Python ``int`` payload, or the original
-        non-static binding. Negative values are allowed within signed-i32
-        range; operation-specific bounds are checked separately.
+        non-static binding. This helper accepts negative values within the
+        signed-i32 range. Factories check operation-specific bounds.
 
     Raises
     ------
@@ -304,8 +316,8 @@ def normalize_i32_binding(
 def _normalize_i64(value: Any, *, name: str, source: str) -> int:
     """Convert an integral value to Python ``int`` within signed-i64 bounds.
 
-    Uses the same type checks and diagnostic labels as ``_normalize_i32``.
-    Negative values are accepted; pointer-offset factories apply their own
+    Apply the same type checks and diagnostic labels as ``_normalize_i32``.
+    Accept negative values here; pointer-offset factories apply their own
     nonnegative bounds after this representation check.
     """
 
@@ -322,7 +334,7 @@ def normalize_i64_binding(
     *,
     name: str,
 ) -> ArgumentBinding:
-    """Validate a static i64 binding and normalize its specialization identity.
+    """Validate a static i64 binding and normalize its identity.
 
     Pointer-offset planning uses this to give equal integral offsets the
     same Python ``int`` payload and semantic key. Omitted and runtime
@@ -339,8 +351,8 @@ def normalize_i64_binding(
     -------
     ArgumentBinding
         A new static binding with a Python ``int`` payload, or the original
-        non-static binding. Nonnegative offsets and combined tile-origin
-        bounds are validated separately by factories and group planning.
+        non-static binding. Factories and group planning check nonnegative
+        offsets and combined tile-origin bounds separately.
 
     Raises
     ------

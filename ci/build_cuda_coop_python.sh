@@ -3,6 +3,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+# Build the universal cuda-coop wheel and check its archive contents.
+# GitHub Actions uploads the checked wheel for the installed-package tests.
+
 set -euo pipefail
 
 ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Define the shared Load and Store call signatures and memory contracts.
+
+The decorators register each function's identity and supported group kinds.
+Compiler adapters recognize these calls and generate the selected memory
+operation. The Python bodies reject calls outside a supported GPU kernel.
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -53,11 +60,11 @@ def load(
         Compile-time load algorithm, default ``"direct"``. ``"direct"`` gives
         each thread consecutive elements (blocked order); ``"striped"`` gives
         neighboring threads neighboring elements at each item index.
-        ``"vectorize"`` uses vector accesses when possible, and ``"transpose"``
-        uses shared scratch to rearrange striped accesses into blocked order.
-        Both return blocked order. Blocks also support ``"warp_transpose"``
-        and ``"warp_transpose_timesliced"``, which return blocked order and
-        require a block size divisible by 32.
+        ``"vectorize"`` uses vector accesses when possible, and
+        ``"transpose"`` uses shared scratch to rearrange striped accesses into
+        blocked order. Both return blocked order. Blocks also support
+        ``"warp_transpose"`` and ``"warp_transpose_timesliced"``, which return
+        blocked order and require a block size divisible by 32.
     valid_items : int or integer scalar, optional
         Number of valid elements in the group's tile, shared by all threads
         in that group. Supply a value between zero and the tile size,
@@ -128,9 +135,9 @@ def store(
         This thread's value or readable :ref:`payload <coop-thread-data>`.
         Initialize every item that will be stored. The tile contains
         ``group_size * items_per_thread`` elements, with one item per thread
-        for a scalar. As in CUB, transpose algorithms may rearrange the payload
-        in place. Do not rely on its contents after Store; copy values before
-        the call if they are needed later.
+        for a scalar. As in CUB, transpose algorithms may rearrange the
+        payload in place. Do not rely on its contents after Store; copy values
+        before the call if they are needed later.
     algorithm : str, optional
         Compile-time store algorithm, default ``"direct"``. ``"direct"``
         expects blocked values; ``"striped"`` expects striped values.
@@ -159,7 +166,7 @@ def store(
     Returns
     -------
     None
-        The call writes to ``destination``. The input payload may be rearranged.
+        Writes to ``destination`` and may rearrange the input payload.
 
     See Also
     --------

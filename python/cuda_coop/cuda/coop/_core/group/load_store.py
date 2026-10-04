@@ -2,7 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Select CUB BlockLoad/Store or WarpLoad/Store for a resolved thread group."""
+"""Plan a group's memory transfer using a CUB Block or Warp implementation.
+
+The operation record describes the requested transfer without compiler values.
+After group resolution, the planner selects a CUB specialization and records
+participation, argument bounds, and scratch requirements. Compiler adapters
+use that plan to generate the call and provide any required storage.
+"""
 
 from __future__ import annotations
 
@@ -47,11 +53,19 @@ from ._model import (
 
 
 class GroupLoadStoreKind(str, Enum):
+    """Distinguish a load into per-thread items from a store to memory."""
+
     LOAD = "load"
     STORE = "store"
 
 
 class GroupLoadStoreAlgorithm(str, Enum):
+    """Name transfer algorithms before the planner selects Block or Warp CUB.
+
+    The set includes both families' choices. The planner checks whether the
+    resolved group supports the requested choice, including warp width limits.
+    """
+
     DIRECT = "direct"
     STRIPED = "striped"
     VECTORIZE = "vectorize"
@@ -71,6 +85,16 @@ _STORAGE_FREE_ALGORITHMS = frozenset(
 
 @dataclass(frozen=True, eq=False)
 class GroupLoadStoreSemantics:
+    """Describe one transfer and the values available when planning it.
+
+    ``dtype`` and ``items_per_thread`` determine each thread's payload.
+    Argument bindings distinguish omitted arguments, known constants, and
+    runtime inputs. Storage fields carry the caller's requests until the
+    selected algorithm's scratch needs are known. Direct, striped, and
+    vectorized transfers need no scratch, so their semantic keys exclude those
+    storage requests.
+    """
+
     kind: GroupLoadStoreKind
     dtype: Any
     items_per_thread: int
@@ -89,6 +113,12 @@ class GroupLoadStoreSemantics:
     storage_auto_sync: bool = True
 
     def __post_init__(self) -> None:
+        """Normalize selectors and check argument and storage requests.
+
+        Check integer representation here. Bounds that depend on group size,
+        such as ``valid_items``, are checked after the group is resolved.
+        """
+
         object.__setattr__(self, "kind", GroupLoadStoreKind(self.kind))
         object.__setattr__(
             self,
@@ -199,10 +229,14 @@ class GroupLoadStoreSemantics:
 
     @property
     def returns_value(self) -> bool:
+        """Report that the call writes through its output argument."""
+
         return False
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
+        """Identify the transfer, excluding unused scratch requests."""
+
         common = (
             f"group_{self.kind.value}",
             semantic_token(self.dtype),
@@ -235,6 +269,13 @@ class GroupLoadStoreSemantics:
 def _call_classifications(
     operation: GroupLoadStoreSemantics,
 ) -> tuple[ParameterClassification, ...]:
+    """Describe each argument's role and when its value is available.
+
+    Both transfers take a memory pointer and per-thread items, but load and
+    store reverse their input/output roles. Omitted optional arguments do not
+    enter the call. Record constants separately from runtime inputs.
+    """
+
     classifications = [
         ParameterClassification(
             "source"
@@ -295,12 +336,13 @@ def _plan_load_store(
 ) -> GroupLoweringPlan:
     """Choose a CUB Load/Store specialization for a resolved thread group.
 
-    Called by ``plan_group_primitive`` after group resolution. Select the block
-    or warp implementation and describe its participation, scratch storage,
-    and storage-reuse synchronization requirements for later compilation and
-    lowering. Direct, striped, and vectorized algorithms require no scratch
-    storage or storage-reuse barrier; other algorithms retain the requested
-    storage ownership, layout constraints, sharing, and automatic sync policy.
+    Called by ``plan_group_primitive`` after group resolution. Select the
+    block or warp implementation and describe its participation, scratch
+    storage, and storage-reuse synchronization requirements for later
+    compilation and lowering. Direct, striped, and vectorized algorithms
+    require no scratch storage or storage-reuse barrier; other algorithms
+    retain the requested storage ownership, layout constraints, sharing, and
+    automatic sync policy.
 
     Validate static ``valid_items`` against the group tile size and check that
     pointer offsets fit signed 64-bit arithmetic. Runtime bounds remain caller
@@ -326,18 +368,19 @@ def _plan_load_store(
     Returns
     -------
     GroupLoweringPlan
-        CUB specialization, execution contracts, and implementation provenance,
-        or an ``UNSUPPORTED`` plan with a reason when the group kind, warp
-        width, or algorithm variant is unsupported. This builds metadata;
-        compilation and device-storage allocation happen during later lowering.
+        CUB specialization, execution contracts, and implementation
+        provenance, or an ``UNSUPPORTED`` plan with a reason when the group
+        kind, warp width, or algorithm variant is unsupported. This builds
+        metadata; compilation and device-storage allocation happen during
+        later lowering.
 
     Raises
     ------
     TypeError
         Static ``valid_items`` is not an integer or is a boolean.
     ValueError
-        Static ``valid_items`` is outside the group tile, a warp tile origin or
-        its sum with the user offset exceeds signed 64-bit range, or the
+        Static ``valid_items`` is outside the group tile, a warp tile origin
+        or its sum with the user offset exceeds signed 64-bit range, or the
         specialization builder rejects an argument binding.
     AssertionError
         A supported group lacks a static size or exact block dimensions are

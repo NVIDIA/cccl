@@ -2,6 +2,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Resolve group descriptions using the kernel's launch facts.
+
+A descriptor can name the current block before its dimensions are known.
+Resolution fills in the exact dimensions needed for that group or for a
+query about an enclosing group. It also checks complete physical warps
+and mapped-group partitions.
+
+Missing facts and unsupported shapes produce a structured reason that an
+operation planner can report. Contradictory explicit dimensions raise an
+error. Cluster and grid resolution also require verified cluster-launch state.
+Operation dispatch adds capability checks specific to the operation, such as
+cooperative-launch support for grid operations.
+"""
+
 from __future__ import annotations
 
 from ..launch import LaunchFacts
@@ -39,6 +53,8 @@ def _resolution_failure(
     code: UnsupportedReasonCode,
     message: str,
 ) -> ThreadGroupLaunchResolution:
+    """Keep the requested group with a reason that prevents its resolution."""
+
     return ThreadGroupLaunchResolution(
         group=group,
         unsupported=UnsupportedReason(code=code, message=message),
@@ -51,12 +67,48 @@ def resolve_thread_group(
     *,
     through_level: str | None = None,
 ) -> ThreadGroupLaunchResolution:
-    """Resolve a group against exact launch facts through a hierarchy level.
+    """Fill a group's required hierarchy from exact launch facts.
 
-    ``through_level`` requests the enclosing hierarchy needed by group queries.
-    Primitive planners omit it because the group's own level is sufficient.
-    Exact dimensions remain distinct from upper bounds, and cluster state must
-    be verified before a missing cluster extent can be treated as one block.
+    The group's own level determines how much hierarchy an operation needs.
+    ``through_level`` can request more, for example when a group query asks
+    for a count at an enclosing level. A mapped group needs the dimensions
+    of its physical parent.
+
+    Exact dimensions remain distinct from upper bounds. Cluster and grid
+    resolution require verified cluster-launch state. A verified non-cluster
+    launch lets a missing cluster shape resolve to one block. Each grid axis's
+    block count must be divisible by the cluster's block count on that axis.
+    The resolved hierarchy stores the resulting cluster counts.
+
+    Warp-based groups require complete 32-thread physical warps in the
+    block. A mapped group's count must fit its parent, and an exhaustive
+    mapping must divide the parent's unit count exactly.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        Descriptor to resolve. Any dimensions already present must agree
+        with the required launch dimensions.
+    launch : LaunchFacts
+        Exact dimensions and capability evidence for this compilation.
+    through_level : str, optional
+        Enclosing level needed by a group query. Primitive planners omit
+        this argument when the group's own level is sufficient.
+
+    Returns
+    -------
+    ThreadGroupLaunchResolution
+        The resolved group, or the original group with an unsupported
+        reason. Missing launch facts and unsupported partitions use this
+        result instead of raising an exception.
+
+    Raises
+    ------
+    TypeError
+        The group or launch argument has the wrong type.
+    ValueError
+        The requested level is invalid or an existing group dimension
+        contradicts the exact launch.
     """
 
     if not isinstance(group, ThreadGroup):
@@ -130,9 +182,8 @@ def resolve_thread_group(
             return _resolution_failure(
                 group,
                 UnsupportedReasonCode.LAUNCH_CAPABILITY,
-                "multi-block cluster operations require "
-                "verified cluster launch "
-                "capability",
+                "multi-block cluster operations require verified "
+                "cluster launch capability",
             )
 
     hierarchy_grid_dim = None
@@ -156,8 +207,8 @@ def resolve_thread_group(
             return _resolution_failure(
                 group,
                 UnsupportedReasonCode.LAUNCH_CAPABILITY,
-                "physical CTA grid dimensions must be divisible by the cluster "
-                "dimensions",
+                "physical CTA grid dimensions must be divisible by "
+                "the cluster dimensions",
             )
         hierarchy_grid_dim = tuple(
             grid_extent // cluster_extent
@@ -214,8 +265,8 @@ def resolve_thread_group(
             return _resolution_failure(
                 group,
                 UnsupportedReasonCode.GROUP_KIND,
-                "exhaustive mapped group count must divide the resolved parent "
-                "unit count",
+                "exhaustive mapped group count must divide "
+                "the resolved parent unit count",
             )
     resolved = group.with_hierarchy(
         resolved_hierarchy,
@@ -228,6 +279,14 @@ def _resolve_group(
     call: GroupPrimitiveCall,
     launch: LaunchFacts,
 ) -> tuple[ThreadGroup, GroupLoweringPlan | None]:
+    """Resolve a primitive's group and convert failure to an operation plan.
+
+    Return ``(resolved_group, None)`` on success. Otherwise return the group
+    with an unsupported plan that retains the call and the resolver's reason.
+    Dispatch returns this plan directly, so a resolution failure has the same
+    form as an unsupported result from a family planner.
+    """
+
     resolution = resolve_thread_group(call.group, launch)
     if resolution.unsupported is None:
         return resolution.group, None

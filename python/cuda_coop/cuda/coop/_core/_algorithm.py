@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe a concrete primitive before a backend generates its callable code.
+
+Factories bind template arguments and describe the C++ method's parameters in
+an ``Algorithm``. Backends translate that description into their own compiler
+types and generated wrappers. The core record lets factories share this work
+without importing a compiler. Its identity includes the bound values so cache
+lookups can distinguish different specializations of the same primitive.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
@@ -18,10 +27,20 @@ from ._types import (
 def _freeze_methods(
     methods: Iterable[Iterable[Any]],
 ) -> tuple[tuple[Any, ...], ...]:
+    """Copy method sequences into tuples and retain their descriptors."""
+
     return tuple(tuple(method) for method in methods)
 
 
 def _freeze_semantic_value(value: Any, active: set[int]) -> Any:
+    """Copy supported containers so later caller edits cannot change them.
+
+    Mappings become read-only mappings, lists and tuples become tuples, sets
+    become frozen sets, and byte arrays become bytes. Other objects stay as
+    supplied. ``active`` holds container identities on the current recursion
+    path. A cycle raises ``ValueError``; repeated references are allowed.
+    """
+
     if not isinstance(value, (Mapping, tuple, list, set, frozenset, bytearray)):
         return value
 
@@ -53,6 +72,8 @@ def _freeze_semantic_value(value: Any, active: set[int]) -> Any:
 
 
 def _freeze_mapping(mapping: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Snapshot named values for an algorithm's cached identity."""
+
     return MappingProxyType(
         {
             key: _freeze_semantic_value(value, set())
@@ -63,7 +84,18 @@ def _freeze_mapping(mapping: Mapping[str, Any]) -> Mapping[str, Any]:
 
 @dataclass(frozen=True)
 class TypeDefinition:
-    """C++ source that must precede the generated primitive wrapper."""
+    """Supply a C++ declaration needed by the generated primitive wrapper.
+
+    A factory can use this for a helper type referenced by its parameters or
+    template arguments. The backend emits ``code`` before the wrapper.
+
+    Attributes
+    ----------
+    name : str
+        Name that identifies this definition in the algorithm description.
+    code : str
+        Complete C++ source for the declaration, including any terminator.
+    """
 
     name: str
     code: str
@@ -75,11 +107,58 @@ class TypeDefinition:
 
 @dataclass(frozen=True, eq=False)
 class Algorithm:
-    """A specialized C++ cooperative primitive ready for materialization.
+    """Describe one C++ primitive with its template arguments already bound.
 
-    ``template_arguments`` binds all template parameters and any auxiliary
-    dependency values without performing backend lowering. Both the bindings
-    and optional ``metadata`` are frozen when the algorithm is constructed.
+    Construction checks that every declared template name has a binding.
+    A backend then resolves parameter dependencies and builds the callable
+    wrapper. This record contains the information for that step; constructing
+    it does not compile or link code.
+
+    Attributes
+    ----------
+    struct_name : str
+        C++ primitive class name, such as ``BlockLoad``.
+    method_name : str
+        Method to call on that class, such as ``Load``.
+    c_name : str
+        Stem the backend uses to name generated wrappers.
+    includes : tuple of str
+        Header paths needed to compile the primitive and its parameters.
+    template_parameters : tuple of TemplateParameter
+        Template declarations in C++ argument order.
+    parameters : tuple of tuple
+        Candidate method signatures. Each inner tuple contains parameter
+        descriptors in call order, including any temporary-storage marker.
+    template_arguments : Mapping
+        Values for the declared template parameters and any extra named
+        dependencies used by parameter descriptors.
+    metadata : Mapping
+        Additional planning facts. These also contribute to record identity.
+    type_definitions : tuple of TypeDefinition
+        Helper declarations the backend emits before the wrapper.
+    fake_return : bool
+        If true, pass every output descriptor to the C++ method as an ordinary
+        argument. The wrapper ignores the method's return value.
+    output_by_reference : bool
+        Used when ``fake_return`` is false. The signature can then have at
+        most one output, which receives the result. ``True`` passes that output
+        to the method as an argument. ``False`` leaves it out of the method's
+        arguments and assigns the method's return value to it.
+
+    Notes
+    -----
+    Construction copies supported containers in ``template_arguments`` and
+    ``metadata`` into immutable forms, then computes the equality and hash
+    key. It retains other leaf objects as supplied. Parameter descriptors and
+    those leaf objects must remain suitable for the backend that reads them.
+
+    Extra dependency names need not be C++ template parameters. For example,
+    a parameter's array extent can use a named value that the class template
+    itself does not accept.
+
+    Return-handling flags describe the wrapper behavior for the adapter to
+    implement. The core stores these flags and includes them in identity;
+    wrapper generation belongs to the backend.
     """
 
     struct_name: str
@@ -153,6 +232,8 @@ class Algorithm:
 
     @property
     def ordered_template_arguments(self) -> tuple[tuple[str, Any], ...]:
+        """Return template bindings in C++ order."""
+
         return tuple(
             (name, self.template_arguments[name])
             for name in self.template_parameter_names
@@ -160,8 +241,10 @@ class Algorithm:
 
     @property
     def ordered_specialization_arguments(self) -> tuple[tuple[str, Any], ...]:
-        """Template arguments followed by deterministically ordered
-        auxiliaries.
+        """List template bindings first, then extra dependencies by name.
+
+        Backends use this order to resolve a signature without depending on
+        the caller's mapping insertion order.
         """
 
         template_names = set(self.template_parameter_names)
@@ -177,6 +260,10 @@ class Algorithm:
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
-        """Stable, hashable identity for provider/cache de-duplication."""
+        """Return the cached identity of the description and bound values.
+
+        Equality and hashing use this key so equivalent records can share a
+        provider or cache entry. Construction computes it once.
+        """
 
         return self._semantic_key

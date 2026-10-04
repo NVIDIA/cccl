@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check the compiler contracts produced by shared Load and Store planning.
+
+Plans select a CUB implementation and describe its arguments, participation,
+scratch storage, and reuse barriers. These tests inspect plans on the host;
+they do not compile or execute the selected device code.
+"""
+
 import numpy as np
 import pytest
 
