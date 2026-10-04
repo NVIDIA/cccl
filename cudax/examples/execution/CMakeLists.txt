@@ -1,5 +1,5 @@
 # Examples for cudax::execution (senders/receivers).
-set(execution_example_sources lane_sharded_pipeline.cu)
+set(execution_example_sources lane_sharded_pipeline.cu lane_localized_stream.cu)
 
 ## cudax_add_execution_example
 #
