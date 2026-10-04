@@ -50,6 +50,12 @@ class GroupLoweringTarget(str, Enum):
 
 
 class GroupOperandKind(str, Enum):
+    """Distinguish a scalar result from a per-member array result.
+
+    The kind selects the result representation for lowering. A one-item array
+    still has ``ARRAY`` kind; its extent alone does not make it a scalar.
+    """
+
     SCALAR = "scalar"
     ARRAY = "array"
 
@@ -68,6 +74,13 @@ class ResultVisibility(str, Enum):
 
 
 class ResultOwnership(str, Enum):
+    """Identify which members own the operation's logical result.
+
+    ``EACH_MEMBER`` gives every member its own result. ``GROUP_ROOT`` assigns
+    the result to rank zero only. Ownership describes the result contract; it
+    does not allocate storage or imply that an input array is reused.
+    """
+
     EACH_MEMBER = "each_member"
     GROUP_ROOT = "group_root"
 
@@ -432,6 +445,34 @@ class ParticipationRequirements:
 
 @dataclass(frozen=True, eq=False)
 class LogicalResultContract:
+    """Describe one named value returned by a cooperative operation.
+
+    The backend uses this record to choose a scalar or array representation
+    and to preserve who owns the result and where it is meaningful. It is
+    metadata about a result, not the result value or an allocation request.
+    For Exchange, for example, each member owns a new array with the input
+    dtype and per-member item count.
+
+    Attributes
+    ----------
+    name : str
+        Non-empty role within the operation, such as ``"value"``.
+    dtype : object
+        Element dtype in the shared semantic model.
+    visibility : ResultVisibility
+        Members for which the result is meaningful. Per-member results may
+        differ between members; an all-member result is a group result.
+    ownership : ResultOwnership
+        Whether each member owns a result or only the group root does.
+    operand_kind : GroupOperandKind
+        Scalar or array representation, independent of the number of items.
+    items_per_member : int
+        Positive element count. A scalar must contain exactly one item.
+    root_rank : int or None, optional
+        Required to be zero for a group-root result and absent otherwise. Root
+        ownership and root visibility must agree.
+    """
+
     name: str
     dtype: Any
     visibility: ResultVisibility
@@ -476,6 +517,8 @@ class LogicalResultContract:
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
+        """Return result identity with a normalized semantic dtype token."""
+
         return (
             self.name,
             semantic_token(self.dtype),
@@ -497,6 +540,14 @@ class LogicalResultContract:
 
 @dataclass(frozen=True)
 class ResultContract:
+    """Group the named logical results in their public return order.
+
+    ``values`` must be a non-empty sequence of ``LogicalResultContract``
+    records with unique names. Its first entry is the primary result; the
+    convenience properties describe that entry, not every returned value. The
+    contract does not prescribe how a backend packs multiple values.
+    """
+
     values: tuple[LogicalResultContract, ...]
 
     def __post_init__(self) -> None:
@@ -528,6 +579,8 @@ class ResultContract:
 
     @property
     def has_aggregate(self) -> bool:
+        """Check for the named ``"aggregate"`` result."""
+
         return any(value.name == "aggregate" for value in self.values)
 
 

@@ -892,6 +892,19 @@ class _GroupCallPlanner:
         return None
 
     def _result_source(self, definition: Any, index: int | None = None):
+        """Find the argument policy for a registered group call's result.
+
+        Return the selected ``GroupResultSource`` and bound public arguments,
+        or ``None`` for an unrelated call or invalid result selection. Without
+        ``index``, only a single-result operation qualifies. With ``index``,
+        only a multiple-result operation qualifies: indexing a single array
+        result selects an element, not a tuple result.
+
+        Dtype, array-origin, and extent queries share this policy. It lets
+        later group calls consume the result before provider rewriting and
+        ordinary typing.
+        """
+
         if not isinstance(definition, ir.Expr) or definition.op != "call":
             return None
         operation = _group_operation_name(self._callable(definition.func))
@@ -990,6 +1003,10 @@ class _GroupCallPlanner:
         its inputs must all be checked. When a ``build_tuple`` expression is
         reached, classify the selected element with ``_is_array_value``.
 
+        For a registered operation with multiple results, follow the selected
+        result's array-source argument. A single-result array call is not a
+        tuple producer; indexing it selects a scalar element.
+
         Parameters
         ----------
         definition : object
@@ -1008,8 +1025,8 @@ class _GroupCallPlanner:
         bool or None
             The selected element's array classification. ``False`` means an
             unsupported source or invalid index. ``None`` means a recursive
-            path supplied no constructor evidence; ``True`` means a supported
-            constructor was found without a conflicting source.
+            path supplied no array evidence; ``True`` means a supported
+            array source was found without a conflicting source.
         """
 
         if isinstance(definition, ir.Var):
@@ -1130,11 +1147,15 @@ class _GroupCallPlanner:
         """Check whether one assignment supplies a supported array payload.
 
         ``_is_array_value`` calls this for each possible source of an operation
-        operand. Tracing the assignment back to its constructor tells Load/Store
+        operand. Tracing the assignment back to its constructor tells operation
         planning whether it has a per-thread array or must apply scalar rules.
         For a value selected from a tuple, resolve the index before examining
         that tuple element. Branch and loop merges inspect all alternatives;
         an unsupported source cannot be hidden by another valid source.
+
+        A generated result marker follows its prototype's origin. A registered
+        single-result operation follows the array-source argument declared by
+        its result policy, preserving the ThreadData-only restriction.
 
         Parameters
         ----------
@@ -1151,11 +1172,11 @@ class _GroupCallPlanner:
         Returns
         -------
         bool or None
-            ``True`` for a supported constructor or alternatives that agree;
+            ``True`` for a supported array source or alternatives that agree;
             ``False`` for an unsupported source or unresolved tuple index;
             ``None`` when following aliases or loop inputs only leads back to
             a variable already being examined. Operand validation reports that
-            unresolved cycle if no other path supplies a constructor.
+            unresolved cycle if no other path supplies an array source.
         """
 
         if isinstance(definition, ir.Var):
@@ -1620,6 +1641,10 @@ class _GroupCallPlanner:
         so known counts on its inputs must agree. At a tuple construction,
         ``_array_extent`` examines the selected payload itself.
 
+        Registered multiple-result calls follow the selected result policy's
+        array-source argument. A policy with no array source describes one
+        scalar item.
+
         Parameters
         ----------
         definition : object
@@ -1691,11 +1716,16 @@ class _GroupCallPlanner:
         """Read one payload assignment to recover its per-thread element count.
 
         ``_array_extent`` calls this for every assignment that might supply an
-        operand. Provider selection needs the constructor's fixed element
-        count, even when the operation receives a copied value or one selected
-        from a tuple. Follow these intermediate expressions until a recognized
-        ``ThreadData`` or CUDA local-array constructor is reached, then resolve
-        its ``items_per_thread`` or integer ``shape`` argument.
+        operand. Provider selection needs a fixed element count, even when
+        the operation receives a copied value or one selected from a tuple.
+        Follow intermediate expressions to a constructor or registered result
+        policy. Constructors supply ``items_per_thread`` or an integer
+        ``shape`` argument.
+
+        Generated result markers use an explicit extent when present,
+        otherwise inherit array extent or use one scalar item. Registered
+        direct results follow their declared array-source argument, or use one
+        item when the policy declares a scalar.
 
         Parameters
         ----------
@@ -1709,9 +1739,10 @@ class _GroupCallPlanner:
         Returns
         -------
         int or None
-            The constructor's number of elements per thread, as an integer
-            excluding booleans. ``None`` means no usable count was found. In
-            particular, an unsupported source, nonconstant tuple index, or
+            Known number of elements per thread. Constructor and generated
+            marker counts are integers excluding booleans.
+            ``None`` means no usable count was found. An unsupported source,
+            nonconstant tuple index, or
             noninteger local-array shape supplies no count. This does not
             establish that every source is an array or that the count is
             positive.
@@ -1825,7 +1856,18 @@ class _GroupCallPlanner:
         loc: ir.Loc,
         known_items_per_thread: int | None = None,
     ) -> None:
-        """Copy a static local payload into a fresh result payload."""
+        """Append an unrolled copy between two fixed-size local payloads.
+
+        Use ``known_items_per_thread`` when supplied; otherwise infer the
+        source extent. Emit one item read and write per index into
+        ``statements``. Define ``destination`` in earlier pending statements.
+        It usually names a result marker that the provider rewrite allocates
+        later. The copy keeps caller-owned input intact when a native provider
+        may modify it.
+
+        Raise ``UnknownResultExtentError`` if no static extent is available.
+        The statements remain pending until the owning planner installs them.
+        """
 
         extent = (
             known_items_per_thread
@@ -1862,6 +1904,19 @@ class _GroupCallPlanner:
         dtype_policy: str,
         items_per_thread: Any = None,
     ) -> ir.Var:
+        """Append a fresh result marker and return its IR variable.
+
+        The marker retains ``prototype`` for dtype inference and ``is_array``
+        for extent selection. An explicit ``items_per_thread`` overrides the
+        inherited extent. ``dtype_policy`` identifies how the later rewrite
+        should obtain the element type.
+
+        Materialize the marker callable and constant controls in
+        ``statements``. No local array is allocated here. The provider rewrite
+        resolves the marker after payload facts are available and emits the
+        allocation.
+        """
+
         function_var = self._new_var(scope, loc, f"{stem}_payload_factory")
         statements.append(
             ir.Assign(
