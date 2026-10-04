@@ -4,11 +4,19 @@
 
 """Identify the public group calls understood by the Numba planner.
 
-Common and backend-qualified constructors use different Python callables. The
-tables here map both spellings to the backend's descriptor constructors, while
-retaining which calls came through the common API and need its restrictions.
-Operation lookup likewise uses registered callable identity, so an unrelated
-function with the same name is not mistaken for a cooperative operation.
+Common and backend-qualified constructors use different Python callables. For
+example, ``cuda.coop.this_block`` and ``cuda.coop.numba_mlir.this_block`` both
+describe a block, and the tables here map either callable to the backend's
+descriptor constructor. The planner also records whether the kernel used the
+common API, whose accepted group kinds and arguments must remain consistent
+across backends.
+
+That distinction still matters after the public call is replaced by a private
+provider call. For example, common ``load`` requires a ``ThreadData`` output;
+the Numba-CUDA-MLIR qualified API also accepts a CUDA local array. The planner
+must retain the call's API origin to check the appropriate payload rule.
+Operation lookup compares the actual registered Python objects, so a user
+function named ``load`` is not mistaken for ``cuda.coop.load``.
 
 The planner helpers also share an IR import, temporary-name counter, and base
 exception here. Keeping these definitions separate lets group planning and its
@@ -68,10 +76,14 @@ class GroupRewriteError(Exception):
 
 
 def _group_operation_name(function: object) -> str | None:
-    """Identify a registered common or qualified group operation.
+    """Find the operation planner associated with a public Python callable.
 
-    Return its canonical operation name, or ``None`` for an unrelated
-    callable. Recognition uses callable identity, so aliases remain valid.
+    Marker detection and call rewriting pass the object recovered from the
+    kernel's call target as ``function``. Return its registered name, such as
+    ``"load"`` or ``"store"``, or ``None`` if it is not a recognized common
+    or qualified operation. Comparing callable identity preserves aliases
+    such as ``my_load = coop.load`` without accepting unrelated functions
+    that happen to have the same name.
     """
 
     operation = group_operation_name(function)
@@ -81,9 +93,18 @@ def _group_operation_name(function: object) -> str | None:
 
 
 def _is_common_root_operation(function: object, operation: str) -> bool:
-    """Check whether the call uses the common API's operation marker.
+    """Tell call rewriting whether to apply the common operation's rules.
 
-    Rewritten calls still need that API's selector and payload restrictions.
+    ``_lower_root_operation`` uses this before replacing a public call with a
+    backend provider. Since rewriting bypasses the common Python wrapper,
+    the planner must check that API's supported group kinds, selector values,
+    and payload types itself.
+
+    ``function`` is the Python object recovered from the call target;
+    ``operation`` is its expected registered name, such as ``"load"``.
+    Return ``True`` only when that object is the common API marker for the
+    named operation. Qualified operations and unrelated callables return
+    ``False``.
     """
 
     return _common_dispatch._common_group_operation_name(function) == operation

@@ -495,11 +495,32 @@ class _StorageRewrite:
         scope: ir.Scope | None,
         loc: ir.Loc,
     ) -> ir.Var:
-        """Append the index that selects the executing group's scratch region.
+        """Select the executing group's region within a scratch allocation.
 
-        Use zero for a block, linear thread rank for a thread, or rank divided
-        by logical width for a warp. Validate the plan before choosing the
-        formula. ``block``, ``scope``, and ``loc`` locate the generated IR.
+        Scratch slicing calls this when a block contains several independent
+        groups. Each warp or thread needs its own region so concurrent
+        operations do not overwrite one another. Use zero for a block-wide
+        group, the linear thread rank for a thread, or that rank divided by the
+        logical warp width.
+
+        Parameters
+        ----------
+        block : ir.Block
+            Replacement block receiving the index calculation.
+        lowering_plan : GroupLoweringPlan or None
+            Validated operation topology that defines group size and rank.
+            ``None`` uses the single-region block convention of private provider
+            calls.
+        scope : ir.Scope or None
+            Scope for the generated index variables.
+        loc : ir.Loc
+            Original call location used for emitted IR and diagnostics.
+
+        Returns
+        -------
+        ir.Var
+            Zero-based group instance index. This is a region index, not a byte
+            offset; the caller multiplies it by the aligned region stride.
         """
 
         topology = self._validate_emittable_topology(lowering_plan)
@@ -940,11 +961,27 @@ class _StorageRewrite:
         stop: int | ir.Var,
         loc: ir.Loc,
     ) -> None:
-        """Append a unit-stride view of ``source_var`` as ``target_var``.
+        """Assign a view of a scratch allocation to a provider operand.
 
-        Bounds may be integers or existing IR variables. Create any needed
-        constants and the slice object in ``block``, using the target's scope
-        and the supplied source location. This creates a view, not a copy.
+        Storage-view emission calls this after computing the required bounds.
+        The generated slice shares the backing array, allowing each provider to
+        receive its assigned region without allocating or copying scratch data.
+        Append constants as needed, the slice object, and the view assignment.
+
+        Parameters
+        ----------
+        block : ir.Block
+            Replacement block to which the slice statements are appended.
+        source_var : ir.Var
+            Backing array or descriptor view to slice.
+        target_var : ir.Var
+            Variable receiving the view; its scope is used for new temporaries.
+        start, stop : int or ir.Var
+            Inclusive start and exclusive stop in array elements. Scratch arrays
+            contain bytes, so their element indices are also byte offsets.
+            Bounds may be constants or variables computed for the current group.
+        loc : ir.Loc
+            Source location attached to generated statements.
         """
 
         slice_ctor_global_name = _next_global_name("temp_storage_slice_ctor")
@@ -1122,11 +1159,30 @@ class _StorageRewrite:
     def _runtime_temp_storage_arg_for_call(
         self, block: ir.Block, *, source_var: ir.Var, call_assign: ir.Assign
     ) -> tuple[ir.Var, _TempStoragePlan | None]:
-        """Select a call's slice within an explicit storage descriptor.
+        """Choose the explicit scratch view passed to one provider call.
 
-        Return the operand and its plan. Reuse the descriptor view for shared
-        storage at offset zero; emit a narrower view for exclusive storage or
-        a nonzero offset. A missing descriptor plan leaves the source intact.
+        ``apply`` uses the function-wide storage plan to replace a descriptor
+        operand with the call's assigned region. Shared storage at offset zero
+        can reuse the descriptor view. Exclusive storage or a nonzero offset
+        needs a narrower view so the provider receives the planned region.
+
+        Parameters
+        ----------
+        block : ir.Block
+            Replacement block receiving a slice assignment when one is needed.
+        source_var : ir.Var
+            Current storage operand, used to find its descriptor's plan.
+        call_assign : ir.Assign
+            Original provider-call assignment. Its object identity selects the
+            recorded slice, and its target supplies the scope for emitted
+            variables.
+
+        Returns
+        -------
+        tuple of ir.Var and _TempStoragePlan or None
+            Provider storage operand and its plan for subsequent
+            synchronization. If no descriptor plan exists, return ``(source_var,
+            None)`` unchanged.
         """
 
         rewrite = cast("CoopSinglePhaseRewrite", self)
@@ -1164,11 +1220,31 @@ class _StorageRewrite:
     def _implicit_temp_storage_arg_for_call(
         self, block: ir.Block, *, call_assign: ir.Assign
     ) -> tuple[ir.Var, _TempStoragePlan]:
-        """Emit a call's view into the implementation-owned scratch region.
+        """Build a scratch operand for a call that omitted a storage descriptor.
 
-        The global backing and region plan must already exist. Use the
-        original call assignment's identity to find its size and offset, then
-        return the generated operand and plan for subsequent barrier emission.
+        ``apply`` calls this after allocating the function's shared backing
+        array. The implementation-owned region has already been sized across
+        implicit consumers; this method selects the current call's part and
+        returns its plan for the later synchronization step.
+
+        Parameters
+        ----------
+        block : ir.Block
+            Replacement block receiving the call's scratch-view statements.
+        call_assign : ir.Assign
+            Original provider-call assignment. Its object identity selects the
+            recorded slice, and its target supplies the scope for emitted
+            variables.
+
+        Returns
+        -------
+        tuple of ir.Var and _TempStoragePlan
+            Generated scratch operand and the implicit region's plan.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            The backing array, implicit region plan, or call's slice is missing.
         """
 
         plan = self._implicit_temp_storage_plan

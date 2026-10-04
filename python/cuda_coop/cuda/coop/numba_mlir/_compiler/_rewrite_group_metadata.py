@@ -30,11 +30,29 @@ class _GroupMetadataRewrite:
         runtime_args: tuple[ir.Var, ...],
         factory_kwargs: dict[str, object],
     ) -> object:
-        """Analyze a split call before its provider is compiled.
+        """Collect operation-specific facts before compiling a provider.
 
-        Pass the operation name, operands, and mutable factory inputs to its
-        family hook. Return the hook's metadata, or ``None`` when absent. The
-        metadata is kept on the match for later operand preparation.
+        Block matching and function-wide storage collection call this after
+        separating specialization inputs from runtime operands. The family
+        hook can then check details that the generic rewrite cannot infer,
+        such as whether Store needs to box a scalar in a one-element array.
+        Its result is saved on the match for operand preparation during
+        ``apply``.
+
+        Parameters
+        ----------
+        op_name : str
+            Registered operation whose analysis hook should run.
+        runtime_args : tuple of ir.Var
+            Provider operands in call order after argument splitting.
+        factory_kwargs : dict of str to object
+            Resolved specialization inputs shared with the argument splitter.
+            The family hook may update this dictionary before compilation.
+
+        Returns
+        -------
+        object
+            Family-specific metadata, or ``None`` when no analysis hook exists.
         """
 
         rewrite = cast("CoopSinglePhaseRewrite", self)
@@ -61,10 +79,34 @@ class _GroupMetadataRewrite:
         scope: ir.Scope | None,
         loc: ir.Loc,
     ) -> list[ir.Var]:
-        """Prepare a matched call's operands through its family hook.
+        """Emit operation-specific operand conversions while replacing a call.
 
-        The hook may append IR to ``block`` using ``scope`` and ``loc`` and
-        return adjusted operands. Without a hook, return the supplied list.
+        ``CoopSinglePhaseRewrite.apply`` invokes this after materializing the
+        provider. For example, Store may need a scalar copied into a local array
+        before the generated provider can consume it. The hook uses the metadata
+        collected during matching and may append statements to ``block``.
+
+        Parameters
+        ----------
+        block : ir.Block
+            Replacement block receiving any operand-conversion statements.
+        match : _RewriteMatch
+            Planned call, including its registered operation and family
+            metadata.
+        runtime_args : list of ir.Var
+            Current operands in provider order, before this family's
+            conversions.
+        scope : ir.Scope or None
+            Scope in which the hook creates temporary variables.
+        loc : ir.Loc
+            Original call location attached to generated statements and
+            diagnostics.
+
+        Returns
+        -------
+        list of ir.Var
+            Operands to pass to the provider. Without a preparation hook, return
+            the supplied list unchanged.
         """
 
         rewrite = cast("CoopSinglePhaseRewrite", self)

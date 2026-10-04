@@ -125,11 +125,31 @@ def _nvrtc_version(nvrtc: Any) -> version:
     return version(int(major), int(minor))
 
 
-def CHECK_NVRTC(err, prog, *, nvrtc=None):
+def _check_nvrtc(err, prog, *, nvrtc=None):
     """Raise an NVRTC failure with the program's compilation log.
 
-    Keep the original result code even if fetching the log also fails. Accept
-    the caller's bindings module so diagnostics use the same loaded library.
+    ``compile_impl`` checks compilation, name-query, and image-retrieval
+    results here so failures include NVRTC's diagnostic text. Keep the
+    original result code even if fetching the log also fails; a secondary
+    logging error must not hide the operation that failed.
+
+    Parameters
+    ----------
+    err : nvrtcResult
+        Result code returned by the operation being checked. Success returns
+        immediately without fetching a log.
+    prog : nvrtcProgram
+        Live program whose log can explain the failure. The caller owns its
+        lifetime and destroys it after diagnostics have been collected.
+    nvrtc : module or None
+        Bindings for the already selected NVRTC library. If omitted, import
+        the bindings; toolkit selection and preloading must have happened first.
+
+    Raises
+    ------
+    RuntimeError
+        NVRTC reported failure. The message includes its result code and either
+        the program log or the reason that the log could not be read.
     """
 
     nvrtc = _load_nvrtc() if nvrtc is None else nvrtc
@@ -338,26 +358,26 @@ def compile_impl(
             (err,) = nvrtc.nvrtcAddNameExpression(
                 prog, expression.encode("utf-8")
             )
-            CHECK_NVRTC(err, prog, nvrtc=nvrtc)
+            _check_nvrtc(err, prog, nvrtc=nvrtc)
         (err,) = nvrtc.nvrtcCompileProgram(
             prog, len(compiler_options), list(compiler_options)
         )
-        CHECK_NVRTC(err, prog, nvrtc=nvrtc)
+        _check_nvrtc(err, prog, nvrtc=nvrtc)
         layouts = {}
         for expression in dict.fromkeys(layout_queries):
             err, lowered_name = nvrtc.nvrtcGetLoweredName(
                 prog, expression.encode("utf-8")
             )
-            CHECK_NVRTC(err, prog, nvrtc=nvrtc)
+            _check_nvrtc(err, prog, nvrtc=nvrtc)
             layouts[expression] = decode_layout_name(
                 lowered_name, symbol=layout_symbol, expression=expression
             )
         if code == "lto":
             err, size = nvrtc.nvrtcGetLTOIRSize(prog)
-            CHECK_NVRTC(err, prog, nvrtc=nvrtc)
+            _check_nvrtc(err, prog, nvrtc=nvrtc)
             image = bytearray(size)
             (err,) = nvrtc.nvrtcGetLTOIR(prog, image)
-            CHECK_NVRTC(err, prog, nvrtc=nvrtc)
+            _check_nvrtc(err, prog, nvrtc=nvrtc)
             result = bytes(image)
             if layout_queries:
                 return result, tuple(
@@ -365,10 +385,10 @@ def compile_impl(
                 )
             return result
         err, size = nvrtc.nvrtcGetPTXSize(prog)
-        CHECK_NVRTC(err, prog, nvrtc=nvrtc)
+        _check_nvrtc(err, prog, nvrtc=nvrtc)
         image = bytearray(size)
         (err,) = nvrtc.nvrtcGetPTX(prog, image)
-        CHECK_NVRTC(err, prog, nvrtc=nvrtc)
+        _check_nvrtc(err, prog, nvrtc=nvrtc)
         return bytes(image).decode("ascii")
     except Exception:
         had_error = True

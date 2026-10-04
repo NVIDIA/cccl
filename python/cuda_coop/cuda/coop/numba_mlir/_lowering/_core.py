@@ -183,16 +183,30 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         return dtype
 
     def core_dtype(self, dtype: Any) -> Any:
-        """Return a backend-neutral builtin token when one exists."""
+        """Translate a Numba dtype for a shared core specialization.
+
+        Provider factories call this before specializing the common algorithm.
+        Return the matching ``BuiltinDType`` token, or pass ``dtype`` through
+        when it has no builtin mapping.
+        """
 
         return self._CORE_DTYPES.get(dtype, dtype)
 
     def cpp_type(self, dtype: Any) -> str:
+        """Spell a specialization's dtype for generated C++ declarations.
+
+        Normalize a shared builtin or accept a backend dtype, then return
+        its builtin C++ spelling or ``storage_t`` for an opaque payload.
+        """
+
         return backend.numba_type_to_cpp(self.normalize_dtype(dtype))
 
     def _resolvable(self, value: Any) -> Any:
         """Preserve a parameter dependency until template arguments are known.
 
+        ``lower_parameter`` uses this for element dtypes and array lengths.
+        ``value`` may be a shared ``Dependency``, a ``Constant``, or a direct
+        value. Return the corresponding backend descriptor for substitution.
         Translate shared dependencies and constants to backend descriptors.
         Normalize dtype before wrapping a value as a backend constant.
         """
@@ -398,8 +412,12 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
     ) -> backend.Pointer:
         """Describe scratch as a pointer in the provider's calling convention.
 
-        The storage ABI decides whether this parameter is included. Later
-        stages handle allocation, layout checks, and reuse barriers.
+        The shared adapter traversal calls this for a ``TempStorageParameter``
+        when the storage ABI includes a leading pointer. ``parameter.dtype``
+        supplies its element type; ``specialization`` is part of the adapter
+        interface but is unused here. Return a backend pointer descriptor.
+        Later stages handle allocation, byte layout checks, and reuse
+        barriers.
         """
 
         del specialization
