@@ -484,10 +484,10 @@ Conflicting type requirements are errors. See :ref:`element-type inference
 Load writes into the payload supplied by the caller. Transpose Store
 algorithms may rearrange their input payload in place, as in CUB. Copy values
 before Store if they are needed later. Both operations return ``None``.
-Array Scan, Exchange, array Shuffle, Merge Sort, Radix Sort, and Radix Rank
-return fresh payloads, so their input values remain available afterwards.
-Reduction returns a scalar, including when each thread contributes several
-items.
+Array Scan, Exchange, array Shuffle, Merge Sort, array Radix Sort, and array
+Radix Rank return fresh payloads, so their input values remain available
+afterwards. Reduction returns a scalar, including when each thread
+contributes several items.
 
 Numba can promote integer arithmetic. Store requires an exact match to the
 destination dtype, so cast computed values when necessary, as in the
