@@ -13,16 +13,16 @@ and values embedded at compile time. ``TypeWrapper`` supplies matching C++
 storage declarations for compiler types without a builtin C++ spelling.
 
 Construction specializes an algorithm, which can then be compiled to LTO IR
-and exposed through an ``Invocable``. It exposes compiler overloads and
-retains the link artifacts while the containing kernel is compiled. The
-compiler turns calls to this object into device calls.
+and exposed through an ``Invocable``. The ``Invocable`` supplies compiler
+overloads and keeps the link artifacts while the containing kernel is
+compiled. The compiler turns calls to it into device calls.
 
 Several operation specializations may be collected before compilation.
 ``prepare_ltoir_bundle`` combines their wrappers into a shared translation unit
 and coalesces equivalent providers, reducing repeated NVRTC compilation. The
-individual and bundled paths use the same source generator, compiler identity,
-and scratch-layout inspection so the resulting callables agree with their
-C++ implementations.
+individual and bundled paths query scratch layouts during the same NVRTC
+compilation that emits their provider image. The image and layouts stay
+together so the Python storage contract agrees with the compiled C++ types.
 """
 
 from __future__ import annotations
@@ -400,7 +400,13 @@ def _size_alignment_from_numba_type(
 
 
 def _ltoir_to_ptx(ltoir: bytes, *, name: str, cc: int) -> str:
-    """Link one LTO-IR image to PTX for compile-time metadata inspection."""
+    """Link one LTO-IR image to PTX for explicit artifact inspection.
+
+    Compile tests use this to inspect generated instructions and storage.
+    Provider creation obtains layouts directly from NVRTC and does not call
+    this helper. The link uses ``cc`` as its target and ``name`` to identify
+    the input image; it does not change the provider's retained artifacts.
+    """
 
     # cuda-core chooses cu12/cu13 exports dynamically, outside its stubs.
     from cuda.core import (
@@ -1594,13 +1600,6 @@ class Algorithm:
             w(f"{line}\n")
         w("}\n\n")
 
-    def _temp_storage_symbol_names(self):
-        suffix = internal_mangle_cpp(self._symbol_base_name())
-        return (
-            f"cuda_coop_numba_mlir_temp_storage_bytes_{suffix}",
-            f"cuda_coop_numba_mlir_temp_storage_alignment_{suffix}",
-        )
-
     def _collect_support_ltoirs_and_udf_declarations(self):
         lto_irs = []
         udf_declarations = OrderedDict()
@@ -1636,9 +1635,11 @@ class Algorithm:
         allocation and reuse synchronization to their caller. Storage-free
         providers emit neither scratch metadata nor allocating variants.
 
-        This method qualifies private symbols on the algorithm but does not run
-        NVRTC. Storage sizes are emitted as C++ ``sizeof``/``alignof`` globals;
-        artifact creation later reads their compiled values from PTX.
+        This method qualifies private symbols without running NVRTC. It
+        returns scratch type names so artifact creation can query their C++
+        size and alignment during provider compilation. Each name describes
+        one ``TempStorage`` instance. The scratch planner uses group topology
+        to set the instance count for explicit-scratch calls.
 
         Parameters
         ----------
@@ -1658,8 +1659,8 @@ class Algorithm:
             Complete CUDA C++ translation unit for this specialization.
         support_lto_irs : list of bytes
             Deduplicated supporting link images from type definitions.
-        temp_storage_symbols : tuple of str
-            Size and alignment global names, or an empty tuple without scratch.
+        temp_storage_types : tuple of str
+            C++ scratch type names to query, or an empty tuple without scratch.
         udf_declarations : collections.OrderedDict
             Declaration table used when constructing a shared source preamble;
             currently empty.
@@ -1694,10 +1695,10 @@ class Algorithm:
         alias_suffix = internal_mangle_cpp(self._symbol_base_name())
         algorithm_type_name = f"algorithm_t_{alias_suffix}"
         temp_storage_type_name = None
-        temp_storage_symbols = ()
+        temp_storage_types = ()
         if self.storage_abi is StorageABI.LEADING_POINTER:
             temp_storage_type_name = f"temp_storage_t_{alias_suffix}"
-            temp_storage_symbols = self._temp_storage_symbol_names()
+            temp_storage_types = (temp_storage_type_name,)
 
         buf = StringIO()
         w = buf.write
@@ -1713,23 +1714,10 @@ class Algorithm:
         w("\n")
 
         w(f"using {algorithm_type_name} = cub::{algorithm_name};\n")
-        if temp_storage_symbols:
-            temp_storage_bytes_symbol, temp_storage_alignment_symbol = (
-                temp_storage_symbols
-            )
+        if temp_storage_type_name is not None:
             w(
                 f"using {temp_storage_type_name} = typename "
                 f"{algorithm_type_name}::TempStorage;\n"
-            )
-            w(
-                "__device__ constexpr unsigned "
-                f"{temp_storage_bytes_symbol} = "
-                f"sizeof({temp_storage_type_name});\n"
-            )
-            w(
-                "__device__ constexpr unsigned "
-                f"{temp_storage_alignment_symbol} = "
-                f"alignof({temp_storage_type_name});\n"
             )
 
         src = buf.getvalue()
@@ -1979,7 +1967,7 @@ class Algorithm:
         return (
             src,
             support_lto_irs,
-            temp_storage_symbols,
+            temp_storage_types,
             udf_declarations,
         )
 
@@ -2028,11 +2016,11 @@ class Algorithm:
     ) -> list[bytes]:
         """Compile or reuse this specialization's matching link images.
 
-        On first use, generate and compile a provider translation unit to LTO
-        IR, then link that image to PTX to read C++ scratch size/alignment
-        globals. Cache those values, the link images, and their filename
-        suffixes on the algorithm. Storage-free providers receive size zero and
-        alignment one.
+        On first use, compile a provider translation unit to LTO IR and query
+        its C++ scratch size and alignment through NVRTC's lowered template
+        names. Cache the image and layouts together, then retain the layouts,
+        link images, and filename suffixes on the algorithm. Storage-free
+        providers skip layout queries and receive size zero and alignment one.
 
         Reuse is confined to the same bound target, options, and thread
         configuration. Without an explicit identity, re-query the current device
@@ -2063,10 +2051,10 @@ class Algorithm:
         ------
         RuntimeError
             Cached or qualified artifacts use different compiler inputs, or the
-            compiler/linker reports an error.
+            compiler reports an error.
         ValueError
-            Warp topology is invalid or an expected scratch metadata global is
-            absent.
+            Warp topology is invalid, or NVRTC returns an unrecognized layout
+            name or invalid scratch size/alignment.
         """
 
         # With no explicit identity, re-query the current device even when an
@@ -2090,35 +2078,28 @@ class Algorithm:
                 )
             return existing
 
-        src, support_lto_irs, temp_storage_symbols, _ = self._source_code(
+        src, support_lto_irs, temp_storage_types, _ = self._source_code(
             threads=threads,
             block_threads=block_threads,
             compile_identity=compile_identity,
         )
 
         cc = int(compile_identity[0])
-        _, ltoir = nvrtc.compile(
+        _, (ltoir, layouts) = nvrtc.compile_with_layouts(
             cpp=src,
+            layout_types=temp_storage_types,
             cc=cc,
             rdc=True,
             code="lto",
             context=self._resolved_compile_context(),
         )
         ltoir_blob = bytes(cast(bytes, ltoir))
-        ptx = _ltoir_to_ptx(ltoir_blob, name=self.c_name, cc=cc)
 
         lto_irs = list(support_lto_irs)
         lto_irs.append(ltoir_blob)
 
-        from ._compiler._artifacts import find_unsigned
-
-        if temp_storage_symbols:
-            abi_globals = {
-                symbol: find_unsigned(symbol, ptx)
-                for symbol in temp_storage_symbols
-            }
-            self._temp_storage_bytes = abi_globals[temp_storage_symbols[0]]
-            self._temp_storage_alignment = abi_globals[temp_storage_symbols[1]]
+        if temp_storage_types:
+            self._temp_storage_bytes, self._temp_storage_alignment = layouts[0]
         else:
             self._temp_storage_bytes = 0
             self._temp_storage_alignment = 1
@@ -2471,7 +2452,6 @@ def _strip_source_preamble(src, algo, udf_decls):
 def prepare_ltoir_bundle(
     algorithms: Sequence[Algorithm],
     *,
-    bundle_name: str | None = None,
     allow_single: bool = False,
     threads_by_algo: Mapping[int, int | None] | None = None,
     block_threads_by_algo: Mapping[int, _BlockThreads | None] | None = None,
@@ -2481,8 +2461,9 @@ def prepare_ltoir_bundle(
     Deduplicate input objects by identity, then coalesce equivalent providers
     with ``algo_coalesce_key``. Emit one body per representative and one shared
     preamble for includes and type declarations. All providers must resolve to
-    the same compiler context and bind to the current device's target. Link the
-    result to PTX to inspect each representative's scratch ABI.
+    the same compiler context and bind to the current device's target. Query
+    each representative's C++ scratch layout during the NVRTC compile and cache
+    those layouts together with the LTO image.
 
     On success, mutate every supplied algorithm with its scratch size/alignment,
     cache key, extra link images, and a reference to the same temporary bundle
@@ -2495,9 +2476,6 @@ def prepare_ltoir_bundle(
     ----------
     algorithms : sequence of Algorithm
         Concrete provider specializations to bundle.
-    bundle_name : str, optional
-        Name used for the LTO-to-PTX inspection object. ``None`` derives a name
-        from the emitted source hash.
     allow_single : bool, optional
         Compile even one distinct representative when true. Defaults to false.
     threads_by_algo : mapping of int to int or None, optional
@@ -2517,9 +2495,10 @@ def prepare_ltoir_bundle(
     ------
     RuntimeError
         Providers resolve to different compiler contexts, conflict with an
-        existing qualification, or compilation/linking fails.
+        existing qualification, or compilation fails.
     ValueError
-        Provider source/topology is invalid or scratch metadata cannot be read.
+        Provider source/topology is invalid, or NVRTC returns an unrecognized
+        layout name or invalid scratch size/alignment.
     """
 
     if not algorithms:
@@ -2575,7 +2554,7 @@ def prepare_ltoir_bundle(
         return None
 
     rep_src = {}
-    rep_symbols = {}
+    rep_storage_types = {}
     rep_udf_decls = {}
     includes = OrderedDict()
     type_defs = OrderedDict()
@@ -2586,13 +2565,13 @@ def prepare_ltoir_bundle(
         block_threads = block_threads_by_algo.get(
             id(rep), getattr(rep, "block_threads", None)
         )
-        src, _support_lto_irs, symbols, udf = rep._source_code(
+        src, _support_lto_irs, storage_types, udf = rep._source_code(
             threads=threads,
             block_threads=block_threads,
             compile_identity=compile_identity,
         )
         rep_src[id(rep)] = src
-        rep_symbols[id(rep)] = symbols
+        rep_storage_types[id(rep)] = storage_types
         rep_udf_decls[id(rep)] = udf
 
         for include in rep.includes or []:
@@ -2628,29 +2607,25 @@ def prepare_ltoir_bundle(
 
     src = buf.getvalue() + "\n".join(bodies)
 
-    if bundle_name is None:
-        bundle_name = (
-            "cuda_coop_numba_mlir_bundle_"
-            f"{hashlib.sha1(src.encode('utf-8')).hexdigest()[:16]}"
-        )
-
-    _, ltoir = nvrtc.compile(
+    # Only representatives with scratch contribute queries. Type names keep
+    # their layouts associated with the right provider after coalescing.
+    layout_types = tuple(
+        storage_type
+        for rep in reps
+        for storage_type in rep_storage_types[id(rep)]
+    )
+    _, (ltoir, layouts) = nvrtc.compile_with_layouts(
         cpp=src,
+        layout_types=layout_types,
         cc=cc,
         rdc=True,
         code="lto",
         context=compile_context,
     )
     ltoir_blob = bytes(cast(bytes, ltoir))
-    ptx = _ltoir_to_ptx(ltoir_blob, name=bundle_name, cc=cc)
+    layouts_by_type = dict(zip(layout_types, layouts, strict=True))
 
-    symbols = []
-    for rep in reps:
-        symbols.extend(rep_symbols[id(rep)])
-
-    from ._compiler._artifacts import find_unsigned, make_binary_tempfile
-
-    abi_globals = {symbol: find_unsigned(symbol, ptx) for symbol in symbols}
+    from ._compiler._artifacts import make_binary_tempfile
 
     bundle_temp_file = _SharedTempFile(
         make_binary_tempfile(ltoir_blob, ".ltoir")
@@ -2658,12 +2633,12 @@ def prepare_ltoir_bundle(
 
     for algo in all_algos:
         rep = rep_for_algo_id[id(algo)]
-        storage_symbols = rep_symbols[id(rep)]
+        storage_types = rep_storage_types[id(rep)]
         extras = _collect_extra_ltoirs(algo)
-        if storage_symbols:
-            bytes_symbol, alignment_symbol = storage_symbols
-            algo._temp_storage_bytes = abi_globals[bytes_symbol]
-            algo._temp_storage_alignment = abi_globals[alignment_symbol]
+        if storage_types:
+            algo._temp_storage_bytes, algo._temp_storage_alignment = (
+                layouts_by_type[storage_types[0]]
+            )
         else:
             algo._temp_storage_bytes = 0
             algo._temp_storage_alignment = 1

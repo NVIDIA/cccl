@@ -51,7 +51,7 @@ _ENABLE_CACHE = (
     and _CACHE_ENV_VALUE.strip().lower() not in _FALSE_CACHE_VALUES
 )
 _CACHE_USABLE = _ENABLE_CACHE
-_CACHE_SCHEMA_VERSION = 5
+_CACHE_SCHEMA_VERSION = 6
 _CACHE_MISS = object()
 
 
@@ -191,20 +191,45 @@ def _cache_value_type(value: object) -> str:
 
 
 def _encode_cache_value(value: object) -> object:
+    """Keep LTO bytes and nested layout tuples together in one JSON entry.
+
+    Tag bytes and recurse through tuples so a result such as
+    ``(image, ((size, alignment), ...))`` survives a process restart with its
+    types intact. Other values pass through to JSON unchanged; this encoder
+    does not recursively tag the contents of lists or dictionaries.
+    """
+
     if isinstance(value, bytes):
         return {
             "__cuda_coop_numba_mlir_cache_type__": "bytes",
             "data": b64encode(value).decode("ascii"),
         }
+    if isinstance(value, tuple):
+        return {
+            "__cuda_coop_numba_mlir_cache_type__": "tuple",
+            "items": [_encode_cache_value(item) for item in value],
+        }
     return value
 
 
 def _decode_cache_value(value: object) -> object:
+    """Restore bytes and tuple structure from the cache's tagged values.
+
+    Strict base64 decoding rejects malformed byte payloads. The outer reader
+    handles unusable entries and checks their schema and top-level result
+    type; this helper does not validate a particular compiler result shape.
+    """
+
     if (
         isinstance(value, dict)
         and value.get("__cuda_coop_numba_mlir_cache_type__") == "bytes"
     ):
-        return b64decode(value["data"].encode("ascii"))
+        return b64decode(value["data"].encode("ascii"), validate=True)
+    if (
+        isinstance(value, dict)
+        and value.get("__cuda_coop_numba_mlir_cache_type__") == "tuple"
+    ):
+        return tuple(_decode_cache_value(item) for item in value["items"])
     return value
 
 
@@ -248,19 +273,22 @@ def _write_cache(path: str | os.PathLike[str], value: object) -> None:
     """Serialize a result and atomically replace its cache entry.
 
     Write a schema and top-level type tag alongside the value, encoding bytes
-    as base64. Use a temporary file in the destination directory, flush and
-    fsync it, then replace the destination so readers do not see a partially
-    written JSON document. Concurrent writers may replace the same entry.
-    On a write or replacement failure, attempt to remove the temporary file
-    and propagate the error for ``disk_cache`` to handle.
+    as base64 and recursively tagging tuples. Use a temporary file in the
+    destination directory, flush and fsync it, then replace the destination
+    so readers do not see a partially written JSON document. A tuple result,
+    such as an LTO image with its layouts, is one entry, so a reader gets both
+    parts or neither. Concurrent writers may replace the same entry. On a
+    write or replacement failure, attempt to remove the temporary file and
+    propagate the error for ``disk_cache`` to handle.
 
     Parameters
     ----------
     path : str or os.PathLike[str]
         Destination entry. Its parent directory must already exist.
     value : object
-        Result to persist: bytes or a JSON-serializable value. A later read
-        also requires the decoded top-level type to match the saved type tag.
+        Result to persist: bytes, recursively supported tuples, or a
+        JSON-serializable value. A later read also requires the decoded
+        top-level type to match the saved type tag.
 
     Raises
     ------
