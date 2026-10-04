@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check which TopK counts the group plan requires to be block-uniform.
+
+Every thread must agree on k and any supplied valid count. An omitted valid
+count follows from the tile shape, so it needs no separate uniform argument
+entry. This test checks the recorded precondition, not runtime enforcement.
+"""
+
 import pytest
 
 from cuda.coop._core import (
