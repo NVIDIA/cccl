@@ -155,8 +155,10 @@ def _typed_group_payload_like(
 __all__ = [
     "_GROUP_CONSTRUCTORS",
     "_NAME_COUNTER",
+    "_PAYLOAD_DTYPE_LIKE",
     "GroupRewriteError",
     "_group_operation_name",
     "_is_common_root_operation",
+    "_typed_group_payload_like",
     "ir",
 ]
