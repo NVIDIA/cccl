@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Run the documented pair sort and verify its original-position values.
+
+The marked example is shared by the programming guide and visualization.
+Keep its key order and key/index association checks together.
+"""
+
 import pytest
 
 cuda = pytest.importorskip("numba_cuda_mlir.cuda")

@@ -2,8 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Illustrative comparison merges; contracts follow the common group planner
-// and the BlockMergeSort / WarpMergeSort providers, not an instruction trace.
+// Show how sorted runs keep keys and associated values together.
+// The stages explain ownership and group boundaries. They do not predict
+// the CUB implementation or the GPU instruction sequence.
 (() => {
   "use strict";
 
@@ -35,6 +36,8 @@
     return Array.from({ length: threads }, (_, thread) => ({ start: thread * items, count: items, label: `T${thread}` }));
   }
 
+  // Keep the input row visible while copies move through each merge.
+  // Null entries mark the undefined tail of a partial result.
   function build(state) {
     const items = Number(state.items);
     const width = group_width(state.scope);
@@ -55,6 +58,8 @@
       detail: `Original input ${index}: T${Math.floor(index / items)}, slot ${index % items}, key ${entry.key}${association(entry)}. ${index % tile < valid ? "Inside this group's valid prefix." : "Outside this group's valid prefix; not an input to the sort."}`,
     }));
 
+    // Link each value to its previous position so the explorer can draw
+    // its path without changing the key/value association.
     function tokens(values, row, previous, previous_row) {
       return values.map((entry, index) => {
         if (entry === null) return {

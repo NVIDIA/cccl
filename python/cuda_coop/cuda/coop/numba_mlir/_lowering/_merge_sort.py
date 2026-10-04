@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Build the CUB Merge Sort provider factories used by the Numba rewrite.
+
+Register keys-only and key/value factories for block and warp groups, each
+with full- and partial-tile variants. Factories specialize shapes, dtypes,
+and comparison operators. The compiler supplies copied arrays to sort in
+place, followed by runtime count and sentinel operands for a partial tile.
+"""
+
 from cuda.coop._core import (
     INT8,
     CxxOperator,
@@ -29,6 +37,15 @@ from ._core import NumbaMlirCoreAdapter
 
 
 def comparison_operator(descending, compare_op):
+    """Describe the built-in ordering or a stateless Python predicate.
+
+    Require a constant boolean direction. Without a callback, select C++
+    less-than or greater-than. A custom predicate owns the ordering, so reject
+    its combination with ``descending=True``. Resolve both predicate argument
+    types from ``KeyT`` and use an int8 device result whose truth value CUB
+    can consume. Callback compilation occurs during provider specialization.
+    """
+
     if not isinstance(descending, bool):
         raise TypeError("Merge Sort descending must be a compile-time bool")
     if compare_op is not None:
@@ -58,6 +75,15 @@ def comparison_operator(descending, compare_op):
 
 
 def _make_provider(namespace, pairs, partial):
+    """Create and register one scope, payload, and tile-policy variant.
+
+    The closure fixes block versus warp, keys versus pairs, and full versus
+    partial tiles. Give it a distinct factory name and registry entry so the
+    rewrite can recover the matching runtime signature and storage scope.
+    All variants use a leading temporary-storage pointer; the compiler decides
+    which scratch allocation supplies it.
+    """
+
     operation = "merge_sort_pairs" if pairs else "merge_sort_keys"
     if partial:
         operation += "_partial"
@@ -71,6 +97,19 @@ def _make_provider(namespace, pairs, partial):
         descending=False,
         compare_op=None,
     ):
+        """Specialize one MergeSort variant for concrete shapes and dtypes.
+
+        Normalize block dimensions and numeric key/value types, then build the
+        shared CUB specialization. For partial tiles, zero placeholders record
+        the presence of count and sentinel operands. Their values arrive
+        later as runtime arguments.
+
+        Adapt the shared signature with this factory's registered storage and
+        synchronization scopes. A Python comparator compiles during this step.
+        Return the invocable, carrying exact block geometry for warp providers
+        so their scratch slices use the correct linear thread rank.
+        """
+
         block_dim = normalize_dim_param(threads_per_block)
         key_dtype = _validate_common_numeric_dtype(
             key_dtype, operation=operation, parameter="keys"

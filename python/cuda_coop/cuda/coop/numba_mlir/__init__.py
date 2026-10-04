@@ -13,8 +13,8 @@ constants. Construct TempStorage inside each kernel. During compilation, the
 compiler rebuilds the descriptor from its compile-time constant arguments
 and validates them. The compiler rejects a descriptor that comes from a
 module global. The ``local`` and ``shared`` namespaces,
-``StatefulFunction``, and the Exchange, Shuffle, Reduce, Sum, and Scan
-markers load on first access.
+``StatefulFunction``, and the Exchange, Shuffle, Reduce, Sum, Scan, and
+Merge Sort markers load on first access.
 """
 
 import importlib

@@ -2,11 +2,30 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Reconcile MergeSort payload types before provider specialization.
+
+The group rewrite creates result arrays that CUB will sort in place. This
+hook checks their fixed extents and records separate key and value dtypes
+for allocation and factory arguments. Partial-tile scalar controls follow
+the arrays and are prepared by the group rewrite.
+"""
+
 from ._parameters import _validate_common_numeric_dtype
 from ._rewrite_support import CoopSinglePhaseRewriteError
 
 
 def infer_merge_sort_payload(context, inference):
+    """Infer matching extents and independent key and value dtypes.
+
+    Inspect one array for keys-only sorting or two for pairs. Require fixed,
+    equal extents, but infer each numeric dtype independently. Use an explicit
+    factory dtype when payload provenance cannot provide one, and reconcile
+    inferred keywords with any existing factory arguments.
+
+    Record each dtype on its ThreadData payload so allocation and provider
+    specialization agree. Partial-tile controls do not affect these shapes.
+    """
+
     names = ("keys", "values") if "pairs" in inference.op_name else ("keys",)
     extent = None
     for index, name in enumerate(names):

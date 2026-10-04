@@ -231,6 +231,8 @@ def check_common_scan_seeds(integer_seed: int, floating_seed: float) -> None:
 
 
 def check_merge_sort_surface() -> None:
+    """Check readable inputs and preservation of both result dtypes."""
+
     keys = coop.ThreadData(items_per_thread=3, dtype=np.int32)
     values = coop.ThreadData(items_per_thread=3, dtype=np.float64)
     read_only_keys = _ReadOnlyThreadData(np.int32(1))

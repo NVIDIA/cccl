@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe in-place CUB Merge Sort for one physical or logical warp.
+
+The lane width and per-thread extent fix the tile capacity. Key/value pairs
+use parallel arrays so CUB can apply the same permutation to both. Partial
+tiles reuse the checked count adapter from Block Merge Sort. The backend
+provides per-group scratch and copies inputs for the group API's results.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -25,11 +33,15 @@ from ..block.merge_sort import _CHECKED_MERGE_SORT
 
 
 class WarpMergeSortPayload(str, Enum):
+    """Select key-only sorting or keys with associated values."""
+
     KEYS = "keys"
     PAIRS = "pairs"
 
 
 class WarpMergeSortTilePolicy(str, Enum):
+    """Select a full tile or a valid prefix with a padding key."""
+
     FULL = "full"
     PARTIAL = "partial"
 
@@ -42,7 +54,12 @@ _ITEMS_PER_THREAD = Dependency("ITEMS_PER_THREAD")
 
 @dataclass(frozen=True)
 class WarpMergeSortSpecialization:
-    """Fully specialized WarpMergeSort call semantics."""
+    """Retain a bound WarpMergeSort Algorithm and its payload choices.
+
+    The Algorithm carries parameter order and specialization identity. The
+    accompanying fields let a backend inspect group width, types, and tile
+    policy without reading generated C++ or unwrapping template arguments.
+    """
 
     specialization: Algorithm
     payload: WarpMergeSortPayload
@@ -82,7 +99,45 @@ def make_warp_merge_sort_specialization(
     valid_items: Any = None,
     oob_default: Any = None,
 ) -> WarpMergeSortSpecialization:
-    """Build canonical WarpMergeSort keys or pairs semantics."""
+    """Bind keys or pairs to a CUB Merge Sort for a fixed lane group.
+
+    CUB sorts the arrays in place. Partial tiles add a signed 64-bit count
+    and padding key; a generated wrapper checks the count before narrowing
+    it. The enclosing block's participation and scratch slices belong to
+    group planning and the backend, not this primitive factory.
+
+    Parameters
+    ----------
+    key_dtype : object
+        Required key type understood by the backend.
+    items_per_thread : int
+        Positive integral array extent shared by the lanes.
+    threads_in_warp : int
+        Static group width: 1, 2, 4, 8, 16, or 32.
+    compare_operator : CxxOperator or PythonOperator
+        Static comparator descriptor. Python descriptors must name a
+        callable; the backend compiles the callback type contract.
+    value_dtype : object, optional
+        Associated-value type. Omit it for keys-only sorting.
+    valid_items, oob_default : object, optional
+        Supply both for a partial tile. Only their presence selects the
+        overload; their values remain runtime operands.
+
+    Returns
+    -------
+    WarpMergeSortSpecialization
+        Bound Algorithm and call choices. Keys and optional values are inout
+        arrays, with no scalar return.
+
+    Raises
+    ------
+    TypeError
+        The comparator is not a supported operator descriptor.
+    ValueError
+        A required type or callable is missing, items_per_thread or
+        threads_in_warp is not a supported integer, or only one partial-tile
+        control is supplied.
+    """
 
     if key_dtype is None:
         raise ValueError("key dtype must be provided")
