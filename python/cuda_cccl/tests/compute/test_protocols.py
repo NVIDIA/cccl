@@ -55,6 +55,7 @@ def test_validate_and_get_stream_revalidates_closed_stream():
 
     assert stream.calls == 2
     assert id(stream) not in protocols._STREAM_HANDLE_CACHE
+    assert protocols._LAST_STREAM_HANDLE_CACHE is None
 
 
 def test_validate_and_get_stream_does_not_confuse_equal_objects():
@@ -71,6 +72,7 @@ def test_validate_and_get_stream_does_not_confuse_equal_objects():
     assert first == second
     assert protocols.validate_and_get_stream(first) == 123
     assert protocols.validate_and_get_stream(second) == 456
+    assert protocols.validate_and_get_stream(first) == 123
     assert first.calls == 1
     assert second.calls == 1
 
@@ -88,6 +90,7 @@ def test_stream_handle_cache_does_not_extend_stream_lifetime():
 
     assert stream_ref() is None
     assert stream_id not in protocols._STREAM_HANDLE_CACHE
+    assert protocols._LAST_STREAM_HANDLE_CACHE is None
 
 
 def test_non_weakrefable_stream_remains_supported_without_caching():

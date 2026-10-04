@@ -28,35 +28,51 @@ def is_device_array(obj: object) -> bool:
 _DATA_POINTER_ACCESSOR_CACHE: dict[type, Callable[[DeviceArrayLike], int]] = {}
 
 # Stream handles are immutable for the lifetime of an object implementing the
-# __cuda_stream__ protocol. Cache successful validation by object identity so
-# repeated algorithm calls on the same stream do not re-run the protocol.
-# Weak references avoid extending the lifetime of CUDA stream objects.
-_STREAM_HANDLE_CACHE: dict[int, tuple[weakref.ReferenceType[object], int]] = {}
+# __cuda_stream__ protocol. Keep a weak identity cache, plus a direct
+# most-recently-used entry so repeated calls on one stream avoid id() and dict
+# lookup overhead.
+_STREAM_HANDLE_CACHE: dict[int, tuple[weakref.ReferenceType[object], int, bool]] = {}
+_LAST_STREAM_HANDLE_CACHE: Optional[tuple[weakref.ReferenceType[object], int, bool]] = None
 
 
 def _get_cached_stream_handle(stream: object) -> Optional[int]:
+    global _LAST_STREAM_HANDLE_CACHE
+
+    # Repeated calls overwhelmingly reuse the same stream. Check the direct
+    # MRU entry before paying for id() and a dictionary lookup.
+    entry = _LAST_STREAM_HANDLE_CACHE
+    if entry is not None and entry[0]() is stream:
+        if entry[2] and stream.is_closed:
+            _STREAM_HANDLE_CACHE.pop(id(stream), None)
+            _LAST_STREAM_HANDLE_CACHE = None
+            return None
+        return entry[1]
+
     stream_id = id(stream)
     entry = _STREAM_HANDLE_CACHE.get(stream_id)
     if entry is None or entry[0]() is not stream:
         return None
 
-    # cuda.core.Stream keeps its object identity after close(), but its native
-    # handle is no longer valid and __cuda_stream__() rejects the object. Do
-    # not let a previously cached handle bypass that validation path.
-    if getattr(stream, "is_closed", False):
+    if entry[2] and stream.is_closed:
         _STREAM_HANDLE_CACHE.pop(stream_id, None)
         return None
 
+    _LAST_STREAM_HANDLE_CACHE = entry
     return entry[1]
 
 
 def _cache_stream_handle(stream: object, handle: int) -> None:
+    global _LAST_STREAM_HANDLE_CACHE
+
     stream_id = id(stream)
 
     def remove(dead_ref: weakref.ReferenceType[object]) -> None:
+        global _LAST_STREAM_HANDLE_CACHE
         current = _STREAM_HANDLE_CACHE.get(stream_id)
         if current is not None and current[0] is dead_ref:
             _STREAM_HANDLE_CACHE.pop(stream_id, None)
+            if _LAST_STREAM_HANDLE_CACHE is current:
+                _LAST_STREAM_HANDLE_CACHE = None
 
     try:
         stream_ref = weakref.ref(stream, remove)
@@ -65,7 +81,14 @@ def _cache_stream_handle(stream: object, handle: int) -> None:
         # Keep supporting them without caching rather than retaining them.
         return
 
-    _STREAM_HANDLE_CACHE[stream_id] = (stream_ref, handle)
+    # Determine this once when caching instead of paying for getattr() on every
+    # cache hit. This also preserves support for protocol objects that expose
+    # is_closed dynamically rather than as a type descriptor.
+    needs_closed_check = hasattr(stream, "is_closed")
+
+    entry = (stream_ref, handle, needs_closed_check)
+    _STREAM_HANDLE_CACHE[stream_id] = entry
+    _LAST_STREAM_HANDLE_CACHE = entry
 
 
 def get_data_pointer(arr: DeviceArrayLike) -> int:
@@ -257,9 +280,23 @@ def compute_c_contiguous_strides_in_bytes(
 
 
 def validate_and_get_stream(stream) -> Optional[int]:
+    global _LAST_STREAM_HANDLE_CACHE
+
     # null stream is allowed
     if stream is None:
         return None
+
+    # Hot path: repeated calls usually reuse the same stream. Keep this inline
+    # to avoid the cost of an extra Python function call before returning the
+    # already validated handle.
+    entry = _LAST_STREAM_HANDLE_CACHE
+    if entry is not None and entry[0]() is stream:
+        if entry[2] and stream.is_closed:
+            stream_id = id(stream)
+            _STREAM_HANDLE_CACHE.pop(stream_id, None)
+            _LAST_STREAM_HANDLE_CACHE = None
+        else:
+            return entry[1]
 
     cached_handle = _get_cached_stream_handle(stream)
     if cached_handle is not None:
