@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Reject invalid common radix controls before backend dispatch.
+
+Common validation runs only while a backend owns the trace, so the tests
+report a fake active backend. Validation must fail before dispatch tries
+to import that module. The readable payload declares Python int, which
+normalizes to Int32 and sets a 32-bit key width. Each case then breaks a
+direction, bit-bound, or digit-width constraint.
+"""
+
 from importlib import import_module
 
 import pytest

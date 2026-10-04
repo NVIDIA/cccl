@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile RadixSort and RadixRank operand profiles without kernel execution.
+
+An SM80 target and typed null pointer exercise provider compilation. Sort
+bit bounds can be runtime operands; rank digits use compile-time bounds.
+The same helper checks qualified-only register and floating-key forms,
+prefix-output requirements, and rejected control types.
+"""
+
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
@@ -28,6 +36,14 @@ def _compile(
     radix_bits=4,
     prefix=False,
 ):
+    """Compile one radix form with controlled key, value, and prefix types.
+
+    The helper compiles a launch with a static block shape. It consumes the
+    returned items, so the result types must compile. Invalid variants change
+    one group, bound, or payload property. No kernel launch uses the null
+    output pointer.
+    """
+
     @cute.kernel
     def kernel(
         memory: cute.Pointer,

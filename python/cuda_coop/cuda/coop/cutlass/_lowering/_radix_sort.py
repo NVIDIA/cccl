@@ -2,6 +2,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Translate block radix Sort and Rank into generated C++ calls to CUB.
+
+During tracing, each call is planned, queued as a request, and emitted as an
+external call by symbol name. Later, the registered renderer writes the C++
+body of that wrapper. Sort wrappers copy keys and optional values and return
+fresh results. Rank wrappers transform signed keys, return Int32 positions,
+and may write bin prefixes.
+
+Shared-memory scratch is deferred: the call gets address and size
+placeholders, filled in after a probe measures the exact CUB TempStorage
+layout. Each plan records whether a block barrier follows the call so the
+scratch can be reused.
+"""
+
 import hashlib
 from dataclasses import dataclass, replace
 from enum import Enum
@@ -55,6 +69,15 @@ _resolve_type = _types.make_provider_type_resolver(
 
 
 def _bit_binding(value, name):
+    """Classify a Sort bound for the signed 64-bit ABI.
+
+    Reject Boolean and Enum inputs. Planning checks static integers early,
+    but the plan keeps only runtime placeholders. Static and runtime bounds
+    both pass to the wrapper as Int64. Runtime types exclude unsigned 64-bit
+    values, so conversion to Int64 is lossless. The checked C++ sort checks
+    the interval before it narrows the bounds to int.
+    """
+
     if isinstance(value, (bool, np.bool_, Enum)):
         raise TypeError(
             f"radix sort {name} must be an integer, not bool or Enum"
@@ -77,6 +100,14 @@ def _bit_binding(value, name):
 
 
 def _plan(group, launch, operation, temp_storage=None):
+    """Require a supported block plan and attach exact scratch controls.
+
+    Reject tiles above CUB's 65,535-item counter limit. Record descriptor
+    size, alignment, sharing, and reuse policy so deferred allocation can
+    satisfy the C++ layout. Rank owns its scratch and always synchronizes
+    after use.
+    """
+
     plan = plan_group_primitive(
         make_group_primitive_call(
             group,
@@ -131,6 +162,13 @@ def _sort_plan(
     blocked_to_striped,
     temp_storage=None,
 ):
+    """Bind Sort ordering, bit ranges, layout, and result shape.
+
+    Preserve scalar versus array form even for one-item payloads. Every call
+    uses the checked explicit-bound C++ method. One wrapper therefore serves
+    all bound values for a given key type, value type, order, and layout.
+    """
+
     primitive = make_block_radix_sort_semantics(
         key_dtype=key_type,
         value_dtype=value_type,
@@ -165,6 +203,12 @@ def _rank_plan(
     descending,
     prefix_items,
 ):
+    """Bind a static digit interval and optional bin-prefix extent.
+
+    The shared plan returns one Int32 rank per key. Prefix slots describe
+    bins, so their per-thread extent is independent of the input item count.
+    """
+
     primitive = make_block_radix_rank_semantics(
         key_dtype=key_type,
         items_per_thread=items,
@@ -187,10 +231,25 @@ def _rank_plan(
 
 @dataclass(frozen=True, eq=False)
 class _CubRadixRequest:
+    """Describe one generated Sort or Rank wrapper and its storage ABI.
+
+    Equality, hashing, and the symbol name use the full plan artifact key, so
+    identical calls share one wrapper and one layout probe. Sort and Rank
+    differ in key types, output dtypes, bit controls, and scratch ownership.
+    """
+
     plan: GroupLoweringPlan
     kind: str = "cub_group_radix"
 
     def __post_init__(self):
+        """Check templates, result contracts, and scratch reuse policy.
+
+        Require the matching CUB method, key/value types, block dimensions and
+        item count. Rank also checks its digit width and order, and requires
+        implementation-owned scratch with a trailing barrier. Every result
+        must agree with the planned scalar or array form.
+        """
+
         self.plan.require_supported()
         if (
             self.plan.target is not GroupLoweringTarget.CUB_BLOCK
@@ -302,6 +361,8 @@ class _CubRadixRequest:
 
     @property
     def cpp_type(self):
+        """Spell the C++ type for wrapper calls and layout probes."""
+
         values = []
         for name, value in self.implementation.ordered_template_arguments:
             if (
@@ -317,10 +378,14 @@ class _CubRadixRequest:
 
     @property
     def scratch_requirement_key(self):
+        """Key layout probes by their CUB storage type."""
+
         return "cub_radix_storage", self.cpp_type
 
     @property
     def symbol_name(self):
+        """Hash the complete plan identity into a wrapper symbol."""
+
         digest = hashlib.sha256(
             repr(self.plan.artifact_key).encode()
         ).hexdigest()[:16]
@@ -337,6 +402,23 @@ class _CubRadixRequest:
 
 
 def _render_radix(request):
+    """Return the C++ source lines of one wrapper function.
+
+    The wrapper copies inputs into local arrays, calls CUB, and writes the
+    results through output pointers.
+
+    Sort passes signed 64-bit bounds to the checked C++ specialization. Rank
+    converts integer keys to unsigned bits and flips signed keys' sign bit
+    before extraction, matching the ordered representation used by Sort. Its
+    optional prefix array starts with placeholders; slots beyond the bins
+    remain undefined by contract.
+
+    The ABI places input items first, then Sort bounds, scratch
+    address/size/sync controls, and result pointers. Check storage size and
+    alignment before calling CUB. Apply the configured reuse barrier and
+    copy results out.
+    """
+
     request.__post_init__()
     p = request.primitive
     params, inputs, outputs = [], [], []
@@ -467,6 +549,13 @@ _rendering.register_bundle_renderer(
 
 
 def _resolve_payload(value, *, allowed, feature):
+    """Resolve the dtype and items of one operand.
+
+    Wrap a scalar as a one-item ThreadData so scalars and payloads share dtype
+    checks. Also return a flag for scalar input. Planning records the flag as
+    the operand kind, so the result is returned as a scalar.
+    """
+
     scalar = not isinstance(value, ThreadData)
     payload = ThreadData(1, values=[value]) if scalar else value
     dtype, items = _types.resolve_thread_data_value_type(
@@ -480,6 +569,8 @@ def _resolve_payload(value, *, allowed, feature):
 
 
 def _typed_item(value, dtype):
+    """Convert a verified input item to its scalar ABI dtype."""
+
     if isinstance(value, np.generic):
         value = value.item()
     converted = _types.coerce_plain_scalar(
@@ -491,6 +582,18 @@ def _typed_item(value, dtype):
 def _materialize(
     request, payloads, resolved, *, bounds=(), temp_storage=None, prefix=None
 ):
+    """Emit the radix call and construct its scalar or payload results.
+
+    Copy typed inputs, carry Sort bounds as Int64, and allocate aligned
+    outputs. Queue the request so the wrapper is generated later, and record
+    deferred scratch before the call. Rank outputs always use Int32; Sort
+    outputs retain each input dtype. Copy the optional prefix side output only
+    after the call has been emitted.
+
+    On failure, restore queued requests and scratch events. This does not undo
+    emitted IR, register-memory outputs, or prefix items already written.
+    """
+
     arguments, parameter_types = [], []
     for dtype, items in resolved:
         arguments.extend(_typed_item(item, dtype) for item in items)
@@ -579,6 +682,12 @@ def provider_radix_sort(
     blocked_to_striped,
     temp_storage,
 ):
+    """Resolve numeric Sort operands and the omitted end-bit default.
+
+    The key dtype sets the full-width default. Shared planning preserves
+    ordering, output layout, and scalar versus payload results.
+    """
+
     keys, key_type, key_items, scalar = _resolve_payload(
         keys, allowed=_SORT_KEYS, feature="radix_sort"
     )
@@ -629,6 +738,13 @@ def provider_radix_rank(
     descending,
     exclusive_digit_prefix,
 ):
+    """Resolve integer keys and validate the optional writable prefix.
+
+    Require a static one-to-eight-bit interval and the exact bin-based prefix
+    extent. The prefix must be ThreadData with inferred or explicit Int32
+    dtype. Rank uses automatic scratch and a trailing reuse barrier.
+    """
+
     keys, key_type, key_items, scalar = _resolve_payload(
         keys, allowed=_INTEGER_KEYS, feature="radix_rank_keys"
     )

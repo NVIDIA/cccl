@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check radix plan validation, wrapper identity, and failed-call cleanup.
+
+Sort bounds are wrapper arguments even when static. Direction and output
+layout change the specialization. Rank wrappers transform signed keys to
+ordered bits and may fill a separate prefix payload. If the external
+wrapper call fails, the prefix stays unchanged and queued session state
+must be restored from its snapshot.
+"""
+
 from dataclasses import replace
 from types import SimpleNamespace
 
@@ -80,6 +89,12 @@ def test_invalid_static_bits(begin, end):
 )
 @pytest.mark.parametrize("descending", (False, True))
 def test_rank_ordered_bits(dtype, descending):
+    """Transform signed keys before extracting their radix digits.
+
+    Only signed key types need the sign-bit flip. Checking each native-width
+    mask in generated source exposes a missing or incorrectly sized transform.
+    """
+
     request = _rank(key_type=dtype, descending=descending)
     source = _rendering.render_bundle_source([request])
     assert ("0x80000000u" in source) == (dtype is cutlass.Int32)
@@ -91,6 +106,13 @@ def test_rank_ordered_bits(dtype, descending):
 
 
 def test_sort_runtime_identity():
+    """Reuse one sort wrapper for different bit intervals.
+
+    Bit bounds are provider operands, so they need no new symbol. Direction
+    and blocked-to-striped output change the compiled operation and must use
+    distinct symbols.
+    """
+
     assert (
         _sort(begin_bit=0, end_bit=4).symbol_name
         == _sort(begin_bit=8, end_bit=12).symbol_name
@@ -100,6 +122,13 @@ def test_sort_runtime_identity():
 
 
 def test_prefix_identity_and_initialization():
+    """Give prefix-output requests a separate wrapper and initialized slots.
+
+    The generated wrapper fills its local prefix array with -1 before calling
+    CUB, which writes only slots below the bin count. The extra output pointer
+    changes the wrapper signature, so the request needs a distinct symbol.
+    """
+
     request = _rank(prefix_items=1)
     assert request.symbol_name != _rank().symbol_name
     assert "prefix[i] = -1" in _rendering.render_bundle_source([request])
@@ -145,6 +174,15 @@ def test_prefix_alias_rejected_before_snapshot():
 
 
 def test_failed_ffi_preserves_prefix_and_session(monkeypatch):
+    """Keep prefix state and input keys unchanged when the wrapper call fails.
+
+    Stubs replace request registration, value and pointer conversion, register
+    tensors, and scratch registration. The stub foreign-function interface
+    (FFI) call can then raise without an active CuTe kernel trace. The prefix
+    starts with no dtype and a sentinel item; both must survive. The session
+    restoration spy must receive the snapshot taken before the call.
+    """
+
     request = _rank(prefix_items=1)
     keys = ThreadData(items_per_thread=3, dtype=cutlass.Int32, values=[3, 1, 2])
     prefix = ThreadData(items_per_thread=1, values=[-7])

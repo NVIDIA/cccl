@@ -94,11 +94,11 @@ the exact CUB instruction sequence or shared-memory layout.
 
 The common sort calls return blocked output. The qualified calls in
 ``cuda.coop.numba_mlir`` and ``cuda.coop.cutlass`` also accept
-``blocked_to_striped=True``. With
-``T`` block threads, sorted position ``p`` then belongs to thread
-``p % T``, slot ``p // T``. Intermediate digit passes still use blocked
-ownership. Keys and values use the same output layout; select a matching
-layout when storing them. Rank has no striped-output or pairs option.
+``blocked_to_striped=True``. With ``T`` block threads, sorted position ``p``
+then belongs to thread ``p % T``, slot ``p // T``. Intermediate digit passes
+still use blocked ownership. Keys and values use the same output layout;
+select a matching layout when storing them. Rank has no striped-output or
+pairs option.
 
 Bit intervals and key types
 ---------------------------
@@ -145,8 +145,8 @@ That side output describes digit bins and has its own per-thread extent,
 separate from the returned per-key ranks. See
 :func:`cuda.coop.numba_mlir.radix_rank_keys` and
 :func:`cuda.coop.cutlass.radix_rank_keys` for the supported output containers,
-layout, and undefined tail slots. The explorer's bin rows are mathematical explanations, not an
-invocation of that optional output.
+layout, and undefined tail slots. The explorer's bin rows are mathematical
+explanations, not an invocation of that optional output.
 
 Sorting key/value pairs in a kernel
 -----------------------------------
@@ -161,10 +161,10 @@ including ties.
    :end-before: # radix-sort-example-end
    :dedent: 4
 
-The CuTe example below covers sorting and ranking in the same kernel. It
-uses 64 threads and an ``items_per_thread`` argument, and ``module`` selects
-the common or CUTLASS-qualified API. Its qualified path also checks striped output and
-bin prefixes. :download:`Download the complete CuTe example
+The CuTe example below covers sorting and ranking in the same kernel. It uses
+64 threads and an ``items_per_thread`` argument, and ``module`` selects the
+common or CUTLASS-qualified API. Its qualified path also checks striped output
+and bin prefixes. :download:`Download the complete CuTe example
 <../../../../python/cuda_coop/examples/cutlass/radix.py>` for setup and host
 checks.
 
@@ -178,9 +178,9 @@ Returning one digit's ranks
 ---------------------------
 
 This Numba example selects the low four bits of unsigned keys. The CuTe
-example above also checks ranks against an independent host reference. The host
-reference inverts the stable digit-sort permutation because each rank must
-be returned at its original input position.
+example above also checks ranks against an independent host reference. The
+host reference inverts the stable digit-sort permutation because each rank
+must be returned at its original input position.
 
 .. literalinclude:: ../../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_radix_examples.py
    :language: python

@@ -2,13 +2,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Expose common block radix operations for supported GPU compilers.
+"""Provide common block Radix Sort and Radix Rank calls.
 
-These functions describe stable ranking and sorting of integral ThreadData
-keys. Decorators register each function so a supported compiler can recognize
-its calls; the Python bodies raise a compiler-context error. The static bound
-helper shares default and validation rules with frontends that need resolved
-compile-time bounds.
+Common calls take readable integer-key payloads in blocked order. Qualified
+operations document their additional payload forms and key dtypes.
+Decorators register these functions so compilers can recognize their calls.
+A CuTe DSL trace executes the Python bodies, which check common restrictions
+before calling the backend. Numba-CUDA-MLIR replaces calls during compilation
+and checks its typed operands separately.
+
+The static bound helper resolves Rank's digit interval for the common check
+and both compiler frontends. Sort bounds may be runtime values; a separate
+range check and a device trap cover them.
 """
 
 from __future__ import annotations
@@ -37,11 +42,11 @@ from ._payload import (
 def _radix_bounds(operation, key_width, begin_bit, end_bit, radix_bits=None):
     """Resolve static radix defaults and check the common API's interval.
 
-    Sort defaults to the full key width. Rank defaults to four bits from
-    begin, unless radix_bits or end is supplied, and permits at most eight
-    selected bits. An explicit radix_bits must agree with the resolved
-    interval. This helper handles static values only; it is not the runtime
-    Sort bounds check.
+    Current callers use this helper only for Rank. Rank defaults to four bits
+    from begin, unless radix_bits or end is supplied, and permits at most
+    eight selected bits. An explicit radix_bits must agree with the resolved
+    interval. The helper also defines a full-key-width default for Sort, but
+    does not handle runtime Sort bounds.
     """
 
     for name, value in (
@@ -84,6 +89,16 @@ def _validate(
     temp_storage,
     radix_bits=None,
 ):
+    """Check common Radix operands while a CuTe DSL trace runs this body.
+
+    Require supported integer-key payloads, matching pair extents, and a
+    compile-time bool for descending. Sort bounds may be runtime integers;
+    Rank requires a static digit interval. With no active Python tracing
+    backend, return at once; the dispatch call that follows reports the
+    missing compiler context. Numba-CUDA-MLIR replaces these calls during
+    compilation and checks its typed operands.
+    """
+
     if _backend_module_name() is None:
         return
     _validate_common_operation_group(operation, group)
@@ -245,9 +260,9 @@ def radix_sort_pairs(
         Block-uniform half-open interval in CUB's ordered key representation.
         Omitted end selects the key width. Require
         ``0 <= begin_bit < end_bit <= key_width``. Invalid static bounds fail
-        compilation; invalid runtime bounds trap before narrowing. Signed
-        keys invert their sign bit before digit extraction. Returned keys
-        keep their original representation.
+        compilation; invalid runtime bounds trap before conversion to CUB's
+        integer arguments. Signed keys invert their sign bit before digit
+        extraction. Returned keys keep their original representation.
     descending : bool
         Compile-time order selector. Equal digits retain their input order
         for both ascending and descending sorts.
