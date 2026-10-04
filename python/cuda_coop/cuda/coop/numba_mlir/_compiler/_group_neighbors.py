@@ -306,9 +306,25 @@ def _lower_neighbors(context, inst, *, operation, group, bound, is_common_root):
 def _discontinuity_results(context, bound):
     """Resolve the selector to one flag payload or a heads/tails pair.
 
+    The registered result resolver is queried by
+    ``_GroupCallPlanner._result_source`` when another operation consumes
+    a Discontinuity result. It describes the return shape before
+    lowering allocates either flag array; ``heads_and_tails`` therefore
+    exposes two results while each other mode exposes one.
+
     Both results inherit the input extent and use int32. Resolve the mode
     before ordinary typing so tuple projections and chained calls see the
     correct number of results.
+
+    Parameters
+    ----------
+    context : GroupPlanningContext
+        Access to launch dimensions, constant controls, payload
+        facts, and IR builders for this group-planning attempt.
+    bound : inspect.BoundArguments
+        Public call arguments after signature binding and default
+        application. Runtime values remain IR variables; selectors
+        are resolved through the context.
     """
 
     mode = context.constant(bound.arguments["mode"])
