@@ -1168,3 +1168,10 @@ def _make_rmem_tensor(
     tensor_type = cute_ir.MemRefType.get(pointer_type, layout.type)
     allocation = cute_ir.memref_alloca(tensor_type, layout=layout)
     return _Tensor(allocation.value, dtype)
+
+
+__all__ = [
+    "ThreadData",
+    "_coerce_thread_payload",
+    "_make_rmem_tensor",
+]

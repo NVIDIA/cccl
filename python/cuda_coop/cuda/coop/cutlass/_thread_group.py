@@ -92,4 +92,11 @@ def this_block() -> ThreadGroup:
     )
 
 
-__all__ = ["Hierarchy", "ThreadGroup", "ThreadHierarchy", "this_block"]
+__all__ = [
+    "Hierarchy",
+    "ThreadGroup",
+    "ThreadHierarchy",
+    "_require_complete_warp_partition",
+    "_resolve_primitive_group_from_launch",
+    "this_block",
+]
