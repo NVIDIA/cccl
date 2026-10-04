@@ -53,11 +53,17 @@ reason it copies the input.
 At the tile edge, an omitted neighbor leaves the current input unchanged.
 ``tile_predecessor_item`` supplies the missing left neighbor;
 ``tile_successor_item`` supplies the missing right neighbor. Neither
-argument wraps around to the other end of the tile.
+argument wraps around to the other end of the tile. These scalar boundary
+values must match the input dtype and agree across the block.
 
-For a partial tile, only positions below ``valid_items`` participate.
-Every later position copies its input, so those slots must also be
-initialized. A count of zero copies the entire tile. A count equal to the
+Every thread in the complete block must call the operation, including for
+partial tiles; warp groups are unsupported. The function infers dtype and
+per-thread extent from ``ThreadData``. It accepts automatic scratch or an
+explicit :ref:`TempStorage <coop-temp-storage>`.
+
+For a partial tile, ``valid_items`` must agree across the block. Only
+positions below that count compute a difference. Every later position
+copies its input, so those slots must also be initialized. A count of zero copies the entire tile. A count equal to the
 tile capacity processes the entire tile.
 
 Right partial tiles do not accept ``tile_successor_item``, even when the
@@ -72,6 +78,8 @@ This tested kernel uses 128 threads and full 512-item tiles. Import
 ``cuda`` from ``numba_cuda_mlir``, ``numpy as np``, and ``coop`` from
 ``cuda``. The previous tile's final source item supplies the left boundary.
 The first tile uses zero so its first result retains the first input.
+An inclusive sum of the resulting deltas reconstructs the original sequence
+when the first delta is the first original value.
 
 .. literalinclude:: ../../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_neighbors.py
    :language: python
@@ -84,6 +92,6 @@ could overwrite a predecessor before the following block reads it. The
 input-preservation guarantee for per-thread payloads does not remove that
 global-memory race.
 
-The :doc:`../neighbor-operations` guide covers composition and custom
-operators. See :func:`cuda.coop.numba_mlir.adjacent_difference` for the
-qualified ``difference_op`` argument and local-array support.
+See :ref:`the Numba-CUDA-MLIR programming guide <coop-neighbor-comparisons>`
+and :func:`cuda.coop.numba_mlir.adjacent_difference` for the qualified
+``difference_op`` argument and local-array support.
