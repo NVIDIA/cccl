@@ -2,7 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Allocate a new result payload for each block histogram."""
+"""Plan block histograms and allocate an independent counter result.
+
+Samples describe the input tile; counter dtype and bins_per_thread describe
+the output. This rewrite validates both, boxes a scalar sample from a
+qualified ``cuda.coop.numba_mlir`` call into a one-item array, and allocates a
+fresh counter payload. Shared planning supplies the exact block and
+bin-capacity constraints. The C++ provider fills the result in striped bin
+order while preserving the samples.
+"""
 
 from dataclasses import replace
 
@@ -33,12 +41,27 @@ from ._parameters import normalize_dtype_param
 
 
 def _extent(context, bound):
+    """Resolve the static counter extent independently of sample shape.
+
+    The planner also calls this before rewriting, when a later operation
+    such as Store consumes the result. Both paths use the same bins_per_thread
+    value, so that operation sees the extent that allocation will produce.
+    """
+
     return normalize_positive_int(
         "bins_per_thread", context.constant(bound.arguments["bins_per_thread"])
     )
 
 
 def _infer_payload(context, inference):
+    """Infer separate sample and counter shapes for the provider call.
+
+    The provider takes an input array and an output array whose dtypes and
+    extents can differ. Recover each dtype from array evidence or its factory
+    keyword, validate the corresponding allowed type set, and record the type
+    for later ThreadData uses. Never infer counter shape from sample shape.
+    """
+
     for index, dtype_name, extent_name in (
         (0, "sample_dtype", "items_per_thread"),
         (1, "counter_dtype", "bins_per_thread"),
@@ -63,6 +86,25 @@ def _infer_payload(context, inference):
 
 
 def _lower_histogram(context, inst, *, operation, group, bound, is_common_root):
+    """Rewrite a histogram call to fill a new counter payload.
+
+    Common calls require ThreadData samples; qualified calls also accept fixed
+    local arrays or scalars. Recover the sample type, resolve static counting
+    options, and ask shared planning to validate the complete one-dimensional
+    block and output capacity. Every sample contributes; there is no partial
+    input count to pass to the provider.
+
+    Box a scalar sample for the array ABI. Allocate bins_per_thread counters
+    with the selected dtype, int32 by default, and record that independent
+    result type. Return the statements that call the provider and bind the
+    public result to this payload. The provider fills fresh striped counts and
+    zero padding; scalar input still produces an array result.
+
+    Explicit scratch replaces the plan's default storage ownership. Its
+    reuse barrier follows auto_sync. The provider's internal barrier before
+    reading shared counters is required for both scratch policies.
+    """
+
     from .._lowering import _histogram
     from .._lowering._core import NumbaMlirCoreAdapter
 
