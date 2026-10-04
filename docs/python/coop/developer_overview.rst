@@ -159,11 +159,11 @@ into the kernel and optimize across that call. Inlining and register use
 still depend on the resulting code; LTO is not a guarantee about either.
 Numba-CUDA-MLIR owns the final kernel compilation, loading, and launch.
 
-Compared with the :doc:`cuda.compute overview <../compute/developer_overview>`,
-the same runtime compilation tools appear at a different boundary. Here
-the generated C++ implements a device call within a kernel supplied by the
-user. That means the group shape and the kernel's other primitive calls
-matter to compilation.
+Compared with the :doc:`cuda.compute overview
+<../compute/developer_overview>`, the same runtime compilation tools appear
+at a different boundary. Here the generated C++ implements a device call
+within a kernel supplied by the user. That means the group shape and the
+kernel's other primitive calls matter to compilation.
 
 .. _cuda.coop.generated_shims:
 
@@ -199,7 +199,7 @@ Kernels and their generated C++
    </style>
 
 The following pairs use source captured while compiling real kernels. Each
-kernel runs as one block of 128 threads and copies 256 ``int32`` values,
+captured kernel used one block of 128 threads to copy 256 ``int32`` values,
 with two values per thread.
 
 The C++ excerpts retain the emitted types, casts, and calls. Generated
@@ -231,16 +231,21 @@ dependencies installed:
 Each command launches the selected kernel, checks its result against NumPy,
 and writes ``cuda_coop_numba_mlir_<hash>.cu`` under the selected directory.
 Use ``CUDA_VISIBLE_DEVICES`` as well if you need to select a particular GPU.
+
+The script's copy examples use 64 threads and four items per thread.
+The recorded copy captures use 128 threads and two items per thread.
+Both arrangements copy 256 values, but their template arguments differ.
+
 The :github:`example script
 <python/cuda_coop/examples/numba_mlir/source_dumps.py>` includes the imports,
 launches, and result checks omitted from the panels below.
 
 Set the environment variables before starting Python. Unset or empty
 ``CUDA_COOP_SOURCE_DUMP_DIR`` disables dumping. The provider source is dumped
-on provider-cache hits too. These
-commands disable that cache and use a fresh process for each kernel so the
-captures are easy to associate with their inputs. Reusing an already compiled
-kernel in the same process can bypass provider generation entirely.
+on provider-cache hits too. These commands disable that cache and use a
+fresh process for each kernel so the captures are easy to associate with
+their inputs. Reusing an already compiled kernel in the same process can
+bypass provider generation entirely.
 
 The dump contains the C++ input to NVRTC. Numba compiles the surrounding
 kernel separately, so its indexing, launches, and planner-inserted barriers
@@ -428,21 +433,21 @@ rewrite helper have no separate registration. The planner reports whether
 either phase changed the IR so Numba can refresh the final analysis before
 typing and lowering the resulting device calls.
 
-Inlining is relevant to helper functions. A helper that receives a group
-and calls ``coop.load`` can be planned after it is inlined into its kernel
+Inlining is relevant to helper functions. A helper that receives a group and
+calls ``coop.load`` can be planned after it is inlined into its kernel
 caller. The descriptor then has the caller's launch context. A group
-descriptor escaping into an arbitrary runtime object or a non-inlined
-device call is not supported by this mechanism.
-Descriptor validation waits for default helper inlining and recursively follows
-aliases and conditional definitions. A surviving unsupported helper or
-descriptor escape is diagnosed with its name. Standalone callbacks cannot
-contain primitives because they lack the caller's cooperative launch context.
+descriptor escaping into an arbitrary runtime object or a non-inlined device
+call is not supported by this mechanism. Descriptor validation waits for
+default helper inlining and recursively follows aliases and conditional
+definitions. A surviving unsupported helper or descriptor escape is
+diagnosed with its name. Standalone callbacks cannot contain primitives
+because they lack the caller's cooperative launch context.
 
 ``literal_unroll`` values shaping cooperative groups, selectors, payloads,
-or storage are unsupported. The planner diagnoses those
-uses and suggests explicit calls with compile-time constants. Ordinary unrolling
-unrelated to cooperative planning remains available. Supporting shaped unrolling
-would require revisiting planner ordering; this implementation does not move
+or storage are unsupported. The planner diagnoses those uses and suggests
+explicit calls with compile-time constants. Ordinary unrolling unrelated to
+cooperative planning remains available. Supporting shaped unrolling would
+require revisiting planner ordering; this implementation does not move
 planning after SSA or unrolling.
 
 The common API primitives in ``_core/api/`` are compiler markers with shared
@@ -539,8 +544,9 @@ establishes the dtype:
    coop.load(block, source, items)
    coop.store(block, destination, items)
 
-The planner propagates the dtype from ``source`` to ``items``. A later Store can then use ``items`` even though its constructor did not
-specify a dtype. Load fills ``items`` in place and returns ``None``.
+The planner propagates the dtype from ``source`` to ``items``. A later Store
+can then use ``items`` even though its constructor did not specify a dtype.
+Load fills ``items`` in place and returns ``None``.
 
 Layout describes which logical tile elements each thread owns. A striped
 Load gives thread ``t`` elements ``t + i * block_size``. A blocked
@@ -589,11 +595,11 @@ strict checks on every reaching definition before accepting the candidate.
 That final check is essential. A known initial value does not establish the
 type of a later opaque helper result. Such a path remains unresolved, and
 conflicting known types are rejected. Candidate facts are discarded after
-each query, including failed queries, so they cannot supply a type to a later
-unrelated operation. This analysis supports type-preserving loops; general
-type promotion remains the compiler's responsibility. The separate
-:ref:`ThreadData inference guidance <coop-faq-thread-data-dtype>` still applies
-to payload construction and unsupported helper producers.
+each query, including failed queries, so they cannot supply a type to a
+later unrelated operation. This analysis supports type-preserving loops;
+general type promotion remains the compiler's responsibility. The separate
+:ref:`ThreadData inference guidance <coop-faq-thread-data-dtype>` still
+applies to payload construction and unsupported helper producers.
 
 Shared memory and reuse
 -----------------------
@@ -653,14 +659,15 @@ which the planner can strengthen to meet the requirements of its uses.
 
 ``sharing="exclusive"`` allocates separate slices for distinct uses. Shared
 and exclusive descriptors both default to ``auto_sync=False``, leaving
-synchronization to the caller. Layout and synchronization are independent.
-A loop that reaches the same call site again still needs safe reuse,
-including with an exclusive descriptor. For a block primitive, put the required
-block barrier where every thread reaches it before the next use. The planner
-conservatively rejects collapsing multiple manually synchronized constructors
-into one descriptor. This is a validation limit, not proof that each rejected
-program races. Planner and rewrite contracts are cross-checked before emission
-so parser disagreement cannot silently remove a reuse barrier.
+synchronization to the caller. Layout and synchronization are independent. A
+loop that reaches the same call site again still needs safe reuse, including
+with an exclusive descriptor. For a block primitive, put the required block
+barrier where every thread reaches it before the next use. The planner
+conservatively rejects collapsing multiple manually synchronized
+constructors into one descriptor. This is a validation limit, not proof that
+each rejected program races. Planner and rewrite contracts are cross-checked
+before emission so parser disagreement cannot silently remove a reuse
+barrier.
 
 The planner can switch its backing allocation to dynamic shared memory
 when the required size exceeds the static allocation limit, subject to
@@ -682,7 +689,7 @@ kernels. Passing coexistence tests against a development compiler alone does
 not remove the compatibility guard.
 
 These controls are operation-specific. Warp Load/Store uses
-compiler-owned storage and reject an explicit ``TempStorage``.
+compiler-owned storage and rejects an explicit ``TempStorage``.
 
 
 .. _coop-numba-compilation-reuse:
@@ -708,19 +715,19 @@ from ``pyproject.toml``; it does not change the wheel or register hooks in a
 running process.
 
 ``_compiler/_activation.py`` checks the runtime and compiler compatibility,
-imports the planner, and registers ``CoopWholeFunctionPlanner`` as its
-final step. There is one compiler hook to register, so activation needs no
-registry snapshots or rollback.
-``_compiler/_numba_mlir_compat.py`` checks the installed compiler version
-when the Numba backend is activated, before importing its compiler integration.
-The Numba extras declare ``numba-cuda-mlir>=0.5.0,<0.6`` for package installers;
-the activation check also covers applications that install bare ``cuda-coop``
-and manage compiler dependencies separately. An unused Numba installation
-has no effect on other backends. Once the version check succeeds, integration
-modules import the required compiler APIs directly. Missing launch metadata
-and other compilation errors retain their specific diagnostics. A new compiler
-series needs its integration checked before the supported range changes.
-The compatibility module documents the reasons for this division in detail.
+imports the planner, and registers ``CoopWholeFunctionPlanner`` as its final
+step. There is one compiler hook to register, so activation needs no
+registry snapshots or rollback. ``_compiler/_numba_mlir_compat.py`` checks
+the installed compiler version when the Numba backend is activated, before
+importing its compiler integration. The Numba extras declare
+``numba-cuda-mlir>=0.5.0,<0.6`` for package installers; the activation check
+also covers applications that install bare ``cuda-coop`` and manage compiler
+dependencies separately. An unused Numba installation has no effect on other
+backends. Once the version check succeeds, integration modules import the
+required compiler APIs directly. Missing launch metadata and other
+compilation errors retain their specific diagnostics. A new compiler series
+needs its integration checked before the supported range changes. The
+compatibility module documents the reasons for this division in detail.
 
 The rewrite can collect compatible CUB specializations and compile them
 in a single NVRTC source bundle. This reduces repeated header parsing and
@@ -870,10 +877,11 @@ stepping over ``register_planner(...)``. This final call registers
 the single compiler hook that resolves and rewrites cooperative calls.
 
 Disable these import breakpoints. Set a breakpoint on the first
-``copy_tile[1, 128](source, destination, items_per_thread)`` in the example and continue.
-At this point, check ``coop.__file__`` in Debug Console. It should point
-inside the checkout you opened. The ``@cuda.jit`` decorator has made a
-dispatcher; this first launch will trigger compilation for its arguments.
+``copy_tile[1, 128](source, destination, items_per_thread)`` in the example
+and continue. At this point, check ``coop.__file__`` in Debug Console. It
+should point inside the checkout you opened. The ``@cuda.jit`` decorator has
+made a dispatcher; this first launch will trigger compilation for its
+arguments.
 
 Fast-forward to the Numba hooks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1065,11 +1073,11 @@ Finish the launch and observe reuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Disable the compiler breakpoints and set a breakpoint on the second
-``copy_tile[1, 128](source, destination, items_per_thread)`` in the example. Continue.
-The first launch has completed and its assertion has passed. Inspect
-``source[:8]`` and ``destination[:8]`` in the example's ``main`` frame:
-``source`` starts at 0, while ``destination`` contains the ``-1`` values
-written immediately before this second launch.
+``copy_tile[1, 128](source, destination, items_per_thread)`` in the example.
+Continue. The first launch has completed and its assertion has passed.
+Inspect ``source[:8]`` and ``destination[:8]`` in the example's ``main``
+frame: ``source`` starts at 0, while ``destination`` contains the ``-1``
+values written immediately before this second launch.
 
 Re-enable the group-planner and NVRTC breakpoints, then continue. This
 launch uses the existing kernel specialization, so it should finish
@@ -1105,8 +1113,8 @@ inspect ``plan.temp_storage`` and ``plan.synchronization`` again. The
 transpose algorithms exchange data through shared memory and require a
 block barrier before that scratch can be reused.
 
-At the invocable breakpoint, the storage ABI is now ``LEADING_POINTER``, and the
-temporary-storage size is nonzero. The compiled provider supplies its
+At the invocable breakpoint, the storage ABI is now ``LEADING_POINTER``, and
+the temporary-storage size is nonzero. The compiled provider supplies its
 size and alignment; avoid hard-coding the numbers from one toolkit.
 
 The additional stops are in ``_compiler/_rewrite_storage.py``. Set both
@@ -1178,10 +1186,10 @@ provide an explicit target. Runtime tests check the resulting kernels.
 
 
 Use tests that exercise the part you changed. A result-ownership change
-needs a check of the operation's documented mutation behavior. A storage change needs repeated calls
-and multiple independent groups. A callable ABI change needs a real link
-and a runtime result. A mocked compiler test cannot establish that the
-generated wrapper and operator agree on their ABI.
+needs a check of the operation's documented mutation behavior. A storage
+change needs repeated calls and multiple independent groups. A callable ABI
+change needs a real link and a runtime result. A mocked compiler test cannot
+establish that the generated wrapper and operator agree on their ABI.
 
 For example, from the CCCL root in an environment with the Numba backend
 and test dependencies installed:
@@ -1203,10 +1211,9 @@ path is available without a GPU or configured launch.
 To inspect generated C++, set ``CUDA_COOP_SOURCE_DUMP_DIR`` to a
 directory before compiling the kernel. Files are named
 ``cuda_coop_<backend>_<hash>.cu``, allowing backends to share the directory.
-The dump is useful for checking
-template arguments, wrapper signatures, and scratch metadata. Inspect
-the final kernel's PTX or SASS separately for inlining, barriers, and
-register behavior.
+Use the dump to check template arguments, wrapper signatures, and scratch
+metadata. Inspect the final kernel's PTX or SASS separately for inlining,
+barriers, and register behavior.
 
 .. _coop-numba-validation:
 
@@ -1224,8 +1231,7 @@ parts of that range:
      - Automated checks
    * - Linux x86-64, Python 3.14, CUDA 13
      - Installed-wheel compilation with GPUs hidden and L4 runtime tests
-       in pull requests; H100 runtime tests with serial synchronization
-       race checking in the nightly matrix
+       in pull requests
    * - Linux x86-64, Python 3.14, CUDA 12
      - Installed-wheel compilation and GPU runtime tests in the nightly matrix
    * - Linux x86-64, Python 3.10 and 3.14
@@ -1237,9 +1243,8 @@ The Windows checks do not compile or launch Numba-CUDA-MLIR kernels. Other
 Python versions and platform combinations need separate backend runtime
 qualification. Dependency bounds allow releases in the supported series;
 they do not mean that every patch release in that series has been tested.
-Thread-block clusters require a CC 9.0+ GPU, and synchronization race
-checking requires Compute Sanitizer. A runtime job that skips those tests
-does not qualify those features.
+These checks cover Block and Warp Load/Store. They do not qualify operations
+on thread, cluster, or grid groups.
 
 Source map
 ----------

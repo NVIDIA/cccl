@@ -65,11 +65,10 @@ it does not serialize the global-memory loads.
 Using Load in a kernel
 ----------------------
 
-This fragment uses the common API inside a Numba-CUDA-MLIR kernel that accepts
-``items_per_thread``. Import
-``cuda`` from ``numba_cuda_mlir``, ``numpy as np``, and
-``cuda.coop as coop``. Launch with 128 threads and provide at least ``128 * items_per_thread``
-source elements for each block.
+This fragment uses the common API inside a Numba-CUDA-MLIR kernel that
+accepts ``items_per_thread``. Import ``cuda`` from ``numba_cuda_mlir``,
+``numpy as np``, and ``cuda.coop as coop``. Launch with 128 threads and
+provide at least ``128 * items_per_thread`` source elements for each block.
 
 .. code-block:: python
 

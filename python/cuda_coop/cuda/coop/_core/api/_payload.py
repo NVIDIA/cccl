@@ -60,6 +60,13 @@ class TempStorageLike(Protocol):
 
 
 def _normalize_alignment(alignment: SupportsIndex | None) -> int | None:
+    """Normalize a payload or scratch alignment request to bytes.
+
+    Preserve ``None`` so the compiler can choose the alignment. Explicit
+    requests must be positive powers of two. Accept integer-like values
+    through ``__index__``, but reject booleans as accidental requests.
+    """
+
     if alignment is None:
         return None
     if isinstance(alignment, bool):

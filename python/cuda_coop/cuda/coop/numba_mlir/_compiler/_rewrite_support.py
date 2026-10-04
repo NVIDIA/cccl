@@ -6,10 +6,10 @@
 
 Match records carry resolved provider inputs; payload and storage records
 retain facts needed between the whole-function scan and block replacement.
-Storage requirements describe sizes and alignments before plans assign
-backing offsets. ``_UNRESOLVED`` distinguishes failed static inference from
-an explicit ``None`` value, and ``_DeferredCoopRewrite`` signals a launch-
-metadata retry rather than an invalid user call.
+Storage requirements describe sizes and alignments before plans assign backing
+offsets. ``_UNRESOLVED`` distinguishes failed static inference from an
+explicit ``None`` value. ``_DeferredCoopRewrite`` asks for a retry once
+launch metadata is available; it does not report an invalid user call.
 """
 
 from __future__ import annotations
@@ -52,7 +52,7 @@ _DYNAMIC_SHARED_MEMORY_ALIGNMENT = 16
 
 
 class CoopSinglePhaseRewriteError(Exception):
-    """Raised when a matched one-shot coop call cannot be rewritten."""
+    """Report a matched cooperative call that cannot be rewritten."""
 
 
 class _DeferredCoopRewrite(Exception):
@@ -67,10 +67,18 @@ class _DeferredCoopRewrite(Exception):
 
 
 def _next_global_name(stem: str) -> str:
+    """Give an injected Python object a process-unique IR global name."""
+
     return f"__cuda_coop_numba_mlir_{stem}_{next(_GLOBAL_NAME_COUNTER)}__"
 
 
 def _phi_incoming_values(definition):
+    """Read the alternatives of a control-flow merge expression.
+
+    Check the compiler IR shape at this boundary so unsupported phi forms
+    produce a rewrite diagnostic instead of losing an incoming value.
+    """
+
     if not hasattr(definition, "incoming_values"):
         raise CoopSinglePhaseRewriteError(
             "Unsupported Numba phi expression shape: missing incoming_values."
@@ -78,8 +86,8 @@ def _phi_incoming_values(definition):
     incoming_values = definition.incoming_values
     if not isinstance(incoming_values, (list, tuple)):
         raise CoopSinglePhaseRewriteError(
-            "Unsupported Numba phi expression shape: "
-            "incoming_values is not a sequence."
+            "Unsupported Numba phi expression shape: incoming_values is not "
+            "a sequence."
         )
     return tuple(incoming_values)
 
@@ -97,6 +105,8 @@ def _next_power_of_two(value: int) -> int:
 
 
 def _default_temp_storage_alignment(required_alignment: int) -> int:
+    """Round alignment up to a power of two, at least pointer size."""
+
     return max(
         _MIN_TEMP_STORAGE_ALIGNMENT, _next_power_of_two(required_alignment)
     )
@@ -105,6 +115,12 @@ def _default_temp_storage_alignment(required_alignment: int) -> int:
 def _normalize_temp_storage_alignment(
     alignment: int, *, context: str = "TempStorage alignment"
 ) -> int:
+    """Validate power-of-two alignment and apply the pointer-size minimum.
+
+    ``context`` names the setting in diagnostics. A smaller valid request is
+    raised to the minimum needed by the generated storage pointer.
+    """
+
     if alignment <= 0:
         raise CoopSinglePhaseRewriteError(
             f"{context} must be a positive integer."
@@ -115,6 +131,12 @@ def _normalize_temp_storage_alignment(
 
 
 def _dtype_values_match(lhs, rhs) -> bool:
+    """Compare dtype spellings after normalization when possible.
+
+    If normalization fails, use the original or partially normalized values.
+    Callers remain responsible for validating accepted dtypes.
+    """
+
     try:
         lhs = normalize_dtype_param(lhs)
         rhs = normalize_dtype_param(rhs)
@@ -139,6 +161,13 @@ def _check_driver_error(err, op: str) -> None:
 
 
 def _query_device_shared_memory_limits() -> dict[str, int]:
+    """Read per-block shared-memory limits for the current CUDA device.
+
+    Obtain the active context and initialize the driver before querying
+    default and opt-in capacities. A nonpositive opt-in value falls back to
+    the default limit. Driver failures raise ``RuntimeError``.
+    """
+
     from numba_cuda_mlir.numba_cuda.cudadrv import devices
 
     import cuda.bindings.driver as _driver
@@ -173,6 +202,21 @@ def _query_device_shared_memory_limits() -> dict[str, int]:
 
 @dataclass(frozen=True)
 class _RewriteMatch:
+    """Keep one validated provider call ready for compilation and emission.
+
+    ``factory`` and ``factory_metadata`` identify the implementation and
+    declared call contract. ``factory_kwargs`` holds resolved compile-time
+    inputs; ``runtime_args`` keeps device operands without storage, which is
+    tracked separately in ``runtime_temp_storage_var``.
+
+    ``func_var_name``, its optional extra alias, and ``factory_kw_value_vars``
+    identify compile-time assignments that may become unused after
+    replacement. ``family_metadata`` carries a hook's analysis, such as scalar
+    boxing. ``lowering_plan`` keeps the shared group contract after its
+    private keyword is removed from factory inputs. ``op_name`` and ``loc``
+    identify the operation and source site.
+    """
+
     op_name: str
     factory: Callable[..., Any]
     factory_metadata: FactoryOperation
@@ -189,6 +233,14 @@ class _RewriteMatch:
 
 @dataclass(frozen=True)
 class _ResolvedCallTarget:
+    """Separate callee recognition from argument validation.
+
+    Keep the registered factory and contract, plus the callee names that
+    replacement may remove. ``getitem_temp_storage`` records an operand from
+    subscript syntax; later descriptor-use checks decide whether the call may
+    use that syntax.
+    """
+
     factory: Callable[..., Any]
     factory_metadata: FactoryOperation
     func_var_name: str
@@ -202,6 +254,16 @@ class _ResolvedCallTarget:
 
 @dataclass(frozen=True)
 class _ThreadDataSpecification:
+    """Carry known payload facts while ordinary typing is incomplete.
+
+    ``items_per_thread`` and ``dtype`` may be unknown. Native local/shared
+    array queries also use this record, so its presence alone does not
+    establish public ``ThreadData`` origin. ``common_root`` records a common
+    API constructor for later numeric validation. ``alignment`` is an optional
+    byte alignment. Construction normalizes recognized dtypes and leaves
+    unsupported values for later validation.
+    """
+
     items_per_thread: int | None
     dtype: object | None
     common_root: bool = False
@@ -219,6 +281,13 @@ class _ThreadDataSpecification:
 
 @dataclass(frozen=True)
 class _TempStorageCtorSpecification:
+    """Retain a descriptor's requested storage policy before layout.
+
+    Capacity and alignment are in bytes and may be inferred later.
+    ``auto_sync=None`` has the effective value false. ``sharing`` selects
+    reuse among compatible calls or separate storage for every call.
+    """
+
     size_in_bytes: int | None
     alignment: int | None
     auto_sync: bool | None
@@ -227,6 +296,14 @@ class _TempStorageCtorSpecification:
 
 @dataclass(frozen=True)
 class _TempStorageUseRequirement:
+    """Record one call's per-group scratch requirement before placement.
+
+    Size and alignment are in bytes. ``call_assign`` retains the original IR
+    identity for slice lookup; ``order`` is the whole-function scan order, not
+    runtime execution order. ``lowering_plan`` supplies group instances and
+    reuse rules when the shared planner produced the call.
+    """
+
     call_assign: ir.Assign
     order: int
     size_in_bytes: int
@@ -236,6 +313,13 @@ class _TempStorageUseRequirement:
 
 @dataclass
 class _TempStorageRequirementSummary:
+    """Accumulate calls that share one descriptor or implicit region.
+
+    The maxima summarize individual byte and alignment requirements. ``uses``
+    retains each call so layout can account for alignment gaps, group
+    instances, and whether storage can be reused.
+    """
+
     max_size_in_bytes: int = 0
     max_alignment: int = 1
     uses: list[_TempStorageUseRequirement] = field(default_factory=list)
@@ -243,6 +327,14 @@ class _TempStorageRequirementSummary:
 
 @dataclass(frozen=True)
 class _TempStorageSlice:
+    """Describe one call's view before the region's base offset is added.
+
+    ``offset`` and ``size_in_bytes`` locate its bytes within the region.
+    Multiple group ``instances`` are separated by ``stride`` bytes; a missing
+    stride falls back to the call's size during emission. The lowering plan
+    supplies the formula that selects the current instance.
+    """
+
     offset: int
     size_in_bytes: int
     stride: int | None = None
@@ -252,6 +344,15 @@ class _TempStorageSlice:
 
 @dataclass(frozen=True)
 class _TempStoragePlan:
+    """Place one explicit descriptor or the implicit scratch region.
+
+    Capacity and alignment include all of the region's calls and group
+    instances. ``slices_by_call_id`` maps IR assignment identities to their
+    views. ``base_offset`` places the region within the global byte array;
+    individual slice offsets remain relative to this region. ``sharing`` and
+    ``auto_sync`` retain the reuse policy for call emission.
+    """
+
     size_in_bytes: int
     alignment: int
     sharing: str
@@ -262,6 +363,14 @@ class _TempStoragePlan:
 
 @dataclass(frozen=True)
 class _TempStorageGlobalPlan:
+    """Describe the backing allocation shared by all scratch regions.
+
+    ``total_size`` includes padding to ``max_alignment``; both are in bytes.
+    ``uses_dynamic_smem`` selects dynamic placement, in which case
+    ``dynamic_shared_bytes`` is the launch requirement. Static placement
+    leaves that requirement at zero.
+    """
+
     total_size: int
     max_alignment: int
     uses_dynamic_smem: bool

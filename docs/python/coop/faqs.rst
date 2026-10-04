@@ -13,7 +13,7 @@ Why are there both ``cuda.coop`` and ``cuda.coop.numba_mlir``?
 
 ``cuda.coop`` provides the common API for cooperative operations. A kernel
 compiler's backend implements those calls. Start with this namespace when
-its groups, ``ThreadData`` payloads, and built-in operators cover your needs:
+its groups, ``ThreadData`` payloads, and operations cover your needs:
 
 .. code-block:: python
 
@@ -159,7 +159,7 @@ barriers automatically. See :ref:`exclusive scratch slices
 <coop-faq-exclusive-storage>` for the tradeoff between memory and reuse
 synchronization.
 
-The current backend accepts explicit descriptors for block transpose-family Load/Store.
+Explicit descriptors control scratch for block transpose-family Load/Store.
 Warp operations use compiler-owned scratch. See
 :ref:`temporary storage <coop-temp-storage>` for the complete contract and
 shared-memory restrictions.

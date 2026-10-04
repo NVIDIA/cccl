@@ -14,11 +14,11 @@ requirements. During batch collection it returns an uncompiled ``Algorithm``
 specialization instead.
 
 These registries identify markers and factories by callable identity, so
-aliases work without relying on function names. Operation names connect
-those identities to family-specific group lowering, argument validation,
-payload inference, and runtime-argument preparation. Families load lazily
-when their hooks are needed; registration itself does not compile providers
-or run cooperative operations.
+aliases work without relying on function names. Operation names connect those
+identities to family-specific group lowering, argument validation, payload
+inference, and runtime-argument preparation. Families load lazily when their
+hooks are needed; registration itself does not compile providers or run
+cooperative operations.
 """
 
 from __future__ import annotations
@@ -45,6 +45,12 @@ _GROUP_LOWERING_PLAN_KWARG = "__cuda_coop_group_lowering_plan__"
 
 
 class _InferPayloadHook(Protocol):
+    """Infer factory inputs from operands before provider construction.
+
+    Update the supplied inference state with compatible dtype and shape facts.
+    The context provides the active rewrite's analysis.
+    """
+
     def __call__(
         self,
         context: GroupRewriteContext,
@@ -53,6 +59,12 @@ class _InferPayloadHook(Protocol):
 
 
 class _AnalyzeMatchHook(Protocol):
+    """Record family facts needed when replacing a provider call.
+
+    Inspect the split arguments, consume private factory markers, and return
+    metadata for the later runtime-argument hook.
+    """
+
     def __call__(
         self,
         context: GroupRewriteContext,
@@ -64,6 +76,13 @@ class _AnalyzeMatchHook(Protocol):
 
 
 class _PrepareRuntimeArgsHook(Protocol):
+    """Prepare operands while the rewrite emits a provider call.
+
+    Use the match's family metadata, append preparation IR to ``block``, and
+    return the provider operands. ``scope`` and ``loc`` identify the generated
+    variables and statements.
+    """
+
     def __call__(
         self,
         context: GroupRewriteContext,
@@ -77,6 +96,12 @@ class _PrepareRuntimeArgsHook(Protocol):
 
 
 class _ValidateRuntimeControlsHook(Protocol):
+    """Check operation-specific scalar controls before provider creation.
+
+    Use available operand types and factory bindings. The hook may leave
+    unknown types for the later compiler typing pass.
+    """
+
     def __call__(
         self,
         context: GroupRewriteContext,
@@ -88,7 +113,12 @@ class _ValidateRuntimeControlsHook(Protocol):
 
 
 class StorageABI(str, Enum):
-    """How a generated provider receives temporary storage."""
+    """Describe the provider's temporary-storage calling convention.
+
+    ``NONE`` needs no storage operand. ``LEADING_POINTER`` reserves the first
+    provider argument for scratch memory, supplied separately from the
+    operation's ordinary operands.
+    """
 
     NONE = "none"
     LEADING_POINTER = "leading_pointer"
@@ -96,7 +126,26 @@ class StorageABI(str, Enum):
 
 @dataclass(frozen=True)
 class FactoryOperation:
-    """Declarative contract for one registered lowering factory."""
+    """Declare the call contract of a registered provider factory.
+
+    The rewrite uses this record to select argument rules and storage
+    handling, then checks the resulting invocable against it. Registration
+    declares the contract; it does not inspect generated device code.
+
+    Attributes
+    ----------
+    operation : str
+        Operation identifier used to find its argument and rewrite rules.
+    namespace : str
+        Provider namespace, such as ``"block"`` or ``"warp"``.
+    storage_abi : StorageABI
+        Whether the generated call receives a leading scratch pointer.
+    execution_scope : SynchronizationScope
+        Threads that execute the primitive together.
+    synchronization_scope : SynchronizationScope
+        Declared synchronization scope: ``NONE`` or the execution scope.
+        Storage planning decides which reuse barriers to emit.
+    """
 
     operation: str
     namespace: str
@@ -131,7 +180,14 @@ class FactoryOperation:
 
 @dataclass(frozen=True)
 class GroupPrimitiveRegistration:
-    """Whole-function planning hooks owned by one primitive operation."""
+    """Connect a public operation to whole-function planning.
+
+    ``lower`` returns replacement IR after the planner has bound public
+    arguments and resolved the group. ``validate_common_arguments`` checks
+    calls made through the common ``cuda.coop`` API before that replacement;
+    backend-qualified calls skip it. ``None`` omits the check. Both hooks
+    receive the active planning context.
+    """
 
     lower: Callable[..., list[Any]]
     validate_common_arguments: Callable[..., None] | None = None
@@ -149,7 +205,57 @@ class GroupPrimitiveRegistration:
 
 @dataclass(frozen=True)
 class RewriteOperationSpecification:
-    """Before-inference call grammar and hooks for one operation."""
+    """Define how to interpret and replace one provider call.
+
+    Public group planning first selects a provider factory. This record then
+    separates its compile-time inputs from device operands and selects the
+    family hooks used before compiler type inference. A registration can serve
+    several provider namespaces.
+
+    Attributes
+    ----------
+    factory_namespaces : frozenset of str
+        Registered provider namespaces accepted for this operation.
+    dtype_factory_kwargs : frozenset of str
+        Factory keywords that use dtype resolution and normalization.
+    runtime_arg_counts : frozenset of int
+        Accepted positional counts before static controls are removed. The
+        smallest count gives the number of ordinary operands.
+    runtime_factory_kwargs : tuple of str
+        Optional controls after the ordinary operands, in provider order.
+        Controls supplied by keyword use this same order.
+    runtime_factory_kw_prerequisites : tuple of tuple of str
+        ``(control, required_control)`` pairs checked when a keyword
+        control remains a runtime operand, such as padding needing a count.
+        Factories remain responsible for validating static bindings.
+    allowed_factory_kwargs : frozenset of str
+        Keywords accepted for specialization, including scalar controls.
+    required_factory_kwargs : frozenset of str
+        Keywords that must be known after payload and launch inference.
+    accepts_temp_storage : bool
+        Whether argument splitting accepts a separate storage operand.
+    scalar_binding_kwargs : frozenset of str
+        Optional controls classified as static or runtime bindings. Other
+        runtime controls are recorded as ``True`` when present.
+    runtime_offset_kwarg : str or None
+        Optional offset keyword handled after other runtime controls. A
+        static offset becomes a binding; a runtime offset is last in the
+        operand list. ``None`` disables this special case.
+    infer_payload : callable
+        Merge operand dtype and shape facts into factory inputs.
+    analyze_match : callable or None
+        Inspect a validated match and return family metadata for emission.
+    prepare_runtime_args : callable or None
+        Emit operand preparation, such as boxing a scalar Store value.
+    validate_runtime_controls : callable or None
+        Check control values and known dtypes before provider creation.
+
+    Notes
+    -----
+    Construction copies collection fields and checks that keyword sets,
+    positional counts, prerequisite names, and hook types agree. It does not
+    validate an actual call or compile its provider.
+    """
 
     factory_namespaces: frozenset[str]
     dtype_factory_kwargs: frozenset[str]
@@ -194,13 +300,13 @@ class RewriteOperationSpecification:
             name, required_name = prerequisite
             if not isinstance(name, str) or not name:
                 raise ValueError(
-                    "runtime_factory_kw_prerequisite "
-                    "names must be non-empty strings"
+                    "runtime_factory_kw_prerequisite names "
+                    "must be non-empty strings"
                 )
             if not isinstance(required_name, str) or not required_name:
                 raise ValueError(
-                    "runtime_factory_kw_prerequisite "
-                    "names must be non-empty strings"
+                    "runtime_factory_kw_prerequisite names "
+                    "must be non-empty strings"
                 )
             prerequisites.append((name, required_name))
         object.__setattr__(
@@ -253,17 +359,16 @@ class RewriteOperationSpecification:
         if unknown_runtime_kwargs:
             names = ", ".join(sorted(unknown_runtime_kwargs))
             raise ValueError(
-                f"runtime_factory_kwargs must be "
-                f"allowed factory kwargs: {names}"
+                f"runtime_factory_kwargs must be allowed factory kwargs: "
+                f"{names}"
             )
         base_runtime_arg_count = min(self.runtime_arg_counts)
         if max(self.runtime_arg_counts) - base_runtime_arg_count > len(
             self.runtime_factory_kwargs
         ):
             raise ValueError(
-                "runtime_arg_counts require more "
-                "trailing runtime arguments than "
-                "runtime_factory_kwargs declares"
+                "runtime_arg_counts require more trailing runtime arguments "
+                "than runtime_factory_kwargs declares"
             )
         prerequisite_names = [name for name, _ in prerequisites]
         if len(set(prerequisite_names)) != len(prerequisite_names):
@@ -276,14 +381,13 @@ class RewriteOperationSpecification:
         for name, required_name in prerequisites:
             if name not in runtime_factory_kwargs:
                 raise ValueError(
-                    "runtime_factory_kw_prerequisite targets must be runtime "
-                    f"factory kwargs: {name}"
+                    f"runtime_factory_kw_prerequisite targets must be "
+                    f"runtime factory kwargs: {name}"
                 )
             if required_name not in known_prerequisites:
                 raise ValueError(
-                    "runtime_factory_kw_prerequisite "
-                    "requirements must be known "
-                    f"factory kwargs: {required_name}"
+                    f"runtime_factory_kw_prerequisite requirements must be "
+                    f"known factory kwargs: {required_name}"
                 )
             if name == required_name:
                 raise ValueError(
@@ -303,8 +407,8 @@ class RewriteOperationSpecification:
         if unknown_required_kwargs:
             names = ", ".join(sorted(unknown_required_kwargs))
             raise ValueError(
-                f"required_factory_kwargs must be "
-                f"allowed factory kwargs: {names}"
+                f"required_factory_kwargs must be allowed factory kwargs: "
+                f"{names}"
             )
         unknown_scalar_kwargs = (
             self.scalar_binding_kwargs - runtime_factory_kwargs
@@ -328,8 +432,8 @@ class RewriteOperationSpecification:
                 )
             if self.runtime_offset_kwarg in runtime_factory_kwargs:
                 raise ValueError(
-                    "runtime_offset_kwarg must not "
-                    "also be a runtime factory kwarg"
+                    "runtime_offset_kwarg must not also be "
+                    "a runtime factory kwarg"
                 )
         if not isinstance(self.accepts_temp_storage, bool):
             raise TypeError("accepts_temp_storage must be a bool")
@@ -360,40 +464,39 @@ def group_operation(
 ) -> Callable[[_CallableT], _CallableT]:
     """Associate a public group marker with its compiler family.
 
-    This decorator records the exact callable object, so the planner recognizes
-    aliases of the registered function without treating unrelated functions with
-    the same name as cooperative operations. Record the family module for lazy
-    loading of planning/rewrite hooks and attach the backend-member marker used
-    during common API provenance checks. Registration does not import that
-    family or wrap the decorated function.
+    This decorator records the exact callable object, so the planner
+    recognizes aliases of the registered function without treating unrelated
+    functions with the same name as cooperative operations. Record the family
+    module for lazy loading of planning/rewrite hooks and attach the
+    backend-member marker used during common API provenance checks.
+    Registration does not import that family or wrap the decorated function.
 
     Parameters
     ----------
     operation : str
-        Shared operation identifier used by group planning and rewrite lookup.
+        Operation identifier shared by planning and rewrite lookup.
     family_module : str
-        Importable compiler-family module that registers the operation's hooks.
+        Compiler-family module that registers the operation's hooks.
 
     Returns
     -------
     callable
-        Decorator that mutates the registries and callable metadata, then
-        returns the original function. Repeating the same registration is
-        allowed.
+        Decorator that updates registries and callable metadata, then
+        returns the original function. Equal registrations may repeat.
 
     Raises
     ------
     RuntimeError
-        Applying the decorator would associate an already registered callable
-        with another operation, or an operation with another family module.
+        The callable already has another operation, or the operation
+        already has another family module.
     """
 
     def decorate(function: _CallableT) -> _CallableT:
         existing = _GROUP_OPERATIONS.get(function)
         if existing is not None and existing != operation:
             raise RuntimeError(
-                f"group marker {function!r} is "
-                f"already registered as {existing!r}"
+                f"group marker {function!r} is already registered as "
+                f"{existing!r}"
             )
         _GROUP_OPERATIONS[function] = operation
         existing_module = _GROUP_FAMILY_MODULES.get(operation)
@@ -416,6 +519,13 @@ def group_operation_name(function: Any) -> str | None:
 
 
 def _ensure_group_family_loaded(operation: str) -> None:
+    """Import an operation's hooks only when a registry lookup needs them.
+
+    Access the qualified backend member first if its marker has not yet
+    registered a family. A reentrant lock serializes family imports.
+    An unknown operation leaves no hooks.
+    """
+
     module_name = _GROUP_FAMILY_MODULES.get(operation)
     if module_name is None:
         backend = import_module("cuda.coop.numba_mlir")
@@ -433,7 +543,12 @@ def register_group_primitive(
     lower: Callable[..., list[Any]],
     validate_common_arguments: Callable[..., None] | None = None,
 ) -> None:
-    """Register the post-inlining planner for one public operation."""
+    """Register the post-inlining planner for one public operation.
+
+    ``lower`` emits replacement IR. For calls through the common ``cuda.coop``
+    API, the optional validator runs first. Equal repeated hooks are allowed;
+    different hooks raise ``RuntimeError``.
+    """
 
     registration = GroupPrimitiveRegistration(
         lower=lower,
@@ -461,8 +576,8 @@ def register_rewrite_operation(
 ) -> None:
     """Register one provider ABI with the shared before-inference rewrite.
 
-    Re-registering an equal specification is allowed; a different specification
-    for the same operation would make call interpretation ambiguous.
+    Equal repeated specifications are allowed. Different specifications for
+    one operation would make its calls ambiguous.
 
     Parameters
     ----------
@@ -476,7 +591,7 @@ def register_rewrite_operation(
     TypeError
         ``specification`` is not a ``RewriteOperationSpecification``.
     RuntimeError
-        The operation is already registered with a different specification.
+        The operation already has a different specification.
     """
 
     if not isinstance(specification, RewriteOperationSpecification):
@@ -492,8 +607,8 @@ def register_rewrite_operation(
 def rewrite_operation(operation: str) -> RewriteOperationSpecification | None:
     """Return the before-inference registration for one operation.
 
-    Load the owning primitive family when its registration is missing,
-    without eagerly importing every family.
+    Load the owning primitive family when its registration is missing, without
+    eagerly importing every family.
 
     Parameters
     ----------
@@ -503,8 +618,8 @@ def rewrite_operation(operation: str) -> RewriteOperationSpecification | None:
     Returns
     -------
     RewriteOperationSpecification or None
-        Registered specification, or ``None`` if no registration exists after
-        loading the owning family.
+        Registered specification, or ``None`` if no registration exists
+        after loading the owning family.
     """
 
     if operation not in _REWRITE_OPERATIONS:
@@ -521,30 +636,31 @@ def register_factory(
     execution_scope: SynchronizationScope,
     synchronization_scope: SynchronizationScope,
 ) -> _CallableT:
-    """Register a provider-building function and its storage and thread scopes.
+    """Register a provider factory and its storage and thread scopes.
 
-    The provider rewrite identifies factories by object identity and
-    uses this metadata to validate provider calls and materialized invocables.
-    The factory's import path or function name is not used to infer its ABI.
+    The provider rewrite identifies factories by object identity and uses this
+    metadata to validate provider calls and materialized invocables. The
+    factory's import path or function name is not used to infer its ABI.
     Registration only declares metadata; the factory and source emitter must
     implement the declared storage and synchronization behavior.
 
     Parameters
     ----------
     function : callable
-        Host-side callable that builds an ``Invocable`` from specialization
-        keywords, or returns an ``Algorithm`` during batch collection. See the
-        module overview for the distinction from public group markers.
+        Host-side callable that builds an ``Invocable`` from
+        specialization keywords, or returns an ``Algorithm`` during batch
+        collection. See the module overview for the distinction from
+        public group markers.
     operation : str
         Non-empty operation identifier, such as ``"load"`` or ``"store"``.
     namespace : str
         Non-empty provider namespace, such as ``"block"`` or ``"warp"``.
     storage_abi : StorageABI
-        Whether provider calls have a leading scratch pointer or no scratch.
+        Whether provider calls take a leading scratch pointer.
     execution_scope : SynchronizationScope
         Scope of threads executing the cooperative operation.
     synchronization_scope : SynchronizationScope
-        Declared synchronization scope, either ``NONE`` or the execution scope.
+        Declared synchronization scope: ``NONE`` or the execution scope.
 
     Returns
     -------
@@ -557,7 +673,7 @@ def register_factory(
     TypeError
         ``function`` is not callable.
     ValueError
-        Names, enum values, or the relationship between scopes are invalid.
+        Names, enum values, or the scope relationship are invalid.
     RuntimeError
         This exact factory is already registered with different metadata.
     """
@@ -574,8 +690,8 @@ def register_factory(
     existing = _FACTORY_OPERATIONS.get(function)
     if existing is not None and existing != metadata:
         raise RuntimeError(
-            f"lowering factory {function!r} is "
-            f"already registered as {existing!r}"
+            f"lowering factory {function!r} is already registered as "
+            f"{existing!r}"
         )
     _FACTORY_OPERATIONS[function] = metadata
     return function

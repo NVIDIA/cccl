@@ -59,14 +59,14 @@ is a compilation/usage error, not evidence of an old compiler.
 
 .. rubric:: Maintenance
 
-Keep the range below aligned with both Numba extras in ``pyproject.toml``.
-Use packaging's version semantics, including local and development versions,
+Keep the range below aligned with both Numba extras in ``pyproject.toml``. Use
+packaging's version semantics, including local and development versions,
 instead of a string prefix check. Already-installed prereleases within the
 range are accepted; prereleases below the minimum or at the excluded next
 series remain outside it. A missing or unparsable version cannot establish
-support and is reported explicitly. Compiler API loading, planner registration,
-and any registration failure handling belong to the activation code, rather
-than to a registry of capabilities in this module.
+support and is reported explicitly. Compiler API loading, planner
+registration, and any registration failure handling belong to the activation
+code, rather than to a registry of capabilities in this module.
 """
 
 from __future__ import annotations
@@ -90,9 +90,9 @@ class NumbaMlirBackendImportError(ImportError):
     instead, allowing the common import to complete. This is a diagnostic
     exception, rather than an internal signal for compiler control flow.
 
-    ``backend`` identifies the compiler, ``reason_code`` classifies the failure,
-    and ``details`` carries diagnostic context. When supplied, the original
-    import failure is preserved as ``__cause__``.
+    ``backend`` identifies the compiler, ``reason_code`` classifies the
+    failure, and ``details`` carries diagnostic context. When supplied, the
+    original import failure is preserved as ``__cause__``.
 
     Parameters
     ----------
@@ -124,6 +124,8 @@ class NumbaMlirBackendImportError(ImportError):
 
 
 def _detected_version(runtime: ModuleType | None) -> str | None:
+    """Prefer the imported runtime's version, then distribution metadata."""
+
     version = getattr(runtime, "__version__", None)
     if isinstance(version, str) and version:
         return version
@@ -139,8 +141,8 @@ def _runtime_requirement(runtime: ModuleType | None = None) -> str:
     Parameters
     ----------
     runtime : module, optional
-        Imported compiler package whose ``__version__`` is preferred. With
-        ``None`` or no usable version attribute, consult distribution metadata.
+        Imported compiler package whose ``__version__`` is preferred. If it
+        is ``None`` or lacks a usable version, use distribution metadata.
 
     Returns
     -------

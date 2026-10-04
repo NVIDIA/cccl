@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check descriptor recognition and exact launch facts in frontend IR.
+
+These tests distinguish descriptor resolution from executable support for a
+primitive. A known group kind alone does not make its operations available.
+"""
+
 from types import SimpleNamespace
 
 import pytest

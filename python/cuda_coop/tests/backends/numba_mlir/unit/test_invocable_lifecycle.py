@@ -12,6 +12,7 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
 
 def _make_invocable():
+    """Build a callable that owns a temporary artifact, without compiling."""
     from numba_cuda_mlir import types
 
     from cuda.coop._core import SynchronizationScope
@@ -42,6 +43,7 @@ def _make_invocable():
 
 
 def _registry_sizes():
+    """Measure typing registries to detect retained dynamic callables."""
     from numba_cuda_mlir.descriptor import mlir_target
     from numba_cuda_mlir.extending import typeof_impl, typing_registry
 

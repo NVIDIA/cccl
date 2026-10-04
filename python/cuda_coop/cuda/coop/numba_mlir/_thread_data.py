@@ -94,12 +94,13 @@ def ThreadData(
     """
 
     raise CoopCompilerContextRequiredError(
-        "cuda.coop.numba_mlir.ThreadData must "
-        "be called from a supported GPU kernel."
+        "cuda.coop.numba_mlir.ThreadData must be called from a supported "
+        "GPU kernel."
     )
 
 
 def __getattr__(name: str):
+    """Resolve and cache an array namespace from the active runtime."""
     if name in {"local", "shared"}:
         value = getattr(_require_runtime(), name)
         globals()[name] = value

@@ -10,6 +10,7 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
 
 def _materialize(specialization, *, adapter=None):
+    """Adapt a specialization without scratch or synchronization operands."""
     from cuda.coop._core import SynchronizationScope
     from cuda.coop.numba_mlir._compiler._operations import StorageABI
     from cuda.coop.numba_mlir._lowering._core import NumbaMlirCoreAdapter
@@ -23,6 +24,7 @@ def _materialize(specialization, *, adapter=None):
 
 
 def _source(algorithm):
+    """Generate wrapper text with a fixed identity, without compiling it."""
     return algorithm._source_code(
         compile_identity=(90, True, "lto", (), "test-toolchain")
     )[0]

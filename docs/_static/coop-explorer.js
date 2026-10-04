@@ -2,7 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Shared controls and SVG rendering, following the Load explorer.
+// Render the rows, phases, and value tokens supplied by each explorer.
+// Algorithm models own data movement; this renderer owns controls, URL state,
+// keyboard selection, and animation between phases.
 (() => {
   "use strict";
 
@@ -170,6 +172,8 @@
       render_frame();
     }
 
+    // Keep token elements by ID so a value retains its identity and animates
+    // from its previous position when the phase changes.
     function render_frame() {
       const frame = model.phases[phase];
       const live_ids = new Set(frame.tokens.map((token) => String(token.id)));
@@ -233,6 +237,7 @@
       root.dataset.algorithm = state.algorithm;
     }
 
+    // Run playback only while the user has enabled it and can see the page.
     function sync_timer() {
       window.clearInterval(timer);
       if (playing && visible && !document.hidden) {

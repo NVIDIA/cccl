@@ -13,10 +13,10 @@ later when a kernel invokes that callable.
 
 Separate factories represent algorithms that need shared scratch and those
 that do not, so their argument lists agree with the planner's storage choice.
-Both paths lower a common core specialization through ``NumbaMlirCoreAdapter``.
-During specialization collection they return an ``Algorithm`` description
-instead of compiling it immediately, allowing several operations to share an
-NVRTC compilation.
+Both paths lower a common core specialization through
+``NumbaMlirCoreAdapter``. During specialization collection they return an
+``Algorithm`` description instead of compiling it immediately, allowing
+several operations to share an NVRTC compilation.
 """
 
 import operator
@@ -65,6 +65,13 @@ from ._core import NumbaMlirCoreAdapter, _optional_binding
 
 
 class _GroupTopology(TypedDict, total=False):
+    """Supply exactly one group shape to runtime-control ABI planning.
+
+    A block uses ``block_dim``; a warp uses ``threads_in_warp``. That thread
+    count times the per-thread extent bounds the valid-item count. For runtime
+    counts, ``_load_store_value_abis`` requires exactly one of these shapes.
+    """
+
     block_dim: Iterable[int]
     threads_in_warp: int
 
@@ -82,6 +89,13 @@ def _positive_int(value, *, name: str) -> int:
 
 
 def _registered_provider_metadata(factory, algorithm):
+    """Check that a factory's storage ABI matches the selected algorithm.
+
+    Algorithms that use shared scratch require a leading pointer. Others
+    require the storage-free factory. Return the registered metadata, or
+    reject an unknown factory or mismatched choice before materialization.
+    """
+
     registered = factory_operation(factory)
     if registered is None:
         raise RuntimeError(f"unregistered cuda.coop provider {factory!r}")
@@ -99,6 +113,8 @@ def _registered_provider_metadata(factory, algorithm):
 
 
 def _materialization_metadata(registered):
+    """Pass the factory's storage and synchronization rules to the adapter."""
+
     return {
         "storage_abi": registered.storage_abi,
         "execution_scope": registered.execution_scope,
@@ -118,12 +134,12 @@ def _load_store_value_abis(
     """Describe runtime controls whose ABI differs from ordinary core scalars.
 
     A runtime valid-item count enters through a signed 64-bit value so bounds
-    can be checked before narrowing to CUB's signed 32-bit count. Its inclusive
-    limit is the exact group tile size. The load operation's ``oob_default``
-    is the padding value for items beyond that count. When supplied at runtime,
-    it uses ``ExactValue`` so typing requires the payload dtype without an
-    implicit conversion. Omitted and static controls need no runtime ABI
-    override.
+    can be checked before narrowing to CUB's signed 32-bit count. Its
+    inclusive limit is the exact group tile size. The load operation's
+    ``oob_default`` is the padding value for items beyond that count. When
+    supplied at runtime, it uses ``ExactValue`` so typing requires the payload
+    dtype without an implicit conversion. Omitted and static controls need no
+    runtime ABI override.
 
     Parameters
     ----------
@@ -144,13 +160,13 @@ def _load_store_value_abis(
     Returns
     -------
     dict of str to Value
-        Named backend overrides for ``num_valid_items`` and/or ``oob_default``.
+        Overrides for ``num_valid_items``, ``oob_default``, or both.
 
     Raises
     ------
     ValueError
-        A runtime count does not have exactly one block/warp topology source, or
-        its bounds cannot fit the integer ABI.
+        A runtime count does not have exactly one block/warp topology source,
+        or its bounds cannot fit the integer ABI.
     """
 
     value_abis: dict[str, Value] = {}
@@ -194,16 +210,16 @@ def _load(
     """Build the callable implementation for a planned load operation.
 
     Use the registered factory identity to select block/warp semantics and
-    verify whether the chosen algorithm requires scratch. Lower the common load
-    specialization through the Numba adapter, including checked runtime counts,
-    exact-dtype runtime defaults, and embedded static controls. The factory
-    describes a callable compiled operation; it does not load data here.
+    verify whether the chosen algorithm requires scratch. Lower the common
+    load specialization through the Numba adapter, including checked runtime
+    counts, exact-dtype runtime defaults, and embedded static controls. The
+    factory describes a compiled callable; it does not load data.
 
     Explicit ``ArgumentBinding`` objects distinguish omitted, static, and
-    runtime controls. Legacy non-``None`` values indicate runtime presence, not
-    a literal to embed. For a legacy count, retain the full-tile overload as
-    well. Legacy offset arguments request offset overloads even when ``None``;
-    explicit bindings let the planner select their precise form.
+    runtime controls. Legacy non-``None`` values indicate runtime presence,
+    not a literal to embed. For a legacy count, retain the full-tile overload
+    as well. Legacy offset arguments request offset overloads even when
+    ``None``; explicit bindings let the planner select their precise form.
 
     Parameters
     ----------
@@ -227,7 +243,7 @@ def _load(
     offset : ArgumentBinding or object, optional
         Pointer-offset binding or legacy overload-presence input.
     threads_in_warp : SupportsIndex, optional
-        Required logical width for warp providers; invalid for block providers.
+        Required logical width for warp providers; invalid for blocks.
 
     Returns
     -------
@@ -455,16 +471,15 @@ def _store(
 
     Resolve the registered block/warp factory and its storage contract, then
     materialize the common store specialization with Numba-specific runtime
-    count
-    bounds. A warp provider also retains the enclosing block dimensions for
-    scratch layout. This constructs a compiled callable; it does not write
+    count bounds. A warp provider also retains the enclosing block dimensions
+    for scratch layout. This constructs a compiled callable; it does not write
     device memory during host-side factory evaluation.
 
     As in ``_load``, explicit bindings control whether scalar arguments are
     omitted, embedded, or runtime. A legacy non-``None`` count means runtime
     presence and retains a full-tile overload. Legacy offset inputs request
-    offset overloads regardless of their value; an explicit binding selects the
-    offset form. Store operations do not accept ``oob_default``.
+    offset overloads regardless of their value; an explicit binding selects
+    the offset form. Store operations do not accept ``oob_default``.
 
     Parameters
     ----------
@@ -485,13 +500,13 @@ def _store(
     offset : ArgumentBinding or object, optional
         Pointer-offset binding or legacy overload-presence input.
     threads_in_warp : SupportsIndex, optional
-        Required logical width for warp providers; invalid for block providers.
+        Required logical width for warp providers; invalid for blocks.
 
     Returns
     -------
     Invocable or Algorithm
-        Compiled provider callable, or the specialization recorded by an active
-        ``collect_specializations`` context.
+        Compiled provider callable, or the specialization recorded by an
+        active ``collect_specializations`` context.
 
     Raises
     ------

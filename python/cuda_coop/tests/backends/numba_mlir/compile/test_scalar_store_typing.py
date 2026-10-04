@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check scalar Store dtypes through real kernel compilation.
+
+Use a fixed target with devices hidden. Cases distinguish planner diagnostics
+from errors that require ordinary compiler type inference.
+"""
+
 import os
 from types import SimpleNamespace
 
@@ -25,6 +31,7 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 
 @pytest.fixture(autouse=True)
 def _fixed_current_device(monkeypatch):
+    """Supply target metadata without requiring a CUDA device."""
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == ""
     monkeypatch.setattr(
         numba_mlir_tools,

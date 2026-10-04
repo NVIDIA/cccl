@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Expose qualified Load and Store markers to Numba-CUDA-MLIR kernels.
+
+The operation decorator identifies each call and its lowering family. The
+whole-function planner replaces supported calls before device compilation.
+Calling a marker directly in Python raises the ``RuntimeError`` from
+``_marker.group_primitive_marker`` because only the planner can replace it.
+"""
+
 from __future__ import annotations
 
 from typing import Any

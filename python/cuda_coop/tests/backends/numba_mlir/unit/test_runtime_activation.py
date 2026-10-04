@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check backend activation and import failures in fresh interpreters.
+
+Separate processes prevent one import order or registry state from masking
+a later case. Embedded probes also exercise missing and unsupported runtimes.
+"""
+
 import os
 import subprocess
 import sys
@@ -18,6 +24,7 @@ PACKAGE_ROOT = Path(__file__).parents[4]
 
 
 def _run_import_probe(script: str) -> None:
+    """Run a fresh import against this package with default registration."""
     env = os.environ.copy()
     env.pop("CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION", None)
     env["PYTHONPATH"] = os.pathsep.join(

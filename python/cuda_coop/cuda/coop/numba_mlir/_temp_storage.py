@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe scratch allocation and reuse for the Numba-CUDA-MLIR planner.
+
+The descriptor validates host-side options and retains them for compilation.
+Constructing it does not allocate shared memory or synchronize threads.
+"""
+
 from enum import Enum
 
 from .._core.api._payload import _normalize_alignment
