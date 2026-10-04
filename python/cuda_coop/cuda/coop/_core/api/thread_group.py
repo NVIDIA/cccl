@@ -2,7 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Construct groups through the active backend, or use symbolic descriptors."""
+"""Construct groups for Python descriptions and active compiler traces.
+
+Outside a trace, return shared symbolic descriptors so compilers can
+inspect group expressions without running device code. Inside an active
+compiler environment, use its group constructors to capture the launch
+facts and query behavior available to that backend.
+
+Constructing a group does not execute a cooperative operation or
+synchronize its threads.
+"""
 
 from __future__ import annotations
 
@@ -39,6 +48,14 @@ def _group_constructor(
     *args: Any,
     **kwargs: Any,
 ) -> Any:
+    """Use an active backend constructor or a shared symbolic fallback.
+
+    The fallback permits host-side group descriptions without activating a
+    compiler. An active backend must provide the requested constructor; a
+    missing one reports unsupported functionality instead of returning a
+    descriptor it may not know how to lower.
+    """
+
     if _backend_module_name() is None:
         return fallback(*args, **kwargs)
     return _backend_member(name)(*args, **kwargs)

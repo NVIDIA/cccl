@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Type per-thread payloads and their qualified register conversions.
+
+Structural samples describe the CuTe attributes used by conversion methods.
+Matching a protocol does not establish register address space, static extent,
+or compiler support; runtime tracing checks those requirements.
+"""
+
 from collections.abc import Callable, Iterator
 from typing import Any, Generic, Protocol, overload
 
@@ -13,7 +20,10 @@ _ItemT = TypeVar("_ItemT", default=Any)
 _ValueT = TypeVar("_ValueT")
 
 class CutlassTensorSample(Protocol):
-    """Structural view of a CuTe register-memory tensor."""
+    """Describe the attributes read from a mutable CuTe register tensor.
+
+    Conversion also checks that memspace is the runtime's rmem value.
+    """
 
     @property
     def element_type(self) -> object: ...
@@ -25,7 +35,7 @@ class CutlassTensorSample(Protocol):
     def load(self) -> object: ...
 
 class CutlassTensorSSASample(Protocol):
-    """Structural view of an immutable CuTe register tensor."""
+    """Describe an immutable register value for payload conversion."""
 
     @property
     def dtype(self) -> object: ...

@@ -11,6 +11,8 @@ from typing import Any
 
 
 def _optional_attr(value: Any, name: str) -> Any:
+    """Treat unavailable foreign metadata as missing evidence."""
+
     try:
         return getattr(value, name, None)
     except Exception:  # noqa: BLE001
@@ -19,6 +21,8 @@ def _optional_attr(value: Any, name: str) -> Any:
 
 
 def _static_layout_int(value: Any) -> int | None:
+    """Accept only a statically inspectable, non-Boolean layout integer."""
+
     if isinstance(value, bool):
         return None
     try:
@@ -56,6 +60,8 @@ def _layout_leaf_pairs(
 
 
 def _layout_leaves(value: Any) -> tuple[tuple[Any, Any], ...] | None:
+    """Read shape and stride metadata and pair corresponding scalar leaves."""
+
     shape = _optional_attr(value, "shape")
     strides = _optional_attr(value, "strides")
     if strides is None:
@@ -66,7 +72,11 @@ def _layout_leaves(value: Any) -> tuple[tuple[Any, Any], ...] | None:
 
 
 def static_layout_elements(value: Any) -> int | None:
-    """Return a statically known layout capacity, when metadata proves one."""
+    """Compute capacity from positive static layout extents.
+
+    This shape product does not establish contiguity; the
+    stride check is separate.
+    """
 
     leaves = _layout_leaves(value)
     if leaves is None:
@@ -78,7 +88,13 @@ def static_layout_elements(value: Any) -> int | None:
 
 
 def contiguous_layout_reason(value: Any) -> str | None:
-    """Return why an operand is not statically compact, or ``None``."""
+    """Return a compactness diagnostic, or None for an eligible layout.
+
+    Ignore unit extents and sort other dimensions by stride, so compact
+    permutations remain eligible. Dynamic or incomplete layout metadata cannot
+    prove compactness. A bare to_llvm_ptr conversion with no layout metadata
+    is accepted as a pointer contract, without a known capacity.
+    """
 
     shape = _optional_attr(value, "shape")
     strides_value = _optional_attr(value, "strides")

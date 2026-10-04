@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check provider artifacts and finalization with a compiler stub.
+
+The fixture keeps real cache paths and bundle logic but supplies predictable
+LTO bytes. Tests distinguish memory hits, disk reuse, corruption, concurrent
+publication and failed attempts. Finalization must attach only the current
+trace's bundle while retaining user-supplied link libraries. Rendered direct
+wrappers omit scratch and barriers; unused storage controls do not change
+request identity.
+"""
+
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
@@ -31,6 +41,13 @@ pytestmark = [pytest.mark.unit, pytest.mark.backend_cutlass]
 
 @pytest.fixture
 def compilation(monkeypatch, tmp_path):
+    """Isolate caches and record native compilation with deterministic bytes.
+
+    The mutable context lets tests vary header or tool identities without
+    finding another toolkit. A private disk cache and fresh in-memory state
+    prevent earlier tests from satisfying a request before the stub runs.
+    """
+
     monkeypatch.setenv(_cache.CACHE_DIR_ENV, str(tmp_path / "cache"))
     monkeypatch.setattr(_cache, "_SOURCE_CACHE", {})
     monkeypatch.setattr(_cache, "_MANAGED_BUNDLE_PATHS", set())
@@ -68,7 +85,7 @@ def test_cache_reuses_only_intact_artifacts(compilation):
     path = Path(_compile())
     assert _compile() == str(path)
     assert len(compilation.calls) == 1
-    # A fresh process can reuse disk artifacts; a damaged artifact is rebuilt.
+    # Clearing the memory cache forces disk reuse; corrupt bytes must rebuild.
     _cache._SOURCE_CACHE.clear()
     assert _compile() == str(path)
     assert len(compilation.calls) == 1
@@ -149,6 +166,14 @@ def test_storage_free_request_identity_ignores_storage_controls():
 def test_finalize_preserves_unrelated_session_and_user_link_libraries(
     compilation, monkeypatch
 ):
+    """Keep trace ownership separate from removal of managed link paths.
+
+    An unrelated finalization removes managed bundle paths from the options,
+    but must retain the user's library and the pending owner session.
+    Only finalizing the owning module consumes that session and links its
+    bundle; a repeated hook must not attach it again.
+    """
+
     class Options:
         def __init__(self):
             self.options = {}

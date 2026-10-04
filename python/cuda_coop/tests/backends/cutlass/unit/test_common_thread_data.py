@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check common ThreadData alignment before selecting a compiler backend.
+
+A recording constructor verifies forwarding and integer normalization. Invalid
+alignments must fail before dispatch, so these checks need no CUTLASS runtime
+or active trace and apply to the common constructor's boundary.
+"""
+
 from importlib import import_module
 
 import numpy as np

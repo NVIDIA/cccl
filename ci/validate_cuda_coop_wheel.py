@@ -210,10 +210,12 @@ def _one_member(names: set[str], suffix: str) -> str:
 
 
 def _validate_metadata(archive: zipfile.ZipFile, names: set[str]) -> None:
-    """Check the distribution name, supported Python versions, and wheel tag.
+    """Check the name, Python requirement, extras, dependencies, and wheel tag.
 
-    These declarations control how installers select the wheel. Keep them
-    consistent with a pure-Python package shared by all supported platforms.
+    Installers use these fields to select the wheel and its optional
+    dependencies. Keep them consistent with one pure-Python wheel for all
+    platforms. The wheel must not require CUTLASS because no CUTLASS package
+    is qualified as a dependency.
     """
     metadata_name = _one_member(names, ".dist-info/METADATA")
     wheel_name = _one_member(names, ".dist-info/WHEEL")

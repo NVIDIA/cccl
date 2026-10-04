@@ -21,6 +21,12 @@ _BUNDLE_RENDERERS: dict[str, BundleRenderer] = {}
 def register_bundle_renderer(
     kind, *, render, include_lines=(), cccl_headers=()
 ):
+    """Associate a request kind with source rendering and required headers.
+
+    Keep provider registration unique so a kind cannot silently change its
+    renderer after requests have been collected.
+    """
+
     if kind in _BUNDLE_RENDERERS:
         raise ValueError(f"bundle renderer {kind!r} is already registered")
     _BUNDLE_RENDERERS[kind] = BundleRenderer(
@@ -33,7 +39,11 @@ def bundle_renderer_for(request: Any) -> BundleRenderer | None:
 
 
 def canonical_bundle_requests(requests: Iterable[Any]) -> tuple[Any, ...]:
-    """Return one deterministic request per provider symbol."""
+    """Return one request per symbol in deterministic symbol order.
+
+    Repeated equivalent requests share a definition. Reject two different
+    requests for the same symbol rather than emitting an ambiguous C++ bundle.
+    """
 
     requests_by_symbol: dict[str, Any] = {}
     for request in requests:
@@ -55,7 +65,11 @@ def canonical_bundle_requests(requests: Iterable[Any]) -> tuple[Any, ...]:
 
 
 def canonical_bundle_preamble_lines(lines: Iterable[str]) -> tuple[str, ...]:
-    """Canonicalize feature definitions before all other preamble lines."""
+    """Deduplicate the preamble and put feature macros before includes.
+
+    A feature macro can affect a header on first inclusion, so it must precede
+    all other lines. Reject conflicting definitions of the same macro.
+    """
 
     feature_definitions: dict[str, str] = {}
     other_lines: set[str] = set()
@@ -84,6 +98,8 @@ def canonical_bundle_preamble_lines(lines: Iterable[str]) -> tuple[str, ...]:
 
 
 def bundle_include_lines(requests: Iterable[Any]) -> list[str]:
+    """Collect the preamble required by the registered request kinds."""
+
     include_lines: list[str] = []
     for request in canonical_bundle_requests(requests):
         renderer = bundle_renderer_for(request)
@@ -93,6 +109,11 @@ def bundle_include_lines(requests: Iterable[Any]) -> list[str]:
 
 
 def registered_bundle_headers() -> dict[str, str]:
+    """Merge header mappings and reject conflicting paths.
+
+    The compiler resolves these headers before computing the bundle cache key.
+    """
+
     headers: dict[str, str] = {}
     for kind in sorted(_BUNDLE_RENDERERS):
         renderer = _BUNDLE_RENDERERS[kind]
@@ -108,6 +129,12 @@ def registered_bundle_headers() -> dict[str, str]:
 
 
 def render_bundle_source(requests):
+    """Render one C-linkage definition for each canonical provider request.
+
+    Combine a deterministic preamble with the registered renderers. C linkage
+    keeps the emitted symbol names aligned with the CuTe extern calls.
+    """
+
     lines = [*bundle_include_lines(requests), 'extern "C" {']
     for request in canonical_bundle_requests(requests):
         renderer = bundle_renderer_for(request)

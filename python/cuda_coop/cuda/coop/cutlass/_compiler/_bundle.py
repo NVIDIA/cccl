@@ -18,6 +18,12 @@ from . import _cache, _nvrtc
 
 
 def append_link_library_attr(module: ir.Module, path: str) -> None:
+    """Attach a bundle path while retaining other GPU-module libraries.
+
+    CuTe merges these attributes into its link options later. Sorted unique
+    paths keep repeated registration deterministic.
+    """
+
     for op in module.body.operations:
         if op.name != "gpu.module":
             continue
@@ -33,6 +39,17 @@ def append_link_library_attr(module: ir.Module, path: str) -> None:
 def compile_bundle_source(
     source: str, *, arch: str, required_headers: tuple[str, ...]
 ) -> str:
+    """Return the path to a verified LTO-IR file for a generated C++ bundle.
+
+    The cache key covers the source, target options, header contents, and the
+    resolved compiler libraries and versions. Check the memory and disk caches
+    first. On a miss, hold the artifact lock across threads and processes
+    while compiling and publishing the file.
+
+    The file holds external device functions for CuTe to link into its kernel.
+    CuTe still produces the final cubin and launches the kernel.
+    """
+
     context = _nvrtc.resolve_compile_context(required_headers)
     options = _nvrtc.compiler_options(context, arch)
     identity = ("cutlass-ltoir-v1", source, asdict(context), options)
