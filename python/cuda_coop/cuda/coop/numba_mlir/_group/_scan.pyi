@@ -5,9 +5,10 @@
 """Describe Scan result types and mode-specific options for type checkers.
 
 Separate overloads retain scalar types and per-thread payload item types.
-They also express Warp-only lane counts, block-only storage, and the seed
-required for non-sum exclusive scans. Runtime contracts are documented on
-the corresponding functions in _scan.py.
+They also express Warp-only valid_items counts, block-only storage, and block
+prefix callbacks with a separately typed state argument. A non-sum exclusive
+scan needs initial_value or a block prefix_op. Runtime contracts are
+documented on the matching functions in _scan.py.
 """
 
 from collections.abc import Callable

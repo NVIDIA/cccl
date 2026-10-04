@@ -204,10 +204,11 @@ def _call_classifications(
     """Describe logical call arguments for planning and diagnostics.
 
     Record whether the operator, seed, and prefix count are static or runtime.
-    An aggregate buffer is an output. Mode and algorithm are static choices.
-    These records describe the group call. The block or warp specialization
-    factory builds CUB's parameter order, including its scratch and
-    output-reference arguments.
+    The prefix callback also supplies its binding kind and role, which retain
+    any runtime state operand. An aggregate buffer is an output. Mode and
+    algorithm are static choices. These records describe the group call.
+    The block or warp specialization factory builds CUB's parameter order,
+    including its scratch and output-reference arguments.
     """
 
     classifications = [
@@ -354,8 +355,8 @@ def _plan_scan(
     Group dispatch has already resolved the group against exact launch
     dimensions. Canonicalize seeded sums and default algorithms before
     building the call so equivalent requests share plan identity. Reject
-    custom exclusive scans without an initial value or prefix callback: the
-    public group result must be defined at rank zero.
+    custom exclusive scans without a seed or prefix callback: the public
+    group result must be defined at rank zero.
 
     Parameters
     ----------
@@ -391,8 +392,9 @@ def _plan_scan(
     -----
     Block scans support scalar and blocked-array inputs. Warp scans accept one
     scalar per lane. ``valid_items`` applies to warps, and algorithm selection
-    applies to blocks. Prefix callbacks require a physical block. Initial
-    values and runtime counts must be uniform.
+    applies to blocks. Prefix callbacks require a physical block group and
+    supply an alternative to the explicit seed. Initial values and runtime
+    counts must be uniform.
     Planning checks static counts. Runtime bounds remain caller preconditions;
     runtime checking belongs to the backend.
     """
