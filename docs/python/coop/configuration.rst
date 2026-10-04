@@ -87,9 +87,13 @@ and leading and trailing whitespace is ignored. An unset variable is false.
 
 ``CUDA_COOP_CUTLASS_PROVIDER_CACHE_DIR``
    Selects the CUTLASS provider artifact cache directory. The default is a
-   user-specific directory under the system temporary directory. See the
-   :doc:`CUTLASS Developer Guide <cutlass_developer_guide>` for artifact
-   lifetime and cache validation.
+   user-specific directory under the system temporary directory. CUTLASS
+   always writes provider artifacts for the linker; ``CUDA_COOP_ENABLE_CACHE``
+   does not disable this cache. The cache must be a real directory owned by
+   the current user where ownership checks are available. The backend sets
+   its permissions to ``0700``, including for a configured directory.
+   See the :doc:`CUTLASS Developer Guide <cutlass_developer_guide>` for
+   artifact lifetime and cache validation.
 
 ``CUDA_COOP_SOURCE_DUMP_DIR``
    Writes generated CUDA source to this directory for compiler diagnostics.
