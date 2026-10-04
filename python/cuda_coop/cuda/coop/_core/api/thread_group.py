@@ -4,10 +4,10 @@
 
 """Construct groups for Python descriptions and active compiler traces.
 
-Outside a trace, return shared symbolic descriptors so compilers can
-inspect group expressions without running device code. Inside an active
-compiler environment, use its group constructors to capture the launch
-facts and query behavior available to that backend.
+Outside a trace, return shared symbolic descriptors so compilers can inspect
+group expressions without running device code. Inside an active compiler
+environment, use its constructors to get the backend's group type.
+Primitive lowering resolves launch dimensions when it uses the group.
 
 Constructing a group does not execute a cooperative operation or
 synchronize its threads.

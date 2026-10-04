@@ -171,7 +171,7 @@ explains terms and concepts, including blocked and striped layouts.
 
 Numba-CUDA-MLIR implements every family in this table. CUTLASS coverage
 expands with its implemented families; the [coverage
-table](https://nvidia.github.io/cccl/unstable/python/coop.html#coop-backends)
+table](https://nvidia.github.io/cccl/unstable/python/coop/concepts.html#coop-backend-operation-support)
 lists current support. Qualified APIs add the extensions documented in each
 guide.
 
@@ -303,8 +303,8 @@ constructor such as `cutlass.Int32(expression)` when an explicit conversion
 is needed. A NumPy dtype selector does not turn a traced CuTe scalar into a
 host NumPy value.
 
-Both common and qualified entry points use the same lowercase string
-algorithm vocabulary: `direct`, `striped`, `vectorize`, `transpose`,
+In Numba-CUDA-MLIR, common and qualified entry points use the same lowercase
+string algorithm vocabulary: `direct`, `striped`, `vectorize`, `transpose`,
 `warp_transpose`, and `warp_transpose_timesliced`. All six are executable.
 `striped` exposes a striped per-thread payload; the other Load algorithms
 expose blocked payloads. Store consumes the matching arrangement. As in CUB,
@@ -338,7 +338,7 @@ in the block; static offsets are checked during planning. `valid_items` is
 relative to each group's own tile, not the entire block, and must be uniform
 within that group.
 
-`ThreadGroup` follows the C++ hierarchy query surface.
+In Numba-CUDA-MLIR, `ThreadGroup` follows the C++ hierarchy query surface.
 `rank(level="thread")` and `count(level="thread")` accept `thread` (or
 `gpu_thread`), `warp`, `block`, `cluster`, and `grid`; logical and mapped
 `group_by` groups have narrower limits, described below. Results use the
@@ -349,11 +349,12 @@ select an explicit signed or unsigned 8-, 16-, 32-, or 64-bit integer dtype.
 `is_member()` returns an integer membership flag.
 
 
-`sync()` and `sync_aligned()` expose the matching non-grid group barriers. All
-participating members must reach `sync()`. `sync_aligned()` additionally
-requires the caller to keep the group aligned and converged. Neither integration
-supports grid synchronization. Numba-CUDA-MLIR cannot request a cooperative
-grid launch; CUTLASS does not expose a grid synchronization implementation.
+In Numba-CUDA-MLIR, `sync()` and `sync_aligned()` expose the matching non-grid
+group barriers. All participating members must reach `sync()`.
+`sync_aligned()` additionally requires the caller to keep the group aligned
+and converged. Numba-CUDA-MLIR cannot request a cooperative grid launch and
+does not support grid synchronization. See the CUTLASS guide for its supported
+queries and synchronization.
 
 The `count` and `exhaustive` arguments of `group_by` must be compile-time
 constants. A logical threads-within-warp group can query its threads and
@@ -369,9 +370,10 @@ group or parent-group participant must still reach the primitive.
 
 ## Temporary storage
 
-Block Load, Store, Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent
-Difference, Discontinuity, Histogram, and both Run Length Decode forms accept
-an optional caller descriptor:
+Numba-CUDA-MLIR accepts an optional caller descriptor for block Load, Store,
+Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent Difference, Discontinuity,
+Histogram, and both Run Length Decode forms. See the CUTLASS guide for the
+calls that accept a descriptor. This transpose example uses Numba-CUDA-MLIR:
 
 ```python
 storage = coop.TempStorage(
