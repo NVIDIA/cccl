@@ -241,3 +241,11 @@ def make_warp_reduce_specialization(
             valid_items.kind is BindingKind.OMITTED or include_full_warp
         ),
     )
+
+
+__all__ = [
+    "WarpReduceOperation",
+    "WarpReduceSpecialization",
+    "_validate_logical_warp_threads",
+    "make_warp_reduce_specialization",
+]

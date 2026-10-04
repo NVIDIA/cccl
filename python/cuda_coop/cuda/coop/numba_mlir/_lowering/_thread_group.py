@@ -374,4 +374,7 @@ def make_group_method_invocable(
     )
 
 
-__all__ = ["make_group_method_invocable"]
+__all__ = [
+    "_normalize_query_dtype",
+    "make_group_method_invocable",
+]

@@ -166,5 +166,6 @@ def _numba_semantic_token(value: object) -> Hashable:
 
 
 __all__ = [
+    "_normalize_numba_callable",
     "_numba_semantic_token",
 ]
