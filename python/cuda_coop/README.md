@@ -313,21 +313,22 @@ storage = coop.TempStorage(
 coop.load(block, source, items, algorithm="transpose", temp_storage=storage)
 ```
 
-For Load and Store on block, physical Warp, and logical Warp groups, `direct`,
-`striped`, and `vectorize` are storage-free: they default-construct CUB
-primitives without shared-memory allocation, pointer arguments, or barriers.
-For block calls, an explicit descriptor is validated but does not change their
-code generation. Construct `TempStorage` inside the kernel; module-global
-storage descriptors cannot be resolved. A descriptor may be passed to a device
-helper that Numba-CUDA-MLIR inlines into the kernel, which is the default.
+For Load and Store on block, physical Warp, and logical Warp groups,
+`direct`, `striped`, and `vectorize` are storage-free: they
+default-construct CUB primitives without shared-memory allocation, pointer
+arguments, or barriers. For block calls, an explicit descriptor is validated
+but does not change their code generation. Construct `TempStorage` inside
+the kernel; module-global storage descriptors cannot be resolved. A
+descriptor may be passed to a device helper that Numba-CUDA-MLIR inlines
+into the kernel, which is the default.
 
-The three block transpose Load/Store algorithms and Block Reduce use CUB
+The three block transpose Load/Store algorithms and Block Scan use CUB
 temporary storage. Without a descriptor, the compiler allocates the
 specialization's exact storage and inserts a block reuse barrier. A caller
 descriptor selects shared or exclusive slices and may request capacity and
-alignment. Both explicit and omitted storage participate in the shared-memory
-plan and launch accounting. The provider determines the required byte count
-and alignment.
+alignment. Both explicit and omitted storage participate in the
+shared-memory plan and launch accounting. The provider determines the
+required byte count and alignment.
 
 A descriptor's `sharing` selects only the slice layout: `"shared"` overlaps
 every call that passes the same descriptor on one region, while
