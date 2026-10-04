@@ -276,12 +276,49 @@ def provider_load(
 ):
     """Emit a Load extern call and replace the output payload values.
 
+    The qualified ``load`` entry point calls this during CuTe tracing,
+    after classifying the optional controls. Each live control has a
+    matching ArgumentBinding: the binding says whether to omit it, embed
+    a constant in C++, or pass the live value to the generated function.
+
     Check source dtype, pointer eligibility, and any provable static capacity
     before registering the request. A temporary register tensor receives the
     C++ output; its scalar expressions replace the ThreadData items.
 
     If lowering fails, restore the queued request snapshot. This rollback does
     not remove emitted IR or undo assignments already made to the payload.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        Cooperative group descriptor selected by the public call.
+    launch : LaunchFacts
+        Compiler-provided launch dimensions used for shared planning.
+    source : CuTe memory operand
+        Contiguous source memory whose element type sets the Load dtype.
+    output : ThreadData
+        Writable per-thread payload. Its items become the generated Load
+        results, and its dtype is set to the source dtype.
+    algorithm : str or enum
+        Normalized Load algorithm selector for the chosen group.
+    valid_items : object
+        Live valid-prefix count, used as an operand only for a runtime
+        binding.
+    valid_items_binding : ArgumentBinding
+        Omitted, static, or runtime classification of the valid-prefix count.
+    oob_default : object
+        Live invalid-item fill value, used only for a runtime binding.
+    oob_default_binding : ArgumentBinding
+        Classification and any embedded fill value.
+    offset : object
+        Live source element offset, used only for a runtime binding.
+    offset_binding : ArgumentBinding
+        Classification and any embedded source offset.
+
+    Returns
+    -------
+    None
+        The call is emitted into the trace and output is updated in place.
     """
 
     value_type = _resolve_memory_type(source, primitive_name="load")
@@ -352,10 +389,42 @@ def provider_store(
 ):
     """Emit a Store extern call from scalar or ThreadData values.
 
+    The qualified ``store`` entry point calls this during CuTe tracing.
+    The binding records choose which controls are embedded in C++ and
+    which live values become operands; the call itself executes later on
+    the GPU.
+
     Resolve one dtype for all items and require the destination to match it.
     Check pointer and static-capacity constraints before registration. The
     extern call receives item values directly, preserving the input payload. A
     failure restores queued request state.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        Cooperative group descriptor selected by the public call.
+    launch : LaunchFacts
+        Compiler-provided launch dimensions used for shared planning.
+    destination : CuTe memory operand
+        Contiguous destination whose dtype must match the stored values.
+    value : ThreadData or scalar
+        Initialized per-thread values, or one typed scalar per thread.
+    algorithm : str or enum
+        Normalized Store algorithm selector for the chosen group.
+    valid_items : object
+        Live valid-prefix count, used only for a runtime binding.
+    valid_items_binding : ArgumentBinding
+        Omitted, static, or runtime classification of that count.
+    offset : object
+        Live destination element offset, used only for a runtime binding.
+    offset_binding : ArgumentBinding
+        Classification and any embedded destination offset.
+
+    Returns
+    -------
+    None
+        A device call is added to the trace; destination writes occur when
+        the compiled kernel runs.
     """
 
     if isinstance(value, ThreadData):
