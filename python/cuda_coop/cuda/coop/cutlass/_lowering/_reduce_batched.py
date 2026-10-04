@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Lower independent batches to CUB register-shuffle reductions.
+
+Each lane supplies one value for every batch. CUB exchanges values with warp
+shuffles and returns each batch total in a blocked or striped layout. CUB's
+TempStorage is an empty type, so the wrapper declares a local one only to
+satisfy the constructor; it needs no shared memory. Results go through a
+pointer into a new register tensor, and the input stays unchanged.
+"""
+
 import hashlib
 from dataclasses import dataclass
 
@@ -39,6 +48,13 @@ _resolve_type = _types.make_provider_type_resolver(
 def _make_reduce_batched_plan(
     *, group, launch, dtype, batches, op="sum", output_layout="striped"
 ):
+    """Plan the built-in operator and distributed result layout.
+
+    Validate the operator/dtype combination, then let shared planning resolve
+    the warp width and ceil(batches / width) result extent. Each input slot
+    remains an independent batch across the participating lanes.
+    """
+
     validate_operator_dtype(op, dtype, primitive="reduce_batched")
     primitive = WarpReduceBatchedSemantics(
         dtype,
@@ -59,11 +75,28 @@ def _make_reduce_batched_plan(
 
 @dataclass(frozen=True, eq=False)
 class _CubReduceBatchedRequest:
+    """Identify one batched warp wrapper and its output contract.
+
+    The plan artifact key controls equality, so equal plans share one wrapper
+    in the session. Validate that the operator, method, warp width, batch
+    count, and result extent agree.
+    """
+
     plan: GroupLoweringPlan
     op: str
     kind: str = "cub_group_reduce_batched"
 
     def __post_init__(self):
+        """Require a matching CUB warp specialization and result extent.
+
+        Check that the plan uses CUB WarpReduceBatched with the method for the
+        chosen layout, the same dtype, batch count and warp width, and
+        SYNC_PHYSICAL_WARP set to false. That setting lets each logical warp
+        call independently, even from a different branch. Also check that the
+        operator matches the plan and is valid for the dtype, and that the
+        result has ceil(batches / width) slots.
+        """
+
         self.plan.require_supported()
         if (
             self.plan.target is not GroupLoweringTarget.CUB_WARP
@@ -116,10 +149,18 @@ class _CubReduceBatchedRequest:
 
     @property
     def outputs_per_thread(self):
+        """Return the ceil(batches / warp width) output capacity."""
+
         return self.plan.result.values[0].items_per_member
 
     @property
     def cpp_type(self):
+        """Spell the CUB type with physical-warp synchronization disabled.
+
+        The final false template argument lets logical warps call
+        independently.
+        """
+
         p = self.operation
         width = self.plan.resolved_group.static_size
         return (
@@ -130,6 +171,8 @@ class _CubReduceBatchedRequest:
 
     @property
     def symbol_name(self):
+        """Hash the complete plan identity into a wrapper symbol."""
+
         digest = hashlib.sha256(
             repr(self.plan.artifact_key).encode()
         ).hexdigest()[:16]
@@ -146,6 +189,17 @@ class _CubReduceBatchedRequest:
 
 
 def _render_reduce_batched(request):
+    """Render a scalar-input, result-pointer ABI without shared scratch.
+
+    Copy per-batch inputs into a const local array and invoke the selected CUB
+    layout method with a built-in functor. CUB's storage is NullType, so this
+    wrapper needs neither a storage pointer nor a reuse barrier.
+
+    Copy all output slots to the result pointer. The zero initializer does not
+    make extra slots valid: CUB may overwrite slots that have no batch.
+    Callers must skip them according to the chosen layout.
+    """
+
     request.__post_init__()
     p = request.operation
     cpp = _types.TYPE_SPECIFICATIONS[p.dtype].cpp_type
@@ -185,6 +239,17 @@ _rendering.register_bundle_renderer(
 
 
 def provider_reduce_batched(*, group, launch, value, op, output_layout):
+    """Emit independent batch reductions into a fresh aligned payload.
+
+    Resolve and convert initialized input items, register the planned wrapper,
+    and allocate only the distributed output extent. The call passes scalar
+    items and a result pointer. Preserve the input dtype and minimum alignment
+    in the returned ThreadData.
+
+    Restore queued session state if allocation or emission fails. Emitted IR
+    and register allocations are outside that rollback.
+    """
+
     dtype, items = _types.resolve_thread_data_value_type(
         value,
         allowed=_types.ALL_PROVIDER_TYPES,

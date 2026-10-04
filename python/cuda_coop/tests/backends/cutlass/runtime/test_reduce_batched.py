@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check independent batch reductions and result ownership within warps.
+
+The host reshapes inputs into subgroup, member, and batch axes, then reduces
+only the member axis. Device stores collect blocked or striped ownership
+into batch order. Partial result slots are skipped, and inputs must remain
+unchanged across repeated calls and launches.
+"""
+
 from contextlib import ExitStack
 
 import numpy as np
@@ -35,6 +43,17 @@ def _run(
     payload_kind="thread_data",
     compile_options=(),
 ):
+    """Run one reduction profile and compare it with host results.
+
+    Each thread's item index identifies a separate reduction batch. The host
+    uses the input dtype so that NumPy does not widen integer arithmetic.
+    The kernel skips result slots that hold no batch in the selected layout.
+
+    Only the first whole subgroup participates in the divergent case. Sibling
+    groups must keep their zero output sentinels. Three calls per launch and
+    two launches check repeated use and that the input stays unchanged.
+    """
+
     threads = int(np.prod(block))
     output_count = (items_per_thread + width - 1) // width
     value_type = cutlass_dtype(dtype)
@@ -164,6 +183,12 @@ def test_builtin_operators(op):
 
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16))
 def test_independent_divergent_subgroup(width):
+    """Let one complete subgroup reduce while sibling groups skip the call.
+
+    The participating lanes form the first logical subgroup. The oracle checks
+    its batch results and zero sentinels for every nonparticipating subgroup.
+    """
+
     _run(width=width, divergent=True)
 
 

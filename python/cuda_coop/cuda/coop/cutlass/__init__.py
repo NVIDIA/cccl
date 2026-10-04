@@ -4,14 +4,15 @@
 
 """Cooperative primitives for the CUTLASS CuTe DSL compiler.
 
-Importing this namespace raises an error if a compatible CUTLASS CuTe DSL
-runtime is unavailable. It lets common ``cuda.coop`` calls recognize the
-active CuTe DSL compiler environment. Common calls traced inside that
-environment use these implementations. The namespace provides Load/Store,
+Importing this namespace checks for a compatible CUTLASS CuTe DSL runtime
+and raises an error if none is available. The import also registers a check
+for the active CuTe compiler environment, so common ``cuda.coop`` calls
+traced there use these implementations. The namespace provides Load/Store,
 Reduce, Sum, Scan, Exchange, Shuffle, Merge Sort, Radix Sort, Radix Rank,
-TopK, Adjacent Difference, Discontinuity, Histogram, Run Length Decode, and
-thread-group handles such as ``this_block()`` with rank/count queries and
-synchronization. Reduce and Scan accept only built-in operators.
+TopK, Adjacent Difference, Discontinuity, Histogram, Run Length Decode,
+Batched Warp Reduction, and thread-group handles such as ``this_block()``
+with rank/count queries and synchronization. Reduction and Scan calls accept
+only built-in operators.
 
 Calls through ``cuda.coop.cutlass`` (qualified calls) also accept the CuTe
 payload forms documented by each operation. The per-operation docs describe

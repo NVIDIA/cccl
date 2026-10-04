@@ -2,10 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Declare batched reductions for the common kernel API.
+"""Reduce each payload slot independently across one selected warp.
 
-The registration lets compiler backends recognize this function by identity.
-The Python body rejects host calls; the backend supplies the device operation.
+During a CuTe trace this function runs in Python. It normalizes the built-in
+operator and output layout and checks the numeric payload before dispatching
+to the active backend. Compilers that use the registered function as a marker
+skip this body and do their own planning checks. The output layout determines
+which lane owns each batch aggregate.
 """
 
 from __future__ import annotations

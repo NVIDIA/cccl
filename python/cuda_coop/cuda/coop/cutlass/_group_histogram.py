@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Provide ``cuda.coop.cutlass.histogram``.
+"""Count block-wide integer samples into bins for CuTe kernels.
 
 Check the group, bin count, output extent, algorithm, and scratch here. These
 controls are fixed at compile time. Copy samples into a new ThreadData so

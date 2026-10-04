@@ -134,8 +134,9 @@ avoids rebinding `cuda`, which Numba examples use for `cuda.jit`.
 Each qualified API includes all common kernel operations, preserving their
 signatures, string selectors, and inference rules. Numba-CUDA-MLIR adds
 local-array payloads, memory namespaces, and device callbacks. CUTLASS adds
-CuTe register conversions and the controls documented in its guide. Only
-Numba-CUDA-MLIR currently supports custom operators and Scan prefix callbacks.
+CuTe register conversions and qualified controls such as warp Scan
+aggregates and scalar Shuffle. Custom operators and Scan prefix callbacks
+are currently supported only by Numba-CUDA-MLIR.
 
 Both integrations accept `ThreadData(items_per_thread, alignment=None)`: use a
 compile-time positive power of two in bytes to request minimum payload storage
@@ -409,13 +410,14 @@ call site still reuses its slice and must be synchronized. Omitting storage
 lets the compiler choose the layout and insert reuse barriers; it does not
 guarantee a separate slice per call site.
 
-Distinct descriptors and compiler-owned storage do not alias each other. With
-the default `auto_sync=False`, call `storage.sync()` or the appropriate block
-barrier before reusing the scratch, including on the next loop iteration.
-Set `auto_sync=True` to append a barrier after each scratch-using call,
-including the last call. That barrier protects reuse of CUB scratch; it does
-not replace barriers needed by the kernel's own shared-memory operations.
-Compiler-owned scratch always synchronizes.
+Distinct descriptors and compiler-owned storage do not alias each other.
+With the default `auto_sync=False`, issue a block barrier before reusing the
+scratch, including on the next loop iteration: `cuda.syncthreads()` in
+Numba-CUDA-MLIR, or `storage.sync()` in CUTLASS. Set `auto_sync=True` to
+append a barrier after each scratch-using call, including the last call.
+That barrier protects reuse of CUB scratch; it does not replace barriers
+needed by the kernel's own shared-memory operations. Compiler-owned scratch
+always synchronizes.
 
 Construct descriptors inside the kernel. Numba-CUDA-MLIR resolves descriptors
 in its compiler passes; a descriptor may also be passed to a device helper

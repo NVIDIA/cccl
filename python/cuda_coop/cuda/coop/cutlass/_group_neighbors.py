@@ -29,9 +29,10 @@ def _neighbors(
 ):
     """Check group, mode, tile-neighbor options, and scratch type.
 
-    The shared validator rejects valid_items for discontinuity and neighbor
-    values that the mode cannot use. Snapshot the input before the provider
-    resolves dtype, count bindings, scratch, and result arrays.
+    The shared validator rejects outside-tile neighbors that the mode cannot
+    use and a successor with a partial right difference. Copy the input before
+    the provider resolves the dtype, the static or runtime count, scratch,
+    and result arrays.
     """
 
     if not isinstance(group, ThreadGroup):
@@ -100,10 +101,11 @@ def adjacent_difference(
 
     Notes
     -----
-    NumPy and runtime boundary scalars must match the input dtype. Plain
-    Python integers convert within the target dtype's range. Python floats
-    require a floating-point input dtype; finite values must fit its range,
-    and infinite values and NaNs are accepted.
+    ``tile_predecessor_item`` and ``tile_successor_item`` given as NumPy or
+    runtime scalars must match the input dtype. Plain Python integers must
+    fit the input dtype; out-of-range values raise ValueError. Python floats
+    require a floating-point input dtype. Finite values must fit its range;
+    infinities and NaNs are accepted.
 
     ``valid_items`` may be a Python integer, a runtime signed integer up to
     64 bits, or a runtime unsigned integer up to 32 bits. An out-of-range
@@ -151,10 +153,11 @@ def discontinuity(
 
     Notes
     -----
-    NumPy and runtime boundary scalars must match the input dtype. Plain
-    Python integers convert within the target dtype's range. Python floats
-    require a floating-point input dtype; finite values must fit its range,
-    and infinite values and NaNs are accepted.
+    ``tile_predecessor_item`` and ``tile_successor_item`` given as NumPy or
+    runtime scalars must match the input dtype. Plain Python integers must
+    fit the input dtype; out-of-range values raise ValueError. Python floats
+    require a floating-point input dtype. Finite values must fit its range;
+    infinities and NaNs are accepted.
 
     See the :doc:`Discontinuity visualization
     <coop/visualizations/discontinuity>` for head and tail flags.

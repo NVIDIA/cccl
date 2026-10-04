@@ -9,10 +9,9 @@
 CUTLASS Programming Guide
 =========================
 
-Use ``cuda.coop`` inside a CuTe kernel to load a tile, reduce or scan its
-values, rearrange, sort, or select items, compare neighboring items, and store
-the result. The CUTLASS backend implements each supported operation with CUB; see :ref:`backend operation support
-<coop-backend-operation-support>`.
+Use ``cuda.coop`` inside a CuTe kernel to move data, reduce or scan values,
+rearrange payloads, sort or select keys, compare neighbors, count samples,
+and decode runs. The CUTLASS backend implements these operations with CUB. The :doc:`API reference <coop_api>` lists common and qualified calls.
 
 Each thread keeps its items in a ``ThreadData`` object. ``load`` fills that
 object and returns ``None``; ``store`` writes its items to memory. The examples

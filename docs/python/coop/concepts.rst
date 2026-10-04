@@ -7,12 +7,12 @@
 Programming concepts
 ====================
 
-Cooperative operations let a group of threads work on data together. This page
-explains the rules shared by the Numba-CUDA-MLIR and CUTLASS APIs: how threads
-divide a tile, which threads must participate, and how to use results and
-temporary storage. For complete kernels and launch examples, see the
-:doc:`Numba-CUDA-MLIR <programming_guide>` or :doc:`CUTLASS <../coop_cutlass>`
-programming guide.
+Cooperative operations let a group of threads work on data together. This
+page explains the rules shared by the Numba-CUDA-MLIR and CUTLASS APIs:
+how threads divide a tile, which threads must participate, and how to use
+results and temporary storage. For complete kernels and launch examples,
+see the :doc:`Numba-CUDA-MLIR <programming_guide>` or
+:doc:`CUTLASS <../coop_cutlass>` programming guide.
 
 .. _coop-api-namespaces:
 .. _kernel-api:
