@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile physical-warp operations and reject invalid launches or arguments.
+
+Typed null pointers and an explicit SM80 target supply compilation inputs
+without a kernel launch. A separate C++ layout probe measures CUB transpose
+scratch for one and two warps. These cases cover compilation and layout
+facts; the runtime tests check device results and linked instructions.
+"""
+
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
@@ -25,6 +33,13 @@ def _pointer():
 
 
 def test_exact_per_group_scratch():
+    """Measure how CUB transpose scratch grows with the warp count.
+
+    Both requests use the same value type and algorithm. Only the number of
+    physical warps changes, so two warps must require twice the storage with
+    the same alignment. The layout comes from the compiled C++ type.
+    """
+
     operation = _load_store(dtype=cutlass.Int32, algorithm="transpose")
     requests = [
         _CubLoadStoreRequest(
@@ -180,6 +195,13 @@ def test_warp_storage_descriptor_fails(api, algorithm):
 
 @pytest.mark.parametrize("valid", (-1, 65, 128))
 def test_count_excludes_other_warps(valid):
+    """Limit each valid count to one warp's tile, even in a larger block.
+
+    Each warp has 32 lanes with two items per lane, so a count must be between
+    0 and 64. A negative count fails, and the block's 128 items cannot let a
+    count above 64 borrow capacity from the neighboring warp.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         cutlass_coop.load(
@@ -198,6 +220,12 @@ def test_count_excludes_other_warps(valid):
 
 
 def test_extent_includes_second_warp():
+    """Include every warp's tile when checking a shaped input's extent.
+
+    The tensor fits two complete tiles at offset zero. An offset of one moves
+    the second warp past the end, although the first warp still fits.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         inputs = cute.make_tensor(memory, cute.make_layout(128))
