@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Plan fresh block histograms with an independent counter result shape.
+
+The request records sample geometry and counting choices. Planning validates
+those choices against the exact block dimensions, then describes the new
+counter payload and the block's shared storage and synchronization. Frontends
+use the result contract instead of assuming that output matches the input.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -27,6 +35,15 @@ from ._model import (
 
 @dataclass(frozen=True, eq=False)
 class GroupHistogramSemantics:
+    """Record histogram choices before exact launch dimensions are available.
+
+    Sample dtype and items_per_thread describe the input. Counter dtype and
+    bins_per_thread describe the separate result. bins is the number of real
+    counters; extra output slots hold zero. The specialization builder
+    validates these values during planning. The semantic key gives equal
+    requests the same identity in every compiler.
+    """
+
     sample_dtype: Any
     items_per_thread: int
     bins: int
@@ -64,6 +81,12 @@ class GroupHistogramSemantics:
 
 
 def _classifications(operation):
+    """Identify the samples as the group's only runtime input payload.
+
+    Bin count, result extent, counter dtype and algorithm are specialization
+    choices already stored in the operation record.
+    """
+
     return (
         ParameterClassification(
             "samples", ArgumentKind.RUNTIME, ParameterRole.INPUT
@@ -72,6 +95,15 @@ def _classifications(operation):
 
 
 def _plan_histogram(call, resolved, launch, operation):
+    """Specialize the block call and describe each member's returned counters.
+
+    The builder checks block shape, supported dtypes, bin capacity and integer
+    limits. The result contract uses counter dtype and bins_per_thread, not
+    the input's dtype and extent. The shared contracts give the implementation
+    ownership of scratch; a frontend replaces that for an explicit descriptor.
+    Striped bin ownership is implemented by the C++ adapter.
+    """
+
     specialization = make_block_histogram_specialization(
         sample_dtype=operation.sample_dtype,
         block_dim=launch.exact_block_dim,
