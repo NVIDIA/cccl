@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Execute the examples included in the common rearrangement API docs.
+
+The marked regions are Sphinx inputs. Extra output checks distinguish a
+layout conversion from a no-op and verify that the original payload is
+preserved. Shuffle examples define exposed boundaries before storing them.
+"""
+
 import pytest
 
 cuda = pytest.importorskip("numba_cuda_mlir.cuda")

@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Plan group Exchange calls using compiler-neutral CUB contracts.
+
+A group Exchange returns a new fixed-size payload for every member. The
+planner maps its layout or scatter request to BlockExchange or WarpExchange,
+then records participation, per-group scratch, synchronization, and result
+ownership. These records tell a backend what it must implement; they do not
+allocate the result or scratch arrays.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -52,7 +61,13 @@ _BLOCK_WARP_STRIPED_MODES = frozenset(
 
 @dataclass(frozen=True, eq=False)
 class GroupExchangeSemantics:
-    """Out-of-place Exchange operation selected after group resolution."""
+    """Describe an Exchange that preserves the caller's input payload.
+
+    ``primitive`` contains validated Exchange semantics without block
+    dimensions. It must select separate input and output arrays. Each group
+    member receives its own result array with the same dtype and item count as
+    its input; the backend creates that result when it lowers the group call.
+    """
 
     primitive: BlockExchangeSemantics
 
@@ -98,6 +113,13 @@ class GroupExchangeSemantics:
 def _call_classifications(
     operation: GroupExchangeSemantics,
 ) -> tuple[ParameterClassification, ...]:
+    """Separate Exchange data operands from specialization choices.
+
+    Value, ranks, and flags are runtime arrays when present. Mode and warp
+    time slicing are static selectors, so they affect specialization without
+    adding runtime call operands.
+    """
+
     classifications = [
         ParameterClassification(
             "value",
@@ -144,6 +166,18 @@ def _plan_exchange(
     launch: LaunchFacts,
     operation: GroupExchangeSemantics,
 ) -> GroupLoweringPlan:
+    """Choose a CUB Exchange implementation for the resolved group.
+
+    Block Exchange requires exact block dimensions. Warp-striped block modes
+    also require complete physical warps. Warp Exchange requires a supported
+    logical width, a warp-supported mode, and no block time slicing.
+
+    Return an unsupported plan when those implementation constraints fail.
+    Otherwise attach the native algorithm, implementation-owned scratch, and
+    one per-member array result to the plan. The result contract preserves
+    input dtype and extent; the backend supplies the actual output allocation.
+    """
+
     assert launch.exact_block_dim is not None
     block_threads = launch.exact_block_threads
     assert block_threads is not None

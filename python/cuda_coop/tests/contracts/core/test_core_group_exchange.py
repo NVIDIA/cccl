@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check which threads own Exchange results and temporary storage.
+
+Each block, physical warp, or logical warp needs its own storage instance.
+Planning must keep that instance count and its reuse barrier consistent
+with the group that executes the operation.
+"""
+
 import pytest
 
 from cuda.coop._core import (
@@ -26,6 +33,12 @@ from cuda.coop._core import (
 
 
 def _exchange(mode="striped_to_blocked", **overrides):
+    """Build an Exchange operation with rank and flag types for its mode.
+
+    Tests override one part of a valid contract at a time. Reject unused
+    options here so a misspelled test input cannot silently keep the default.
+    """
+
     uses_ranks = mode.startswith("scatter_")
     uses_flags = mode == "scatter_to_striped_flagged"
     primitive = make_block_exchange_semantics(

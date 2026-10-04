@@ -6,10 +6,11 @@
 Shuffle
 =======
 
-:func:`cuda.coop.shuffle` shifts values within a complete block and returns a
-new per-thread payload. The input remains unchanged. ``up`` and ``down`` move
-one item along the flattened blocked tile, including across thread boundaries.
-The qualified Numba-CUDA-MLIR API also supports scalar ``offset`` and ``rotate``.
+:func:`cuda.coop.shuffle` shifts values within a complete block and returns
+a new per-thread payload. The input remains unchanged. ``up`` and ``down``
+move one item along the flattened blocked tile, including across thread
+boundaries. The qualified Numba-CUDA-MLIR API also supports scalar
+``offset`` and ``rotate``.
 
 The explorer shows eight illustrative threads. Change the items per thread
 to see how local shifts connect across threads. Scalar modes use one value
@@ -61,11 +62,11 @@ hardware instructions.
 Using Shuffle in a kernel
 -------------------------
 
-This fragment uses the common API inside a Numba-CUDA-MLIR kernel that accepts
-``items_per_thread``. Import
-``cuda`` from ``numba_cuda_mlir``, ``numpy as np``, and
-``cuda.coop as coop``. Launch with 128 threads and provide at least ``128 * items_per_thread``
-source and destination elements per block.
+This fragment uses the common API inside a Numba-CUDA-MLIR kernel that
+accepts ``items_per_thread``. Import ``cuda`` from ``numba_cuda_mlir``,
+``numpy as np``, and ``cuda.coop as coop``. Launch with 128 threads and
+provide at least ``128 * items_per_thread`` source and destination elements
+per block.
 
 .. code-block:: python
 
