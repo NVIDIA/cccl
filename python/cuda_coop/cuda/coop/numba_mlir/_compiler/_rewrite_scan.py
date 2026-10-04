@@ -97,7 +97,22 @@ def _runtime_initial_index(
     base_count: int,
     factory_kwargs: dict[str, object],
 ) -> int | None:
-    """Locate a runtime seed immediately after the provider's payloads."""
+    """Locate a runtime seed immediately after the provider's payloads.
+
+    Scan operand validation uses this before reading the seed from the
+    runtime argument list. A static or omitted seed consumes no operand,
+    so return ``None`` for those forms.
+
+    Parameters
+    ----------
+    base_count : int
+        Number of provider payload operands before optional
+        controls: one for a scalar scan, two for a separate-
+        input/output array scan. The scratch pointer is excluded.
+    factory_kwargs : dict of str to object
+        Resolved provider choices, including the omitted, static, or
+        runtime ``initial_value`` binding.
+    """
 
     if _runtime_binding(factory_kwargs.get("initial_value")):
         return base_count
@@ -117,6 +132,23 @@ def _validate_initial_value(
     Literal conversion may use a known source dtype to preserve the scalar
     rules. A runtime value must match exactly; leave unresolved types for
     subsequent typing instead of inserting an implicit cast.
+
+    Parameters
+    ----------
+    context : GroupRewriteContext
+        Operand provenance and dtype records for the active
+        provider-call rewrite, before ordinary Numba type inference.
+    runtime_args : list of ir.Var
+        Device operands in provider order, excluding the scratch
+        pointer.
+    factory_kwargs : dict of str to object
+        Resolved specialization inputs. A static seed is replaced in
+        place with its validated typed value.
+    dtype : numba type
+        Payload element dtype that the seed must match.
+    base_count : int
+        Number of payload operands before optional runtime controls;
+        used to find a runtime seed.
     """
 
     initial = factory_kwargs.get("initial_value")
