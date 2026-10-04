@@ -2,7 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Allocate device buffers and copy test data with the CUDA Driver API."""
+"""Supply typed CUDA Driver buffers and value patterns for CUTLASS tests.
+
+Tests pass CuTe pointers directly, so buffer ownership and host/device copies
+are explicit here. NumPy storage holds both inputs and observed outputs.
+Unsigned patterns set the high bit to expose lost signedness in conversions.
+"""
 
 from contextlib import contextmanager
 
@@ -56,8 +61,12 @@ def cutlass_dtype(dtype):
 
 @contextmanager
 def device_array(values):
-    """Yield a typed pointer; copy the result back before freeing the
-    allocation.
+    """Yield a typed device pointer and copy results back on normal exit.
+
+    Require contiguous NumPy storage, then allocate and initialize device
+    memory for the context body. On normal exit, synchronize before copying
+    into the same host array. Always free the allocation, including when the
+    body raises; failed bodies do not copy results back.
     """
 
     values = np.asarray(values)
@@ -85,6 +94,13 @@ def device_array(values):
 
 
 def values_for(dtype, size, *, shift=0):
+    """Make a repeating value pattern with the unsigned type's high bit.
+
+    Values repeat every 97 items. Signed and floating cases include negative
+    values. Unsigned cases add the high bit after conversion, so tests cover
+    values outside the signed range without overflowing the unsigned type.
+    """
+
     dtype = np.dtype(dtype)
     values = (np.arange(size, dtype=np.int64) * 3 + shift) % 97
     if dtype.kind in {"i", "f"}:

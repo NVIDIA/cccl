@@ -70,11 +70,11 @@ in the programming guides.
 .. _block-prefix-callbacks:
 
 Numba-CUDA-MLIR additionally supports qualified device operators and
-:ref:`Scan prefix callbacks <coop-prefix-callbacks>`. Custom operators and stateful Scan callbacks are outside CUTLASS's
-current scope.
-CUTLASS qualification covers a compatible Linux/CUDA 13 environment. No
-official public runtime artifact has passed consumer qualification; see its
-programming guide before selecting a runtime.
+:ref:`Scan prefix callbacks <coop-prefix-callbacks>`. Custom operators and
+stateful Scan callbacks are outside CUTLASS's current scope. CUTLASS
+qualification covers a compatible Linux/CUDA 13 environment. No official
+public runtime artifact has passed consumer qualification; see its programming
+guide before selecting a runtime.
 
 .. raw:: html
 
@@ -89,20 +89,19 @@ programming guide before selecting a runtime.
 Common and qualified APIs
 -------------------------
 
-``from cuda import coop`` selects the common namespace. It defines the
-shared contracts for groups, payloads, operations, and temporary storage
-across supported DSLs. Calls inside a kernel are compiler markers; they are not
+``from cuda import coop`` selects the common namespace. It defines the shared
+contracts for groups, payloads, operations, and temporary storage across
+supported DSLs. Calls inside a kernel are compiler markers; they are not
 host-side implementations of those operations.
 
-The qualified namespaces, ``cuda.coop.numba_mlir`` and
-``cuda.coop.cutlass``, expose their implemented common operations and
-backend-specific extensions. A program using one compiler can use its qualified
-namespace alone. CUTLASS-only code can use ``import cuda.coop.cutlass as coop``. Use
-``numba_coop`` and ``cutlass_coop`` when a module contains both DSLs.
-Common and qualified calls can appear in the same kernel when they belong
-to its compiler. The comparisons in the
-:ref:`Numba-CUDA-MLIR guide <coop-programming-api-choice>` and
-:ref:`CUTLASS guide <coop-cutlass-api-choice>` list the differences.
+The qualified namespaces, ``cuda.coop.numba_mlir`` and ``cuda.coop.cutlass``,
+expose their implemented common operations and backend-specific extensions. A
+program using one compiler can use its qualified namespace alone. CUTLASS-only
+code can use ``import cuda.coop.cutlass as coop``. Use ``numba_coop`` and
+``cutlass_coop`` when a module contains both DSLs. Common and qualified calls
+can appear in the same kernel when they belong to its compiler. The
+comparisons in the :ref:`Numba-CUDA-MLIR guide <coop-programming-api-choice>`
+and :ref:`CUTLASS guide <coop-cutlass-api-choice>` list the differences.
 
 A common call preserves its operation's contract across backends. Moving
 a kernel still requires adapting launch syntax, array arguments, control
@@ -199,12 +198,12 @@ Shared execution model
 Groups and tiles
 ^^^^^^^^^^^^^^^^
 
-A group identifies the threads working together. ``this_block()`` selects the
-current block; ``this_warp()`` selects a physical 32-thread warp.
-``this_warp().group_by(width)`` partitions it into consecutive logical warps
-of 1, 2, 4, 8, 16, or 32 threads. A group processing ``K`` items per thread
-has a tile of ``group_size * K`` items. Each block or warp group processes its
-own tile.
+A group identifies the threads working together. ``this_block()`` selects
+the current block; ``this_warp()`` selects a physical 32-thread warp.
+``this_warp().group_by(width)`` partitions it into consecutive logical
+warps of 1, 2, 4, 8, 16, or 32 threads. A group processing ``K`` items per
+thread has a tile of ``group_size * K`` items. Each block or warp group
+processes its own tile.
 
 The hierarchy also describes individual threads, clusters, the grid, and mapped
 groups of physical warps. These descriptors support queries such as rank,
@@ -213,12 +212,12 @@ for that group: Reduce, Load/Store, and Scan use block or warp groups, and grid
 primitives are unavailable. Consult the backend guide for the supported query
 levels and synchronization operations.
 
-A multidimensional block uses x-major linear thread rank: ``x + block_x * (y +
-block_y * z)``. Warp primitives require an enclosing block made of complete
-physical warps. For warp Load/Store, the compiler adds the group's
-within-block tile origin to the memory address. A caller's ``offset`` supplies
-the remaining element offset, such as the block's tile origin in a larger
-array; do not add the within-block group origin again.
+A multidimensional block uses x-major linear thread rank:
+``x + block_x * (y + block_y * z)``. Warp primitives require an enclosing
+block made of complete physical warps. For warp Load/Store, the compiler
+adds the group's within-block tile origin to the memory address. A caller's
+``offset`` supplies the remaining element offset, such as the block's tile
+origin in a larger array; do not add the within-block group origin again.
 
 .. _coop-common-participation:
 .. _load-and-store-semantics:
@@ -226,18 +225,19 @@ array; do not add the within-block group origin again.
 Participation and valid prefixes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Every required participant must reach the same primitive invocation. A short
-tile does not reduce the number of threads that must participate. For example,
-``valid_items=45`` limits a 64-item Load to its first 45 tile positions; all
-threads in the group still call Load. Complete sibling logical warps may take
-different paths where the operation's contract permits it.
+Every required participant must reach the same primitive invocation.
+A short tile does not reduce the number of threads that must participate.
+For example, ``valid_items=45`` limits a 64-item Load to its first 45 tile
+positions; all threads in the group still call Load. Complete sibling
+logical warps may take different paths where the operation's contract
+permits it.
 
 For Load and Store, ``valid_items`` counts tile elements, not items per
 thread. It must be uniform within the group and lie between zero and the tile
 capacity. Clamp a tail count before passing it. Invalid static counts are
 rejected during compilation; invalid runtime counts trap on the device.
-``offset`` is a nonnegative element offset, also uniform within the group. It
-is independent of the valid count. Other families define their own
+``offset`` is a nonnegative element offset, also uniform within the group.
+It is independent of the valid count. Other families define their own
 valid-prefix controls; for example, reduction counts contributing threads.
 
 Load leaves invalid payload slots unspecified unless ``oob_default`` is
@@ -262,9 +262,9 @@ in CUB, transpose Store algorithms may rearrange the input payload in place.
 Copy values before Store if they are needed later.
 
 Supported payload dtypes are signed and unsigned 8-, 16-, 32-, and 64-bit
-integers and 32- and 64-bit floating-point values. An explicit alignment is a
-positive power of two in bytes and sets a minimum when payload storage is
-materialized. It does not assert alignment of an input or output array.
+integers and 32- and 64-bit floating-point values. An explicit alignment is
+a positive power of two in bytes and sets a minimum when payload storage
+is materialized. It does not assert alignment of an input or output array.
 
 The payload extent is a compile-time value available as
 ``items.items_per_thread``. Initialize every item an operation will read; Load
@@ -286,24 +286,25 @@ backend details, see the :ref:`Numba type rules <coop-thread-data>` and
 Layouts and operation order
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In a :term:`blocked` layout, each thread owns consecutive tile positions. In a
-:term:`striped` layout, consecutive threads own consecutive positions at each
-item slot. The :ref:`layout glossary <coop-glossary-layouts>` gives the
-formulas and an ownership table.
+In a :term:`blocked` layout, each thread owns consecutive tile positions.
+In a :term:`striped` layout, consecutive threads own consecutive positions
+at each item slot. The :ref:`layout glossary <coop-glossary-layouts>` gives
+the formulas and an ownership table.
 
-Load/Store's ``direct`` and ``vectorize`` algorithms expose blocked payloads.
-``striped`` exposes striped payloads. Transpose algorithms use striped memory
-accesses and present blocked payloads to the caller. Exchange converts between
-supported layouts. ``ThreadData`` does not carry a layout tag that
-automatically fixes a mismatched Load/Store pair. Shuffle shifts values within
-a block's tile. The :doc:`Exchange <visualizations/exchange>` and
-:doc:`Shuffle <visualizations/shuffle>` visualizations show the common
-rearrangements and qualified modes.
+Load/Store's ``direct`` and ``vectorize`` algorithms expose blocked
+payloads. ``striped`` exposes striped payloads. Transpose algorithms use
+striped memory accesses and present blocked payloads to the caller.
+Exchange converts between supported layouts. ``ThreadData`` does not carry
+a layout tag that automatically fixes a mismatched Load/Store pair.
+Shuffle shifts values within a block's tile. The
+:doc:`Exchange <visualizations/exchange>` and
+:doc:`Shuffle <visualizations/shuffle>` visualizations show the
+common rearrangements and qualified modes.
 
-Scan traverses the group's values in blocked tile order. A striped Load must
-therefore be converted before a Scan intended to follow the array's original
-order. Choosing a memory-access algorithm and choosing the order of values
-seen by an operation are related but distinct decisions.
+Scan traverses the group's values in blocked tile order. A striped Load
+must therefore be converted before a Scan intended to follow the array's
+original order. Choosing a memory-access algorithm and choosing the order
+of values seen by an operation are related but distinct decisions.
 
 .. _coop-common-results:
 
@@ -317,9 +318,8 @@ contract before consuming a result.
 
 Sorting and selection operate on one group's tile. Sorting each block does not
 sort a whole array. TopK defines an unordered selected prefix; the remaining
-payload positions are not output. See :ref:`backend operation support
-<coop-backend-operation-support>` for the available sorting and selection
-families.
+payload positions are not output. For available families, see :ref:`backend
+operation support <coop-backend-operation-support>`.
 
 .. _coop-common-storage:
 .. _temporary-storage:
@@ -327,10 +327,10 @@ families.
 Scratch allocation and reuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The compiler allocates temporary shared storage for operations that need it.
-Direct, striped, and vectorized Load/Store are storage-free: they add no
-scratch pointer, shared allocation, or reuse barrier. Other algorithms use the
-concrete CUB specialization's required size and alignment.
+The compiler allocates temporary shared storage for operations that need
+it. Direct, striped, and vectorized Load/Store are storage-free: they add
+no scratch pointer, shared allocation, or reuse barrier. Other algorithms
+use the concrete CUB specialization's required size and alignment.
 
 For operations that accept an explicit descriptor, construct ``TempStorage``
 inside the kernel. A descriptor lets several calls reuse one region or request
@@ -353,7 +353,7 @@ synchronization for the kernel's own shared data.
 Warp operations that need scratch keep independent storage per physical or
 logical group and use the appropriate warp mask. Each primitive documents
 whether it accepts explicit storage. Rules for combining cooperative scratch
-with the kernel's own shared memory depend on the compiler. See :ref:`Numba
-storage <coop-temp-storage>`, the :doc:`CUTLASS Programming Guide
-<../coop_cutlass>`, and the :ref:`storage FAQ <coop-faq-temp-storage>` for
-examples and limits.
+with the kernel's own shared memory depend on the compiler. See
+:ref:`Numba storage <coop-temp-storage>`, the
+:doc:`CUTLASS Programming Guide <../coop_cutlass>`, and the
+:ref:`storage FAQ <coop-faq-temp-storage>` for examples and limits.

@@ -17,7 +17,12 @@ ROOT_SCOPE = "cuda.coop.cutlass"
 
 
 def _remove_managed_bundle_link_options(dsl: Any) -> None:
-    """Keep persistent CUTLASS compile options from relinking prior bundles."""
+    """Remove prior provider bundles from persistent CUTLASS link options.
+
+    CuTe merges GPU-module link attributes into options that can outlive one
+    trace. Keep user-supplied libraries, but remove provider-owned paths
+    before attaching the current module's bundle.
+    """
 
     managed_paths = _cache.managed_bundle_paths()
     if not managed_paths:
@@ -46,6 +51,13 @@ def _remove_managed_bundle_link_options(dsl: Any) -> None:
 
 
 def _trace_finalize_hook(dsl, module, function_name):
+    """Compile this module's requests and attach its LTO-IR bundle.
+
+    Other nested or outer trace sessions remain queued. Render the selected
+    requests after tracing, compile for the configured target, and add the
+    resulting path to the GPU module for CuTe's later link step.
+    """
+
     del function_name
     options = dsl.compile_options
     _remove_managed_bundle_link_options(dsl)

@@ -19,7 +19,10 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
 @pytest.fixture(autouse=True)
 def _restore_private_registries():
-    """Restore all registries changed by the test, even after a failure."""
+    """Snapshot the listed family registries and restore them after each test.
+
+    Restore them even if the test fails.
+    """
     from cuda.coop._core.api import _dispatch as common_dispatch
     from cuda.coop._core.group import _dispatch as core_dispatch
     from cuda.coop.numba_mlir._compiler import _operations

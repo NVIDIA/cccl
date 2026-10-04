@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check that the installed distribution supplies the CUTLASS adapter.
+
+The child interpreter ignores an intentionally supplied checkout PYTHONPATH
+and runs from a temporary directory. Module origins must lie under the
+installed distribution. Registration must succeed while leaving no active
+compiler backend in ordinary host code.
+"""
+
 import importlib.metadata
 import os
 import subprocess
@@ -13,6 +21,8 @@ import pytest
 
 
 def test_isolated_cutlass_backend_uses_installed_modules(tmp_path):
+    """Probe installed imports in isolated mode from a temporary directory."""
+
     try:
         importlib.metadata.distribution("cuda-coop")
         importlib.metadata.distribution("nvidia-cutlass-dsl")

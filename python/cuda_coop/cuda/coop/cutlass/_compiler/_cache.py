@@ -35,6 +35,8 @@ _ACTIVE_ARTIFACT_LOCK_FDS: set[int] = set()
 
 @dataclass(frozen=True)
 class _CachedBundle:
+    """Track an LTO-IR path with the size and digest required for reuse."""
+
     path: str
     artifact_size: int | None = None
     artifact_sha256: str | None = None
@@ -49,6 +51,13 @@ def _release_state_lock_after_fork() -> None:
 
 
 def _reset_locks_after_fork() -> None:
+    """Discard inherited lock state without unlocking the parent process.
+
+    Close inherited artifact descriptors and create new thread locks
+    in the child. A parent-owned lock context must not release its
+    lock from the child.
+    """
+
     global _ACTIVE_ARTIFACT_LOCK_FDS, _ARTIFACT_LOCKS, _STATE_LOCK
     for descriptor in _ACTIVE_ARTIFACT_LOCK_FDS:
         try:
@@ -69,12 +78,16 @@ if hasattr(os, "register_at_fork"):
 
 
 def _local_artifact_lock(path: str) -> threading.RLock:
+    """Share one in-process lock for aliases of the same artifact path."""
+
     real_path = os.path.realpath(path)
     with _STATE_LOCK:
         return _ARTIFACT_LOCKS.setdefault(real_path, threading.RLock())
 
 
 def _close_artifact_lock_descriptor(descriptor: int) -> None:
+    """Close and forget a lock descriptor while holding the state lock."""
+
     with _STATE_LOCK:
         try:
             os.close(descriptor)
@@ -86,7 +99,13 @@ def _close_artifact_lock_descriptor(descriptor: int) -> None:
 
 @contextmanager
 def artifact_lock(path: str, *, scope: str):
-    """Serialize one cache artifact across threads and processes."""
+    """Serialize one artifact across threads and processes.
+
+    A local reentrant lock protects threads, and a sidecar file lock
+    protects processes. Validate the lock file before use. Only the process
+    that acquired the descriptor may release it, including when a fork
+    occurs inside the context.
+    """
 
     lock_path = f"{path}.lock"
     local_lock = _local_artifact_lock(path)
@@ -139,6 +158,12 @@ def artifact_lock(path: str, *, scope: str):
 
 
 def memory_cached_bundle(cache_key: str) -> _CachedBundle | None:
+    """Revalidate the file behind a memory entry and discard a stale entry.
+
+    A cached path alone cannot establish that the artifact still exists or has
+    the expected contents. Recheck size and digest before returning it.
+    """
+
     with _STATE_LOCK:
         cached = _SOURCE_CACHE.get(cache_key)
     if cached is None:
@@ -157,11 +182,15 @@ def store_memory_bundle(cache_key: str, cached: _CachedBundle) -> None:
 
 
 def add_managed_bundle_path(path: str) -> None:
+    """Remember a provider path for cleanup of persistent link options."""
+
     with _STATE_LOCK:
         _MANAGED_BUNDLE_PATHS.add(os.path.realpath(path))
 
 
 def managed_bundle_paths() -> frozenset[str]:
+    """List provider bundle paths to remove from persistent link options."""
+
     with _STATE_LOCK:
         return frozenset(_MANAGED_BUNDLE_PATHS)
 
@@ -177,6 +206,8 @@ _CACHE_DIR = os.path.join(tempfile.gettempdir(), _cache_dir_name())
 
 
 def configured_cache_dir() -> str:
+    """Resolve the override or default cache directory."""
+
     cache_dir = os.environ.get(CACHE_DIR_ENV)
     if cache_dir:
         return os.path.abspath(os.path.expanduser(cache_dir))
@@ -184,6 +215,13 @@ def configured_cache_dir() -> str:
 
 
 def ensure_cache_dir(scope: str) -> str:
+    """Prepare an owned directory for artifacts and temporary files.
+
+    Reject a symlink or a non-directory at the configured path. Where user IDs
+    are available, require ownership by the current user; restrict directory
+    permissions before writing artifacts.
+    """
+
     cache_dir = configured_cache_dir()
     try:
         os.makedirs(cache_dir, mode=0o700, exist_ok=True)
@@ -212,6 +250,12 @@ def ensure_cache_dir(scope: str) -> str:
 def write_binary_atomic(
     path: str, blob: bytes | bytearray, *, scope: str
 ) -> None:
+    """Flush a temporary file before replacing the cache file.
+
+    Create the temporary file in the configured cache directory. On failure,
+    remove it and report the provider scope.
+    """
+
     cache_dir = ensure_cache_dir(scope)
     temp_path = ""
     try:
@@ -243,6 +287,8 @@ def write_text_atomic(path: str, text: str, *, scope: str) -> None:
 
 
 def _cached_artifact_is_valid(cached: _CachedBundle) -> bool:
+    """Check a regular artifact against its recorded size and hash."""
+
     if (
         cached.artifact_size is None
         or cached.artifact_size <= 0
@@ -266,7 +312,12 @@ def _cached_artifact_is_valid(cached: _CachedBundle) -> bool:
 
 
 def load_bundle(path: str, cache_key: str) -> _CachedBundle | None:
-    """Reuse only a complete artifact whose contents match its metadata."""
+    """Reuse only a complete artifact whose contents match its metadata.
+
+    The sidecar must name the requested cache key. Missing,
+    malformed, or stale entries are misses so the caller can rebuild
+    them under the artifact lock.
+    """
 
     try:
         with open(f"{path}.json", encoding="utf-8") as stream:
@@ -280,7 +331,11 @@ def load_bundle(path: str, cache_key: str) -> _CachedBundle | None:
 
 
 def publish_bundle(path: str, cache_key: str, blob: bytes) -> _CachedBundle:
-    """Publish data before metadata while holding the artifact lock."""
+    """Publish data before metadata under the caller-held artifact lock.
+
+    Each file is replaced atomically. Publishing the size and digest last lets
+    later readers reject an incomplete or mismatched pair.
+    """
 
     cached = _CachedBundle(path, len(blob), hashlib.sha256(blob).hexdigest())
     write_binary_atomic(path, blob, scope="cuda.coop.cutlass")

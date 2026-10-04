@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check which compiler launch facts can justify a cooperative group shape.
+
+Only exact dimensions and explicit Boolean flags receive verified provenance.
+An upper bound cannot establish the exact block size. Tests supply stand-in
+facts or replace the compiler's launch-fact hook without tracing a kernel.
+Group resolution must use those facts without changing the symbolic group.
+"""
+
 from types import SimpleNamespace
 
 import pytest

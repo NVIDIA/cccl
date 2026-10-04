@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check runtime capabilities and active-context selection without CUTLASS.
+
+Load validation and activation modules directly, then use small compiler
+stubs. Missing runtime, transitive import failure and incompatible capability
+have distinct diagnostics. A compatible runtime is active only while its own
+environment object is current; merely loading it does not select a backend.
+"""
+
 import importlib.util
 import sys
 from types import SimpleNamespace
@@ -16,8 +24,12 @@ pytestmark = pytest.mark.unit
 
 @pytest.fixture
 def compiler_modules(monkeypatch):
-    # Load the runtime validator without importing the qualified facade: its
-    # missing-runtime diagnostics must also be testable without CUTLASS.
+    """Load validators directly so missing-runtime cases remain testable.
+
+    Use fresh modules and a private dispatch-probe registry. Cached validation
+    or registration from earlier cases must not change the outcome.
+    """
+
     modules = []
     for name in ("_runtime", "_activation"):
         module_name = f"{__package__}.{name}"
@@ -35,6 +47,14 @@ def compiler_modules(monkeypatch):
 
 
 def _compatible_modules():
+    """Build the smallest compiler surface accepted by runtime validation.
+
+    The methods are capability markers; they do not trace or compile kernels.
+    One shared environment identity lets activation tests distinguish this DSL
+    from an unrelated active environment. Each call returns fresh classes so a
+    case can remove a capability without affecting later cases.
+    """
+
     environment = object()
 
     class CuTeDSL:

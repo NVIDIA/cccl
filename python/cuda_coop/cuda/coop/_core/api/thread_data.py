@@ -2,10 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Define the common constructor for per-thread values in a GPU kernel.
+"""Construct common per-thread payloads through the active compiler.
 
-A compiler replaces this call with storage for the calling thread. The Python
-body rejects host execution because it cannot provide that device storage.
+Tracing backends implement the constructor with their own storage and
+scalar representation. The common-operation scope marks the new payload
+as common, so an explicit ``dtype`` and later item writes must use the
+common numeric dtypes. Qualified constructors can accept more types and
+convert register values. Numba recognizes the function marker before
+Python execution.
 """
 
 from __future__ import annotations

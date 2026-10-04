@@ -15,7 +15,8 @@ Terms
    backend
       The integration that lets a kernel compiler recognize ``cuda.coop``
       calls and generate CUDA code for them. The current integrations target
-      Numba-CUDA-MLIR and CUTLASS / CuTe DSL. See :ref:`registration <coop-backend-registration>`.
+      Numba-CUDA-MLIR and CUTLASS / CuTe DSL. See :ref:`registration
+      <coop-backend-registration>`.
 
    blocked
       A layout in which each thread owns consecutive elements of a
@@ -116,7 +117,7 @@ Terms
       A key used for ordering or selection and an associated value, such as
       its original array index. Pair operations move the two together.
       Key and value payloads have the same number of items per thread
-      but may have different dtypes. See :doc:`Merge Sort <visualizations/merge-sort>`.
+      but may have different dtypes. See :ref:`Merge Sort <coop-merge-sort>`.
 
    stable sort
       A sort that preserves the input order of elements with equal keys.
@@ -125,10 +126,11 @@ Terms
       promise equal-key order. See :doc:`radix sorting <visualizations/radix>`.
 
    radix digit
-      A fixed-width interval of key bits used in one ranking or sorting
-      step. ``radix_rank_keys`` assigns ranks according to one such digit;
+      A fixed-width interval of key bits used in one ranking or sorting step.
+      ``radix_rank_keys`` assigns ranks according to one such digit;
       ``radix_sort_keys`` and ``radix_sort_pairs`` order keys over the
-      requested bit interval. See :doc:`radix sorting and ranks <visualizations/radix>`.
+      requested bit interval. See :doc:`radix sorting and ranks
+      <visualizations/radix>`.
 
    common API
       .. raw:: html
@@ -137,16 +139,17 @@ Terms
 
       The contract shared by Numba-CUDA-MLIR and CUTLASS, exposed through
       ``from cuda import coop``. Implemented operations on thread groups,
-      values, and storage follow the documented argument and result rules;
-      see :ref:`backend operation support <coop-backend-operation-support>` for availability. Qualified APIs add compiler-specific extensions. See
+      values, and storage follow the documented argument and result rules; see
+      :ref:`backend operation support <coop-backend-operation-support>` for
+      availability. Qualified APIs add compiler-specific extensions. See
       :ref:`choosing an API <coop-api-namespaces>`.
 
    qualified API
       A backend's namespace: ``cuda.coop.numba_mlir`` or
       ``cuda.coop.cutlass``. Each includes its supported common operations and
       compiler-specific extensions. Host registration uses
-      ``cuda.coop.register`` or occurs when importing the qualified namespace. See
-      :ref:`namespace choices <coop-faq-namespaces>`.
+      ``cuda.coop.register`` or occurs when importing the qualified namespace.
+      See :ref:`namespace choices <coop-faq-namespaces>`.
 
    striped
       A layout in which consecutive threads own consecutive tile elements

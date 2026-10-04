@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Show calls that the public stubs must reject.
+
+mypy checks this file; it is never run. Each expected-error marker names
+an error code for that source line. The reported lines and codes must match
+all markers exactly.
+"""
+
 from __future__ import annotations
 
 import operator

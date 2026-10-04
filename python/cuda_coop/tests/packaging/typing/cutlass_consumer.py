@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Type-check CUTLASS payloads shared with common Load and Store calls.
+
+The checks confirm that payload construction, register-tensor conversions, and
+immutable-vector conversions keep the scalar dtype. This module is a mypy
+input; it does not trace or launch a kernel.
+"""
+
 from __future__ import annotations
 
 from typing import Literal
@@ -18,6 +25,11 @@ def register_cutlass() -> None:
 
 
 def check_cutlass_surface(source: object, destination: object) -> None:
+    """Check both Load/Store namespaces and dtype-preserving conversions.
+
+    Confirm the block group type for these calls as well.
+    """
+
     block = cutlass_coop.this_block()
     values = cutlass_coop.ThreadData(
         items_per_thread=2, dtype=np.int32, alignment=16

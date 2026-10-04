@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check ownership and rollback of provider requests within compiler traces.
+
+An options object can host nested traces for different MLIR modules. Tests
+require separate sessions for those modules, reuse within one module, and
+rollback limited to the failed trace. Weak-referenceable options may be
+unhashable; both lookup paths must release abandoned sessions with the owner.
+"""
+
 import gc
 import weakref
 from dataclasses import dataclass
@@ -17,27 +25,41 @@ ir = import_module("cutlass._mlir.ir")
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
 
+# Ordinary hashable options exercise the weak-key session registry.
 class _Options:
     pass
 
 
 class _UnhashableOptions:
+    """Exercise identity lookup for unhashable compiler options."""
+
     __hash__ = None
 
 
 @dataclass(frozen=True)
 class _Request:
+    """Represent a provider by symbol so session tests need no native code."""
+
     symbol_name: str
 
 
 @pytest.fixture(autouse=True)
 def isolated_sessions(monkeypatch):
+    """Give each test empty weak-key and identity-based session registries."""
+
     monkeypatch.setattr(_state, "_SESSIONS", weakref.WeakKeyDictionary())
     monkeypatch.setattr(_state, "_ID_SESSIONS", {})
 
 
 @pytest.mark.parametrize("options_type", [_Options, _UnhashableOptions])
 def test_nested_modules_keep_independent_provider_sessions(options_type):
+    """Resume the outer module after independently consuming an inner session.
+
+    Both modules share one options object. A lookup without module identity
+    must not guess while two sessions exist. Popping the inner session must
+    leave the outer request list available for further tracing.
+    """
+
     options = options_type()
     outer_module, inner_module = object(), object()
     outer = _state.get_or_create_bundle_session(
@@ -77,6 +99,8 @@ def test_nested_modules_keep_independent_provider_sessions(options_type):
 
 
 def test_nested_jit_in_the_same_mlir_module_reuses_one_bundle():
+    """Use one session for an MLIR module wrapper and its operation."""
+
     options = _Options()
     with ir.Context(), ir.Location.unknown():
         module = ir.Module.create()
@@ -224,6 +248,13 @@ def test_retry_in_a_new_module_does_not_reuse_failed_trace(monkeypatch):
 def test_rollback_after_options_switch_preserves_unrelated_sessions(
     monkeypatch,
 ):
+    """Restore the saved owner after tracing switches options and modules.
+
+    The snapshot belongs to the original options. Rollback must restore its
+    requests and remove the current failed session, while another session on
+    the new options object remains intact.
+    """
+
     original_options, current_options = _Options(), _Options()
     original_module, current_module, unrelated_module = (
         object(),

@@ -2,10 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Check backend activation and import failures in fresh interpreters.
+"""Check backend activation and import failures.
 
-Separate processes prevent one import order or registry state from masking
-a later case. Embedded probes also exercise missing and unsupported runtimes.
+Most cases run in fresh interpreters, so one import order or registry state
+cannot mask a later case. Embedded probes also exercise missing and
+unsupported runtimes. The runtime-load retry check instead patches the
+activation module in the pytest process.
 """
 
 import os

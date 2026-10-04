@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Declare qualified Load/Store calls with compiler-valued arguments.
+
+Keep annotations broad enough for compiler scalar values. Tracing checks block
+groups, DIRECT, memory layout, and dtype.
+"""
+
 from typing import Any
 
 from .._core.api.thread_group import ThreadGroup

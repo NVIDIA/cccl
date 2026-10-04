@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Select common-API dispatch from the active compiler environment.
+
+Synthetic backends isolate dispatch rules from any compiler installation.
+Nested context changes must select the matching backend and restore the
+previous one. Competing probes and probe failures must report an error rather
+than silently choosing a backend.
+"""
+
 import sys
 from contextvars import ContextVar
 from types import ModuleType
@@ -15,6 +23,13 @@ from cuda.coop._core.thread_group import CoopCompilerContextRequiredError
 
 @pytest.fixture
 def compiler_environment(monkeypatch):
+    """Register two fake backends controlled by one context-local selector.
+
+    Each constructor returns its backend name to make routing visible.
+    Replace the probe registry and install temporary modules so nested context
+    changes can be tested without loading or activating a real compiler.
+    """
+
     environment = ContextVar("test_compiler_environment", default=None)
     monkeypatch.setattr(_dispatch, "_COMPILER_CONTEXT_PROBES", {})
     for name in ("first", "second"):

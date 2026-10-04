@@ -6,8 +6,8 @@
 TopK
 ====
 
-This page describes the Numba-CUDA-MLIR implementation. See
-:ref:`backend operation support <coop-backend-operation-support>` for CUTLASS availability.
+This page describes the Numba-CUDA-MLIR implementation. See :ref:`backend
+operation support <coop-backend-operation-support>` for CUTLASS availability.
 
 :func:`cuda.coop.topk_min_keys` selects the smallest keys in a block;
 :func:`cuda.coop.topk_max_keys` selects the largest. The corresponding

@@ -1159,8 +1159,10 @@ kernel[1, BLOCK_THREADS](source, distances, observed)
 cuda.synchronize()
 raise AssertionError("invalid runtime Shuffle distance did not trap")
 """
+    # -P keeps the current directory off sys.path. Python 3.10 lacks -P, so
+    # use -I, which also ignores PYTHONPATH and user site-packages. The child
+    # can then import another cuda.coop; the origin check reports that case.
     return subprocess.run(
-        # -P (or -I on 3.10) keeps the current directory off sys.path.
         [sys.executable, _SAFE_PATH_FLAG, "-B", "-c", script],
         check=False,
         capture_output=True,

@@ -2,6 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Lower shared block Load/Store plans to CuTe calls and C++ wrappers.
+
+A request gives both sides the same symbol, template arguments, and runtime
+parameter order. Tracing emits an extern call and queues its immutable
+request; finalization renders and compiles the wrapper as LTO-IR.
+
+DIRECT uses no shared scratch. Load writes a temporary register tensor and
+then replaces the output payload's scalar expressions. Store passes its
+initialized items as scalar arguments without changing the payload.
+"""
+
 from __future__ import annotations
 
 import dataclasses
@@ -44,11 +55,21 @@ _provider_types = _types
 
 @dataclasses.dataclass(frozen=True, eq=False)
 class _CubLoadStoreRequest:
+    """Bind one supported shared plan to a C++ wrapper request.
+
+    Require a storage-free block DIRECT implementation with no
+    returned-result contract or reuse barrier. The plan's artifact key drives
+    equality and the generated symbol, so requests with equivalent
+    specialization contracts share one definition.
+    """
+
     plan: GroupLoweringPlan
     value_type: type
     kind: str = "cub_group_load_store"
 
     def __post_init__(self):
+        """Reject plans whose contracts cannot use this wrapper ABI."""
+
         self.plan.require_supported()
         if self.plan.target is not GroupLoweringTarget.CUB_BLOCK:
             raise NotImplementedError("CUTLASS Load/Store requires a block")
@@ -109,6 +130,8 @@ class _CubLoadStoreRequest:
 
     @property
     def symbol_name(self):
+        """Derive an extern symbol from the operation and artifact key."""
+
         signature = hashlib.sha256(
             repr(self.semantic_key).encode()
         ).hexdigest()[:16]
@@ -119,6 +142,17 @@ class _CubLoadStoreRequest:
 
 
 def _render_cub_load_store(request):
+    """Render the C++ side of the Load/Store extern ABI.
+
+    Place the base pointer first, then Store item scalars, then runtime
+    count/default/offset controls in that order. Load adds a final result
+    pointer. Static controls appear in the body and have no ABI argument.
+
+    Guard runtime counts and negative offsets before the CUB call. Load copies
+    every item slot to its result buffer. Slots beyond ``valid_items`` stay
+    unspecified unless ``oob_default`` is supplied.
+    """
+
     request.__post_init__()
     operation = request.operation
     type_specification = TYPE_SPECIFICATIONS[request.value_type]
@@ -210,6 +244,8 @@ def _make_request(
     oob_default_binding,
     offset_binding,
 ):
+    """Require a supported shared plan before creating a provider request."""
+
     plan = _make_group_load_store_plan(
         group=group,
         launch=launch,
@@ -238,6 +274,16 @@ def provider_load(
     offset,
     offset_binding,
 ):
+    """Emit a Load extern call and replace the output payload values.
+
+    Check source dtype, pointer eligibility, and any provable static capacity
+    before registering the request. A temporary register tensor receives the
+    C++ output; its scalar expressions replace the ThreadData items.
+
+    If lowering fails, restore the queued request snapshot. This rollback does
+    not remove emitted IR or undo assignments already made to the payload.
+    """
+
     value_type = _resolve_memory_type(source, primitive_name="load")
     if (
         output.dtype is not None
@@ -304,6 +350,14 @@ def provider_store(
     offset,
     offset_binding,
 ):
+    """Emit a Store extern call from scalar or ThreadData values.
+
+    Resolve one dtype for all items and require the destination to match it.
+    Check pointer and static-capacity constraints before registration. The
+    extern call receives item values directly, preserving the input payload. A
+    failure restores queued request state.
+    """
+
     if isinstance(value, ThreadData):
         value_type, values = _types.resolve_thread_data_value_type(
             value,
@@ -365,6 +419,8 @@ def provider_store(
 
 
 def _resolve_type(value, *, allowed=ALL_PROVIDER_TYPES, feature="load/store"):
+    """Resolve a provider dtype within the common API restrictions."""
+
     return _types.resolve_provider_type(
         value,
         allowed=allowed,
@@ -376,6 +432,8 @@ def _resolve_type(value, *, allowed=ALL_PROVIDER_TYPES, feature="load/store"):
 
 
 def _normalize_algorithm(algorithm: Any) -> GroupLoadStoreAlgorithm:
+    """Resolve the algorithm enum before checking provider support."""
+
     token = getattr(algorithm, "value", algorithm)
     if isinstance(token, str):
         token = token.lower().replace("-", "_")
@@ -400,7 +458,12 @@ def _make_group_load_store_plan(
     oob_default: ArgumentBinding,
     offset: ArgumentBinding,
 ) -> GroupLoweringPlan:
-    """Build the canonical shared-core plan for group Load or Store."""
+    """Plan Load/Store from launch facts and scalar binding records.
+
+    The core selects specialization contracts and static argument
+    checks. The provider request then restricts that plan to its
+    supported block DIRECT ABI.
+    """
 
     operation = GroupLoadStoreSemantics(
         kind=kind,
@@ -423,6 +486,8 @@ def _render_template_argument(
     name: str,
     value: Any,
 ) -> str:
+    """Spell a template argument with the verified C++ dtype."""
+
     if name == "T":
         if value is not request.value_type:
             raise ValueError(
@@ -439,6 +504,11 @@ def _render_template_argument(
 
 
 def _cpp_oob_literal(request: _CubLoadStoreRequest) -> str:
+    """Embed a finite default cast to the memory element type.
+
+    Request validation checks representability before this source is rendered.
+    """
+
     value = getattr(request.operation.oob_default.value, "value", None)
     if value is None:
         value = request.operation.oob_default.value
@@ -461,6 +531,8 @@ def _binding_expr(
     runtime_name: str,
     oob_default: bool = False,
 ) -> str | None:
+    """Choose an omitted, runtime, or literal binding expression."""
+
     if binding.kind is BindingKind.OMITTED:
         return None
     if binding.kind is BindingKind.RUNTIME:
@@ -471,6 +543,8 @@ def _binding_expr(
 
 
 def _memory_dtype(value: Any) -> Any:
+    """Find element-type metadata on a memory object or its iterator."""
+
     for name in ("element_type", "dtype", "_dtype"):
         dtype = getattr(value, name, None)
         if dtype is not None:
@@ -481,11 +555,19 @@ def _memory_dtype(value: Any) -> Any:
 
 @dataclasses.dataclass(frozen=True)
 class _ContiguousMemoryProof:
+    """Retain a generic pointer and any statically known capacity.
+
+    A pointer can be eligible even when its capacity is unknown. The caller
+    remains responsible for accesses that static metadata cannot bound.
+    """
+
     pointer: Any
     available_elements: int | None
 
 
 def _is_local_memory_space(value: Any) -> bool:
+    """Recognize LLVM local storage and equivalent register-memory names."""
+
     try:
         if int(value) == _LLVM_LOCAL_ADDRESS_SPACE:
             return True
@@ -501,6 +583,8 @@ def _is_local_memory_space(value: Any) -> bool:
 
 
 def _uses_local_memory(value: Any) -> bool:
+    """Detect register/local storage on an operand or its pointers."""
+
     candidates = [value]
     for name in ("iterator", "pointer", "ptr", "_pointer", "_ptr"):
         try:
@@ -523,6 +607,12 @@ def _uses_local_memory(value: Any) -> bool:
 
 
 def _try_raw_memory_pointer(value: Any) -> Any | None:
+    """Extract a usable LLVM pointer and cast its address space to generic.
+
+    Skip candidates that cannot establish pointer type. Local-memory pointers
+    are ineligible; other address spaces can require an emitted cast.
+    """
+
     candidates = [value]
     data_ptr = getattr(value, "data_ptr", None)
     if callable(data_ptr):
@@ -567,8 +657,11 @@ def _contiguous_memory_proof(
     *,
     primitive_name: str,
 ) -> tuple[_ContiguousMemoryProof | None, str]:
-    """Classify raw-pointer eligibility without registering a provider
-    request.
+    """Check layout and pointer eligibility before registering a request.
+
+    Reject register/local memory and retain a static capacity when available.
+    Pointer extraction may emit an address-space cast; this helper does not
+    promise an IR-free inspection.
     """
 
     layout_reason = contiguous_layout_reason(value)
@@ -594,6 +687,12 @@ def _memory_pointer(
     primitive_name: str,
     required_elements: int | None = None,
 ) -> Any:
+    """Require a valid pointer and check any known static memory bound.
+
+    Compare capacity only when both the requested prefix and operand extent
+    are static. An unknown extent does not prove an access is within bounds.
+    """
+
     proof, reason = _contiguous_memory_proof(
         value,
         primitive_name=primitive_name,
@@ -620,12 +719,13 @@ def _memory_pointer(
 
 
 def _resolve_memory_type(value: Any, *, primitive_name: str) -> type:
+    """Require inspectable dtype metadata on the memory operand."""
+
     dtype = _memory_dtype(value)
     if dtype is None:
         raise TypeError(
             f"{_ROOT_SCOPE}.{primitive_name} memory operand must expose "
-            "element_type "
-            "or dtype"
+            "element_type or dtype"
         )
     return _resolve_type(
         dtype,
@@ -635,6 +735,12 @@ def _resolve_memory_type(value: Any, *, primitive_name: str) -> type:
 
 
 def _validate_static_oob_default(value: Any, value_type: type) -> None:
+    """Require a finite static default compatible with the memory dtype.
+
+    Python literals may convert within range; an already typed value must
+    match. This validates the value before its C++ literal is emitted.
+    """
+
     plain_value = _provider_types.coerce_plain_scalar(
         value,
         value_type,
@@ -674,6 +780,8 @@ def _validate_static_oob_default(value: Any, value_type: type) -> None:
 
 
 def _coerce_runtime_oob_default(value: Any, value_type: type) -> Any:
+    """Require a runtime default with the exact memory element type."""
+
     if isinstance(value, value_type):
         return value
     raise TypeError(
@@ -690,6 +798,12 @@ def _runtime_binding_args(
     oob_default: Any,
     offset: Any,
 ) -> tuple[list[type], list[Any]]:
+    """Match runtime controls to their C++ wrapper parameter order.
+
+    Only runtime bindings occupy ABI slots. Counts use Int32 after range
+    handling, defaults use the element dtype, and offsets use Int64.
+    """
+
     param_types: list[type] = []
     args: list[Any] = []
     if operation.valid_items.kind is BindingKind.RUNTIME:
@@ -712,7 +826,12 @@ def _runtime_binding_args(
 
 
 def _required_static_elements(request: _CubLoadStoreRequest) -> int | None:
-    """Return the largest statically reachable operand prefix."""
+    """Compute the operand prefix needed when count and offset are static.
+
+    A runtime control leaves the bound unknown. Account for group tile origins
+    when the plan describes multiple warp instances; current request
+    validation permits only block plans.
+    """
 
     operation = request.operation
     if (

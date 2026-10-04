@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Resolve shared group descriptors against exact CuTe launch facts.
+
+Constructing a descriptor records intent without querying a device. Primitive
+lowering validates required dimensions through the shared resolver; the public
+factory exposes the current block.
+"""
+
 from __future__ import annotations
 
 from cuda.coop._core import (
@@ -26,7 +33,12 @@ def _resolve_primitive_group_from_launch(
     *,
     feature: str,
 ) -> ThreadGroup:
-    """Resolve a primitive using the frontend's exact launch facts."""
+    """Resolve a primitive group using the compiler's exact launch facts.
+
+    Keep shared resolution failures but add the qualified operation context.
+    Record whether the supplied group was already static or inferred from the
+    launch; constructing this descriptor does not emit a collective.
+    """
 
     resolution = resolve_thread_group(group, launch)
     try:
@@ -46,7 +58,11 @@ def _require_complete_warp_partition(
     feature: str,
     exact_block_dim: tuple[int, int, int] | None = None,
 ) -> None:
-    """Check that a warp primitive cannot run in a partial physical warp."""
+    """Require complete 32-thread membership for a supplied warp group.
+
+    Use an exact block-shape override when supplied, otherwise the resolved
+    hierarchy. This helper does not add warp support to a primitive.
+    """
 
     if group.kind not in COMPLETE_WARP_GROUP_KINDS:
         return
@@ -58,8 +74,8 @@ def _require_complete_warp_partition(
     if block_threads is None:
         raise NotImplementedError(
             f"cuda.coop.cutlass.{feature} requires exact enclosing "
-            "block dimensions "
-            "to prove complete 32-thread physical-warp participation"
+            "block dimensions to prove complete 32-thread physical-warp "
+            "participation"
         )
     if block_threads % 32:
         raise NotImplementedError(

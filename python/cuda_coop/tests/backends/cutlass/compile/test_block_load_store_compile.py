@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check movement diagnostics with CuTe compilation for an explicit target.
+
+Null device pointers supply argument types without allocating buffers or
+launching kernels. Invalid scalar controls and payload types must fail during
+tracing. A runtime block-size argument must not become an exact launch fact
+merely because its example value is 32.
+"""
+
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
@@ -96,6 +104,13 @@ def test_invalid_movement_inputs(case, message):
 
 
 def test_dynamic_block_dimensions_are_not_assumed_exact():
+    """Keep runtime launch values distinct from compile-time dimensions.
+
+    The launcher receives block_size as Int32, although compilation is called
+    with 32. Cooperative specialization requires exact block dimensions. It
+    must reject this dynamic input instead of using the sample value.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         cutlass_coop.load(

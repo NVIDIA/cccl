@@ -10,8 +10,9 @@ CUTLASS Programming Guide
 =========================
 
 Use ``cuda.coop`` inside a CuTe kernel for the cooperative primitives
-documented below. The CUTLASS backend implements each supported operation
-with CUB or CUDAX; see :ref:`backend operation support <coop-backend-operation-support>`.
+documented below. The CUTLASS backend implements each supported operation with
+CUB or CUDAX; see :ref:`backend operation support
+<coop-backend-operation-support>`.
 
 Each thread keeps its items in a ``ThreadData`` object. ``load`` fills that
 object and returns ``None``; ``store`` writes its items to memory without
@@ -78,9 +79,9 @@ tensor. See :ref:`coop-cutlass-register-payloads`.
 
 Construct payloads with ``cuda.coop.ThreadData`` or
 ``cuda.coop.cutlass.ThreadData`` inside a CuTe kernel. Both create CUTLASS
-payloads that work with common and qualified calls. ``ThreadDataLike`` describes the shared
-interface; implementing that interface in a user class does not register a
-new payload representation with the compiler.
+payloads that work with common and qualified calls. ``ThreadDataLike``
+describes the shared interface; implementing that interface in a user class
+does not register a new payload representation with the compiler.
 
 
 All threads in the group must call the primitive, even when ``valid_items``
@@ -242,8 +243,9 @@ Helpers and compile-time values
 
 A ``@cute.jit`` helper called by a ``@cute.kernel`` can contain cooperative
 operations. Its calls are traced in the enclosing kernel's compiler
-environment and contribute to that kernel's provider bundle. Every required group member must reach a cooperative call,
-including when it appears in a helper or loop.
+environment and contribute to that kernel's provider bundle. Every required
+group member must reach a cooperative call, including when it appears in a
+helper or loop.
 
 Payload extents, group mappings, dtype selectors, and algorithm names
 must be known while tracing. Use
@@ -259,11 +261,12 @@ may be runtime values where the primitive allows them.
 Qualified register payloads
 ---------------------------
 
-Import ``cuda.coop.cutlass`` as ``cutlass_coop`` when a kernel needs CuTe register
-conversions. The qualified ``ThreadData`` provides ``from_register_tensor``
-and ``to_register_tensor`` for register-memory tensors, and ``from_vector``
-and ``to_tensor_ssa`` for immutable register values. These conversions use the
-same fixed per-thread item count as the load/store payload.
+Import ``cuda.coop.cutlass`` as ``cutlass_coop`` when a kernel needs CuTe
+register conversions. The qualified ``ThreadData`` provides
+``from_register_tensor`` and ``to_register_tensor`` for register-memory
+tensors, and ``from_vector`` and ``to_tensor_ssa`` for immutable register
+values. These conversions use the same fixed per-thread item count as the
+load/store payload.
 
 An initialized ``ThreadData`` can cross CuTe runtime loops and branches while
 retaining its fixed item count, dtype, and requested alignment. Initialize
@@ -308,13 +311,13 @@ scratch reuse or synchronization.
 Launch dimensions and resources
 -------------------------------
 
-Specify the block dimensions in the CuTe launch, including all dimensions of
-a multidimensional block. Primitives specialize for those exact dimensions.
-The block dimensions determine the participating threads. Group queries
-and synchronization are not yet implemented by this integration. A maximum thread bound cannot substitute
-for the actual participating group size. Missing required facts cause a
-compilation error; see :ref:`the compiler launch contract
-<coop-cutlass-exact-launch-facts>`.
+Specify the block dimensions in the CuTe launch, including all dimensions of a
+multidimensional block. Primitives specialize for those exact dimensions. The
+block dimensions determine the participating threads. Group queries and
+synchronization are not yet implemented by this integration. A maximum thread
+bound cannot substitute for the actual participating group size. Missing
+required facts cause a compilation error; see :ref:`the compiler launch
+contract <coop-cutlass-exact-launch-facts>`.
 
 More items per thread can increase register use. Check the compiled
 kernel's resource usage as well as its execution time.

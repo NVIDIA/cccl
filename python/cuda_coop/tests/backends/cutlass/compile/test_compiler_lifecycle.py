@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Exercise backend activation and provider cleanup through real GPU copies.
+
+Fresh processes test import order without an already populated module cache.
+Repeated and nested traces must release their compiler environment. Injected
+failures at tracing, provider compilation, and final linking must leave a
+subsequent compile usable; unrelated kernels must not inherit provider work.
+"""
+
 import os
 import subprocess
 import sys
@@ -30,6 +38,13 @@ _TILE = _THREADS * _ITEMS
 
 
 def _copy_launcher(api, *, nested=False):
+    """Build direct or nested calls with the same cooperative copy behavior.
+
+    The nested form enters another cute.jit function within one kernel trace.
+    Both forms share the same input/output contract, so tests can isolate
+    provider ownership and cleanup from differences in kernel behavior.
+    """
+
     @cute.jit
     def copy_tile(
         source: cute.Pointer,
@@ -67,6 +82,13 @@ def _copy_launcher(api, *, nested=False):
 
 
 def _exercise_copy(api_name, *, nested=False, repeats=1):
+    """Compile and run a copy while checking that tracing has ended.
+
+    The context checks occur after compile returns and before GPU execution.
+    Each repeat checks copied values from fresh device buffers on the host.
+    A successful compile still fails the test if it leaves a backend active.
+    """
+
     api = coop if api_name == "common" else cutlass_coop
     launch = _copy_launcher(api, nested=nested)
     source = values_for(np.int32, _TILE, shift=31)
@@ -91,6 +113,13 @@ def _exercise_copy(api_name, *, nested=False, repeats=1):
     ),
 )
 def test_fresh_process_traces_with_either_import_order(tmp_path, api, order):
+    """Test automatic and explicit activation without prior import state.
+
+    The child imports this test package from the same checkout. Clear the
+    parent's auto-registration override, then let each case select automatic
+    activation or an explicit register call.
+    """
+
     if order.endswith("-register"):
         compiler_import = (
             "import cutlass.cute" if order.startswith("cutlass-first") else ""
@@ -151,6 +180,14 @@ def test_repeated_compile_and_nested_jit_leave_no_active_backend(api, nested):
 def test_failed_compilation_or_linking_can_retry(
     monkeypatch, tmp_path, failure
 ):
+    """Retry the launcher after provider compilation or final linking fails.
+
+    One injection fails provider compilation. The other compiles a real
+    provider, then supplies invalid bytes to final linking. After restoring
+    the hook, require a successful compile and copy and no active backend left
+    by the failed attempt.
+    """
+
     launch = _copy_launcher(coop)
     source = values_for(np.int32, _TILE, shift=47)
     destination = np.full(_TILE, -101, dtype=np.int32)
@@ -191,6 +228,13 @@ def test_failed_compilation_or_linking_can_retry(
 
 @pytest.mark.parametrize("items_per_thread", (1, 4))
 def test_failed_trace_after_registering_a_provider_can_retry(items_per_thread):
+    """Discard provider work from a trace that raises after its first load.
+
+    The rejection occurs after Load registers its provider and before Store.
+    The failed trace must release the compiler environment. A retry with
+    rejection disabled must complete the copy for both payload extents.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,
@@ -228,6 +272,13 @@ def test_failed_trace_after_registering_a_provider_can_retry(items_per_thread):
 
 
 def test_unrelated_trace_does_not_compile_or_relink_a_provider(monkeypatch):
+    """Follow a cooperative kernel with an ordinary CuTe kernel.
+
+    The first copy populates provider state. Then install a failing hook to
+    expose leaked provider work when the unrelated kernel is traced. Its
+    separate arithmetic output confirms that the second kernel still runs.
+    """
+
     _exercise_copy("common")
 
     @cute.kernel

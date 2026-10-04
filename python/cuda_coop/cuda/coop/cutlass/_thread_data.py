@@ -2,6 +2,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Represent a thread's fixed payload as CuTe scalar expressions.
+
+The Python container supports static indexing and in-place item replacement.
+Register conversion methods copy values. Control-flow hooks require every item
+to be initialized. They pass one MLIR value per item into CuTe if and loop
+regions, then rebuild the payload from the region results.
+
+Payloads created through the common ``cuda.coop`` API retain that origin
+during reconstruction. This keeps the common API dtype checks active on
+later item assignments.
+"""
+
 from __future__ import annotations
 
 import inspect as _inspect
@@ -27,6 +39,8 @@ _COMMON_ROOT_OPERATION_FAMILIES = {
 
 
 def _normalize_index_int(value: Any) -> int | None:
+    """Require a static integer index and reject booleans."""
+
     if isinstance(value, bool):
         return None
     try:
@@ -51,6 +65,8 @@ def _normalize_group_width(value: Any) -> int | None:
 
 
 def _get_optional_metadata_attr(value: Any, attr_name: str) -> Any:
+    """Read foreign metadata when its accessor is available."""
+
     try:
         return getattr(value, attr_name, None)
     except Exception:  # noqa: BLE001
@@ -78,6 +94,11 @@ def _infer_1d_static_extent(shape: Any) -> int | None:
 
 
 def _infer_static_extent(shape: Any) -> int | None:
+    """Multiply positive static leaves of a possibly nested shape.
+
+    Any missing, dynamic, or nonpositive leaf makes the total unknown.
+    """
+
     inferred = _normalize_group_width(shape)
     if inferred is not None:
         return inferred
@@ -98,6 +119,12 @@ def _infer_fragment_items_per_thread(
     *,
     allow_nested: bool = True,
 ) -> int | None:
+    """Infer extent from tensor shape, then layout shape, then type shape.
+
+    Mutable register tensors can expose nested layouts; vector callers can
+    require a one-dimensional extent instead.
+    """
+
     infer_extent = (
         _infer_static_extent if allow_nested else _infer_1d_static_extent
     )
@@ -128,6 +155,8 @@ def _infer_fragment_items_per_thread(
 
 
 def _infer_vector_items_per_thread(vector: Any) -> int | None:
+    """Find vector extent through numel() or one-dimensional shape."""
+
     numel = _get_optional_metadata_attr(vector, "numel")
     if callable(numel):
         try:
@@ -156,6 +185,12 @@ def _is_register_fragment(value: Any) -> bool:
 
 
 def _is_register_memory_space(memspace: Any) -> bool:
+    """Recognize the runtime's CUTLASS or CuTe register-space enum.
+
+    Optional imports and foreign equality can fail; absent evidence must
+    not establish register storage.
+    """
+
     register_spaces = []
     try:
         from cutlass import AddressSpace as CutlassAddressSpace
@@ -183,6 +218,12 @@ def _is_register_memory_space(memspace: Any) -> bool:
 
 
 def _has_memory_space(value: Any) -> bool:
+    """Detect declared memory-space metadata even when its accessor fails.
+
+    An unreadable declaration still distinguishes memory-backed data from
+    an immutable register vector.
+    """
+
     for attr_name in ("memspace", "space"):
         try:
             attr = getattr(value, attr_name, None)
@@ -199,6 +240,12 @@ def _has_memory_space(value: Any) -> bool:
 
 
 def _has_memory_protocol(value: Any) -> bool:
+    """Detect array or DLPack protocols without requesting their data.
+
+    A present or failing protocol identifies memory-backed data, which must
+    not be mistaken for per-thread vector contents.
+    """
+
     for attr_name in _MEMORY_PROTOCOL_ATTRS:
         try:
             _inspect.getattr_static(value, attr_name)
@@ -229,6 +276,8 @@ def _is_cutlass_dsl_dtype(dtype: Any) -> bool:
 
 
 def _is_ordinary_scalar_dtype(dtype: Any) -> bool:
+    """Recognize Python scalar classes and NumPy scalar subclasses."""
+
     if any(dtype is candidate for candidate in (bool, int, float, complex)):
         return True
     if (
@@ -250,6 +299,12 @@ def _coerce_payload_values_to_dtype(
     *,
     source: str,
 ) -> tuple[Any, ...]:
+    """Cast known scalar dtypes and retain uninitialized slots.
+
+    Leave opaque dtype metadata alone. Wrap conversion failures with the item
+    index and conversion source so a caller can locate the bad value.
+    """
+
     if not (_is_cutlass_dsl_dtype(dtype) or _is_ordinary_scalar_dtype(dtype)):
         return values
 
@@ -286,6 +341,12 @@ def _resolve_items_per_thread(
     source: str,
     missing_message: str,
 ) -> int:
+    """Reconcile an explicit positive item count with any inferred extent.
+
+    An explicit count can fill missing metadata but must not contradict
+    a known payload size.
+    """
+
     explicit = (
         None if explicit is None else _validate_items_per_thread(explicit)
     )
@@ -308,6 +369,12 @@ def _resolve_export_shape(
     items_per_thread: int,
     source: str,
 ) -> Any:
+    """Choose a flat export shape or validate a static reshape.
+
+    The new shape must contain exactly the payload's item count; export does
+    not pad or truncate values.
+    """
+
     if shape is None:
         return (items_per_thread,)
     inferred = _infer_static_extent(shape)
@@ -322,6 +389,12 @@ def _resolve_export_shape(
 
 
 def _resolve_export_dtype(dtype: Any, *, fallback: Any, source: str) -> Any:
+    """Resolve explicit or retained dtype metadata for a register export.
+
+    Require a supported numeric type rather than inferring a dtype from
+    exported items at this stage.
+    """
+
     dtype = fallback if dtype is None else dtype
     if dtype is None:
         raise TypeError(
@@ -533,8 +606,8 @@ class ThreadData:
             source="ThreadData.from_register_tensor",
             missing_message=(
                 "ThreadData.from_register_tensor could not infer "
-                "items_per_thread "
-                "from fragment shape; pass items_per_thread explicitly"
+                "items_per_thread from fragment shape; pass "
+                "items_per_thread explicitly"
             ),
         )
 
@@ -651,9 +724,8 @@ class ThreadData:
                 items_per_thread = _validate_items_per_thread(items_per_thread)
                 if payload.items_per_thread != items_per_thread:
                     raise ValueError(
-                        "ThreadData.from_payload items_per_thread "
-                        "does not match "
-                        "payload.items_per_thread"
+                        "ThreadData.from_payload items_per_thread does not "
+                        "match payload.items_per_thread"
                     )
             if dtype is None or payload.dtype == dtype:
                 return payload
@@ -780,6 +852,8 @@ class ThreadData:
         return value
 
     def _index(self, index: Any) -> int:
+        """Check static indices, including Python-style negative indices."""
+
         normalized = _normalize_index_int(index)
         if normalized is None:
             raise TypeError("ThreadData index must be a compile-time integer")
@@ -796,6 +870,12 @@ class ThreadData:
         self._values[idx] = value
 
     def _dynamic_values(self) -> tuple[type, tuple[Any, ...]]:
+        """Resolve all items to one dtype for CuTe control-flow operands.
+
+        Convert host literals to scalar expressions and retain explicit
+        signedness metadata when reconciling raw IR values.
+        """
+
         from ._compiler import _types
 
         resolve_type = _types.make_provider_type_resolver(
@@ -825,12 +905,17 @@ class ThreadData:
         return value_type, tuple(converted)
 
     def __extract_mlir_values__(self) -> list[Any]:
-        """Carry initialized scalar lanes through CuTe control flow."""
+        """Expose one scalar IR value per item to CuTe control flow."""
         _, values = self._dynamic_values()
         return [value.ir_value() for value in values]
 
     def __new_from_mlir_values__(self, values: list[Any]) -> ThreadData:
-        """Rebuild lanes while preserving static payload and root metadata."""
+        """Rebuild a payload from CuTe control-flow results.
+
+        Require one result per item and restore dtype, alignment, and the
+        payload's common API origin. Later assignments still apply the common
+        API's dtype checks when the payload came from a common call.
+        """
         if len(values) != self.items_per_thread:
             raise ValueError(
                 "ThreadData control flow requires one value per item"
@@ -847,11 +932,15 @@ class ThreadData:
         return self._preserve_common_root(result)
 
     def _preserve_common_root(self, result: ThreadData) -> ThreadData:
+        """Preserve common API dtype checks and alignment in a new payload."""
+
         result._common_root = self._common_root
         result.alignment = self.alignment
         return result
 
     def __copy__(self) -> ThreadData:
+        """Copy the container while sharing scalar values and metadata."""
+
         result = ThreadData(
             self.items_per_thread,
             dtype=self.dtype,
@@ -861,6 +950,8 @@ class ThreadData:
         return result
 
     def __deepcopy__(self, memo: dict[int, Any]) -> ThreadData:
+        """Copy dtype and items while retaining the uninitialized sentinel."""
+
         result = ThreadData(
             self.items_per_thread,
             dtype=_deepcopy(self.dtype, memo),
@@ -874,6 +965,8 @@ class ThreadData:
         return result
 
     def _require_values(self, primitive_name: str | None) -> list[Any]:
+        """Reject incomplete payloads and report all missing item indices."""
+
         missing = [
             idx for idx, value in enumerate(self._values) if value is _UNSET
         ]
@@ -885,12 +978,14 @@ class ThreadData:
             )
             raise ValueError(
                 f"{context} requires ThreadData values to be initialized "
-                "before use; "
-                "missing index(es): " + ", ".join(str(i) for i in missing)
+                "before use; missing index(es): "
+                + ", ".join(str(i) for i in missing)
             )
         return self._values
 
     def values(self, primitive_name: str) -> tuple[Any, ...]:
+        """Return initialized items in payload order for a primitive."""
+
         return tuple(self._require_values(primitive_name))
 
     def __iter__(self) -> Iterator[Any]:
@@ -898,6 +993,13 @@ class ThreadData:
 
 
 def _is_thread_payload_candidate(value: Any) -> bool:
+    """Recognize register containers even when their extent is unknown.
+
+    A malformed vector must reach conversion diagnostics instead of falling
+    through as a scalar. Memory-backed values are candidates too, so
+    conversion can explain why an explicit load is needed.
+    """
+
     if _is_ordinary_scalar_dtype(type(value)) or _is_cutlass_dsl_dtype(
         type(value)
     ):
@@ -926,7 +1028,12 @@ def _coerce_thread_payload(
     ]
     | None = None,
 ) -> Any:
-    """Adapt a backend register payload without widening the common contract."""
+    """Adapt register payloads within the caller's common API contract.
+
+    When invoked for a delegated common operation, check its permitted payload
+    kind before considering automatic conversion. Existing ThreadData and
+    scalar values pass through; eligible register containers use from_payload.
+    """
 
     if common_root_payload_kind is not None:
         from cuda.coop._core.api._dispatch import _common_root_operation_name
@@ -978,7 +1085,12 @@ def _coerce_thread_payload(
 def _make_rmem_tensor(
     shape: Any, dtype: Any, alignment: int | None = None
 ) -> Any:
-    """Allocate CuTe register storage honoring a minimum byte alignment."""
+    """Emit register-storage allocation with a minimum byte alignment.
+
+    Use the standard allocator through 32-byte alignment. Larger requests need
+    an explicit aligned pointer type and memref allocation. The compiler may
+    still spill register values to local memory.
+    """
 
     from cutlass import cute
 

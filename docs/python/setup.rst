@@ -169,5 +169,6 @@ Next Steps
 Now that you have ``cuda-cccl`` installed, check out:
 
 * :doc:`compute/index` - Parallel computing primitives for operations on arrays or data ranges
-* :doc:`coop` - Cooperative primitives inside Numba-CUDA-MLIR or CuTe kernels (installed separately via ``cuda-coop``)
+* :doc:`coop` - Cooperative primitives inside Numba-CUDA-MLIR or CuTe kernels
+  (installed separately via ``cuda-coop``)
 * :doc:`stf` - Sequential Task Flow for CUDA (installed separately via ``cuda-stf``)

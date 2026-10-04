@@ -164,11 +164,11 @@ Numba-CUDA-MLIR:
 .. note::
 
    Numba local arrays, the ``local`` and ``shared`` namespaces, Python device
-   callbacks, and stateful Scan prefix callbacks belong to the
-   Numba-CUDA-MLIR integration. CUTLASS-qualified controls are listed in its programming guide.
-   Check the selected backend's guide before carrying a qualified call
-   between compilers. Check backend coverage before selecting Merge Sort, Radix Sort/Rank,
-   or TopK for a CuTe kernel.
+   callbacks, and stateful Scan prefix callbacks belong to the Numba-CUDA-MLIR
+   integration. CUTLASS-qualified controls are listed in its programming
+   guide. Check the selected backend's guide before carrying a qualified call
+   between compilers. Check backend coverage before selecting Merge Sort,
+   Radix Sort/Rank, or TopK for a CuTe kernel.
 
 For example, suppose you need both the exclusive sum and each tile's total.
 The qualified Scan can produce both in one call. Each thread keeps its
@@ -191,9 +191,10 @@ with a separate common API reduction, but the qualified call is useful when
 you already need a scan and want its aggregate as well.
 
 Implemented common operations follow the documented group, dtype, and
-participation requirements; see :ref:`backend operation support <coop-backend-operation-support>`. The kernels here also contain Numba
-launch and indexing code; porting a complete kernel to CuTe requires adapting
-those parts too.
+participation requirements; see :ref:`backend operation support
+<coop-backend-operation-support>`. The kernels here also contain Numba
+launch and indexing code; porting a complete kernel to CuTe requires
+adapting those parts too.
 
 Registering the compiler backend
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

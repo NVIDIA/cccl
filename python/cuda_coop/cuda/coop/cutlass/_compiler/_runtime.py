@@ -53,6 +53,12 @@ class CutlassRuntime:
 
 
 def _runtime_requirement() -> str:
+    """Describe the installed runtime and required capabilities.
+
+    Distribution metadata improves diagnostics; compatibility is established
+    by the API checks rather than by a version threshold.
+    """
+
     version = None
     distribution = None
     for candidate in _RUNTIME_DISTRIBUTIONS:
@@ -69,12 +75,13 @@ def _runtime_requirement() -> str:
     return (
         f"{detected}. Use a CUTLASS DSL runtime with scoped trace "
         "finalization, active compiler-environment ownership, exact launch "
-        "facts, and external "
-        "LTO-IR linking support."
+        "facts, and external LTO-IR linking support."
     )
 
 
 def _runtime_import_error(error: ImportError) -> CutlassRuntimeDependencyError:
+    """Classify missing, conflicting, or failing runtime imports."""
+
     missing = getattr(error, "name", None)
     if missing == "cutlass":
         return CutlassRuntimeDependencyError(
@@ -90,10 +97,9 @@ def _runtime_import_error(error: ImportError) -> CutlassRuntimeDependencyError:
     ):
         return CutlassRuntimeDependencyError(
             "conflicting-backend-runtime",
-            "cuda.coop.cutlass found a package named 'cutlass', "
-            "but it does not "
-            "provide the complete CUTLASS DSL compiler runtime; missing "
-            f"{missing!r}. Remove the conflicting package. "
+            "cuda.coop.cutlass found a package named 'cutlass', but it "
+            "does not provide the complete CUTLASS DSL compiler runtime; "
+            f"missing {missing!r}. Remove the conflicting package. "
             f"{_runtime_requirement()}",
             cause=error,
             missing=missing,
@@ -101,8 +107,7 @@ def _runtime_import_error(error: ImportError) -> CutlassRuntimeDependencyError:
     return CutlassRuntimeDependencyError(
         "transitive-runtime-import-failed",
         "cuda.coop.cutlass found the CUTLASS DSL runtime, but importing it "
-        "failed at dependency "
-        f"{missing!r}. {_runtime_requirement()}",
+        f"failed at dependency {missing!r}. {_runtime_requirement()}",
         cause=error,
         missing=missing,
     )
@@ -114,6 +119,12 @@ def _missing_capabilities(
     compiler: ModuleType,
     common: ModuleType,
 ) -> tuple[str, ...]:
+    """List missing compiler APIs without creating a DSL or trace.
+
+    Check environment ownership, exact launch facts, finalization hooks,
+    target selection, and the link-library option that the provider uses.
+    """
+
     dsl_type = getattr(cutlass_dsl, "CuTeDSL", None)
     missing: list[str] = []
     if not isinstance(dsl_type, type):
@@ -149,8 +160,11 @@ def _missing_capabilities(
 
 @functools.lru_cache(maxsize=1)
 def validate_cutlass_runtime() -> CutlassRuntime:
-    """Return CUTLASS modules with the capabilities required by
-    ``cuda.coop``.
+    """Import and validate the CUTLASS compiler APIs used by this backend.
+
+    Cache a successful result for later callers. Failures retain a
+    reason code and missing capability details; this check does not
+    compile or launch a kernel.
     """
 
     try:
@@ -164,9 +178,7 @@ def validate_cutlass_runtime() -> CutlassRuntime:
         raise CutlassRuntimeDependencyError(
             "transitive-runtime-import-failed",
             "cuda.coop.cutlass found the CUTLASS DSL runtime, but importing it "
-            "failed with "
-            f"{type(error).__name__}. "
-            f"{_runtime_requirement()}",
+            f"failed with {type(error).__name__}. {_runtime_requirement()}",
             cause=error,
             exception_type=type(error).__name__,
         ) from error
@@ -178,9 +190,8 @@ def validate_cutlass_runtime() -> CutlassRuntime:
         raise CutlassRuntimeDependencyError(
             "backend-runtime-incompatible",
             "cuda.coop.cutlass requires active compiler-environment ownership, "
-            "scoped trace finalization, exact launch facts, "
-            "architecture selection, and "
-            "link-library merging; missing: "
+            "scoped trace finalization, exact launch facts, architecture "
+            "selection, and link-library merging; missing: "
             + ", ".join(missing_capabilities)
             + f". {_runtime_requirement()}",
             missing_capabilities=missing_capabilities,
@@ -196,6 +207,8 @@ def validate_cutlass_runtime() -> CutlassRuntime:
 
 
 def raise_for_missing_cutlass_runtime(error: ImportError) -> None:
+    """Translate CUTLASS import errors while retaining unrelated errors."""
+
     missing = getattr(error, "name", None)
     if not isinstance(missing, str):
         return

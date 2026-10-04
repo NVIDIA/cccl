@@ -2,11 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Load a compiler adapter when the host requests registration.
+"""Initialize an explicitly requested compiler integration on the host.
 
-The adapter installs its compiler hooks during import. Python's import cache
-makes repeated registration calls safe and keeps compiler imports out of the
-common API's normal import path.
+Importing the qualified adapter installs its compiler hooks and validates its
+optional dependencies. The module cache makes repeated registration safe.
+Registration makes the integration available; the compiler processing a kernel
+determines how common operations are lowered.
 """
 
 from __future__ import annotations

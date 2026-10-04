@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Test CUTLASS activation in processes with fresh import and dispatch state.
+
+Import probes simulate missing or incompatible runtimes and exercise both
+import orders, explicit registration and backend coexistence. They check
+that failed activation leaves the common API usable and permits a retry.
+Loading an adapter alone must not select it outside its compiler environment.
+"""
+
 from __future__ import annotations
 
 import importlib.util
@@ -20,6 +28,14 @@ _NUMBA_AVAILABLE = importlib.util.find_spec("numba_cuda_mlir") is not None
 
 
 def _run_import_probe(script: str) -> None:
+    """Run an import scenario without this process's module cache.
+
+    Put the checkout's package first on PYTHONPATH and clear the inherited
+    auto-registration override. Individual probes can then choose registration
+    behavior explicitly. Include child output in failures so import and
+    capability diagnostics retain their original context.
+    """
+
     environment = os.environ.copy()
     environment.pop("CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION", None)
     environment["PYTHONPATH"] = os.pathsep.join(
@@ -218,6 +234,14 @@ def test_compiler_backends_coexist(first, registration):
 @pytest.mark.skipif(not _CUTLASS_AVAILABLE, reason="requires CUTLASS DSL")
 @pytest.mark.parametrize("failure", ("missing", "incompatible"))
 def test_register_retry(failure):
+    """Repair a dependency failure and register again in one process.
+
+    Both a missing import and a missing compiler capability must leave no
+    adapter module or dispatch probe installed. Restore only the broken
+    condition before retrying, so success cannot depend on reimporting the
+    common API or starting a fresh interpreter.
+    """
+
     _run_import_probe(
         f"""
         import importlib.abc

@@ -2,7 +2,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Validate per-thread values and scratch descriptors for backend calls."""
+"""Check common payload representations before a tracing backend uses them.
+
+A per-thread payload exposes a fixed extent, one dtype and indexed items.
+Structural checks keep this module independent of compiler imports.
+Read-only inputs, writable outputs and scratch descriptors have different
+requirements, so callers choose the appropriate protocol.
+
+Numeric checks accept common Python, NumPy and compiler scalar forms, then
+apply the shared dtype policy. A recognized shape alone is not enough: the
+common API still accepts only the shared dtypes and not backend-specific
+register tensors.
+"""
 
 from __future__ import annotations
 
@@ -84,7 +95,12 @@ def _normalize_alignment(alignment: SupportsIndex | None) -> int | None:
 
 
 def _validate_common_temp_storage(operation: str, value: Any) -> None:
-    """Require the common explicit temporary-storage representation."""
+    """Check that explicit scratch exposes the common descriptor fields.
+
+    This structural check does not allocate storage or validate an operation's
+    required capacity, alignment or synchronization. The backend checks those
+    requirements when it plans the call.
+    """
 
     if isinstance(value, TempStorageLike):
         return
@@ -101,7 +117,12 @@ def _validate_common_thread_data_payload(
     *,
     allow_readonly: bool = False,
 ) -> None:
-    """Require the common fixed-size payload representation."""
+    """Check for readable or writable fixed-size payload operations.
+
+    Inputs can opt into the read-only protocol; outputs require indexed
+    writes. This check covers the interface only. Separate helpers validate
+    the extent and dtype before the backend interprets individual items.
+    """
 
     protocol = _ReadableThreadDataLike if allow_readonly else ThreadDataLike
     if isinstance(value, protocol):
@@ -118,7 +139,12 @@ def _common_thread_data_extent(
     parameter: str,
     value: _ReadableThreadDataLike[Any],
 ) -> int:
-    """Return one positive trace-static common payload extent."""
+    """Return a positive payload extent known during Python tracing.
+
+    Require a host integer rather than a compiler value, and compare it
+    with the payload's reported length. Both values must agree before
+    callers compute the group tile size from them.
+    """
 
     extent = value.items_per_thread
     if isinstance(extent, bool) or not isinstance(extent, Integral):
@@ -145,7 +171,13 @@ def _common_payload_dtype(
     parameter: str,
     value: _ReadableThreadDataLike[Any],
 ) -> Any:
-    """Return the declared or item-inferred dtype for a common payload."""
+    """Read a declared dtype, or infer one from populated payload items.
+
+    Trust an explicit dtype without reading the payload. Otherwise use
+    each item's dtype attribute or Python type, rejecting mixed normalized
+    names. Call this only when the items already hold values. An untyped
+    Load output is skipped instead, so the source array can set its dtype.
+    """
 
     dtype = value.dtype
     if dtype is None and len(value) > 0:
@@ -168,7 +200,14 @@ def _common_payload_dtype(
 
 
 def _common_numeric_dtype_name(dtype: Any) -> str:
-    """Normalize a Python, NumPy, or structural compiler numeric dtype."""
+    """Describe a dtype without importing its compiler or NumPy.
+
+    Map Python int and float aliases to the common 32-bit types. Prefer an
+    explicit numeric name; integer-like compiler types can instead expose
+    width and signedness. Return other names for the policy validator to
+    reject with an operation-specific message. This helper does not establish
+    that the resulting dtype is supported.
+    """
 
     if dtype is int:
         return "int32"
@@ -208,7 +247,13 @@ def _common_numeric_dtype_name(dtype: Any) -> str:
 
 
 def _is_common_numeric_scalar(value: Any) -> bool:
-    """Return whether ``value`` has the common scalar representation."""
+    """Recognize the scalar forms checked by the common dtype policy.
+
+    Accept Python numeric literals, listed NumPy scalar types, or compiler
+    values with a positive width, dtype and callable ir_value accessor.
+    Structural recognition avoids importing the compiler. The caller must
+    still validate the dtype; this predicate does not read the device value.
+    """
 
     if type(value) in {int, float}:
         return True
@@ -241,7 +286,13 @@ def _validate_common_numeric_scalar(
     parameter: str,
     value: object,
 ) -> str:
-    """Require a numeric scalar supported by the common API."""
+    """Validate a scalar representation and return its common dtype name.
+
+    Use the value's ``dtype`` attribute when present (NumPy and compiler
+    scalars), otherwise its Python type. The shared policy rejects
+    unsupported widths and kinds before a backend can interpret the value
+    using a wider qualified contract.
+    """
 
     if not _is_common_numeric_scalar(value):
         raise TypeError(
@@ -264,7 +315,13 @@ def _validate_common_integer_value(
     parameter: str,
     value: object,
 ) -> int | None:
-    """Validate a static or compiler-owned integer in the common API."""
+    """Distinguish a static integer from a validated compiler integer.
+
+    Return a Python int for a non-Boolean Integral value so callers can check
+    its range immediately. Return None for a supported compiler integer whose
+    device value is not available during tracing. That return means range
+    checks remain for lowering; it does not mean the argument was omitted.
+    """
 
     if isinstance(value, Integral) and not isinstance(value, bool):
         return int(value)
@@ -295,7 +352,15 @@ def _validate_common_numeric_value(
     allow_readonly_thread_data: bool = False,
     require_thread_data: bool = False,
 ) -> str | None:
-    """Require one common scalar or fixed-size per-thread payload."""
+    """Validate a common scalar or fixed-size payload and return its dtype.
+
+    Callers can require a payload, accept read-only inputs, or defer dtype
+    inference for an untyped output. Every payload needs a positive static
+    extent that matches its length. For an untyped output that allows
+    deferral, return None without reading items: Load must set the dtype
+    before those slots are used. Other payloads need one supported numeric
+    dtype. Scalar inputs follow the same dtype policy.
+    """
 
     protocol = (
         _ReadableThreadDataLike

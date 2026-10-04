@@ -75,10 +75,14 @@ def _algorithm(
     items_per_thread: int = 2,
     valid_items: ArgumentBinding | None = None,
 ) -> _types.Algorithm:
-    """Materialize a Load or Store provider for one CUB algorithm and shape.
+    """Materialize a block Load or Store provider for direct compilation.
 
-    Storage-free algorithms get no scratch pointer or barrier. Others take a
-    leading scratch pointer and block synchronization.
+    Derive scratch and synchronization contracts from the algorithm. Direct,
+    striped, and vectorize need no scratch or reuse barrier. Transpose
+    algorithms use a leading scratch pointer and require block-scope
+    synchronization before scratch reuse. The generated allocation wrapper
+    emits that barrier; the wrapper that takes caller-provided scratch leaves
+    synchronization to its caller.
     """
     if valid_items is None:
         valid_items = ArgumentBinding.runtime()

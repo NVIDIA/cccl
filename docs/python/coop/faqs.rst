@@ -14,8 +14,8 @@ FAQs
 Why are there common and backend-qualified namespaces?
 ------------------------------------------------------
 
-``cuda.coop`` provides the contract shared by Numba-CUDA-MLIR and CUTLASS.
-See backend coverage for the implemented operations. Use this namespace for code
+``cuda.coop`` provides the contract shared by Numba-CUDA-MLIR and CUTLASS. See
+backend coverage for the implemented operations. Use this namespace for code
 that shares group, ``ThreadData``, and built-in operator contracts across
 compilers. Register the compiler your kernel uses on the host:
 
@@ -33,20 +33,20 @@ For CuTe kernels, register ``"cutlass"`` instead:
 
    coop.register("cutlass")
 
-The qualified namespaces, ``cuda.coop.numba_mlir`` and
-``cuda.coop.cutlass``, include their supported common operations and add
-features specific to their compiler. Numba's extensions include local-array
-payloads and device callbacks. CUTLASS adds CuTe register-tensor conversions.
-Both add operation-specific controls;
-see the :ref:`Numba comparison <coop-programming-api-choice>` and
-:ref:`CUTLASS comparison <coop-cutlass-api-choice>`.
+The qualified namespaces, ``cuda.coop.numba_mlir`` and ``cuda.coop.cutlass``,
+include their supported common operations and add features specific to their
+compiler. Numba's extensions include local-array payloads and device
+callbacks. CUTLASS adds CuTe register-tensor conversions. Both add
+operation-specific controls; see the :ref:`Numba comparison
+<coop-programming-api-choice>` and :ref:`CUTLASS comparison
+<coop-cutlass-api-choice>`.
 
 Importing a qualified namespace also registers its backend. Common and
-qualified calls for the same compiler can appear in one kernel and follow
-the shared contracts. Kernel launch syntax and other DSL code still need
-adaptation when moving between compilers; compiler-owned payloads cannot
-cross that boundary. The :ref:`operation support table <coop-backend-operation-support>` lists the
-families implemented by each backend.
+qualified calls for the same compiler can appear in one kernel and follow the
+shared contracts. Kernel launch syntax and other DSL code still need
+adaptation when moving between compilers; compiler-owned payloads cannot cross
+that boundary. See the :ref:`operation support table
+<coop-backend-operation-support>` for the families each backend implements.
 
 .. _i-only-use-numba-cuda-mlir-can-i-import-its-namespace-as-coop:
 .. _coop-faq-numba-only:
@@ -189,14 +189,17 @@ barriers automatically. See :ref:`exclusive scratch slices
 <coop-faq-exclusive-storage>` for the tradeoff between memory and reuse
 synchronization.
 
-Numba accepts explicit descriptors for its supported block primitives; see
-:ref:`Numba storage rules <coop-temp-storage>` for the complete list. CUTLASS
-currently provides storage-free block Load/Store only. See the :ref:`shared
-storage model <coop-common-storage>` and the :doc:`CUTLASS Programming Guide
-<../coop_cutlass>` for reuse rules. Numba's restrictions on combining
-cooperative backing with user static or dynamic shared arrays are specific to
-that backend. Warp operations reject explicit descriptors. The compiler
-allocates any scratch required by CUB operations.
+Explicit descriptors control scratch for Numba's supported block primitives;
+see :ref:`Numba storage rules <coop-temp-storage>` for the complete list.
+Storage-free block Load/Store accept and validate a descriptor but do not use
+it. CUTLASS currently provides storage-free block Load/Store only. See the
+:ref:`shared storage model <coop-common-storage>` and the
+:doc:`CUTLASS Programming Guide <../coop_cutlass>` for reuse rules.
+
+Numba's restrictions on combining cooperative backing with user static or
+dynamic shared arrays are specific to that backend. Warp operations reject
+explicit descriptors. The compiler allocates any scratch required by CUB
+operations.
 
 .. _coop-faq-installed-extra:
 
@@ -232,11 +235,10 @@ Does TopK return sorted results?
 No. It selects the smallest or largest keys and places them in a blocked
 output prefix without promising their order. Only the first
 ``min(k, valid_items)`` positions are defined. When keys tie at the selection
-boundary, any of the tied keys may fill the remaining positions. Pair
-variants keep each selected key attached to its value. Use a sorting
-primitive when you need ordered output.
-See the :ref:`Numba TopK example <coop-topk>` and current
-:ref:`backend operation support <coop-backend-operation-support>`.
+boundary, any of the tied keys may fill the remaining positions. Pair variants
+keep each selected key attached to its value. Use a sorting primitive when
+you need ordered output. See the :ref:`Numba TopK example <coop-topk>` and
+current :ref:`backend operation support <coop-backend-operation-support>`.
 
 .. _coop-faq-global-sort:
 

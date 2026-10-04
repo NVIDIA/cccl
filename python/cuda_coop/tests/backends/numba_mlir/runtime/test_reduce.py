@@ -6,8 +6,8 @@
 
 Host references keep the payload dtype and group boundaries explicit.
 Root-only results are observed only at the group root. Callback tests also
-check that captured values affect compiled-code reuse, and invalid-prefix
-probes isolate device traps in child processes.
+check that captured values affect compiled-code reuse. Out-of-range
+``valid_items`` probes isolate their device traps in child processes.
 """
 
 from __future__ import annotations

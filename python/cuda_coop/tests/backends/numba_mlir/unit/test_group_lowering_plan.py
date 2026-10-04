@@ -21,10 +21,11 @@ _STATIC_PROVENANCE_GLOBAL = np.int32(3)
 
 
 def _planner(function, *, arg_types, block=(64, 1, 1), ssa=False):
-    """Build a planner with exact launch facts, optionally in SSA form.
+    """Build a planner with exact launch facts.
 
-    SSA cases exercise merged reaching definitions as well as the frontend
-    form used during ordinary group planning.
+    With ``ssa=True``, first rewrite the IR so each variable is assigned once.
+    That form adds merge nodes at branch joins. Planning must still find the
+    original payload or descriptor through those merges.
     """
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 

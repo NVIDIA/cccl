@@ -2,11 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Define the shared Load and Store call signatures and memory contracts.
+"""Expose common Load and Store contracts to compiler adapters.
 
-The decorators register each function's identity and supported group kinds.
-Compiler adapters recognize these calls and generate the selected memory
-operation. The Python bodies reject calls outside a supported GPU kernel.
+Numba recognizes these registered functions during planning. A tracing backend
+executes their Python bodies, which check common selectors, payloads and
+controls before delegation. These checks keep a qualified backend's extra
+representations from silently widening the common API.
 """
 
 from __future__ import annotations
@@ -65,7 +66,19 @@ def _validate_common_load_store_options(
     offset: Any,
     temp_storage: Any,
 ) -> None:
-    """Enforce the group-dependent common overload matrix."""
+    """Check common controls before a tracing backend lowers Load or Store.
+
+    Static counts and offsets can be range-checked now. When group size is
+    known, also bound valid_items by the payload tile size; a scalar Store
+    contributes one item per member. Compiler-owned integer controls get
+    dtype checks here; generated device code checks their ranges.
+
+    Warp groups have fewer algorithms and cannot use explicit scratch.
+    Block scratch must satisfy the common descriptor protocol; required
+    capacity and reuse synchronization remain backend responsibilities.
+    With no active trace, leave these checks to the compiler that
+    recognizes the marker.
+    """
 
     if _backend_module_name() is None:
         return

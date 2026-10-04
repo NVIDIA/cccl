@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check block movement against explicit indexing and host-side references.
+
+Load and Store each have an independent direct-layout case: ordinary CuTe
+indexing performs the opposite half of the copy. Partial tiles, runtime
+controls and multidimensional blocks exercise address calculations. Final
+linked-cubin checks require global loads and stores and reject out-of-line
+calls, local or shared memory accesses, and barriers in this kernel.
+"""
+
 import importlib.util
 import math
 import re
@@ -42,6 +51,13 @@ _TILE = _THREADS * _ITEMS
 def test_direct_layout_matches_independent_oracle(
     api, dtype, operation, items_per_thread
 ):
+    """Check each operation without using its inverse as the reference.
+
+    Flatten the multidimensional block and use CuTe indexing on the other
+    side. The host checks item placement with a 97-item repeating pattern.
+    Unsigned cases use high-bit values and views that retain signedness.
+    """
+
     value_type = cutlass_dtype(dtype)
 
     @cute.kernel
@@ -102,6 +118,14 @@ def test_direct_layout_matches_independent_oracle(
 def test_partial_load_valid_items_and_explicit_default(
     api, valid, runtime_valid, default
 ):
+    """Check defined Load results while avoiding reads of an unspecified tail.
+
+    With no default, Store only the valid prefix and leave the destination's
+    zero tail intact. With a default, Store the full tile and check its padded
+    tail. Both paths load after a nonzero source offset and include empty,
+    partial, and full valid counts.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,
@@ -162,6 +186,13 @@ def test_partial_load_valid_items_and_explicit_default(
     "runtime_valid", (False, True), ids=("static", "runtime")
 )
 def test_partial_store_respects_runtime_offsets_and_tail(valid, runtime_valid):
+    """Detect writes outside the requested destination interval.
+
+    A full Load supplies known payload values. The host reference changes only
+    the valid range after the runtime offset, leaving sentinel values on both
+    sides. Static and runtime counts must preserve the same untouched region.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,
@@ -211,6 +242,13 @@ def test_partial_store_respects_runtime_offsets_and_tail(valid, runtime_valid):
 
 
 def test_runtime_load_default_and_offset_change_between_launches():
+    """Vary scalar controls while keeping the launcher's declared types fixed.
+
+    The three calls use different valid counts, defaults, and offsets. The
+    host reference uses each call's values to detect controls incorrectly
+    captured from an earlier trace or treated as fixed specialization inputs.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,
@@ -298,6 +336,14 @@ def test_scalar_store_and_payload_alignment(block, alignment):
 
 
 def test_final_cubin_eliminates_direct_providers_and_scratch(tmp_path):
+    """Inspect instructions after external providers have been linked.
+
+    Execute the copy first, then inspect each retained cubin rather than
+    intermediate provider code. Require global loads/stores and reject native
+    provider names, calls, local/shared accesses, and barriers for this direct
+    movement case.
+    """
+
     cuobjdump = shutil.which("cuobjdump")
     if cuobjdump is None:
         pytest.skip(

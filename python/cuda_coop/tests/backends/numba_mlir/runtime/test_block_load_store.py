@@ -1200,7 +1200,9 @@ def _run_invalid_runtime_valid_items_probe(
     test process, then compiles the requested operation and payload extent.
     A device trap poisons its CUDA context, so the child contains that failure.
     Return its status and output for the test's device-trap assertion. The
-    timeout bounds a stalled child; no kernel runs in the pytest worker here.
+    timeout bounds a stalled child. This helper launches nothing in the pytest
+    worker; its caller then runs a valid kernel there to check that the
+    worker's context still works.
     """
 
     operation_body = textwrap.indent(

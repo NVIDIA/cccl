@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check exact item types and scalar ranges at the native provider boundary.
+
+NumPy types, DSL types and IR values must resolve to the same numeric profile.
+Signless integer IR needs separate signedness evidence. Range checks must
+inspect wide counts before conversion to the provider's int32 ABI, so an
+invalid value cannot wrap into an apparently valid item count.
+"""
+
 from importlib import import_module
 from types import SimpleNamespace
 
@@ -84,6 +92,13 @@ def test_integer_literal_range_checks(numpy_type, dsl_type):
 def test_integer_ir_requires_signedness_or_explicit_payload_dtype(
     numpy_type, dsl_type
 ):
+    """Resolve signless IR only when another source supplies its signedness.
+
+    A signed flag identifies a standalone IR value. Without that flag, an
+    explicit ThreadData dtype supplies the missing interpretation. The width
+    alone cannot distinguish signed and unsigned provider types.
+    """
+
     width = 8 * np.dtype(numpy_type).itemsize
     signed = np.issubdtype(numpy_type, np.signedinteger)
     item = SimpleNamespace(type=f"i{width}", signed=bool(signed))
@@ -208,6 +223,13 @@ def test_valid_items_requires_integer(value):
     ],
 )
 def test_wide_valid_items_retains_original_range(dtype, value, valid):
+    """Inspect the range guard before a wide count reaches the int32 provider.
+
+    Choose values whose low bits could look valid after narrowing. Read the
+    emitted select's condition and rejected sentinel, then verify the MLIR
+    module. This checks constructed IR; it does not launch a device trap.
+    """
+
     with ir.Context(), ir.Location.unknown():
         module = ir.Module.create()
         with ir.InsertionPoint(module.body):
@@ -216,7 +238,7 @@ def test_wide_valid_items_retains_original_range(dtype, value, valid):
         condition = select.operands[0].owner.attributes["value"]
         assert bool(ir.IntegerAttr(condition).value) is valid
         # An invalid wide count reaches the provider as its rejected sentinel,
-        # even when its low 32 bits would be a valid tile count.
+        # even when its low 32 bits would be a valid item count.
         fallback = select.operands[2].owner.attributes["value"]
         assert ir.IntegerAttr(fallback).value == -1
         assert module.operation.verify()
