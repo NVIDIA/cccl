@@ -396,6 +396,11 @@ def provider_topk(
 ):
     """Emit selection with independently typed key and value outputs.
 
+    The qualified TopK entry point calls this during tracing after choosing
+    min/max and keys/pairs form. The result allocates as many slots as the
+    input so a runtime k can vary without changing the return shape. Only
+    items belonging to the selected prefix are defined.
+
     Resolve initialized payloads, retain static counts in the request, and
     carry runtime counts as Int64. Allocate aligned register outputs and
     register exact deferred scratch before the call. Return fresh ThreadData
@@ -403,6 +408,31 @@ def provider_topk(
 
     Restore queued session state on failure. Emitted IR and register
     allocations are outside that rollback.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        Complete one-dimensional block participating in selection.
+    launch : LaunchFacts
+        Exact compiler-provided dimensions for shared planning.
+    keys : ThreadData
+        Initialized per-thread keys.
+    values : ThreadData or None
+        Optional associated values with the same item count as keys.
+    selection : str
+        Normalized min or max selector.
+    k : integer
+        Requested selected-item count across the whole block, static or
+        runtime.
+    valid_items : integer or None
+        Input-prefix length across the block. None selects the full tile.
+    temp_storage : TempStorage or None
+        Optional descriptor for the block's deferred scratch allocation.
+
+    Returns
+    -------
+    ThreadData or tuple of ThreadData
+        Fresh key payload, or key/value payload pair, with input item counts.
     """
 
     payloads = [keys] if values is None else [keys, values]
