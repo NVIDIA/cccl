@@ -9,9 +9,10 @@
 CUTLASS Programming Guide
 =========================
 
-Use ``cuda.coop`` inside a CuTe kernel to load a tile, reduce or scan its
-values, rearrange, sort, or select items, and store the result. The CUTLASS
-backend implements these primitives with CUB.
+Use ``cuda.coop`` inside a CuTe kernel for the cooperative primitives
+documented below. The CUTLASS backend implements each supported operation with
+CUB; see :ref:`backend operation support
+<coop-backend-operation-support>`.
 
 Each thread keeps its items in a ``ThreadData`` object. ``load`` fills that
 object and returns ``None``; ``store`` writes its items to memory. The examples
@@ -87,7 +88,8 @@ qualified imports perform that registration directly.
      - Adds scalar and register-tensor inputs, floating-point Sort keys,
        striped Sort results, and Rank bin prefixes; see :ref:`coop-cutlass-radix`.
    * - TopK
-     - Block minimum or maximum keys/pairs with common count and scratch controls.
+     - Block minimum or maximum keys/pairs with common count and scratch
+       controls.
      - Also accepts CuTe register tensors and returns fresh ``ThreadData``;
        see :ref:`coop-cutlass-topk`.
 

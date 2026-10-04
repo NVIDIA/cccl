@@ -2,6 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Lower TopK plans to calls into a generated C++ wrapper.
+
+CUB has no public BlockTopK class. A shared ``cub::BlockTopKCoop`` shim wraps
+``cub::detail::block_topk``. It has one method for each min/max, keys/pairs,
+and full/partial-tile form, and it checks counts before CUB narrows them to
+``int``. The wrapper copies input items into local arrays, so CUB can select
+in place without changing the caller's payloads. Scratch is deferred: its
+shared-memory address and size are filled in later, after a probe measures
+the exact C++ ``TempStorage`` size and alignment.
+"""
+
 import hashlib
 from dataclasses import dataclass, replace
 from enum import Enum
@@ -37,6 +48,14 @@ _resolve_type = _types.make_provider_type_resolver(
 
 
 def _count_binding(value, name, *, optional=False):
+    """Classify a required or optional TopK count.
+
+    Python and NumPy integers are static and stay in the plan. CuTe DSL
+    integers are runtime values. Omit only an optional count. Reject Boolean
+    and Enum values. Runtime types exclude unsigned 64-bit values so Int64
+    carries every accepted count without loss.
+    """
+
     if optional and value is None:
         return ArgumentBinding.omitted()
     if isinstance(value, (bool, np.bool_, Enum)):
@@ -70,6 +89,17 @@ def _make_topk_plan(
     valid_items,
     temp_storage=None,
 ):
+    """Plan selection and attach the block scratch policy.
+
+    Shared planning checks the one-dimensional block, tile size, and static
+    count bounds. Each count stays static or runtime: static values are
+    embedded in the wrapper, runtime values become 64-bit parameters, and an
+    omitted ``valid_items`` selects the full-tile method. Scratch must match
+    CUB's exact ``TempStorage`` layout. A caller descriptor supplies capacity,
+    minimum alignment, sharing, and ``auto_sync``. Without it, the compiler
+    allocates scratch and adds a block barrier before reuse.
+    """
+
     operation = GroupTopKSemantics(
         key_dtype=key_type,
         value_dtype=value_type,
@@ -113,10 +143,24 @@ def _make_topk_plan(
 
 @dataclass(frozen=True, eq=False)
 class _CubTopKRequest:
+    """Identify a checked TopK wrapper and its scratch requirement.
+
+    The artifact key controls deduplication and symbol identity. Key/value
+    types and per-thread result extents must match the planned selection; the
+    full-size result allocation does not make its unselected tail valid.
+    """
+
     plan: GroupLoweringPlan
     kind: str = "cub_group_topk"
 
     def __post_init__(self):
+        """Check the selected C++ method, payload types, and scratch policy.
+
+        Match min/max, keys/pairs, and full/partial variants to the plan.
+        Require one-dimensional template dimensions and matching result
+        dtypes/extents. Check the exact scratch layout and its reuse barrier.
+        """
+
         self.plan.require_supported()
         if (
             self.plan.target is not GroupLoweringTarget.CUB_BLOCK
@@ -202,6 +246,8 @@ class _CubTopKRequest:
 
     @property
     def cpp_type(self):
+        """Spell the C++ type used by calls and layout probes."""
+
         values = []
         for name, value in self.implementation.ordered_template_arguments:
             if (
@@ -217,10 +263,14 @@ class _CubTopKRequest:
 
     @property
     def scratch_requirement_key(self):
+        """Key layout probes by their CUB storage type."""
+
         return "cub_topk_storage", self.cpp_type
 
     @property
     def symbol_name(self):
+        """Hash the complete plan identity into a wrapper symbol."""
+
         digest = hashlib.sha256(
             repr(self.plan.artifact_key).encode()
         ).hexdigest()[:16]
@@ -237,6 +287,17 @@ class _CubTopKRequest:
 
 
 def _render_topk(request):
+    """Render copied inputs, wide count arguments, and output pointers.
+
+    Embed static counts in the call and pass runtime counts as signed 64-bit
+    values. An omitted valid count becomes the tile size. The shared C++ class
+    checks bounds before narrowing and skips selection for zero counts.
+
+    After checking scratch size and alignment, call the selected
+    ``BlockTopKCoop`` method and apply the configured reuse barrier. Copy the
+    local arrays to separate outputs; only the selected prefix is defined.
+    """
+
     request.__post_init__()
     p = request.operation
     params, inputs, outputs = [], [], []
@@ -320,6 +381,8 @@ _rendering.register_bundle_renderer(
 
 
 def _typed_item(value, dtype):
+    """Convert a verified payload item to its scalar ABI dtype."""
+
     if isinstance(value, np.generic):
         value = value.item()
     converted = _types.coerce_plain_scalar(
@@ -331,6 +394,17 @@ def _typed_item(value, dtype):
 def provider_topk(
     *, group, launch, keys, values, selection, k, valid_items, temp_storage
 ):
+    """Emit selection with independently typed key and value outputs.
+
+    Resolve initialized payloads, retain static counts in the request, and
+    carry runtime counts as Int64. Allocate aligned register outputs and
+    register exact deferred scratch before the call. Return fresh ThreadData
+    with each input's dtype and extent.
+
+    Restore queued session state on failure. Emitted IR and register
+    allocations are outside that rollback.
+    """
+
     payloads = [keys] if values is None else [keys, values]
     resolved = [
         _types.resolve_thread_data_value_type(

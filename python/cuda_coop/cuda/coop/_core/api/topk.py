@@ -5,10 +5,14 @@
 """Define block TopK calls and their selected-prefix contract.
 
 The registered functions select minimum or maximum keys, optionally with
-paired values. Compiler backends preserve the input payloads and return
-new ones. The full payload shape is retained, but only the selected
-prefix is defined. Python execution raises an error because these calls
-require a GPU kernel.
+paired values. Backends preserve the inputs and return new payloads with the
+same extent. Only the selected blocked prefix is defined.
+
+Numba-CUDA-MLIR replaces these calls during compilation. CuTe tracing runs
+the bodies in Python. It checks that keys and values are numeric ThreadData
+(read-only views are allowed) and that the group is a block, then calls the
+backend. Backend lowering checks counts and plans scratch, using any supplied
+storage descriptor. Calls require an active compiler backend.
 """
 
 from __future__ import annotations

@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check TopK specialization, scratch contracts, and failed-call cleanup.
+
+Plan tests run on the host without tracing a kernel. They distinguish
+full-tile and explicit-prefix wrappers, validate static count ranges, and
+check that scratch registration failure restores queued session state
+without changing input keys.
+"""
+
 import inspect
 from dataclasses import replace
 from types import SimpleNamespace
@@ -74,6 +82,13 @@ def test_required_k_cannot_be_omitted():
 
 
 def test_full_prefix_identity():
+    """Keep the explicit-prefix wrapper distinct from the full-tile wrapper.
+
+    An explicit prefix selects CUB's partial-tile path even when it equals the
+    tile size, so it needs its own method and wrapper symbol. Both requests
+    share one BlockTopKCoop helper definition, emitted before the wrappers.
+    """
+
     full, explicit = _request(), _request(valid_items=128)
     assert full.symbol_name != explicit.symbol_name
     assert full.implementation.method_name == "min_keys_full"
@@ -136,6 +151,13 @@ def test_common_signature(name):
 
 
 def test_failed_storage_restores_session(monkeypatch):
+    """Restore saved session state if deferred scratch registration fails.
+
+    Stubs replace request registration and register-tensor creation, so the
+    call reaches scratch registration without tracing a CuTe kernel. The fault
+    must restore the exact saved snapshot and leave the input keys unchanged.
+    """
+
     saved, restored = object(), []
     monkeypatch.setattr(_state, "snapshot_active_session_state", lambda: saved)
     monkeypatch.setattr(_state, "restore_active_session_state", restored.append)

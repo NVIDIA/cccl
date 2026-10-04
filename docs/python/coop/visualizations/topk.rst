@@ -83,10 +83,10 @@ you need an ordered result. See :ref:`the TopK ordering FAQ
 Using TopK in a kernel
 ----------------------
 
-This Numba example selects eight largest keys from a partial input tile.
-Each value is the key's original position. The kernel uses
-64 threads and an ``items_per_thread`` argument; the host verifies
-membership and pair association without depending on output order.
+This Numba example selects eight largest keys from a partial input tile. Each
+value is the key's original position. The kernel uses 64 threads and an
+``items_per_thread`` argument; the host verifies membership and pair
+association without depending on output order.
 
 .. literalinclude:: ../../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_topk_examples.py
    :language: python
@@ -103,11 +103,11 @@ must store only ``min(k, valid_items)`` results, using that value as
 Store's ``valid_items``. The result payloads retain the input extent, so
 their size alone does not tell you which slots are safe to read.
 
-The CuTe example below selects both minimum keys and maximum pairs. It uses
-64 threads and defaults to two items per thread, ``k=31``, and
-``valid_items=93``. ``module``
-selects the common or CUTLASS-qualified API; the qualified path converts
-register payloads explicitly. :download:`Download the complete CuTe example
+The CuTe example below selects both minimum keys and maximum pairs. It uses 64
+threads and defaults to two items per thread, ``k=31``, and
+``valid_items=93``. ``module`` selects the common or CUTLASS-qualified API;
+the qualified path converts register payloads explicitly. :download:`Download
+the complete CuTe example
 <../../../../python/cuda_coop/examples/cutlass/topk.py>` for setup and the
 order-independent host checks.
 
@@ -128,10 +128,9 @@ contract. The four :func:`CUTLASS-qualified variants
 warp and logical-warp TopK are unsupported.
 
 Scratch is allocated automatically, or supplied through ``temp_storage``.
-Follow the descriptor's synchronization requirements before reusing it.
-See the :ref:`Numba <coop-topk>` and :ref:`CUTLASS <coop-cutlass-topk>`
-guides for scratch reuse and the API reference for supported dtypes and
-runtime count types. The explorer omits
-floating-point special values: positive and negative zero compare as
-equal while retaining their original bits, and NaNs have no guaranteed
-numeric ordering.
+Follow the descriptor's synchronization requirements before reusing it. See
+the :ref:`Numba <coop-topk>` and :ref:`CUTLASS <coop-cutlass-topk>` guides for
+scratch reuse and the API reference for supported dtypes and runtime count
+types. The explorer omits floating-point special values: positive and negative
+zero compare as equal while retaining their original bits, and NaNs have no
+guaranteed numeric ordering.

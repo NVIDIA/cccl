@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Preserve independent key/value types in TopK payload results.
+
+Every overload returns ThreadData, including for CuTe register inputs.
+Register overloads return ``ThreadData[Any]`` because their element type is
+known only during kernel tracing. Only the selected blocked prefix of each
+result is defined at runtime.
+"""
+
 from typing import Any, TypeAlias, overload
 
 import numpy as np

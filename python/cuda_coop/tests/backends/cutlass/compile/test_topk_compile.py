@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile TopK payload and count profiles without launching kernels.
+
+Each kernel targets SM80 and uses typed null pointers, so compilation does
+not need a GPU. Runtime counts come from one Int64 kernel parameter. This
+compiles the 64-bit path whose device checks precede narrowing to int;
+static bounds are checked while building the plan. A store gives the first
+result item a use. Undefined result positions are harmless here because
+the kernel never runs.
+"""
+
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
@@ -29,6 +39,13 @@ def _compile(
     bad=None,
     static_k=None,
 ):
+    """Compile one selection form while varying one input constraint.
+
+    The helper covers keys or pairs through either frontend. Invalid profiles
+    change group, count, or payload properties. Register tensors are accepted
+    only by the qualified frontend. The null pointer is never used at runtime.
+    """
+
     operation = getattr(api, f"topk_{mode}_{'pairs' if pairs else 'keys'}")
 
     @cute.kernel
