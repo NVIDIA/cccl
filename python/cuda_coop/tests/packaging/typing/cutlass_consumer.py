@@ -1085,6 +1085,12 @@ def check_cutlass_neighbors() -> None:
 
 
 def check_cutlass_histogram() -> None:
+    """Infer counters from their selector independently of the sample dtype.
+
+    NumPy and CuTe selectors retain their annotation type. The default and
+    Python ``int`` both select CuTe Int32, even for register-payload samples.
+    """
+
     block = cutlass_coop.this_block()
     samples = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.uint8)
     storage = cutlass_coop.TempStorage(alignment=16)

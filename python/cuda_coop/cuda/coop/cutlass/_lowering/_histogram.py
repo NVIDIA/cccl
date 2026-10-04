@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Turn ``cuda.coop.cutlass.histogram`` into generated C++ calls to CUB.
+
+CUB writes a block-wide histogram into shared memory. ``cuda.coop`` returns
+counts in registers instead. The C++ adapter therefore keeps CUB scratch and
+one shared counter per bin in a single storage type. Each call zeroes those
+counters, counts the samples, and distributes bins round-robin across threads.
+A C++ probe reports the storage type's size and alignment so the compiler can
+allocate matching scratch. Sample count and output extent are independent.
+"""
+
 import hashlib
 from dataclasses import dataclass, replace
 
@@ -45,6 +55,13 @@ def _make_histogram_plan(
     algorithm,
     temp_storage=None,
 ):
+    """Plan sample/counter types, bin coverage, and exact scratch.
+
+    Shared planning checks the one-dimensional block and static capacity
+    limits. Attach requested scratch size, alignment, sharing, and reuse
+    policy, or retain automatic allocation with a trailing block barrier.
+    """
+
     operation = GroupHistogramSemantics(
         sample_type, items, bins, bins_per_thread, counter_type, algorithm
     )
@@ -81,10 +98,26 @@ def _make_histogram_plan(
 
 @dataclass(frozen=True, eq=False)
 class _CubHistogramRequest:
+    """Describe one specialized CUB histogram wrapper call.
+
+    The plan artifact key controls equality, hashing, and the wrapper symbol.
+    Block width, items per thread, sample and counter dtypes, bin count,
+    output extent, and algorithm select the C++ type, its scratch layout, and
+    the result contract.
+    """
+
     plan: GroupLoweringPlan
     kind: str = "cub_group_histogram"
 
     def __post_init__(self):
+        """Check that the plan matches the CUB histogram wrapper contract.
+
+        Require a CUB block plan, supported sample and counter dtypes,
+        matching template arguments and method, exact scratch, and one counter
+        result of the planned extent. These checks cannot see runtime values.
+        Callers must keep each sample in [0, bins).
+        """
+
         self.plan.require_supported()
         if (
             self.plan.target is not GroupLoweringTarget.CUB_BLOCK
@@ -139,6 +172,8 @@ class _CubHistogramRequest:
 
     @property
     def cpp_type(self):
+        """Spell the C++ type used by calls and layout probes."""
+
         arguments = [
             _types.TYPE_SPECIFICATIONS[value].cpp_type
             if name in {"SampleT", "CounterT"}
@@ -151,10 +186,14 @@ class _CubHistogramRequest:
 
     @property
     def scratch_requirement_key(self):
+        """Key scratch uses by adapter type to share one layout probe."""
+
         return "cub_histogram_storage", self.cpp_type
 
     @property
     def symbol_name(self):
+        """Hash the complete plan identity into a wrapper symbol."""
+
         digest = hashlib.sha256(
             repr(self.plan.artifact_key).encode()
         ).hexdigest()[:16]
@@ -171,6 +210,20 @@ class _CubHistogramRequest:
 
 
 def _render_histogram(request):
+    """Write the C++ wrapper that calls the shared histogram adapter.
+
+    The wrapper receives samples by value, the scratch's 32-bit shared
+    address, byte size, and auto-sync flag, and a pointer to register
+    counters. It traps if the scratch is too small or misaligned. Then it
+    converts the shared address to a generic pointer and calls the adapter.
+    The adapter zeroes the counters, runs CUB, and synchronizes before reading
+    bins into each thread's outputs.
+
+    The optional trailing barrier protects later scratch reuse. Disabling it
+    leaves the adapter's internal barrier intact. Copy every output slot,
+    including the adapter's zeros for slots beyond the bin count.
+    """
+
     request.__post_init__()
     operation = request.operation
     sample_cpp = _types.TYPE_SPECIFICATIONS[operation.sample_dtype].cpp_type
@@ -217,6 +270,8 @@ def _render_histogram(request):
 
 
 def _scratch_probe(request):
+    """Probe the combined CUB scratch and intermediate counter layout."""
+
     return _rendering.make_scratch_layout_probe(
         request.scratch_requirement_key,
         f"typename {request.cpp_type}::TempStorage",
@@ -247,6 +302,18 @@ def provider_histogram(
     algorithm,
     temp_storage,
 ):
+    """Emit a fresh histogram with independently typed counters.
+
+    Resolve sample items and default the counter dtype to Int32. Allocate
+    register counters with bins_per_thread slots and the samples' alignment.
+    Record the wrapper request and its scratch use in the compile session,
+    which builds the C++ later, then emit the call. Keep an explicit counter
+    selector as the returned ThreadData dtype.
+
+    If recording or emission fails, restore the session's earlier requests and
+    scratch uses. Emitted IR and the register tensor are not undone.
+    """
+
     sample_type, values = _types.resolve_thread_data_value_type(
         samples,
         allowed=_SAMPLES,

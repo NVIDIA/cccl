@@ -4,9 +4,11 @@
 
 """Compile payload reconstruction across dynamic loops and nested CuTe calls.
 
-A typed null pointer and explicit SM80 target permit compilation without a
-launch. Each provider dtype must survive repeated extraction and rebuilding of
-ThreadData values while retaining its declared alignment and item type.
+A typed null pointer and an explicit SM80 target let the kernels compile
+without a launch. For each supported element dtype, tracing must rebuild
+ThreadData from the compiler's MLIR values after a runtime loop and a nested
+JIT call, while preserving its declared alignment and item type. The tests
+also convert one TensorSSA vector both inside and after a loop.
 """
 
 import pytest
@@ -78,6 +80,13 @@ def test_dynamic_payload(dtype, api):
 
 
 def test_tensor_ssa_conversion_across_regions():
+    """Convert one SSA vector inside and after a runtime loop.
+
+    The outer vector remains in use after both conversions. This exposes a
+    conversion that incorrectly reuses values defined only inside the loop.
+    An SM80 target and null pointer check compilation without execution.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer, iterations: cutlass.Int32):
         payload = cutlass_coop.ThreadData.from_values(

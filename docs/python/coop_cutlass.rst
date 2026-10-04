@@ -991,7 +991,9 @@ uint64; counters independently use int32, uint32, int64, or uint64.
 Each thread receives ``bins_per_thread`` counters in striped order: thread
 ``t`` owns bins ``t + i * block_size``. The output capacity must cover every
 bin, and slots beyond ``bins`` contain zero. Use striped Store to write the
-counters in bin order, as in this tested example:
+counters in bin order. In this example, 64 threads each receive two counters
+to cover 65 bins. The first 65 output positions hold counts, and the other
+63 positions are zero:
 
 .. literalinclude:: ../../python/cuda_coop/tests/backends/cutlass/runtime/test_histogram.py
    :language: python
