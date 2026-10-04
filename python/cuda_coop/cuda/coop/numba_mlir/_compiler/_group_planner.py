@@ -2179,5 +2179,7 @@ class _GroupPlanning:
 
 __all__ = [
     "GroupRewriteError",
+    "_GroupCallPlanner",
+    "_GroupPlanning",
     "has_group_markers",
 ]

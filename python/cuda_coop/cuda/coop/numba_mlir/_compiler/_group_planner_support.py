@@ -110,3 +110,13 @@ def _is_common_root_operation(function: object, operation: str) -> bool:
     return (
         _portable_dispatch._portable_group_operation_name(function) == operation
     )
+
+
+__all__ = [
+    "_GROUP_CONSTRUCTORS",
+    "_NAME_COUNTER",
+    "GroupRewriteError",
+    "_group_operation_name",
+    "_is_common_root_operation",
+    "ir",
+]

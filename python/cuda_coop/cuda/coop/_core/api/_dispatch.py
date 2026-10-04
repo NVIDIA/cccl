@@ -163,4 +163,6 @@ def _validate_portable_operation_group(
 
 __all__ = [
     "_portable_group_operation",
+    "_portable_group_operation_name",
+    "_validate_portable_operation_group",
 ]

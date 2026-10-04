@@ -60,4 +60,9 @@ def ThreadData(
 ) -> ThreadDataLike[Any]:
     """Construct storage using a compiler dtype token or inferred dtype."""
 
-__all__ = ["ThreadData", "local", "shared"]
+__all__ = [
+    "ThreadData",
+    "_normalize_thread_data_alignment",
+    "local",
+    "shared",
+]

@@ -784,4 +784,5 @@ class _CallRewriting:
 __all__ = [
     "CoopSinglePhaseRewrite",
     "CoopSinglePhaseRewriteError",
+    "_CallRewriting",
 ]
