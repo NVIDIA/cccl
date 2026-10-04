@@ -137,6 +137,8 @@ coop.WarpStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018
 
 
 def select_left(left: np.int32, right: np.int32) -> np.int32:
+    """Provide a callback for unsupported namespace and overload checks."""
+
     del right
     return left
 

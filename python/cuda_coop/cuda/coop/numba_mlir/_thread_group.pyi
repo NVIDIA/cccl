@@ -53,7 +53,7 @@ class ThreadGroup(
     def rank(
         self: ThreadGroup[_PhysicalGroupKind], level: ThreadLevel = "thread"
     ) -> np.uint32 | np.uint64:
-        """Return rank using the outer C++ hierarchy boundary's product type."""
+        """Return rank with the default unsigned hierarchy dtype."""
     @overload
     def rank(
         self: ThreadGroup[Literal["threads_within_warp"]],
@@ -76,9 +76,7 @@ class ThreadGroup(
     def count(
         self: ThreadGroup[_PhysicalGroupKind], level: ThreadLevel = "thread"
     ) -> np.uint32 | np.uint64:
-        """Return count using the outer C++ hierarchy boundary's product
-        type.
-        """
+        """Return count with the default unsigned hierarchy dtype."""
     @overload
     def count(
         self: ThreadGroup[Literal["threads_within_warp"]],

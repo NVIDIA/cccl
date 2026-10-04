@@ -432,6 +432,13 @@ def test_implicit_oversized_storage_rejects_user_static_shared_allocation(
 @pytest.mark.parametrize("kind", ["block", "mapped_warps", "cluster"])
 @pytest.mark.parametrize("shape", [0, 128], ids=["dynamic", "static"])
 def test_cudax_reduce_shared_memory_coexistence(kind, shape):
+    """Check shared-memory compatibility after inlining a user allocation.
+
+    CUDAX may use internal static shared state without an external scratch
+    operand. A dynamic user array would alias that state in this compiler;
+    separate static user allocations remain supported.
+    """
+
     @cuda.jit(device=True)
     def allocate():
         return cuda.shared.array(shape, types.int32)
