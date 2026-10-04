@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check radix ordering, stable ranks, exact key bits, and input preservation.
+
+Host checks transform keys into ordered digits before selecting the bit
+window. Stable permutations distinguish equal digits by input order. Byte
+comparisons detect changes to NaN payloads and signed zeros that numeric
+equality cannot distinguish. Blocks must produce independent tile results.
+"""
+
 from contextlib import ExitStack
 
 import numpy as np
@@ -26,6 +34,13 @@ _INTEGER_KEYS = (np.int32, np.uint32, np.int64, np.uint64)
 
 
 class _Readonly:
+    """Expose a payload snapshot that has no item-assignment method.
+
+    Extent, dtype, and alignment stay visible; the dtype may still be None.
+    Both APIs can copy this input, infer its dtype, and return a separate
+    result without writing to the input.
+    """
+
     def __init__(self, source):
         self.items_per_thread = source.items_per_thread
         self.dtype = source.dtype
@@ -40,6 +55,13 @@ class _Readonly:
 
 
 def _keys(dtype, size):
+    """Build keys with numeric boundaries and repeated bit patterns.
+
+    Integer inputs include repeated extrema. Floating inputs include signed
+    zeros, infinities, finite extrema, and distinct NaN payloads. Repeated and
+    shuffled patterns expose unstable ties or changes to the original bits.
+    """
+
     dtype = np.dtype(dtype)
     result = values_for(dtype, size, shift=19)
     if dtype.kind == "f":
@@ -86,6 +108,14 @@ def _keys(dtype, size):
 
 
 def _digits(keys, begin, end):
+    """Extract a bit window from ordered host key representations.
+
+    The transform matches CUB's ordered key representation. Signed integers
+    flip the sign bit. Negative floating-point values invert all bits; other
+    values flip only the sign bit. Both zeros use the same ordering key, while
+    the original arrays keep their distinct bits for the result comparison.
+    """
+
     unsigned = np.dtype(f"uint{keys.dtype.itemsize * 8}")
     bits = keys.view(unsigned).copy()
     sign = unsigned.type(1 << (keys.dtype.itemsize * 8 - 1))
@@ -99,17 +129,35 @@ def _digits(keys, begin, end):
 
 
 def _permutation(keys, begin, end, descending):
+    """Sort selected digits while retaining input order for equal digits.
+
+    For descending order, sorting complemented digits reverses the digit order
+    but keeps equal digits in input order. Reversing an ascending result would
+    also reverse those equal-digit runs.
+    """
+
     digits = _digits(keys, begin, end)
     return np.argsort(~digits if descending else digits, kind="stable")
 
 
 def _assert_bits(actual, expected):
+    """Compare exact representations, including NaN payloads and signed zeros.
+
+    Viewing bytes avoids numeric equality rules that lose these distinctions.
+    """
+
     np.testing.assert_array_equal(
         actual.view(np.uint8), expected.view(np.uint8)
     )
 
 
 def _check_result(result, source, dtype, items_per_thread, scalar, alignment):
+    """Check returned scalar types or independent payload ownership.
+
+    Payload results must retain their extent, dtype, and alignment while using
+    a different object from the input. Scalar forms return the typed value.
+    """
+
     if scalar:
         assert isinstance(result, dtype)
     else:
@@ -146,6 +194,14 @@ def _run_sort(
     alignment=64,
     chain=False,
 ):
+    """Check each block's stable sort and key/value permutation independently.
+
+    Plain CuTe supplies inputs and collects blocked or striped output. Byte
+    comparisons check sorted keys, associated values, and original payloads.
+    Runtime-loop cases repeat the same input. Chained cases sort the result
+    again to check composition and storage reuse.
+    """
+
     key_type, value_type = cutlass_dtype(dtype), cutlass_dtype(value_dtype)
     items_per_thread = 1 if scalar else items_per_thread
     threads = int(np.prod(block))
@@ -426,6 +482,15 @@ def _run_rank(
     reuse=False,
     chain=False,
 ):
+    """Compare stable ranks and digit prefixes independently for each block.
+
+    A rank counts keys whose digits come first in the requested order, plus
+    earlier keys with the same digit. Chained cases sort the returned ranks
+    and require every tile index exactly once. Prefix slots keep ascending
+    bin ownership in both directions; only their counts change. Slots beyond
+    the bin count have no output assertion.
+    """
+
     key_type = cutlass_dtype(dtype)
     items_per_thread = 1 if scalar else items_per_thread
     threads = int(np.prod(block))
@@ -617,6 +682,13 @@ def test_common_integral_sort(dtype, descending, pairs, items_per_thread):
 def test_qualified_float_bits_and_stable_ties(
     dtype, descending, striped, selected
 ):
+    """Keep floating key bits and stable ties through both output layouts.
+
+    Full-key and high-byte windows exercise different equal-digit groups. The
+    same stable oracle checks ascending and descending output, including the
+    repeated signed zeros and distinct NaN payloads supplied by the harness.
+    """
+
     width = np.dtype(dtype).itemsize * 8
     _run_sort(
         cutlass_coop,
@@ -709,6 +781,13 @@ def test_rank_stability_and_sign_window(
 )
 @pytest.mark.parametrize("descending", (False, True))
 def test_prefix_ascending_bin_ownership(bits, block, descending):
+    """Distribute digit bins across per-thread prefix payloads.
+
+    Different digit widths need one or several slots per thread. Descending
+    order changes the number of preceding keys, but slot ownership still runs
+    from the lowest bin to the highest. The output dtype is inferred as Int32.
+    """
+
     _run_rank(
         cutlass_coop,
         dtype=np.int64,

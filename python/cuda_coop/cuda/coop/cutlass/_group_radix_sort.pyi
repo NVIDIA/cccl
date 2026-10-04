@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Keep radix input shapes and result dtypes visible to type checkers.
+
+Sort preserves key/value types and scalar versus payload form. Rank returns
+Int32 regardless of key dtype; its optional prefix is a writable Int32
+payload. Sort results from register inputs use ThreadData[Any], because their
+element type is known only during tracing. Sort bit bounds may be runtime
+values, while Rank controls are static.
+"""
+
 from typing import Any, TypeAlias, overload
 
 import numpy as np

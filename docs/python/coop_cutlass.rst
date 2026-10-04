@@ -750,8 +750,8 @@ up to 32 bits. Counts outside the tile range are rejected before narrowing.
 A typed sentinel must match the key dtype exactly. For ordinary Python
 literals, integer keys require integers within the key dtype's range.
 Floating keys accept integer or floating literals within range, and allow
-infinite bounds. ``descending`` is a compile-time Boolean. Counts and
-sentinels must be uniform within each group.
+infinite bounds; a NaN sentinel is rejected. ``descending`` is a compile-time
+Boolean. Counts and sentinels must be uniform within each group.
 
 Block sorts accept ``temp_storage`` with the size, alignment, sharing, and
 reuse rules described above. Warp sorts manage independent scratch per group
@@ -783,12 +783,12 @@ flattened blocked input order in both ascending and descending modes.
 These primitives require a complete physical block, including multidimensional
 blocks. Every block thread participates with identical controls and per-thread
 extents. A block tile contains at most 65,535 items. Warp and mapped groups
-are unsupported. Inputs use blocked layout,
-and array results are fresh ``ThreadData`` payloads with the same item count.
-Read-only inputs are accepted. Sort preserves the key and value dtypes;
-Rank returns signed ``cutlass.Int32`` values. The
-:doc:`Radix visualization <coop/visualizations/radix>` illustrates the relation
-between digits, ranks, and sorted positions.
+are unsupported. Inputs use blocked layout, and array results are fresh
+``ThreadData`` payloads with the same item count. Read-only inputs are
+accepted. Sort preserves the key and value dtypes; Rank returns signed
+``cutlass.Int32`` values. The :doc:`Radix visualization
+<coop/visualizations/radix>` illustrates the relation between digits, ranks,
+and sorted positions.
 
 The common API accepts payloads of ``int32``, ``uint32``, ``int64``, or
 ``uint64`` keys. Pair values may use any of the ten numeric dtypes supported

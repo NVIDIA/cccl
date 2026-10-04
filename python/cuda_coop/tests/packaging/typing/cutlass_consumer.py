@@ -824,6 +824,13 @@ def check_cutlass_merge_sort_surface() -> None:
 
 
 def check_cutlass_radix_surface(scalar: Float32, value: Int16) -> None:
+    """Separate type-preserving Sort outputs from signed Int32 Rank outputs.
+
+    Scalar and payload forms retain their shape. Register inputs can lose
+    static element detail for Sort, but Rank has a fixed result dtype. Bin
+    prefixes are a separate writable output with their own per-thread extent.
+    """
+
     block = cutlass_coop.this_block()
     keys = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.int32)
     values = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.float64)

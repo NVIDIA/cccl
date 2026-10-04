@@ -5,9 +5,11 @@
 """Represent a thread's fixed payload as CuTe scalar expressions.
 
 The Python container supports static indexing and in-place item replacement.
-Register conversion methods copy values. Control-flow hooks require every item
-to be initialized. They pass one MLIR value per item into CuTe ``if`` and loop
-regions, then rebuild the payload from the region results.
+Register conversion methods copy values. When a kernel changes a payload in
+a runtime ``if`` or loop, CuTe passes its items through the generated compiler
+IR region. The control-flow hooks split the payload into one IR scalar per
+item and rebuild it from the region results. Every item must be initialized
+first because an unset slot has no IR value to pass.
 
 Payloads created through the common ``cuda.coop`` API retain that origin
 during reconstruction. This keeps the common API dtype checks active on
@@ -17,9 +19,9 @@ Module helpers decide which arguments are register payloads. Qualified
 calls convert CuTe register tensors and vectors to ThreadData; common calls
 reject them.
 
-Merge Sort copies each input into a new ThreadData before lowering, so
-read-only inputs work. Lowerings allocate register outputs with the
-payload's alignment when one is set.
+Merge Sort, Radix Sort, and Radix Rank copy readable input payloads into new
+ThreadData before lowering, so read-only inputs work. Lowerings allocate
+register outputs with the payload's alignment when one is set.
 """
 
 from __future__ import annotations
@@ -1179,14 +1181,15 @@ def _coerce_thread_payload(
 
 
 def _snapshot_readable_payload(value, *, name, primitive, allow_scalar=False):
-    """Copy readable input items so sorting can preserve the caller's payload.
+    """Copy readable input items so Sort and Rank preserve the caller's payload.
 
     Common calls, and any input with the readable ThreadData interface,
     pass the shared payload checks. Copy their items, dtype, extent, and
     optional alignment. Qualified register containers use the usual adapter.
     With ``allow_scalar=True``, other qualified inputs pass through for the
     operation to validate as scalars. Common calls still require a fixed-size
-    payload. Read-only inputs work because sorting writes fresh results.
+    payload. Read-only inputs work because the copy only reads items and the
+    operation writes fresh results.
     """
 
     from cuda.coop._core.api._dispatch import _common_root_operation_name

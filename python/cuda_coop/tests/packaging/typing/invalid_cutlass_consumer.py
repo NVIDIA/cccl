@@ -10,7 +10,8 @@ dtypes, synchronization, payload forms, and primitive groups and controls.
 Exchange distinguishes value, rank, and flag types; Shuffle separates
 payload shifts from scalar offset and rotate calls. Merge Sort checks
 paired partial-tile controls and rejects backend-specific input forms from
-common calls.
+common calls. Radix checks integer Rank keys, writable bin-prefix outputs,
+and the different controls accepted by Sort, Rank, and common calls.
 """
 
 from __future__ import annotations
@@ -382,6 +383,8 @@ common.radix_sort_keys(block, scalar)  # expected-error: [arg-type]
 
 
 class _ReadOnlyPrefix:
+    """Omit mutable item access so the checker rejects this output buffer."""
+
     items_per_thread: int = 1
     dtype: object | None = Int32
 

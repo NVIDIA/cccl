@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check radix scratch reuse, dynamic bounds, and compiler error recovery.
+
+Shared runtime harnesses supply the numerical and bitwise oracles. These
+cases vary storage policy, isolate device traps in child processes, inspect
+final linked calls, and retry after provider compilation or linking fails.
+"""
+
 import os
 import re
 import shutil
@@ -28,6 +35,13 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
 @pytest.mark.parametrize("auto_sync", (False, True))
 def test_sort_storage_reuse(sharing, auto_sync):
+    """Reuse scratch at two sort call sites across three runtime iterations.
+
+    The second sort consumes the first result. Explicit shared or exclusive
+    storage must honor either provider reuse barriers or the caller's manual
+    barriers when each call site executes again.
+    """
+
     _run_sort(
         reuse=True,
         sharing=sharing,
@@ -39,11 +53,24 @@ def test_sort_storage_reuse(sharing, auto_sync):
 
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
 def test_storage_alignment(sharing):
+    """Honor native alignment when the caller requests only one byte.
+
+    The descriptor reserves ample capacity. Successful repeated sorting checks
+    that the request is treated as a minimum for shared and exclusive storage.
+    """
+
     _run_sort(reuse=True, sharing=sharing, capacity=16384, alignment=1)
 
 
 @pytest.mark.parametrize("bits", (4, 8))
 def test_rank_reuse(bits):
+    """Reuse Rank scratch and feed its result into RadixSort.
+
+    Four- and eight-bit digits exercise different prefix payload extents. The
+    harness repeats ranking, then sorts those ranks. The result must contain
+    every tile index once.
+    """
+
     _run_rank(
         cutlass_coop, radix_bits=bits, prefix=True, reuse=True, chain=True
     )
@@ -67,6 +94,16 @@ def test_undersized_storage():
     ),
 )
 def test_invalid_runtime_bits_trap(begin, end, control):
+    """Require invalid runtime sort bounds to trap on the device.
+
+    Cases cover negative, empty, reversed, and too-wide intervals. The two
+    large Int64 bounds would narrow to valid int values if converted before
+    validation. The Uint32 case checks that an accepted unsigned runtime type
+    still reaches the range check. A trap leaves the CUDA context unusable,
+    so each case runs in a child. The parent requires a failed process and a
+    CUDA trap or launch-failure message.
+    """
+
     script = (
         "import cutlass\n"
         "from tests.backends.cutlass.runtime.test_radix import _run_sort\n"
@@ -103,6 +140,13 @@ def test_invalid_runtime_bits_trap(begin, end, control):
 
 @pytest.mark.parametrize("operation", ("sort", "rank4", "rank8"))
 def test_final_cubin(tmp_path, operation):
+    """Check radix provider inlining after the numerical harness succeeds.
+
+    Sort uses runtime bit bounds; Rank includes its optional prefix output for
+    two digit widths. Retained SASS must contain neither provider symbols nor
+    CALL instructions. No resource or barrier counts are asserted here.
+    """
+
     tool = shutil.which("cuobjdump")
     if tool is None:
         pytest.skip("cuobjdump is required for final linked code inspection")
@@ -134,6 +178,14 @@ def test_final_cubin(tmp_path, operation):
 
 @pytest.mark.parametrize("failure", ("compile", "link"))
 def test_provider_failure_retry(monkeypatch, tmp_path, failure):
+    """Check that compile or link failure leaves no active compiler context.
+
+    One injection raises during provider compilation. The other returns
+    malformed LTO IR after a real compile, forcing a link failure. The CUTLASS
+    environment manager and active ``cuda.coop`` backend must both be cleared.
+    An unpatched Rank call must then pass the full host result checks.
+    """
+
     original = _bundle.compile_bundle_source_with_layouts
     malformed = tmp_path / "malformed-radix.ltoir"
     malformed.write_bytes(b"not NVIDIA LTO IR\n")

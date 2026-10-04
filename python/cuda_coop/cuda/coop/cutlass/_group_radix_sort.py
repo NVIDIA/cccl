@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Adapt qualified radix inputs and preserve public result shapes.
+
+Sort accepts scalar or readable/register payloads and returns fresh keys and
+optional associated values. Rank returns Int32 positions and can also write a
+separate bin-prefix payload. All forms require a complete block.
+"""
+
 from cuda.coop._core.thread_group import ThreadGroup
 
 from ._temp_storage import TempStorage
@@ -9,6 +16,8 @@ from ._thread_data import ThreadData, _snapshot_readable_payload
 
 
 def _validate_group(group):
+    """Require the physical block used by CUB radix collectives."""
+
     if not isinstance(group, ThreadGroup):
         raise TypeError("cuda.coop.cutlass radix group must be a ThreadGroup")
     if group.kind != "block":
@@ -18,6 +27,12 @@ def _validate_group(group):
 
 
 def _input(value, name, primitive):
+    """Copy readable payloads and adapt register containers.
+
+    Direct ``cuda.coop.cutlass`` calls may also pass a scalar key or value.
+    Calls through the shared ``cuda.coop`` API require a readable payload.
+    """
+
     return _snapshot_readable_payload(
         value, name=name, primitive=primitive, allow_scalar=True
     )
@@ -34,6 +49,13 @@ def _sort(
     blocked_to_striped,
     temp_storage,
 ):
+    """Validate sort controls and matching key/value shapes.
+
+    Adapt operands before comparing scalar versus payload form and item count.
+    The provider then resolves independent dtypes, bit bounds, exact scratch
+    layout, and the blocked or striped output method.
+    """
+
     _validate_group(group)
     primitive = "radix_sort_keys" if values is None else "radix_sort_pairs"
     for name, value in (

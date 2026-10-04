@@ -20,14 +20,22 @@ _BINS = 16
 
 
 def _check(result):
+    """Raise on Driver errors and unwrap a single returned handle or value."""
+
     if int(result[0]):
         raise RuntimeError(f"CUDA Driver call failed: {result[0]}")
     return result[1] if len(result) == 2 else result[1:]
 
 
 def run_example(api="common", items_per_thread=2):
-    """Check stable digit order, inverse ranks, prefixes, and input
-    preservation.
+    """Check full-key Sort, stable signed-digit pairs, ranks, and prefixes.
+
+    The host flips the sign bit before extracting the high digit, then uses a
+    stable descending order to track ties by their original positions. Rank
+    must return that permutation's inverse at the original input positions.
+    The qualified path stores the striped pair-sort results with a striped
+    Store and counts greater digits for each bin prefix. Both paths check
+    that the input keys are unchanged.
     """
     tile_size = 64 * items_per_thread
     if api not in {"common", "qualified"}:
