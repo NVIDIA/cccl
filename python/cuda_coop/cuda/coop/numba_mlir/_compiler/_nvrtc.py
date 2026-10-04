@@ -82,7 +82,11 @@ class CompileContext:
 
     @property
     def symbol_suffix(self) -> str:
-        """Qualify provider symbols with this header and toolkit selection."""
+        """Return a short digest of every toolkit and header field.
+
+        Raw C-ABI helpers add it to their symbols to distinguish code built
+        with different headers or toolkits.
+        """
 
         digest = hashlib.sha256()
         values: tuple[object, ...] = (

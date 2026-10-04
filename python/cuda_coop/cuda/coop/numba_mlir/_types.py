@@ -537,10 +537,10 @@ def _compile_device_ltoir(
     signature, and ABI options. ``semantic_identity`` can describe an adapter
     in terms of the original callback and its pointer/value choices.
 
-    Compile the underlying Python function rather than an existing dispatcher:
-    the compiler can mutate dispatcher options during compilation. Return
-    LTO-IR bytes and cache only a successful result, allowing the same
-    callback to participate in multiple cooperative specializations.
+    Compile the underlying Python function rather than an existing dispatcher.
+    The compiler can change dispatcher options during compilation, so this
+    lets one dispatcher take part in several cooperative specializations.
+    Return LTO-IR bytes and cache only successful results.
 
     Parameters
     ----------
@@ -3027,10 +3027,11 @@ class Algorithm:
         ``__abi`` symbol. Pointer-backed arguments use an untyped pointer ABI
         and ``types.ptr`` conversion; scalar arguments use their descriptor
         dtype. An output becomes the external call's return value. Embedded
-        C++ expressions, such as functors and static seeds, and static pointer
-        offsets consume no runtime arguments.
-        A stateful Python operator consumes its state array instead: check the
-        array type, then pass its data pointer through the untyped ABI.
+        C++ expressions (functors or static values such as scan seeds),
+        stateless Python callbacks, and static pointer offsets consume no
+        runtime arguments. A stateful Python operator consumes its state
+        array instead: check the array type, then pass its data pointer
+        through the untyped ABI.
 
         The resulting typing implementation returns ``None`` when the arity or
         an input descriptor rejects the compiler types. This lets overload
@@ -3763,7 +3764,7 @@ class RawCAbiInvocable:
     cc : int
         Positive target compute capability encoded as major * 10 + minor.
     compile_context : nvrtc.CompileContext
-        Compiler options and header context used for this translation unit.
+        Resolved header and toolkit context for compiling this source.
     storage_abi : StorageABI
         Must be ``NONE``: this callable accepts no TempStorage operand.
     execution_scope : SynchronizationScope

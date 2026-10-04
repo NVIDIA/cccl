@@ -75,7 +75,11 @@ def _algorithm(
     items_per_thread: int = 2,
     valid_items: ArgumentBinding | None = None,
 ) -> _types.Algorithm:
-    """Materialize a block provider with the selected ABI and toolchain."""
+    """Materialize a Load or Store provider for one CUB algorithm and shape.
+
+    Storage-free algorithms get no scratch pointer or barrier. Others take a
+    leading scratch pointer and block synchronization.
+    """
     if valid_items is None:
         valid_items = ArgumentBinding.runtime()
     adapter = NumbaMlirCoreAdapter(

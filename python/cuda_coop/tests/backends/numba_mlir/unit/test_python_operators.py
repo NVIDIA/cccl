@@ -4,9 +4,10 @@
 
 """Check Python callback adaptation and artifact ownership without NVRTC.
 
-Compiler doubles record signatures, target architectures, and source. The
-assertions check scalar and aggregate calling conventions and ensure that
-provider artifacts include the callback code needed at link time.
+Compiler doubles record signatures, target architectures, and source. Tests
+check the calling conventions for scalars passed by value and aggregates
+passed by pointer. They also check that provider artifacts include the
+callback code needed at link time.
 """
 
 from pathlib import Path
@@ -24,8 +25,8 @@ def _combine(lhs, rhs):
 def _named_operator_algorithm(operator):
     """Materialize a small provider with a named callback parameter.
 
-    The parameter's local name must remain distinct from the callback's linker
-    symbol, even when both refer to the same operator.
+    The C++ local name comes from the operator's display name. Callers check
+    that this name does not change the compiled callback's linker symbol.
     """
 
     from numba_cuda_mlir import types
@@ -67,10 +68,11 @@ def _make_same_named_operator(offset):
 
 
 class _RunningPrefix:
-    """Model a state-mutating callback through an unbound class method.
+    """Model a block-scan prefix callback that updates device state.
 
-    ``self_ptr`` is the device state pointer, not a Python instance. The
-    compiler must place it before the aggregate in the callback signature.
+    The class's ``__call__`` is used without an instance, so ``self_ptr`` is
+    the device state pointer. ``aggregate`` is the block total from CUB. The
+    adapter must pass the state pointer before that value.
     """
 
     def __call__(self_ptr, aggregate):
@@ -368,6 +370,12 @@ def test_pointer_abi_adapts_aggregate_operator(monkeypatch):
 
 
 def test_provider_artifacts_include_callback_and_wrapper_ltoir(monkeypatch):
+    """Retain callback and wrapper images as separate device-link inputs.
+
+    This provider has no scratch, so its layout query tuple is empty. It must
+    still keep both artifacts alive without linking them for metadata.
+    """
+
     from numba_cuda_mlir import types
 
     from cuda.coop._core import SynchronizationScope
