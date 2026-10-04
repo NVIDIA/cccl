@@ -117,9 +117,36 @@ def coerce_plain_scalar(
 ) -> Any:
     """Validate and optionally cast an exact Python int or float.
 
+    Lowerings call this before forming typed wrapper arguments. A Python
+    literal has no fixed-width compiler dtype, so it must be checked against
+    the destination type before conversion can discard high bits.
+
     Check the destination range and the requested nonfinite policy. Normal
     floating-point rounding can still occur. Return a sentinel for other
     scalar objects so their declared dtype can be checked separately.
+
+    Parameters
+    ----------
+    value : object
+        Candidate host literal. Only exact Python int and float enter this
+        conversion path; typed compiler values use the separate dtype checks.
+    value_type : type
+        Supported CUTLASS scalar type required by the wrapper parameter.
+    name : str
+        Argument name or operation detail for a conversion diagnostic.
+    scope : str
+        Qualified operation prefix used in diagnostics.
+    allow_nonfinite : bool
+        Whether floating-point infinities and NaNs are accepted.
+    convert : bool
+        Whether to build the CUTLASS scalar after checking its range. False
+        returns the original Python literal after the same checks.
+
+    Returns
+    -------
+    object
+        Converted scalar, validated original literal when convert is false,
+        or ``_NOT_PLAIN_SCALAR`` when the input is not an exact int or float.
     """
 
     token = TYPE_SPECIFICATIONS[value_type].token

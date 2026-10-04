@@ -121,8 +121,27 @@ def _infer_fragment_items_per_thread(
 ) -> int | None:
     """Infer extent from tensor shape, then layout shape, then type shape.
 
+    ``ThreadData.from_register_tensor`` uses this result to size its Python
+    item list before reading register values. Here an extent is the number
+    of scalar items held by one thread. Different CuTe containers expose
+    that count on the value, layout, or type, so the helper checks each.
+
     Mutable register tensors can expose nested layouts; vector callers can
     require a one-dimensional extent instead.
+
+    Parameters
+    ----------
+    fragment : object
+        Register container whose optional shape metadata is inspected.
+    allow_nested : bool
+        Multiply all static dimensions of a nested tensor shape when true.
+        False accepts only a scalar dimension or a one-dimensional shape.
+
+    Returns
+    -------
+    int or None
+        Positive item count known while tracing, or None when no supported
+        shape proves that count. No register values are read or allocated.
     """
 
     infer_extent = (
@@ -870,10 +889,21 @@ class ThreadData:
         self._values[idx] = value
 
     def _dynamic_values(self) -> tuple[type, tuple[Any, ...]]:
-        """Resolve all items to one dtype for CuTe control-flow operands.
+        """Resolve payload items to typed scalars for CuTe IR operations.
+
+        CuTe uses ``__extract_mlir_values__`` and ``__new_from_mlir_values__``
+        when a payload crosses a function boundary or runtime branch or loop.
+        Those hooks call this helper because IR uses separate typed scalar
+        operands, rather than a Python ThreadData object.
 
         Convert host literals to scalar expressions and retain explicit
         signedness metadata when reconciling raw IR values.
+
+        Returns
+        -------
+        tuple
+            Common CUTLASS scalar type and the initialized item expressions in
+            payload order. Uninitialized or incompatible items raise an error.
         """
 
         from ._compiler import _types
@@ -905,17 +935,46 @@ class ThreadData:
         return value_type, tuple(converted)
 
     def __extract_mlir_values__(self) -> list[Any]:
-        """Expose one scalar IR value per item to CuTe control flow."""
+        """Expose one scalar IR value per payload item to CuTe.
+
+        CuTe calls this hook to flatten a Python payload into scalar IR
+        operands, including for function calls and runtime branches or loops.
+        The returned order defines the correspondence used by
+        ``__new_from_mlir_values__`` to rebuild the payload.
+
+        Returns
+        -------
+        list
+            One typed MLIR scalar per initialized payload item, in index
+            order.
+        """
         _, values = self._dynamic_values()
         return [value.ir_value() for value in values]
 
     def __new_from_mlir_values__(self, values: list[Any]) -> ThreadData:
-        """Rebuild a payload from CuTe control-flow results.
+        """Rebuild a payload from replacement scalar IR values.
 
-        Require one result per item. Keep the alignment and the common API
+        CuTe calls this hook when it needs a Python payload for replacement IR
+        values, such as function block arguments or runtime control-flow
+        results. A block argument names a value supplied on entry to an IR
+        block. The hook wraps the supplied scalars in a new Python container.
+
+        Require one value per item. Keep the alignment and the common API
         origin, so later assignments still apply common dtype checks. Keep a
-        declared dtype; without one, record the item type inferred for the
-        control-flow operands.
+        declared dtype; without one, record the item type inferred from
+        the original payload.
+
+        Parameters
+        ----------
+        values : list
+            Replacement scalar IR values in the item order established by
+            ``__extract_mlir_values__``; their count must match
+            items_per_thread.
+
+        Returns
+        -------
+        ThreadData
+            Reconstructed payload with the same item count and alignment.
         """
         if len(values) != self.items_per_thread:
             raise ValueError(

@@ -13,6 +13,14 @@ CUB or CUDAX. NVRTC compiles those functions to LTO-IR, which CuTe links into
 the kernel before it runs. The implementation calls these generated
 functions *providers*.
 
+During tracing, CuTe runs the kernel's Python code with symbolic values
+and builds its intermediate representation (IR). A cooperative call at
+this stage adds device instructions to that representation; the GPU runs
+them later. *Lowering* adapts the call and its values to the generated
+provider's argument and result types. A *provider request* records which
+C++ function is needed, and a *session* collects those requests for one
+trace.
+
 The :doc:`shared overview <../coop>` introduces groups, per-thread items, and
 the common API. The :doc:`CUTLASS Programming Guide <../coop_cutlass>` covers
 writing kernels and choosing CUTLASS-specific controls. Here, an executable

@@ -45,8 +45,24 @@ def launch_facts_from_cutlass_api(
 ) -> LaunchFacts:
     """Validate the compiler's exact dimensions and launch-mode flags.
 
+    ``current_kernel_launch_facts`` calls this during primitive lowering.
+    The shared planner needs actual launch dimensions to instantiate CUB
+    types and check that every required thread belongs to the group.
+
     Missing facts stay unknown. Upper bounds and user-supplied launch metadata
     are not evidence of an exact launch.
+
+    Parameters
+    ----------
+    facts : object
+        Result of CuTe's launch-facts query. Absent fields remain unknown.
+    detail : str
+        Query name recorded in the origin of each fact and in diagnostics.
+
+    Returns
+    -------
+    LaunchFacts
+        Validated dimensions and flags with compiler-source annotations.
     """
 
     values = {}
