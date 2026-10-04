@@ -503,3 +503,21 @@ def register_request(request: Any) -> None:
     """Add an immutable provider request to the active trace's bundle."""
 
     active_bundle_session().add(request)
+
+
+__all__ = [
+    "_SESSION_SCOPE",
+    "BundleSession",
+    "active_bundle_session",
+    "ensure_trace_hook_registered",
+    "get_or_create_bundle_session",
+    "lookup_bundle_session",
+    "pop_bundle_session",
+    "register_bundle_finalizer",
+    "register_request",
+    "restore_active_session_state",
+    "restore_active_session_state_for",
+    "set_bundle_session",
+    "snapshot_active_session_state",
+    "snapshot_active_session_state_for",
+]
