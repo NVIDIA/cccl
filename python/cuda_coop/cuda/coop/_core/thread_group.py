@@ -323,8 +323,9 @@ class GroupByMapping:
         Whether the count must divide the parent's unit count exactly.
         A non-exhaustive mapping can leave units outside complete groups.
     synchronizer : str
-        ``lane`` for thread units or ``barrier`` for warp units. This
-        selects the synchronization form when generating a mapped group.
+        Must be ``lane`` for thread units and ``barrier`` for warp units.
+        Construction rejects any other pairing. Code generation emits the
+        matching synchronizer.
     """
 
     unit: str
@@ -677,11 +678,11 @@ class ThreadGroup:
         *,
         source: str = "resolved",
     ) -> _ThreadGroupT:
-        """Copy the descriptor with a resolved hierarchy and source label.
+        """Copy the descriptor with a given hierarchy and source label.
 
         Keep its concrete backend type. For a mapped group, give its physical
         parent the same hierarchy so both descriptions remain consistent.
-        Construction rechecks the mapping against the supplied dimensions.
+        Construction rechecks the mapping against the known dimensions.
         """
 
         if self.mapping is None:
