@@ -271,7 +271,8 @@ parts of the API.
      - Hierarchy queries
    * - ``coop.this_warp()``
      - One physical warp
-     - Load, Store, Exchange, Reduce, scalar Scan, Merge Sort
+     - Load, Store, Exchange, Reduce, scalar Scan, Merge Sort, and Batched
+       Reduction
    * - ``coop.this_warp().group_by(8)``
      - Eight consecutive lanes within a physical warp
      - Logical-warp forms of those operations
@@ -499,11 +500,11 @@ Load writes into the payload supplied by the caller. Transpose Store
 algorithms may rearrange their input payload in place, as in CUB. Copy values
 before Store if they are needed later. Both operations return ``None``.
 Array Scan, Exchange, array Shuffle, Merge Sort, array Radix Sort, array Radix
-Rank, TopK, Adjacent Difference, Discontinuity, Histogram, and windowed Run
-Length Decode return fresh payloads, so their input values remain available
-afterwards. Reduction returns a scalar, including when each thread contributes
-several items. Bulk Run Length Decode writes the caller's destination and
-returns the total decoded size.
+Rank, TopK, Adjacent Difference, Discontinuity, Histogram, windowed Run Length
+Decode, and Batched Reduction return fresh payloads, so their input values
+remain available afterwards. Reduce returns a scalar, including when each
+thread contributes several items. Bulk Run Length Decode writes the caller's
+destination and returns the total decoded size.
 
 Numba can promote integer arithmetic. Store requires an exact match to the
 destination dtype, so cast computed values when necessary, as in the

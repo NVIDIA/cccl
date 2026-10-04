@@ -795,6 +795,12 @@ def check_run_length_surface(destination: object, offsets: object) -> None:
 
 
 def check_batched_reduction_typing() -> None:
+    """Check that Batched Reduction keeps the payload dtype.
+
+    The compiler computes the result extent, ceil(batches / warp_width), while
+    planning; the static annotation records only the item type.
+    """
+
     warp = coop.this_warp()
     values = coop.ThreadData(items_per_thread=3, dtype=np.float32)
     assert_type(

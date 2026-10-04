@@ -2,11 +2,29 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Infer and check the unequal array extents of a batched-reduce provider.
+
+Input extent is the batch count. Output extent is the per-lane share of the
+aggregates, rounded up for batches that do not fill the warp. Both arrays
+must use the same numeric dtype; the rewrite records that type for subsequent
+ThreadData accesses as well as for provider specialization.
+"""
+
 from ._parameters import _validate_common_numeric_dtype
 from ._rewrite_support import CoopSinglePhaseRewriteError, _dtype_values_match
 
 
 def infer_reduce_batched_payload(context, inference):
+    """Match fixed provider arrays to the batch count and static warp width.
+
+    Take the batch count from the input extent and require an output extent
+    of ceil(batches / width). Take the input dtype from array evidence or the
+    explicit dtype keyword, and check any known output dtype against it. Fill
+    the dtype and batches factory keywords, or reject explicit values that
+    disagree with the arrays. Record the dtype on both operands so later
+    indexing does not depend on type evidence from another call.
+    """
+
     input_var, input_specification = inference.array_candidate(0)
     output_var, output_specification = inference.array_candidate(1)
     if (

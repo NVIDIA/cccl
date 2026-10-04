@@ -112,11 +112,11 @@ consecutive logical warps of 1, 2, 4, 8, 16, or 32 threads. Load, Store,
 Exchange, Reduce, Scan, and Merge Sort support block, physical-Warp, and logical-Warp
 forms. Shuffle, Radix Sort, Radix Rank, TopK, Adjacent Difference,
 Discontinuity, Histogram, and Run Length Decode are block-only. Batched
-Reduction supports physical and logical warps. Warp operations require an
-enclosing block with a multiple of 32 threads and no incomplete final physical
-warp. For a multidimensional block, threads are linearized in x-major order.
-Every member of a participating group must reach its primitive; complete
-sibling logical groups may take different control-flow paths.
+Reduction supports physical and logical warps. For Warp primitives, the
+enclosing block must contain a multiple of 32 threads, with no incomplete
+final physical warp. For a multidimensional block, threads are linearized in
+x-major order. Every member of a participating group must reach its primitive;
+complete sibling logical groups may take different control-flow paths.
 
 The common group vocabulary also includes thread, cluster, grid, and mapped
 groups of physical warps. These groups support hierarchy queries; the
@@ -467,8 +467,9 @@ state in its per-thread payload, separate from CUB temporary storage.
 Temporary storage
 -----------------
 
-Block Load, Store, Reduce, and Scan accept an optional ``TempStorage``
-descriptor:
+Block Load, Store, Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent
+Difference, Discontinuity, Histogram, and both Run Length Decode forms accept
+an optional ``TempStorage`` descriptor:
 
 .. code-block:: python
 
@@ -526,19 +527,19 @@ descriptor, and a call site inside a loop counts as a reuse on every
 iteration. Compiler-owned storage always synchronizes.
 
 The compiler stages descriptors and compiler-managed CUB scratch into one
-shared-memory backing. Up to 48 KiB, it uses a conservative static limit
+shared-memory backing. Up to 48 KiB, the compiler uses static shared memory
 without querying the device. Larger requests, from explicit ``size_in_bytes``
 or implicit requirements, trigger a query of the device's default and opt-in
 limits. Backing above the default limit uses dynamic shared memory, and the
-launch reserves its exact byte count within the opt-in limit.
-Supported Numba-CUDA-MLIR releases do not separate static and dynamic shared
-allocations reliably. A kernel using cooperative temporary storage must not
-also declare a zero-sized or runtime-sized ``cuda.shared.array``. When
-cooperative backing becomes dynamic, user static shared arrays are also
-unsupported. Keep both user arrays and cooperative backing static, or move the
-user data out of shared memory. Reduce uses this same cooperative backing,
-including when ``temp_storage`` is omitted. Storage-free Load/Store algorithms
-do not add this restriction.
+launch reserves its exact byte count within the opt-in limit. Supported
+Numba-CUDA-MLIR releases do not separate static and dynamic shared allocations
+reliably. A kernel using cooperative temporary storage must not also declare a
+zero-sized or runtime-sized ``cuda.shared.array``. When cooperative backing
+becomes dynamic, user static shared arrays are also unsupported. Keep both user
+arrays and cooperative backing static, or move the user data out of shared
+memory. Reduce uses the same cooperative backing, including when
+``temp_storage`` is omitted. Storage-free Load/Store algorithms do not add this
+restriction.
 
 With ``auto_sync=False``, a descriptor must originate from exactly one
 constructor site. Selecting between multiple manual-sync constructors is
