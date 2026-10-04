@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Accept readable MergeSort inputs without requiring in-place mutation.
+
+Keys and values independently use mutable or read-only protocol objects.
+A fake active backend name enables common payload validation. A dispatch
+spy records argument identities and returns a unique object, so the tests
+check validation and result forwarding without backend compilation.
+"""
+
 from importlib import import_module
 
 import numpy as np
@@ -63,6 +71,12 @@ class _ThreadData(_ReadonlyThreadData):
 def test_common_merge_sort_accepts_readonly_inputs(
     monkeypatch, group, operation, payload_types
 ):
+    """Forward readable payloads and return the delegated result unchanged.
+
+    The matrix makes keys, values, or both read-only for each supported group.
+    Original items and argument identities must survive common dispatch.
+    """
+
     dispatch = import_module("cuda.coop._core.api._dispatch")
     api = import_module("cuda.coop._core.api.merge_sort")
     payloads = tuple(

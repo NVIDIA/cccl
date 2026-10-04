@@ -2,13 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Combine group queries, Load, Reduce, and Store in one compiled kernel.
+"""Combine collective families in one kernel and reuse shared scratch.
 
 Transpose Load, Store, and full/prefix CUB reductions share explicit scratch.
-The checks expose
-missing provider registration or interference between operations that
-share one compilation. The final Store also checks that both reductions
-leave the original payload unchanged.
+Their final Store checks that both reductions preserve the original payload.
+The sort case adds Merge Sort and Scan to a repeated Load/Store pipeline.
+Together they check provider registration and scratch reuse when several
+families share one compilation.
 """
 
 import numpy as np
@@ -95,6 +95,13 @@ def test_mixed_primitives(api, items_per_thread):
 )
 @pytest.mark.parametrize("items_per_thread", (1, 4))
 def test_sort_scan_shared_storage(api, items_per_thread):
+    """Share one allocation across Load, MergeSort, Scan, and Store.
+
+    Four runtime iterations process independent tiles with automatic reuse
+    barriers. The host sorts each tile before computing exclusive prefixes,
+    checking the whole pipeline across distinct provider scratch requirements.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,

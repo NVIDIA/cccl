@@ -2,6 +2,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Generate CUB Merge Sort wrappers and call them from CuTe tracing.
+
+The trace calls generated C++ functions through the foreign function
+interface. Wrappers receive keys and optional values by value, sort local
+copies, and write fresh register results without changing the caller's
+inputs. Only built-in less or greater ordering is supported. Shared plans
+select the block or warp CUB class, keys or pairs, and full or partial tiles.
+
+Block scratch allocation waits for a C++ probe to report the exact size and
+alignment of CUB's TempStorage. Tracing emits placeholder address and size
+values, which storage materialization replaces after allocation. Warp
+wrappers declare shared arrays with one scratch slice per logical warp.
+"""
+
 import hashlib
 import math
 from dataclasses import dataclass, replace
@@ -42,6 +56,14 @@ _resolve_type = _types.make_provider_type_resolver(
 
 
 def _valid_binding(value):
+    """Classify an omitted, static, or runtime valid-item count.
+
+    Reject Boolean counts, non-integer runtime values, and unsigned 64-bit
+    runtime values. Every accepted runtime count then fits the signed 64-bit
+    ABI. Shared planning checks static counts; the checked C++ class checks
+    runtime bounds before narrowing to int.
+    """
+
     if value is None:
         return ArgumentBinding.omitted()
     if isinstance(value, (bool, np.bool_)):
@@ -74,6 +96,15 @@ def _make_merge_sort_plan(
     valid_items,
     temp_storage=None,
 ):
+    """Plan built-in ordering and attach the block scratch policy.
+
+    Choose the built-in less or greater comparator and keep the count binding.
+    Zero placeholders select the partial-tile specialization; the actual count
+    and sentinel travel separately. Shared planning checks group shape and
+    static counts. For blocks, require an exact scratch layout and honor
+    explicit sharing, size, alignment, and synchronization controls.
+    """
+
     if not isinstance(descending, bool):
         raise TypeError("Merge Sort descending must be a compile-time bool")
     valid = _valid_binding(valid_items)
@@ -133,10 +164,24 @@ def _make_merge_sort_plan(
 
 @dataclass(frozen=True, eq=False)
 class _CubMergeSortRequest:
+    """Identify one validated sort wrapper and its scratch requirements.
+
+    The plan artifact key controls request equality and symbol identity. Key
+    and value dtypes remain independent; result contracts must agree with both
+    types and the per-thread extent.
+    """
+
     plan: GroupLoweringPlan
     kind: str = "cub_group_merge_sort"
 
     def __post_init__(self):
+        """Check the CUB specialization against payload and result contracts.
+
+        Require built-in ordering, the correct full or checked partial-tile
+        class, matching template arguments, and exact block dimensions or
+        logical warp width. Block scratch must request an exact C++ layout.
+        """
+
         self.plan.require_supported()
         if self.plan.target not in {
             GroupLoweringTarget.CUB_BLOCK,
@@ -244,6 +289,8 @@ class _CubMergeSortRequest:
 
     @property
     def cpp_type(self):
+        """Spell the C++ type used by calls and layout probes."""
+
         arguments = []
         for name, value in self.implementation.ordered_template_arguments:
             if name in {"KeyT", "ValueT"} and value in TYPE_SPECIFICATIONS:
@@ -260,10 +307,14 @@ class _CubMergeSortRequest:
 
     @property
     def scratch_requirement_key(self):
+        """Key layout probes by their CUB storage type."""
+
         return "cub_merge_sort_storage", self.cpp_type
 
     @property
     def symbol_name(self):
+        """Hash the complete plan identity into a wrapper symbol."""
+
         digest = hashlib.sha256(
             repr(self.plan.artifact_key).encode()
         ).hexdigest()[:16]
@@ -280,6 +331,22 @@ class _CubMergeSortRequest:
 
 
 def _render_merge_sort(request):
+    """Render copied key/value arrays, scratch checks, and result writes.
+
+    The ABI passes all keys, then optional values. Partial tiles add a runtime
+    count when needed and always add the key sentinel. Block calls then pass
+    scratch address, byte count, and synchronization control. Result pointers
+    come last. Checked partial-tile classes trap on an out-of-range count,
+    then narrow it to int for CUB.
+
+    Blocks check scratch size and alignment before use; warp groups use
+    separate static slices. After sorting the local copies, blocks call
+    ``__syncthreads()`` only when ``auto_sync`` is set. Warps always call
+    ``__syncwarp()`` with their logical group's lane mask. Results are then
+    copied to the output pointers. Only the valid prefix is defined for a
+    partial tile.
+    """
+
     request.__post_init__()
     key_cpp = TYPE_SPECIFICATIONS[request.key_type].cpp_type
     params, inputs, outputs = [], [], []
@@ -370,6 +437,12 @@ def _render_merge_sort(request):
 
 
 def _scratch_probe(request):
+    """Request the exact block scratch size and alignment from C++.
+
+    Warp wrappers declare their own scratch arrays, so they need no deferred
+    allocation or external layout probe.
+    """
+
     if not request.is_block:
         return None
     return _rendering.make_scratch_layout_probe(
@@ -401,6 +474,15 @@ _rendering.register_bundle_renderer(
 
 
 def _typed_value(value, dtype, *, sentinel=False):
+    """Convert a payload item or sentinel without losing dtype checks.
+
+    NumPy and runtime CuTe scalars must match the payload dtype. Plain Python
+    int and float literals convert to it when in range; floats cannot convert
+    to integers. Floating dtypes accept infinities. Reject a NaN sentinel when
+    its host value is known. Runtime sentinel ordering remains the caller's
+    responsibility.
+    """
+
     if isinstance(value, np.generic):
         if _types.canonical_dsl_type(value) is not dtype:
             raise TypeError(
@@ -440,6 +522,17 @@ def provider_merge_sort(
     oob_default,
     temp_storage,
 ):
+    """Emit one input-preserving sort with independently typed results.
+
+    Resolve initialized payloads, bind ordering and count, and copy scalar ABI
+    arguments. Allocate separate aligned register outputs for keys and
+    optional values. Block scratch is registered as a deferred event keyed by
+    the C++ layout; warp scratch stays inside the wrapper.
+
+    Restore queued session state if registration or emission fails. This
+    rollback does not remove emitted IR or register allocations.
+    """
+
     payloads = [keys] if values is None else [keys, values]
     resolved = [
         _types.resolve_thread_data_value_type(

@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check MergeSort key order, value association, and preservation of inputs.
+
+A host sort checks each valid prefix. Pair cases compare the input and
+output key/value multisets without assuming a stable order for equal keys.
+Other cases check read-only inputs, partial bounds, scratch reuse, groups
+that skip the sort, invalid counts, and inlining in the final machine code.
+"""
+
 import os
 import re
 import shutil
@@ -31,6 +39,12 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
 class _Readonly:
+    """Copy payload items into an object with reads but no item assignment.
+
+    The wrapper retains extent, dtype, and alignment. Both APIs must accept
+    this read-only input and return a separate sorted payload.
+    """
+
     def __init__(self, source):
         self.items_per_thread = source.items_per_thread
         self.dtype = source.dtype
@@ -67,6 +81,23 @@ def _run(
     selected_groups=False,
     infinite_sentinel=False,
 ):
+    """Launch one block and check each group's sorted tile.
+
+    Here ``width=64`` selects the block, whose size comes from ``block``.
+    Width 32 selects physical warps; smaller widths select logical warps. A
+    partial tile defaults to two fewer valid items than its capacity. Padding
+    uses the dtype maximum for ascending order and minimum for descending
+    order, or the matching infinity when requested.
+
+    Only the valid prefix is compared with a host sort; remaining positions
+    are unspecified. Pair checks compare key/value associations without
+    requiring equal keys to stay in input order. After sorting, the kernel
+    copies the original ThreadData keys and values into check buffers.
+
+    Reuse cases call the sort three times on the same inputs. When groups are
+    selected, even groups sort and odd groups must keep their original keys.
+    """
+
     key_type, value_type = cutlass_dtype(dtype), cutlass_dtype(value_dtype)
     threads = int(np.prod(block))
     size = threads * items_per_thread
@@ -333,6 +364,13 @@ def test_partial_key_types(dtype, descending):
 @pytest.mark.parametrize("width", (8, 64))
 @pytest.mark.parametrize("pairs", (False, True))
 def test_infinite_partial_bound(api, dtype, descending, width, pairs):
+    """Keep a valid infinite key even when padding uses the same infinity.
+
+    The first valid item of each tile equals the selected sentinel. The valid
+    prefix and pair-association checks must still preserve it, distinguishing
+    real input from padding for either sort direction.
+    """
+
     _run(
         api,
         dtype=dtype,
@@ -358,17 +396,38 @@ def test_block_dimensions(block):
 
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
 def test_storage_alignment_minimum(sharing):
+    """Treat one-byte caller alignment as a minimum for native sort scratch.
+
+    Shared and exclusive descriptors reserve enough capacity but request less
+    alignment than the sort needs. The repeated sort must still produce valid
+    results with correctly placed scratch.
+    """
+
     _run(reuse=True, sharing=sharing, alignment=1, capacity=8192)
 
 
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
 @pytest.mark.parametrize("manual_sync", (False, True))
 def test_reuse_storage(sharing, manual_sync):
+    """Reuse each sort call site's scratch across runtime iterations.
+
+    Exclusive storage gives a call site its own slice, which is still reused
+    on the next iteration. Manual mode supplies the barrier after the call;
+    automatic mode delegates that reuse barrier to the provider.
+    """
+
     _run(reuse=True, sharing=sharing, manual_sync=manual_sync, alignment=128)
 
 
 @pytest.mark.parametrize("width", (1, 8, 32))
 def test_selected_warp_groups(width):
+    """Run complete alternating groups while their siblings skip the sort.
+
+    Repeating the call exercises group-local scratch reuse. Skipped groups
+    retain their original keys. Active groups must sort without requiring
+    their inactive siblings to join synchronization.
+    """
+
     _run(width=width, reuse=True, selected_groups=True)
 
 
@@ -381,6 +440,13 @@ def test_undersized_storage():
 
 @pytest.mark.parametrize("width", (8, 64))
 def test_final_cubin(tmp_path, width):
+    """Check inlining after validating a partial block or logical-warp sort.
+
+    The numerical harness runs before SASS inspection. Provider calls must be
+    inlined, and logical-warp code must omit BAR.SYNC. No allocation size or
+    particular warp instruction sequence is required.
+    """
+
     tool = shutil.which("cuobjdump")
     if tool is None:
         pytest.skip("cuobjdump is required for final linked code inspection")
@@ -403,6 +469,15 @@ def test_final_cubin(tmp_path, width):
 
 @pytest.mark.parametrize("count", (-1, 193, 1 << 32))
 def test_runtime_count_traps(count):
+    """Run invalid counts in children to protect the test's CUDA context.
+
+    A device trap leaves the CUDA context unusable. Each count therefore runs
+    in a separate child. The counts are negative, one above the 192-item tile,
+    and 2**32, which would wrap to valid zero if narrowed before validation.
+    PYTHONPATH starts at this package root. A nonzero exit must include a CUDA
+    trap or launch-failure message, so unrelated Python errors cannot pass.
+    """
+
     script = (
         "from tests.backends.cutlass.runtime.test_merge_sort import _run\n"
         f"_run(partial=True, count={count})\n"

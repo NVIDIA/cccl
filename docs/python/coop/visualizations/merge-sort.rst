@@ -78,23 +78,22 @@ bound for ascending order, or a lower bound for descending order. A typed
 sentinel, whether a runtime value or a NumPy scalar constant, must have
 exactly the key dtype. For ordinary Python literals, integer keys require
 integers within the key dtype's range. Floating keys accept integer or
-floating literals within the dtype's finite range. They also accept positive
-or negative infinity, as a Python float or a NumPy scalar of the key dtype.
-The explorer chooses a suitable sentinel for its integer inputs. The
-displayed ``?`` does not promise a particular tail value.
+floating literals within range, and allow infinite bounds. The explorer
+chooses a suitable sentinel for its integer inputs. The displayed ``?``
+does not promise a particular tail value.
 
 Load only valid inputs and store only defined outputs. A sentinel does not
-make an out-of-bounds memory access valid. See the
-:ref:`Numba <coop-merge-sort>` and :ref:`CUTLASS <coop-cutlass-merge-sort>`
-guides for partial-tile examples and :doc:`../../coop_api` for parameter details.
+make an out-of-bounds memory access valid. See the :ref:`Numba
+<coop-merge-sort>` and :ref:`CUTLASS <coop-cutlass-merge-sort>` guides for
+partial-tile examples and :doc:`../../coop_api` for parameter details.
 
 Using Merge Sort in a kernel
 ----------------------------
 
-This Numba example sorts ``64 * items_per_thread`` keys in one block of
-64 threads. Each thread owns ``items_per_thread`` keys and matching
-original-position values. The checks verify key order and confirm that
-each returned index still identifies its key in the original input.
+This tested Numba example sorts ``64 * items_per_thread`` keys in one block
+of 64 threads. Each thread owns ``items_per_thread`` keys and matching
+original-position values. The checks verify key order and confirm that each
+returned index still identifies its key in the original input.
 
 .. literalinclude:: ../../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_merge_sort_examples.py
    :language: python
@@ -104,11 +103,10 @@ each returned index still identifies its key in the original input.
 
 This CuTe example sorts a partial tile with 64 threads and an
 ``items_per_thread`` argument, defaulting to three. ``module`` selects the
-common or CUTLASS-qualified API. It checks
-both key order and pair association while preserving the original inputs.
-:download:`Download the complete CuTe example
-<../../../../python/cuda_coop/examples/cutlass/merge_sort.py>` for constants,
-launch setup, and host checks.
+common or CUTLASS-qualified API. It checks both key order and pair association
+while preserving the original inputs. :download:`Download the complete CuTe
+example <../../../../python/cuda_coop/examples/cutlass/merge_sort.py>` for
+constants, launch setup, and host checks.
 
 .. literalinclude:: ../../../../python/cuda_coop/examples/cutlass/merge_sort.py
    :language: python

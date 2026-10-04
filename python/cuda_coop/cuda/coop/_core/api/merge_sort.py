@@ -2,11 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Expose common Merge Sort calls with separate result payloads.
+"""Provide common Merge Sort calls that return new result payloads.
 
-These functions define the common key and key/value contracts. A compiler
-backend replaces each call with a CUB block or warp Merge Sort that runs on
-copies of the inputs. A host Python call raises a context error.
+Numba-CUDA-MLIR recognizes the registered function objects without running
+these bodies. CuTe tracing executes them in Python and validates common
+payloads and scratch descriptors before dispatching to its implementation.
+Qualified APIs add CuTe register or local-array inputs, and Numba-CUDA-MLIR
+adds custom comparison predicates, without changing the shared result
+contract. Calls require an active compiler backend.
 """
 
 from __future__ import annotations
@@ -74,11 +77,9 @@ def merge_sort_keys(
         Key sentinel for a partial tile. Choose a value that sorts after the
         valid keys: an upper bound for ascending order or a lower bound for
         descending order. Typed runtime values and NumPy scalar constants
-        must match the key dtype exactly. An ordinary Python int constant
-        can convert to any key dtype within range. A Python float constant
-        requires a floating key dtype and must be within its finite range;
-        float-to-integer conversion is rejected. Floating keys also accept
-        positive or negative infinity as a sentinel.
+        must match the key dtype exactly. An ordinary Python int can convert
+        to a numeric key dtype within range. A Python float requires a
+        floating key dtype; float-to-integer conversion is rejected.
         ``valid_items`` and ``oob_default`` must be uniform within the group.
     temp_storage : TempStorageLike, optional
         Caller-provided scratch for a block group. Omit it to let the compiler
@@ -98,8 +99,8 @@ def merge_sort_keys(
     Notes
     -----
     Numba-CUDA-MLIR and CUTLASS use ``cub::BlockMergeSort::Sort`` or
-    ``cub::WarpMergeSort::Sort`` on copies of the input payloads.
-    Floating-point keys must obey the comparison's ordering requirements.
+    ``cub::WarpMergeSort::Sort`` on copies of the input payloads. Floating-point
+    keys must obey the comparison's ordering requirements.
     The qualified Numba-CUDA-MLIR API accepts fixed-size local-array inputs
     and custom comparison predicates. The qualified CUTLASS API accepts CuTe
     register payloads and supports built-in ascending or descending ordering.
@@ -190,11 +191,9 @@ def merge_sort_pairs(
         Key sentinel for a partial tile. Choose a value that sorts after the
         valid keys: an upper bound for ascending order or a lower bound for
         descending order. Typed runtime values and NumPy scalar constants
-        must match the key dtype exactly. An ordinary Python int constant
-        can convert to any key dtype within range. A Python float constant
-        requires a floating key dtype and must be within its finite range;
-        float-to-integer conversion is rejected. Floating keys also accept
-        positive or negative infinity as a sentinel.
+        must match the key dtype exactly. An ordinary Python int can convert
+        to a numeric key dtype within range. A Python float requires a
+        floating key dtype; float-to-integer conversion is rejected.
         ``valid_items`` and ``oob_default`` must be uniform within the group.
     temp_storage : TempStorageLike, optional
         Caller-provided scratch for a block group. Omit it to let the compiler
@@ -215,8 +214,8 @@ def merge_sort_pairs(
     Notes
     -----
     Numba-CUDA-MLIR and CUTLASS use ``cub::BlockMergeSort::Sort`` or
-    ``cub::WarpMergeSort::Sort`` on copies of the input payloads.
-    Floating-point keys must obey the comparison's ordering requirements.
+    ``cub::WarpMergeSort::Sort`` on copies of the input payloads. Floating-point
+    keys must obey the comparison's ordering requirements.
     The qualified Numba-CUDA-MLIR API accepts fixed-size local-array inputs
     and custom comparison predicates. The qualified CUTLASS API accepts CuTe
     register payloads and supports built-in ascending or descending ordering.

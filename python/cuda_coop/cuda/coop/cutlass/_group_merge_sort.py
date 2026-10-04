@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Expose CUTLASS Merge Sort entry points for keys and key/value pairs.
+
+``cuda.coop.cutlass.merge_sort_keys`` and ``merge_sort_pairs`` accept common
+ThreadData payloads and CuTe register tensors or TensorSSA values. Snapshot
+readable ThreadData or adapt register inputs before lowering. Both sorts
+return fresh ThreadData without changing the inputs, so read-only inputs
+work. Key/value pairs keep independent dtypes and matching extents.
+"""
+
 from cuda.coop._core.api._payload import (
     _validate_common_temp_storage,
 )
@@ -19,6 +28,14 @@ _SCOPE = "cuda.coop.cutlass"
 def _merge_sort(
     group, keys, values, *, descending, valid_items, oob_default, temp_storage
 ):
+    """Validate the public sort form and resolve its complete group.
+
+    Require count and sentinel together for partial tiles, and allow explicit
+    scratch only for blocks. Snapshot each readable operand before checking
+    pair extents. Launch facts then determine the exact block shape and
+    complete warp partition needed by shared planning.
+    """
+
     primitive = "merge_sort_keys" if values is None else "merge_sort_pairs"
     if not isinstance(group, ThreadGroup):
         raise TypeError(f"{_SCOPE}.{primitive} group must be a ThreadGroup")

@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check MergeSort result contracts, sentinel conversion, and storage plans.
+
+Keys and associated values can use different scalar types. Partial sorts
+also need a valid sentinel and a checked provider definition. Snapshot and
+failure cases verify that readable inputs remain independent of returned
+payloads and that failed storage emission restores the provider session.
+"""
+
 from dataclasses import replace
 from types import SimpleNamespace
 
@@ -63,6 +71,12 @@ def test_invalid_count(count):
 @pytest.mark.parametrize("negative", (False, True))
 @pytest.mark.parametrize("numpy_scalar", (False, True))
 def test_infinite_sentinel(dtype, negative, numpy_scalar):
+    """Allow either infinity as a sentinel for a matching floating-point type.
+
+    Ascending and descending partial sorts can use opposite infinite bounds.
+    Python and NumPy spellings must preserve the requested floating type.
+    """
+
     value = float("-inf" if negative else "inf")
     if numpy_scalar:
         value = (np.float32 if dtype is cutlass.Float32 else np.float64)(value)
@@ -121,6 +135,13 @@ def test_semantic_changes_do_not_share_provider():
 
 
 def test_partial_definition_order():
+    """Emit the checked-sort helper before its block and warp users.
+
+    Requests are rendered in canonical order, so reversing them must produce
+    identical source. Both aliases follow the helper, so registration order
+    cannot determine whether the C++ compiles.
+    """
+
     requests = [_request(count=0), _request(group=this_warp(), count=0)]
     source = _rendering.render_bundle_source(requests)
     assert source.index("struct CudaCoopCheckedMergeSort") < source.index(
@@ -159,6 +180,13 @@ class _Readonly:
 @pytest.mark.parametrize("dtype", (np.int32, None))
 @pytest.mark.parametrize("primitive", ("merge_sort_keys", "merge_sort_pairs"))
 def test_readonly_snapshot(dtype, primitive):
+    """Copy a readable input into an independently mutable payload.
+
+    The snapshot retains extent, dtype state, and alignment. Changing one
+    snapshot item must leave the source untouched, including when its dtype is
+    still unspecified for later inference.
+    """
+
     source = _Readonly(dtype)
     with _common_root_operation_scope(primitive):
         result = _snapshot_readable_payload(
@@ -181,6 +209,13 @@ def test_readonly_mixed_dtype_rejected():
 
 
 def test_failed_storage_emission_restores_session(monkeypatch):
+    """Restore the session when scratch registration fails after the request.
+
+    The storage stub fails before a provider call can be emitted. The test
+    checks the saved snapshot is restored and that the caller's keys remain
+    unchanged through the failed attempt.
+    """
+
     saved, restored, requests = object(), [], []
     monkeypatch.setattr(_state, "snapshot_active_session_state", lambda: saved)
     monkeypatch.setattr(_state, "register_request", requests.append)
