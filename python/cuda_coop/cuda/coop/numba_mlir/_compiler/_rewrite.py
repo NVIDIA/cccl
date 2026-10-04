@@ -292,6 +292,10 @@ class CoopSinglePhaseRewrite(
         the typing context after installing invocables; the caller installs
         the returned block in the function IR.
 
+        A CUDAX reduction can use internal static shared memory without a
+        TempStorage operand. Check user shared-array conflicts for those calls
+        even when there is no cooperative scratch backing to allocate.
+
         Returns
         -------
         ir.Block
