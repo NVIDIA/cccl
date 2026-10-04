@@ -85,6 +85,16 @@ def _array_extent(
     Exchange must select a fixed-size CUB overload before normal typing.
     Report the operand name when its origin or extent cannot establish that
     shape; scalar operands are not accepted as one-item arrays.
+
+    Parameters
+    ----------
+    context : GroupPlanningContext
+        Access to launch dimensions, constant controls, payload
+        facts, and IR builders for this group-planning attempt.
+    value : ir.Var
+        Input, rank, or validity payload to inspect.
+    parameter : str
+        Public argument name included in diagnostics.
     """
 
     if not context.is_array("exchange", value):
