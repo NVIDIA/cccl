@@ -547,6 +547,11 @@ def provider_store(
 ):
     """Trace a Store call with per-thread values and deferred scratch.
 
+    The qualified ``store`` entry point calls this during CuTe tracing.
+    The binding records choose which controls are embedded in C++ and
+    which live values become operands; the call itself executes later on
+    the GPU.
+
     Resolve one dtype for all items and require the destination to match it.
     Check pointer and static-capacity constraints before registration. The
     wrapper receives input items as scalars and copies them into its C++
@@ -555,6 +560,36 @@ def provider_store(
 
     Registration records scratch use for finalization; a failure restores
     session bookkeeping without undoing emitted IR.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        Cooperative group descriptor selected by the public call.
+    launch : LaunchFacts
+        Compiler-provided launch dimensions used for shared planning.
+    destination : CuTe memory operand
+        Contiguous destination whose dtype must match the stored values.
+    value : ThreadData or scalar
+        Initialized per-thread values, or one typed scalar per thread.
+    algorithm : str or enum
+        Normalized Store algorithm selector for the chosen group.
+    valid_items : object
+        Live valid-prefix count, used only for a runtime binding.
+    valid_items_binding : ArgumentBinding
+        Omitted, static, or runtime classification of that count.
+    offset : object
+        Live destination element offset, used only for a runtime binding.
+    offset_binding : ArgumentBinding
+        Classification and any embedded destination offset.
+    temp_storage : TempStorage or None
+        Optional block scratch descriptor. None uses compiler allocation.
+        Storage-free algorithms omit scratch operands.
+
+    Returns
+    -------
+    None
+        A device call is added to the trace; destination writes occur when
+        the compiled kernel runs.
     """
 
     if isinstance(value, ThreadData):
