@@ -47,6 +47,14 @@ Terms
       accept scalars or backend-specific arrays. See
       :ref:`thread data <coop-thread-data>`.
 
+   phi
+      A compiler intermediate representation (IR) operation that selects a
+      value according to the control-flow path taken into a block. For
+      example, after an ``if`` statement assigns different values to a
+      variable, a phi selects the value from the branch that ran. At a loop
+      header, it can select the initial value or the value from the previous
+      iteration. Comments refer to these alternatives as *phi inputs*.
+
    common API
       .. raw:: html
 
