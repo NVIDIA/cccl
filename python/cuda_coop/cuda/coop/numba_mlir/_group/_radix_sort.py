@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Expose stable block radix sorting and per-item digit ranks to Numba.
+
+Sort calls return reordered copies of keys and optional values. Rank calls
+leave keys in place and return each key's stable int32 sorted position for
+the selected digit, with an optional digit-prefix side output. Qualified
+calls accept scalars and fixed arrays; sorting also accepts floating-point
+keys. These compiler markers are resolved during group planning, before
+ordinary Numba type inference.
+"""
+
 from __future__ import annotations
 
 from typing import Any

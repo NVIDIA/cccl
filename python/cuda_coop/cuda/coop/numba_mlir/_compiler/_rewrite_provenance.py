@@ -556,11 +556,12 @@ class _ProvenanceRewrite(Rewrite):
         and count before local-array allocation can be emitted.
 
         Validate the marker's positional arguments and constant shape/type
-        policy. Inherit dtype from the prototype's array facts or known scalar
-        type. An explicit positive extent takes precedence. Otherwise use
-        the prototype's array extent when the marker's array flag is true,
-        or one item when it is false. Retain any common API provenance
-        supplied by the prototype.
+        policy. The ``like`` policy inherits dtype from the prototype's array
+        facts or scalar type; ``int32`` fixes the dtype for rank results. An
+        explicit positive extent takes precedence. Otherwise use the
+        prototype's array extent when the marker's array flag is true, or one
+        item when it is false. Retain any common API provenance supplied by
+        the prototype.
 
         Return a possibly partial ``_ThreadDataSpecification``. Missing
         inferred facts can be resolved by later provider inference, but

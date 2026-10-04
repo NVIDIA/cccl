@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe block radix sorting and checked runtime bit-range calls.
+
+CUB sorts key arrays, or key/value arrays, in place. These records select
+order, output arrangement, and available overloads independently of a
+compiler. Explicit bounds share a runtime call signature, so changing their
+values does not create another specialization. A generated C++ adapter checks
+those bounds before converting them to CUB's narrower integer type.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -48,7 +57,13 @@ class BlockRadixSortOutput(str, Enum):
 
 
 class BlockRadixSortBitPolicy(str, Enum):
-    """Runtime bit-range overloads represented by a generated wrapper."""
+    """Choose which bit-range signatures a generated wrapper exposes.
+
+    DEFAULT uses the full key width without bound arguments. EXPLICIT passes
+    begin and end at runtime. BOTH exposes both forms on one specialization.
+    The Numba factory requests BOTH, but its planner always passes begin and
+    end, with end defaulting to the key width.
+    """
 
     DEFAULT = "default"
     EXPLICIT = "explicit"
@@ -92,7 +107,12 @@ def _runtime_bit_range(
     end_bit: Any,
     key_bit_width: int | None,
 ) -> RadixBitRange:
-    """Validate known bounds, then retain only their runtime ABI identity."""
+    """Check known bounds, then keep their runtime call identity.
+
+    Even when a caller supplies constants, the Sort wrapper receives them as
+    arguments. Removing their values from this record lets the compilation
+    cache reuse one specialization for different valid intervals.
+    """
 
     make_radix_bit_range(
         begin_bit=begin_bit,
@@ -111,6 +131,14 @@ def _method_parameters(
     payload: BlockRadixSortPayload,
     with_bits: bool,
 ) -> tuple[Any, ...]:
+    """Describe one in-place CUB key or key/value overload.
+
+    The arrays are written by the call, rather than returned through the
+    wrapper result. Explicit bounds use int64 arguments so the checked adapter
+    can reject an invalid wide value before converting it to CUB's integer
+    arguments.
+    """
+
     parameters: list[Any] = [
         TempStorageParameter(),
         Array(
@@ -143,7 +171,14 @@ def _method_parameters(
 
 @dataclass(frozen=True)
 class BlockRadixSortSemantics:
-    """Dimension-independent block-radix-sort call contract."""
+    """Record Sort choices and signatures before block dimensions are fixed.
+
+    Order and output arrangement choose the CUB method name. Payload kind
+    chooses the key-only or key/value overload. Bit policy selects full-width
+    and/or explicit-bound signatures. An explicit bit range stores runtime
+    argument identity, even when its inputs were constants, so different valid
+    intervals share one cache entry.
+    """
 
     key_dtype: Any
     value_dtype: Any | None
@@ -195,7 +230,12 @@ class BlockRadixSortSemantics:
 
 @dataclass(frozen=True)
 class BlockRadixSortSpecialization:
-    """Fully specialized CUB BlockRadixSort call semantics."""
+    """Pair a specialized Sort algorithm with the choices that produced it.
+
+    The Algorithm supplies C++ template arguments and wrapper signatures. The
+    call record keeps their Python meaning available to planners and frontends
+    without requiring them to interpret C++ names or template values.
+    """
 
     specialization: Algorithm
     call: BlockRadixSortSemantics
@@ -258,7 +298,14 @@ def make_block_radix_sort_semantics(
     key_bit_width: int | None = None,
     bit_policy: str | BlockRadixSortBitPolicy | None = None,
 ) -> BlockRadixSortSemantics:
-    """Build normalized default- or runtime-bit BlockRadixSort semantics."""
+    """Validate Sort choices and describe the selected in-place overloads.
+
+    Supplying a value dtype selects key/value pairs. Bounds must appear
+    together; known values are checked before they become runtime arguments in
+    the record. With no explicit policy, their presence selects EXPLICIT
+    rather than DEFAULT. BOTH can expose both signatures without supplying
+    concrete bounds yet.
+    """
 
     if key_dtype is None:
         raise ValueError("key dtype must be provided")
@@ -347,7 +394,14 @@ def make_block_radix_sort_specialization(
     key_bit_width: int | None = None,
     bit_policy: str | BlockRadixSortBitPolicy | None = None,
 ) -> BlockRadixSortSpecialization:
-    """Build a fully specialized CUB BlockRadixSort description."""
+    """Fix block dimensions and construct a CUB Sort compilation description.
+
+    Use CUB directly for a full-width-only call. If explicit bounds are
+    allowed, select the checked adapter and attach its C++ definition to the
+    Algorithm. With BOTH, the Algorithm also lists the full-width signatures,
+    which the adapter inherits from CUB. Neither this builder nor the returned
+    record compiles or runs the operation.
+    """
 
     block_dim = normalize_block_dim(block_dim)
     call = make_block_radix_sort_semantics(
@@ -406,6 +460,15 @@ def make_block_radix_sort_specialization(
 
 
 def _checked_radix_sort_type() -> TypeDefinition:
+    """Generate the adapter that checks bounds before CUB narrows them.
+
+    Each sorting method keeps CUB's inherited overloads and gains key-only and
+    key/value overloads with wide bounds. Invalid intervals trap on the
+    device; valid intervals are converted to CUB's integer type and forwarded
+    unchanged. The returned definition is attached only to explicit-bound
+    specializations.
+    """
+
     methods = []
     for method in (
         "Sort",

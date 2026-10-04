@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check group plans for block radix results and temporary storage.
+
+Sort plans retain key/value dtypes and choose the CUB method from direction
+and output layout. Rank plans retain the input extent but fix result dtype
+to int32. Both operations require a complete block and carry block scratch
+and reuse synchronization in their plans.
+"""
+
 import pytest
 
 from cuda.coop._core import (

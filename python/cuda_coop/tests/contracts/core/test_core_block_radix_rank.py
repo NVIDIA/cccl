@@ -3,6 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
+"""Check shared radix-rank signatures, bit policies, and prefix extents.
+
+These contracts describe CUB specialization inputs without running a
+compiler. They also cover runtime-bound semantic records; the Numba public
+rank API separately requires a static digit interval.
+"""
+
 import numpy as np
 import pytest
 
@@ -102,6 +109,13 @@ def test_radix_rank_specialization_owns_cub_specialization_and_full_abi():
 
 
 def test_runtime_width_semantics_drop_provider_payloads():
+    """Keep runtime control identities out of shared rank semantics.
+
+    Different runtime value objects describe the same unknown interval and
+    prefix shape. Their semantic keys must match, while the signature retains
+    separate begin/end controls for a provider that can resolve such a record.
+    """
+
     first = make_block_radix_rank_semantics(
         key_dtype="u64",
         key_bit_width=64,
@@ -224,6 +238,13 @@ def test_radix_rank_rejects_invalid_static_bit_ranges(
 
 
 def test_radix_rank_rejects_invalid_order_shape_and_prefix_extent():
+    """Check strict controls and prefix sizing across NumPy boolean forms.
+
+    The synthetic numpy.bool_ object exercises legacy type-name recognition
+    alongside the installed NumPy scalar. Truthy integers, invalid block
+    shapes, and incorrect prefix extents must still fail the contract checks.
+    """
+
     legacy_numpy_bool = type(
         "bool_",
         (),

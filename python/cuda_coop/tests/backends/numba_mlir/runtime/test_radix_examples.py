@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Run the programming guide and Radix visualization examples.
+
+Keep each marked region self-contained for Sphinx. Host checks use original
+positions and an inverse digit permutation, so the examples demonstrate
+key/value association and rank meaning as well as successful compilation.
+"""
+
 import pytest
 
 cuda = pytest.importorskip("numba_cuda_mlir.cuda")
@@ -19,6 +26,8 @@ pytestmark = [
 
 
 def test_radix_sort_pairs_example():
+    """Check the published sort example with original positions as values."""
+
     # radix-sort-example-begin
     import numpy as np
     from numba_cuda_mlir import cuda, types
@@ -62,6 +71,8 @@ def test_radix_sort_pairs_example():
 
 
 def test_radix_rank_example():
+    """Check the rank example against an inverse digit permutation."""
+
     # radix-rank-example-begin
     import numpy as np
     from numba_cuda_mlir import cuda
