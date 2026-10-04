@@ -273,9 +273,6 @@ struct sharded_view
   int* data[N];
   int shard_n;
   ex::lane_scheduler lane[N];
-  // One event per lane, owned by whoever owns the lane: the "input ready" point
-  // a neighbor-dependent verb records before launching its own kernel.
-  cudaEvent_t ready[N]{};
 };
 
 template <class... S>
@@ -341,35 +338,43 @@ auto scale2(bundle<S...> b, const sharded_view<N>& in, const sharded_view<N>& ou
 }
 
 // adjacent_difference(bundle, in, out): out[i] = in[i] - in[i-1] across the
-// global index space, out[0] = in[0]. Per shard: record "my input is ready" on
-// my lane, wait on the previous shard's ready event (the only cross-lane edge,
-// one per boundary), launch; the kernel reads the predecessor's last element
-// directly through the shared address space (P2P between devices), no staging.
-// Because every shard records before launching and shard k waits on k-1's
-// *ready* event rather than on lane k-1's tail, shard k depends on shard k-1's
-// input, not on shard k-1's kernel: the kernels run concurrently. (Relies on the
-// bundle being started in shard order, which when_all guarantees; a right-
-// neighbor dependency would need the reverse order.)
+// global index space, out[0] = in[0]. The kernel reads the predecessor's last
+// element directly through the shared address space (P2P between devices), no
+// staging. Shard k's kernel needs shard k-1's *input* complete, and that input
+// point has two consumers (shard k-1's own kernel, shard k's): lane_split gives
+// it both. `when_all(r_k, r_{k-1}) | continues_on(lane_k)` is the dependency;
+// the join waits on the split's recorded ready point, not on lane k-1's tail,
+// so shard k does not wait for shard k-1's kernel and the kernels run
+// concurrently. No raw CUDA call in the verb; everything is a sender edge, and
+// under capture every edge is a graph edge.
+template <class Bundle, size_t N, size_t... I>
+auto adjacent_difference_impl(
+  Bundle b, const sharded_view<N>& in, const sharded_view<N>& out, cuda::std::index_sequence<I...>)
+{
+  auto r     = cuda::std::make_tuple(ex::lane_split(cuda::std::get<I>(::std::move(b.s)))...);
+  auto stage = [&](auto k) {
+    constexpr size_t K = decltype(k)::value;
+    auto body          = [=] {
+      const int* prev_last = K > 0 ? in.data[K - 1] + in.shard_n - 1 : nullptr;
+      adjdiff_k<<<(in.shard_n + 255) / 256, 256, 0, in.lane[K].stream()>>>(
+        in.data[K], out.data[K], in.shard_n, prev_last, static_cast<int>(K));
+    };
+    if constexpr (K == 0)
+    {
+      return cuda::std::get<0>(r) | ex::then(body);
+    }
+    else
+    {
+      return ex::when_all(cuda::std::get<K>(r), cuda::std::get<K - 1>(r)) | ex::continues_on(in.lane[K])
+           | ex::then(body);
+    }
+  };
+  return bundle{cuda::std::make_tuple(stage(cuda::std::integral_constant<size_t, I>{})...)};
+}
 template <class... S, size_t N>
 auto adjacent_difference(bundle<S...> b, const sharded_view<N>& in, const sharded_view<N>& out)
 {
-  return map_bundle(
-    ::std::move(b.s),
-    [=](auto s, auto k) {
-      return ::std::move(s) | ex::then([=] {
-               const cudaStream_t st = in.lane[k].stream();
-               REQUIRE(cudaEventRecord(in.ready[k], st) == cudaSuccess);
-               const int* prev_last = nullptr;
-               if constexpr (decltype(k)::value > 0)
-               {
-                 REQUIRE(cudaStreamWaitEvent(st, in.ready[k - 1], 0) == cudaSuccess);
-                 prev_last = in.data[k - 1] + in.shard_n - 1;
-               }
-               adjdiff_k<<<(in.shard_n + 255) / 256, 256, 0, st>>>(
-                 in.data[k], out.data[k], in.shard_n, prev_last, static_cast<int>(k));
-             });
-    },
-    cuda::std::make_index_sequence<N>{});
+  return adjacent_difference_impl(::std::move(b), in, out, cuda::std::make_index_sequence<N>{});
 }
 
 // reduce(bundle, in, partials, result): per shard, CUB Reduce into partials[k] on
@@ -696,18 +701,14 @@ C2H_TEST("lane_scheduler: sharded adjacent difference: direct neighbor read, one
   // Two shards on lanes a and b. x = iota; y = 2x (elementwise, per shard);
   // z = adjacent difference of y across the global index space.
   fixture f;
+  join_counter jc;
   constexpr size_t N = 2;
   const int half     = f.n / 2;
-  cudaEvent_t ready[N]{};
-  for (auto& e : ready)
-  {
-    REQUIRE(cudaEventCreateWithFlags(&e, cudaEventDisableTiming) == cudaSuccess);
-  }
-  int* z = nullptr;
+  int* z             = nullptr;
   REQUIRE(cudaMalloc(&z, f.n * sizeof(int)) == cudaSuccess);
-  sharded_view<N> x{{f.a, f.a + half}, half, {f.la, f.lb}, {ready[0], ready[1]}};
-  sharded_view<N> y{{f.b, f.b + half}, half, {f.la, f.lb}, {ready[0], ready[1]}};
-  sharded_view<N> zv{{z, z + half}, half, {f.la, f.lb}, {ready[0], ready[1]}};
+  sharded_view<N> x{{f.a, f.a + half}, half, {f.la, f.lb}};
+  sharded_view<N> y{{f.b, f.b + half}, half, {f.la, f.lb}};
+  sharded_view<N> zv{{z, z + half}, half, {f.la, f.lb}};
   iota_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n);
   REQUIRE(cudaStreamSynchronize(f.sa.get()) == cudaSuccess);
 
@@ -722,8 +723,11 @@ C2H_TEST("lane_scheduler: sharded adjacent difference: direct neighbor read, one
            });
   };
 
-  // Eager: correct across the boundary.
-  ex::sync_wait(make());
+  // Eager: correct across the boundary; exactly three cross-lane dependencies:
+  // the fork a -> b at the outer when_all, the boundary b <- a (the split's
+  // ready point), and the join b -> a at the end.
+  ex::sync_wait(make(), jc.env());
+  CHECK(jc.joins == 3);
   std::vector<int> h(f.n);
   REQUIRE(cudaMemcpy(h.data(), z, f.n * sizeof(int), cudaMemcpyDeviceToHost) == cudaSuccess);
   CHECK(h[0] == 0);
@@ -754,8 +758,4 @@ C2H_TEST("lane_scheduler: sharded adjacent difference: direct neighbor read, one
   }
   cudaGraphDestroy(g);
   cudaFree(z);
-  for (auto e : ready)
-  {
-    cudaEventDestroy(e);
-  }
 }

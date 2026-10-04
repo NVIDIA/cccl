@@ -82,6 +82,7 @@
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/env.cuh>
+#include <cuda/experimental/__execution/exception.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/schedule_from.cuh>
@@ -90,6 +91,7 @@
 #include <cuda/experimental/__execution/visit.cuh>
 #include <cuda/experimental/__execution/when_all.cuh>
 
+#include <memory>
 #include <type_traits>
 #include <utility>
 
@@ -152,26 +154,51 @@ struct get_lane_fork_t
 };
 _CCCL_GLOBAL_CONSTANT get_lane_fork_t get_lane_fork{};
 
+//! @brief Attribute of a `lane_split` sender: where the event recorded at the
+//! split's completion point lives. A `continues_on` whose upstream is a split
+//! consumer waits on that event instead of on the lane's tail.
+struct get_lane_ready_t
+{
+  _CCCL_TEMPLATE(class _Env)
+  _CCCL_REQUIRES(__queryable_with<_Env, get_lane_ready_t>)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Env& __env) const noexcept
+    -> __query_result_t<_Env, get_lane_ready_t>
+  {
+    return __env.query(*this);
+  }
+};
+_CCCL_GLOBAL_CONSTANT get_lane_ready_t get_lane_ready{};
+
 namespace __lane
 {
 // ------------------------------------------------------- stream set ----------
+// The lanes a sender completes on. For each lane, optionally the event recorded
+// at the point the sender's work on that lane completed (a `lane_split`'s ready
+// point); a join waits on that event when present, else on the lane's tail.
 struct stream_set
 {
   static constexpr int cap = 16;
   cudaStream_t s[cap]{};
+  cudaEvent_t* ready[cap]{};
   int n = 0;
-  void add(cudaStream_t x)
+  void add(cudaStream_t x, cudaEvent_t* ev = nullptr)
   {
     for (int i = 0; i < n; ++i)
     {
       if (s[i] == x)
       {
+        if (ready[i] == nullptr)
+        {
+          ready[i] = ev;
+        }
         return;
       }
     }
     if (n < cap)
     {
-      s[n++] = x;
+      s[n]     = x;
+      ready[n] = ev;
+      ++n;
     }
   }
 };
@@ -198,9 +225,21 @@ void join_into(const stream_set& from, cudaStream_t to, [[maybe_unused]] const E
     {
       continue;
     }
-    // Event created in from.s[i]'s context (timing disabled), recorded, waited
-    // on by `to`, destroyed on scope exit; throws cuda::cuda_error on failure.
-    ::cuda::stream_ref{to}.wait(::cuda::stream_ref{from.s[i]});
+    if (from.ready[i] != nullptr && *from.ready[i] != nullptr)
+    {
+      // The upstream recorded its completion point (a lane_split): depend on
+      // that, not on whatever the lane enqueued since.
+      if (auto st = cudaStreamWaitEvent(to, *from.ready[i], 0); st != cudaSuccess)
+      {
+        throw ::cuda::cuda_error(st, "lane_scheduler: cudaStreamWaitEvent on a split's ready point failed");
+      }
+    }
+    else
+    {
+      // Event created in from.s[i]'s context (timing disabled), recorded, waited
+      // on by `to`, destroyed on scope exit; throws cuda::cuda_error on failure.
+      ::cuda::stream_ref{to}.wait(::cuda::stream_ref{from.s[i]});
+    }
     notify(from.s[i], to, env);
   }
 }
@@ -384,7 +423,13 @@ void collect(const Sndr& s, stream_set& out)
 {
   if constexpr (completes_on_lane<Sndr>)
   {
-    out.add(execution::get_completion_scheduler<set_value_t>(execution::get_env(s)).stream());
+    const auto attrs = execution::get_env(s);
+    cudaEvent_t* ev  = nullptr;
+    if constexpr (__queryable_with<decltype(attrs), get_lane_ready_t>)
+    {
+      ev = get_lane_ready(attrs);
+    }
+    out.add(execution::get_completion_scheduler<set_value_t>(attrs).stream(), ev);
   }
   else if constexpr (structured_binding_size<Sndr> >= 2)
   {
@@ -558,6 +603,23 @@ struct on_t
 };
 inline constexpr on_t on{};
 
+// Is this environment the one a when_all hands its children (possibly behind
+// forwarding-env layers added by then/continues_on)?
+template <class Env>
+struct strip_fwd_env
+{
+  using type = Env;
+};
+template <class Env>
+struct strip_fwd_env<__fwd_env_<Env>> : strip_fwd_env<Env>
+{};
+template <class Env>
+inline constexpr bool is_when_all_child_env_ = false;
+template <class Rcvr>
+inline constexpr bool is_when_all_child_env_<when_all_t::__env_t<Rcvr>> = true;
+template <class Env>
+inline constexpr bool is_when_all_child_env = is_when_all_child_env_<typename strip_fwd_env<::std::decay_t<Env>>::type>;
+
 // ------------------------------------------------------ fork at when_all -----
 // A when_all whose children run on lanes, started on a lane: record one event on
 // the origin lane *before* any child starts, and give it to the children through
@@ -626,6 +688,7 @@ struct fork_when_all_t
     lane_fork_point fork_{};
     cudaStream_t origin_{nullptr};
     bool needs_fork_ = false;
+    bool reuse_      = false;
     connect_result_t<CvSndr, rcvr_t<Rcvr>> op_;
 
     opstate_t(CvSndr&& s, Rcvr r)
@@ -637,6 +700,14 @@ struct fork_when_all_t
     // At connect: the origin lane (the environment's scheduler, if it is a lane)
     // and whether any child touches another lane. If every lane the children
     // complete on is the origin, no fork point is needed.
+    //
+    // A when_all forks from its predecessor's completion point. A when_all can
+    // only acquire upstream lane work through a let_value body (whose entry is
+    // where this wrapper records a new point) or by being a child of an outer
+    // when_all, whose predecessor is the same: in that case the enclosing fork
+    // point is reused rather than re-recorded at this when_all's start, which
+    // would make the children depend on whatever the sibling stages started
+    // earlier enqueued on the origin lane in between.
     void prepare(const Sndr& s)
     {
       const auto& env = execution::get_env(rcvr_);
@@ -652,13 +723,26 @@ struct fork_when_all_t
           {
             needs_fork_ = needs_fork_ || lanes.s[i] != origin_;
           }
+          if constexpr (is_when_all_child_env<decltype(env)> && __queryable_with<decltype(env), get_lane_fork_t>)
+          {
+            reuse_ = needs_fork_;
+          }
         }
       }
     }
 
     void start() noexcept
     {
-      if (needs_fork_)
+      if (reuse_)
+      {
+        if constexpr (__queryable_with<env_of_t<Rcvr>, get_lane_fork_t>)
+        {
+          fork_ = get_lane_fork(execution::get_env(rcvr_)); // the enclosing when_all's point
+        }
+        execution::start(op_);
+        fork_ = {};
+      }
+      else if (needs_fork_)
       {
         const ::cuda::__ensure_current_context guard{::cuda::stream_ref{origin_}};
         cudaEvent_t e{};
@@ -714,6 +798,297 @@ struct fork_when_all_t
     }
   };
 };
+
+// ------------------------------------------------------------- lane::split ---
+// One lane sender, several consumers (P2300 `split`). The child runs once,
+// started by the first consumer to start; when it completes on its lane, one
+// event is recorded there -- the "ready" point -- and every consumer receives
+// the (decayed) values. The ready point is exposed as the sender's
+// `get_lane_ready` attribute, so a `continues_on` downstream of a consumer on
+// another lane waits on *that* event (`join_into`) rather than on the lane's
+// tail: the consumer depends on the split's completion point, not on whatever
+// the lane enqueued afterwards. Lane completion is synchronous and every
+// consumer connects before the pipeline starts, so there are no races to
+// handle; the shared state is heap-allocated, as in every `split`.
+struct split_t
+{
+  struct waiter
+  {
+    waiter* next_              = nullptr;
+    void (*complete_)(waiter*) = nullptr;
+  };
+
+  template <class Values>
+  struct shared_base
+  {
+    cudaEvent_t* ready_{nullptr}; // the slot lives in the control block
+    cudaStream_t lane_{nullptr};
+    bool started_ = false;
+    bool done_    = false;
+    int kind_     = 0; // 1 value, 2 error, 3 stopped
+    Values values_{};
+    exception_ptr error_{};
+    waiter* waiters_ = nullptr;
+
+    virtual ~shared_base()     = default;
+    virtual void start_child() = 0;
+
+    void push(waiter* w) noexcept
+    {
+      w->next_ = waiters_;
+      waiters_ = w;
+    }
+    void finish(int kind)
+    {
+      kind_ = kind;
+      done_ = true;
+      if (kind == 1)
+      {
+        if (auto st = cudaEventCreateWithFlags(ready_, cudaEventDisableTiming); st != cudaSuccess)
+        {
+          throw ::cuda::cuda_error(st, "lane_split: cudaEventCreateWithFlags failed");
+        }
+        if (auto st = cudaEventRecord(*ready_, lane_); st != cudaSuccess)
+        {
+          throw ::cuda::cuda_error(st, "lane_split: cudaEventRecord failed");
+        }
+      }
+      // Waiters were pushed in start order; complete them in that order.
+      waiter* list = waiters_;
+      waiters_     = nullptr;
+      waiter* rev  = nullptr;
+      while (list)
+      {
+        waiter* n   = list->next_;
+        list->next_ = rev;
+        rev         = list;
+        list        = n;
+      }
+      for (waiter* w = rev; w;)
+      {
+        waiter* n = w->next_;
+        w->complete_(w);
+        w = n;
+      }
+    }
+  };
+
+  template <class Base, class Env>
+  struct child_rcvr_t
+  {
+    using receiver_concept = receiver_t;
+    Base* base_;
+    Env env_;
+    template <class... Ts>
+    void set_value(Ts&&... ts) noexcept
+    {
+      base_->values_ = typename Base::values_type{static_cast<Ts&&>(ts)...};
+      base_->finish(1);
+    }
+    void set_error(exception_ptr e) noexcept
+    {
+      base_->error_ = static_cast<exception_ptr&&>(e);
+      base_->finish(2);
+    }
+    void set_stopped() noexcept
+    {
+      base_->finish(3);
+    }
+    [[nodiscard]] auto get_env() const noexcept -> const Env&
+    {
+      return env_;
+    }
+  };
+
+  // The child is connected with the environment of the first consumer to
+  // connect (forwarding queries only): that is how its `schedule(lane)` sees the
+  // enclosing when_all's fork point, and so joins a capture at the right point.
+  template <class Sndr, class Values, class Env>
+  struct shared_impl : shared_base<Values>
+  {
+    using values_type = Values;
+    connect_result_t<Sndr, child_rcvr_t<shared_impl, Env>> op_;
+    shared_impl(Sndr&& s, Env env)
+        : op_{execution::connect(static_cast<Sndr&&>(s), child_rcvr_t<shared_impl, Env>{this, static_cast<Env&&>(env)})}
+    {}
+    void start_child() override
+    {
+      execution::start(op_);
+    }
+  };
+
+  template <class Sndr>
+  struct sndr_t;
+
+  template <class Sndr, class Rcvr>
+  struct opstate_t : waiter
+  {
+    using operation_state_concept = operation_state_t;
+    using values_t                = typename sndr_t<Sndr>::values_t;
+    Rcvr rcvr_;
+    ::std::shared_ptr<shared_base<values_t>> state_;
+
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_HOST_DEVICE opstate_t(Rcvr r, ::std::shared_ptr<shared_base<values_t>> st)
+        : rcvr_{static_cast<Rcvr&&>(r)}
+        , state_{::std::move(st)}
+    {
+      this->complete_ = [](waiter* w) {
+        static_cast<opstate_t*>(w)->complete();
+      };
+    }
+    opstate_t(opstate_t&&) = delete;
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_HOST_DEVICE ~opstate_t() {}
+
+    void start() noexcept
+    {
+      if (state_->done_)
+      {
+        complete();
+        return;
+      }
+      state_->push(this);
+      if (!state_->started_)
+      {
+        state_->started_ = true;
+        state_->start_child(); // completes synchronously, finishing every pushed waiter
+      }
+    }
+    void complete() noexcept
+    {
+      switch (state_->kind_)
+      {
+        case 1:
+          ::cuda::std::__apply(
+            [&](auto&... vs) {
+              execution::set_value(static_cast<Rcvr&&>(rcvr_), vs...);
+            },
+            state_->values_);
+          break;
+        case 2:
+          execution::set_error(static_cast<Rcvr&&>(rcvr_), state_->error_);
+          break;
+        default:
+          execution::set_stopped(static_cast<Rcvr&&>(rcvr_));
+      }
+    }
+  };
+
+  template <class Sndr>
+  struct attrs_t
+  {
+    scheduler sch_;
+    cudaEvent_t* ready_;
+    [[nodiscard]] constexpr auto query(get_completion_behavior_t) const noexcept
+    {
+      return completion_behavior::synchronous;
+    }
+    template <class... Env>
+    [[nodiscard]] constexpr auto query(get_completion_scheduler_t<set_value_t>, const Env&...) const noexcept
+      -> scheduler
+    {
+      return sch_;
+    }
+    template <class... Env>
+    [[nodiscard]] constexpr auto query(get_completion_domain_t<set_value_t>, const Env&...) const noexcept -> domain;
+    [[nodiscard]] auto query(::cuda::get_stream_t) const noexcept -> ::cuda::stream_ref
+    {
+      return ::cuda::stream_ref{sch_.stream()};
+    }
+    [[nodiscard]] auto query(get_lane_ready_t) const noexcept -> cudaEvent_t*
+    {
+      return ready_;
+    }
+  };
+
+  template <class... Ts>
+  using set_value_sig_t = completion_signatures<set_value_t(::std::decay_t<Ts>...)>;
+
+  template <class Sndr>
+  struct sndr_t
+  {
+    using sender_concept = sender_t;
+    static_assert(!dependent_sender<Sndr>, "lane_split: the child must know its completions without an environment");
+    static_assert(completes_on_lane<Sndr>, "lane_split: the child must complete on a lane_scheduler");
+    using completions_t = decltype(execution::get_completion_signatures<Sndr>());
+    using values_t      = __value_types<completions_t, ::cuda::std::__decayed_tuple, ::cuda::std::__type_self_t>;
+
+    // Copies share the control block. The child is held there until the first
+    // connect, when it is connected into the shared state with that consumer's
+    // environment. The ready event's slot lives in the control block so that
+    // `get_lane_ready` can hand out its address before anything is connected.
+    struct control
+    {
+      ::std::shared_ptr<shared_base<values_t>> impl_;
+      cudaEvent_t ready_{nullptr};
+      Sndr sndr_;
+      scheduler sch_;
+      explicit control(Sndr s)
+          : sndr_{static_cast<Sndr&&>(s)}
+          , sch_{execution::get_completion_scheduler<set_value_t>(execution::get_env(sndr_))}
+      {}
+      ~control()
+      {
+        if (ready_)
+        {
+          cudaEventDestroy(ready_);
+        }
+      }
+    };
+    ::std::shared_ptr<control> ctl_;
+
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_HOST_DEVICE explicit sndr_t(Sndr s)
+        : ctl_{::std::make_shared<control>(static_cast<Sndr&&>(s))}
+    {}
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_HOST_DEVICE sndr_t(const sndr_t& o)
+        : ctl_{o.ctl_}
+    {}
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_HOST_DEVICE sndr_t(sndr_t&& o) noexcept
+        : ctl_{::std::move(o.ctl_)}
+    {}
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_HOST_DEVICE ~sndr_t() {}
+
+    template <class Self, class... Env>
+    [[nodiscard]] static constexpr auto get_completion_signatures()
+    {
+      return concat_completion_signatures(
+        __value_types<completions_t, set_value_sig_t, ::cuda::std::__type_self_t>{},
+        __eptr_completion(),
+        completion_signatures<set_stopped_t()>{});
+    }
+    template <class Rcvr>
+    [[nodiscard]] auto connect(Rcvr r) const -> opstate_t<Sndr, Rcvr>
+    {
+      if (!ctl_->impl_)
+      {
+        using env_t = __fwd_env_t<env_of_t<Rcvr>>;
+        auto impl   = ::std::make_shared<shared_impl<Sndr, values_t, env_t>>(
+          static_cast<Sndr&&>(ctl_->sndr_), execution::__fwd_env(execution::get_env(r)));
+        impl->lane_  = ctl_->sch_.stream();
+        impl->ready_ = &ctl_->ready_;
+        ctl_->impl_  = impl;
+      }
+      return {static_cast<Rcvr&&>(r), ctl_->impl_};
+    }
+    _CCCL_EXEC_CHECK_DISABLE
+    [[nodiscard]] _CCCL_HOST_DEVICE auto get_env() const noexcept -> attrs_t<Sndr>
+    {
+      return {ctl_->sch_, &ctl_->ready_};
+    }
+  };
+
+  template <class Sndr>
+  [[nodiscard]] auto operator()(Sndr sndr) const -> sndr_t<Sndr>
+  {
+    return sndr_t<Sndr>{static_cast<Sndr&&>(sndr)};
+  }
+};
+inline constexpr split_t split{};
 
 template <class S>
 inline constexpr bool is_when_all = false;
@@ -808,11 +1183,20 @@ inline constexpr auto on_t::attrs_t<Sndr>::query(get_completion_domain_t<set_val
 {
   return {};
 }
+template <class Sndr>
+template <class... Env>
+inline constexpr auto split_t::attrs_t<Sndr>::query(get_completion_domain_t<set_value_t>, const Env&...) const noexcept
+  -> domain
+{
+  return {};
+}
 } // namespace __lane
 
 //! The public names.
 using lane_scheduler = __lane::scheduler;
 using lane_domain    = __lane::domain;
+//! `lane_split(sndr)`: one lane sender, several consumers; see `__lane::split_t`.
+inline constexpr auto& lane_split = __lane::split;
 
 template <class Sndr>
 inline constexpr int structured_binding_size<__lane::on_t::sndr_t<Sndr>> = 3;
