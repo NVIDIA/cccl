@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compare device scans with host prefixes in the same group order.
+
+Cases cover scalar and per-thread array inputs, independent physical and
+logical warps, callbacks, and scratch-storage reuse. Separate outputs check
+that scans preserve their input. Invalid runtime bounds run in child
+processes so their deliberate device traps cannot damage the test worker's
+CUDA context.
+"""
+
 from __future__ import annotations
 
 import operator
@@ -56,6 +65,13 @@ _DTYPES = (
 
 
 def _dtype_values(dtype, size: int) -> np.ndarray:
+    """Choose patterns that reveal lost payload bits during a scan.
+
+    Float64 values include a fraction lost in float32. Wider integer patterns
+    use bits beyond the next smaller width. Sum references accumulate in the
+    payload dtype so host promotion cannot hide a conversion error.
+    """
+
     indices = np.arange(size, dtype=np.int64)
     if np.dtype(dtype).kind == "u":
         values = (indices % 3 == 0).astype(dtype)
@@ -73,6 +89,12 @@ def _dtype_values(dtype, size: int) -> np.ndarray:
 
 
 def _exclusive_sum(values: np.ndarray, initial: float = 0) -> np.ndarray:
+    """Shift a dtype-preserving cumulative sum and insert the initial value.
+
+    Apply this reference separately to each group or valid prefix. It has no
+    knowledge of the device scan's algorithm or per-thread storage layout.
+    """
+
     result = np.empty_like(values)
     result[0] = initial
     result[1:] = initial + np.cumsum(values[:-1], dtype=values.dtype)
@@ -136,6 +158,13 @@ def test_all_five_spellings_preserve_mode_initial_and_aggregate_semantics(
 
 @cache
 def _thread_data_algorithm_kernel(algorithm: str):
+    """Capture an algorithm selector for repeated dtype and shape cases.
+
+    Each thread owns consecutive source items. Store both the scan result and
+    the original payload so the caller can check global prefix order and
+    out-of-place behavior independently.
+    """
+
     @cuda.jit
     def kernel(source, output, preserved, items_per_thread):
         thread = cuda.threadIdx.x
@@ -210,6 +239,13 @@ def test_scalar_scan_accepts_an_element_of_a_loaded_payload(
 
 @cache
 def _local_array_numpy_scan(array_items_per_thread):
+    """Capture a fixed local-array extent for the qualified NumPy operator.
+
+    Local allocation needs a compile-time extent. The returned kernel records
+    prefixes, the unchanged input, and one aggregate per thread to check all
+    three results of the call.
+    """
+
     @cuda.jit
     def kernel(source, output, preserved, aggregates, items_per_thread):
         thread = cuda.threadIdx.x
@@ -311,6 +347,14 @@ def _warp_scans(
 def test_physical_and_logical_warp_forms_cover_alias_callback_and_valid_prefix(
     dtype,
 ):
+    """Compare full-warp scans and valid prefixes as independent groups.
+
+    The two full-warp references restart every 32 lanes. The partial reference
+    uses only the first valid lanes of each eight-lane group; results outside
+    that prefix are not inspected. Every lane of each eight-lane group must
+    receive the sum of that group's valid inputs as its aggregate.
+    """
+
     source = _dtype_values(dtype, _BLOCK_THREADS)
     if dtype is np.int32:
         source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 13) % 47) + 1
@@ -370,6 +414,14 @@ def _warp_scan_combined_runtime_abi(source, output, aggregates, initial, valid):
 
 
 def test_warp_scan_combines_runtime_initial_prefix_and_aggregate_abi():
+    """Check argument order with initial value, valid_items, and aggregate.
+
+    The initial value is below every input. Later exclusive maxima therefore
+    equal the maxima of preceding inputs alone. Rank zero must receive the
+    initial value. The aggregate includes every valid input and excludes
+    that initial value.
+    """
+
     source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 11) % 43) + 1
     output = np.full_like(source, -99)
     aggregates = np.full_like(source, -99)
@@ -404,6 +456,16 @@ def test_warp_scan_combines_runtime_initial_prefix_and_aggregate_abi():
 
 @cache
 def _storage_scan_kernel(storage_mode: str):
+    """Build equivalent scans with three scratch-allocation paths.
+
+    Without a descriptor, the compiler sizes and synchronizes its scratch.
+    An unsized caller descriptor also lets the compiler determine capacity.
+    The last case requests 64 KiB, above the 48 KiB conservative threshold
+    for a device-limit query. Dynamic backing is selected only when capacity
+    exceeds the device's default limit; the test requires 64 KiB of dynamic
+    shared memory in the launch metadata.
+    """
+
     if storage_mode == "implicit":
 
         @cuda.jit
@@ -488,6 +550,13 @@ def test_reused_caller_storage_keeps_calls_ordered_and_input_unchanged():
 def _run_invalid_runtime_prefix_probe(
     valid_items: int,
 ) -> subprocess.CompletedProcess[str]:
+    """Test an invalid valid_items count in a child with its own CUDA context.
+
+    Require the child to import the same package origin as the parent. Return
+    its status and diagnostics so the test can distinguish a device trap from
+    an unrelated failure, then verify that the parent's context still works.
+    """
+
     # A device trap poisons its CUDA context, so invalid launches must run in a
     # disposable child process rather than the pytest worker.
     script = f"""\

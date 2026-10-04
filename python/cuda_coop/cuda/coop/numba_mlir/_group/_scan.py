@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Expose Numba-qualified Scan markers and their user-facing contracts.
+
+These functions are recognized inside kernels. Their markers let the group
+planner choose a CUB provider from the launch, payload, and selectors. They
+extend the common API with local arrays, device operators, lane-prefix
+counts, and aggregate outputs; they do not execute a host-side scan.
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -39,10 +47,10 @@ def scan(
         the same dtype and extent across threads. Warps accept scalars only.
     scan_op : str or device callable, optional
         Also accepts ``operator``/NumPy aliases for the built-in strings or a
-        stateless device function ``op(left, right)``. The compile-time operator
-        must be associative and return the input dtype. ``None`` selects sum.
-        Exclusive custom scans require ``initial_value``. Stateful binary
-        operators are unsupported.
+        stateless device function ``op(left, right)``. The operator is fixed
+        at compile time and must be associative and return the input dtype.
+        ``None`` selects sum. Non-sum exclusive scans require
+        ``initial_value``. Stateful binary operators are unsupported.
     valid_items : int or integer scalar, optional
         Warp-only count of contributing lanes, from one through the group
         size, uniform within the group. ``None`` includes all lanes. Every
@@ -53,6 +61,7 @@ def scan(
         Writable one-item payload with the input dtype. Receives the input
         aggregate on every member, excluding ``initial_value`` and lanes
         beyond ``valid_items``.
+
     Returns
     -------
     numeric scalar or per-thread payload

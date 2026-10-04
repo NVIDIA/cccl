@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Inspect Scan call planning before device compilation.
+
+Frontend IR exposes the provider selected for each public spelling and the
+arguments passed to it. These tests separate signature validation and dtype
+inference from generated C++ compilation and numerical scan results.
+"""
+
 from __future__ import annotations
 
 import operator
@@ -23,6 +30,12 @@ class _StringSelector(str, Enum):
 
 
 def _plan(function, *, arg_types=(), block=(64, 1, 1)):
+    """Build frontend IR and a planner with argument types and launch sizes.
+
+    Return both objects before running the planner so each test can choose
+    whether planning should fail or inspect the rewritten calls afterward.
+    """
+
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
     from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
@@ -36,6 +49,13 @@ def _plan(function, *, arg_types=(), block=(64, 1, 1)):
 
 
 def _planned_factory_calls(func_ir):
+    """Pair IR calls with their captured Python targets when those are known.
+
+    Resolve global and free-variable assignments so tests can compare targets
+    by callable identity. Keep calls with unknown targets as ``None`` rather
+    than treating an IR variable name as proof of which provider was selected.
+    """
+
     from numba_cuda_mlir.numbair_transforms import ir
 
     globals_by_name = {
@@ -66,6 +86,13 @@ def _provider_call(func_ir, provider):
 
 
 def _kwarg_value(func_ir, call, name):
+    """Read a planned keyword whose value has one constant definition.
+
+    Require an explicit constant, global, or free-variable assignment. This
+    keeps assertions about static factory options separate from runtime values
+    that merely have a similar IR variable name.
+    """
+
     from numba_cuda_mlir.numbair_transforms import ir
 
     variable = dict(call.kws)[name]

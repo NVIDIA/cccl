@@ -142,12 +142,16 @@
   });
 
   function prefix_choices(state) {
+    // Sum supplies zero itself. Only a general exclusive scan exposes a
+    // separate initial value; inclusive scans have no added prefix.
     const generic_exclusive = state.variant === "exclusive_scan";
     const choices = generic_exclusive ? [choice("zero", "Initial value 0"), choice("ten", "Initial value 10")] : [choice("none", "No added prefix")];
     return choices;
   }
 
   function build_scan(state) {
+    // Scan each group's blocked sequence independently. Local prefixes and
+    // incoming thread prefixes explain the same ordered result in stages.
     const items = Number(state.items);
     const width = group_width(state.scope);
     const valid = state.valid === "half" ? width / 2 : width;
@@ -155,6 +159,7 @@
     const inclusive = state.variant.startsWith("inclusive");
     const values = input_values(threads * items, operator);
     const totals = Array.from({ length: threads }, (_, thread) => fold(values.slice(thread * items, (thread + 1) * items), operator));
+    // The aggregate excludes the initial value and any invalid tail lanes.
     const aggregates = Array.from({ length: threads / width }, (_, group) => fold(values.slice(group * width * items, (group * width + valid) * items), operator));
     const seeds = aggregates.map(aggregate => state.prefix === "ten" ? 10 : state.prefix === "zero" || !inclusive ? 0 : null);
     const local = values.map((_, index) => {
@@ -186,6 +191,8 @@
       { id: "prefix", label: "Prefix entering each thread · ∅ means no earlier value", count: threads, groups: groups(1) },
       { id: "output", label: `${inclusive ? "Inclusive" : "Exclusive"} result registers`, count: values.length, groups: groups(items) },
     ];
+    // Every member receives the aggregate, including lanes whose individual
+    // scan result is undefined outside the valid prefix.
     if (state.aggregate === "emit") {
       rows.push({ id: "aggregate", label: "Optional aggregate_output · input aggregate, without prefix", count: threads, groups: groups(1) });
       for (let thread = 0; thread < threads; ++thread) output.push(token(`aggregate${thread}`, aggregates[Math.floor(thread / width)], "aggregate", thread,

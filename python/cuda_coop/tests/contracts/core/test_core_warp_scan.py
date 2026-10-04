@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check full and partial WarpScan signatures without a backend compiler.
+
+Logical width, prefix binding, and aggregate outputs affect both the CUB
+entry point and specialization identity. Initial values and custom
+operators must keep their distinct runtime or static argument roles.
+"""
+
 import numpy as np
 import pytest
 
@@ -48,6 +55,14 @@ def test_warp_scan_selects_default_sum_entry_point(mode, method_name):
 
 
 def test_partial_exclusive_sum_uses_plus_and_an_explicitly_typed_zero():
+    """Check the general Scan overload used for a partial exclusive sum.
+
+    CUB's partial scan takes an operator, so addition needs an explicit plus
+    functor. Without an initial value, rank zero's exclusive result would
+    be undefined. A zero gives rank zero the exclusive-sum result, and using
+    the payload dtype keeps C++ input, output, and initial types consistent.
+    """
+
     specialization = make_warp_scan_specialization(
         dtype="int32",
         threads_in_warp=8,
