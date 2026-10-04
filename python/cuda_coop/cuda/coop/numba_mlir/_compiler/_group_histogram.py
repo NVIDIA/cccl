@@ -43,9 +43,21 @@ from ._parameters import normalize_dtype_param
 def _extent(context, bound):
     """Resolve the static counter extent independently of sample shape.
 
-    The planner also calls this before rewriting, when a later operation
-    such as Store consumes the result. Both paths use the same bins_per_thread
-    value, so that operation sees the extent that allocation will produce.
+    Here, extent is the counter slots owned by one thread. The
+    registered result policy calls this when a later operation needs the
+    Histogram output shape, and Histogram lowering uses it to allocate
+    that same output. Sample items per thread do not determine counter
+    capacity.
+
+    Parameters
+    ----------
+    context : GroupPlanningContext
+        Access to launch dimensions, constant controls, payload
+        facts, and IR builders for this group-planning attempt.
+    bound : inspect.BoundArguments
+        Public call arguments after signature binding and default
+        application. Runtime values remain IR variables; selectors
+        are resolved through the context.
     """
 
     return normalize_positive_int(
