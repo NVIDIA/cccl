@@ -28,7 +28,7 @@ using namespace cuda::experimental::stf;
  * @param d_offsets  Slice containing the offset vector of the CSR representation.
  * @return           The degree of each vertex.
  */
-__device__ int degree_centrality(int idx, slice<const int> loffsets)
+_CCCL_HOST_DEVICE int degree_centrality(int idx, slice<const int> loffsets)
 {
   return loffsets[idx + 1] - loffsets[idx];
 }

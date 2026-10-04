@@ -92,7 +92,7 @@ void write_vtk_2D(const std::string& filename, slice<const double, 3> Ez, double
 }
 
 // Define the source function
-_CCCL_DEVICE double Source(double t, double x, double y, double z)
+_CCCL_HOST_DEVICE double Source(double t, double x, double y, double z)
 {
   constexpr double pi         = 3.14159265358979323846;
   constexpr double freq       = 1e9;
