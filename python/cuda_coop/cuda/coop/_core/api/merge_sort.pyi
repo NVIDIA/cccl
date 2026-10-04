@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Keep key and value result types distinct in Merge Sort calls.
+
+Overloads require partial-tile controls together and restrict explicit
+scratch to block groups. Runtime behavior is documented in merge_sort.py;
+these signatures let type checkers retain each input's item type.
+"""
+
 from typing import overload
 
 from typing_extensions import TypeVar

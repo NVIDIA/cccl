@@ -2,7 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Copy keys and values before calling CUB's in-place merge sort."""
+"""Plan MergeSort calls while preserving the caller's input payloads.
+
+CUB sorts keys and optional values in place. These rewrites allocate and
+copy result payloads first, then sort those copies and return them through
+IR aliases. Shared-core planning selects the block or warp implementation
+and its storage contract. The rewrite keeps comparison and shape inputs
+separate from runtime partial-tile counts and sentinels.
+"""
 
 import math
 from dataclasses import replace
@@ -37,6 +44,14 @@ from ._rewrite_merge_sort import infer_merge_sort_payload
 
 
 def _payload(context, operation, name, value, is_common_root):
+    """Recover a fixed array extent and numeric dtype for keys or values.
+
+    Common calls require ThreadData; qualified calls also accept local
+    arrays. Use an existing dtype or infer it from writes, then record it on
+    the payload so the result allocation inherits the same type. Return the
+    extent and dtype; pairwise extent matching is checked by the caller.
+    """
+
     if not context.is_array(operation, value):
         raise TypeError(
             f"{operation} {name} must be a fixed-size ThreadData or local array"
@@ -62,6 +77,13 @@ def _payload(context, operation, name, value, is_common_root):
 
 
 def _cast(context, statements, inst, value, dtype, name):
+    """Append a typed scalar conversion for a partial-tile operand.
+
+    Counts must reach the checked C++ wrapper as int64; sentinels must have
+    the key dtype. Materialize a constant or existing IR value, append its
+    conversion call, and return the new variable for the provider arguments.
+    """
+
     kwargs = {"scope": inst.target.scope, "loc": inst.loc}
     cast = context.value_var(
         statements, stem=f"merge_sort_{name}_type", value=dtype, **kwargs
@@ -79,6 +101,15 @@ def _cast(context, statements, inst, value, dtype, name):
 
 
 def _coerce_static_sentinel(value, dtype, *, operation):
+    """Convert a static key sentinel while allowing infinite float bounds.
+
+    The shared scalar coercion rejects nonfinite values, but infinity can be
+    a useful sorting bound. Validate a matching zero first so this special
+    case keeps the usual dtype checks, including exact NumPy scalar dtypes.
+    Then restore the infinity in the validated type. Other values use the
+    ordinary representability checks.
+    """
+
     if (type(value) is float or isinstance(value, np.floating)) and math.isinf(
         value
     ):
@@ -95,6 +126,24 @@ def _coerce_static_sentinel(value, dtype, *, operation):
 def _lower_merge_sort(
     context, inst, *, operation, group, bound, is_common_root
 ):
+    """Build a supported Merge Sort call over fresh copies of the inputs.
+
+    Infer payload dtypes and matching extents. Require constant comparison
+    choices and validate the paired valid-count and sentinel controls. The
+    shared semantics record whether the tile is partial; the actual count
+    binding stays in the group plan, and the sentinel remains a call operand.
+
+    Ask core planning to select the CUB block or warp implementation. Apply
+    any caller-owned block storage descriptor to that plan, then choose the
+    registered factory whose namespace and partial-tile form match it.
+
+    Allocate and copy keys and optional values before the provider call, so
+    CUB's in-place sort cannot modify the public inputs. Convert a partial
+    count to int64 and its sentinel to the key dtype, even when the values
+    are static. Return pending IR statements with the plan attached; the
+    public result aliases one copied payload or the pair of copied payloads.
+    """
+
     from .._lowering import _merge_sort
 
     arguments = bound.arguments

@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check Merge Sort argument contracts before device code is generated.
+
+The frontend supplies kernel IR and argument types to the group planner.
+These tests cover static controls, runtime scalar types, and the boundary
+between common payloads and qualified local arrays.
+"""
+
 from types import SimpleNamespace
 
 import numpy as np
@@ -11,6 +18,8 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
 
 def _plan(function, arg_types=(), block=(64, 1, 1)):
+    """Plan a kernel with known launch dimensions and no CUDA compilation."""
+
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
     from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
@@ -110,6 +119,8 @@ def test_static_infinite_sentinel(
     ],
 )
 def test_static_sentinel_retains_scalar_validation(dtype_name, default):
+    """Keep dtype and representability checks when accepting infinity."""
+
     from numba_cuda_mlir import types
 
     from cuda import coop
