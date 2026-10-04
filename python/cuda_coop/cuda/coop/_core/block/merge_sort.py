@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe CUB BlockMergeSort overloads without importing a compiler.
+
+The call record stores two independent choices: keys only or key/value pairs,
+and a full tile or a partial tile. Binding a block shape produces the
+Algorithm consumed by a backend. CUB sorts its array operands in place; the
+group API's separate results are implemented by the backend using copies.
+Partial-tile wrappers check the wide runtime count before converting it to
+CUB's integer argument.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -24,11 +34,15 @@ from .._types import (
 
 
 class BlockMergeSortPayload(str, Enum):
+    """Select key-only sorting or keys with associated values."""
+
     KEYS = "keys"
     PAIRS = "pairs"
 
 
 class BlockMergeSortTilePolicy(str, Enum):
+    """Select a full tile or a valid prefix with a padding key."""
+
     FULL = "full"
     PARTIAL = "partial"
 
@@ -41,13 +55,13 @@ _ITEMS_PER_THREAD = Dependency("ITEMS_PER_THREAD")
 
 @dataclass(frozen=True)
 class BlockMergeSortSemantics:
-    """Dimension-independent BlockMergeSort call contract.
+    """Describe a Merge Sort call before a block shape is known.
 
-    Compiler backends add a static block shape through
-    :func:`make_block_merge_sort_specialization`.
-    Runtime ``valid_items`` and ``oob_default`` payloads are intentionally not
-    retained here. Their joint presence is recorded as the tile policy, which
-    selects the CUB overload and participates in semantic identity.
+    Key and value dtypes, item count, comparator, and parameter order select
+    the CUB call. The tile policy records whether both valid_items and
+    oob_default are present. Their actual runtime values are not retained,
+    so changing a count or padding key does not change this call identity.
+    The same shape-independent record also feeds Warp group planning.
     """
 
     key_dtype: Any
@@ -82,7 +96,11 @@ class BlockMergeSortSemantics:
 
 @dataclass(frozen=True)
 class BlockMergeSortSpecialization:
-    """Fully specialized CUB BlockMergeSort semantics."""
+    """Pair a bound CUB Algorithm with its block shape and call choices.
+
+    Backends use the Algorithm to emit the provider. The retained call record
+    exposes payload and tile policy without inspecting its C++ parameters.
+    """
 
     specialization: Algorithm
     call: BlockMergeSortSemantics
@@ -138,7 +156,40 @@ def make_block_merge_sort_semantics(
     valid_items: Any = None,
     oob_default: Any = None,
 ) -> BlockMergeSortSemantics:
-    """Build the normalized BlockMergeSort call contract."""
+    """Validate payload choices and build the CUB parameter sequence.
+
+    Keys and optional values are inout arrays. A partial tile adds a wide
+    count and a key-typed padding value after the comparator. This function
+    checks only their joint presence; it does not inspect device values.
+
+    Parameters
+    ----------
+    key_dtype : object
+        Required key type understood by the consuming backend.
+    items_per_thread : int
+        Positive fixed array extent, excluding booleans.
+    compare_operator : CxxOperator or PythonOperator
+        Static comparison descriptor. A Python descriptor must identify a
+        callable; the backend validates and compiles its type contract.
+    value_dtype : object, optional
+        Associated-value type. Omit it for a keys-only overload.
+    valid_items, oob_default : object, optional
+        Supply both to select the partial-tile overload. Their values stay
+        runtime operands and are not embedded in this record.
+
+    Returns
+    -------
+    BlockMergeSortSemantics
+        Payload and tile choices with ordered parameter descriptors.
+
+    Raises
+    ------
+    TypeError
+        The comparator is not a supported operator descriptor.
+    ValueError
+        The key type or Python callable is missing, the extent is invalid,
+        or only one partial-tile control is supplied.
+    """
 
     if key_dtype is None:
         raise ValueError("key dtype must be provided")
@@ -220,7 +271,42 @@ def make_block_merge_sort_specialization(
     valid_items: Any = None,
     oob_default: Any = None,
 ) -> BlockMergeSortSpecialization:
-    """Build a fully specialized CUB BlockMergeSort description."""
+    """Bind a block shape to the full or checked partial CUB Sort overload.
+
+    The partial form uses a generated adapter around CUB. It accepts the
+    count as a signed 64-bit value, checks zero through the group capacity,
+    and only then narrows it. Full tiles call the CUB primitive directly.
+
+    Parameters
+    ----------
+    key_dtype : object
+        Key type passed to make_block_merge_sort_semantics.
+    block_dim : tuple of int
+        Three positive Python dimensions, excluding booleans. Their product
+        must be a power of two for cub::BlockMergeSort.
+    items_per_thread : int
+        Positive array extent shared by the participating threads.
+    compare_operator : CxxOperator or PythonOperator
+        Comparison descriptor included in the method parameters.
+    value_dtype : object, optional
+        Associated-value type. Omit it for keys-only sorting.
+    valid_items, oob_default : object, optional
+        Joint presence selects partial-tile parameters. The backend supplies
+        their runtime operands; the factory does not retain their values.
+
+    Returns
+    -------
+    BlockMergeSortSpecialization
+        Bound Algorithm plus the call record and exact block dimensions.
+        Its input arrays are also the outputs; it has no scalar return.
+
+    Raises
+    ------
+    TypeError
+        The comparison descriptor is unsupported.
+    ValueError
+        The block shape or shared call arguments violate the constraints.
+    """
 
     block_dim = tuple(block_dim)
     if len(block_dim) != 3 or any(

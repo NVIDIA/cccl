@@ -22,7 +22,9 @@ uses a block of 64 threads.
    .. only:: html
 
       .. figure:: merge-sort.svg
-         :alt: Sixteen keys and their position badges form sorted local runs, then merge within one block. The final keys are zero through fifteen; each badge remains associated with its original key.
+         :alt: Sixteen keys and their position badges form sorted local
+               runs, then merge within one block. The final keys are zero
+               through fifteen; each badge stays with its original key.
          :width: 100%
 
          Ascending pairs with two items per teaching thread. Badges A through
@@ -71,10 +73,12 @@ the operation, including threads outside the prefix. Only the first
 remaining positions with ``?``. Zero valid items produces no defined output.
 
 Supply ``valid_items`` and ``oob_default`` together, with the same values
-throughout the group. The sentinel must have the key dtype and sort after
-all valid keys: a larger key for ascending order, or a smaller key for
-descending order. The explorer chooses a suitable sentinel for its integer
-inputs. The displayed ``?`` does not promise a particular tail value.
+throughout the group. The sentinel must sort after all valid keys: an upper
+bound for ascending order, or a lower bound for descending order. A typed
+sentinel, whether a runtime value or a NumPy scalar constant, must have
+exactly the key dtype. An ordinary Python numeric literal is converted to that
+dtype if it is representable. The explorer chooses a suitable sentinel for its
+integer inputs. The displayed ``?`` does not promise a particular tail value.
 
 Load only valid inputs and store only defined outputs. A sentinel does not
 make an out-of-bounds memory access valid. See :ref:`coop-merge-sort` for the
@@ -85,8 +89,8 @@ Using Merge Sort in a kernel
 
 This tested example sorts ``64 * items_per_thread`` keys in one block of
 64 threads. Each thread owns ``items_per_thread`` keys and matching
-original-position values. The checks verify both key
-order and the association between each returned key and its original index.
+original-position values. The checks verify key order and confirm that
+each returned index still identifies its key in the original input.
 
 .. literalinclude:: ../../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_merge_sort_examples.py
    :language: python
@@ -103,5 +107,4 @@ comparator supplies its own direction and cannot be combined with
 
 Only block calls accept explicit ``temp_storage``. Descriptors default to
 ``auto_sync=False``: provide barriers before reusing scratch or request
-``auto_sync=True``; see
-:ref:`coop-faq-temp-storage`.
+``auto_sync=True``. See :ref:`coop-faq-temp-storage`.

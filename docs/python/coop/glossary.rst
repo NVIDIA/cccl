@@ -59,8 +59,8 @@ Terms
    key-value pair
       A key used for ordering or selection and an associated value, such as
       its original array index. Pair operations move the two together.
-      Key and value payloads have the same extent but may have different
-      dtypes. See :ref:`Merge Sort <coop-merge-sort>`.
+      Key and value payloads have the same number of items per thread
+      but may have different dtypes. See :ref:`Merge Sort <coop-merge-sort>`.
 
    common API
       .. raw:: html

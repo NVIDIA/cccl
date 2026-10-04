@@ -616,6 +616,8 @@ def check_numba_surface(
 
 
 def check_merge_sort_surface() -> None:
+    """Check custom comparison typing and distinct key and value dtypes."""
+
     keys = coop.ThreadData(items_per_thread=3, dtype=np.int32)
     values = coop.ThreadData(items_per_thread=3, dtype=np.float64)
 

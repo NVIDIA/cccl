@@ -6,9 +6,7 @@
 Visualizations
 ==============
 
-Explore how ``cuda.coop`` moves values between memory and per-thread
-payloads, converts layouts, shifts values between neighbors, reduces a
-group's inputs to one aggregate, and computes ordered prefixes.
+Explore how ``cuda.coop`` primitives move, combine, and order values.
 Change the settings, step through the stages, and select a value to follow
 its ownership. These diagrams show data movement; their timing and geometry
 do not predict GPU performance.

@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compare group sorts with host results and check input preservation.
+
+Cases cover numeric key and value types, independent warp groups, partial
+prefixes, explicit scratch reuse, and qualified comparison functions.
+Duplicate keys test associations without requiring stable tie ordering.
+"""
+
 import numpy as np
 import pytest
 
@@ -37,6 +44,13 @@ def _run(
     valid_count=None,
     items_per_thread,
 ):
+    """Run one sort variant and check each group's defined output prefix.
+
+    Keys and associated values are copied back separately from the results
+    to check that the operation preserves both inputs. Numeric offsets expose
+    accidental narrowing of 64-bit keys or values.
+    """
+
     api = numba_coop if qualified else coop
     dtype = np.dtype(dtype)
     group_kind = (
@@ -295,6 +309,7 @@ def test_static_infinite_sentinel(
             preserved[thread * items_per_thread + item] = keys[item]
 
     source = (((np.arange(64 * items_per_thread) * 17) % 47) - 23).astype(dtype)
+    # Include both finite extremes so only infinity lies beyond them.
     source[:2] = [np.finfo(dtype).min, np.finfo(dtype).max]
     output = np.empty_like(source)
     associations = np.full(64 * items_per_thread, -1, dtype=np.int64)
@@ -392,6 +407,8 @@ def test_qualified_local_arrays_and_device_helper():
 
 @pytest.mark.parametrize("count", [-1, 129, 1 << 32])
 def test_invalid_runtime_count_traps(count):
+    """Isolate the device trap so it cannot affect later CUDA tests."""
+
     import subprocess
     import sys
     from pathlib import Path
@@ -462,6 +479,7 @@ def test_static_partial_default_and_load_inference(items_per_thread):
     source = np.arange(64 * items_per_thread, dtype=np.int16)[::-1].copy()
     observed = np.zeros_like(source)
     kernel[1, 64](source, observed, items_per_thread)
+    # Only the sorted prefix is checked; the tail has no specified value.
     np.testing.assert_array_equal(observed[:-3], np.sort(source[:-3]))
 
 
