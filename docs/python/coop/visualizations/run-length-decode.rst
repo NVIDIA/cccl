@@ -23,7 +23,10 @@ independent per-thread extents. The tested kernels below use 128 threads.
    .. only:: html
 
       .. figure:: run-length-decode.svg
-         :alt: Run values 7 and 9 with lengths 3 and 2 have exclusive starts 0 and 3 and total size 5. A four-item window at offset 2 returns 7, 9, 9, 0 with relative offsets 2, 0, 1, MAX. The final slot is outside the stream and zero-filled.
+         :alt: Run values 7 and 9 with lengths 3 and 2 have exclusive starts 0
+            and 3 and total size 5. A four-item window at offset 2 returns 7,
+            9, 9, 0 with relative offsets 2, 0, 1, MAX. The final slot is
+            outside the stream and zero-filled.
          :width: 100%
 
          One decoded item per teaching thread, window offset 2. ``MAX``
@@ -108,8 +111,8 @@ accepted. Shared window behavior follows the common API.
 
 This tested kernel takes the input run count per thread as
 ``items_per_thread`` and produces four decoded items per thread. Its two
-positive runs produce only three valid items after offset
-2. The remaining window slots show the defined zero and ``MAX`` fills.
+positive runs produce only three valid items after offset 2. The remaining
+window slots show the defined zero and ``MAX`` fills.
 
 .. literalinclude:: ../../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_run_length_examples.py
    :language: python
@@ -130,9 +133,9 @@ before offset 3 and after the decoded interval keep their initial values.
    :end-before: # run-length-bulk-example-end
    :dedent: 4
 
-The qualified bulk operation can also write global relative offsets and
-select uint64 totals. Both forms allocate scratch automatically unless
-you supply ``temp_storage``. Scratch remains occupied through the internal
-loop. Explicit descriptors default to ``auto_sync=False``: synchronize the
-block after the call and before its next use, or request ``auto_sync=True``; see
+The qualified bulk operation can also write global relative offsets and select
+uint64 totals. Both forms allocate scratch automatically unless you supply
+``temp_storage``. Scratch remains occupied through the internal loop. Explicit
+descriptors default to ``auto_sync=False``: synchronize the block after the
+call and before its next use, or request ``auto_sync=True``; see
 :ref:`coop-faq-temp-storage`.

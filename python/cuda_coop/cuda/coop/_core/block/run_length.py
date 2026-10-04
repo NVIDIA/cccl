@@ -2,6 +2,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe checked window and whole-stream CUB run-length decoding.
+
+The C++ driver first scans run lengths into offsets. Along with each prefix,
+it tracks invalid lengths, overflow and a positive length after zero padding.
+Only a valid stream reaches CUB decoding. Window calls prepare that table for
+one returned tile; bulk calls prepare it once and keep it for all windows.
+
+The scan and decoder share a scratch union, with a barrier between their
+lifetimes. Bulk decoding checks destination capacities before writing and
+masks its final window. This module describes that driver and its wrapper
+arguments; compilation and GPU execution belong to the provider.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -25,6 +38,10 @@ from .._types import (
 )
 from ._common import normalize_block_dim, normalize_positive_int
 
+# The scan combines counts with validation flags. Saturating at one past the
+# allowed total keeps the scan arithmetic safe while preserving an overflow
+# signal. has_zero lets a later positive count reveal invalid interior padding.
+# Reserve enough wide-integer range for one decode window beyond a valid total.
 BLOCK_RUN_LENGTH_DECODE_DRIVER = TypeDefinition(
     name="BlockRunLengthDecodeCoop",
     code=r"""
@@ -223,6 +240,14 @@ public:
 
 @dataclass(frozen=True)
 class BlockRunLengthDecodeSpecialization:
+    """Pair the decoder Algorithm with its independent input and window extents.
+
+    runs_per_thread counts compressed runs. decoded_items_per_thread counts
+    expanded values produced by one window, so it need not match the input
+    extent. The normalized block shape and both extents are kept with the
+    Algorithm for callers that inspect the description.
+    """
+
     specialization: Algorithm
     block_dim: tuple[int, int, int]
     runs_per_thread: int
@@ -245,7 +270,20 @@ def make_block_run_length_decode_specialization(
     bulk: bool = False,
     relative_offsets: bool = False,
 ) -> BlockRunLengthDecodeSpecialization:
-    """Describe one complete decode window or construct-once bulk operation."""
+    """Describe a checked decode window or a whole-stream destination write.
+
+    Validate one-dimensional block geometry and fixed run/window extents. A
+    known offset becomes an unsigned C++ constant after range validation; a
+    runtime offset remains an argument with control_dtype. Dtype support is
+    the frontend's responsibility.
+
+    Window calls write a decoded array, a one-element total-size array, and
+    relative offsets. Bulk calls instead receive destination pointers and wide
+    capacities, and return the total through an output reference. The optional
+    relative-offset destination selects the separate IntoWithOffsets method.
+    These call shapes let frontends expose their public results while the
+    same C++ driver owns validation, table preparation, and decoding.
+    """
     block_dim = normalize_block_dim(block_dim)
     if block_dim[1:] != (1, 1):
         raise ValueError(

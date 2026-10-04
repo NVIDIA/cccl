@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check decoded windows and complete streams against host run expansion.
+
+Use trailing zero runs for unused input slots. Window references add zero
+values beyond the stream; bulk references keep sentinels outside the written
+interval. Other cases cover auxiliary output types, wide stream positions,
+scratch reuse, and malformed inputs isolated in child processes.
+"""
+
 import os
 import subprocess
 import sys
@@ -47,6 +55,14 @@ pytestmark = [
 def test_windows_preserve_inputs_and_zero_invalid_slots(
     qualified, value_dtype, length_dtype, items_per_thread
 ):
+    """Compare shifted windows and check that both run inputs stay unchanged.
+
+    Exercise empty streams, long runs, full tiles, and offsets past the end.
+    An offset above 2**32 must stay out of range without wrapping into valid
+    items. Wide integer values and fine float64 increments expose value loss.
+    The output extent is fixed at three per thread while input extents vary.
+    """
+
     api = numba_coop if qualified else coop
 
     @cuda.jit
@@ -117,6 +133,15 @@ def test_windows_preserve_inputs_and_zero_invalid_slots(
 @pytest.mark.parametrize("auto_sync", [True, False])
 @pytest.mark.parametrize("offset_dtype", [np.uint32, np.uint64])
 def test_auxiliary_outputs_and_explicit_storage_reuse(auto_sync, offset_dtype):
+    """Decode two windows through shared scratch and auxiliary buffers.
+
+    Fixed local arrays supply the runs to the qualified API. Store each window
+    separately, then check the second window's relative positions and the full
+    stream total. The total stays five although only three values remain in
+    that window. Exercise both offset dtypes and explicit block sync when
+    ``auto_sync`` is off.
+    """
+
     @cuda.jit
     def kernel(values, lengths, output, relative_output, totals):
         block = numba_coop.this_block()
@@ -179,6 +204,14 @@ def test_auxiliary_outputs_and_explicit_storage_reuse(auto_sync, offset_dtype):
 def test_uint64_decode_above_uint32_range_without_large_allocation(
     total_size, items_per_thread
 ):
+    """Read a small tail window from a stream described by huge run lengths.
+
+    Two compressed runs describe totals above uint32 and at the largest uint64
+    limit permitted for a 64-item window. Decode only the last three valid
+    items. Small allocations test wide prefix sums, relative offsets, totals,
+    and the zero values and maximum-offset sentinels in the tail.
+    """
+
     @cuda.jit
     def kernel(
         values,
@@ -262,6 +295,19 @@ def test_uint64_decode_above_uint32_range_without_large_allocation(
 def test_bulk_multiple_windows_partial_final_window_and_empty(
     qualified, threads, value_dtype, items_per_thread
 ):
+    """Check a full stream across internal windows and then reuse its scratch.
+
+    Decode at a nonzero destination offset. Sentinels on both sides of the
+    written interval expose stores before that offset or past the partial
+    final window. Long runs cross window boundaries; empty input must write
+    nothing. Qualified cases also check global relative offsets and their
+    untouched surrounding slots.
+
+    A later window call reuses the descriptor after the bulk call finishes.
+    Its first value must still match. This checks that the ``auto_sync``
+    barrier after the bulk call makes the scratch safe to reuse.
+    """
+
     api = numba_coop if qualified else coop
 
     @cuda.jit
@@ -297,8 +343,8 @@ def test_bulk_multiple_windows_partial_final_window_and_empty(
                 temp_storage=scratch,
             )
         totals[cuda.threadIdx.x] = total
-        # Reusing this descriptor after the internal bulk loop needs the
-        # normal barrier.
+        # The bulk call has finished using its prepared table. auto_sync
+        # makes the descriptor ready for this next collective.
         again = api.run_length_decode(
             block, runs, sizes, decoded_items_per_thread=1, temp_storage=scratch
         )
@@ -374,7 +420,15 @@ def test_bulk_multiple_windows_partial_final_window_and_empty(
     ],
 )
 def test_invalid_inputs_trap_before_decode_or_bulk_writes(case):
-    # A device trap poisons the context; isolate each deliberate invalid launch.
+    """Require device failure for malformed runs, offsets, or capacities.
+
+    Exercise negative lengths, a positive run after zero padding, individual
+    and accumulated overflow, negative offsets, and either undersized output.
+    Each child verifies the parent's package source and prints success only
+    after a CUDA trap or launch failure. Isolation contains poisoned contexts
+    and keeps compilation errors from counting as expected failures.
+    """
+
     script = f"""
 import numpy as np
 from pathlib import Path
@@ -437,6 +491,14 @@ else:
 def test_untyped_auxiliary_outputs_adopt_selected_dtype(
     offset_dtype, items_per_thread
 ):
+    """Index auxiliary outputs before a later Store can supply dtype evidence.
+
+    Leave total and relative-offset ThreadData untyped, then index them
+    directly. The decode rewrite must record the selected uint32 or uint64
+    type itself. Check valid offsets, maximum-value tail sentinels, and the
+    same full total on every block member.
+    """
+
     @cuda.jit
     def kernel(output, relative_output, total_output, items_per_thread):
         block = numba_coop.this_block()

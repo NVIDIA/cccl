@@ -755,6 +755,13 @@ def check_histogram_surface() -> None:
 
 
 def check_run_length_surface(destination: object, offsets: object) -> None:
+    """Check wide controls and explicit window outputs in the qualified API.
+
+    Window decoding keeps the value dtype when total and relative-offset
+    buffers use uint64. Bulk decoding types the returned total as an unsigned
+    scalar; its offset dtype can be selected at the call.
+    """
+
     block = coop.this_block()
     values = coop.ThreadData(items_per_thread=2, dtype=np.float32)
     lengths = coop.ThreadData(items_per_thread=2, dtype=np.uint64)

@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Adapt window and bulk decode drivers to Numba's block-call ABI.
+
+The shared driver validates lengths and trailing zero padding, computes run
+prefixes with overflow checks, and prepares CUB's table. Window mode fills
+explicit result buffers; bulk mode keeps one table through its internal loop,
+checks output capacities before writing, and masks the final window.
+These factories supply compiler types, scratch, and return conventions.
+"""
+
 from cuda.coop._core import SynchronizationScope
 from cuda.coop._core.block.run_length import (
     make_block_run_length_decode_specialization,
@@ -30,6 +39,21 @@ def _decode(
     offset,
     relative_offsets=False,
 ):
+    """Materialize the window or bulk provider identified by its factory.
+
+    Convert value, length, result-offset, and control dtypes independently.
+    Keep run and decoded extents separate. Pass the offset binding unchanged;
+    the shared builder selects an inline uint64 constant or a runtime operand.
+    Factory identity selects window or bulk mode and supplies the registered
+    scratch and synchronization metadata. The separate
+    ``run_length_decode_into_offsets`` factory takes six runtime arguments
+    instead of four; each registered operation has one fixed argument count.
+
+    Return an invocable for the resulting signature. The rewrite supplies
+    explicit arrays for window outputs. Bulk output uses global pointers and
+    returns the decoded total by reference through the provider ABI.
+    """
+
     adapter = NumbaMlirCoreAdapter()
     specialization = make_block_run_length_decode_specialization(
         item_dtype=adapter.core_dtype(item_dtype),

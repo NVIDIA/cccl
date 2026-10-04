@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Prepare window and bulk run-length decode calls for the CUB provider.
+
+Both forms read matching value/length payloads. A window returns a new value
+payload and fills per-thread auxiliary buffers; bulk decoding writes global
+arrays and returns the stream total. Input run count and decoded window size
+are independent. This rewrite records those shapes, preserves offset types,
+and passes bulk destination lengths so the native driver checks capacity
+before any write.
+"""
+
 from dataclasses import replace
 
 import numba_cuda_mlir.numba_cuda.types as numba_types
@@ -29,6 +39,12 @@ from ._rewrite_support import CoopSinglePhaseRewriteError
 
 
 def _integer_dtype(dtype, name):
+    """Keep integer width and signedness for lengths and runtime offsets.
+
+    Normalize supported integer types up to 64 bits without narrowing them.
+    The driver needs their full values to detect negatives and overflow.
+    """
+
     dtype = normalize_dtype_param(dtype)
     if not isinstance(dtype, numba_types.Integer) or dtype.bitwidth > 64:
         raise TypeError(
@@ -38,6 +54,12 @@ def _integer_dtype(dtype, name):
 
 
 def _decode_extent(context, bound):
+    """Resolve the decoded extent separately from the input run count.
+
+    The result registration and _lower both call this, so code that uses the
+    returned payload sees the same extent that _lower allocates.
+    """
+
     return normalize_positive_int(
         "decoded_items_per_thread",
         context.constant(bound.arguments["decoded_items_per_thread"]),
@@ -45,6 +67,18 @@ def _decode_extent(context, bound):
 
 
 def _infer_payload(context, inference):
+    """Check provider operands for window buffers or bulk destinations.
+
+    Infer value and length dtypes from run arrays. Window calls pass three
+    output arrays: decoded values, one total per thread, and relative offsets.
+    Check extents and types, then record each output dtype so later indexing
+    can use an initially untyped ThreadData.
+
+    Bulk calls instead pass writable contiguous one-dimensional global arrays.
+    Check their item types and layout here. The driver checks capacities at
+    runtime before writing either destination.
+    """
+
     for index, name in enumerate(("item_dtype", "run_length_dtype")):
         value, specification = inference.array_candidate(index)
         if specification is None or specification.items_per_thread is None:
@@ -117,6 +151,13 @@ def _infer_payload(context, inference):
 
 
 def _allocate(context, statements, scope, loc, name, extent, dtype):
+    """Emit a typed ThreadData allocation and record its result dtype.
+
+    Append the constructor call to statements and return its IR variable. The
+    explicit extent supports value windows and the differently sized total
+    buffer. Recording the dtype lets later scalar indexing type these outputs.
+    """
+
     constructor = context.value_var(
         statements,
         scope=scope,
@@ -143,6 +184,26 @@ def _allocate(context, statements, scope, loc, name, extent, dtype):
 
 
 def _lower(context, inst, *, operation, group, bound, is_common_root):
+    """Rewrite a decode call with the buffers required by its result form.
+
+    Require matching fixed run extents and validate value and length types.
+    Resolve the independent decoded extent and the unsigned dtype for totals
+    and relative offsets. Keep static offsets as bindings and preserve runtime
+    integer types so the native driver can validate wide values without loss.
+    Shared planning checks the complete one-dimensional block and tile limits.
+
+    For a window, allocate the value result and supply both auxiliary arrays.
+    Allocate private buffers for omitted auxiliaries. Supplied buffers must
+    have the required extent and adopt or match the selected offset dtype. For
+    bulk output, pass each destination with its runtime length. The provider
+    returns the total and checks all capacities before any output write.
+
+    Return IR statements for allocation, capacity queries, and one provider
+    call. The bulk loop stays inside that provider so its prepared run table
+    remains live across all windows. Explicit scratch ownership and auto_sync
+    control reuse after the call, not the driver's internal synchronization.
+    """
+
     from .._lowering import _run_length
 
     bulk = operation == "run_length_decode_into"
