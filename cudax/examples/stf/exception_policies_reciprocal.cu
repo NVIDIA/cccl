@@ -18,7 +18,7 @@
  * floating-point status word plays the role of the trap: each worker checks
  * std::fetestexcept / std::isfinite after evaluating, and turns a poisoned
  * result into an exception. The policy algebra plays the role of the signal:
- * on_error(defer) turns the worker's exception into a value, a handler
+ * errsink(defer) turns the worker's exception into a value, a handler
  * thread rethrows and interprets it, and the whole hand-off needs no shared
  * try/catch choreography.
  */

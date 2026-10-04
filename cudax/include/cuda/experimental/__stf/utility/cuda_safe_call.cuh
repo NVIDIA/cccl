@@ -138,7 +138,7 @@ struct cuda_status_traits_base
 };
 
 /**
- * @brief Makes the CUDA runtime's `cudaError_t` a status for `on_error(policy) ->* status`; see
+ * @brief Makes the CUDA runtime's `cudaError_t` a status for `errsink(policy) ->* status`; see
  * @ref status_traits.
  */
 template <>
@@ -160,7 +160,7 @@ struct status_traits<cudaError_t> : cuda_status_traits_base<cudaError_t>
 };
 
 /**
- * @brief Makes the CUDA driver's `CUresult` a status for `on_error(policy) ->* status`; see
+ * @brief Makes the CUDA driver's `CUresult` a status for `errsink(policy) ->* status`; see
  * @ref status_traits.
  */
 template <>
@@ -190,7 +190,7 @@ struct status_traits<CUresult> : cuda_status_traits_base<CUresult>
 };
 
 /**
- * @brief Makes the occupancy calculator's `cudaOccError` a status for `on_error(policy) ->* status`;
+ * @brief Makes the occupancy calculator's `cudaOccError` a status for `errsink(policy) ->* status`;
  * see @ref status_traits.
  */
 template <>
@@ -216,7 +216,7 @@ struct status_traits<cudaOccError> : cuda_status_traits_base<cudaOccError>
 
 #if __has_include(<cublas_v2.h>)
 /**
- * @brief Makes cuBLAS's `cublasStatus_t` a status for `on_error(policy) ->* status`; see
+ * @brief Makes cuBLAS's `cublasStatus_t` a status for `errsink(policy) ->* status`; see
  * @ref status_traits.
  */
 template <>
@@ -240,7 +240,7 @@ struct status_traits<cublasStatus_t> : cuda_status_traits_base<cublasStatus_t>
 
 #if __has_include(<cusolverDn.h>)
 /**
- * @brief Makes cuSOLVER's `cusolverStatus_t` a status for `on_error(policy) ->* status`; see
+ * @brief Makes cuSOLVER's `cusolverStatus_t` a status for `errsink(policy) ->* status`; see
  * @ref status_traits.
  */
 template <>
@@ -572,7 +572,7 @@ UNITTEST("cuda_safe_call")
  * `cudaCreateStream(&stream)`, with the note that the former call throws an exception in case of error.
  *
  * For the status types that specialize @ref status_traits, `cuda_try(status)` is equivalent to
- * `on_error(unwind) ->* status`.
+ * `errsink(eh::unwind) << status`.
  *
  * @snippet this cuda_try1
  */

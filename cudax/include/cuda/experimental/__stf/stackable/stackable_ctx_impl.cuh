@@ -1220,7 +1220,7 @@ public:
       _pop_epilogue(finalize_prereqs, err);
       if (err)
       {
-        on_error(policy)->*[&] {
+        errsink(policy)->*[&] {
           ::std::rethrow_exception(err);
         };
       }
@@ -1319,7 +1319,7 @@ public:
       pending_epilogue_node_offset_ = -1;
       if (err)
       {
-        on_error(policy)->*[&] {
+        errsink(policy)->*[&] {
           ::std::rethrow_exception(err);
         };
       }
@@ -1678,10 +1678,10 @@ public:
   //! function most worth catching around.
   //!
   //! `policy` decides what happens to that first failure once the level is gone: the default,
-  //! `passthrough`, propagates it with its type intact; `abort` reports and ends the program, which
+  //! `fwd`, propagates it with its type intact; `abort` reports and ends the program, which
   //! is what the RAII scopes pass since they call pop() from a destructor; `notify` reports and
   //! lets the program continue. See exception_policy.cuh for the full set.
-  template <typename Policy = exception_policies::passthrough_t>
+  template <typename Policy = eh::fwd_t>
   void pop(Policy policy = {})
   {
     pimpl->pop(policy);
@@ -1711,7 +1711,7 @@ public:
   //! context, and destroys the node. Invalidates every launchable_graph_handle
   //! that was produced by the matching pop_prologue(). Completes even if a step
   //! fails, then hands the first failure to `policy`; see the contract on pop().
-  template <typename Policy = exception_policies::passthrough_t>
+  template <typename Policy = eh::fwd_t>
   void pop_epilogue(Policy policy = {})
   {
     pimpl->pop_epilogue_impl(policy);

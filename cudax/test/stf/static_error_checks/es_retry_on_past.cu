@@ -19,10 +19,10 @@
 #include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
-using namespace cuda::experimental::stf::exception_policies;
+using namespace cuda::experimental::stf::eh;
 
 int main()
 {
-  on_error(retry)->*cudaErrorInvalidValue;
+  errsink(retry)->*cudaErrorInvalidValue;
   return EXIT_FAILURE;
 }

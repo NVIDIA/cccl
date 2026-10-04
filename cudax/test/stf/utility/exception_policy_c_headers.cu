@@ -19,7 +19,7 @@
  * exercises the spellings that could collide: SCOPE's tokens paste into a
  * fully qualified path (no unqualified lookup to hijack), ON_THROW injects
  * the policy namespace for the policy expression only, and the qualified
- * exception_policies names resolve regardless of what is in scope. Pins the
+ * eh names resolve regardless of what is in scope. Pins the
  * current lookup strategy against refactors that would weaken it.
  */
 
@@ -58,14 +58,14 @@ int main()
   _CCCL_ASSERT(v == 42, "ON_THROW(abort) must compile and pass the value through");
 
   // The function form with qualified policies.
-  const int w = on_error(exception_policies::terminate)->*[] {
+  const int w = errsink(eh::terminate)->*[] {
     return 5;
   };
-  _CCCL_ASSERT(w == 5, "on_error(exception_policies::terminate) must compile");
+  _CCCL_ASSERT(w == 5, "errsink(eh::terminate) must compile");
 
   // Qualified names resolve to the policy objects, not the C library functions.
-  [[maybe_unused]] const auto& policy_abort     = exception_policies::abort;
-  [[maybe_unused]] const auto& policy_terminate = exception_policies::terminate;
+  [[maybe_unused]] const auto& policy_abort     = eh::abort;
+  [[maybe_unused]] const auto& policy_terminate = eh::terminate;
 
   // Bare abort/exit still mean the C library: the policies live in a non-inline
   // namespace that `using namespace cuda::experimental::stf` does not open.
