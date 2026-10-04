@@ -2,6 +2,29 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe a cooperative call and the requirements for implementing it.
+
+A frontend first records an operation and its requested thread group in a
+``GroupPrimitiveCall``. Launch resolution establishes the group's concrete
+membership, then the operation's planner chooses an implementation and returns
+a ``GroupLoweringPlan``. That plan carries the participation, synchronization,
+and scratch-storage requirements needed to preserve the operation's semantics.
+For example, a warp load using a transpose needs a separate scratch instance
+for each participating warp and synchronization before that storage is reused.
+
+Backends consume these records when choosing provider factories, materializing
+specialized code, and arranging storage and barriers. The records describe those
+requirements; constructing them does not emit device code or check runtime
+participation. Unsupported requests retain the original call and a structured
+reason so callers can inspect a planning result before requiring executable
+support.
+
+Implementation provenance identifies the native library entry point selected
+by planning. Together with the specialized implementation and execution
+contracts, it contributes to the plan's artifact identity; the logical request
+and a particular implementation have separate keys.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -15,29 +38,63 @@ from ..thread_group import MAPPED_GROUP_KINDS, ThreadGroup
 
 
 class GroupLoweringTarget(str, Enum):
+    """Implementation family chosen by planning, or an unsupported outcome.
+
+    CUB block and warp targets describe the cooperative primitive's scope.
+    A backend still selects and validates a provider for that target.
+    """
+
     CUB_BLOCK = "cub_block"
     CUB_WARP = "cub_warp"
     UNSUPPORTED = "unsupported"
 
 
 class ResultVisibility(str, Enum):
+    """Which group members have meaningful results from the operation.
+
+    ``ALL_MEMBERS`` describes a group result available to every member;
+    ``GROUP_ROOT`` restricts it to the root; ``PER_MEMBER`` describes each
+    member's own result, such as its items from a cooperative load.
+    """
+
     ALL_MEMBERS = "all_members"
     GROUP_ROOT = "group_root"
     PER_MEMBER = "per_member"
 
 
 class PreconditionEnforcement(str, Enum):
+    """Whether planning checked a bound or the caller must satisfy it.
+
+    ``PLANNER_VALIDATED`` records a check against a known static value.
+    ``CALLER`` records a precondition on a runtime value; it does not request
+    insertion of a runtime guard.
+    """
+
     PLANNER_VALIDATED = "planner_validated"
     CALLER = "caller"
 
 
 class StorageOwnership(str, Enum):
+    """Who supplies the primitive's temporary storage.
+
+    ``NONE`` selects a storage-free implementation. ``IMPLEMENTATION`` lets
+    lowering arrange scratch internally; ``CALLER`` requires the supplied
+    storage binding and its layout requests to be honored.
+    """
+
     NONE = "none"
     IMPLEMENTATION = "implementation"
     CALLER = "caller"
 
 
 class SynchronizationScope(str, Enum):
+    """Members covered by execution or a storage-reuse synchronization.
+
+    ``NONE`` requires no barrier, while ``WARP`` and ``BLOCK`` identify
+    hardware scopes. ``GROUP`` refers to the resolved cooperative group;
+    a backend must support that group's synchronization before lowering it.
+    """
+
     NONE = "none"
     WARP = "warp"
     BLOCK = "block"
@@ -46,7 +103,33 @@ class SynchronizationScope(str, Enum):
 
 @dataclass(frozen=True)
 class GroupTopologyContract:
-    """Static execution topology shared by primitive families."""
+    """Describe the group instances and ranks needed by backend lowering.
+
+    Topology supplies the indexing rules for per-group scratch and data
+    tiles. For logical warps of width 16 in a 128-thread block, for example,
+    there are eight instances; dividing the linear thread rank by 16 selects
+    the instance, and taking its remainder gives the rank within that group.
+    The expression strings name canonical formulas understood by backends.
+    They are not arbitrary expressions to evaluate as Python or C++.
+
+    Attributes
+    ----------
+    group_kind : str
+        Kind of the resolved group, such as ``"block"`` or ``"warp"``.
+    logical_width : int
+        Positive number of threads in each group instance.
+    instances : int
+        Positive number of group instances in the enclosing execution
+        context; for block and warp lowering, this is per thread block.
+    instance_index : str
+        Symbolic rule selecting the current group instance, such as
+        ``"cta"`` or ``"linear_thread_rank / 16"``.
+    execution_scope : SynchronizationScope
+        Scope within which the primitive's participating threads execute.
+    thread_rank : str, optional
+        Symbolic rule for the thread's rank within its group. Defaults to
+        the block's linear thread rank.
+    """
 
     group_kind: str
     logical_width: int
@@ -83,6 +166,12 @@ class GroupTopologyContract:
 
 
 class UnsupportedReasonCode(str, Enum):
+    """Stable categories for unsupported planning and resolution outcomes.
+
+    These distinguish missing launch facts, incomplete membership, and
+    unsupported group or operation forms without matching diagnostic text.
+    """
+
     MISSING_EXACT_BLOCK_DIM = "missing_exact_block_dim"
     PARTIAL_PHYSICAL_WARP = "partial_physical_warp"
     GROUP_KIND = "group_kind"
@@ -93,7 +182,14 @@ class UnsupportedReasonCode(str, Enum):
 
 
 class GroupOperationSemantics(Protocol):
-    """Structural contract implemented by every primitive-family record."""
+    """Operation facts required by the common group-call model.
+
+    A primitive-family record supplies its semantic identity, result
+    visibility, and whether it returns a value. Its concrete type also has
+    to be registered with the dispatcher, which provides that family's
+    argument classification and planning functions. Satisfying this protocol
+    alone does not register a new operation.
+    """
 
     @property
     def semantic_key(self) -> tuple[Any, ...]: ...
@@ -112,6 +208,13 @@ def _requested_result_visibility(
 
 
 def _group_key(group: ThreadGroup) -> tuple[Any, ...]:
+    """Identify a group using the hierarchy dimensions relevant to its kind.
+
+    Physical warps share the same logical identity across enclosing block
+    shapes. Artifact identity separately retains the exact block dimensions
+    needed for lowering and scratch layout.
+    """
+
     hierarchy = group.hierarchy
     assert hierarchy is not None
     if group.kind == "warp":
@@ -134,6 +237,33 @@ def _group_key(group: ThreadGroup) -> tuple[Any, ...]:
 
 @dataclass(frozen=True, eq=False)
 class GroupPrimitiveCall:
+    """A requested group operation before selecting its implementation.
+
+    Frontends provide a compile-time group description and a registered
+    operation record. The dispatcher derives the argument classifications;
+    the call itself contains no runtime operands or compiled provider.
+    ``plan_group_primitive`` combines it with launch facts to resolve the
+    group and select an implementation.
+
+    Attributes
+    ----------
+    group : ThreadGroup
+        Requested participating threads. Launch-dependent dimensions may
+        still need to be resolved.
+    operation : GroupOperationSemantics
+        Primitive-family options, including static bindings and requested
+        result behavior.
+    argument_classifications : tuple of ParameterClassification
+        Names, static/runtime kinds, and roles derived by the registered
+        operation family. Computed during construction.
+
+    Notes
+    -----
+    Equality and hashing use the requested group, the operation's semantic
+    key, and its requested result visibility. Backend provider selection and
+    executable-artifact details enter the later lowering plan.
+    """
+
     group: ThreadGroup
     operation: GroupOperationSemantics
     argument_classifications: tuple[ParameterClassification, ...] = field(
@@ -172,6 +302,23 @@ class GroupPrimitiveCall:
 
 @dataclass(frozen=True)
 class ArgumentPrecondition:
+    """An inclusive scalar bound and who is responsible for checking it.
+
+    Planners use these records for controls such as a tile's ``valid_items``
+    count or a pointer offset. Construction checks the bounds' shape and
+    ordering; it does not receive or validate the argument's actual value.
+
+    Attributes
+    ----------
+    name : str
+        Nonempty name of the argument constrained by this record.
+    minimum, maximum : int or None
+        Inclusive bounds. ``None`` leaves that end unconstrained here.
+    enforcement : PreconditionEnforcement
+        Whether planning already checked a static value or a runtime
+        caller must satisfy the bound.
+    """
+
     name: str
     minimum: int | None
     maximum: int | None
@@ -203,6 +350,40 @@ class ArgumentPrecondition:
 
 @dataclass(frozen=True)
 class ParticipationContract:
+    """Membership and argument requirements for executing a group primitive.
+
+    Backends use these facts to check that their provider and launch model
+    match the selected group. Runtime requirements, such as converged entry
+    and uniform arguments, remain obligations of the generated call; this
+    record does not inspect running threads or insert validation code.
+
+    Attributes
+    ----------
+    group_kind : str
+        Kind of the resolved participating group.
+    exact_group_size : int
+        Number of participating threads in one group instance.
+    exact_block_dim : Dim3 or None
+        Exact enclosing launch shape when known, including all three axes.
+    complete_membership : bool
+        Whether the group has its full required membership.
+    contiguous, aligned : bool
+        Whether membership is contiguous in thread rank and aligned to
+        the group's partition boundaries.
+    converged_entry : bool
+        Whether all participating threads must enter the primitive together.
+    complete_parent_partition : bool
+        Whether groups form complete partitions of the relevant parent.
+    uniform_arguments : tuple of str, optional
+        Argument names whose values must agree across participating members.
+    valid_member_selection : str or None, optional
+        Description of how a guarded operation selects valid data, such as
+        ``"first valid_items tile elements"``. A partial data tile still
+        requires the group's participating threads.
+    argument_preconditions : tuple of ArgumentPrecondition, optional
+        Static or caller-enforced scalar bounds. Names must be unique.
+    """
+
     group_kind: str
     exact_group_size: int
     exact_block_dim: Dim3 | None
@@ -241,12 +422,68 @@ class ParticipationContract:
 
 @dataclass(frozen=True)
 class SynchronizationContract:
+    """Entry and scratch-reuse synchronization required by the plan.
+
+    Attributes
+    ----------
+    converged_entry : bool
+        Whether participating threads must reach the operation together.
+        Must agree with the plan's participation contract.
+    storage_reuse_barrier : SynchronizationScope
+        Scope of synchronization required before scratch is reused, or
+        ``NONE`` when no automatic reuse barrier is requested. This does not
+        describe every synchronization performed inside the native primitive.
+    """
+
     converged_entry: bool
     storage_reuse_barrier: SynchronizationScope
 
 
 @dataclass(frozen=True)
 class TempStorageContract:
+    """Describe scratch ownership, per-group layout, and reuse policy.
+
+    A storage-bearing primitive may need one independent scratch instance
+    per participating group. Planning records that topology and any caller
+    requests; backend materialization discovers the concrete layout and
+    lowering arranges the storage binding. Constructing this record does not
+    allocate memory or establish that a requested capacity is sufficient.
+
+    Attributes
+    ----------
+    ownership : StorageOwnership
+        Storage-free, internally arranged, or caller-supplied storage.
+    address_space : str or None
+        Required memory space, such as ``"shared"`` for CUB scratch.
+    cpp_type : str or None
+        Native scratch type when already named. ``None`` can defer its
+        resolution until the specialized implementation is materialized.
+    instances : int or None
+        Positive scratch-instance count for a storage-bearing operation.
+    instance_index : str or None
+        Symbolic rule selecting the current group's scratch instance.
+    exact_layout_required : bool
+        Whether the supplied storage must be checked against the concrete
+        implementation layout, as required for caller-owned storage.
+    sharing : {"shared", "exclusive"} or None, optional
+        Caller storage-sharing policy: reusable with other compatible
+        consumers or reserved exclusively. ``None`` for implementation-owned
+        storage; distinct from the ``"shared"`` address space.
+    requested_size_in_bytes : int or None, optional
+        Positive caller-requested capacity, or no explicit capacity request.
+    requested_alignment : int or None, optional
+        Positive caller-requested byte alignment, or no explicit request.
+    auto_sync : bool, optional
+        Whether lowering should arrange scratch-reuse synchronization.
+        Defaults to ``True``; storage-free contracts must set it to ``False``.
+
+    Notes
+    -----
+    Storage-free contracts carry no layout, sharing, or size requests.
+    Implementation-owned storage carries no caller sharing, size, or
+    alignment requests. Caller-owned storage must select a sharing policy.
+    """
+
     ownership: StorageOwnership
     address_space: str | None
     cpp_type: str | None
@@ -335,6 +572,46 @@ class TempStorageContract:
 
 @dataclass(frozen=True)
 class ImplementationProvenance:
+    """Identify the native library entry point chosen for a group operation.
+
+    A logical request such as a group load does not by itself identify the
+    native primitive that will execute it. The planner records that choice
+    here so a backend can recognize the implementation and route it to a
+    supported provider. For example, a CUB block load records ``"CUB"``,
+    ``"cub/block/block_load.cuh"``, ``"cub::BlockLoad"``, and ``"Load"``.
+    The Numba-CUDA-MLIR Load/Store planner uses this exact tuple to select
+    its load or store route, then checks the provider against the plan's
+    contracts.
+
+    The same native entry point can serve many element types, tile sizes,
+    and algorithm choices. Those details belong to the plan's specialized
+    ``implementation`` and its metadata. Provenance supplies the entry-point
+    identity; both contribute to ``GroupLoweringPlan.artifact_key`` so the
+    identity retains the chosen native implementation as well as its
+    specialization and execution requirements.
+
+    Attributes
+    ----------
+    library : str
+        Underlying native library, such as ``"CUB"``. The backend compiler
+        or Python provider factory is selected separately.
+    header : str
+        Native header declaring the chosen primitive.
+    cpp_class : str
+        Qualified C++ class or namespace containing the operation, such as
+        ``"cub::BlockLoad"``.
+    method : str
+        Native operation name invoked by the implementation, such as
+        ``"Load"``.
+
+    Notes
+    -----
+    This record identifies an implementation choice. It does not record a
+    library version, compiled binary, or proof that a backend supports the
+    choice. A backend can reject an unrecognized tuple; planning failures
+    are represented separately by ``UnsupportedReason``.
+    """
+
     library: str
     header: str
     cpp_class: str
@@ -342,18 +619,40 @@ class ImplementationProvenance:
 
     @property
     def semantic_key(self) -> tuple[str, str, str, str]:
+        """Return the library/header/implementation/method identity."""
+
         return self.library, self.header, self.cpp_class, self.method
 
 
 @dataclass(frozen=True)
 class UnsupportedReason:
+    """A machine-readable failure category with a human explanation.
+
+    ``code`` identifies the unsupported case; ``message`` supplies details
+    for diagnostics and ``require_supported`` exceptions. Messages are
+    excluded from equality and hashing, allowing wording to change without
+    changing the failure's identity.
+    """
+
     code: UnsupportedReasonCode
     message: str = field(compare=False, hash=False)
 
 
 @dataclass(frozen=True)
 class ThreadGroupLaunchResolution:
-    """One launch-reconciled static group or a typed unsupported reason."""
+    """A thread group reconciled with launch facts, or a resolution failure.
+
+    Resolution establishes dimensions and membership needed by subsequent
+    operation planning. It does not choose a primitive implementation.
+
+    Attributes
+    ----------
+    group : ThreadGroup
+        Resolved group on success, or the group retained with failure context.
+    unsupported : UnsupportedReason or None, optional
+        Why the launch facts cannot support this group, or ``None`` when
+        resolution succeeded.
+    """
 
     group: ThreadGroup
     unsupported: UnsupportedReason | None = None
@@ -372,6 +671,8 @@ class ThreadGroupLaunchResolution:
             )
 
     def require_supported(self) -> ThreadGroup:
+        """Return the resolved group or raise its ``NotImplementedError``."""
+
         if self.unsupported is not None:
             raise NotImplementedError(self.unsupported.message)
         return self.group
@@ -379,6 +680,55 @@ class ThreadGroupLaunchResolution:
 
 @dataclass(frozen=True, eq=False)
 class GroupLoweringPlan:
+    """An implementation choice with the contracts required to lower a call.
+
+    Operation planners construct this after resolving the requested group
+    against launch facts. A supported plan combines a specialized native
+    implementation with topology, participation, synchronization, storage,
+    and provenance. Backends use that information to select compatible
+    providers and produce code; a supported planning outcome alone does not
+    mean that compilation has occurred or every backend can lower the plan.
+
+    Construction checks consistency between the resolved group and its
+    topology, participation, and convergence requirements. Unsupported plans
+    instead retain a typed reason and can be inspected before
+    ``require_supported`` turns that reason into an exception.
+
+    Attributes
+    ----------
+    target : GroupLoweringTarget
+        Chosen implementation family, or ``UNSUPPORTED``.
+    call : GroupPrimitiveCall
+        Original request, retained alongside the resolved group.
+    resolved_group : ThreadGroup
+        Group after applying launch facts, or the group retained on failure.
+    implementation : Algorithm or None
+        Specialized primitive description; ``None`` for an unsupported plan.
+    topology : GroupTopologyContract or None
+        Group instances and rank rules used for indexing and execution.
+    participation : ParticipationContract or None
+        Required membership, launch shape, uniformity, and scalar bounds.
+    result : None
+        Load/Store writes its results through the supplied item array or
+        memory pointer and has no separate returned-result contract.
+    synchronization : SynchronizationContract or None
+        Converged-entry and scratch-reuse requirements.
+    temp_storage : TempStorageContract or None
+        Scratch ownership, layout requests, and automatic reuse policy.
+    provenance : ImplementationProvenance or None
+        Native library entry point used for routing and artifact identity.
+    unsupported : UnsupportedReason or None, optional
+        Required for ``UNSUPPORTED`` and absent for a supported plan.
+
+    Notes
+    -----
+    Supported plans require complete lowering contracts. Their equality and
+    hashing use ``artifact_key``. Unsupported plans have no artifact key;
+    they compare by logical semantics and reason code, excluding diagnostic
+    wording. ``semantic_key`` alone is not enough to identify an executable
+    implementation because it omits provider and storage choices.
+    """
+
     target: GroupLoweringTarget
     call: GroupPrimitiveCall
     resolved_group: ThreadGroup
@@ -475,6 +825,13 @@ class GroupLoweringPlan:
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
+        """Identify the resolved logical request independently of its provider.
+
+        Physical warp requests can share this key across enclosing block
+        shapes. Use ``artifact_key`` when execution and storage details must
+        also distinguish plans.
+        """
+
         return (
             _group_key(self.resolved_group),
             self.call.operation.semantic_key,
@@ -483,6 +840,15 @@ class GroupLoweringPlan:
 
     @property
     def artifact_key(self) -> tuple[Any, ...] | None:
+        """Identify a supported implementation and its lowering requirements.
+
+        Include exact block dimensions, the specialized implementation,
+        execution/storage contracts, and native provenance. Backends can use
+        this identity when reusing generated artifacts, together with their
+        compiler- and target-specific cache inputs. Unsupported plans return
+        ``None`` because they have no executable implementation to reuse.
+        """
+
         if self.unsupported is not None:
             return None
         implementation_key = (
@@ -514,12 +880,16 @@ class GroupLoweringPlan:
 
     @property
     def _identity_key(self) -> tuple[Any, ...]:
+        # Diagnostic prose can evolve without changing an unsupported request;
+        # successful requests must retain every artifact-affecting contract.
         if self.artifact_key is not None:
             return "artifact", self.artifact_key
         assert self.unsupported is not None
         return "unsupported", self.semantic_key, self.unsupported.code.value
 
     def require_supported(self) -> GroupLoweringPlan:
+        """Return this plan or raise ``NotImplementedError`` with its reason."""
+
         if self.unsupported is not None:
             raise NotImplementedError(self.unsupported.message)
         return self
