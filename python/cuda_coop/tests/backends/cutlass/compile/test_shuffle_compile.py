@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile scalar and payload Shuffle forms without launching a kernel.
+
+Scalar offset and rotate accept per-thread runtime distances. Payload up
+and down instead move one element across the block tile. These cases
+compile for SM80 and never launch, so a typed null pointer is enough.
+They check accepted forms and diagnostics, not numerical results or
+defined edge values.
+"""
+
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
@@ -19,6 +28,13 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 def _compile(
     kernel, dtype=cutlass.Int32, block=(8, 3, 2), items_per_thread=None
 ):
+    """Compile a test kernel with fixed launch facts and a typed null pointer.
+
+    The default block has 48 threads, so its second physical warp is partial.
+    Kernels that declare a compile-time payload extent receive
+    ``items_per_thread``. Other kernels omit that argument.
+    """
+
     @cute.jit
     def launch(memory: cute.Pointer):
         if cutlass.const_expr(items_per_thread is None):
@@ -72,6 +88,13 @@ def test_profiles(dtype, mode, items_per_thread):
     ),
 )
 def test_dynamic_distance(mode, dtype):
+    """Compile distances that vary by thread in each accepted integer type.
+
+    Scalar distances need not be uniform across the block. The thread-derived
+    value checks acceptance of a runtime argument instead of requiring a
+    compile-time constant.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer):
         distance = dtype(cute.arch.thread_idx()[0] % 7 + 1)

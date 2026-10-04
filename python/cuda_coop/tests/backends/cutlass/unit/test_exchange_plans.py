@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check Exchange layouts, operand profiles, and failed-emission rollback.
+
+Plans distinguish block modes from warp layout conversions and assign the
+matching synchronization scope. Provider requests must agree with those
+plans. Host-side spies also check result allocation and session restoration
+when a registered Exchange call cannot emit FFI.
+"""
+
 from dataclasses import replace
 from types import SimpleNamespace
 
@@ -75,6 +83,13 @@ def test_block_mode_contract(mode):
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
 @pytest.mark.parametrize("mode", ("striped_to_blocked", "blocked_to_striped"))
 def test_warp_instances(width, mode):
+    """Account for logical groups and their synchronization scope.
+
+    Changing the block size changes the number of groups and the wrapper
+    symbol. Rendered source must neither synchronize the block nor derive its
+    membership from the current active mask, since sibling groups can diverge.
+    """
+
     request = _request(this_warp().group_by(width), mode=mode)
     assert request.plan.target is GroupLoweringTarget.CUB_WARP
     assert _exchange._warp_instances(request) == (64 // width, width)
@@ -164,6 +179,13 @@ def test_warp_scatter_profile(kind):
 
 @pytest.mark.parametrize("group", (this_block(), this_warp().group_by(8)))
 def test_failed_ffi_rollback(group, monkeypatch):
+    """Restore the provider session without modifying the caller's payload.
+
+    Allocation is replaced by a recorder, and FFI fails after registration.
+    The test checks result extent, dtype, and alignment, then verifies the
+    registered request, restored snapshot, and unchanged input values.
+    """
+
     request = _request(group)
     payload = ThreadData(
         items_per_thread=2, dtype=cutlass.Int32, values=[1, 2], alignment=64

@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 // Adapted from CooperativeDataMotion.tsx at cccl-mirror trentn/dev/cuda-coop
-// 5dba3d36b6eaae48b967d6fa48f9d15e98136000; contracts follow the shared and qualified APIs.
+// 5dba3d36b6eaae48b967d6fa48f9d15e98136000; contracts follow the shared and
+// qualified APIs.
 (() => {
   "use strict";
 

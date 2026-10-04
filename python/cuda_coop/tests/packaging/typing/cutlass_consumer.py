@@ -6,9 +6,10 @@
 
 ``test_typing.py`` runs ``mypy --strict`` on this file against copied
 ``.pyi`` stubs. This prevents implementation modules from supplying missing
-declarations. Checks cover group query types, Reduce and Scan results,
-Load/Store returns, descriptor attributes, and calls across namespaces.
-Payload constructors and conversions must preserve the scalar dtype.
+declarations. Checks cover group query types, primitive results, descriptor
+attributes, and calls across namespaces. Payload constructors, conversions,
+and rearrangements must preserve the value dtype independently of ranks
+and flags.
 
 The test neither imports this file nor traces or launches a kernel.
 """
@@ -165,9 +166,10 @@ def check_cutlass_dynamic_memory_controls(
 def check_cutlass_warp_surface(source: object, destination: object) -> None:
     """Check Warp Load/Store types across both API namespaces.
 
-    All four physical Warp algorithms accept ``valid_items``,
-    ``oob_default``, and ``offset``. Groups from either namespace must work
-    with common and qualified calls.
+    With each of the four physical Warp algorithms, Load accepts
+    ``valid_items``, ``oob_default``, and ``offset``, and Store accepts
+    ``valid_items``. Groups from either namespace must work with common and
+    qualified calls.
     """
 
     warp = cutlass_coop.this_warp()
@@ -564,6 +566,14 @@ def check_cutlass_scan_seeds(integer_seed: int, floating_seed: float) -> None:
 
 
 def check_cutlass_exchange_surface() -> None:
+    """Keep the value dtype separate from scatter rank and flag dtypes.
+
+    Layout changes and scatters keep the value dtype. Exchange of a register
+    tensor or ``TensorSSA`` value returns ``ThreadData[Any]`` because the
+    stubs cannot see its CuTe element type; the compiler resolves the dtype
+    while tracing.
+    """
+
     block = cutlass_coop.this_block()
     values = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.float32)
     ranks = cutlass_coop.ThreadData(items_per_thread=3, dtype=Int16)
@@ -652,6 +662,8 @@ def check_cutlass_exchange_surface() -> None:
 
 
 def check_cutlass_shuffle_surface(scalar: Uint32) -> None:
+    """Keep payload and scalar Shuffle result types distinct."""
+
     block = cutlass_coop.this_block()
     values = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.int32)
     assert_type(

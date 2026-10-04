@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Validate block Shuffle calls and adapt register payloads.
+
+Payload up/down shifts and scalar offset/rotate calls have different result
+ABIs. Shared planning checks the selected form and distance before the
+provider emits a call; qualified register inputs are converted to ThreadData.
+"""
+
 from enum import Enum
 
 from cuda.coop._core.thread_group import ThreadGroup

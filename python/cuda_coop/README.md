@@ -134,9 +134,8 @@ avoids rebinding `cuda`, which Numba examples use for `cuda.jit`.
 Each qualified API includes its supported common operations, preserving their
 signatures, string selectors, and inference rules. Numba-CUDA-MLIR adds
 local-array payloads, memory namespaces, and device callbacks. CUTLASS adds
-CuTe register conversions and qualified controls such as warp Scan aggregates
-and scalar Shuffle. Custom operators and Scan prefix callbacks are currently
-supported only by Numba-CUDA-MLIR.
+CuTe register conversions and the controls documented in its guide. Only
+Numba-CUDA-MLIR currently supports custom operators and Scan prefix callbacks.
 
 Both integrations accept `ThreadData(items_per_thread, alignment=None)`: use a
 compile-time positive power of two in bytes to request minimum payload storage
@@ -689,31 +688,31 @@ unchanged. The common API accepts `striped_to_blocked` and
 blocked tile gives each thread consecutive items. A striped tile gives item
 `i` to thread `i % group_size` at per-thread position `i // group_size`.
 
-Both `numba_coop.exchange` and `cutlass_coop.exchange` expose the
-block-only `warp_striped_to_blocked` and `blocked_to_warp_striped` layouts and
-the CUB scatter modes. Scatter ranks are local to the selected group tile and
-must use a signed integer payload with the same extent as `value`.
-Both accept `ThreadData`; qualified Numba calls also accept local arrays, and
-qualified CUTLASS calls accept CuTe register payloads. Unguarded ranks must be in
-`[0, group_size * items_per_thread)`. Guarded scatter skips negative ranks;
-every nonnegative rank must still be in range. Flagged scatter uses only ranks
-whose corresponding non-boolean integer flag is nonzero; each active rank must
-be in range. Active destinations must be unique for a deterministic result;
-holes and duplicate destinations are otherwise unspecified.
-`warp_time_slicing=True` is available only for block Exchange and is not valid
-for guarded or flagged scatter.
+Both `numba_coop.exchange` and `cutlass_coop.exchange` expose the block-only
+`warp_striped_to_blocked` and `blocked_to_warp_striped` layouts and the CUB
+scatter modes. Scatter ranks are local to the selected group tile and must use
+a signed integer payload with the same extent as `value`. Both accept
+`ThreadData`; qualified Numba calls also accept local arrays, and qualified
+CUTLASS calls accept CuTe register payloads. Unguarded ranks must be in `[0,
+group_size * items_per_thread)`. Guarded scatter skips negative ranks; every
+nonnegative rank must still be in range. Flagged scatter uses only ranks whose
+corresponding non-boolean integer flag is nonzero; each active rank must be in
+range. Active destinations must be unique for a deterministic result; holes
+and duplicate destinations are otherwise unspecified. `warp_time_slicing=True`
+is available only for block Exchange and is not valid for guarded or flagged
+scatter.
 
 `shuffle(block, value, mode=...)` is block-only. The common API accepts a
 `ThreadData` payload, `up` or `down`, and the fixed distance `1`; the vacated
-edge item is unspecified. Both qualified APIs also accept scalar `offset`
-and `rotate` modes. Offset distance is signed, may vary by thread, and must fit a
+edge item is unspecified. Both qualified APIs also accept scalar `offset` and
+`rotate` modes. Offset distance is signed, may vary by thread, and must fit a
 signed 32-bit integer. Static overflows are rejected during compilation;
 runtime overflows trap before narrowing to CUB. Within that range, a source
 rank outside the block leaves that thread's result unspecified. Rotate
-distance may be static or runtime and must satisfy
-`0 < distance < block_threads`. An invalid runtime Rotate distance also
-executes a device trap. A trap invalidates that CUDA context, so validate
-untrusted distances before launch.
+distance may be static or runtime and must satisfy `0 < distance <
+block_threads`. An invalid runtime Rotate distance also executes a device
+trap. A trap invalidates that CUDA context, so validate untrusted distances
+before launch.
 
 Exchange and Shuffle require converged participation by every member of the
 selected group. They use compiler-owned CUB temporary storage and append a

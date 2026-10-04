@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check Exchange layouts, scatter destinations, and scratch reuse on the GPU.
+
+Plain CuTe accesses fill inputs and observe outputs, so layout checks do
+not depend on Load or Store. Scatter cases compare only defined outputs
+and verify that values, ranks, and flags remain unchanged. Loop cases
+check scratch reuse. Final-cubin cases check that the linked kernel
+inlines provider calls and that logical warps use no block barrier.
+"""
+
 import re
 import shutil
 import subprocess
@@ -40,6 +49,13 @@ _SCATTERS = (
 
 
 def _layout(source, width, mode, items_per_thread=3):
+    """Map each destination item back to its source lane and payload position.
+
+    The host loops apply the selected blocked/striped conversion independently
+    inside each group. This models the caller's payload layout without using
+    the device provider or reversing its output with another Exchange call.
+    """
+
     result = np.empty_like(source)
     for first in range(0, source.size, width * items_per_thread):
         for lane in range(width):
@@ -71,6 +87,14 @@ def _run_layout(
     time_slicing=False,
     items_per_thread=3,
 ):
+    """Observe a layout conversion and check the original payload separately.
+
+    The launch varies group width, scalar type, and block shape. The host
+    compares full-block tiles for ordinary block scope, 32-lane tiles for
+    physical warps or warp-striped block modes, and ``width``-lane tiles for
+    logical warps. Results must keep the requested minimum alignment.
+    """
+
     value_type = cutlass_dtype(dtype)
     threads = int(np.prod(block))
     size = threads * items_per_thread
@@ -191,6 +215,15 @@ def _run_scatter(
     time_slicing=False,
     block=(8, 4, 1),
 ):
+    """Compare scatter destinations that receive a write.
+
+    The modular rank map is a permutation for the tested tile sizes. Guarded
+    cases replace some ranks with a negative value; flagged cases clear some
+    flags. Other nonzero flags include negative signed values. The oracle
+    checks only destinations that receive a write, plus preservation of all
+    three input payloads.
+    """
+
     threads = int(np.prod(block))
     size = threads * _ITEMS
     value_type = cutlass_dtype(dtype)
@@ -358,6 +391,16 @@ def test_scatter_partial_block(mode):
     "divergent", (False, True), ids=("all-groups", "selected-group")
 )
 def test_reuse_loop(api, width, divergent):
+    """Repeat Exchange while complete sibling groups may skip the calls.
+
+    Five runtime iterations convert the previous payload and add a changing
+    increment. The host repeats the same steps. Full-block and all-groups
+    cases keep every member active. Selected-group warp cases run only the
+    second physical warp for width 32, or the third subgroup of each physical
+    warp for narrower widths. Other groups keep their sentinels. They must not
+    join the warp barrier that protects scratch before the next iteration.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,
@@ -430,6 +473,13 @@ def test_reuse_loop(api, width, divergent):
 
 @pytest.mark.parametrize("warp", (False, True), ids=("block", "logical-warp"))
 def test_final_cubin(tmp_path, warp):
+    """Check provider inlining and the logical-warp barrier boundary.
+
+    First compare the output with the independent layout oracle. Then reject
+    provider symbols and CALL instructions. Logical-warp kernels must omit
+    block barriers. Resource reports are saved but have no assertions here.
+    """
+
     cuobjdump = shutil.which("cuobjdump")
     if cuobjdump is None:
         pytest.skip(

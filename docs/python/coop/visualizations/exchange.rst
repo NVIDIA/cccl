@@ -10,10 +10,11 @@ Exchange
 returns a new payload with the requested ownership and preserves the input
 payload. Exchange itself performs no global-memory load or store.
 
-The common API provides ``striped_to_blocked`` and ``blocked_to_striped``.
-The explorer also includes the six additional block modes available through
+The common API provides ``striped_to_blocked`` and ``blocked_to_striped``. The
+explorer also includes the six additional block modes available through
 :func:`cuda.coop.numba_mlir.exchange` and :func:`cuda.coop.cutlass.exchange`:
-two warp-striped conversions and four rank-based scatters. Each option identifies which API provides it.
+two warp-striped conversions and four rank-based scatters. Each option
+identifies which API provides it.
 
 .. coop-visualization:: exchange
 

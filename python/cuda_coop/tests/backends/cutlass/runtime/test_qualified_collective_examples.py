@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Run the qualified scatter and rotate examples used in the documentation.
+
+Marked regions remain suitable for direct inclusion in the public guide.
+Host oracles outside those regions compare the complete reversed tile or
+rotation, covering the backend-specific modes shown in each example.
+"""
+
 import numpy as np
 import pytest
 
@@ -14,6 +21,12 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 @pytest.mark.parametrize("items_per_thread", (1, 4))
 def test_scatter_example(items_per_thread):
+    """Reverse a tile with a unique destination rank for every input element.
+
+    Host reversal checks the rank permutation across all threads and items,
+    including the one-item case. It does not rely on an inverse Exchange call.
+    """
+
     # qualified-scatter-example-begin
     import cutlass
     from cutlass import cute
@@ -60,6 +73,12 @@ def test_scatter_example(items_per_thread):
 
 
 def test_rotate_example():
+    """Rotate scalar values across the block and compare with a host rotation.
+
+    Each output reads seven threads ahead with wraparound. This checks the
+    direction for a positive distance and the wraparound at the tile boundary.
+    """
+
     # qualified-rotate-example-begin
     from cutlass import cute
 

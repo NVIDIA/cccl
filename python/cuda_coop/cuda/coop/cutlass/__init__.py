@@ -7,10 +7,12 @@
 Importing this namespace validates the optional runtime and lets the common
 API recognize the active CuTe DSL compiler environment. Calls inside that
 environment use these implementations. The namespace provides Load/Store,
-built-in Reduce, Sum, and Scan, and supported group queries and
-synchronization. Qualified calls also accept the CuTe payload forms
-documented by each operation. The per-operation docs describe which block
-calls accept TempStorage descriptors to control scratch.
+Reduce, Sum, Scan, Exchange, Shuffle, and supported group queries and
+synchronization. Reduce and Scan accept only built-in operators.
+
+Qualified calls also accept the CuTe payload forms documented by each
+operation. The per-operation docs describe which block calls accept a
+TempStorage descriptor to control their temporary shared-memory storage.
 """
 
 from .._core.api import TempStorageLike, ThreadDataLike

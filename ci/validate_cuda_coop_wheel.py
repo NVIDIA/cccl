@@ -305,9 +305,10 @@ def _validate_provenance(archive: zipfile.ZipFile) -> None:
 def validate(wheel: str | Path) -> None:
     """Check a wheel and stop on a packaging contract violation.
 
-    Require the common API, both compiler integrations, the header bundle,
-    and license files. Reject native binaries, excluded or obsolete modules,
-    and ``cuda/__init__.py``, which would break the shared namespace.
+    Require a fixed set of common API, compiler-integration, and bundled
+    header files, plus the license files. Reject native binaries and excluded
+    or obsolete modules. Reject ``cuda/__init__.py``, which would break the
+    shared namespace.
     Explicit contract checks raise ``SystemExit`` with a packaging diagnostic.
     Unexpected file, archive, or record-shape errors propagate to the caller.
     """

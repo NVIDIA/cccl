@@ -18,13 +18,22 @@ _THREADS = 64
 
 
 def _check(result):
+    """Raise on Driver errors and unwrap a single returned handle or value."""
+
     if int(result[0]):
         raise RuntimeError(f"CUDA Driver call failed: {result[0]}")
     return result[1] if len(result) == 2 else result[1:]
 
 
 def run_example(api="common", items_per_thread=3):
-    """Run Exchange and Shuffle and check their independent layout oracle."""
+    """Check a layout conversion followed by a one-item downward shift.
+
+    The CPU reference builds striped order: thread t holds source[t],
+    source[t + 64], and so on. It shifts that flattened sequence down by one
+    and appends zero. The kernel explicitly repairs Shuffle's undefined final
+    item before Store. The comparison checks the composition of two
+    operations. Common and qualified calls use the same reference.
+    """
 
     tile_size = _THREADS * items_per_thread
     if api not in {"common", "qualified"}:

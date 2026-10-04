@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Validate qualified Exchange operands before shared planning.
+
+Adapt register containers to initialized ThreadData and classify their dtypes.
+The shared plan selects the block or warp specialization and its owned
+scratch; lowering later emits the CuTe call and C++ wrapper.
+"""
+
 from enum import Enum
 
 from cuda.coop._core import GroupExchangeMode
@@ -19,6 +26,13 @@ _WARP_MODES = frozenset({"striped_to_blocked", "blocked_to_striped"})
 
 
 def _normalize_exchange_mode(mode, *, group_kind):
+    """Resolve a mode within the group's supported Exchange family.
+
+    Block groups expose layout conversions and scatter forms. Physical and
+    logical warps expose only blocked/striped conversions; other restrictions
+    are checked by shared planning.
+    """
+
     if not isinstance(mode, str) or isinstance(mode, Enum):
         raise TypeError(f"{_SCOPE}.exchange mode must be a compile-time string")
     token = mode.strip().lower().replace("-", "_")
@@ -32,6 +46,14 @@ def _normalize_exchange_mode(mode, *, group_kind):
 
 
 def _payload(value, *, name):
+    """Adapt a register container and require a per-thread payload.
+
+    Calls through the shared ``cuda.coop.exchange`` API accept only
+    ThreadData. Direct ``cuda.coop.cutlass`` calls may also pass a CuTe
+    register tensor or TensorSSA value. Convert these inputs with
+    ``ThreadData.from_payload``.
+    """
+
     value = _coerce_thread_payload(
         value,
         scope=_SCOPE,
@@ -107,6 +129,11 @@ def exchange(
 
     Notes
     -----
+    ``cuda.coop`` does not check rank uniqueness or bounds. Guarded scatter
+    skips only negative ranks, and flagged scatter skips only items with a
+    zero flag. Duplicate ranks on written items give undefined results. An
+    out-of-range rank on a written item can write past the exchange scratch.
+
     Scratch allocation and trailing synchronization are automatic. See
     :ref:`coop-temp-storage` for storage reuse and :ref:`coop-thread-groups`
     for participation requirements.
