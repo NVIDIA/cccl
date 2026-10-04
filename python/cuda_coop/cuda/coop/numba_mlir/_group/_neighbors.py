@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Qualified block neighbor markers with optional scalar device callbacks.
+
+These operations accept ThreadData or fixed-size local arrays and return
+fresh per-thread arrays with the input extent. A result counts as ThreadData
+for later common-API checks only when its input was ThreadData. The common
+API defines participation, boundaries, and scratch use; this module adds
+stateless callbacks to those contracts.
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -45,13 +54,15 @@ def adjacent_difference(
         Stateless device-compilable ``difference_op(current, neighbor)``
         returning the input dtype. ``None`` selects subtraction. The call
         receives the previous neighbor for left differences and the next
-        neighbor for right differences.
+        neighbor for right differences. Both arguments are scalar elements
+        of the input dtype.
 
     Returns
     -------
     ThreadDataLike
-        The fresh payload described by the common operation, including when
-        the input is a local array.
+        Fresh blocked values with the input dtype and extent, including the
+        unchanged invalid suffix. Common API calls recognize this result as
+        ThreadData only when the input was ThreadData.
     """
     return group_primitive_marker(
         "adjacent_difference",
@@ -84,7 +95,8 @@ def discontinuity(
     """Flag adjacent items with an optional device predicate.
 
     Shared parameters, participation, boundaries, and scratch behavior follow
-    :func:`cuda.coop.discontinuity`.
+    :func:`cuda.coop.discontinuity`. Every item in the block tile must be
+    initialized; this operation has no partial-tile count.
 
     Additional parameters
     ---------------------
@@ -93,13 +105,17 @@ def discontinuity(
     flag_op : callable, optional
         Stateless device-compilable binary predicate. Heads evaluate
         ``flag_op(previous, current)``; tails evaluate
-        ``flag_op(current, next)``. ``None`` selects inequality.
+        ``flag_op(current, next)``. Both arguments are scalar elements of
+        the input dtype, and the predicate returns a Boolean result. ``None``
+        selects inequality.
 
     Returns
     -------
     ThreadDataLike or tuple of ThreadDataLike
-        The common operation's int32 flag payload, or ``(heads, tails)``
-        for ``mode="heads_and_tails"``, including for local-array inputs.
+        Fresh int32 flags, or ``(heads, tails)`` for
+        ``mode="heads_and_tails"``. Each array has the input extent. Common
+        API calls recognize these results as ThreadData only when the input
+        was ThreadData.
     """
     return group_primitive_marker(
         "discontinuity",

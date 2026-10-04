@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Exercise neighbor ordering, boundaries, and fresh results on the GPU.
+
+Compare complete difference outputs, including the unchanged invalid tail,
+and check int32 flags through downstream scans. Separate subprocesses keep
+expected device traps from corrupting the main test process's CUDA context.
+"""
+
 import numpy as np
 import pytest
 
@@ -42,6 +49,12 @@ _DTYPES = [
 def test_adjacent_partial_boundaries_and_input_preservation(
     dtype, direction, items_per_thread
 ):
+    """Check partial tiles in a 30-thread block, including zero valid items.
+
+    Fractional, signed, and wide integer values expose unwanted conversions.
+    The copied tail and the original input must survive every boundary case.
+    """
+
     source = ((np.arange(30 * items_per_thread) * 7) % 17).astype(dtype)
     if np.issubdtype(dtype, np.floating):
         source = source / dtype(4) + dtype(0.125)
@@ -112,6 +125,11 @@ def test_adjacent_partial_boundaries_and_input_preservation(
 def test_flags_boundaries_pair_results_and_chained_scan(
     dtype, mode, boundary, items_per_thread
 ):
+    """Check flag boundaries and scan one returned int32 flag payload.
+
+    Pair results scan the tails; single results scan the returned flags.
+    """
+
     source = (np.arange(32 * items_per_thread) // 5 % 7).astype(dtype)
     source[31:35] = 9
     if np.issubdtype(dtype, np.floating):
@@ -195,6 +213,15 @@ def test_flags_boundaries_pair_results_and_chained_scan(
 
 
 def test_qualified_custom_operators_and_shared_storage_reuse():
+    """Check callback operand order while reusing shared scratch.
+
+    Asymmetric callbacks expose order: difference_op receives (current,
+    neighbor), and flag_op receives (earlier, later) for heads and tails.
+    Adjacent Difference must keep the local array, and Discontinuity must
+    keep the differences it reads. Automatic synchronization permits these
+    consecutive uses of the shared TempStorage.
+    """
+
     def difference(current, neighbor):
         return current * 2 - neighbor
 
@@ -335,6 +362,8 @@ def test_full_tile_default_boundary_and_chained_result(
 
 @pytest.mark.parametrize("count", [-1, 193, 1 << 32])
 def test_invalid_runtime_count_traps_before_narrowing(count):
+    """Isolate device traps and include a count that could wrap to zero."""
+
     import subprocess
     import sys
     from pathlib import Path
