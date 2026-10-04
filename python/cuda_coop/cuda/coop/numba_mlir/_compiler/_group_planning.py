@@ -678,10 +678,28 @@ class GroupPlanningContext:
     ) -> Any | None:
         """Infer result dtype from its registered source argument.
 
+        The context's dtype traversal calls this before provider rewriting.
+        It follows the public operation's result policy so a chain of group
+        calls can be planned even though Numba has not typed their results
+        yet.
+
         ``index`` selects a tuple result or is ``None`` for a direct result.
         Return ``None`` when the call has no matching policy or that policy
         has no dtype source. Reuse the caller's recursion path when inspecting
         the bound argument so cyclic result dependencies remain guarded.
+
+        Parameters
+        ----------
+        definition : ir.Expr
+            Potential public operation call whose result is used by
+            another group operation.
+        index : int or None
+            Position in a tuple of public results, or ``None`` for a
+            direct result.
+        seen : set of str
+            IR variable names already visited on this recursive path.
+            Reusing the path prevents a loop-carried value from causing
+            unbounded traversal.
         """
 
         resolved = self.__planner._result_source(definition, index)
