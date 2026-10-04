@@ -2056,10 +2056,33 @@ class _GroupCallPlanner:
     ) -> tuple[ir.Var, bool]:
         """Represent a scalar as a one-item array for an array-only provider.
 
+        Array-only families call this during group planning to reuse the
+        same provider for scalar input. The Boolean result records the
+        public operand form, so later result construction can restore that
+        form without mistaking a one-item array for a scalar.
+
         Return an existing array unchanged. For a scalar, append a payload
         allocation marker and a write to element zero. Return the payload and
         a flag describing the original operand's array form; the family uses
         that flag to restore a scalar result after the provider call.
+
+        Parameters
+        ----------
+        statements : list of IR statements
+            Pending replacement statements, appended to in execution
+            order. The function's blocks are unchanged until the owning
+            planner installs this list.
+        operation : str
+            Canonical public operation name, used in diagnostics and
+            generated temporary names.
+        value : ir.Var
+            Public operand, either a supported per-thread array or a
+            scalar.
+        scope : ir.Scope
+            Scope in which to create temporary IR variables.
+        loc : ir.Loc
+            Source location attached to generated statements and
+            diagnostics.
         """
 
         is_array = self._array_operand_state(operation, value)
@@ -2096,9 +2119,34 @@ class _GroupCallPlanner:
     ) -> ir.Var:
         """Recover the public result shape from an internal array payload.
 
+        A family calls this after appending the provider call to its
+        replacement statements. This restores the public result form when
+        the provider itself always writes an array.
+
         Return an array payload unchanged. For a scalar result, append a read
         of element zero and return its variable. The caller must supply a
         one-item payload for that case; this helper does not check its extent.
+
+        Parameters
+        ----------
+        statements : list of IR statements
+            Pending replacement statements, appended to in execution
+            order. The function's blocks are unchanged until the owning
+            planner installs this list.
+        payload : ir.Var
+            Internal provider result array, already defined by earlier
+            pending statements.
+        is_array : bool
+            Whether the public call should return the whole array. False
+            extracts element zero as a scalar.
+        scope : ir.Scope
+            Scope in which to create temporary IR variables.
+        loc : ir.Loc
+            Source location attached to generated statements and
+            diagnostics.
+        stem : str
+            Readable prefix for the index and scalar-result temporary
+            names.
         """
 
         if is_array:
