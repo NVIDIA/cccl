@@ -1524,6 +1524,32 @@ struct high_bin_histogram_tuning
   }
 };
 
+struct wide_counter_cooperative_histogram_tuning
+    : high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                                cub::HistogramCacheAlgorithm::cuckoo,
+                                cub::HistogramSpillAlgorithm::output,
+                                cub::HistogramAggregationAlgorithm::warp_coalesced>
+{
+  using local_counter_type = unsigned long long;
+};
+
+struct byte_sample_cooperative_histogram_tuning
+    : high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                                cub::HistogramCacheAlgorithm::single_probe,
+                                cub::HistogramSpillAlgorithm::output,
+                                cub::HistogramAggregationAlgorithm::rle>
+{
+  using local_counter_type = unsigned long long;
+
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::HistogramPolicy
+  {
+    auto policy                                             = high_bin_histogram_tuning::operator()(cc);
+    policy.max_privatized_static_smem_single_channel_bytes  = 0;
+    policy.max_privatized_dynamic_smem_single_channel_bytes = 0;
+    return policy;
+  }
+};
+
 template <int BlockThreads, typename LocalCounterT>
 struct histogram_tuning_with_local_counter : histogram_tuning<BlockThreads>
 {
@@ -1708,6 +1734,67 @@ CUB_TEST("DeviceHistogram high-bin cooperative strategies can be tuned", "[histo
                                 cub::HistogramSpillAlgorithm::output,
                                 cub::HistogramAggregationAlgorithm::warp_coalesced,
                                 98304>{});
+}
+
+CUB_TEST("DeviceHistogram cooperative warp aggregation handles invalid lanes", "[histogram][device]", CUB_SMALL)
+{
+  constexpr int num_levels  = 1026;
+  constexpr int num_samples = 257;
+  c2h::host_vector<int> h_samples(num_samples);
+  c2h::host_vector<unsigned long long> h_expected(num_levels - 1, 0);
+  for (int i = 0; i < num_samples; ++i)
+  {
+    const int sample = i % 7 == 0 ? -1 : i % (num_levels - 1);
+    h_samples[i]     = sample;
+    if (sample >= 0)
+    {
+      ++h_expected[sample];
+    }
+  }
+
+  const c2h::device_vector<int> d_samples               = h_samples;
+  c2h::device_vector<unsigned long long> d_histogram    = h_expected;
+  const c2h::device_vector<unsigned long long> expected = h_expected;
+  thrust::fill(d_histogram.begin(), d_histogram.end(), 0);
+  const auto env = cuda::execution::tune(wide_counter_cooperative_histogram_tuning{});
+
+  histogram_even(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_levels,
+    0,
+    num_levels - 1,
+    static_cast<long long>(d_samples.size()),
+    env);
+  REQUIRE(d_histogram == expected);
+}
+
+CUB_TEST("DeviceHistogram byte samples bypass cooperative direct-output dispatch", "[histogram][device]", CUB_SMALL)
+{
+  constexpr int num_levels = 17;
+  c2h::host_vector<unsigned char> h_samples(257);
+  c2h::host_vector<unsigned long long> h_expected(num_levels - 1, 0);
+  for (int i = 0; i < static_cast<int>(h_samples.size()); ++i)
+  {
+    h_samples[i] = static_cast<unsigned char>(i);
+    ++h_expected[h_samples[i] / 16];
+  }
+
+  const c2h::device_vector<unsigned char> d_samples     = h_samples;
+  c2h::device_vector<unsigned long long> d_histogram    = h_expected;
+  const c2h::device_vector<unsigned long long> expected = h_expected;
+  thrust::fill(d_histogram.begin(), d_histogram.end(), 0);
+  const auto env = cuda::execution::tune(byte_sample_cooperative_histogram_tuning{});
+
+  histogram_even(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_levels,
+    0,
+    256,
+    static_cast<int>(d_samples.size()),
+    env);
+  REQUIRE(d_histogram == expected);
 }
 
 CUB_TEST("DeviceHistogram high-bin cooperative strategy handles strided rows", "[histogram][device]", CUB_SMALL)
