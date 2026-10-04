@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile Exchange and Shuffle with CUDA devices hidden.
+
+Fixed device queries select an architecture while the compiler, NVRTC,
+and linker still run. Source checks cover call parameters and storage;
+compiled-kernel checks cover linked code and ordered reuse barriers.
+"""
+
 from __future__ import annotations
 
 import os
@@ -78,10 +85,22 @@ def _fixed_current_device(
 
 @pytest.fixture(scope="module")
 def compile_context() -> _nvrtc.CompileContext:
+    """Reuse one resolved toolchain configuration for this module.
+
+    Each collected algorithm receives this context, so its source and compiled
+    bundle use the same headers and compiler libraries.
+    """
+
     return _nvrtc.resolve_compile_context()
 
 
 def _collect(factory, compile_context: _nvrtc.CompileContext, /, **kwargs):
+    """Capture one lowering request before it compiles provider code.
+
+    The algorithm retains its logical width and block shape for source
+    rendering and bundled compilation.
+    """
+
     with _types.collect_specializations() as collected:
         factory(**kwargs)
     assert len(collected) == 1
@@ -95,6 +114,12 @@ def _source(algorithm) -> str:
 
 
 def _compile_bundle(collected) -> bytes:
+    """Compile collected providers with their individual group dimensions.
+
+    A nonempty result checks that the emitted wrappers compile together. The
+    caller can then inspect storage sizes resolved during compilation.
+    """
+
     ltoir = _types.prepare_ltoir_bundle(
         collected,
         allow_single=True,
@@ -387,6 +412,12 @@ def test_exchange_and_shuffle_compile_for_every_supported_dtype(
 
 
 def _production_compile_environment(monkeypatch: pytest.MonkeyPatch):
+    """Fix architecture discovery for complete kernel compilation.
+
+    Only the device queries are replaced. Kernel rewriting, provider
+    compilation, and linking still use their production implementations.
+    """
+
     import numba_cuda_mlir.tools as numba_mlir_tools
     from numba_cuda_mlir import cuda as compiler_cuda
 
@@ -519,8 +550,12 @@ def test_untyped_load_composes_directly_into_exchange(
 
 
 def _evaluate_warp_mask(definitions, operand, rank):
-    """Evaluate only the emitted mask dependencies, independently of the
-    rewrite.
+    """Interpret the emitted barrier-mask arithmetic for one thread rank.
+
+    The test compares this value with an independent set of expected lanes.
+    Only operations used by the mask are supported; reject unfamiliar ones
+    so a changed expression cannot silently evade the check. Integer casts
+    must retain their signed or unsigned bit behavior.
     """
     expression = definitions[operand]
     operation = expression.split()[0]
