@@ -19,6 +19,8 @@
     { id: "warp_reductions", label: "Warp reductions", tag: "CUB · warp partials" },
   ];
   function group_width(scope) {
+    // Scale physical and logical warps to four and two teaching threads.
+    // Blocks, mapped-warp groups, and clusters span all eight threads.
     return scope === "thread" ? 1 : scope === "logical_warp" ? 2 : scope === "warp" ? 4 : threads;
   }
 
@@ -50,6 +52,8 @@
   }
 
   function reduce_algorithms(state) {
+    // Prefixes and callbacks select CUB paths with a root-only result.
+    // Full built-in reductions can use the hierarchy-aware group path.
     const direct_cub = state.operator === "custom_max" || state.valid === "half";
     const automatic = { id: "group", label: "Group reduction", tag: "Built-in · hierarchy-aware ownership" };
     if (state.scope !== "block") {
@@ -60,6 +64,8 @@
   }
 
   function build_reduce(state) {
+    // Keep every thread visible. A valid prefix limits contributions, not
+    // participation, and result ownership is a separate choice.
     const items = Number(state.items);
     const width = group_width(state.scope);
     const valid = state.valid === "half" ? width / 2 : width;
@@ -71,6 +77,8 @@
       `T${thread} combines its ${items} input item${items === 1 ? "" : "s"} into ${value}.${thread % width >= valid ? " This thread lies outside the valid prefix." : ""}`,
       thread, { row: "input", index: thread * items }));
     const intermediate = [];
+    // Draw illustrative combinations within each group. These segments
+    // explain the algorithm choices without modeling GPU instructions.
     for (let start = 0; start < threads; start += width) {
       const contributors = Array.from({ length: valid }, (_, index) => start + index);
       let segments;

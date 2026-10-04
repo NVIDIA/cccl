@@ -92,7 +92,7 @@ class ThreadGroup(Generic[_GroupKindT_co]):
     def rank(
         self: ThreadGroup[_PhysicalGroupKind], level: ThreadLevel = "thread"
     ) -> IntegerValue:
-        """Return rank using the outer C++ hierarchy boundary's product type."""
+        """Return uint64 rank when the group or level is grid, else uint32."""
     @overload
     def rank(
         self: ThreadGroup[Literal["threads_within_warp"]],
@@ -113,9 +113,7 @@ class ThreadGroup(Generic[_GroupKindT_co]):
     def count(
         self: ThreadGroup[_PhysicalGroupKind], level: ThreadLevel = "thread"
     ) -> IntegerValue:
-        """Return count using the outer C++ hierarchy boundary's product
-        type.
-        """
+        """Return uint64 count when group or level is grid, else uint32."""
     @overload
     def count(
         self: ThreadGroup[Literal["threads_within_warp"]],
@@ -354,4 +352,4 @@ def this_cluster() -> ThreadGroup[Literal["cluster"]]:
     """Describe the current thread-block cluster."""
 
 def this_grid() -> ThreadGroup[Literal["grid"]]:
-    """Describe the grid; common operations do not support this group."""
+    """Describe the grid for queries; common primitives reject it."""

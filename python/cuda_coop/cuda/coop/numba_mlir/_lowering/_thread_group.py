@@ -2,7 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compile group queries and synchronization helpers to LTO IR."""
+"""Compile group queries and synchronization helpers to device LTO IR.
+
+A public group descriptor exists only during compilation. Its rank, count,
+membership, and synchronization methods become C-ABI device helpers with the
+group hierarchy embedded in generated C++. Query helpers return scalar values;
+synchronization helpers return void. No runtime group object or TempStorage
+pointer is passed through this ABI.
+"""
 
 from __future__ import annotations
 
@@ -71,6 +78,13 @@ def _current_cc() -> int:
 
 
 def _group_prelude(group: ThreadGroup) -> list[str]:
+    """Render the group and any explicit hierarchy it depends on.
+
+    Implicit hierarchies use the native current-group construction. Explicit
+    hierarchies must be declared first so the group expression can refer to
+    their known launch dimensions.
+    """
+
     hierarchy = group.hierarchy
     if hierarchy.implicit:
         return render_group_decl_lines(group)
@@ -81,7 +95,12 @@ def _group_prelude(group: ThreadGroup) -> list[str]:
 
 
 def _mapped_warp_query_prelude(group: ThreadGroup) -> list[str]:
-    """Render flat mapped-Warp metadata without constructing a barrier group."""
+    """Render mapped-warp query metadata without a barrier group.
+
+    Queries need only the physical warp rank, grouping count, and complete
+    mapped prefix. Derive those values from the parent block instead of
+    constructing a synchronization object with a separate barrier lifetime.
+    """
 
     assert group.kind == "warps_within_block"
     assert group.parent is not None
@@ -115,6 +134,16 @@ def _mapped_warp_query_prelude(group: ThreadGroup) -> list[str]:
 
 
 def _query_expr(group: ThreadGroup, operation: str, level: str) -> str:
+    """Select the C++ rank or count expression for the requested level.
+
+    An inner level queries constituents; an outer level queries this group
+    within its parent hierarchy. Same-level rank/count are zero/one. Mapped
+    groups use their immediate parent and reject higher-level composition.
+
+    Mapped physical warps use rank arithmetic from the query prelude so these
+    reads do not construct a barrier-bearing group object.
+    """
+
     if group.kind == "warps_within_block":
         assert group.mapping is not None
         block_threads = group.hierarchy.block_thread_count
@@ -161,6 +190,12 @@ def _query_expr(group: ThreadGroup, operation: str, level: str) -> str:
 
 
 def _execution_scope(group: ThreadGroup) -> SynchronizationScope:
+    """Map the descriptor to the execution scope of its native helper.
+
+    This metadata describes participating threads. It does not request an
+    extra scratch-reuse barrier after a query or synchronization helper.
+    """
+
     return {
         "thread": SynchronizationScope.NONE,
         "warp": SynchronizationScope.WARP,
@@ -177,6 +212,14 @@ def _normalize_query_dtype(
     level: str,
     dtype: Any,
 ) -> Any:
+    """Choose a default unsigned query type or validate an explicit integer.
+
+    Use uint64 when the group or requested level is grid, otherwise uint32. An
+    explicit dtype is normalized and checked against the shared query policy.
+    The caller must choose enough width for its possible ranks or counts; this
+    step does not prove that conversion is lossless.
+    """
+
     if dtype is None:
         dtype = (
             numba_types.uint64
@@ -197,7 +240,18 @@ def make_group_method_invocable(
     level: str = "thread",
     compile_context: _nvrtc.CompileContext | None = None,
 ) -> RawCAbiInvocable:
-    """Materialize one query, membership, or synchronization helper."""
+    """Compile one rank, count, membership, or synchronization helper.
+
+    Embed the resolved group and query controls in C++ and qualify its symbol
+    with target and compiler context. Rank/count return the selected integer
+    dtype; membership returns uint8; synchronization returns void. Incomplete
+    mapped groups guard synchronization for excluded threads.
+
+    Mapped physical-warp synchronization is rejected because its barrier
+    lifetime is not managed here. The planner must resolve supported group and
+    launch facts before calling this factory. Construction compiles LTO IR and
+    returns a compiler-local ``RawCAbiInvocable`` with no operands.
+    """
 
     if not isinstance(group, ThreadGroup):
         raise TypeError("group must be a ThreadGroup")

@@ -206,6 +206,8 @@ class UnsupportedReasonCode(str, Enum):
 
 
 class CudaxReturnKind(str, Enum):
+    """Distinguish an ordinary value from CUDAX's optional root-only result."""
+
     VALUE = "value"
     OPTIONAL_VALUE = "optional_value"
 
@@ -331,6 +333,18 @@ class GroupPrimitiveCall:
 
 @dataclass(frozen=True)
 class CudaxCallDescription:
+    """Describe a CUDAX call whose group is supplied by backend-generated code.
+
+    ``header``, ``namespace``, and ``primitive`` identify the C++ operation.
+    ``overload`` selects a variant, such as broadcast or root-only Reduce,
+    while ``return_kind`` tells the backend how that variant returns a value.
+
+    ``parameters`` classifies the operation's arguments. It must not contain
+    group or launch descriptors: those are compile-time planning inputs. The
+    backend builds the C++ group from the resolved topology in the enclosing
+    ``GroupLoweringPlan``. All fields contribute to the call's semantic key.
+    """
+
     primitive: str
     header: str
     namespace: str
@@ -588,9 +602,10 @@ class ResultContract:
     """Group the named logical results in their public return order.
 
     ``values`` must be a non-empty sequence of ``LogicalResultContract``
-    records with unique names. Its first entry is the primary result; the
-    convenience properties describe that entry, not every returned value. The
-    contract does not prescribe how a backend packs multiple values.
+    records with unique names. Its first entry is the primary result.
+    ``primary``, ``visibility``, and ``operand_kind`` describe that entry;
+    ``has_aggregate`` checks all entries. The contract does not prescribe
+    how a backend packs multiple values.
     """
 
     values: tuple[LogicalResultContract, ...]

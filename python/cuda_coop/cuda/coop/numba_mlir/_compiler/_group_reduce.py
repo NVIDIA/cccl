@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Plan Reduce and Sum calls before ordinary Numba type inference.
+
+Recover the payload form, operator, valid prefix, and static selectors from
+the public call. The shared group planner chooses a supported CUB or CUDAX
+implementation and its result contract. This module selects the matching
+private factory and builds replacement IR. Every reduction returns a scalar;
+its registered result policy inherits dtype from the value argument.
+"""
+
 from __future__ import annotations
 
 import inspect
@@ -64,6 +73,13 @@ def _normalize_public_algorithm(
     operation: str,
     is_common_root: bool,
 ) -> str | None:
+    """Normalize an optional public CUB algorithm selector.
+
+    Accept the supported string names and retain ``None`` so core planning can
+    select its default implementation. Use the common or qualified API name in
+    diagnostics; enum objects are not public selectors.
+    """
+
     namespace = "cuda.coop" if is_common_root else "cuda.coop.numba_mlir"
     if value is None:
         return None
@@ -79,7 +95,13 @@ def _normalize_public_algorithm(
 
 
 class _ReducePlanning:
-    """Family-local Reduce semantics over the declared planning context."""
+    """Validate a reduction and build its selected provider call.
+
+    The shared context supplies launch facts and payload provenance. This
+    family distinguishes built-in sum, other C++ operators, and qualified
+    Python callbacks. It returns replacement statements; the owning planner
+    installs them after whole-function validation.
+    """
 
     def __init__(self, context: GroupPlanningContext) -> None:
         self._context = context
@@ -89,6 +111,12 @@ class _ReducePlanning:
         operation: str,
         bound: inspect.BoundArguments,
     ) -> None:
+        """Normalize the common API's optional CUB algorithm in place.
+
+        The bound selector must be constant before implementation selection.
+        Other operation and operand checks run when the reduction is planned.
+        """
+
         bound.arguments["algorithm"] = _normalize_public_algorithm(
             self._context.constant(bound.arguments["algorithm"]),
             operation=operation,
@@ -103,6 +131,19 @@ class _ReducePlanning:
         dtype: Any,
         is_common_root: bool,
     ) -> tuple[str, str, CxxOperator | PythonOperator | None]:
+        """Classify sum, a built-in C++ operator, or a Python callback.
+
+        Return the core operation name, provider-selection token, and
+        optional operator descriptor. Recognized callable aliases retain
+        built-in semantics. Qualified unrecognized callables become
+        ``PythonOperator`` descriptors with dtype dependencies; common calls
+        require string names.
+
+        Validate built-in dtype restrictions here, including integer-only
+        bitwise operations. The shared planner later checks which group and
+        algorithm can support the chosen operator kind.
+        """
+
         from .._lowering._reduce import (
             normalize_reduce_operation,
             validate_reduce_operator_dtype,
@@ -148,6 +189,14 @@ class _ReducePlanning:
 
     @staticmethod
     def _provider(plan: GroupLoweringPlan, *, operator_kind: str):
+        """Match reduction provenance to a registered provider factory.
+
+        CUB block and warp targets select sum, built-in, or callback
+        factories. CUDAX group targets select a factory by execution scope.
+        Require the expected library and native entry point so unrelated plans
+        cannot be interpreted through a reduction ABI.
+        """
+
         if plan.provenance is None or plan.topology is None:
             raise GroupRewriteError(
                 "cuda.coop.numba_mlir.reduce requires "
@@ -206,6 +255,19 @@ class _ReducePlanning:
         bound: inspect.BoundArguments,
         is_common_root: bool,
     ) -> tuple[GroupLoweringPlan, str, Any, bool]:
+        """Resolve reduction operands and request a supported core plan.
+
+        Require a constant broadcast flag, operator, and algorithm. Infer the
+        numeric dtype and any fixed array extent; common calls accept only a
+        scalar or ThreadData array. Preserve a valid-prefix control as an
+        omitted, static, or runtime binding. A runtime count must have an
+        inferable, supported integer dtype, or planning fails.
+
+        Construct the shared reduction semantics and require a supported plan.
+        Return that plan, the operator token, the original operator value, and
+        the array-form flag for provider-call construction.
+        """
+
         if operation not in {"reduce", "sum"}:
             raise GroupRewriteError(
                 f"Reduce planner received unexpected operation {operation!r}"
@@ -312,6 +374,13 @@ class _ReducePlanning:
         binding: ArgumentBinding,
         value: Any,
     ) -> Any:
+        """Prepare a runtime valid-prefix count for the checked provider ABI.
+
+        Append an int64 conversion to the pending statements for a runtime
+        binding. Static and omitted bindings pass through unchanged so the
+        provider rewrite can retain their specialization meaning.
+        """
+
         if binding.kind is not BindingKind.RUNTIME:
             return binding
         scope = inst.target.scope
@@ -342,6 +411,17 @@ class _ReducePlanning:
         bound: inspect.BoundArguments,
         is_common_root: bool,
     ) -> list[Any]:
+        """Build the selected reduction call with its validated plan attached.
+
+        CUDAX receives a resolved group, built-in operator, payload form, and
+        broadcast choice. CUB receives exact block or warp dimensions and any
+        valid-prefix control using that provider's keyword. Custom callbacks
+        remain specialization inputs rather than runtime callable operands.
+
+        Return ordered conversion and call statements. The provider's scalar
+        return becomes the original public result without an output array.
+        """
+
         plan, operator_kind, binary_op, _is_array = self._plan(
             operation=operation,
             group=group,

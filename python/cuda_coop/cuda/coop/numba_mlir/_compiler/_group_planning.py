@@ -278,6 +278,12 @@ class GroupPlanningContext:
         This exception does not apply to implementation-owned storage. No IR
         is mutated here.
 
+        A provider with GROUP execution scope is accepted only when the plan
+        and factory require no TempStorage operand and no emitted reuse
+        barrier. The helper can manage native synchronization and internal
+        memory itself; this check does not establish that its implementation
+        uses no memory.
+
         Parameters
         ----------
         lowering_plan : GroupLoweringPlan

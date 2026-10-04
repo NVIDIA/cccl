@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe scalar CUB reductions for physical or fixed-width logical warps.
+
+The factory selects a named method and its full-warp or valid-count overloads.
+It records Min and Max in ``call`` as equivalent reductions with C++ operators
+for semantic comparison. The bound algorithm still calls the named CUB method.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -54,7 +61,13 @@ _REDUCE_OPERATORS = (CxxOperator, PythonOperator, StatefulOperator)
 
 @dataclass(frozen=True)
 class WarpReduceSpecialization:
-    """Fully specialized WarpReduce call semantics."""
+    """Keep a bound WarpReduce algorithm and its supported count signatures.
+
+    ``operation`` retains the named CUB method. The shared ``call`` represents
+    Min and Max as reductions with C++ operators for semantic comparison.
+    ``has_full_warp`` records whether a signature without a valid count is
+    available; it does not prove which threads participate in a kernel call.
+    """
 
     specialization: Algorithm
     call: ReduceSemantics
@@ -88,7 +101,20 @@ def make_warp_reduce_specialization(
     valid_items: bool | ArgumentBinding = False,
     include_full_warp: bool = False,
 ) -> WarpReduceSpecialization:
-    """Build canonical scalar WarpReduce semantics."""
+    """Bind a scalar reduction and its count overloads for a logical warp.
+
+    The width must be a power of two from 1 through 32. A static valid count
+    must fit within that width. Min and Max accept no valid count or custom
+    operator; Reduce requires an operator description and Sum uses its own.
+
+    ``valid_items=True`` selects a runtime count and false omits it. An
+    ``ArgumentBinding`` can embed a constant instead. ``include_full_warp``
+    adds a no-count signature alongside a requested count signature, so one
+    bound algorithm can expose both forms. It requires a valid-count request.
+
+    The returned record describes CUB parameters and template arguments.
+    The backend later allocates scratch and emits code for those signatures.
+    """
 
     operation = WarpReduceOperation(operation)
     threads_in_warp = _validate_logical_warp_threads(threads_in_warp)

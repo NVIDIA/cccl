@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe reduction inputs without choosing a group or compiler backend.
+
+Block and Warp factories share the payload, operator, and valid-count checks
+here. Their scope-specific factories add group dimensions and CUB overloads.
+The resulting record also gives caches a stable description of the operation.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -14,11 +21,15 @@ from ._types import CxxOperator, PythonOperator, StatefulOperator
 
 
 class ReduceOperation(str, Enum):
+    """Select a custom binary reduction or the built-in sum."""
+
     REDUCE = "reduce"
     SUM = "sum"
 
 
 class ReduceValueKind(str, Enum):
+    """Distinguish one scalar per thread from a fixed per-thread array."""
+
     SCALAR = "scalar"
     ARRAY = "array"
 
@@ -28,7 +39,17 @@ _REDUCE_OPERATORS = (CxxOperator, PythonOperator, StatefulOperator)
 
 @dataclass(frozen=True, eq=False)
 class ReduceSemantics:
-    """Normalized reduction payload and operator contract."""
+    """Hold normalized inputs for group, Block, and Warp reductions.
+
+    ``value_kind`` and ``items_per_thread`` select the scalar or array form.
+    ``valid_items`` records whether the call omits a count, embeds a constant,
+    or accepts the count at runtime. ``reduce_operator`` is required for a
+    custom reduction and absent for the built-in sum.
+
+    Equality and hashing use semantic tokens for the dtype, binding, and
+    operator. This lets separately constructed equivalent records share
+    compiler artifacts without relying on their Python object identities.
+    """
 
     dtype: Any
     operation: ReduceOperation
@@ -78,7 +99,18 @@ def make_reduce_semantics(
     | None = None,
     valid_items: bool | ArgumentBinding = False,
 ) -> ReduceSemantics:
-    """Build a scope-independent reduction operation record."""
+    """Validate reduction inputs before selecting a Block or Warp overload.
+
+    Scalar inputs require one item per thread. A valid-item count applies
+    only to scalar inputs; its static value must be positive and fit signed
+    32-bit storage. The scope-specific factory checks its group-size limit.
+    For the shorthand ``valid_items``, true requests a runtime count and
+    false omits it. An ``ArgumentBinding`` can instead embed a constant.
+
+    A custom reduction needs a C++, Python, or stateful operator description.
+    Sum uses its built-in operator and rejects an extra one. This function
+    creates a description; a backend later turns it into callable device code.
+    """
 
     if dtype is None:
         raise ValueError("dtype must be provided")

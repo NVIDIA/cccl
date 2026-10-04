@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check Python callback adaptation and artifact ownership without NVRTC.
+
+Compiler doubles record signatures, target architectures, and source. Tests
+check the calling conventions for scalars passed by value and aggregates
+passed by pointer. They also check that provider artifacts include the
+callback code needed at link time.
+"""
+
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -15,6 +23,12 @@ def _combine(lhs, rhs):
 
 
 def _named_operator_algorithm(operator):
+    """Materialize a small provider with a named callback parameter.
+
+    The C++ local name comes from the operator's display name. Callers check
+    that this name does not change the compiled callback's linker symbol.
+    """
+
     from numba_cuda_mlir import types
 
     from cuda.coop._core import Algorithm, Reference, SynchronizationScope
@@ -39,6 +53,12 @@ def _named_operator_algorithm(operator):
 
 
 def _make_same_named_operator(offset):
+    """Create callbacks with equal names but different captured offsets.
+
+    This forces symbol and cache identity to account for callable behavior;
+    module and qualified names alone cannot distinguish the two callbacks.
+    """
+
     def combine(lhs, rhs):
         return lhs + rhs + offset
 

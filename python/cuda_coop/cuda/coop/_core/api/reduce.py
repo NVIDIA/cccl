@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Define the common Reduce and Sum calls that kernels use.
+
+The registration decorator records accepted group kinds and leaves each
+function unwrapped. Shared planning selects CUDAX or CUB and records where
+the result is defined. A backend compiles that plan; callers must respect
+its result visibility. The Python bodies reject host execution.
+"""
+
 from __future__ import annotations
 
 from typing import Any

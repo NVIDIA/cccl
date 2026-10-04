@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Infer reduction provider inputs and check valid-prefix controls.
+
+Both scalar values and fixed per-thread arrays reduce to one scalar result.
+These hooks recover the input dtype and form for factory specialization, then
+check any CUB valid-prefix count before provider materialization. Runtime
+count conversion is handled by the provider's bounded integer ABI.
+"""
+
 from __future__ import annotations
 
 from numbers import Integral
@@ -19,6 +27,14 @@ from ._rewrite_support import CoopSinglePhaseRewriteError, ir
 
 
 def _numeric_dtype(dtype: Any, *, binary_op: Any) -> Any:
+    """Validate numeric payload types against a built-in or custom operator.
+
+    Recognized built-ins apply their extra dtype rules, such as integer-only
+    bitwise reduction. A custom callable uses the common numeric set; later
+    callback compilation checks its concrete signature. Translate validation
+    failures to the provider rewrite's error type.
+    """
+
     from .._lowering._reduce import (
         normalize_reduce_operation,
         validate_reduce_operator_dtype,
@@ -44,7 +60,16 @@ def infer_reduce_payload(
     context: GroupRewriteContext,
     inference: PayloadInference,
 ) -> None:
-    """Infer one scalar-result reduction payload."""
+    """Infer the reduction value's dtype, extent, and scalar/array form.
+
+    A recognized array must have a static extent. Otherwise infer a scalar
+    with one item. Use payload or scalar type facts before an explicit factory
+    dtype, then apply the operator's numeric restrictions.
+
+    Merge the resulting factory keywords through ``inference`` so explicit
+    values must agree. For arrays, record dtype on the payload for later
+    allocation. The reduction result remains scalar in either input form.
+    """
 
     if not inference.runtime_args or not isinstance(
         inference.runtime_args[0], ir.Var
@@ -89,6 +114,13 @@ def infer_reduce_payload(
 def _group_width(
     factory_kwargs: dict[str, object], *, parameter: str
 ) -> int | None:
+    """Recover the member count used to bound a valid-prefix control.
+
+    Warp providers use ``threads_in_warp``. Block providers use a scalar block
+    size or the product of a three-dimensional shape. Return ``None`` when
+    these factory inputs do not establish an integer width.
+    """
+
     if parameter == "valid_items":
         value = factory_kwargs.get("threads_in_warp")
         if isinstance(value, Integral) and not isinstance(value, bool):
@@ -116,6 +148,17 @@ def _validate_valid_items(
     factory_kwargs: dict[str, object],
     parameter: str,
 ) -> None:
+    """Check the representation and known bounds of a CUB valid prefix.
+
+    An absent control needs no check. A static binding must be a positive
+    non-boolean integer and cannot exceed a known group width. A runtime
+    binding requires a second operand and a supported integer dtype when that
+    type is known. Unknown runtime type defers to later typing.
+
+    This hook validates call structure and known facts. The factory supplies
+    the bounded conversion for runtime values before the native call.
+    """
+
     binding = factory_kwargs.get(parameter)
     if binding is None:
         return

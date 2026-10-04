@@ -32,6 +32,10 @@
 #include <cuda/experimental/coop/__group/synchronizer/level_synchronizer.cuh>
 #include <cuda/experimental/coop/__group/traits.cuh>
 
+// Cooperative-groups interoperability lives in cg_interop.cuh. Keeping this
+// header independent of toolkit group headers lets that layer honor
+// _CUDAX_DISABLE_CG_INTEROP.
+
 #include <cuda/std/__cccl/prologue.h>
 
 #if !defined(_CCCL_DOXYGEN_INVOKED)

@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compare group queries with host coordinates across physical boundaries.
+
+The output rows distinguish block, physical-warp, and mapped-group ranks.
+A separate child process enables C++ assertions to detect synchronization
+by nonmembers without risking the test worker's CUDA context.
+"""
+
 from __future__ import annotations
 
 import subprocess
@@ -82,6 +89,12 @@ np.testing.assert_array_equal(output, np.array([1] * 30 + [0, 0]))
 
 @cuda.jit
 def _group_query_kernel(output):
+    """Record each query in a separate row for an independent host check.
+
+    The three-warp block leaves one warp outside the two-warp mapped group.
+    Write sentinels instead of querying a nonmember's rank.
+    """
+
     block_thread = cuda.threadIdx.x
     thread = common_coop.this_thread()
     warp = qualified_coop.this_warp()
