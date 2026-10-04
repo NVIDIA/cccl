@@ -247,6 +247,9 @@ def compile_impl(
         The requested output format or relocatable-code option is invalid.
     """
 
+    # These arguments are only used by the cache decorators to distinguish
+    # compiler and header contexts. Delete their local bindings to mark them
+    # as intentionally unused by the compilation body.
     del (
         toolkit_root,
         toolkit_version,
