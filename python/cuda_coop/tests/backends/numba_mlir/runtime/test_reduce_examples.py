@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Execute reduction examples included in the common API reference.
+
+The examples separate broadcast results from values read only by group
+roots. Array sums pad a partial tile during Load, then reduce the complete
+payload; a scalar prefix instead limits which group members contribute.
+"""
+
 import pytest
 
 cuda = pytest.importorskip("numba_cuda_mlir.cuda")

@@ -48,6 +48,8 @@ class CoopCompilerContextRequiredError(RuntimeError):
 
 
 def _compiler_method_marker(method: str) -> Any:
+    """Reject host execution of a method that the backend must replace."""
+
     raise CoopCompilerContextRequiredError(
         f"cuda.coop.ThreadGroup.{method} requires compiler-owned activation "
         "or a qualified backend import before compilation"
@@ -129,7 +131,13 @@ def normalize_thread_group_kind(kind: str, *, scope: str, feature: str) -> str:
 
 
 def validate_thread_group_query_dtype(dtype: Any, *, scope: str) -> str:
-    """Validate the integral result domain shared by thread-group backends."""
+    """Normalize a query's integer result type without importing a compiler.
+
+    Read the dtype's name, falling back to its Python name or string form.
+    Accept signed or unsigned 8-, 16-, 32-, and 64-bit integers. Backends can
+    use the returned name to construct their own compiler type; ``scope``
+    identifies the API in a diagnostic when the requested type is unsupported.
+    """
 
     token = getattr(dtype, "name", None)
     if token is None:
@@ -176,26 +184,19 @@ class ThreadHierarchy:
     The corresponding C++ abstraction is
     :ref:`cuda::hierarchy <cccl-runtime-hierarchy>`.
 
-    Attributes
-    ----------
-    block_dim : tuple of int or None
-        Threads along each axis of one block, once known.
-    cluster_dim : tuple of int or None
-        Blocks along each axis of one cluster, once needed and known.
-    grid_dim : tuple of int or None
-        Clusters along each axis of the resolved grid. On a non-cluster
-        launch, each cluster contains one block.
-    implicit : bool
-        Whether this descriptor still refers to the current launch without
-        explicit dimensions. A resolved hierarchy can leave higher levels
-        unknown if the selected group does not need them.
     Notes
     -----
-    Creating a Python descriptor does not resolve runtime ranks or allocate
-    device storage. Its dimensions may remain unspecified until compilation.
-    Use group methods inside a kernel to query the actual launch.
+    Descriptors created in Python leave ``block_dim``, ``grid_dim``, and
+    ``cluster_dim`` as ``None``. Creating one does not resolve runtime ranks
+    or allocate device storage. Use group methods inside a kernel to query
+    the actual launch.
     """
 
+    # Planner fields: ``block_dim`` counts threads per block, ``cluster_dim``
+    # counts blocks per cluster, and ``grid_dim`` counts clusters per grid. A
+    # non-cluster launch has one block per cluster. A resolved hierarchy can
+    # leave unneeded outer dimensions unknown. ``implicit`` marks a descriptor
+    # that still refers to the current launch.
     block_dim: tuple[int, int, int] | None
     grid_dim: tuple[int, int, int] | None
     cluster_dim: tuple[int, int, int] | None
@@ -1280,7 +1281,10 @@ def this_cluster() -> ThreadGroup:
 
 
 def this_grid() -> ThreadGroup:
-    """Describe the launch grid for later cooperative-launch validation."""
+    """Describe the launch grid for hierarchy queries and primitive planning.
+
+    Grid primitive lowering requires a cooperative launch; queries do not.
+    """
 
     return make_thread_group("grid")
 

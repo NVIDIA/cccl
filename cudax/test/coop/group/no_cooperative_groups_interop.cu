@@ -12,7 +12,9 @@
 
 #include <cuda/experimental/coop/algorithm>
 
-// Check both toolkit headers before any intentional include of them.
+// Check header isolation before the test itself includes toolkit headers.
+// The opt-out must exclude both the public header and its internal
+// configuration header.
 #if defined(_COOPERATIVE_GROUPS_H_) || defined(_CG_INFO_H_)
 #  error "coop/algorithm included cooperative groups despite the interop opt-out"
 #endif
@@ -29,6 +31,8 @@ namespace
 {
 using namespace cuda::experimental::coop;
 
+// A removed conversion must select the fallback through substitution
+// failure, even after the test makes cooperative_groups types available.
 template <class From, class Hierarchy>
 __device__ auto can_make_group(int)
   -> decltype(make_group(cuda::std::declval<const From&>(), cuda::std::declval<const Hierarchy&>()),
@@ -41,6 +45,7 @@ template <template <class> class Group, class From>
 __device__ void check_disabled_interop()
 {
   using hierarchy = decltype(cuda::experimental::implicit_hierarchy());
+  // Disabling conversion must leave native group construction available.
   static_assert(cuda::std::is_constructible_v<Group<hierarchy>, const hierarchy&>);
   static_assert(!decltype(can_make_group<From, hierarchy>(0))::value);
 }
@@ -60,4 +65,5 @@ __device__ void check_disabled_interop()
 
 #include <c2h/catch2_test_helper.h>
 
+// Compilation instantiates the checks above; no kernel launch is needed.
 C2H_TEST("coop/algorithm cooperative-groups interop can be disabled", "[group]") {}

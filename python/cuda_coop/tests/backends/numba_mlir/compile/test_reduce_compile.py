@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile CUDAX and CUB reductions, including Python callbacks.
+
+CUDAX providers have no external scratch operand; some group constructions
+still use internal shared state. CUB providers expose scratch storage and
+reuse barriers. Fixed device queries allow both paths to compile and link
+with CUDA devices hidden.
+"""
+
 from __future__ import annotations
 
 import os
@@ -66,10 +74,19 @@ def _fixed_compiler_target(
 
 @pytest.fixture(scope="module")
 def compile_context() -> _nvrtc.CompileContext:
+    """Resolve one header and compiler-library identity for this module."""
+
     return _nvrtc.resolve_compile_context()
 
 
 def _resolved_group(kind: str):
+    """Attach exact hierarchy dimensions needed to render each group.
+
+    The mapped cases use four physical warps. This gives multiple instances
+    for groups of one or two warps. The cluster case records both grid and
+    cluster sizes.
+    """
+
     if kind in ("mapped_warp", "mapped_warps"):
         hierarchy = ThreadHierarchy._resolved(block_dim=128)
         count = 1 if kind == "mapped_warp" else 2
@@ -277,6 +294,13 @@ def _collect_cub(
     /,
     **kwargs,
 ):
+    """Capture a CUB factory's algorithm before compiling its wrapper.
+
+    Keep the recorded group width and block dimensions with it. They select
+    the wrapper's template arguments and per-group storage, including when
+    several providers share one bundle.
+    """
+
     with _types.collect_specializations() as collected:
         result = factory(**kwargs)
     assert len(collected) == 1
@@ -291,6 +315,12 @@ def _cub_source(algorithm) -> str:
 
 
 def _compile_cub_bundle(collected) -> bytes:
+    """Compile collected CUB wrappers with their recorded dimensions.
+
+    Bundle preparation also resolves each algorithm's temporary-storage size
+    and alignment, which the callers check after compilation.
+    """
+
     ltoir = _types.prepare_ltoir_bundle(
         collected,
         allow_single=True,
@@ -472,6 +502,12 @@ def test_deterministic_cub_reduce_variants_compile_with_scoped_storage(
 
 
 def _link_ltoir_files(paths: list[str], *, name: str) -> str:
+    """Link the provider and callback artifacts into PTX for one target.
+
+    Compiling each artifact alone cannot prove that their symbols and calling
+    conventions agree. Linking the full file list checks that boundary.
+    """
+
     from cuda.core import Linker, LinkerOptions, ObjectCode
 
     objects = [

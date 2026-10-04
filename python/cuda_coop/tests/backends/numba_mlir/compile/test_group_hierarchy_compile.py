@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile group queries and synchronization with fixed launch facts.
+
+These checks reach linked device code without launching a kernel. Separate
+runtime tests compare ranks, counts, and membership with host references.
+"""
+
 from types import SimpleNamespace
 
 import pytest
@@ -14,6 +20,12 @@ _FIXED_COMPUTE_CAPABILITY = (9, 0)
 
 
 def _production_compile_environment(monkeypatch: pytest.MonkeyPatch):
+    """Fix device discovery while retaining the real compilation path.
+
+    The selected architecture supports cluster instructions. Each test still
+    supplies its own launch dimensions to the compiler.
+    """
+
     import numba_cuda_mlir.tools as numba_mlir_tools
     from numba_cuda_mlir import cuda as compiler_cuda
 

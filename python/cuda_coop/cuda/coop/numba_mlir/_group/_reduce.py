@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Declare qualified Reduce and Sum calls for Numba-CUDA-MLIR kernels.
+
+These markers share the common reduction contract and add native local-array
+operands and supported device-operator forms. The whole-function planner
+resolves them to CUB or CUDAX providers before ordinary type inference.
+"""
+
 from __future__ import annotations
 
 from typing import Any
