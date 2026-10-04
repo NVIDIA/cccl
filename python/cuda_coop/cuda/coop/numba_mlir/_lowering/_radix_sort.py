@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Adapt shared block radix specializations to Numba provider callables.
+
+Every provider uses block scratch through the leading-pointer ABI. Sorting
+passes native key dtypes to CUB; ranking converts signed keys into ordered
+unsigned bits before digit extraction. Group planning owns input copies,
+scalar boxing, and the public result shape.
+"""
+
 import numba_cuda_mlir.numba_cuda.types as numba_types
 
 from cuda.coop._core import SynchronizationScope
@@ -19,6 +27,13 @@ from ._core import NumbaMlirArrayInputTransform, NumbaMlirCoreAdapter
 
 
 def _materialize(adapter, specialization):
+    """Bind the block storage contract and expose a radix provider callable.
+
+    Translate the shared parameter descriptions to Numba, then create the
+    invocable that supplies wrapper code and storage metadata to compilation.
+    The adapter records block execution and synchronization scopes.
+    """
+
     specialization = adapter.materialize(
         specialization,
         storage_abi=StorageABI.LEADING_POINTER,
@@ -37,6 +52,18 @@ def radix_rank_keys(
     descending=False,
     with_exclusive_digit_prefix=False,
 ):
+    """Specialize integer digit ranking with an ordered unsigned key view.
+
+    CUB's digit extractor operates on unsigned bits. For signed keys, request
+    an input transform that flips the sign bit in a temporary array. This
+    uses the signed ordering transform before digit selection without changing
+    the caller's keys. Unsigned keys need no transform. The native key width
+    still bounds the static digit interval.
+
+    Build the block specialization with the chosen interval, direction, and
+    optional digit-prefix output, then materialize its provider callable.
+    """
+
     dtype = normalize_dtype_param(dtype)
     if not isinstance(dtype, numba_types.Integer) or dtype not in {
         numba_types.int32,
@@ -88,6 +115,15 @@ def radix_sort_keys(
     blocked_to_striped=False,
     value_dtype=None,
 ):
+    """Specialize stable block sorting with optional associated values.
+
+    Keep the native integer or floating key dtype so CUB applies its ordering
+    transformation. An optional value dtype selects the paired overloads.
+    Direction and blocked/striped output select the CUB method. The shared
+    ``both`` bit policy emits default-range and checked explicit-range forms;
+    the public rewrite supplies its bit bounds as provider operands.
+    """
+
     dtype = normalize_dtype_param(dtype)
     if dtype not in {
         numba_types.int32,
@@ -123,6 +159,8 @@ def radix_sort_pairs(
     descending=False,
     blocked_to_striped=False,
 ):
+    """Delegate the pair-sort factory to the shared sort provider builder."""
+
     return radix_sort_keys(
         dtype,
         threads_per_block,

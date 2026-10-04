@@ -2,8 +2,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Blocked radix semantics follow BlockRadixRank and BlockRadixSort. The
-// unsigned teaching keys avoid conflating raw signed bits with ordered bits.
+// Build the Rank and Sort teaching models consumed by CoopExplorer. Tokens
+// keep their original identity as their digit, destination, or owner changes.
+// Eight threads and unsigned keys keep the steps small and let the picture
+// use raw bits without signed-key transforms. These mathematical stages do
+// not reproduce CUB instructions or scratch.
 (() => {
   "use strict";
 
@@ -22,6 +25,9 @@
     return (key >>> begin) & ((1 << (end - begin)) - 1);
   }
 
+  // Count each digit, then prefix the bins in the requested direction. A
+  // running count within each bin breaks ties in the current input order,
+  // so descending order keeps equal-digit keys stable as well.
   function rank_digit(entries, begin, end, descending) {
     const digits = entries.map(entry => digit(entry.key, begin, end));
     const counts = Array(1 << (end - begin)).fill(0);
@@ -51,6 +57,9 @@
     return keys;
   }
 
+  // Map logical sorted positions to displayed thread slots. Striped output
+  // changes ownership only at the final pass; original IDs and colors still
+  // connect each key and associated value to its unchanged input slot.
   function working_tokens(entries, items, pairs, striped = false) {
     const result = [];
     entries.forEach((entry, position) => {
@@ -82,6 +91,10 @@
     });
   }
 
+  // Keep input tokens visible while a separate working sequence is sorted.
+  // Each pass extracts at most four bits, computes stable destinations, then
+  // scatters into that order. Earlier low-bit order survives ties in later
+  // digits, which explains why the sequence sorts the full selected range.
   function build_sort(state, entries, items, begin, end, descending) {
     const pairs = state.payload === "pairs";
     const striped = state.output === "striped";
@@ -133,6 +146,10 @@
     };
   }
 
+  // Expose the bin counts and starts that explain each returned rank. Empty
+  // bins are hidden only to keep the picture small. Ranks remain in their
+  // original slots; this model does not scatter keys or request the optional
+  // provider output that stores exclusive digit prefixes.
   function build_rank(entries, items, begin, end, descending) {
     const result = rank_digit(entries, begin, end, descending);
     const preserved = input_tokens(entries, items, false);
@@ -167,6 +184,8 @@
     };
   }
 
+  // Turn the bounded UI controls into one model with a shared caption. The
+  // UI keeps end above begin, so digit extraction sees a nonempty interval.
   function build(state) {
     const items = Number(state.items);
     const begin = Number(state.begin);

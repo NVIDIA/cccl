@@ -207,8 +207,9 @@ class GroupPlanningContext:
     ) -> bool:
         """Check the payload-origin restriction required by the common API.
 
-        Follow aliases to ThreadData constructors. An unresolved cycle raises
-        a diagnostic that names the operation and parameter.
+        Follow aliases, generated result markers, and earlier group results
+        to ThreadData constructors. An unresolved cycle raises a diagnostic
+        that names the operation and parameter.
         """
 
         return self.__planner._thread_data_operand_state(
@@ -713,7 +714,7 @@ class GroupPlanningContext:
         index: int | None,
         seen: set[str],
     ) -> Any | None:
-        """Infer result dtype from its registered source argument.
+        """Infer a registered result's fixed or argument-derived dtype.
 
         The context's dtype traversal calls this before provider rewriting.
         It follows the public operation's result policy so a chain of group
@@ -721,9 +722,9 @@ class GroupPlanningContext:
         yet.
 
         ``index`` selects a tuple result or is ``None`` for a direct result.
-        Return ``None`` when the call has no matching policy or that policy
-        has no dtype source. Reuse the caller's recursion path when inspecting
-        the bound argument so cyclic result dependencies remain guarded.
+        A fixed dtype takes precedence, so rank results do not inherit the key
+        type. Otherwise follow the policy's named argument using the caller's
+        recursion path. Return ``None`` if no policy or dtype source applies.
 
         Parameters
         ----------
@@ -964,9 +965,10 @@ class GroupPlanningContext:
         and tuple-projection keys already on the recursion path. Return a
         normalized dtype or ``None`` when the source supplies no known dtype.
 
-        Generated payload markers inherit their prototype's dtype. A direct
-        registered result follows its dtype-source argument before the
-        planner attempts ordinary scalar-call inference.
+        Generated payload markers either inherit their prototype's dtype or
+        select fixed int32 output. Registered results use their declared dtype
+        policy, including fixed types or source-argument dtypes, before
+        scalar-call inference.
         """
 
         if isinstance(definition, ir.Var):

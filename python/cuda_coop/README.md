@@ -274,12 +274,13 @@ in the block; static offsets are checked during planning. `valid_items` is
 relative to each group's own tile, not the entire block, and must be uniform
 within that group.
 
-`ThreadGroup` follows the C++ hierarchy query surface. `rank(level="thread")`
-and `count(level="thread")` accept `thread` (or `gpu_thread`), `warp`, `block`,
-`cluster`, and `grid`; mapped groups have narrower limits, described below.
-Results use the unsigned type of the matching C++ hierarchy query: normally
-`uint32`, and `uint64` when the group or queried outer level is the grid.
-Use `rank_as(dtype, level="thread")` or `count_as(dtype, level="thread")` to
+`ThreadGroup` follows the C++ hierarchy query surface.
+`rank(level="thread")` and `count(level="thread")` accept `thread` (or
+`gpu_thread`), `warp`, `block`, `cluster`, and `grid`; logical and mapped
+`group_by` groups have narrower limits, described below. Results use the
+unsigned type of the matching C++ hierarchy query: normally `uint32`, and
+`uint64` when the group or queried outer level is the grid. Use
+`rank_as(dtype, level="thread")` or `count_as(dtype, level="thread")` to
 select an explicit signed or unsigned 8-, 16-, 32-, or 64-bit integer dtype.
 `is_member()` returns an integer membership flag.
 
@@ -303,8 +304,8 @@ group or parent-group participant must still reach the collective.
 
 ## Temporary storage
 
-Block Load, Store, Reduce, Scan, and Merge Sort accept an optional caller
-descriptor:
+Block Load, Store, Reduce, Scan, Merge Sort, and Radix Sort accept an optional
+caller descriptor:
 
 ```python
 storage = coop.TempStorage(

@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check radix results against stable host permutations of selected bits.
+
+References model signed and floating key transforms before bit selection.
+Associated values expose tie ordering and dtype loss; separate outputs check
+that input keys remain intact. Other cases cover striped placement, rank
+composition, prefix counts, scalar results, and isolated invalid launches.
+"""
+
 import subprocess
 import sys
 from pathlib import Path
@@ -31,6 +39,13 @@ _ITEMS = 3
 
 
 def _ordered_bits(keys):
+    """Map keys to the ordered unsigned bits used by radix sort.
+
+    Copy the bit view before transforming it so the reference preserves input
+    bytes. Flip signed integer sign bits and apply the floating transform;
+    map both floating zeros to the same bit pattern for stable tie handling.
+    """
+
     unsigned = np.dtype(f"uint{keys.dtype.itemsize * 8}")
     bits = keys.view(unsigned).copy()
     sign = np.array(1 << (keys.dtype.itemsize * 8 - 1), dtype=unsigned)
@@ -44,6 +59,12 @@ def _ordered_bits(keys):
 
 
 def _permutation(keys, begin, end, descending):
+    """Return a stable ordering for only the selected transformed key bits.
+
+    Complement digits to get descending order. Reversing an ascending
+    permutation would also reverse equal-key ties and violate stability.
+    """
+
     digits = (_ordered_bits(keys) >> begin) & np.array(
         (1 << (end - begin)) - 1, dtype=f"uint{keys.dtype.itemsize * 8}"
     )
@@ -84,6 +105,14 @@ def _permutation(keys, begin, end, descending):
 def test_pairs_preserve_stability_association_and_inputs(
     dtype, descending, partial, value_dtype, *, items_per_thread
 ):
+    """Expose ordering, association, and dtype loss with repeated keys.
+
+    Carry identifiable values through the same permutation as the keys. Wide
+    integers and small float64 increments make accidental value narrowing
+    visible. Compare preserved key bits separately, including signed zeros,
+    so a correct sorted result cannot hide mutation of the input payload.
+    """
+
     compiler_dtype = getattr(types, np.dtype(dtype).name)
     value_compiler_dtype = getattr(types, np.dtype(value_dtype).name)
     qualified = np.dtype(dtype).kind == "f"
@@ -177,6 +206,14 @@ def test_pairs_preserve_stability_association_and_inputs(
 def test_rank_is_stable_signed_int32_and_composes(
     dtype, descending, sign_window, *, items_per_thread
 ):
+    """Compare ranks with an inverse permutation and sort the ranks again.
+
+    Low-digit and sign-bit windows exercise both ordinary extraction and the
+    signed-key transform. Stable ranks must form one complete permutation of
+    int32 positions; the second sort also checks that rank dtype propagates
+    to a later cooperative call.
+    """
+
     compiler_dtype = getattr(types, np.dtype(dtype).name)
     source = (
         (np.arange(_THREADS * items_per_thread, dtype=np.int64) * 17) % 43 - 21
@@ -217,6 +254,14 @@ def test_rank_is_stable_signed_int32_and_composes(
 def test_qualified_striped_keys_and_exclusive_prefix(
     descending, *, items_per_thread
 ):
+    """Check striped stores and digit-prefix counts with host references.
+
+    Write sorted items with striped indexing, but write ranks and bin prefixes
+    in blocked order. The source fits seven bits, so one permutation checks
+    both the full sort and the selected-digit ranks. Prefix references
+    count smaller or greater digits while retaining ascending bin indices.
+    """
+
     source = (np.arange(_THREADS * items_per_thread, dtype=np.int32) * 17) % 97
 
     array_items_per_thread = items_per_thread
@@ -267,6 +312,13 @@ def test_qualified_striped_keys_and_exclusive_prefix(
 
 
 def test_qualified_scalar_sort_and_rank():
+    """Check scalar sort and rank results.
+
+    The compiler wraps each scalar in a one-item array for the array-only CUB
+    providers and then returns a scalar. Use each key's value as its expected
+    ascending rank.
+    """
+
     source = np.arange(_THREADS, dtype=np.int32)[::-1].copy()
 
     @cuda.jit
@@ -301,7 +353,16 @@ def test_qualified_scalar_sort_and_rank():
 def test_invalid_runtime_bit_intervals_trap_before_narrowing(
     pairs, begin, end, unsigned
 ):
-    # Device traps poison their context; keep each invalid launch in a child.
+    """Reject invalid bounds before a narrow CUB argument can hide the error.
+
+    Cover negative, too-wide, reversed, and empty intervals, plus controls
+    that change meaning when narrowed to CUB's signed 32-bit int: a 64-bit
+    begin of 2**32 and an unsigned end of 2**32 - 1. Each child uses the
+    parent's package source and must report a CUDA trap or launch failure; a
+    compilation failure does not pass. Separate processes keep the poisoned
+    CUDA contexts out of later tests.
+    """
+
     script = f"""
 import numpy as np
 from pathlib import Path
@@ -356,6 +417,14 @@ raise AssertionError("invalid radix interval did not trap")
 def test_chained_sorts_and_ranks_infer_dtypes_from_indexed_writes(
     qualified, pairs, *, items_per_thread
 ):
+    """Carry inferred types through sort tuples, rank output, and Store calls.
+
+    Omit ThreadData dtypes so indexed writes supply the first type evidence.
+    Follow descending and ascending sorts with rank and a second sort; pair
+    results also carry an independent float32 value type. Check the final
+    values against host references and preserve the original key payload.
+    """
+
     api = numba_coop if qualified else coop
 
     @cuda.jit

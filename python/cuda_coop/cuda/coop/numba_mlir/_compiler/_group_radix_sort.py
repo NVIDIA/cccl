@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Plan block radix operations and preserve their public result shapes.
+
+The qualified API accepts scalars and arrays, while CUB providers consume
+arrays. Planning boxes scalar inputs and unboxes scalar results. Sort calls
+copy inputs before CUB rearranges them; rank calls allocate separate int32
+outputs and may write caller-supplied digit prefixes. Shared-core planning
+checks group participation, bit controls, and storage requirements before
+replacement statements are installed.
+"""
+
 from dataclasses import replace
 from numbers import Integral
 
@@ -47,6 +57,13 @@ from ._rewrite_radix_sort import infer_radix_payload
 
 
 def _dtype(context, operation, parameter, value):
+    """Recover and record the numeric type evidence for one operand.
+
+    Use an existing dtype or infer it from payload writes, then normalize it
+    for provider selection. Recording it keeps later allocation consistent.
+    The caller applies the different allowed dtype sets for keys and values.
+    """
+
     dtype = context.dtype(value)
     if dtype is None:
         dtype = context.payload_write_dtype(value)
@@ -69,6 +86,14 @@ def _bool(context, operation, name, value):
 
 
 def _sort_bit(context, operation, name, value):
+    """Keep a known bit bound static or validate its runtime integer type.
+
+    Return a Python integer for a resolved scalar, rejecting booleans and
+    nonintegral values. Otherwise retain the IR value after checking that its
+    integer dtype fits the provider control ABI. Range checks are separate:
+    core planning checks known bounds; the wrapper checks runtime bounds.
+    """
+
     known, constant = context.try_static_scalar(value)
     if known:
         if isinstance(constant, bool) or not isinstance(constant, Integral):
@@ -84,6 +109,27 @@ def _sort_bit(context, operation, name, value):
 
 
 def _lower(context, inst, *, operation, group, bound, is_common_root):
+    """Build a supported radix call with fresh, correctly typed results.
+
+    Require a complete block and matching key/value shapes. Common calls use
+    ThreadData with integer keys. Qualified calls also accept scalars and
+    local arrays; qualified Sort also accepts float32 and float64 keys.
+    Ranking always uses integer keys and produces int32 ranks, regardless of
+    the key width or signedness.
+
+    Rank digit bounds are static. Validate the optional int32 prefix array
+    against the number of bins assigned to each thread. Sort bounds may be
+    runtime integers; retain their bindings for core validation and pass them
+    to the provider. Order and output-layout selectors remain compile-time
+    choices. Attach the selected plan and any caller-owned sort scratch.
+
+    Box scalar inputs for CUB's array signatures. Rank providers read keys
+    and write a new rank array; sort providers rearrange copies of keys and
+    values. Replace the rewrite's final alias assignment so boxed one-item
+    results become scalars again. Return the pending statements for the
+    owning planner to install after validation.
+    """
+
     from .._lowering import _radix_sort
     from .._lowering._core import NumbaMlirCoreAdapter
 
