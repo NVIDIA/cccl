@@ -769,4 +769,9 @@ def provider_exchange(
         raise
 
 
-__all__ = ["_CubExchangeRequest", "provider_exchange"]
+__all__ = [
+    "_CubExchangeRequest",
+    "_make_group_exchange_plan",
+    "_resolve_exchange_operand_types",
+    "provider_exchange",
+]
