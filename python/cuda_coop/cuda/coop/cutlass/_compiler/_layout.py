@@ -210,3 +210,12 @@ def _decode_layout_probe_name(
         int(match.group(2)),
         description=expression,
     )
+
+
+__all__ = [
+    "BundleCompilation",
+    "_PreparedLayoutProbes",
+    "_decode_layout_probe_name",
+    "_prepare_layout_probes",
+    "_validate_storage_layout",
+]
