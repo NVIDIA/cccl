@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Expose decode markers with optional totals and relative run offsets.
+
+When the compiler first sees one of these calls, it imports the module that
+registers their rewrite rules. The qualified window API adds per-thread
+total and relative-offset buffers; the bulk API adds an optional global
+relative-offset array. Both can select uint32 or uint64 totals and offsets.
+These functions describe compiled operations and do not expand runs in Python.
+"""
+
 from __future__ import annotations
 
 from typing import Any

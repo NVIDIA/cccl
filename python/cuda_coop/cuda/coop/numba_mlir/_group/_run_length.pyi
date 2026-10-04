@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Type decoded values separately from lengths and offset outputs.
+
+A window retains the run-value item type in a new payload. Bulk decoding
+returns an unsigned total while updating the destination. The compiler
+checks matching run extents and auxiliary dtypes; the driver checks capacity
+at runtime. These signatures do not express the positive-length prefix or
+buffer non-overlap.
+"""
+
 import numpy
 from typing_extensions import TypeVar
 

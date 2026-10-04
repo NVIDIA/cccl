@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile window and bulk decode providers with no visible GPU.
+
+Fix only device-target queries at SM90 and retain production compilation and
+linkage. Window outputs use per-thread buffers; bulk outputs use global arrays
+with capacities. Cases check both forms and reject invalid global array types.
+"""
+
 import os
 from types import SimpleNamespace
 
@@ -24,6 +31,15 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 def test_rld_production_compile_and_link(
     monkeypatch, bulk, relative, items_per_thread
 ):
+    """Link decode forms with wide lengths, offsets, and separate outputs.
+
+    Use float64 values and uint64 lengths and controls. Vary input run counts
+    while each window still has four decoded items per thread. The qualified
+    window fills initially untyped auxiliary buffers; bulk cases include or
+    omit global relative offsets. Require linked artifacts and the presence of
+    trap and block-barrier instructions without executing the kernel.
+    """
+
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == ""
     monkeypatch.setattr(
         _types.cuda,

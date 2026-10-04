@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Expose decoded windows and complete stream writes for compiled kernels.
+
+The window form returns a fixed-size payload per thread. The into form writes
+the entire decoded stream to a caller's array and returns its total size. Both
+preserve the compressed inputs. Registration decorators let compiler frontends
+recognize these calls; the Python bodies reject host execution.
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -64,7 +72,7 @@ def run_length_decode(
     Notes
     -----
     The decoded total must fit uint32. Negative lengths, a positive length
-    after zero padding, and overflow trap before CUB is called. Invalid
+    after zero padding, and overflow trap before CUB decoding. Invalid
     static controls are rejected during compilation; negative runtime offsets
     trap before writing outputs. Both run and window tile extents must fit
     signed 32-bit integers.
@@ -130,11 +138,11 @@ def run_length_decode_into(
 
     Notes
     -----
-    Capacity and offset checks complete before any output write. Invalid runtime
-    controls or insufficient capacity trap. Only the interval beginning at
-    ``destination_offset`` and containing the returned number of items is
-    written; the remaining destination elements are preserved. The last
-    internal window is masked when the stream is not a whole number of
+    Capacity and offset checks complete before any output write. Invalid
+    runtime controls or insufficient capacity trap. Only the interval
+    beginning at ``destination_offset`` and containing the returned number of
+    items is written; the remaining destination elements are preserved. The
+    last internal window is masked when the stream is not a whole number of
     windows. Both run inputs are preserved.
     """
     raise CoopCompilerContextRequiredError(

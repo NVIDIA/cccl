@@ -2,7 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Run Length Decode ownership and table lifetime, not a CUB instruction trace.
+// Show how input runs map to decoded windows and destination positions.
+// Stable token IDs keep one SVG element across phases. A token's `from`
+// cell, such as its run's table entry, sets where a new element appears.
+// The phases explain table lifetime; CUB chooses the compiled instructions.
 (() => {
   "use strict";
 
@@ -21,6 +24,10 @@
   const required_capacity = state => Number(state.destination_offset) + total_for(state);
   const thread_groups = extent => Array.from({ length: threads }, (_, thread) => ({ start: thread * extent, count: extent, label: `T${thread}` }));
 
+  // Keep the input run extent separate from the decoded window extent.
+  // Bulk phases retain one prepared table while window calls prepare anew.
+  // Each window starts from an explicit decoded index, so neither view keeps
+  // a hidden cursor between calls.
   function build(state) {
     const runs = Number(state.runs);
     const decoded_items = Number(state.items);
@@ -39,7 +46,8 @@
     const destination_offset = Number(state.destination_offset);
     const needed = required_capacity(state);
     const capacity = state.capacity === "short" ? Math.max(0, needed - 1) : needed + (state.capacity === "padded" ? 3 : 0);
-    // Keep one visible cell for a zero-capacity destination, labeled as outside the array.
+    // Keep one visible cell for a zero-capacity destination. Its label marks
+    // it as outside the array so an empty destination is still visible.
     const output_count = bulk ? Math.max(1, capacity) : window_size;
     const prepared = total > 0 && (bulk ? capacity >= needed : offset < total);
     const initial = lengths.flatMap((length, index) => [
@@ -62,9 +70,13 @@
       from: prepared ? { row: "values", index } : { row: "lengths", index },
       detail: `Run ${index}: exclusive start ${starts[index]}, value ${values[index]}, length ${length}. ${length ? `It covers decoded indices [${starts[index]}, ${starts[index] + length}).` : "Zero-length padding covers no decoded indices."}${prepared ? " This prepared table stays live through every internal bulk window." : " The exclusive sum of earlier lengths gives this start."}`,
     }));
+    // A linear lookup is enough for the small teaching model. It describes
+    // interval ownership without claiming to reproduce CUB's search method.
     function find_run(index) {
       return lengths.findIndex((length, run) => length > 0 && starts[run] <= index && index < starts[run] + length);
     }
+    // A missing source run marks a tail slot. A decoded value of zero is
+    // still valid when it belongs to a run, so value alone cannot mark tails.
     function window_tokens(base) {
       return Array.from({ length: window_size }, (_, index) => {
         const decoded_index = base + index;
@@ -86,6 +98,9 @@
         }] : [])];
       }).flat();
     }
+    // Retain untouched prefix and tail cells between bulk windows. Only cells
+    // written by the newest window start at their table entry. A jump to a
+    // later window shows earlier writes in place without moving them again.
     function destination_tokens(written, previous) {
       return Array.from({ length: output_count }, (_, index) => {
         const decoded_index = index - destination_offset;
