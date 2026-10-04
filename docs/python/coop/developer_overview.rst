@@ -610,11 +610,21 @@ pointer or a reuse barrier.
 
 Changing the Load to ``algorithm="transpose"`` introduces shared-memory
 communication. CUB defines a ``TempStorage`` type whose size and alignment
-depend on the specialization. ``cuda.coop`` obtains both from compiled
-code: generated globals contain ``sizeof`` and ``alignof`` values, and a
-metadata link to PTX makes those constants available to the host planner.
-The provider's LTO-IR is retained for the final kernel link. The compiler
-does not run a GPU kernel to discover the scratch layout.
+depend on the specialization. ``cuda.coop`` obtains both during the NVRTC
+compilation that builds the provider's LTO-IR. It appends a variable template
+whose arguments are ``sizeof(TempStorage)`` and ``alignof(TempStorage)`` and
+registers its address with ``nvrtcAddNameExpression``. After compilation,
+``nvrtcGetLoweredName`` returns a symbol that encodes the two integer values.
+The decoder checks the expected symbol, encoding, and layout before handing
+the size and alignment to the host planner.
+
+Both individual providers and shared bundles cache the ordered layouts with
+the provider image. A memory or disk cache hit therefore supplies the image
+and scratch requirements together. Storage-free providers skip the queries.
+The provider's LTO-IR is retained for the final kernel link; layout discovery
+requires no separate PTX link or GPU kernel launch. See
+``numba_mlir/_compiler/_layout.py`` for the probe and decoder, and
+``numba_mlir/_compiler/_nvrtc.py`` for compilation and cache integration.
 
 Storage-bearing CUB providers use ``StorageABI.LEADING_POINTER``. The
 rewrite supplies a pointer to the appropriate slice of the kernel's

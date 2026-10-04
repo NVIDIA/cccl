@@ -231,9 +231,6 @@ def test_all_warp_algorithms_compile_with_scope_owned_storage(
 
     bundle = _types.prepare_ltoir_bundle(
         list(algorithms.values()),
-        bundle_name=(
-            f"cuda_coop_numba_mlir_all_warp_load_store_algorithms_{threads_in_warp}"
-        ),
     )
     assert isinstance(bundle, bytes)
     assert bundle
@@ -276,7 +273,6 @@ def test_direct_multi_item_load_store_compiles_for_every_supported_dtype(
 
     bundle = _types.prepare_ltoir_bundle(
         algorithms,
-        bundle_name=f"cuda_coop_numba_mlir_warp_load_store_{dtype}",
     )
     assert isinstance(bundle, bytes)
     assert bundle
@@ -329,7 +325,6 @@ def test_logical_warp_widths_have_distinct_specializations_and_cache_keys(
 
     bundle = _types.prepare_ltoir_bundle(
         algorithms,
-        bundle_name="cuda_coop_numba_mlir_logical_warp_widths",
     )
     assert bundle
 
