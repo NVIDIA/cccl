@@ -338,6 +338,11 @@ def provider_load(
 ):
     """Trace a Load call and copy its per-thread result into ``output``.
 
+    The qualified ``load`` entry point calls this during CuTe tracing,
+    after classifying the optional controls. Each live control has a
+    matching ArgumentBinding: the binding says whether to omit it, embed
+    a constant in C++, or pass the live value to the generated function.
+
     Check source dtype, pointer eligibility, and any provable static capacity
     before registering the request. A temporary register tensor receives the
     C++ output; its scalar expressions replace the ThreadData items. Runtime
@@ -347,6 +352,41 @@ def provider_load(
     A failure restores the session's wrapper and scratch records. This
     rollback does not undo emitted IR or assignments already made to the
     payload.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        Cooperative group descriptor selected by the public call.
+    launch : LaunchFacts
+        Compiler-provided launch dimensions used for shared planning.
+    source : CuTe memory operand
+        Contiguous source memory whose element type sets the Load dtype.
+    output : ThreadData
+        Writable per-thread payload. Its items become the generated Load
+        results, and its dtype is set to the source dtype.
+    algorithm : str or enum
+        Normalized Load algorithm selector for the chosen group.
+    valid_items : object
+        Live valid-prefix count, used as an operand only for a runtime
+        binding.
+    valid_items_binding : ArgumentBinding
+        Omitted, static, or runtime classification of the valid-prefix count.
+    oob_default : object
+        Live invalid-item fill value, used only for a runtime binding.
+    oob_default_binding : ArgumentBinding
+        Classification and any embedded fill value.
+    offset : object
+        Live source element offset, used only for a runtime binding.
+    offset_binding : ArgumentBinding
+        Classification and any embedded source offset.
+    temp_storage : TempStorage or None
+        Optional block scratch descriptor. None leaves allocation policy to
+        the compiler; storage-free algorithms need no scratch operands.
+
+    Returns
+    -------
+    None
+        The call is emitted into the trace and output is updated in place.
     """
 
     value_type = _resolve_memory_type(source, primitive_name="load")
@@ -421,12 +461,47 @@ def provider_store(
 ):
     """Trace a Store call with per-thread values and deferred scratch.
 
+    The qualified ``store`` entry point calls this during CuTe tracing.
+    The binding records choose which controls are embedded in C++ and
+    which live values become operands; the call itself executes later on
+    the GPU.
+
     Resolve one dtype for all items and require the destination to match it.
     Check pointer and static-capacity constraints before registration. The
     wrapper receives input items as scalars and collects them in its C++
     array, preserving the caller's payload values. Registration records
     scratch use for finalization; a failure restores session bookkeeping
     without undoing emitted IR.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        Cooperative group descriptor selected by the public call.
+    launch : LaunchFacts
+        Compiler-provided launch dimensions used for shared planning.
+    destination : CuTe memory operand
+        Contiguous destination whose dtype must match the stored values.
+    value : ThreadData or scalar
+        Initialized per-thread values, or one typed scalar per thread.
+    algorithm : str or enum
+        Normalized Store algorithm selector for the chosen group.
+    valid_items : object
+        Live valid-prefix count, used only for a runtime binding.
+    valid_items_binding : ArgumentBinding
+        Omitted, static, or runtime classification of that count.
+    offset : object
+        Live destination element offset, used only for a runtime binding.
+    offset_binding : ArgumentBinding
+        Classification and any embedded destination offset.
+    temp_storage : TempStorage or None
+        Optional block scratch descriptor. None uses compiler allocation.
+        Storage-free algorithms omit scratch operands.
+
+    Returns
+    -------
+    None
+        A device call is added to the trace; destination writes occur when
+        the compiled kernel runs.
     """
 
     if isinstance(value, ThreadData):

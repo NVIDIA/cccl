@@ -390,7 +390,27 @@ def get_or_create_bundle_session(
 ) -> BundleSession:
     """Reuse this module's session, or bind an existing unbound session.
 
+    Provider registration calls this while tracing; rollback can also use
+    it to recreate a removed session. Compile options alone cannot identify
+    a trace because CuTe can reuse them for nested or later compilations.
+
     Create and store a new session only when neither is available.
+
+    Parameters
+    ----------
+    compile_options : object
+        CuTe compile-options owner used to keep sessions alive only while
+        that owner exists.
+    trace_module_op : object or None
+        MLIR module that owns the generated calls. None requests an unbound
+        session; a later call with a module can bind that session to its
+        trace.
+
+    Returns
+    -------
+    BundleSession
+        Existing or newly registered session for the requested owner and
+        module.
     """
 
     with _STATE_LOCK:
@@ -429,8 +449,23 @@ def active_bundle_session() -> BundleSession:
 def snapshot_active_session_state_for(*, get_cute_dsl: Callable[[], Any]):
     """Save active options, the module, requests, and scratch events.
 
+    Lowerings take this snapshot before recording a wrapper request.
+    If emission fails, ``restore_active_session_state_for`` removes those
+    records so finalization does not compile providers for an abandoned call.
+
     A missing session is recorded explicitly so restoration can remove a
     session created by the failed operation.
+
+    Parameters
+    ----------
+    get_cute_dsl : callable
+        Getter for the DSL whose active module and compile options are saved.
+
+    Returns
+    -------
+    tuple
+        Compile-options owner, active module, and a copied session snapshot.
+        The last entry is None when no session existed before the call.
     """
 
     compile_options = get_cute_dsl().compile_options
