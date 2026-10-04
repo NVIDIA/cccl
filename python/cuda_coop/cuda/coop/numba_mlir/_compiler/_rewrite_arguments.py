@@ -5,11 +5,10 @@
 """Separate provider specialization inputs from device-call operands.
 
 After group resolution selects a provider, argument validation applies its
-registered grammar, infers missing payload and launch facts, and
-distinguishes static scalar bindings from runtime controls. The result
-supplies host-side factory keywords and device-side IR operands to the
-remaining rewrite helpers; this module does not replace the call or allocate
-its storage.
+registered grammar, infers missing payload and launch facts, and distinguishes
+static scalar bindings from runtime controls. The result supplies host-side
+factory keywords and device-side IR operands to the remaining rewrite helpers;
+this module does not replace the call or allocate its storage.
 """
 
 from __future__ import annotations
@@ -32,6 +31,13 @@ if TYPE_CHECKING:
 
 
 class _ArgumentRewrite:
+    """Split provider calls using their registered argument rules.
+
+    This mixin gathers static factory values and ordered runtime operands.
+    ``CoopSinglePhaseRewrite`` supplies provenance, payload, and launch
+    inference through the other mixins.
+    """
+
     def _validate_and_split_args(
         self, op_name: str, call: ir.Expr, getitem_temp_storage: ir.Var | None
     ) -> tuple[
@@ -47,23 +53,23 @@ class _ArgumentRewrite:
         become ``ArgumentBinding.static`` values; unresolved controls stay in
         the runtime argument list in registry order. A resolved ``None`` omits
         an optional control, whereas ``_UNRESOLVED`` preserves its runtime
-        operand. Temporary storage is returned separately for later ABI-specific
-        insertion.
+        operand. Temporary storage is returned separately for later
+        ABI-specific insertion.
 
         Infer missing factory inputs from payloads and exact launch metadata,
-        validate runtime controls, and normalize the ``dim`` alias. The private
-        group lowering plan is carried in the factory dictionary for the caller
-        to remove before invoking the provider. Record the variables that
-        supplied compile-time inputs so ``apply`` can remove their assignments
-        if unused. The call expression itself is not rewritten here.
+        validate runtime controls, and normalize the ``dim`` alias. The
+        private group lowering plan is carried in the factory dictionary for
+        the caller to remove before invoking the provider. Record the
+        variables that supplied compile-time inputs so ``apply`` can remove
+        their assignments if unused. The call expression itself is not
+        rewritten here.
 
         Parameters
         ----------
         op_name : str
             Registered operation whose argument contract governs the call.
         call : ir.Expr
-            Provider call with positional and keyword operands in untyped
-            IR.
+            Untyped IR call with positional and keyword operands.
         getitem_temp_storage : ir.Var or None
             Storage operand discovered in a subscripted callee. Argument
             splitting recognizes it, but descriptor-use validation decides
@@ -72,16 +78,14 @@ class _ArgumentRewrite:
         Returns
         -------
         runtime_args : tuple of ir.Var
-            Operands in provider order, without the leading storage pointer.
+            Provider operands, excluding the leading storage pointer.
         runtime_temp_storage : ir.Var or None
-            Explicit storage operand, or None for implementation-owned
-            storage.
+            Caller scratch operand, or None for implementation-owned storage.
         factory_kwargs : dict
-            Resolved specialization values, bindings, and optional lowering
-            plan.
+            Resolved specialization values, bindings, and optional
+            lowering plan.
         factory_kw_value_vars : tuple of ir.Var
-            Variables consumed as compile-time inputs and candidates for
-            cleanup.
+            Compile-time input variables that can be considered for cleanup.
 
         Raises
         ------
@@ -91,8 +95,9 @@ class _ArgumentRewrite:
         _DeferredCoopRewrite
             Internal signal that exact launch metadata is still needed.
             ``CoopSinglePhaseRewrite.match`` catches it and preserves the
-            call while ``_CallRewriting._rewrite_calls`` obtains the kernel
-            launch shape and retries within ``CoopWholeFunctionPlanner``.
+            call while ``_CallRewriting._rewrite_calls`` obtains the
+            kernel launch shape and retries within
+            ``CoopWholeFunctionPlanner``.
         """
 
         rewrite = cast("CoopSinglePhaseRewrite", self)
@@ -111,9 +116,9 @@ class _ArgumentRewrite:
                 str(v) for v in sorted(specification.runtime_arg_counts)
             )
             raise CoopSinglePhaseRewriteError(
-                f"cooperative group operation {op_name!r} expects a positional "
-                f"runtime argument count in {{{expected_csv}}}; got "
-                f"{runtime_arg_count}."
+                f"cooperative group operation {op_name!r} expects a "
+                f"positional runtime argument count in {{{expected_csv}}}; "
+                f"got {runtime_arg_count}."
             )
         base_runtime_arg_count = min(specification.runtime_arg_counts)
         runtime_args = list(call.args[:base_runtime_arg_count])
@@ -141,7 +146,7 @@ class _ArgumentRewrite:
             if extra_runtime_arg_count > len(runtime_factory_kwargs):
                 raise CoopSinglePhaseRewriteError(
                     f"cooperative group operation {op_name!r} received too "
-                    "many positional runtime arguments."
+                    f"many positional runtime arguments."
                 )
             for index, name in enumerate(
                 runtime_factory_kwargs[:extra_runtime_arg_count]
@@ -172,8 +177,8 @@ class _ArgumentRewrite:
             if name == _GROUP_LOWERING_PLAN_KWARG:
                 if seen_lowering_plan:
                     raise CoopSinglePhaseRewriteError(
-                        "cooperative group provider marker received duplicate "
-                        "lowering-plan metadata."
+                        "cooperative group provider marker received "
+                        "duplicate lowering-plan metadata."
                     )
                 seen_lowering_plan = True
                 lowering_plan = rewrite._resolve_factory_kwarg_value(
@@ -191,7 +196,7 @@ class _ArgumentRewrite:
                 if runtime_temp_storage is not None:
                     raise CoopSinglePhaseRewriteError(
                         f"cooperative group operation {op_name!r} received "
-                        "duplicate temp_storage arguments."
+                        f"duplicate temp_storage arguments."
                     )
                 if not isinstance(value_var, ir.Var):
                     raise CoopSinglePhaseRewriteError(
@@ -210,8 +215,8 @@ class _ArgumentRewrite:
                     )
                 if not isinstance(value_var, ir.Var):
                     raise CoopSinglePhaseRewriteError(
-                        f"cooperative group runtime argument {name!r} must be "
-                        "a variable."
+                        f"cooperative group runtime argument {name!r} must "
+                        f"be a variable."
                     )
                 value = rewrite._resolve_static_scalar_value(value_var)
                 if value is not _UNRESOLVED:
@@ -239,8 +244,8 @@ class _ArgumentRewrite:
                     )
                 if not isinstance(value_var, ir.Var):
                     raise CoopSinglePhaseRewriteError(
-                        f"cooperative group runtime argument {name!r} must be "
-                        "a variable."
+                        f"cooperative group runtime argument {name!r} must "
+                        f"be a variable."
                     )
                 if name in scalar_binding_kwargs:
                     value = rewrite._resolve_static_scalar_value(value_var)
@@ -264,9 +269,9 @@ class _ArgumentRewrite:
                     )
                 )
                 raise CoopSinglePhaseRewriteError(
-                    f"cooperative group operation {op_name!r} does not support "
-                    f"factory keyword {name!r}. "
-                    f"Allowed keywords are: {allowed}."
+                    f"cooperative group operation {op_name!r} does not "
+                    f"support factory keyword {name!r}. Allowed keywords "
+                    f"are: {allowed}."
                 )
             if name in seen_factory_kwargs:
                 raise CoopSinglePhaseRewriteError(
@@ -280,8 +285,8 @@ class _ArgumentRewrite:
             if value is _UNRESOLVED:
                 raise CoopSinglePhaseRewriteError(
                     f"Failed to evaluate cooperative group operation "
-                    f"{op_name!r} factory argument {name!r} as a compile-time "
-                    "constant."
+                    f"{op_name!r} factory argument {name!r} as a "
+                    f"compile-time constant."
                 )
             factory_kwargs[name] = value
             if isinstance(value_var, ir.Var):
@@ -298,8 +303,8 @@ class _ArgumentRewrite:
                 and prerequisite not in seen_factory_kwargs
             ):
                 raise CoopSinglePhaseRewriteError(
-                    f"cooperative group operation {op_name!r} runtime argument "
-                    f"{name!r} requires {prerequisite!r}."
+                    f"cooperative group operation {op_name!r} runtime "
+                    f"argument {name!r} requires {prerequisite!r}."
                 )
             runtime_args.append(value_var)
             factory_kwargs[name] = (
@@ -350,12 +355,11 @@ class _ArgumentRewrite:
                         else ""
                     )
                     raise CoopSinglePhaseRewriteError(
-                        f"coop operation '{op_name}' could not infer an exact "
-                        "positive threads_per_block value because "
+                        f"coop operation '{op_name}' could not infer an "
+                        f"exact positive threads_per_block value because "
                         f"{rewrite._launch_dim_inference_failure_detail()}. "
-                        "Use a "
-                        "compile-time constant launch shape or pass explicit "
-                        f"threads_per_block.{other_missing_message}"
+                        f"Use a compile-time constant launch shape or pass "
+                        f"explicit threads_per_block.{other_missing_message}"
                     )
             missing_csv = ", ".join(sorted(missing))
             raise CoopSinglePhaseRewriteError(
@@ -368,7 +372,7 @@ class _ArgumentRewrite:
         ):
             raise CoopSinglePhaseRewriteError(
                 f"cooperative group operation {op_name!r} does not support "
-                "runtime temp_storage."
+                f"runtime temp_storage."
             )
         if lowering_plan is not None:
             factory_kwargs[_GROUP_LOWERING_PLAN_KWARG] = lowering_plan

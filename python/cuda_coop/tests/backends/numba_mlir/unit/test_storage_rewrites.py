@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check payload and scratch rewrites by inspecting Numba's function IR.
+
+The kernels below are parsed and rewritten; their array accesses are not run.
+Fake provider metadata isolates alias handling, allocation layout, and barrier
+insertion from CUDA compilation. Tests use both ordinary frontend IR and
+single-assignment form to check descriptors across branches and loops.
+"""
+
 from enum import Enum
 from types import SimpleNamespace
 
@@ -36,6 +44,8 @@ class _StringSharing(str, Enum):
 
 
 class _TypingContext:
+    """Count refresh requests without a full compiler typing context."""
+
     def __init__(self):
         self.refresh_count = 0
 
@@ -45,6 +55,8 @@ class _TypingContext:
 
 @pytest.fixture(autouse=True)
 def _restore_rewrite_registries():
+    """Remove temporary test providers after each test."""
+
     operation_prefix = "_test_storage_rewrite_family_"
     try:
         yield
@@ -58,6 +70,12 @@ def _restore_rewrite_registries():
 
 
 def _rewrite(function, *, arg_types=()):
+    """Rewrite payload constructors and fail if a block keeps matching.
+
+    Supply only the compiler state these rewrites need. The iteration bound
+    turns an accidental rewrite cycle into a test failure instead of a hang.
+    """
+
     func_ir = run_frontend(function)
     typingctx = _TypingContext()
     state = SimpleNamespace(
@@ -83,6 +101,8 @@ def _rewrite(function, *, arg_types=()):
 
 
 def _call_targets(func_ir):
+    """Resolve emitted callees to Python functions for assertions."""
+
     rewrite = object.__new__(CoopSinglePhaseRewrite)
     rewrite._func_ir = func_ir
     targets = []
@@ -511,6 +531,8 @@ def test_temp_storage_rewrite_rejects_string_enum_sharing():
 
 
 class _FakeInvocable:
+    """Supply provider storage metadata without compiling device code."""
+
     files = ("storage-rewrite-test.ltoir",)
     specialization = None
     storage_abi = "leading_pointer"
@@ -531,6 +553,12 @@ def _register_leading_pointer_provider(
     execution_scope=SynchronizationScope.BLOCK,
     synchronization_scope=SynchronizationScope.BLOCK,
 ):
+    """Register a test provider whose generated call takes a scratch pointer.
+
+    Its factory accepts no options and records each construction. Tests check
+    that invalid storage requests fail before the provider is constructed.
+    """
+
     operation = f"_test_storage_rewrite_family_{id(invocable)}"
     calls = []
 
@@ -570,6 +598,12 @@ def _register_leading_pointer_provider(
 
 
 def _frontend(function, *, ssa=False):
+    """Parse the kernel and optionally give each assignment a unique variable.
+
+    Single-assignment form adds merge nodes at control-flow joins. Both forms
+    must retain descriptor origins despite their different variable names.
+    """
+
     func_ir = run_frontend(function)
     if ssa:
         from numba_cuda_mlir.numba_cuda.core.ir_utils import build_definitions
@@ -581,6 +615,13 @@ def _frontend(function, *, ssa=False):
 
 
 def _rewrite_registered_provider(function, *, ssa=False, lifo=False):
+    """Rewrite test providers and optionally visit later blocks first.
+
+    Revisit each changed block until it no longer matches. Reverse the visit
+    order to check that storage is emitted before all possible consumers,
+    even when a later block is rewritten first.
+    """
+
     func_ir = _frontend(function, ssa=ssa)
     typingctx = _TypingContext()
     state = SimpleNamespace(
@@ -605,6 +646,8 @@ def _rewrite_registered_provider(function, *, ssa=False, lifo=False):
 
 
 def _rewrite_preflight(function):
+    """Prepare IR for tests that must fail before provider construction."""
+
     func_ir = _frontend(function)
     state = SimpleNamespace(
         func_ir=func_ir,
@@ -977,6 +1020,8 @@ def test_apply_refuses_a_plan_whose_auto_sync_disagrees_with_implicit_storage():
 
 
 def _resolved_calls(func_ir):
+    """Locate each emitted callee's block and assignment for layout checks."""
+
     resolver = object.__new__(CoopSinglePhaseRewrite)
     resolver._func_ir = func_ir
     calls = []
@@ -998,6 +1043,12 @@ def _resolved_calls(func_ir):
 def _rewrite_with_fake_invocable(
     function, invocable, *, ssa=False, arg_types=()
 ):
+    """Exercise a real provider's rewrite using supplied compilation metadata.
+
+    Skip device-code preparation while retaining argument, descriptor, and
+    storage analysis. Return the rewrite object so tests can inspect its plan.
+    """
+
     func_ir = _frontend(function, ssa=ssa)
     typingctx = _TypingContext()
     state = SimpleNamespace(
@@ -1755,6 +1806,12 @@ def test_getitem_temp_storage_syntax_is_not_an_accepted_descriptor_use():
 
 
 def _planner_for_storage_policy(specification, use_specifications):
+    """Build one descriptor's use list from explicit size/alignment pairs.
+
+    Stable call identities let tests inspect each assigned scratch slice
+    without first constructing and parsing a kernel.
+    """
+
     rewrite = object.__new__(CoopSinglePhaseRewrite)
     calls = [object() for _ in use_specifications]
     rewrite._temp_storage_plans = {}
@@ -2007,6 +2064,13 @@ def _global_storage_planner(
     implicit_use_specifications=(),
     alignment=16,
 ):
+    """Supply device limits and record dynamic-storage requests for one plan.
+
+    Replace the descriptor's own plan with a fixed size and alignment, and
+    fix the device limits. The real function-wide planner combines that plan
+    with implicit uses and chooses static or dynamic shared memory.
+    """
+
     from cuda.coop.numba_mlir._compiler import _rewrite_storage
 
     rewrite = object.__new__(CoopSinglePhaseRewrite)

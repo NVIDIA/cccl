@@ -15,7 +15,7 @@ _SOURCE_OFFSET = 3
 
 @cuda.jit
 def block_load(source, observed, valid_items, items_per_thread):
-    """Load a tile; invalid payload slots receive a caller-selected default."""
+    """Load a tile; invalid payload slots receive the default value -1."""
 
     thread = cuda.threadIdx.x
     payload = coop.ThreadData(items_per_thread)

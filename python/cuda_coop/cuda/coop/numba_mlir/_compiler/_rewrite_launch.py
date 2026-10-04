@@ -4,11 +4,11 @@
 
 """Reconcile provider block dimensions with the configured kernel launch.
 
-Provider specialization needs the exact block shape; a launch bound only
-gives an upper limit. These helpers read launch metadata, normalize explicit
-shapes, and mark work that must wait for the planner to request a launch
-configuration. Device helpers retain unresolved calls until inlining
-supplies their caller's launch context.
+Provider specialization needs the exact block shape; a launch bound only gives
+an upper limit. These helpers read launch metadata, normalize explicit shapes,
+and mark work that must wait for the planner to request a launch
+configuration. Device helpers retain unresolved calls until inlining supplies
+their caller's launch context.
 """
 
 from __future__ import annotations
@@ -23,6 +23,8 @@ if TYPE_CHECKING:
 
 
 class _LaunchRewrite:
+    """Resolve exact block dimensions before specializing a provider."""
+
     def _infer_threads_per_block_from_context(
         self,
         *,
@@ -31,13 +33,13 @@ class _LaunchRewrite:
         seen_factory_kwargs: set[str],
         factory_kwargs: dict[str, object],
     ) -> None:
-        """Fill or check the factory block shape against exact launch metadata.
+        """Infer or check the block shape using exact launch metadata.
 
         Only operations accepting ``threads_per_block`` participate. Compare
-        normalized three-dimensional shapes when both explicit and launch values
-        are available; equal thread counts alone do not imply equal shapes.
-        Malformed explicit dimensions are left for later factory validation.
-        Launch bounds are never treated as an exact shape.
+        normalized three-dimensional shapes when both explicit and launch
+        values are available; equal thread counts alone do not imply equal
+        shapes. Malformed explicit dimensions are left for later factory
+        validation. Launch bounds are never treated as an exact shape.
 
         An explicit dimension may still need to wait: a device helper or a
         kernel with a launch tracker must reconcile it after inlining or after
@@ -50,22 +52,19 @@ class _LaunchRewrite:
         allowed_factory_kwargs : set of str
             Keywords accepted by the operation's factory.
         seen_factory_kwargs : set of str
-            Resolved keyword names; updated when the block shape is
-            inferred.
+            Resolved keyword names; receives an inferred block-shape keyword.
         factory_kwargs : dict of str to object
-            Resolved values; receives an inferred ``threads_per_block`` in
-            place.
+            Resolved values; updated with inferred ``threads_per_block``.
 
         Returns
         -------
         None
-            Update the inferred inputs or leave them unchanged when
-            unavailable.
+            Fill a missing shape from launch metadata; never overwrite one.
 
         Raises
         ------
         CoopSinglePhaseRewriteError
-            An explicit shape disagrees with the exact kernel launch shape.
+            Explicit dimensions disagree with the exact kernel launch shape.
         _DeferredCoopRewrite
             Internal signal that explicit dimensions need pending launch
             metadata. It propagates through argument validation to
@@ -95,12 +94,10 @@ class _LaunchRewrite:
                 launch_block = self._launch_block_from_context()
                 raise CoopSinglePhaseRewriteError(
                     f"cuda.coop factory '{op_name}' received "
-                    f"threads_per_block="
-                    f"{explicit_threads_per_block!r}, but the "
-                    f"exact kernel launch block is {launch_block!r}. Make "
-                    "threads_per_block match the "
-                    "launch block or omit it to infer "
-                    "the dimension."
+                    f"threads_per_block={explicit_threads_per_block!r}, but "
+                    f"the exact kernel launch block is {launch_block!r}. "
+                    f"Make threads_per_block match the launch block or omit "
+                    f"it to infer the dimension."
                 )
             return
         factory_kwargs["threads_per_block"] = threads_per_block
@@ -115,14 +112,13 @@ class _LaunchRewrite:
         this rewrite object; without either signal, this helper returns False.
 
         This predicate has a side effect: a positive result latches
-        ``_deferred_launch_dim_inference`` so matching preserves descriptors and
-        the whole-function planner knows that it must retry.
+        ``_deferred_launch_dim_inference`` so matching preserves descriptors
+        and the whole-function planner knows that it must retry.
 
         Returns
         -------
         bool
-            Whether the caller should defer reconciliation of explicit
-            dimensions.
+            Whether to wait for launch metadata before comparing dimensions.
         """
 
         rewrite = cast("CoopSinglePhaseRewrite", self)
@@ -150,6 +146,12 @@ class _LaunchRewrite:
         return launch_config.get("block")
 
     def _launch_dim_inference_failure_detail(self) -> str:
+        """Explain which launch metadata is missing or invalid.
+
+        The argument validator includes this detail in its final diagnostic. A
+        launch bound is reported separately because it is only a limit.
+        """
+
         rewrite = cast("CoopSinglePhaseRewrite", self)
         metadata = getattr(rewrite._state, "metadata", {}) or {}
         targetoptions = metadata.get("targetoptions", {}) or {}
@@ -174,8 +176,7 @@ class _LaunchRewrite:
         if "launch_bounds" in targetoptions:
             detail += (
                 f"; launch_bounds={targetoptions['launch_bounds']!r} "
-                "is only an "
-                "upper bound, not an exact launch shape"
+                "is only an upper bound, not an exact launch shape"
             )
         return detail
 
@@ -219,13 +220,18 @@ class _LaunchRewrite:
         seen_factory_kwargs: set[str],
         factory_kwargs: dict[str, object],
     ) -> None:
+        """Rename ``dim`` to ``threads_per_block`` in both tracking tables.
+
+        Reject calls supplying both names, using ``op_name`` in the error.
+        This only renames the keyword; later code validates its value.
+        """
+
         if "dim" not in seen_factory_kwargs:
             return
         if "threads_per_block" in seen_factory_kwargs:
             raise CoopSinglePhaseRewriteError(
                 f"cuda.coop factory '{op_name}' received both "
-                f"'threads_per_block' "
-                "and its 'dim' alias; provide only one."
+                f"'threads_per_block' and its 'dim' alias; provide only one."
             )
         factory_kwargs["threads_per_block"] = factory_kwargs.pop("dim")
         seen_factory_kwargs.remove("dim")

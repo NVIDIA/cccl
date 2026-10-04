@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check scalar provenance and the core plans selected from compiler IR.
+
+Tests inspect plans before provider compilation, including loop dtype
+propagation, argument bindings, and storage and synchronization contracts.
+"""
+
 from types import SimpleNamespace
 
 import numpy as np
@@ -15,6 +21,11 @@ _STATIC_PROVENANCE_GLOBAL = np.int32(3)
 
 
 def _planner(function, *, arg_types, block=(64, 1, 1), ssa=False):
+    """Build a planner with exact launch facts, optionally in SSA form.
+
+    SSA cases exercise merged reaching definitions as well as the frontend
+    form used during ordinary group planning.
+    """
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
     from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner

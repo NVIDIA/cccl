@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check Load/Store planning, argument validation, and emitted call structure.
+
+Frontend IR and core plans are real. Tests replace provider materialization
+where they need to inspect rewriting without compiling or launching kernels.
+The compile and runtime suites check those later stages separately.
+"""
+
 import operator
 from collections import Counter
 from enum import Enum
@@ -19,6 +26,7 @@ class _StringAlgorithm(str, Enum):
 
 @pytest.fixture(autouse=True)
 def _fixed_provider_compute_capability(monkeypatch):
+    """Keep provider identity stable without querying a CUDA device."""
     from cuda.coop.numba_mlir import _types
 
     monkeypatch.setattr(
@@ -29,6 +37,7 @@ def _fixed_provider_compute_capability(monkeypatch):
 
 
 def _plan(function, *, arg_types, block=(64, 1, 1)):
+    """Build frontend IR with exact argument and launch facts."""
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
     from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
@@ -43,6 +52,7 @@ def _plan(function, *, arg_types, block=(64, 1, 1)):
 
 
 def _planned_factory_calls(func_ir, ir):
+    """Find calls and their directly assigned global factory objects in IR."""
     globals_by_name = {
         inst.target.name: inst.value.value
         for block in func_ir.blocks.values()
@@ -60,6 +70,7 @@ def _planned_factory_calls(func_ir, ir):
 
 
 def _resolved_python_call_targets(func_ir, ir):
+    """Resolve rewritten call targets to inspect allocations and barriers."""
     from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
 
     resolver = object.__new__(CoopSinglePhaseRewrite)
@@ -82,6 +93,8 @@ def _resolved_python_call_targets(func_ir, ir):
 
 
 class _MovementInvocable:
+    """Supply scratch requirements without compiling a provider."""
+
     files = ("movement-test.ltoir",)
     storage_abi = "leading_pointer"
     execution_scope = "block"
@@ -96,6 +109,11 @@ class _MovementInvocable:
 
 
 def _rewrite_planned_movement(function, *, arg_types):
+    """Run planning and rewriting with fixed provider storage requirements.
+
+    Return the rewritten IR, rewrite state, and fake providers so tests can
+    inspect calls, scratch allocation, and reuse barriers together.
+    """
     from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
 
     func_ir, planner = _plan(function, arg_types=arg_types)
@@ -139,6 +157,11 @@ def _run_single_phase_to_provider_boundary(
     monkeypatch,
     allow_provider_bundling=False,
 ):
+    """Check argument validation before a provider can be materialized.
+
+    Allow the bundling boundary only for inputs expected to pass validation.
+    Provider compilation and materialization are replaced by test guards.
+    """
     from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
 
     func_ir, planner = _plan(function, arg_types=arg_types, block=(32, 1, 1))
@@ -194,6 +217,8 @@ def _run_single_phase_to_provider_boundary(
 
 
 class _FailingAttribute:
+    """Raise an error when the rewrite resolves a call result dtype."""
+
     def __init__(self, exception_type):
         self._exception_type = exception_type
 

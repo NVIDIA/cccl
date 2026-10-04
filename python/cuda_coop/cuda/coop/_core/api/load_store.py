@@ -108,10 +108,10 @@ def load(
 
     Examples
     --------
-    Copy an array with Numba-CUDA-MLIR, using 128 threads and a kernel argument
-    for the values per thread. Each block loads up to
-    ``128 * items_per_thread`` elements. The last block pads its
-    missing values with zero and stores only the valid prefix.
+    Copy an array with Numba-CUDA-MLIR, using 128 threads and a kernel
+    argument for the values per thread. Each block loads up to
+    ``128 * items_per_thread`` elements. The last block pads missing values
+    with zero and stores only the valid prefix.
 
     .. literalinclude::
         ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_load_example.py

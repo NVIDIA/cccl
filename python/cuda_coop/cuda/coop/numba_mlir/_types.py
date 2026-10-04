@@ -14,9 +14,8 @@ storage declarations for compiler types without a builtin C++ spelling.
 
 Construction specializes an algorithm, which can then be compiled to LTO IR
 and exposed through an ``Invocable``. It exposes compiler overloads and
-retains the
-link artifacts while the containing kernel is compiled. It represents a
-device call, not an operation executed by the host Python interpreter.
+retains the link artifacts while the containing kernel is compiled. The
+compiler turns calls to this object into device calls.
 
 Several operation specializations may be collected before compilation.
 ``prepare_ltoir_bundle`` combines their wrappers into a shared translation unit
@@ -124,6 +123,7 @@ def collect_specializations() -> Iterator[
 
 
 def numba_type_to_cpp(numba_type):
+    """Return the builtin C++ spelling or the opaque ``storage_t`` name."""
     cpp_type = NUMBA_TYPES_TO_CPP.get(numba_type)
     if cpp_type is not None:
         return cpp_type
@@ -147,6 +147,12 @@ def _validate_logical_warp_threads(threads):
 
 
 def _normalize_block_threads(threads_per_block):
+    """Validate one to three block dimensions and return their thread count.
+
+    Require positive Python integers, reject booleans, and limit the
+    product to 1024 threads. Allocating warp wrappers use this count to
+    size scratch.
+    """
     if isinstance(threads_per_block, bool):
         # Keep the established ValueError contract for invalid block dimensions.
         raise ValueError(  # noqa: TRY004
@@ -211,6 +217,11 @@ def _lto_ir_digest(lto_ir):
 def _struct_size_alignment(
     member_types: Iterable[numba_types.Type],
 ) -> tuple[int, int]:
+    """Lay out ordered members and return their byte size and alignment.
+
+    Each field starts at its required alignment. Tail padding lets an array of
+    these structs keep that alignment for every element.
+    """
     offset = 0
     max_align = 1
     for member_type in member_types:
@@ -409,6 +420,8 @@ def _ltoir_to_ptx(ltoir: bytes, *, name: str, cc: int) -> str:
 
 
 class TypeWrapper:
+    """Supply an aligned C++ storage declaration for a compiler value type."""
+
     def __init__(self, numba_type: numba_types.Type) -> None:
         """Build the C++ storage declaration for a compiler value type.
 
@@ -608,6 +621,14 @@ def _cpp_parameter_names(parameters, *, reserved=()):
 
 
 class Parameter:
+    """Describe one argument at the Python-to-C++ call boundary.
+
+    Subclasses define the compiler dtype and C++ representation. An output is
+    supplied by the wrapper and becomes the call result, so it consumes no
+    Python input argument. Concrete descriptors return themselves from
+    ``specialize``; dependent descriptors resolve template arguments first.
+    """
+
     # The formal parameter name is separate from an operator's linker symbol.
     parameter_name: str | None = None
 
@@ -631,6 +652,8 @@ class Parameter:
 
 
 class Value(Parameter):
+    """Pass a scalar by value using the descriptor's compiler dtype."""
+
     def __init__(self, value_type, is_output=False):
         self.value_type = value_type
         super().__init__(is_output)
@@ -737,6 +760,13 @@ class BoundedInteger(Value):
 
 
 class PointerOffset(Value):
+    """Adjust an earlier pointer argument by an element count.
+
+    ``pointer_arg_index`` selects the earlier provider argument. A static
+    value is embedded in C++ source; otherwise the caller supplies the offset
+    at runtime. The offset itself is not an argument to the CUB method.
+    """
+
     def __init__(self, value_type, pointer_arg_index=0, static_value=None):
         if static_value is not None and (
             not isinstance(static_value, Integral)
@@ -771,6 +801,12 @@ class PointerOffset(Value):
 
 
 class Pointer(Parameter):
+    """Pass contiguous one-dimensional array storage as a typed C++ pointer.
+
+    Typing requires a C-contiguous array because the wrapper passes only the
+    address; it cannot retain an arbitrary array stride.
+    """
+
     def __init__(self, value_dtype, is_output=False):
         self.value_dtype = value_dtype
         super().__init__(is_output)
@@ -793,6 +829,8 @@ class Pointer(Parameter):
 
 
 class DependentPointer(Parameter):
+    """Resolve a template dtype before constructing a pointer descriptor."""
+
     def __init__(self, value_dtype, is_output=False):
         self.value_dtype = value_dtype
         super().__init__(is_output)
@@ -807,6 +845,8 @@ class DependentPointer(Parameter):
 
 
 class PointerReference(Pointer):
+    """Pass an array pointer, then dereference it for the CUB method call."""
+
     def __init__(self, value_dtype, is_output=False):
         self.deref_on_call = True
         super().__init__(value_dtype, is_output)
@@ -818,6 +858,8 @@ class PointerReference(Pointer):
 
 
 class DependentPointerReference(DependentPointer):
+    """Resolve the dtype of a pointer that the CUB call will dereference."""
+
     def __init__(self, value_dtype, is_output=False):
         self.deref_on_call = True
         super().__init__(value_dtype, is_output)
@@ -836,6 +878,12 @@ class DependentPointerReference(DependentPointer):
 
 
 class Reference(Parameter):
+    """Represent a C++ reference using a scalar at the external-call boundary.
+
+    The ABI wrapper creates a local scalar and passes it by reference to the
+    typed wrapper. An output reference becomes the external call's result.
+    """
+
     def __init__(self, value_dtype, is_output=False):
         self.value_dtype = value_dtype
         super().__init__(is_output)
@@ -854,6 +902,8 @@ class Reference(Parameter):
 
 
 class DependentReference(Parameter):
+    """Resolve a template dtype before constructing a reference descriptor."""
+
     def __init__(self, value_dtype, is_output=False):
         self.value_dtype = value_dtype
         super().__init__(is_output)
@@ -870,6 +920,12 @@ class DependentReference(Parameter):
 
 
 class Array(Pointer):
+    """Pass a fixed-size per-thread array to a CUB array-reference parameter.
+
+    The external ABI receives a pointer. The typed wrapper casts that pointer
+    to a C++ array reference with ``size`` elements.
+    """
+
     def __init__(self, value_dtype, size, is_output=False):
         self.size = size
         super().__init__(value_dtype, is_output)
@@ -925,12 +981,16 @@ class TransformedArray(Array):
 
 
 class SubstitutionFailure(Exception):
+    """Signal that a missing template value excludes one overload."""
+
     def __init__(self, message):
         self.message = message
         super().__init__(self.message)
 
 
 class Dependency:
+    """Look up a required template argument during specialization."""
+
     def __init__(self, dep):
         self.dep = dep
 
@@ -945,6 +1005,8 @@ class Dependency:
 
 
 class Constant:
+    """Keep one value unchanged while dependent parameters are specialized."""
+
     def __init__(self, val):
         self.val = val
 
@@ -953,6 +1015,13 @@ class Constant:
 
 
 class CxxFunction(Parameter):
+    """Embed a C++ expression in the provider call without a runtime argument.
+
+    The expression can name a functor or encode a compile-time scalar value.
+    Its text contributes to the generated symbol so distinct expressions can
+    select distinct wrappers.
+    """
+
     def __init__(self, cpp, func_dtype):
         super().__init__()
         self.cpp = cpp
@@ -972,6 +1041,8 @@ class CxxFunction(Parameter):
 
 
 class DependentArray(Parameter):
+    """Resolve both the dtype and length of a fixed-size array parameter."""
+
     def __init__(self, value_dtype, size, is_output=False):
         self.value_dtype = value_dtype
         self.size = size
@@ -989,6 +1060,8 @@ class DependentArray(Parameter):
 
 
 class TemplateParameter:
+    """Name a required argument in the CUB class template parameter list."""
+
     def __init__(self, name):
         self.name = name
 
@@ -1032,6 +1105,12 @@ def mangle_symbol(name, template_parameters):
 
 
 def war_introspection(fn, n):
+    """Give a variadic typing function an inspectable fixed-arity signature.
+
+    Numba overload registration inspects the Python argument list. Generate a
+    small forwarding function with ``n`` named arguments and capture ``fn``
+    in its globals. The returned function is called later during typing.
+    """
     arglist = ", ".join(f"param{i}" for i in range(n))
     mod_str = dedent(f"""
     def impl({arglist}):
@@ -1104,6 +1183,14 @@ def war_introspection_call_with_transforms(
 
 
 class Algorithm:
+    """Generate and compile wrappers for one concrete CUB specialization.
+
+    Construction resolves ``template_arguments`` and keeps only applicable
+    parameter overloads. Storage and synchronization settings describe the
+    wrapper contract. Compilation later binds a device target, qualifies
+    private symbols, and records the compiled scratch size and alignment.
+    """
+
     def __init__(
         self,
         struct_name,
@@ -1122,6 +1209,15 @@ class Algorithm:
         output_by_reference=False,
         compile_context=None,
     ):
+        """Resolve template arguments and initialize provider compile state.
+
+        ``parameters`` lists the candidate method signatures. A missing
+        dependent value excludes that signature. Every declared class-template
+        parameter requires a value. ``storage_abi`` determines whether scratch
+        is the first runtime argument. ``synchronization_scope`` is ``NONE``
+        or equal to ``execution_scope``; allocating wrappers emit the matching
+        barrier after the call. Construction does not run NVRTC.
+        """
         self.struct_name = struct_name
         self.method_name = method_name
         self.c_name = (
@@ -1184,6 +1280,7 @@ class Algorithm:
         )
 
     def _bind_provider_compile_identity(self, compile_identity=None):
+        """Bind the first compile identity and reject conflicting reuse."""
         observed = (
             self._current_provider_compile_identity()
             if compile_identity is None
@@ -1268,6 +1365,7 @@ class Algorithm:
         return compile_identity
 
     def _resolved_compile_context(self):
+        """Resolve header and toolkit identity once for this provider."""
         if self._compile_context is None:
             self._compile_context = nvrtc.resolve_compile_context()
         return self._compile_context
@@ -1336,8 +1434,8 @@ class Algorithm:
     def temp_storage_bytes(self):
         if self._temp_storage_bytes is None:
             raise RuntimeError(
-                "Temporary storage bytes not computed "
-                "yet.  Call get_lto_ir() first."
+                "Temporary storage bytes not computed yet.  "
+                "Call get_lto_ir() first."
             )
         return self._temp_storage_bytes
 
@@ -1674,9 +1772,8 @@ class Algorithm:
                         )
                         if pointer_arg_pos is None:
                             raise ValueError(
-                                "PointerOffset must "
-                                "reference an earlier pointer "
-                                "parameter."
+                                "PointerOffset must reference an earlier "
+                                "pointer parameter."
                             )
                         param_args[pointer_arg_pos] = (
                             f"({param_args[pointer_arg_pos]} + "
@@ -1889,6 +1986,12 @@ class Algorithm:
     def _make_lto_ir_cache_key(
         self, threads=None, block_threads=None, *, compile_identity=None
     ):
+        """Validate warp topology and identify reusable link images.
+
+        The key includes storage policy, execution and synchronization scopes,
+        thread configuration, and compiler identity. Reusing an object with a
+        different bound target fails before its cached artifact is returned.
+        """
         resolved_threads = threads if threads is not None else self.threads
         resolved_block_threads = (
             block_threads if block_threads is not None else self.block_threads
@@ -2025,6 +2128,12 @@ class Algorithm:
         return lto_irs
 
     def codegen(self, func_to_overload):
+        """Build callable overloads for each specialized C++ method.
+
+        Providers with a leading scratch pointer also expose an allocating
+        variant whose Python signature omits that pointer. Return the templates
+        for this callable without adding them to a global typing registry.
+        """
         if len(self.template_parameters):
             raise ValueError("Cannot generate codegen for a template")
 
@@ -2187,6 +2296,12 @@ class _NamedTempFile(Protocol):
 
 
 class _SharedTempFile:
+    """Keep a shared bundle file alive until its final owner is released.
+
+    Invocables retain this object with their own link files. Its finalizer
+    removes the shared path only when no owner retains this object.
+    """
+
     def __init__(self, temp_file: _NamedTempFile):
         self._temp_file = temp_file
         self._temp_file_finalizer = weakref.finalize(
@@ -2212,6 +2327,11 @@ def _collect_extra_ltoirs(algo):
 
 
 def _param_coalesce_key(param):
+    """Describe one parameter's generated C++ and runtime ABI shape.
+
+    Parameter display names are omitted. Types, transforms, bounds, and
+    embedded expressions remain part of the key because they affect code.
+    """
     if isinstance(param, TransformedArray):
         return (
             "TransformedArray",
@@ -2330,6 +2450,11 @@ def algo_coalesce_key(
 
 
 def _strip_source_preamble(src, algo, udf_decls):
+    """Remove shared includes and declarations before combining wrappers.
+
+    Only the first exact occurrence of each generated fragment is removed.
+    The bundle emits the shared preamble once for all representatives.
+    """
     body = src
     body = body.replace("#include <cuda/std/cstdint>\n", "", 1)
     for include in algo.includes or []:
@@ -2643,6 +2768,13 @@ def make_invocable_from_specialization(
 
 
 class Invocable:
+    """Expose a compiled provider as a callable and retain its link files.
+
+    The compiler obtains overloads from ``_numba_type_`` on first use. The
+    object also exposes scratch and synchronization requirements to planning.
+    Direct Python calls raise an error because execution belongs in a kernel.
+    """
+
     def __init__(
         self,
         temp_files: Sequence[_NamedTempFile],
@@ -2731,6 +2863,7 @@ class Invocable:
 
 
 def _cleanup_temp_files(paths):
+    """Remove owned artifact paths, allowing a path to be already absent."""
     for path in paths:
         try:
             os.unlink(path)

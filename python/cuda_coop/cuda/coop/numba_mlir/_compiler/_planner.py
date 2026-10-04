@@ -31,26 +31,26 @@ class CoopWholeFunctionPlanner(
     def run(self) -> bool:
         """Lower cooperative calls while their inlined consumers are visible.
 
-        Numba calls this once per compiler attempt after device-helper inlining
-        and before type inference. A ``True`` result makes its planner registry
-        rebuild IR analysis before proceeding to later planners and compiler
-        passes. It does not ask the registry to repeat this planner. A request
-        for a literal argument may separately cause the dispatcher to begin
-        another compiler attempt. Launch metadata is obtained within the
-        current attempt or reported as unavailable.
+        Numba calls this once per compiler attempt after device-helper
+        inlining and before type inference. A ``True`` result makes its
+        planner registry rebuild IR analysis before proceeding to later
+        planners and compiler passes. It does not ask the registry to repeat
+        this planner. A request for a literal argument may separately cause
+        the dispatcher to begin another compiler attempt. Launch metadata is
+        obtained within the current attempt or reported as unavailable.
 
         Group resolution supplies the launch-dependent operation and provider
         choices that call rewriting needs. Rebuild IR analysis between these
         phases when resolution changes the function: otherwise rewriting could
-        inspect definitions and control-flow facts from before the new provider
-        calls existed. Numba repairs the final IR after a successful change
-        report, ready for subsequent compiler passes and type inference.
+        inspect definitions and control-flow facts from before the new
+        provider calls existed. Numba repairs the final IR after a successful
+        change report, ready for later compiler passes and type inference.
 
         Both phases run even when group resolution makes no changes; payload
         constructors and private provider calls can still need rewriting.
-        Planning and provider errors propagate with their original diagnostics.
-        Compiler specialization requests also propagate so the dispatcher can
-        retry with the required literal arguments.
+        Planning and provider errors propagate with their original
+        diagnostics. Compiler specialization requests also propagate so the
+        dispatcher can retry with the required literal arguments.
 
         Returns
         -------

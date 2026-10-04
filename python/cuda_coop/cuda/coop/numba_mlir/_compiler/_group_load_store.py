@@ -14,9 +14,9 @@ The returned IR carries both the runtime operands and the complete lowering
 plan. Later in the same whole-function planner, call rewriting specializes the
 factory and supplies payload arrays and any shared scratch it needs. Warp
 operations may also need an offset for their particular warp within the block;
-this module emits that arithmetic because it depends on runtime thread indices.
-It builds replacement statements without installing them, so the caller can
-validate every group descriptor use before changing the function's blocks.
+this module emits that arithmetic because it depends on runtime thread
+indices. It builds replacement statements without installing them, so the
+caller can check every group descriptor use before it changes any block.
 """
 
 import inspect
@@ -83,6 +83,13 @@ def _load_store_algorithm(
     operation: str,
     group_kind: str,
 ) -> str:
+    """Resolve an algorithm from the choices for the selected group kind.
+
+    Physical and logical warps use the warp choices; block groups use the
+    block choices. Keep the group kind in an invalid-choice diagnostic so
+    callers can see why an algorithm is unavailable for this request.
+    """
+
     algorithm_scope = (
         "warp" if group_kind in {"warp", "threads_within_warp"} else group_kind
     )
@@ -102,6 +109,8 @@ def _load_store_algorithm(
         ) from None
 
 
+# Match the selected implementation to a provider operation. Each key contains
+# the library, include path, C++ type, and method recorded by shared planning.
 _CUB_PLAN_ROUTES = {
     (
         "CUB",
@@ -131,7 +140,7 @@ _CUB_PLAN_ROUTES = {
 
 
 class _LoadStorePlanning:
-    """Shared planning for the separately registered load and store primitives.
+    """Plan registered Load and Store operations with shared rules.
 
     A compiler family is a module supplying planning and rewrite hooks for one
     or more operation names. Load and store share this implementation because
@@ -144,6 +153,12 @@ class _LoadStorePlanning:
     def _validate_common_arguments(
         self, operation: str, bound: inspect.BoundArguments
     ) -> None:
+        """Normalize selectors in the bound arguments of a common API call.
+
+        Update ``algorithm`` in place. Rewriting bypasses the Python wrapper,
+        so compiled calls must apply its selector restrictions here.
+        """
+
         bound.arguments["algorithm"] = self._context.validate_common_selector(
             operation,
             "algorithm",
@@ -156,6 +171,18 @@ class _LoadStorePlanning:
         plan: GroupLoweringPlan,
         operation: str,
     ) -> tuple[Any, dict[str, Any]]:
+        """Choose the registered factory and its group-dimension arguments.
+
+        Use the plan's block/warp target and storage ownership to select the
+        matching private factory. Warp factories also need the logical group
+        width. Both forms need exact enclosing block dimensions, including
+        when the selected algorithm uses no scratch.
+
+        Return ``(factory, kwargs)`` without invoking the factory. Reject
+        missing block dimensions, unsupported warp topology, or an unknown
+        target before building provider-call IR.
+        """
+
         group = plan.resolved_group
         assert group.hierarchy is not None
         block_dim = group.hierarchy.block_dim
@@ -206,12 +233,12 @@ class _LoadStorePlanning:
     ) -> ArgumentBinding:
         """Validate the ``load()`` operation's out-of-bounds fill value.
 
-        Classify ``oob_default`` as omitted, static, or runtime. A runtime value
-        with a known dtype must match the payload exactly; an unknown dtype is
-        left for later validation. Static values retain their original dtype
-        information during coercion, preserving the distinction between Python
-        literals whose type is determined by the operation and values whose
-        numeric width is already established.
+        Classify ``oob_default`` as omitted, static, or runtime. A runtime
+        value with a known dtype must match the payload exactly; an unknown
+        dtype is left for later validation. Static values retain their
+        original dtype information during coercion, preserving the distinction
+        between Python literals whose type is determined by the operation and
+        values whose numeric width is already established.
 
         Parameters
         ----------
@@ -266,6 +293,14 @@ class _LoadStorePlanning:
         return ArgumentBinding.static(scalar)
 
     def _planning_items_per_thread(self, operation: str, payload: Any) -> int:
+        """Recover a fixed payload extent for provider specialization.
+
+        A scalar store uses one item per thread. Array payloads must have a
+        known extent, and a load always needs an array destination. This
+        determines the item count; dtype and common API payload rules are
+        checked separately.
+        """
+
         is_array = self._context.is_array(operation, payload)
         if not is_array:
             if operation == "load":
@@ -286,15 +321,15 @@ class _LoadStorePlanning:
         group: ThreadGroup,
         bound: inspect.BoundArguments,
     ) -> GroupLoweringPlan:
-        """Translate a bound group memory operation into a supported core plan.
+        """Build a supported core plan from a bound group memory call.
 
         Recover payload shape and element type before selecting a provider.
-        Memory dtype takes precedence when known, but a known payload dtype must
-        match it. For a ``store()`` operation with an untyped array payload,
-        inspect values written to its elements first; for a static scalar
-        payload, check whether its value and original dtype can be used with
-        the destination dtype. A ``load()`` operation records the inferred
-        output dtype in the planning context for later group calls.
+        Memory dtype takes precedence when known, but a known payload dtype
+        must match it. For a ``store()`` operation with an untyped array
+        payload, inspect values written to its elements first; for a static
+        scalar payload, check whether its value and original dtype can be used
+        with the destination dtype. A ``load()`` operation records the
+        inferred output dtype in the planning context for later group calls.
 
         Classify optional scalar controls by provenance, parse caller storage,
         and pass compiler-neutral load/store semantics plus exact launch facts
@@ -332,7 +367,7 @@ class _LoadStorePlanning:
             A scalar or algorithm is invalid, or explicit storage is supplied
             for a warp group.
         ForceLiteralArg
-            A shape, algorithm, or storage option needs literal specialization.
+            A shape, selector, or storage option needs literal specialization.
         NotImplementedError
             The core planner cannot lower the requested group operation.
         """
@@ -439,6 +474,14 @@ class _LoadStorePlanning:
 
     @staticmethod
     def _plan_provider_operation(plan: GroupLoweringPlan) -> str:
+        """Route the selected CUB implementation to its provider operation.
+
+        Match the plan's library, header, C++ type, and method against the
+        known routes. This checks the implementation the core actually
+        selected. The caller then verifies that it matches the requested load
+        or store.
+        """
+
         if plan.target not in {
             GroupLoweringTarget.CUB_BLOCK,
             GroupLoweringTarget.CUB_WARP,
@@ -457,6 +500,13 @@ class _LoadStorePlanning:
         binding: ArgumentBinding,
         runtime_value: Any,
     ) -> Any:
+        """Forward runtime operands and keep static binding descriptors.
+
+        Factories read any plain non-None value as a runtime operand. Keep a
+        static control wrapped in its ArgumentBinding so the factory embeds
+        it as a constant.
+        """
+
         return runtime_value if binding.kind is BindingKind.RUNTIME else binding
 
     def _warp_group_effective_offset(
@@ -473,18 +523,18 @@ class _LoadStorePlanning:
 
         Each physical or logical warp must access its own tile within the
         block's data. Compute the current thread's x-fastest linear rank as
-        ``x + block_x * (y + block_y * z)``. Divide by the logical group width,
-        then multiply by ``width * items_per_thread``. Add the user's base
-        offset to that tile origin. The arithmetic remains
-        runtime IR because the warp's position in the block depends on
-        ``threadIdx``, even when the user's base offset is static. For a
-        one-dimensional block, the linear rank is simply ``threadIdx.x``.
+        ``x + block_x * (y + block_y * z)``. Divide by the logical group
+        width, then multiply by ``width * items_per_thread``. Add the user's
+        base offset to that tile origin. The arithmetic remains runtime IR
+        because the warp's position in the block depends on ``threadIdx``,
+        even when the user's base offset is static. For a one-dimensional
+        block, the linear rank is simply ``threadIdx.x``.
 
         Parameters
         ----------
         statements : list of ir.Assign
-            Output list extended in place with constants, CUDA attribute reads,
-            and arithmetic assignments in dependency order.
+            Output list extended in place with constants, CUDA attribute
+            reads, and arithmetic assignments in dependency order.
         inst : ir.Assign
             Original public call; supplies scope and source locations.
         plan : GroupLoweringPlan
@@ -501,12 +551,12 @@ class _LoadStorePlanning:
         Returns
         -------
         ir.Var
-            Variable holding the effective element offset for the provider call.
+            Variable holding the provider call's effective element offset.
 
         Raises
         ------
         GroupRewriteError
-            The plan lacks the required exact warp topology or block dimensions.
+            The plan lacks exact warp topology or block dimensions.
         """
 
         topology = plan.topology
@@ -619,17 +669,17 @@ class _LoadStorePlanning:
         """Build replacement IR for a public ``load()`` or ``store()`` call.
 
         Validate common-API payload restrictions, obtain a semantic lowering
-        plan, and select the matching private factory by provider provenance and
-        scope. Translate planned dtype, shape, algorithm, and scalar bindings
-        into the provider's arguments. Warp plans that require a tile origin
-        first emit the effective-offset arithmetic. Other static controls retain
-        their ``ArgumentBinding`` objects; runtime controls retain their
-        original IR operands.
+        plan, and select the matching private factory by provider provenance
+        and scope. Translate planned dtype, shape, algorithm, and scalar
+        bindings into the provider's arguments. Warp plans that require a tile
+        origin first emit the effective-offset arithmetic. Other static
+        controls retain their ``ArgumentBinding`` objects; runtime controls
+        retain their original IR operands.
 
         The final provider call carries the complete plan for the subsequent
-        provider rewrite. Planning may record inferred payload dtypes, but this
-        method only returns replacement statements; the whole-function planner
-        installs them after validating all descriptor uses.
+        provider rewrite. Planning may record inferred payload dtypes, but
+        this method only returns replacement statements; the whole-function
+        planner installs them after validating all descriptor uses.
 
         Parameters
         ----------
@@ -644,8 +694,8 @@ class _LoadStorePlanning:
             Public call arguments with defaults applied. Runtime operands are
             forwarded; the argument mapping is not modified.
         is_common_root : bool
-            Whether the call uses the common API, requiring its payload contract
-            and a retained common-operation marker on the provider call.
+            Whether the call uses the common API. Enforce its payload
+            contract and retain its operation marker on the provider call.
 
         Returns
         -------
@@ -657,8 +707,8 @@ class _LoadStorePlanning:
         Raises
         ------
         GroupRewriteError
-            Planning cannot resolve the payload, provider provenance selects the
-            wrong operation, or its contract is incompatible with the plan.
+            The payload is unresolved, provenance selects the wrong
+            operation, or the provider contract conflicts with the plan.
         TypeError
             A common-API payload is unsupported or known dtypes disagree.
         ValueError

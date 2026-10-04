@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile descriptor and storage edge cases to check their diagnostics.
+
+The fixed target permits compilation with devices hidden. Source-location,
+helper-inlining, and shared-memory checks exercise the real compiler pipeline.
+"""
+
 import inspect
 import os
 from types import SimpleNamespace
@@ -28,6 +34,7 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 
 @pytest.fixture(autouse=True)
 def _fixed_current_device(monkeypatch):
+    """Supply target metadata without requiring a CUDA device."""
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == ""
     monkeypatch.setattr(
         numba_mlir_tools,
@@ -42,6 +49,7 @@ def _fixed_current_device(monkeypatch):
 
 
 def _compile(kernel, *arg_types, block=(32, 1, 1)):
+    """Compile with exact launch dimensions; do not execute the kernel."""
     return kernel._compile_launch_config_signature(
         types.void(*arg_types),
         (

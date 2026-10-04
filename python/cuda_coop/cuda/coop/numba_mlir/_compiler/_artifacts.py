@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Prepare compiled provider files and read their storage metadata.
+
+The linker consumes binary inputs by filename after provider construction.
+Temporary-file helpers therefore keep those paths alive for the owner to clean
+up later. PTX inspection reads emitted size and alignment constants without
+launching a kernel.
+"""
+
 import os
 import re
 import tempfile
@@ -15,9 +23,9 @@ def make_binary_tempfile(content: bytes, suffix: str) -> IO[bytes]:
     """Write a persistent link-input file and return its closed handle.
 
     Compiler link inputs are consumed by filename after provider construction,
-    so flush and close the file before returning while leaving its path intact.
-    The caller must arrange successful-file cleanup, normally through an
-    ``Invocable`` or shared-bundle owner. If writing raises, remove the
+    so flush and close the file before returning while leaving its path
+    intact. The caller must arrange successful-file cleanup, normally through
+    an ``Invocable`` or shared-bundle owner. If writing raises, remove the
     partially written file before propagating the exception.
 
     Parameters
@@ -62,9 +70,9 @@ def find_unsigned(name: str, txt: str) -> int:
 
     Provider compilation emits C++ ``sizeof`` and ``alignof`` constants, then
     links to PTX to inspect their values without executing a GPU kernel. Match
-    the compiler's aligned 32-bit unsigned global declaration for the requested
-    symbol. A declaration without an initializer denotes zero. This is a narrow
-    metadata extractor, not a general PTX parser.
+    the compiler's aligned 32-bit unsigned global declaration for the
+    requested symbol. A declaration without an initializer denotes zero. This
+    is a narrow metadata extractor, not a general PTX parser.
 
     Parameters
     ----------

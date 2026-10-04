@@ -56,7 +56,13 @@ class CoopSinglePhaseRewrite(
     _StorageRewrite,
     Rewrite,
 ):
-    """Specialize private providers and replace their calls with invocables."""
+    """Replace one block's provider calls using a plan for the whole function.
+
+    The mixins resolve arguments and descriptors, build provider callables,
+    and emit array and synchronization code. ``match`` gathers a block's work;
+    ``apply`` performs it. Both share function-wide payload and scratch facts
+    so calls in different blocks use compatible allocations.
+    """
 
     def match(
         self,
@@ -67,34 +73,33 @@ class CoopSinglePhaseRewrite(
     ) -> bool:
         """Find provider calls and descriptors ready for a block rewrite.
 
-        ``CoopWholeFunctionPlanner`` calls this through ``_rewrite_calls`` after
-        helper inlining and group resolution, before type inference. Identify
-        the provider calls, payload constructors, and storage descriptors that
-        ``apply`` can replace in this block. Unresolved public group markers
-        prevent a match because their provider choices are not available yet.
+        ``CoopWholeFunctionPlanner`` calls this through ``_rewrite_calls``
+        after helper inlining and group resolution, before type inference.
+        Identify the provider calls, payload constructors, and storage
+        descriptors that ``apply`` can replace in this block. Unresolved
+        public group markers prevent a match because their provider choices
+        are not available yet.
 
-        On the first visit to a function IR, collect storage requirements across
-        all its blocks before rewriting any constructor or call. Inlined helper
-        consumers therefore participate in the same storage plan.
+        On the first visit to a function IR, collect storage requirements
+        across all its blocks before rewriting any constructor or call.
+        Inlined helper calls therefore share the same storage plan.
 
-        The match records payload metadata, constructor sites, constant payload
-        extents, and provider arguments for ``apply``. It does not replace block
-        statements, but requirement collection may materialize invocables and
-        update compiler caches. Missing launch dimensions defer rewriting with
-        descriptors intact; the calling planner retries with exact launch
-        metadata.
+        The match records payload metadata, constructor sites, constant
+        payload extents, and provider arguments for ``apply``. It does not
+        replace block statements, but requirement collection may materialize
+        invocables and update compiler caches. Missing launch dimensions defer
+        rewriting with descriptors intact; the calling planner retries with
+        exact launch metadata.
 
         Parameters
         ----------
         func_ir : FunctionIR
-            Current function, with definitions available for provenance
-            lookup.
+            Current function and definitions used for provenance lookup.
         block : ir.Block
             Block to inspect once function-wide requirements are available.
         typemap : dict or None
             Type map supplied by the rewrite interface; not read here.
-            Inference helpers consult the compiler state when types are
-            available.
+            Inference helpers use compiler-state types when available.
         calltypes : dict or None
             Call signatures supplied by the rewrite interface; not read here.
             Both maps may be absent before type inference.
@@ -241,29 +246,29 @@ class CoopSinglePhaseRewrite(
         )
 
     def apply(self) -> ir.Block:
-        """Replace the block recorded by ``match`` with executable provider IR.
+        """Replace the matched block with executable provider calls.
 
         During Numba-CUDA-MLIR's post-inlining, pre-typing planner step,
-        ``CoopWholeFunctionPlanner`` calls this through ``_rewrite_calls`` after
-        ``match`` succeeds for a block. Replace compile-time cooperative
+        ``CoopWholeFunctionPlanner`` calls this through ``_rewrite_calls``
+        after ``match`` succeeds for a block. Replace compile-time cooperative
         descriptors and provider markers with arrays and calls that the normal
         typing and lowering passes can process.
 
         Materialize the selected invocables, turn ``ThreadData`` constructors
-        into local arrays, and replace consumed ``TempStorage`` descriptors with
-        views of one function-wide shared allocation. Calls receive the
-        family-specific runtime operands and, when required by the provider ABI,
-        a leading scratch view. Automatic reuse barriers follow calls whose
-        storage plan requests synchronization.
+        into local arrays, and replace consumed ``TempStorage`` descriptors
+        with views of one function-wide shared allocation. Calls receive the
+        family-specific runtime operands and, when required by the provider
+        ABI, a leading scratch view. Automatic reuse barriers follow calls
+        whose storage plan requests synchronization.
 
         This method also mutates the function outside the returned block:
         backing storage is staged in the entry block so it dominates every
-        consumer, and unused payload constructor aliases may be retired in other
-        blocks. Each rewritten call receives its own callee binding so aliases
-        in unrevised blocks remain usable. Compile-time argument assignments are
-        removed only when no block still uses them. Refresh the typing context
-        after installing invocables; the caller installs the returned block in
-        the function IR.
+        consumer, and unused payload constructor aliases may be retired in
+        other blocks. Each rewritten call receives its own callee binding so
+        aliases in unrevised blocks remain usable. Compile-time argument
+        assignments are removed only when no block still uses them. Refresh
+        the typing context after installing invocables; the caller installs
+        the returned block in the function IR.
 
         Returns
         -------
@@ -275,8 +280,7 @@ class CoopSinglePhaseRewrite(
         ------
         CoopSinglePhaseRewriteError
             Payload inference, invocable construction, storage allocation,
-            or synchronization contracts cannot support the matched
-            operation.
+            or synchronization cannot support the matched operation.
         """
 
         assert self._block is not None
@@ -285,6 +289,8 @@ class CoopSinglePhaseRewrite(
         candidate_dead_factory_kw_vars: set[str] = set()
         if self._has_temp_storage_requirements():
             self._stage_temp_storage_backing()
+        # Compile each selected provider before emitting its replacement call.
+        # Keep one callee binding per call so shared Python aliases stay usable.
         for match_inst, match in self._matches.items():
             invocable, _ = self._materialize_invocable(match)
             self._record_invocable_specialization(invocable)
@@ -346,9 +352,8 @@ class CoopSinglePhaseRewrite(
                 ):
                     raise CoopSinglePhaseRewriteError(
                         "Failed to infer dtype for coop.ThreadData(...). "
-                        "Use it with a "
-                        "cooperative group operation "
-                        "that provides dtype context."
+                        "Use it with a cooperative group operation that "
+                        "provides dtype context."
                     )
                 if thread_data_specification.common_root:
                     from ._parameters import _validate_common_numeric_dtype
@@ -500,8 +505,8 @@ class CoopSinglePhaseRewrite(
                 ctor_key = self._resolve_temp_storage_ctor_key(inst.target)
                 if ctor_key is None:
                     raise CoopSinglePhaseRewriteError(
-                        f"Missing TempStorage metadata "
-                        f"for '{inst.target.name}'."
+                        f"Missing TempStorage metadata for "
+                        f"'{inst.target.name}'."
                     )
                 if ctor_key not in self._func_temp_storage_requirements:
                     new_block.append(
@@ -590,10 +595,9 @@ class CoopSinglePhaseRewrite(
                 # Barrier emission consults both parsers; refuse to continue
                 # when they disagree instead of silently emitting nothing.
                 raise CoopSinglePhaseRewriteError(
-                    "cooperative provider TempStorage "
-                    "automatic synchronization "
-                    "disagrees between the group lowering plan and the "
-                    "descriptor."
+                    "cooperative provider TempStorage automatic "
+                    "synchronization disagrees between the group lowering "
+                    "plan and the descriptor."
                 )
             if (
                 runtime_temp_storage_plan is not None
@@ -622,6 +626,8 @@ class CoopSinglePhaseRewrite(
                     lowering_plan=match.lowering_plan,
                 )
         used_var_names: set[str] = set()
+        # A compile-time argument may still feed a call in another block.
+        # Remove its assignment only after checking all remaining uses.
         for block in self._func_ir.blocks.values():
             rewritten_block = new_block if block is self._block else block
             for stmt in rewritten_block.body:
@@ -647,13 +653,13 @@ class CoopSinglePhaseRewrite(
         return new_block
 
     def _clear_unused_payload_callees(self, new_block: ir.Block) -> None:
-        """Retire constructor bindings after their final use has been rewritten.
+        """Retire constructor bindings after their last use is rewritten.
 
-        Inspect uses across the function with ``new_block`` substituted for the
-        current block. Replace unused candidate assignments with ``None`` and
-        follow their source aliases until no additional binding can be retired.
-        This preserves shared constructor aliases while later blocks still need
-        them, but removes Python descriptor callees before type inference.
+        Inspect uses across the function with ``new_block`` substituted for
+        the current block. Replace unused candidate assignments with ``None``
+        and follow their source aliases until no additional binding can be
+        retired. Shared constructor aliases remain while later blocks need
+        them. Unused descriptor callees are removed before type inference.
 
         Parameters
         ----------
@@ -704,26 +710,25 @@ class _CallRewriting:
     """Apply cooperative-provider rewrites after device-function inlining."""
 
     def _rewrite_calls(self) -> bool:
-        """Rewrite cooperative providers after device helpers have been inlined.
+        """Replace provider calls after device helpers have been inlined.
 
-        ``CoopWholeFunctionPlanner.run`` invokes this after its group-resolution
-        step, even when that step made no changes: payload constructors and
-        private providers can still need rewriting. Visit blocks in label order
-        and repeatedly apply each block's matches until no further rewrite is
-        available. A fresh rewrite object sees the inlined consumers when
-        collecting payload and storage requirements.
+        ``CoopWholeFunctionPlanner.run`` invokes this after its
+        group-resolution step, even when that step made no changes: payload
+        constructors and private providers can still need rewriting. Visit
+        blocks in label order and repeatedly apply each block's matches until
+        no further rewrite is available. A fresh rewrite object sees the
+        inlined consumers when collecting payload and storage requirements.
 
         If launch-dependent work remains in a kernel, request its exact launch
-        configuration and retry with deferral disabled. A device function leaves
-        that work for its kernel caller; it has no independent kernel launch.
-        The second kernel attempt diagnoses unresolved dimensions instead of
-        silently leaving provider markers for type inference.
+        configuration and retry with deferral disabled. A device function
+        leaves that work for its kernel caller; it has no independent kernel
+        launch. The second kernel attempt diagnoses unresolved dimensions
+        instead of silently leaving provider markers for type inference.
 
         Returns
         -------
         bool
-            Whether any replacement block was installed in
-            ``state.func_ir``.
+            Whether a replacement block was installed in ``state.func_ir``.
 
         Raises
         ------
@@ -740,6 +745,8 @@ class _CallRewriting:
         modified = False
 
         def apply_matches() -> None:
+            """Apply ready block rewrites until no matches remain."""
+
             nonlocal modified
             for label in sorted(planner.state.func_ir.blocks):
                 block = planner.state.func_ir.blocks[label]

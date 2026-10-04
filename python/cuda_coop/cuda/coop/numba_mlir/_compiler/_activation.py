@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Activate the Numba backend when its qualified API is imported or registered.
+"""Activate the Numba backend after checking its compiler runtime.
 
 Load the compiler package, check its supported version, and import the CUDA
 compiler interface before registering ``CoopWholeFunctionPlanner``. The
@@ -53,9 +53,8 @@ def _load_runtime() -> (
     Return import failures with their original exception as the cause for
     ``_require_runtime`` to raise. Version-validation failures raise directly,
     before importing the ``.cuda`` submodule. In either case, explicit
-    registration and qualified imports propagate an ``ImportError``;
-    automatic registration catches it and warns, keeping the common import
-    usable.
+    registration and qualified imports propagate an ``ImportError``.
+    Automatic registration catches it and warns so the common import works.
 
     Returns
     -------
@@ -163,8 +162,7 @@ def _require_runtime() -> ModuleType:
     """Return the validated CUDA compiler module, loading it on first use.
 
     Cache successful loads only. Explicit activation propagates the classified
-    import or version error; automatic registration catches it and emits its
-    incompatibility warning.
+    import or version error. Automatic registration catches it and warns.
 
     Returns
     -------
@@ -193,9 +191,9 @@ def _initialize_runtime_hooks() -> None:
     Serialize this backend's activation attempts and require a supported
     runtime before importing its implementation. Those imports do not register
     planner or rewrite hooks. Registering the single planner as the final step
-    therefore keeps failed imports from leaving partially activated cooperative
-    hooks; a later attempt can reuse successfully loaded modules. The runtime
-    deduplicates repeated registration of the same planner class.
+    therefore keeps failed imports from leaving partially activated
+    cooperative hooks; a later attempt can reuse successfully loaded modules.
+    The runtime deduplicates repeated registration of the same planner class.
 
     Raises
     ------

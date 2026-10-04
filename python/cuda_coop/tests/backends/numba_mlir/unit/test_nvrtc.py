@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check compiler identity and source dumps with compiler calls replaced.
+
+Small header trees exercise content identity. Fake library records and NVRTC
+responses isolate selection, version checks, and cache arguments from CUDA
+installation details. Real compilation is covered by the compile suite.
+"""
+
 from __future__ import annotations
 
 import inspect
@@ -25,6 +32,7 @@ def _fake_nvrtc(
     *,
     result: int = 0,
 ) -> SimpleNamespace:
+    """Provide the version query needed for context validation."""
     return SimpleNamespace(
         nvrtcResult=SimpleNamespace(NVRTC_SUCCESS=0),
         nvrtcVersion=lambda: (result, *actual_version),
@@ -32,6 +40,7 @@ def _fake_nvrtc(
 
 
 def _libraries(**changes) -> ToolkitCompilerLibraries:
+    """Create a coherent fake toolchain with the requested differences."""
     libraries = ToolkitCompilerLibraries(
         toolkit_root="/cuda/toolkit",
         toolkit_version=(13, 3),
@@ -45,6 +54,7 @@ def _libraries(**changes) -> ToolkitCompilerLibraries:
 
 
 def _context(**changes) -> _nvrtc.CompileContext:
+    """Build a cache identity without resolving installed libraries."""
     context = _nvrtc.CompileContext(
         toolkit_root="/cuda/toolkit",
         toolkit_version=(13, 3),

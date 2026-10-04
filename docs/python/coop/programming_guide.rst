@@ -223,14 +223,15 @@ Constructing a group or a ``ThreadData`` object does not synchronize threads.
 ------------------------------------------------------
 
 ``coop.ThreadData(items_per_thread)`` gives each thread that many slots.
-With 128 threads, the group owns ``128 * items_per_thread`` values. Each thread
-indexes its own slots with ``items[i]``. Each thread accesses only its own slots.
+With 128 threads, the group owns ``128 * items_per_thread`` values. Each
+thread indexes its own slots with ``items[i]``. Each thread accesses only
+its own slots.
 
 :class:`~cuda.coop.ThreadDataLike` names the common payload interface used
 in API signatures. It describes the item count, dtype, and indexed reads and
-writes. Use :func:`~cuda.coop.ThreadData` to construct a payload for the active
-compiler backend. Other payload representations require support from that
-backend.
+writes. Use :func:`~cuda.coop.ThreadData` to construct a payload for the
+active compiler backend. Other payload representations require support from
+that backend.
 
 The item count must be a positive compile-time integer. Pass
 ``items_per_thread`` as a kernel argument; the compiler specializes the
@@ -300,13 +301,13 @@ The current numeric payload types are signed and unsigned integers of 8,
 16, 32, or 64 bits, and 32- or 64-bit floating point. Boolean, half
 precision, complex, and structured payloads are outside this contract.
 
-Leave the constructor's element type unspecified for normal use.
-Load infers it from the source, and Store can establish it from the destination.
-Supported typed assignments also provide the element type; use a typed scalar
-when your computation needs a particular width or precision. Inference follows
-the backend's supported producers and assignments. Conflicting type requirements
-are errors. See :ref:`element-type inference <coop-faq-thread-data-dtype>` for
-cases that need additional information.
+Leave the constructor's element type unspecified for normal use. Load infers
+it from the source, and Store can establish it from the destination.
+Supported typed assignments also provide the element type; use a typed
+scalar when your computation needs a particular width or precision.
+Inference follows the backend's supported producers and assignments.
+Conflicting type requirements are errors. See :ref:`element-type inference
+<coop-faq-thread-data-dtype>` for cases that need additional information.
 
 Load writes into the payload supplied by the caller. Transpose Store
 algorithms may rearrange their input payload in place, as in CUB. Copy values
@@ -539,17 +540,18 @@ With the default ``auto_sync=False``, the kernel must provide reuse barriers.
 Put an explicit block barrier before a later call reuses the same scratch,
 including between loop iterations.
 
-Set ``auto_sync=True`` to insert automatic trailing barriers for scratch reuse.
-Without an explicit descriptor, the compiler synchronizes scratch automatically.
-An unrelated memory access between calls does not establish a block barrier.
-The compiler rejects merging multiple manually synchronized
+Set ``auto_sync=True`` to insert automatic trailing barriers for scratch
+reuse. Without an explicit descriptor, the compiler synchronizes scratch
+automatically. An unrelated memory access between calls does not establish a
+block barrier. The compiler rejects merging multiple manually synchronized
 ``TempStorage`` constructors into one descriptor, including conditional
 definitions. Use one constructor and keep its synchronization explicit. This
 restriction reflects what the planner can establish; it does not mean that
 every rejected program necessarily races.
 
 Scratch lasts for the kernel's execution on that block. It cannot carry
-state between blocks or kernel launches. Keep persistent application state in a separate payload.
+state between blocks or kernel launches. Keep persistent application state
+in a separate payload.
 
 When the combined scratch requirement exceeds the default static shared-memory
 limit, the backend can use dynamic shared memory, subject to the GPU's opt-in
@@ -582,8 +584,8 @@ Checking and tuning a kernel
 Check results before comparing algorithms. Useful cases include one full
 tile, several tiles, a single valid element in the final tile, and an empty
 input handled on the host. Layout conversions are easier to inspect with
-distinct input values. Compare computed values against a CPU reference with a suitable
-accumulation dtype and floating-point tolerance.
+distinct input values. Compare computed values against a CPU reference with
+a suitable accumulation dtype and floating-point tolerance.
 
 Keep launch dimensions, logical-warp widths, payload extents, and algorithm
 choices consistent with the code. The compiler specializes group operations

@@ -5,18 +5,17 @@
 """Batch provider compilation and reuse callable specializations.
 
 The whole-function storage scan collects the kernel's distinct provider
-specializations before materializing any invocable. On the successful
-batching path, their generated C++ shares one translation unit and, on a
-cache miss, one NVRTC compilation to LTO IR, avoiding a separate compiler
-invocation for each cooperative primitive. Every resulting invocable retains
-the shared artifact for linking.
+specializations before materializing any invocable. On the successful batching
+path, their generated C++ shares one translation unit and, on a cache miss,
+one NVRTC compilation to LTO IR, avoiding a separate compiler invocation for
+each cooperative primitive. Every resulting invocable retains the shared
+artifact for linking.
 
-This reduces provider-compilation overhead; it is not a promise of exactly
-one NVRTC invocation per kernel. Cache hits can avoid compilation,
-equivalent specializations can collapse to one provider, and unavailable or
-failed bundling falls back to individual materialization. LTO-to-PTX
-inspection, extra support images, and the kernel's own compilation remain
-separate work.
+This reduces provider-compilation overhead; it is not a promise of exactly one
+NVRTC invocation per kernel. Cache hits can avoid compilation, equivalent
+specializations can collapse to one provider, and unavailable or failed
+bundling falls back to individual materialization. LTO-to-PTX inspection,
+extra support images, and the kernel's own compilation remain separate work.
 """
 
 from __future__ import annotations
@@ -40,6 +39,12 @@ if TYPE_CHECKING:
 
 
 class _InvocableRewrite:
+    """Reuse compiled providers across matches and planner retries.
+
+    The mixin validates factory results, caches them in compiler state, and
+    optionally compiles several specializations together.
+    """
+
     @staticmethod
     def _invocable_cache_key(
         factory: Callable[..., Any],
@@ -51,28 +56,27 @@ class _InvocableRewrite:
         Include factory object identity and the registered storage, execution,
         and synchronization contracts so distinct providers cannot share an
         invocable merely because their operation names match. Keyword order is
-        irrelevant; each value contributes its Python type and structural symbol
-        hash. The object identity makes this unsuitable as a persistent cache
-        key across processes.
+        irrelevant; each value contributes its Python type and structural
+        symbol hash. The object identity makes this unsuitable as a persistent
+        cache key across processes.
 
         Parameters
         ----------
         factory : callable
-            Registered host-side provider factory whose identity partitions
-            the cache. It is not invoked here.
+            Registered host-side provider factory whose identity
+            partitions the cache. It is not invoked here.
         factory_metadata : FactoryOperation
-            Required registration carrying the operation name, namespace, and
-            ABI and scope contracts for ``factory``.
+            Required registration carrying the operation name, namespace,
+            and ABI and scope contracts for ``factory``.
         factory_kwargs : dict of str to object
-            Resolved specialization inputs, after removing lowering-plan
-            metadata.
+            Resolved specialization inputs, without lowering-plan metadata.
 
         Returns
         -------
         tuple
             Provider identity string and sorted keyword-name, value-type,
-            and value-digest triples used by the rewrite and compiler-state
-            caches.
+            and value-digest triples used by the rewrite and
+            compiler-state caches.
         """
 
         def cache_component(name: str, value: object) -> tuple[str, str, str]:
@@ -81,9 +85,9 @@ class _InvocableRewrite:
             value_type = f"{type(value).__module__}.{type(value).__qualname__}"
             return (name, value_type, hasher.hexdigest())
 
-        # This cache is compiler-state-local. Object identity deliberately keeps
-        # separately registered providers apart even when their public operation
-        # name and specialization arguments are identical.
+        # This cache belongs to one compiler state. Object identity keeps
+        # separately registered providers apart even when their operation
+        # names and specialization arguments are identical.
         provider_contract = (
             factory_metadata.namespace,
             factory_metadata.storage_abi.value,
@@ -114,27 +118,27 @@ class _InvocableRewrite:
         Construction and compiler-cache lookup both use this check before an
         invocable enters the rewrite-local cache. Require a callable exposing
         link files, then compare its storage ABI and thread scopes with the
-        registry. This checks declared metadata, not the generated device code.
+        registry. This checks declarations, not generated device code.
 
         Parameters
         ----------
         invocable : object
             Factory result or cached provider to check.
         factory_metadata : FactoryOperation
-            Storage and synchronization contract registered for its factory.
+            The factory's registered storage and synchronization contract.
 
         Raises
         ------
         CoopSinglePhaseRewriteError
-            The result lacks the invocable interface or declares incompatible
-            storage, execution, or synchronization metadata.
+            The result lacks the invocable interface or declares
+            incompatible storage, execution, or synchronization metadata.
         """
 
         op_name = factory_metadata.operation
         if not callable(invocable) or not hasattr(invocable, "files"):
             raise CoopSinglePhaseRewriteError(
-                f"coop single-phase factory for '{op_name}' did not produce a "
-                f"coop invocable; got {type(invocable)!r}."
+                f"coop single-phase factory for '{op_name}' did not produce "
+                f"a coop invocable; got {type(invocable)!r}."
             )
         expected_contract = {
             "storage_abi": factory_metadata.storage_abi,
@@ -155,14 +159,14 @@ class _InvocableRewrite:
         if mismatches:
             details = ", ".join(mismatches)
             raise CoopSinglePhaseRewriteError(
-                f"coop provider '{op_name}' returned "
-                f"incompatible metadata: {details}."
+                f"coop provider '{op_name}' returned incompatible metadata: "
+                f"{details}."
             )
 
     def _prepare_ltoir_bundle_for_matches(
         self, matches: list[_RewriteMatch]
     ) -> None:
-        """Prepare one LTO IR bundle for distinct specializations when possible.
+        """Prepare a shared LTO IR bundle when distinct matches permit it.
 
         The function-wide storage scan calls this before materializing its
         providers. A shared translation unit lets NVRTC compile all distinct
@@ -172,31 +176,31 @@ class _InvocableRewrite:
 
         Collect factory specializations without immediately building each
         invocable, deduplicate identical matches, and associate each collected
-        algorithm with its thread dimensions. Bundling is attempted only for at
-        least two unique matches and before any specialization has been recorded
-        as materialized in this compiler state.
+        algorithm with its thread dimensions. Bundling is attempted only for
+        at least two unique matches and before any specialization has been
+        recorded as materialized in this compiler state.
 
-        This is an optional compilation optimization. Clear the previous bundle
-        lookup first; a collection-count mismatch or an import, OS, or runtime
-        failure leaves it empty so ``_materialize_invocable`` can call factories
-        individually. Other exceptions propagate. Successful preparation records
-        specializations by invocable cache key without replacing function IR.
-        If those specializations coalesce to one algorithm, bundle preparation
-        may produce no shared bundle; retain the collected specializations for
-        individual materialization anyway.
+        This is an optional compilation optimization. Clear the previous
+        bundle lookup first; a collection-count mismatch or an import, OS, or
+        runtime failure leaves it empty so ``_materialize_invocable`` can call
+        factories individually. Other exceptions propagate. Successful
+        preparation records specializations by invocable cache key without
+        replacing function IR. If those specializations coalesce to one
+        algorithm, bundle preparation may produce no shared bundle; retain the
+        collected specializations for individual materialization anyway.
 
         Parameters
         ----------
         matches : list of _RewriteMatch
-            Validated provider calls from the entire function, in scan
-            order.
+            Validated provider calls in whole-function scan order.
 
         Returns
         -------
         None
-            ``_prebundled_specializations`` holds the prepared specializations,
-            which may share a bundle. Early exits and caught failures leave
-            it empty so materialization can invoke factories directly.
+            ``_prebundled_specializations`` holds the prepared
+            specializations, which may share a bundle. Early exits and
+            caught failures leave it empty so materialization can invoke
+            factories directly.
         """
 
         rewrite = cast("CoopSinglePhaseRewrite", self)
@@ -253,36 +257,34 @@ class _InvocableRewrite:
     def _materialize_invocable(
         self, match: _RewriteMatch
     ) -> tuple[object, bool]:
-        """Obtain the callable specialization for one validated provider match.
+        """Obtain a callable specialization for one validated match.
 
-        Consult the rewrite-local cache, then the cache in compiler metadata so
-        a fresh rewrite during launch retries can reuse prior work. On a miss,
-        construct an invocable from a prepared specialization or evaluate the
-        factory directly. Newly constructed and compiler-cache invocables must
-        agree with the provider's storage and synchronization contracts before
-        being used; successful construction populates both caches.
+        Consult the rewrite-local cache, then the cache in compiler metadata
+        so a fresh rewrite during launch retries can reuse prior work. On a
+        miss, construct an invocable from a prepared specialization or
+        evaluate the factory directly. Newly constructed and compiler-cache
+        invocables must agree with the provider's storage and synchronization
+        contracts before use. Successful construction populates both caches.
 
         Parameters
         ----------
         match : _RewriteMatch
             Provider factory, registered contract, and resolved
-            specialization keywords. Lowering-plan metadata has already been
-            removed.
+            specialization keywords. Lowering-plan metadata has already
+            been removed.
 
         Returns
         -------
         invocable : object
-            Callable provider object exposing link files and its ABI
-            metadata.
+            Callable provider with link files and ABI metadata.
         created : bool
-            True when this call constructed the invocable, including from a
-            prepared specialization; False for either cache hit.
+            True when this call constructed the invocable, including from
+            a prepared specialization; False for either cache hit.
 
         Raises
         ------
         CoopSinglePhaseRewriteError
-            Construction fails or the result violates the registered
-            contract.
+            Construction fails, or the result breaks the registered contract.
         """
 
         rewrite = cast("CoopSinglePhaseRewrite", self)
@@ -312,8 +314,8 @@ class _InvocableRewrite:
                 invocable = match.factory(**match.factory_kwargs)
         except Exception as e:
             raise CoopSinglePhaseRewriteError(
-                f"Failed to evaluate coop single-phase factory at compile time "
-                f"for '{match.op_name}'."
+                f"Failed to evaluate coop single-phase factory at compile "
+                f"time for '{match.op_name}'."
             ) from e
         self._validate_invocable(invocable, match.factory_metadata)
         rewrite._invocable_cache[key] = invocable
@@ -331,8 +333,8 @@ class _InvocableRewrite:
         Parameters
         ----------
         invocable : object
-            Callable provider whose optional ``specialization`` identifies its
-            generated implementation.
+            Callable provider whose optional ``specialization`` identifies
+            its generated implementation.
         """
 
         rewrite = cast("CoopSinglePhaseRewrite", self)
