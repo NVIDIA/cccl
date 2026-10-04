@@ -64,10 +64,10 @@ be in range and unique.
 ``scatter_to_striped_guarded`` suppresses inputs with negative ranks; it
 does not guard against ranks beyond the tile extent. The example assigns
 rank ``-1`` to every fifth input. ``scatter_to_striped_flagged`` instead
-uses an integral ``valid_flags`` payload and suppresses every fourth input
-in the example. Suppressed writes leave holes: **a question mark means an
-unspecified output that must not be consumed**, not a zero or a preserved
-input value.
+uses a non-boolean integer ``valid_flags`` payload and suppresses every
+fourth input in the example. Suppressed writes leave holes: **a question
+mark means an unspecified output that must not be consumed**, not a zero
+or a preserved input value.
 
 The illustrations use the default non-timesliced exchange. The qualified
 block API also provides ``warp_time_slicing`` for the layout conversions
@@ -76,11 +76,11 @@ and unguarded scatters. Guarded and flagged scatter do not support it.
 Using Exchange in a kernel
 --------------------------
 
-This fragment uses the common API inside a Numba-CUDA-MLIR kernel that accepts
-``items_per_thread``. Import
-``cuda`` from ``numba_cuda_mlir``, ``numpy as np``, and
-``cuda.coop as coop``. Launch with 128 threads and provide at least ``128 * items_per_thread``
-source and destination elements for each block.
+This fragment uses the common API inside a Numba-CUDA-MLIR kernel that
+accepts ``items_per_thread``. Import ``cuda`` from ``numba_cuda_mlir``,
+``numpy as np``, and ``cuda.coop as coop``. Launch with 128 threads and
+provide at least ``128 * items_per_thread`` source and destination elements
+for each block.
 
 .. code-block:: python
 

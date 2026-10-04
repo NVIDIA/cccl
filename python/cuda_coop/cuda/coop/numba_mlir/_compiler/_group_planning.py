@@ -191,11 +191,12 @@ class GroupPlanningContext:
         return self.__planner._is_none(value)
 
     def is_array(self, operation: str, value: Any) -> bool:
-        """Check for a supported per-thread payload constructor.
+        """Check for a supported per-thread array payload.
 
-        Accept ThreadData and CUDA local-array constructors. The common API's
-        ThreadData-only rule is checked separately by ``is_thread_data``. An
-        unresolved cycle raises a diagnostic; a false result still needs
+        Accept ThreadData, CUDA local-array constructors, and array results
+        from earlier group calls or generated result markers. Check the common
+        API's ThreadData-only rule separately with ``is_thread_data``.
+        An unresolved cycle raises a diagnostic. A false result still needs
         scalar validation by the caller.
         """
 
@@ -444,11 +445,10 @@ class GroupPlanningContext:
 
         Check the provider ABI and storage contract before embedding the plan
         in its reserved keyword argument. The later provider rewrite consumes
-        this metadata, so it does not have to reconstruct the public group
-        semantics. The returned assignments materialize non-IR arguments,
-        invoke the factory, and assign the public result or requested payload
-        alias. The caller installs them into the function; this method does
-        not replace the original instruction.
+        this metadata instead of reconstructing the public group semantics.
+        The assignments materialize non-IR arguments, invoke the factory,
+        and assign the public result or requested payload alias. The caller
+        installs them; this method does not replace the original instruction.
 
         Parameters
         ----------
@@ -511,9 +511,23 @@ class GroupPlanningContext:
         )
 
     def copy_array_payload(self, *args: Any, **kwargs: Any) -> None:
+        """Append a fixed-size copy to preserve a provider input.
+
+        Forward the source, destination, and pending statement list to the
+        planner. The destination must already exist; unknown source extent is
+        an error because the planner emits one copy statement pair per item.
+        """
+
         self.__planner._copy_array_payload(*args, **kwargs)
 
     def typed_payload_like(self, *args: Any, **kwargs: Any) -> ir.Var:
+        """Append a result-payload marker and return its IR variable.
+
+        The marker carries a prototype and shape/type policy until the
+        provider rewrite can create a local array. This only appends pending
+        statements; the owning planner decides when to install them.
+        """
+
         return self.__planner._typed_payload_like(*args, **kwargs)
 
     def planning_binding(self, value: Any) -> ArgumentBinding:
@@ -662,6 +676,14 @@ class GroupPlanningContext:
         index: int | None,
         seen: set[str],
     ) -> Any | None:
+        """Infer result dtype from its registered source argument.
+
+        ``index`` selects a tuple result or is ``None`` for a direct result.
+        Return ``None`` when the call has no matching policy or that policy
+        has no dtype source. Reuse the caller's recursion path when inspecting
+        the bound argument so cyclic result dependencies remain guarded.
+        """
+
         resolved = self.__planner._result_source(definition, index)
         if resolved is None:
             return None
@@ -818,6 +840,10 @@ class GroupPlanningContext:
         and out-of-range indices contribute no dtype; known conflicts at a phi
         join raise ``GroupRewriteError``.
 
+        Registered calls with multiple results follow the selected result's
+        dtype-source argument. This makes tuple-returned payloads available to
+        later group planning before provider rewriting.
+
         Parameters
         ----------
         definition : object
@@ -880,6 +906,10 @@ class GroupPlanningContext:
         ``definition`` is that assignment source; ``seen`` contains variable
         and tuple-projection keys already on the recursion path. Return a
         normalized dtype or ``None`` when the source supplies no known dtype.
+
+        Generated payload markers inherit their prototype's dtype. A direct
+        registered result follows its dtype-source argument before the
+        planner attempts ordinary scalar-call inference.
         """
 
         if isinstance(definition, ir.Var):
@@ -987,14 +1017,13 @@ class GroupPlanningContext:
 
         Use argument types, scalar constants and operators, supported CUDA
         index attributes, local-array constructors, and ``ThreadData``
-        declarations or recorded producer dtypes. Operation result policies
-        and planner-created payload markers supply the types of returned
-        payloads. Follow aliases, casts, phi inputs, and tuple projections;
-        array indexing contributes the source element dtype. This is a limited
-        pre-typing analysis, not full Numba type inference.
+        declarations or recorded producer dtypes. Result policies and payload
+        markers supply returned payload types. Follow aliases, casts,
+        phi inputs, and tuple projections. Array indexing contributes the
+        source element dtype. This analysis runs before full Numba typing.
 
         Loop backedges can use a candidate established by a known incoming
-        definition, provided every reaching definition then resolves to the
+        definition, provided every recorded definition then resolves to the
         same type. Unknown definitions and unseeded cycles return ``None``;
         fully known but inconsistent paths are rejected.
 

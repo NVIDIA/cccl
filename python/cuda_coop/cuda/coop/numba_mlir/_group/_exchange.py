@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Declare Exchange calls that Numba-CUDA-MLIR plans inside device code."""
+
 from __future__ import annotations
 
 from typing import Any

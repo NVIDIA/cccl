@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Materialize Numba-CUDA-MLIR providers for CUB Exchange calls.
+
+These host factories translate compiler dtypes to shared-core descriptions,
+then adapt the selected CUB algorithm into an invocable. Plain, ranked, and
+flagged factories have distinct registered ABIs because they consume different
+runtime arrays. Group planning emits a result marker. The provider rewrite
+replaces that marker with a local-array allocation. Providers receive separate
+input and output arrays plus leading scratch.
+"""
+
 from __future__ import annotations
 
 import operator
@@ -83,6 +93,13 @@ def _valid_flag_dtype(value: Any):
 
 
 def _provider_metadata(factory, *, operation: str, namespace: str):
+    """Require the factory registration that matches this provider ABI.
+
+    Return storage and synchronization metadata for materialization. The
+    operation and namespace must match the selected overload; otherwise
+    runtime arguments could be interpreted with the wrong provider contract.
+    """
+
     registered = factory_operation(factory)
     if registered is None:
         raise RuntimeError(f"unregistered cuda.coop provider {factory!r}")
@@ -107,7 +124,16 @@ def _block_exchange(
     valid_flag_dtype=None,
     warp_time_slicing=False,
 ):
-    """Build an out-of-place BlockExchange invocable."""
+    """Build the registered block provider for one Exchange mode.
+
+    Normalize block dimensions, numeric dtype, extent, and optional scatter
+    types. Select the expected plain, ranked, or flagged registration from the
+    mode. Build shared-core separate-input/output semantics, adapt its types
+    and scratch ABI, and return the materialized invocable.
+
+    The caller supplies output storage as an operand. This host factory does
+    not allocate the per-thread result or perform a device exchange.
+    """
 
     if threads_per_block is None:
         raise ValueError("threads_per_block must be provided")
@@ -240,7 +266,16 @@ def _warp_exchange(
     mode="striped_to_blocked",
     rank_dtype=None,
 ):
-    """Build an out-of-place physical or logical WarpExchange invocable."""
+    """Build a CUB Exchange provider with scratch for each logical warp.
+
+    Normalize the enclosing block shape, logical width, numeric dtype, and
+    fixed item count. Match the factory registration to layout conversion or
+    ranked scatter, then adapt the shared-core warp algorithm.
+
+    Pass both logical width and block shape to invocable construction so it
+    can arrange storage for each warp instance. Input and output remain
+    separate runtime arrays owned by the caller.
+    """
 
     if threads_per_block is None:
         raise ValueError("threads_per_block must be provided")

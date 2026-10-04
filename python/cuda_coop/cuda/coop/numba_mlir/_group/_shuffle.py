@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Declare scalar and array Shuffle calls for Numba-CUDA-MLIR device code."""
+
 from __future__ import annotations
 
 from typing import Any

@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check the CUB call contracts for block Exchange without a compiler.
+
+The core supports both in-place and out-of-place overloads. These tests
+check their parameter roles separately from the public group API, which
+returns a new payload.
+"""
+
 import pytest
 
 from cuda.coop._core import (

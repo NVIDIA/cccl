@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe CUB BlockExchange calls without compiler-specific types.
+
+Exchange rearranges a fixed number of items held by each block thread. Layout
+modes convert between blocked, striped, and warp-striped ordering; scatter
+modes select destinations from rank arrays. The semantics record validates
+operands without a launch shape. The specialization builder adds exact block
+dimensions and CUB template arguments. Both produce descriptions for a backend
+to materialize; neither performs the exchange.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -15,6 +25,13 @@ from ._common import normalize_block_dim, normalize_positive_int
 
 
 class BlockExchangeMode(str, Enum):
+    """Select the CUB layout conversion or rank-directed scatter.
+
+    Scatter modes consume one destination rank per input item. The guarded
+    variant skips negative ranks; the flagged variant uses explicit validity
+    flags. The properties below select the required operands and CUB method.
+    """
+
     STRIPED_TO_BLOCKED = "striped_to_blocked"
     BLOCKED_TO_STRIPED = "blocked_to_striped"
     WARP_STRIPED_TO_BLOCKED = "warp_striped_to_blocked"
@@ -43,6 +60,13 @@ class BlockExchangeMode(str, Enum):
 
 
 class BlockExchangeValueForm(str, Enum):
+    """Select whether CUB reads and writes the same per-thread array.
+
+    ``IN_PLACE`` uses one input/output array. ``OUT_OF_PLACE`` uses separate
+    input and output arrays. ``BOTH`` describes both overloads for a backend
+    that supports either call form.
+    """
+
     IN_PLACE = "in_place"
     OUT_OF_PLACE = "out_of_place"
     BOTH = "both"
@@ -73,6 +97,12 @@ _TEMPLATE_PARAMETERS = (
 
 
 def _in_place_parameters(mode: BlockExchangeMode) -> tuple[Any, ...]:
+    """Describe scratch, one mutable item array, and any scatter controls.
+
+    The item array remains a runtime operand. Mark it as modified, but do not
+    turn it into a backend return value; the caller already owns that array.
+    """
+
     parameters: list[Any] = [
         TempStorageParameter(),
         Array(
@@ -93,6 +123,13 @@ def _in_place_parameters(mode: BlockExchangeMode) -> tuple[Any, ...]:
 
 
 def _out_of_place_parameters(mode: BlockExchangeMode) -> tuple[Any, ...]:
+    """Describe separate input and output arrays for one Exchange call.
+
+    Ranks and flags follow the output when the mode requires them. Mark the
+    output as writable but not as a backend return value, so group lowering
+    can return the independently allocated payload through its own alias.
+    """
+
     parameters: list[Any] = [
         TempStorageParameter(),
         Array(_T, _ITEMS_PER_THREAD, name="input_items"),
@@ -115,7 +152,17 @@ def _out_of_place_parameters(mode: BlockExchangeMode) -> tuple[Any, ...]:
 
 @dataclass(frozen=True)
 class BlockExchangeSemantics:
-    """Dimension-independent BlockExchange call contract."""
+    """Hold Exchange arguments that do not depend on block dimensions.
+
+    The normalized mode determines whether rank and validity arrays are
+    present. ``value_form`` determines which input/output overloads appear in
+    ``parameters``. ``warp_time_slicing`` controls the CUB implementation; it
+    is part of call identity even though it adds no runtime operand.
+
+    Use ``make_block_exchange_semantics`` to validate these related choices.
+    The group planner can inspect this record before exact block dimensions
+    are attached to a CUB specialization.
+    """
 
     dtype: Any
     mode: BlockExchangeMode
@@ -155,7 +202,13 @@ class BlockExchangeSemantics:
 
 @dataclass(frozen=True)
 class BlockExchangeSpecialization:
-    """Fully specialized CUB BlockExchange semantics."""
+    """Pair validated call semantics with a block-specific CUB algorithm.
+
+    ``specialization`` holds the native method, template arguments, and
+    parameter descriptions for backend materialization. ``call`` retains the
+    logical choices used by group planning and cache keys. ``block_dim`` is
+    the exact three-dimensional block shape used in those arguments.
+    """
 
     specialization: Algorithm
     call: BlockExchangeSemantics
@@ -213,7 +266,17 @@ def make_block_exchange_semantics(
     rank_dtype: Any | None = None,
     valid_flag_dtype: Any | None = None,
 ) -> BlockExchangeSemantics:
-    """Build the normalized dimension-independent BlockExchange contract."""
+    """Validate Exchange choices and describe the selected overloads.
+
+    Require a dtype and a positive per-thread item count. Scatter modes
+    require a rank dtype; only flagged scatter accepts a validity dtype. Warp
+    time slicing must be boolean and cannot accompany guarded or flagged
+    scatter. These checks concern call structure, not runtime rank contents or
+    destination uniqueness.
+
+    Return normalized semantics that can be reused before block dimensions are
+    known. No compiler types are lowered and no device code is generated.
+    """
 
     if dtype is None:
         raise ValueError("dtype must be provided")
@@ -283,7 +346,16 @@ def make_block_exchange_specialization(
     rank_dtype: Any | None = None,
     valid_flag_dtype: Any | None = None,
 ) -> BlockExchangeSpecialization:
-    """Build a fully specialized CUB BlockExchange description."""
+    """Bind Exchange semantics to exact CUB block template arguments.
+
+    Normalize the block shape, validate the call, and construct an
+    ``Algorithm`` for its CUB method and requested array overloads. Bind the
+    item dtype, block dimensions, item count, and time-slicing choice. Rank
+    and flag dtypes resolve parameter dependencies when the mode uses them.
+
+    Return the algorithm together with its call semantics and block shape. A
+    backend must still translate its types and materialize the invocable.
+    """
 
     block_dim = normalize_block_dim(block_dim)
     call = make_block_exchange_semantics(

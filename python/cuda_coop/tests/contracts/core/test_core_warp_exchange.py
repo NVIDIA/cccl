@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check CUB WarpExchange overloads and logical-warp specialization.
+
+These tests cover the core factory, including its ranked scatter form.
+The public group planner applies its own narrower set of supported modes.
+"""
+
 import pytest
 
 from cuda.coop._core import ArgumentKind, ParameterRole, classify_parameter

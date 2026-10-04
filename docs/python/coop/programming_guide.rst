@@ -318,8 +318,9 @@ Conflicting type requirements are errors. See :ref:`element-type inference
 
 Load writes into the payload supplied by the caller. Transpose Store
 algorithms may rearrange their input payload in place, as in CUB. Copy values
-before Store if they are needed later. Both operations return ``None``. Exchange and array Shuffle return fresh payloads,
-so their input values remain available afterwards.
+before Store if they are needed later. Both operations return ``None``.
+Exchange and array Shuffle return fresh payloads, so their input values
+remain available afterwards.
 
 Numba can promote integer arithmetic. Store requires an exact match to the
 destination dtype, so cast computed values when necessary, as in the
@@ -406,11 +407,13 @@ An explicit layout conversion
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Exchange converts per-thread values between blocked and striped layouts.
+For example, ``striped_to_blocked`` lets a striped Load feed an operation
+that expects consecutive values in each thread. The logical tile order
+stays the same. Use ``blocked_to_striped`` for the reverse conversion.
 
-The common Exchange API also supports ``blocked_to_striped``. Qualified
-block scatter modes let you supply destination ranks for finer control.
-For scatter, valid ranks and unique active destinations are caller
-requirements; duplicate destinations and holes leave unspecified slots.
+Qualified block scatter modes let you supply destination ranks for finer
+control. Valid ranks and unique active destinations are caller requirements;
+duplicate destinations and holes leave unspecified slots.
 
 The :doc:`Exchange visualization <visualizations/exchange>` shows both
 layout conversions and ranked scatters, including the holes left by

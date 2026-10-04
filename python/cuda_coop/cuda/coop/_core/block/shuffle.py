@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe CUB BlockShuffle scalar and array calls.
+
+Scalar Offset and Rotate select another thread's value. Array Up and Down
+shift the flattened blocked tile by one item. These forms have different CUB
+overloads: scalar calls use a distance, while array calls use a fixed
+per-thread extent. The builders keep these choices separate, then attach exact
+block dimensions for backend materialization.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -26,6 +35,13 @@ from ._common import normalize_block_dim, normalize_positive_int
 
 
 class BlockShuffleMode(str, Enum):
+    """Select scalar thread movement or a unit array shift.
+
+    ``OFFSET`` permits signed distances, including zero and negative values.
+    ``ROTATE`` wraps within the block. ``UP`` and ``DOWN`` select CUB's array
+    shift methods; their missing boundary item has no defined value.
+    """
+
     OFFSET = "offset"
     ROTATE = "rotate"
     UP = "up"
@@ -41,6 +57,12 @@ class BlockShuffleMode(str, Enum):
 
 
 class BlockShuffleValueKind(str, Enum):
+    """Distinguish one scalar from a fixed per-thread array.
+
+    This choice selects the CUB overload and whether an item-count template
+    argument is required. An array of one item remains an array call.
+    """
+
     SCALAR = "scalar"
     ARRAY = "array"
 
@@ -62,6 +84,13 @@ def _u32_parameter(
     name: str,
     omitted_value: int | None = None,
 ) -> Value | CxxFunction | None:
+    """Translate a distance binding to CUB's unsigned scalar parameter.
+
+    An omitted binding uses ``omitted_value`` when supplied, otherwise adds no
+    parameter. A runtime binding becomes a value operand. A static binding
+    must fit unsigned 32 bits and becomes an embedded C++ literal.
+    """
+
     if option.kind is BindingKind.OMITTED:
         if omitted_value is None:
             return None
@@ -80,7 +109,13 @@ def _u32_parameter(
 
 @dataclass(frozen=True)
 class BlockShuffleSemantics:
-    """Dimension-independent scalar or array BlockShuffle contract."""
+    """Hold Shuffle choices before a block shape is attached.
+
+    ``value_kind`` and ``items_per_thread`` distinguish scalar and fixed-array
+    calls. ``distance`` preserves whether the control is omitted, embedded, or
+    passed at runtime. ``parameters`` describes the resulting CUB call; the
+    specialization builder checks that its mode and value form agree.
+    """
 
     dtype: Any
     mode: BlockShuffleMode
@@ -112,7 +147,12 @@ class BlockShuffleSemantics:
 
 @dataclass(frozen=True)
 class BlockShuffleSpecialization:
-    """Fully specialized CUB BlockShuffle semantics."""
+    """Pair a block-specific CUB Shuffle algorithm with its call semantics.
+
+    The algorithm holds native parameters and bound template arguments for a
+    backend. The call record retains mode, value form, and distance binding
+    for planning; ``block_dim`` records the exact shape used to build it.
+    """
 
     specialization: Algorithm
     call: BlockShuffleSemantics
@@ -150,7 +190,17 @@ def make_block_shuffle_semantics(
     items_per_thread: int | None = None,
     distance: ArgumentBinding | None = None,
 ) -> BlockShuffleSemantics:
-    """Build a normalized dimension-independent BlockShuffle contract."""
+    """Normalize Shuffle operands before selecting a block implementation.
+
+    A missing item count selects scalar references; a positive count selects
+    input and output arrays. Preserve distance binding so a runtime control
+    stays an operand and a static control becomes an embedded literal. Offset
+    accepts signed 32-bit distances; Rotate uses unsigned 32 bits.
+
+    This step validates dtype, extent, and distance representation. The
+    specialization builder additionally checks mode/value-form combinations
+    and any static Rotate bound against the block size.
+    """
 
     if dtype is None:
         raise ValueError("dtype must be provided")
@@ -225,7 +275,17 @@ def make_block_shuffle_specialization(
     items_per_thread: int | None = None,
     distance: ArgumentBinding | None = None,
 ) -> BlockShuffleSpecialization:
-    """Build a fully specialized public CUB BlockShuffle description."""
+    """Build the CUB Shuffle algorithm for one exact block shape.
+
+    Array calls must use Up or Down with no distance operand. Scalar calls
+    must use Offset or Rotate. A known Rotate distance must be at least one
+    and smaller than the block size; runtime controls retain their binding for
+    backend validation.
+
+    Return the normalized semantics and algorithm with dtype, block shape, and
+    any array extent bound to template arguments. Backend materialization
+    supplies concrete compiler types and generates the callable.
+    """
 
     block_dim = normalize_block_dim(block_dim)
     call = make_block_shuffle_semantics(
