@@ -54,6 +54,7 @@
 #include <cub/device/device_scan.cuh>
 #include <cub/device/device_transform.cuh>
 
+#include <cuda/argument>
 #include <cuda/buffer>
 #include <cuda/memory_resource>
 #include <cuda/std/functional>
@@ -253,9 +254,9 @@ __global__ void sum_partials(const int* partials, int n, int* result)
   *result = acc;
 }
 
-// Scan helpers. prefix_kernel: carries[k] = sum of *totals[j] for j < k (one
+// Scan helper. prefix_kernel: carries[k] = sum of *totals[j] for j < k (one
 // thread; N is tiny). The totals live in the shards' own buffers and are read
-// directly, P2P between devices. add_carry adds a shard's carry to its elements.
+// directly, P2P between devices.
 template <size_t N>
 struct total_ptrs
 {
@@ -272,14 +273,6 @@ __global__ void prefix_kernel(total_ptrs<N> totals, int* carries)
       carries[k] = acc;
       acc += *totals.p[k];
     }
-  }
-}
-__global__ void add_carry(int* data, int n, const int* carry)
-{
-  const int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i < n)
-  {
-    data[i] += *carry;
   }
 }
 
@@ -309,8 +302,9 @@ struct scan_carries
 //     in a scoped buffer on lane 0, one tiny prefix kernel; completes with the
 //     carries and all the contexts;
 //  3. re-fork: lane_split of that prefix; shard k's stage waits on its ready
-//     point (continues_on(lane k)), runs CUB's in-place InclusiveSum on the
-//     shard, adds carries[k], and completes with its context again.
+//     point (continues_on(lane k)), runs one in-place CUB InclusiveScanInit on
+//     the shard seeded with carries[k] read on the device (a deferred init),
+//     and completes with its context again.
 // N-1 events to collapse and N-1 to re-fork, the same as an all-gather. The
 // result is a bundle again, so the next verb maps over it.
 template <class Bundle, size_t N, size_t... I>
@@ -345,18 +339,15 @@ auto inclusive_scan_impl(Bundle b, const sharded_view<N>& data, cuda::std::index
   auto stage = [=](auto k) {
     constexpr size_t K = decltype(k)::value;
     return prefix | ex::continues_on(data.lane[K]) | ex::then([=](auto sc) {
-             auto ctx         = sc.ctx[K];
-             auto m           = ctx.mr;
-             const auto st    = ctx.lane.stream();
-             void* tmp        = nullptr;
-             size_t tmp_bytes = 0;
-             check(cub::DeviceScan::InclusiveSum(tmp, tmp_bytes, data.data[K], data.data[K], data.shard_size, st),
-                   "DeviceScan::InclusiveSum");
-             tmp = m.allocate(cuda::stream_ref{st}, tmp_bytes, 256);
-             check(cub::DeviceScan::InclusiveSum(tmp, tmp_bytes, data.data[K], data.data[K], data.shard_size, st),
-                   "DeviceScan::InclusiveSum");
-             m.deallocate(cuda::stream_ref{st}, tmp, tmp_bytes, 256);
-             add_carry<<<(data.shard_size + 255) / 256, 256, 0, st>>>(data.data[K], data.shard_size, sc.carries + K);
+             auto ctx = sc.ctx[K];
+             check(cub::DeviceScan::InclusiveScanInit(
+                     data.data[K],
+                     data.data[K],
+                     cuda::std::plus<>{},
+                     cuda::args::deferred(sc.carries + K),
+                     data.shard_size,
+                     ctx.cub_env()),
+                   "DeviceScan::InclusiveScanInit");
              return ctx;
            });
   };

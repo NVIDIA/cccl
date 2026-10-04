@@ -12,6 +12,7 @@
 #include <cub/device/device_scan.cuh>
 #include <cub/device/device_transform.cuh>
 
+#include <cuda/argument>
 #include <cuda/buffer>
 #include <cuda/memory_resource>
 #include <cuda/std/functional>
@@ -95,14 +96,6 @@ __global__ void prefix_k(ptrs<N> totals, int* carries)
     }
   }
 }
-__global__ void add_carry_k(int* data, int n, const int* carry, int shard)
-{
-  const int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i < n)
-  {
-    data[i] += *carry;
-  }
-}
 __global__ void iota_k(int* p, int n)
 {
   const int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -163,6 +156,10 @@ struct null_rcvr
   }
 };
 
+// Shard base pointers, set by the scan test so node_name can tell CUB's per-shard
+// scan kernels apart.
+std::vector<const int*> scan_shards;
+
 // Names a captured kernel node after the kernel it launches: "fill_a" / "fill_b"
 // by the fill value, "sum" for sum2_k.
 std::string node_name(cudaGraphNode_t node)
@@ -199,9 +196,20 @@ std::string node_name(cudaGraphNode_t node)
   {
     return "prefix";
   }
-  if (p.func == reinterpret_cast<const void*>(&add_carry_k))
+  // CUB's scan kernel (one per shard): named after which shard its d_in is.
+  const char* fn = nullptr;
+  if (cudaFuncGetName(&fn, p.func) == cudaSuccess && fn
+      && std::string{fn}.find("DeviceScanKernel") != std::string::npos)
   {
-    return "carry_" + std::to_string(*static_cast<const int*>(p.kernelParams[3]));
+    const int* d_in = *static_cast<int* const*>(p.kernelParams[0]);
+    for (size_t k = 0; k < scan_shards.size(); ++k)
+    {
+      if (scan_shards[k] == d_in)
+      {
+        return "scan_" + std::to_string(k);
+      }
+    }
+    return "scan_?";
   }
   return "other";
 }
@@ -467,18 +475,12 @@ auto adjacent_difference_inplace_impl(Bundle b, const sharded_view<N>& data, Mr 
   auto stage = [&](auto k) {
     constexpr size_t K = decltype(k)::value;
     auto interior      = [=] {
-      auto env  = cuda::std::execution::env{cuda::std::execution::prop{::cuda::get_stream, data.lane[K].stream()}};
-      void* tmp = nullptr;
-      size_t tmp_bytes = 0;
-      REQUIRE(cub::DeviceAdjacentDifference::SubtractLeft(
-                tmp, tmp_bytes, data.data[K], data.shard_n, cuda::std::minus<>{}, env)
+      // The env overload: CUB takes its scratch from the env's memory resource
+      // on the env's stream; no temp-storage dance.
+      auto env = cuda::std::execution::env{cuda::std::execution::prop{::cuda::get_stream, data.lane[K].stream()},
+                                           cuda::std::execution::prop{::cuda::mr::get_memory_resource, mr}};
+      REQUIRE(cub::DeviceAdjacentDifference::SubtractLeft(data.data[K], data.shard_n, cuda::std::minus<>{}, env)
               == cudaSuccess);
-      auto m = mr; // used mutably
-      tmp    = m.allocate(::cuda::stream_ref{data.lane[K].stream()}, tmp_bytes, 256);
-      REQUIRE(cub::DeviceAdjacentDifference::SubtractLeft(
-                tmp, tmp_bytes, data.data[K], data.shard_n, cuda::std::minus<>{}, env)
-              == cudaSuccess);
-      m.deallocate(::cuda::stream_ref{data.lane[K].stream()}, tmp, tmp_bytes, 256);
     };
     if constexpr (K == 0)
     {
@@ -513,9 +515,8 @@ auto adjacent_difference_inplace(bundle<S...> b, const sharded_view<N>& data, Mr
 //     carries on lane 0, one tiny prefix kernel reading the totals through
 //     their pointers (direct, P2P between devices), complete with the carries;
 //  3. re-fork: lane_split of that prefix; shard k's stage waits on its ready
-//     point (continues_on(lane k)), runs CUB's in-place InclusiveSum on the
-//     shard, then adds carries[k] (CUB has no device-side init for an
-//     inclusive scan).
+//     point (continues_on(lane k)), runs one in-place CUB InclusiveScanInit on
+//     the shard seeded with carries[k], read on the device (a deferred init).
 // N-1 events to collapse, N-1 to re-fork: the same as #11118's all-gather
 // (the MGMN engine). The result is a bundle again.
 template <class Bundle, size_t N, class Mr, size_t... I>
@@ -553,18 +554,14 @@ auto inclusive_scan_impl(Bundle b, const sharded_view<N>& data, Mr mr, cuda::std
   auto stage = [=](auto k) {
     constexpr size_t K = decltype(k)::value;
     return prefix | ex::continues_on(data.lane[K]) | ex::then([=](const int* carries) {
-             auto m           = mr;
-             const auto st    = data.lane[K].stream();
-             void* tmp        = nullptr;
-             size_t tmp_bytes = 0;
-             REQUIRE(cub::DeviceScan::InclusiveSum(tmp, tmp_bytes, data.data[K], data.data[K], data.shard_n, st)
-                     == cudaSuccess);
-             tmp = m.allocate(::cuda::stream_ref{st}, tmp_bytes, 256);
-             REQUIRE(cub::DeviceScan::InclusiveSum(tmp, tmp_bytes, data.data[K], data.data[K], data.shard_n, st)
-                     == cudaSuccess);
-             m.deallocate(::cuda::stream_ref{st}, tmp, tmp_bytes, 256);
-             add_carry_k<<<(data.shard_n + 255) / 256, 256, 0, st>>>(
-               data.data[K], data.shard_n, carries + K, static_cast<int>(K));
+             // One CUB call, seeded by the shard's carry read on the device
+             // (cuda::args::deferred), scratch from the env's memory resource.
+             auto env = cuda::std::execution::env{cuda::std::execution::prop{::cuda::get_stream, data.lane[K].stream()},
+                                                  cuda::std::execution::prop{::cuda::mr::get_memory_resource, mr}};
+             REQUIRE(
+               cub::DeviceScan::InclusiveScanInit(
+                 data.data[K], data.data[K], cuda::std::plus<>{}, ::cuda::args::deferred(carries + K), data.shard_n, env)
+               == cudaSuccess);
            });
   };
   return bundle{cuda::std::make_tuple(stage(cuda::std::integral_constant<size_t, I>{})...)};
@@ -1129,18 +1126,20 @@ C2H_TEST("lane_scheduler: sharded inclusive scan: collapse to one lane for the c
   // prefix split's ready point), final join b -> a.
   CHECK(jc.joins == 4);
   CAPTURE(allocs);
-  // per shard: its total, CUB Reduce scratch, CUB InclusiveSum scratch; plus the carries.
+  // per shard: its total, CUB Reduce scratch, CUB scan scratch; plus the carries.
   CHECK(allocs == 3 * N + 1);
 
   // Captured: shard b's seeded scan depends on the prefix, which depends on
   // both totals; and the graph closes without any hand-written join.
   fill_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n, 1);
   REQUIRE(cudaStreamSynchronize(f.sa.get()) == cudaSuccess);
+  scan_shards   = {y.data[0], y.data[1]};
   cudaGraph_t g = ex::lane_capture(f.la, make());
-  CHECK(graph_has_path(g, "prefix", "carry_1"));
-  CHECK(graph_has_path(g, "prefix", "carry_0"));
+  CHECK(graph_has_path(g, "prefix", "scan_1"));
+  CHECK(graph_has_path(g, "prefix", "scan_0"));
   CHECK(graph_has_path(g, "t2_1", "prefix"));
-  CHECK(!graph_has_path(g, "carry_0", "carry_1")); // the seeded scans are independent
+  CHECK(!graph_has_path(g, "scan_0", "scan_1")); // the seeded scans are independent
+  scan_shards.clear();
   cudaGraphDestroy(g);
 }
 
