@@ -458,12 +458,14 @@ def test_stateless_block_and_warp_scan_callbacks_link_with_provider_lto(
 def test_block_prefix_callbacks_compile_for_scalar_array_and_algorithms(
     compile_context: _nvrtc.CompileContext,
 ) -> None:
-    """Link prefix callbacks across CUB algorithms and payload forms.
+    """Compile prefix-callback wrappers for CUB algorithms and payload forms.
 
-    Use both decorated functions and a functor class, with state dtypes
-    independent of the int32 payload. The two stateless cases must reuse
-    one callback symbol; the stateful forms need distinct symbols. Compile
-    all providers together to check declarations and callback LTO linkage.
+    Use both decorated functions and a functor class. One state dtype is
+    int64 and the other matches the int32 payload. The two stateless cases
+    must reuse one callback symbol; stateful forms need distinct symbols.
+    Compile all providers in one bundle to check declarations and call
+    forms. This bundle does not link callback LTO-IR. Other tests in this
+    module check callback symbol resolution.
     """
 
     def prefix_from_aggregate(block_aggregate):
