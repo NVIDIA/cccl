@@ -277,6 +277,11 @@ class _ScanPlanning:
     ]:
         """Validate a block prefix callback and separate its runtime state.
 
+        ``_plan`` calls this before choosing the Scan overload. Separating
+        the callback descriptor from its state array lets later
+        specialization compile one callback implementation while each kernel
+        call supplies its own mutable state.
+
         The callback must be constant. A plain callable becomes a stateless
         unary operator. A ``StatefulFunction`` also requires a one-item
         array with the descriptor's exact numeric dtype. Its dtype may differ
@@ -286,6 +291,19 @@ class _ScanPlanning:
         state IR reference. The descriptor specializes the provider; the state
         remains a runtime operand. Return three ``None`` values when
         no callback is present.
+
+        Parameters
+        ----------
+        operation : str
+            Canonical public operation name, used in diagnostics and
+            generated temporary names.
+        group : ThreadGroup
+            Resolved participating group, which must be a block when a
+            prefix callback is supplied.
+        bound : inspect.BoundArguments
+            Public call arguments after signature binding and default
+            application. Runtime values remain IR variables; selectors
+            are resolved through the context.
         """
 
         prefix_ref = bound.arguments.get("prefix_op")
