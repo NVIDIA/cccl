@@ -4,17 +4,16 @@
 
 """Recover compile-time facts from cooperative values before type inference.
 
-The call rewrite needs payload shapes, scalar bindings, and scratch
-ownership before ordinary compiler typing is available. These helpers follow
-variable definitions, aliases, casts, and control-flow merges to recover
-those facts. They distinguish unknown provenance from conflicting concrete
-origins so a branch or loop rebinding cannot silently select one
-descriptor's contract.
+The call rewrite needs payload shapes, scalar bindings, and scratch ownership
+before ordinary compiler typing is available. These helpers follow variable
+definitions, aliases, casts, and control-flow merges to recover those facts.
+They distinguish unknown provenance from conflicting concrete origins so a
+branch or loop rebinding cannot silently select one descriptor's contract.
 
-Storage constructor identities also determine which calls may reuse an
-aligned scratch region. This module builds per-descriptor layouts;
-``_rewrite_storage`` combines them into one backing allocation and emits
-array views and barriers.
+Storage constructor identities also determine which calls may reuse an aligned
+scratch region. This module builds per-descriptor layouts;
+``_rewrite_storage`` combines them into one backing allocation and emits array
+views and barriers.
 """
 
 from __future__ import annotations
@@ -77,6 +76,19 @@ if TYPE_CHECKING:
 
 
 class _ProvenanceRewrite(Rewrite):
+    """Keep the facts used while cooperative calls are being replaced.
+
+    Provenance means where an IR value comes from. These queries trace
+    definitions to recover static values, payload types, and storage owners
+    before ordinary typing. A missing fact stays unknown; concrete descriptor
+    conflicts produce diagnostics.
+
+    ``state`` supplies the function IR, argument types, and compiler metadata.
+    ``allow_launch_dim_deferral`` permits a retry when launch facts are
+    missing. Mixins share this state, including block lookups, descriptor
+    tables, storage plans, and provider caches.
+    """
+
     def __init__(
         self,
         state,
@@ -130,21 +142,20 @@ class _ProvenanceRewrite(Rewrite):
         """Look up a block definition only for an unambiguous name.
 
         Before SSA reconstruction, branches and loops may assign the same name
-        more than once. The block map stores only the last assignment, which can
-        follow the use being analyzed. Refuse that shortcut when the function's
-        definition table contains multiple assignments so provenance analysis
-        cannot mistake one branch or a later rebinding for a constant.
+        more than once. The block map stores only the last assignment, which
+        can follow the use being analyzed. Refuse that shortcut when the
+        function's definition table contains multiple assignments. This avoids
+        mistaking a branch or later rebinding for a constant.
 
         Parameters
         ----------
         name : str
-            IR variable name to look up in the current block's assignment
-            map.
+            IR variable name to find in the current block's assignment map.
 
         Returns
         -------
         object or None
-            Block-local definition, or None when absent or multiply defined.
+            Local definition, or None for a missing or multiply assigned name.
         """
 
         # Before SSA, a name can be rebound in a loop or branch. The block map
@@ -154,6 +165,13 @@ class _ProvenanceRewrite(Rewrite):
         return self._block_defs.get(name)
 
     def _infer_constant(self, value):
+        """Try local and scalar facts before the compiler's constant resolver.
+
+        A unique block definition can supply a constant, global, or closure
+        value. Otherwise use static scalar provenance, then let compiler
+        inference return a value or raise its normal inference error.
+        """
+
         if isinstance(value, ir.Var):
             definition = self._lookup_block_definition(value.name)
             if isinstance(definition, (ir.Const, ir.Global, ir.FreeVar)):
@@ -172,22 +190,20 @@ class _ProvenanceRewrite(Rewrite):
         Use the shared scalar-provenance resolver with this function's
         definitions and specialized argument types. Callers use the result to
         choose between compile-time scalar bindings and runtime operands;
-        ordinary constant inference is not enough to establish that binding
-        contract.
+        ordinary constant inference does not establish this binding contract.
 
         Parameters
         ----------
         value : object
-            Scalar value or IR reference accepted by the provenance
-            resolver.
+            Scalar value or IR reference for the provenance resolver.
 
         Returns
         -------
         object
-            Resolved scalar, including None when it is explicitly static, or
-            the ``_UNRESOLVED`` sentinel when static provenance cannot be
-            established. Compare the sentinel by identity; None can mean an
-            omitted control.
+            Resolved scalar, including None when it is explicitly static,
+            or the ``_UNRESOLVED`` sentinel when static provenance cannot
+            be established. Compare the sentinel by identity; None can
+            mean an omitted control.
         """
 
         arg_types = tuple(getattr(self._state, "args", ()) or ())
@@ -201,6 +217,13 @@ class _ProvenanceRewrite(Rewrite):
         return scalar if resolved else _UNRESOLVED
 
     def _resolve_static_scalar_provenance(self, value):
+        """Resolve a scalar together with its established source dtype.
+
+        Return ``_UNRESOLVED`` when the shared resolver cannot prove static
+        origin. Keeping dtype provenance lets scalar coercion distinguish a
+        Python literal from a value with an explicit numeric width.
+        """
+
         arg_types = tuple(getattr(self._state, "args", ()) or ())
         resolved, scalar = try_resolve_static_scalar_provenance(
             value,
@@ -212,6 +235,8 @@ class _ProvenanceRewrite(Rewrite):
         return scalar if resolved else _UNRESOLVED
 
     def _build_arg_type_map(self) -> dict[str, object]:
+        """Pair argument names with compiler types only when counts agree."""
+
         arg_names = tuple(getattr(self._func_ir, "arg_names", ()) or ())
         arg_types = tuple(getattr(self._state, "args", ()) or ())
         if len(arg_names) != len(arg_types):
@@ -219,6 +244,12 @@ class _ProvenanceRewrite(Rewrite):
         return dict(zip(arg_names, arg_types))
 
     def _lookup_definition(self, value):
+        """Resolve one unambiguous definition, or return ``None``.
+
+        Accept a variable or its name and prefer the guarded block lookup.
+        Pass other objects through for callers that already hold a definition.
+        """
+
         if isinstance(value, ir.Var):
             definition = self._lookup_block_definition(value.name)
             if definition is not None:
@@ -238,6 +269,14 @@ class _ProvenanceRewrite(Rewrite):
         return value
 
     def _lookup_definitions(self, value) -> list[object]:
+        """Collect definitions while retaining branch alternatives.
+
+        Accept a variable, its name, or an already resolved object. Before
+        static single assignment (SSA) reconstruction, a name can have several
+        assignments. Return each one once, by object identity, so walks can
+        inspect every alternative.
+        """
+
         defs: list[object] = []
         seen_ids: set[int] = set()
 
@@ -267,6 +306,12 @@ class _ProvenanceRewrite(Rewrite):
         return [value]
 
     def _resolve_attribute_chain(self, func_var):
+        """Trace a Python object and attribute path through untyped IR.
+
+        Return ``(root, attributes)`` in lookup order. Return ``None`` for a
+        cycle or a root that is not a constant, global, or closure value.
+        """
+
         attrs: list[str] = []
         current = func_var
         seen: set[str] = set()
@@ -289,6 +334,12 @@ class _ProvenanceRewrite(Rewrite):
         return (root, attrs)
 
     def _resolve_python_value(self, value):
+        """Read a resolved attribute chain to identify a Python callable.
+
+        Missing attributes and failed imports return ``None``. Reading an
+        attribute can trigger the backend's lazy registration.
+        """
+
         chain = self._resolve_attribute_chain(value)
         if chain is None:
             return None
@@ -302,6 +353,8 @@ class _ProvenanceRewrite(Rewrite):
         return obj
 
     def _is_common_root_member(self, value, name: str) -> bool:
+        """Require both common API identity and its backend-member marker."""
+
         member = getattr(_portable_api, name)
         return (
             self._resolve_python_value(value) is member
@@ -309,6 +362,8 @@ class _ProvenanceRewrite(Rewrite):
         )
 
     def _is_supported_factory(self, obj) -> bool:
+        """Require a registered factory in an accepted provider namespace."""
+
         if not callable(obj):
             return False
         metadata = factory_operation(obj)
@@ -322,6 +377,13 @@ class _ProvenanceRewrite(Rewrite):
         return metadata.namespace in specification.factory_namespaces
 
     def _resolve_factory_from_var(self, func_var):
+        """Resolve a callee through the operation registry.
+
+        Constants, globals, closure values, and directly supplied callables
+        can identify it. A function's spelling alone does not identify a
+        cooperative provider.
+        """
+
         direct = None
         direct_def = self._lookup_definition(func_var)
         if isinstance(direct_def, (ir.Global, ir.FreeVar, ir.Const)):
@@ -336,6 +398,13 @@ class _ProvenanceRewrite(Rewrite):
         return direct if self._is_supported_factory(direct) else None
 
     def _extract_1d_extent_literal(self, value_ref):
+        """Read an integer extent from a scalar or one-element shape.
+
+        Return ``None`` when constant inference or shape recognition fails.
+        This extracts a fact for native arrays; it does not apply the stricter
+        positivity and boolean checks of the ``ThreadData`` constructor.
+        """
+
         try:
             value = self._infer_constant(value_ref)
         except _INFERENCE_EXCEPTIONS:
@@ -368,9 +437,9 @@ class _ProvenanceRewrite(Rewrite):
         Returns
         -------
         bool
-            Whether the value is callable and exposes ``py_func`` and a
-            ``targetoptions`` dictionary. This recognizes the interface;
-            it does not check whether the device-function option is enabled.
+            Whether the value is callable and has ``py_func`` and a
+            ``targetoptions`` dictionary. This checks the interface; it does
+            not require the device-function option to be enabled.
         """
 
         return (
@@ -396,33 +465,32 @@ class _ProvenanceRewrite(Rewrite):
         """Recover the compile-time ``ThreadData`` constructor contract.
 
         Require a positive integral item count, rejecting booleans, and
-        normalize an explicit alignment. A directly referenced function argument
-        used for the extent requests literal specialization before continuing.
-        An omitted or explicitly None dtype remains unresolved so operation
-        consumers or typed writes can supply it later.
+        normalize an explicit alignment. A directly referenced function
+        argument used for the extent requests literal specialization before
+        continuing. An omitted or explicitly None dtype remains unresolved so
+        operation consumers or typed writes can supply it later.
 
-        Record whether the constructor came from the common API; ``apply`` uses
-        that flag when validating the inferred numeric dtype before lowering the
-        descriptor to a local array. This method does not allocate that array or
-        mutate the constructor expression.
+        Record whether the constructor came from the common API; ``apply``
+        uses that flag when validating the inferred numeric dtype before
+        lowering the descriptor to a local array. This method does not
+        allocate that array or mutate the constructor expression.
 
         Parameters
         ----------
         call : ir.Expr
-            Recognized common or Numba-CUDA-MLIR ``ThreadData`` constructor
-            call.
+            Recognized common or Numba-CUDA-MLIR ``ThreadData``
+            constructor call.
 
         Returns
         -------
         _ThreadDataSpecification
-            Static extent, optional dtype and alignment, and common-API
-            origin.
+            Static extent, optional dtype and alignment, and whether the
+            constructor came from the common API.
 
         Raises
         ------
         ForceLiteralArg
-            The extent is a direct function argument not yet specialized
-            literally.
+            The extent is a function argument awaiting literal specialization.
         CoopSinglePhaseRewriteError
             Constructor arguments are invalid or required compile-time
             values cannot be resolved.
@@ -483,8 +551,8 @@ class _ProvenanceRewrite(Rewrite):
                 raw_alignment = self._infer_constant(alignment_ref)
             except _INFERENCE_EXCEPTIONS as exc:
                 raise CoopSinglePhaseRewriteError(
-                    "coop.ThreadData alignment must "
-                    "be a compile-time integer or None"
+                    "coop.ThreadData alignment must be a compile-time "
+                    "integer or None"
                 ) from exc
             try:
                 alignment = _normalize_thread_data_alignment(raw_alignment)
@@ -537,6 +605,13 @@ class _ProvenanceRewrite(Rewrite):
         existing: _ThreadDataSpecification | None,
         observed: _ThreadDataSpecification,
     ) -> _ThreadDataSpecification:
+        """Combine compatible payload facts from separate definitions.
+
+        Fill unknown extent and dtype fields; reject unequal known values.
+        Keep the larger alignment and retain common API origin if either input
+        has it. With no existing description, return the observed one.
+        """
+
         if existing is None:
             return observed
         if (
@@ -545,8 +620,8 @@ class _ProvenanceRewrite(Rewrite):
             and (existing.items_per_thread != observed.items_per_thread)
         ):
             raise CoopSinglePhaseRewriteError(
-                "Inconsistent items_per_thread across "
-                "merged coop.ThreadData aliases."
+                "Inconsistent items_per_thread "
+                "across merged coop.ThreadData aliases."
             )
         if (
             existing.dtype is not None
@@ -579,12 +654,14 @@ class _ProvenanceRewrite(Rewrite):
         existing: _TempStorageCtorSpecification | None,
         observed: _TempStorageCtorSpecification,
     ) -> _TempStorageCtorSpecification:
+        """Require identical settings when storage aliases merge."""
+
         if existing is None:
             return observed
         if existing != observed:
             raise CoopSinglePhaseRewriteError(
-                "Inconsistent TempStorage constructor "
-                "metadata across merged aliases."
+                "Inconsistent TempStorage constructor metadata "
+                "across merged aliases."
             )
         return existing
 
@@ -592,9 +669,9 @@ class _ProvenanceRewrite(Rewrite):
         """Record one constructor site for the variable it defines.
 
         The rewrite runs before SSA reconstruction, so a name rebound inside a
-        branch or loop body keeps one name for several constructor sites. Every
-        site must agree on the effective contract, and the sites are counted so
-        that auto_sync=False storage cannot be silently collapsed.
+        branch or loop body keeps one name for several constructor sites.
+        Every site must agree on the effective contract, and the sites are
+        counted so that auto_sync=False storage cannot be silently collapsed.
         """
 
         name = inst.target.name
@@ -605,7 +682,7 @@ class _ProvenanceRewrite(Rewrite):
             != self._temp_storage_contract(specification)
         ):
             raise CoopSinglePhaseRewriteError(
-                "TempStorage aliases have inconsistent contracts across "
+                f"TempStorage aliases have inconsistent contracts across "
                 f"constructor instances ({name})."
             )
         self._temp_storage_ctor_specifications.setdefault(name, specification)
@@ -616,15 +693,20 @@ class _ProvenanceRewrite(Rewrite):
         names: str, sites: int
     ) -> CoopSinglePhaseRewriteError:
         return CoopSinglePhaseRewriteError(
-            "TempStorage with auto_sync=False "
-            "must be constructed at exactly one "
-            f"site; {names} reaches {sites} constructor sites. The compiler "
-            "cannot verify caller synchronization "
-            "when it merges these regions. "
-            "Construct the descriptor once or set auto_sync=True."
+            f"TempStorage with auto_sync=False must be constructed at "
+            f"exactly one site; {names} reaches {sites} constructor sites. "
+            f"The compiler cannot verify caller synchronization when it "
+            f"merges these regions. Construct the descriptor once or set "
+            f"auto_sync=True."
         )
 
     def _validate_temp_storage_ctor_sites(self) -> None:
+        """Reject repeated constructor sites when the caller manages barriers.
+
+        Equal settings do not prove that independently constructed regions can
+        share storage safely after the rewrite combines them.
+        """
+
         for name, sites in sorted(self._temp_storage_ctor_sites.items()):
             if len(sites) < 2:
                 continue
@@ -635,6 +717,13 @@ class _ProvenanceRewrite(Rewrite):
     def _record_inferred_thread_data_dtype(
         self, value: ir.Var, dtype, seen: set[str] | None = None
     ) -> None:
+        """Record an inferred dtype on payload constructors and aliases.
+
+        Update partial descriptions and reject a conflicting known dtype.
+        Follow copies, casts, merged paths, and static tuple items. ``seen``
+        prevents revisiting names in loops or alias cycles.
+        """
+
         if not isinstance(value, ir.Var) or dtype is None:
             return
         if seen is None:
@@ -686,6 +775,13 @@ class _ProvenanceRewrite(Rewrite):
     def _extract_temp_storage_ctor_specification(
         self, call: ir.Expr
     ) -> _TempStorageCtorSpecification:
+        """Resolve storage constructor settings before layout planning.
+
+        Delegate argument rules to the shared descriptor parser, require
+        compile-time values, and apply the backend's pointer-alignment
+        minimum. Convert parser failures into rewrite diagnostics.
+        """
+
         def constant(value, *, name):
             try:
                 return self._infer_constant(value)
@@ -716,12 +812,10 @@ class _ProvenanceRewrite(Rewrite):
         name: str,
     ) -> CoopSinglePhaseRewriteError:
         return CoopSinglePhaseRewriteError(
-            "TempStorage variables must be "
-            "bound to a TempStorage descriptor on "
-            f"every path; {name!r} is also bound "
-            f"to a non-descriptor value such "
-            "as None. Remove the None initializer or construct the descriptor "
-            "unconditionally."
+            f"TempStorage variables must be bound to a TempStorage "
+            f"descriptor on every path; {name!r} is also bound to a "
+            f"non-descriptor value such as None. Remove the None initializer "
+            f"or construct the descriptor unconditionally."
         )
 
     def _collect_temp_storage_ctor_keys(
@@ -735,18 +829,18 @@ class _ProvenanceRewrite(Rewrite):
 
         Follow the shared descriptor-provenance traversal through aliases and
         control-flow joins, recording constructor specifications as they are
-        found. Once backing emission has begun, previously validated constructor
-        owners still count even though their calls have been replaced by slices.
-        A join containing both a descriptor and a non-descriptor such as None is
-        invalid; returning only the descriptor branch would hide an unsafe path.
+        found. Once backing emission has begun, previously validated
+        constructor owners still count even though their calls have been
+        replaced by slices. A join containing both a descriptor and a
+        non-descriptor such as None is invalid; returning only the descriptor
+        branch would hide an unsafe path.
 
         Parameters
         ----------
         value : ir.Var
             Variable whose possible storage origins are needed.
         seen : set of str
-            Names already visited by the provenance walk, used to stop
-            cycles.
+            Visited variable names used to stop cycles in the provenance walk.
         display_name : str or None, optional
             User-facing variable name for diagnostics. When absent, prefer
             the current name unless it is a compiler temporary.
@@ -754,15 +848,15 @@ class _ProvenanceRewrite(Rewrite):
         Returns
         -------
         set of str
-            Constructor owner names before canonicalization. Empty means no
-            descriptor origin was found, including when traversal stops at a
-            cycle.
+            Constructor owner names before canonicalization. Empty means
+            no descriptor origin was found, including when traversal stops
+            at a cycle.
 
         Raises
         ------
         CoopSinglePhaseRewriteError
-            A constructor contract is invalid or inconsistent, or descriptor
-            and non-descriptor definitions reach the same variable.
+            A constructor contract is invalid or inconsistent, or one
+            variable merges descriptor and non-descriptor definitions.
         """
 
         if not isinstance(value, ir.Var):
@@ -812,6 +906,11 @@ class _ProvenanceRewrite(Rewrite):
     def _temp_storage_contract(
         specification: _TempStorageCtorSpecification,
     ) -> tuple[int | None, int | None, bool, str]:
+        """Return effective settings used to compare storage descriptors.
+
+        An omitted ``auto_sync`` counts as false.
+        """
+
         auto_sync = (
             False
             if specification.auto_sync is None
@@ -825,6 +924,11 @@ class _ProvenanceRewrite(Rewrite):
         )
 
     def _canonical_temp_storage_ctor_key(self, key: str) -> str:
+        """Return the canonical owner of a merged descriptor.
+
+        Point ``key`` directly at that owner to shorten later lookups.
+        """
+
         roots = getattr(self, "_temp_storage_ctor_roots", {})
         root = roots.get(key, key)
         while roots.get(root, root) != root:
@@ -843,11 +947,11 @@ class _ProvenanceRewrite(Rewrite):
         constructed regions collapse into one allocation.
 
         Choose the earliest recorded constructor, breaking ties by variable
-        name, and redirect existing root mappings to it. Requirement collection
-        later uses this canonical identity to combine every alias's primitive
-        uses. This method checks distinct roots; repeated constructor sites
-        under one pre-SSA name are checked separately by constructor-site
-        validation.
+        name, and redirect existing root mappings to it. Requirement
+        collection later uses this canonical identity to combine every alias's
+        primitive uses. This method checks distinct roots; repeated
+        constructor sites under one pre-SSA name are checked separately by
+        constructor-site validation.
 
         Parameters
         ----------
@@ -857,14 +961,14 @@ class _ProvenanceRewrite(Rewrite):
         Returns
         -------
         str
-            Canonical owner name. ``_temp_storage_ctor_roots`` is updated in
-            place.
+            Canonical owner name. ``_temp_storage_ctor_roots`` is updated
+            in place.
 
         Raises
         ------
         CoopSinglePhaseRewriteError
-            Effective contracts differ, or multiple roots disable automatic
-            sync.
+            Effective contracts differ, or multiple roots disable
+            automatic sync.
         """
 
         roots = {self._canonical_temp_storage_ctor_key(key) for key in keys}
@@ -884,12 +988,12 @@ class _ProvenanceRewrite(Rewrite):
             )
             names = ", ".join(ordered_keys)
             raise CoopSinglePhaseRewriteError(
-                "TempStorage aliases have inconsistent contracts across "
+                f"TempStorage aliases have inconsistent contracts across "
                 f"constructor instances ({names})."
             )
         if len(roots) > 1 and not next(iter(contracts))[2]:
-            # Conservatively refuse this merge: caller synchronization may be
-            # sufficient, but this planner cannot prove that it protects reuse.
+            # Caller synchronization may suffice, but this planner cannot
+            # prove that it protects reuse after the regions merge.
             ordered = sorted(
                 roots,
                 key=lambda key: (
@@ -915,6 +1019,12 @@ class _ProvenanceRewrite(Rewrite):
         return canonical
 
     def _resolve_temp_storage_ctor_key(self, value: ir.Var) -> str | None:
+        """Find and unify the constructors that can supply a storage value.
+
+        Return ``None`` when no owner is known. Conflicting constructor
+        contracts or an unsafe merge propagate a rewrite diagnostic.
+        """
+
         if not isinstance(value, ir.Var):
             return None
         keys = self._collect_temp_storage_ctor_keys(value, seen=set())
@@ -925,6 +1035,12 @@ class _ProvenanceRewrite(Rewrite):
     def _resolve_temp_storage_plan(
         self, value: ir.Var
     ) -> _TempStoragePlan | None:
+        """Find a descriptor's layout, assigning global offsets when needed.
+
+        Canonicalize aliases first. Return ``None`` for an unknown descriptor;
+        otherwise reuse or finalize its plan against the known requirements.
+        """
+
         rewrite = cast("CoopSinglePhaseRewrite", self)
         key = self._resolve_temp_storage_ctor_key(value)
         if key is None:
@@ -942,27 +1058,25 @@ class _ProvenanceRewrite(Rewrite):
     ) -> tuple[object, ...]:
         """Identify storage uses that may reuse one region.
 
-        Legacy block providers share one domain. Caller-owned storage also uses
-        one domain, preserving its explicit reuse contract; its block-only
-        restriction is checked by storage-plan validation. Implementation-owned
-        storage instead partitions uses by group topology and reuse-barrier
-        scope so incompatible group instances cannot alias.
+        Legacy block providers share one domain. Caller-owned storage also
+        uses one domain, preserving its explicit reuse contract; its
+        block-only restriction is checked by storage-plan validation.
+        Implementation-owned storage instead partitions uses by group topology
+        and reuse-barrier scope so incompatible group instances cannot alias.
 
         When a group has an execution scope but no reuse barrier, append the
-        call order to its key. Such calls receive distinct domains even if their
-        topologies match, because completion before scratch reuse is not
-        assured.
+        call order to its key. Such calls receive distinct domains even if
+        their topologies match: completion before scratch reuse is uncertain.
 
         Parameters
         ----------
         entry : _TempStorageUseRequirement
-            One primitive use with its lowering plan and stable scan order.
+            Primitive use with its lowering plan and scan-order position.
 
         Returns
         -------
         tuple of object
-            Domain key used by ``_layout_temp_storage_uses`` for shared
-            placement.
+            Placement key for ``_layout_temp_storage_uses``.
 
         Raises
         ------
@@ -976,8 +1090,8 @@ class _ProvenanceRewrite(Rewrite):
             return ("legacy-provider",)
         if lowering_plan.unsupported is not None:
             raise CoopSinglePhaseRewriteError(
-                "cooperative provider storage received an unsupported "
-                "group lowering plan."
+                "cooperative provider storage received an unsupported group "
+                "lowering plan."
             )
         topology = lowering_plan.topology
         synchronization = lowering_plan.synchronization
@@ -996,13 +1110,13 @@ class _ProvenanceRewrite(Rewrite):
             storage.instance_index != topology.instance_index
         ):
             raise CoopSinglePhaseRewriteError(
-                "cooperative provider storage layout "
-                "disagrees with its group topology."
+                "cooperative provider storage layout disagrees with its "
+                "group topology."
             )
         if storage.ownership is StorageOwnership.CALLER:
-            # Explicit single-block storage keeps the established caller-owned
-            # reuse layout. Topology domains apply only to implementation-owned
-            # storage, where the backend controls every slice.
+            # Explicit single-block storage keeps the caller's reuse layout.
+            # The backend separates topology domains only when it owns the
+            # storage and controls every slice.
             return ("caller-storage",)
         domain = (
             topology.group_kind,
@@ -1030,36 +1144,32 @@ class _ProvenanceRewrite(Rewrite):
 
         Exclusive sharing gives each use a distinct domain. Shared placement
         reuses a domain only when ``_temp_storage_domain_key`` permits it.
-        Within a domain, reserve the largest per-instance requirement and align
-        its stride for every consumer. Multiple group instances receive separate
-        strides; compatible calls reuse those same instance slots.
+        Within a domain, reserve the largest per-instance requirement and
+        align its stride for every consumer. Multiple group instances receive
+        separate strides; compatible calls reuse those same instance slots.
 
         Offsets are relative to the region, before the function-wide backing's
-        base offset is assigned. Views retain each call's actual byte count even
-        when another call determines the larger shared stride. No lifetime or
-        control-flow overlap analysis is performed here.
+        base offset is assigned. Views retain each call's actual byte count
+        even when another call determines the larger shared stride. No
+        lifetime or control-flow overlap analysis is performed here.
 
         Parameters
         ----------
         uses : list of _TempStorageUseRequirement
-            Nonempty list of validated primitive requirements and lowering
-            plans.
+            Nonempty list of validated requirements and lowering plans.
         sharing : str
-            Validated sharing policy: ``"exclusive"`` separates every call;
-            ``"shared"`` permits reuse within compatible domains.
+            Validated sharing policy: ``"exclusive"`` separates every
+            call; ``"shared"`` permits reuse within compatible domains.
 
         Returns
         -------
         required_size : int
-            Bytes required by the region, including alignment gaps and
-            instances.
+            Region size in bytes, including alignment gaps and all instances.
         required_alignment : int
-            Maximum required alignment, at least the storage pointer
-            alignment.
+            Maximum required alignment, at least that of the storage pointer.
         slices_by_call_id : dict of int to _TempStorageSlice
-            Region-relative offset, byte count, instance stride, and
-            lowering plan indexed by the identity of each original call
-            assignment.
+            Region-relative offset, byte count, instance stride, and lowering
+            plan keyed by the object identity of each call assignment.
         """
 
         ordered_uses = sorted(uses, key=lambda entry: entry.order)
@@ -1117,15 +1227,15 @@ class _ProvenanceRewrite(Rewrite):
 
         Lay out the uses, infer capacity when the constructor omitted it, and
         check that an explicit capacity covers the result. Alignment is raised
-        to satisfy both the constructor and every consumer, with a pointer-sized
-        minimum. An unspecified ``auto_sync`` means caller-managed
-        synchronization.
+        to satisfy both the constructor and every consumer, with a
+        pointer-sized minimum. An unspecified ``auto_sync`` means
+        caller-managed synchronization.
 
-        Cache the resulting region plan before the function-wide allocation adds
-        its base offset. A descriptor with no uses needs an explicit capacity
-        and the default sharing/synchronization policy here; whole-function
-        descriptor validation separately rejects constructors without primitive
-        consumers.
+        Cache the resulting region plan before the function-wide allocation
+        adds its base offset. A descriptor with no uses needs an explicit
+        capacity and the default sharing/synchronization policy here;
+        whole-function descriptor validation separately rejects constructors
+        without primitive consumers.
 
         Parameters
         ----------
@@ -1135,15 +1245,14 @@ class _ProvenanceRewrite(Rewrite):
         Returns
         -------
         _TempStoragePlan
-            Cached or newly finalized region plan, including per-call
-            slices.
+            Cached or newly finalized region plan with slices for each call.
 
         Raises
         ------
         CoopSinglePhaseRewriteError
-            Constructor metadata is missing, capacity cannot be inferred or
-            is insufficient, or the descriptor policy is invalid for the
-            known uses.
+            Constructor metadata is missing, capacity cannot be inferred
+            or is insufficient, or the descriptor policy is invalid for
+            the known uses.
         """
 
         var_name = self._canonical_temp_storage_ctor_key(var_name)
@@ -1155,8 +1264,8 @@ class _ProvenanceRewrite(Rewrite):
         )
         if ctor_specification is None:
             raise CoopSinglePhaseRewriteError(
-                f"Missing TempStorage constructor "
-                f"metadata for variable '{var_name}'."
+                f"Missing TempStorage constructor metadata for "
+                f"variable '{var_name}'."
             )
         requirements = self._func_temp_storage_requirements.get(var_name)
         uses = list(requirements.uses) if requirements is not None else []
@@ -1232,6 +1341,12 @@ class _ProvenanceRewrite(Rewrite):
     def _extract_local_array_specification(
         self, call: ir.Expr
     ) -> _ThreadDataSpecification:
+        """Recover a native local array's one-dimensional extent and dtype.
+
+        Read positional or keyword constructor inputs. Leave unavailable facts
+        as ``None``; normal compiler typing still validates the native call.
+        """
+
         kw_map = {name: value for name, value in call.kws}
         items_ref = None
         if call.args:
@@ -1259,6 +1374,12 @@ class _ProvenanceRewrite(Rewrite):
     def _extract_shared_array_specification(
         self, call: ir.Expr
     ) -> _ThreadDataSpecification:
+        """Recover a native shared array's extent and dtype when known.
+
+        Use the payload-description record to carry these facts without
+        claiming that the array is a public ``ThreadData`` value.
+        """
+
         kw_map = {name: value for name, value in call.kws}
         shape_ref = None
         if call.args:
@@ -1281,6 +1402,13 @@ class _ProvenanceRewrite(Rewrite):
     def _resolve_array_specification_from_var(
         self, value: ir.Var, seen: set[str]
     ) -> _ThreadDataSpecification | None:
+        """Merge array facts across constructors, aliases, and branches.
+
+        Recognize public payloads and native local or shared arrays. ``seen``
+        stops recursive paths; unknown paths contribute no facts. The result
+        is partial inference, not proof that every path supplies an array.
+        """
+
         if not isinstance(value, ir.Var):
             return None
         if value.name in seen:
@@ -1356,17 +1484,17 @@ class _ProvenanceRewrite(Rewrite):
 
         Follow aliases, casts, static tuple selections, and phi inputs to
         ``ThreadData`` or local-array constructors. Reuse complete cached
-        specifications;
-        otherwise merge discovered facts with any partial cached information and
-        cache the result. Conflicting known extents or dtypes are errors, while
-        alignment constraints merge by taking the larger minimum.
+        specifications; otherwise merge discovered facts with any partial
+        cached information and cache the result. Conflicting known extents or
+        dtypes are errors, while alignment constraints merge by taking the
+        larger minimum.
 
         Unrecognized or cyclic paths contribute no facts. A returned
-        specification is
-        therefore partial inference, not proof that every path is a public
-        payload. ``_is_thread_data_like_var`` supplies that stricter origin
-        check when rewriting the public ``items_per_thread`` attribute. Shared
-        arrays are handled by the separate array-specification resolver.
+        specification is therefore partial inference, not proof that every
+        path is a public payload. ``_is_thread_data_like_var`` supplies that
+        stricter origin check when rewriting the public ``items_per_thread``
+        attribute. Shared arrays are handled by the separate
+        array-specification resolver.
 
         Parameters
         ----------
@@ -1374,7 +1502,7 @@ class _ProvenanceRewrite(Rewrite):
             Variable whose payload facts are needed.
         seen : set of str
             Active traversal names, extended in place. Branches receive
-            copies so independent incoming paths can still contribute facts.
+            copies so each incoming path can contribute its facts.
 
         Returns
         -------
@@ -1385,8 +1513,7 @@ class _ProvenanceRewrite(Rewrite):
         Raises
         ------
         CoopSinglePhaseRewriteError
-            A recognized constructor is invalid or incoming payload facts
-            conflict.
+            A constructor is invalid, or incoming payload facts conflict.
         """
 
         if not isinstance(value, ir.Var):
@@ -1467,6 +1594,8 @@ class _ProvenanceRewrite(Rewrite):
     def _resolve_static_tuple_item_vars(
         self, definition: ir.Expr
     ) -> list[ir.Var]:
+        """Recover candidate variables for a static tuple item."""
+
         index = getattr(definition, "index", None)
         tuple_value = getattr(definition, "value", None)
         if not isinstance(index, int) or not isinstance(tuple_value, ir.Var):
@@ -1476,6 +1605,12 @@ class _ProvenanceRewrite(Rewrite):
     def _resolve_tuple_item_vars(
         self, tuple_value: ir.Var, index: int, seen: set[str]
     ) -> list[ir.Var]:
+        """Follow tuple construction and aliases to the requested item index.
+
+        Keep alternatives from merged paths, including valid negative indices.
+        ``seen`` stops cycles. Unknown or out-of-range paths add nothing.
+        """
+
         if tuple_value.name in seen:
             return []
         seen.add(tuple_value.name)
@@ -1532,12 +1667,12 @@ class _ProvenanceRewrite(Rewrite):
 
         Unlike shape inference, this check rejects an incoming non-payload
         origin, including a native local array, even when another branch is
-        ``ThreadData``. Trace aliases, casts, iterator exhaustion, tuple items,
-        and phi inputs; cycle-only paths remain unknown rather than proving or
-        disproving origin. At least one positive origin and no negative origin
-        are needed to cache a positive result. This prevents rewriting
-        ``items_per_thread`` on a mixed or unrelated object just because some
-        shape information is available.
+        ``ThreadData``. Trace aliases, casts, iterator exhaustion, tuple
+        items, and phi inputs; cycle-only paths remain unknown rather than
+        proving or disproving origin. At least one positive origin and no
+        negative origin are needed to cache a positive result. This prevents
+        rewriting ``items_per_thread`` on a mixed or unrelated object just
+        because some shape information is available.
 
         Parameters
         ----------
@@ -1605,6 +1740,12 @@ class _ProvenanceRewrite(Rewrite):
         return resolve(value, set() if seen is None else set(seen)) is True
 
     def _resolve_var_numba_type(self, value: ir.Var):
+        """Read an existing compiler type without starting a new typing pass.
+
+        Prefer the state's type map, then known argument names and argument
+        definitions. Return ``None`` when those sources have no type.
+        """
+
         typemap = getattr(self._state, "typemap", None)
         if isinstance(typemap, dict):
             mapped = typemap.get(value.name)
@@ -1620,6 +1761,12 @@ class _ProvenanceRewrite(Rewrite):
         return None
 
     def _resolve_call_result_dtype(self, definition: ir.Expr):
+        """Probe a recognized scalar callee's result type from operand dtypes.
+
+        Resolve the Python callee first, then use the shared scalar call
+        rules. Unknown callees or unsupported calls yield no dtype.
+        """
+
         func_obj = None
         func_ref = getattr(definition, "func", None)
         if isinstance(func_ref, ir.Var):
@@ -1646,6 +1793,12 @@ class _ProvenanceRewrite(Rewrite):
 
     @staticmethod
     def _merge_scalar_dtypes(dtypes):
+        """Keep a scalar dtype only when every candidate is known and agrees.
+
+        Normalize equivalent spellings before comparison. This does not
+        promote conflicting types or infer a dtype from only one known branch.
+        """
+
         candidates = list(dtypes)
         if not candidates or any(dtype is None for dtype in candidates):
             return None
@@ -1668,6 +1821,13 @@ class _ProvenanceRewrite(Rewrite):
         )
 
     def _resolve_definition_dtype(self, definition, *, seen: set[str]):
+        """Infer an element or scalar dtype from one recognized IR definition.
+
+        Trace argument types, scalar values, array accesses, operators, and
+        calls. Copy ``seen`` into recursive paths and require agreement at
+        control-flow joins. Unsupported expressions return ``None``.
+        """
+
         from ._parameters import _python_scalar_dtype
 
         if isinstance(definition, ir.Arg):
@@ -1717,6 +1877,13 @@ class _ProvenanceRewrite(Rewrite):
         return None
 
     def _infer_thread_data_dtype_from_writes(self, value: ir.Var):
+        """Infer one payload dtype from its known element assignments.
+
+        Inspect writes only for a recognized payload. Reject differing write
+        dtypes, record a consistent result on its aliases, and return ``None``
+        when the write analysis supplies no dtype.
+        """
+
         if self._resolve_thread_data_specification(value) is None:
             return None
         inferred = None
@@ -1727,14 +1894,21 @@ class _ProvenanceRewrite(Rewrite):
                 inferred = value_dtype
             elif inferred != value_dtype:
                 raise CoopSinglePhaseRewriteError(
-                    "Failed to infer a consistent dtype from "
-                    "coop.ThreadData writes."
+                    "Failed to infer a consistent dtype "
+                    "from coop.ThreadData writes."
                 )
         if inferred is not None:
             self._record_inferred_thread_data_dtype(value, inferred)
         return inferred
 
     def _resolve_var_dtype(self, value: ir.Var, seen: set[str] | None = None):
+        """Infer a dtype from payload facts, types, or definitions.
+
+        Prefer an established payload dtype, then an array element or scalar
+        compiler type. Otherwise require all recovered definition dtypes to
+        agree. ``seen`` guards recursion; unknown paths remain unresolved.
+        """
+
         if seen is None:
             seen = set()
         if value.name in seen:
@@ -1755,6 +1929,13 @@ class _ProvenanceRewrite(Rewrite):
         )
 
     def _resolve_dtype_ref(self, value_ref):
+        """Resolve a requested dtype from a constant or an operand's type.
+
+        If ordinary constant inference fails, recognize an array's ``dtype``
+        attribute or ask for the variable's known dtype. Return ``None`` when
+        neither path establishes one.
+        """
+
         try:
             return self._infer_constant(value_ref)
         except _INFERENCE_EXCEPTIONS:
@@ -1772,6 +1953,14 @@ class _ProvenanceRewrite(Rewrite):
         return None
 
     def _resolve_factory_kwarg_value(self, op_name: str, name: str, value_ref):
+        """Resolve a factory input without losing an explicit ``None`` value.
+
+        Use the operation's dtype-keyword rules before constant inference.
+        Compiler argument types can also establish an omitted or explicit
+        ``None``. Return ``_UNRESOLVED`` for other unknown inputs so argument
+        validation can distinguish missing facts from an omitted option.
+        """
+
         from ._operations import rewrite_operation
 
         specification = rewrite_operation(op_name)
@@ -1810,18 +1999,18 @@ class _ProvenanceRewrite(Rewrite):
         Parameters
         ----------
         call : ir.Expr
-            Call expression whose callee may resolve to a registered factory.
+            Call whose callee may resolve to a registered factory.
 
         Returns
         -------
         _ResolvedCallTarget or None
-            Factory registration, callee variable names, and optional storage
-            operand, or ``None`` when the callee is not a registered provider.
+            Factory registration, callee names, and optional storage operand.
+            Return ``None`` when the callee is not a registered provider.
 
         Raises
         ------
         CoopSinglePhaseRewriteError
-            A subscripted provider has no IR variable for its storage operand.
+            A subscripted provider lacks an IR variable for its storage.
         """
 
         factory = self._resolve_factory_from_var(call.func)

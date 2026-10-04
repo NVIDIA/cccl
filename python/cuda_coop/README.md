@@ -38,18 +38,16 @@ integrations. The extra only adds the dependency requirements declared in
 `pyproject.toml` so pip installs the supported Numba-CUDA-MLIR stack for the
 selected CUDA major version.
 
-Python 3.10 through 3.14 is supported. The current backend integration requires
-`numba-cuda-mlir>=0.5.0,<0.6`.
+Python 3.10 through 3.14 is supported. The current backend integration
+requires `numba-cuda-mlir>=0.5.0,<0.6`.
 
-Backend compiler and runtime CI is configured for Linux x86-64 with Python 3.14:
-CUDA 13 in pull requests and CUDA 12 in the nightly matrix. The nightly
-matrix also configures H100 runtime tests with serial synchronization race
-checking under CUDA 13. Linux host contracts cover Python 3.10 and 3.14.
-Windows checks build and import the universal wheel and verify its headers;
-they do not execute the compiler
+Backend compiler and runtime CI is configured for Linux x86-64 with Python
+3.14: CUDA 13 in pull requests and CUDA 12 in the nightly matrix. Linux host
+contracts cover Python 3.10 and 3.14. Windows checks build and import the
+universal wheel and verify its headers; they do not execute the compiler
 backend. Other combinations need separate runtime qualification. See the
 [validation scope](https://nvidia.github.io/cccl/unstable/python/coop.html#coop-numba-validation)
-for coverage and hardware requirements.
+for tested platforms and coverage.
 
 With Numba-CUDA-MLIR 0.5.0 through 0.5.3, keep a compiled kernel's dispatcher
 and configured launch callables in their original CUDA context. Reuse on
@@ -95,24 +93,24 @@ also registers it:
 import cuda.coop.numba_mlir as numba_coop
 ```
 
-Use `numba_coop` alongside common calls. In a program using only this backend,
-`import cuda.coop.numba_mlir as coop` is also supported. Keep the alias: a bare
-`import cuda.coop.numba_mlir` binds `cuda` to the top-level Python package and
-can replace the name used for Numba's `cuda.jit`.
+Use `numba_coop` alongside common calls. In a program using only this
+backend, `import cuda.coop.numba_mlir as coop` is also supported. Keep the
+alias: a bare `import cuda.coop.numba_mlir` binds `cuda` to the top-level
+Python package and can replace the name used for Numba's `cuda.jit`.
 
 Shared operations retain the common signatures, string selectors, and
 inference rules. The backend namespace adds Numba local-array payloads and
-memory namespaces.
-Both namespaces accept `ThreadData(items_per_thread, alignment=None)`: use a compile-time
-positive power of two in bytes to request minimum payload storage alignment,
-or omit it to let the compiler choose. This does not assert alignment of Load
-or Store arrays.
+memory namespaces. The common and qualified namespaces both accept
+`ThreadData(items_per_thread, alignment=None)`. Use a compile-time positive
+power of two in bytes to request minimum payload storage alignment, or omit
+it to let the compiler choose. This does not assert alignment of Load or
+Store arrays.
 
 Pass `items_per_thread` as a kernel argument. Numba-CUDA-MLIR specializes
 the kernel for its value. The payload count stays fixed during execution.
 
-The [FAQs](https://nvidia.github.io/cccl/unstable/python/coop/faqs.html) explain
-namespace choices and temporary storage. The
+The [FAQs](https://nvidia.github.io/cccl/unstable/python/coop/faqs.html)
+explain namespace choices and temporary storage. The
 [Glossary](https://nvidia.github.io/cccl/unstable/python/coop/glossary.html)
 explains terms and concepts, including blocked and striped layouts.
 
@@ -123,9 +121,10 @@ explains terms and concepts, including blocked and striped layouts.
 | Memory operations | `load`, `store` |
 
 Each operation documents its supported groups and result ownership in the
-[API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).
-The [visualizations](https://nvidia.github.io/cccl/unstable/python/coop/visualizations/index.html)
-explain these contracts with interactive diagrams and tested kernel examples.
+[API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html). The
+[visualizations](https://nvidia.github.io/cccl/unstable/python/coop/visualizations/index.html)
+explain these contracts with interactive diagrams and tested kernel
+examples.
 
 
 ## Configuration
@@ -144,8 +143,8 @@ Runtime configuration is controlled by these environment variables:
 | `CUDA_HOME` | Supplies `<value>/include` after `CUDA_PATH` under the same fallback rule. |
 | `CUDA_ROOT` | Supplies `<value>/include` after `CUDA_HOME` under the same fallback rule. |
 
-If those mechanisms do not resolve CUDA headers, `/usr/local/cuda/include` is
-tried last.
+On POSIX, `/usr/local/cuda/include` is tried last if those mechanisms do
+not resolve CUDA headers.
 
 The build recognizes these CMake cache variables:
 
@@ -200,11 +199,12 @@ coop.store(
 
 `load` fills the caller's output in place and returns `None`. `valid_items`
 counts items across the selected group tile, while `offset` is a nonnegative
-element offset. Runtime offsets are caller-validated. Source and destination arrays
-must be one-dimensional and contiguous. Without `oob_default`, invalid Load
-slots have unspecified values, even if initialized before Load. Every supplied runtime control
-(`valid_items`, `oob_default`, and `offset`) must be uniform within its selected
-group; different groups may use different values.
+element offset. Runtime offsets are caller-validated. Source and destination
+arrays must be one-dimensional and contiguous. Without `oob_default`,
+invalid Load slots have unspecified values, even if initialized before Load.
+Every supplied runtime control (`valid_items`, `oob_default`, and `offset`)
+must be uniform within its selected group; different groups may use
+different values.
 
 Runtime `valid_items` and `offset` accept signed integer types through 64 bits
 and unsigned integer types through 32 bits. Boolean, floating-point, and
@@ -236,8 +236,8 @@ coop.store(block, destination, value, algorithm="direct")
 Both common and qualified entry points use the same lowercase string
 algorithm vocabulary: `direct`, `striped`, `vectorize`, `transpose`,
 `warp_transpose`, and `warp_transpose_timesliced`. All six are executable.
-`striped` exposes a striped per-thread payload; the other Load algorithms expose
-blocked payloads. Store consumes the matching arrangement. As in CUB,
+`striped` exposes a striped per-thread payload; the other Load algorithms
+expose blocked payloads. Store consumes the matching arrangement. As in CUB,
 transpose Store algorithms may rearrange the input payload in place. Copy
 values before Store if they are needed later. The two warp-transpose modes
 require a block size divisible by 32.
@@ -247,25 +247,26 @@ Enum and integer selectors, including `0`, are rejected.
 
 Warp Load and Store accept `this_warp()` and support `direct`, `striped`,
 `vectorize`, and `transpose`. Partition a physical warp into consecutive
-logical groups with `this_warp().group_by(width)`, where `width` is 1, 2, 4, 8,
-16, or 32. The enclosing block must contain a multiple of 32 threads and must
-not have an incomplete final physical warp. Every member of a participating
-group must reach the collective; complete sibling logical groups may diverge.
-`direct` and `vectorize` expose blocked payloads, `striped` exposes a striped
-payload, and `transpose` uses striped memory transactions while exposing a
-blocked payload.
+logical groups with `this_warp().group_by(width)`, where `width` is 1, 2, 4,
+8, 16, or 32. The enclosing block must contain a multiple of 32 threads and
+must not have an incomplete final physical warp. Every member of a
+participating group must reach the collective; complete sibling logical
+groups may diverge. `direct` and `vectorize` expose blocked payloads,
+`striped` exposes a striped payload, and `transpose` uses striped memory
+transactions while exposing a blocked payload.
 
 Each Warp group addresses a distinct tile. The compiler advances the memory
 base by `group_index * (group_size * items_per_thread)` and then applies the
-caller's element `offset`. The offset must be uniform within each participating
-group; different groups may use different offsets. The group index is the
-x-major linear thread rank divided by the selected group size. For a
-multi-block traversal, include the block's global tile origin in the caller
-offset; the compiler-provided origin distinguishes the physical or logical
-Warp groups within that block and must not be added again. Runtime offsets must
-also leave enough signed 64-bit range for the last group origin in the block;
-static offsets are checked during planning. `valid_items` is relative to each
-group's own tile, not the entire block, and must be uniform within that group.
+caller's element `offset`. The offset must be uniform within each
+participating group; different groups may use different offsets. The group
+index is the x-major linear thread rank divided by the selected group size.
+For a multi-block traversal, include the block's global tile origin in the
+caller offset; the compiler-provided origin distinguishes the physical or
+logical Warp groups within that block and must not be added again. Runtime
+offsets must also leave enough signed 64-bit range for the last group origin
+in the block; static offsets are checked during planning. `valid_items` is
+relative to each group's own tile, not the entire block, and must be uniform
+within that group.
 
 `ThreadGroup` objects are descriptor-only in this release. Runtime query,
 membership, and synchronization methods such as `rank`, `count`, `rank_as`,
@@ -286,24 +287,25 @@ coop.load(block, source, items, algorithm="transpose", temp_storage=storage)
 ```
 
 For block, physical Warp, and logical Warp calls, `direct`, `striped`, and
-`vectorize` are storage-free: they default-construct CUB primitives without shared-memory allocation, pointer arguments, or
-barriers. For block calls, an explicit descriptor is validated but does not
-change their code generation. Construct `TempStorage` inside the kernel; module-global storage
-descriptors cannot be resolved. A descriptor may be passed to a device helper
-that Numba-CUDA-MLIR inlines into the kernel, which is the default.
+`vectorize` are storage-free: they default-construct CUB primitives without
+shared-memory allocation, pointer arguments, or barriers. For block calls,
+an explicit descriptor is validated but does not change their code
+generation. Construct `TempStorage` inside the kernel; module-global storage
+descriptors cannot be resolved. A descriptor may be passed to a device
+helper that Numba-CUDA-MLIR inlines into the kernel, which is the default.
 
-The three block transpose algorithms use CUB temporary storage. Without a descriptor,
-the compiler allocates the specialization's exact storage and inserts a block
-reuse barrier. A caller descriptor selects shared or exclusive slices and
-may request capacity and alignment. Both explicit and omitted storage
-participate in the shared-memory plan and launch accounting. The provider
-determines the required byte count and alignment.
+The three block transpose algorithms use CUB temporary storage. Without a
+descriptor, the compiler allocates the specialization's exact storage and
+inserts a block reuse barrier. A caller descriptor selects shared or
+exclusive slices and may request capacity and alignment. Both explicit and
+omitted storage participate in the shared-memory plan and launch accounting.
+The provider determines the required byte count and alignment.
 
 A descriptor's `sharing` selects only the slice layout: `"shared"` overlaps
-every call that passes the same descriptor on one region, while `"exclusive"`
-gives each call site its own slice. A call site inside a loop reuses its slice
-under either layout, so `auto_sync` is independent of `sharing` and defaults to
-`False` for both.
+every call that passes the same descriptor on one region, while
+`"exclusive"` gives each call site its own slice. A call site inside a loop
+reuses its slice under either layout, so `auto_sync` is independent of
+`sharing` and defaults to `False` for both.
 
 Exclusive slices use more shared memory to avoid barriers needed solely for
 cross-call scratch reuse when `auto_sync=False`. Repeated execution of one
@@ -311,17 +313,16 @@ call site still reuses its slice and must be synchronized. Omitting storage
 lets the compiler choose the layout and insert reuse barriers; it does not
 guarantee a separate slice per call site.
 
-The synchronization model is deliberately simple. A descriptor names one
-region; distinct descriptors and compiler-owned storage never alias each other.
-With `auto_sync=True`, the compiler appends
-`cuda.syncthreads()` for block groups or `cuda.syncwarp(mask)` for Warp groups
-immediately after every call that consumes the storage, including the last
-one, and never inserts a barrier before a call. That trailing barrier only
-orders reuse of the temporary storage; it is not a general barrier for the
-kernel's own shared-memory traffic. With the default `auto_sync=False`, the
-caller issues `cuda.syncthreads()` between consecutive uses, and a call site
-inside a loop counts as a reuse on every iteration.
-Compiler-owned storage always synchronizes.
+A descriptor names one region. Distinct descriptors and compiler-owned storage
+never alias each other. With `auto_sync=True`, the compiler appends
+`cuda.syncthreads()` immediately after every block call that consumes the
+storage, including the last one. Warp calls do not accept a descriptor. The
+compiler never inserts a barrier before a call. The trailing barrier orders
+only reuse of the temporary storage. Arrange explicit barriers for the
+kernel's own shared-memory traffic. With `auto_sync=False`, the caller issues
+`cuda.syncthreads()` between consecutive uses, and a call site inside a loop
+counts as a reuse on every iteration. Compiler-owned storage always
+synchronizes.
 
 All descriptors and compiler-owned requirements of a kernel share one
 shared-memory backing. Above the 48 KiB static limit that backing moves to
@@ -335,18 +336,18 @@ user data out of shared memory. Storage-free operations do not add this
 restriction.
 
 With `auto_sync=False`, a descriptor must originate from exactly one
-constructor site. Selecting between multiple manual-sync constructors is unsupported:
-the compiler cannot prove that caller barriers protect the merged region,
-even when a particular program supplies sufficient barriers.
+constructor site. Selecting between multiple manual-sync constructors is
+unsupported: the compiler cannot prove that caller barriers protect the
+merged region, even when a particular program supplies sufficient barriers.
 
 Cooperative calls in device helpers must be inlined into the kernel; use
 `@cuda.jit(device=True, inline="always")` when selecting the helper's
 policy explicitly. Standalone collective helpers and collectives inside
-standalone callbacks are unsupported. `literal_unroll` values cannot
-determine cooperative payload extents, group dimensions,
-selectors, or descriptor constructor arguments. Write separate calls with
-explicit constants, or use an ordinary loop with one fixed cooperative shape.
-An unrelated `literal_unroll` loop does not add this restriction.
+standalone callbacks are unsupported. `literal_unroll` values cannot determine
+cooperative payload extents, group dimensions, selectors, or descriptor
+constructor arguments. Use separate calls with explicit constants, or an
+ordinary loop with one fixed cooperative shape. An unrelated `literal_unroll`
+loop does not add this restriction.
 
 Warp `transpose` uses compiler-owned storage with one disjoint slice per
 physical or logical group and inserts `syncwarp` with the exact group mask.
@@ -356,5 +357,6 @@ every Warp Load and Store algorithm, including the storage-free modes.
 These APIs are compile-time kernel constructs. Calling them outside a
 compatible compiler context reports a structured context error.
 
-See the [CCCL documentation](https://nvidia.github.io/cccl/unstable/python/coop.html)
+See the
+[CCCL documentation](https://nvidia.github.io/cccl/unstable/python/coop.html)
 for the complete signatures.

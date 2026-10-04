@@ -10,6 +10,8 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
 
 class _FakeInvocable:
+    """Expose a distinct link input for each registered provider factory."""
+
     storage_abi = "leading_pointer"
     execution_scope = "block"
     synchronization_scope = "block"

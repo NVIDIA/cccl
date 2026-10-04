@@ -4,20 +4,22 @@
 
 """Find where ``ThreadData`` and ``TempStorage`` values came from in the IR.
 
-These objects describe per-thread payloads and shared scratch for the compiler;
-they do not become ordinary Python objects in a GPU kernel. To replace them with
-arrays and storage pointers, the compiler must recover their constructors and
-options even when the kernel assigns aliases, casts values, or joins branches.
-A "reaching definition" is an assignment that may supply a variable's value;
-"provenance" here means following those assignments back to their sources.
+These objects describe per-thread payloads and shared scratch for the
+compiler; they do not become ordinary Python objects in a GPU kernel. To
+replace them with arrays and storage pointers, the compiler must recover their
+constructors and options even when the kernel assigns aliases, casts values,
+or joins branches. A "reaching definition" is an assignment that may supply a
+variable's value; "provenance" here means following those assignments back to
+their sources.
 
-The helpers trace descriptor sources, bind ``TempStorage`` constructor options,
-and collect the element types written through payload aliases. Group planning
-uses these facts to select an operation implementation; call rewriting uses
-them to materialize payloads and scratch storage. Each caller supplies its own
-definition and constant lookups because the available IR facts differ between
-those phases. The shared traversal keeps their treatment of aliases and
-control-flow joins consistent without evaluating arbitrary kernel code.
+The helpers trace descriptor sources, bind ``TempStorage`` constructor
+options, and collect the element types written through payload aliases. Group
+planning uses these facts to select an operation implementation; call
+rewriting uses them to materialize payloads and scratch storage. Each caller
+supplies its own definition and constant lookups because the available IR
+facts differ between those phases. The shared traversal keeps their treatment
+of aliases and control-flow joins consistent without evaluating arbitrary
+kernel code.
 """
 
 from __future__ import annotations
@@ -41,13 +43,13 @@ def descriptor_definitions(
 ) -> Iterator[tuple[str | None, object]]:
     """Trace a possible descriptor to the assignments that supply its value.
 
-    Follow aliases, casts, iterator unpacking, and phi inputs using the caller's
-    definition lookup, so the same traversal works before and after single
-    static assignment (SSA) construction. A cycle contributes no leaf. Concrete
-    non-descriptors, including ``None``, remain leaves: callers need to reject
-    paths that mix such values with descriptors rather than accepting one valid
-    constructor. Sibling paths are independent, so a shared constructor may be
-    yielded more than once.
+    Follow aliases, casts, iterator unpacking, and phi inputs using the
+    caller's definition lookup, so the same traversal works before and after
+    single static assignment (SSA) construction. A cycle contributes no leaf.
+    Concrete non-descriptors, including ``None``, remain leaves: callers need
+    to reject paths that mix such values with descriptors rather than
+    accepting one valid constructor. Sibling paths are independent, so a
+    shared constructor may be yielded more than once.
 
     Parameters
     ----------
@@ -57,8 +59,8 @@ def descriptor_definitions(
         Lookup accepting an IR variable and returning all its reaching
         definitions, including multiple definitions before SSA construction.
     seen : set of str, optional
-        Variable names on the current recursion path. This traversal copies the
-        set before extending it and does not mutate the supplied set.
+        Variable names on the current recursion path. This traversal copies
+        the set before extending it and does not mutate the supplied set.
 
     Yields
     ------
@@ -107,8 +109,8 @@ def temp_storage_constructor(
 ) -> TempStorage:
     """Build a storage descriptor from an IR constructor call.
 
-    Share argument binding and descriptor validation between group planning and
-    provider rewriting while letting each phase supply its own constant
+    Share argument binding and descriptor validation between group planning
+    and provider rewriting while letting each phase supply its own constant
     resolver. This creates the host-side descriptor only; it does not allocate
     scratch or modify the call. Constructor defaults and value validation come
     from ``TempStorage`` itself.
@@ -182,17 +184,17 @@ def payload_write_dtypes(
 
     Build an alias set to a fixed point across the entire function, following
     assignments, casts, iterator unpacking, and phi inputs in both directions.
-    This lets inference start at either a constructor or a later alias. The scan
-    is flow-insensitive: it collects writes throughout the function, including
-    all connected phi inputs, without checking path feasibility or write order.
-    The caller decides whether the collected dtypes agree.
+    This lets inference start at either a constructor or a later alias. The
+    scan is flow-insensitive: it collects writes throughout the function,
+    including all connected phi inputs, without checking path feasibility or
+    write order. The caller decides whether the collected dtypes agree.
 
     Parameters
     ----------
     func_ir : ir.FunctionIR
-        Function containing alias assignments and element writes. Not modified.
+        Function with alias assignments and element writes; not modified.
     payload : object
-        Variable whose aliases are searched. Non-variable inputs yield nothing.
+        Variable whose aliases are searched; non-variables yield nothing.
     dtype : callable
         Lookup accepting the variable assigned to an element and returning its
         dtype, or ``None`` when unknown.
@@ -200,11 +202,11 @@ def payload_write_dtypes(
     Yields
     ------
     object
-        Known dtype for each ``SetItem`` or ``StaticSetItem`` write through the
-        alias set, in the representation supplied by ``dtype``. This helper
-        does not normalize the callback's results. Unknown dtypes are skipped;
-        duplicates are retained. An empty result does not establish that the
-        payload has no writes.
+        Known dtype for each ``SetItem`` or ``StaticSetItem`` write through
+        the alias set, in the representation supplied by ``dtype``. This
+        helper does not normalize the callback's results. Unknown dtypes are
+        skipped; duplicates are retained. An empty result does not establish
+        that the payload has no writes.
     """
 
     if not isinstance(payload, ir.Var):

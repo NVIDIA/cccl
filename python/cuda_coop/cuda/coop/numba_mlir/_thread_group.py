@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Attach the Numba-CUDA-MLIR scope to shared thread-group descriptors.
+
+The shared descriptor supplies hierarchy and partition rules. This subclass
+keeps the qualified API's compiler scope when a group is resolved or split.
+Creating a descriptor does not query a running kernel or synchronize threads.
+"""
+
 from __future__ import annotations
 
 from cuda.coop._core import ThreadHierarchy, make_thread_group
@@ -13,7 +20,12 @@ Hierarchy = ThreadHierarchy
 
 
 class ThreadGroup(PortableThreadGroup):
-    """Compile-time CUDA group descriptor for the Numba-CUDA-MLIR frontend."""
+    """Describe a CUDA thread group for the Numba-CUDA-MLIR planner.
+
+    Membership and launch resolution follow :class:`cuda.coop.ThreadGroup`.
+    A descriptor can exist even when a particular operation does not support
+    that group; operation planning checks support separately.
+    """
 
     def group_by(
         self,
@@ -21,6 +33,12 @@ class ThreadGroup(PortableThreadGroup):
         *,
         exhaustive: bool = True,
     ) -> ThreadGroup:
+        """Partition the parent and retain this backend's descriptor type.
+
+        ``count`` measures threads within a warp or physical warps within a
+        block. The validation rules follow ``cuda.coop.ThreadGroup.group_by``.
+        The returned descriptor does not synchronize or rearrange threads.
+        """
         return super().group_by(count, exhaustive=exhaustive)
 
 
@@ -32,6 +50,7 @@ WarpGroup = ThreadGroup
 
 
 def _make_group(kind: str) -> ThreadGroup:
+    """Create a current-group descriptor with this backend's scope."""
     return make_thread_group(
         kind,
         group_type=ThreadGroup,
@@ -52,7 +71,7 @@ def this_warp() -> ThreadGroup:
 
 
 def this_block() -> ThreadGroup:
-    """Describe the current CTA."""
+    """Describe the current CUDA thread block."""
 
     return _make_group("block")
 

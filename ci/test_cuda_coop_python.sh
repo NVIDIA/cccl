@@ -3,8 +3,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# Test the installed cuda-coop wheel's API, compilation, and GPU kernels.
-# Select host, compile, or runtime checks for the current CI job.
+# Test the installed wheel in one stage: host contracts, device compilation,
+# or GPU execution. The compiler stage hides devices to check that providers
+# can compile with an explicit target and no running kernel.
 
 set -euo pipefail
 

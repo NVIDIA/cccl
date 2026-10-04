@@ -2,8 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Importing this module registers cooperative operations with
-Numba-CUDA-MLIR.
+"""Expose cooperative operations and activate their Numba-CUDA-MLIR planner.
+
+Import this qualified API on the host before compiling kernels. Importing it
+loads the supported compiler runtime and registers the whole-function planner.
+Load, Store, and ThreadData are kernel constructs. Group descriptors can also
+be created on the host and used as kernel globals. TempStorage validates its
+options on the host, but each kernel constructs its own scratch descriptor.
+The ``local`` and ``shared`` array namespaces are resolved and cached on first
+access.
 """
 
 import importlib
@@ -49,6 +56,7 @@ __all__ = [
 
 
 def __getattr__(name):
+    """Resolve and cache the runtime array namespaces on first access."""
     if name in {"local", "shared"}:
         value = getattr(
             importlib.import_module(f"{__name__}._thread_data"), name

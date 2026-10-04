@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check public stubs through isolated valid and invalid consumer programs.
+
+Copy only installed declarations to a temporary root so implementation types
+and an unrelated installed wheel cannot satisfy missing public declarations.
+"""
+
 from __future__ import annotations
 
 import importlib.util
@@ -41,6 +47,7 @@ def _run_mypy(
     *,
     stub_root: Path,
 ) -> subprocess.CompletedProcess[str]:
+    """Type-check copied consumers against only the selected stub root."""
     environment = os.environ.copy()
     environment["MYPYPATH"] = str(stub_root)
     environment.pop("PYTHONPATH", None)
@@ -55,6 +62,7 @@ def _run_mypy(
 
 
 def _expected_diagnostics(consumer: Path) -> set[tuple[int, str]]:
+    """Read expected error codes at their current consumer source lines."""
     return {
         (line_number, error_code)
         for line_number, line in enumerate(

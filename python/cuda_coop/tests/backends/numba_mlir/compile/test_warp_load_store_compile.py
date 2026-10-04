@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile physical and logical Warp providers with GPUs hidden.
+
+The fixed device supplies target metadata; NVRTC and nvJitLink remain real.
+Checks cover group storage, synchronization scope, and public-call linking.
+"""
+
 from __future__ import annotations
 
 import os
@@ -77,6 +83,7 @@ def _algorithm(
     dtype=types.int32,
     threads_in_warp: int = _WARP_THREADS,
 ) -> _types.Algorithm:
+    """Build a Warp provider with runtime tail, default, and offset inputs."""
     valid_items = ArgumentBinding.runtime()
     oob_default = (
         ArgumentBinding.runtime()
@@ -134,6 +141,7 @@ def _source(algorithm: _types.Algorithm) -> str:
 
 
 def _production_compile_environment(monkeypatch: pytest.MonkeyPatch):
+    """Fix device queries while retaining real compilation and linking."""
     import numba_cuda_mlir.tools as numba_mlir_tools
     from numba_cuda_mlir import cuda as compiler_cuda
 
@@ -155,6 +163,7 @@ def _production_compile_environment(monkeypatch: pytest.MonkeyPatch):
 
 
 def _production_launch_config_key() -> tuple[tuple[str, object], ...]:
+    """Supply exact block metadata for two physical warps."""
     return (
         ("grid", (1, 1, 1)),
         ("block", (_BLOCK_THREADS, 1, 1)),

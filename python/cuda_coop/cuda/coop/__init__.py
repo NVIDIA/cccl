@@ -4,9 +4,10 @@
 
 """Expose cooperative operations through a common CUDA Python interface.
 
-Compiler adapters translate these calls into device code. Importing the common
-interface does not load a compiler; :func:`register` loads a selected adapter
-when explicit registration is needed.
+Compiler adapters translate these calls into device code. The root import
+probes supported compiler runtimes already loaded by the application and can
+activate their adapters. Use :func:`register` or a qualified backend import
+when importing the common interface before the compiler runtime.
 """
 
 import importlib.metadata

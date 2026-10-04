@@ -60,11 +60,19 @@ _PORTABLE_GROUP_CONSTRUCTORS = frozenset(
 
 
 class GroupRewriteError(Exception):
-    """A group-first call was recognized but could not be lowered safely."""
+    """A recognized group call cannot be lowered with the available facts.
+
+    Report a planning failure to the compiler. ``ForceLiteralArg`` is the
+    separate compiler signal for retrying with a specialized argument.
+    """
 
 
 def _group_operation_name(function: object) -> str | None:
-    """Return the group-first operation represented by one marker callable."""
+    """Identify a registered common or qualified group operation.
+
+    Return its canonical operation name, or ``None`` for an unrelated
+    callable. Recognition uses callable identity, so aliases remain valid.
+    """
 
     operation = group_operation_name(function)
     if operation is None:
@@ -73,6 +81,11 @@ def _group_operation_name(function: object) -> str | None:
 
 
 def _is_common_root_operation(function: object, operation: str) -> bool:
+    """Check whether the call uses the common API's operation marker.
+
+    Rewritten calls still need that API's selector and payload restrictions.
+    """
+
     return (
         _portable_dispatch._portable_group_operation_name(function) == operation
     )

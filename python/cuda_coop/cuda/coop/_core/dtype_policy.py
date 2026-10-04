@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Keep the common API's numeric type choices consistent across backends.
+
+A backend first converts its dtype object to a standard name such as
+``int32``. These checks then enforce the common operation's supported set.
+Names keep this policy independent of each compiler's type objects.
+"""
+
 from __future__ import annotations
 
 _PORTABLE_NUMERIC_DTYPE_NAMES = (
@@ -25,7 +32,11 @@ def _validate_portable_dtype_name(
     parameter: str | None,
     supported_dtype_names: tuple[str, ...],
 ) -> str:
-    """Validate one normalized dtype name and report the common contract."""
+    """Check that a dtype name is allowed; name the operation in any error.
+
+    ``parameter`` adds argument-specific context when supplied. Return the
+    accepted name unchanged so callers can use it after validation.
+    """
 
     if dtype_name not in supported_dtype_names:
         supported = ", ".join(supported_dtype_names)
@@ -44,7 +55,11 @@ def validate_portable_numeric_dtype_name(
     operation: str,
     parameter: str | None = None,
 ) -> str:
-    """Validate one backend-normalized dtype name for a common operation."""
+    """Require one of the common API's integer or floating-point type names.
+
+    The backend must normalize aliases before calling this function. Its
+    qualified API may support additional types outside this common set.
+    """
 
     return _validate_portable_dtype_name(
         dtype_name,

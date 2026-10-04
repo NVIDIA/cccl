@@ -55,7 +55,13 @@ _REQUIRED_HEADERS = (
 
 @dataclass(frozen=True)
 class CompileContext:
-    """All compiler inputs that participate in provider and cache identity."""
+    """Record header and toolkit inputs shared by provider compilations.
+
+    Exact library paths and versions identify the selected compiler and
+    linker. ``include_dirs`` preserves header search order, while
+    ``header_identity`` identifies their contents. Source, target, and
+    compiler options enter each compilation's cache key separately.
+    """
 
     toolkit_root: str
     toolkit_version: tuple[int, int]
@@ -69,6 +75,8 @@ class CompileContext:
 
     @property
     def symbol_suffix(self) -> str:
+        """Qualify provider symbols with this header and toolkit selection."""
+
         digest = hashlib.sha256()
         values: tuple[object, ...] = (
             self.toolkit_root,
@@ -88,7 +96,7 @@ class CompileContext:
 
 
 def _load_nvrtc():
-    """Import CUDA bindings only after exact toolkit libraries are preloaded."""
+    """Import CUDA bindings after the selected toolkit is preloaded."""
 
     import cuda.bindings.nvrtc as _nvrtc_bindings
 
@@ -96,6 +104,8 @@ def _load_nvrtc():
 
 
 def _nvrtc_version(nvrtc: Any) -> version:
+    """Read the bound NVRTC library's version or report its query failure."""
+
     err, major, minor = nvrtc.nvrtcVersion()
     if err != nvrtc.nvrtcResult.NVRTC_SUCCESS:
         raise RuntimeError(f"nvrtcVersion error: {err}")
@@ -103,6 +113,12 @@ def _nvrtc_version(nvrtc: Any) -> version:
 
 
 def CHECK_NVRTC(err, prog, *, nvrtc=None):
+    """Raise an NVRTC failure with the program's compilation log.
+
+    Keep the original result code even if fetching the log also fails. Accept
+    the caller's bindings module so diagnostics use the same loaded library.
+    """
+
     nvrtc = _load_nvrtc() if nvrtc is None else nvrtc
     if err == nvrtc.nvrtcResult.NVRTC_SUCCESS:
         return
@@ -124,6 +140,8 @@ def CHECK_NVRTC(err, prog, *, nvrtc=None):
 
 
 def _dump_source(cpp, cc, code, compiler_options):
+    """Include the target and output options in the saved source identity."""
+
     return dump_source(
         cpp,
         backend="numba_mlir",
@@ -158,7 +176,13 @@ def _compiler_options(
 def compiler_identity(
     *, context: CompileContext, cc: int, rdc: bool, code: str
 ) -> tuple[int, bool, str, tuple[bytes, ...]]:
-    """Return target and option identity for provider symbols and LTO reuse."""
+    """Identify target and options that qualify provider symbols.
+
+    The options include the context's ordered header paths. Providers also use
+    this tuple to group compatible specializations into one compilation. The
+    complete identity also needs the context's library and header-content
+    identities, which callers retain separately.
+    """
 
     return (
         int(cc),
@@ -194,16 +218,16 @@ def compile_impl(
     """Compile one source unit using a complete, explicit cache identity.
 
     The memory and disk cache decorators key all arguments, including toolkit
-    paths and header identity that are not otherwise read by the function body.
-    Those fields prevent artifacts from different compiler installations or
-    header sets from sharing an entry. Callers must resolve and preload the
+    paths and header identity that are not otherwise read by the function
+    body. Those fields prevent artifacts from different compiler installations
+    or header sets from sharing an entry. Callers must resolve and preload the
     matching compiler context before entering this function.
 
     On a cache miss, verify that the supplied option tuple matches the request
     and that the loaded NVRTC version still matches the context. Compile the
-    source, retrieve the requested image, and destroy the NVRTC program on both
-    success and failure. A cleanup error does not replace an earlier compilation
-    error. Cache hits bypass these body-level checks.
+    source, retrieve the requested image, and destroy the NVRTC program on
+    both success and failure. A cleanup error does not replace an earlier
+    compilation error. Cache hits bypass these body-level checks.
 
     Parameters
     ----------
@@ -230,8 +254,7 @@ def compile_impl(
     header_identity : str
         Header-content identity supplied by context resolution.
     compiler_options : tuple of bytes
-        Exact ordered options produced by ``_compiler_options`` for this
-        request.
+        Exact ordered options from ``_compiler_options`` for this request.
 
     Returns
     -------
@@ -267,8 +290,8 @@ def compile_impl(
     )
     if compiler_options != expected_options:
         raise RuntimeError(
-            "NVRTC compiler-option identity does "
-            "not match the requested compile."
+            "NVRTC compiler-option identity does not match the "
+            "requested compile."
         )
     nvrtc = _load_nvrtc()
     loaded_version = _nvrtc_version(nvrtc)
@@ -323,22 +346,21 @@ def resolve_compile_context() -> CompileContext:
     Resolve CUDA headers separately, then preload NVRTC, its builtins, and
     nvJitLink from that toolkit before importing the CUDA NVRTC bindings.
     Check that the loaded NVRTC version matches the selected toolkit. This
-    ordering keeps wrapper compilation and subsequent linking tied to the same
-    installation.
+    ordering keeps wrapper compilation and later linking on the same toolkit.
 
-    Hash the resolved header roots and their contents into the returned context.
-    The context is used both for artifact cache keys and provider symbol
-    qualification. Resolution is lazy at its callers; this function itself is
-    not memoized and may load process-wide compiler libraries. Algorithms
-    retain their resolved context, so changing ``CUDA_COOP_CCCL_ROOT`` affects
-    subsequent resolutions, not contexts already held by providers or supplied
-    explicitly to ``compile``.
+    Hash the resolved header roots and their contents into the returned
+    context. The context is used both for artifact cache keys and provider
+    symbol qualification. Resolution is lazy at its callers; this function
+    itself is not memoized and may load process-wide compiler libraries.
+    Algorithms retain their resolved context, so changing
+    ``CUDA_COOP_CCCL_ROOT`` affects subsequent resolutions, not contexts
+    already held by providers or supplied explicitly to ``compile``.
 
     Returns
     -------
     CompileContext
-        Frozen snapshot of exact library paths/versions, ordered include roots,
-        and header identity for a provider compilation.
+        Frozen snapshot of exact library paths/versions, ordered include
+        roots, and header identity for a provider compilation.
     """
 
     include_paths = resolve_include_paths(
@@ -367,23 +389,23 @@ def resolve_compile_context() -> CompileContext:
 def compile(
     *, context: CompileContext | None = None, **kwargs: Any
 ) -> tuple[version, bytes | str]:
-    """Compile generated provider source with resolved compiler/cache identity.
+    """Compile provider source with a resolved header and toolkit context.
 
     Build the ordered options from the selected context, optionally dump the
-    source through the shared source-dump hook, and pass every context field to
-    ``compile_impl``. Dumping occurs before cache lookup so source inspection
-    also works when artifact compilation is reused from memory or disk.
+    source through the shared source-dump hook, and pass every context field
+    to ``compile_impl``. Dumping occurs before cache lookup so source
+    inspection also works when compilation is reused from memory or disk.
 
     Parameters
     ----------
     context : CompileContext, optional
         Previously resolved and preloaded compiler context. ``None`` resolves
-        one now. Supplying a context reuses its identity; it does not reload the
-        library paths stored in it.
+        one now. Supplying a context reuses its identity; it does not reload
+        the library paths stored in it.
     **kwargs : dict
-        Required ``cpp`` source string, integer ``cc`` target, boolean ``rdc``,
-        and ``code`` equal to ``"lto"`` or ``"ptx"``. These are forwarded to
-        ``compile_impl`` with the context and generated compiler options.
+        Required ``cpp`` source string, integer ``cc`` target, boolean
+        ``rdc``, and ``code`` equal to ``"lto"`` or ``"ptx"``. These are
+        forwarded to ``compile_impl`` with the context and generated options.
 
     Returns
     -------

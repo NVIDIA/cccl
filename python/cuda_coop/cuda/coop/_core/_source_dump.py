@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Save generated CUDA source when source inspection is enabled.
+
+Backends call this before cache lookup so cached compilations remain
+inspectable. The backend, source, and compile identity determine the
+filename. An atomic write keeps concurrent calls from leaving a partial
+source file.
+"""
+
 from __future__ import annotations
 
 import hashlib
@@ -16,7 +24,7 @@ def dump_source(
     backend: str,
     identity: tuple[object, ...] = (),
 ) -> Path | None:
-    """Write a backend-tagged, content-addressed CUDA translation unit.
+    """Write generated CUDA source to a file named by its content and backend.
 
     ``CUDA_COOP_SOURCE_DUMP_DIR`` selects the directory and is read on every
     call; unset or empty disables dumping. Other values are directory names,
@@ -43,14 +51,14 @@ def dump_source(
         ``"numba_mlir"``. Callers supply a filename-safe label.
     identity : tuple of object, optional
         Extra compile identity, such as target architecture and output kind.
-        Its ``repr`` contributes to the digest; use reproducible representations
-        when repeated compilations should select the same path.
+        Its ``repr`` contributes to the digest. Use reproducible
+        representations so repeated compilations select the same path.
 
     Returns
     -------
     pathlib.Path or None
-        Absolute path of the existing or newly written source file, or ``None``
-        when dumping is disabled.
+        Absolute path of the existing or newly written source file, or
+        ``None`` when dumping is disabled.
 
     Raises
     ------

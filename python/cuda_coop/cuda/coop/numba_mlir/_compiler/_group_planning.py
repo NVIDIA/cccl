@@ -5,18 +5,18 @@
 """Provide operation planners with group, payload, and storage facts.
 
 Each supported operation needs some of the same information: the participating
-threads, a payload's element type and item count, compile-time scalar controls,
-and the options of a ``TempStorage`` descriptor. ``GroupPlanningContext``
-exposes those queries to operation-specific code without direct access to all
-of ``_GroupCallPlanner``'s bookkeeping.
+threads, a payload's element type and item count, compile-time scalar
+controls, and the options of a ``TempStorage`` descriptor.
+``GroupPlanningContext`` exposes those queries to operation-specific code
+without direct access to all of ``_GroupCallPlanner``'s bookkeeping.
 
-This context belongs to the group-resolution phase of the single whole-function
-planner, before provider calls are materialized. It follows IR assignments to
-recover facts that ordinary type inference has not established yet and records
-element types inferred by earlier ``load()`` operations for later calls. Once an
-operation has chosen a provider, it also checks that the provider's storage and
-synchronization declarations agree with the group plan and builds the call IR
-that carries that plan to the rewriting phase.
+This context belongs to the group-resolution phase of the single
+whole-function planner, before provider calls are materialized. It follows IR
+assignments to recover facts that ordinary type inference has not established
+yet and records element types inferred by earlier ``load()`` operations for
+later calls. Once an operation has chosen a provider, it also checks that the
+provider's storage and synchronization declarations agree with the group plan
+and builds the call IR that carries that plan to the rewriting phase.
 """
 
 from __future__ import annotations
@@ -65,12 +65,25 @@ if TYPE_CHECKING:
 
 
 class GroupPlanningContext:
-    """Share one group planner's analysis with operation-specific lowering.
+    """Share one planner's analysis with operation implementations.
+
+    An operation planner needs launch dimensions, payload types and extents,
+    and static scalar controls before ordinary Numba typing runs. This
+    context exposes those queries and builds provider-call replacements.
+    The owning planner retains the IR and decides when to install them.
+
+    The context retains inferred ThreadData dtypes at constructor sites so
+    a later operation can use the type established by an earlier load.
+    Aliases of the same constructor share this fact. Loop dtype candidates
+    have a shorter lifetime: they exist for one query, seed a type cycle,
+    and must pass a second query in which all definitions resolve and agree.
+    See ``_loop_dtype`` for that two-stage analysis.
 
     Parameters
     ----------
     planner : _GroupCallPlanner
-        Active group planner supplying IR definitions and launch facts.
+        Active planner supplying IR definitions, argument types, and launch
+        facts. Create one context for each planner attempt.
     """
 
     __slots__ = (
@@ -88,6 +101,8 @@ class GroupPlanningContext:
 
     @property
     def launch(self) -> Any:
+        """Return launch dimensions and their sources for this attempt."""
+
         return self.__planner.launch
 
     def _definition(self, value: Any) -> Any:
@@ -100,21 +115,47 @@ class GroupPlanningContext:
         return self.__planner._callable(value)
 
     def constant(self, value: Any) -> Any:
+        """Require a constant control without literal-unroll dependencies.
+
+        The planner may request literal specialization for a kernel argument.
+        Use ``try_static_scalar`` when a runtime scalar is also permitted.
+        """
+
         self.__planner._reject_literal_unroll_value(
             value, "a compile-time argument"
         )
         return self.__planner._constant(value)
 
     def try_constant(self, value: Any) -> tuple[bool, Any]:
+        """Probe for a constant without requesting another compiler attempt.
+
+        Return ``(resolved, value)``. Numba constant inference may resolve it;
+        use ``try_static_scalar`` when the source must be explicitly static.
+        """
+
         return self.__planner._try_constant(value)
 
     def try_static_scalar(self, value: Any) -> tuple[bool, Any]:
+        """Recover an explicitly static scalar and keep its known width.
+
+        Return ``(resolved, value)`` without evaluating runtime expressions or
+        requesting specialization. A false result means a runtime operand.
+        """
+
         return self.__planner._try_static_scalar(value)
 
     def try_static_scalar_provenance(self, value: Any) -> tuple[bool, Any]:
+        """Recover a static scalar together with its recorded dtype.
+
+        Return ``(resolved, provenance)``. The record distinguishes an untyped
+        Python literal from a value that already has a compiler dtype.
+        """
+
         return self.__planner._try_static_scalar_provenance(value)
 
     def bind(self, function: Any, call: ir.Expr) -> Any:
+        """Bind IR arguments and defaults to the public signature."""
+
         return self.__planner._bind(function, call)
 
     def validate_common_selector(
@@ -126,6 +167,12 @@ class GroupPlanningContext:
         *,
         allow_none: bool = False,
     ) -> Any:
+        """Apply the common API's selector rules after its wrapper is removed.
+
+        Resolve the selector as a constant, normalize its spelling, and check
+        ``allowed``. ``allow_none`` controls whether omission is valid.
+        """
+
         return self.__planner._validate_common_selector(
             operation,
             parameter,
@@ -138,11 +185,25 @@ class GroupPlanningContext:
         return self.__planner._is_none(value)
 
     def is_array(self, operation: str, value: Any) -> bool:
+        """Check for a supported per-thread payload constructor.
+
+        Accept ThreadData and CUDA local-array constructors. The common API's
+        ThreadData-only rule is checked separately by ``is_thread_data``. An
+        unresolved cycle raises a diagnostic; a false result still needs
+        scalar validation by the caller.
+        """
+
         return self.__planner._array_operand_state(operation, value)
 
     def is_thread_data(
         self, operation: str, parameter: str, value: Any
     ) -> bool:
+        """Check the payload-origin restriction required by the common API.
+
+        Follow aliases to ThreadData constructors. An unresolved cycle raises
+        a diagnostic that names the operation and parameter.
+        """
+
         return self.__planner._thread_data_operand_state(
             operation,
             parameter,
@@ -150,6 +211,12 @@ class GroupPlanningContext:
         )
 
     def array_extent(self, value: Any) -> int | None:
+        """Recover the unique known per-thread item count, or ``None``.
+
+        Known counts must agree. Unknown paths contribute no count, so the
+        caller must validate the payload's form separately.
+        """
+
         return self.__planner._array_extent(value)
 
     def new_var(self, scope: Any, loc: ir.Loc, stem: str) -> ir.Var:
@@ -186,14 +253,14 @@ class GroupPlanningContext:
         synchronization, and storage facts, then compare them with the
         registered factory's ABI and scopes.
 
-        Some algorithms need temporary shared memory to exchange values between
-        threads. A block ``load()`` operation with ``algorithm="transpose"``
-        uses one scratch region for the block; a warp ``load()`` operation with
-        that algorithm needs a separate region for each participating physical
-        or logical warp.
-        For such plans, require exact block dimensions, groups that cover the
-        block, and one shared-memory slice per group instance. Direct algorithms
-        for ``load()`` and ``store()`` need no scratch and skip those checks. An
+        Some algorithms need temporary shared memory to exchange values
+        between threads. A block ``load()`` operation with
+        ``algorithm="transpose"`` uses one scratch region for the block; a
+        warp ``load()`` operation with that algorithm needs a separate region
+        for each participating physical or logical warp. For such plans,
+        require exact block dimensions, groups that cover the block, and one
+        shared-memory slice per group instance. Direct algorithms for
+        ``load()`` and ``store()`` need no scratch and skip those checks. An
         explicit ``temp_storage`` argument is supported only for a single
         block-scoped instance.
 
@@ -201,20 +268,20 @@ class GroupPlanningContext:
         Caller-owned storage with ``auto_sync=False`` also permits the
         provider's execution-scope barrier declaration: the pointer rewrite
         bypasses its allocating wrapper and controls synchronization itself.
-        This exception does not apply to implementation-owned storage. No IR is
-        mutated here.
+        This exception does not apply to implementation-owned storage. No IR
+        is mutated here.
 
         Parameters
         ----------
         lowering_plan : GroupLoweringPlan
-            Supported plan whose storage and execution requirements are checked.
+            Supported plan with storage and execution requirements to check.
         factory : callable
             Selected host-side provider factory registered with operation
             metadata. It is not invoked here.
         runtime_temp_storage_supplied : bool or None, optional
             Whether the proposed provider call supplies ``temp_storage``. When
-            the plan needs scratch, this flag must agree with caller ownership.
-            ``None`` skips this argument-presence check only.
+            the plan needs scratch, this flag must agree with caller
+            ownership. ``None`` skips this argument-presence check only.
 
         Returns
         -------
@@ -226,8 +293,8 @@ class GroupPlanningContext:
         TypeError
             ``lowering_plan`` is not a ``GroupLoweringPlan``.
         GroupRewriteError
-            The plan is unsupported or incomplete, the provider is unregistered,
-            or its ABI, scopes, storage ownership, or layout are incompatible.
+            The plan is unsupported or incomplete, the provider is
+            unregistered, or its ABI, scopes, ownership, or layout disagree.
         """
 
         if not isinstance(lowering_plan, GroupLoweringPlan):
@@ -260,8 +327,8 @@ class GroupPlanningContext:
             )
         if topology.execution_scope is SynchronizationScope.GROUP:
             raise GroupRewriteError(
-                "cuda.coop.numba_mlir provider execution scope 'group' has no "
-                "storage or synchronization emitter"
+                "cuda.coop.numba_mlir provider execution scope 'group' "
+                "has no storage or synchronization emitter"
             )
         storage_bearing = storage.ownership is not StorageOwnership.NONE
         if storage_bearing:
@@ -345,9 +412,8 @@ class GroupPlanningContext:
         planned_synchronization = expected["synchronization_scope"]
         allowed_synchronization = {planned_synchronization}
         # The provider's convenience ``_alloc`` wrapper owns its declared
-        # reuse barrier. Pointer rewrites bypass that wrapper, and the compiler
-        # rewrite emits the descriptor-selected barrier only when auto_sync is
-        # enabled.
+        # reuse barrier. Pointer rewrites bypass that wrapper. The compiler
+        # rewrite emits the selected barrier only when auto_sync is on.
         if (
             planned_synchronization is SynchronizationScope.NONE
             and caller_owned
@@ -379,20 +445,21 @@ class GroupPlanningContext:
     ) -> list[Any]:
         """Build a provider call carrying the validated group-lowering plan.
 
-        Check the provider ABI and storage contract before embedding the plan in
-        its reserved keyword argument. The later provider rewrite consumes this
-        metadata, so it does not have to reconstruct the public group semantics.
-        The returned assignments materialize non-IR arguments and invoke the
-        factory with the original result target. The caller installs them into
-        the function; this method does not replace the original instruction.
+        Check the provider ABI and storage contract before embedding the plan
+        in its reserved keyword argument. The later provider rewrite consumes
+        this metadata, so it does not have to reconstruct the public group
+        semantics. The returned assignments materialize non-IR arguments and
+        invoke the factory with the original result target. The caller
+        installs them into the function; this method does not replace the
+        original instruction.
 
         Parameters
         ----------
         inst : ir.Assign
-            Original public call assignment; supplies the result target, scope,
-            and source location for generated statements.
+            Original public call assignment; supplies the result target,
+            scope, and source location for generated statements.
         lowering_plan : GroupLoweringPlan
-            Supported semantic plan to validate and attach to the provider call.
+            Supported plan to validate and attach to the provider call.
         factory : callable
             Registered host-side provider factory selected by the operation
             family. Embedded as the generated call target, not invoked here.
@@ -403,9 +470,9 @@ class GroupPlanningContext:
             Provider keyword arguments. Copied before plan metadata is added;
             presence of ``temp_storage`` is checked against planned ownership.
         common_root_operation : str or None, optional
-            Common API operation name to retain for downstream validation. When
-            present, supplies the private marker unless ``kwargs`` already has
-            it.
+            Common API operation name to retain for downstream validation.
+            When present, supplies the private marker unless ``kwargs``
+            already has it.
 
         Returns
         -------
@@ -445,10 +512,10 @@ class GroupPlanningContext:
     def planning_binding(self, value: Any) -> ArgumentBinding:
         """Classify a scalar control from its explicit static provenance.
 
-        Use explicit static provenance rather than general constant inference. A
-        runtime expression remains a runtime binding even if another compiler
-        analysis could fold it. The original runtime operand is retained by the
-        operation family, not inside the returned binding.
+        Use explicit static provenance rather than general constant inference.
+        A runtime expression remains a runtime binding even if another
+        compiler analysis could fold it. The original runtime operand is
+        retained by the operation family, not inside the returned binding.
 
         Parameters
         ----------
@@ -462,8 +529,8 @@ class GroupPlanningContext:
         ArgumentBinding
             ``OMITTED`` for statically known ``None``, ``STATIC`` with the
             resolved value otherwise, or ``RUNTIME`` when static provenance is
-            not established. Numeric validity and operation-specific constraints
-            are checked later.
+            not established. Numeric validity and operation-specific
+            constraints are checked later.
         """
 
         resolved, constant = self.try_static_scalar(value)
@@ -493,6 +560,14 @@ class GroupPlanningContext:
         *,
         message: str,
     ) -> Any | None:
+        """Require agreement among the dtype candidates for one query.
+
+        During loop discovery, omit unknown candidates so a known entry value
+        can seed a cycle. The later strict query requires every candidate to
+        be known. Return ``None`` if information is incomplete. After that
+        check, raise the given diagnostic when the remaining dtypes disagree.
+        """
+
         resolved = list(candidates)
         if self.__seed_loop_dtypes:
             # Discovery can use a known loop-entry type before the backedge
@@ -505,18 +580,20 @@ class GroupPlanningContext:
     def _loop_dtype(self, value: ir.Var) -> Any | None:
         """Resolve a loop's type cycle without accepting an unknown producer.
 
-        Group planning runs before ordinary type inference. A value initialized
-        from a typed array may then feed a computation whose result becomes the
-        next iteration's input. Following that input recursively reaches the
-        same variable before its dtype is known. Returning ``None`` at every
-        such backedge would discard the useful type supplied by the array.
+        Group planning runs before ordinary type inference. A value
+        initialized from a typed array may then feed a computation whose
+        result becomes the next iteration's input. Following that input
+        recursively reaches the same variable before its dtype is known.
+        Returning ``None`` at every such backedge would discard the useful
+        type supplied by the array.
 
-        First propagate candidate dtypes from known definitions until they stop
-        changing. During this discovery pass only, a join may omit unresolved
-        inputs; a recursive backedge can use its variable's candidate. Then
-        repeat the query with strict joins: every reaching definition must
-        resolve and agree, including the computation on the backedge. An opaque
-        helper remains unknown, and a conflicting dtype is still an error.
+        First propagate candidate dtypes from known definitions until they
+        stop changing. During this discovery pass only, a join may omit
+        unresolved inputs; a recursive backedge can use its variable's
+        candidate. Then repeat the query with strict joins: every reaching
+        definition must resolve and agree, including the computation on the
+        backedge. An opaque helper remains unknown, and a conflicting dtype is
+        still an error.
 
         Candidates live only for this query and are cleared on failure too.
         They are neither IR annotations nor permanent facts for later calls.
@@ -526,7 +603,7 @@ class GroupPlanningContext:
         Returns
         -------
         numba_types.Type or None
-            Dtype verified across all paths, or ``None`` if any remain unknown.
+            Dtype verified on all paths, or ``None`` if any path is unknown.
 
         Raises
         ------
@@ -549,19 +626,20 @@ class GroupPlanningContext:
     def record_thread_data_dtype(
         self, value: Any, dtype: _numba_types.Type
     ) -> None:
-        """Record a producer's element dtype at the payload's constructor sites.
+        """Record a producer's dtype at the payload's constructor sites.
 
-        Group planning precedes the provider rewrite that materializes payloads.
-        A load into untyped ``ThreadData`` therefore records its inferred dtype
-        here so subsequent group calls can recover it. Follow descriptor
-        aliases, casts, phi inputs, and constant tuple projections to
-        constructor calls, keying the cache by call-expression identity so
-        aliases share the fact. Explicit constructor dtypes and earlier inferred
-        dtypes must agree.
+        Group planning precedes the provider rewrite that materializes
+        payloads. A load into untyped ``ThreadData`` therefore records its
+        inferred dtype here so subsequent group calls can recover it. Follow
+        descriptor aliases, casts, phi inputs, and constant tuple projections
+        to constructor calls, keying the cache by call-expression identity so
+        aliases share the fact. Explicit constructor dtypes and earlier
+        inferred dtypes must agree.
 
         Only recognized constructors reached by this traversal are updated;
-        unresolved tuple projections and other leaves contribute no cache entry.
-        This updates the planning context, not constructor arguments in the IR.
+        unresolved tuple projections and other leaves contribute no cache
+        entry. This updates the planning context, not constructor arguments in
+        the IR.
 
         Parameters
         ----------
@@ -635,6 +713,15 @@ class GroupPlanningContext:
         *,
         seen: set[str],
     ) -> Any | None:
+        """Infer one tuple element across all definitions of its container.
+
+        Track ``variable[index]`` separately from the container variable. This
+        allows one projection to recurse without hiding a different element.
+        Return ``None`` for an unresolved projection or cycle. Candidate
+        agreement uses ``_complete_dtype``, including its temporary
+        loop-discovery rule.
+        """
+
         if not isinstance(value, ir.Var):
             return None
         seen_key = f"{value.name}[{index}]"
@@ -663,6 +750,14 @@ class GroupPlanningContext:
         *,
         seen: set[str],
     ) -> Any | None:
+        """Follow one tuple definition to the selected element's dtype.
+
+        Aliases, casts, iterator unpacking, and phi inputs retain the index. A
+        built tuple delegates its selected element to ``dtype``. Unknown forms
+        and out-of-range indices contribute no dtype; known conflicts at a phi
+        join raise ``GroupRewriteError``.
+        """
+
         if isinstance(definition, ir.Var):
             return self._tuple_dtype(definition, index, seen=seen)
         if not isinstance(definition, ir.Expr):
@@ -690,6 +785,20 @@ class GroupPlanningContext:
     def _dtype_definition(
         self, definition: Any, *, seen: set[str]
     ) -> Any | None:
+        """Extract dtype evidence from one supported IR definition.
+
+        Use argument types, constants, payload constructors, selected scalar
+        operators, casts, and CUDA index attributes. Follow aliases and joins
+        through the context's dtype queries. A tuple projection can have its
+        own element type. Array indexing uses the source's element type.
+
+        ThreadData constructors use an explicit dtype or a dtype recorded by a
+        producer. An unrelated call stays unknown unless the scalar-cast
+        helper recognizes it. This limited analysis supplies provider
+        selection before ordinary Numba typing; it does not execute kernel
+        expressions.
+        """
+
         if isinstance(definition, ir.Var):
             return self.dtype(definition, seen=seen)
         if isinstance(definition, ir.Arg):
@@ -767,6 +876,12 @@ class GroupPlanningContext:
     def _attribute_chain(
         self, value: Any
     ) -> tuple[Any, tuple[str, ...]] | None:
+        """Recover an attribute path and its constant root without calling it.
+
+        CUDA index recognition compares the root object's identity and the
+        attribute names. Return ``None`` when the root cannot be recovered.
+        """
+
         attributes: list[str] = []
         current = self._definition(value)
         while isinstance(current, ir.Expr) and current.op == "getattr":
@@ -780,13 +895,14 @@ class GroupPlanningContext:
     def dtype(
         self, value: object, *, seen: set[str] | None = None
     ) -> _numba_types.Type | None:
-        """Infer a normalized dtype from facts available during group planning.
+        """Infer a normalized dtype from facts known during group planning.
 
-        Use argument types, scalar constants and operators, supported CUDA index
-        attributes, local-array constructors, and ``ThreadData`` declarations or
-        recorded producer dtypes. Follow aliases, casts, phi inputs, and tuple
-        projections; array indexing contributes the source element dtype. This
-        is a limited pre-typing analysis, not full Numba type inference.
+        Use argument types, scalar constants and operators, supported CUDA
+        index attributes, local-array constructors, and ``ThreadData``
+        declarations or recorded producer dtypes. Follow aliases, casts, phi
+        inputs, and tuple projections; array indexing contributes the source
+        element dtype. This is a limited pre-typing analysis, not full Numba
+        type inference.
 
         Loop backedges can use a candidate established by a known incoming
         definition, provided every reaching definition then resolves to the
@@ -801,9 +917,9 @@ class GroupPlanningContext:
             are accepted as probes and return ``None``; a raw Python scalar is
             not treated as an IR constant by this entry point.
         seen : set of str, optional
-            Recursion-path variable names and tuple-projection keys. The current
-            name is added in place; definitions are visited with separate
-            copies.
+            Recursion-path variable names and tuple-projection keys. The
+            current name is added in place; definitions are visited with
+            separate copies.
 
         Returns
         -------
@@ -843,7 +959,14 @@ class GroupPlanningContext:
         return inferred
 
     def payload_write_dtype(self, payload: Any) -> Any | None:
-        """Infer an untyped payload from values written through its aliases."""
+        """Infer a payload dtype from values assigned through its aliases.
+
+        Inspect the known types of element writes across the function. All
+        known types must agree or ``TypeError`` is raised. Unknown writes
+        contribute no evidence; ``None`` means no known write dtype was found.
+        The scan does not prove that every element is initialized or that all
+        paths write.
+        """
 
         inferred = None
         for value_dtype in payload_write_dtypes(
@@ -869,14 +992,14 @@ class GroupPlanningContext:
         Parse each recognized constructor with the planning constant resolver,
         then require its normalized contract to agree with the others. A
         concrete non-descriptor path, including a ``None`` initializer,
-        invalidates a value that also reaches a descriptor. Backedges contribute
-        no new leaf.
+        invalidates a value that also reaches a descriptor. Backedges
+        contribute no new leaf.
 
         Equivalent constructors may merge when automatic synchronization is
-        used. With ``auto_sync=False``, all aliases must reach exactly one call
-        expression: merging separately constructed regions would lose the origin
-        needed to reason about caller-managed synchronization. This checks
-        provenance and constructor options, not backing storage or capacity.
+        used. With ``auto_sync=False``, all aliases must reach exactly one
+        call expression: merging separately constructed regions would lose the
+        origin needed to reason about caller-managed synchronization. This
+        checks provenance and options, not backing storage or capacity.
 
         Parameters
         ----------

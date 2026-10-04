@@ -8,6 +8,8 @@
 (() => {
   "use strict";
 
+  // Use a small teaching tile; these sizes do not describe a CUDA launch.
+  // Each value keeps its tile index as it moves between owners.
   const threads = 8;
   const warp_threads = 4;
   const colors = ["#76b900", "#00a9ce", "#f6b21a", "#d6538f", "#9d80d7", "#e86f18", "#2a9d8f", "#8198a7"];
@@ -174,6 +176,8 @@
       }
     }
 
+    // Rebuild layout and exchange phases after algorithm or extent changes.
+    // Animation phases show ownership, not GPU instruction timing.
     function build_scene() {
       const option = algorithms[state.algorithm];
       const total = threads * state.items;

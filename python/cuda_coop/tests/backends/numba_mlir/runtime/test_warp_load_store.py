@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Exercise independent physical and logical warp tiles on GPUs.
+
+Two physical warps and smaller logical groups expose incorrect group origins
+and barriers that include other groups. Host references add each group's tile
+origin separately from the explicit offset and check Load and Store with
+independent input patterns. Guarded cases cover counts that differ between
+groups while remaining uniform within each group. Trap and divergence probes
+run in bounded child processes.
+"""
+
 from __future__ import annotations
 
 import subprocess
@@ -67,6 +77,13 @@ def _values(size: int, *, shift: int = 0) -> np.ndarray:
 
 
 def _dtype_values(dtype: np.dtype, size: int, *, shift: int = 0) -> np.ndarray:
+    """Build dtype-sensitive inputs that expose accidental narrowing.
+
+    Float64 values retain bits below float32 precision, and 64-bit integers
+    exceed the 32-bit range. ``shift`` separates Load and Store patterns so
+    each direction can be checked independently.
+    """
+
     values = (np.arange(size, dtype=np.int64) * 3 + shift) % 97
     if dtype.kind in {"i", "f"}:
         values = values - 48
@@ -206,6 +223,13 @@ def _store_kernel(algorithm: str, qualified: bool, numba_dtype=types.int32):
 
 @cache
 def _direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
+    """Check both direct operations with independent input patterns.
+
+    Observe Load with ordinary stores, then build the Store payload from
+    different input data. A matching error in the two primitives cannot cancel
+    through a Load-to-Store round trip.
+    """
+
     if qualified:
 
         @cuda.jit
@@ -304,6 +328,8 @@ def test_direct_multi_item_load_store_matches_oracles_for_every_dtype(
 def _tile_index(
     algorithm: str, lane: int, item: int, *, items_per_thread
 ) -> int:
+    """Map a lane's item to a blocked or striped index within its warp."""
+
     if algorithm == "striped":
         return lane + item * _WARP_THREADS
     return lane * items_per_thread + item
@@ -318,6 +344,13 @@ def _expected_loaded_payload(
     oob_default: int,
     items_per_thread,
 ) -> np.ndarray:
+    """Compute separate Load results for both physical warps.
+
+    Keep observed payload slots in thread-major order. For each valid item,
+    add its warp's tile origin and the caller's offset to the layout index.
+    Each warp applies the count independently; other slots use the default.
+    """
+
     expected = np.full(
         (_BLOCK_THREADS * items_per_thread), oob_default, dtype=source.dtype
     )
@@ -347,6 +380,13 @@ def _expected_stored_payload(
     offset: int,
     items_per_thread,
 ) -> np.ndarray:
+    """Map per-thread Store inputs to each physical warp's destination tile.
+
+    Add the warp origin and explicit offset after applying the layout. Begin
+    with the original destination so invalid items and guard regions remain
+    part of the reference check.
+    """
+
     expected = destination.copy()
     for thread in range(_BLOCK_THREADS):
         warp = thread // _WARP_THREADS
@@ -516,6 +556,12 @@ def _logical_tile_index(
 
 @cache
 def _logical_load_store_kernel(algorithm: str, qualified: bool):
+    """Give each logical warp its own count and offset in a shared block.
+
+    Each control value is uniform within its group. Load and Store use
+    different source data so host references check both directions.
+    """
+
     if qualified:
         load_algorithm = algorithm
         store_algorithm = algorithm
@@ -673,6 +719,12 @@ def test_logical_warp_algorithms_use_independent_group_tiles(
 
 @cache
 def _logical_partial_transpose_load_kernel(qualified: bool):
+    """Observe only valid items from each logical warp's transpose load.
+
+    Omit a default and leave invalid payload slots unobserved. The host
+    sentinel belongs to the observation array, not the payload contract.
+    """
+
     if qualified:
 
         @cuda.jit
@@ -919,6 +971,13 @@ def test_logical_direct_load_store_matches_every_dtype_oracle(
 
 @cache
 def _partial_load_kernel(algorithm: str, qualified: bool):
+    """Observe only valid items according to each warp's selected layout.
+
+    Without a default value, the test checks the valid prefix and leaves
+    invalid payload slots unobserved. The host reference separately applies
+    the same layout definition to each warp's tile origin.
+    """
+
     striped = algorithm == "striped"
     if qualified:
         selector = algorithm
@@ -1385,6 +1444,12 @@ def test_physical_warp_scalar_literal_infers_the_destination_dtype(
 
 @cache
 def _grid_stride_transpose_kernel(qualified: bool):
+    """Clamp a separate valid count for each warp in each block's tile.
+
+    Pass only the block origin as ``offset``. The provider adds the warp's
+    tile origin, including for the partial last warp of the final block.
+    """
+
     if qualified:
 
         @cuda.jit
@@ -1490,6 +1555,12 @@ def test_grid_stride_tail_clamps_valid_items_per_physical_warp(
 
 @cache
 def _logical_grid_stride_transpose_kernel(qualified: bool):
+    """Clamp the tail count for every logical group in each block's tile.
+
+    Pass the block origin as ``offset`` and let the provider add the logical
+    group's tile origin. Groups beyond the source use a zero valid count.
+    """
+
     if qualified:
 
         @cuda.jit
@@ -1598,6 +1669,14 @@ def test_grid_stride_tail_clamps_valid_items_per_logical_warp(
 def _run_divergent_warp_probe(
     qualified: bool, *, items_per_thread
 ) -> subprocess.CompletedProcess[str]:
+    """Run a one-warp collective with a child-process timeout.
+
+    A barrier that includes the inactive warp could stall the kernel. The
+    child contains that failure and checks that it imports the same
+    ``cuda.coop`` package as the test process before launching. Return its
+    status and output for the test assertion.
+    """
+
     if qualified:
         thread_data = "qualified_coop.ThreadData"
         group = "qualified_coop.this_warp()"
@@ -1678,6 +1757,13 @@ def test_one_physical_warp_can_take_a_transpose_collective_path(
 def _run_divergent_logical_warp_probe(
     qualified: bool, *, items_per_thread
 ) -> subprocess.CompletedProcess[str]:
+    """Probe a nonzero logical group in each physical warp with a timeout.
+
+    Only subgroup two participates, testing masks that must exclude other
+    lanes. A child process bounds an incorrect barrier and checks the
+    package's import origin. Return its status and captured output.
+    """
+
     if qualified:
         thread_data = "qualified_coop.ThreadData"
         group = "qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)"
@@ -1768,8 +1854,15 @@ def _run_invalid_runtime_valid_items_probe(
     logical_width: int | None = None,
     items_per_thread,
 ) -> subprocess.CompletedProcess[str]:
-    # A device trap poisons its CUDA context, so invalid launches must run in
-    # disposable child processes rather than the pytest worker.
+    """Run an invalid per-group count in a disposable CUDA context.
+
+    ``logical_width`` selects a logical group; ``None`` uses a full physical
+    warp. The child checks that its ``cuda.coop`` import origin matches the
+    test process, then launches with ``items_per_thread`` items per lane.
+    A device trap poisons its CUDA context. Return captured output and status
+    so the test can require that fault while keeping its own context usable.
+    """
+
     group = "root_coop.this_warp()"
     if logical_width is not None:
         group = f"root_coop.this_warp().group_by({logical_width})"

@@ -2,7 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Load/Store selectors shared by group planning and lowering."""
+"""Keep Numba Load/Store selectors consistent with the shared core.
+
+Allowed names come from the core algorithm enums. Factories use the
+storage-free subset to check that an algorithm without shared scratch
+uses the factory without a scratch pointer. Callers pass strings, which
+are normalized; enum objects are rejected.
+"""
 
 from enum import Enum
 
@@ -26,6 +32,13 @@ _STORAGE_FREE_ALGORITHMS = frozenset(
 def _resolve_algorithm(
     algorithm, allowed_algorithms, primitive_name: str
 ) -> str:
+    """Normalize a selector and check the primitive's supported choices.
+
+    Ignore surrounding whitespace and letter case; treat hyphens as
+    underscores. Reject enum objects even when they inherit from ``str`` so
+    the API has one consistent selector form.
+    """
+
     if not isinstance(algorithm, str) or isinstance(algorithm, Enum):
         raise TypeError(f"{primitive_name} algorithm must be a string")
     token = algorithm.strip().lower().replace("-", "_")

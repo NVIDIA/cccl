@@ -6,9 +6,9 @@
 
 Each exception names the kernel argument or missing fact that prevents a
 cooperative operation from being lowered. Keeping their message construction
-here lets the planner's branches focus on the condition being checked and keeps
-related diagnostics consistent. These errors leave planning with a diagnostic;
-they are not requests for another compiler pass or literal specialization.
+here lets the planner's branches focus on the condition being checked and
+keeps related diagnostics consistent. These errors leave planning with a
+diagnostic; they do not request another pass or literal specialization.
 """
 
 from textwrap import fill
@@ -17,34 +17,47 @@ from ._group_planner_support import GroupRewriteError
 
 
 def _wrap_diagnostic(message: str) -> str:
+    """Wrap a diagnostic without splitting names or hyphenated terms."""
+
     return fill(
         message, width=80, break_long_words=False, break_on_hyphens=False
     )
 
 
 class InvalidGroupSelectorError(ValueError):
+    """The common API received a selector outside its supported choices.
+
+    Point callers to the qualified API when they need backend-only controls.
+    """
+
     def __init__(self, operation, parameter, choices):
         super().__init__(
             _wrap_diagnostic(
-                f"cuda.coop.{operation} {parameter}"
-                f" must be one of: {choices}; use "
-                f"a backend-qualified import for backend-only controls",
+                f"cuda.coop.{operation} {parameter} must be one of: "
+                f"{choices}; use a backend-qualified import for "
+                "backend-only controls",
             )
         )
 
 
 class CyclicArrayProvenanceError(GroupRewriteError):
+    """A payload cycle has no concrete source that establishes its form.
+
+    The planner cannot choose scalar or array rules from a backedge alone.
+    """
+
     def __init__(self, operation):
         super().__init__(
             _wrap_diagnostic(
-                f"cuda.coop.numba_mlir.{operation}"
-                f" could not resolve cyclic array "
-                f"provenance to a concrete scalar or array value",
+                f"cuda.coop.numba_mlir.{operation} could not resolve "
+                "cyclic array provenance to a concrete scalar or array value",
             )
         )
 
 
 class InconsistentArrayExtentError(GroupRewriteError):
+    """Payload aliases imply different item counts for one provider call."""
+
     def __init__(self):
         super().__init__(
             _wrap_diagnostic(
@@ -55,6 +68,8 @@ class InconsistentArrayExtentError(GroupRewriteError):
 
 
 class InconsistentTupleExtentError(GroupRewriteError):
+    """The same tuple element reaches payloads with different item counts."""
+
     def __init__(self):
         super().__init__(
             _wrap_diagnostic(
@@ -65,6 +80,11 @@ class InconsistentTupleExtentError(GroupRewriteError):
 
 
 class NonConstantThreadGroupError(GroupRewriteError):
+    """The group operand cannot be reconstructed as a planning descriptor.
+
+    Provider selection needs the group before Numba type inference.
+    """
+
     def __init__(self, operation):
         super().__init__(
             _wrap_diagnostic(
@@ -75,6 +95,12 @@ class NonConstantThreadGroupError(GroupRewriteError):
 
 
 class NonConstantGroupArgumentError(GroupRewriteError):
+    """A specialization control cannot be recovered as a constant.
+
+    This is an unsupported value after constant resolution. A non-literal
+    kernel argument instead raises ``ForceLiteralArg`` to request a retry.
+    """
+
     def __init__(self, value_name):
         super().__init__(
             _wrap_diagnostic(
@@ -86,6 +112,8 @@ class NonConstantGroupArgumentError(GroupRewriteError):
 
 
 class InconsistentLoopTupleExtentError(GroupRewriteError):
+    """A merged tuple element has conflicting known payload item counts."""
+
     def __init__(self):
         super().__init__(
             _wrap_diagnostic(
@@ -96,29 +124,38 @@ class InconsistentLoopTupleExtentError(GroupRewriteError):
 
 
 class InconsistentLoopPayloadExtentError(GroupRewriteError):
+    """A merged payload has conflicting known per-thread item counts."""
+
     def __init__(self):
         super().__init__(
             _wrap_diagnostic(
-                "cuda.coop.numba_mlir loop-carried payloads have inconsistent "
-                "items_per_thread extents",
+                "cuda.coop.numba_mlir loop-carried payloads have "
+                "inconsistent items_per_thread extents",
             )
         )
 
 
 class EscapingGroupDescriptorError(GroupRewriteError):
+    """A descriptor still feeds a use that would need a runtime object.
+
+    Group planning erases these host descriptions after consuming their
+    supported uses. Report the remaining variable names before changing IR.
+    """
+
     def __init__(self, names):
         super().__init__(
             _wrap_diagnostic(
-                f"cuda.coop.numba_mlir ThreadGroup/ThreadHierarchy values are "
-                f"compile-time descriptors and may only feed this_*(), "
+                f"cuda.coop.numba_mlir ThreadGroup/ThreadHierarchy values "
+                f"are compile-time descriptors and may only feed this_*(), "
                 f"group_by(), or group-first primitives; descriptor use "
-                f"involving {names!r} "
-                f"would escape to runtime",
+                f"involving {names!r} would escape to runtime",
             )
         )
 
 
 class InvalidLoadStoreAlgorithmError(ValueError):
+    """A Load/Store algorithm is outside the choices for this group kind."""
+
     def __init__(self, operation, choices, group_kind=None):
         group = "" if group_kind is None else f" for {group_kind} groups"
         super().__init__(
@@ -130,6 +167,8 @@ class InvalidLoadStoreAlgorithmError(ValueError):
 
 
 class UnknownBlockDimensionError(GroupRewriteError):
+    """Provider selection lacks the exact block size needed for its shape."""
+
     def __init__(self, operation):
         super().__init__(
             _wrap_diagnostic(
@@ -140,6 +179,8 @@ class UnknownBlockDimensionError(GroupRewriteError):
 
 
 class UnknownLoadStoreExtentError(GroupRewriteError):
+    """Provider selection cannot determine the per-thread payload size."""
+
     def __init__(self, operation):
         super().__init__(
             _wrap_diagnostic(
@@ -150,58 +191,79 @@ class UnknownLoadStoreExtentError(GroupRewriteError):
 
 
 class UnknownLoadStoreDtypeError(GroupRewriteError):
+    """Provider selection cannot determine the payload's element type."""
+
     def __init__(self, operation):
         super().__init__(
             _wrap_diagnostic(
-                f"cuda.coop.numba_mlir.{operation}"
-                f" could not infer a dtype before "
-                f"provider selection",
+                f"cuda.coop.numba_mlir.{operation} could not infer "
+                "a dtype before provider selection",
             )
         )
 
 
 class MemoryDtypeMismatchError(TypeError):
+    """The memory operand and payload require different element types.
+
+    Load/Store transfers elements with matching types; it does not insert
+    an element conversion between these operands.
+    """
+
     def __init__(self, operation, memory_dtype, payload_dtype):
         super().__init__(
             _wrap_diagnostic(
-                f"cuda.coop.numba_mlir.{operation} memory dtype {memory_dtype} "
-                f"does not match payload dtype {payload_dtype}",
+                f"cuda.coop.numba_mlir.{operation} memory dtype "
+                f"{memory_dtype} does not match "
+                f"payload dtype {payload_dtype}",
             )
         )
 
 
 class NonConstantTempStorageError(GroupRewriteError):
+    """A storage argument cannot be recovered as a compile-time descriptor.
+
+    The provider needs its storage options before scratch is materialized.
+    """
+
     def __init__(self, operation):
         super().__init__(
             _wrap_diagnostic(
-                f"cuda.coop.numba_mlir.{operation}"
-                f" temp_storage must resolve to a "
-                f"compile-time TempStorage descriptor",
+                f"cuda.coop.numba_mlir.{operation} temp_storage must "
+                "resolve to a compile-time TempStorage descriptor",
             )
         )
 
 
 class UnsupportedLoadStoreTargetError(GroupRewriteError):
+    """The shared plan selected a target this backend cannot lower."""
+
     def __init__(self, target):
         super().__init__(
             _wrap_diagnostic(
-                f"cuda.coop.numba_mlir Load/Store "
-                f"received an unsupported lowering "
-                f"target {target!r}",
+                "cuda.coop.numba_mlir Load/Store received an unsupported "
+                f"lowering target {target!r}",
             )
         )
 
 
 class DefaultDtypeMismatchError(TypeError):
+    """A runtime load fill value has a different type from the payload.
+
+    Its existing type must match; contextual coercion applies to untyped
+    static literals, not arbitrary runtime operands.
+    """
+
     def __init__(self, value_dtype, payload_dtype):
         super().__init__(
-            f"cuda.coop.numba_mlir.load runtime "
-            f"oob_default dtype {value_dtype}\n"
+            "cuda.coop.numba_mlir.load runtime oob_default dtype "
+            f"{value_dtype}\n"
             f"does not match payload dtype {payload_dtype}"
         )
 
 
 class UnknownLoadStoreProviderError(GroupRewriteError):
+    """The plan's CUB implementation has no matching provider factory."""
+
     def __init__(self, provenance):
         super().__init__(
             _wrap_diagnostic(
@@ -212,29 +274,46 @@ class UnknownLoadStoreProviderError(GroupRewriteError):
 
 
 class PortableLoadPayloadError(TypeError):
+    """The common load API received an output without a ThreadData origin.
+
+    Qualified Numba calls also support local-array destinations.
+    """
+
     def __init__(self):
         super().__init__(
             _wrap_diagnostic(
-                "cuda.coop.load requires output to be a fixed-size ThreadData "
-                "payload in the portable API; use cuda.coop.numba_mlir for "
-                "backend-qualified local-array payload support",
+                "cuda.coop.load requires output to be a fixed-size "
+                "ThreadData payload in the portable API; "
+                "use cuda.coop.numba_mlir for backend-qualified "
+                "local-array payload support",
             )
         )
 
 
 class PortableStorePayloadError(TypeError):
+    """The common store API received an unsupported payload form.
+
+    Its payload must be a scalar or ThreadData. Qualified Numba calls also
+    support local arrays.
+    """
+
     def __init__(self):
         super().__init__(
             _wrap_diagnostic(
                 "cuda.coop.store accepts only a scalar or fixed-size "
                 "ThreadData value payload in the portable API; use "
-                "cuda.coop.numba_mlir for "
-                "backend-qualified local-array payload support",
+                "cuda.coop.numba_mlir for backend-qualified local-array "
+                "payload support",
             )
         )
 
 
 class UnsupportedLoadStoreGroupError(NotImplementedError):
+    """Load/Store has no supported implementation for the requested group.
+
+    Include the shared plan's reason when it supplies one.
+    """
+
     def __init__(self, operation, reason=None):
         message = f"cuda.coop.numba_mlir.{operation} cannot lower this group"
         if reason is not None:

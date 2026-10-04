@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Exercise family registration and rewriting with small test providers.
+
+The fixtures isolate private registries so test families cannot affect later
+operations. Fake invocables expose storage and call metadata without compiling
+C++ providers.
+"""
+
 from dataclasses import dataclass
 from types import SimpleNamespace
 
@@ -12,6 +19,7 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
 @pytest.fixture(autouse=True)
 def _restore_private_registries():
+    """Restore all registries changed by the test, even after a failure."""
     from cuda.coop._core.api import _dispatch as portable_dispatch
     from cuda.coop._core.group import _dispatch as core_dispatch
     from cuda.coop.numba_mlir._compiler import _operations
@@ -37,6 +45,8 @@ def _restore_private_registries():
 
 @dataclass(frozen=True)
 class _FakeSemantics:
+    """Provide semantic identity for a temporary operation family."""
+
     token: str
 
     @property
@@ -135,6 +145,7 @@ def test_factory_registration_rejects_noncallable_provider():
 
 
 def _rewrite_specification(**overrides):
+    """Build a valid baseline so each case can vary one registration rule."""
     from cuda.coop.numba_mlir._compiler._operations import (
         RewriteOperationSpecification,
     )
@@ -386,6 +397,8 @@ def test_storage_free_provider_uses_default_constructor_and_zero_storage():
 
 
 class _FakeInvocable:
+    """Expose scratch and synchronization metadata for one group scope."""
+
     files = ("family-registration-test.ltoir",)
     specialization = None
     temp_storage_bytes = 24
@@ -403,6 +416,8 @@ class _FakeInvocable:
 
 
 class _StorageFreeInvocable:
+    """Model a provider that needs neither scratch nor a reuse barrier."""
+
     files = ("storage-free-family-registration-test.ltoir",)
     specialization = None
     temp_storage_bytes = 0
@@ -416,6 +431,8 @@ class _StorageFreeInvocable:
 
 
 class _TypingContext:
+    """Count refreshes without a complete compiler typing context."""
+
     def __init__(self):
         self.refresh_count = 0
 
@@ -424,6 +441,7 @@ class _TypingContext:
 
 
 def _resolved_calls(func_ir):
+    """Resolve callable objects to inspect rewritten IR."""
     from numba_cuda_mlir.numbair_transforms import ir
 
     from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
