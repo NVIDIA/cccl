@@ -15,9 +15,8 @@ CUB or CUDAX; see :ref:`backend operation support
 <coop-backend-operation-support>`.
 
 Each thread keeps its items in a ``ThreadData`` object. ``load`` fills that
-object and returns ``None``; ``store`` writes its items to memory without
-changing them. The examples below show the same kernel using the common API
-and the CUTLASS-qualified API.
+object and returns ``None``; ``store`` writes its items to memory. The examples
+below show the same kernel using the common API and the CUTLASS-qualified API.
 
 The :doc:`overview <coop>` introduces ``cuda.coop`` and installation.
 The :doc:`programming concepts <coop/concepts>` explain the shared execution
