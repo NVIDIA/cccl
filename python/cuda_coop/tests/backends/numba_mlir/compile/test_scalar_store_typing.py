@@ -16,6 +16,9 @@ from numba_cuda_mlir.numba_cuda.core.errors import TypingError
 
 import cuda.coop.numba_mlir as qualified_coop
 from cuda import coop as root_coop
+from cuda.coop.numba_mlir._compiler._group_errors import (
+    MemoryDtypeMismatchError,
+)
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 
@@ -95,6 +98,10 @@ def test_store_checks_actual_expression_dtype(coop, expression, matching):
     arg_types = (types.float32[::1], destination_dtype[::1])
     if matching:
         _compile(kernel, *arg_types)
+    elif expression == "loop":
+        # Loop types are available during group planning, before typing.
+        with pytest.raises(MemoryDtypeMismatchError, match="payload dtype"):
+            _compile(kernel, *arg_types)
     else:
         with pytest.raises(
             TypingError, match="does not match destination dtype"

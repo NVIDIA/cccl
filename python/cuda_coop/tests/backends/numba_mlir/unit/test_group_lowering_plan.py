@@ -14,12 +14,18 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 _STATIC_PROVENANCE_GLOBAL = np.int32(3)
 
 
-def _planner(function, *, arg_types, block=(64, 1, 1)):
+def _planner(function, *, arg_types, block=(64, 1, 1), ssa=False):
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
     from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
 
     func_ir = run_frontend(function)
+    if ssa:
+        from numba_cuda_mlir.numba_cuda.core.ir_utils import build_definitions
+        from numba_cuda_mlir.numba_cuda.core.ssa import reconstruct_ssa
+
+        func_ir = reconstruct_ssa(func_ir)
+        func_ir._definitions = build_definitions(func_ir.blocks)
     state = SimpleNamespace(func_ir=func_ir, args=arg_types)
     return _GroupCallPlanner(
         state,
@@ -103,6 +109,74 @@ def test_group_planner_tracks_runtime_scalar_expression_provenance():
         assert (
             planner.context.planning_binding(value).kind is BindingKind.RUNTIME
         )
+
+
+@pytest.mark.parametrize("ssa", [False, True])
+@pytest.mark.parametrize("step_dtype", ["float32", "float64"])
+def test_loop_dtype_checks_every_reaching_definition(ssa, step_dtype):
+    from numba_cuda_mlir import types
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    from cuda.coop.numba_mlir._compiler._group_planner_support import (
+        GroupRewriteError,
+    )
+
+    def loop(source, step, condition):
+        value = source[0]
+        for _ in range(5):
+            if condition:
+                value = value + step
+        return value
+
+    planner = _planner(
+        loop,
+        arg_types=(
+            types.float32[::1],
+            getattr(types, step_dtype),
+            types.boolean,
+        ),
+        ssa=ssa,
+    )
+    result = next(
+        statement.value
+        for block in planner.func_ir.blocks.values()
+        for statement in block.body
+        if isinstance(statement, ir.Return)
+    )
+    if step_dtype == "float32":
+        assert planner.context.dtype(result) == types.float32
+    else:
+        with pytest.raises(GroupRewriteError, match="inconsistent dtypes"):
+            planner.context.dtype(result)
+
+
+@pytest.mark.parametrize("ssa", [False, True])
+def test_loop_dtype_does_not_ignore_an_unknown_producer(ssa):
+    from numba_cuda_mlir import types
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    def opaque(value):
+        return value
+
+    def loop(source, condition):
+        value = source[0]
+        for _ in range(5):
+            if condition:
+                value = opaque(value)
+        return value
+
+    planner = _planner(
+        loop, arg_types=(types.float32[::1], types.boolean), ssa=ssa
+    )
+    result = next(
+        statement.value
+        for block in planner.func_ir.blocks.values()
+        for statement in block.body
+        if isinstance(statement, ir.Return)
+    )
+    assert planner.context.dtype(result) is None
+    # A failed query must not leave speculative types for later operations.
+    assert planner.context.dtype(result) is None
 
 
 def test_group_planner_marks_only_explicit_static_scalar_provenance_static():
