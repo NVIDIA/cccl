@@ -144,8 +144,9 @@ several operations:
      - Same shared controls; qualifying the import is unnecessary for these
 
 For example, suppose you need both the exclusive sum and each tile's total.
-The qualified Scan can produce both in one call. Here it also consumes an
-existing Numba local array:
+The qualified Scan can produce both in one call. Each thread keeps its
+input values in ``ThreadData`` and receives the total through a separate
+one-item payload:
 
 .. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
    :language: python
