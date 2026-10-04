@@ -20,6 +20,7 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_exchange.cuh>
 #include <cub/block/block_load.cuh>
+#include <cub/block/block_reduce.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
@@ -447,6 +448,7 @@ private:
   using block_scan_t       = BlockScan<flag_value_t, threads_per_block, policy.scan_algorithm>;
   using block_store_t      = BlockStore<AccumT, threads_per_block, items_per_thread, policy.store_algorithm>;
   using block_count_scan_t = BlockScan<int, threads_per_block, policy.scan_algorithm>;
+  using block_reduce_t     = BlockReduce<AccumT, threads_per_block, BLOCK_REDUCE_WARP_REDUCTIONS>;
   using scan_tile_state_t  = ReduceByKeyScanTileState<AccumT, int>;
   using prefix_callback_t  = TilePrefixCallbackOp<flag_value_t, pair_scan_op_t, scan_tile_state_t>;
 
@@ -455,6 +457,7 @@ private:
     typename block_load_t::TempStorage load;
     typename block_scan_t::TempStorage scan;
     typename block_store_t::TempStorage store;
+    typename block_reduce_t::TempStorage reduce;
   };
 
   struct tile_deltas_t
@@ -747,7 +750,11 @@ private:
     {
       block_load_t(temp_storage.local.tile.load).Load(d_in + tile_start, values, valid_items, d_in[tile_start]);
     }
-    __syncthreads();
+    // A gathered tile uses no tile storage.
+    if (!gather)
+    {
+      __syncthreads();
+    }
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < items_per_thread; ++item)
@@ -881,43 +888,61 @@ private:
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE flag_value_t
-  reduce_range(work_t range_begin, work_t range_end, OffsetT num_segments, OffsetT first_segment)
+  // Reduces a range that lies inside first_segment and does not begin at its head. Only thread 0 holds the result.
+  _CCCL_DEVICE _CCCL_FORCEINLINE flag_value_t reduce_range(work_t range_begin, work_t range_end, OffsetT first_segment)
   {
-    initialize_cursor(range_begin, num_segments, first_segment);
+    const delta_t delta =
+      make_delta(static_cast<OffsetT>(addressing.input_begin[first_segment]), offsets[first_segment]);
 
-    flag_value_t range_aggregate{};
-    bool first_tile = true;
+    AccumT range_aggregate{};
     for (work_t tile_begin = range_begin; tile_begin < range_end;)
     {
-      const work_t tile_size = (::cuda::std::min) (range_end - tile_begin, static_cast<work_t>(items_per_tile));
-      const work_t tile_end  = tile_begin + tile_size;
-      const int valid_items  = static_cast<int>(tile_end - tile_begin);
-      flag_value_t items[items_per_thread];
-      int entries[items_per_thread];
-      load_tile(tile_begin, tile_end, num_segments, items, entries);
-
-      flag_value_t ignored_aggregate;
-      block_scan_t(temp_storage.local.tile.scan).InclusiveScan(items, items, pair_scan_op, ignored_aggregate);
-      __syncthreads();
-
-      const int last_index = valid_items - 1;
-      if (static_cast<int>(threadIdx.x) == last_index / items_per_thread)
+      const work_t tile_size   = (::cuda::std::min) (range_end - tile_begin, static_cast<work_t>(items_per_tile));
+      const work_t tile_end    = tile_begin + tile_size;
+      const int valid_items    = static_cast<int>(tile_size);
+      const OffsetT tile_start = element_index(tile_begin, delta);
+      input_value_t values[items_per_thread];
+      AccumT tile_aggregate;
+      if (valid_items == items_per_tile)
       {
-        temp_storage.local.thread_tails.Alias()[0] =
-          valid_items == items_per_tile
-            ? items[items_per_thread - 1]
-            : select_item(items, last_index % items_per_thread);
-      }
-      __syncthreads();
+        block_load_t(temp_storage.local.tile.load).Load(d_in + tile_start, values);
+        __syncthreads();
 
-      const flag_value_t tile_aggregate = temp_storage.local.thread_tails.Alias()[0];
-      range_aggregate                   = first_tile ? tile_aggregate : pair_scan_op(range_aggregate, tile_aggregate);
-      first_tile                        = false;
+        AccumT items[items_per_thread];
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int item = 0; item < items_per_thread; ++item)
+        {
+          items[item] = values[item];
+        }
+        tile_aggregate = block_reduce_t(temp_storage.local.tile.reduce).Reduce(items, scan_op);
+      }
+      else
+      {
+        block_load_t(temp_storage.local.tile.load).Load(d_in + tile_start, values, valid_items, d_in[tile_start]);
+        __syncthreads();
+
+        const int thread_items = valid_items - static_cast<int>(threadIdx.x) * items_per_thread;
+        AccumT partial         = values[0];
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int item = 1; item < items_per_thread; ++item)
+        {
+          if (item < thread_items)
+          {
+            partial = scan_op(partial, static_cast<AccumT>(values[item]));
+          }
+        }
+        const int valid_threads = (valid_items + items_per_thread - 1) / items_per_thread;
+        tile_aggregate = block_reduce_t(temp_storage.local.tile.reduce).Reduce(partial, scan_op, valid_threads);
+      }
+
+      if (threadIdx.x == 0)
+      {
+        range_aggregate = tile_begin == range_begin ? tile_aggregate : scan_op(range_aggregate, tile_aggregate);
+      }
       __syncthreads();
       tile_begin = tile_end;
     }
-    return range_aggregate;
+    return flag_value_t{0, range_aggregate};
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE flag_value_t
@@ -999,7 +1024,6 @@ private:
 
       flag_value_t ignored_aggregate;
       block_scan_t(temp_storage.local.tile.scan).InclusiveScan(items, items, pair_scan_op, ignored_aggregate);
-      __syncthreads();
 
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < items_per_thread; ++item)
@@ -1060,10 +1084,8 @@ private:
     int tile_idx,
     scan_tile_state_t& tile_state)
   {
-    const flag_value_t range_aggregate = reduce_range(range_begin, range_end, num_segments, first_segment);
-    __syncthreads();
-    const flag_value_t range_prefix = obtain_prefix(range_aggregate, tile_idx, tile_state);
-    __syncthreads();
+    const flag_value_t range_aggregate = reduce_range(range_begin, range_end, first_segment);
+    const flag_value_t range_prefix    = obtain_prefix(range_aggregate, tile_idx, tile_state);
     static_cast<void>(scan_range(range_begin, range_end, num_segments, range_prefix, first_segment));
   }
 
@@ -1117,9 +1139,7 @@ public:
 
     const flag_value_t suffix_aggregate = scan_range(
       temp_storage.local.tail_begin, range_end, num_segments, flag_value_t{}, temp_storage.local.tail_segment);
-    __syncthreads();
     publish_without_lookback(suffix_aggregate, tile_idx, tile_state);
-    __syncthreads();
 
     if (temp_storage.local.tail_begin == range_begin)
     {
@@ -1128,7 +1148,6 @@ public:
 
     const flag_value_t range_prefix =
       temp_storage.local.begins_at_head ? flag_value_t{} : obtain_predecessor_prefix(tile_idx, tile_state);
-    __syncthreads();
     static_cast<void>(
       scan_range(range_begin, temp_storage.local.tail_begin, num_segments, range_prefix, first_segment));
   }
@@ -1139,8 +1158,6 @@ struct range_split
 {
   WorkT total;
   int virtual_blocks;
-  // Read from shared storage by every thread.
-  int block;
 };
 
 //! @brief Scans the block's range of the work items. The work is split evenly across the blocks the grid
@@ -1240,7 +1257,6 @@ __launch_bounds__(current_policy<LoadBalancedPolicySelector>().threads_per_block
   constexpr int tile_size = policy.threads_per_block * policy.items_per_thread;
   if (threadIdx.x == 0)
   {
-    split.block = static_cast<int>(blockIdx.x);
     split.total = work_index[num_segments];
     split.virtual_blocks =
       (::cuda::std::min) (load_balanced_block_count(
@@ -1255,12 +1271,12 @@ __launch_bounds__(current_policy<LoadBalancedPolicySelector>().threads_per_block
   const ActualInitValueT actual_init_value = init_value;
   agent_t agent(temp_storage, d_in, d_out, work_index, scan_op, actual_init_value, addressing);
 
+  const int block = static_cast<int>(blockIdx.x);
   if (threadIdx.x < detail::warp_threads)
   {
     __syncwarp();
-    if (split.block < split.virtual_blocks)
+    if (block < split.virtual_blocks)
     {
-      const int block    = split.block;
       const work_t begin = even_split_boundary(split.total, split.virtual_blocks, block);
       const auto record  = make_even_boundary_record(work_index, num_segments, begin);
       if (threadIdx.x == 0)
@@ -1271,7 +1287,6 @@ __launch_bounds__(current_policy<LoadBalancedPolicySelector>().threads_per_block
   }
   __syncthreads();
 
-  const int block          = split.block;
   const int virtual_blocks = split.virtual_blocks;
   if (block >= virtual_blocks)
   {
