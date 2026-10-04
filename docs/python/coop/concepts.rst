@@ -342,11 +342,11 @@ compiled device function.
 The block ``transpose``, ``warp_transpose``, and
 ``warp_transpose_timesliced`` use CUB temporary storage. Without a
 descriptor, the compiler allocates the specialization's exact storage and
-inserts a block reuse barrier. An explicit descriptor selects shared or
-exclusive ownership, requests capacity and alignment, or opts into dynamic
-shared memory. The provider remains authoritative for the required byte
-count and alignment, and the backend validates the descriptor against the
-concrete lowering plan.
+inserts a block reuse barrier. An explicit descriptor selects the sharing
+policy and may request capacity and alignment. The compiler selects static
+or dynamic backing from the total requirement, as described below. The
+provider remains authoritative for the required byte count and alignment,
+and the backend validates the descriptor against the concrete lowering plan.
 
 Sharing selects only the slice layout: ``sharing="shared"`` overlaps every
 call that passes the same descriptor on one region, while
@@ -367,16 +367,18 @@ descriptor, and a call site inside a loop counts as a reuse on every
 iteration. Compiler-owned storage always synchronizes.
 
 The compiler stages every descriptor and every compiler-owned requirement of
-a kernel into one shared-memory backing. When that backing exceeds the
-48 KiB static limit, through an explicit ``size_in_bytes`` or through large
-implicit requirements, it moves to dynamic shared memory and the launch
-reserves the exact byte count. Supported Numba-CUDA-MLIR releases do not
-separate static and dynamic shared allocations reliably. A kernel using
-cooperative temporary storage must not also declare a zero-sized or
-runtime-sized ``cuda.shared.array``. When cooperative backing becomes
-dynamic, user static shared arrays are also unsupported. Keep both user
-arrays and cooperative backing static, or move the user data out of shared
-memory. Storage-free operations do not add this restriction.
+a kernel into one shared-memory backing. Up to 48 KiB, it uses static shared
+memory without querying the device. Larger requests, from explicit
+``size_in_bytes`` or implicit requirements, trigger a query of the device's
+default and opt-in limits. Backing above the default limit uses dynamic shared
+memory, and the launch reserves its exact byte count within the opt-in limit.
+Supported Numba-CUDA-MLIR releases do not separate static and dynamic shared
+allocations reliably. A kernel using cooperative temporary storage must not
+also declare a zero-sized or runtime-sized ``cuda.shared.array``. When
+cooperative backing becomes dynamic, user static shared arrays are also
+unsupported. Keep both user arrays and cooperative backing static, or move
+the user data out of shared memory. Storage-free operations do not add this
+restriction.
 
 With ``auto_sync=False``, a descriptor must originate from exactly one
 constructor site. Selecting between multiple manual-sync constructors is
