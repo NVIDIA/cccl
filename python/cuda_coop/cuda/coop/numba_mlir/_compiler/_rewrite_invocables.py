@@ -14,8 +14,9 @@ artifact for linking.
 This reduces provider-compilation overhead; it is not a promise of exactly one
 NVRTC invocation per kernel. Cache hits can avoid compilation, equivalent
 specializations can collapse to one provider, and unavailable or failed
-bundling falls back to individual materialization. LTO-to-PTX inspection,
-extra support images, and the kernel's own compilation remain separate work.
+bundling falls back to individual materialization. Scratch layouts come from
+the provider compilation and share its cache entry. Extra support images and
+the kernel's own compilation remain separate work.
 """
 
 from __future__ import annotations
@@ -245,7 +246,6 @@ class _InvocableRewrite:
                     block_threads_by_algo[id(algo)] = block_threads
             prepare_ltoir_bundle(
                 algorithms,
-                bundle_name=f"cuda_coop_numba_mlir_bundle_{id(self)}_{id(rewrite._func_ir)}",
                 allow_single=False,
                 threads_by_algo=threads_by_algo,
                 block_threads_by_algo=block_threads_by_algo,
