@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Reject decode type and payload-shape errors during group planning.
+
+Run the frontend with explicit types and launch facts, without compiling a
+provider. Lengths and runtime offsets need integer types. Run values and
+lengths must have the same fixed extent. Qualified auxiliary buffers must
+match their required extent and selected ``decoded_offset_dtype``. The
+generated driver checks run contents at execution.
+"""
+
 from types import SimpleNamespace
 
 import pytest
@@ -10,6 +19,12 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
 
 def _plan(function, args=(), block=(32, 1, 1)):
+    """Run group planning with argument types and an exact block shape.
+
+    The minimal compiler state reaches public-call validation. Block size
+    selects the decode specialization without compiling a provider.
+    """
+
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
     from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
