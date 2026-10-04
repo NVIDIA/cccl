@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe CUB block digit ranking and its optional prefix output.
+
+Rank assigns a position to each key without sorting its payload. The call
+record describes the key and output arrays before block dimensions are fixed.
+Specialization supplies those dimensions and the static digit width required
+by CUB. No GPU code is compiled in this module.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -44,7 +52,13 @@ _TEMPLATE_PARAMETERS = (
 def block_radix_rank_bins_per_thread(
     radix_bits: int, block_threads: int
 ) -> int:
-    """Return CUB's per-thread exclusive-prefix array extent."""
+    """Return the prefix slots CUB assigns to each thread.
+
+    A digit of radix_bits has ``2**radix_bits`` bins. Distribute their
+    prefixes across the block with ceiling division, retaining at least one
+    slot per thread. The extent sizes the optional exclusive-digit-prefix
+    output.
+    """
 
     radix_bits = normalize_positive_int("radix_bits", radix_bits)
     block_threads = normalize_positive_int("block_threads", block_threads)
@@ -53,12 +67,15 @@ def block_radix_rank_bins_per_thread(
 
 @dataclass(frozen=True)
 class BlockRadixRankSemantics:
-    """Dimension-independent radix-rank call contract.
+    """Record key, rank, and optional prefix arguments before specialization.
 
-    Static bit intervals describe CUB's ``BFEDigitExtractor`` argument exactly.
-    Runtime-classified intervals describe the equivalent operands used by a
-    provider-owned runtime-width shim; such a record cannot be specialized as
-    ``cub::BlockRadixRank`` until the interval becomes static.
+    ``parameters`` describes the provider call: key input, int32 rank output,
+    and, when requested, an int32 exclusive-digit-prefix output. The optional
+    block thread count lets the builder check that prefix array's extent.
+
+    Static bit intervals produce CUB's ``BFEDigitExtractor`` argument. Runtime
+    intervals instead describe operands for a provider shim; this record
+    cannot specialize ``cub::BlockRadixRank`` until both bounds are static.
     """
 
     key_dtype: Any
@@ -106,7 +123,13 @@ class BlockRadixRankSemantics:
 
 @dataclass(frozen=True)
 class BlockRadixRankSpecialization:
-    """Fully specialized CUB BlockRadixRank call semantics."""
+    """Pair a specialized CUB Rank algorithm with its normalized call data.
+
+    The Algorithm fixes block dimensions, digit width, and argument types for
+    a provider to compile. The call record retains facts such as the prefix-
+    array extent that planners and frontends need without decoding C++
+    arguments.
+    """
 
     specialization: Algorithm
     call: BlockRadixRankSemantics
@@ -161,7 +184,15 @@ def make_block_radix_rank_semantics(
     block_threads: int | None = None,
     exclusive_digit_prefix_items_per_thread: int | None = None,
 ) -> BlockRadixRankSemantics:
-    """Build normalized static or runtime-width BlockRadixRank semantics."""
+    """Validate Rank options and describe the input and output arguments.
+
+    Normalize the bit range and order, then check the requested prefix extent
+    when both the digit width and block thread count are known. Static bounds
+    create a CUB digit extractor; runtime bounds remain explicit operands for
+    a provider shim. Key dtype support and runtime checks belong to the
+    frontend or provider, rather than this compiler-independent argument
+    description.
+    """
 
     if key_dtype is None:
         raise ValueError("key dtype must be provided")
@@ -264,7 +295,13 @@ def make_block_radix_rank_specialization(
     descending: bool | RadixOrder = False,
     with_exclusive_digit_prefix: bool = False,
 ) -> BlockRadixRankSpecialization:
-    """Build a fully specialized CUB BlockRadixRank description."""
+    """Fix block dimensions and digit width for a CUB Rank specialization.
+
+    A runtime digit width cannot form CUB's ``RADIX_BITS`` template argument.
+    For a static width, derive the optional prefix extent and reuse the shared
+    call builder. The returned Algorithm describes compilation inputs;
+    creating it does not compile or launch a GPU kernel.
+    """
 
     if not isinstance(with_exclusive_digit_prefix, bool):
         # Keep the established ValueError contract for invalid controls.

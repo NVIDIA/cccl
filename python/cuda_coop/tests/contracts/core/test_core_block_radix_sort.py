@@ -3,6 +3,14 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
+"""Check CUB radix-sort signatures and specialization identity.
+
+Default bit bounds select a shorter signature; explicit bounds remain
+runtime controls even when supplied as Python constants. These host tests
+verify that overload choice, direction, layout, and payload form are retained
+without specializing on the values of runtime bounds.
+"""
+
 import numpy as np
 import pytest
 
@@ -156,6 +164,12 @@ def test_both_policy_preserves_default_and_explicit_overload_order():
 
 
 def test_runtime_bit_values_do_not_fragment_semantic_identity():
+    """Share one explicit-bound specialization across different bit intervals.
+
+    Actual bound values remain runtime operands. Omitting them changes the
+    provider signature, so its semantic identity must still differ.
+    """
+
     def make(begin_bit, end_bit):
         return make_block_radix_sort_semantics(
             key_dtype="u32",
@@ -177,6 +191,14 @@ def test_runtime_bit_values_do_not_fragment_semantic_identity():
 
 
 def test_sort_boolean_options_accept_numpy_scalars_but_reject_truthy_integers():
+    """Check type ancestry while rejecting non-boolean truthy values.
+
+    A synthetic NumPy base and subclass exercise the dependency-free core's
+    MRO check independently of the installed NumPy version. A moduleless type
+    must be rejected cleanly. An integer must not become a boolean selector
+    merely because it is truthy.
+    """
+
     numpy_bool_base = type(
         "bool_",
         (),

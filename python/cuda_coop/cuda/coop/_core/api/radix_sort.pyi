@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Type the common block radix API and its fixed-size payload results.
+
+Keys use the supported 32- and 64-bit signed or unsigned integers. Pair values
+use the common numeric types and retain their dtype in the result. Sort bit
+bounds may be compiler integers; Rank controls are compile-time integers. The
+implementation module documents participation and runtime constraints.
+"""
+
 from typing import TypeAlias
 
 import numpy

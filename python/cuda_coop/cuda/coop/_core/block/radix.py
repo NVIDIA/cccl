@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe radix order and bit ranges without a compiler dependency.
+
+Rank and Sort both select a half-open interval of key bits. The bounds can be
+known constants or runtime arguments, so the shared record stores each bound's
+binding kind. It does not retain a compiler's expression objects. Frontends
+choose their defaults before requesting these shared checks.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -15,7 +23,12 @@ from ._common import normalize_boolean_option
 
 
 class RadixOrder(str, Enum):
-    """Ordering selected by a radix rank or sort operation."""
+    """Select increasing or decreasing digit order.
+
+    Rank passes ``cpp_bool`` as CUB's ``IS_DESCENDING`` template argument.
+    Sort selects a method such as ``Sort`` or ``SortDescending``. One
+    normalized order gives different frontends the same cache identity.
+    """
 
     ASCENDING = "ascending"
     DESCENDING = "descending"
@@ -30,7 +43,11 @@ class RadixOrder(str, Enum):
 
 
 def normalize_radix_order(descending: bool | RadixOrder) -> RadixOrder:
-    """Normalize the public descending flag without truthiness coercion."""
+    """Accept an order enum or a boolean, without converting arbitrary values.
+
+    In particular, integers such as 0 and 1 are not order selectors. Boolean
+    validation is shared with other options and also accepts NumPy booleans.
+    """
 
     if isinstance(descending, RadixOrder):
         return descending
@@ -39,6 +56,13 @@ def normalize_radix_order(descending: bool | RadixOrder) -> RadixOrder:
 
 
 def _bit_binding(name: str, value: Any) -> ArgumentBinding:
+    """Classify one required bound and normalize a known integer value.
+
+    Runtime bindings pass through for the provider to check later. Static
+    booleans are rejected even though Python treats them as integers; range
+    checks belong to the complete interval, where both bounds are available.
+    """
+
     option = value if isinstance(value, ArgumentBinding) else binding(value)
     if option.kind is BindingKind.OMITTED:
         raise ValueError(f"{name} must be provided")
@@ -53,6 +77,12 @@ def _bit_binding(name: str, value: Any) -> ArgumentBinding:
 
 
 def _optional_positive_int(name: str, value: Any) -> int | None:
+    """Normalize optional key widths and default digit widths.
+
+    None means the caller has no width to supply. A supplied width must be a
+    positive integer, so a boolean cannot silently select a one-bit width.
+    """
+
     if value is None:
         return None
     if not isinstance(value, Integral) or isinstance(value, bool) or value < 1:
@@ -62,7 +92,14 @@ def _optional_positive_int(name: str, value: Any) -> int | None:
 
 @dataclass(frozen=True)
 class RadixBitRange:
-    """Static or runtime-classified half-open radix bit interval."""
+    """Record the bounds of a half-open interval and an optional key width.
+
+    Each bound records whether it is known during specialization or passed at
+    runtime. ``radix_bits`` is available only when both bounds are static.
+    This lets Rank require a template width while Sort can keep runtime
+    bounds. The semantic key includes the bindings and key width for cache
+    identity.
+    """
 
     begin_bit: ArgumentBinding
     end_bit: ArgumentBinding
@@ -110,11 +147,15 @@ def make_radix_bit_range(
     end_bit: Any,
     bit_width: int | None = None,
 ) -> RadixBitRange:
-    """Validate and classify a resolved radix bit interval.
+    """Classify a resolved bit interval and check every known constraint.
 
-    Runtime payloads are represented by :class:`ArgumentBinding` rather than
-    retained in the core record. Static bounds receive the full validation
-    available from the key bit width.
+    Require ``0 <= begin_bit < end_bit <= bit_width`` wherever the supplied
+    constants allow those checks. The upper limit is checked only when the key
+    width is available. A provider must check the remaining runtime
+    conditions.
+
+    The returned bindings retain static values or runtime identity, not the
+    compiler expressions that will supply runtime arguments.
     """
 
     bit_width = _optional_positive_int("bit_width", bit_width)
@@ -158,8 +199,14 @@ def resolve_static_radix_end_bit(
     default_to_bit_width: bool = False,
     clamp_default: bool = False,
 ) -> int:
-    """Resolve a frontend's static default and validate the resulting
-    interval.
+    """Resolve a frontend's default end bit and require a static interval.
+
+    An explicit end takes precedence. Otherwise, use the requested digit width
+    starting at begin, or the complete key width when enabled. Clamping
+    applies only to a default digit width and requires a known key width. This
+    helper keeps those frontend choices separate from common interval
+    validation. Return the validated end; neither bound may remain a runtime
+    argument.
     """
 
     begin = _bit_binding("begin_bit", begin_bit)

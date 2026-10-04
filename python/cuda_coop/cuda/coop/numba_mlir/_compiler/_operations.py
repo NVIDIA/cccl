@@ -223,21 +223,25 @@ def provider_synchronization_matches(
 
 @dataclass(frozen=True)
 class GroupResultSource:
-    """Name the arguments that determine one public result's type and shape.
+    """Describe one public result's dtype and scalar or array shape.
 
     Group planning reads these policies before a call is lowered. This lets a
-    later group call inspect an earlier call's result without requiring normal
-    Numba type inference first. Names refer to the bound public call
-    signature, not positions in the private provider ABI.
+    later group call inspect an earlier call's result before normal Numba
+    type inference. Names refer to bound public call arguments, not positions
+    in the private provider ABI. Dtype and shape can come from different
+    sources: ranks use int32 and retain the key payload's shape.
 
     Attributes
     ----------
     dtype_parameter : str or None
-        Argument whose dtype the result inherits. ``None`` supplies no dtype
-        inference through this policy.
+        Argument whose dtype the result inherits when no fixed dtype is set.
+        ``None`` supplies no argument-based dtype inference.
     array_parameter : str or None
         Argument whose scalar/array form and array extent the result inherits.
         ``None`` describes a scalar result with one item.
+    fixed_dtype : object, optional
+        Compiler dtype that overrides ``dtype_parameter``. ``None`` leaves
+        dtype inference to the named argument, if one exists.
     """
 
     dtype_parameter: str | None
