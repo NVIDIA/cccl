@@ -143,7 +143,8 @@ See :ref:`selecting the smallest or largest keys <coop-topk>`.
 Neighbor comparisons
 ^^^^^^^^^^^^^^^^^^^^
 
-See :doc:`neighbor operations <coop/neighbor-operations>` for tile boundaries
+See :doc:`Adjacent Difference <coop/visualizations/adjacent-difference>` and
+:doc:`Discontinuity <coop/visualizations/discontinuity>` for tile boundaries
 and the difference between arithmetic results and flags.
 
 .. autofunction:: adjacent_difference

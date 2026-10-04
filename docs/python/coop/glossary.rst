@@ -61,7 +61,8 @@ Terms
       Adjacent Difference and Discontinuity can consume an explicit
       predecessor or successor value to compare across this edge.
       Without one, their endpoint rules apply to the local tile. See
-      :doc:`neighbor operations <neighbor-operations>`.
+      :doc:`Adjacent Difference <visualizations/adjacent-difference>` and
+      :doc:`Discontinuity <visualizations/discontinuity>`.
 
    head flag
       An integer flag marking the start of a sequence according to

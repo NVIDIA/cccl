@@ -227,5 +227,7 @@ flags; ``mode="heads_and_tails"`` returns both payloads.
 Tile boundaries matter for both operations. Supply a predecessor or
 successor when comparisons must continue across tiles. A multiblock
 kernel that reads global neighbors must preserve those source values
-until all readers finish. The :doc:`neighbor examples <neighbor-operations>`
-use separate input and output arrays.
+until all readers finish. The
+:doc:`Adjacent Difference <visualizations/adjacent-difference>` and
+:doc:`Discontinuity <visualizations/discontinuity>` examples use separate
+input and output arrays.

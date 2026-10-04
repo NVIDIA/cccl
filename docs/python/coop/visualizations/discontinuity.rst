@@ -50,7 +50,13 @@ When no predecessor is supplied, the first head is one. When no successor
 is supplied, the last tail is one. Supplying the appropriate tile boundary
 value replaces that forced flag with the predicate result. For example,
 ``tile_predecessor_item=2`` changes the first head in the fallback table
-from one to zero. It does not change any other flag.
+from one to zero. It does not change any other flag. Scalar boundary values
+must match the input dtype and agree across the block.
+
+Every thread in the complete block must call the operation; warp groups
+are unsupported. The function infers dtype and per-thread extent from
+``ThreadData``. It accepts automatic scratch or an explicit
+:ref:`TempStorage <coop-temp-storage>`.
 
 The operation requires a full tile. There is no ``valid_items`` argument.
 Padding becomes input: a padding value equal to the final valid value can
@@ -77,6 +83,6 @@ The IDs restart at zero in each block. Global run IDs require a separate
 step to account for runs in preceding tiles and runs spanning tile
 boundaries.
 
-See :doc:`../neighbor-operations` for composition and
-:func:`cuda.coop.numba_mlir.discontinuity` for the qualified binary
+See :ref:`the Numba-CUDA-MLIR programming guide <coop-neighbor-comparisons>`
+and :func:`cuda.coop.numba_mlir.discontinuity` for the qualified binary
 ``flag_op`` predicate and local-array support.
