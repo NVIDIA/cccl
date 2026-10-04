@@ -119,9 +119,9 @@ public:
 class BlockHistogramSpecialization:
     """Pair a CUB compilation description with input and output geometry.
 
-    Input items_per_thread and output bins_per_thread are independent.
-    Retaining both extents and the bin count lets a frontend allocate counters
-    without assuming the result has the samples' shape.
+    Input items_per_thread and output bins_per_thread are independent, so the
+    result need not have the samples' shape. Current planners use only
+    ``specialization``; the shared result contract carries the counter extent.
     """
 
     specialization: Algorithm
