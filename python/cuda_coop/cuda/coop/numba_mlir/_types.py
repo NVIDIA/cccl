@@ -1650,6 +1650,11 @@ class DependentStatefulOperator:
     def specialize(self, template_arguments):
         """Compile a typed callback for the current device target.
 
+        Algorithm specialization calls this before compiling its Scan
+        wrapper. The state pointer is a device operand at each call, so only
+        its type and the callback's semantics belong in the compiled
+        operator identity.
+
         Resolve the state and payload types, reject aggregate payloads, and
         compile a signature with the typed state pointer first. For a functor
         class, compile its unbound ``__call__`` method. The first parameter
@@ -1659,6 +1664,13 @@ class DependentStatefulOperator:
         types, including the state dtype. Return a ``StatefulOperator`` with
         the LTO image and exact compute capability. Source generation checks
         that the provider target agrees. Wrapper compilation happens later.
+
+        Parameters
+        ----------
+        template_arguments : dict of str to object
+            Concrete algorithm bindings for the callback, state dtype,
+            and payload argument/result types. Runtime state values are
+            not part of these bindings.
         """
 
         state_dtype = self.state_dtype.resolve(template_arguments)

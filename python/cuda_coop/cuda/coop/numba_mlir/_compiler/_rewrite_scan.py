@@ -213,6 +213,11 @@ def _validate_prefix_state(
 ) -> int:
     """Check a prefix callback and consume its optional state operand.
 
+    ``infer_scan_payload`` calls this after the public call has been
+    converted to provider argument order. This second check also handles
+    direct provider calls, which may not have passed through public
+    group planning.
+
     ``index`` points after the payloads and any runtime seed in the device
     arguments. A stateful callback consumes one array there; stateless or
     absent callbacks leave the index unchanged. Return the next index so
@@ -222,6 +227,20 @@ def _validate_prefix_state(
     Require state only for ``StatefulFunction`` and validate its one-item
     extent and exact numeric dtype. Record the descriptor dtype on an
     untyped state payload so its later allocation uses the same type.
+
+    Parameters
+    ----------
+    context : GroupRewriteContext
+        Operand provenance and dtype records for the active
+        provider-call rewrite, before ordinary Numba type inference.
+    inference : PayloadInference
+        This call's runtime operands and mutable factory keywords.
+        Inferred shapes and types must agree with explicit factory
+        choices.
+    index : int
+        First optional operand after the input/output payloads and
+        any runtime seed, excluding the scratch pointer. The return
+        value advances this index only for a stateful callback.
     """
 
     from .._stateful_function import StatefulFunction
