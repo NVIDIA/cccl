@@ -684,8 +684,40 @@ def provider_radix_sort(
 ):
     """Resolve numeric Sort operands and the omitted end-bit default.
 
+    The qualified Sort entry point calls this during tracing after checking
+    the public argument form. It preserves scalar versus payload input so
+    the generated result has the same form, even for a one-item payload.
+
     The key dtype sets the full-width default. Shared planning preserves
     ordering, output layout, and scalar versus payload results.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        Complete block participating in this sort.
+    launch : LaunchFacts
+        Exact block dimensions reported by the compiler.
+    keys : ThreadData or scalar
+        Initialized per-thread numeric keys.
+    values : ThreadData, scalar, or None
+        Optional associated values in the same operand form as keys. Their
+        dtype may differ from the key dtype.
+    begin_bit : integer
+        Inclusive start of the key-bit interval, static or runtime.
+    end_bit : integer or None
+        Exclusive end of the interval. None selects the key dtype width.
+    descending : bool
+        Compile-time sort direction.
+    blocked_to_striped : bool
+        Whether to return striped rather than blocked item ownership.
+    temp_storage : TempStorage or None
+        Optional descriptor for the block's deferred scratch allocation.
+
+    Returns
+    -------
+    object
+        Fresh keys, or a pair of fresh key/value results. Each result retains
+        the scalar or ThreadData form selected by the input.
     """
 
     keys, key_type, key_items, scalar = _resolve_payload(
@@ -740,9 +772,40 @@ def provider_radix_rank(
 ):
     """Resolve integer keys and validate the optional writable prefix.
 
+    The qualified Rank entry point calls this during tracing. The optional
+    prefix is a second output: it holds bin offsets needed by radix passes
+    and does not replace the returned rank of each input key.
+
     Require a static one-to-eight-bit interval and the exact bin-based prefix
     extent. The prefix must be ThreadData with inferred or explicit Int32
     dtype. Rank uses automatic scratch and a trailing reuse barrier.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        Complete block participating in the rank operation.
+    launch : LaunchFacts
+        Exact block dimensions used to size per-thread prefix output.
+    keys : ThreadData or scalar
+        Initialized signed or unsigned integer keys.
+    begin_bit : int
+        Compile-time inclusive start of the selected bit interval.
+    end_bit : int or None
+        Compile-time exclusive end. None uses begin_bit plus radix_bits,
+        or four bits when neither width nor end was supplied.
+    radix_bits : int or None
+        Alternate width used with begin_bit to select one to eight bits.
+    descending : bool
+        Compile-time rank order.
+    exclusive_digit_prefix : ThreadData or None
+        Optional writable Int32 payload receiving per-bin exclusive counts.
+        Its required item count depends on the radix width and block size.
+
+    Returns
+    -------
+    object
+        Int32 ranks in the input's scalar or ThreadData form. An explicit
+        prefix payload is updated separately.
     """
 
     keys, key_type, key_items, scalar = _resolve_payload(
