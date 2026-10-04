@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check native batched-reduction geometry, method choice, and identity.
+
+Output capacity is the smallest per-lane extent that holds all batch results.
+Layout selects a CUB method, and synchronization is restricted to the logical
+warp so neighboring groups can skip the call. Operator, layout, and batch
+count must remain part of specialization identity. Construction rejects warp
+widths that are not a power of two up to 32, batch counts that are not
+positive integers, unknown layouts, and a missing dtype.
+"""
+
 import pytest
 
 from cuda.coop._core import CxxOperator, Dependency

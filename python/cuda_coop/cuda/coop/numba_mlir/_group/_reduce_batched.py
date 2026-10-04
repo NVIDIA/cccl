@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Expose the batched-reduction marker and qualified operator extension.
+
+The compiler loads this operation's planning family on demand. Each input
+slot reduces across the selected warp, and layout distributes those batch
+results among lanes. The marker body does not perform Python reductions.
+"""
+
 from __future__ import annotations
 
 from typing import Any

@@ -2,7 +2,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Each thread's result holds ``ceil(batches / warp_width)`` elements."""
+"""Plan independent reductions of payload slots across a selected warp.
+
+Each input slot is one batch with one item from each lane. CUB distributes
+its aggregates across the warp, so the result extent is ceil(batches / width)
+instead of the input extent. This rewrite resolves that shape, allocates a
+separate payload, and preserves the item dtype for later cooperative calls.
+Shared planning validates the warp and owns its scratch contract.
+
+The module also registers the follow-up rewrite for the generated provider
+call. That call takes the input and result arrays, requires static dtype,
+block shape, warp width, and batch count, and accepts no temp_storage. Its
+payload hook checks the two array extents.
+"""
 
 from cuda.coop._core import (
     make_group_primitive_call,
@@ -25,6 +37,15 @@ from ._rewrite_reduce_batched import infer_reduce_batched_payload
 
 
 def _result_extent(context, bound):
+    """Infer result capacity from the batch count and resolved warp width.
+
+    When a later call asks for the extent of this call's result, the group
+    planner traces back to this call and uses this value before the call is
+    rewritten and its output is allocated. Return None while the payload
+    extent or selected group's static size is unknown; do not guess the
+    input shape.
+    """
+
     batches = context.array_extent(bound.arguments["value"])
     if batches is None:
         return None
@@ -39,6 +60,19 @@ def _result_extent(context, bound):
 def _lower_reduce_batched(
     context, inst, *, operation, group, bound, is_common_root
 ):
+    """Rewrite a batch reduction to a native input/output array call.
+
+    Require fixed array input and infer its item type. Common calls require
+    ThreadData; qualified calls also accept local arrays. Resolve the static
+    layout and operator, then ask shared planning to validate the warp.
+
+    Allocate ceil(batches / width) slots per lane with the input dtype and
+    record that shape for later uses. The provider writes a separate result,
+    so the input stays intact. Layout assigns batch indices to result slots;
+    slots with no batch remain unspecified. Scratch comes from the plan and
+    has no caller-supplied descriptor in this API.
+    """
+
     value = bound.arguments["value"]
     if not context.is_array(operation, value):
         raise TypeError(

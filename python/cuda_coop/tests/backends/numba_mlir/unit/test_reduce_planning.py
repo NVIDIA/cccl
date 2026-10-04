@@ -861,6 +861,14 @@ def test_warp_reduction_rejects_explicit_storage(group_kind):
 
 
 def test_batched_reduction_operator_tracks_nested_device_helper(monkeypatch):
+    """Key callback behavior through the dependencies of a nested helper.
+
+    Build callbacks whose device helpers capture equal or different constants.
+    Equivalent helpers must share a semantic token; changed captured values
+    must differ. The patched type hook fails if fingerprinting reaches the
+    MLIRDispatcher class instead of the nested helper's semantic inputs.
+    """
+
     from numba_cuda_mlir import cuda, types
     from numba_cuda_mlir.descriptor import MLIRDispatcher
 
