@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Attach block participation and result contracts to neighbor operations.
+
+The primitive record selects a CUB overload. The group record adds the
+binding for ``valid_items``, and the planner checks it against the exact tile
+size. The resulting plan tells frontends who owns each output and which count
+or outside-tile neighbor arguments must agree across the block.
+"""
+
 from dataclasses import dataclass, field
 
 from .._bindings import ArgumentBinding, BindingKind, normalize_i32_binding
@@ -29,12 +37,23 @@ from ._model import (
 
 @dataclass(frozen=True, eq=False)
 class GroupNeighborSemantics:
+    """Pair a neighbor primitive with its omitted, static or runtime count.
+
+    The count binding must be present exactly when the primitive selects a
+    partial tile. Known counts receive integer validation here and tile-size
+    validation in the planner, where the block dimensions are available. Cache
+    identity includes the binding kind and any static value, rather than a
+    compiler expression that supplies a runtime count.
+    """
+
     primitive: BlockNeighborSemantics
     valid_items: ArgumentBinding = field(
         default_factory=ArgumentBinding.omitted
     )
 
     def __post_init__(self):
+        """Match the count binding to the partial-tile overload."""
+
         if not isinstance(self.primitive, BlockNeighborSemantics):
             raise TypeError("primitive must be BlockNeighborSemantics")
         object.__setattr__(
@@ -75,6 +94,14 @@ class GroupNeighborSemantics:
 
 
 def _classifications(operation):
+    """Label payloads and optional controls for the group call contract.
+
+    Values and supplied neighbors are runtime inputs. A partial count keeps
+    its static or runtime binding kind, while the binary operator is fixed
+    during specialization. Omitted neighbor controls do not become public
+    operands.
+    """
+
     result = [
         ParameterClassification(
             "values", ArgumentKind.RUNTIME, ParameterRole.INPUT
@@ -107,6 +134,19 @@ def _classifications(operation):
 
 
 def _plan_neighbors(call, resolved, launch, operation):
+    """Build result and participation contracts for the exact block tile.
+
+    Check a known valid count against tile capacity, and record that bound as
+    a precondition for runtime counts. The C++ adapter also checks runtime
+    counts before narrowing them. Every member owns its portion of each
+    blocked output; differences keep the input dtype and head/tail flags use
+    int32.
+
+    Count and supplied neighbor values must be block-uniform. Shared contracts
+    supply implementation-owned scratch and its synchronization requirements;
+    the frontend can replace those storage choices for an explicit descriptor.
+    """
+
     primitive = operation.primitive
     capacity = launch.exact_block_threads * primitive.items_per_thread
     if (

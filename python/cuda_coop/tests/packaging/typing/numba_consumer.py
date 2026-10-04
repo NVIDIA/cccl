@@ -17,9 +17,9 @@ _ItemT = TypeVar("_ItemT")
 
 
 class _ReadOnlyThreadData(Generic[_ItemT]):
-    """Check readable-input protocols without requiring mutable item access.
+    """Provide a read-only payload for readable-input signature checks.
 
-    These consumers check static declarations; they do not compile kernels
+    The consumers check static declarations only; no kernel is compiled
     with this custom Python payload.
     """
 
@@ -695,6 +695,8 @@ def check_topk_surface() -> None:
 
 
 def check_neighbor_results() -> None:
+    """Check typed neighbor results and qualified binary callbacks."""
+
     block = coop.this_block()
     values = coop.ThreadData(items_per_thread=3, dtype=np.float64)
     assert_type(
