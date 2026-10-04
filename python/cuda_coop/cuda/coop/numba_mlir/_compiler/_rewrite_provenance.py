@@ -244,10 +244,27 @@ class _ProvenanceRewrite(Rewrite):
         return dict(zip(arg_names, arg_types))
 
     def _lookup_definition(self, value):
-        """Resolve one unambiguous definition, or return ``None``.
+        """Resolve one unambiguous assignment for a provenance query.
 
-        Accept a variable or its name and prefer the guarded block lookup.
-        Pass other objects through for callers that already hold a definition.
+        Queries for a callee or constructor need one source value before they
+        can inspect it. Before static single assignment (SSA) reconstruction, a
+        name can have several assignments in branches or loops. Choosing the
+        last one would lose the other possibilities, so the guarded block lookup
+        and function lookup only accept an unambiguous definition. Use
+        ``_lookup_definitions`` when the caller can combine several
+        alternatives.
+
+        Parameters
+        ----------
+        value : ir.Var, str, or object
+            Variable or variable name to look up. An already resolved definition
+            is returned unchanged so recursive queries can accept either form.
+
+        Returns
+        -------
+        object or None
+            The defining value, or ``None`` when the name has no unique
+            definition.
         """
 
         if isinstance(value, ir.Var):
@@ -269,12 +286,27 @@ class _ProvenanceRewrite(Rewrite):
         return value
 
     def _lookup_definitions(self, value) -> list[object]:
-        """Collect definitions while retaining branch alternatives.
+        """Collect recorded sources without discarding branch inputs.
 
-        Accept a variable, its name, or an already resolved object. Before
-        static single assignment (SSA) reconstruction, a name can have several
-        assignments. Return each one once, by object identity, so walks can
-        inspect every alternative.
+        Payload and descriptor queries need to compare every possible
+        assignment: selecting just one branch could accept incompatible dtypes
+        or storage settings. This helper supplies the definitions recorded for a
+        name, plus an unambiguous block-local definition when available. It
+        deduplicates by object identity and leaves the caller to follow aliases
+        and check agreement. This is a conservative collection, not a proof that
+        each assignment can reach the current statement.
+
+        Parameters
+        ----------
+        value : ir.Var, str, or object
+            Variable or name whose definitions are needed. A resolved definition
+            is returned as a one-element list for the recursive callers.
+
+        Returns
+        -------
+        list of object
+            Candidate defining values. An unknown variable produces an empty
+            list.
         """
 
         defs: list[object] = []
@@ -398,11 +430,26 @@ class _ProvenanceRewrite(Rewrite):
         return direct if self._is_supported_factory(direct) else None
 
     def _extract_1d_extent_literal(self, value_ref):
-        """Read an integer extent from a scalar or one-element shape.
+        """Read a native array's element count from its shape argument.
 
-        Return ``None`` when constant inference or shape recognition fails.
-        This extracts a fact for native arrays; it does not apply the stricter
-        positivity and boolean checks of the ``ThreadData`` constructor.
+        Array provenance queries call this before provider specialization needs
+        ``items_per_thread``. The extent is the number of elements in the
+        array's single dimension, not a byte count. For example, both ``4`` and
+        ``(4,)`` describe four elements. Native-array typing later checks the
+        constructor; this query does not apply ``ThreadData``'s positivity and
+        boolean rules.
+
+        Parameters
+        ----------
+        value_ref : ir.Var or object
+            Shape argument to resolve with the rewrite's constant inference.
+
+        Returns
+        -------
+        int or None
+            Scalar shape or the sole integer in a tuple or list. ``None`` means
+            the shape is unresolved or is not a recognized one-dimensional
+            shape.
         """
 
         try:
@@ -605,11 +652,28 @@ class _ProvenanceRewrite(Rewrite):
         existing: _ThreadDataSpecification | None,
         observed: _ThreadDataSpecification,
     ) -> _ThreadDataSpecification:
-        """Combine compatible payload facts from separate definitions.
+        """Combine payload facts that must describe one compatible allocation.
 
-        Fill unknown extent and dtype fields; reject unequal known values.
-        Keep the larger alignment and retain common API origin if either input
-        has it. With no existing description, return the observed one.
+        Provenance queries call this when aliases or branches provide more than
+        one description of a payload. A later provider needs one element count
+        and dtype, so unequal known values raise a rewrite error. Unknown fields
+        can be filled from the other description. Keep the larger alignment and
+        retain common API origin if either input has it.
+
+        Parameters
+        ----------
+        existing : _ThreadDataSpecification or None
+            Facts accumulated so far, or ``None`` for the first description.
+        observed : _ThreadDataSpecification
+            Facts from another source of the payload. ``items_per_thread``
+            counts elements; ``alignment`` is in bytes. Either may still be
+            unknown.
+
+        Returns
+        -------
+        _ThreadDataSpecification
+            Combined facts, or ``observed`` unchanged when it is the first
+            input.
         """
 
         if existing is None:
@@ -1605,10 +1669,30 @@ class _ProvenanceRewrite(Rewrite):
     def _resolve_tuple_item_vars(
         self, tuple_value: ir.Var, index: int, seen: set[str]
     ) -> list[ir.Var]:
-        """Follow tuple construction and aliases to the requested item index.
+        """Trace a selected tuple element back to its possible source variables.
 
-        Keep alternatives from merged paths, including valid negative indices.
-        ``seen`` stops cycles. Unknown or out-of-range paths add nothing.
+        A payload or descriptor may pass through a tuple before a cooperative
+        call uses it. Provenance queries use this walk to recover the selected
+        item without treating the whole tuple as a payload. Keep alternatives
+        from merged control-flow paths so later checks can compare their facts.
+
+        Parameters
+        ----------
+        tuple_value : ir.Var
+            Variable holding the tuple or an alias of it.
+        index : int
+            Compile-time element index. Valid negative indices count from the
+            end.
+        seen : set of str
+            Names already visited on this recursive path. The method adds the
+            current name; recursive alternatives receive copies to detect cycles
+            without suppressing a separate branch.
+
+        Returns
+        -------
+        list of ir.Var
+            Recognized source variables. Unknown, cyclic, and out-of-range paths
+            contribute no entries, so this result may be incomplete.
         """
 
         if tuple_value.name in seen:

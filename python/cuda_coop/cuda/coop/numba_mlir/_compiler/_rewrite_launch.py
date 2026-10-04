@@ -220,10 +220,24 @@ class _LaunchRewrite:
         seen_factory_kwargs: set[str],
         factory_kwargs: dict[str, object],
     ) -> None:
-        """Rename ``dim`` to ``threads_per_block`` in both tracking tables.
+        """Give later dimension inference one keyword for the block shape.
 
-        Reject calls supplying both names, using ``op_name`` in the error.
-        This only renames the keyword; later code validates its value.
+        Argument splitting accepts ``dim`` as an alias of ``threads_per_block``.
+        It calls this before inferring the launch shape so required-keyword
+        checks and the provider factory both see the canonical name. Reject a
+        call that supplies both spellings; later validation checks the dimension
+        value.
+
+        Parameters
+        ----------
+        op_name : str
+            Operation name used in the duplicate-keyword diagnostic.
+        seen_factory_kwargs : set of str
+            Resolved keyword names. Replace ``dim`` with ``threads_per_block``
+            in place when the alias is present.
+        factory_kwargs : dict of str to object
+            Corresponding specialization values. Move the alias's value to the
+            canonical key without changing it.
         """
 
         if "dim" not in seen_factory_kwargs:

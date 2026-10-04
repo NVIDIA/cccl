@@ -77,6 +77,14 @@ class _GroupTopology(TypedDict, total=False):
 
 
 def _positive_int(value, *, name: str) -> int:
+    """Normalize a per-thread item count or logical warp width.
+
+    Load/Store factories pass an index-compatible ``value`` and the parameter
+    ``name`` to use in diagnostics. Return a positive Python integer; reject
+    booleans and non-integers with ``TypeError``, and nonpositive counts with
+    ``ValueError``.
+    """
+
     if isinstance(value, bool):
         raise TypeError(f"{name} must be an integer")
     try:
@@ -91,6 +99,9 @@ def _positive_int(value, *, name: str) -> int:
 def _registered_provider_metadata(factory, algorithm):
     """Check that a factory's storage ABI matches the selected algorithm.
 
+    ``_load`` and ``_store`` call this after resolving ``algorithm`` to a
+    canonical name. ``factory`` is the registered callable that selected the
+    block or warp provider and its scratch policy.
     Algorithms that use shared scratch require a leading pointer. Others
     require the storage-free factory. Return the registered metadata, or
     reject an unknown factory or mismatched choice before materialization.
@@ -113,7 +124,13 @@ def _registered_provider_metadata(factory, algorithm):
 
 
 def _materialization_metadata(registered):
-    """Pass the factory's storage and synchronization rules to the adapter."""
+    """Pass the chosen factory's scope and scratch rules to the adapter.
+
+    ``_load`` and ``_store`` supply the registry entry returned by
+    ``_registered_provider_metadata``. Return keyword arguments for
+    ``NumbaMlirCoreAdapter.materialize`` so provider construction uses those
+    same storage, execution, and synchronization contracts.
+    """
 
     return {
         "storage_abi": registered.storage_abi,

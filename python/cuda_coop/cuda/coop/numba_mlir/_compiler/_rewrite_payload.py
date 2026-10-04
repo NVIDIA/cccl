@@ -161,11 +161,28 @@ class _PayloadRewrite:
         seen_factory_kwargs: set[str],
         factory_kwargs: dict[str, object],
     ) -> None:
-        """Let the registered family fill or check pending factory inputs.
+        """Use payload facts to complete a provider's specialization inputs.
 
-        Share the argument splitter's operand list and keyword collections
-        with the hook. Updates to factory values and seen names remain visible
-        to the caller's later required-keyword checks.
+        The argument splitter calls the registered family's inference hook
+        before checking required factory keywords. This lets an operand's dtype
+        or per-thread element count supply an omitted keyword while detecting a
+        conflict with an explicit value. ``PayloadInference`` shares the pending
+        collections with the splitter so those decisions remain visible.
+
+        Parameters
+        ----------
+        op_name : str
+            Registered operation whose payload inference hook should run.
+        runtime_args : list of ir.Var
+            Operands in provider order, without the storage pointer.
+        allowed_factory_kwargs : set of str
+            Keywords accepted by this operation; other inferred names are
+            ignored.
+        seen_factory_kwargs : set of str
+            Names already resolved. The hook adds names that it successfully
+            infers.
+        factory_kwargs : dict of str to object
+            Resolved specialization inputs, updated in place by the hook.
         """
 
         rewrite = cast("CoopSinglePhaseRewrite", self)
