@@ -137,7 +137,7 @@ def check_cutlass_surface(source: object, destination: object) -> None:
 def check_cutlass_dynamic_memory_controls(
     signed: Int32, unsigned: Uint32
 ) -> None:
-    """Accept CuTe integer controls with a typed payload."""
+    """Check CuTe counts, offsets and sentinels, plus scalar Store."""
 
     block = cutlass_coop.this_block()
     values = cutlass_coop.ThreadData(items_per_thread=2, dtype=Float64)
@@ -436,8 +436,8 @@ def check_cutlass_scan_surface(scalar: Uint32) -> None:
 def check_cutlass_scan_seeds(integer_seed: int, floating_seed: float) -> None:
     """Accept matching initial-value types without changing the result dtype.
 
-    NumPy and CuTe spellings can describe the same numeric dtype. Python
-    numbers use the input's type context. These declarations check accepted
+    NumPy and CuTe spellings can describe the same numeric dtype. Python int
+    and float seeds take the input's dtype. These declarations check accepted
     type combinations; representability of a particular literal is a compiler
     validation, not a mypy assertion here.
     """
@@ -1136,6 +1136,14 @@ def check_cutlass_histogram() -> None:
 
 
 def check_cutlass_run_length_surface(destination: CutlassTensorSample) -> None:
+    """Distinguish a value-typed decoded window from the bulk Uint32 total.
+
+    Run lengths and offsets have independent integer types. Bulk decoding
+    writes the destination tensor and returns a count; it does not return a
+    payload. Register run values give a ThreadData[Any] window result;
+    register run lengths do not change either result type.
+    """
+
     block = cutlass_coop.this_block()
     values = cutlass_coop.ThreadData(items_per_thread=2, dtype=Int32)
     lengths = cutlass_coop.ThreadData(items_per_thread=2, dtype=Uint64)

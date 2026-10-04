@@ -7,9 +7,9 @@ Run Length Decode
 =================
 
 Both Numba-CUDA-MLIR and CUTLASS implement the common window and bulk
-operations. The examples below use Numba; the :ref:`CuTe example
-<coop-cutlass-run-length>` demonstrates the same decoding and scratch-reuse
-contracts.
+operations. The examples below use Numba; the
+:ref:`CuTe example <coop-cutlass-run-length>` demonstrates the same
+decoding and scratch-reuse contracts.
 
 Run Length Decode expands each run value by its length. Values ``[7, 9]``
 with lengths ``[3, 2]`` describe the stream ``[7, 7, 7, 9, 9]``.

@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Type stubs for ``cuda.coop.cutlass`` run-length decoding.
+
+run_length_decode returns ThreadData with the run-value dtype. If run values
+come from a CuTe register tensor or TensorSSA, a type checker cannot see that
+dtype, so the result is ThreadData[Any]. run_length_decode_into writes a CuTe
+tensor and returns the Uint32 total to every thread. Offsets accept integer
+types up to uint64.
+"""
+
 from typing import Any, TypeAlias, overload
 
 from cutlass import Uint32

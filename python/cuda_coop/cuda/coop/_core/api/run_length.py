@@ -2,12 +2,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Expose decoded windows and complete stream writes for compiled kernels.
+"""Define common block run-length decoding calls for compiled kernels.
 
-The window form returns a fixed-size payload per thread. The into form writes
-the entire decoded stream to a caller's array and returns its total size. Both
-preserve the compressed inputs. Registration decorators let compiler frontends
-recognize these calls; the Python bodies reject host execution.
+Each input run is a value and a length. Decoding repeats each value by its
+length to make one stream. ``run_length_decode`` returns a blocked window as
+one fixed-size payload per thread. ``run_length_decode_into`` writes the
+complete stream to an array and returns its total size. Neither call changes
+its run inputs.
+
+Numba-CUDA-MLIR replaces these registered calls during compilation. CuTe
+tracing runs the Python bodies. They require fixed-size ThreadData run
+payloads with a numeric value dtype and an integer length dtype, then
+dispatch to the active backend. Device code checks run lengths and, for bulk
+writes, destination capacity at runtime, and traps on failure.
 """
 
 from __future__ import annotations

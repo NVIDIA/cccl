@@ -306,14 +306,19 @@ forms and return ``ThreadData`` payloads. Warp Scan accepts only one scalar
 per lane. Rank results and Discontinuity flags have signed Int32 dtype.
 Scalar Shuffle returns a CuTe scalar.
 
+Qualified Run Length Decode also accepts both register forms. The window
+call returns ``ThreadData``; the bulk call writes a destination tensor and
+returns a CuTe ``Uint32`` total to each block member.
+
 The :doc:`CUTLASS Programming Guide <coop_cutlass>` explains how to choose
 between common and qualified calls. Qualified Reduce and Scan also accept
-Python ``operator`` functions and NumPy ufuncs as aliases for their built-in
-operators. Sum always adds. CUTLASS rejects custom Reduce and Scan operators
-and Scan prefix callbacks. See :ref:`CUTLASS-specific behavior and limits
-<coop-cutlass-differences>` for participation and launch requirements,
-and the :doc:`CUTLASS Developer Guide <coop/cutlass_developer_guide>` for
-compilation, linking, and debugging.
+matching ``operator`` functions and NumPy ufuncs, such as ``operator.add``
+and ``numpy.maximum``, as aliases for their built-in operators. Sum always
+adds. CUTLASS rejects all other callables, including custom Reduce and Scan
+operators and Scan prefix callbacks. See :ref:`CUTLASS-specific behavior and
+limits <coop-cutlass-differences>` for participation and launch
+requirements, and the :doc:`CUTLASS Developer Guide
+<coop/cutlass_developer_guide>` for compilation, linking, and debugging.
 
 .. currentmodule:: cuda.coop.cutlass
 

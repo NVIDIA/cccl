@@ -88,8 +88,8 @@ qualified imports perform that registration directly.
      - Adds scalar and register-tensor inputs, floating-point Sort keys,
        striped Sort results, and Rank bin prefixes; see :ref:`coop-cutlass-radix`.
    * - TopK
-     - Block minimum or maximum keys/pairs with common count and scratch
-       controls.
+     - Block minimum or maximum keys or pairs with common count and
+       scratch controls.
      - Also accepts CuTe register tensors and returns fresh ``ThreadData``;
        see :ref:`coop-cutlass-topk`.
 
@@ -1075,9 +1075,12 @@ The qualified functions additionally accept CuTe register payloads. Numba's
 optional total-size and relative-offset payloads and uint64 decoded totals
 are outside the current CUTLASS-qualified interface.
 
-This example decodes a window starting at item three, then reuses the scratch
-to write the complete stream at destination offset five. The bulk operation
-uses two internal windows.
+This example decodes a 64-item window starting at decoded index 3, then
+reuses the scratch to write the complete stream at destination offset 5.
+Each of the 32 threads supplies ``items_per_thread`` runs of length two. Bulk
+decoding therefore writes ``64 * items_per_thread`` items through
+``2 * items_per_thread`` internal 32-item windows. The input run extent and
+each operation's decoded window extent are independent.
 
 .. literalinclude:: ../../python/cuda_coop/tests/backends/cutlass/runtime/test_run_length_examples.py
    :language: python

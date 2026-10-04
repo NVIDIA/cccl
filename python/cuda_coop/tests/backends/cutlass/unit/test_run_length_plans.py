@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check decoding plans, offset limits, and failed-call session restoration.
+
+Window plans return typed payloads; bulk plans return a Uint32 total.
+Requests use distinct wrapper symbols. The rendered source defines their
+shared BlockRunLengthDecodeCoop class only once. That class checks lengths
+and destination bounds before decoding.
+"""
+
 import inspect
 from dataclasses import replace
 from types import SimpleNamespace
@@ -107,6 +115,15 @@ def test_storage_contract(sharing, auto_sync):
 
 
 def test_typed_identity_and_driver_deduplication():
+    """Keep request wrappers distinct while sharing one decoder class.
+
+    Each request renders an extern C wrapper with a hashed symbol. Bulk mode,
+    length type, and a maximum-width static offset change that symbol. All
+    wrappers share one BlockRunLengthDecodeCoop class template. Source checks
+    require the Uint64 literal and the overflow-safe capacity check. Negative
+    lengths and any positive run after zero padding must be rejected.
+    """
+
     requests = [
         _request(),
         _request(bulk=True),
@@ -160,6 +177,13 @@ def test_common_signature(name):
 )
 @pytest.mark.parametrize("invalid", ("run_values", "run_lengths"))
 def test_invalid_payload_names_operation(api, primitive, invalid):
+    """Name the invoked operation and bad payload in validation errors.
+
+    An active CuTe environment reaches qualified validation through either
+    frontend. This context is needed to check decoding-specific diagnostics
+    instead of failing earlier during backend selection.
+    """
+
     values = cutlass_coop.ThreadData(
         items_per_thread=1, dtype=cutlass.Int32, values=[3]
     )
@@ -183,6 +207,13 @@ def test_invalid_payload_names_operation(api, primitive, invalid):
 
 
 def test_failed_storage_restores_session(monkeypatch):
+    """Restore saved session state if decoding scratch registration fails.
+
+    Stubs replace request registration and register-tensor allocation, so the
+    call reaches scratch registration without tracing a CuTe kernel. Both
+    value and length payloads must remain intact after snapshot restoration.
+    """
+
     saved, restored = object(), []
     monkeypatch.setattr(_state, "snapshot_active_session_state", lambda: saved)
     monkeypatch.setattr(_state, "restore_active_session_state", restored.append)

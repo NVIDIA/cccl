@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Generate the C++ call for CUTLASS run-length decoding.
+
+The C++ adapter scans lengths to check padding and the total size before it
+builds the CUB decoder. Window calls return a new register payload. Bulk calls
+build the decoder table once, write every window to a checked global tensor,
+and return the total. Exact scratch means its size and alignment come from
+probing the real C++ TempStorage type at build time. The scan and decoder use
+that scratch in turn.
+"""
+
 import hashlib
 from dataclasses import dataclass, replace
 from enum import Enum
@@ -44,6 +54,14 @@ _resolve_type = _types.make_provider_type_resolver(
 
 
 def _offset_binding(value):
+    """Return the offset binding and its C++ control type.
+
+    A Python or NumPy integer becomes a static Uint64 literal; shared planning
+    checks its range. A runtime offset keeps its own integer dtype. The C++
+    adapter can then trap a negative signed offset before it uses it. Bool and
+    Enum values are rejected.
+    """
+
     if isinstance(value, (bool, np.bool_, Enum)):
         raise TypeError(
             "run_length_decode offset must be an integer, not bool or Enum"
@@ -70,6 +88,14 @@ def _make_run_length_plan(
     bulk=False,
     temp_storage=None,
 ):
+    """Plan the call and its scratch ownership and reuse barrier.
+
+    Keep run extent, decoded window extent, and offset binding distinct. The
+    CUTLASS form uses the common Uint32 total profile without relative-offset
+    outputs. Use caller storage controls or keep automatic allocation and a
+    trailing reuse barrier.
+    """
+
     binding, control_type = _offset_binding(offset)
     operation = GroupRunLengthDecodeSemantics(
         item_dtype=value_type,
@@ -118,10 +144,27 @@ def _make_run_length_plan(
 
 @dataclass(frozen=True, eq=False)
 class _CubRunLengthRequest:
+    """Describe one C++ run-length wrapper for the session to render.
+
+    The session renders each distinct request once. Requests with equal
+    artifact keys share one wrapper symbol. The key includes window or bulk
+    form, run and decoded extents, dtypes, static offset, and storage
+    controls. The scratch type is a union: the validation scan and decoder use
+    the same memory one after the other.
+    """
+
     plan: GroupLoweringPlan
     kind: str = "cub_group_run_length"
 
     def __post_init__(self):
+        """Check decoder templates, results, and storage contracts.
+
+        Require numeric values, integer lengths/controls, a one-dimensional
+        block, and the common Uint32 total profile. Match Window or Into and
+        every template argument. Check result dtype/extent and exact scratch
+        with its reuse policy.
+        """
+
         self.plan.require_supported()
         if (
             self.plan.target is not GroupLoweringTarget.CUB_BLOCK
@@ -213,6 +256,8 @@ class _CubRunLengthRequest:
 
     @property
     def cpp_type(self):
+        """Spell the C++ type used by calls and layout probes."""
+
         args = [
             _types.TYPE_SPECIFICATIONS[value].cpp_type
             if value in _types.TYPE_SPECIFICATIONS
@@ -223,10 +268,14 @@ class _CubRunLengthRequest:
 
     @property
     def scratch_requirement_key(self):
+        """Key layout probes by their CUB storage type."""
+
         return "cub_run_length_storage", self.cpp_type
 
     @property
     def symbol_name(self):
+        """Hash the complete plan identity into a wrapper symbol."""
+
         digest = hashlib.sha256(
             repr(self.plan.artifact_key).encode()
         ).hexdigest()[:16]
@@ -243,6 +292,21 @@ class _CubRunLengthRequest:
 
 
 def _render_run_length(request):
+    """Return the C++ source lines of one wrapper function.
+
+    Parameters arrive in this order: run values and lengths as scalars, then
+    the destination pointer and capacity for bulk calls, the runtime offset if
+    present, the scratch address, size and auto-sync flag, and the result
+    pointer for window calls. A static offset is a literal in the generated
+    code. The wrapper traps if scratch is too small or misaligned. It then
+    turns the shared address into a pointer and copies the runs into local
+    arrays. The shared adapter checks lengths, padding, totals, and offsets.
+
+    Window calls copy decoded items to the result pointer. Total and
+    relative-offset arrays stay internal. Bulk calls return the Uint32 total.
+    When auto_sync is set, a block barrier follows either form.
+    """
+
     request.__post_init__()
     p = request.operation
     item_cpp = _types.TYPE_SPECIFICATIONS[p.item_dtype].cpp_type
@@ -339,6 +403,13 @@ _rendering.register_bundle_renderer(
 
 
 def _destination(destination, value_type):
+    """Extract a contiguous global tensor pointer and Int64 capacity.
+
+    Require the run-value dtype, one-dimensional shape and unit stride. Reject
+    invalid static extents before conversion. The C++ adapter checks the
+    resulting capacity and offset before writing the decoded stream.
+    """
+
     message = (
         "run_length_decode_into destination must be a contiguous "
         "one-dimensional global-memory tensor with the run-value dtype"
@@ -372,6 +443,8 @@ def _destination(destination, value_type):
 
 
 def _typed_item(value, dtype):
+    """Convert a verified run value or length to its scalar ABI dtype."""
+
     if isinstance(value, np.generic):
         value = value.item()
     converted = _types.coerce_plain_scalar(
@@ -396,6 +469,18 @@ def provider_run_length_decode(
     bulk,
     temp_storage,
 ):
+    """Emit checked decoding while preserving both input payloads.
+
+    Resolve value and length dtypes separately and carry a runtime offset in
+    its original integer type. Window output uses a new aligned register
+    tensor. Bulk output uses the destination pointer and capacity and returns
+    a Uint32 scalar.
+
+    Record exact scratch for the whole operation. On failure, undo the queued
+    session changes and re-raise. Kernel code already emitted and the output
+    register tensor are not removed.
+    """
+
     resolved = [
         _types.resolve_thread_data_value_type(
             payload,

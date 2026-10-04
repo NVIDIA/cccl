@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check readable run inputs before compiler-specific decoding begins.
+
+A marker spy and fake backend identity isolate common validation. Values
+and lengths may use different dtypes, but lengths must use an integer
+dtype. The bulk destination is a placeholder because backend validation
+is mocked.
+"""
+
 from importlib import import_module
 
 import numpy as np
@@ -11,6 +19,12 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
 
 class _ReadonlyThreadData:
+    """Supply a minimal readable payload with a selectable dtype and extent.
+
+    No compiler object or writable interface is needed to exercise the common
+    input checks. Tests can change the length dtype independently of values.
+    """
+
     def __init__(self, items_per_thread=2, *, dtype=np.int32):
         self.items_per_thread = items_per_thread
         self.dtype = dtype
