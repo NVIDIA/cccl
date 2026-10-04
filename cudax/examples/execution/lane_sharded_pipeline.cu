@@ -289,25 +289,6 @@ __global__ void fill(int* p, int n, int v)
   }
 }
 
-// A receiver for running a sender by hand (needed under stream capture, where
-// sync_wait must not be used: it would synchronize inside the capture). Its
-// environment carries the memory resource, as sync_wait's does in the eager run.
-template <class Env>
-struct no_op_receiver
-{
-  using receiver_concept = ex::receiver_t;
-  Env env;
-  void set_value() noexcept {}
-  template <class E>
-  void set_error(E&&) noexcept
-  {}
-  void set_stopped() noexcept {}
-  const Env& get_env() const noexcept
-  {
-    return env;
-  }
-};
-
 int main(int argc, char** argv)
 {
   const bool as_graph = argc > 1 && std::strcmp(argv[1], "--graph") == 0;
@@ -368,22 +349,12 @@ int main(int argc, char** argv)
     else
     {
       // Captured: the same chain, enqueued into a capture that starts on lane 0.
-      // The fork events bring the other lanes into the capture; the join events
-      // become graph edges.
-      cudaGraph_t graph{};
-      check(cudaStreamBeginCapture(streams[0].get(), cudaStreamCaptureModeThreadLocal), "cudaStreamBeginCapture");
-      {
-        auto op = ex::connect(std::move(pipeline), no_op_receiver<decltype(env)>{env});
-        ex::start(op);
-      } // the operation state dies here: the partials' free is captured too
-      // Every lane's tail must be joined back into the capturing stream before
-      // the capture ends. The pipeline's own join covers the reduce; CUB's
-      // scratch frees were enqueued on each lane after it.
-      for (size_t k = 1; k < N; ++k)
-      {
-        streams[0].wait(streams[k]);
-      }
-      check(cudaStreamEndCapture(streams[0].get(), &graph), "cudaStreamEndCapture");
+      // The fork events bring the other lanes into the capture, the join events
+      // become graph edges, and lane_capture joins every lane back at the end.
+      // lane_capture: begin the capture on lane 0, run the pipeline, destroy its
+      // operation state (so scoped frees are captured too), join every lane the
+      // pipeline touched back into lane 0, end the capture.
+      cudaGraph_t graph = ex::lane_capture(lanes[0], std::move(pipeline), env);
       size_t nodes = 0, edges = 0;
       check(cudaGraphGetNodes(graph, nullptr, &nodes), "cudaGraphGetNodes");
       check(cudaGraphGetEdges(graph, nullptr, nullptr, nullptr, &edges), "cudaGraphGetEdges");

@@ -199,6 +199,54 @@ struct get_lane_ready_t
 };
 _CCCL_GLOBAL_CONSTANT get_lane_ready_t get_lane_ready{};
 
+//! @brief The set of lanes a pipeline touched, gathered as it runs.
+//!
+//! The lanes a pipeline uses cannot be read off the sender: `let_value` bodies
+//! exist only at run time. So a `lane_tracker` is handed down through the
+//! environment (`get_lane_tracker`, a forwarding query) and every lane node
+//! registers its lane when it executes: `schedule(lane)` on start,
+//! `continues_on(lane)` on completion, a split's child through the same nodes.
+//! Once the pipeline has run (and its operation state has died, so that scoped
+//! frees are enqueued too), the set is what the terminal has to wait on:
+//! `sync_wait` synchronizes each lane, `lane_join_into` makes a stream wait on
+//! each lane, `lane_capture` joins each lane back into the capturing stream.
+struct lane_tracker
+{
+  static constexpr int cap = 32;
+  cudaStream_t s[cap]{};
+  int n = 0;
+  void add(cudaStream_t x) noexcept
+  {
+    for (int i = 0; i < n; ++i)
+    {
+      if (s[i] == x)
+      {
+        return;
+      }
+    }
+    if (n < cap)
+    {
+      s[n++] = x;
+    }
+  }
+};
+
+struct get_lane_tracker_t
+{
+  _CCCL_TEMPLATE(class _Env)
+  _CCCL_REQUIRES(__queryable_with<_Env, get_lane_tracker_t>)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const _Env& __env) const noexcept
+    -> __query_result_t<_Env, get_lane_tracker_t>
+  {
+    return __env.query(*this);
+  }
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  {
+    return true;
+  }
+};
+_CCCL_GLOBAL_CONSTANT get_lane_tracker_t get_lane_tracker{};
+
 namespace __lane
 {
 // ------------------------------------------------------- stream set ----------
@@ -232,6 +280,19 @@ struct stream_set
     }
   }
 };
+
+// Register a lane with the environment's tracker, if any.
+template <class Env>
+void track(cudaStream_t lane, [[maybe_unused]] const Env& env)
+{
+  if constexpr (__queryable_with<Env, get_lane_tracker_t>)
+  {
+    if (lane_tracker* t = get_lane_tracker(env))
+    {
+      t->add(lane);
+    }
+  }
+}
 
 // Tell the observer, if any, about one cross-lane dependency (fork or join).
 template <class Env>
@@ -369,6 +430,7 @@ struct scheduler
     cudaStream_t s_;
     void start() noexcept
     {
+      track(s_, execution::get_env(rcvr_));
       // Beginning on this lane inside a when_all that started on another lane:
       // depend on the when_all's fork point, not on the origin's current tail.
       wait_fork(s_, execution::get_env(rcvr_));
@@ -506,7 +568,8 @@ struct on_t
     {
       const auto& env       = execution::get_env(st_->rcvr_);
       const cudaStream_t to = st_->sch_.stream();
-      bool forked           = false;
+      track(to, env);
+      bool forked = false;
       if (st_->bare_schedule_ && st_->upstream_.n == 1 && st_->upstream_.s[0] != to)
       {
         if constexpr (__queryable_with<decltype(env), get_lane_fork_t>)
@@ -1163,6 +1226,18 @@ inline constexpr bool is_continues_on_to_lane = false;
 template <class Child>
 inline constexpr bool is_continues_on_to_lane<continues_on_t::__sndr_t<scheduler, Child>> = true;
 
+// sync_wait with a tracker added to the environment (or a fresh env).
+template <class Sndr>
+auto sync_wait_tracked(Sndr&& sndr, lane_tracker& t)
+{
+  return sync_wait.apply_sender(static_cast<Sndr&&>(sndr), env{prop{get_lane_tracker, &t}});
+}
+template <class Sndr, class Env>
+auto sync_wait_tracked(Sndr&& sndr, lane_tracker& t, Env&& e)
+{
+  return sync_wait.apply_sender(static_cast<Sndr&&>(sndr), env{prop{get_lane_tracker, &t}, static_cast<Env&&>(e)});
+}
+
 struct domain
 {
   // sync_wait: host completion, then synchronize every lane the sender
@@ -1172,12 +1247,22 @@ struct domain
   {
     if constexpr (::std::is_same_v<Tag, sync_wait_t>)
     {
-      stream_set lanes{};
-      collect(sndr, lanes);
-      auto result = sync_wait.apply_sender(static_cast<Sndr&&>(sndr), static_cast<Args&&>(args)...);
-      for (int i = 0; i < lanes.n; ++i)
+      // Host completion, with a tracker in the environment; then synchronize
+      // every lane the pipeline touched (the operation state has died inside
+      // the generic sync_wait by then, so scoped frees are enqueued too).
+      lane_tracker tracked{};
       {
-        if (auto st = cudaStreamSynchronize(lanes.s[i]); st != cudaSuccess)
+        stream_set completion_lanes{}; // seed with the completion lanes, in case nothing registers
+        collect(sndr, completion_lanes);
+        for (int i = 0; i < completion_lanes.n; ++i)
+        {
+          tracked.add(completion_lanes.s[i]);
+        }
+      }
+      auto result = sync_wait_tracked(static_cast<Sndr&&>(sndr), tracked, static_cast<Args&&>(args)...);
+      for (int i = 0; i < tracked.n; ++i)
+      {
+        if (auto st = cudaStreamSynchronize(tracked.s[i]); st != cudaSuccess)
         {
           throw ::cuda::cuda_error(st, "lane::sync_wait: cudaStreamSynchronize failed");
         }
@@ -1257,6 +1342,91 @@ inline constexpr auto split_t::attrs_t<Sndr>::query(get_completion_domain_t<set_
 //! The public names.
 using lane_scheduler = __lane::scheduler;
 using lane_domain    = __lane::domain;
+
+//! @brief Make `to` depend on every lane in `lanes` (one event per lane other
+//! than `to` itself). The stream-ordered terminal of a lane pipeline: the
+//! counterpart of `sync_wait`'s host wait for a stream the caller owns, legal
+//! under capture (the waits become graph edges). Call it after the pipeline's
+//! operation state has died, so that scoped frees are included.
+inline void lane_join_into(::cuda::stream_ref to, const lane_tracker& lanes)
+{
+  for (int i = 0; i < lanes.n; ++i)
+  {
+    if (lanes.s[i] != to.get())
+    {
+      to.wait(::cuda::stream_ref{lanes.s[i]});
+    }
+  }
+}
+
+//! @brief Add a lane tracker to an environment.
+template <class Env = env<>>
+[[nodiscard]] auto lane_tracked(lane_tracker& t, Env e = {})
+{
+  return env{prop{get_lane_tracker, &t}, static_cast<Env&&>(e)};
+}
+
+namespace __lane
+{
+template <class Env>
+struct capture_rcvr_t
+{
+  using receiver_concept = receiver_t;
+  Env env_;
+  bool* failed_;
+  template <class... Ts>
+  void set_value(Ts&&...) noexcept
+  {}
+  template <class E>
+  void set_error(E&&) noexcept
+  {
+    *failed_ = true;
+  }
+  void set_stopped() noexcept
+  {
+    *failed_ = true;
+  }
+  [[nodiscard]] auto get_env() const noexcept -> const Env&
+  {
+    return env_;
+  }
+};
+} // namespace __lane
+
+//! @brief Run `sndr` inside a stream capture that begins and ends on `origin`'s
+//! lane, and return the graph. Every lane the pipeline touched is joined back
+//! into the origin before the capture ends, after the operation state has died
+//! (so scoped frees are captured too). Nothing a caller could not write with
+//! `connect`/`start` and `lane_join_into`; this is the convenience.
+template <class Sndr, class Env = env<>>
+[[nodiscard]] cudaGraph_t lane_capture(lane_scheduler origin, Sndr&& sndr, Env e = {})
+{
+  lane_tracker lanes{};
+  lanes.add(origin.stream());
+  if (auto st = cudaStreamBeginCapture(origin.stream(), cudaStreamCaptureModeThreadLocal); st != cudaSuccess)
+  {
+    throw ::cuda::cuda_error(st, "lane_capture: cudaStreamBeginCapture failed");
+  }
+  bool failed = false;
+  {
+    auto op = execution::connect(static_cast<Sndr&&>(sndr),
+                                 __lane::capture_rcvr_t<decltype(lane_tracked(lanes, static_cast<Env&&>(e)))>{
+                                   lane_tracked(lanes, static_cast<Env&&>(e)), &failed});
+    execution::start(op);
+  } // the operation state dies here: scoped frees are enqueued, inside the capture
+  lane_join_into(::cuda::stream_ref{origin.stream()}, lanes);
+  cudaGraph_t graph{};
+  if (auto st = cudaStreamEndCapture(origin.stream(), &graph); st != cudaSuccess)
+  {
+    throw ::cuda::cuda_error(st, "lane_capture: cudaStreamEndCapture failed");
+  }
+  if (failed)
+  {
+    cudaGraphDestroy(graph);
+    throw ::std::runtime_error("lane_capture: the pipeline did not complete with a value");
+  }
+  return graph;
+}
 //! `lane_split(sndr)`: one lane sender, several consumers; see `__lane::split_t`.
 inline constexpr auto& lane_split = __lane::split;
 

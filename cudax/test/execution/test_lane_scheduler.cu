@@ -613,7 +613,6 @@ C2H_TEST("lane_scheduler: a when_all under a lane forks from the when_all's star
   // schedule(lb), lane_b2 is schedule(la) | continues_on(lb). Neither depends on
   // lane a's own fill, which when_all starts first. The join back onto lane a is
   // continues_on. No hand-written cudaEventRecord/cudaStreamWaitEvent anywhere.
-  REQUIRE(cudaStreamBeginCapture(f.sa.get(), cudaStreamCaptureModeThreadLocal) == cudaSuccess);
   auto whole = ex::schedule(f.la) | ex::let_value([&] {
                  auto lane_a  = ex::schedule(f.la) | ex::then([&] {
                                  fill_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n, 1);
@@ -630,10 +629,9 @@ C2H_TEST("lane_scheduler: a when_all under a lane forks from the when_all's star
                           sum2_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.b, f.out, f.n);
                         });
                });
-  // sync_wait would synchronize inside the capture; connect and start by hand.
-  auto op = ex::connect(std::move(whole), null_rcvr{});
-  ex::start(op);
-  REQUIRE(cudaStreamEndCapture(f.sa.get(), &g) == cudaSuccess);
+  // lane_capture: begin on lane a, run, destroy the operation state, join every
+  // lane the pipeline touched back into lane a, end.
+  g = ex::lane_capture(f.la, std::move(whole));
   // Expected: fill_a is a root, and so is the first lane-b fill (the fork point
   // on an empty capturing stream carries no node). The two lane-b fills share a
   // lane, so they serialize (fill_b -> fill_b): sharing a lane means ordering.
@@ -827,13 +825,7 @@ C2H_TEST("lane_scheduler: sharded adjacent difference: direct neighbor read, one
 
   // Captured: shard k's adjdiff depends on shard k-1's *input* (its times2
   // node), not on shard k-1's adjdiff; the two adjdiff kernels are independent.
-  cudaGraph_t g{};
-  REQUIRE(cudaStreamBeginCapture(f.sa.get(), cudaStreamCaptureModeThreadLocal) == cudaSuccess);
-  {
-    auto op = ex::connect(make(), null_rcvr{});
-    ex::start(op);
-  }
-  REQUIRE(cudaStreamEndCapture(f.sa.get(), &g) == cudaSuccess);
+  cudaGraph_t g    = ex::lane_capture(f.la, make());
   const auto edges = graph_edges(g);
   CAPTURE(edges);
   CHECK(edges.count("t2_0->adj_0") == 1);
@@ -891,22 +883,15 @@ C2H_TEST("lane_scheduler: sharded adjacent difference in place: the halo is the 
   // node has the reader's fix kernel among its ancestors.
   iota_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n);
   REQUIRE(cudaStreamSynchronize(f.sa.get()) == cudaSuccess);
-  cudaGraph_t g{};
-  REQUIRE(cudaStreamBeginCapture(f.sa.get(), cudaStreamCaptureModeThreadLocal) == cudaSuccess);
-  {
-    auto op = ex::connect(
-      ex::schedule(f.la) | ex::let_value([&] {
-        auto b = adjacent_difference_inplace(scale2(start(x), x, y), y, counting_mr{&allocs});
-        return ex::when_all(cuda::std::get<0>(::std::move(b.s)), cuda::std::get<1>(::std::move(b.s)))
-             | ex::continues_on(f.la);
-      }),
-      null_rcvr{});
-    ex::start(op);
-  } // the operation states die here: the splits join their consumers, then free
-  // Lane b's own tail (its slot's free, no consumer) is still unjoined: the
-  // pipeline-level "join every lane back to the origin" is not a primitive yet.
-  ::cuda::stream_ref{f.sa.get()}.wait(::cuda::stream_ref{f.sb.get()});
-  REQUIRE(cudaStreamEndCapture(f.sa.get(), &g) == cudaSuccess);
+  // lane_capture joins every lane the pipeline touched back into lane a after
+  // the operation state died, so lane b's own tail (its slot's free) is covered
+  // too: no hand-written join anywhere.
+  cudaGraph_t g = ex::lane_capture(
+    f.la, ex::schedule(f.la) | ex::let_value([&] {
+            auto b = adjacent_difference_inplace(scale2(start(x), x, y), y, counting_mr{&allocs});
+            return ex::when_all(cuda::std::get<0>(::std::move(b.s)), cuda::std::get<1>(::std::move(b.s)))
+                 | ex::continues_on(f.la);
+          }));
   const auto edges = graph_edges(g);
   CAPTURE(edges);
   CHECK(edges.count("fix_1->other") >= 1); // a free depends on the reader's kernel
