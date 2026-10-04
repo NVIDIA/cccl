@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Turn neighbor plans into C++ calls for the CUTLASS backend.
+
+This backend supports built-in subtraction for differences and inequality for
+discontinuity. Each call copies its input items into a generated C++ function.
+A wrapper struct from the common planner selects the CUB method for the
+direction or flag mode, partial tile, and outside-tile neighbors. Results go
+to separate value or Int32 flag arrays. Shared-memory scratch is recorded now
+and sized later from the exact CUB TempStorage layout.
+"""
+
 import hashlib
 from dataclasses import dataclass, replace
 from enum import Enum
@@ -39,6 +49,15 @@ _resolve_type = _types.make_provider_type_resolver(
 
 
 def _valid_binding(value):
+    """Classify a full tile or static/runtime valid prefix count.
+
+    Static counts stay in the plan. Reject Boolean and Enum values because
+    they are not counts. Accept runtime signed integers up to 64 bits and
+    unsigned integers up to 32 bits: the C++ wrapper takes a signed 64-bit
+    count. Shared planning checks static bounds. The partial-tile wrapper
+    checks runtime bounds before it narrows the count to int.
+    """
+
     if value is None:
         return ArgumentBinding.omitted()
     if isinstance(value, (bool, np.bool_, Enum)):
@@ -73,6 +92,15 @@ def _make_neighbor_plan(
     successor=False,
     temp_storage=None,
 ):
+    """Select built-in neighbor semantics and exact block scratch.
+
+    Use subtraction for differences and inequality for discontinuity. Preserve
+    mode and boundary-presence flags so shared planning selects the correct
+    CUB overload and result arrays. Use the caller TempStorage size,
+    alignment, sharing, and auto_sync settings. Without TempStorage, allocate
+    scratch automatically and add a trailing block barrier.
+    """
+
     valid = _valid_binding(valid_items)
     operator = "minus" if operation == "adjacent_difference" else "not_equal_to"
     primitive = BlockNeighborSemantics(
@@ -121,10 +149,25 @@ def _make_neighbor_plan(
 
 @dataclass(frozen=True, eq=False)
 class _CubNeighborRequest:
+    """Describe one C++ neighbor wrapper and its result and storage types.
+
+    The bundle session keeps requests in a set. Equality, hashing, and symbol
+    names use the plan artifact key, so equal plans render one wrapper. The
+    operation fixes the result names, dtype, and extent. Differences use the
+    input type, and discontinuity uses one or two Int32 arrays.
+    """
+
     plan: GroupLoweringPlan
     kind: str = "cub_group_neighbors"
 
     def __post_init__(self):
+        """Match the shared plan to its template and result contracts.
+
+        Require a supported CUB block plan, numeric input, Apply method, exact
+        block dimensions and item count, and an exact scratch layout. Check
+        every named result against the operation before rendering.
+        """
+
         self.plan.require_supported()
         if (
             self.plan.target is not GroupLoweringTarget.CUB_BLOCK
@@ -189,6 +232,8 @@ class _CubNeighborRequest:
 
     @property
     def cpp_type(self):
+        """Spell the C++ type used by calls and layout probes."""
+
         arguments = [
             _types.TYPE_SPECIFICATIONS[value].cpp_type
             if name == "T"
@@ -201,10 +246,14 @@ class _CubNeighborRequest:
 
     @property
     def scratch_requirement_key(self):
+        """Key layout probes by their CUB storage type."""
+
         return "cub_neighbors_storage", self.cpp_type
 
     @property
     def symbol_name(self):
+        """Name the operation and hash its complete plan identity."""
+
         digest = hashlib.sha256(
             repr(self.plan.artifact_key).encode()
         ).hexdigest()[:16]
@@ -221,6 +270,19 @@ class _CubNeighborRequest:
 
 
 def _render_neighbors(request):
+    """Render copied values, boundary arguments, and typed outputs.
+
+    Pass runtime counts as signed 64-bit arguments and embed static counts.
+    Both boundary slots are always in the C++ signature. The common planner's
+    wrapper struct is chosen by the operation, mode, and partial, predecessor,
+    and successor flags. It passes to CUB only the boundary slots whose flags
+    are set. Partial wrappers check counts before they narrow them to int.
+
+    Pass scratch address, size, and synchronization control before the output
+    pointers. Check storage size and alignment, call Apply, perform the
+    configured reuse barrier, and copy each result array out.
+    """
+
     request.__post_init__()
     cpp = _types.TYPE_SPECIFICATIONS[request.value_type].cpp_type
     output_cpp = _types.TYPE_SPECIFICATIONS[request.output_type].cpp_type
@@ -283,6 +345,8 @@ def _render_neighbors(request):
 
 
 def _scratch_probe(request):
+    """Request the C++ scratch size and alignment for deferred storage."""
+
     return _rendering.make_scratch_layout_probe(
         request.scratch_requirement_key,
         f"typename {request.cpp_type}::TempStorage",
@@ -304,6 +368,14 @@ _rendering.register_bundle_renderer(
 
 
 def _typed_value(value, dtype, *, name):
+    """Convert items and external neighbors to the verified input dtype.
+
+    NumPy and runtime CuTe scalars must already match the dtype. Plain
+    Python integers convert within its range. Python floats require a
+    floating-point dtype, and finite values must fit its range. Infinite
+    values and NaNs are accepted for floating-point dtypes.
+    """
+
     if isinstance(value, np.generic):
         if _types.canonical_dsl_type(value) is not dtype:
             raise TypeError(f"neighbor {name} dtype must match input dtype")
@@ -330,6 +402,18 @@ def provider_neighbors(
     tile_successor_item,
     temp_storage,
 ):
+    """Emit one neighbor call with aligned, independently owned results.
+
+    Resolve every initialized input item, including the invalid suffix. Pass
+    typed boundary scalars and use zero placeholders for omitted neighbors.
+    The wrapper struct's predecessor and successor flags keep CUB from reading
+    these placeholders. Allocate value arrays for differences or Int32 arrays
+    for flags.
+
+    Register exact deferred scratch and emit the call. On failure, restore
+    queued session state. Emitted IR and register allocations remain.
+    """
+
     dtype, items = _types.resolve_thread_data_value_type(
         values,
         allowed=_types.ALL_PROVIDER_TYPES,

@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check neighbors across thread boundaries and independent block tiles.
+
+Host comparisons use adjacent values in flattened tile order. Repeated
+values expose both equal neighbors and discontinuities. Three-dimensional
+blocks exercise linear thread rank; each block must keep its own edges.
+After the operations, the kernel copies its original ThreadData items to
+host-check buffers to detect changes to that payload.
+"""
+
 import os
 import re
 import shutil
@@ -31,6 +40,13 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
 class _Readonly:
+    """Wrap loaded items in a readable payload with no item assignment.
+
+    This checks that neighbor operations accept read-only inputs. When the
+    source dtype is None, the backend infers the type from the copied items.
+    The harness checks preservation through the original ThreadData.
+    """
+
     def __init__(self, source):
         self.items_per_thread, self.dtype, self.alignment = (
             source.items_per_thread,
@@ -65,6 +81,19 @@ def _run(
     items_per_thread=3,
     compile_options=(),
 ):
+    """Compare difference or flag outputs with independent per-tile results.
+
+    The host uses the input dtype for subtraction, including integer overflow.
+    A partial difference leaves items outside the prefix unchanged. Explicit
+    predecessors and successors affect the tile's first or last item; they do
+    not replace neighbors at each thread boundary.
+
+    Two blocks run with an Int64 prefix count and an Int32 repeat count passed
+    at runtime. Reuse cases call the operation five times on the same inputs.
+    With automatic synchronization disabled, the kernel calls storage.sync()
+    after each operation. Head and tail outputs are checked separately.
+    """
+
     value_type = cutlass_dtype(dtype)
     result_type = (
         value_type if operation == "adjacent_difference" else cutlass.Int32
@@ -286,6 +315,13 @@ def test_numeric_results(api, dtype, operation, mode, items_per_thread):
 @pytest.mark.parametrize("mode", ("left", "right"))
 @pytest.mark.parametrize("count", (0, 1, 47, 191, 192))
 def test_valid_prefix(mode, count):
+    """Keep inactive items unchanged when only a prefix has neighbors.
+
+    Counts include empty, singleton, interior, and full-tile prefixes. The
+    oracle checks every output item, including the inactive suffix and the
+    unpaired edge of the valid prefix.
+    """
+
     _run(mode=mode, count=count)
 
 
@@ -330,6 +366,12 @@ def test_qualified_tensor():
     [("adjacent_difference", "left"), ("discontinuity", "heads_and_tails")],
 )
 def test_scratch_reuse(sharing, manual_sync, operation, mode):
+    """Repeat one call site with automatic or manual reuse barriers.
+
+    Five runtime iterations exercise both scratch sharing policies. Combined
+    head/tail flags also check the operation that returns two payloads.
+    """
+
     _run(
         sharing=sharing,
         manual_sync=manual_sync,
@@ -341,6 +383,13 @@ def test_scratch_reuse(sharing, manual_sync, operation, mode):
 
 
 def test_alignment_minimum():
+    """Allow native scratch alignment to exceed the caller's minimum.
+
+    The one-byte request is only a minimum; scratch must still meet the CUB
+    storage type's alignment or the wrapper traps. The 8192-byte capacity
+    keeps the size check from failing as the harness repeats the operation.
+    """
+
     _run(reuse=True, alignment=1, capacity=8192)
 
 
@@ -352,6 +401,12 @@ def test_undersized_storage():
 
 
 def test_final_cubin(tmp_path):
+    """Check AdjacentDifference inlining after its runtime oracle succeeds.
+
+    Retained SASS must contain no provider symbol or CALL instruction. This
+    case makes no assertion about Discontinuity code or resource counts.
+    """
+
     tool = shutil.which("cuobjdump")
     if tool is None:
         pytest.skip("cuobjdump is required for final linked code inspection")
@@ -368,6 +423,14 @@ def test_final_cubin(tmp_path):
 
 @pytest.mark.parametrize("count", (-1, 193, 1 << 32))
 def test_runtime_count_traps(count):
+    """Run invalid counts in child processes to protect the CUDA context.
+
+    A device trap leaves the process's CUDA context unusable. Each count runs
+    in a child process. Int64 counts include a value that could become valid
+    if narrowed too soon. The parent requires a CUDA trap or launch error,
+    so an unrelated Python error cannot pass.
+    """
+
     script = (
         "from tests.backends.cutlass.runtime.test_neighbors import _run\n"
         + f"_run(count={count})\n"
@@ -401,6 +464,13 @@ def test_runtime_count_traps(count):
 
 @pytest.mark.parametrize("items_per_thread", (1, 4))
 def test_documented_neighbor_composition(items_per_thread):
+    """Run both neighbor operations with one reused TempStorage.
+
+    Equal-value runs span thread boundaries. The host checks differences and
+    both flag arrays independently. The CUTLASS guide includes the kernel and
+    launcher between the documentation markers.
+    """
+
     # docs: start cutlass-neighbors
     @cute.kernel
     def compare_neighbors(

@@ -5,10 +5,14 @@
 """Expose block differences and run-boundary flags for compiled kernels.
 
 Adjacent Difference subtracts neighboring values. Discontinuity identifies
-unequal neighbors as run heads or tails. Both preserve the source payload and
-return separate blocked results. Decorators register each function so a
-supported compiler can recognize calls to it. Ordinary Python calls raise
-a context error. Custom binary operations use the qualified API.
+unequal neighbors as run heads or tails. Both preserve the input payload and
+return separate blocked results.
+
+Numba-CUDA-MLIR replaces these registered calls during compilation. CuTe
+tracing runs the bodies in Python, validates modes, boundary combinations,
+readable numeric payloads, and optional scratch descriptors, then calls the
+backend. Calls require an active compiler backend. Custom arithmetic and
+flag predicates use the qualified Numba-CUDA-MLIR API.
 """
 
 from __future__ import annotations
@@ -32,6 +36,13 @@ from ._payload import (
 
 
 def _validate_payload(operation, values, temp_storage):
+    """Check common payload and scratch contracts during Python tracing.
+
+    CuTe runs this check while tracing the call. Numba-CUDA-MLIR replaces
+    the call and validates its typed operands separately. Read-only inputs
+    are accepted because results use fresh payloads.
+    """
+
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
             operation,
@@ -82,10 +93,9 @@ def adjacent_difference(
         Block-uniform neighbor outside the tile. A runtime or NumPy scalar
         must match the input dtype. Finite Python int or float literals take
         the input dtype when in range; conversion to float may round. A float
-        literal cannot become an integer.
-        Left differences accept only a predecessor; right differences accept
-        only a successor. Without that neighbor, the boundary input is
-        copied unchanged.
+        literal cannot become an integer. Left differences accept only a
+        predecessor; right differences accept only a successor. Without that
+        neighbor, the boundary input is copied unchanged.
     temp_storage : TempStorageLike, optional
         Explicit block scratch descriptor. Omit it for automatic storage.
         With ``auto_sync=False``, synchronize the block before reusing the
@@ -155,10 +165,10 @@ def discontinuity(
         Block-uniform neighbor outside the tile. A runtime or NumPy scalar
         must match the input dtype. Finite Python int or float literals take
         the input dtype when in range; conversion to float may round. A float
-        literal cannot become an integer.
-        Heads accept a predecessor, tails accept a successor, and
-        ``"heads_and_tails"`` accepts both. Without a predecessor the first
-        head is one; without a successor the last tail is one.
+        literal cannot become an integer. Heads accept a predecessor, tails
+        accept a successor, and ``"heads_and_tails"`` accepts both. Without a
+        predecessor the first head is one; without a successor the last tail
+        is one.
     temp_storage : TempStorageLike, optional
         Explicit block scratch descriptor. Omit it for automatic storage.
         With ``auto_sync=False``, synchronize the block before reusing the

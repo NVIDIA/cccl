@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check neighbor plans and session restoration after scratch failure.
+
+Difference results retain the input type, while flags use Int32. Plans
+carry tile-edge options, exact scratch layout, and reuse synchronization.
+These tests inspect that metadata without compiling or launching kernels.
+"""
+
 from dataclasses import replace
 from types import SimpleNamespace
 
@@ -112,6 +119,12 @@ def test_storage_controls(sharing, auto_sync):
 
 
 def test_semantics_and_storage_affect_identity():
+    """Separate wrappers when neighbor semantics or synchronization change.
+
+    Direction, a partial prefix, a tile predecessor, and manual scratch reuse
+    each change the generated call or its synchronization requirements.
+    """
+
     requests = [
         _request(),
         _request(mode="right"),
@@ -133,6 +146,13 @@ def test_mismatched_result_rejected():
 
 
 def test_failed_storage_emission_restores_session(monkeypatch):
+    """Restore queued session state when scratch registration fails.
+
+    A stub replaces register-tensor allocation, so the call reaches scratch
+    registration without tracing a CuTe kernel. The test observes one request,
+    restoration of the saved snapshot, and unchanged inputs after failure.
+    """
+
     saved, restored, requests = object(), [], []
     monkeypatch.setattr(_state, "snapshot_active_session_state", lambda: saved)
     monkeypatch.setattr(_state, "register_request", requests.append)
