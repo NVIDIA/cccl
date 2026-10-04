@@ -56,8 +56,24 @@ def _integer_dtype(dtype, name):
 def _decode_extent(context, bound):
     """Resolve the decoded extent separately from the input run count.
 
-    The result registration and _lower both call this, so code that uses the
-    returned payload sees the same extent that _lower allocates.
+    Here, extent is decoded items per thread.
+    ``decoded_items_per_thread`` controls the output window
+    independently of ``runs_per_thread``: one encoded run can expand
+    into many output values. The result policy needs this count before a
+    later operation can consume the window.
+
+    The result registration and ``_lower`` both call this, so code that uses
+    the returned payload sees the same extent that ``_lower`` allocates.
+
+    Parameters
+    ----------
+    context : GroupPlanningContext
+        Access to launch dimensions, constant controls, payload
+        facts, and IR builders for this group-planning attempt.
+    bound : inspect.BoundArguments
+        Public call arguments after signature binding and default
+        application. Runtime values remain IR variables; selectors
+        are resolved through the context.
     """
 
     return normalize_positive_int(
@@ -153,9 +169,37 @@ def _infer_payload(context, inference):
 def _allocate(context, statements, scope, loc, name, extent, dtype):
     """Emit a typed ThreadData allocation and record its result dtype.
 
+    Run-length lowering calls this while assembling its window outputs
+    and auxiliary buffers. It emits a constructor into pending IR;
+    actual local-array allocation is produced by the later payload
+    rewrite.
+
     Append the constructor call to statements and return its IR variable. The
     explicit extent supports value windows and the differently sized total
     buffer. Recording the dtype lets later scalar indexing type these outputs.
+
+    Parameters
+    ----------
+    context : GroupPlanningContext
+        Access to launch dimensions, constant controls, payload
+        facts, and IR builders for this group-planning attempt.
+    statements : list of IR statements
+        Pending replacement statements, appended to in execution
+        order. The function's blocks are unchanged until the owning
+        planner installs this list.
+    scope : ir.Scope
+        Scope in which to create temporary IR variables.
+    loc : ir.Loc
+        Source location attached to generated statements and
+        diagnostics.
+    name : str
+        Readable name for the newly created result variable.
+    extent : int
+        Static number of elements owned by each thread in this
+        output buffer.
+    dtype : numba type
+        Concrete element type for the constructor and the planner's
+        dtype record.
     """
 
     constructor = context.value_var(
