@@ -418,8 +418,7 @@ def test_warp_scan_combines_runtime_initial_prefix_and_aggregate_abi():
 
     The initial value is below every input. Later exclusive maxima therefore
     equal the maxima of preceding inputs alone. Rank zero must receive the
-    initial value. The aggregate includes every valid input and excludes
-    that initial value.
+    initial value. The aggregate must equal the maximum of the valid inputs.
     """
 
     source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 11) % 43) + 1
