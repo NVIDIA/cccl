@@ -575,6 +575,52 @@ auto inclusive_scan(bundle<S...> b, const sharded_view<N>& data, Mr mr)
   return inclusive_scan_impl(::std::move(b), data, mr, cuda::std::make_index_sequence<N>{});
 }
 
+// Verbs as closures. `bundle | verb` applies the verb; `verb | verb` composes two
+// verbs into one without any data: an *algorithm* is a value that can be
+// composed first and applied to a bundle later, as pipeable adaptors compose in
+// P2300 (`then(f) | then(g)` is itself a closure).
+template <class Fn>
+struct verb
+{
+  Fn fn;
+  template <class... S>
+  friend auto operator|(bundle<S...> b, verb v)
+  {
+    return v.fn(::std::move(b));
+  }
+};
+template <class Fn>
+verb(Fn) -> verb<Fn>;
+template <class F, class G>
+auto operator|(verb<F> f, verb<G> g)
+{
+  return verb{[f, g](auto b) {
+    return g.fn(f.fn(::std::move(b)));
+  }};
+}
+// Closure forms of the verbs above.
+template <size_t N>
+auto scale2(const sharded_view<N>& in, const sharded_view<N>& out)
+{
+  return verb{[=](auto b) {
+    return scale2(::std::move(b), in, out);
+  }};
+}
+template <size_t N>
+auto adjacent_difference(const sharded_view<N>& in, const sharded_view<N>& out)
+{
+  return verb{[=](auto b) {
+    return adjacent_difference(::std::move(b), in, out);
+  }};
+}
+template <size_t N, class Mr>
+auto inclusive_scan(const sharded_view<N>& data, Mr mr)
+{
+  return verb{[=](auto b) {
+    return inclusive_scan(::std::move(b), data, mr);
+  }};
+}
+
 // reduce(bundle, in, partials, result): per shard, CUB Reduce into partials[k] on
 // the shard's lane; when_all (the fork, if under a lane) ; continues_on(lane 0)
 // (the join) ; one kernel adds the partials into result.
@@ -1096,4 +1142,65 @@ C2H_TEST("lane_scheduler: sharded inclusive scan: collapse to one lane for the c
   CHECK(graph_has_path(g, "t2_1", "prefix"));
   CHECK(!graph_has_path(g, "carry_0", "carry_1")); // the seeded scans are independent
   cudaGraphDestroy(g);
+}
+
+C2H_TEST("lane_scheduler: an algorithm is a composed closure, applied to a bundle later and reused", "[lane_scheduler]")
+{
+  using namespace sharded_mock;
+  fixture f;
+  join_counter jc;
+  constexpr size_t N = 2;
+  const int half     = f.n / 2;
+  int* z             = nullptr;
+  REQUIRE(cudaMalloc(&z, f.n * sizeof(int)) == cudaSuccess);
+  sharded_view<N> x{{f.a, f.a + half}, half, {f.la, f.lb}};
+  sharded_view<N> y{{f.b, f.b + half}, half, {f.la, f.lb}};
+  sharded_view<N> zv{{z, z + half}, half, {f.la, f.lb}};
+
+  // The algorithm, composed before any bundle exists: y = 2x, z = adjdiff(y),
+  // then the inclusive scan of z in place. No sender has been created yet.
+  int allocs = 0;
+  auto algo  = scale2(x, y) | adjacent_difference(y, zv) | inclusive_scan(zv, counting_mr{&allocs});
+  // Applied to a bundle: the pipeline value.
+  auto run = [&] {
+    return ex::schedule(f.la) | ex::let_value([&] {
+             auto b = start(x) | algo;
+             return ex::when_all(cuda::std::get<0>(::std::move(b.s)), cuda::std::get<1>(::std::move(b.s)))
+                  | ex::continues_on(f.la);
+           });
+  };
+  // x = iota: y = 2i, z = adjdiff(y) = 2 (z[0] = 0), scan(z)[i] = 2i.
+  auto check = [&] {
+    std::vector<int> h(f.n);
+    REQUIRE(cudaMemcpy(h.data(), z, f.n * sizeof(int), cudaMemcpyDeviceToHost) == cudaSuccess);
+    bool ok = true;
+    for (int i = 0; i < f.n; ++i)
+    {
+      ok = ok && h[i] == 2 * i;
+    }
+    CHECK(ok);
+  };
+
+  // The same algorithm value, applied twice to two bundles, consumed by two
+  // different terminals: eagerly, and captured into a graph that is relaunched.
+  iota_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n);
+  REQUIRE(cudaStreamSynchronize(f.sa.get()) == cudaSuccess);
+  ex::sync_wait(run(), jc.env());
+  check();
+  // fork a->b, adjdiff boundary b<-a, scan collapse b->a, scan re-fork a->b, final join b->a
+  CHECK(jc.joins == 5);
+
+  cudaGraph_t g = ex::lane_capture(f.la, run());
+  cudaGraphExec_t ge{};
+  REQUIRE(cudaGraphInstantiate(&ge, g, 0) == cudaSuccess);
+  for (int launch = 0; launch < 2; ++launch)
+  {
+    iota_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n);
+    REQUIRE(cudaGraphLaunch(ge, f.sa.get()) == cudaSuccess);
+    REQUIRE(cudaStreamSynchronize(f.sa.get()) == cudaSuccess);
+    check();
+  }
+  cudaGraphExecDestroy(ge);
+  cudaGraphDestroy(g);
+  cudaFree(z);
 }

@@ -15,7 +15,8 @@
 // an array, `transform`, `inclusive_scan` and `reduce`, as senders, and runs a
 // transform, a scan and a reduce:
 //
-//     start(x) | transform(x, y, *2) | inclusive_scan(y) | reduce(y, result)
+//     auto algo = transform(x, y, *2) | inclusive_scan(y) | reduce(y, result);
+//     start(x) | algo
 //
 // Verbs take only data. The memory resource for scratch comes from the sender
 // environment, read once at the root of the pipeline; `start` puts it and the
@@ -210,6 +211,16 @@ struct verb
 };
 template <class Fn>
 verb(Fn) -> verb<Fn>;
+// `verb | verb` composes two verbs into one, with no bundle involved: an algorithm
+// is a value that is composed first and applied to data later, as P2300's
+// pipeable adaptors compose (`then(f) | then(g)` is itself a closure).
+template <class F, class G>
+auto operator|(verb<F> f, verb<G> g)
+{
+  return verb{[f, g](auto b) {
+    return g.fn(f.fn(std::move(b)));
+  }};
+}
 
 // transform(in, out, op): `out[k] = op(in[k])` on shard k's lane. Elementwise:
 // maps over the bundle, no lane meets another.
@@ -444,13 +455,17 @@ int main(int argc, char** argv)
 
     // The pipeline. It begins on lane 0: that is the lane the reduce allocates
     // its partials on and forks the other lanes from.
+    // The algorithm: composed first, with no sender and no lane involved yet.
+    auto algo = transform(x, y, times2{}) //
+              | inclusive_scan(y) //
+              | reduce(y, result.data());
+    // The pipeline: the algorithm applied to the bundle that starts on the shards'
+    // lanes. It begins on lane 0: that is the lane the reduce allocates its
+    // partials on and forks the other lanes from.
     auto pipeline = ex::schedule(lanes[0]) | ex::let_value([&] {
                       // Inside this scope the environment's scheduler is lane 0.
                       return ex::read_env(cuda::mr::get_memory_resource) | ex::let_value([&](auto mr) {
-                               return start(x, mr) //
-                                    | transform(x, y, times2{}) //
-                                    | inclusive_scan(y) //
-                                    | reduce(y, result.data());
+                               return start(x, mr) | algo;
                              });
                     });
     // Everything in the pipeline that allocates -- the reduce's partials and
