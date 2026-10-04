@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Lower shared Exchange plans to CUB wrappers and CuTe calls.
+
+Scalar ABI arguments carry payload items, optional ranks, and optional flags.
+A result pointer receives a separate output payload. Wrappers own scratch and
+a trailing reuse barrier; warp groups receive separate scratch slices.
+"""
+
 from __future__ import annotations
 
 import dataclasses
@@ -48,6 +55,8 @@ _VALID_FLAG_TYPES = INTEGER_VALUE_TYPES
 
 
 def _normalize_exchange_mode(mode: Any) -> str:
+    """Resolve the core Exchange mode before shared validation."""
+
     try:
         return BlockExchangeMode(mode).value
     except (TypeError, ValueError) as exc:
@@ -68,7 +77,12 @@ def _make_group_exchange_plan(
     valid_flag_dtype: Any = None,
     warp_time_slicing: bool = False,
 ) -> GroupLoweringPlan:
-    """Build the canonical shared-core exchange plan."""
+    """Build an out-of-place Exchange plan for the selected group.
+
+    Shared planning chooses CUB block or warp specialization, participation,
+    result extent, and owned scratch. Rank and flag dtypes remain part of the
+    plan and its artifact identity.
+    """
 
     primitive = make_block_exchange_semantics(
         dtype=dtype,
@@ -91,6 +105,8 @@ def _render_template_argument(
     name: str,
     value: Any,
 ) -> str:
+    """Spell bound CUB arguments and check the payload type identity."""
+
     if name == "T":
         if value is not request.value_type:
             raise ValueError(
@@ -107,6 +123,12 @@ def _render_template_argument(
 
 
 def _storage_reuse_barrier_line(request: _CubExchangeRequest) -> str:
+    """Render the planned block or logical-warp scratch barrier.
+
+    Each warp instance has its own scratch slice. Shift a narrow warp mask to
+    that group's lanes so the trailing barrier matches its participants.
+    """
+
     synchronization = request.plan.synchronization
     if synchronization is None:
         raise ValueError("Exchange plan requires a synchronization contract")
@@ -138,6 +160,13 @@ def _validate_planned_exchange(
     rank_type: type | None,
     valid_flag_type: type | None,
 ) -> None:
+    """Check that a plan matches the wrapper's types and storage ABI.
+
+    Verify CUB class/method, template dimensions, item count, rank/flag
+    dtypes, scratch ownership, and output extent. These are structural checks;
+    they do not prove that runtime scatter ranks are unique or in range.
+    """
+
     plan.require_supported()
     if value_type not in ALL_PROVIDER_TYPES:
         raise TypeError("Exchange requires a supported numeric value dtype")
@@ -237,6 +266,13 @@ def _validate_planned_exchange(
 
 @dataclasses.dataclass(frozen=True, eq=False)
 class _CubExchangeRequest:
+    """Identify a validated Exchange wrapper and its scalar ABI types.
+
+    The plan artifact key controls equality and deduplication. Rank and flag
+    widths also appear in the readable symbol, while a short hash
+    distinguishes the full specialization contract.
+    """
+
     plan: GroupLoweringPlan
     value_type: type
     rank_type: type | None = None
@@ -244,6 +280,8 @@ class _CubExchangeRequest:
     kind: str = "cub_group_exchange"
 
     def __post_init__(self) -> None:
+        """Require a shared plan and validate its wrapper contracts."""
+
         if not isinstance(self.plan, GroupLoweringPlan):
             raise TypeError("CUB Exchange request requires a GroupLoweringPlan")
         _validate_planned_exchange(
@@ -270,6 +308,8 @@ class _CubExchangeRequest:
 
     @property
     def block_dim(self) -> tuple[int, int, int]:
+        """Require the block dimensions used for scratch and symbols."""
+
         participation = self.plan.participation
         if participation is None or participation.exact_block_dim is None:
             raise ValueError(
@@ -300,6 +340,8 @@ class _CubExchangeRequest:
 
     @property
     def symbol_name(self) -> str:
+        """Name the call and its auxiliary types with an artifact-key hash."""
+
         assert self.plan.artifact_key is not None
         signature = hashlib.sha256(
             repr(self.plan.artifact_key).encode()
@@ -324,6 +366,12 @@ class _CubExchangeRequest:
 
 
 def _warp_instances(request: _CubExchangeRequest) -> tuple[int, int]:
+    """Count complete logical warps for independent scratch slices.
+
+    Use the bound warp width and exact block shape, rather than assuming every
+    instance is a physical 32-thread warp.
+    """
+
     x, y, z = request.block_dim
     block_threads = x * y * z
     logical_width = request.implementation.template_arguments.get(
@@ -339,6 +387,18 @@ def _warp_instances(request: _CubExchangeRequest) -> tuple[int, int]:
 
 
 def _render_cub_exchange(request: _CubExchangeRequest) -> list[str]:
+    """Render copied inputs, owned scratch, and separate result storage.
+
+    ABI order is payload items, rank items, flag items, then the result
+    pointer. Preserve auxiliary dtypes when rebuilding C++ arrays. The wrapper
+    does not add rank-range or uniqueness guards; guarded and flagged CUB
+    methods filter negative ranks or zero validity flags, respectively.
+
+    Use one scratch object per block or logical warp. After the CUB call,
+    synchronize before scratch reuse and copy output items to the result
+    pointer. The public contract leaves unwritten destinations undefined.
+    """
+
     request.__post_init__()
     implementation = request.implementation
     type_specification = TYPE_SPECIFICATIONS[request.value_type]
@@ -447,6 +507,8 @@ def _render_cub_exchange(request: _CubExchangeRequest) -> list[str]:
 
 
 def _register_renderer() -> None:
+    """Register Exchange rendering and its block/warp header needs."""
+
     _provider_rendering.register_bundle_renderer(
         "cub_group_exchange",
         render=_render_cub_exchange,
@@ -483,6 +545,13 @@ def _resolve_auxiliary_values(
     items_per_thread: int,
     allowed: frozenset[type],
 ) -> tuple[type | None, tuple[Any, ...]]:
+    """Resolve an optional rank or flag payload with matching extent.
+
+    Require initialized values and the allowed integer dtype family. Return no
+    ABI items for an omitted operand; the selected mode determines
+    whether omission is legal.
+    """
+
     if value is None:
         return None, ()
     if not isinstance(value, ThreadData):
@@ -524,6 +593,13 @@ def _resolve_exchange_operands(
     type | None,
     tuple[Any, ...],
 ]:
+    """Resolve initialized values, ranks, and flags for one Exchange.
+
+    All three payloads share the per-thread item count. Values use supported
+    numeric types, ranks use signed integers, and flags use non-Boolean
+    integers. The three dtypes need not match each other.
+    """
+
     value_type, values = _provider_types.resolve_thread_data_value_type(
         value,
         allowed=ALL_PROVIDER_TYPES,
@@ -559,6 +635,12 @@ def _resolve_exchange_operand_types(
     ranks: ThreadData | None,
     valid_flags: ThreadData | None,
 ) -> tuple[type, type | None, type | None]:
+    """Validate operands and retain the dtypes needed for planning.
+
+    Resolving types also checks initialization and auxiliary extents before a
+    shared plan is constructed.
+    """
+
     value_type, _, rank_type, _, valid_flag_type, _ = (
         _resolve_exchange_operands(
             value=value,
@@ -570,6 +652,8 @@ def _resolve_exchange_operand_types(
 
 
 def _typed_item(value, dtype):
+    """Convert one scalar to the verified ABI dtype."""
+
     converted = _provider_types.coerce_plain_scalar(
         value,
         dtype,
@@ -591,7 +675,15 @@ def provider_exchange(
     ranks: ThreadData | None = None,
     valid_flags: ThreadData | None = None,
 ) -> ThreadData:
-    """Materialize one plan-validated CUB Exchange call."""
+    """Emit a validated Exchange call and return a fresh ThreadData.
+
+    Check mode-specific auxiliary operands before registration. Copy values,
+    ranks, and flags into scalar ABI arguments, and allocate a separate
+    register result with the requested alignment. Inputs remain unchanged.
+
+    A failure restores queued request bookkeeping. It does not undo emitted
+    IR or register allocations.
+    """
 
     if not isinstance(plan, GroupLoweringPlan):
         raise TypeError(

@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Separate Exchange layouts and scatter controls in overloads.
+
+Scatter requires signed rank payloads; flagged scatter also requires integer
+flag payloads. Guarded and flagged forms exclude time slicing. Warp overloads
+allow only blocked/striped conversions and no time slicing.
+Register-container overloads leave the output element type broad because
+tracing inspects their dtype and extent.
+"""
+
 from typing import Any, Literal, TypeAlias, overload
 
 import numpy as np

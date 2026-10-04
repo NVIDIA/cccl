@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check scalar distance bindings and payload shifts before emission.
+
+Scalar offset and rotate have different numeric bounds. Payload up and
+down use a fixed one-element shift and therefore need no runtime distance
+operand. Requests also enforce their plan's implementation and restore the
+provider session if FFI emission fails.
+"""
+
 from dataclasses import replace
 
 import numpy as np
@@ -95,6 +103,13 @@ def test_array_contract(mode):
 
 
 def test_request_identity():
+    """Include static distance and implementation in the request identity.
+
+    Different static offsets produce different wrappers. A supplied scalar
+    type or implementation that disagrees with the resolved plan must fail
+    before the provider can emit the wrong operation.
+    """
+
     a = _shuffle._CubShuffleRequest(_plan(distance=1), cutlass.Int32)
     b = _shuffle._CubShuffleRequest(_plan(distance=2), cutlass.Int32)
     assert a != b
@@ -119,6 +134,12 @@ def test_group_restriction():
 
 
 def test_failed_call_rollback(monkeypatch):
+    """Restore the previous session after registering a failed Shuffle call.
+
+    FFI fails after provider registration. The test checks that restoration
+    receives the same snapshot taken before the request was registered.
+    """
+
     snapshot, registered, restored = object(), [], []
     monkeypatch.setattr(
         _state, "snapshot_active_session_state", lambda: snapshot

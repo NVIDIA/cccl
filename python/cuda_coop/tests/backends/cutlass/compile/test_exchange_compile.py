@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile Exchange layouts, operand types, and rejected control combinations.
+
+These kernels are compiled for SM80 and never launched, so typed null
+pointers suffice. Scatter ranks exercise compilation and may repeat across
+threads; these kernels are not runnable scatter examples. Runtime tests
+check valid rank permutations, layout results, and input preservation.
+"""
+
 from enum import Enum
 
 import pytest
@@ -57,6 +65,12 @@ def test_logical_layouts(api, width, mode, items_per_thread):
 
 @pytest.mark.parametrize("dtype", tuple(ALL_PROVIDER_TYPES))
 def test_typed_result(dtype):
+    """Use each Exchange result type as a payload for a later reduction.
+
+    The second collective consumes the typed payload returned by Exchange.
+    Every supported provider scalar type passes through this composition.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         payload = cutlass_coop.ThreadData(
@@ -80,6 +94,12 @@ def test_typed_result(dtype):
     "rank_type", (cutlass.Int8, cutlass.Int16, cutlass.Int32, cutlass.Int64)
 )
 def test_rank_width(rank_type):
+    """Compile scatter ranks with every supported signed integer width.
+
+    Rank payloads have the same extent as the value payload. These cases check
+    operand types. Their repeated ranks are not a valid runtime permutation.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         value = cutlass_coop.ThreadData(
@@ -107,6 +127,13 @@ def test_rank_width(rank_type):
 
 @pytest.mark.parametrize("flag_type", tuple(INTEGER_VALUE_TYPES))
 def test_flag_width(flag_type):
+    """Compile scatter flags with each supported integer representation.
+
+    Flags require an integer, non-boolean dtype. Zero and a nonzero value
+    exercise each integer width as a validity test. Runtime cases check which
+    writes occur.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         value = cutlass_coop.ThreadData(
@@ -281,6 +308,12 @@ def test_invalid_controls(case, expected):
     "api", (coop, cutlass_coop), ids=("common", "qualified")
 )
 def test_register_payload(ssa, api):
+    """Keep native CuTe register inputs behind the qualified Exchange API.
+
+    The qualified path accepts a register tensor or its loaded SSA value. The
+    common path requires fixed-size ThreadData and rejects both native forms.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer):
         fragment = cute.make_rmem_tensor((2,), cutlass.Int32)

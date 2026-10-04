@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Distinguish payload shifts from scalar Shuffle overloads.
+
+Payload up/down shifts require a static unit distance. Scalar offset/rotate
+calls accept integer distances except 64-bit unsigned ones. Planning checks
+static distances. The generated device code checks runtime distances and
+traps if one is out of range. Tracing also checks register dtype and extent.
+"""
+
 from typing import Any, Literal, TypeAlias, overload
 
 import numpy as np

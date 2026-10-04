@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Emit distinct CUB Shuffle ABIs for payloads and scalars.
+
+Array up/down shifts pass scalar items and a result pointer. Scalar
+offset/rotate calls return one value and may carry a runtime distance. Both
+forms use owned block scratch and synchronize before reuse.
+"""
+
 from __future__ import annotations
 
 import hashlib
@@ -42,6 +49,14 @@ _resolve_type = _types.make_provider_type_resolver(
 
 
 def _distance_binding(distance, *, array):
+    """Classify a unit array shift or a scalar distance operand.
+
+    Arrays accept only the compile-time value 1 and omit distance from the
+    ABI. Scalars retain static integers or runtime integer values. Exclude
+    unsigned 64-bit runtime values so every accepted runtime distance can be
+    carried in Int64 without losing its value.
+    """
+
     if isinstance(distance, (bool, Enum)):
         raise TypeError(
             f"{_SCOPE}.shuffle distance must be an integer, not bool or Enum"
@@ -66,9 +81,8 @@ def _distance_binding(distance, *, array):
         or type_specification.token == "u64"
     ):
         raise TypeError(
-            f"{_SCOPE}.shuffle distance requires a signed integer "
-            "up to 64 bits "
-            "or an unsigned integer up to 32 bits"
+            f"{_SCOPE}.shuffle distance requires a signed integer up to 64 "
+            "bits or an unsigned integer up to 32 bits"
         )
     return ArgumentBinding.runtime()
 
@@ -76,6 +90,12 @@ def _distance_binding(distance, *, array):
 def _make_shuffle_plan(
     *, group, launch, dtype, items_per_thread, mode, distance
 ):
+    """Build shared Shuffle semantics and require a supported block plan.
+
+    Keep scalar and array forms distinct, including one-item arrays. Check
+    mode compatibility and static distance bounds before code generation.
+    """
+
     primitive = make_block_shuffle_semantics(
         dtype=dtype,
         mode=mode,
@@ -95,11 +115,19 @@ def _make_shuffle_plan(
 
 @dataclass(frozen=True, eq=False)
 class _CubShuffleRequest:
+    """Bind a Shuffle plan to its payload dtype and owned block scratch.
+
+    Check the CUB method, dimensions, array extent, and reuse barrier. Then
+    derive a symbol from the plan artifact key.
+    """
+
     plan: GroupLoweringPlan
     value_type: type
     kind: str = "cub_group_shuffle"
 
     def __post_init__(self):
+        """Require a matching block specialization and scratch contract."""
+
         self.plan.require_supported()
         operation = self.plan.call.operation
         implementation = self.plan.implementation
@@ -173,6 +201,8 @@ class _CubShuffleRequest:
 
     @property
     def symbol_name(self):
+        """Name the Shuffle mode and hash its complete artifact identity."""
+
         digest = hashlib.sha256(repr(self.semantic_key).encode()).hexdigest()[
             :16
         ]
@@ -180,6 +210,19 @@ class _CubShuffleRequest:
 
 
 def _render_shuffle(request):
+    """Render array output storage or a scalar return with block scratch.
+
+    Runtime scalar distances arrive as signed 64-bit values. Check Offset
+    representability or Rotate's block-relative bounds before casting to CUB's
+    int or unsigned int. A failed check executes a device trap, which aborts
+    the kernel. Offset may still select a source outside the block, where its
+    public result is undefined.
+
+    The array boundary slots also remain undefined by contract, regardless of
+    local initialization in the wrapper. A trailing block barrier permits
+    scratch reuse by the next call.
+    """
+
     request.__post_init__()
     primitive = request.operation
     type_specification = _types.TYPE_SPECIFICATIONS[request.value_type]
@@ -266,8 +309,17 @@ _rendering.register_bundle_renderer(
 
 
 def provider_shuffle(*, group, launch, value, mode, distance):
-    """Lower a current shared Shuffle plan without an alternate compiler
-    adapter.
+    """Plan one block Shuffle and emit its CUB wrapper call.
+
+    Build the shared plan here from the group, launch facts, mode, and
+    distance. Resolve one dtype and convert its scalar arguments. Array
+    results use a new aligned register tensor and return ThreadData; scalar
+    results return a CuTe value. The input payload remains unchanged. Carry
+    runtime distance as Int64 so the wrapper can check its range before
+    narrowing it.
+
+    A failure restores queued requests only. Emitted IR and register
+    allocations remain in place.
     """
     array = isinstance(value, ThreadData)
     if array:

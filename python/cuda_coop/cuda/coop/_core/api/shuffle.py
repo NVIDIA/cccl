@@ -4,9 +4,13 @@
 
 """Define the common block Shuffle call for shifting items by one place.
 
-Shuffle shifts a flattened block payload by one element. The decorator
-registers the function so a compiler can recognize calls to it. A host
-Python call raises an error.
+The common API takes a payload, an up/down direction, and a static distance
+of one element. A tracing compiler, such as the CuTe DSL, runs this body in
+Python. The body checks these limits, then calls the active backend.
+Numba-CUDA-MLIR replaces the call during compilation and applies its own
+checks. A call outside a compiler environment raises an error.
+
+The qualified APIs also provide scalar offset and rotate forms.
 """
 
 from __future__ import annotations

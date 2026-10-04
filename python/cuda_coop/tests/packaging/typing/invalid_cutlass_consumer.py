@@ -6,8 +6,9 @@
 
 The runner compares each marked line and error code with mypy output. These
 calls are static inputs, not kernels to execute. They cover query levels and
-dtypes, synchronization, Load/Store groups and controls, payload forms, and
-Reduce and Scan controls.
+dtypes, synchronization, payload forms, and primitive groups and controls.
+Exchange distinguishes value, rank, and flag types; Shuffle separates
+payload shifts from scalar offset and rotate calls.
 """
 
 from __future__ import annotations

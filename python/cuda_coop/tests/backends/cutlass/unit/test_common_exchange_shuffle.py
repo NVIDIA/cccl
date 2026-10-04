@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check common Exchange and Shuffle validation before backend dispatch.
+
+Small protocol objects isolate the Python entry points. Both operations
+accept read-only inputs because they return new payloads. The tests report
+a placeholder backend as active so that common validation runs. Lookalike
+string modes and integer distances, such as enums or objects with a value
+attribute, must not bypass the common API's exact type rules.
+"""
+
 from enum import Enum, IntEnum
 from importlib import import_module
 from types import SimpleNamespace
@@ -21,6 +30,12 @@ class _UnitDistance(IntEnum):
 
 
 class _ReadOnlyPayload:
+    """Provide the minimum readable payload without an item-assignment method.
+
+    Successful delegation proves that the common input contract does not
+    require mutation of the caller's payload.
+    """
+
     items_per_thread = 1
     dtype = int
 

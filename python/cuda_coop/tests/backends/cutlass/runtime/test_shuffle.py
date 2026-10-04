@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check Shuffle direction, per-thread distances, and scratch reuse.
+
+Payload shifts expose one undefined element at a block-tile edge. Scalar
+offsets may select outside the block, while rotations wrap around. The
+oracles handle these different boundaries explicitly and use varying
+runtime distances without imposing block-wide uniformity.
+"""
+
 import importlib.util
 import os
 import re
@@ -38,6 +46,14 @@ _TILE = _THREADS * _ITEMS
 
 
 def _run_array(api, dtype, mode, *, block=_BLOCK, items_per_thread=3):
+    """Check a one-element payload shift across the complete block tile.
+
+    Only the first element for up or last element for down is undefined. The
+    kernel replaces that one result with zero before observation. A separate
+    output checks that the original payload remains unchanged, and result type
+    and minimum alignment must also be preserved.
+    """
+
     value_type = cutlass_dtype(dtype)
     threads = int(np.prod(block))
     size = threads * items_per_thread
@@ -123,6 +139,13 @@ def test_partial_block(api, mode):
 
 
 def _run_scalar(dtype, mode, *, runtime, distance=5, distance_dtype=np.int64):
+    """Check scalar selection with static or per-thread runtime distances.
+
+    In runtime cases, each thread reads its distance from an array. Rotate
+    wraps the selected index; offset results are compared only when the source
+    index lies within the block. A second output checks input preservation.
+    """
+
     value_type = cutlass_dtype(dtype)
     control_type = cutlass_dtype(distance_dtype)
 
@@ -247,6 +270,16 @@ def test_static_edges(mode, distance):
     ),
 )
 def test_bad_distance(tmp_path, mode, distance):
+    """Check invalid runtime distances in isolated CUDA processes.
+
+    A device trap can leave the CUDA context unusable, so each case runs in a
+    child process. The child confirms that it imports the same ``cuda.coop``
+    sources as the parent, then reports the driver status after launch. Wide
+    Int64 values could look valid after 32-bit truncation; they check that
+    validation uses the full distance. The parent accepts only an illegal
+    instruction or failed launch, not an arbitrary subprocess error.
+    """
+
     path = tmp_path / "invalid_distance.py"
     path.write_text(f"""import numpy as np
 import cutlass
@@ -302,6 +335,13 @@ raise AssertionError("invalid Shuffle distance did not trap")
     "mixed", (False, True), ids=("shuffle", "exchange-shuffle")
 )
 def test_reuse_loop(api, mixed):
+    """Reuse Shuffle scratch alone or after Exchange in a runtime loop.
+
+    Each iteration shifts the previous payload, optionally after a layout
+    conversion. The kernel replaces the undefined tile tail with zero before
+    reusing the result. The host applies the same sequence for all five steps.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,
@@ -355,6 +395,13 @@ def test_reuse_loop(api, mixed):
     "scalar", (False, True), ids=("array-down", "scalar-rotate")
 )
 def test_final_cubin(tmp_path, scalar):
+    """Check scalar and payload Shuffle calls in the final linked kernel.
+
+    After validating rotation or the defined payload shift, reject residual
+    provider symbols and CALL instructions. The resource reports are retained
+    for inspection but do not impose allocation or barrier requirements.
+    """
+
     cuobjdump = shutil.which("cuobjdump")
     if cuobjdump is None:
         pytest.skip(

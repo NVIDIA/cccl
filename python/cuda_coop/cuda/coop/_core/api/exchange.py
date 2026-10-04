@@ -4,9 +4,14 @@
 
 """Define the common Exchange call for blocked and striped layouts.
 
-Exchange converts a group payload between blocked and striped order. The
-decorator registers the function so a compiler can recognize calls to it. A
-host Python call raises an error.
+The decorator registers this function so compilers can recognize calls to it.
+Numba-CUDA-MLIR replaces each call during compilation; this body does not run.
+A tracing compiler, such as the CuTe DSL, runs the body in Python. It checks
+the group kind, payload, and layout mode, then calls the active backend.
+A call outside a compiler environment raises an error.
+
+Ranked scatter, block warp-striped layouts, and warp time slicing are
+available only through the qualified APIs.
 """
 
 from __future__ import annotations
