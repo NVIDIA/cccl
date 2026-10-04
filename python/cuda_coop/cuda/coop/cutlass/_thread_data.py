@@ -1251,4 +1251,5 @@ __all__ = [
     "ThreadData",
     "_coerce_thread_payload",
     "_make_rmem_tensor",
+    "_snapshot_readable_payload",
 ]
