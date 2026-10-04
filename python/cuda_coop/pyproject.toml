@@ -36,6 +36,7 @@ test = [
   "mypy",
   "numpy",
   "packaging",
+  "pyright==1.1.414",
   "pytest",
   "pytest-cov",
   "tomli>=2.0; python_version < '3.11'",

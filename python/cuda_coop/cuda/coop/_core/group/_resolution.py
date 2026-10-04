@@ -298,4 +298,7 @@ def _resolve_group(
     )
 
 
-__all__ = ["resolve_thread_group"]
+__all__ = [
+    "_resolve_group",
+    "resolve_thread_group",
+]

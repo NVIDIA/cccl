@@ -271,6 +271,9 @@ def plan_group_primitive(
 
 __all__ = [
     "GroupOperationSemantics",
+    "_call_classifications",
+    "_is_group_operation",
+    "_register_group_operation_family",
     "make_group_primitive_call",
     "plan_group_primitive",
 ]

@@ -75,4 +75,6 @@ def _portable_group_operation(
     return decorate
 
 
-__all__ = []
+__all__ = [
+    "_portable_group_operation",
+]

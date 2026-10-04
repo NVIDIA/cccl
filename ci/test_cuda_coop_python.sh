@@ -118,5 +118,9 @@ PY
 
 tests_root="$repo_root/python/cuda_coop/tests"
 
+# Check shared helpers without requiring optional compiler backends.
+python -m pyright --warnings --project "$repo_root/python/cuda_coop/tests/typing/pyright-unused.json" \
+  --pythonpath "$(command -v python)"
+
 cd "$tests_root"
 python -m pytest -v test_*.py

@@ -9,7 +9,6 @@ interface does not load a compiler; :func:`register` loads a selected adapter
 when explicit registration is needed.
 """
 
-import importlib
 import importlib.metadata
 from pkgutil import extend_path
 
@@ -17,11 +16,10 @@ from ._registration import register
 
 __path__ = extend_path(__path__, __name__)
 
-_PORTABLE_API_MODULE = f"{__name__}._core.api"
-_portable_api = importlib.import_module(_PORTABLE_API_MODULE)
-_portable_exports: tuple[str, ...] = _portable_api.__all__
+from ._core import api as _portable_api
+
 globals().update(
-    {name: getattr(_portable_api, name) for name in _portable_exports}
+    {name: getattr(_portable_api, name) for name in _portable_api.__all__}
 )
 
 
@@ -37,7 +35,7 @@ def _package_version() -> str:
 __version__ = _package_version()
 
 __all__ = ["__version__", "register"]
-__all__.extend(_portable_exports)
+__all__.extend(_portable_api.__all__)
 
 
 def __dir__() -> list[str]:
