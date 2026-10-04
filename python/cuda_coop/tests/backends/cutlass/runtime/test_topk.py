@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check selected keys and pair identity without requiring sorted output.
+
+Host comparisons sort only the defined output prefix. Pair values carry
+original indices, which identify selected keys even when keys tie. Exact
+bit comparisons check preservation of inputs and signed zeros. Positions
+beyond the selected prefix are never read from the result.
+"""
+
 from collections import Counter
 from contextlib import ExitStack
 
@@ -25,6 +33,12 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
 class _Readonly:
+    """Expose input items and metadata without a writable payload interface.
+
+    The copied item tuple lets inference and result allocation operate on a
+    readable input while the original payload remains available for checks.
+    """
+
     def __init__(self, source):
         self.items_per_thread = source.items_per_thread
         self.dtype = source.dtype
@@ -39,16 +53,30 @@ class _Readonly:
 
 
 def _assert_bits(actual, expected):
+    """Compare exact bits so numeric equality cannot hide changed zeros."""
+
     np.testing.assert_array_equal(
         actual.view(np.uint8), expected.view(np.uint8)
     )
 
 
 def _bit_counts(values):
+    """Count exact key representations without imposing a tie order.
+
+    Multiset subtraction detects a selected bit pattern that was absent from
+    the valid input prefix, including either representation of floating zero.
+    """
+
     return Counter(row.tobytes() for row in values.reshape(-1, 1))
 
 
 def _check_result(result, source, dtype, items_per_thread, alignment):
+    """Require a new payload with the input extent, dtype, and alignment.
+
+    Selection changes which positions contain valid results; it does not
+    shrink the per-thread payload or reuse the input object.
+    """
+
     assert isinstance(result, cutlass_coop.ThreadData)
     assert result is not source
     assert result.dtype is dtype
@@ -82,6 +110,19 @@ def _run(
     source=None,
     cases=None,
 ):
+    """Check each block's selection and verify that its inputs are unchanged.
+
+    Only min(k, valid_items) output positions are observed. Sorting those keys
+    on the host checks membership without requiring device output order. Pair
+    indices must be distinct, in range, and retain exact key and value bits.
+
+    ``controls`` selects static counts or Int64 kernel arguments. Runtime
+    cases reuse a compiled kernel with different counts. Reuse loops repeat
+    the original input. Chained calls select one opposite extreme from the
+    first result's defined prefix. Manual barriers protect scratch when
+    automatic synchronization is disabled.
+    """
+
     key_type, value_type = cutlass_dtype(dtype), cutlass_dtype(value_dtype)
     tile, size = threads * items_per_thread, blocks * threads * items_per_thread
     topk = getattr(api, f"topk_{mode}_{'pairs' if pairs else 'keys'}")
@@ -399,6 +440,13 @@ def test_readonly_inferred_composition(api, pairs):
 @pytest.mark.parametrize("dtype", (np.float32, np.float64))
 @pytest.mark.parametrize("mode", ("min", "max"))
 def test_selected_signed_zero_pairs_preserve_original_bits(dtype, mode):
+    """Select tied zeros while retaining each chosen pair's original bits.
+
+    The host treats both zero signs as equal, so either may be selected.
+    Pair indices require each returned zero to keep its original input bits,
+    without requiring a stable order among ties.
+    """
+
     nonzero = 1 if mode == "min" else -1
     source = np.tile(
         np.array([-0.0, 0.0, nonzero, 2 * nonzero], dtype=dtype), 64

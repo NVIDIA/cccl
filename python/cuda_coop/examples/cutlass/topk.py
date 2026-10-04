@@ -20,14 +20,23 @@ _K = 31
 
 
 def _check(result):
+    """Raise on Driver errors and unwrap a single returned handle or value."""
+
     if int(result[0]):
         raise RuntimeError(f"CUDA Driver call failed: {result[0]}")
     return result[1] if len(result) == 2 else result[1:]
 
 
 def run_example(api="common", items_per_thread=2):
-    """Check selected multisets and pair identity without assuming output
-    order.
+    """Check selected keys and pair identity without assuming output order.
+
+    Repeated keys allow several correct selections at the boundary. Sorting
+    only the selected outputs checks membership while permitting those ties.
+    Original-position values identify each chosen input. Comparing each
+    selected key's bits with the source key at that position checks the pair
+    and also distinguishes positive and negative zero. The kernel also stores
+    the original payloads to confirm that TopK left them unchanged. Sentinel
+    tails check that Store writes only the defined result prefix.
     """
     tile_size = _THREADS * items_per_thread
     valid_items = tile_size - 35
@@ -180,8 +189,7 @@ def run_example(api="common", items_per_thread=2):
     selected_ids = positions[:selected_items]
     assert len(np.unique(selected_ids)) == selected_items
     assert np.all((selected_ids >= 0) & (selected_ids < valid_items))
-    # Preserve the source bits and association even when tied keys are signed
-    # zeros.
+    # Check pair association and the sign bit of tied floating-point zeros.
     np.testing.assert_array_equal(
         largest[:selected_items].view(np.uint32),
         source[selected_ids].view(np.uint32),

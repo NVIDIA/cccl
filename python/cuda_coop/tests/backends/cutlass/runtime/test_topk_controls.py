@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check TopK scratch lifetime, count traps, and compiler recovery.
+
+The shared runtime harness checks numerical selection and pair identity.
+These cases vary scratch policy, isolate traps in child processes, and
+inspect linked code after successful execution. A mixed-operation loop
+also checks that one allocation can serve four provider call sites.
+"""
+
 import os
 import re
 import shutil
@@ -32,6 +40,13 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
 @pytest.mark.parametrize("auto_sync", (False, True))
 def test_scratch_reuse(sharing, auto_sync):
+    """Reuse scratch for chained selections across three runtime iterations.
+
+    Shared and exclusive policies must support repeated call sites. With
+    automatic synchronization disabled, the harness inserts explicit barriers
+    between operations and before the next iteration.
+    """
+
     _run(
         reuse=True,
         valid_items=91,
@@ -44,11 +59,23 @@ def test_scratch_reuse(sharing, auto_sync):
 
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
 def test_alignment_minimum(sharing):
+    """Treat requested alignment as a minimum for the native scratch layout.
+
+    A large capacity isolates alignment from size. Repeated selection must
+    succeed even when the descriptor requests only one-byte alignment.
+    """
+
     _run(reuse=True, sharing=sharing, capacity=16384, alignment=1)
 
 
 @pytest.mark.parametrize("k,count", ((0, 128), (17, 0), (0, 0)))
 def test_empty_selection_reuse(k, count):
+    """Reuse scratch when k or the valid input count makes the result empty.
+
+    The harness observes no result items in these cases. Its input checks and
+    repeated calls still exercise preservation and scratch lifetime.
+    """
+
     _run(reuse=True, sharing="shared", k=k, valid_items=count)
 
 
@@ -60,6 +87,14 @@ def test_undersized_storage():
 @pytest.mark.parametrize("name", ("k", "valid_items"))
 @pytest.mark.parametrize("value", (-1, 129, 1 << 32))
 def test_invalid_runtime_counts_trap(name, value):
+    """Run each invalid-count case in a child process.
+
+    A device trap leaves the process's CUDA context unusable. Both counts
+    arrive as Int64. The value 2**32 would narrow to zero, a valid count, if
+    converted to int before validation. Each child must fail with a CUDA trap
+    or launch error, so an unrelated Python error cannot pass.
+    """
+
     args = {"k": 17, "valid_items": 91}
     args[name] = value
     script = (
@@ -97,6 +132,12 @@ def test_invalid_runtime_counts_trap(name, value):
 @pytest.mark.parametrize("pairs", (False, True))
 @pytest.mark.parametrize("mode", ("min", "max"))
 def test_final_cubin(tmp_path, pairs, mode):
+    """Check wrapper inlining after selection passes its host checks.
+
+    Retained SASS must contain no TopK wrapper symbol or CALL instruction.
+    These checks make no claim about resource use or barrier counts.
+    """
+
     tool = shutil.which("cuobjdump")
     if tool is None:
         pytest.skip("cuobjdump is required for final linked code inspection")
@@ -119,6 +160,14 @@ def test_final_cubin(tmp_path, pairs, mode):
 
 @pytest.mark.parametrize("failure", ("compile", "link"))
 def test_provider_failure_retry(monkeypatch, tmp_path, failure):
+    """Check that compile or link failure leaves no active compiler context.
+
+    One injection fails provider compilation directly. The other compiles real
+    provider code, then substitutes malformed LTO IR to force a link failure.
+    The CuTe environment manager and backend selection must both be cleared.
+    A later unpatched selection must pass all host checks.
+    """
+
     original = _bundle.compile_bundle_source_with_layouts
     malformed = tmp_path / "malformed-topk.ltoir"
     malformed.write_bytes(b"not NVIDIA LTO IR\n")
@@ -151,6 +200,13 @@ def test_provider_failure_retry(monkeypatch, tmp_path, failure):
     "api", (coop, cutlass_coop), ids=("common", "qualified")
 )
 def test_load_topk_sort_store_loop(api):
+    """Share one scratch allocation across four operations and runtime tiles.
+
+    TopK produces an unordered prefix. MergeSort receives only that prefix and
+    an out-of-bounds sentinel; Store writes only the selected items. The host
+    checks the smallest keys in order and untouched output tails in each tile.
+    """
+
     threads, items_per_thread, tiles, selected = 32, 2, 4, 11
     tile = threads * items_per_thread
 

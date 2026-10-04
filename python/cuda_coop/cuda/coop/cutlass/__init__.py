@@ -8,8 +8,8 @@ Importing this namespace validates the optional runtime and lets the common
 API recognize the active CuTe DSL compiler environment. Calls inside that
 environment use these implementations. The namespace provides Load/Store,
 Reduce, Sum, Scan, Exchange, Shuffle, Merge Sort, Radix Sort, Radix Rank,
-and supported group queries and synchronization. Reduce and Scan accept only
-built-in operators.
+TopK, and supported group queries and synchronization. Reduce and Scan
+accept only built-in operators.
 
 Qualified calls also accept the CuTe payload forms documented by each
 operation. The per-operation docs describe which block calls accept a

@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Adapt readable payloads for block TopK selection.
+
+Turn each input into a fixed-size ThreadData snapshot. Common payloads,
+including read-only ones, are copied item by item; CuTe register tensors and
+TensorSSA values are converted. Selection reads only these copies and returns
+new ThreadData, so inputs remain unchanged. Keys and values keep independent
+element types and need matching extents. The selected prefix is unsorted.
+"""
+
 from cuda.coop._core.thread_group import ThreadGroup
 
 from ._temp_storage import TempStorage
@@ -9,6 +18,13 @@ from ._thread_data import _snapshot_readable_payload
 
 
 def _topk(group, keys, values, *, selection, k, valid_items, temp_storage):
+    """Validate the block and snapshot each input before lowering.
+
+    Check explicit scratch type and matching pair extents here. The shared
+    planner checks one-dimensional launch shape and static counts; the
+    provider resolves numeric dtypes and emits the checked C++ call.
+    """
+
     primitive = f"topk_{selection}_{'keys' if values is None else 'pairs'}"
     if not isinstance(group, ThreadGroup):
         raise TypeError(

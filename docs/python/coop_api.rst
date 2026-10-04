@@ -299,9 +299,10 @@ or to get a register tensor after Load.
 Qualified Reduce and Sum accept register tensors and ``TensorSSA`` values
 directly. Inside the kernel they return CuTe scalars, even when a NumPy dtype
 selects the payload type; the stubs report that NumPy type for static checks.
-Qualified block Scan, Exchange, array Shuffle, Merge Sort, Radix Sort, and
-Radix Rank also accept both forms and return ``ThreadData`` payloads. Rank
-results have signed Int32 dtype. Scalar Shuffle returns a CuTe scalar.
+Qualified Exchange, Merge Sort, Radix Sort, Radix Rank, TopK, array Shuffle,
+and block Scan also accept both forms and return ``ThreadData`` payloads.
+Warp Scan accepts only one scalar per lane. Rank results have signed Int32
+dtype. Scalar Shuffle returns a CuTe scalar.
 
 The :doc:`CUTLASS Programming Guide <coop_cutlass>` explains how to choose
 between common and qualified calls. Qualified Reduce and Scan also accept

@@ -11,7 +11,8 @@ Exchange distinguishes value, rank, and flag types; Shuffle separates
 payload shifts from scalar offset and rotate calls. Merge Sort checks
 paired partial-tile controls and rejects backend-specific input forms from
 common calls. Radix checks integer Rank keys, writable bin-prefix outputs,
-and the different controls accepted by Sort, Rank, and common calls.
+and the different controls accepted by Sort, Rank, and common calls. TopK
+checks block-only groups, integer counts, and payload-only inputs.
 """
 
 from __future__ import annotations

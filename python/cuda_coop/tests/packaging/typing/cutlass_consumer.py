@@ -9,7 +9,7 @@
 declarations. Checks cover group query types, primitive results, descriptor
 attributes, and calls across namespaces. Payload constructors, conversions,
 and rearrangements must preserve the value dtype independently of ranks
-and flags. Sorting keeps key and value result types independent.
+and flags. Sorting and selection keep key and value result types independent.
 
 The test neither imports this file nor traces or launches a kernel.
 """
@@ -952,6 +952,13 @@ def check_cutlass_radix_surface(scalar: Float32, value: Int16) -> None:
 
 
 def check_cutlass_topk_surface() -> None:
+    """Keep key and value dtypes through each minimum and maximum overload.
+
+    Counts affect which result positions are defined, not their static type.
+    Read-only payloads need no setter, and mixed register/payload pairs lose
+    element detail only for the register operand whose annotation lacks it.
+    """
+
     block = cutlass_coop.this_block()
     keys = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.float32)
     values = cutlass_coop.ThreadData(items_per_thread=3, dtype=Int16)
