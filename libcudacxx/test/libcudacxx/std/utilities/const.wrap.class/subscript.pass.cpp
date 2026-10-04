@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Enable constant_wrapper for msvc.
+// todo(dabayer): Enable for msvc. It has problems selecting the constexpr path.
 // UNSUPPORTED: msvc
 
 // todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
