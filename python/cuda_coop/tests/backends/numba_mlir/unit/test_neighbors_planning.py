@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check neighbor validation and operator identity before device compilation.
+
+Planning resolves static selectors and rejects unsupported input and count
+types. Operator fingerprints must include user helper state without tracing
+the compiler dispatcher's own implementation.
+"""
+
 from types import SimpleNamespace
 
 import pytest
@@ -10,6 +17,8 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
 
 def _plan(function, arg_types=()):
+    """Run the whole-function planner with a known 64-thread block launch."""
+
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
     from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
@@ -94,6 +103,8 @@ def test_mode_requests_literal_specialization():
 
 @pytest.mark.parametrize("operation", ["adjacent_difference", "discontinuity"])
 def test_neighbor_operator_tracks_nested_device_helper(monkeypatch, operation):
+    """Track helper captures without tracing the dispatcher implementation."""
+
     from numba_cuda_mlir import cuda
     from numba_cuda_mlir.descriptor import MLIRDispatcher
 

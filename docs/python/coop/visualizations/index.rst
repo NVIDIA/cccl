@@ -6,10 +6,10 @@
 Visualizations
 ==============
 
-Explore how ``cuda.coop`` primitives move, combine, order, and select values.
-Change the settings, step through the stages, and select a value to follow
-its ownership. These diagrams show data movement; their timing and geometry
-do not predict GPU performance.
+Explore how ``cuda.coop`` primitives move, combine, compare, order, and
+select values. Change the settings, step through the stages, and select a
+value to follow its ownership. These diagrams show data movement; their
+timing and geometry do not predict GPU performance.
 
 .. toctree::
    :maxdepth: 1
