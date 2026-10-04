@@ -151,6 +151,12 @@ def check_cutlass_warp_surface(source: object, destination: object) -> None:
 def check_cutlass_logical_warp_surface(
     source: object, destination: object
 ) -> None:
+    """Check logical Warp group kinds and their Load/Store calls.
+
+    Each width keeps the ``threads_within_warp`` kind. Qualified calls accept
+    all four Warp algorithms. Calls also accept groups from either namespace.
+    """
+
     values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
     for width in (1, 2, 4, 8, 16, 32):
         group = cutlass_coop.this_warp().group_by(width)
@@ -175,5 +181,7 @@ def check_cutlass_logical_warp_surface(
     cutlass_coop.load(common_coop.this_warp().group_by(8), source, values)
     cutlass_coop.store(common_coop.this_warp().group_by(8), destination, values)
 
+    # Block partitions keep their mapped group kind, although Load/Store
+    # reject them during tracing.
     mapped = cutlass_coop.this_block().group_by(2, exhaustive=False)
     assert_type(mapped, cutlass_coop.ThreadGroup[Literal["warps_within_block"]])

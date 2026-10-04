@@ -4,8 +4,9 @@
 
 """Lower shared Load/Store plans to CuTe calls and C++ wrappers.
 
-A request gives both sides the same symbol, template arguments, and runtime
-parameter order. Tracing emits an extern call and queues its immutable
+One request gives the traced extern call and the generated C++ wrapper the
+same symbol and runtime parameter order. It also supplies the wrapper's CUB
+template arguments. Tracing emits an extern call and queues its immutable
 request; finalization renders and compiles the wrapper as LTO-IR.
 
 DIRECT, STRIPED, and VECTORIZE use no shared scratch. Transpose algorithms add
@@ -62,9 +63,10 @@ class _CubLoadStoreRequest:
 
     The plan supplies participation, algorithm arguments, and synchronization
     policy. Wrapper identity includes that complete contract. Scratch request
-    keys retain the Algorithm identity and number of independent groups.
-    Layout preparation merges probes for the same C++ ``TempStorage`` array,
-    so wrappers with different controls can share those layout results.
+    keys include the Algorithm identity and number of independent groups, so
+    different count or default bindings can produce different keys. Later
+    layout preparation combines identical C++ size and alignment expressions
+    into one NVRTC query, even when their requirement keys differ.
     """
 
     plan: GroupLoweringPlan
@@ -83,6 +85,8 @@ class _CubLoadStoreRequest:
                 "CUTLASS Load/Store requires a CUB block or warp plan"
             )
         if self.plan.target is GroupLoweringTarget.CUB_WARP:
+            # Shared planning checks logical width and complete membership.
+            # Keep caller-owned scratch restricted to the block wrapper ABI.
             if self.plan.resolved_group.kind not in {
                 "warp",
                 "threads_within_warp",
@@ -159,8 +163,9 @@ class _CubLoadStoreRequest:
     def group_instances(self):
         """Count groups whose independent scratch slices share one allocation.
 
-        Flatten all three block dimensions. Each physical warp needs one CUB
-        storage object; a block operation needs only one for the whole block.
+        Flatten all three block dimensions. Each physical or logical warp
+        needs one CUB storage object; a block operation needs only one for the
+        whole block.
         """
 
         if not self.is_warp:
@@ -225,8 +230,8 @@ def _render_cub_load_store(request):
     adds a final result pointer. Static controls have no ABI argument.
 
     Check scratch size and alignment, then convert its address for CUB. Guard
-    runtime counts and offset bounds before the call. For physical warps, add
-    the warp's tile origin and select its scratch slice. Synchronize the group
+    runtime counts and offset bounds before the call. For warp groups, add the
+    group's tile origin and select its scratch slice. Synchronize the group
     after the call when requested. Load copies every item slot to its result
     buffer; slots beyond ``valid_items`` stay unspecified without a default.
     """
@@ -378,6 +383,8 @@ def _render_cub_load_store(request):
             width = request.plan.resolved_group.static_size
             mask = "0xffffffffu"
             if width < 32:
+                # Each logical group reuses its own scratch slice. Shift the
+                # width-bit mask to its lanes within the physical warp.
                 mask = (
                     f"{(1 << width) - 1}u << ((linear_tid % 32u / {width}u) "
                     f"* {width}u)"
@@ -1094,7 +1101,7 @@ def _required_static_elements(request: _CubLoadStoreRequest) -> int | None:
     """Compute the operand prefix needed when count and offset are static.
 
     A runtime control leaves the bound unknown. Account for group tile origins
-    when the plan describes multiple physical warps. The common operand must
+    when the plan describes physical or logical warps. The common operand must
     have space through the last group's selected prefix.
     """
 

@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check common Load and Store contracts before backend compilation.
+
+Small Python objects implement the payload and storage protocols. Common
+validation needs an active compiler trace, so each test reports a
+placeholder backend as active. A spy or no-op replaces the dispatch marker.
+The tests can check mutation, return values, and rejected controls without
+CUTLASS or a kernel launch. GPU tests cover the collective implementations.
+"""
+
 from importlib import import_module
 
 import numpy as np
@@ -13,6 +22,13 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
 
 class _ThreadData:
+    """Provide a payload whose item count can differ from its declared extent.
+
+    The length override lets a test check that ``len(payload)`` must match
+    ``items_per_thread``. List storage lets the marker spy show that Load
+    mutates the supplied object.
+    """
+
     def __init__(self, items_per_thread=2, *, dtype=np.int32, length=None):
         self.items_per_thread = items_per_thread
         self.dtype = dtype
@@ -29,6 +45,12 @@ class _ThreadData:
 
 
 class _ReadonlyThreadData:
+    """Provide a Store input with indexing but no mutation operation.
+
+    Store only reads a payload, so the common API must accept this object even
+    though it cannot serve as Load's writable output.
+    """
+
     def __init__(self, items_per_thread=2, *, dtype=np.int32):
         self.items_per_thread = items_per_thread
         self.dtype = dtype
@@ -42,6 +64,12 @@ class _ReadonlyThreadData:
 
 
 class _TempStorage:
+    """Supply the storage protocol attributes used by common API validation.
+
+    No allocation occurs here. The object lets block validation accept a
+    storage descriptor and warp validation reject the same option.
+    """
+
     size_in_bytes = 128
     alignment = 16
     auto_sync = True
@@ -57,6 +85,12 @@ class _TempStorage:
     ],
 )
 def test_common_load_mutates_output_and_returns_none(monkeypatch, group):
+    """Pass the caller's output object through the common dispatch marker.
+
+    The spy fills that same object for each group kind. This checks the public
+    mutation and return-value contract independently of a compiler backend.
+    """
+
     dispatch = import_module("cuda.coop._core.api._dispatch")
     api = import_module("cuda.coop._core.api.load_store")
     output = _ThreadData()
@@ -88,6 +122,14 @@ def test_common_load_mutates_output_and_returns_none(monkeypatch, group):
 
 
 def test_common_load_store_validate_block_payloads_and_options(monkeypatch):
+    """Validate payloads and group-specific options before compilation.
+
+    A no-op marker removes backend work from the test. Read-only Store input
+    is valid, while malformed Load outputs and unsupported scalar types fail.
+    Block storage options and block-only algorithms must not pass through the
+    warp paths, including logical warps.
+    """
+
     dispatch = import_module("cuda.coop._core.api._dispatch")
     api = import_module("cuda.coop._core.api.load_store")
     monkeypatch.setattr(
@@ -191,6 +233,12 @@ def test_common_load_store_accept_every_advertised_dtype(monkeypatch, dtype):
 
 
 def test_common_static_controls_fail_closed_before_delegation(monkeypatch):
+    """Reject malformed static counts and offsets before calling the marker.
+
+    The call log stays empty across all failures, showing that invalid Python
+    controls do not reach backend compilation.
+    """
+
     dispatch = import_module("cuda.coop._core.api._dispatch")
     api = import_module("cuda.coop._core.api.load_store")
     calls = []

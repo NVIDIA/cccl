@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Type hints for cuda.coop.cutlass thread groups.
+
+Overloads keep the group kind in the type, so a type checker can tell blocks,
+physical warps, and logical warps apart. A warp partition returns a logical
+thread group. A block partition returns warps within a block, which Load/Store
+do not accept. Lowering checks group width and membership against the
+enclosing kernel launch.
+"""
+
 from typing import Generic, Literal, TypeAlias, overload
 
 from typing_extensions import TypeVar
@@ -29,7 +38,11 @@ class ThreadGroup(CommonThreadGroup[_GroupKindT_co], Generic[_GroupKindT_co]):
         *,
         exhaustive: bool = True,
     ) -> ThreadGroup[Literal["threads_within_warp"]]:
-        """Partition a physical warp into groups of threads."""
+        """Describe groups with a compile-time count of threads per group.
+
+        Load/Store accept widths 1, 2, 4, 8, 16, and 32. Each width divides a
+        physical warp, so either exhaustive setting gives complete groups.
+        """
 
     @overload
     def group_by(
