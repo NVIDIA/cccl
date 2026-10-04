@@ -471,6 +471,10 @@ def provider_run_length_decode(
 ):
     """Emit checked decoding while preserving both input payloads.
 
+    Both public decoding forms reach this helper through ``_decode`` during
+    tracing. The bulk flag changes the meaning of offset and the return
+    value, while the same run inputs and scratch planning serve both forms.
+
     Resolve value and length dtypes separately and carry a runtime offset in
     its original integer type. Window output uses a new aligned register
     tensor. Bulk output uses the destination pointer and capacity and returns
@@ -479,6 +483,36 @@ def provider_run_length_decode(
     Record exact scratch for the whole operation. On failure, undo the queued
     session changes and re-raise. Kernel code already emitted and the output
     register tensor are not removed.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        Complete one-dimensional block decoding the runs.
+    launch : LaunchFacts
+        Exact block dimensions reported by the compiler.
+    values : ThreadData
+        Run values in blocked per-thread order.
+    lengths : ThreadData
+        Integer run lengths with the same item count as values.
+    decoded_items_per_thread : int
+        Compile-time items per thread in one decode window. Bulk decoding
+        reuses that window size until it has written the full stream.
+    offset : integer
+        Decoded-stream window start when bulk is false, or destination
+        element offset when bulk is true. May be static or runtime.
+    destination : CuTe tensor or None
+        Contiguous global output with a known capacity for bulk decoding.
+        Unused for the window form.
+    bulk : bool
+        Compile-time choice between a returned window and full-stream writes.
+    temp_storage : TempStorage or None
+        Optional descriptor whose allocation covers the entire decoding call.
+
+    Returns
+    -------
+    ThreadData or Uint32
+        Decoded window when bulk is false; full decoded length when bulk is
+        true. Bulk output writes are represented by the emitted device call.
     """
 
     resolved = [
