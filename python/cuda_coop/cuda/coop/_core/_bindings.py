@@ -20,7 +20,36 @@ _U64_MAX = (1 << 64) - 1
 
 
 class BindingKind(str, Enum):
-    """How a factory option reaches the generated primitive call."""
+    """How a scalar option is supplied to a generated primitive call.
+
+    A factory needs more than the option's value: it must know whether to
+    select an overload without that option, embed a compile-time constant,
+    or accept an argument on each device call. These choices affect the
+    generated wrapper signature and whether one specialization can be reused.
+
+    For example, an omitted ``valid_items`` can select an unguarded load;
+    a static count of 12 produces a guarded load with 12 embedded in its
+    wrapper; a runtime count produces a guarded load whose count is supplied
+    on each invocation. A static zero is therefore different from omission.
+
+    Attributes
+    ----------
+    OMITTED
+        The caller did not supply the option. The consuming factory chooses
+        an overload or supplies its own default; no payload is stored.
+    STATIC
+        The value is known while building the specialization and can be
+        embedded in generated code. The binding retains that value.
+    RUNTIME
+        The value is supplied when the device code executes. The binding
+        records that requirement without retaining a value or compiler IR.
+
+    Notes
+    -----
+    ``ArgumentKind`` classifies parameters after a signature is selected and
+    has only static and runtime cases. ``BindingKind`` also represents the
+    earlier decision to omit an option entirely.
+    """
 
     OMITTED = "omitted"
     STATIC = "static"
@@ -29,7 +58,37 @@ class BindingKind(str, Enum):
 
 @dataclass(frozen=True, eq=False)
 class ArgumentBinding:
-    """An omitted, compile-time, or runtime scalar factory argument."""
+    """A scalar option's supply mode and, when static, its known value.
+
+    Frontends use this record to pass argument decisions into shared
+    planning code without carrying backend-specific runtime expressions.
+    Factories then select overloads and turn the bindings into parameter
+    descriptors: for example, ``i32_parameter`` creates an embedded
+    ``CxxFunction`` for a static count or a runtime ``Value`` descriptor.
+    Lowering connects runtime descriptors to the actual device operands.
+
+    Prefer ``omitted()``, ``static(value)``, and ``runtime()`` when building
+    a record explicitly, or ``binding`` to classify a frontend value.
+    A static value contributes to specialization identity; runtime bindings
+    carry no payload, allowing calls with different runtime values to share
+    the same description.
+
+    Attributes
+    ----------
+    kind : BindingKind
+        Whether the option is omitted, known statically, or runtime-provided.
+    value : Any, optional
+        Payload for ``STATIC``; must be ``None`` for the other two modes.
+        Payload types, integer widths, and operation-specific bounds are
+        validated by consuming helpers and factories, not by this record.
+
+    Notes
+    -----
+    Equality and hashing use ``semantic_key`` rather than Python numeric
+    equality, so static ``True`` and ``1``, or ``0.0`` and ``-0.0``, remain
+    distinct requests. Integer normalization can deliberately merge equivalent
+    integral types before they enter an operation's specialization key.
+    """
 
     kind: BindingKind
     value: Any = None
@@ -40,19 +99,33 @@ class ArgumentBinding:
 
     @classmethod
     def omitted(cls) -> ArgumentBinding:
+        """Leave the option's overload or default selection to the factory."""
+
         return cls(BindingKind.OMITTED)
 
     @classmethod
     def static(cls, value: Any) -> ArgumentBinding:
+        """Retain a compile-time value for later validation and embedding."""
+
         return cls(BindingKind.STATIC, value)
 
     @classmethod
     def runtime(cls) -> ArgumentBinding:
+        """Request a device-call argument without storing its runtime value."""
+
         return cls(BindingKind.RUNTIME)
 
     @property
     def semantic_key(self) -> tuple[str, ...]:
-        """Return a type- and representation-stable request identity."""
+        """Return the binding identity used by equality and hashing.
+
+        Omitted and runtime bindings are identified solely by their kind.
+        Static bindings also include the payload type's module and qualified
+        name and the payload's ``repr``. This distinguishes values that
+        Python considers numerically equal but may generate different code.
+        The key reflects the stored representation; consumers normalize
+        values first when equivalent input types should share a key.
+        """
 
         if self.kind is not BindingKind.STATIC:
             return (self.kind.value,)
@@ -74,6 +147,12 @@ class ArgumentBinding:
 
     @property
     def argument_kind(self) -> ArgumentKind | None:
+        """Classify a supplied parameter, or return ``None`` for omission.
+
+        Planners use this when describing static and runtime call arguments.
+        A factory may separately replace an omitted option with a default.
+        """
+
         if self.kind is BindingKind.OMITTED:
             return None
         if self.kind is BindingKind.STATIC:
@@ -82,7 +161,31 @@ class ArgumentBinding:
 
 
 def binding(value: Any, *, omitted: Any = None) -> ArgumentBinding:
-    """Classify a frontend value without retaining runtime payload data."""
+    """Classify an option as omitted, static, or runtime-provided.
+
+    Frontends mark runtime expressions with ``RuntimeValue`` before calling
+    this helper. Every other supplied object is treated as a static payload;
+    its type alone does not imply that it is a device-time expression.
+    In particular, booleans are static values here. The boolean flags accepted
+    by some factories to select overloads are a separate convention.
+
+    Parameters
+    ----------
+    value : Any
+        Frontend option value or a ``RuntimeValue`` marker. An existing
+        ``ArgumentBinding`` is not passed through; use it directly instead
+        of classifying it again.
+    omitted : Any, optional
+        Sentinel for an absent option, defaulting to ``None``. Compared by
+        object identity before checking for ``RuntimeValue``.
+
+    Returns
+    -------
+    ArgumentBinding
+        Omitted when ``value is omitted``, runtime for a ``RuntimeValue``,
+        and static with the original payload otherwise. A runtime marker's
+        name is discarded; parameter builders supply their own names.
+    """
 
     if value is omitted:
         return ArgumentBinding.omitted()
@@ -97,7 +200,39 @@ def i32_parameter(
     name: str,
     omitted_value: int | None = None,
 ) -> Value | CxxFunction | None:
-    """Materialize an i32 binding as a core runtime or constant parameter."""
+    """Turn a count-like option into a signed-i32 parameter descriptor.
+
+    A runtime ``Value`` becomes an operand of the generated wrapper. A
+    ``CxxFunction`` embeds the constant expression in the underlying CUB
+    call without adding a runtime operand. An omitted binding can remove
+    the parameter or substitute a factory-provided constant default.
+
+    Parameters
+    ----------
+    option : ArgumentBinding
+        Binding that determines whether and how the parameter is supplied.
+    name : str
+        Parameter name, also used to identify the option in validation errors.
+    omitted_value : int or None, optional
+        Constant to embed when ``option`` is omitted. With the default
+        ``None``, omission produces no descriptor. Ignored for static and
+        runtime bindings.
+
+    Returns
+    -------
+    Value or CxxFunction or None
+        Runtime i32 descriptor, embedded i32 constant, or no parameter.
+        This constructs metadata; wrapper code generation happens later.
+
+    Raises
+    ------
+    TypeError
+        A used static value or omitted default is not integral or is a boolean.
+    ValueError
+        A used static value or omitted default does not fit signed i32.
+        Operation-specific bounds, such as a tile's item count, are checked
+        separately by the consuming factory or planner.
+    """
 
     if option.kind is BindingKind.OMITTED:
         if omitted_value is None:
@@ -111,6 +246,13 @@ def i32_parameter(
 
 
 def _normalize_i32(value: Any, *, name: str, source: str) -> int:
+    """Convert an integral value to Python ``int`` within signed-i32 bounds.
+
+    Reject booleans and non-integral values with ``TypeError`` and overflow
+    with ``ValueError``. ``source`` and ``name`` identify the offending
+    binding in diagnostics, such as ``static valid_items``.
+    """
+
     if isinstance(value, bool) or not isinstance(value, Integral):
         raise TypeError(f"{source} {name} must be an integer")
     normalized = int(value)
@@ -119,12 +261,38 @@ def _normalize_i32(value: Any, *, name: str, source: str) -> int:
     return normalized
 
 
-def _normalize_i32_binding(
+def normalize_i32_binding(
     option: ArgumentBinding,
     *,
     name: str,
 ) -> ArgumentBinding:
-    """Canonicalize the value identity of one static signed-i32 binding."""
+    """Validate a static i32 binding and normalize its specialization identity.
+
+    Equivalent integral values, such as Python ``1`` and NumPy ``int32(1)``,
+    become the same Python ``int`` payload. This avoids separate semantic
+    keys for constants that generate the same i32 argument.
+
+    Parameters
+    ----------
+    option : ArgumentBinding
+        Binding to normalize; omitted and runtime bindings pass through.
+    name : str
+        Option name included in validation errors.
+
+    Returns
+    -------
+    ArgumentBinding
+        A new static binding with a Python ``int`` payload, or the original
+        non-static binding. Negative values are allowed within signed-i32
+        range; operation-specific bounds are checked separately.
+
+    Raises
+    ------
+    TypeError
+        The static payload is not integral or is a boolean.
+    ValueError
+        The static payload is outside ``[-2**31, 2**31 - 1]``.
+    """
 
     if option.kind is not BindingKind.STATIC:
         return option
@@ -134,6 +302,13 @@ def _normalize_i32_binding(
 
 
 def _normalize_i64(value: Any, *, name: str, source: str) -> int:
+    """Convert an integral value to Python ``int`` within signed-i64 bounds.
+
+    Uses the same type checks and diagnostic labels as ``_normalize_i32``.
+    Negative values are accepted; pointer-offset factories apply their own
+    nonnegative bounds after this representation check.
+    """
+
     if isinstance(value, bool) or not isinstance(value, Integral):
         raise TypeError(f"{source} {name} must be an integer")
     normalized = int(value)
@@ -142,12 +317,38 @@ def _normalize_i64(value: Any, *, name: str, source: str) -> int:
     return normalized
 
 
-def _normalize_i64_binding(
+def normalize_i64_binding(
     option: ArgumentBinding,
     *,
     name: str,
 ) -> ArgumentBinding:
-    """Canonicalize the value identity of one static signed-i64 binding."""
+    """Validate a static i64 binding and normalize its specialization identity.
+
+    Pointer-offset planning uses this to give equal integral offsets the
+    same Python ``int`` payload and semantic key. Omitted and runtime
+    bindings already describe their supply mode without a value to normalize.
+
+    Parameters
+    ----------
+    option : ArgumentBinding
+        Binding to normalize; omitted and runtime bindings pass through.
+    name : str
+        Option name included in validation errors.
+
+    Returns
+    -------
+    ArgumentBinding
+        A new static binding with a Python ``int`` payload, or the original
+        non-static binding. Nonnegative offsets and combined tile-origin
+        bounds are validated separately by factories and group planning.
+
+    Raises
+    ------
+    TypeError
+        The static payload is not integral or is a boolean.
+    ValueError
+        The static payload is outside ``[-2**63, 2**63 - 1]``.
+    """
 
     if option.kind is not BindingKind.STATIC:
         return option
@@ -156,8 +357,39 @@ def _normalize_i64_binding(
     )
 
 
-def _cxx_scalar_literal(value: Any, *, name: str) -> str:
-    """Render one finite scalar as a C++ source literal."""
+def cxx_scalar_literal(value: Any, *, name: str) -> str:
+    """Render a static scalar as an expression for a generated CUB call.
+
+    Factories use this for embedded values such as a load's ``oob_default``.
+    The result is source text for a ``CxxFunction`` descriptor, whose dtype
+    is supplied separately by the factory.
+
+    Parameters
+    ----------
+    value : Any
+        Boolean, integral, or real scalar, or an object whose ``value``
+        attribute contains one. Integral values may span signed-i64 minimum
+        through unsigned-i64 maximum. Real values must remain finite after
+        conversion to Python ``float``.
+    name : str
+        Option name included in validation errors.
+
+    Returns
+    -------
+    str
+        C++ boolean literal, integer expression, or floating-point literal.
+        Integers above signed-i64 maximum receive a ``ULL`` suffix; signed
+        i64 minimum uses an expression that avoids an overflowing positive
+        literal. Conversion into the eventual CUB element type is left to
+        later compilation.
+
+    Raises
+    ------
+    TypeError
+        The unwrapped value is not a supported numeric scalar.
+    ValueError
+        An integer is outside ``[-2**63, 2**64 - 1]`` or a real is nonfinite.
+    """
 
     scalar = getattr(value, "value", value)
     if isinstance(scalar, bool):
@@ -179,4 +411,12 @@ def _cxx_scalar_literal(value: Any, *, name: str) -> str:
     raise TypeError(f"static {name} must be a numeric scalar")
 
 
-__all__ = ["ArgumentBinding", "BindingKind", "binding", "i32_parameter"]
+__all__ = [
+    "ArgumentBinding",
+    "BindingKind",
+    "binding",
+    "cxx_scalar_literal",
+    "i32_parameter",
+    "normalize_i32_binding",
+    "normalize_i64_binding",
+]
