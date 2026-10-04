@@ -44,10 +44,25 @@ from ._rewrite_support import CoopSinglePhaseRewriteError
 def _infer_payload(context, inference):
     """Infer provider dtypes and extent from fixed per-thread arrays.
 
+    The provider rewrite invokes this registered inference hook while
+    splitting a TopK call into specialization keywords and runtime
+    operands. Public planning may already have copied the inputs, but
+    those generated arrays still need concrete types before allocation.
+
     The factory rewrite can recover a dtype from its payload or an explicit
     factory keyword. Require matching key/value extents, validate each numeric
     type independently, and record the types for later uses of ThreadData.
     This keeps specialization and later type inference consistent.
+
+    Parameters
+    ----------
+    context : GroupRewriteContext
+        Operand provenance and dtype records for the active
+        provider-call rewrite, before ordinary Numba type inference.
+    inference : PayloadInference
+        This call's runtime operands and mutable factory keywords.
+        Inferred shapes and types must agree with explicit factory
+        choices.
     """
 
     names = (
