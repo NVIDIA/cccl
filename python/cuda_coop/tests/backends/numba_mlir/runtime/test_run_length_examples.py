@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Execute the documented window and bulk run-length decode examples.
+
+Keep both marked regions self-contained for Sphinx. The window example
+checks auxiliary buffers and padded tails. The bulk example crosses three
+internal windows. It checks that the destination offset and final-window
+masking leave elements outside the decoded interval unchanged, for both
+input run extents.
+"""
+
 import pytest
 
 cuda = pytest.importorskip("numba_cuda_mlir.cuda")
@@ -19,6 +28,8 @@ pytestmark = [
 
 
 def test_run_length_window_example():
+    """Check a shifted window, full total, and relative run positions."""
+
     # run-length-window-example-begin
     import numpy as np
     from numba_cuda_mlir import cuda
@@ -71,6 +82,8 @@ def test_run_length_window_example():
 
 
 def test_run_length_bulk_example():
+    """Check three internal windows and the untouched destination margins."""
+
     # run-length-bulk-example-begin
     import numpy as np
     from numba_cuda_mlir import cuda

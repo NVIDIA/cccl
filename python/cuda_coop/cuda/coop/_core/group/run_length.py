@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Plan block decoding while keeping input runs and output windows distinct.
+
+The operation record selects a single decoded window or a whole-stream write.
+Planning binds the exact block geometry and records result ownership, uniform
+offsets and destinations, and scratch requirements. It does not allocate a
+destination or execute the prepared CUB decoder.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, fields
@@ -36,6 +44,19 @@ _DEFAULT_OFFSET = ArgumentBinding.static(0)
 
 @dataclass(frozen=True, eq=False)
 class GroupRunLengthDecodeSemantics:
+    """Describe decoding inputs, offset binding, and the chosen result form.
+
+    Item and length dtypes describe separate compressed payloads with the same
+    runs_per_thread. decoded_items_per_thread sizes each expanded window.
+    decoded_offset_dtype sizes totals and relative offsets; control_dtype
+    keeps a runtime window or destination offset wide until validation.
+
+    bulk selects a destination write and a total-size scalar visible to every
+    member. Otherwise, members receive their own blocked decoded payloads.
+    relative_offsets selects an additional bulk output destination. Validation
+    occurs when the planner constructs the block specialization.
+    """
+
     item_dtype: Any
     run_length_dtype: Any
     runs_per_thread: int
@@ -78,6 +99,14 @@ class GroupRunLengthDecodeSemantics:
 
 
 def _classifications(operation):
+    """Identify compressed inputs, explicit destinations and the offset control.
+
+    Bulk destination arrays are output operands. The offset is a
+    specialization constant or runtime input according to its binding, and its
+    public name changes with the operation: a decoded-stream window index or a
+    destination write index.
+    """
+
     names = ["run_values", "run_lengths"]
     if operation.bulk:
         names.append("destination")
@@ -106,6 +135,19 @@ def _classifications(operation):
 
 
 def _plan(call, resolved, launch, operation):
+    """Bind decoding geometry and describe the public result and uniform inputs.
+
+    The block builder validates extents and offset bindings. A window plan
+    returns each member's fixed-size decoded payload; a bulk plan returns the
+    same total-size scalar to every member. Auxiliary window outputs are
+    provider arguments and are not additional public return values in this
+    plan.
+
+    All members must agree on the window offset, or on the bulk destinations
+    and destination offset. Shared contracts supply implementation-owned
+    scratch; the frontend can replace that choice for an explicit descriptor.
+    """
+
     specialization = make_block_run_length_decode_specialization(
         **{
             field.name: getattr(operation, field.name)
