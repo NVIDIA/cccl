@@ -55,3 +55,8 @@ def _numba_semantic_token(value: object) -> Hashable:
             str(value),
         )
     return semantic_token(value)
+
+
+__all__ = [
+    "_numba_semantic_token",
+]

@@ -253,4 +253,6 @@ def _auto_register_known_dsls() -> tuple[str, ...]:
     return tuple(registered)
 
 
-__all__: list[str] = []
+__all__ = [
+    "_auto_register_known_dsls",
+]

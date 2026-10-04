@@ -215,4 +215,7 @@ def _initialize_runtime_hooks() -> None:
         register_planner(planner_module.CoopWholeFunctionPlanner)
 
 
-__all__: tuple[str, ...] = ()
+__all__ = [
+    "_initialize_runtime_hooks",
+    "_require_runtime",
+]

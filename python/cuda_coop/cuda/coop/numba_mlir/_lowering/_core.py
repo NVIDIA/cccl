@@ -677,4 +677,8 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         )
 
 
-__all__ = ["NumbaMlirArrayInputTransform", "NumbaMlirCoreAdapter"]
+__all__ = [
+    "NumbaMlirArrayInputTransform",
+    "NumbaMlirCoreAdapter",
+    "_optional_binding",
+]

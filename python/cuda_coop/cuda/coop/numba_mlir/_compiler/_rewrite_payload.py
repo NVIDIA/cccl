@@ -203,4 +203,7 @@ class _PayloadRewrite:
         specification.infer_payload(inference.context, inference)
 
 
-__all__ = ["_PayloadRewrite"]
+__all__ = [
+    "PayloadInference",
+    "_PayloadRewrite",
+]

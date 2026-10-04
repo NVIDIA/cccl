@@ -86,4 +86,5 @@ __all__ = [
     "TempStorageLike",
     "ThreadDataLike",
     "_ReadableThreadDataLike",
+    "_normalize_alignment",
 ]

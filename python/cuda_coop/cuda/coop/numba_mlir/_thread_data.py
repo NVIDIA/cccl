@@ -112,4 +112,9 @@ def __dir__() -> list[str]:
     return sorted(__all__)
 
 
-__all__ = ["ThreadData", "local", "shared"]
+__all__ = [
+    "ThreadData",
+    "_normalize_thread_data_alignment",
+    "local",
+    "shared",
+]

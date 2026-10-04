@@ -218,4 +218,8 @@ def _require_numba_mlir_version(runtime: ModuleType) -> None:
         )
 
 
-__all__: tuple[str, ...] = ()
+__all__ = [
+    "NumbaMlirBackendImportError",
+    "_require_numba_mlir_version",
+    "_runtime_requirement",
+]
