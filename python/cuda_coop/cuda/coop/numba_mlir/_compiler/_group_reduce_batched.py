@@ -39,11 +39,26 @@ from ._rewrite_reduce_batched import infer_reduce_batched_payload
 def _result_extent(context, bound):
     """Infer result capacity from the batch count and resolved warp width.
 
+    Each input slot represents one independent reduction across the
+    warp. If there are ``batches`` slots and ``width`` lanes,
+    distributing the results needs ``ceil(batches / width)`` slots per
+    lane. That output item count is the extent returned here.
+
     When a later call asks for the extent of this call's result, the group
     planner traces back to this call and uses this value before the call is
     rewritten and its output is allocated. Return None while the payload
     extent or selected group's static size is unknown; do not guess the
     input shape.
+
+    Parameters
+    ----------
+    context : GroupPlanningContext
+        Access to launch dimensions, constant controls, payload
+        facts, and IR builders for this group-planning attempt.
+    bound : inspect.BoundArguments
+        Public call arguments after signature binding and default
+        application. Runtime values remain IR variables; selectors
+        are resolved through the context.
     """
 
     batches = context.array_extent(bound.arguments["value"])
@@ -62,6 +77,11 @@ def _lower_reduce_batched(
 ):
     """Rewrite a batch reduction to a native input/output array call.
 
+    The group-operation registry calls this during whole-function
+    planning, before ordinary typing. It returns pending replacement IR;
+    the owning planner installs it only after the function's group
+    operations validate.
+
     Require fixed array input and infer its item type. Common calls require
     ThreadData; qualified calls also accept local arrays. Resolve the static
     layout and operator, then ask shared planning to validate the warp.
@@ -71,6 +91,29 @@ def _lower_reduce_batched(
     so the input stays intact. Layout assigns batch indices to result slots;
     slots with no batch remain unspecified. Scratch comes from the plan and
     has no caller-supplied descriptor in this API.
+
+    Parameters
+    ----------
+    context : GroupPlanningContext
+        Access to launch dimensions, constant controls, payload
+        facts, and IR builders for this group-planning attempt.
+    inst : ir.Assign
+        Original public call assignment. Its target, scope, and
+        source location identify the replacement result and
+        generated temporaries.
+    operation : str
+        Canonical public operation name, used in diagnostics and
+        generated temporary names.
+    group : ThreadGroup
+        Group resolved by the owning planner against the current
+        kernel launch.
+    bound : inspect.BoundArguments
+        Public call arguments after signature binding and default
+        application. Runtime values remain IR variables; selectors
+        are resolved through the context.
+    is_common_root : bool
+        Whether the call came through the common ``cuda.coop`` API
+        and must satisfy its narrower operand and selector rules.
     """
 
     value = bound.arguments["value"]
