@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check logical-group layouts and independence within physical warps.
+
+Plain CuTe indexing writes Load results and supplies Store inputs, so each
+direction is checked on its own. Different controls in sibling groups
+expose incorrect tile indexing. Divergent loop cases leave whole sibling
+groups inactive to exercise scratch reuse and synchronization scope.
+"""
+
 import importlib.util
 import re
 import shutil
@@ -37,6 +45,13 @@ _BLOCK_TILE = _THREADS * _ITEMS
 @pytest.mark.parametrize("operation", ("load", "store"))
 @pytest.mark.parametrize("items_per_thread", (1, 4))
 def test_width_layout(api, width, algorithm, operation, items_per_thread):
+    """Check each width with one collective direction at a time.
+
+    Plain CuTe indexing supplies Store input or records Load output, so errors
+    in Load and Store cannot cancel each other. A nonzero offset and untouched
+    sentinels reveal incorrect tile origins and stray writes.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,
@@ -91,6 +106,14 @@ def test_width_layout(api, width, algorithm, operation, items_per_thread):
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize("exhaustive", (False, True))
 def test_group_controls(api, algorithm, exhaustive):
+    """Use different runtime counts, offsets, and defaults in sibling groups.
+
+    All lanes of a group read the same control values, while other groups may
+    use different values. Load output is observed directly and Store receives
+    a separate seed array. This prevents a paired layout error from passing as
+    a correct copy.
+    """
+
     width = 8
     groups = _THREADS // width
     tile = width * _ITEMS
@@ -196,6 +219,13 @@ def test_group_controls(api, algorithm, exhaustive):
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("width", _WIDTHS)
 def test_partial_transpose_loads_valid_items_without_default(api, width):
+    """Read only the defined payload entries of each logical group's tile.
+
+    Without a default, entries past a group's count are undefined. The kernel
+    skips them when writing observations, so their sentinels must survive.
+    Different runtime counts exercise this rule for every supported width.
+    """
+
     groups = _THREADS // width
     tile = width * _ITEMS
 
@@ -258,6 +288,15 @@ def test_partial_transpose_loads_valid_items_without_default(api, width):
     "divergent", (False, True), ids=("all-groups", "selected-group")
 )
 def test_transpose_loop(api, width, divergent):
+    """Reuse each group's scratch while sibling groups may skip the calls.
+
+    For widths 1 and 8, the divergent branch selects the third logical group
+    in each physical warp. Width 32 selects only the second physical warp.
+    Every selected group participates in full. Its reuse synchronization must
+    exclude inactive siblings. Eight iterations and group-specific increments
+    make incorrect tile selection or stale data visible in the results.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,
@@ -331,6 +370,16 @@ def test_transpose_loop(api, width, divergent):
     + [(1, "transpose"), (32, "transpose")],
 )
 def test_final_cubin(tmp_path, width, algorithm):
+    """Inspect the final machine code after verifying the copy.
+
+    The generated Load and Store wrappers must be fully inlined: no wrapper
+    symbol or CALL instruction may remain in the SASS. No block barrier (BAR)
+    may appear. Algorithms without scratch must use no shared memory and no
+    warp synchronization instruction (WARPSYNC). Transpose must use shared
+    memory for widths above one; width one leaves the size unconstrained. The
+    test does not check a specific warp synchronization mask.
+    """
+
     cuobjdump = shutil.which("cuobjdump")
     if cuobjdump is None:
         pytest.skip(

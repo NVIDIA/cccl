@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile logical-warp layouts and reject unsupported group contracts.
+
+Typed null pointers and an explicit SM80 target permit compilation without
+a kernel launch. Native C++ layout probes measure scratch for every group
+in the block. Other cases distinguish supported warp subdivisions from
+nested mappings, partial physical warps, and unknown launch dimensions.
+"""
+
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
@@ -34,6 +42,13 @@ def _pointer():
 
 @pytest.mark.parametrize("width", _WIDTHS)
 def test_exact_subgroup_scratch(width):
+    """Compare total scratch with the native size of one logical group's slot.
+
+    Probe Load and Store independently because their native storage types may
+    differ. For each width, the block allocation must hold one slot per group
+    and retain the native alignment. Check blocks with one and two warps.
+    """
+
     requests = [
         _load_store._make_request(
             group=this_warp().group_by(width),
@@ -132,6 +147,13 @@ def test_logical_warp_compile(width, algorithm, api, items_per_thread):
 
 @pytest.mark.parametrize("width", _WIDTHS)
 def test_nonexhaustive_divisor_compile(width):
+    """Accept a supported divisor with nonexhaustive grouping.
+
+    Every tested width divides 32, so each logical group still has complete
+    membership. ``exhaustive=False`` permits incomplete coverage in the group
+    model but does not make these particular subdivisions incomplete.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         cutlass_coop.load(
@@ -243,6 +265,12 @@ def test_dynamic_dimensions_fail():
 
 
 def test_extent_includes_last_group():
+    """Check the shaped input against the final logical group's tile.
+
+    The tensor holds all 128 items at offset zero. An offset of one puts the
+    last group past the end even though the earlier groups still fit.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         inputs = cute.make_tensor(memory, cute.make_layout(128))

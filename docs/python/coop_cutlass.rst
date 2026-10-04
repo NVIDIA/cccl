@@ -331,8 +331,8 @@ an explicit descriptor, the compiler manages scratch and its reuse
 synchronization automatically.
 
 By default, the following example transforms eight independent tiles with
-``sharing="shared"`` and ``auto_sync=True``. The ``sharing`` option selects
-shared or exclusive slices. The ``manual_sync`` option replaces automatic
+``sharing="shared"`` and ``auto_sync=True``. Its ``run_example`` function also
+accepts ``sharing="exclusive"``, and ``manual_sync=True`` replaces automatic
 synchronization with ``storage.sync()`` calls.
 :download:`Download the storage example
 <../../python/cuda_coop/examples/cutlass/block_storage.py>`:
