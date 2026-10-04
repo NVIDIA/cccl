@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Plan scalar and array Shuffle calls before Numba type inference.
+
+Array Up and Down create a fresh per-thread result payload. Scalar Offset and
+Rotate return the provider's scalar result and may pass a runtime distance.
+Shared-core planning records CUB block requirements; this module selects the
+corresponding provider and builds its replacement call IR.
+"""
+
 from __future__ import annotations
 
 import inspect
@@ -67,7 +75,12 @@ def _mode_token(value: object) -> str:
 
 
 class _ShufflePlanning:
-    """Family-local Shuffle semantics over the declared planning context."""
+    """Validate Shuffle operands and build a CUB provider replacement.
+
+    The shared context resolves constants, payload facts, and launch shape.
+    This family keeps scalar distance controls separate from fixed-array unit
+    shifts, then returns statements for the owning planner to install.
+    """
 
     def __init__(self, context: GroupPlanningContext) -> None:
         self._context = context
@@ -77,6 +90,12 @@ class _ShufflePlanning:
         operation: str,
         bound: inspect.BoundArguments,
     ) -> None:
+        """Normalize the mode and keep the common API on array Up and Down.
+
+        Update the bound mode in place. Scalar Offset and Rotate belong to the
+        qualified Numba-CUDA-MLIR API.
+        """
+
         bound.arguments["mode"] = self._context.validate_common_selector(
             operation,
             "mode",
@@ -86,6 +105,12 @@ class _ShufflePlanning:
 
     @staticmethod
     def _provider(plan: GroupLoweringPlan, *, is_array: bool):
+        """Require CUB BlockShuffle provenance and select its operand form.
+
+        Match the plan's target, native header, and C++ class before choosing
+        the scalar or array factory. Reject a plan with no matching provider.
+        """
+
         if (
             plan.target is not GroupLoweringTarget.CUB_BLOCK
             or plan.provenance is None
@@ -111,6 +136,12 @@ class _ShufflePlanning:
 
     @staticmethod
     def _planned_argument(binding: ArgumentBinding, runtime_value: Any) -> Any:
+        """Retain the runtime variable or static distance binding.
+
+        The provider rewrite needs this distinction to choose an operand or an
+        embedded constant without specializing an ordinary runtime value.
+        """
+
         return runtime_value if binding.kind is BindingKind.RUNTIME else binding
 
     def _plan(
@@ -120,6 +151,19 @@ class _ShufflePlanning:
         bound: inspect.BoundArguments,
         is_common_root: bool,
     ) -> tuple[GroupLoweringPlan, bool]:
+        """Validate Shuffle mode, payload form, and distance before lowering.
+
+        Array Up and Down require a fixed extent and constant unit distance.
+        Their CUB overload takes no distance operand. Scalar Offset and Rotate
+        retain a static or runtime integer binding; check known Rotate bounds
+        against the block size. Common calls must use a ThreadData array.
+
+        Infer and validate the numeric dtype, then ask the shared planner for
+        a supported block implementation. Return its plan and the array-form
+        flag. The provider adapter handles the checks and conversions for
+        runtime distance values.
+        """
+
         value = bound.arguments["value"]
         is_array = self._context.is_array("shuffle", value)
         mode = _mode_token(self._context.constant(bound.arguments["mode"]))
@@ -262,6 +306,17 @@ class _ShufflePlanning:
         bound: inspect.BoundArguments,
         is_common_root: bool,
     ) -> list[Any]:
+        """Build a provider call with the public Shuffle result form.
+
+        For an array, create a payload marker, pass it as output, and return
+        it through a result alias. For a scalar, retain the provider return
+        value. A runtime scalar distance is converted to int64 before the
+        provider's bounded conversion to the CUB argument type.
+
+        Return the ordered replacement statements with the validated core plan
+        attached. The owning planner installs them after validation succeeds.
+        """
+
         if operation != "shuffle":
             raise GroupRewriteError(
                 f"Shuffle planner received unexpected operation {operation!r}"

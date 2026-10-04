@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check Exchange and Shuffle planning before compiling provider code.
+
+Public calls must choose a provider with the correct operands and result
+shape. Invalid controls must fail before provider selection. These tests
+inspect rewritten Numba IR and use a fake invocable only where matching
+would otherwise compile a provider.
+"""
+
 from enum import Enum, IntEnum
 from inspect import signature
 from types import SimpleNamespace
@@ -21,6 +29,12 @@ class _UnitDistance(IntEnum):
 
 
 def _plan(function, *, arg_types=(), block=(64, 1, 1)):
+    """Create untyped Numba IR and its group planner without running it.
+
+    Tests supply argument types and exact launch dimensions, then choose when
+    to run planning so they can check both rewrites and early failures.
+    """
+
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
     from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
@@ -34,6 +48,12 @@ def _plan(function, *, arg_types=(), block=(64, 1, 1)):
 
 
 def _planned_factory_calls(func_ir):
+    """Pair IR call expressions with directly referenced Python globals.
+
+    The planner inserts providers as globals. Inspecting those targets lets
+    tests check provider selection and casts without compiling the calls.
+    """
+
     from numba_cuda_mlir.numbair_transforms import ir
 
     globals_by_name = {
@@ -64,6 +84,13 @@ def _provider_call(func_ir, provider):
 
 
 def _match_before_inference(func_ir, *, arg_types):
+    """Check that planned calls match with an empty compiler type map.
+
+    A fake invocable supplies storage metadata without compiling a provider.
+    The real matcher must recover enough information from arguments and IR
+    before the compiler has inferred expression types.
+    """
+
     from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
 
     class _Invocable:
