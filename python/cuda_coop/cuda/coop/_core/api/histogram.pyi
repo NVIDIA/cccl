@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Type histogram counters independently of the sample payload.
+
+Omitting counter_dtype, or spelling it as Python int, gives int32 results. An
+explicit supported NumPy counter type determines the result type instead. The
+block and input constraints here describe the common API; runtime sample range
+and result ownership are explained in the implementation docstring.
+"""
+
 from typing import Literal, TypeAlias, overload
 
 import numpy

@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check histogram validation before provider compilation or execution.
+
+The planner receives Python IR, argument types, and exact launch facts.
+Cases separate sample and counter dtype rules, static bin capacity, and the
+one-dimensional complete-block requirement. A dynamic bin-count argument
+requests literal specialization instead of becoming a runtime control.
+"""
+
 from types import SimpleNamespace
 
 import numpy as np
@@ -11,6 +19,13 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
 
 def _plan(function, arg_types=(), block=(64, 1, 1)):
+    """Run group planning with explicit types and a known launch shape.
+
+    A minimal compiler state supplies function IR and argument types. Launch
+    facts let shared planning check block shape and bin capacity without
+    provider compilation or a CUDA device.
+    """
+
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
     from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
@@ -67,6 +82,12 @@ def test_reject_invalid_capacity(bins, bins_per_thread):
 
 
 def test_require_literal_bins():
+    """Request a literal bin count when an argument lacks a known value.
+
+    The provider specializes its counter storage on bins. ForceLiteralArg
+    requests specialization on its value before planning can continue.
+    """
+
     from numba_cuda_mlir import types
     from numba_cuda_mlir.numba_cuda.core.errors import ForceLiteralArg
 
