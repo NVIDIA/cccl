@@ -195,10 +195,26 @@ class _ScanPlanning:
     ) -> tuple[ArgumentBinding, CxxFunction | Reference | None]:
         """Separate an omitted, static, or runtime exclusive-scan seed.
 
+        Scan planning calls this before selecting a CUB overload. Returning
+        both the binding and shared parameter descriptor keeps a runtime
+        seed in the device argument list while allowing a static seed to be
+        embedded in generated C++.
+
         Runtime seeds must already have the payload dtype. Static seeds are
         converted under the scalar-literal rules and embedded in typed C++
         expressions. Inclusive scans reject any seed because their first
         output starts with the first input value.
+
+        Parameters
+        ----------
+        value : object
+            Bound ``initial_value`` argument, retained as IR when it is
+            a runtime scalar.
+        dtype : numba type
+            Already inferred element dtype of the scanned payload.
+        mode : str
+            Validated inclusive or exclusive mode used to decide whether
+            a seed is allowed.
         """
 
         binding = self._context.planning_binding(value)
@@ -289,9 +305,25 @@ class _ScanPlanning:
     ) -> GroupLoweringPlan:
         """Apply an explicit block storage descriptor to a supported plan.
 
+        ``_plan`` calls this after selecting the primitive when the public
+        call supplies TempStorage. This records who owns the scratch and
+        whether later rewriting must insert a reuse barrier; it does not
+        allocate shared memory.
+
         Preserve the primitive's storage requirement, but record the caller's
         capacity, alignment, sharing, and reuse-barrier policy. Warp Scan
         uses compiler-owned storage and rejects this descriptor.
+
+        Parameters
+        ----------
+        plan : GroupLoweringPlan
+            Supported Scan plan from shared planning; returned as a
+            modified copy, leaving the original plan unchanged.
+        descriptor : tuple
+            Resolved ``(size_in_bytes, alignment, auto_sync, sharing)``
+            from the caller's TempStorage descriptor. Missing size or
+            alignment leaves that requirement to compiled layout
+            information.
         """
 
         if plan.target is not GroupLoweringTarget.CUB_BLOCK:
