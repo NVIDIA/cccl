@@ -24,7 +24,8 @@ logical warps. **Physical CUDA warps have 32 lanes.**
    .. only:: html
 
       .. figure:: scan.svg
-         :alt: Blocked values 1 through 16 become exclusive sums; each thread receives the sum of earlier threads as its incoming prefix.
+         :alt: Blocked values 1 through 16 become exclusive sums; each thread
+               receives the sum of earlier threads as its incoming prefix.
          :width: 100%
 
          Exclusive block sum with two items per thread.
@@ -60,15 +61,17 @@ Block scans accept scalars or several items per thread. Physical- and
 logical-warp scans accept one scalar per lane. The qualified warp API also
 accepts ``valid_items``: every lane participates, but only the first
 ``valid_items`` lanes have defined scan results. The explorer marks other
-results with ``?``.
+results with ``?``. The count must be uniform and between one and the group's
+width, inclusive.
 
 Exclusive sums begin at zero. A generic exclusive scan accepts
 ``initial_value``; a non-sum operator requires it. Inclusive scans reject
 ``initial_value``. The initial value is an operand: for maximum, an initial
 value of 10 keeps every output at least 10.
 
-The qualified ``aggregate_output`` returns the input aggregate to every
-member, excluding the initial value.
+The qualified ``aggregate_output`` writes the input aggregate to a separate
+one-item payload in every member. It excludes the initial value and any
+input lanes beyond ``valid_items``.
 
 Using Scan in a kernel
 ----------------------
@@ -76,8 +79,8 @@ Using Scan in a kernel
 This fragment runs inside a Numba-CUDA-MLIR kernel that accepts
 ``items_per_thread``. Import ``cuda`` from
 ``numba_cuda_mlir``, ``numpy as np``, and ``cuda.coop as coop``. Launch with
-128 threads and provide at least ``128 * items_per_thread`` elements for each block. Each block
-scans its own tile independently.
+128 threads and provide at least ``128 * items_per_thread`` elements for each
+block. Each block scans its own tile independently.
 
 .. code-block:: python
 

@@ -506,6 +506,13 @@ def test_load_store_infer_untyped_payloads_symmetrically(
 def test_inferred_load_dtype_follows_output_aliases(
     qualified, projection, items_per_thread
 ):
+    """Check that a load types the original payload through output aliases.
+
+    Direct aliases, tuple projections, and branch-selected tuples all reach
+    the same allocation. The later exchange and scalar scan require its dtype
+    to remain available through that chain of results.
+    """
+
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as qualified_coop

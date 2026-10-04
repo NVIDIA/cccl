@@ -153,8 +153,15 @@ CommonNumericScalar: TypeAlias = (
 )
 
 class _ExactScalar(Protocol[_ItemT]):
-    # Writable __class__ makes the scalar type invariant: a seed cannot widen
-    # the input type. It also keeps NumPy float64 out of the Python-float arm.
+    """Match a seed's exact scalar type without widening the input type.
+
+    The writable ``__class__`` member makes the type parameter invariant, so
+    a seed cannot widen the input type. Invariance also keeps NumPy float64,
+    a float subclass, out of the Python ``float`` arm. The separate ``int``
+    and ``float`` arms let ``ContextualInitialValue`` accept ordinary Python
+    literals. The compiler still checks literal values and runtime dtypes.
+    """
+
     __class__: type[_ItemT]  # type: ignore[assignment]
 
 ContextualInitialValue: TypeAlias = (

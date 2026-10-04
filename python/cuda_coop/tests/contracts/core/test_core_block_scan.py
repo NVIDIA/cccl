@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check BlockScan call descriptions without a compiler backend.
+
+The signatures must keep input and output separate, place operators and
+initial values correctly, and expose aggregates as side outputs. Parameter
+classification distinguishes runtime values, static values, and scratch
+storage in the generated call.
+"""
+
 import pytest
 
 from cuda.coop._core import (

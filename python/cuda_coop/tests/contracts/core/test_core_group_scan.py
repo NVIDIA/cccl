@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check Scan group plans before backend code generation.
+
+Plans describe who owns each result, how many scratch instances a launch
+needs, and which bounds the caller must satisfy. Unsupported group or
+operand forms must retain specific reasons instead of selecting a provider
+whose semantics do not match the request.
+"""
+
 from importlib import import_module
 
 import numpy as np
