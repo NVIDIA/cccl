@@ -79,14 +79,12 @@ def test_qualified_import():
 
 def test_qualified_scan():
     # coop-pg-qualified-scan-begin
-    from numba_cuda_mlir import types
-
     @cuda.jit
-    def scan_tiles_with_totals(source, destination, totals):
+    def scan_tiles_with_totals(source, destination, totals, items_per_thread):
         block = numba_coop.this_block()
-        items = cuda.local.array(2, dtype=types.int32)
+        items = numba_coop.ThreadData(items_per_thread)
         aggregate = numba_coop.ThreadData(items_per_thread=1)
-        offset = cuda.blockIdx.x * cuda.blockDim.x * 2
+        offset = cuda.blockIdx.x * cuda.blockDim.x * items_per_thread
 
         numba_coop.load(block, source, items, offset=offset)
         prefixes = numba_coop.exclusive_sum(
@@ -96,16 +94,22 @@ def test_qualified_scan():
         if block.rank() == 0:
             totals[cuda.blockIdx.x] = aggregate[0]
 
-    source = (np.arange(512) % 11).astype(np.int32)
-    destination = np.empty_like(source)
-    totals = np.empty(2, dtype=np.int32)
-    scan_tiles_with_totals[2, 128](source, destination, totals)
-    cuda.synchronize()
+    for items_per_thread in (1, 4):
+        tile_size = 128 * items_per_thread
+        source = (np.arange(2 * tile_size) % 11).astype(np.int32)
+        destination = np.empty_like(source)
+        totals = np.empty(2, dtype=np.int32)
+        scan_tiles_with_totals[2, 128](
+            source, destination, totals, items_per_thread
+        )
+        cuda.synchronize()
 
-    tiles = source.reshape(2, 256)
-    expected = np.cumsum(tiles, axis=1) - tiles
-    np.testing.assert_array_equal(destination.reshape(2, 256), expected)
-    np.testing.assert_array_equal(totals, tiles.sum(axis=1))
+        tiles = source.reshape(2, tile_size)
+        expected = np.cumsum(tiles, axis=1) - tiles
+        np.testing.assert_array_equal(
+            destination.reshape(2, tile_size), expected
+        )
+        np.testing.assert_array_equal(totals, tiles.sum(axis=1))
     # coop-pg-qualified-scan-end
 
 
