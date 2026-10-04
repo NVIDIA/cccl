@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check how storage policy reaches Load and Store provider requests.
+
+Storage-free algorithms must ignore descriptor options when constructing
+their provider. Scratch-using algorithms must pass the selected reuse
+barrier policy from the common plan to deferred storage registration.
+"""
+
 import pytest
 
 pytest.importorskip("cutlass")
@@ -64,6 +71,14 @@ def test_storage_free_provider_ignores_descriptor_controls(kind, algorithm):
 def test_reuse_barrier_requires_explicit_opt_in(
     monkeypatch, kind, sharing, options, expected_sync
 ):
+    """Pass explicit synchronization policy to storage registration.
+
+    Implicit storage retains automatic reuse barriers. An explicit descriptor
+    uses manual synchronization unless ``auto_sync=True``. Check both the
+    common plan and the registered descriptor so a correct plan cannot hide
+    a lost option at the backend boundary.
+    """
+
     from cuda.coop._core import (
         GroupLoadStoreKind,
         LaunchFacts,

@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Run the debugger walkthrough and confirm that it dumps provider source.
+
+A subprocess runs the script from this checkout with a private dump
+directory. The script launches its kernel twice, and both launches must
+report a verified copy. Each case uses one algorithm, direct or transpose.
+The test does not attach a debugger or check breakpoints.
+"""
+
 import os
 import subprocess
 import sys

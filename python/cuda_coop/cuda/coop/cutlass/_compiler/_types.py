@@ -52,7 +52,12 @@ class TypeSpecification:
 
 @dataclass(frozen=True)
 class BundleRenderer:
-    """Describe source rendering and required headers for a request kind."""
+    """Associate a provider kind with its source and scratch requirements.
+
+    The renderer supplies includes, header lookup paths, and C++ wrapper text.
+    Its optional ``scratch_layout_probe`` callback returns a layout query
+    when a request needs storage, or ``None`` for a storage-free request.
+    """
 
     include_lines: tuple[str, ...]
     cccl_headers: tuple[tuple[str, str], ...]
@@ -64,7 +69,11 @@ class BundleRenderer:
 
 @dataclass(frozen=True)
 class ScratchLayout:
-    """Exact C++ temporary-storage layout for one specialization."""
+    """Record a compiled C++ scratch size and alignment, both in bytes.
+
+    The probe decoder validates these values before allocation planning uses
+    them. This record does not allocate storage or select a sharing policy.
+    """
 
     size_in_bytes: int
     alignment: int
@@ -72,7 +81,13 @@ class ScratchLayout:
 
 @dataclass(frozen=True)
 class ScratchLayoutProbe:
-    """C++ constant expressions for one exact scratch layout."""
+    """Describe a C++ layout query and the calls that will consume it.
+
+    ``requirement_key`` joins traced uses to the result. ``size_expression``
+    and ``alignment_expression`` are C++ constant expressions evaluated in the
+    provider translation unit. Several keys may refer to the same expressions;
+    the compiler only needs to evaluate that expression pair once.
+    """
 
     requirement_key: Hashable
     size_expression: str
@@ -81,7 +96,18 @@ class ScratchLayoutProbe:
 
 @dataclass(frozen=True)
 class DeferredTempStorageEvent:
-    """One traced cooperative call whose scratch operands need finalization."""
+    """Keep one traced call's scratch operands until finalization.
+
+    ``kernel_op`` and ``temp_storage`` identify the kernel and descriptor that
+    own the allocation. ``requirement_key`` selects its compiled C++ layout.
+    Sharing, synchronization, and capacity fields capture descriptor policy
+    at the call. The planner checks that later uses retain the same policy.
+
+    ``smem_addr_placeholder`` and ``size_placeholder`` are MLIR values to
+    replace after allocation. ``kernel_name``, ``primitive_name``, and
+    ``location`` identify the use in diagnostics. An event represents a traced
+    call site, not each runtime execution of a loop containing that call.
+    """
 
     kernel_op: Any
     kernel_name: str
@@ -99,7 +125,12 @@ class DeferredTempStorageEvent:
 
 @dataclass(frozen=True)
 class DeferredTempStorageBinding:
-    """Resolved per-call scratch slice within a deferred storage plan."""
+    """Assign one traced call a slice within a descriptor's allocation.
+
+    ``byte_offset_in_bytes`` is relative to the allocation base. The byte size
+    and alignment describe the slice available to ``event``. Shared bindings
+    use the whole allocation; exclusive bindings use their own C++ layout.
+    """
 
     event: DeferredTempStorageEvent
     byte_offset_in_bytes: int
@@ -109,7 +140,12 @@ class DeferredTempStorageBinding:
 
 @dataclass(frozen=True)
 class DeferredTempStoragePlan:
-    """One kernel-local allocation for one TempStorage identity."""
+    """Collect all scratch uses of one descriptor in one kernel.
+
+    ``size_in_bytes`` and ``alignment`` describe the allocation to insert at
+    kernel entry. ``bindings`` maps its slices back to traced call operands.
+    The same descriptor used in another kernel receives a separate plan.
+    """
 
     kernel_op: Any
     kernel_name: str
@@ -391,9 +427,9 @@ def canonical_dsl_type(
 ) -> type:
     """Resolve values, dtype tokens, and typed IR to a CUTLASS type.
 
-    Do not guess the signedness of raw i8/i16/i32/i64 values.
-    Unsupported values retain their Python type so the caller can
-    issue its operation-specific diagnostic.
+    Raise TypeError for raw i8/i16/i32/i64 values without signedness instead
+    of guessing. Return the Python type of other unsupported values so the
+    caller can issue an operation-specific diagnostic.
     """
 
     if isinstance(value, type) and value in TYPE_SPECIFICATIONS:

@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check scratch-layout metadata alongside compiled provider code.
+
+NVRTC name expressions encode C++ size and alignment in a lowered name.
+Synthetic names test decoding without a compiler. Separate compiler stubs
+check that cache entries retain the layout facts and LTO IR, the code used
+for link-time optimization. One NVRTC program must produce both before it
+is destroyed.
+"""
+
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -81,6 +90,13 @@ def test_invalid_layout(size, alignment):
 
 @pytest.fixture
 def compilation(monkeypatch, tmp_path):
+    """Isolate the artifact cache and record simulated provider compilations.
+
+    Fixed compiler identities keep cache keys stable. The stub returns layout
+    facts for each requested expression with synthetic LTO bytes. Its call
+    list distinguishes cache hits from recompilation without invoking NVRTC.
+    """
+
     monkeypatch.setenv(_cache.CACHE_DIR_ENV, str(tmp_path / "cache"))
     monkeypatch.setattr(_cache, "_SOURCE_CACHE", {})
     monkeypatch.setattr(_cache, "_MANAGED_BUNDLE_PATHS", set())
@@ -124,6 +140,14 @@ def _compile(key="storage", size="sizeof(Storage)"):
 def test_layouts_survive_memory_and_disk_hits_with_different_requirement_keys(
     compilation,
 ):
+    """Reuse native layout facts under a different caller requirement key.
+
+    The C++ expression determines the artifact; the caller's key only selects
+    where to return its layout. Clearing the memory cache then checks that the
+    same facts survive a disk-cache hit. Changing the expression must compile
+    a separate artifact.
+    """
+
     initial = _compile()
     assert initial.layouts == {"storage": ScratchLayout(1040, 16)}
     renamed = _compile(key=("different", "key"))
@@ -156,6 +180,13 @@ def test_incomplete_layout_cache_is_recompiled(compilation, damage):
 
 
 def test_failed_probe_does_not_publish_an_artifact(compilation, monkeypatch):
+    """Keep unusable LTO out of the cache when its layout query fails.
+
+    A provider that needs scratch is incomplete without size and alignment.
+    After the injected failure, restoring compilation must produce a usable
+    artifact with its layout metadata.
+    """
+
     compile_source = _nvrtc.compile_ltoir_with_layouts
 
     def fail(*args):
@@ -170,6 +201,15 @@ def test_failed_probe_does_not_publish_an_artifact(compilation, monkeypatch):
 
 
 class _NVRTC:
+    """Record NVRTC calls through one program's compile and cleanup steps.
+
+    The fake creates a program, registers name expressions, compiles, reads
+    lowered names, fetches LTO IR, and destroys the program. Methods return
+    CUDA-style result tuples and synthetic output. Failure injection at name
+    registration or lookup checks cleanup before and after compilation without
+    loading NVRTC.
+    """
+
     nvrtcResult = SimpleNamespace(NVRTC_SUCCESS=0)
 
     def __init__(self, fail_at=None):

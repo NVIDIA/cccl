@@ -26,9 +26,9 @@ from ._types import ScratchLayout
 class CompileContext:
     """Record header and compiler-library identity for an NVRTC cache key.
 
-    Paths and versions keep a bundle tied to the toolkit selected
-    by its headers. The header digest detects changed contents
-    within the include roots.
+    Paths and versions keep a bundle tied to the toolkit selected by its
+    headers. The header digest detects changed contents within the include
+    roots.
     """
 
     include_dirs: tuple[str, ...]
@@ -121,10 +121,10 @@ def _program_log(nvrtc: Any, program: Any) -> str:
 
 
 def compile_ltoir(source: str, options: tuple[bytes, ...]) -> bytes:
-    """Compile the generated source and return its LTO-IR bytes.
+    """Compile source without layout queries and return its LTO-IR bytes.
 
-    Include the NVRTC log on compilation failure. Always destroy the program,
-    but preserve an existing failure if destruction also reports an error.
+    The shared compiler helper reports the NVRTC log on compilation failure
+    and destroys the program without replacing an earlier failure.
     """
 
     return _compile_ltoir(source, options)[0]
@@ -133,7 +133,13 @@ def compile_ltoir(source: str, options: tuple[bytes, ...]) -> bytes:
 def compile_ltoir_with_layouts(
     prepared: _PreparedLayoutProbes, options: tuple[bytes, ...]
 ) -> tuple[bytes, dict[str, ScratchLayout]]:
-    """Recover all requested layouts from the same program as its LTO-IR."""
+    """Compile provider code and evaluate its layouts in the same program.
+
+    ``prepared`` contains the provider source, probe template, and registered
+    name expressions; ``options`` selects the compiler settings. The result
+    pairs LTO-IR bytes with layouts indexed by those expressions. Registering
+    names before compilation makes NVRTC instantiate the requested probes.
+    """
 
     return _compile_ltoir(prepared.source, options, prepared)
 
@@ -143,6 +149,14 @@ def _compile_ltoir(
     options: tuple[bytes, ...],
     prepared: _PreparedLayoutProbes | None = None,
 ) -> tuple[bytes, dict[str, ScratchLayout]]:
+    """Keep probe registration, layout extraction, and code on one program.
+
+    Queries are registered before compilation and decoded before program
+    destruction. With no ``prepared`` probes the layout map is empty. Cleanup
+    always destroys the program without replacing an earlier compile or query
+    failure with a destruction error.
+    """
+
     nvrtc = _load_nvrtc()
     error, program = nvrtc.nvrtcCreateProgram(
         source.encode("utf-8"), b"cuda_coop_cutlass_bundle.cu", 0, [], []

@@ -42,15 +42,10 @@ def append_link_library_attr(module: ir.Module, path: str) -> None:
 def compile_bundle_source(
     source: str, *, arch: str, required_headers: tuple[str, ...]
 ) -> str:
-    """Return the path to a verified LTO-IR file for a generated C++ bundle.
+    """Return the cached LTO-IR path for a bundle with no layout queries.
 
-    The cache key covers the source, target options, header contents, and the
-    resolved compiler libraries and versions. Check the memory and disk caches
-    first. On a miss, hold the artifact lock across threads and processes
-    while compiling and publishing the file.
-
-    The file holds external device functions for CuTe to link into its kernel.
-    CuTe still produces the final cubin and launches the kernel.
+    The shared compiler helper validates cached bytes or compiles under the
+    artifact lock. CuTe links these device functions into the final kernel.
     """
 
     return _compile_bundle_source(
@@ -65,7 +60,26 @@ def compile_bundle_source_with_layouts(
     required_headers: tuple[str, ...],
     layout_probes: Iterable[ScratchLayoutProbe],
 ) -> BundleCompilation:
-    """Compile one provider bundle and recover its exact C++ storage layouts."""
+    """Compile a provider bundle and recover its C++ scratch layouts.
+
+    Parameters
+    ----------
+    source : str
+        Generated C++ wrappers before the layout probes are added.
+    arch : str
+        NVRTC target architecture.
+    required_headers : tuple of str
+        Header paths that must be available in the selected include roots.
+    layout_probes : iterable of ScratchLayoutProbe
+        C++ size/alignment expressions indexed by caller requirement keys.
+
+    Returns
+    -------
+    BundleCompilation
+        Cached LTO-IR path and layouts indexed by the supplied keys. The image
+        and layouts come from one NVRTC program. Equivalent query sets can
+        reuse a compilation even when their caller keys differ.
+    """
 
     return _compile_bundle_source(
         source,
@@ -82,6 +96,14 @@ def _compile_bundle_source(
     required_headers: tuple[str, ...],
     layout_probes: Iterable[ScratchLayoutProbe],
 ) -> BundleCompilation:
+    """Cache the compiled image together with its complete set of layouts.
+
+    Generated probe source, query expressions, compiler context, and options
+    identify the artifact. Caller requirement keys only map results back to
+    uses; they do not change compiled code. A cache entry must contain exactly
+    the requested expression set before any of its layouts can be reused.
+    """
+
     prepared = _prepare_layout_probes(source, layout_probes)
     context = _nvrtc.resolve_compile_context(required_headers)
     options = _nvrtc.compiler_options(context, arch)

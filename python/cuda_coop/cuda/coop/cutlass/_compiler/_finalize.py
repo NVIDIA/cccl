@@ -51,26 +51,12 @@ def _remove_managed_bundle_link_options(dsl: Any) -> None:
 
 
 def _trace_finalize_hook(dsl, module, function_name):
-    """Compile this module's requests and attach its LTO-IR bundle.
+    """Finish one trace's provider bundle and deferred scratch allocations.
 
-    CuTe calls this registered hook after it has traced a module and before
-    it links device code. At that point all cooperative calls are known, so
-    their wrappers can share one NVRTC compilation. The hook changes the
-    module and compiler link options; it does not launch the kernel.
-
-    Other nested or outer trace sessions remain queued. Render the selected
-    requests after tracing, compile for the configured target, and add the
-    resulting path to the GPU module for CuTe's later link step.
-
-    Parameters
-    ----------
-    dsl : object
-        Active CuTe DSL instance, which owns the compile options.
-    module : ir.Module
-        Completed trace module whose GPU modules receive the link attribute.
-    function_name : str
-        Function name supplied by CuTe. Unused because sessions are selected
-        by module identity, not by function name.
+    The matching session supplies deduplicated wrapper requests and every
+    recorded scratch use. Compile first to learn exact C++ layouts, then plan
+    and insert allocations before attaching the LTO-IR file for CuTe linking.
+    Other trace sessions remain separate, including nested compilations.
     """
 
     del function_name

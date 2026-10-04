@@ -26,10 +26,12 @@ def register_bundle_renderer(
     cccl_headers=(),
     scratch_layout_probe=None,
 ):
-    """Associate a request kind with source rendering and required headers.
+    """Register how one provider kind emits wrappers and describes scratch.
 
-    Keep provider registration unique so a kind cannot silently change its
-    renderer after requests have been collected.
+    ``render`` emits a request's C++ lines. ``include_lines`` and
+    ``cccl_headers`` supply its preamble and header lookup requirements. The
+    optional ``scratch_layout_probe`` callback returns a layout query or
+    ``None`` for each request. A kind can have only one registered renderer.
     """
 
     if kind in _BUNDLE_RENDERERS:
@@ -140,6 +142,12 @@ def make_scratch_layout_probe(requirement_key, cpp_type):
 
 
 def bundle_scratch_layout_probes(requests):
+    """Collect one compatible layout probe per requirement key.
+
+    Storage-free requests can omit a probe. Repeated keys must describe the
+    same C++ expressions so finalization binds each call to the right layout.
+    """
+
     probes = {}
     for request in canonical_bundle_requests(requests):
         renderer = bundle_renderer_for(request)
@@ -156,10 +164,11 @@ def bundle_scratch_layout_probes(requests):
 
 
 def render_bundle_source(requests):
-    """Render one C-linkage definition for each canonical provider request.
+    """Render canonical requests with shared type definitions and C linkage.
 
-    Combine a deterministic preamble with the registered renderers. C linkage
-    keeps the emitted symbol names aligned with the CuTe extern calls.
+    Merge compatible type definitions by name before emitting the wrappers.
+    Deterministic ordering stabilizes the source identity; C linkage keeps
+    symbol names aligned with CuTe extern calls.
     """
 
     requests = canonical_bundle_requests(requests)

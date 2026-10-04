@@ -4,10 +4,12 @@
 
 """Describe explicit scratch storage for compiler-supported block operations.
 
-The constructor marks a request inside a GPU kernel. A compiler that supports
-explicit scratch collects the descriptor's uses to choose shared-memory space
-and any requested reuse barriers. The Python body raises an error outside a
-supported kernel; it never allocates storage.
+The constructor describes a scratch request inside a GPU kernel. A tracing
+compiler, such as CUTLASS, runs this body, which returns the active backend's
+descriptor. Other compilers recognize the call directly. Without an active
+compiler environment, the call raises. It never allocates storage; the
+compiler chooses shared-memory space and any requested reuse barriers from
+the descriptor's uses.
 """
 
 from __future__ import annotations

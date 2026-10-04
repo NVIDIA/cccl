@@ -25,9 +25,10 @@ def register_cutlass() -> None:
 
 
 def check_cutlass_surface(source: object, destination: object) -> None:
-    """Check both Load/Store namespaces and dtype-preserving conversions.
+    """Check block group, Load/Store, descriptor, and payload annotations.
 
-    Confirm the block group type for these calls as well.
+    Common and qualified calls accept descriptors from either namespace.
+    Payload conversions must preserve the scalar dtype.
     """
 
     block = cutlass_coop.this_block()
@@ -52,6 +53,8 @@ def check_cutlass_surface(source: object, destination: object) -> None:
     common_coop.load(common_coop.this_block(), source, values)
     common_coop.store(common_coop.this_block(), destination, values)
 
+    # Common and qualified calls accept either descriptor type, and sync()
+    # returns None. These checks exercise annotations, not execution.
     storage = cutlass_coop.TempStorage(alignment=1, sharing="exclusive")
     assert_type(storage, cutlass_coop.TempStorage)
     assert_type(storage.auto_sync, bool)

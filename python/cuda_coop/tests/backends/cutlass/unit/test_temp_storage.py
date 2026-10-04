@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check storage descriptor options and its CuTe control-flow protocol.
+
+The descriptor carries compile-time policy and identity. These tests cover
+normalization, invalid options, the explicit block barrier, and preserving
+the same descriptor when a runtime loop reconstructs its arguments.
+"""
+
 from enum import Enum
 from importlib import import_module
 
@@ -80,6 +87,13 @@ def test_manual_sync_calls_block_barrier(monkeypatch):
 
 
 def test_loop_protocol_keeps_identity():
+    """Carry storage identity through a loop without adding runtime operands.
+
+    CuTe extracts no IR values from the descriptor and rebuilds the same
+    object. Keeping that identity lets calls across loop iterations refer to
+    the same deferred allocation.
+    """
+
     typing = import_module("cutlass.base_dsl.typing")
     storage = TempStorage(1024, sharing="exclusive", alignment=64)
     assert typing.implements_dynamic_expression(storage)

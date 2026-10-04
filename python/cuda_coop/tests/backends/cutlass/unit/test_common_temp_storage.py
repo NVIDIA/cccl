@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check which storage options the common API validates before dispatch.
+
+A constructor spy observes normalized alignment and forwarded options
+without loading a backend. Invalid alignment must fail before the common
+API asks a backend to create the descriptor.
+"""
+
 from importlib import import_module
 
 import numpy as np
