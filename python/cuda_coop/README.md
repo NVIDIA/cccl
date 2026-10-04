@@ -564,10 +564,10 @@ dynamic shared memory. Compiler-owned scratch and explicit descriptors with
 `auto_sync=True` append a block reuse barrier. Explicit descriptors default to
 `auto_sync=False`, so the caller must synchronize before reuse. Physical and
 logical Warp calls use compiler-owned per-Warp storage and append `syncwarp`
-for the exact participating mask. Prefix callbacks keep these storage
-rules. When repeated calls reuse an explicit descriptor, set
-`auto_sync=True` or issue `cuda.syncthreads()` before reuse. Keep the prefix
-state in its per-thread payload, separate from CUB temporary storage.
+for the exact participating mask. Prefix callbacks keep these storage rules.
+When repeated calls reuse an explicit descriptor, set `auto_sync=True` or
+issue `cuda.syncthreads()` before reuse. The prefix state is a per-thread
+payload that persists across calls; it is not CUB temporary storage.
 
 This common example loads a block tile, computes its exclusive sum, and
 stores the out-of-place result:
