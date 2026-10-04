@@ -1240,7 +1240,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
     using PrivatizedDecodeOpT = typename TransformsT::PassThruTransform;
 
     // Use the scale transform op for converting privatized bins to output bins
-    using OutputDecodeOpT = typename TransformsT::ScaleTransform;
+    using OutputDecodeOpT = typename TransformsT::FastScaleTransform;
 
     using CommonT = typename TransformsT::ScaleTransform::CommonT;
 
@@ -1336,7 +1336,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
     if (max_num_output_bins > max_privatized_smem_bins)
     {
       constexpr int PrivatizedSmemBins = 0;
-      using PrivatizedDecodeOpT        = typename TransformsT::ScaleTransform;
+      using PrivatizedDecodeOpT        = typename TransformsT::FastScaleTransform;
       ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op{};
       for (int channel = 0; channel < NumActiveChannels; ++channel)
       {
@@ -1374,7 +1374,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
     else
     {
       constexpr int PrivatizedSmemBins = max_privatized_smem_bins;
-      using PrivatizedDecodeOpT        = typename TransformsT::ScaleTransform;
+      using PrivatizedDecodeOpT        = typename TransformsT::FastScaleTransform;
       ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op{};
       for (int channel = 0; channel < NumActiveChannels; ++channel)
       {
