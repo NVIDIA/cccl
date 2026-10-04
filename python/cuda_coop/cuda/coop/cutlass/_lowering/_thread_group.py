@@ -78,11 +78,31 @@ class _CudaxGroupRequest:
 def _resolve_method_group(group, op, level="thread"):
     """Resolve the hierarchy needed by a query, membership test, or barrier.
 
+    ThreadGroup method lowerings call this before generating CUDAX code.
+    A descriptor can leave launch dimensions unknown; resolving it here
+    supplies the compiler facts needed to interpret ranks and group sizes.
+
     Queries resolve the hierarchy through the queried level. A mapped group
     cannot query above its immediate parent. For synchronization, reject grid
     groups and mapped groups of warps. The latter need barrier storage with a
     lifetime that only the planner can own. Queries and membership tests on
     mapped groups of warps remain supported.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        Descriptor on which the user invoked a group method.
+    op : str
+        Normalized rank, count, membership, or synchronization operation.
+    level : str
+        Hierarchy level for rank/count queries. It determines how far up
+        the launch hierarchy dimensions must be known.
+
+    Returns
+    -------
+    ThreadGroup
+        Resolved descriptor accepted by the requested method. Unsupported
+        hierarchies or synchronization forms raise before code emission.
     """
 
     if not isinstance(group, ThreadGroup):
@@ -298,7 +318,29 @@ def _emit(request, result_type):
 
 
 def provider_group_query(*, group, op, level="thread", result_type=None):
-    """Normalize a query level, resolve its group, and emit a typed value."""
+    """Normalize a query level, resolve its group, and emit a typed value.
+
+    ``ThreadGroup.rank`` and ``ThreadGroup.count`` call this while CuTe
+    traces the kernel. The wrapper has no explicit operands: it reads the
+    executing thread's built-in coordinates when the kernel runs.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        Group relative to which rank or count is requested.
+    op : str
+        Either rank or count.
+    level : str
+        Hierarchy unit to count or rank, such as thread, warp, or block.
+    result_type : object or None
+        Optional integral dtype selector. None uses Uint64 for grid queries
+        and Uint32 for the other supported levels.
+
+    Returns
+    -------
+    CuTe scalar
+        Typed result of the generated CUDAX query call.
+    """
 
     if op not in _QUERY_OPS:
         raise ValueError(f"unsupported group query {op!r}")
