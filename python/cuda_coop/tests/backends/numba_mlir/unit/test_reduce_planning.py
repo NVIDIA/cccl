@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check reduction provider selection before compilation.
+
+The planner must retain scalar versus array arguments, even for one-item
+arrays, and carry result visibility into the selected provider contract.
+Invalid controls are rejected before provider creation. Matcher tests use
+fake artifacts to isolate early inference and storage planning.
+"""
+
 import operator
 from enum import Enum
 from inspect import signature
@@ -21,6 +29,12 @@ class _StringSelector(str, Enum):
 def _plan(
     function, *, arg_types=(), block=(64, 1, 1), grid=(1, 1, 1), cluster=None
 ):
+    """Build untyped Numba IR and a planner with explicit launch facts.
+
+    Return the planner before running it so tests can inspect successful
+    rewrites or assert that invalid inputs fail at the planning boundary.
+    """
+
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
     from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
@@ -34,6 +48,8 @@ def _plan(
 
 
 def _planned_factory_calls(func_ir):
+    """Pair rewritten calls with the Python globals that name providers."""
+
     from numba_cuda_mlir.numbair_transforms import ir
 
     globals_by_name = {
@@ -64,6 +80,12 @@ def _provider_call(func_ir, provider):
 
 
 def _kwarg_value(func_ir, call, name):
+    """Read a factory keyword emitted as one constant or global definition.
+
+    Require a unique definition so the assertion cannot accidentally inspect a
+    different branch or a runtime value.
+    """
+
     from numba_cuda_mlir.numbair_transforms import ir
 
     variable = dict(call.kws)[name]
@@ -81,6 +103,12 @@ def _kwarg_value(func_ir, call, name):
 
 
 def _match_before_inference(func_ir, *, arg_types):
+    """Match provider calls before the compiler has populated type maps.
+
+    Fake invocables keep each factory's declared storage and synchronization
+    contract. This lets the real matcher plan storage without compiling code.
+    """
+
     from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
 
     state = SimpleNamespace(

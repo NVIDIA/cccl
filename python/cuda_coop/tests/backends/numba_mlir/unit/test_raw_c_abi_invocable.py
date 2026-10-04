@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check callable wrappers for generated C device functions.
+
+Compilation is replaced with fixed artifact bytes. The real invocable
+still defines its argument contract, registers local typing behavior, and
+owns a temporary artifact whose lifetime follows the compiled callables.
+"""
+
 import gc
 import weakref
 from dataclasses import replace
@@ -17,6 +24,8 @@ _SOURCE = (
 
 
 def _compile_context():
+    """Provide synthetic toolchain identity without loading its libraries."""
+
     from cuda.coop.numba_mlir._compiler import _nvrtc
     from cuda.coop.numba_mlir._compiler._artifacts import version
 
@@ -34,6 +43,13 @@ def _compile_context():
 
 
 def _make_raw(monkeypatch, **overrides):
+    """Build a raw C invocable while recording its NVRTC request.
+
+    Only compilation is replaced. Tests exercise real typing and artifact
+    lifetime, then remove the temporary file by calling the invocable's
+    finalizer or by dropping every reference to it.
+    """
+
     from numba_cuda_mlir import types
 
     from cuda.coop._core import SynchronizationScope
@@ -64,6 +80,12 @@ def _make_raw(monkeypatch, **overrides):
 
 
 def _registry_sizes():
+    """Measure global typing registries before and after local registration.
+
+    An invocable must not leave permanent global registrations behind after
+    its local typing objects are released.
+    """
+
     from numba_cuda_mlir.descriptor import mlir_target
     from numba_cuda_mlir.extending import typeof_impl, typing_registry
 

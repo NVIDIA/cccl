@@ -28,10 +28,10 @@
    coop/developer_overview
 
 ``cuda.coop`` brings CCCL's optimized cooperative algorithms to Python GPU
-kernels. Use it when threads need to work together, such as summing a tile of
-values or arranging data for the next stage of a computation. These operations
-run inside a kernel, where you can combine them with your own code and reuse
-algorithms maintained and tuned for NVIDIA GPUs.
+kernels. Use it when threads need to work together, such as summing a tile
+of values or arranging data for the next stage of a computation. These
+operations run inside a kernel, where you can combine them with your own
+code and reuse algorithms maintained and tuned for NVIDIA GPUs.
 
 The Numba-CUDA-MLIR integration compiles cooperative calls inside Python
 GPU kernels. You keep Numba's kernel syntax and launch conventions and

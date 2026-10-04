@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check CUB WarpReduce entry points and valid-prefix parameters.
+
+The core factory must keep builtin and custom-operator signatures distinct
+and bound static prefixes to the logical warp width before compilation.
+"""
+
 import numpy as np
 import pytest
 
