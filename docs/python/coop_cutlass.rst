@@ -750,8 +750,9 @@ up to 32 bits. Counts outside the tile range are rejected before narrowing.
 A typed sentinel must match the key dtype exactly. For ordinary Python
 literals, integer keys require integers within the key dtype's range.
 Floating keys accept integer or floating literals within range, and allow
-infinite bounds; a NaN sentinel is rejected. ``descending`` is a compile-time
-Boolean. Counts and sentinels must be uniform within each group.
+infinite bounds. A Python or NumPy NaN sentinel is rejected. CuTe values are
+not checked for NaN; callers must supply a valid bound. ``descending`` is a
+compile-time Boolean. Counts and sentinels must be uniform within each group.
 
 Block sorts accept ``temp_storage`` with the size, alignment, sharing, and
 reuse rules described above. Warp sorts manage independent scratch per group
