@@ -76,9 +76,12 @@ Supply ``valid_items`` and ``oob_default`` together, with the same values
 throughout the group. The sentinel must sort after all valid keys: an upper
 bound for ascending order, or a lower bound for descending order. A typed
 sentinel, whether a runtime value or a NumPy scalar constant, must have
-exactly the key dtype. An ordinary Python numeric literal is converted to that
-dtype if it is representable. The explorer chooses a suitable sentinel for its
-integer inputs. The displayed ``?`` does not promise a particular tail value.
+exactly the key dtype. For ordinary Python literals, integer keys require
+integers within the key dtype's range. Floating keys accept integer or
+floating literals within the dtype's finite range. They also accept positive
+or negative infinity, as a Python float or a NumPy scalar of the key dtype.
+The explorer chooses a suitable sentinel for its integer inputs. The
+displayed ``?`` does not promise a particular tail value.
 
 Load only valid inputs and store only defined outputs. A sentinel does not
 make an out-of-bounds memory access valid. See :ref:`coop-merge-sort` for the

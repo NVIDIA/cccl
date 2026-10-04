@@ -987,8 +987,10 @@ zero and ``group_size * items_per_thread`` and describes the group's blocked
 prefix. The sentinel must sort after all valid keys: use an upper bound for
 ascending order or a lower bound for descending order. A typed sentinel,
 whether a runtime value or a NumPy scalar constant, must have exactly the key
-dtype. An ordinary Python numeric literal is converted to that dtype if it is
-representable.
+dtype. For ordinary Python literals, integer keys require integers within
+the key dtype's range. Floating keys accept integer or floating literals
+within the dtype's finite range. They also accept positive or negative
+infinity, as a Python float or a NumPy scalar of the key dtype.
 
 Only the sorted valid prefix is defined. Load only the valid input elements
 and store only that output prefix. A sentinel does not make an out-of-bounds
