@@ -169,6 +169,7 @@ __all__ = [
     "_GROUP_CONSTRUCTORS",
     "_GROUP_METHODS",
     "_NAME_COUNTER",
+    "_PAYLOAD_DTYPE_INT32",
     "_PAYLOAD_DTYPE_LIKE",
     "GroupRewriteError",
     "_group_operation_name",
