@@ -73,11 +73,18 @@ class GroupPlanningContext:
         Active group planner supplying IR definitions and launch facts.
     """
 
-    __slots__ = ("__planner", "__thread_data_dtypes")
+    __slots__ = (
+        "__loop_dtypes",
+        "__planner",
+        "__seed_loop_dtypes",
+        "__thread_data_dtypes",
+    )
 
     def __init__(self, planner: _GroupCallPlanner) -> None:
         self.__planner = planner
         self.__thread_data_dtypes: dict[int, Any] = {}
+        self.__loop_dtypes: dict[str, Any] = {}
+        self.__seed_loop_dtypes = False
 
     @property
     def launch(self) -> Any:
@@ -480,17 +487,64 @@ class GroupPlanningContext:
             raise GroupRewriteError(message)
         return next(iter(candidates), None)
 
-    @classmethod
     def _complete_dtype(
-        cls,
+        self,
         candidates: Any,
         *,
         message: str,
     ) -> Any | None:
         resolved = list(candidates)
+        if self.__seed_loop_dtypes:
+            # Discovery can use a known loop-entry type before the backedge
+            # resolves. The final pass requires every candidate to resolve.
+            resolved = [dtype for dtype in resolved if dtype is not None]
         if not resolved or any(dtype is None for dtype in resolved):
             return None
-        return cls._one_dtype(set(resolved), message=message)
+        return self._one_dtype(set(resolved), message=message)
+
+    def _loop_dtype(self, value: ir.Var) -> Any | None:
+        """Resolve a loop's type cycle without accepting an unknown producer.
+
+        Group planning runs before ordinary type inference. A value initialized
+        from a typed array may then feed a computation whose result becomes the
+        next iteration's input. Following that input recursively reaches the
+        same variable before its dtype is known. Returning ``None`` at every
+        such backedge would discard the useful type supplied by the array.
+
+        First propagate candidate dtypes from known definitions until they stop
+        changing. During this discovery pass only, a join may omit unresolved
+        inputs; a recursive backedge can use its variable's candidate. Then
+        repeat the query with strict joins: every reaching definition must
+        resolve and agree, including the computation on the backedge. An opaque
+        helper remains unknown, and a conflicting dtype is still an error.
+
+        Candidates live only for this query and are cleared on failure too.
+        They are neither IR annotations nor permanent facts for later calls.
+        This solves supported type-preserving cycles; it does not implement
+        general type promotion or infer arbitrary device-helper return types.
+
+        Returns
+        -------
+        numba_types.Type or None
+            Dtype verified across all paths, or ``None`` if any remain unknown.
+
+        Raises
+        ------
+        GroupRewriteError
+            Known reaching definitions require different dtypes.
+        """
+        self.__seed_loop_dtypes = True
+        try:
+            while True:
+                previous = self.__loop_dtypes.copy()
+                self.dtype(value, seen=set())
+                if self.__loop_dtypes == previous:
+                    break
+            self.__seed_loop_dtypes = False
+            return self.dtype(value, seen=set())
+        finally:
+            self.__seed_loop_dtypes = False
+            self.__loop_dtypes.clear()
 
     def record_thread_data_dtype(
         self, value: Any, dtype: _numba_types.Type
@@ -734,10 +788,10 @@ class GroupPlanningContext:
         projections; array indexing contributes the source element dtype. This
         is a limited pre-typing analysis, not full Numba type inference.
 
-        Every reaching definition must produce a dtype before agreement is
-        checked. Unknown definitions and cycles return ``None`` even when
-        another path has a known type; fully known but inconsistent paths are
-        rejected.
+        Loop backedges can use a candidate established by a known incoming
+        definition, provided every reaching definition then resolves to the
+        same type. Unknown definitions and unseeded cycles return ``None``;
+        fully known but inconsistent paths are rejected.
 
         Parameters
         ----------
@@ -766,11 +820,13 @@ class GroupPlanningContext:
         if not isinstance(value, ir.Var):
             return self._dtype_from_numba_type(value)
         if seen is None:
-            seen = set()
+            inferred = self.dtype(value, seen=set())
+            return inferred if inferred is not None else self._loop_dtype(value)
         if value.name in seen:
-            return None
+            # Only the loop-resolution query supplies a candidate here.
+            return self.__loop_dtypes.get(value.name)
         seen.add(value.name)
-        return self._complete_dtype(
+        inferred = self._complete_dtype(
             (
                 self._dtype_definition(
                     definition,
@@ -782,6 +838,9 @@ class GroupPlanningContext:
                 "cuda.coop.numba_mlir payload aliases have inconsistent dtypes"
             ),
         )
+        if self.__seed_loop_dtypes and inferred is not None:
+            self.__loop_dtypes[value.name] = inferred
+        return inferred
 
     def payload_write_dtype(self, payload: Any) -> Any | None:
         """Infer an untyped payload from values written through its aliases."""
