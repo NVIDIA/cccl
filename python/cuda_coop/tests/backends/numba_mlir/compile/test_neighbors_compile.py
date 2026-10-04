@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile neighbor overloads and inferred result chains without a GPU.
+
+Only device-capability queries are replaced. The real compiler and linker
+still process the provider wrappers and the runtime count trap. Invalid
+Adjacent Difference options must fail compilation.
+"""
+
 import os
 from types import SimpleNamespace
 
@@ -21,6 +28,8 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 
 @pytest.fixture(autouse=True)
 def _fixed_device(monkeypatch):
+    """Select SM90 for compilation and require the GPU to remain hidden."""
+
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == ""
     monkeypatch.setattr(
         cuda,
@@ -36,6 +45,8 @@ def _fixed_device(monkeypatch):
 
 @pytest.mark.parametrize("operation", ["adjacent_difference", "discontinuity"])
 def test_all_numeric_provider_overloads(operation):
+    """Link valid modes together to expose overload or symbol conflicts."""
+
     variants = []
     context = _nvrtc.resolve_compile_context()
     modes = (
@@ -93,6 +104,8 @@ def test_all_numeric_provider_overloads(operation):
 
 
 def _compile(kernel, signature):
+    """Compile a known block launch without executing the kernel."""
+
     return kernel._compile_launch_config_signature(
         signature,
         (
@@ -106,6 +119,8 @@ def _compile(kernel, signature):
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_production_partial_with_inferred_payload(items_per_thread):
+    """Infer float64 inputs, chain int32 flags, and retain the count trap."""
+
     @cuda.jit(chip="sm_90")
     def kernel(source, output, count, items_per_thread):
         values = coop.ThreadData(items_per_thread)

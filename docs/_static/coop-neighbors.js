@@ -2,8 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Mathematical blocked-order models of CUB BlockAdjacentDifference and
-// BlockDiscontinuity. These pictures do not model instruction scheduling.
+// Build two neighbor-operation models for the shared CoopExplorer renderer.
+// Input tokens stay visible while neighbor links explain each new result.
+// A flattened blocked sequence makes cross-thread reads and tile endpoints
+// explicit. These mathematical models omit CUB scheduling and scratch.
 (() => {
   "use strict";
 
@@ -22,6 +24,10 @@
       `Input ${index}: ${value}, owned by T${Math.floor(index / items)}, slot ${index % items}. The input remains unchanged.`));
   }
 
+  // Separate valid positions, missing neighbors, and the copied suffix.
+  // A null neighbor means copy the current value; zero is a supplied value
+  // and must still take part in subtraction. UI choices reject a successor
+  // for every right partial call, including a full-capacity explicit count.
   function build_difference(state) {
     const items = Number(state.items);
     const values = inputs(items);
@@ -82,6 +88,10 @@
     };
   }
 
+  // Build heads and tails from the same unchanged full tile. A missing
+  // outside neighbor forces the endpoint flag to one; an explicit boundary
+  // value instead uses the predicate. Each flag occupies its input item's
+  // blocked slot.
   function build_discontinuity(state) {
     const items = Number(state.items);
     const values = inputs(items);

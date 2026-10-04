@@ -268,7 +268,7 @@ parts of the API.
    * - ``coop.this_block()``
      - All threads in the block
      - Load, Store, Exchange, Shuffle, Reduce, Scan, Merge Sort, Radix Sort,
-       Radix Rank, and TopK
+       Radix Rank, TopK, Adjacent Difference, and Discontinuity
    * - ``coop.this_block().group_by(2)``
      - Two consecutive physical warps
      - Hierarchy queries
@@ -488,9 +488,9 @@ Load writes into the payload supplied by the caller. Transpose Store
 algorithms may rearrange their input payload in place, as in CUB. Copy values
 before Store if they are needed later. Both operations return ``None``.
 Array Scan, Exchange, array Shuffle, Merge Sort, array Radix Sort, array Radix
-Rank, and TopK return fresh payloads, so their input values remain available
-afterwards. Reduction returns a scalar, including when each thread contributes
-several items.
+Rank, TopK, Adjacent Difference, and Discontinuity return fresh payloads, so
+their input values remain available afterwards. Reduction returns a scalar,
+including when each thread contributes several items.
 
 Numba can promote integer arithmetic. Store requires an exact match to the
 destination dtype, so cast computed values when necessary, as in the

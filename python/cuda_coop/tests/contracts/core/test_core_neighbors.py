@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check compiler-neutral neighbor contracts and specialization identity.
+
+These host checks cover result shape and dtype, physical block membership,
+static count bounds, and supported boundary combinations. Runtime values
+and callback execution are tested separately by the backend suite.
+"""
+
 import pytest
 
 from cuda import coop
@@ -23,6 +30,8 @@ from cuda.coop._core.group.neighbors import GroupNeighborSemantics
 
 
 def _primitive(operation="adjacent_difference", mode="left", **kwargs):
+    """Build a numeric neighbor request for host-only contract checks."""
+
     return BlockNeighborSemantics(
         operation=operation,
         dtype=FLOAT64,
