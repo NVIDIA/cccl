@@ -894,6 +894,10 @@ class _GroupCallPlanner:
     def _result_source(self, definition: Any, index: int | None = None):
         """Find the argument policy for a registered group call's result.
 
+        For example, planning ``store(group, output, exchange(group,
+        values))`` needs the Exchange result's element type and per-thread
+        item count before either public call has been replaced.
+
         Return the selected ``GroupResultSource`` and bound public arguments,
         or ``None`` for an unrelated call or invalid result selection. Without
         ``index``, only a single-result operation qualifies. With ``index``,
@@ -903,6 +907,17 @@ class _GroupCallPlanner:
         Dtype, array-origin, and extent queries share this policy. It lets
         later group calls consume the result before provider rewriting and
         ordinary typing.
+
+        Parameters
+        ----------
+        definition : object
+            Right-hand side of an IR assignment being queried. Only a
+            registered public group-operation call provides a result
+            policy.
+        index : int or None, optional
+            Tuple-result position, including supported negative indices.
+            ``None`` requests the policy for a directly returned value;
+            it does not select an array element.
         """
 
         if not isinstance(definition, ir.Expr) or definition.op != "call":
@@ -1867,6 +1882,29 @@ class _GroupCallPlanner:
 
         Raise ``UnknownResultExtentError`` if no static extent is available.
         The statements remain pending until the owning planner installs them.
+
+        Parameters
+        ----------
+        statements : list of IR statements
+            Pending replacement statements, appended to in execution
+            order. The function's blocks are unchanged until the owning
+            planner installs this list.
+        operation : str
+            Canonical public operation name, used in diagnostics and
+            generated temporary names.
+        source : ir.Var
+            Input payload whose elements must be preserved.
+        destination : ir.Var
+            Previously defined writable payload with enough slots for
+            the copy.
+        scope : ir.Scope
+            Scope in which to create temporary IR variables.
+        loc : ir.Loc
+            Source location attached to generated statements and
+            diagnostics.
+        known_items_per_thread : int or None, optional
+            Validated number of elements to copy per thread. ``None``
+            asks the planner to infer this count from the source.
         """
 
         extent = (
@@ -1906,6 +1944,10 @@ class _GroupCallPlanner:
     ) -> ir.Var:
         """Append a fresh result marker and return its IR variable.
 
+        Operation-family planners call this while constructing their
+        replacement IR. Deferring allocation lets later payload inference
+        establish the element type before a concrete local array is created.
+
         The marker retains ``prototype`` for dtype inference and ``is_array``
         for extent selection. An explicit ``items_per_thread`` overrides the
         inherited extent. ``dtype_policy`` identifies how the later rewrite
@@ -1915,6 +1957,34 @@ class _GroupCallPlanner:
         ``statements``. No local array is allocated here. The provider rewrite
         resolves the marker after payload facts are available and emits the
         allocation.
+
+        Parameters
+        ----------
+        statements : list of IR statements
+            Pending replacement statements, appended to in execution
+            order. The function's blocks are unchanged until the owning
+            planner installs this list.
+        scope : ir.Scope
+            Scope in which to create temporary IR variables.
+        loc : ir.Loc
+            Source location attached to generated statements and
+            diagnostics.
+        stem : str
+            Readable prefix for fresh temporary names.
+        prototype : ir.Var
+            Existing scalar or array supplying type evidence for the new
+            payload.
+        is_array : bool
+            Whether to inherit the prototype's per-thread array item
+            count; false selects one item unless an explicit count is
+            supplied.
+        dtype_policy : str
+            Registered rule for deriving the element dtype from the
+            prototype or selecting a fixed result type.
+        items_per_thread : int or ir.Var or None, optional
+            Explicit compile-time item count, as a value or an IR
+            variable that resolves to one. ``None`` uses the prototype-
+            based count.
         """
 
         function_var = self._new_var(scope, loc, f"{stem}_payload_factory")

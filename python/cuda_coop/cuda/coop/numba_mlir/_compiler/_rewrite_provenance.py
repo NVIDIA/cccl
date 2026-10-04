@@ -550,6 +550,11 @@ class _ProvenanceRewrite(Rewrite):
     ) -> _ThreadDataSpecification:
         """Recover result dtype and extent from a planner-created marker.
 
+        Provider rewriting calls this when it encounters a result marker
+        instead of a real allocation. Here, extent means the number of array
+        elements owned by one thread; those elements need a concrete dtype
+        and count before local-array allocation can be emitted.
+
         Validate the marker's positional arguments and constant shape/type
         policy. Inherit dtype from the prototype's array facts or known scalar
         type. An explicit positive extent takes precedence. Otherwise use
@@ -562,6 +567,16 @@ class _ProvenanceRewrite(Rewrite):
         malformed marker arguments or an unknown policy raise
         ``CoopSinglePhaseRewriteError``. The supplied ``seen`` path guards
         recursive prototype traversal.
+
+        Parameters
+        ----------
+        call : ir.Expr
+            Call to ``_typed_group_payload_like`` emitted by group
+            planning, after its marker identity has been recognized.
+        seen : set of str or None, optional
+            Variable names already visited while following the
+            prototype. ``None`` starts a fresh traversal; independent
+            recursive branches receive copies.
         """
 
         if seen is None:
