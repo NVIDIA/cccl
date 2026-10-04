@@ -2,7 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Show the batch axis and ownership contract, not CUB's instruction schedule.
+// Show which input values belong to each independent reduction and which
+// lane owns each result. Batch colors stay fixed when output layout changes.
+// The regrouped input row is a teaching view; CUB chooses its instructions.
 (() => {
   "use strict";
 
@@ -10,12 +12,17 @@
   const groups = (count, slots, prefix) => Array.from({ length: count }, (_, index) => ({
     start: index * slots, count: slots, label: `${prefix}${index}`,
   }));
+  // Null represents an output slot with no batch. Keep it distinct from a
+  // valid zero result so the diagram never suggests padding can be read.
   const token = (id, value, row, index, batch, detail, from) => ({
     id, label: value === null ? "?" : String(value),
     value: value === null ? "undefined" : value, row, index, color: batch,
     muted: value === null, detail, from,
   });
 
+  // Compute each batch once, then assign its result to a lane and slot.
+  // Layout changes ownership only: every batch still combines the same
+  // local slot across lanes, and the original input tokens remain visible.
   function build(state) {
     const width = Number(state.width);
     const batches = Number(state.batches);
@@ -40,6 +47,10 @@
     const aggregates = totals.map((value, batch) => token(`total-${batch}`, value,
       "totals", batch, batch,
       `Batch ${batch}: ${maximum ? "maximum" : "sum"} across ${width} lanes is ${value}.`));
+    // Reuse each aggregate's token ID so the explorer moves that token into
+    // the owning lane's slot instead of drawing a new one.
+    // Allocate all per-lane slots, including ones with no batch, to show why
+    // callers must guard reads and stores using the selected layout.
     const output = Array.from({ length: width * slots }, (_, index) => {
       const lane = Math.floor(index / slots);
       const slot = index % slots;
