@@ -21,14 +21,20 @@ _DESTINATION_OFFSET = 5
 
 
 def _check(result):
+    """Raise on Driver errors and unwrap a single returned handle or value."""
+
     if int(result[0]):
         raise RuntimeError(f"CUDA Driver call failed: {result[0]}")
     return result[1] if len(result) == 2 else result[1:]
 
 
 def run_example(api="common", items_per_thread=4):
-    """Run eight independent logical tiles and verify their prefixes and
-    defaults.
+    """Check eight logical-group tiles with different valid prefixes.
+
+    Each group loads a different count, then stores its full tile. The CPU
+    comparison checks copied values, fill values and automatic tile origins
+    within both physical warps. Sentinels outside the stored interval must
+    remain untouched. Common and qualified calls use the same check.
     """
 
     group_tile = _WIDTH * items_per_thread

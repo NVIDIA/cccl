@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check logical-warp group counts, tile bounds, and scratch identity.
+
+A supported width divides each physical warp into complete logical groups.
+``valid_items`` applies to one group's tile, while memory extents and
+scratch account for all groups in the block. These host-side plans require
+exact launch facts and reject mappings that this backend cannot lower.
+"""
+
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
@@ -56,6 +64,13 @@ def _request(
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize("exhaustive", (True, False))
 def test_logical_group_contract(width, kind, algorithm, exhaustive):
+    """Retain complete logical groups under either exhaustive setting.
+
+    The tested widths divide 32, so both settings give the same membership and
+    group count. Only transpose needs implementation-owned scratch and a warp
+    reuse barrier; the other algorithms have neither requirement.
+    """
+
     request = _request(
         width, kind=kind, algorithm=algorithm, exhaustive=exhaustive
     )
@@ -85,6 +100,13 @@ def test_logical_group_contract(width, kind, algorithm, exhaustive):
 
 @pytest.mark.parametrize("width", _WIDTHS)
 def test_subgroup_tile_bounds(width):
+    """Limit valid_items to one tile while keeping each group's fixed stride.
+
+    The final group starts after all earlier full tiles. A smaller
+    ``valid_items`` shortens each group's valid range; group origins stay
+    fixed. A value above one tile is rejected.
+    """
+
     tile_items = 2 * width
     valid_items = tile_items - 1
     request = _request(
@@ -102,6 +124,12 @@ def test_subgroup_tile_bounds(width):
 
 @pytest.mark.parametrize("width", _WIDTHS)
 def test_subgroup_offset_headroom(width):
+    """Leave room for the last group's origin in signed offset arithmetic.
+
+    The user offset is added to each group's tile origin. The final group has
+    the largest origin, so it determines the highest accepted offset.
+    """
+
     maximum = (1 << 63) - 1 - (128 - 2 * width)
     assert (
         _request(
@@ -115,6 +143,14 @@ def test_subgroup_offset_headroom(width):
 
 @pytest.mark.parametrize("width", _WIDTHS)
 def test_scratch_identity_counts_groups(width):
+    """Separate scratch for blocks with different numbers of groups.
+
+    Doubling the warp count doubles the number of logical groups. The CUB
+    implementation key stays the same. The scratch requirement and wrapper
+    symbol must differ: scratch holds one slot per group, and the wrapper
+    hard-codes the group count in its scratch-size check.
+    """
+
     one_warp = _request(width, algorithm="transpose", block=(32, 1, 1))
     two_warps = _request(width, algorithm="transpose")
     assert (
