@@ -68,9 +68,8 @@ Using Store in a kernel
 -----------------------
 
 This common-API fragment works in either DSL with the :ref:`kernel-fragment
-setup <coop-visualization-kernels>`. Launch with 128 threads and provide at
-least ``128 * items_per_thread`` source and destination elements for each
-block.
+setup <coop-visualization-kernels>`. Launch with 128 threads. Give each block
+at least ``128 * items_per_thread`` source and destination elements.
 
 .. code-block:: python
 

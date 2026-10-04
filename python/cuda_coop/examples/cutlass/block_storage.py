@@ -16,13 +16,22 @@ _BLOCK = (8, 4, 2)
 
 
 def _check(result):
+    """Raise on Driver errors and unwrap a single returned handle or value."""
+
     if int(result[0]):
         raise RuntimeError(f"CUDA Driver call failed: {result[0]}")
     return result[1] if len(result) == 2 else result[1:]
 
 
 def run_example(*, sharing="shared", manual_sync=False, items_per_thread=4):
-    """Run eight tiles and verify every output item against NumPy."""
+    """Reuse scratch across eight tiles and check their transformed values.
+
+    Adding ``tile + 1`` makes every output differ from its input, so a Store
+    that writes untransformed or stale scratch values fails the NumPy check.
+    Shared and exclusive policies both reuse storage on the next iteration;
+    manual mode places barriers after Load and Store. The small requested
+    alignment lets the compiler raise it to each primitive's needs.
+    """
 
     # docs: start cutlass-block-storage
     tile_size = 64 * items_per_thread

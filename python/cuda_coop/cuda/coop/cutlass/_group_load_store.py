@@ -4,9 +4,10 @@
 
 """Validate block Load/Store calls before emitting CuTe extern calls.
 
-Use exact compiler launch facts and shared group planning. This implementation
-supports DIRECT access to contiguous memory, with no shared scratch. Binding
-records separate embedded constants from device-time arguments.
+Use exact compiler launch facts and shared group planning. Calls accept all
+six CUB block algorithms on contiguous memory. Transpose algorithms use
+shared scratch from an implicit or explicit TempStorage. Binding records
+separate embedded constants from device-time arguments.
 """
 
 from __future__ import annotations
@@ -27,11 +28,11 @@ _MAX_STATIC_OFFSET = (1 << 63) - 1
 
 
 def _resolve_group(group, algorithm, temp_storage, operation):
-    """Require block DIRECT and resolve the exact launch dimensions.
+    """Require a block group and resolve exact launch dimensions.
 
-    Validate an explicit scratch descriptor if present. DIRECT
-    does not consume it; launch resolution supplies the block
-    shape for shared planning.
+    Normalize the algorithm and apply the common checks to an explicit scratch
+    descriptor. The shared planner later decides whether the algorithm uses
+    that descriptor.
     """
 
     if not isinstance(group, CommonThreadGroup):
@@ -67,14 +68,15 @@ def load(
     """Load a contiguous block tile into a writable per-thread payload.
 
     Shared parameters and participation follow :func:`cuda.coop.load`. This
-    implementation accepts block groups. The output
-    must be CUTLASS ThreadData; its dtype is inferred from the source, or must
-    agree with it when already declared.
+    implementation accepts block groups and all six block Load algorithms.
+    The output must be CUTLASS ThreadData; its dtype is inferred from the
+    source, or must agree with it when already declared.
 
-    Load populates the payload in place. Beyond
-    ``valid_items``, slots have unspecified values unless ``oob_default`` is
-    supplied, even if initialized before Load. Supplying ``oob_default`` also
-    requires ``valid_items``. A runtime default must have the memory dtype.
+    Load populates the payload in place in the selected algorithm's layout.
+    Beyond ``valid_items``, slots have unspecified values unless
+    ``oob_default`` is supplied, even if initialized before Load. Supplying a
+    default also requires ``valid_items``. A runtime default must have the
+    memory dtype.
 
     The count ranges from zero through the full tile size. ``offset`` is a
     nonnegative element offset. Counts, offsets, and supplied defaults must
@@ -85,8 +87,12 @@ def load(
     bare pointer conversion without layout metadata. Register or local-memory
     tensors are rejected. Load reads addressable memory, such as global or
     shared memory. DIRECT, STRIPED, and VECTORIZE need no shared scratch or
-    reuse barrier. Transpose algorithms use shared scratch; an optional
-    TempStorage descriptor controls allocation and reuse.
+    reuse barrier; an accepted explicit descriptor does not change that.
+
+    Transpose algorithms use shared scratch. With no ``temp_storage``, the
+    compiler allocates it and inserts a trailing reuse barrier. An explicit
+    :class:`cuda.coop.cutlass.TempStorage` sets sharing and synchronization
+    policy. Its default ``auto_sync=False`` requires a barrier before reuse.
     """
 
     if not isinstance(output, ThreadData):
@@ -130,22 +136,23 @@ def store(
     """Store per-thread values into a contiguous block tile.
 
     Shared parameters and participation follow :func:`cuda.coop.store`. This
-    implementation accepts block groups. Each thread supplies a
-    scalar or an initialized CUTLASS ThreadData payload whose dtype matches
-    the destination.
+    implementation accepts block groups and all six block Store algorithms.
+    Each thread supplies a scalar or an initialized CUTLASS ThreadData
+    payload whose dtype matches the destination. As with
+    :func:`cuda.coop.store`, do not rely on the payload's contents after a
+    transpose Store; copy values that are needed later.
 
     ``valid_items`` selects a prefix from zero through the full tile size.
     ``offset`` is a nonnegative element offset. Both must agree across the
     block, and the caller must provide enough accessible destination memory
-    for that prefix. Items outside it are not written.
+    for that prefix. Items outside it are not written. The destination has the
+    same raw-pointer and compact-layout requirements as :func:`load`.
 
-    The destination has the same raw-pointer and compact-layout requirements
-    as :func:`load`. DIRECT, STRIPED, and VECTORIZE need no shared scratch
-    or reuse barrier. Transpose algorithms use shared scratch; an optional
-    TempStorage descriptor controls allocation and reuse.
-
-    Transpose algorithms may rearrange the input payload, so do not rely on
-    its contents after Store.
+    Transpose algorithms use shared scratch. With no ``temp_storage``, the
+    compiler allocates it and inserts a trailing reuse barrier. An explicit
+    descriptor controls allocation and reuse; the caller must synchronize
+    before reuse unless ``auto_sync=True``. DIRECT, STRIPED, and VECTORIZE do
+    not need scratch or a reuse barrier.
     """
 
     group, launch, algorithm = _resolve_group(

@@ -191,12 +191,12 @@ the final linker has read it. Finalization removes stale managed library
 paths from persistent compiler options so the next trace cannot link an
 earlier bundle by mistake.
 
-Failed emission restores the queued requests, bundle state and pending scratch
-uses saved in the provider-session snapshot. It does not undo emitted IR or
-payload assignments. Finalization removes only its own session. Lifecycle
-tests exercise failed compilation or linking followed by a successful retry,
-as well as repeated and nested compilation. These checks matter because a
-single Python process can compile many kernels through the same CuTe DSL.
+Failed emission restores the queued requests and pending scratch uses saved in
+the provider-session snapshot. It does not undo emitted IR or payload changes.
+Finalization removes only its own session. Lifecycle tests exercise failed
+compilation or linking followed by a successful retry, as well as repeated and
+nested compilation. These checks matter because one Python process can compile
+many kernels through the same CuTe DSL.
 
 .. _coop-cutlass-scratch-allocation:
 
@@ -222,9 +222,9 @@ allocations and replaces the trace's storage placeholders.
 Exclusive slices still need reuse synchronization when one call site runs
 again in a loop. Explicit descriptors default to ``auto_sync=False`` for both
 sharing modes, so the kernel must call ``storage.sync()`` before reuse. Set
-``auto_sync=True`` to insert automatic trailing synchronization. Compiler-managed
-scratch synchronizes automatically. See the programming guide for each family's explicit-storage
-support and participation rules.
+``auto_sync=True`` to insert automatic trailing synchronization.
+Compiler-managed scratch synchronizes automatically. See the programming guide
+for each family's explicit-storage support and participation rules.
 
 Finding the implementation
 ---------------------------
@@ -281,11 +281,11 @@ It needs no command-line arguments. Its kernel and launcher are:
    :end-before: docs: end cutlass-debug-kernel
 
 The default ``algorithm`` is ``"direct"`` and ``items_per_thread`` is ``2``.
-Each of the 128 threads copies two integers, so the default tile contains
-256 items. The kernel and launcher specialize the item-count argument with
+Each of the 128 threads copies two integers, so the default tile contains 256
+items. The kernel and launcher specialize the item-count argument with
 ``cutlass.Constexpr``; pass ``--items-per-thread`` to change it. ``scratch``
-is a descriptor: Direct Load and Store ignore it and allocate no shared memory.
-The same descriptor will let us follow scratch reuse in the transpose pass.
+is a descriptor: Direct Load and Store ignore it and allocate no shared
+memory. The same descriptor shows scratch reuse in the transpose pass.
 
 The complete example allocates device buffers with the CUDA Driver API,
 wraps their addresses in CuTe pointers, and frees them before returning.
@@ -301,10 +301,9 @@ synchronizes, and checks every value against NumPy. Here,
 ``cute.compile`` makes compilation an explicit step before either launch.
 The two calls to ``compiled`` reuse that kernel.
 
-A direct call to a CuTe ``@cute.jit`` function can
-trace again to compute the module's cache key, even when compiled code
-is reusable. Retaining the compiled callable makes the two GPU launches
-independent of that tracing path.
+A direct call to a CuTe ``@cute.jit`` function can trace again to compute the
+module's cache key, even when compiled code is reusable. Retaining the
+compiled callable makes the two GPU launches independent of that tracing path.
 
 Configure VS Code
 ^^^^^^^^^^^^^^^^^
@@ -344,14 +343,13 @@ exists, add the entry to its ``configurations`` list:
      ]
    }
 
-``justMyCode: false`` permits stepping into library code. ``PYTHONPATH``
-and ``CUDA_COOP_CCCL_ROOT`` select this checkout's Python sources and C++
-headers. ``cute.compile`` explicitly requests CuTe compilation. When run
-as a script, the example also selects a fresh temporary provider-cache
-directory and removes it on exit. A new process with that empty provider
-cache lets each debug session reach NVRTC.
-The Numba setting ``CUDA_COOP_ENABLE_CACHE=0`` does not control this
-backend's provider cache.
+``justMyCode: false`` permits stepping into library code. ``PYTHONPATH`` and
+``CUDA_COOP_CCCL_ROOT`` select this checkout's Python sources and C++ headers.
+``cute.compile`` explicitly requests CuTe compilation. When run as a script,
+the example also selects a fresh temporary provider-cache directory and
+removes it on exit. A new process with that empty provider cache lets each
+debug session reach NVRTC. The Numba setting ``CUDA_COOP_ENABLE_CACHE=0`` does
+not control this backend's provider cache.
 
 On a machine with several GPUs, add ``CUDA_VISIBLE_DEVICES`` to ``env``.
 Use the toolkit configured for your compatible compiler environment.
@@ -559,14 +557,13 @@ the second launch with ``iteration == 1``. The first verification message
 has printed, and ``destination`` has been reset to ``-1`` on both host
 and device.
 
-Re-enable the plan and NVRTC breakpoints, then continue. Calling
-``compiled`` executes the existing kernel without tracing or provider
-compilation. Neither breakpoint should fire, and the second verification
-message should print. Calling ``cute.compile`` again would request another
-CuTe compilation, though the provider cache could supply its LTO-IR.
-Start a new debug session to repeat the tour;
-editing a file while paused does not replace the function already loaded
-in the current process.
+Re-enable the plan and NVRTC breakpoints, then continue. Calling ``compiled``
+executes the existing kernel without tracing or provider compilation. Neither
+breakpoint should fire, and the second verification message should print.
+Calling ``cute.compile`` again would request another CuTe compilation, though
+the provider cache could supply its LTO-IR. Start a new debug session to
+repeat the tour; editing a file while paused does not replace the function
+already loaded in the current process.
 
 A second pass: shared scratch and synchronization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -613,11 +610,11 @@ Open the dumped C++ and find ``temp_storage_auto_sync``. Each wrapper
 ends with a conditional ``__syncthreads()``; this example passes a true
 flag, so Load finishes using the workspace before Store reuses it.
 
-CUTLASS emits the trailing barrier in
-the provider wrapper and patches deferred storage operands after obtaining
-the C++ layouts. ``ThreadData`` still holds the per-thread payload;
-``TempStorage`` describes the shared workspace used during each primitive.
-Continue to verify both launches of the transpose copy.
+CUTLASS emits the trailing barrier in the provider wrapper and patches
+deferred storage operands after obtaining the C++ layouts. ``ThreadData``
+still holds the per-thread payload; ``TempStorage`` describes the shared
+workspace used during each primitive. Continue to verify both launches of the
+transpose copy.
 
 If a breakpoint does not stop
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -666,7 +663,8 @@ Start with the affected family under
 argument contracts, and state transitions. Compile tests exercise real CuTe
 traces, launch metadata, FFI emission, and lifecycle recovery. Runtime tests
 compare results and layouts against independent references, including
-partial tiles and repeated scratch reuse.
+partial tiles and repeated scratch reuse. For storage-policy routing, see
+``unit/test_load_store_plans.py``.
 
 For a Load/Store or lifecycle change, the following are useful entry points
 from the repository root with the package and compatible compiler installed:
@@ -692,9 +690,12 @@ when a test needs an isolated cache directory. See :doc:`configuration`
 for these settings and header-selection controls.
 
 For generated-code claims, inspect the final linked cubin with ``cuobjdump``.
-``runtime/test_block_load_store.py`` shows this check for direct Load/Store.
-Check whether provider calls remain and whether the generated storage and
-barriers match the operation. Provider source or intermediate PTX alone cannot
-prove the final result. Use Compute Sanitizer race checks for changes to
-scratch allocation or synchronization. Numerical correctness, generated-code
-evidence, and public-package qualification require separate checks.
+``runtime/test_block_load_store.py`` checks that direct Load/Store leave no
+provider calls, shared accesses, or barriers. The final-cubin check in
+``runtime/test_block_algorithms.py`` tests striped, vectorize, and transpose.
+It requires shared memory and barriers only for transpose.
+
+Provider source or intermediate PTX alone cannot prove the final result. Use
+Compute Sanitizer race checks for changes to scratch allocation or
+synchronization. Numerical correctness, generated-code evidence, and
+public-package qualification require separate checks.

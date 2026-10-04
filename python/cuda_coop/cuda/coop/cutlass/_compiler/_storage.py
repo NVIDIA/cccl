@@ -3,7 +3,14 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
-"""Allocate shared scratch and replace placeholders after layout resolution."""
+"""Allocate shared scratch after the C++ layouts become known.
+
+Tracing records each scratch-using call with placeholder address and size
+operands. Finalization obtains exact layouts from the provider compilation,
+plans each kernel's allocations, then replaces those placeholders in MLIR.
+Descriptor identity controls reuse; equal descriptor fields alone do not
+make two descriptors share an allocation.
+"""
 
 from __future__ import annotations
 
@@ -37,6 +44,12 @@ def _deferred_temp_storage_capability_error(
 
 
 def _active_cuda_kernel_op() -> Any:
+    """Walk from the insertion point to the enclosing ``cuda.kernel``.
+
+    Scratch is planned per kernel. A call inside a loop or branch must map to
+    that kernel so its allocation can be placed at kernel entry.
+    """
+
     try:
         from cutlass._mlir import ir
 
@@ -75,6 +88,8 @@ def _cuda_kernel_name(kernel_op: Any) -> str:
 
 
 def _fresh_i32_placeholder() -> Any:
+    """Emit a distinct operand for replacement during finalization."""
+
     from cutlass._mlir.dialects import arith
     from cutlass.cutlass_dsl import T
 
@@ -88,7 +103,30 @@ def register_deferred_temp_storage_event(
     requirement_key: Hashable,
     active_session_getter: Callable[[], BundleSession] = active_bundle_session,
 ) -> tuple[Any, Any, Any]:
-    """Emit fresh ABI placeholders and record one deferred scratch use."""
+    """Record one traced scratch use before its C++ layout is available.
+
+    Each call gets fresh address and size placeholders. The session preserves
+    call order because exclusive storage assigns a slice to each traced use.
+    A runtime loop reuses those operands on each iteration.
+
+    Parameters
+    ----------
+    temp_storage : TempStorage
+        Descriptor whose identity and current policies are recorded.
+    primitive_name : str
+        Operation name for diagnostics.
+    requirement_key : hashable
+        Key that matches this call to its compiled scratch-layout probe.
+    active_session_getter : callable, optional
+        Supplies the active bundle session; tests can substitute a session.
+
+    Returns
+    -------
+    tuple
+        Provider operands: a Uint32 shared-memory address, an Int32 capacity,
+        and an Int32 automatic-barrier flag. Finalization replaces the first
+        two; the flag is fixed by the descriptor's ``auto_sync`` policy.
+    """
 
     try:
         hash(requirement_key)
@@ -137,7 +175,35 @@ def plan_deferred_temp_storage_events(
     events: list[DeferredTempStorageEvent],
     layouts: Mapping[Hashable, ScratchLayout],
 ) -> tuple[DeferredTempStoragePlan, ...]:
-    """Resolve exact kernel-local storage plans without mutating MLIR."""
+    """Resolve kernel-local allocations without changing MLIR.
+
+    Events are grouped by kernel and descriptor identity. Shared storage uses
+    one slice large enough for every use. Exclusive storage assigns an aligned
+    slice to each event in trace order. Sharing selects the layout, not
+    synchronization. Unless ``auto_sync`` is true, the kernel must synchronize
+    before a shared slice serves another call and before any call site reuses
+    its own slice.
+
+    Parameters
+    ----------
+    events : list of DeferredTempStorageEvent
+        Traced uses with captured descriptor policies and ABI placeholders.
+    layouts : mapping
+        Exact C++ byte layouts, indexed by each event's requirement key.
+
+    Returns
+    -------
+    tuple of DeferredTempStoragePlan
+        Allocations and per-call slices. Explicit capacity must cover the
+        whole plan. Allocation alignment satisfies both the descriptor's
+        requested minimum and every operation's alignment.
+
+    Raises
+    ------
+    DSLRuntimeError
+        Uses of one descriptor disagree on its configuration, a layout is
+        missing, or explicit capacity is too small.
+    """
 
     grouped: dict[tuple[Any, int], list[DeferredTempStorageEvent]] = {}
     for event in events:
@@ -255,7 +321,20 @@ def _replace_all_uses(old_value: Any, new_value: Any) -> None:
 def materialize_deferred_temp_storage_plans(
     plans: tuple[DeferredTempStoragePlan, ...],
 ) -> None:
-    """Insert planned allocations and backpatch every recorded ABI operand."""
+    """Allocate each plan at kernel entry and replace its call operands.
+
+    ``plans`` comes from :func:`plan_deferred_temp_storage_events`. One
+    ``SmemAllocator`` per kernel places all of that kernel's allocations.
+    Each binding supplies its slice's shared-memory address and capacity to
+    the recorded call, including calls nested in loops or conditional regions.
+    This step emits no barriers. The provider wrapper adds a trailing barrier
+    when the call's ``auto_sync`` flag is set; otherwise the kernel must
+    synchronize before reuse.
+
+    The function returns ``None``. Missing allocation or value-replacement
+    support raises ``DSLRuntimeError``. Capabilities are checked before
+    allocation. A later replacement failure does not roll back MLIR.
+    """
 
     if not plans:
         return

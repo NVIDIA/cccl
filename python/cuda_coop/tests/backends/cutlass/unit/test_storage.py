@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Plan deferred scratch from call events and exact native layout facts.
+
+Synthetic events stand in for traced collective calls. The tests supply
+size and alignment directly, then inspect shared slots, exclusive slices,
+and isolation by kernel and descriptor. Separate session checks cover
+rollback and the operands that final allocation will replace.
+"""
+
 from dataclasses import replace
 from importlib import import_module
 
@@ -18,6 +26,13 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
 
 def _event(storage, key, kernel):
+    """Make one traced-call event without generating a provider or GPU kernel.
+
+    Opaque objects stand in for the kernel and the operands that deferred
+    allocation will replace. Each test passes layouts to the planner by
+    requirement key, so placement checks do not need C++ compilation.
+    """
+
     return _types.DeferredTempStorageEvent(
         kernel_op=kernel,
         kernel_name="example",
@@ -37,6 +52,13 @@ def _event(storage, key, kernel):
 @pytest.mark.parametrize("capacity", [None, 128])
 @pytest.mark.parametrize("requested", [None, 1, 8, 16, 32, 64])
 def test_shared_uses_one_maximum_slot(capacity, requested):
+    """Share one slot large enough for the largest collective requirement.
+
+    Both calls start at offset zero. Provider alignment sets a lower bound on
+    the allocation; caller capacity can reserve more bytes than the maximum
+    requirement without creating another slot.
+    """
+
     storage = TempStorage(capacity, alignment=requested)
     kernel = object()
     events = [_event(storage, key, kernel) for key in ("small", "large")]
@@ -66,6 +88,14 @@ def test_shared_uses_one_maximum_slot(capacity, requested):
 @pytest.mark.parametrize("requested", [None, 1, 8, 16, 32, 64])
 @pytest.mark.parametrize("auto_sync", [None, True, False])
 def test_exclusive_slices(capacity, requested, auto_sync):
+    """Place each call in its own aligned slice of the same allocation.
+
+    The first requirement occupies 24 bytes. The second needs alignment 16,
+    so it starts at byte 32 and brings the minimum capacity to 48 bytes. The
+    allocation may have stronger alignment without changing either slice's
+    native size and alignment.
+    """
+
     storage = TempStorage(
         capacity, alignment=requested, sharing="exclusive", auto_sync=auto_sync
     )
@@ -158,6 +188,13 @@ def test_empty_plan():
 
 
 def test_event_rollback():
+    """Restore the call list when a tracing attempt is rolled back.
+
+    A snapshot keeps the first call while discarding the later call. Reading
+    the event list must return a copy, so callers cannot change session state
+    by editing the returned list.
+    """
+
     session = _state.BundleSession()
     first = _event(TempStorage(), "first", object())
     second = _event(TempStorage(), "second", object())
@@ -174,6 +211,13 @@ def test_event_rollback():
 
 
 def test_registration_uses_fresh_operands(monkeypatch):
+    """Give each call its own operands for deferred storage replacement.
+
+    Calls may share storage but still need distinct address and size operands.
+    An MLIR context permits operand creation here without tracing or launching
+    a GPU kernel.
+    """
+
     session = _state.BundleSession()
     storage = TempStorage(128, auto_sync=False)
     kernel = object()
