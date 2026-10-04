@@ -85,10 +85,11 @@ def test_public_stubs_pass_strict_consumer_type_checks(
     """Check accepted calls and exact expected errors against copied stubs.
 
     The CUTLASS consumers import real CuTe numeric types, so that case skips
-    when CUTLASS DSL is absent. Their mypy config reads those types quietly
-    and skips generated experimental bindings. Copying the stubs and
-    consumers isolates this check from checkout import paths. Negative cases
-    confirm that unsupported call forms are rejected.
+    when CUTLASS DSL is absent. When CUTLASS is installed, both families use a
+    mypy config that reads its types quietly and skips generated experimental
+    bindings. Copying the stubs and consumers isolates this check from
+    checkout import paths. Negative cases confirm that unsupported call forms
+    are rejected.
     """
 
     if importlib.util.find_spec("mypy") is None:

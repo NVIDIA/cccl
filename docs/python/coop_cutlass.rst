@@ -101,7 +101,7 @@ selects a short tile or only rank zero uses the result. The sections below
 describe the requirements for block, warp, and mapped groups.
 
 Reduce and Scan support the built-in operators listed below. Custom operators
-and Scan prefix callbacks are unsupported. See the :doc:`API reference
+and Scan prefix callbacks are not yet supported. See the :doc:`API reference
 <coop_api>` for operation signatures and return values.
 
 .. _coop-cutlass-mixed-backends:
@@ -544,8 +544,8 @@ Built-in Scan
 ``scan``, ``exclusive_scan``, ``inclusive_scan``, ``exclusive_sum``, and
 ``inclusive_sum`` support block, physical warp, and logical warp groups. Block
 primitives accept scalars and fixed multi-item payloads; warp primitives
-accept one scalar per lane. A ``ThreadData(1)`` remains an array payload
-and is not accepted by Warp Scan. Input values are preserved. A scalar input
+accept one scalar per lane. A ``ThreadData(1)`` remains an array payload and
+is not accepted by Warp Scan. Input values are preserved. A scalar input
 returns a scalar; a block payload returns a fresh ``ThreadData`` with the same
 dtype and extent in blocked order.
 
@@ -588,9 +588,9 @@ The qualified CUTLASS API adds two controls to all five Scan spellings:
 
 For a partial warp scan, the aggregate includes only the valid prefix and is
 available even on lanes outside that prefix. A zero count is invalid. The
-common API does not expose these two keywords. The qualified backend
-also accepts CuTe register tensors for block Scan and returns ``ThreadData``;
-use its conversion methods when a register-tensor result is needed.
+common API does not expose these two keywords. The qualified backend also
+accepts CuTe register tensors for block Scan and returns ``ThreadData``; use
+its conversion methods when a register-tensor result is needed.
 
 :download:`Download the Scan example
 <../../python/cuda_coop/examples/cutlass/scan.py>`:

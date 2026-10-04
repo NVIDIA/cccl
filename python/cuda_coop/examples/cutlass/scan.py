@@ -18,13 +18,21 @@ _THREADS = 64
 
 
 def _check(result):
+    """Raise on Driver errors and unwrap a single returned handle or value."""
+
     if int(result[0]):
         raise RuntimeError(f"CUDA Driver call failed: {result[0]}")
     return result[1] if len(result) == 2 else result[1:]
 
 
 def run_example(api="common", items_per_thread=2):
-    """Run a seeded block scan and verify its ordered prefixes."""
+    """Check exclusive prefix sums that start from seven across a block tile.
+
+    Load, Scan and Store share one descriptor with automatic synchronization.
+    The CPU reference gives each item seven plus the sum of all earlier
+    inputs in blocked order. The stored values come from Scan's separate
+    output payload. Common and qualified calls use the same comparison.
+    """
 
     tile_size = _THREADS * items_per_thread
     if api not in {"common", "qualified"}:

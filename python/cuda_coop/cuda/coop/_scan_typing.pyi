@@ -1,7 +1,15 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-"""Pair NumPy and CUTLASS scalar types so scan seeds match the input dtype."""
+"""Pair NumPy and CUTLASS scalar types for Scan initial values.
+
+The two Python classes can describe the same numeric dtype. Scan stubs use
+these pairs to accept either representation while retaining the input's type
+parameter. ``_ExactScalar`` makes the scalar type invariant. A typed initial
+value cannot widen the inferred input type. ``_CompilerIdentity`` also
+requires the compiler-scalar protocol. This module describes types; it does
+not convert kernel values.
+"""
 
 from typing import Protocol, TypeAlias, TypeVar
 

@@ -372,8 +372,8 @@ group or parent-group participant must still reach the primitive.
 
 Numba-CUDA-MLIR accepts an optional caller descriptor for block Load, Store,
 Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent Difference, Discontinuity,
-Histogram, and both Run Length Decode forms. CUTLASS currently accepts one for
-block Load, Store, and Reduce:
+Histogram, and both Run Length Decode forms. See the CUTLASS guide for the
+calls that accept a descriptor. This transpose example uses Numba-CUDA-MLIR:
 
 ```python
 storage = coop.TempStorage(
@@ -566,21 +566,21 @@ recognize the corresponding Python `operator` functions and NumPy ufuncs.
 Numba-CUDA-MLIR additionally accepts stateless binary device callbacks, which
 must be associative and return the input dtype. CUTLASS does not support
 custom scan operators. A non-sum exclusive scan requires an `initial_value`
-with the payload dtype. Ordinary Python literals are checked and converted in
-that context. A Numba block-prefix callback can supply that prefix instead.
-Inclusive scans reject an initial value.
+with the payload dtype. Ordinary Python literals are checked and converted
+in that context. A Numba block-prefix callback can supply that prefix
+instead. Inclusive scans reject an initial value.
 
 Both qualified APIs accept `aggregate_output`, a one-item `ThreadData`
 populated with the group aggregate on every member. Its dtype must match the
 input or be omitted for inference. Numba-CUDA-MLIR also accepts a one-item
 local array; CUTLASS requires writable `ThreadData` for this output. Warp
-forms accept `valid_items`, which selects the first N lanes by group rank and
-requires `1 <= N <= warp_width`; only those N result lanes are defined. The
-aggregate excludes the exclusive initial value and any input lanes beyond
-`valid_items`. The initial value and `valid_items` must be uniform within the
-group. At runtime, an invalid `valid_items` count triggers a deterministic
-device trap before CUB's 32-bit parameter is formed. The trap invalidates the
-current CUDA context.
+forms accept `valid_items`, which selects the first N lanes by group rank
+and requires `1 <= N <= warp_width`; only those N result lanes are defined.
+The aggregate excludes the exclusive initial value and any input lanes
+beyond `valid_items`. The initial value and `valid_items` must be uniform
+within the group. At runtime, an invalid `valid_items` count triggers a
+deterministic device trap before CUB's 32-bit parameter is formed. The trap
+invalidates the current CUDA context.
 
 All five Numba-qualified Block Scan spellings accept a block-prefix callback
 through the `prefix_op` keyword. CUTLASS does not support prefix callbacks or
@@ -639,8 +639,8 @@ every participating thread the same initial contents. CUB may invoke the
 callback in every lane of the block's first warp, but only lane 0's returned
 prefix is applied; only thread 0's state is authoritative after the calls.
 
-Prefix callbacks are available only through Numba-qualified Block Scan. They are
-mutually exclusive with `initial_value` and `aggregate_output`, are not
+Prefix callbacks are available only through Numba-qualified Block Scan. They
+are mutually exclusive with `initial_value` and `aggregate_output`, are not
 stateful binary `scan_op` values, and do not support Warp Scan, `valid_items`,
 or structured state.
 
@@ -649,13 +649,13 @@ scratch or an explicit `TempStorage` descriptor. Numba-CUDA-MLIR backing may
 use static or dynamic shared memory. Compiler-owned scratch and explicit
 descriptors with `auto_sync=True` append a block reuse barrier. Explicit
 descriptors default to `auto_sync=False`, so the caller must synchronize
-before reuse. Physical and
-logical Warp calls use compiler-owned per-Warp storage and append `syncwarp`
-for the exact participating mask. Prefix callbacks keep these storage rules.
-When repeated calls reuse an explicit descriptor, set `auto_sync=True` or
-issue a block barrier before reuse: `cuda.syncthreads()` in Numba-CUDA-MLIR,
-or `storage.sync()` in CUTLASS. The prefix state is a per-thread payload that
-persists across calls; it is not CUB temporary storage.
+before reuse. Physical and logical Warp calls use compiler-owned per-Warp
+storage and append `syncwarp` for the exact participating mask. Prefix
+callbacks keep these storage rules. When repeated calls reuse an explicit
+descriptor, set `auto_sync=True` or issue a block barrier before reuse:
+`cuda.syncthreads()` in Numba-CUDA-MLIR, or `storage.sync()` in CUTLASS. The
+prefix state is a per-thread payload that persists across calls; it is not
+CUB temporary storage.
 
 This example uses the common API to load a block tile, compute its exclusive
 sum, and store the out-of-place result:

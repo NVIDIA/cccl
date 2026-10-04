@@ -2,12 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Express Scan result shape and initial-value rules for type checkers.
+"""Keep common Scan input and initial-value types consistent.
 
 Block overloads preserve scalar or payload form; warp overloads accept only
-scalars. Non-sum exclusive scans require an initial value, and inclusive
-scans forbid one. For exclusive scans, ``ContextualInitialValue`` keeps the
-seed from widening the input dtype that a type checker infers.
+scalars. Non-sum exclusive scans require an initial value, and inclusive scans
+forbid one. Additional overloads let a NumPy input take a CUTLASS initial
+value of the same dtype, and let a CUTLASS input take a NumPy initial value.
+The initial value cannot widen the input's type parameter. Typed option
+dictionaries share the remaining exclusive-scan keywords; warp options exclude
+block algorithms and explicit storage.
 """
 
 from typing import Literal, overload

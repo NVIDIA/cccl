@@ -6,9 +6,9 @@
 
 ``test_typing.py`` runs ``mypy --strict`` on this file against copied
 ``.pyi`` stubs. This prevents implementation modules from supplying missing
-declarations. Checks cover group query types, Reduce results, Load/Store
-returns, descriptor attributes, and calls across namespaces. Payload
-constructors and conversions must preserve the scalar dtype.
+declarations. Checks cover group query types, Reduce and Scan results,
+Load/Store returns, descriptor attributes, and calls across namespaces.
+Payload constructors and conversions must preserve the scalar dtype.
 
 The test neither imports this file nor traces or launches a kernel.
 """
@@ -165,8 +165,9 @@ def check_cutlass_dynamic_memory_controls(
 def check_cutlass_warp_surface(source: object, destination: object) -> None:
     """Check Warp Load/Store types across both API namespaces.
 
-    All four physical Warp algorithms accept prefix controls. Groups from
-    either namespace must work with common and qualified calls.
+    All four physical Warp algorithms accept ``valid_items``,
+    ``oob_default``, and ``offset``. Groups from either namespace must work
+    with common and qualified calls.
     """
 
     warp = cutlass_coop.this_warp()
@@ -319,6 +320,14 @@ def check_cutlass_reduce_surface(scalar: Uint32) -> None:
 
 
 def check_cutlass_scan_surface(scalar: Uint32) -> None:
+    """Check scalar versus payload results and qualified Scan controls.
+
+    All five spellings preserve a ``ThreadData`` or scalar input dtype. Block
+    Scan of a register tensor or ``TensorSSA`` input returns
+    ``ThreadData[Any]`` because the stubs cannot see its CuTe element type;
+    the compiler determines the dtype while tracing.
+    """
+
     block = cutlass_coop.this_block()
     logical = cutlass_coop.this_warp().group_by(8)
     values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
@@ -421,6 +430,14 @@ def check_cutlass_scan_surface(scalar: Uint32) -> None:
 
 
 def check_cutlass_scan_seeds(integer_seed: int, floating_seed: float) -> None:
+    """Accept matching initial-value types without changing the result dtype.
+
+    NumPy and CuTe spellings can describe the same numeric dtype. Python
+    numbers use the input's type context. These declarations check accepted
+    type combinations; representability of a particular literal is a compiler
+    validation, not a mypy assertion here.
+    """
+
     block = cutlass_coop.this_block()
     warp = cutlass_coop.this_warp()
     numpy_values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)

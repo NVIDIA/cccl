@@ -66,13 +66,13 @@ width, inclusive.
 
 Exclusive sums begin at zero. A generic exclusive scan accepts
 ``initial_value``; a non-sum operator requires it. Numba-CUDA-MLIR also
-permits a qualified block prefix callback to supply the prefix. Inclusive scans reject
-``initial_value``. The initial value is an operand: for maximum, an initial
-value of 10 keeps every output at least 10.
+permits a qualified block prefix callback to supply the prefix. Inclusive
+scans reject ``initial_value``. The initial value is an operand: for maximum,
+an initial value of 10 keeps every output at least 10.
 
-Both qualified APIs write ``aggregate_output`` to a one-item payload in every
-member. It excludes the exclusive initial value and any input lanes beyond
-``valid_items``.
+Both qualified APIs can write ``aggregate_output``, a separate one-item
+payload containing the input aggregate at every member. It excludes the
+initial value and any input lanes beyond ``valid_items``.
 
 Numba-CUDA-MLIR prefix callbacks are block-only and cannot be combined with
 ``initial_value`` or ``aggregate_output``. The callback receives the input

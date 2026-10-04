@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Run the qualified partial-warp Scan example used in the documentation.
+
+The marked region supplies the public example verbatim. Host checks outside
+it distinguish seeded prefix results from the unseeded aggregate. They also
+confirm that lanes without a defined Scan result keep their sentinel.
+"""
+
 import numpy as np
 import pytest
 
@@ -13,6 +20,13 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
 def test_partial_warp_scan_example():
+    """Check a seeded five-lane prefix within complete eight-lane groups.
+
+    All lanes participate and record the aggregate of the five valid inputs.
+    Only the first five use their primary Scan result. The aggregate excludes
+    the seed, although the exclusive results start from seven.
+    """
+
     # qualified-exclusive-scan-example-begin
     import operator
 

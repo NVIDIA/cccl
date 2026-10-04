@@ -290,15 +290,16 @@ conversions, and the extensions documented below:
 Group construction, synchronization, Load/Store, and temporary storage follow
 the :ref:`Common API <coop-common-api>`. Use the qualified ``ThreadData``
 conversion methods below to adapt CuTe register tensors before Load or Store.
-Qualified Reduce and Sum also accept register tensors and ``TensorSSA`` values
-directly. Their scalar results are CuTe values, including when a NumPy dtype
-selects the payload type.
+Qualified Reduce and Sum accept register tensors and ``TensorSSA`` values
+directly and return CuTe scalars, even when a NumPy dtype selects the payload
+type. Qualified block Scan also accepts both forms and returns a
+``ThreadData`` payload.
 
 The :doc:`CUTLASS Programming Guide <coop_cutlass>` explains how to choose
-between common and qualified calls. Qualified Reduce also accepts Python
-``operator`` functions and NumPy ufuncs as aliases for its built-in operators.
-Sum always adds. CUTLASS does not implement Scan, and its Reduce rejects
-custom operators. See :ref:`CUTLASS-specific behavior and limits
+between common and qualified calls. Qualified Reduce and Scan also accept
+Python ``operator`` functions and NumPy ufuncs as aliases for their built-in
+operators. Sum always adds. CUTLASS rejects custom Reduce and Scan operators
+and Scan prefix callbacks. See :ref:`CUTLASS-specific behavior and limits
 <coop-cutlass-differences>` for participation and launch requirements,
 and the :doc:`CUTLASS Developer Guide <coop/cutlass_developer_guide>` for
 compilation, linking, and debugging.

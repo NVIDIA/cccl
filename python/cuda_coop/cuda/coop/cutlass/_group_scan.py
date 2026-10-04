@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Trace built-in BlockScan and WarpScan calls from the qualified API.
+
+Normalize the mode and algorithm strings and convert CuTe register tensors
+and TensorSSA values to ThreadData before asking the provider to build a
+shared-core plan. The provider handles dtype reconciliation, scratch, and the
+C++ call. These entry points retain the common Scan contract and add built-in
+aliases, CuTe payload forms, warp prefix counts, and aggregate outputs.
+"""
+
 from enum import Enum
 
 from cuda.coop._core.api._payload import _validate_common_temp_storage
