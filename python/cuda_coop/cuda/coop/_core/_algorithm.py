@@ -77,7 +77,7 @@ class TypeDefinition:
 class Algorithm:
     """A specialized C++ cooperative primitive ready for materialization.
 
-    ``specialization`` binds all template parameters and any auxiliary
+    ``template_arguments`` binds all template parameters and any auxiliary
     dependency values without performing backend lowering. Both the bindings
     and optional ``metadata`` are frozen when the algorithm is constructed.
     """
@@ -88,7 +88,7 @@ class Algorithm:
     includes: tuple[str, ...]
     template_parameters: tuple[TemplateParameter, ...]
     parameters: tuple[tuple[Any, ...], ...]
-    specialization: Mapping[str, Any] = field(kw_only=True)
+    template_arguments: Mapping[str, Any] = field(kw_only=True)
     metadata: Mapping[str, Any] = field(default_factory=dict, kw_only=True)
     type_definitions: tuple[TypeDefinition, ...] = ()
     fake_return: bool = False
@@ -108,13 +108,15 @@ class Algorithm:
         names = self.template_parameter_names
         if len(set(names)) != len(names):
             raise ValueError("template parameter names must be unique")
-        missing = [name for name in names if name not in self.specialization]
+        missing = [
+            name for name in names if name not in self.template_arguments
+        ]
         if missing:
             joined = ", ".join(missing)
             raise ValueError(f"Template argument(s) not provided: {joined}")
 
         object.__setattr__(
-            self, "specialization", _freeze_mapping(self.specialization)
+            self, "template_arguments", _freeze_mapping(self.template_arguments)
         )
         object.__setattr__(self, "metadata", _freeze_mapping(self.metadata))
         object.__setattr__(
@@ -148,10 +150,6 @@ class Algorithm:
     @property
     def template_parameter_names(self) -> tuple[str, ...]:
         return tuple(parameter.name for parameter in self.template_parameters)
-
-    @property
-    def template_arguments(self) -> Mapping[str, Any]:
-        return self.specialization
 
     @property
     def ordered_template_arguments(self) -> tuple[tuple[str, Any], ...]:

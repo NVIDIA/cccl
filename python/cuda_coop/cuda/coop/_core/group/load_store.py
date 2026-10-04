@@ -403,7 +403,7 @@ def _plan_load_store(
             oob_default=operation.oob_default,
             include_full_tile=False,
             include_pointer_offset=operation.offset,
-        ).specialization
+        )
         target = GroupLoweringTarget.CUB_BLOCK
         header = f"cub/block/block_{operation.kind.value}.cuh"
     else:
@@ -438,7 +438,7 @@ def _plan_load_store(
             # The backend combines this runtime ABI argument with the preserved
             # user offset recorded on ``operation``.
             include_pointer_offset=ArgumentBinding.runtime(),
-        ).specialization
+        )
         target = GroupLoweringTarget.CUB_WARP
         header = f"cub/warp/warp_{operation.kind.value}.cuh"
         group_instances = block_threads // warp_width
