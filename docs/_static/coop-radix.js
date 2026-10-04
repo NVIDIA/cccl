@@ -57,9 +57,9 @@
     return keys;
   }
 
-  // Map logical sorted positions to displayed thread slots. Striped output
-  // changes ownership only at the final pass; original IDs and colors still
-  // connect each key and associated value to its unchanged input slot.
+  // Map positions in the current working order to displayed thread slots.
+  // build_sort requests striped slots only for the returned payload. IDs
+  // and colors still link each key and value to its unchanged input slot.
   function working_tokens(entries, items, pairs, striped = false) {
     const result = [];
     entries.forEach((entry, position) => {
@@ -146,10 +146,10 @@
     };
   }
 
-  // Expose the bin counts and starts that explain each returned rank. Empty
-  // bins are hidden only to keep the picture small. Ranks remain in their
-  // original slots; this model does not scatter keys or request the optional
-  // provider output that stores exclusive digit prefixes.
+  // Show the bin counts and starts that explain each returned rank. Empty
+  // bins are hidden only to keep the picture small. Ranks stay in their
+  // original slots. This model does not scatter keys or request the
+  // optional qualified exclusive_digit_prefix output.
   function build_rank(entries, items, begin, end, descending) {
     const result = rank_digit(entries, begin, end, descending);
     const preserved = input_tokens(entries, items, false);
