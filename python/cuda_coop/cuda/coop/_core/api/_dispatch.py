@@ -342,7 +342,14 @@ def _group_primitive_marker(
 
 
 __all__ = [
+    "_backend_member",
+    "_backend_module_name",
     "_common_group_operation",
     "_common_group_operation_name",
+    "_common_root_operation_name",
+    "_common_root_operation_scope",
+    "_common_selector",
+    "_group_primitive_marker",
+    "_register_compiler_context_probe",
     "_validate_common_operation_group",
 ]

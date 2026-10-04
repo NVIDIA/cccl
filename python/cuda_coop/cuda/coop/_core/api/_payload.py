@@ -401,5 +401,12 @@ __all__ = [
     "TempStorageLike",
     "ThreadDataLike",
     "_ReadableThreadDataLike",
+    "_common_payload_dtype",
+    "_common_thread_data_extent",
     "_normalize_alignment",
+    "_validate_common_integer_value",
+    "_validate_common_numeric_scalar",
+    "_validate_common_numeric_value",
+    "_validate_common_temp_storage",
+    "_validate_common_thread_data_payload",
 ]
