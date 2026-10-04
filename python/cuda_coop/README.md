@@ -305,8 +305,8 @@ group or parent-group participant must still reach the collective.
 
 ## Temporary storage
 
-Block Load, Store, Reduce, Scan, Merge Sort, and Radix Sort accept an optional
-caller descriptor:
+Block Load, Store, Reduce, Scan, Merge Sort, Radix Sort, and TopK accept an
+optional caller descriptor:
 
 ```python
 storage = coop.TempStorage(

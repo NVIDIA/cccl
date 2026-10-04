@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile TopK kernels with real provider linkage and no visible GPU.
+
+Pin device-target queries to SM90 while retaining the normal compiler and
+linker. Runtime counts keep the generated count checks in the provider.
+Explicit scratch checks the caller-owned storage ABI. The default
+``auto_sync=False`` inserts no reuse barrier, so ``bar.sync`` comes from
+CUB's internal TopK barriers.
+"""
+
 import os
 from types import SimpleNamespace
 
@@ -23,6 +32,15 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 def test_topk_production_compile_links_checked_provider(
     monkeypatch, selection, pairs, items_per_thread
 ):
+    """Check linked TopK code for count traps and CUB block barriers.
+
+    Compile all four selection forms with runtime counts and explicit scratch.
+    Pairs use float64 keys and independent int64 values. Cubin and external
+    link items confirm provider linkage; PTX checks confirm count validation
+    and CUB's internal synchronization. The test does not launch the kernel or
+    inspect its selected values.
+    """
+
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == ""
     device = SimpleNamespace(compute_capability=(9, 0))
     monkeypatch.setattr(_types.cuda, "get_current_device", lambda: device)

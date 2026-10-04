@@ -28,6 +28,8 @@
       row, index, color, detail, muted, from };
   }
 
+  // Filtering annotates original positions; only the final output row
+  // gathers the selected records into a new blocked prefix.
   function build_topk(state) {
     const items = Number(state.items);
     const capacity = threads * items;
@@ -67,6 +69,8 @@
         const histogram = [0, 0, 0, 0];
         for (const record of candidates) histogram[(record.key >> shift) & 3] += 1;
         const order = minimum ? [0, 1, 2, 3] : [3, 2, 1, 0];
+        // Revisit only the boundary bucket. Better buckets have already
+        // filled part of the requested selection.
         let needed = count - accepted.length;
         let boundary;
         for (const digit of order) {

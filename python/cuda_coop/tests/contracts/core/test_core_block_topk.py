@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check TopK count bindings and block limits before provider compilation.
+
+Static counts must fit the tile. Runtime counts retain a signed int64 ABI,
+and an omitted valid count becomes the full tile constant. Empty or short
+valid prefixes remain legal even when k asks for more items.
+"""
+
 import pytest
 
 from cuda.coop._core import INT32, INT64, ArgumentBinding, CxxFunction, Value

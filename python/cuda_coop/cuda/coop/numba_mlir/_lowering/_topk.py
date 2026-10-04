@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Adapt shared TopK specializations to Numba-callable block providers.
+
+The shared core supplies CUB's checked count wrapper and array signature.
+These factories attach compiler types and pass the shared scratch pointer
+as the first call argument.
+Group rewriting supplies writable result copies before calling the provider.
+"""
+
 from __future__ import annotations
 
 from cuda.coop._core import SynchronizationScope
@@ -31,6 +39,18 @@ def _topk(
     value_dtype=None,
     num_valid=None,
 ):
+    """Bind TopK payload types, launch shape, and counts to one provider.
+
+    Validate key and optional value types independently, then pass core types
+    and count bindings to the shared specialization builder. The builder
+    selects the full- or partial-tile method from the valid-count binding.
+    Its wrapper keeps runtime counts wide until it validates them.
+
+    Use the calling factory's registered storage and synchronization metadata
+    when materializing the specialization. Return an invocable that modifies
+    its array operands in place; the public rewrite owns their initial copies.
+    """
+
     adapter = NumbaMlirCoreAdapter()
     key_dtype = _validate_common_numeric_dtype(
         key_dtype, operation="topk", parameter="keys"
