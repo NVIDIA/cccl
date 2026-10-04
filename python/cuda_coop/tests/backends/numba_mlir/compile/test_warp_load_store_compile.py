@@ -83,7 +83,14 @@ def _algorithm(
     dtype=types.int32,
     threads_in_warp: int = _WARP_THREADS,
 ) -> _types.Algorithm:
-    """Build a Warp provider with runtime tail, default, and offset inputs."""
+    """Build a Warp provider with a runtime valid count and offset.
+
+    Load also takes a runtime out-of-bounds default. Only transpose needs
+    scratch. Its provider has two entry points. One takes a caller
+    TempStorage pointer. The ``_alloc`` entry point declares one shared slot
+    per logical warp. It synchronizes that warp after the call so the slot
+    can be reused.
+    """
     valid_items = ArgumentBinding.runtime()
     oob_default = (
         ArgumentBinding.runtime()
