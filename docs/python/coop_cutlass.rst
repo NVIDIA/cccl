@@ -958,14 +958,16 @@ Pass ``tile_predecessor_item`` or ``tile_successor_item`` to compare across
 tile boundaries. Adjacent Difference also accepts a block-uniform
 ``valid_items`` count; its invalid suffix retains the original input.
 Right partial tiles cannot take a successor, and Discontinuity requires a
-full tile. See :doc:`neighbor operations <coop/neighbor-operations>` for
-the shared boundary and participation rules.
+full tile. See :doc:`Adjacent Difference <coop/visualizations/adjacent-difference>`
+and :doc:`Discontinuity <coop/visualizations/discontinuity>` for the shared
+boundary and participation rules.
 
 Both functions accept explicit block ``TempStorage``. The example below
 reuses one descriptor between the operations; automatic trailing
 synchronization makes that reuse safe. The qualified functions also accept
-CuTe register tensors and immutable register vectors, returning fresh
-``ThreadData``. Custom arithmetic and flag callbacks are not supported.
+CuTe register tensors and immutable register vectors. They snapshot the
+input and return fresh ``ThreadData``; flags contain CuTe ``Int32`` values.
+Custom arithmetic and flag callbacks are not supported.
 
 .. literalinclude:: ../../python/cuda_coop/tests/backends/cutlass/runtime/test_neighbors.py
    :language: python

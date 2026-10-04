@@ -62,7 +62,7 @@ must match the input dtype and agree across the block.
 Every thread in the complete block must call the operation; warp groups
 are unsupported. The function infers dtype and per-thread extent from
 ``ThreadData``. It accepts automatic scratch or an explicit
-:ref:`TempStorage <coop-temp-storage>`.
+:ref:`TempStorage <coop-common-storage>`.
 
 The operation requires a full tile. There is no ``valid_items`` argument.
 Padding becomes input: a padding value equal to the final valid value can
