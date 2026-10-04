@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Type qualified neighbor results independently of their scalar callbacks.
+"""Describe typed differences and fixed-width discontinuity flags.
 
 Differences retain the input dtype. The discontinuity mode selects one
 int32 payload or a pair of int32 payloads, regardless of the input dtype.

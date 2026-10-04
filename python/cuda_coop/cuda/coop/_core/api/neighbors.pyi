@@ -7,7 +7,7 @@
 Differences retain the input scalar type. Discontinuity uses int32 flags and
 returns either one payload or a pair, selected by the literal mode. Boundary
 items follow the input's scalar type, including contextual Python literals.
-The implementation documents collective participation and boundary rules.
+The implementation documents primitive participation and boundary rules.
 """
 
 from typing import Literal, overload

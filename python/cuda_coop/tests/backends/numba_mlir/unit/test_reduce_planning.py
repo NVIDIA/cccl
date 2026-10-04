@@ -861,7 +861,7 @@ def test_warp_reduction_rejects_explicit_storage(group_kind):
 
 
 def test_batched_reduction_operator_tracks_nested_device_helper(monkeypatch):
-    """Key callback behavior through the dependencies of a nested helper.
+    """Derive a callback's semantic token from its nested helper's inputs.
 
     Build callbacks whose device helpers capture equal or different constants.
     Equivalent helpers must share a semantic token; changed captured values

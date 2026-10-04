@@ -503,8 +503,9 @@ class _LoadStorePlanning:
     ) -> Any:
         """Forward runtime operands and keep static binding descriptors.
 
-        The factory needs the descriptor to distinguish an embedded constant
-        from a legacy argument whose presence selects a runtime overload.
+        Factories read any plain non-None value as a runtime operand. Keep a
+        static control wrapped in its ArgumentBinding so the factory embeds
+        it as a constant.
         """
 
         return runtime_value if binding.kind is BindingKind.RUNTIME else binding

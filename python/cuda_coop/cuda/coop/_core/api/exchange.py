@@ -2,7 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Expose the common API marker for returning a rearranged group payload."""
+"""Define the common Exchange call for blocked and striped layouts.
+
+Exchange converts a group payload between blocked and striped order. The
+decorator registers the function so a compiler can recognize calls to it. A
+host Python call raises an error.
+"""
 
 from __future__ import annotations
 

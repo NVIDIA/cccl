@@ -7,7 +7,7 @@
 Provider construction and pre-typing payload inference share these helpers so
 dimension shapes, dtype spellings, and scalar controls have one
 interpretation. Normalization produces compiler types; common-API validation
-further restricts them to the portable numeric profile. Static scalar
+further restricts them to the common API's numeric profile. Static scalar
 conversion preserves explicit dtype provenance, while operator-result
 inference delegates promotion rules to the compiler and leaves unresolved
 expressions for its later typing pass.
@@ -127,7 +127,7 @@ def normalize_dtype_param(
 
     String names may start with ``np.``, ``types.``, or
     ``numba_cuda_mlir.types.``. Unknown formats or names raise ``ValueError``.
-    Common API callers separately check the portable numeric profile;
+    Common API callers separately check the common numeric profile;
     normalization alone does not impose that profile.
     """
 
@@ -301,11 +301,12 @@ def _validate_runtime_integer_dtype(
 ) -> numba_types.Integer:
     """Check integer types for runtime count and offset controls.
 
-    Load/Store bounds and Scan ``valid_items`` use this representation check.
-    Unwrap literal types, then accept signed integers up to 64 bits or
-    unsigned integers up to 32 bits. Reject booleans and other types with
-    ``TypeError``, using ``operation`` and ``parameter`` in the message. This
-    checks representation; it does not prove runtime value bounds.
+    Runtime counts, offsets, and similar integer controls across group
+    operations use this check. Unwrap literal types, then accept signed
+    integers up to 64 bits or unsigned integers up to 32 bits. Reject booleans
+    and other types with ``TypeError``, using ``operation`` and ``parameter``
+    in the message. This checks representation; it does not prove runtime
+    value bounds.
     """
 
     if isinstance(dtype, numba_types.Literal):

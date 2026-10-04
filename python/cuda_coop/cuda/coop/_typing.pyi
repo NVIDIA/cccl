@@ -155,10 +155,11 @@ CommonNumericScalar: TypeAlias = (
 class _ExactScalar(Protocol[_ItemT]):
     """Match a seed's exact scalar type without widening the input type.
 
-    The writable ``__class__`` member makes the type parameter invariant.
-    Separate ``int`` and ``float`` arms admit Python literals in
-    ``ContextualInitialValue`` while keeping NumPy float64 out of the Python
-    float arm. The compiler still checks literal values and runtime dtypes.
+    The writable ``__class__`` member makes the type parameter invariant, so
+    a seed cannot widen the input type. Invariance also keeps NumPy float64,
+    a float subclass, out of the Python ``float`` arm. The separate ``int``
+    and ``float`` arms let ``ContextualInitialValue`` accept ordinary Python
+    literals. The compiler still checks literal values and runtime dtypes.
     """
 
     __class__: type[_ItemT]  # type: ignore[assignment]
@@ -230,10 +231,14 @@ class CommonThreadDataLike(Protocol[_ReadableItemT_co]):
         """Return one numeric register value supported by the common API."""
 
 class TempStorageLike(Protocol):
-    """Describe a kernel's scratch-storage requests.
+    """Describe the attributes of an explicit scratch descriptor.
 
-    These attributes describe storage for the compiler to arrange. They do not
-    contain an allocated buffer or establish that its capacity is sufficient.
+    ``size_in_bytes`` and ``alignment`` may be ``None`` so the compiler
+    derives them from the calls that use the descriptor. ``auto_sync``
+    selects automatic reuse barriers. ``sharing`` selects one shared region
+    or separate slices per call site. The descriptor holds no buffer. A
+    supported compiler allocates the memory and rejects a size that is too
+    small for its uses.
     """
 
     size_in_bytes: int | None

@@ -8,7 +8,7 @@ Recover static mode and per-thread payload facts before ordinary typing. Ask
 the shared group planner for a supported CUB implementation, select its
 registered provider, and build replacement IR with a fresh result payload.
 Provider rewriting later allocates that payload and supplies shared scratch.
-Common-API validation retains the portable layout subset. Qualified block
+Common-API validation retains the common layout subset. Qualified block
 calls also accept scatter and warp-striped modes. Their contracts are
 documented by ``cuda.coop.numba_mlir.exchange``.
 """

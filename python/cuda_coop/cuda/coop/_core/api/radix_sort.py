@@ -147,9 +147,9 @@ def radix_sort_pairs(
         Block-uniform half-open interval in CUB's ordered key representation.
         Omitted end selects the key width. Require
         ``0 <= begin_bit < end_bit <= key_width``. Invalid static bounds fail
-        compilation; invalid runtime bounds trap before narrowing. Signed keys
-        invert their sign bit before digit extraction. Returned keys keep their
-        original representation.
+        compilation; invalid runtime bounds trap before narrowing. Signed
+        keys invert their sign bit before digit extraction. Returned keys
+        keep their original representation.
     descending : bool
         Compile-time order selector. Equal digits retain their input order
         for both ascending and descending sorts.

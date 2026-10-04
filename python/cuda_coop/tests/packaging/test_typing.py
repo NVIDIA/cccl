@@ -4,8 +4,9 @@
 
 """Check public stubs through isolated valid and invalid consumer programs.
 
-Copy only installed declarations to a temporary root so implementation types
-and an unrelated installed wheel cannot satisfy missing public declarations.
+Copy only the imported package's ``.pyi`` stubs and ``py.typed`` marker to a
+temporary root. Then implementation modules and an unrelated installed wheel
+cannot satisfy missing public declarations.
 """
 
 from __future__ import annotations

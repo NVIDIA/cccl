@@ -731,7 +731,7 @@ def _run_invalid_runtime_prefix_probe(
     group: str,
     valid_items: int,
 ) -> subprocess.CompletedProcess[str]:
-    """Run an invalid prefix in a child with its own CUDA context.
+    """Run an out-of-range ``valid_items`` count in a separate CUDA context.
 
     A device trap poisons its context, so the invalid call must run outside
     the pytest worker. The child checks its package origin against the

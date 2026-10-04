@@ -345,7 +345,7 @@ def test_planned_payload_rejects_conflicting_specialization(
 
 
 class _FailingAttribute:
-    """Raise a selected error when the planner inspects a call target."""
+    """Raise an error when the rewrite resolves a call result dtype."""
 
     def __init__(self, exception_type):
         self._exception_type = exception_type

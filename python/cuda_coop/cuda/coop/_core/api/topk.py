@@ -4,10 +4,11 @@
 
 """Define block TopK calls and their selected-prefix contract.
 
-The registered markers select minimum or maximum keys, optionally with paired
-values. Compiler backends preserve the input payloads and return new ones.
-The full payload shape is retained, but only the selected prefix is defined.
-Python execution raises an error because these calls require a GPU kernel.
+The registered functions select minimum or maximum keys, optionally with
+paired values. Compiler backends preserve the input payloads and return
+new ones. The full payload shape is retained, but only the selected
+prefix is defined. Python execution raises an error because these calls
+require a GPU kernel.
 """
 
 from __future__ import annotations

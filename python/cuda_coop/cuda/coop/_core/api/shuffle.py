@@ -2,7 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Expose the common API marker for returning a unit-shifted block payload."""
+"""Define the common block Shuffle call for shifting items by one place.
+
+Shuffle shifts a flattened block payload by one element. The decorator
+registers the function so a compiler can recognize calls to it. A host
+Python call raises an error.
+"""
 
 from __future__ import annotations
 

@@ -716,10 +716,10 @@ def test_production_kernel_compile_accepts_descriptors_through_inlined_helpers(
 
 
 def test_primitive_inside_standalone_scan_callback_has_clear_diagnostic():
-    """Preserve the planning error from a callback that calls a collective.
+    """Preserve the planning error from a callback that calls a primitive.
 
     Prefix callbacks compile as standalone device functions. Their nested
-    collective lacks the kernel launch context required by group planning.
+    primitive lacks the kernel launch context required by group planning.
     The diagnostic must identify that callback and explain the inlining
     requirement, even when provider construction triggers the compilation.
     """

@@ -92,7 +92,7 @@ class _ScanPlanning:
         operation: str,
         bound: inspect.BoundArguments,
     ) -> None:
-        """Check portable mode and algorithm names before backend planning.
+        """Check common mode and algorithm names before backend planning.
 
         The common API accepts a smaller vocabulary than backend internals.
         Replace the bound arguments with validated compile-time selectors so
@@ -908,7 +908,7 @@ def _validate_registered_common_arguments(
     operation: str,
     bound: inspect.BoundArguments,
 ) -> None:
-    """Apply Scan's portable-selector checks through the family registry."""
+    """Apply Scan's common-selector checks through the family registry."""
 
     _ScanPlanning(context)._validate_common_arguments(operation, bound)
 

@@ -557,11 +557,11 @@ class _ProvenanceRewrite(Rewrite):
 
         Validate the marker's positional arguments and constant shape/type
         policy. The ``like`` policy inherits dtype from the prototype's array
-        facts or scalar type; ``int32`` fixes the dtype for rank results. An
-        explicit positive extent takes precedence. Otherwise use the
-        prototype's array extent when the marker's array flag is true, or one
-        item when it is false. Retain any common API provenance supplied by
-        the prototype.
+        facts or scalar type; ``int32`` fixes the dtype for rank and flag
+        results. An explicit positive extent takes precedence. Otherwise use
+        the prototype's array extent when the marker's array flag is true, or
+        one item when it is false. Retain any common API provenance supplied
+        by the prototype.
 
         Return a possibly partial ``_ThreadDataSpecification``. Missing
         inferred facts can be resolved by later provider inference, but
@@ -1622,8 +1622,8 @@ class _ProvenanceRewrite(Rewrite):
 
         Follow aliases, casts, static tuple items, and phi inputs to
         ThreadData, local/shared arrays, or result markers. A marker inherits
-        its prototype's dtype unless its policy fixes int32; its extent can be
-        explicit. Unknown or cyclic paths contribute no facts. Conflicting
+        its prototype's dtype unless its policy fixes int32; its extent can
+        be explicit. Unknown or cyclic paths contribute no facts. Conflicting
         payload facts raise ``CoopSinglePhaseRewriteError``.
 
         Extend ``seen`` in place and copy it for independent branches. Return

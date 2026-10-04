@@ -587,15 +587,15 @@ def analyze_load_store_match(
     """Consume Load/Store markers and identify scalar boxing.
 
     Remove the private ``_common_root_operation`` and ``_group_root_store``
-    markers from factory keywords so they are not passed to the provider. The
-    common-API marker requires supported numeric dtypes for the memory and
-    array operands. Scalar Store values are handled by scalar inference and
-    the later typing guard; they need no array payload specification here.
+    markers from factory keywords so they are not passed to the provider.
+    The common-API marker requires supported numeric dtypes for memory and
+    array operands. Scalar inference and the later typing guard handle scalar
+    Store values, so they need no array payload specification here.
 
     A public group Store with no recognized per-thread array records a boxing
-    request for either the common or backend-qualified API.
-    ``prepare_load_store_runtime_args`` then supplies the array operand
-    required by the provider. This analysis emits no runtime statements.
+    request for either the common or backend-qualified API. The helper
+    ``prepare_load_store_runtime_args`` supplies the required array operand.
+    This analysis emits no runtime statements.
 
     Parameters
     ----------
@@ -616,7 +616,7 @@ def analyze_load_store_match(
     Raises
     ------
     CoopSinglePhaseRewriteError
-        Private markers are inconsistent or portable operand dtypes cannot
+        Private markers are inconsistent or common-API operand dtypes cannot
         be established or are unsupported.
     """
 

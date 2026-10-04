@@ -2304,8 +2304,9 @@ class _GroupCallPlanner:
 
         Validate argument shape and resolve dtype/level controls as constants.
         Resolve the group through the requested hierarchy level and reject
-        unsupported mapped-parent queries, mapped-warp synchronization, or
-        grid synchronization without a supported cooperative launch contract.
+        unsupported mapped-parent queries, mapped-warp synchronization, and
+        grid synchronization. Grid sync needs a cooperative launch, which this
+        launch descriptor cannot request.
 
         Reuse an invocable keyed by group semantics, operation, dtype, and
         level within this planner attempt. Its C++ helper embeds the
@@ -2668,7 +2669,7 @@ def has_group_markers(func_ir: ir.FunctionIR) -> bool:
     constructor such as ``this_block()``, ``ThreadHierarchy()``, a registered
     public group operation such as ``load()`` or ``store()``, or a supported
     method on a recognized group descriptor. Partitioning, hierarchy queries,
-    and synchronization need planning even when no collective remains.
+    and synchronization need planning even when no primitive remains.
 
     Trace method receivers through aliases, casts, control-flow merges, and
     earlier subgroup calls to distinguish group descriptors from unrelated

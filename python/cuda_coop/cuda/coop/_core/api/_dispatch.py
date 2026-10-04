@@ -56,9 +56,7 @@ def _common_group_operation(
     def decorate(function: _CallableT) -> _CallableT:
         """Register one function in both tables and reject conflicts."""
 
-        registration = _CommonGroupOperation(
-            name, tuple(group_kinds), function
-        )
+        registration = _CommonGroupOperation(name, tuple(group_kinds), function)
         existing = _COMMON_GROUP_OPERATIONS_BY_NAME.get(name)
         if existing is not None and existing != registration:
             raise RuntimeError(

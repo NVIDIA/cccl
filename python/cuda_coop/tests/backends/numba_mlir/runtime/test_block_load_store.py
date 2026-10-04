@@ -322,8 +322,9 @@ def _load_valid_prefix(
 ):
     """Observe only valid slots when Load has no out-of-bounds default.
 
-    Unobserved destination entries retain their host sentinel. They do not
-    assert that invalid slots inside the payload retain a previous value.
+    The kernel writes only valid slots, so other observation entries keep
+    their host sentinel. Invalid payload slots are unspecified and are not
+    checked.
     """
 
     thread = cuda.threadIdx.x

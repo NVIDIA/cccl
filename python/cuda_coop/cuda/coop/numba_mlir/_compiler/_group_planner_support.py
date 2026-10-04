@@ -136,7 +136,8 @@ def _typed_group_payload_like(
     The planner emits this callable into IR while payload facts are still
     being inferred. ``_is_array`` selects inherited array extent or one scalar
     item; ``_items_per_thread`` can override that extent. ``_dtype_policy``
-    either inherits the prototype dtype or fixes it to int32 for rank output.
+    either inherits the prototype dtype or fixes int32 for rank and
+    discontinuity-flag output.
 
     The provider rewrite replaces the marker with a local-array allocation
     once dtype and extent are known. Calling it directly is an error; it must

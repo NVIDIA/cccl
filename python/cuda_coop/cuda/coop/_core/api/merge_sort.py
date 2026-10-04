@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Expose portable Merge Sort calls with separate result payloads.
+"""Expose common Merge Sort calls with separate result payloads.
 
-These functions define the common key and key/value contracts and are
-registered as kernel operations. A compiler backend lowers them to a group
-provider; calling their Python bodies on the host raises a context error.
+These functions define the common key and key/value contracts. A compiler
+backend replaces each call with a CUB block or warp Merge Sort that runs on
+copies of the inputs. A host Python call raises a context error.
 """
 
 from __future__ import annotations

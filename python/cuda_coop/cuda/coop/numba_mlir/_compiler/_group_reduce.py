@@ -134,11 +134,11 @@ class _ReducePlanning:
     ) -> tuple[str, str, CxxOperator | PythonOperator | None]:
         """Classify sum, a built-in C++ operator, or a Python callback.
 
-        Return the core operation name, provider-selection token,
-        and optional operator descriptor. Recognized callable
-        aliases retain built-in semantics. Qualified unrecognized
-        callables become ``PythonOperator`` descriptors with
-        dtype dependencies; common calls require string names.
+        Return the core operation name, provider-selection token, and
+        optional operator descriptor. Recognized callable aliases retain
+        built-in semantics. Qualified unrecognized callables become
+        ``PythonOperator`` descriptors with dtype dependencies; common calls
+        require string names.
 
         Validate built-in dtype restrictions here, including integer-only
         bitwise operations. The shared planner later checks which group and
@@ -412,9 +412,8 @@ class _ReducePlanning:
         control using that provider's keyword. Custom callbacks
         remain specialization inputs rather than runtime callable operands.
 
-        Return ordered conversion and call statements.
-        The provider's scalar return becomes the original
-        public result; no output array is allocated.
+        Return ordered conversion and call statements. The provider's scalar
+        return becomes the original public result without an output array.
         """
 
         plan, operator_kind, binary_op, _is_array = self._plan(

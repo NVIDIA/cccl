@@ -1669,7 +1669,7 @@ def test_grid_stride_tail_clamps_valid_items_per_logical_warp(
 def _run_divergent_warp_probe(
     qualified: bool, *, items_per_thread
 ) -> subprocess.CompletedProcess[str]:
-    """Run a one-warp collective with a child-process timeout.
+    """Run a one-warp primitive with a child-process timeout.
 
     A barrier that includes the inactive warp could stall the kernel. The
     child contains that failure and checks that it imports the same

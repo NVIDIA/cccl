@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Declare portable Scan calls for an activated compiler backend.
+"""Declare common Scan calls for an activated compiler backend.
 
 The decorators register each public spelling and its supported group kinds.
 A backend recognizes these calls while compiling a kernel and supplies the

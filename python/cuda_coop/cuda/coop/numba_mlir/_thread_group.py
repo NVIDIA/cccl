@@ -79,8 +79,8 @@ class ThreadGroup(CoreThreadGroup):
         when the group or queried level is grid. Use ``count_as`` for
         another integer dtype.
 
-        See :ref:`ranks and sizes <coop-group-queries>` for mapped-group
-        limits and the treatment of partial physical warps.
+        Block warp counts include a partial final warp. See :ref:`ranks and
+        sizes <coop-group-queries>` for mapped-group limits.
         """
 
         return self.count_as(None, level)
@@ -88,11 +88,10 @@ class ThreadGroup(CoreThreadGroup):
     def rank_as(self, dtype: Any = None, level: str = "thread") -> Any:
         """Return the hierarchy rank in a selected integer dtype.
 
-        ``dtype`` and ``level`` must be compile-time choices.
-        ``None`` uses the same default dtype as ``rank``. Signed
-        and unsigned 8-, 16-, 32-, and 64-bit integer types are
-        supported; choose enough width for the possible ranks. Level
-        and membership rules are the same as for ``rank(level)``.
+        ``dtype`` and ``level`` must be compile-time choices. ``None`` uses
+        the same default dtype as ``rank``. Signed and unsigned 8-, 16-, 32-,
+        and 64-bit integer types are supported; choose enough width for the
+        possible ranks. Level and membership rules follow ``rank(level)``.
         """
 
         level = normalize_thread_level(
@@ -105,11 +104,10 @@ class ThreadGroup(CoreThreadGroup):
     def count_as(self, dtype: Any = None, level: str = "thread") -> Any:
         """Return the hierarchy count in a selected integer dtype.
 
-        ``dtype`` and ``level`` must be compile-time choices.
-        ``None`` uses the same default dtype as ``count``. Signed
-        and unsigned 8-, 16-, 32-, and 64-bit integer types are
-        supported; choose enough width for the possible counts.
-        Level restrictions are the same as for ``count(level)``.
+        ``dtype`` and ``level`` must be compile-time choices. ``None`` uses
+        the same default dtype as ``count``. Signed and unsigned 8-, 16-, 32-,
+        and 64-bit integer types are supported; choose enough width for the
+        possible counts. Level restrictions follow ``count(level)``.
         """
 
         level = normalize_thread_level(
@@ -122,12 +120,11 @@ class ThreadGroup(CoreThreadGroup):
     def sync(self) -> None:
         """Synchronize the participating members of this group.
 
-        All participants must execute the call in converged
-        control flow. The Numba backend supports thread, warp,
-        logical-warp, block, and supported cluster scopes. Grid
-        synchronization and mapped physical-warp group synchronization
-        are unavailable. See :ref:`participation requirements
-        <coop-participation>` for the collective-call contract.
+        All participants must execute the call in converged control flow.
+        The Numba backend supports thread, warp, logical-warp, block, and
+        supported cluster scopes. Grid synchronization and synchronization of
+        mapped physical-warp groups are unavailable. See :ref:`participation
+        requirements <coop-participation>` for the primitive-call contract.
         """
 
         _thread_group_method_marker(self, "sync")
@@ -161,11 +158,10 @@ class ThreadGroup(CoreThreadGroup):
     def is_member(self) -> Any:
         """Return whether the calling thread belongs to this group.
 
-        The device helper returns uint8, suitable for an ``if``
-        condition. It is zero for trailing threads excluded
-        by a non-exhaustive mapped partition. Use it to guard
-        rank-dependent work; membership alone does not satisfy a
-        primitive's convergence or complete-participation requirements.
+        The device helper returns uint8, suitable for an ``if`` condition.
+        It is zero for trailing threads excluded by a non-exhaustive mapped
+        partition. Use membership to guard rank-dependent work. It does not
+        ensure a primitive's convergence or complete participation.
         """
 
         return _thread_group_method_marker(self, "is_member")
