@@ -89,6 +89,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("example", choices=("direct", "transpose", "scan"))
     example = parser.parse_args().example
+    # Scan contributes one scalar per thread. The copy kernels instead
+    # distribute several items to each thread through ThreadData.
     count = 128 if example == "scan" else 256
     source = ((np.arange(count) * 17) % 113 - 51).astype(np.int32)
     destination = np.empty_like(source)

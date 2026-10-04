@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Build Numba Scan providers from shared CUB primitive descriptions.
+
+These factories normalize selectors, describe operators and optional seeds,
+and adapt the shared block or Warp specialization to Numba's calling
+convention. The resulting invocable supplies provider code and storage
+metadata to kernel compilation. Registration defines its storage argument
+and execution scope for the compiler rewrite.
+"""
+
 from __future__ import annotations
 
 import operator
@@ -71,7 +80,12 @@ _BITWISE_SCAN_OPERATORS = frozenset({"bit_and", "bit_or", "bit_xor"})
 
 
 def normalize_scan_operation(scan_op: Any) -> str | None:
-    """Return a canonical built-in token or ``None`` for a callback."""
+    """Return a built-in name or mark a callable for device compilation.
+
+    Recognized Python and NumPy aliases use the same C++ operators as string
+    selectors. Other callables return None so the caller can create a typed
+    PythonOperator. An omitted selector is the built-in sum.
+    """
 
     if scan_op is None:
         return "sum"
@@ -90,15 +104,13 @@ def normalize_scan_operation(scan_op: Any) -> str | None:
     if callable(scan_op):
         return None
     raise TypeError(
-        "cuda.coop.numba_mlir scan_op must be "
-        "a string or stateless device callback"
+        "cuda.coop.numba_mlir scan_op must be a string or stateless "
+        "device callback"
     )
 
 
 def validate_scan_operator_dtype(scan_op: Any, dtype: Any) -> Any:
-    """Validate a Scan operator against the common API's numeric dtype
-    profile.
-    """
+    """Normalize the numeric dtype and require integers for bitwise scans."""
 
     dtype = _validate_common_numeric_dtype(
         dtype,
@@ -116,6 +128,8 @@ def validate_scan_operator_dtype(scan_op: Any, dtype: Any) -> Any:
 
 
 def _positive_int(value: Any, *, name: str) -> int:
+    """Accept a positive index-like value, excluding booleans."""
+
     if isinstance(value, bool):
         raise TypeError(f"{name} must be an integer")
     try:
@@ -128,18 +142,22 @@ def _positive_int(value: Any, *, name: str) -> int:
 
 
 def _block_scan_algorithm(algorithm: Any) -> Any:
+    """Normalize a supported string selector to the shared CUB enum."""
+
     if not isinstance(algorithm, str) or isinstance(algorithm, Enum):
         raise TypeError("block scan algorithm must be a string")
     token = algorithm.strip().lower().replace("-", "_")
     if token not in {"raking", "raking_memoize", "warp_scans"}:
         raise ValueError(
-            "block scan algorithm must be one "
-            "of: raking, raking_memoize, warp_scans"
+            "block scan algorithm must be one of: raking, raking_memoize, "
+            "warp_scans"
         )
     return normalize_block_scan_algorithm(token)
 
 
 def _scan_mode(mode: Any) -> str:
+    """Normalize the inclusive or exclusive mode used by both providers."""
+
     if not isinstance(mode, str) or isinstance(mode, Enum):
         raise TypeError("scan mode must be a string")
     token = mode.strip().lower().replace("-", "_")
@@ -149,6 +167,12 @@ def _scan_mode(mode: Any) -> str:
 
 
 def _provider_metadata(factory: Any, *, namespace: str) -> dict[str, Any]:
+    """Read storage and synchronization rules from the factory registry.
+
+    The rewrite and generated wrapper must agree on these rules. Use the
+    registered values instead of maintaining a second copy in each factory.
+    """
+
     registered = factory_operation(factory)
     if registered is None:
         raise RuntimeError(f"unregistered cuda.coop provider {factory!r}")
@@ -162,6 +186,13 @@ def _provider_metadata(factory: Any, *, namespace: str) -> dict[str, Any]:
 
 
 def _scan_operator(scan_op: Any, *, force_sum_operator: bool) -> Any:
+    """Choose CUB's sum overload or describe an explicit binary operator.
+
+    A supplied seed forces sum through the general Scan overload with a plus
+    functor. Other built-ins use C++ functors; custom callables carry their
+    input/output type contract into backend specialization.
+    """
+
     operation = normalize_scan_operation(scan_op)
     if operation == "sum" and not force_sum_operator:
         return None
@@ -182,6 +213,12 @@ def _scan_operator(scan_op: Any, *, force_sum_operator: bool) -> Any:
 
 
 def _initial_value(binding: Any, dtype: Any) -> Any:
+    """Represent a seed as no argument, a runtime reference, or typed C++.
+
+    Static values are embedded in the provider, while runtime values remain
+    kernel operands. Both use the same payload type dependency.
+    """
+
     binding = _optional_binding(binding)
     if binding.kind is BindingKind.OMITTED:
         return None
@@ -212,6 +249,14 @@ def _block_scan(
     block_aggregate: Any = None,
     algorithm: Any = "raking",
 ) -> Any:
+    """Build the scalar or array BlockScan provider selected by the factory.
+
+    Validate the common shape, mode, operator, and seed rules, then adapt the
+    shared specialization to Numba. The factory identity selects the payload
+    calling convention and registry metadata; an aggregate request adds a
+    separate output reference without changing the main result.
+    """
+
     if threads_per_block is None:
         raise ValueError("threads_per_block must be provided")
     block_dim = normalize_dim_param(threads_per_block)
@@ -266,13 +311,13 @@ def _block_scan(
 
 
 def block_scan_scalar(**kwargs: Any) -> Any:
-    """Build a direct scalar CUB BlockScan invocable."""
+    """Build a BlockScan provider returning one scalar prefix per thread."""
 
     return _block_scan(block_scan_scalar, **kwargs)
 
 
 def block_scan_array(**kwargs: Any) -> Any:
-    """Build a direct array CUB BlockScan invocable."""
+    """Build a BlockScan provider with separate input and output arrays."""
 
     return _block_scan(block_scan_array, **kwargs)
 
@@ -287,7 +332,14 @@ def warp_scan(
     valid_items: Any = None,
     warp_aggregate: Any = None,
 ) -> Any:
-    """Build a direct scalar CUB WarpScan invocable."""
+    """Build a scalar WarpScan provider for a physical or logical warp.
+
+    Pass the lane-group width and enclosing block shape to the invocable so
+    it can select the correct storage slice and synchronization mask. Runtime
+    ``valid_items`` values use a bounded integer argument: the wrapper checks
+    that the value is between 1 and the group width before narrowing the
+    argument for CUB.
+    """
 
     if threads_per_block is None:
         raise ValueError("threads_per_block must be provided")

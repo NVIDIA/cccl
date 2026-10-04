@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile Scan wrappers and callback dependencies without a GPU context.
+
+Fix device queries to SM 90 while using the real provider compiler and linker.
+Source checks cover CUB entry points, array references, and synchronization.
+Compilation also checks storage queries and callback symbol resolution.
+"""
+
 from __future__ import annotations
 
 import os
@@ -34,6 +41,13 @@ _BLOCK_THREADS = 64
 def _fixed_compiler_target(
     monkeypatch: pytest.MonkeyPatch,
 ) -> list[tuple[int, int]]:
+    """Fix architecture queries while keeping compilation and linking real.
+
+    Record device queries so tests can check that the target was consulted.
+    Clear compiled callback IR before each test so that cache cannot hide
+    compilation for the selected target. CUDA devices must remain hidden.
+    """
+
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == "", (
         "the Numba-CUDA-MLIR compile stage must hide all CUDA devices"
     )
@@ -63,6 +77,13 @@ def compile_context() -> _nvrtc.CompileContext:
 
 
 def _collect(factory, compile_context: _nvrtc.CompileContext, /, **kwargs):
+    """Collect one provider before its generated wrapper is compiled.
+
+    Collection exposes the generated wrapper for source assertions. Attach the
+    shared compile context so the later bundle uses the same resolved headers
+    and compiler options.
+    """
+
     with _types.collect_specializations() as collected:
         result = factory(**kwargs)
     assert len(collected) == 1
@@ -77,6 +98,12 @@ def _source(algorithm) -> str:
 
 
 def _compile_bundle(collected) -> bytes:
+    """Compile the collected provider wrappers into one nonempty LTO unit.
+
+    Preserve each algorithm's logical and block widths. The callers then link
+    the result to PTX, which checks that the generated CUB calls compile.
+    """
+
     ltoir = _types.prepare_ltoir_bundle(
         collected,
         allow_single=True,
@@ -343,6 +370,13 @@ def test_physical_and_logical_warp_methods_prefixes_and_aggregates_compile(
 
 
 def _link_ltoir_files(paths: list[str], *, name: str) -> str:
+    """Link callback and provider IR together to check symbol resolution.
+
+    A provider wrapper can compile with only a callback declaration. Linking
+    both inputs into PTX also checks that the compiled callback supplies the
+    symbol and calling convention required by that declaration.
+    """
+
     from cuda.core import Linker, LinkerOptions, ObjectCode
 
     objects = [

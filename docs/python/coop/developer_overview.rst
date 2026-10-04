@@ -83,9 +83,9 @@ operands. These arguments are positional-only. Options such as
    total = coop.sum(block, value, temp_storage=scratch)
    coop.load(block, source, items, algorithm="direct", valid_items=n)
 
-Reduce and Scan usually need just a group and a value. Load and Store add a
-source or destination. This short operand list keeps primitive calls compact
-inside a kernel, while named options make choices such as
+Reduce and Scan usually need just a group and a value. Load and Store add
+a source or destination. This short operand list keeps primitive calls
+compact inside a kernel, while named options make choices such as
 partial-tile handling and temporary storage ownership explicit. New optional
 keyword parameters can be added without changing existing calls.
 
@@ -102,8 +102,8 @@ allows callers to omit optional arguments, such as unused value buffers in
 a key-only sort.
 
 For ``cuda.coop``, the group already describes the participating threads,
-and operations such as Reduce and Scan return their results directly. The
-positional operands and named controls fit that smaller call shape.
+and operations such as Reduce and Scan return their results directly.
+The positional operands and named controls fit that smaller call shape.
 When extending an API, keep the operand order consistent and use
 keyword-only parameters for additional options.
 
@@ -226,8 +226,8 @@ Kernels and their generated C++
    }
    </style>
 
-The following pairs use source captured while compiling real kernels. Each
-kernel runs as one block of 128 threads. The copy kernels process 256
+The following pairs use source captured while compiling real kernels. These
+captures use one block of 128 threads. The copy kernels process 256
 ``int32`` values, with two values per thread; the Scan processes 128 values,
 one per thread.
 
@@ -975,8 +975,8 @@ The result contracts preserve the following public behavior:
 * Load and Store return ``None``. Load fills the supplied output in place.
   Store follows CUB: transpose algorithms may rearrange the input payload
   in place. Invalid Load slots are unspecified unless a default is supplied.
-* Exchange, array Shuffle, and array Scan return fresh payloads.
-  Their inputs remain available to subsequent kernel code.
+* Exchange, array Shuffle, and array Scan return a fresh payload. Their
+  inputs remain available to subsequent kernel code.
 * Reduce returns a scalar defined only at group rank zero. Every required
   thread must still participate.
 
@@ -1177,8 +1177,8 @@ This computes one block's prefix sum. Processing multiple blocks requires
 the caller to assign separate tiles and, for a device-wide scan, arrange
 the carry between them. Merely increasing the grid size does not do that.
 
-Python operators and prefix state
----------------------------------
+Python scan operators
+---------------------
 
 A built-in sum can use a C++ operator directly. A Python-defined operator
 adds another compilation input. This example uses the qualified namespace,

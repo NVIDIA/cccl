@@ -48,8 +48,8 @@ covered by CI. Before reusing compiled kernels, check the
 A first kernel: prefix sums within tiles
 ----------------------------------------
 
-A prefix sum gives each element the sum of the elements before it. For an
-exclusive sum of ``[3, 1, 4, 2]``, the result is ``[0, 3, 4, 8]``.
+An exclusive prefix sum gives each element the sum of earlier elements.
+For ``[3, 1, 4, 2]``, the result is ``[0, 3, 4, 8]``.
 The kernel below computes a separate exclusive sum for each tile of
 ``128 * items_per_thread`` elements. Each block has 128 threads; the host
 passes the number of elements per thread to the kernel.
@@ -67,8 +67,7 @@ Load fills the unused slots with zero, and Store writes only the valid
 prefix. Zero contributes nothing to the sum.
 
 Each block starts its sum at zero. For one prefix sum spanning the entire
-array, you also need to carry the totals between tiles. A later example
-does that while one block processes successive tiles. A scan distributed
+array, you also need to carry the totals between tiles. A scan distributed
 across independently scheduled blocks needs a device-wide algorithm.
 
 The host code copies input to the GPU once and copies the result back for
@@ -284,9 +283,8 @@ membership for excluded threads, and check the primitive's participation
 requirements before using that guard around an operation.
 
 Mapped groups of physical warps support hierarchy queries through their
-immediate parent block. Primitives and group barriers are unavailable for
-these groups. Use the block and logical-warp forms for the examples in this
-guide.
+immediate parent block. Primitives and group barriers are unavailable for these
+groups. Use the block and logical-warp forms for the examples in this guide.
 
 .. _coop-group-queries:
 
@@ -384,7 +382,7 @@ Constructing a group or a ``ThreadData`` object does not synchronize threads.
 
 ``coop.ThreadData(items_per_thread)`` gives each thread that many slots.
 With 128 threads, the group owns ``128 * items_per_thread`` values. Each
-thread indexes its own slots with ``items[i]``. To move values between
+thread indexes only its own slots with ``items[i]``. To move values between
 threads, use an operation such as Exchange, Shuffle, or Scan.
 
 :class:`~cuda.coop.ThreadDataLike` names the common payload interface used
@@ -475,10 +473,10 @@ Conflicting type requirements are errors. See :ref:`element-type inference
 
 Load writes into the payload supplied by the caller. Transpose Store
 algorithms may rearrange their input payload in place, as in CUB. Copy values
-before Store if they are needed later. Both operations return ``None``. Scan,
-Exchange, and array Shuffle return fresh payloads, so their input values
-remain available afterwards. Reduction returns a scalar, including when each
-thread contributes several items.
+before Store if they are needed later. Both operations return ``None``.
+Array Scan, Exchange, and array Shuffle return fresh payloads, so their
+input values remain available afterwards. Reduction returns a scalar,
+including when each thread contributes several items.
 
 Numba can promote integer arithmetic. Store requires an exact match to the
 destination dtype, so cast computed values when necessary, as in the
@@ -860,8 +858,8 @@ compiler-managed scratch.
 
 .. _coop-scans:
 
-Scan operators and carrying a prefix
-------------------------------------
+Scan operators and initial values
+---------------------------------
 
 An inclusive scan includes the current element; an exclusive scan starts
 with an initial value and excludes the current element. For sum, the
@@ -898,8 +896,8 @@ following explicit maximum operator computes a running maximum:
 For maximum alone, the common ``scan_op="max"`` already suffices. The
 device function shows where to put an application's own associative
 operator. It executes on the GPU and must return the payload dtype.
-Binary Scan callbacks are stateless in the current API; supported payloads
-remain numeric scalars even when a thread owns several items.
+Binary Scan callbacks are stateless in the current API. Each callback
+combines two numeric scalars, even when a thread owns several items.
 
 
 Checking and tuning a kernel

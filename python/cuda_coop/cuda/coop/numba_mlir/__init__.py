@@ -12,7 +12,7 @@ Construct TempStorage inside each kernel. During compilation, the compiler
 rebuilds the descriptor from its compile-time constant arguments and
 validates them. The compiler rejects a descriptor that comes from a module
 global. The ``local`` and ``shared`` namespaces and the Exchange, Shuffle,
-Reduce, and Sum markers load on first access.
+Reduce, Sum, and Scan markers load on first access.
 """
 
 import importlib

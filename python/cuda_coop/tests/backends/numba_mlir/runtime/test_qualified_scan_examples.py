@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Run the qualified Scan documentation examples against NumPy results.
+
+The examples exercise a compiled callback on local arrays and a runtime
+valid_items count with a separate aggregate output. Begin/end markers select
+the code shown in the public reference.
+"""
+
 import pytest
 
 cuda = pytest.importorskip("numba_cuda_mlir.cuda")
@@ -51,6 +58,13 @@ def test_qualified_inclusive_scan_example():
 
 
 def test_qualified_exclusive_scan_example():
+    """Check partial prefixes and input aggregates for each logical warp.
+
+    Only valid lanes write prefix results, leaving sentinel values elsewhere.
+    Every lane receives the sum of valid inputs as its aggregate; the initial
+    value contributes to the exclusive prefixes but not to that aggregate.
+    """
+
     # qualified-exclusive-scan-example-begin
     import numpy as np
     from numba_cuda_mlir import cuda

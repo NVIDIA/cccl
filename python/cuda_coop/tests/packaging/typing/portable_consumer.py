@@ -199,6 +199,8 @@ def check_portable_surface(
 
 
 def check_common_scan_seeds(integer_seed: int, floating_seed: float) -> None:
+    """Preserve item dtype with typed or Python-scalar Scan initial values."""
+
     block = coop.this_block()
     warp = coop.this_warp()
     values = coop.ThreadData(items_per_thread=2, dtype=np.int16)

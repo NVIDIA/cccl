@@ -299,8 +299,9 @@ def _scalar_operator_result_dtype(
 def _validate_runtime_integer_dtype(
     dtype: object, *, operation: str, parameter: str
 ) -> numba_types.Integer:
-    """Check the integer types accepted by Load/Store controls.
+    """Check integer types for runtime count and offset controls.
 
+    Load/Store bounds and Scan ``valid_items`` use this representation check.
     Unwrap literal types, then accept signed integers up to 64 bits or
     unsigned integers up to 32 bits. Reject booleans and other types with
     ``TypeError``, using ``operation`` and ``parameter`` in the message. This
@@ -314,12 +315,12 @@ def _validate_runtime_integer_dtype(
     ):
         raise TypeError(
             f"coop {operation} {parameter} must be an integer, not bool or a "
-            f"noninteger scalar"
+            "noninteger scalar"
         )
     if dtype.bitwidth > 64 or (not dtype.signed and dtype.bitwidth > 32):
         raise TypeError(
             f"coop {operation} {parameter} must be a signed integer up to 64 "
-            f"bits or an unsigned integer up to 32 bits"
+            "bits or an unsigned integer up to 32 bits"
         )
     return dtype
 
@@ -410,7 +411,7 @@ def coerce_static_scalar(
     if type(value) not in {int, float}:
         raise TypeError(
             f"cuda.coop.{operation} {parameter} must be an ordinary Python "
-            f"numeric literal or an exactly typed NumPy/compiler scalar"
+            "numeric literal or an exactly typed NumPy/compiler scalar"
         )
 
     value = cast(int | float, value)
@@ -418,7 +419,7 @@ def coerce_static_scalar(
         if type(value) is float:
             raise TypeError(
                 f"cuda.coop.{operation} {parameter} does not permit "
-                f"float-to-integer conversion"
+                "float-to-integer conversion"
             )
         bounds = np.iinfo(target_numpy_dtype)
         if not bounds.min <= value <= bounds.max:
@@ -458,6 +459,12 @@ def _validate_static_oob_default(value: object, dtype: object) -> np.generic:
 
 
 def _scalar_cpp_literal(value):
+    """Spell a Python or NumPy scalar for a generated C++ expression.
+
+    Convert NumPy scalars to Python values and use C++ spellings for booleans,
+    infinities, and NaN. The caller supplies the explicit destination type.
+    """
+
     if isinstance(value, np.generic):
         value = value.item()
     if isinstance(value, bool):
@@ -473,13 +480,18 @@ def _scalar_cpp_literal(value):
             return "-INFINITY"
         return repr(value)
     raise ValueError(
-        f"Unsupported scalar literal type for "
-        f"compile-time binding: {type(value)}"
+        f"Unsupported scalar literal type for compile-time binding: "
+        f"{type(value)}"
     )
 
 
 def make_typed_cpp_literal(value, dtype):
-    """Render a compiler scalar as a C++ literal of exactly ``dtype``."""
+    """Render a compiler scalar as a C++ literal of exactly dtype.
+
+    An explicit cast keeps C++ literal type inference from changing overload
+    selection or the Scan seed type. Scalar binding has no representation
+    for user-defined storage types, so reject those before source generation.
+    """
 
     dtype = normalize_dtype_param(dtype)
     from .._types import numba_type_to_cpp
@@ -487,8 +499,8 @@ def make_typed_cpp_literal(value, dtype):
     cpp_type = numba_type_to_cpp(dtype)
     if cpp_type == "storage_t":
         raise ValueError(
-            "Compile-time scalar literal binding "
-            "does not support user-defined dtypes"
+            "Compile-time scalar literal binding does not support "
+            "user-defined dtypes"
         )
     return f"static_cast<{cpp_type}>({_scalar_cpp_literal(value)})"
 

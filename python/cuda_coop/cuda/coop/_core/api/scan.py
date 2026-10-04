@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Declare portable Scan calls for an activated compiler backend.
+
+The decorators register each public spelling and its supported group kinds.
+A backend recognizes these calls while compiling a kernel and supplies the
+implementation. Direct Python calls raise the compiler-context diagnostic.
+The function docstrings define input order, result ownership, and controls
+shared by the supported backends.
+"""
+
 from __future__ import annotations
 
 from typing import Any

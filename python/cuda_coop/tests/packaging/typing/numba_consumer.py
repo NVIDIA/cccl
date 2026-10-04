@@ -41,7 +41,7 @@ class _ReadOnlyThreadData(Generic[_ItemT]):
 
 
 class _ReadonlyUInt16Payload(Protocol):
-    """Check that reduction infers its scalar dtype from readable items.
+    """Check Reduce and Scan item types inferred from a read-only payload.
 
     This protocol tests static declarations, not runtime payload support.
     """
@@ -69,6 +69,8 @@ def _select_left_uint16(left: np.uint16, right: np.uint16) -> np.uint16:
 
 
 def check_numba_scan_seeds(integer_seed: int, floating_seed: float) -> None:
+    """Preserve item dtype with typed or Python-scalar Scan initial values."""
+
     block = coop.this_block()
     warp = coop.this_warp()
     values = coop.ThreadData(items_per_thread=2, dtype=np.uint16)

@@ -117,9 +117,9 @@ consecutive logical warps of 1, 2, 4, 8, 16, or 32 threads. Load, Store,
 Exchange, Reduce, and Scan support block, physical-Warp, and logical-Warp forms;
 Shuffle is block-only. Warp operations require an enclosing block with a
 multiple of 32 threads and no incomplete final physical warp. For a
-multidimensional block, threads are linearized in x-major order. Every member
-of a participating group must reach its collective; complete sibling logical
-groups may take different control-flow paths.
+multidimensional block, threads are linearized in x-major order. Every
+member of a participating group must reach its collective; complete sibling
+logical groups may take different control-flow paths.
 
 The common group vocabulary also includes thread, cluster, grid, and mapped
 groups of physical warps. These groups support hierarchy queries; the
@@ -406,30 +406,31 @@ have no algorithm or explicit-storage selector.
 Sum is the default operation. The three general Scan spellings accept the same
 built-in string aliases as Reduce. The qualified spelling also recognizes the
 corresponding Python ``operator`` functions and NumPy ufuncs, and accepts a
-stateless device callback. Non-sum exclusive Scan requires an
-``initial_value`` matching the payload dtype; ordinary Python literals are
-checked and converted in that context. Inclusive Scan rejects an initial
-value.
+stateless device callback. Callbacks must be associative and return the
+input dtype. Non-sum exclusive Scan requires an ``initial_value`` with the
+payload dtype. Ordinary Python literals are checked and converted in that
+context. Inclusive Scan rejects an initial value.
 
 The qualified spelling adds ``aggregate_output``, an exact-dtype one-item
-``ThreadData`` or local array populated with the group aggregate. That
-aggregate excludes an exclusive initial value. Warp forms also accept
+``ThreadData`` or local array populated with the group aggregate on every
+member. That aggregate excludes an exclusive initial value. Warp forms accept
 ``valid_items`` to scan the first N lanes by group rank, with
-``1 <= N <= warp_width``; only those N result lanes are defined. The initial
-value and ``valid_items`` must be uniform across all participating members.
+``1 <= N <= warp_width``; only those N result lanes are defined. The aggregate
+excludes values from the remaining lanes. The initial value and
+``valid_items`` must be uniform across all participating members.
 An out-of-range runtime ``valid_items`` value triggers a device trap before
 CUB's integer argument is formed and invalidates the current CUDA context.
-Block Scan rejects ``valid_items``. These two controls are intentionally absent
-from the common root API.
+Block Scan rejects ``valid_items``. The common API exposes neither
+``valid_items`` nor ``aggregate_output``.
 
-All Scan forms use CUB temporary storage. Block calls may use compiler-owned,
-caller-owned, or dynamic shared storage. Compiler-owned storage and explicit
-descriptors with ``auto_sync=True`` append ``syncthreads``. Explicit descriptors
-default to ``auto_sync=False``, so the caller must synchronize before reuse.
-Physical and
+All Scan forms use CUB temporary storage. Block calls use compiler-owned
+scratch or an explicit ``TempStorage`` descriptor. Backing may use static or
+dynamic shared memory. Compiler-owned scratch and explicit descriptors with
+``auto_sync=True`` append ``syncthreads``. Explicit descriptors default to
+``auto_sync=False``, so the caller must synchronize before reuse. Physical and
 logical Warp calls use one compiler-owned slice per Warp and append
 ``syncwarp`` with the participating mask. Prefix callbacks and running-prefix
-state are deferred.
+state are unsupported.
 
 .. literalinclude:: ../../../python/cuda_coop/examples/numba_mlir/block_scan.py
    :language: python
@@ -440,7 +441,8 @@ state are deferred.
 Temporary storage
 -----------------
 
-Block Load, Store, and Reduce accept an optional ``TempStorage`` descriptor.
+Block Load, Store, Reduce, and Scan accept an optional ``TempStorage``
+descriptor.
 
 Scratch belongs to one block during its kernel execution. A descriptor does
 not carry data between blocks or kernel launches.
@@ -535,7 +537,7 @@ Warp ``transpose``, Warp Reduce, Warp Exchange, and Warp Scan use
 compiler-owned storage with one disjoint slice per physical or logical group.
 The compiler inserts ``syncwarp`` with the exact logical-group mask. Exchange
 and Shuffle always use compiler-owned storage and append a group-scoped reuse
-barrier. Block Scan may instead use implicit, caller-owned, or dynamic storage.
-Both the common and qualified APIs reject explicit ``TempStorage`` for every
-Warp Load and Store algorithm, including the storage-free modes, and for Warp
-Reduce and Scan.
+barrier. Block Scan uses compiler-owned storage unless the caller passes a
+``TempStorage`` descriptor. Both the common and qualified APIs reject explicit
+``TempStorage`` for every Warp Load and Store algorithm, including the
+storage-free modes, and for Warp Reduce and Scan.
