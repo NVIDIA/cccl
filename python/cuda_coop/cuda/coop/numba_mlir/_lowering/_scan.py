@@ -424,4 +424,9 @@ for _factory, _operation, _namespace, _scope in (
 del _factory, _namespace, _operation, _scope
 
 
-__all__: tuple[str, ...] = ()
+__all__ = [
+    "_block_scan_algorithm",
+    "_scan_mode",
+    "normalize_scan_operation",
+    "validate_scan_operator_dtype",
+]
