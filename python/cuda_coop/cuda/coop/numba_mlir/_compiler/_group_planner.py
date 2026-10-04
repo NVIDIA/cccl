@@ -2125,9 +2125,19 @@ class _GroupCallPlanner:
     def _group_method(self, call: ir.Expr) -> tuple[str, ThreadGroup] | None:
         """Recognize a supported method on a resolvable group descriptor.
 
+        ``run`` uses this probe to distinguish executable queries such as
+        ``group.rank()`` from descriptor construction before it chooses a
+        replacement device helper.
+
         Return the method name and group, or ``None`` for unrelated calls.
         ``group_by`` is excluded because it constructs another descriptor;
         this path handles methods that must become executable device helpers.
+
+        Parameters
+        ----------
+        call : ir.Expr
+            Call expression inspected by ``run`` while the original
+            group descriptors and their aliases are still present.
         """
 
         definition = self._definition(call.func)
@@ -2148,6 +2158,11 @@ class _GroupCallPlanner:
     ) -> None:
         """Plan a group method and stage its no-argument device helper call.
 
+        ``run`` calls this after recognizing a query or synchronization
+        method. Unlike an ordinary Python object method, the receiver
+        describes compile-time thread membership and must disappear before
+        device typing.
+
         Validate argument shape and resolve dtype/level controls as constants.
         Resolve the group through the requested hierarchy level and reject
         unsupported mapped-parent queries, mapped-warp synchronization, or
@@ -2158,6 +2173,23 @@ class _GroupCallPlanner:
         descriptor, so the replacement passes no runtime group object. Record
         the old callee as dead and stage the replacement; the normal planner
         run installs it later.
+
+        Parameters
+        ----------
+        inst : ir.Assign
+            Original public call assignment. Its target, scope, and
+            source location identify the replacement result and
+            generated temporaries.
+        call : ir.Expr
+            Method-call expression stored in ``inst.value``, retaining
+            the public positional and keyword arguments.
+        method : str
+            Supported method name returned by ``_group_method``,
+            including typed query variants such as ``rank_as``.
+        group : ThreadGroup
+            Descriptor recovered from the method receiver. Its hierarchy
+            is resolved against this compilation's launch before code
+            generation.
         """
 
         if call.vararg is not None or call.varkwarg is not None:

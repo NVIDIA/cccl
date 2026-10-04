@@ -519,6 +519,11 @@ def _compile_device_ltoir(
 ) -> bytes:
     """Compile and cache a callable for one device signature and target.
 
+    Operator specialization calls this once its type dependencies are
+    concrete. The resulting callback image will be linked with the C++
+    provider, so compilation must use the same signature and device
+    target as the declaration emitted into that provider.
+
     Cache identity includes callable semantics, compute capability, concrete
     signature, and ABI options. ``semantic_identity`` can describe an adapter
     in terms of the original callback and its pointer/value choices.
@@ -527,6 +532,26 @@ def _compile_device_ltoir(
     the compiler can mutate dispatcher options during compilation. Return
     LTO-IR bytes and cache only a successful result, allowing the same
     callback to participate in multiple cooperative specializations.
+
+    Parameters
+    ----------
+    fn : callable
+        Device-compilable Python function or dispatcher, possibly an
+        ABI adapter generated for an aggregate callback.
+    sig : numba signature
+        Concrete return and argument types after pointer/value ABI
+        adaptation.
+    abi_info : dict of str to object
+        Compiler ABI options, including the device symbol in
+        ``abi_name``. These options participate in cache identity.
+    compute_capability : tuple of int
+        Exact target as ``(major, minor)``. The generated image is
+        later linked only with a provider targeting the same
+        capability.
+    semantic_identity : object or None, optional
+        Stable description of the original callback and any ABI
+        adaptation. ``None`` uses the underlying Python function
+        itself.
     """
 
     compute_capability = _normalize_compute_capability(compute_capability)
@@ -574,6 +599,11 @@ def _adapt_python_operator_abi(
 ) -> Callable:
     """Adapt value-level callback code to pointer-based aggregate operands.
 
+    ``DependentPythonOperator.specialize`` uses this adapter before
+    compiling the callback. The generated C++ wrapper passes aggregate
+    storage by address, while Python callback authors still write
+    ordinary value arguments and a returned value.
+
     Primitive arguments and returns stay by value. An aggregate argument is
     read through its pointer; an aggregate result is written through a final
     output pointer. Return the original function when no adaptation is needed.
@@ -581,6 +611,19 @@ def _adapt_python_operator_abi(
     The wrapper calls an inline device version of the original function and
     supports one or two input values. It changes the native calling convention
     without changing the value-level callback signature seen by its author.
+
+    Parameters
+    ----------
+    py_func : callable
+        Original value-level callback, already unwrapped from an
+        outer dispatcher.
+    return_by_pointer : bool
+        Whether the native caller supplies a final output pointer in
+        place of a returned aggregate value.
+    arguments_by_pointer : tuple of bool
+        One flag per input, in callback argument order. True
+        dereferences that input pointer before calling the original
+        function.
     """
 
     if not return_by_pointer and not any(arguments_by_pointer):
@@ -1359,6 +1402,11 @@ class DependentPythonOperator:
     def specialize(self, template_arguments):
         """Resolve callback types and compile the matching device ABI.
 
+        Algorithm specialization calls this while resolving its operator
+        parameters, before the provider wrapper is compiled. The callback's
+        compiled definition and C++ declaration must therefore be produced
+        together.
+
         Resolve the callable and dtype dependencies from
         ``template_arguments``. Build pointer transforms for aggregate values,
         derive the stable symbol, and compile for the current device's compute
@@ -1368,6 +1416,12 @@ class DependentPythonOperator:
         Return a ``StatelessOperator`` carrying declarations, LTO IR, and
         target identity for later provider linkage. A non-callable resolution
         is an error.
+
+        Parameters
+        ----------
+        template_arguments : dict of str to object
+            Concrete algorithm bindings used to resolve the callback and
+            its return/argument dtype dependencies, such as ``T``.
         """
 
         op = self.op.resolve(template_arguments)
