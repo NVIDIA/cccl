@@ -1622,9 +1622,9 @@ class _ProvenanceRewrite(Rewrite):
 
         Follow aliases, casts, static tuple items, and phi inputs to
         ThreadData, local/shared arrays, or result markers. A marker inherits
-        its dtype from its prototype; its extent can be explicit. Unknown or
-        cyclic paths contribute no facts. Conflicting payload facts raise
-        ``CoopSinglePhaseRewriteError``.
+        its prototype's dtype unless its policy fixes int32; its extent can be
+        explicit. Unknown or cyclic paths contribute no facts. Conflicting
+        payload facts raise ``CoopSinglePhaseRewriteError``.
 
         Extend ``seen`` in place and copy it for independent branches. Return
         merged facts or ``None``; this is partial shape/type inference, not
@@ -1711,13 +1711,14 @@ class _ProvenanceRewrite(Rewrite):
         """Infer payload shape and dtype through variable origins.
 
         Follow aliases, casts, static tuple selections, and phi inputs to
-        ``ThreadData``, local-array constructors, or planner-created result
-        payload markers. Result markers derive their shape and dtype from a
-        prototype and any explicit extent. Reuse complete cached
-        specifications; otherwise merge discovered facts with partial cached
-        information and cache the result. Conflicting known extents or dtypes
-        are errors, while alignment constraints merge by taking the larger
-        minimum.
+        ``ThreadData``, local-array constructors, or planner-created payload
+        markers. A marker takes its dtype from the prototype unless
+        its policy fixes int32. Its extent is explicit, or the prototype's
+        extent for an array marker, or one item for a scalar marker. Reuse
+        complete cached specifications; otherwise merge discovered facts with
+        partial cached information and cache the result. Conflicting known
+        extents or dtypes are errors, while alignment constraints merge by
+        taking the larger minimum.
 
         Unrecognized or cyclic paths contribute no facts. A returned
         specification is therefore partial inference, not proof that every
