@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Type MergeSort results and the supported optional-argument combinations.
+
+Keys and values retain independent element types. Overloads pair a partial
+count with its key-typed sentinel, restrict caller storage to block groups,
+and require ``descending=False`` when a custom comparator is supplied.
+The implementation docstrings define ordering and participation contracts.
+"""
+
 from collections.abc import Callable
 from typing import Literal, overload
 
