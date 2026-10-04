@@ -47,10 +47,12 @@ before backend activation to select it. Activation checks the compiler
 interfaces used by this pipeline and rejects an incompatible installation.
 
 Backend compiler and runtime CI is configured for Linux x86-64 with Python
-3.14: CUDA 13 in pull requests and CUDA 12 in the nightly matrix. Linux host
-contracts cover Python 3.10 and 3.14. Windows checks build and import the
-universal wheel and verify its headers; they do not execute the compiler
-backend. Other combinations need separate runtime qualification. See the
+3.14: CUDA 13 in pull requests and CUDA 12 in the nightly matrix. The nightly
+matrix also configures H100 runtime tests with serial synchronization race
+checking under CUDA 13. Linux host contracts cover Python 3.10 and 3.14.
+Windows checks build and import the universal wheel and verify its headers;
+they do not execute the compiler backend. Other combinations need separate
+runtime qualification. See the
 [validation scope](https://nvidia.github.io/cccl/unstable/python/coop/developer_overview.html#coop-numba-validation)
 for tested platforms and coverage.
 
@@ -369,7 +371,7 @@ every Warp Load and Store algorithm, including the storage-free modes.
 unchanged. The common API accepts `striped_to_blocked` and
 `blocked_to_striped` for block, physical Warp, and logical Warp groups. A
 blocked tile gives each thread consecutive items. A striped tile gives item
-`i` to lane `i % group_size` at per-thread position `i // group_size`.
+`i` to thread `i % group_size` at per-thread position `i // group_size`.
 
 The qualified `cuda.coop.numba_mlir.exchange` API additionally exposes the
 block-only `warp_striped_to_blocked` and `blocked_to_warp_striped` layouts and

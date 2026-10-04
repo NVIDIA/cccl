@@ -15,7 +15,11 @@ _ItemT = TypeVar("_ItemT")
 
 
 class _ReadOnlyThreadData(Generic[_ItemT]):
-    """Structural readable payload without mutable item access."""
+    """Check readable-input protocols without requiring mutable item access.
+
+    These consumers check static declarations; they do not compile kernels
+    with this custom Python payload.
+    """
 
     items_per_thread: int
     dtype: object | None

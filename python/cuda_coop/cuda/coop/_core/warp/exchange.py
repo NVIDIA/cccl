@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe CUB WarpExchange for physical and logical warps.
+
+The logical width selects a power-of-two group of at most 32 threads. Layout
+conversions use separate input and output arrays; scatter can also use one
+mutable array. Reuse the block Exchange semantic record for shared operand
+choices, then describe the warp-specific overloads and scratch policy. A
+backend allocates scratch for each participating warp.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -20,12 +29,24 @@ _SUPPORTED_LOGICAL_WARP_THREADS = frozenset({1, 2, 4, 8, 16, 32})
 
 
 class WarpExchangeMode(str, Enum):
+    """Select a warp layout conversion or rank-directed striped scatter.
+
+    Layout conversion rearranges blocked and striped per-thread items. Scatter
+    additionally consumes one destination rank for each input item.
+    """
+
     STRIPED_TO_BLOCKED = "striped_to_blocked"
     BLOCKED_TO_STRIPED = "blocked_to_striped"
     SCATTER_TO_STRIPED = "scatter_to_striped"
 
 
 class WarpExchangeValueForm(str, Enum):
+    """Select separate arrays or a mutable scatter input/output array.
+
+    ``BOTH`` requests both scatter overloads. Layout conversion supports only
+    ``OUT_OF_PLACE`` in this description.
+    """
+
     IN_PLACE = "in_place"
     OUT_OF_PLACE = "out_of_place"
     BOTH = "both"
@@ -43,7 +64,14 @@ _OFFSET_T = Dependency("OffsetT")
 
 @dataclass(frozen=True)
 class WarpExchangeSpecialization:
-    """Fully specialized CUB WarpExchange semantics."""
+    """Describe a CUB WarpExchange call for one logical width.
+
+    ``specialization`` contains the native algorithm for backend translation.
+    ``call`` holds the shared Exchange semantics; the remaining fields retain
+    warp mode, array form, extent, logical width, and optional rank dtype. The
+    enclosing block shape is supplied separately by the backend when it
+    arranges scratch for multiple warp instances.
+    """
 
     specialization: Algorithm
     call: BlockExchangeSemantics
@@ -67,6 +95,8 @@ class WarpExchangeSpecialization:
 
 
 def _normalize_logical_warp_threads(threads_in_warp: Any) -> int:
+    """Require a supported CUB logical width: 1, 2, 4, 8, 16, or 32."""
+
     if (
         not isinstance(threads_in_warp, int)
         or isinstance(threads_in_warp, bool)
@@ -83,6 +113,12 @@ def _normalize_logical_warp_threads(threads_in_warp: Any) -> int:
 
 
 def _in_place_parameters() -> tuple[Any, ...]:
+    """Describe mutable scatter items and ranks after the scratch pointer.
+
+    The item array is modified through its operand, not returned through the
+    backend ABI. This overload is used only for scatter-to-striped mode.
+    """
+
     return (
         TempStorageParameter(),
         Array(
@@ -97,6 +133,12 @@ def _in_place_parameters() -> tuple[Any, ...]:
 
 
 def _out_of_place_parameters(*, uses_ranks: bool) -> tuple[Any, ...]:
+    """Describe separate input/output arrays and optional scatter ranks.
+
+    Keep the output as an explicit writable operand so group lowering can
+    return its allocated payload independently of the native call result.
+    """
+
     parameters: list[Any] = [
         TempStorageParameter(),
         Array(_T, _ITEMS_PER_THREAD, name="input_items"),
@@ -123,7 +165,17 @@ def make_warp_exchange_specialization(
     | WarpExchangeValueForm = WarpExchangeValueForm.OUT_OF_PLACE,
     rank_dtype: Any | None = None,
 ) -> WarpExchangeSpecialization:
-    """Build canonical SMEM-backed WarpExchange semantics."""
+    """Bind Exchange arguments to a supported CUB logical warp width.
+
+    Require a dtype, positive item count, and supported power-of-two width.
+    Only scatter-to-striped consumes ranks or permits an in-place overload.
+    Use shared Exchange validation for the call semantics, then build the
+    warp-specific algorithm and its scratch description.
+
+    The returned record does not establish that the launch supplies complete
+    warp groups. Group resolution and backend scratch allocation check the
+    enclosing block separately.
+    """
 
     if dtype is None:
         raise ValueError("dtype must be provided")

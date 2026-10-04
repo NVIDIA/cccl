@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check Exchange and Shuffle results against host index calculations.
+
+Independent layout references catch errors that an inverse round trip
+could hide. Separate reuse tests exercise consecutive calls and logical
+warps that reach their barriers at different times. Trap probes run in
+child processes so their failed CUDA contexts cannot affect later tests.
+"""
+
 from __future__ import annotations
 
 import os
@@ -78,6 +86,13 @@ def _values(size: int, *, shift: int = 0) -> np.ndarray:
 
 
 def _dtype_values(dtype, size: int) -> np.ndarray:
+    """Make bounded values that expose unintended dtype narrowing.
+
+    Float64 values include a fraction lost in float32. Wide integers include
+    bits above the 32-bit range. Smaller integer inputs stay within their
+    dtype ranges, so overflow does not obscure the movement being checked.
+    """
+
     values = (np.arange(size, dtype=np.int64) * 17) % 97
     if np.dtype(dtype).kind != "u":
         values -= 48
@@ -98,7 +113,12 @@ def _structured_exchange_oracle(
     items_per_thread: int,
     mode: str,
 ) -> np.ndarray:
-    """Compute a layout transform without applying its inverse operation."""
+    """Map output slots to input slots without using an inverse Exchange.
+
+    The flat arrays store each thread's items contiguously, before and after
+    the operation. Compute source indices separately within each group so the
+    reference also detects values crossing logical-warp boundaries.
+    """
 
     result = np.empty_like(source)
     group_items = group_width * items_per_thread
@@ -131,6 +151,12 @@ def _warp_structured_exchange_oracle(
     items_per_thread: int,
     mode: str,
 ) -> np.ndarray:
+    """Apply a block warp-striped layout change within each physical warp.
+
+    The block operation changes ownership within 32-thread tiles, so reuse the
+    structured reference with that width rather than the whole block width.
+    """
+
     mapped_mode = {
         "warp_striped_to_blocked": "striped_to_blocked",
         "blocked_to_warp_striped": "blocked_to_striped",
@@ -149,6 +175,12 @@ def _reversed_ranks(
     group_width: int,
     items_per_thread: int,
 ) -> np.ndarray:
+    """Assign each input a unique reversed destination within its group.
+
+    Group-local ranks keep scatter inside each tile and avoid duplicate
+    writers, whose output would not provide a deterministic reference.
+    """
+
     ranks = np.empty(thread_count * items_per_thread, dtype=np.int32)
     group_items = group_width * items_per_thread
     for thread in range(thread_count):
@@ -170,7 +202,12 @@ def _scatter_exchange_oracle(
     mode: str,
     valid_flags: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Return values and a mask for destinations written by active inputs."""
+    """Return expected values and the destinations that may be compared.
+
+    The test inputs have unique ranks. A negative guarded rank or a false
+    flag removes an input from the scatter. Destinations with no writer have
+    no defined expected value and must be excluded by the returned mask.
+    """
 
     result = np.empty_like(source)
     compared = np.zeros(source.size, dtype=np.bool_)
@@ -209,6 +246,12 @@ def _structured_exchange_kernel(
     qualified: bool,
     numba_dtype=types.int32,
 ):
+    """Observe an Exchange result and its original payload separately.
+
+    The two output arrays let tests verify both layout and input preservation
+    for each API and group scope.
+    """
+
     if scope == "block" and qualified:
 
         @cuda.jit
@@ -458,6 +501,13 @@ def test_inferred_load_payload_composes_directly_into_exchange() -> None:
 def _qualified_block_exchange_kernel(
     mode: str, warp_time_slicing: bool, array_items_per_thread: int
 ):
+    """Exercise qualified Exchange modes with native local-array operands.
+
+    Keep ranks and flags as separate arrays to check the backend's extended
+    call forms. Copy inputs after the call so tests can detect an unintended
+    in-place update as well as an incorrect result.
+    """
+
     if mode in {
         "striped_to_blocked",
         "blocked_to_striped",
@@ -581,6 +631,12 @@ def _qualified_block_exchange_kernel(
 def _block_exchange_inputs(
     mode: str, *, items_per_thread
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Build inputs and a comparison mask for one block Exchange mode.
+
+    Guarded and flagged cases remove every seventh input. Only destinations
+    that still have a writer take part in the output comparison.
+    """
+
     source = _values((_BLOCK_THREADS * items_per_thread), shift=71)
     ranks = _reversed_ranks(
         thread_count=_BLOCK_THREADS,
@@ -696,6 +752,12 @@ def test_block_exchange_warp_time_slicing_matches_the_full_storage_oracle(
 
 @cache
 def _repeated_warp_exchange_kernel(width: int):
+    """Compose inverse exchanges to exercise reuse of warp storage.
+
+    This round trip checks composition. The independent layout tests are
+    needed because matching errors in two inverse operations could cancel.
+    """
+
     if width == _WARP_THREADS:
 
         @cuda.jit
@@ -774,6 +836,13 @@ def test_warp_exchange_inverse_round_trip(
 def _array_shuffle_kernel(
     mode: str, api: str, array_items_per_thread: int, numba_dtype=types.int32
 ):
+    """Observe shifted values and preserve a copy of each input payload.
+
+    The kernel copies every output slot. Callers compare only the defined
+    part of the flattened tile: Up leaves the tile's first item undefined,
+    and Down leaves its last item.
+    """
+
     if api == "common":
 
         @cuda.jit
@@ -1049,9 +1118,13 @@ def _run_invalid_runtime_shuffle_probe(
     distance: int,
     dtype: str,
 ) -> subprocess.CompletedProcess[str]:
-    # A device trap poisons its CUDA context, so invalid launches must run in
-    # isolated processes. The safe-path flag also proves the installed package
-    # is used instead of a source-tree package found through the current path.
+    """Run a distance that must trap in a separate CUDA context.
+
+    The child verifies that it imports the same package source as the parent.
+    Its failure output distinguishes the expected device trap from an import
+    or compilation failure. A timeout bounds the probe.
+    """
+
     script = f"""\
 import numpy as np
 import numba_cuda_mlir.cuda as cuda
@@ -1087,6 +1160,7 @@ cuda.synchronize()
 raise AssertionError("invalid runtime Shuffle distance did not trap")
 """
     return subprocess.run(
+        # -P (or -I on 3.10) keeps the current directory off sys.path.
         [sys.executable, _SAFE_PATH_FLAG, "-B", "-c", script],
         check=False,
         capture_output=True,
@@ -1153,6 +1227,14 @@ _REUSE_ROUNDS = 10
 
 
 def _run_same_direction_warp_reuse(width, *, check_output=True):
+    """Stress warp storage reuse when sibling groups progress separately.
+
+    Every group repeats the same layout change with new values. Group members
+    share an iteration count, but sibling groups may finish at different
+    times. A host index calculation checks each observed iteration. Racecheck
+    also uses this kernel without output checks for its negative control.
+    """
+
     @cuda.jit
     def kernel(observed, items_per_thread):
         thread = cuda.threadIdx.x

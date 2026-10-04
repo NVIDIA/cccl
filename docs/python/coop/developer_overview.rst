@@ -894,8 +894,8 @@ establishes the dtype:
    coop.store(block, destination, items)
 
 The planner propagates the dtype from ``source`` to ``items``. A later Store
-or Exchange can then use ``items`` even though its constructor did not specify
-a dtype. Load fills ``items`` in place and returns ``None``.
+or Exchange can then use ``items`` even though its constructor did not
+specify a dtype. Load fills ``items`` in place and returns ``None``.
 
 Layout describes which logical tile elements each thread owns. A striped
 Load gives thread ``t`` elements ``t + i * block_size``. A blocked
@@ -910,8 +910,8 @@ The result contracts preserve the following public behavior:
 * Load and Store return ``None``. Load fills the supplied output in place.
   Store follows CUB: transpose algorithms may rearrange the input payload
   in place. Invalid Load slots are unspecified unless a default is supplied.
-* Exchange returns a fresh payload. Its input remains available to
-  subsequent kernel code.
+* Exchange and array Shuffle return fresh payloads. Their inputs remain
+  available to subsequent kernel code.
 
 Output ownership is part of lowering. A CUB method that overwrites an
 array does not, by itself, implement a Python operation that promises to
@@ -1647,7 +1647,8 @@ parts of that range:
      - Automated checks
    * - Linux x86-64, Python 3.14, CUDA 13
      - Installed-wheel compilation with GPUs hidden and L4 runtime tests
-       in pull requests
+       in pull requests; H100 runtime tests with serial synchronization
+       race checking in the nightly matrix
    * - Linux x86-64, Python 3.14, CUDA 12
      - Installed-wheel compilation and GPU runtime tests in the nightly matrix
    * - Linux x86-64, Python 3.10 and 3.14
@@ -1659,8 +1660,10 @@ The Windows checks do not compile or launch Numba-CUDA-MLIR kernels. Other
 Python versions and platform combinations need separate backend runtime
 qualification. Dependency bounds allow releases in the supported series;
 they do not mean that every patch release in that series has been tested.
-These checks cover Block and Warp Load/Store. They do not qualify operations
-on thread, cluster, or grid groups.
+These checks cover Block and Warp Load/Store and Exchange, plus Block
+Shuffle. Thread, cluster, and grid groups are not operation targets in this
+release. Synchronization race checking requires Compute Sanitizer; a job
+that skips those checks does not qualify scratch reuse under the sanitizer.
 
 Source map
 ----------

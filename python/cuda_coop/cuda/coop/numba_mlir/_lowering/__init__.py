@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Hold private Load/Store, Exchange, and Shuffle lowering factories.
+"""Collect private Load/Store, Exchange, and Shuffle provider factories.
 
-Group planning chooses these factories after validating a public call. The
-compiler registers exact factory identities, not names. Calling a factory
-specializes device code; it does not execute the operation.
+Importing this package registers each factory and its scratch ABI. Group
+planning selects a factory after validating a public call. Calling a factory
+specializes device code but does not run the device operation.
 """
 
 from ._exchange import exchange as exchange

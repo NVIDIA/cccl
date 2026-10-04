@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Define the common Exchange call for blocked and striped layouts.
+
+Exchange converts a group payload between blocked and striped order. The
+decorator registers the function so a compiler can recognize calls to it. A
+host Python call raises an error.
+"""
+
 from __future__ import annotations
 
 from typing import Any
