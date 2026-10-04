@@ -2,14 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Expose fresh block histograms through the common compiled-kernel API.
+"""Provide fresh block histograms through the common compiled-kernel API.
 
-Samples contain bin indices. The result is a separate counter payload whose
-dtype and per-thread extent can differ from the input. The decorator registers
-this function so that compilers can recognize its calls. An ordinary Python
-call raises a compiler-context error. Each call zeroes its shared counters
-before counting, so reused scratch never carries counts from an earlier call.
-To accumulate tiles, add the returned counters yourself.
+Samples contain bin indices. Results use a separate striped counter payload
+whose dtype and per-thread extent can differ from the input. Decorators let
+compilers recognize the call. A CuTe DSL trace runs the Python checks for
+static bin controls, dtype selectors, and readable sample payloads. Numba
+replaces the call during compilation and checks its typed operands.
+
+The backend plans CUB scratch and intermediate bin counters. Each call starts
+its counters at zero, so reused scratch does not retain earlier counts. To
+accumulate tiles, add the returned counters yourself.
 """
 
 from __future__ import annotations

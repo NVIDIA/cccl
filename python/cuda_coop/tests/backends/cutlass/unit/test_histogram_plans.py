@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check Histogram plans, scratch policy, and queued session restoration.
+
+Sample and counter types are independent. Plans also distinguish the
+number of bins, per-thread output extent, and algorithm. These tests
+inspect generated wrappers and plan metadata without launching kernels.
+A failure during scratch registration must restore saved session state.
+"""
+
 from dataclasses import replace
 from types import SimpleNamespace
 
@@ -92,6 +100,12 @@ def test_storage_controls(sharing, auto_sync):
 
 
 def test_output_and_algorithm_affect_identity():
+    """Give each output shape and algorithm its own wrapper and scratch key.
+
+    Counter type, algorithm, bin count, and per-thread output extent each
+    change the provider request. None may reuse a mismatched specialization.
+    """
+
     requests = [
         _request(),
         _request(counter_type=cutlass.Int32),
@@ -116,6 +130,14 @@ def test_mismatched_result_rejected():
 
 
 def test_failed_storage_emission_restores_session(monkeypatch):
+    """Restore saved session state if Histogram scratch registration fails.
+
+    Stubs replace request recording and register-tensor creation, so the call
+    needs no CuTe kernel trace. With temp_storage=None, the provider still
+    registers automatic scratch. The injected failure must restore the saved
+    snapshot and leave the samples unchanged.
+    """
+
     saved, restored = object(), []
     monkeypatch.setattr(_state, "snapshot_active_session_state", lambda: saved)
     monkeypatch.setattr(_state, "register_request", lambda request: None)

@@ -14,7 +14,8 @@ common calls. Radix checks integer Rank keys, writable bin-prefix outputs,
 and the different controls accepted by Sort, Rank, and common calls. TopK
 checks block-only groups, integer counts, and payload-only inputs. Neighbor
 operations reject warp groups, scalar inputs, and unsupported modes or
-callbacks.
+callbacks. Histogram rejects warp groups, scalar samples, floating counters,
+and unknown algorithms.
 """
 
 from __future__ import annotations

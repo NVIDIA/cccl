@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Declare static result types for ``cuda.coop.cutlass.histogram``.
+
+The counter type does not depend on the sample type. An omitted selector or
+Python int gives Int32 counters. An explicit NumPy or CuTe selector sets the
+counter type. Result extent follows bins_per_thread, not the sample count.
+"""
+
 from typing import Literal, TypeAlias, overload
 
 import numpy as np

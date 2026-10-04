@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Provide ``cuda.coop.cutlass.histogram``.
+
+Check the group, bin count, output extent, algorithm, and scratch here. These
+controls are fixed at compile time. Copy samples into a new ThreadData so
+read-only common payloads and CuTe register tensors or TensorSSA values are
+accepted. The lowering provider then resolves the dtypes and emits the call.
+"""
+
 from cuda.coop._core.block._common import normalize_positive_int
 from cuda.coop._core.block.histogram import normalize_histogram_algorithm
 from cuda.coop._core.thread_group import ThreadGroup

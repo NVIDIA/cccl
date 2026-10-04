@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check independent histogram types, striped bin ownership, and fresh counts.
+
+A host bincount checks each block's last input tile. Output slots at or
+beyond the bin count must be zero. Both algorithms must preserve the
+original samples, including Sort, which uses a private mutable copy.
+"""
+
 import re
 import shutil
 import subprocess
@@ -23,6 +30,13 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
 class _Readonly:
+    """Copy sample items into a tuple that Histogram cannot write.
+
+    Histogram must accept this read-only payload and infer the sample dtype
+    from its items when no dtype is set. The harness checks preservation
+    through the original ThreadData.
+    """
+
     def __init__(self, source):
         self.items_per_thread, self.dtype, self.alignment = (
             source.items_per_thread,
@@ -59,6 +73,17 @@ def _run(
     default_counter=False,
     compile_options=(),
 ):
+    """Compare striped counters against each block's final input tile.
+
+    Input items and output bins have independent extents and types. Plain CuTe
+    stores bin slot i from thread t at t + i * threads, so the host sees bins
+    in order. It also checks zero padding and every original sample.
+
+    Reuse cases process four different tiles with the same scratch. Output
+    must count only the last tile, which exposes counters left from earlier
+    calls. Manual barriers protect reuse when automatic barriers are off.
+    """
+
     value_type, counter_type = (
         cutlass_dtype(dtype),
         cutlass_dtype(counter_dtype),
@@ -223,6 +248,12 @@ def test_bin_capacity(algorithm, threads, bins):
 @pytest.mark.parametrize("manual_sync", (False, True))
 @pytest.mark.parametrize("algorithm", ("atomic", "sort"))
 def test_fresh_counters_on_scratch_reuse(sharing, manual_sync, algorithm):
+    """Discard earlier counts while reusing scratch across four input tiles.
+
+    Both algorithms and sharing policies use the same last-tile oracle. Manual
+    barriers replace automatic reuse barriers when requested by the test.
+    """
+
     _run(
         sharing=sharing,
         manual_sync=manual_sync,
@@ -252,6 +283,12 @@ def test_default_counter(api):
 
 
 def test_alignment_minimum():
+    """Allow native scratch alignment to exceed a one-byte request.
+
+    A large capacity isolates alignment from size while repeated histograms
+    still check fresh counters and input preservation.
+    """
+
     _run(reuse=True, alignment=1, capacity=8192)
 
 
@@ -264,6 +301,13 @@ def test_undersized_storage():
 
 @pytest.mark.parametrize("algorithm", ("atomic", "sort"))
 def test_final_cubin(tmp_path, algorithm):
+    """Check that each generated histogram wrapper is fully inlined.
+
+    Each algorithm first passes the host result checks. The final SASS must
+    then contain no wrapper symbol and no CALL instruction. Register and
+    shared-memory usage are not checked here.
+    """
+
     tool = shutil.which("cuobjdump")
     if tool is None:
         pytest.skip("cuobjdump is required for final linked code inspection")
@@ -283,6 +327,12 @@ def test_final_cubin(tmp_path, algorithm):
 
 @pytest.mark.parametrize("items_per_thread", (1, 4))
 def test_documented_histogram(items_per_thread):
+    """Execute the documented striped store of independently typed counters.
+
+    The example maps 65 bins onto 128 output slots. The host checks each count
+    and requires zero in every padding slot, for both input payload extents.
+    """
+
     # docs: start cutlass-histogram
     @cute.kernel
     def count_samples(

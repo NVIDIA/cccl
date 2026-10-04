@@ -78,7 +78,7 @@ _COMMON_ROOT_OPERATION_FAMILIES = {
 
 
 def _normalize_index_int(value: Any) -> int | None:
-    """Require a static integer index and reject booleans."""
+    """Return a static integer, or None for booleans and dynamic values."""
 
     if isinstance(value, bool):
         return None
@@ -936,21 +936,10 @@ class ThreadData:
         self._values[idx] = value
 
     def _dynamic_values(self) -> tuple[type, tuple[Any, ...]]:
-        """Resolve payload items to typed scalars for CuTe IR operations.
+        """Resolve all items to one dtype for CuTe control-flow operands.
 
-        CuTe uses ``__extract_mlir_values__`` and ``__new_from_mlir_values__``
-        when a payload crosses a function boundary or runtime branch or loop.
-        Those hooks call this helper because IR uses separate typed scalar
-        operands, rather than a Python ThreadData object.
-
-        Convert host literals to scalar expressions and retain explicit
-        signedness metadata when reconciling raw IR values.
-
-        Returns
-        -------
-        tuple
-            Common CUTLASS scalar type and the initialized item expressions in
-            payload order. Uninitialized or incompatible items raise an error.
+        Convert host literals to scalar expressions. A declared dtype supplies
+        the signedness for raw integer IR values of matching width.
         """
 
         from ._compiler import _types
@@ -1237,9 +1226,10 @@ def _make_rmem_tensor(
 ) -> Any:
     """Emit register-storage allocation with a minimum byte alignment.
 
-    Use the standard allocator through 32-byte alignment. Larger requests need
-    an explicit aligned pointer type and memref allocation. The compiler may
-    still spill register values to local memory.
+    The standard CuTe allocator already aligns register storage to 32 bytes,
+    so use it for requests up to 32. Larger requests build an aligned pointer
+    type and allocate the memref directly. The compiler may still spill
+    register values to local memory.
     """
 
     from cutlass import cute
