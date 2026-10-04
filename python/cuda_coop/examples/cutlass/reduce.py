@@ -18,13 +18,21 @@ _THREADS = 64
 
 
 def _check(result):
+    """Raise on Driver errors and unwrap a single returned handle or value."""
+
     if int(result[0]):
         raise RuntimeError(f"CUDA Driver call failed: {result[0]}")
     return result[1] if len(result) == 2 else result[1:]
 
 
 def run_example(api="common", items_per_thread=2):
-    """Run built-in reductions and verify group results and root ownership."""
+    """Check full block and logical-warp results plus a scalar input prefix.
+
+    The output has one block sum per thread, one maximum per logical-group
+    member, and one prefix sum stored by block rank zero. The expected prefix
+    sum uses each thread's first item; the count is threads, not contiguous
+    input elements. The same checks cover common and qualified calls.
+    """
 
     tile_size = _THREADS * items_per_thread
     if api not in {"common", "qualified"}:

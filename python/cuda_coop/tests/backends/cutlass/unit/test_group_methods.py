@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Resolve group queries from launch evidence and check emission rollback.
+
+Injected launch facts separate hierarchy rules from kernel tracing. The
+cases distinguish dimensions from verified cluster-launch mode and keep
+metadata-only queries free of storage or synchronization. A failed FFI
+emission must restore the active provider session.
+"""
+
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
@@ -24,6 +32,13 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.unit]
 
 
 def _facts(monkeypatch, **values):
+    """Convert a small compiler-API stand-in into the current launch facts.
+
+    The real CUTLASS conversion validates each supplied shape, leaves missing
+    fields unknown, and marks supplied fields as verified compiler evidence.
+    No active CUTLASS trace is needed.
+    """
+
     facts = launch_facts_from_cutlass_api(SimpleNamespace(**values))
     monkeypatch.setattr(lowering, "current_kernel_launch_facts", lambda: facts)
     return facts
@@ -65,6 +80,13 @@ def test_block_query_allows_partial_warp(monkeypatch):
 
 @pytest.mark.parametrize("constructor", (this_cluster, this_grid))
 def test_cluster_mode_must_be_verified(monkeypatch, constructor):
+    """Require verified launch mode before resolving cluster or grid metadata.
+
+    Exact dimensions alone do not establish how blocks were launched. These
+    facts deliberately omit verified provenance, so hierarchy resolution must
+    reject them even though their dimensions look complete.
+    """
+
     facts = LaunchFacts(
         exact_block_dim=(64, 1, 1),
         exact_grid_dim=(2, 1, 1),
@@ -77,6 +99,13 @@ def test_cluster_mode_must_be_verified(monkeypatch, constructor):
 
 
 def test_grid_counts_clusters(monkeypatch):
+    """Convert a compiler grid of blocks into a hierarchy grid of clusters.
+
+    Dividing each grid dimension by the matching cluster dimension yields the
+    cluster count. The hierarchy must keep the cluster shape, counted in
+    blocks, as a separate value.
+    """
+
     _facts(
         monkeypatch,
         exact_block_dim=(8, 4, 2),
@@ -122,6 +151,12 @@ def test_query_defaults():
 
 
 def test_query_registration_rolls_back(monkeypatch):
+    """Remove a registered query if its FFI call cannot be emitted.
+
+    The snapshot precedes registration. The failure stub then forces rollback,
+    so a later compilation cannot inherit a request from an abandoned trace.
+    """
+
     events = []
     sentinel = object()
     monkeypatch.setattr(

@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check common Reduce validation and normalized options before dispatch.
+
+A spy replaces compiler delegation and records each call. NumPy scalars
+and a small ThreadData stand-in supply scalar and fixed-size payload
+inputs. A placeholder active backend enables common validation. The cases
+check which controls reach dispatch and which fail before any collective
+is compiled or run.
+"""
+
 from enum import Enum
 from importlib import import_module
 
@@ -39,6 +48,13 @@ class _ThreadData:
 
 
 def test_common_reduce_matrix_and_family_owned_selectors(monkeypatch):
+    """Normalize public selectors while preserving the delegated result.
+
+    Several group kinds share the common dispatch path. The spy records the
+    canonical operator and algorithm tokens, while its identity sentinel shows
+    that Reduce and Sum return the backend result directly.
+    """
+
     dispatch = import_module("cuda.coop._core.api._dispatch")
     api = import_module("cuda.coop._core.api.reduce")
     delegated = object()

@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Reuse CUDAX reduction resources across runtime loop iterations.
+
+Block, mapped-warp, and cluster groups repeatedly alternate Sum and Max.
+The host oracle includes the iteration-dependent contribution, exposing
+stale results or interference between the two call sites. Cluster cases
+run only when the active device supports an actual cluster launch.
+"""
+
 import numpy as np
 import pytest
 

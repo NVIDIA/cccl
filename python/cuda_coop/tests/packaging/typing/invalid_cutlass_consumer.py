@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Reject unsupported CUTLASS calls through the copied public stubs.
+
+The runner compares each marked line and error code with mypy output. These
+calls are static inputs, not kernels to execute. They cover query levels and
+dtypes, synchronization, Load/Store groups and controls, payload forms, and
+reduction controls.
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -23,6 +31,8 @@ cutlass_coop.this_grid().sync_aligned()  # expected-error: [misc]
 
 
 def callback(left: Int32, right: Int32) -> Int32:
+    """Supply a typed callback that CUTLASS Reduce must still reject."""
+
     del right
     return left
 

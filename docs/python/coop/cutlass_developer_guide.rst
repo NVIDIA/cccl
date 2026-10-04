@@ -706,7 +706,9 @@ provider calls, shared accesses, or barriers. The final-cubin check in
 It requires shared memory and barriers only for transpose. The final-cubin
 checks in ``runtime/test_warp_load_store.py`` and
 ``runtime/test_logical_warp_load_store.py`` reject provider calls and block
-barriers for physical and logical Warp operations.
+barriers for physical and logical Warp operations. The final-cubin check in
+``runtime/test_reduce.py`` confirms that the CUDAX and CUB Reduce routes leave
+no provider calls. It does not check shared memory, registers, or barriers.
 
 Provider source or intermediate PTX alone cannot prove the final result. Use
 Compute Sanitizer race checks for changes to scratch allocation or

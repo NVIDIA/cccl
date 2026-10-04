@@ -58,6 +58,12 @@ def _is_plain_string(value: Any) -> bool:
 
 
 def _common_reduce_algorithm(operation: str, value: Any) -> Any:
+    """Normalize the common algorithm selector during active dispatch.
+
+    Accept only the shared block choices. Outside an active backend, leave the
+    value intact so the operation can report the missing compiler context.
+    """
+
     if _backend_module_name() is None or value is None:
         return value
     if not _is_plain_string(value):
@@ -73,6 +79,13 @@ def _common_reduce_algorithm(operation: str, value: Any) -> Any:
 
 
 def _common_reduce_operator(value: Any) -> Any:
+    """Normalize shared operator aliases during active dispatch.
+
+    Custom operators need a backend-qualified import. Outside a compiler
+    environment, return the value unchanged; the operation marker reports
+    the missing context.
+    """
+
     if _backend_module_name() is None or value is None:
         return value
     if not _is_plain_string(value):
@@ -97,6 +110,8 @@ def _validate_common_reduce_options(
     algorithm: Any,
     temp_storage: Any,
 ) -> None:
+    """Validate supported CUB groups, scalar prefixes, and block scratch."""
+
     if _backend_module_name() is None:
         return
     if isinstance(group, ThreadGroup) and group.kind == "grid":
@@ -154,6 +169,12 @@ def _validate_common_reduce_value(
     value: object,
     operator: Any,
 ) -> None:
+    """Require common numeric payloads and integer bitwise operands.
+
+    Readable payloads contribute their elements without mutation. Check
+    dtypes here so delegation retains the common input contract.
+    """
+
     dtype_name = _validate_common_numeric_value(
         operation,
         "value",

@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile group queries and synchronization with explicit launch facts.
+
+An SM80 target and typed null pointers permit compilation without a kernel
+launch. The cases check query result types, supported hierarchy relations,
+and which methods need exact dimensions. They do not execute the query
+writes or synchronization calls.
+"""
+
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
@@ -23,6 +31,14 @@ def _pointer():
     "api", (coop, cutlass_coop), ids=("common", "qualified")
 )
 def test_hierarchy_compile(api):
+    """Compile mixed hierarchy queries, including nonexhaustive mappings.
+
+    Non-power-of-two lane groups and mapped warp groups exercise query support
+    beyond the groups accepted by Load and Store. Type assertions check a
+    32-bit block rank, 64-bit grid-related counts, and an 8-bit membership
+    flag as the default result types.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer):
         output = cute.make_tensor(memory, cute.make_layout(32))

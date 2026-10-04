@@ -6,8 +6,9 @@
 
 Outside a trace, return shared symbolic descriptors so compilers can inspect
 group expressions without running device code. Inside an active compiler
-environment, use its constructors to get the backend's group type.
-Primitive lowering resolves launch dimensions when it uses the group.
+environment, use its constructors to get the backend's group type and query
+methods. The backend resolves launch dimensions later, when a query or
+primitive uses the group.
 
 Constructing a group does not execute a cooperative operation or
 synchronize its threads.

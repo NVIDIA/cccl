@@ -336,7 +336,7 @@ in the block; static offsets are checked during planning. `valid_items` is
 relative to each group's own tile, not the entire block, and must be uniform
 within that group.
 
-In Numba-CUDA-MLIR, `ThreadGroup` follows the C++ hierarchy query surface.
+`ThreadGroup` follows the C++ hierarchy query surface in both integrations.
 `rank(level="thread")` and `count(level="thread")` accept `thread` (or
 `gpu_thread`), `warp`, `block`, `cluster`, and `grid`; logical and mapped
 `group_by` groups have narrower limits, described below. Results use the
@@ -350,11 +350,11 @@ These widths apply to both integrations. CuTe queries return `Uint32` or
 `Uint64`, and `is_member()` returns `Uint8`; Numba queries return the matching
 Numba integer types.
 
-`sync()` and `sync_aligned()` expose the matching non-grid group barriers. All
-participating members must reach `sync()`. `sync_aligned()` additionally
-requires the caller to keep the group aligned and converged. Numba-CUDA-MLIR
-does not support grid synchronization because it cannot request a cooperative
-grid launch. CUTLASS does not yet implement group queries or synchronization.
+`sync()` and `sync_aligned()` expose non-grid barriers in both integrations.
+All participating members must reach `sync()`. `sync_aligned()` additionally
+requires the caller to keep the group aligned and converged. Neither
+integration supports grid synchronization. Numba-CUDA-MLIR cannot request a
+cooperative grid launch.
 
 The `count` and `exhaustive` arguments of `group_by` must be compile-time
 constants. A logical threads-within-warp group can query its threads and
@@ -507,9 +507,9 @@ payload sums, logical-warp reductions, and root-only prefix results.
 and `maximum`; and the bitwise pairs `&`/`bit_and`, `|`/`bit_or`, and
 `^`/`bit_xor`. Bitwise reductions require an integer payload dtype. The
 qualified APIs in both integrations additionally recognize the corresponding
-Python `operator` functions and NumPy ufuncs. Built-in operator and algorithm selectors are
-normalized to canonical lowercase strings. Enum-like and other non-string
-selector objects are rejected.
+Python `operator` functions and NumPy ufuncs. Built-in operator and algorithm
+selectors are normalized to canonical lowercase strings. Enum-like and other
+non-string selector objects are rejected.
 
 The following controls select the reduction form:
 

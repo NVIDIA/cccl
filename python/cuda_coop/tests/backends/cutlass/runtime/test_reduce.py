@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check Reduce values, result ownership, input preservation, and reuse.
+
+Host folds use the input dtype to match the collective's scalar arithmetic.
+Broadcast and root-only cases write only results that their contract makes
+valid. Separate tests exercise cluster launch, repeated prefix reductions,
+device range-check traps, and call elimination in the final linked kernel.
+"""
+
 import importlib.util
 import os
 import re
@@ -58,6 +66,12 @@ def _group(api, kind):
 
 
 def _fold(values, operation):
+    """Fold a group's flattened payload using the kernel's scalar dtype.
+
+    Passing the dtype prevents NumPy from widening small integer reductions.
+    The oracle covers one or several values per participating thread.
+    """
+
     operation = {
         "sum": np.add,
         "multiplies": np.multiply,
@@ -76,6 +90,13 @@ def _fold(values, operation):
     "items_per_thread", (0, 1, 4), ids=("scalar", "one-item", "four-items")
 )
 def test_sum_types(api, dtype, items_per_thread):
+    """Check result type and input preservation for scalar and payload sums.
+
+    Every member records the broadcast result. A second output records the
+    original scalar or payload after reduction, so a correct sum cannot hide
+    mutation of the caller's input.
+    """
+
     value_type = cutlass_dtype(dtype)
     extent = max(items_per_thread, 1)
     size = _THREADS * extent
@@ -146,6 +167,13 @@ def test_sum_types(api, dtype, items_per_thread):
 @pytest.mark.parametrize("operation", _OPS)
 @pytest.mark.parametrize("broadcast", (False, True), ids=("root", "members"))
 def test_group_builtins(api, kind, operation, broadcast):
+    """Observe built-in reductions only where their results are defined.
+
+    Broadcast mode writes every group member's result. Root-only mode writes
+    one result per group and leaves other output sentinels intact. Products
+    use only 1 and -1, so the group product cannot overflow Int32.
+    """
+
     width = _WIDTHS[kind]
     items_per_thread = 2
 
@@ -200,6 +228,13 @@ def test_group_builtins(api, kind, operation, broadcast):
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("dtype", (np.uint8, np.uint16, np.uint32, np.uint64))
 def test_unsigned_result(api, dtype):
+    """Carry an unsigned result through two reductions and a typed payload.
+
+    A warp maximum becomes the input to a block maximum. The block result
+    then enters ThreadData. Both intermediate type checks and the final
+    values must preserve the unsigned scalar representation.
+    """
+
     value_type = cutlass_dtype(dtype)
 
     @cute.kernel
@@ -244,6 +279,13 @@ def test_unsigned_result(api, dtype):
 @pytest.mark.parametrize("runtime", (False, True), ids=("static", "runtime"))
 @pytest.mark.parametrize("prefix", (1, 5, None), ids=("one", "several", "full"))
 def test_prefix(api, kind, runtime, prefix):
+    """Reduce each group's scalar prefix with static or runtime counts.
+
+    All members call the collective, but only each group's root stores a
+    result. The host folds the same leading values within each group, keeping
+    prefix length separate from the group's full participation requirement.
+    """
+
     width = _WIDTHS[kind]
     prefix = width if prefix is None else prefix
 
@@ -297,6 +339,13 @@ def test_prefix(api, kind, runtime, prefix):
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize("items_per_thread", (0, 2), ids=("scalar", "payload"))
 def test_block_algorithm(api, algorithm, items_per_thread):
+    """Select each CUB block algorithm without modifying its input.
+
+    Only thread zero consumes the root-only result. Every thread separately
+    records its scalar or payload after reduction, checking preservation as
+    well as the total for each explicit algorithm.
+    """
+
     extent = max(items_per_thread, 1)
 
     @cute.kernel
@@ -356,6 +405,13 @@ def test_block_algorithm(api, algorithm, items_per_thread):
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 def test_nonmembers(api):
+    """Let excluded threads continue after a mapped-group reduction.
+
+    Three of the block's four warps belong to the mapped group. Only members
+    consume the reduction result, while every thread writes a later value.
+    This checks that excluding the final warp does not end its kernel work.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer, observed: cute.Pointer, continued: cute.Pointer
@@ -393,6 +449,13 @@ def test_nonmembers(api):
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 def test_cluster(api):
+    """Reduce across real two-block clusters and check their hierarchy fields.
+
+    The device capability check gates an actual cluster launch. Two clusters
+    produce independent sums and maxima. Their rank and count fields must also
+    distinguish blocks within a cluster from clusters within the grid.
+    """
+
     cutlass.cuda.initialize_cuda_context()
     device = check_cuda(driver.cuCtxGetDevice())
     supported = check_cuda(
@@ -478,6 +541,14 @@ def test_cluster(api):
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("kind", ("block", "warp", "logical"))
 def test_reuse_loop(api, kind):
+    """Reuse prefix-reduction scratch across eight runtime iterations.
+
+    Each iteration changes the scalar inputs. Only group roots accumulate the
+    results. The expected total includes the loop offset that each iteration
+    adds to every counted input. This exposes stale prefix results while
+    respecting root-only visibility.
+    """
+
     width = _WIDTHS[kind]
     groups = _THREADS // width
     count = width - 3
@@ -534,6 +605,14 @@ def test_reuse_loop(api, kind):
     ],
 )
 def test_bad_prefix(tmp_path, kind, value):
+    """Reject invalid runtime prefixes in an isolated CUDA process.
+
+    A device trap can leave its context unusable, so each case launches in a
+    child process pinned to this source checkout. Counts include a value above
+    32 bits to catch truncation before validation. The parent requires a CUDA
+    trap-related status, not merely an arbitrary child-process failure.
+    """
+
     path = tmp_path / "invalid_prefix.py"
     path.write_text(f"""import numpy as np
 import cutlass
@@ -590,6 +669,13 @@ raise AssertionError("invalid Reduce prefix did not trap")
 
 @pytest.mark.parametrize("route", ("cudax", "cub"))
 def test_final_cubin(tmp_path, route):
+    """Check that both provider routes inline into the final linked kernel.
+
+    First verify the root's sum, then reject residual provider symbols or CALL
+    instructions in the retained cubin. This test checks call elimination; it
+    does not measure shared allocation, register use, or barrier counts.
+    """
+
     cuobjdump = shutil.which("cuobjdump")
     if cuobjdump is None:
         pytest.skip(

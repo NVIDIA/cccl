@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Validate Reduce calls for CUTLASS kernels and adapt register payloads.
+
+This module implements ``cuda.coop.cutlass.reduce`` and ``sum``. It also
+serves ``cuda.coop.reduce`` and ``sum`` when CUTLASS is the active compiler.
+Qualified calls convert register tensors and TensorSSA values to ThreadData
+automatically. Common API calls accept only scalars or ThreadData. The shared
+planner selects CUDAX for full-group built-in reductions. It selects CUB when
+the call has ``valid_items`` or an explicit block algorithm.
+"""
+
 from enum import Enum
 from numbers import Integral
 
@@ -20,6 +30,12 @@ _ALGORITHMS = frozenset(
 
 
 def _classify_valid_items(value):
+    """Separate omitted, static, and runtime prefix counts.
+
+    Reject booleans before integer classification. The shared plan checks
+    static bounds and whether the operand form can use a valid prefix.
+    """
+
     if value is None:
         return ArgumentBinding.omitted()
     if _is_boolean(value):
@@ -34,6 +50,14 @@ def _classify_valid_items(value):
 
 
 def _normalize_algorithm(algorithm):
+    """Normalize a CUB block algorithm name.
+
+    Strip whitespace, lowercase, and replace hyphens with underscores. Accept
+    strings for the three deterministic strategies; Enum values and the
+    nondeterministic warp-reduction strategy are rejected. Leave None so the
+    shared planner can choose a route.
+    """
+
     if algorithm is None:
         return None
     if not isinstance(algorithm, str) or isinstance(algorithm, Enum):

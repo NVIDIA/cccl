@@ -95,9 +95,9 @@ All threads in the group must call the primitive, even when ``valid_items``
 selects a short tile or only rank zero uses the result. The sections below
 describe the requirements for block, warp, and mapped groups.
 
-Reduce supports the built-in operators listed below. Custom
-operators and Scan prefix callbacks are not yet supported. See the
-:doc:`API reference <coop_api>` for operation signatures and return values.
+Reduce supports the built-in operators listed below and rejects custom
+operators. CUTLASS does not implement Scan. See the :doc:`API reference
+<coop_api>` for operation signatures and return values.
 
 .. _coop-cutlass-mixed-backends:
 
@@ -441,11 +441,11 @@ Hierarchy queries and synchronization
 ``count`` accept a hierarchy level: ``thread`` (also spelled ``gpu_thread``),
 ``warp``, ``block``, ``cluster``, or ``grid``. Their default result is a CuTe
 ``Uint32``, or ``Uint64`` when the group or queried level is the grid.
-``rank_as(dtype, level="thread")`` and ``count_as`` select a signed or unsigned
-8-, 16-, 32-, or 64-bit integer type. Floating and Boolean query types are
-unsupported. NumPy integer dtypes and Python ``int`` are also accepted as dtype
-selectors; the compiled values are CuTe scalars. ``is_member()`` returns a CuTe
-``Uint8`` membership flag.
+``rank_as(dtype, level="thread")`` and ``count_as`` select a signed or
+unsigned 8-, 16-, 32-, or 64-bit integer type. Floating and Boolean query
+types are unsupported. NumPy integer dtypes and Python ``int`` are also
+accepted as dtype selectors; the compiled values are CuTe scalars.
+``is_member()`` returns a CuTe ``Uint8`` membership flag.
 
 Mapped groups may query their constituents and immediate physical parent.
 Thus ``this_warp().group_by(8)`` supports thread and warp queries, while

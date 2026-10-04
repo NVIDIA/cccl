@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compare device group queries with explicit host hierarchy calculations.
+
+Three-dimensional blocks and multiple grid blocks expose flattening and
+scope mistakes. Threads outside a nonexhaustive mapped group skip its
+rank queries, so their output slots keep the host sentinel. Separate cases
+check requested integer types, partial physical warps, and final code for
+metadata-only queries.
+"""
+
 import re
 import shutil
 import subprocess
@@ -34,6 +43,14 @@ _FIELDS = 23
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 def test_queries(api):
+    """Record per-thread hierarchy fields across a multidimensional grid.
+
+    The mapped group uses two of each block's three warps. Only members query
+    its ranks and block-level count. The remaining warp keeps sentinels in
+    those fields. The host computes each rank and count independently from
+    linear thread indices.
+    """
+
     @cute.kernel
     def kernel(observed: cute.Pointer):
         x, y, z = cute.arch.thread_idx()
@@ -167,6 +184,13 @@ def test_query_dtype(api, dtype):
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 def test_partial_warp(api):
+    """Count a partial final warp when querying the enclosing block.
+
+    A 48-thread block contains two physical warp slots. This block-level query
+    is valid even though a collective requiring complete physical warps would
+    reject the same launch shape.
+    """
+
     @cute.kernel
     def kernel(observed: cute.Pointer):
         thread = cute.arch.thread_idx()[0]
@@ -189,6 +213,13 @@ def test_partial_warp(api):
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 def test_nonpower_mapping(api):
+    """Query and synchronize complete groups of three lanes within each warp.
+
+    Thirty lanes belong to ten groups; the last two lanes are nonmembers.
+    Only members synchronize or query ranks, so the unused lanes retain the
+    rank sentinels while still reporting membership and group size.
+    """
+
     @cute.kernel
     def kernel(observed: cute.Pointer):
         thread = cute.arch.thread_idx()[0]
@@ -223,6 +254,13 @@ def test_nonpower_mapping(api):
 
 
 def test_mapped_query_cubin(tmp_path):
+    """Query a mapped group without requiring its other members to execute.
+
+    Only the first warp queries a two-warp group. The values must be correct
+    without collective participation. Final SASS and resource checks reject
+    calls, barriers, warp synchronization, and shared allocation.
+    """
+
     cuobjdump = shutil.which("cuobjdump")
     if cuobjdump is None:
         pytest.skip(

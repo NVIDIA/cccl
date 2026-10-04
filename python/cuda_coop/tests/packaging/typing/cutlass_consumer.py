@@ -6,9 +6,9 @@
 
 ``test_typing.py`` runs ``mypy --strict`` on this file against copied
 ``.pyi`` stubs. This prevents implementation modules from supplying missing
-declarations. Checks cover block and warp group kinds, Load/Store returns,
-descriptor attributes and calls across namespaces, and dtype-preserving
-payload constructors and conversions.
+declarations. Checks cover group query types, Reduce results, Load/Store
+returns, descriptor attributes, and calls across namespaces. Payload
+constructors and conversions must preserve the scalar dtype.
 
 The test neither imports this file nor traces or launches a kernel.
 """
@@ -125,6 +125,8 @@ def check_cutlass_surface(source: object, destination: object) -> None:
 def check_cutlass_dynamic_memory_controls(
     signed: Int32, unsigned: Uint32
 ) -> None:
+    """Accept CuTe integer controls with a typed payload."""
+
     block = cutlass_coop.this_block()
     values = cutlass_coop.ThreadData(items_per_thread=2, dtype=Float64)
     assert_type(
@@ -215,13 +217,15 @@ def check_cutlass_logical_warp_surface(
     cutlass_coop.load(common_coop.this_warp().group_by(8), source, values)
     cutlass_coop.store(common_coop.this_warp().group_by(8), destination, values)
 
-    # Block partitions keep their mapped group kind, although Load/Store
-    # reject them during tracing.
+    # Block partitions keep their mapped group kind. Load/Store stubs and
+    # tracing both reject this kind, so it is checked only as a group.
     mapped = cutlass_coop.this_block().group_by(2, exhaustive=False)
     assert_type(mapped, cutlass_coop.ThreadGroup[Literal["warps_within_block"]])
 
 
 def check_cutlass_hierarchy_surface() -> None:
+    """Check group kinds, query dtypes and synchronization."""
+
     thread = cutlass_coop.this_thread()
     block = cutlass_coop.this_block()
     cluster = cutlass_coop.this_cluster()
@@ -250,6 +254,8 @@ def check_cutlass_hierarchy_surface() -> None:
 
 
 def check_cutlass_reduce_surface(scalar: Uint32) -> None:
+    """Preserve scalar dtype through Reduce and operator aliases."""
+
     block = cutlass_coop.this_block()
     values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
     assert_type(cutlass_coop.reduce(block, values), np.int32)

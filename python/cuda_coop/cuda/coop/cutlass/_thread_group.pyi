@@ -2,13 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Type hints for cuda.coop.cutlass thread groups.
+"""Declare CUTLASS groups and their CuTe query result types.
 
-Overloads keep the group kind in the type, so a type checker can tell blocks,
-physical warps, and logical warps apart. A warp partition returns a logical
-thread group. A block partition returns warps within a block, which Load/Store
-do not accept. Lowering checks group width and membership against the
-enclosing kernel launch.
+Overloads restrict mapped queries to their constituents and immediate parent.
+Python or NumPy dtype selectors choose a scalar representation; runtime
+values still belong to CuTe. Default widths are Uint64 for grid-related
+queries and Uint32 otherwise.
 """
 
 from collections.abc import Callable
@@ -58,7 +57,7 @@ class ThreadGroup(
     def rank(
         self: ThreadGroup[_PhysicalGroupKind], level: ThreadLevel = "thread"
     ) -> Uint32 | Uint64:
-        """Return rank using the outer C++ hierarchy boundary's product type."""
+        """Return an unsigned rank; grid-related queries use 64 bits."""
     @overload
     def rank(
         self: ThreadGroup[Literal["threads_within_warp"]],
@@ -79,9 +78,7 @@ class ThreadGroup(
     def count(
         self: ThreadGroup[_PhysicalGroupKind], level: ThreadLevel = "thread"
     ) -> Uint32 | Uint64:
-        """Return count using the outer C++ hierarchy boundary's product
-        type.
-        """
+        """Return an unsigned count; grid-related queries use 64 bits."""
     @overload
     def count(
         self: ThreadGroup[Literal["threads_within_warp"]],
@@ -101,7 +98,7 @@ class ThreadGroup(
         dtype: _BuiltinIntDType,
         level: _UniversalQueryLevel = "thread",
     ) -> int:
-        """Query a universal thread or Warp rank as built-in int."""
+        """Use ``int`` to select a signed 32-bit CuTe ``Int32`` rank."""
     @overload
     def rank_as(
         self,
@@ -122,21 +119,21 @@ class ThreadGroup(
         dtype: _BuiltinIntDType,
         level: ThreadLevel = "thread",
     ) -> int:
-        """Return rank converted to the built-in integral dtype."""
+        """Use ``int`` to select a signed 32-bit CuTe ``Int32`` rank."""
     @overload
     def rank_as(
         self: ThreadGroup[Literal["threads_within_warp"]],
         dtype: _BuiltinIntDType,
         level: _ThreadsWithinWarpLevel = "thread",
     ) -> int:
-        """Return rank converted to the built-in integral dtype."""
+        """Use ``int`` to select a signed 32-bit CuTe ``Int32`` rank."""
     @overload
     def rank_as(
         self: ThreadGroup[Literal["warps_within_block"]],
         dtype: _BuiltinIntDType,
         level: _WarpsWithinBlockLevel = "thread",
     ) -> int:
-        """Return rank converted to the built-in integral dtype."""
+        """Use ``int`` to select a signed 32-bit CuTe ``Int32`` rank."""
     @overload
     def rank_as(
         self: ThreadGroup[_PhysicalGroupKind],
@@ -186,7 +183,7 @@ class ThreadGroup(
         dtype: _BuiltinIntDType,
         level: _UniversalQueryLevel = "thread",
     ) -> int:
-        """Query a universal thread or Warp count as built-in int."""
+        """Use ``int`` to select a signed 32-bit CuTe ``Int32`` count."""
     @overload
     def count_as(
         self,
@@ -207,21 +204,21 @@ class ThreadGroup(
         dtype: _BuiltinIntDType,
         level: ThreadLevel = "thread",
     ) -> int:
-        """Return count converted to the built-in integral dtype."""
+        """Use ``int`` to select a signed 32-bit CuTe ``Int32`` count."""
     @overload
     def count_as(
         self: ThreadGroup[Literal["threads_within_warp"]],
         dtype: _BuiltinIntDType,
         level: _ThreadsWithinWarpLevel = "thread",
     ) -> int:
-        """Return count converted to the built-in integral dtype."""
+        """Use ``int`` to select a signed 32-bit CuTe ``Int32`` count."""
     @overload
     def count_as(
         self: ThreadGroup[Literal["warps_within_block"]],
         dtype: _BuiltinIntDType,
         level: _WarpsWithinBlockLevel = "thread",
     ) -> int:
-        """Return count converted to the built-in integral dtype."""
+        """Use ``int`` to select a signed 32-bit CuTe ``Int32`` count."""
     @overload
     def count_as(
         self: ThreadGroup[_PhysicalGroupKind],
@@ -278,10 +275,12 @@ class ThreadGroup(
         *,
         exhaustive: bool = True,
     ) -> ThreadGroup[Literal["threads_within_warp"]]:
-        """Describe groups with a compile-time count of threads per group.
+        """Partition a physical warp into groups of ``count`` threads.
 
-        Load/Store accept widths 1, 2, 4, 8, 16, and 32. Each width divides a
-        physical warp, so either exhaustive setting gives complete groups.
+        ``count`` is a compile-time value from 1 to 32. With
+        ``exhaustive=False``, a count that does not divide 32 leaves trailing
+        lanes outside every group. Each primitive documents its supported
+        widths; Load/Store accept 1, 2, 4, 8, 16, and 32.
         """
 
     @overload

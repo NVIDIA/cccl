@@ -746,9 +746,10 @@ class ThreadGroup:
     ) -> _ThreadGroupT:
         """Copy the descriptor with a given hierarchy and source label.
 
-        Keep its concrete backend type. For a mapped group, give its physical
-        parent the same hierarchy so both descriptions remain consistent.
-        Construction rechecks the mapping against the known dimensions.
+        Resolvers attach launch dimensions; common ``this_grid`` changes only
+        the source label. Keep the concrete backend type. For a mapped group,
+        give its physical parent the same hierarchy so both descriptions stay
+        consistent. Construction rechecks the mapping against known dimensions.
         """
 
         if self.mapping is None:
