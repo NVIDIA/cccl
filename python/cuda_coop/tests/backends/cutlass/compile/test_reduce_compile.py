@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile Reduce payloads and controls without executing a kernel.
+
+Typed null pointers and an explicit SM80 target exercise specialization,
+provider compilation, and result typing. Some kernels write results without
+selecting the group root; those stores are compile inputs, not executable
+examples. Runtime tests check result ownership and numerical behavior.
+"""
+
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
@@ -68,6 +76,13 @@ def test_scalar_and_payload(api, algorithm, array):
     ),
 )
 def test_typed_result_consumption(dtype):
+    """Use a reduction result as typed input to another reduction.
+
+    The first scalar enters a ThreadData payload and then a second collective.
+    This checks that the result retains a usable scalar type throughout the
+    compiler path, including narrow integers and floating-point values.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         first = cutlass_coop.sum(cutlass_coop.this_block(), dtype(1))
@@ -94,6 +109,13 @@ def test_typed_result_consumption(dtype):
 )
 @pytest.mark.parametrize("warp", (False, True))
 def test_dynamic_prefix_compile(dtype, warp):
+    """Compile prefix counts with signed and unsigned 32- and 64-bit types.
+
+    The count remains a runtime operand for both block and logical-warp
+    reductions. This checks the accepted operand types; separate runtime cases
+    check values outside the valid range.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer, count: dtype):
         if cutlass.const_expr(warp):
@@ -196,6 +218,13 @@ def test_missing_exact_block():
     "api", (coop, cutlass_coop), ids=("common", "qualified")
 )
 def test_register_payload_boundary(ssa, api):
+    """Keep native CuTe register payloads behind the qualified API.
+
+    The same register tensor and its loaded SSA value are accepted through the
+    CUTLASS API. The common API requires a scalar or ThreadData payload, so it
+    must reject both native forms before provider compilation can use them.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer):
         fragment = cute.make_rmem_tensor((2,), cutlass.Int32)

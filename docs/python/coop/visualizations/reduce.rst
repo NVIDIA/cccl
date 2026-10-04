@@ -63,10 +63,9 @@ participates. The explorer offers this choice only for one item per thread.
 A custom operator uses the qualified ``cuda.coop.numba_mlir`` namespace.
 It must be associative and is supported through the CUB block or warp path,
 with scalar or fixed-array inputs and a result defined only at the group
-root. CUTLASS currently supports built-in operators only.
-The common namespace accepts
-built-in names such as ``"sum"``, ``"max"``, ``"min"``, ``"multiplies"``,
-and the integer bitwise operators.
+root. CUTLASS currently supports built-in operators only. The common
+namespace accepts built-in names such as ``"sum"``, ``"max"``, ``"min"``,
+``"multiplies"``, and the integer bitwise operators.
 
 Using Reduce in a kernel
 ------------------------
@@ -90,7 +89,8 @@ each physical warp. Each group has a separate aggregate, consumed by its
 rank-zero lane. Logical widths may be powers of two from 1 through 32 or any
 width from 17 through 31. CUB supports only one non-power-of-two group per
 physical warp. For those widths, use ``group_by(width, exhaustive=False)`` and
-guard the reduction with ``group.is_member()`` so trailing lanes do not participate:
+guard the reduction with ``group.is_member()`` so trailing lanes do not participate.
+This fragment writes one sum for each eight-lane logical warp:
 
 .. code-block:: python
 
@@ -101,9 +101,9 @@ guard the reduction with ``group.is_member()`` so trailing lanes do not particip
 
 
 For the explorer's custom-maximum choice, use a device callback and the
-Numba-qualified API. CuTe can select the built-in ``binary_op="max"`` for the
-same maximum operation. Launch this Numba kernel with one block whose size
-matches the input:
+Numba-qualified API. CuTe can select the built-in ``binary_op="max"`` for
+the same maximum operation. Launch this Numba kernel with one block whose
+size matches the input:
 
 .. code-block:: python
 

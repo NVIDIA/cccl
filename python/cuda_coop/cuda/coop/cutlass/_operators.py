@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Map supported operator names and known callables to C++ functors.
+
+Callable aliases are recognized by identity; their Python bodies are never
+compiled or invoked. The shared plan receives a typed functor descriptor,
+while generated calls construct a functor with deduced operand types.
+"""
+
 import operator
 from enum import Enum
 
@@ -55,6 +62,12 @@ _CALLABLE_ALIASES = {
 
 
 def normalize_operator(value, *, primitive="reduce"):
+    """Resolve a built-in string or known callable to one operator token.
+
+    None selects sum. Compare callable objects by identity so an arbitrary
+    callback cannot acquire built-in semantics merely by sharing a name.
+    """
+
     if value is None:
         return "sum"
     if isinstance(value, Enum):
@@ -80,6 +93,8 @@ def normalize_operator(value, *, primitive="reduce"):
 
 
 def validate_operator_dtype(op, value_type, *, primitive="reduce"):
+    """Require a known operator and integer values for bitwise operations."""
+
     if op not in OPERATOR_CPP:
         raise ValueError(f"unsupported built-in operator {op!r}")
     if op.startswith("bit_") and value_type not in INTEGER_VALUE_TYPES:
@@ -89,4 +104,6 @@ def validate_operator_dtype(op, value_type, *, primitive="reduce"):
 
 
 def operator_expression(op):
+    """Construct a C++ functor whose operand types are deduced."""
+
     return OPERATOR_CPP[op].replace("<T>", "<>") + "{}"

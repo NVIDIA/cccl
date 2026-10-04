@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Combine group queries, Load, Reduce, and Store in one compiled kernel.
+
+Transpose Load and Store share explicit scratch. A full payload reduction
+uses CUDAX, while a scalar prefix reduction selects CUB. The checks expose
+missing provider registration or interference between operations that
+share one compilation. The final Store also checks that both reductions
+leave the original payload unchanged.
+"""
+
 import numpy as np
 import pytest
 
@@ -21,6 +30,13 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 )
 @pytest.mark.parametrize("items_per_thread", (1, 4))
 def test_mixed_primitives(api, items_per_thread):
+    """Check both reductions and the later Store from the same loaded payload.
+
+    Every member records the full reduction. Only the block root records the
+    prefix result, using the first item from each of the first 45 threads.
+    The final copy verifies that the intervening reductions preserve payloads.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,

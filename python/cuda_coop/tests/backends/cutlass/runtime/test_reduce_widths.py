@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check reduction width boundaries and nonexhaustive logical groups.
+
+Widths one and 32 cover the smallest group and a full physical warp. Width
+three leaves two nonmembers per warp for the ordinary CUDAX route. Prefix
+cases use supported CUB widths and consume results only at group roots.
+"""
+
 import numpy as np
 import pytest
 

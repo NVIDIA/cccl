@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Lower group queries and synchronization to CUDAX extern calls.
+
+Resolve hierarchy facts before emitting a request. Query wrappers return
+CuTe integer values, membership returns Uint8, and synchronization
+returns no value. All group and dtype choices are static; the extern ABI
+has no runtime arguments.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -29,6 +37,12 @@ _SYNC_OPS = frozenset({"sync", "sync_aligned"})
 
 @dataclass(frozen=True)
 class _CudaxGroupRequest:
+    """Identify one group operation and its static query result type.
+
+    Symbol names include group topology, operation, level, and dtype so
+    distinct query contracts receive distinct definitions.
+    """
+
     group: ThreadGroup
     op: str
     level: str = "thread"
@@ -36,6 +50,8 @@ class _CudaxGroupRequest:
     kind: str = "cudax_group"
 
     def __post_init__(self):
+        """Validate the operation and any requested integral query type."""
+
         if self.op not in _QUERY_OPS | _SYNC_OPS | {"is_member"}:
             raise ValueError(f"unsupported group operation {self.op!r}")
         if self.op in _QUERY_OPS:
@@ -60,6 +76,15 @@ class _CudaxGroupRequest:
 
 
 def _resolve_method_group(group, op, level="thread"):
+    """Resolve the hierarchy needed by a query, membership test, or barrier.
+
+    Queries resolve the hierarchy through the queried level. A mapped group
+    cannot query above its immediate parent. For synchronization, reject grid
+    groups and mapped groups of warps. The latter need barrier storage with a
+    lifetime that only the planner can own. Queries and membership tests on
+    mapped groups of warps remain supported.
+    """
+
     if not isinstance(group, ThreadGroup):
         raise TypeError(f"{_SCOPE}.ThreadGroup method requires a ThreadGroup")
     if (
@@ -89,6 +114,14 @@ def _resolve_method_group(group, op, level="thread"):
 
 
 def _result_type(group, level, dtype):
+    """Select a supported CuTe integer type for a hierarchy query.
+
+    Defaults use Uint64 when the group or queried level is grid, and Uint32
+    otherwise. Explicit dtype selectors, such as NumPy dtypes, become the
+    matching CuTe integer type. The result is always a CuTe scalar.
+    Non-integral dtypes are rejected.
+    """
+
     if dtype is None:
         return (
             _types.Uint64
@@ -105,6 +138,8 @@ def _result_type(group, level, dtype):
 
 
 def _group_prelude(group):
+    """Render group context without adding mapped-warp barrier state."""
+
     if group.kind == "warps_within_block":
         return _mapped_warp_query_prelude(group)
     return [
@@ -114,7 +149,12 @@ def _group_prelude(group):
 
 
 def _mapped_warp_query_prelude(group: ThreadGroup) -> list[str]:
-    """Render flat mapped-Warp metadata without constructing a barrier group."""
+    """Render mapped-warp metadata without constructing a barrier group.
+
+    Queries need only the parent warp rank, the number of warps per group,
+    and the number of warps that belong to complete groups. Avoid barrier
+    allocation and initialization for these arithmetic and membership tests.
+    """
 
     assert group.kind == "warps_within_block"
     assert group.parent is not None
@@ -148,6 +188,16 @@ def _mapped_warp_query_prelude(group: ThreadGroup) -> list[str]:
 
 
 def _query_expr(group: ThreadGroup, operation: str, level: str) -> str:
+    """Select rank or count arithmetic for the requested hierarchy level.
+
+    At a level inside the group, return the caller's rank among units of that
+    level, or how many such units the group contains. At a level outside the
+    group, return this group's rank within that level, or how many such groups
+    that level contains. An unmapped group's own level returns rank zero and
+    count one. Mapped warp groups use flat arithmetic. Mapped groups cannot
+    query above their immediate parent.
+    """
+
     if group.kind == "warps_within_block":
         assert group.mapping is not None
         block_threads = group.hierarchy.block_thread_count
@@ -194,6 +244,8 @@ def _query_expr(group: ThreadGroup, operation: str, level: str) -> str:
 
 
 def _render_cudax_group(request):
+    """Render a typed query, Uint8 membership test, or void barrier call."""
+
     group, op = request.group, request.op
     if op in _QUERY_OPS:
         cpp_type = _types.TYPE_SPECIFICATIONS[request.result_type].cpp_type
@@ -227,6 +279,12 @@ def _render_cudax_group(request):
 
 
 def _emit(request, result_type):
+    """Queue a group definition and emit its zero-argument extern call.
+
+    Convert a returned value to the declared CuTe type. On failure, restore
+    queued request state without claiming to undo emitted IR.
+    """
+
     snapshot = _state.snapshot_active_session_state()
     try:
         _state.register_request(request)
@@ -240,6 +298,8 @@ def _emit(request, result_type):
 
 
 def provider_group_query(*, group, op, level="thread", result_type=None):
+    """Normalize a query level, resolve its group, and emit a typed value."""
+
     if op not in _QUERY_OPS:
         raise ValueError(f"unsupported group query {op!r}")
     level = normalize_thread_level(
@@ -251,12 +311,16 @@ def provider_group_query(*, group, op, level="thread", result_type=None):
 
 
 def provider_group_sync(*, group, aligned):
+    """Resolve a supported group and emit its selected barrier call."""
+
     op = "sync_aligned" if aligned else "sync"
     group = _resolve_method_group(group, op)
     _emit(_CudaxGroupRequest(group, op), None)
 
 
 def provider_group_membership(*, group):
+    """Emit a Uint8 flag for membership in the resolved group."""
+
     group = _resolve_method_group(group, "is_member")
     return _emit(_CudaxGroupRequest(group, "is_member"), _types.Uint8)
 

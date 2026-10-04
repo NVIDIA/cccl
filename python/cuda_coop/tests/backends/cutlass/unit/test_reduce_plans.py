@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check Reduce provider selection, result ownership, and failure recovery.
+
+Plans choose CUDAX group operations for ordinary reductions and CUB for
+prefix or explicit block-algorithm requests. Their visibility rules tell
+callers which members may consume the result. Rendered guards and session
+rollback are checked here without a GPU launch.
+"""
+
 import operator
 from dataclasses import replace
 
@@ -75,6 +83,14 @@ def _plan(group=None, **options):
 )
 @pytest.mark.parametrize("broadcast", (True, False))
 def test_cudax_route_and_visibility(group, op, broadcast):
+    """Keep the requested visibility on the CUDAX group route.
+
+    These plans have no caller scratch operand or separate storage-reuse
+    barrier. That does not imply that the CUDAX implementation uses no shared
+    memory internally. Broadcast results belong to every member; root-only
+    results belong to the group root.
+    """
+
     plan = _plan(
         group,
         op=op,
@@ -155,6 +171,13 @@ def test_operator_aliases(value, expected):
 
 
 def test_callback_rejected():
+    """Accept operator aliases by identity, not user-defined equality.
+
+    The callable below hashes and compares like ``operator.add`` but subtracts
+    its inputs. Treating it as the built-in alias would silently change its
+    meaning, so it must be rejected with other unsupported callbacks.
+    """
+
     with pytest.raises(NotImplementedError, match="custom callbacks"):
         normalize_operator(lambda a, b: a + b)
 
@@ -179,6 +202,13 @@ def test_static_prefix_range(valid):
 
 
 def test_request_rejects_mismatched_plan():
+    """Reject a provider request that disagrees with its resolved plan.
+
+    The request and plan must agree on scalar type, operator, and result mode.
+    The test changes each field separately and expects rejection before the
+    provider renders source or starts compilation.
+    """
+
     plan = _plan()
     with pytest.raises(ValueError, match="dtype"):
         _reduce._CudaxReduceRequest(plan, "sum", cutlass.Uint32)
@@ -211,6 +241,12 @@ def test_grid_reduction_rejected():
 
 
 def test_runtime_count_guard():
+    """Place the runtime range check before the CUB reduction call.
+
+    A dynamic prefix cannot be fully validated on the host. The rendered trap
+    must precede the collective so invalid values never enter its overload.
+    """
+
     plan = _plan(valid_items=ArgumentBinding.runtime(), broadcast=False)
     request = _reduce._CubReduceRequest(plan, "sum", cutlass.Int32)
     source = _rendering.render_bundle_source([request])
@@ -221,6 +257,12 @@ def test_runtime_count_guard():
 
 
 def test_failed_ffi_restores_session(monkeypatch):
+    """Restore the saved session when reduction FFI emission fails.
+
+    The provider request is already registered when FFI raises. Restoring the
+    earlier snapshot keeps the next provider bundle free of failed requests.
+    """
+
     snapshot = object()
     registered, restored = [], []
     monkeypatch.setattr(

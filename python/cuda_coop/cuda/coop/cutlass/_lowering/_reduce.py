@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Emit CuTe extern calls for shared CUDAX or CUB reduction plans.
+
+Requests bind generated definitions to plan identities and extern signatures.
+Full-group built-ins use CUDAX. A valid prefix or explicit block algorithm
+uses CUB, whose result is defined only at group rank zero. Finalization
+compiles the queued C++ definitions into a device LTO-IR bundle.
+"""
+
 from __future__ import annotations
 
 import dataclasses
@@ -66,7 +74,12 @@ def _make_group_reduce_plan(
     valid_items: ArgumentBinding | None = None,
     algorithm: Any = None,
 ) -> GroupLoweringPlan:
-    """Build the canonical shared-core plan for one CUTLASS reduction."""
+    """Build shared reduction semantics and select a lowering route.
+
+    Represent built-in non-sum operators as C++ functors with a payload dtype
+    dependency. Shared planning decides result visibility, participation,
+    scratch, and specialization; this helper does not emit a device call.
+    """
 
     reduce_operator = None
     operation = ReduceOperation.SUM
@@ -108,6 +121,12 @@ def _validate_valid_items_payload(
     binding: ArgumentBinding,
     value: Any,
 ) -> None:
+    """Check that a count value agrees with its binding description.
+
+    An omitted binding carries no value, a runtime binding needs an operand,
+    and a static binding must match its recorded constant.
+    """
+
     if binding.kind is BindingKind.OMITTED:
         if value is not None:
             raise ValueError("omitted valid_items binding cannot carry a value")
@@ -126,6 +145,12 @@ def _validate_reduce_request_plan(
     op: str,
     value_type: type,
 ) -> GroupReduceSemantics:
+    """Match a wrapper request to its planned dtype and operator.
+
+    Check the C++ functor spelling as well as sum versus general Reduce so the
+    rendered operation cannot differ from the artifact identity.
+    """
+
     operation = plan.call.operation
     if not isinstance(operation, GroupReduceSemantics):
         raise TypeError("group reduce request requires reduce semantics")
@@ -153,12 +178,22 @@ def _validate_reduce_request_plan(
 
 @dataclasses.dataclass(frozen=True, eq=False)
 class _CudaxReduceRequest:
+    """Describe one CUDAX reduction and its result contract.
+
+    The plan artifact key controls deduplication. Before rendering, check that
+    the dtype, operator, and CUDAX overload match the plan. With broadcast,
+    every member gets the value. Without broadcast, CUDAX returns an optional
+    value that only rank zero holds.
+    """
+
     plan: GroupLoweringPlan
     op: str
     value_type: type
     kind: str = "cudax_reduce"
 
     def __post_init__(self) -> None:
+        """Require a non-grid CUDAX plan with the expected result mode."""
+
         self.plan.require_supported()
         if self.plan.target is not GroupLoweringTarget.CUDAX_GROUP:
             raise ValueError("cudax reduce request requires a CUDAX_GROUP plan")
@@ -233,6 +268,8 @@ class _CudaxReduceRequest:
 
     @property
     def symbol_name(self) -> str:
+        """Combine readable call details with a short artifact-key hash."""
+
         signature = hashlib.sha256(
             repr(self.semantic_key).encode("utf-8", errors="backslashreplace")
         ).hexdigest()[:12]
@@ -245,6 +282,13 @@ class _CudaxReduceRequest:
 
 
 def _storage_reuse_barrier_line(plan: GroupLoweringPlan) -> str:
+    """Render a barrier before wrapper-owned scratch is reused, or no line.
+
+    CUB plans get a block barrier or a warp barrier. The warp mask covers only
+    the logical group's lanes. NONE means the wrapper owns no scratch, which
+    is always true for CUDAX plans, so no barrier is added.
+    """
+
     synchronization = plan.synchronization
     if synchronization is None:
         raise ValueError("Reduce plan requires a synchronization contract")
@@ -280,6 +324,14 @@ def _storage_reuse_barrier_line(plan: GroupLoweringPlan) -> str:
 
 
 def _render_group_prelude(group: ThreadGroup) -> list[str]:
+    """Construct the planned group and its explicit or implicit hierarchy.
+
+    Mapped groups use the shared-core declaration helper. A mapped group of
+    warps also declares ``__shared__`` barrier storage. A lane group inside
+    one warp uses a lane synchronizer instead. This setup runs before the
+    wrapper filters out threads that are not members.
+    """
+
     if group.hierarchy.implicit:
         assert group.mapping is None
         hierarchy = "::cuda::experimental::implicit_hierarchy()"
@@ -296,6 +348,14 @@ def _render_group_prelude(group: ThreadGroup) -> list[str]:
 
 
 def _render_cudax_reduce(request: _CudaxReduceRequest) -> list[str]:
+    """Render scalar arguments and the selected CUDAX result form.
+
+    Collect item arguments into a local array. Construct mapped groups before
+    excluded threads return so parent participation requirements remain
+    intact. Root-only optional results are unwrapped with a placeholder value
+    elsewhere; that placeholder does not make non-root results valid.
+    """
+
     if request.items_per_thread <= 0:
         raise ValueError("cudax reduce items_per_thread must be positive")
     implementation = request.plan.implementation
@@ -383,12 +443,21 @@ _BLOCK_ALGORITHM_TOKENS = {
 
 @dataclasses.dataclass(frozen=True, eq=False)
 class _CubReduceRequest:
+    """Describe a direct CUB reduction with a shared specialization.
+
+    The plan artifact key includes controls and topology needed by the
+    wrapper. Scalar and one-item array forms stay distinct: the array form
+    passes a local one-element array to CUB and adds an ``_x1`` symbol suffix.
+    """
+
     plan: GroupLoweringPlan
     op: str
     value_type: type
     kind: str = "cub_group_reduce"
 
     def __post_init__(self) -> None:
+        """Require a CUB plan with a matching dtype and built-in operator."""
+
         self.plan.require_supported()
         if self.plan.target not in {
             GroupLoweringTarget.CUB_BLOCK,
@@ -441,6 +510,8 @@ class _CubReduceRequest:
 
     @property
     def algorithm_suffix(self) -> str:
+        """Name the selected block strategy or the warp provider route."""
+
         if self.plan.target is GroupLoweringTarget.CUB_WARP:
             return "warp"
         algorithm = (
@@ -450,6 +521,8 @@ class _CubReduceRequest:
 
     @property
     def symbol_name(self) -> str:
+        """Name the CUB call and include a short artifact-key hash."""
+
         arity = (
             f"_x{self.items_per_thread}"
             if self.operation.primitive.value_kind is ReduceValueKind.ARRAY
@@ -471,6 +544,8 @@ def _render_cub_template_argument(
     name: str,
     value: Any,
 ) -> str:
+    """Spell a bound CUB argument and verify the payload dtype."""
+
     if name == "T":
         if value is not request.value_type:
             raise ValueError(
@@ -487,6 +562,12 @@ def _render_cub_template_argument(
 
 
 def _warp_instances(plan: GroupLoweringPlan) -> tuple[int, int]:
+    """Find complete logical warp instances and their width.
+
+    Use the exact enclosing block and the bound CUB warp width to size
+    storage. Each instance needs its own scratch slice.
+    """
+
     participation = plan.participation
     if participation is None:
         raise ValueError("WarpReduce plan requires a participation contract")
@@ -505,6 +586,15 @@ def _warp_instances(plan: GroupLoweringPlan) -> tuple[int, int]:
 
 
 def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
+    """Render a CUB call with owned scratch and root-only results.
+
+    Item scalars come before an optional runtime count in the extern ABI. If
+    a runtime count is outside 1 through the group size, the wrapper traps;
+    the planner already checked static counts. Allocate one scratch object
+    per block or logical warp, and emit the planned barrier before that
+    scratch can be reused.
+    """
+
     implementation = request.plan.implementation
     assert isinstance(implementation, Algorithm)
     type_specification = TYPE_SPECIFICATIONS[request.value_type]
@@ -601,6 +691,12 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
 
 
 def _register_renderer() -> None:
+    """Register both reduction routes and their header prerequisites.
+
+    CUDAX feature macros must precede includes in the generated bundle. The
+    CUB route contributes only its own required headers.
+    """
+
     _provider_rendering.register_bundle_renderer(
         "cudax_reduce",
         render=_render_cudax_reduce,
@@ -671,6 +767,14 @@ def provider_reduce(
     valid_items_binding: ArgumentBinding | None = None,
     algorithm: Any = None,
 ) -> Any:
+    """Plan a reduction and emit its typed CuTe extern call.
+
+    Resolve scalar or initialized ThreadData values to one dtype and validate
+    the built-in operator. Each payload element becomes a scalar ABI argument;
+    a runtime valid count follows those items. Inputs remain unchanged, and
+    the returned scalar follows the plan's result visibility.
+    """
+
     if not isinstance(group, ThreadGroup):
         raise TypeError(f"{_ROOT_SCOPE}.reduce group must be a ThreadGroup")
     if not isinstance(broadcast, bool):
@@ -687,6 +791,13 @@ def provider_reduce(
         value_kind: ReduceValueKind,
         values: tuple[Any, ...],
     ) -> Any:
+        """Bind one operand shape and emit its planned reduction.
+
+        Convert literals and runtime counts before registration. On
+        failure, restore queued requests; this bookkeeping rollback does
+        not remove emitted IR.
+        """
+
         plan = _make_group_reduce_plan(
             group=group,
             launch=launch,

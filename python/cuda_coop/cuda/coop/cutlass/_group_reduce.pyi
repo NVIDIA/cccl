@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe qualified reduction shapes and root-only CUB options.
+
+Overloads preserve the input element type and separate full-group payloads
+from scalar valid prefixes. Structural callable types admit built-in aliases;
+tracing checks their identities and rejects custom callbacks.
+"""
+
 from collections.abc import Callable
 from typing import Literal, Protocol, TypeAlias, overload
 
@@ -31,6 +38,8 @@ _NumpyReduceUfuncName: TypeAlias = Literal[
 ]
 
 class _NumpyReduceUfunc(Protocol):
+    """Describe NumPy binary ufunc metadata for built-in alias typing."""
+
     @property
     def __name__(self) -> _NumpyReduceUfuncName: ...
     @property
