@@ -58,6 +58,10 @@ struct histogram_tuning_policy_selector
     policy.gmem         = sweep;
     policy.static_smem  = sweep;
     policy.dynamic_smem = sweep;
+    // Tuning points measure only the requested sweep configuration. Do not inherit
+    // production-only launch bounds or route high-bin cases to the cooperative kernel.
+    policy.static_smem_min_blocks_per_sm = 0;
+    policy.high_bin_algorithm            = cub::HistogramHighBinAlgorithm::global_memory_privatized;
     return policy;
   }
 };

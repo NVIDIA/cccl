@@ -239,10 +239,10 @@ public:
   {
     // SM100 and SM120 use the autoresearch launch shapes. Their dynamic-SMEM budgets differ because SM100 permits
     // 227 KiB per block while SM120 permits 99 KiB per block.
-    if (cc >= ::cuda::compute_capability{10, 0})
+    if (cc == ::cuda::compute_capability{10, 0} || cc == ::cuda::compute_capability{12, 0})
     {
-      const bool is_sm120_or_newer = cc >= ::cuda::compute_capability{12, 0};
-      const bool single_channel    = num_channels == 1 && num_active_channels == 1;
+      const bool is_sm120       = cc == ::cuda::compute_capability{12, 0};
+      const bool single_channel = num_channels == 1 && num_active_channels == 1;
       auto gmem = HistogramPrivatizationPolicy{384, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, false};
 
       // Single-channel primitive samples with 32-bit counters use their per-sample-width tuning.
@@ -306,7 +306,7 @@ public:
       constexpr int init_threads_per_block                              = 256;
       constexpr int max_output_histogram_bytes_for_init_kernel_pdl      = 8192;
       const int max_privatized_dynamic_smem_single_channel_bytes =
-        is_sm120_or_newer ? max_privatized_dynamic_smem_sm120_bytes : max_privatized_dynamic_smem_sm100_bytes;
+        is_sm120 ? max_privatized_dynamic_smem_sm120_bytes : max_privatized_dynamic_smem_sm100_bytes;
 
       const bool supports_dynamic_smem =
         counter_size_bytes == int{sizeof(::cuda::std::uint32_t)} && sample_is_primitive;
@@ -325,7 +325,7 @@ public:
       {
         dynamic_smem_multi_channel_even_bytes =
           max_privatized_dynamic_smem_even_bytes_per_channel * num_active_channels;
-        if (is_sm120_or_newer)
+        if (is_sm120)
         {
           dynamic_smem_multi_channel_even_bytes =
             (::cuda::std::min) (dynamic_smem_multi_channel_even_bytes, max_privatized_dynamic_smem_sm120_bytes);
