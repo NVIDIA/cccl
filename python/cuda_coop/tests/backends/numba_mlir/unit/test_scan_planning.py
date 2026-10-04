@@ -235,6 +235,14 @@ def test_public_signatures_keep_portable_surface_narrow_and_add_n6_callbacks():
 def test_all_qualified_scan_spellings_plan_stateless_prefix_callbacks(
     spelling: str,
 ):
+    """Keep a stateless prefix in specialization inputs for every Scan name.
+
+    The generic Scan spellings use a custom binary operator to reach their
+    non-sum path. Inspect rewritten IR and the shared plan without compiling
+    the callbacks: the prefix must remain static and must not introduce a
+    state, seed, or aggregate operand.
+    """
+
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as coop
@@ -350,6 +358,13 @@ def test_removed_prefix_keyword_is_rejected_during_binding():
     ),
 )
 def test_all_qualified_scan_spellings_plan_explicit_state(spelling: str):
+    """Carry the same runtime state through every qualified Scan spelling.
+
+    Use int64 state beside an int32 scalar value to catch accidental payload
+    dtype reuse. Inspect the selected provider's state reference and the
+    shared plan's runtime STATE classification before compiling callbacks.
+    """
+
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as coop
@@ -462,6 +477,13 @@ def test_all_qualified_scan_spellings_plan_explicit_state(spelling: str):
     ),
 )
 def test_scan_prefix_validation_fails_during_planning(case: str, match: str):
+    """Reject invalid callback and state combinations before materialization.
+
+    Each kernel introduces one binding, group, shape, or dtype violation.
+    Run only the group planner so a later callback compilation error cannot
+    hide a missing check or substitute a less useful diagnostic.
+    """
+
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as coop

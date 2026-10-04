@@ -38,6 +38,12 @@ _BLOCK_THREADS = 64
 
 
 class _RunningPrefixFunctor:
+    """Exercise the functor-class ABI with a mutable running prefix.
+
+    The compiler passes a state pointer as the unbound method's first
+    argument. No Python instance is constructed for the device call.
+    """
+
     def __call__(self_ptr, block_aggregate):
         previous = self_ptr[0]
         self_ptr[0] = previous + block_aggregate
@@ -452,6 +458,14 @@ def test_stateless_block_and_warp_scan_callbacks_link_with_provider_lto(
 def test_block_prefix_callbacks_compile_for_scalar_array_and_algorithms(
     compile_context: _nvrtc.CompileContext,
 ) -> None:
+    """Link prefix callbacks across CUB algorithms and payload forms.
+
+    Use both decorated functions and a functor class, with state dtypes
+    independent of the int32 payload. The two stateless cases must reuse
+    one callback symbol; the stateful forms need distinct symbols. Compile
+    all providers together to check declarations and callback LTO linkage.
+    """
+
     def prefix_from_aggregate(block_aggregate):
         return block_aggregate + 7
 
@@ -565,6 +579,14 @@ def test_block_prefix_callbacks_compile_for_scalar_array_and_algorithms(
 
 
 def test_production_kernel_compile_consumes_prefix_descriptors() -> None:
+    """Compile public Scan calls through planning, lowering, and device link.
+
+    Use ThreadData and local-array state with different dtypes, followed by
+    a stateless array scan. One kernel must resolve each descriptor and link
+    its callback. Stateful calls retain the state array as a runtime operand.
+    The configured launch supplies block geometry without launching a GPU.
+    """
+
     import cuda.coop.numba_mlir as coop
 
     @cuda.jit(device=True)
@@ -692,6 +714,14 @@ def test_production_kernel_compile_accepts_descriptors_through_inlined_helpers(
 
 
 def test_collective_inside_standalone_scan_callback_has_clear_diagnostic():
+    """Preserve the planning error from a callback that calls a collective.
+
+    Prefix callbacks compile as standalone device functions. Their nested
+    collective lacks the kernel launch context required by group planning.
+    The diagnostic must identify that callback and explain the inlining
+    requirement, even when provider construction triggers the compilation.
+    """
+
     from numba_cuda_mlir.numba_cuda.core.errors import TypingError
 
     import cuda.coop.numba_mlir as coop

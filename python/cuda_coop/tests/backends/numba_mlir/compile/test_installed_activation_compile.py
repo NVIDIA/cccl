@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Check activation and compilation from the installed wheel in isolation.
+"""Check installed activation and callback exports in isolated Python.
 
 Each probe runs ``python -I`` with ``PYTHONPATH`` deliberately set to the
 checkout. Isolated mode must ignore that path. The probe checks module and
@@ -10,7 +10,10 @@ header origins before compiling, so checkout files cannot hide missing
 wheel contents. Four import orders must each activate the backend. The public
 Reduce and Scan modules must load only when first accessed. Their compiler
 modules must load only when the compiler first looks up their planning hooks.
-Removed prefix-callback parameters and modules must stay absent.
+
+The probe also checks lazy StatefulFunction exports, then compiles a real
+kernel. Only device-target queries are replaced; provider compilation and
+device linking use the installed toolchain.
 """
 
 from __future__ import annotations

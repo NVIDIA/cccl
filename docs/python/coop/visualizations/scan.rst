@@ -74,12 +74,11 @@ The qualified ``aggregate_output`` writes the input aggregate to a separate
 one-item payload in every member. It excludes the initial value and any
 input lanes beyond ``valid_items``.
 
-Prefix callbacks are block-only and
-cannot be combined with ``initial_value`` or ``aggregate_output``. The
-callback receives the input aggregate and returns the prefix to apply. The
-explorer's stateless callback returns ``aggregate + 7``; its stateful example
-returns the previous running value of 10 and updates that value with the tile
-aggregate.
+Prefix callbacks are block-only and cannot be combined with
+``initial_value`` or ``aggregate_output``. The callback receives the input
+aggregate and returns the prefix to apply. The explorer's stateless callback
+returns ``aggregate + 7``; its stateful example returns the previous running
+value of 10 and updates that value with the tile aggregate.
 
 Using Scan in a kernel
 ----------------------

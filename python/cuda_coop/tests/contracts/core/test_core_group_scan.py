@@ -300,6 +300,13 @@ def test_custom_exclusive_scan_requires_initial_value():
 
 
 def test_block_prefix_callback_defines_custom_exclusive_rank_zero():
+    """Let a block prefix callback supply a custom scan's first value.
+
+    A custom exclusive operator normally requires an initial value. The
+    callback fills that role here, so the planner must select ExclusiveScan
+    and carry a runtime state parameter without adding a uniform seed input.
+    """
+
     def maximum(left, right):
         return max(right, left)
 

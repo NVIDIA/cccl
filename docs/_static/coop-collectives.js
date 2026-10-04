@@ -142,8 +142,8 @@
   });
 
   function prefix_choices(state) {
-    // Sum supplies zero itself. Only a general exclusive scan exposes a
-    // separate initial value; inclusive scans have no added prefix.
+    // Explicit initial values belong to generic exclusive scans. Block
+    // prefix callbacks can also seed inclusive and sum forms.
     const generic_exclusive = state.variant === "exclusive_scan";
     const choices = generic_exclusive ? [choice("zero", "Initial value 0"), choice("ten", "Initial value 10")] : [choice("none", "No added prefix")];
     if (state.scope === "block") choices.push(choice("callback", "Callback: aggregate + 7"), choice("stateful", "Running state: prefix 10"));
@@ -200,6 +200,9 @@
         "The group input aggregate is returned to every lane; initial_value is not included.", Math.floor(thread / width) * width));
     }
     if (state.prefix === "stateful") {
+      // Show only the state at block rank zero, which the API guarantees.
+      // CUB may also call other first-warp lanes; their copies are not
+      // authoritative.
       rows.push({ id: "state", label: "Running state · inspect at block rank zero", count: 1 });
       output.push(token("state", combine(10, aggregates[0], operator), "state", 0,
         `The callback returned the previous prefix 10 and updated its state with tile aggregate ${aggregates[0]}.`, 0));
@@ -238,6 +241,7 @@
       { id: "operator", label: "Operator", value: "sum", choices: state => state.variant.endsWith("_sum") ? [choice("sum", "Sum")] : [choice("sum", "Sum"), choice("max", "Maximum"), choice("custom_max", "Custom maximum callback")] },
       { id: "prefix", label: "Prefix", value: "none", choices: prefix_choices },
       { id: "valid", label: "Contributing ranks", value: "full", choices: state => [choice("full", "All group members"), ...(state.scope !== "block" ? [choice("half", "First half (valid_items)")] : [])] },
+      // Match the API's mutually exclusive callback and aggregate forms.
       { id: "aggregate", label: "Aggregate output", value: "none", choices: state => [choice("none", "Scan results only"), ...(!["callback", "stateful"].includes(state.prefix) ? [choice("emit", "Also return input aggregate")] : [])] },
     ],
     build: build_scan,

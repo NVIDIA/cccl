@@ -254,12 +254,12 @@ def _python_operator_symbol_name(
     *,
     state_dtype: numba_types.Type | None = None,
 ) -> str:
-    """Name a Python operator by callable semantics and concrete signature.
+    """Name a compiled Python operator from its callable and signature.
 
-    Include return and argument dtypes so one function specialized at two
-    signatures gets distinct device symbols. Include the state dtype for a
-    stateful callback. Avoid host object identity, which cannot identify
-    equivalent callbacks across compilation attempts.
+    Include the callable's semantic identity and the result and argument
+    dtypes. A stateful operator also includes its state dtype, so callbacks
+    with different state-pointer signatures cannot share a symbol. Runtime
+    state contents and diagnostic labels do not affect this name.
     """
 
     callable_component = _callable_symbol_component(binary_op)
@@ -1395,7 +1395,35 @@ class StatelessOperator(Parameter):
 
 
 class StatefulOperator(Parameter):
-    """A compiled Python callable closed over a runtime state pointer."""
+    """Bind compiled callback code to a runtime state-array parameter.
+
+    The callback is already compiled to LTO for one compute capability.
+    Its C++ lambda captures the caller's state pointer and forwards it as
+    the first argument to that device function. CUB receives the lambda;
+    the provider's runtime ABI receives the state array, not a callable.
+
+    Parameters
+    ----------
+    name : str
+        Compiled device symbol used by declarations and callback calls.
+    state_dtype : numba type
+        Element type of the runtime state array, independent of payload type.
+    ret_cpp_type : str
+        C++ spelling of the callback result type.
+    arg_cpp_types : sequence of str
+        C++ spellings of callback arguments after the state pointer.
+    ltoir : bytes-like
+        Compiled callback image included when linking the provider.
+    compute_capability : tuple of int
+        Exact target of that image. Provider source generation checks that
+        the callback and provider targets agree.
+
+    Notes
+    -----
+    Scan planning requires a one-item state array. The Numba parameter type
+    checks its dtype and contiguous one-dimensional layout; it cannot encode
+    the one-item extent. Runtime state values are never specialization inputs.
+    """
 
     def __init__(
         self,
@@ -1427,6 +1455,13 @@ class StatefulOperator(Parameter):
         return self.name
 
     def forward_decl(self):
+        """Declare the compiled callback with its state pointer first.
+
+        The provider treats state as an untyped byte pointer. Callback code
+        uses the corresponding typed pointer. This declaration preserves the
+        external ABI without exposing a state object to C++.
+        """
+
         return_type = (
             "void" if self.ret_cpp_type == "storage_t" else self.ret_cpp_type
         )
@@ -1443,12 +1478,28 @@ class StatefulOperator(Parameter):
         )
 
     def cpp_decl(self, name):
+        """Declare the provider runtime state pointer."""
+
         return f"char *{name}_state"
 
     def dtype(self):
+        """Require a contiguous one-dimensional array of the state dtype.
+
+        Planning separately verifies the one-item extent. Numba's array type
+        does not carry that extent into overload matching.
+        """
+
         return numba_types.Array(self.state_dtype, 1, "C")
 
     def wrap_decl(self, name):
+        """Emit the C++ functor that closes over the runtime state pointer.
+
+        CUB calls this lambda with the scan aggregate. The lambda prepends the
+        captured pointer when calling the compiled device symbol, so updates
+        reach the caller's state array without passing state through CUB's
+        callback signature.
+        """
+
         param_decls = []
         param_refs = []
         for index, arg_type in enumerate(self.arg_cpp_types):
@@ -1474,6 +1525,8 @@ class StatefulOperator(Parameter):
         return buf.getvalue()
 
     def is_provided_by_user(self):
+        """Consume a runtime state-array argument for this parameter."""
+
         return True
 
 
@@ -1579,7 +1632,13 @@ class DependentPythonOperator:
 
 
 class DependentStatefulOperator:
-    """A stateful Python operator resolved after dtype specialization."""
+    """Resolve a stateful callback's types before compiling its device code.
+
+    State, result, argument, and callable dependencies are resolved against
+    the provider's template arguments. Specialization produces a
+    ``StatefulOperator`` with compiled LTO and a concrete state-pointer ABI.
+    No state allocation or state values are stored in this descriptor.
+    """
 
     def __init__(self, state_dtype, ret_dtype, arg_dtypes, op, *, name=None):
         self.state_dtype = state_dtype
@@ -1589,6 +1648,19 @@ class DependentStatefulOperator:
         self.name = name
 
     def specialize(self, template_arguments):
+        """Compile a typed callback for the current device target.
+
+        Resolve the state and payload types, reject aggregate payloads, and
+        compile a signature with the typed state pointer first. For a functor
+        class, compile its unbound ``__call__`` method. The first parameter
+        receives the pointer instead of a Python instance.
+
+        Build the symbol and compilation identity from callable semantics and
+        types, including the state dtype. Return a ``StatefulOperator`` with
+        the LTO image and exact compute capability. Source generation checks
+        that the provider target agrees. Wrapper compilation happens later.
+        """
+
         state_dtype = self.state_dtype.resolve(template_arguments)
         ret_dtype = self.ret_dtype.resolve(template_arguments)
         arg_dtypes = tuple(
@@ -2302,13 +2374,16 @@ class Algorithm:
         w("}\n\n")
 
     def _collect_support_ltoirs_and_udf_declarations(self, *, provider_cc):
-        """Collect link images and declarations needed by provider source.
+        """Collect link images and declarations required by the provider.
 
-        Include type support and stateless Python operators. Each
-        callback must target ``provider_cc`` and repeated device
-        symbols must declare the same signature. Deduplicate
-        link images and preserve declaration order for a shared
-        preamble. A mismatch raises before provider compilation.
+        Include type-definition images and both stateless and stateful Python
+        callbacks. Require each callback's recorded target to match
+        ``provider_cc`` before adding its declaration. Repeated device symbols
+        must have the same declaration; conflicting signatures are rejected.
+
+        Return deduplicated LTO images and declarations in first-seen order.
+        The provider source and linker consume these together, so generated
+        calls and their compiled definitions describe the same ABI.
         """
 
         lto_irs = []
@@ -2353,14 +2428,14 @@ class Algorithm:
     ) -> tuple[str, list[bytes], tuple[str, ...], OrderedDict[str, str]]:
         """Generate C++ wrappers and compile-time storage metadata.
 
-        Emit a typed wrapper plus an ``__abi`` shim for each specialized
-        method. The typed wrapper adapts array pointers to CUB array
-        references, applies input transforms, folds pointer offsets into
-        earlier pointer arguments, and traps on out-of-range
-        ``BoundedInteger`` values before narrowing them. C++ functors,
-        Python-operator lambdas, and static offsets are embedded in source
-        instead of passed as runtime arguments. Python operators add their
-        device declarations and supporting LTO images for later linkage.
+        Emit a typed wrapper and an ``__abi`` shim for each concrete method.
+        The typed wrapper adapts array pointers to CUB array references and
+        applies input transforms. It folds offsets into earlier pointer
+        arguments and traps on out-of-range ``BoundedInteger`` values before
+        narrowing them. C++ functors and static offsets are embedded in source
+        instead of passed as runtime arguments. Python callbacks use lambdas:
+        stateless lambdas have no capture, while stateful lambdas capture a
+        runtime state pointer and forward it to the compiled callback.
 
         For ``LEADING_POINTER`` storage, emit both explicit-scratch and
         ``_alloc`` entry points. Only ``_alloc`` allocates scratch and emits
@@ -2394,25 +2469,22 @@ class Algorithm:
         src : str
             Complete CUDA C++ translation unit for this specialization.
         support_lto_irs : list of bytes
-            Deduplicated supporting link images from type definitions
-            and Python operators.
+            Deduplicated type-definition and Python-callback link images.
         temp_storage_types : tuple of str
             C++ scratch type names to query, or an empty tuple without scratch.
         udf_declarations : collections.OrderedDict
-            Device declarations for Python operators, keyed by
-            symbol name for constructing a shared source preamble.
+            Device declarations for Python operators, keyed by symbol name.
+            Source coalescing uses these to construct a shared preamble.
 
         Raises
         ------
         ValueError
-            A pointer offset has no earlier pointer target,
-            multiple outputs are requested, or allocating
-            warp storage has an invalid width/block size.
+            A pointer offset lacks an earlier pointer target, the method has
+            multiple outputs, or warp storage uses invalid thread dimensions.
         RuntimeError
-            The provider was already qualified for incompatible
-            compiler inputs, a Python operator targets a different
-            compute capability, or two operators declare the
-            same device symbol with different signatures.
+            The provider has incompatible bound compiler inputs, a callback
+            targets a different compute capability, or two callbacks declare
+            the same device symbol with different signatures.
         NotImplementedError
             The requested allocating execution or synchronization scope has
             no source emitter.
@@ -2937,17 +3009,20 @@ class Algorithm:
         method: Sequence[Parameter],
         mangled_name: str,
     ) -> type[_OverloadFunctionTemplate]:
-        """Build a Numba overload template for one specialized provider method.
+        """Build a Numba overload for one specialized provider method.
 
         Pair the method's Python-facing argument checks with the generated
         ``__abi`` symbol. Pointer-backed arguments use an untyped pointer ABI
         and ``types.ptr`` conversion; scalar arguments use their descriptor
         dtype. An output becomes the external call's return value. Embedded
-        functors and static pointer offsets consume no runtime arguments.
+        C++ expressions, such as functors and static seeds, and static pointer
+        offsets consume no runtime arguments.
+        A stateful Python operator consumes its state array instead: check the
+        array type, then pass its data pointer through the untyped ABI.
 
         The resulting typing implementation returns ``None`` when the arity or
-        an input descriptor rejects the actual compiler types, allowing overload
-        selection to continue. On a match, it returns a fixed-arity
+        an input descriptor rejects the compiler types. This lets overload
+        selection continue. On a match, it returns a fixed-arity
         implementation and attaches the invocable's link paths. Registration
         remains local to the returned template instead of modifying a global
         typing registry.
@@ -2979,7 +3054,8 @@ class Algorithm:
             raise ValueError("Cannot generate codegen for a template")
 
         def ignore_param(param):
-            # Static C++ and Python operators need no runtime argument handling.
+            # Embedded C++ expressions (functors or static values), stateless
+            # Python operators, and static offsets consume no runtime argument.
             ignore = isinstance(param, (CxxFunction, StatelessOperator)) or (
                 isinstance(param, PointerOffset)
                 and param.static_value is not None
@@ -3122,14 +3198,14 @@ def _collect_extra_ltoirs(algo):
 
 
 def _param_coalesce_key(param):
-    """Describe one parameter's generated C++ and runtime ABI shape.
+    """Describe one parameter's effect on provider source and calling ABI.
 
-    Parameter display names are omitted. Types, transforms, bounds, and
-    embedded expressions remain part of the key because they affect code.
-
-    Stateless Python operators also include their device symbol, concrete C++
-    signature, target compute capability, and LTO digest. A matching name
-    alone cannot establish that two callback implementations can be reused.
+    Preserve dtype, extent, transforms, bounds, and static values that alter
+    generated code. Python callbacks also contribute their symbol, signature,
+    exact target, and LTO digest; stateful callbacks include the state dtype.
+    Runtime state contents are absent, allowing one provider to serve arrays
+    with different values. Unknown descriptor types fall back to their class
+    name and representation.
     """
 
     if isinstance(param, TransformedArray):
@@ -3652,12 +3728,12 @@ class Invocable:
 class RawCAbiInvocable:
     """Expose generated C-ABI device code as a compiler-local callable.
 
-    Group queries already have a concrete
-    C signature; they do not need the CUB ``Algorithm`` wrapper
-    machinery. Construction validates that signature, compiles
-    the source to LTO IR, and owns a temporary link file until
-    this object is finalized. Numba obtains a callable type lazily
-    from ``_numba_type_`` without global overload registration.
+    Group queries already have a concrete C signature;
+    they do not need the CUB ``Algorithm`` wrapper machinery. Construction
+    validates that signature, compiles the source to LTO IR, and owns a
+    temporary link file until this object is finalized. Numba obtains a
+    callable type lazily from ``_numba_type_`` without global overload
+    registration.
 
     Parameters
     ----------

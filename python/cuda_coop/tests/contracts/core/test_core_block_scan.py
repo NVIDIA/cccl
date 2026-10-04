@@ -322,6 +322,14 @@ def test_block_scan_sum_accepts_stateless_prefix_callback():
 
 
 def test_block_scan_prefix_callback_follows_scan_operator_in_cub_signature():
+    """Preserve CUB argument order with a runtime state parameter.
+
+    Use a custom binary operator plus a stateful prefix so both appear in
+    the same ExclusiveScan signature. The binary operator is static; the
+    prefix parameter consumes the caller's state array. Neither an explicit
+    seed nor an aggregate output belongs to this overload.
+    """
+
     def maximum(left, right):
         return max(right, left)
 

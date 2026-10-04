@@ -98,6 +98,8 @@ def _carry_int64_for_int32(
     state: coop.ThreadDataLike[np.int64],
     block_aggregate: np.int32,
 ) -> np.int32:
+    """Keep the Scan result type while allowing a wider running-state type."""
+
     previous = np.int32(state[0])
     state[0] += np.int64(block_aggregate)
     return previous
@@ -108,6 +110,8 @@ class _Int32PrefixFunctor:
         return block_aggregate
 
 
+# The descriptor tracks state and Scan value types separately. Each call
+# below must retain its payload type even when the state has a wider dtype.
 _INT32_RUNNING_PREFIX = coop.StatefulFunction(
     _carry_int32_prefix,
     np.int32,
