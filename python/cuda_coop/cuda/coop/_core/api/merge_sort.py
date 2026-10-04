@@ -70,8 +70,11 @@ def merge_sort_keys(
         Key sentinel for a partial tile. Choose a value that sorts after the
         valid keys: an upper bound for ascending order or a lower bound for
         descending order. Typed runtime values and NumPy scalar constants
-        must match the key dtype exactly. Representable ordinary Python
-        numeric literals are converted to it.
+        must match the key dtype exactly. An ordinary Python int constant
+        can convert to any key dtype within range. A Python float constant
+        requires a floating key dtype and must be within its finite range;
+        float-to-integer conversion is rejected. Floating keys also accept
+        positive or negative infinity as a sentinel.
         ``valid_items`` and ``oob_default`` must be uniform within the group.
     temp_storage : TempStorageLike, optional
         Caller-provided scratch for a block group. Omit it to let the compiler
@@ -156,8 +159,11 @@ def merge_sort_pairs(
         Key sentinel for a partial tile. Choose a value that sorts after the
         valid keys: an upper bound for ascending order or a lower bound for
         descending order. Typed runtime values and NumPy scalar constants
-        must match the key dtype exactly. Representable ordinary Python
-        numeric literals are converted to it.
+        must match the key dtype exactly. An ordinary Python int constant
+        can convert to any key dtype within range. A Python float constant
+        requires a floating key dtype and must be within its finite range;
+        float-to-integer conversion is rejected. Floating keys also accept
+        positive or negative infinity as a sentinel.
         ``valid_items`` and ``oob_default`` must be uniform within the group.
     temp_storage : TempStorageLike, optional
         Caller-provided scratch for a block group. Omit it to let the compiler
