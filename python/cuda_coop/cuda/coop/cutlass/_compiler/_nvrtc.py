@@ -151,10 +151,32 @@ def _compile_ltoir(
 ) -> tuple[bytes, dict[str, ScratchLayout]]:
     """Keep probe registration, layout extraction, and code on one program.
 
+    The bundle compiler reaches this helper on a cache miss, after it has
+    selected and preloaded the toolkit libraries. The query names encode
+    C++ constant values in template arguments, so compilation can return
+    storage requirements without executing a device function.
+
     Queries are registered before compilation and decoded before program
     destruction. With no ``prepared`` probes the layout map is empty. Cleanup
     always destroys the program without replacing an earlier compile or query
     failure with a destruction error.
+
+    Parameters
+    ----------
+    source : str
+        Complete C++ translation unit. With prepared probes, this must be
+        the prepared source containing their variable-template declaration.
+    options : tuple of bytes
+        NVRTC flags selecting the target architecture, headers, and LTO-IR.
+    prepared : _PreparedLayoutProbes or None
+        Probe names and decoder identity from ``_prepare_layout_probes``.
+        None compiles code without requesting layout metadata.
+
+    Returns
+    -------
+    tuple
+        LTO-IR bytes and a map from query expressions to byte sizes and
+        alignments, all obtained from this NVRTC program.
     """
 
     nvrtc = _load_nvrtc()
