@@ -237,8 +237,8 @@ def validate(wheel: str | Path) -> None:
 
     Require the shared API and its header bundle, reject native binaries and
     excluded implementations, and preserve the shared ``cuda`` namespace.
-    A failed check raises ``SystemExit`` with a packaging diagnostic.
-    File and ZIP errors propagate to the caller.
+    Explicit contract checks raise ``SystemExit`` with a packaging diagnostic.
+    Unexpected file, archive, or record-shape errors propagate to the caller.
     """
     wheel_path = Path(wheel)
     if not wheel_path.name.endswith("-py3-none-any.whl"):

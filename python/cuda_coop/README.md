@@ -481,11 +481,11 @@ no algorithm selector.
 Sum is the default operation. `scan`, `exclusive_scan`, and `inclusive_scan`
 accept the same built-in string aliases as Reduce. The qualified API also
 recognizes the corresponding Python `operator` functions and NumPy ufuncs, and
-accepts stateless device callbacks. Callbacks must be associative and return
-the input dtype. A non-sum exclusive scan requires an `initial_value` with
-the payload dtype. Ordinary Python literals are checked and converted in
-that context. A block-prefix callback can supply the prefix instead.
-Inclusive scans reject an initial value.
+accepts stateless binary device callbacks. Binary callbacks must be
+associative and return the input dtype. A non-sum exclusive scan requires an
+`initial_value` with the payload dtype. Ordinary Python literals are checked
+and converted in that context. A block-prefix callback can supply that prefix
+instead. Inclusive scans reject an initial value.
 
 The qualified API also accepts `aggregate_output`, an exact-dtype one-item
 `ThreadData` or local array populated with the group aggregate on every
@@ -564,10 +564,10 @@ dynamic shared memory. Compiler-owned scratch and explicit descriptors with
 `auto_sync=True` append a block reuse barrier. Explicit descriptors default to
 `auto_sync=False`, so the caller must synchronize before reuse. Physical and
 logical Warp calls use compiler-owned per-Warp storage and append `syncwarp`
-for the exact participating mask. Prefix callbacks retain the same storage
-rules. When repeated calls reuse an explicit Block Scan descriptor, set
-`auto_sync=True` or issue `cuda.syncthreads()` before reuse. The prefix state
-is persistent per-thread data, not CUB temporary storage.
+for the exact participating mask. Prefix callbacks keep these storage
+rules. When repeated calls reuse an explicit descriptor, set
+`auto_sync=True` or issue `cuda.syncthreads()` before reuse. Keep the prefix
+state in its per-thread payload, separate from CUB temporary storage.
 
 This common example loads a block tile, computes its exclusive sum, and
 stores the out-of-place result:

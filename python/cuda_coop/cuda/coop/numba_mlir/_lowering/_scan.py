@@ -216,6 +216,17 @@ def _scan_operator(scan_op: Any, *, force_sum_operator: bool) -> Any:
 def _prefix_operator(
     prefix_op: Any,
 ) -> PythonOperator | StatefulOperator | None:
+    """Describe a prefix callback without binding its runtime state.
+
+    A ``StatefulFunction`` contributes its callable and numeric state dtype;
+    the callback argument and result still depend on the scan payload type.
+    A plain callable becomes a stateless unary operator. Return ``None``
+    when no prefix callback is requested, and reject non-callable inputs.
+
+    The core adapter resolves these descriptors and compiles their callbacks
+    during specialization. State contents never enter this description.
+    """
+
     if prefix_op is None:
         return None
 
@@ -291,10 +302,16 @@ def _block_scan(
 ) -> Any:
     """Build the scalar or array BlockScan provider selected by the factory.
 
-    Validate the common shape, mode, operator, and seed rules, then adapt the
-    shared specialization to Numba. The factory identity selects the payload
-    calling convention and registry metadata; an aggregate request adds a
-    separate output reference without changing the main result.
+    Validate shape, mode, operator, seed, and prefix-callback rules before
+    adapting the shared specialization to Numba. A stateful callback requires
+    ``prefix_state`` to indicate that the device call has a state operand;
+    the factory does not receive that array's contents. A prefix callback
+    excludes an explicit seed and a separate aggregate output.
+
+    The factory identity selects the payload calling convention and registry
+    metadata. Materialization resolves operator types and compiles callback
+    LTO. Invocable construction supplies the provider wrapper and storage
+    metadata; a requested aggregate remains a separate output reference.
     """
 
     if threads_per_block is None:

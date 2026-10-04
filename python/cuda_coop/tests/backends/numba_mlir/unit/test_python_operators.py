@@ -68,6 +68,13 @@ def _make_same_named_operator(offset):
 
 
 class _RunningPrefix:
+    """Model a block-scan prefix callback that updates device state.
+
+    The class's ``__call__`` is used without an instance, so ``self_ptr`` is
+    the device state pointer. ``aggregate`` is the block total from CUB. The
+    adapter must pass the state pointer before that value.
+    """
+
     def __call__(self_ptr, aggregate):
         previous = self_ptr[0]
         self_ptr[0] = previous + aggregate
@@ -75,6 +82,8 @@ class _RunningPrefix:
 
 
 class _OffsetPrefix:
+    """Provide different callback semantics with the same argument types."""
+
     def __call__(self_ptr, aggregate):
         return self_ptr[0] + aggregate
 
@@ -486,6 +495,15 @@ def test_provider_rejects_callback_lto_for_a_different_target():
 def test_core_adapter_lowers_stateful_operator_and_emits_state_capture(
     monkeypatch,
 ):
+    """Check the state-pointer ABI without invoking the callback compiler.
+
+    Record the requested compilation signature and supply a fixed LTO image.
+    Then generate real wrapper source and verify that the CUB functor captures
+    state, forwards it to the callback, and retains its link image. Also check
+    that a named parameter changes wrapper spelling without renaming the
+    compiled callback symbol.
+    """
+
     from numba_cuda_mlir import types
 
     from cuda.coop._core import StatefulOperator, SynchronizationScope
@@ -584,6 +602,13 @@ def test_core_adapter_lowers_stateful_operator_and_emits_state_capture(
 def test_stateful_symbols_use_callable_semantics_not_diagnostic_name(
     monkeypatch,
 ):
+    """Separate callback identity from its optional display label.
+
+    Keep payload types fixed while varying callable behavior, state dtype,
+    and diagnostic name. Symbol differences must track the first two; label
+    changes must preserve both the symbol and descriptor semantic token.
+    """
+
     from numba_cuda_mlir import types
 
     from cuda.coop.numba_mlir import StatefulFunction, _types

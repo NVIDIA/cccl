@@ -471,11 +471,12 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         *,
         specialization: Algorithm,
     ) -> Any:
-        """Translate a stateful callback into the backend descriptor.
+        """Translate a shared stateful operator into deferred Numba inputs.
 
-        Resolve state, return, and argument types through the same adapter
-        used for the containing algorithm. Preserve the callable and name;
-        later specialization compiles its device function with the state ABI.
+        Adapt dtype dependencies and normalize the callback. Return a
+        ``DependentStatefulOperator`` for later specialization, which compiles
+        callback LTO with a leading typed state pointer. The state array
+        remains a runtime provider operand.
         """
 
         del specialization

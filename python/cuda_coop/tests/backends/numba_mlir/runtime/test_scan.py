@@ -324,6 +324,8 @@ def test_qualified_scan_accepts_a_callback_with_a_nested_device_helper():
 
 @cuda.jit(device=True)
 def _prefix_after_block_aggregate(block_aggregate):
+    """Return a max-scan prefix larger than every input."""
+
     return block_aggregate + 7
 
 
@@ -343,6 +345,13 @@ _RUNNING_PREFIX_INT64 = qualified_coop.StatefulFunction(
 
 @cache
 def _block_scan_prefix(array_items_per_thread):
+    """Compile a custom max scan with a fixed per-thread array extent.
+
+    Capture the extent for local allocation while keeping loop bounds as
+    runtime arguments. This exercises array-form prefix callbacks even when
+    each thread owns only one item.
+    """
+
     @cuda.jit
     def kernel(source, output, items_per_thread):
         thread = cuda.threadIdx.x
@@ -369,6 +378,13 @@ def _block_scan_prefix(array_items_per_thread):
 def test_stateless_prefix_custom_array_scan_without_initial(
     *, items_per_thread
 ):
+    """Use a block-wide maximum plus seven as every exclusive prefix.
+
+    The callback's value exceeds every source element, so a correct max
+    scan produces that value at every position. This also checks that the
+    callback supplies the exclusive prefix without ``initial_value``.
+    """
+
     source = (
         (np.arange((_BLOCK_THREADS * items_per_thread), dtype=np.int32) * 19)
         % 101
@@ -385,6 +401,15 @@ def test_stateless_prefix_custom_array_scan_without_initial(
 
 @cache
 def _stateful_prefix_kernel(algorithm: str, storage_mode: str):
+    """Build repeated scans that reuse state and temporary storage.
+
+    The caller-storage case uses inclusive scans and automatic barriers.
+    Dynamic storage covers local-array state and exclusive scans. The third
+    case disables automatic barriers and places one explicitly after each
+    scan. All cases initialize each thread's state identically and export
+    only block thread zero's final value.
+    """
+
     if storage_mode == "caller":
 
         @cuda.jit
@@ -485,6 +510,14 @@ def test_stateful_prefix_tracks_repeated_scans_across_modes_and_storage(
     algorithm: str,
     storage_mode: str,
 ):
+    """Check running state and scratch reuse over four block-wide tiles.
+
+    The nonzero initial state must affect every prefix and survive every
+    call. Compare the whole output with one CPU scan and check the final
+    int64 state independently. The dynamic-storage case also checks the
+    compiler's shared-memory launch requirement.
+    """
+
     source = (
         (np.arange(_PREFIX_TILE_COUNT * _BLOCK_THREADS, dtype=np.int32) * 7)
         % 23

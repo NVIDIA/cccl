@@ -197,6 +197,8 @@ def select_left(left: np.int32, right: np.int32) -> np.int32:
     return left
 
 
+# These callback signatures distinguish aggregate, result, and state dtypes.
+# Invalid uses below check the descriptor and Scan overloads independently.
 def prefix_from_aggregate(block_aggregate: np.int32) -> np.int32:
     return block_aggregate
 
