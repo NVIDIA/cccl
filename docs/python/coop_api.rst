@@ -18,11 +18,12 @@ Common API
 
 The primitive functions below are compiler markers; ``register`` is a
 host-side configuration function. The installed ``.pyi`` files are
-authoritative for overload and result typing. Both Numba-CUDA-MLIR and CUTLASS
-implement these common kernel operations with the documented contracts. The
-:doc:`programming concepts <coop/concepts>` explain their shared execution
-rules. The :ref:`calling conventions <coop-common-calling-conventions>`
-explain positional operands and keyword-only controls for both DSLs.
+authoritative for overload and result typing. Both Numba-CUDA-MLIR and
+CUTLASS implement these common kernel operations with the documented
+contracts. The :doc:`programming concepts <coop/concepts>` explain their
+shared execution rules. The :ref:`calling conventions
+<coop-common-calling-conventions>` explain positional operands and
+keyword-only controls for both DSLs.
 
 .. currentmodule:: cuda.coop
 
@@ -301,10 +302,10 @@ Qualified Reduce and Sum accept register tensors and ``TensorSSA`` values
 directly. Inside the kernel they return CuTe scalars, even when a NumPy dtype
 selects the payload type; the stubs report that NumPy type for static checks.
 Qualified Exchange, Merge Sort, Radix Sort, Radix Rank, TopK, array Shuffle,
-block Scan, Adjacent Difference, Discontinuity, and Histogram also accept both
-forms and return ``ThreadData`` payloads. Warp Scan accepts only one scalar
-per lane. Rank results and Discontinuity flags have signed Int32 dtype.
-Scalar Shuffle returns a CuTe scalar.
+block Scan, Adjacent Difference, Discontinuity, Histogram, and Batched Warp
+Reduction also accept both forms and return ``ThreadData`` payloads. Warp
+Scan accepts only one scalar per lane. Rank results and Discontinuity flags
+have signed Int32 dtype. Scalar Shuffle returns a CuTe scalar.
 
 Qualified Run Length Decode also accepts both register forms. The window
 call returns ``ThreadData``; the bulk call writes a destination tensor and

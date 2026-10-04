@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check batched reduction plans, request validation, and wrapper arguments.
+
+Plans distribute batch results across members. Output layout, subgroup
+width, and operator each distinguish wrapper symbols. Rendered wrappers
+need no caller scratch or barrier. Other tests reject unsupported groups,
+launches, and operator dtypes, and check session restoration after failure.
+Runtime code-generation tests inspect final machine code separately.
+"""
+
 from dataclasses import replace
 
 import pytest
@@ -34,6 +43,13 @@ def _request(**kwargs):
 @pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
 @pytest.mark.parametrize("layout", ("striped", "blocked"))
 def test_storage_free_abi(width, layout):
+    """Distribute 33 batch results without adding wrapper scratch or barriers.
+
+    The rounded-up output extent leaves unused slots for some widths. A 3D
+    64-thread block determines the number of independent groups. Generated
+    wrappers and scratch probes must agree that no scratch operand is needed.
+    """
+
     request = _request(group=this_warp().group_by(width), output_layout=layout)
     assert request.outputs_per_thread == (33 + width - 1) // width
     assert request.plan.topology.instances == 64 // width
@@ -103,6 +119,13 @@ def test_request_identity():
 
 
 def test_allocation_rollback(monkeypatch):
+    """Restore saved session state when result-register allocation fails.
+
+    The test replaces request registration with a no-op, so the call reaches
+    allocation without queuing a wrapper. The fault must restore the exact
+    saved snapshot and leave all input items unchanged.
+    """
+
     saved, restored = object(), []
     monkeypatch.setattr(_state, "snapshot_active_session_state", lambda: saved)
     monkeypatch.setattr(_state, "restore_active_session_state", restored.append)

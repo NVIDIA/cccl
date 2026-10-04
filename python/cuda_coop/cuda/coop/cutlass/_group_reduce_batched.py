@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Adapt readable or register payloads for batched warp reduction.
+
+Input slot i in every lane belongs to batch i. Check the group, normalize
+the built-in operator and output layout, and copy the input. Then require
+the enclosing block to hold only complete 32-thread warps and pass the call
+to the CUB lowering. Batch totals are spread across lanes, and some lanes
+may get none.
+"""
+
 from enum import Enum
 
 from cuda.coop._core.thread_group import ThreadGroup

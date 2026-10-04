@@ -28,11 +28,12 @@ def _decode(
     bulk,
     temp_storage,
 ):
-    """Validate the group and snapshot matching run payloads.
+    """Validate the block group and copy both run payloads.
 
-    Keep input run extent independent of decoded output extent. The provider
-    resolves value/length types, the offset ABI, and the destination contract
-    before selecting the shared window or bulk specialization.
+    Values and lengths must have the same per-thread extent. The decoded
+    extent is a separate compile-time control. The provider resolves the
+    value and length types, the static or runtime offset type, and the
+    destination checks. It then selects the window or bulk C++ wrapper.
     """
 
     if not isinstance(group, ThreadGroup):

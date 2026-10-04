@@ -88,12 +88,12 @@ also launches two warps and checks their sums against NumPy:
    :end-before: # docs: end cutlass-reduce-batched
    :dedent: 4
 
-Both backends support complete physical warps and logical
-warps of 1, 2, 4, 8, 16, or 32 threads. Every member of the selected warp must
-participate, even if that member owns no result. Other logical warps may
-take another branch. The compiler manages provider storage; this operation
-does not accept a caller ``TempStorage``. The CUTLASS provider needs no shared
-scratch allocation or trailing storage-reuse barrier.
+Both backends support complete physical warps and logical warps of 1, 2, 4, 8,
+16, or 32 threads. Every member of the selected warp must participate, even if
+that member owns no result. Other logical warps may take another branch. The
+compiler manages provider storage; this operation does not accept a caller
+``TempStorage``. The CUTLASS provider needs no shared scratch allocation or
+trailing storage-reuse barrier.
 
 The batch count is a positive compile-time payload extent. The result
 uses the input dtype without accumulator promotion. Built-in operator

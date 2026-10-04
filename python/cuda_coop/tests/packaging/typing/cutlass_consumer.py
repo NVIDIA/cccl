@@ -268,7 +268,11 @@ def check_cutlass_hierarchy_surface() -> None:
 
 
 def check_cutlass_reduce_surface(scalar: Uint32) -> None:
-    """Preserve scalar dtype through Reduce and operator aliases."""
+    """Distinguish per-batch payload results from one scalar Reduce result.
+
+    Both retain the input element type. Batched output layout changes which
+    lane owns each aggregate without changing the payload's static type.
+    """
 
     block = cutlass_coop.this_block()
     values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)

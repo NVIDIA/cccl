@@ -38,8 +38,8 @@
 ``cuda.coop`` brings CCCL's optimized cooperative algorithms to Python GPU
 kernels. Use it when threads need to work together, such as summing a tile
 of values or arranging data for the next stage of a computation. These
-operations run inside a kernel, where you can combine them with your own code
-and reuse algorithms maintained and tuned for NVIDIA GPUs.
+operations run inside a kernel, where you can combine them with your own
+code and reuse algorithms maintained and tuned for NVIDIA GPUs.
 
 The common Python API works with Numba-CUDA-MLIR and CUTLASS CuTe DSL, using
 CUB underneath. You keep your compiler's kernel syntax and launch

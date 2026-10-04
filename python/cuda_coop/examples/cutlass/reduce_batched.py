@@ -15,12 +15,21 @@ from cuda.coop import cutlass as cutlass_coop
 
 
 def _check(result):
+    """Raise on Driver errors and unwrap a single returned handle or value."""
+
     if int(result[0]):
         raise RuntimeError(f"CUDA Driver call failed: {result[0]}")
     return result[1] if len(result) == 2 else result[1:]
 
 
 def run_example(api="common", items_per_thread=3):
+    """Sum matching features in two independent warps and check against NumPy.
+
+    Reshaping the input as warp, lane, feature makes the CPU reference reduce
+    only the lane axis. The kernel writes each defined striped result once,
+    leaving the two warps' feature totals separate.
+    """
+
     if api not in {"common", "qualified"}:
         raise ValueError("api must be 'common' or 'qualified'")
     module = coop if api == "common" else cutlass_coop

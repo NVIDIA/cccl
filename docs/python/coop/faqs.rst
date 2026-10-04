@@ -38,20 +38,20 @@ These examples need no explicit ``coop.register`` call. If you cannot
 ensure import order, see :ref:`when to register explicitly
 <coop-faq-register>`.
 
-The qualified namespaces, ``cuda.coop.numba_mlir`` and ``cuda.coop.cutlass``,
-each include all common kernel operations and add features specific to their
-compiler. Numba's extensions include local-array payloads and device
-callbacks. CUTLASS adds CuTe register-tensor conversions. Both add
-operation-specific controls; see the :ref:`Numba comparison
-<coop-programming-api-choice>` and :ref:`CUTLASS comparison
-<coop-cutlass-api-choice>`.
+The qualified namespaces, ``cuda.coop.numba_mlir`` and
+``cuda.coop.cutlass``, each include all common kernel operations and add
+features specific to their compiler. Numba's extensions include local-array
+payloads and device callbacks. CUTLASS adds CuTe register-tensor conversions.
+Both add operation-specific controls;
+see the :ref:`Numba comparison <coop-programming-api-choice>` and
+:ref:`CUTLASS comparison <coop-cutlass-api-choice>`.
 
 Importing a qualified namespace also registers its backend. Common and
-qualified calls for the same compiler can appear in one kernel and follow the
-shared contracts. Kernel launch syntax and other DSL code still need
-adaptation when moving between compilers; compiler-owned payloads cannot cross
-that boundary. The :doc:`API reference <../coop_api>` lists the common
-operations and each compiler's extensions.
+qualified calls for the same compiler can appear in one kernel and follow
+the shared contracts. Kernel launch syntax and other DSL code still need
+adaptation when moving between compilers; compiler-owned payloads cannot
+cross that boundary. The :doc:`API reference <../coop_api>` lists the
+common operations and each compiler's extensions.
 
 .. _i-only-use-numba-cuda-mlir-can-i-import-its-namespace-as-coop:
 .. _coop-faq-numba-only:
@@ -122,27 +122,23 @@ order or whether registration has already happened before making the call.
 Importing a qualified namespace such as ``cuda.coop.numba_mlir`` also
 registers its backend, so it needs no separate call. If you deliberately
 disable automatic registration with
-``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION=1``, use explicit registration or
-a qualified import regardless of import order. See :ref:`backend
-registration <coop-backend-registration>` for supported names and setup
-requirements.
+``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION=1``, use explicit registration or a
+qualified import regardless of import order. See :ref:`backend registration
+<coop-backend-registration>` for supported names and setup requirements.
 
 .. _coop-faq-thread-data-local-array:
 
 Why do I need to use ``coop.ThreadData``? Why can't I use ``cuda.local.array``?
 --------------------------------------------------------------------------------
 
-Users familiar with writing Numba CUDA GPU kernels are no doubt familiar
-with `cuda.local.array
+`cuda.local.array
 <https://nvidia.github.io/numba-cuda-mlir/latest/user/memory.html#local-memory>`_,
-which is used to allocate local arrays private to each thread participating
-in the kernel launch.
+a Numba CUDA function, allocates an array private to each kernel thread.
 
-One drawback of ``cuda.local.array`` is that its size and any explicit
-alignment must be compile-time constants, and its dtype must be known when
-the kernel is specialized. You can't pass an expression whose value must
-be resolved dynamically during kernel execution as the array size. For
-example, consider the following two kernels:
+Its size and any explicit alignment must be compile-time constants, and its
+dtype must be known when the kernel is specialized. An array size computed
+from values read during kernel execution is unsupported. These two kernels
+show the difference:
 
 .. code-block:: python
 
@@ -202,11 +198,9 @@ the source array's element type is known when the kernel is specialized.
 ``cuda.shared.array``, the shared-memory counterpart, also supports dynamic
 shared memory; it does not have exactly the same size restrictions.
 
-This limitation makes it harder to write standalone kernels whose local
-array sizes depend on the input. What you would typically do is use a
-kernel maker function that adds a level of indirection and captures the
-host-computed size and dtype as local variables, which Numba-CUDA-MLIR
-will then see as compile-time constants, e.g.:
+A kernel factory can compute the size on the host and capture it with the
+dtype. Numba-CUDA-MLIR then sees those captured values as compile-time
+constants:
 
 .. code-block:: python
 
@@ -234,11 +228,9 @@ will then see as compile-time constants, e.g.:
    d_dst.copy_to_host(h_dst)
    np.testing.assert_array_equal(h_dst, h_src)
 
-That style of kernel authoring is often referred to as two-phase: you need
-to *make* kernels or primitives prior to using them. One of the advantages
-of ``cuda.coop`` is that it is inherently single-phase by design, which
-requires more infrastructure behind the scenes but yields a much nicer
-user experience, allowing you to write kernels like this:
+This two-phase pattern makes a kernel before launching it. With
+``coop.ThreadData``, one kernel can take the per-thread item count as an
+argument and let cooperative operations supply the dtype:
 
 .. code-block:: python
 
@@ -260,45 +252,35 @@ user experience, allowing you to write kernels like this:
            kernel[1, threads_per_block](d_src, d_dst, items_per_thread)
            np.testing.assert_array_equal(d_dst.copy_to_host(), h_src)
 
-Two important things to note about this example:
+The compiler handles the payload's dtype and extent as follows:
 
-* ``dtype`` isn't specified anywhere in the kernel. We infer it behind the
-  scenes by analyzing which primitives use the ``coop.ThreadData()``
-  instance assigned to ``items``. Here, we know to derive the dtype from
-  ``src`` in the first ``coop.load()`` call, and we also ensure subsequent
-  uses have consistent types. In this example, we verify that ``dst.dtype``
-  matches ``src.dtype`` and raise an error before kernel launch if this
-  isn't the case.
-* The element count is supplied through the ``items_per_thread`` kernel
-  argument: each thread owns that many items. We automatically calculate
-  the required storage from that count and the inferred dtype. ``cuda.local.array`` also
-  calculates storage bytes from its shape and dtype; ``ThreadData`` adds
-  the inference and common payload interface. ``items_per_thread`` must
-  still be a positive compile-time integer. Numba-CUDA-MLIR specializes
-  the kernel for the argument's value; ``ThreadData`` does not provide
-  dynamically sized local arrays.
+* Load infers the dtype of ``items`` from ``src``. Store checks that
+  ``dst.dtype`` agrees with it and reports a mismatch before kernel launch.
+  No explicit payload dtype is needed in this kernel.
+* ``items_per_thread`` supplies the element count for each thread. Storage
+  size follows from that count and the inferred dtype. ``cuda.local.array``
+  also computes storage bytes from its shape and dtype; ``ThreadData`` adds
+  inference and the common payload interface. The count must still be a
+  positive compile-time integer. Numba-CUDA-MLIR specializes the kernel for
+  the argument's value; ``ThreadData`` does not create dynamically sized
+  local arrays.
 
-This behind-the-scenes inference eliminates a class of bugs related to
-mismatched payload dtypes that can easily manifest during normal
-development, for example, by copy-and-pasting some other code chunk and
-forgetting to update its dtype. It does not check
-that your input and output arrays have enough elements for the requested
-tile; these examples provide one full tile per launch.
+Inference avoids a separately written payload dtype that could become stale
+when the input type changes. It does not check that the input and output
+arrays have enough elements for the requested tile; these examples provide
+one full tile per launch.
 
-The other piece of plumbing ``coop.ThreadData`` provides is the
-``items_per_thread`` value. This corresponds to the template parameter
-``ITEMS_PER_THREAD`` or ``ItemsPerThread`` on the CUB C++ side, which is
-used by many CUB block and warp primitives. A raw ``cuda.local.array``
-does not expose the common :class:`~cuda.coop.ThreadDataLike` interface;
-interpreting its shape as an item count requires compiler-specific support.
+The ``items_per_thread`` field corresponds to the template parameter
+``ITEMS_PER_THREAD`` or ``ItemsPerThread`` on the CUB C++ side, which is used
+by many CUB block and warp primitives. A raw ``cuda.local.array`` does not
+expose the common :class:`~cuda.coop.ThreadDataLike` interface; interpreting
+its shape as an item count requires compiler-specific support.
 
-``cuda.coop`` primitives that consume per-thread array payloads use this
-information to obtain an appropriate ``items_per_thread`` when generating
-the C++ shim that is JIT-compiled via NVRTC. Likewise, the ``cuda.coop``
-infrastructure knows which primitive operands supply dtype information.
-For Load and Store, these are the source and destination arrays; the
-compiler checks that their types agree with the same ``ThreadData``
-payload. Other producers follow their documented type-inference rules.
+Primitives use the field when generating the C++ wrapper compiled by NVRTC.
+The compiler also knows which operands can supply the payload dtype. For Load
+and Store, these are the source and destination arrays; the compiler checks
+that their types agree with the same ``ThreadData`` payload. Other producers
+follow their documented type-inference rules.
 
 .. _coop-faq-local-array-payload:
 
@@ -496,21 +478,18 @@ barriers automatically. See :ref:`exclusive scratch slices
 <coop-faq-exclusive-storage>` for the tradeoff between memory and reuse
 synchronization.
 
-Explicit descriptors control scratch for Numba's supported block primitives;
-see :ref:`Numba storage rules <coop-temp-storage>` for the complete list.
-Storage-free block Load/Store accept and validate a descriptor but do not use
-it. See the :ref:`shared storage model <coop-common-storage>` for descriptor
-sharing and the :doc:`CUTLASS Programming Guide <../coop_cutlass>` for the
-block operations that accept descriptors and their reuse rules.
-
+Both backends use explicit descriptors for block transpose-family Load/Store,
+Block Scan, Block Merge Sort, Block Radix Sort, and TopK. Storage-free block
+Load/Store accept a descriptor but do not use it. Warp operations manage
+their own resources and reject explicit descriptors.
+See the :ref:`shared storage model <coop-common-storage>`,
+:ref:`Numba storage rules <coop-temp-storage>`, and the
+:ref:`CUTLASS storage rules <coop-cutlass-storage>` for each family's limits.
 Numba's restrictions on combining cooperative backing with user static or
-dynamic shared arrays are specific to that backend. Both backends also accept
-explicit block scratch for Adjacent Difference, Discontinuity, Histogram, and
-both Run Length Decode forms. Batched Warp Reduction manages its own resources
-and accepts no explicit descriptor.
-
-Warp operations reject explicit descriptors. When a Warp operation uses CUB,
-the compiler allocates any scratch that CUB requires.
+dynamic shared arrays are specific to that backend.
+Both backends also accept explicit block scratch for Adjacent Difference,
+Discontinuity, Histogram, and both Run Length Decode forms. Batched Warp
+Reduction manages its own resources and accepts no explicit descriptor.
 
 .. _coop-faq-installed-extra:
 

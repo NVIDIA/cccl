@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check qualified frontends preserve the common callable surface.
+
+Each available compiler frontend must export every common name. Functions
+keep the common parameter order, kinds, and defaults; qualified APIs may
+add optional parameters. These checks compare signatures, not runtime
+behavior or types.
+"""
+
 import importlib
 import inspect
 
@@ -25,6 +33,12 @@ _POSITIONAL_KINDS = {
 
 @pytest.fixture(params=("cutlass", "numba_mlir"))
 def qualified_api(request):
+    """Import each frontend only when its compiler runtime is present.
+
+    The module and runtime names differ for Numba. Skipping a missing runtime
+    lets this shared surface check run in either backend environment.
+    """
+
     runtime = "cutlass" if request.param == "cutlass" else "numba_cuda_mlir"
     pytest.importorskip(runtime)
     return importlib.import_module(f"cuda.coop.{request.param}")
@@ -38,6 +52,13 @@ def test_common_exports(qualified_api):
 
 @pytest.mark.parametrize("name", _COMMON_FUNCTIONS)
 def test_common_function_call_shape(qualified_api, name):
+    """Preserve common call shapes while allowing optional backend extensions.
+
+    Common parameters keep their relative order, kinds, and defaults. Their
+    positional order must also remain the prefix of the qualified signature,
+    and added parameters cannot introduce a required argument.
+    """
+
     common = inspect.signature(getattr(common_api, name)).parameters
     qualified = inspect.signature(getattr(qualified_api, name)).parameters
     assert tuple(

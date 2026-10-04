@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile batched warp reductions without executing null-pointer kernels.
+
+The matrix distinguishes common ThreadData inputs from qualified register
+conversions. It also checks complete physical warps, supported subgroup
+widths, and the operator and output-layout selectors at a fixed SM80 target.
+"""
+
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
@@ -18,6 +25,14 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
 
 
 def _compile(api=coop, *, block=64, bad=None, width=8):
+    """Compile three batches with a chosen subgroup width or invalid profile.
+
+    Each member contributes one value to each batch. Only lanes that own a
+    valid striped result consume it. Input, group, operator, and layout
+    variants select an invalid or qualified-only case. The kernel is compiled
+    but never launched, so its null output pointer is never used.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
