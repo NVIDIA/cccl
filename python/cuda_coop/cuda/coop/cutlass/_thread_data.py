@@ -6,12 +6,20 @@
 
 The Python container supports static indexing and in-place item replacement.
 Register conversion methods copy values. Control-flow hooks require every item
-to be initialized. They pass one MLIR value per item into CuTe if and loop
+to be initialized. They pass one MLIR value per item into CuTe ``if`` and loop
 regions, then rebuild the payload from the region results.
 
 Payloads created through the common ``cuda.coop`` API retain that origin
 during reconstruction. This keeps the common API dtype checks active on
 later item assignments.
+
+Module helpers decide which arguments are register payloads. Qualified
+calls convert CuTe register tensors and vectors to ThreadData; common calls
+reject them.
+
+Merge Sort copies each input into a new ThreadData before lowering, so
+read-only inputs work. Lowerings allocate register outputs with the
+payload's alignment when one is set.
 """
 
 from __future__ import annotations
@@ -265,10 +273,10 @@ def _is_register_memory_space(memspace: Any) -> bool:
 
 
 def _has_memory_space(value: Any) -> bool:
-    """Detect declared memory-space metadata even when its accessor fails.
+    """Detect memory-space metadata, even when its accessor fails.
 
-    An unreadable declaration still distinguishes memory-backed data from
-    an immutable register vector.
+    Any declared space, including rmem, marks a tensor rather than an
+    immutable register vector.
     """
 
     for attr_name in ("memspace", "space"):
@@ -1171,7 +1179,14 @@ def _coerce_thread_payload(
 
 
 def _snapshot_readable_payload(value, *, name, primitive):
-    """Read the common payload interface without requiring writable inputs."""
+    """Copy a readable payload into a new ThreadData for lowering.
+
+    Common calls, and any input with the readable ThreadData interface,
+    pass the shared payload checks. Copy their items, dtype, extent, and
+    optional alignment. Qualified calls can also pass CuTe register
+    containers, which the usual adapter converts. Read-only inputs
+    therefore work, and the sort never writes to the caller's object.
+    """
 
     from cuda.coop._core.api._dispatch import _common_root_operation_name
     from cuda.coop._core.api._payload import (

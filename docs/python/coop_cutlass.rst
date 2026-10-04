@@ -742,9 +742,11 @@ including those with no valid items.
 
 The count may be a runtime signed integer up to 64 bits or unsigned integer
 up to 32 bits. Counts outside the tile range are rejected before narrowing.
-A typed sentinel must match the key dtype exactly; ordinary Python numeric
-literals must be representable in that dtype. ``descending`` is a compile-time
-Boolean. Counts and sentinels must be uniform within each group.
+A typed sentinel must match the key dtype exactly. For ordinary Python
+literals, integer keys require integers within the key dtype's range.
+Floating keys accept integer or floating literals within range, and allow
+infinite bounds. ``descending`` is a compile-time Boolean. Counts and
+sentinels must be uniform within each group.
 
 Block sorts accept ``temp_storage`` with the size, alignment, sharing, and
 reuse rules described above. Warp sorts manage independent scratch per group

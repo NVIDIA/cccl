@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Type full and partial Merge Sort over common or register payloads.
+
+Overloads keep count and sentinel together and permit explicit scratch only
+for blocks. Pair results preserve each input dtype independently. Register
+inputs return ThreadData with a broad element type because tracing resolves
+their dtype and extent.
+"""
+
 from typing import Any, TypeAlias, overload
 
 import numpy as np

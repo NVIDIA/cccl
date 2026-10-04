@@ -19,13 +19,21 @@ _BLOCK = (8, 4, 2)
 
 
 def _check(result):
+    """Raise on Driver errors and unwrap a single returned handle or value."""
+
     if int(result[0]):
         raise RuntimeError(f"CUDA Driver call failed: {result[0]}")
     return result[1] if len(result) == 2 else result[1:]
 
 
 def run_example(api="common", items_per_thread=3):
-    """Check key ordering, pair association, and unchanged input payloads."""
+    """Check partial sorting, pair association, and unchanged input payloads.
+
+    Five output buffers expose ascending keys, descending key/value pairs,
+    and both original inputs. Unique values identify their associated keys;
+    the pair check permits any order among equal keys. Outputs start as -999;
+    unchanged tails show that no Store wrote past the valid prefix.
+    """
     tile_size = 64 * items_per_thread
     valid_items = tile_size - 7
     if api not in {"common", "qualified"}:

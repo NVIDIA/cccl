@@ -9,7 +9,7 @@
 declarations. Checks cover group query types, primitive results, descriptor
 attributes, and calls across namespaces. Payload constructors, conversions,
 and rearrangements must preserve the value dtype independently of ranks
-and flags.
+and flags. Sorting keeps key and value result types independent.
 
 The test neither imports this file nor traces or launches a kernel.
 """
@@ -702,6 +702,8 @@ def check_cutlass_shuffle_surface(scalar: Uint32) -> None:
 
 
 class _ReadOnlyKeys:
+    """Supply readable keys for static typing without mutable item access."""
+
     items_per_thread: int = 2
     dtype: object | None = np.int32
 
@@ -713,6 +715,13 @@ class _ReadOnlyKeys:
 
 
 def check_cutlass_merge_sort_surface() -> None:
+    """Keep key and value result types independent across sort overloads.
+
+    Read-only inputs need no setter because sorting returns new payloads.
+    Register inputs deliberately infer ``Any`` where CuTe annotations do not
+    expose an element type; typed ``ThreadData`` operands retain their dtype.
+    """
+
     block = cutlass_coop.this_block()
     warp = cutlass_coop.this_warp()
     logical = warp.group_by(8)

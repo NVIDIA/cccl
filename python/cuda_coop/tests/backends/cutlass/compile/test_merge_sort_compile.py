@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile MergeSort payloads, partial tiles, and rejected input contracts.
+
+Each test compiles for an explicit SM80 target and never launches a kernel.
+The target removes the need to query a GPU, and typed null pointers supply
+output argument types. Result reads must compile even where a partial tile
+would leave runtime results undefined. GPU tests check valid prefixes, key
+order, associated values, and input preservation.
+"""
+
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
@@ -72,6 +81,12 @@ def test_groups_and_partial_pairs(api, width, partial, items_per_thread):
 
 @pytest.mark.parametrize("dtype", tuple(ALL_PROVIDER_TYPES))
 def test_inferred_key_type(dtype):
+    """Infer keys from their first assignments and consume the sorted payload.
+
+    Each case writes one supported scalar type into an untyped ThreadData.
+    A following ``coop.sum`` must accept the sorted result with that dtype.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         keys = coop.ThreadData(items_per_thread)
@@ -92,6 +107,12 @@ def test_inferred_key_type(dtype):
 
 
 def test_mixed_partial_group_bundle():
+    """Compile partial block and logical-warp sorts in one provider bundle.
+
+    Both partial-sort aliases depend on the checked-sort helper. The generated
+    C++ must define the helper before either alias in any registration order.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
         keys = coop.ThreadData(items_per_thread, dtype=cutlass.Int32)
@@ -181,6 +202,12 @@ def test_invalid_profiles(case, message):
     "api", (coop, cutlass_coop), ids=("common", "qualified")
 )
 def test_register_input_boundary(api):
+    """Accept a native register tensor only through qualified MergeSort.
+
+    The common API requires a ThreadData-like payload and must reject the CuTe
+    register tensor. The qualified CUTLASS API must compile the same kernel.
+    """
+
     @cute.kernel
     def kernel(memory: cute.Pointer):
         fragment = cute.make_rmem_tensor(2, cutlass.Int32)

@@ -311,9 +311,9 @@ def validate(wheel: str | Path) -> None:
     Require a fixed set of common API, compiler-integration, and bundled
     header files, plus the license files. Reject native binaries and excluded
     or obsolete modules. Reject ``cuda/__init__.py``, which would break the
-    shared namespace.
-    Explicit contract checks raise ``SystemExit`` with a packaging diagnostic.
-    Unexpected file, archive, or record-shape errors propagate to the caller.
+    shared namespace. Explicit contract checks raise ``SystemExit`` with a
+    packaging diagnostic. Unexpected file, archive, or record-shape errors
+    propagate to the caller.
     """
     wheel_path = Path(wheel)
     if not wheel_path.name.endswith("-py3-none-any.whl"):

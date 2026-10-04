@@ -289,13 +289,17 @@ conversions, and the extensions documented below:
    import cuda.coop.cutlass as cutlass_coop
 
 Group construction, synchronization, Load/Store, and temporary storage follow
-the :ref:`Common API <coop-common-api>`. Load and Store use ``ThreadData``.
-Use the qualified conversion methods below to build a payload from a CuTe
-register tensor before Store, or to get a register tensor after Load.
+the :ref:`Common API <coop-common-api>`. Load fills a ``ThreadData``; Store
+writes a ``ThreadData`` or one scalar per thread. Use the qualified conversion
+methods below to build a payload from a CuTe register tensor before Store,
+or to get a register tensor after Load.
+
 Qualified Reduce and Sum accept register tensors and ``TensorSSA`` values
-directly and return CuTe scalars, even when a NumPy dtype selects the payload
-type. Qualified block Scan, Exchange, and array Shuffle also accept both forms
-and return a ``ThreadData`` payload. Scalar Shuffle returns a CuTe scalar.
+directly. Inside the kernel they return CuTe scalars, even when a NumPy dtype
+selects the payload type; the stubs report that NumPy type for static checks.
+Qualified block Scan, Exchange, array Shuffle, and Merge Sort keys and pairs
+also accept both forms and return ``ThreadData`` payloads. Scalar Shuffle
+returns a CuTe scalar.
 
 The :doc:`CUTLASS Programming Guide <coop_cutlass>` explains how to choose
 between common and qualified calls. Qualified Reduce and Scan also accept

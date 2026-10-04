@@ -261,8 +261,8 @@ provider emission belong under ``cutlass``.
        ``cutlass/_temp_storage.py``, and their ``.pyi`` files
    * - Family validation and lowering
      - ``cutlass/_group_load_store.py`` and
-       ``cutlass/_lowering/_load_store.py``; the Reduce, Scan, Exchange, Shuffle, and Merge Sort
-       files follow the same organization
+       ``cutlass/_lowering/_load_store.py``; other primitive families
+       follow the same organization
    * - Launch facts and provider sessions
      - ``cutlass/_compiler/_launch.py``, ``cutlass/_compiler/_state.py``,
        ``cutlass/_compiler/_finalize.py``
@@ -718,6 +718,7 @@ shared memory, except that the width-one test leaves allocation unconstrained.
 
 The final-cubin check in ``runtime/test_reduce.py`` confirms that the CUB Reduce routes leave no provider calls. It does not check shared
 memory, registers, or barriers.
+
 The final-cubin check in ``runtime/test_scan.py`` rejects provider calls for
 block and logical-Warp Scan, and block barriers for the logical-Warp path.
 It saves resource reports but does not check them.
@@ -728,6 +729,10 @@ Exchange and for array and scalar Shuffle. The Exchange check also rejects
 block barriers on the logical-Warp path. Neither check examines shared
 memory. ``runtime/test_group_hierarchy.py`` checks that mapped-group queries
 leave no calls, barriers, warp synchronization, or shared memory.
+
+The final-cubin check in ``runtime/test_merge_sort.py`` rejects provider
+calls for a partial block sort and a logical-Warp sort. It also rejects block
+barriers on the logical-Warp path. It does not check shared memory.
 
 Provider source or intermediate PTX alone cannot prove the final result. Use
 Compute Sanitizer race checks for changes to scratch allocation or
