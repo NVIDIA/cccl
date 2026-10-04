@@ -350,6 +350,12 @@ def check_histogram_surface() -> None:
 
 
 def check_run_length_surface(destination: object) -> None:
+    """Check read-only run inputs and the two common-API result forms.
+
+    A window returns a payload with the run-value dtype. Bulk decoding writes
+    the destination and returns a uint32 total, even with uint64 run lengths.
+    """
+
     block = coop.this_block()
     values = _ReadOnlyThreadData(np.float32(7))
     lengths = _ReadOnlyThreadData(np.uint64(3))

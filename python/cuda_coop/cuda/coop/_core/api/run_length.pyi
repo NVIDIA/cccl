@@ -2,6 +2,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Type common decoding inputs and distinguish payload from size results.
+
+A window keeps the run-value type in a new per-thread payload. Whole-stream
+decoding instead returns a uint32 total and writes a caller's destination.
+Run lengths use an integer item type, and offsets accept integer scalars.
+
+The compiler checks the block shape, matching run extents, and destination
+layout. Generated device code checks destination capacity when the kernel
+runs and traps if it is too small. These signatures cannot express the
+positive-length prefix or the rule that buffers must not overlap.
+"""
+
 import numpy
 from typing_extensions import TypeVar
 
