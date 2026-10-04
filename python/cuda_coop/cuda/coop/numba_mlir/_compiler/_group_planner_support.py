@@ -128,6 +128,21 @@ def _typed_group_payload_like(
     The provider rewrite replaces the marker with a local-array allocation
     once dtype and extent are known. Calling it directly is an error; it must
     not survive into device compilation.
+
+    Parameters
+    ----------
+    _prototype : object
+        Scalar or array operand retained in the generated IR as the
+        source of type and shape evidence.
+    _is_array : bool
+        Whether the default item count comes from the prototype
+        array. False selects one item.
+    _dtype_policy : str
+        Compile-time rule used by the provider rewrite to select the
+        result element dtype.
+    _items_per_thread : int or None, optional
+        Explicit per-thread element count, overriding the prototype-
+        based count when supplied.
     """
 
     raise GroupRewriteError(
