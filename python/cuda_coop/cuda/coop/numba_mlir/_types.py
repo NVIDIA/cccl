@@ -2889,3 +2889,43 @@ def _cleanup_temp_files(paths):
             os.unlink(path)
         except FileNotFoundError:
             pass
+
+
+__all__ = [
+    "NUMBA_TYPES_TO_CPP",
+    "Algorithm",
+    "Array",
+    "BoundedInteger",
+    "Constant",
+    "CxxFunction",
+    "Dependency",
+    "DependentArray",
+    "DependentPointer",
+    "DependentPointerReference",
+    "DependentReference",
+    "ExactValue",
+    "Invocable",
+    "Parameter",
+    "Pointer",
+    "PointerOffset",
+    "PointerReference",
+    "Reference",
+    "SubstitutionFailure",
+    "TemplateParameter",
+    "TransformedArray",
+    "TypeWrapper",
+    "Value",
+    "_hash_symbol_value",
+    "_ltoir_to_ptx",
+    "_validate_logical_warp_threads",
+    "algo_coalesce_key",
+    "collect_specializations",
+    "internal_mangle_cpp",
+    "make_invocable_from_specialization",
+    "mangle_symbol",
+    "numba_type_to_cpp",
+    "numba_type_to_wrapper",
+    "prepare_ltoir_bundle",
+    "war_introspection",
+    "war_introspection_call_with_transforms",
+]

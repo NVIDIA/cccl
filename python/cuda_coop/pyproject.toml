@@ -128,6 +128,7 @@ include = ["cuda/coop/numba_mlir"]
 extraPaths = ["."]
 typeCheckingMode = "standard"
 pythonVersion = "3.10"
+reportUnusedFunction = "error"
 
 [tool.ruff]
 extend = "../../pyproject.toml"

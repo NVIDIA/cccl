@@ -455,3 +455,17 @@ def _validate_static_oob_default(value: object, dtype: object) -> np.generic:
         operation="load",
         parameter="oob_default",
     )
+
+
+__all__ = [
+    "_python_scalar_dtype",
+    "_scalar_cast_dtype",
+    "_scalar_operator_result_dtype",
+    "_validate_common_numeric_dtype",
+    "_validate_runtime_integer_dtype",
+    "_validate_static_oob_default",
+    "coerce_static_scalar",
+    "dim3",
+    "normalize_dim_param",
+    "normalize_dtype_param",
+]

@@ -49,3 +49,11 @@ def _resolve_algorithm(
         f"Unsupported {primitive_name} algorithm {algorithm!r}; expected one "
         f"of: {choices}"
     )
+
+
+__all__ = [
+    "_BLOCK_LOAD_STORE_ALGORITHMS",
+    "_STORAGE_FREE_ALGORITHMS",
+    "_WARP_LOAD_STORE_ALGORITHMS",
+    "_resolve_algorithm",
+]
