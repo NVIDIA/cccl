@@ -47,9 +47,19 @@ struct Transforms
   template <typename LevelIteratorT>
   struct SearchTransform
   {
+    static constexpr bool is_range_transform = false;
+    struct BracketCacheT
+    {};
+
     LevelIteratorT d_levels; // Pointer to levels array
     int num_output_levels; // Number of levels in array
 
+    _CCCL_DEVICE _CCCL_FORCEINLINE void PrecomputeOnDevice(int) {}
+
+    //! @brief Initializer
+    //!
+    //! @param d_levels_ Pointer to levels array
+    //! @param num_output_levels_ Number of levels in array
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(LevelIteratorT d_levels_, int num_output_levels_)
     {
       d_levels          = d_levels_;
@@ -73,6 +83,304 @@ struct Transforms
         {
           bin = -1;
         }
+      }
+    }
+  };
+
+  //! @brief Finds a RANGE bin with piecewise-linear interpolation and a per-thread bracket cache.
+  template <typename LevelIteratorT>
+  struct CachedSearchTransform
+  {
+    static constexpr bool is_range_transform = true;
+
+    template <typename T>
+    [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static auto interpolation_difference(T lhs, T rhs)
+    {
+      if constexpr (::cuda::std::is_integral_v<T>)
+      {
+        using UnsignedT = ::cuda::std::make_unsigned_t<T>;
+        return static_cast<UnsignedT>(lhs) - static_cast<UnsignedT>(rhs);
+      }
+      else
+      {
+        return lhs - rhs;
+      }
+    }
+
+    struct BracketCacheT
+    {
+      LevelT lo{};
+      LevelT hi{};
+      int bin = -1;
+    };
+
+    LevelIteratorT d_levels;
+    int num_output_levels;
+    LevelT first{};
+    LevelT middle{};
+    LevelT last{};
+    float inverse_scale{};
+    float inverse_scale_low{};
+    float inverse_scale_high{};
+    int middle_bin{};
+    bool has_precompute{};
+
+    template <typename DifferenceT>
+    [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static bool
+    compute_inverse_scale(int bins, DifferenceT difference, float& result)
+    {
+      const float denominator = static_cast<float>(difference);
+      if (!(denominator > 0.0f) || !::cuda::std::isfinite(denominator))
+      {
+        return false;
+      }
+      result = static_cast<float>(bins) / denominator;
+      return result > 0.0f && ::cuda::std::isfinite(result);
+    }
+
+    [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool interpolation_guess(LevelT value, int num_bins, int& guess) const
+    {
+      const float prediction =
+        value < middle || middle_bin == 0
+          ? static_cast<float>(interpolation_difference(value, first)) * inverse_scale_low
+          : static_cast<float>(middle_bin)
+              + static_cast<float>(interpolation_difference(value, middle)) * inverse_scale_high;
+      if (!::cuda::std::isfinite(prediction))
+      {
+        return false;
+      }
+      guess = prediction <= 0.0f ? 0
+            : prediction >= static_cast<float>(num_bins - 1)
+              ? num_bins - 1
+              : static_cast<int>(prediction);
+      return true;
+    }
+
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(LevelIteratorT d_levels_, int num_output_levels_)
+    {
+      d_levels          = d_levels_;
+      num_output_levels = num_output_levels_;
+      has_precompute    = false;
+    }
+
+    _CCCL_DEVICE _CCCL_FORCEINLINE void PrecomputeOnDevice(int interpolation_min_level_bytes)
+    {
+      const int num_bins = num_output_levels - 1;
+      if (static_cast<size_t>(num_output_levels) * sizeof(LevelT) < static_cast<size_t>(interpolation_min_level_bytes))
+      {
+        return;
+      }
+
+      using WrappedLevelIteratorT =
+        ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
+                         CacheModifiedInputIterator<LOAD_LDG, LevelT, OffsetT>,
+                         LevelIteratorT>;
+      WrappedLevelIteratorT wrapped_levels(d_levels);
+      const LevelT first_level = wrapped_levels[0];
+      const LevelT last_level  = wrapped_levels[num_bins];
+      if (!(first_level < last_level))
+      {
+        return;
+      }
+
+      first = first_level;
+      last  = last_level;
+      if (!compute_inverse_scale(num_bins, interpolation_difference(last, first), inverse_scale))
+      {
+        return;
+      }
+      middle_bin         = 0;
+      inverse_scale_low  = inverse_scale;
+      inverse_scale_high = inverse_scale;
+      middle             = first;
+
+      const int split = num_bins >> 1;
+      if (split > 0 && split < num_bins)
+      {
+        const LevelT split_level = wrapped_levels[split];
+        if (first < split_level && split_level < last)
+        {
+          float split_scale_low{};
+          float split_scale_high{};
+          if (compute_inverse_scale(split, interpolation_difference(split_level, first), split_scale_low)
+              && compute_inverse_scale(num_bins - split, interpolation_difference(last, split_level), split_scale_high))
+          {
+            middle             = split_level;
+            middle_bin         = split;
+            inverse_scale_low  = split_scale_low;
+            inverse_scale_high = split_scale_high;
+          }
+        }
+      }
+      has_precompute = true;
+    }
+
+    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid, BracketCacheT& bracket) const
+    {
+      if (!valid)
+      {
+        return;
+      }
+
+      using WrappedLevelIteratorT =
+        ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
+                         CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
+                         LevelIteratorT>;
+      WrappedLevelIteratorT wrapped_levels(d_levels);
+      const int num_bins = num_output_levels - 1;
+      const LevelT value = static_cast<LevelT>(sample);
+
+      if (bracket.bin >= 0 && !(value < bracket.lo) && value < bracket.hi)
+      {
+        bin = bracket.bin;
+        return;
+      }
+
+      if (!has_precompute)
+      {
+        bin = UpperBound(wrapped_levels, num_output_levels, value) - 1;
+        if (bin >= num_bins)
+        {
+          bin = -1;
+        }
+      }
+      else if (value < first || !(value < last))
+      {
+        bin = -1;
+      }
+      else
+      {
+        int guess{};
+        if (!interpolation_guess(value, num_bins, guess))
+        {
+          bin = UpperBound(wrapped_levels, num_output_levels, value) - 1;
+          if (bin >= num_bins)
+          {
+            bin = -1;
+          }
+          if (bin >= 0)
+          {
+            bracket = BracketCacheT{wrapped_levels[bin], wrapped_levels[bin + 1], bin};
+          }
+          return;
+        }
+        const LevelT lo = wrapped_levels[guess];
+        const LevelT hi = wrapped_levels[guess + 1];
+
+        if (!(value < lo) && value < hi)
+        {
+          bin     = guess;
+          bracket = BracketCacheT{lo, hi, guess};
+          return;
+        }
+
+        if (value < lo && guess > 0)
+        {
+          const LevelT adjacent_lo = wrapped_levels[guess - 1];
+          if (!(value < adjacent_lo))
+          {
+            bin     = guess - 1;
+            bracket = BracketCacheT{adjacent_lo, lo, bin};
+            return;
+          }
+        }
+        else if (!(value < hi) && guess + 1 < num_bins)
+        {
+          const LevelT adjacent_hi = wrapped_levels[guess + 2];
+          if (value < adjacent_hi)
+          {
+            bin     = guess + 1;
+            bracket = BracketCacheT{hi, adjacent_hi, bin};
+            return;
+          }
+        }
+
+        bin = UpperBound(wrapped_levels, num_output_levels, value) - 1;
+        if (bin >= num_bins)
+        {
+          bin = -1;
+        }
+      }
+
+      if (bin >= 0)
+      {
+        bracket = BracketCacheT{wrapped_levels[bin], wrapped_levels[bin + 1], bin};
+      }
+    }
+
+    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid) const
+    {
+      if (!valid)
+      {
+        return;
+      }
+
+      using WrappedLevelIteratorT =
+        ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
+                         CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
+                         LevelIteratorT>;
+      WrappedLevelIteratorT wrapped_levels(d_levels);
+      const int num_bins = num_output_levels - 1;
+      const LevelT value = static_cast<LevelT>(sample);
+
+      if (!has_precompute)
+      {
+        bin = UpperBound(wrapped_levels, num_output_levels, value) - 1;
+        if (bin >= num_bins)
+        {
+          bin = -1;
+        }
+        return;
+      }
+      if (value < first || !(value < last))
+      {
+        bin = -1;
+        return;
+      }
+
+      int guess{};
+      if (!interpolation_guess(value, num_bins, guess))
+      {
+        bin = UpperBound(wrapped_levels, num_output_levels, value) - 1;
+        if (bin >= num_bins)
+        {
+          bin = -1;
+        }
+        return;
+      }
+      const LevelT lo = wrapped_levels[guess];
+      const LevelT hi = wrapped_levels[guess + 1];
+
+      if (!(value < lo) && value < hi)
+      {
+        bin = guess;
+        return;
+      }
+      if (value < lo && guess > 0)
+      {
+        const LevelT adjacent_lo = wrapped_levels[guess - 1];
+        if (!(value < adjacent_lo))
+        {
+          bin = guess - 1;
+          return;
+        }
+      }
+      else if (!(value < hi) && guess + 1 < num_bins)
+      {
+        const LevelT adjacent_hi = wrapped_levels[guess + 2];
+        if (value < adjacent_hi)
+        {
+          bin = guess + 1;
+          return;
+        }
+      }
+
+      bin = UpperBound(wrapped_levels, num_output_levels, value) - 1;
+      if (bin >= num_bins)
+      {
+        bin = -1;
       }
     }
   };
@@ -312,6 +620,12 @@ struct Transforms
     }
 
   public:
+    static constexpr bool is_range_transform = false;
+    struct BracketCacheT
+    {};
+
+    _CCCL_DEVICE _CCCL_FORCEINLINE void PrecomputeOnDevice(int) {}
+
     //! @brief Initializes the ScaleTransform for the given parameters
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(int num_levels, LevelT max_level, LevelT min_level)
     {
@@ -386,6 +700,11 @@ struct Transforms
   // Pass-through bin transform operator
   struct PassThruTransform
   {
+    static constexpr bool is_range_transform = false;
+    struct BracketCacheT
+    {};
+
+    _CCCL_DEVICE _CCCL_FORCEINLINE void PrecomputeOnDevice(int) {}
 // GCC 14 rightfully warns that when a value-initialized array of this struct is copied using memcpy, uninitialized
 // bytes may be accessed. To avoid this, we add a dummy member, so value initialization actually initializes the memory.
 #if _CCCL_COMPILER(GCC, >=, 13)
@@ -634,6 +953,13 @@ __launch_bounds__(int(histogram_privatization_policy<PolicySelector, Privatizati
     dynamic_smem_privatized_histograms = reinterpret_cast<CounterT*>(dynamic_smem);
   }
 
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int channel = 0; channel < NumActiveChannels; ++channel)
+  {
+    privatized_decode_op_wrapper[channel].PrecomputeOnDevice(
+      current_policy<PolicySelector>().high_bin_interpolation_min_level_bytes);
+  }
+
   AgentHistogramT agent(
     static_smem,
     d_samples,
@@ -817,6 +1143,13 @@ __launch_bounds__(int(histogram_privatization_policy<PolicySelector, Privatizati
   if constexpr (is_privatized_dynamic_smem_v<PrivatizationMode>)
   {
     dynamic_smem_privatized_histograms = reinterpret_cast<CounterT*>(dynamic_smem);
+  }
+
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int channel = 0; channel < NumActiveChannels; ++channel)
+  {
+    privatized_decode_op[channel].PrecomputeOnDevice(
+      current_policy<PolicySelector>().high_bin_interpolation_min_level_bytes);
   }
 
   AgentHistogramT agent(
@@ -1337,8 +1670,11 @@ struct AgentHistogramCooperative
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
       decode_op[ch] = decode_op_wrapper[ch];
+      decode_op[ch].PrecomputeOnDevice(policy.high_bin_interpolation_min_level_bytes);
     }
 
+    constexpr bool use_mru_cache = NumActiveChannels == 1 && PrivatizedDecodeOpT::is_range_transform;
+    [[maybe_unused]] histogram_bracket_cache_storage<PrivatizedDecodeOpT, use_mru_cache> bracket_cache_storage;
     ProbeOp probe_ops[NumActiveChannels];
     SpillOp spill_ops[NumActiveChannels];
 
@@ -1389,7 +1725,15 @@ struct AgentHistogramCooperative
             int bin = -1;
             if (valid_samples[pixel_index])
             {
-              decode_op[0].template BinSelect<LOAD_DEFAULT>(staged_samples[pixel_index], bin, true);
+              if constexpr (use_mru_cache)
+              {
+                decode_op[0].template BinSelect<LOAD_DEFAULT>(
+                  staged_samples[pixel_index], bin, true, bracket_cache_storage.bracket_cache);
+              }
+              else
+              {
+                decode_op[0].template BinSelect<LOAD_DEFAULT>(staged_samples[pixel_index], bin, true);
+              }
               if (bin >= num_output_bins_wrapper[0])
               {
                 bin = -1;
@@ -1545,7 +1889,15 @@ struct AgentHistogramCooperative
         for (int ch = 0; ch < NumActiveChannels; ++ch)
         {
           int bin = -1;
-          decode_op[ch].template BinSelect<LOAD_DEFAULT>(d_samples[pixel_offset + ch], bin, true);
+          if constexpr (use_mru_cache)
+          {
+            decode_op[ch].template BinSelect<LOAD_DEFAULT>(
+              d_samples[pixel_offset + ch], bin, true, bracket_cache_storage.bracket_cache);
+          }
+          else
+          {
+            decode_op[ch].template BinSelect<LOAD_DEFAULT>(d_samples[pixel_offset + ch], bin, true);
+          }
           if (bin >= 0 && bin < num_output_bins_wrapper[ch])
           {
             spill_ops[ch].consume(probe_ops[ch], bin, CounterT{1});

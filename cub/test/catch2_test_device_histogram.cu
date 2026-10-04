@@ -52,6 +52,26 @@ namespace cs = cuda::std;
 using cs::array;
 using cs::size_t;
 
+struct ordered_histogram_level
+{
+  int value{};
+
+  _CCCL_HOST_DEVICE ordered_histogram_level() = default;
+  _CCCL_HOST_DEVICE explicit ordered_histogram_level(int value_)
+      : value(value_)
+  {}
+
+  _CCCL_HOST_DEVICE explicit operator int() const
+  {
+    return value;
+  }
+
+  friend _CCCL_HOST_DEVICE bool operator<(ordered_histogram_level lhs, ordered_histogram_level rhs)
+  {
+    return lhs.value < rhs.value;
+  }
+};
+
 template <typename T>
 auto unwrap(T* p) -> T*
 {
@@ -782,6 +802,85 @@ CUB_TEST("DeviceHistogram::HistogramRange interpolation avoids signed overflow",
   {
     const auto upper = std::upper_bound(h_levels.begin(), h_levels.end(), sample);
     ++expected[static_cast<size_t>(std::distance(h_levels.begin(), upper) - 1)];
+  }
+  REQUIRE(d_histogram == expected);
+}
+
+CUB_TEST("DeviceHistogram::HistogramRange supports ordered non-arithmetic levels",
+         "[histogram_range][device]",
+         CUB_SMALL)
+{
+  constexpr int num_bins = 512;
+  c2h::host_vector<ordered_histogram_level> h_levels(num_bins + 1);
+  for (int i = 0; i <= num_bins; ++i)
+  {
+    h_levels[i] = ordered_histogram_level{i * 2};
+  }
+
+  const c2h::host_vector<ordered_histogram_level> h_samples{
+    ordered_histogram_level{-1},
+    ordered_histogram_level{0},
+    ordered_histogram_level{1},
+    ordered_histogram_level{511},
+    ordered_histogram_level{1023},
+    ordered_histogram_level{1024}};
+  c2h::device_vector<ordered_histogram_level> d_levels  = h_levels;
+  c2h::device_vector<ordered_histogram_level> d_samples = h_samples;
+  c2h::device_vector<int> d_histogram(num_bins, 0);
+
+  histogram_range(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_bins + 1,
+    thrust::raw_pointer_cast(d_levels.data()),
+    static_cast<int>(d_samples.size()));
+
+  c2h::host_vector<int> expected(num_bins, 0);
+  for (const auto sample : h_samples)
+  {
+    const auto upper = std::upper_bound(h_levels.begin(), h_levels.end(), sample);
+    if (upper != h_levels.begin() && upper != h_levels.end())
+    {
+      ++expected[static_cast<size_t>(std::distance(h_levels.begin(), upper) - 1)];
+    }
+  }
+  REQUIRE(d_histogram == expected);
+}
+
+CUB_TEST("DeviceHistogram::HistogramRange falls back for non-finite interpolation spans",
+         "[histogram_range][device]",
+         CUB_SMALL)
+{
+  using sample_t         = double;
+  constexpr int num_bins = 1024;
+  c2h::host_vector<sample_t> h_levels(num_bins + 1);
+  h_levels.front() = -cs::numeric_limits<sample_t>::max();
+  for (int i = 1; i < num_bins; ++i)
+  {
+    h_levels[i] = -1000.0 + 2000.0 * static_cast<double>(i - 1) / static_cast<double>(num_bins - 2);
+  }
+  h_levels.back() = cs::numeric_limits<sample_t>::max();
+
+  const c2h::host_vector<sample_t> h_samples{h_levels.front(), -999.5, -1.0, 0.0, 1.0, 999.5, h_levels.back()};
+  c2h::device_vector<sample_t> d_levels  = h_levels;
+  c2h::device_vector<sample_t> d_samples = h_samples;
+  c2h::device_vector<int> d_histogram(num_bins, 0);
+
+  histogram_range(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_bins + 1,
+    thrust::raw_pointer_cast(d_levels.data()),
+    static_cast<int>(d_samples.size()));
+
+  c2h::host_vector<int> expected(num_bins, 0);
+  for (const auto sample : h_samples)
+  {
+    const auto upper = std::upper_bound(h_levels.begin(), h_levels.end(), sample);
+    if (upper != h_levels.begin() && upper != h_levels.end())
+    {
+      ++expected[static_cast<size_t>(std::distance(h_levels.begin(), upper) - 1)];
+    }
   }
   REQUIRE(d_histogram == expected);
 }

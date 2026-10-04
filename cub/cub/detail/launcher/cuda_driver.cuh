@@ -75,6 +75,8 @@ struct CudaDriverLauncher
 
 struct CudaDriverLauncherFactory
 {
+  static constexpr bool force_device_kernel_emission = false;
+
   CUB_RUNTIME_FUNCTION void __assert_pdl_allowed(bool dependent_launch) const
   {
     if (dependent_launch)

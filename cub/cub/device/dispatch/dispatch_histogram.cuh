@@ -270,10 +270,42 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }
 
   const HistogramPolicy active_policy = policy_selector(cc);
+  size_t cooperative_temp_storage_bytes{};
 
   detail::log_dispatch("DeviceHistogram", cc, active_policy);
 
 #if _CCCL_HOSTED()
+  if constexpr (!IsDeviceInit
+                && is_privatized_gmem_v<PrivatizationMode> && KernelLauncherFactory::force_device_kernel_emission)
+  {
+    // Taking a kernel's address is insufficient to make nvcc emit the device entry needed by
+    // cudaLaunchCooperativeKernel. This dead chevron launch is seen by the device compilation pass but never runs.
+    if (false)
+    {
+      using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
+      ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_bins{};
+      ::cuda::std::array<LocalCounterT*, NUM_ACTIVE_CHANNELS> private_histograms{};
+      DeviceHistogramCooperativeKernel<
+        PolicySelector,
+        NUM_CHANNELS,
+        NUM_ACTIVE_CHANNELS,
+        SampleIteratorT,
+        LocalCounterT,
+        CounterT,
+        privatized_decode_op_t,
+        OffsetT><<<1, 1, 0, stream>>>(
+        d_samples,
+        num_output_bins,
+        d_output_histograms,
+        private_histograms,
+        second_level_array,
+        num_row_pixels,
+        num_rows,
+        row_stride_samples,
+        0);
+    }
+  }
+
   NV_IF_TARGET(
     NV_IS_HOST, ({
       // Byte-sample dispatch first privatizes by raw byte value, then applies a
@@ -284,8 +316,18 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         const size_t output_histogram_bytes =
           static_cast<size_t>(max_num_output_bins) * NUM_ACTIVE_CHANNELS * sizeof(LocalCounterT);
         bool use_cooperative = active_policy.high_bin_algorithm == HistogramHighBinAlgorithm::cooperative
-                            && output_histogram_bytes
-                                 > static_cast<size_t>(active_policy.high_bin_min_histogram_bytes);
+                            && output_histogram_bytes > static_cast<size_t>(active_policy.high_bin_min_histogram_bytes);
+        if (use_cooperative && d_temp_storage != nullptr)
+        {
+          cudaStreamCaptureStatus capture_status{};
+          if (const auto error = CubDebug(cudaStreamIsCapturing(stream, &capture_status)))
+          {
+            return error;
+          }
+          // Cooperative execution requires setup that is not permitted while capturing. Size queries still account
+          // for both layouts so the returned allocation remains valid when execution chooses either path.
+          use_cooperative = capture_status == cudaStreamCaptureStatusNone;
+        }
         if (use_cooperative)
         {
           if (const auto error = CubDebug(launcher_factory.CooperativeLaunchSupported(use_cooperative)))
@@ -373,16 +415,17 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             }
             allocation_sizes[num_allocations - 1] = GridQueue<int>::AllocationSize();
             if (const auto error = CubDebug(
-                  detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+                  detail::alias_temporaries(nullptr, cooperative_temp_storage_bytes, allocations, allocation_sizes)))
             {
               return error;
             }
-            if (d_temp_storage == nullptr)
+            if (d_temp_storage != nullptr && num_thread_blocks > 0)
             {
-              return cudaSuccess;
-            }
-            if (num_thread_blocks > 0)
-            {
+              if (const auto error = CubDebug(
+                    detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+              {
+                return error;
+              }
               ::cuda::std::array<LocalCounterT*, NUM_ACTIVE_CHANNELS> private_histograms{};
               auto* typed_allocations = reinterpret_cast<LocalCounterT**>(allocations);
               ::cuda::std::copy(
@@ -587,6 +630,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
   if (d_temp_storage == nullptr)
   {
+    temp_storage_bytes = (::cuda::std::max) (temp_storage_bytes, cooperative_temp_storage_bytes);
     // Return if the caller is simply requesting the size of the storage allocation
     return cudaSuccess;
   }
@@ -1321,37 +1365,64 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
     const auto privatization =
       select_privatization_mode<false, LocalCounterT, NumActiveChannels>(active_policy, max_num_output_bins);
 
-    using PrivatizedDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;
-    ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op{};
+    using SearchDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;
+    ::cuda::std::array<SearchDecodeOpT, NumActiveChannels> search_decode_op{};
     for (int channel = 0; channel < NumActiveChannels; ++channel)
     {
-      privatized_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
+      search_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
     }
 
     const auto dispatch_with = [&](auto mode) {
       using privatization_mode_t = decltype(mode);
-      return detail::histogram::dispatch<NumChannels,
-                                         NumActiveChannels,
-                                         privatization_mode_t,
-                                         /* IsDeviceInit = */ false,
-                                         /* IsEven = */ false,
-                                         /* IsByteSample = */ false>(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_samples,
-        d_output_histograms,
-        num_output_levels,
-        num_output_levels,
-        output_decode_op,
-        privatized_decode_op,
-        max_num_output_bins,
-        num_row_pixels,
-        num_rows,
-        row_stride_samples,
-        stream,
-        policy_selector,
-        kernel_source,
-        launcher_factory);
+      constexpr bool supports_cached_search =
+        (::cuda::std::is_integral_v<LevelT> || ::cuda::std::is_floating_point_v<LevelT>)
+        && !::cuda::std::is_same_v<::cuda::std::remove_cv_t<LevelT>, bool>;
+      if constexpr (is_privatized_static_smem_v<privatization_mode_t> || !supports_cached_search)
+      {
+        return detail::histogram::dispatch<NumChannels, NumActiveChannels, privatization_mode_t, false, false, false>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_samples,
+          d_output_histograms,
+          num_output_levels,
+          num_output_levels,
+          output_decode_op,
+          search_decode_op,
+          max_num_output_bins,
+          num_row_pixels,
+          num_rows,
+          row_stride_samples,
+          stream,
+          policy_selector,
+          kernel_source,
+          launcher_factory);
+      }
+      else
+      {
+        using CachedSearchDecodeOpT = typename TransformsT::template CachedSearchTransform<const LevelT*>;
+        ::cuda::std::array<CachedSearchDecodeOpT, NumActiveChannels> cached_search_decode_op{};
+        for (int channel = 0; channel < NumActiveChannels; ++channel)
+        {
+          cached_search_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
+        }
+        return detail::histogram::dispatch<NumChannels, NumActiveChannels, privatization_mode_t, false, false, false>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_samples,
+          d_output_histograms,
+          num_output_levels,
+          num_output_levels,
+          output_decode_op,
+          cached_search_decode_op,
+          max_num_output_bins,
+          num_row_pixels,
+          num_rows,
+          row_stride_samples,
+          stream,
+          policy_selector,
+          kernel_source,
+          launcher_factory);
+      }
     };
 
     const auto error =
@@ -1462,8 +1533,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
                                          NumActiveChannels,
                                          privatization_mode_t,
                                          /* IsDeviceInit = */ false,
-                                         /* IsEven = */ false,
-                                         /* IsByteSample = */ false>(
+                                         /* IsEven = */ true,
+                                         /* IsByteSample = */ true>(
         d_temp_storage,
         temp_storage_bytes,
         d_samples,

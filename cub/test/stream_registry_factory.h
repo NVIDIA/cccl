@@ -74,6 +74,8 @@ struct kernel_launcher_t : thrust::cuda_cub::detail::triple_chevron
 
 struct stream_registry_factory_t
 {
+  static constexpr bool force_device_kernel_emission = true;
+
   CUB_RUNTIME_FUNCTION kernel_launcher_t
   operator()(dim3 grid, dim3 block, size_t shared_mem, cudaStream_t stream, bool dependent_launch = false) const
   {

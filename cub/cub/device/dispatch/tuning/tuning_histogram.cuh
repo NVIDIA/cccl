@@ -151,17 +151,19 @@ struct HistogramPolicy
   int max_privatized_dynamic_smem_3_channel_even_bytes; //!< Three-channel HistogramEven SMEM limit
   int max_privatized_dynamic_smem_4_channel_even_bytes; //!< Four-channel HistogramEven SMEM limit
   int max_output_histogram_bytes_for_init_kernel_pdl; //!< Largest output allocation for init-kernel PDL
-  HistogramHighBinAlgorithm high_bin_algorithm = HistogramHighBinAlgorithm::global_memory_privatized;
-  HistogramCacheAlgorithm high_bin_cache = HistogramCacheAlgorithm::single_probe;
-  HistogramSpillAlgorithm high_bin_spill = HistogramSpillAlgorithm::global_memory_privatized;
+  HistogramHighBinAlgorithm high_bin_algorithm       = HistogramHighBinAlgorithm::global_memory_privatized;
+  HistogramCacheAlgorithm high_bin_cache             = HistogramCacheAlgorithm::single_probe;
+  HistogramSpillAlgorithm high_bin_spill             = HistogramSpillAlgorithm::global_memory_privatized;
   HistogramAggregationAlgorithm high_bin_aggregation = HistogramAggregationAlgorithm::rle;
-  int high_bin_cache_bytes_per_channel = 16384;
-  int high_bin_cache_count_replicas = 1;
-  int high_bin_cache_cuckoo_max_histogram_bytes = 1048576;
-  int high_bin_items_per_thread = 4;
-  int high_bin_threads_per_block = 0;
-  int high_bin_min_histogram_bytes = 0;
-  int high_bin_blocks_per_sm = 0;
+  int high_bin_cache_bytes_per_channel               = 16384;
+  int high_bin_cache_count_replicas                  = 1;
+  int high_bin_cache_cuckoo_max_histogram_bytes      = 1048576;
+  int high_bin_items_per_thread                      = 4;
+  int high_bin_threads_per_block                     = 0; //!< High-bin block size; 0 inherits threads_per_block
+  int high_bin_interpolation_min_level_bytes         = 2052;
+  int high_bin_min_histogram_bytes                   = 0;
+  //! Target resident cooperative blocks per SM. Zero keeps the occupancy-derived grid and a one-block launch bound.
+  int high_bin_blocks_per_sm        = 0;
   int high_bin_grid_items_per_block = 0;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int high_bin_threads() const noexcept
@@ -202,6 +204,7 @@ struct HistogramPolicy
         && lhs.high_bin_cache_cuckoo_max_histogram_bytes == rhs.high_bin_cache_cuckoo_max_histogram_bytes
         && lhs.high_bin_items_per_thread == rhs.high_bin_items_per_thread
         && lhs.high_bin_threads_per_block == rhs.high_bin_threads_per_block
+        && lhs.high_bin_interpolation_min_level_bytes == rhs.high_bin_interpolation_min_level_bytes
         && lhs.high_bin_min_histogram_bytes == rhs.high_bin_min_histogram_bytes
         && lhs.high_bin_blocks_per_sm == rhs.high_bin_blocks_per_sm
         && lhs.high_bin_grid_items_per_block == rhs.high_bin_grid_items_per_block;
@@ -229,18 +232,18 @@ struct HistogramPolicy
         << ", .max_privatized_dynamic_smem_3_channel_even_bytes = "
         << p.max_privatized_dynamic_smem_3_channel_even_bytes
         << ", .max_privatized_dynamic_smem_4_channel_even_bytes = "
-        << p.max_privatized_dynamic_smem_4_channel_even_bytes << ", .max_output_histogram_bytes_for_init_kernel_pdl = "
-        << p.max_output_histogram_bytes_for_init_kernel_pdl << ", .high_bin_algorithm = " << p.high_bin_algorithm
-        << ", .high_bin_cache = " << p.high_bin_cache << ", .high_bin_spill = " << p.high_bin_spill
-        << ", .high_bin_aggregation = " << p.high_bin_aggregation
+        << p.max_privatized_dynamic_smem_4_channel_even_bytes
+        << ", .max_output_histogram_bytes_for_init_kernel_pdl = " << p.max_output_histogram_bytes_for_init_kernel_pdl
+        << ", .high_bin_algorithm = " << p.high_bin_algorithm << ", .high_bin_cache = " << p.high_bin_cache
+        << ", .high_bin_spill = " << p.high_bin_spill << ", .high_bin_aggregation = " << p.high_bin_aggregation
         << ", .high_bin_cache_bytes_per_channel = " << p.high_bin_cache_bytes_per_channel
         << ", .high_bin_cache_count_replicas = " << p.high_bin_cache_count_replicas
         << ", .high_bin_cache_cuckoo_max_histogram_bytes = " << p.high_bin_cache_cuckoo_max_histogram_bytes
         << ", .high_bin_items_per_thread = " << p.high_bin_items_per_thread
         << ", .high_bin_threads_per_block = " << p.high_bin_threads_per_block
-        << ", .high_bin_min_histogram_bytes = " << p.high_bin_min_histogram_bytes
-        << ", .high_bin_blocks_per_sm = " << p.high_bin_blocks_per_sm
-        << ", .high_bin_grid_items_per_block = " << p.high_bin_grid_items_per_block << " }";
+        << ", .high_bin_interpolation_min_level_bytes = " << p.high_bin_interpolation_min_level_bytes
+        << ", .high_bin_min_histogram_bytes = " << p.high_bin_min_histogram_bytes << ", .high_bin_blocks_per_sm = "
+        << p.high_bin_blocks_per_sm << ", .high_bin_grid_items_per_block = " << p.high_bin_grid_items_per_block << " }";
   }
 #endif
 };
@@ -516,10 +519,10 @@ public:
           use_full_smem_capacity ? max_privatized_dynamic_smem_sm100_bytes
           : is_even              ? max_privatized_dynamic_smem_even_bytes_per_channel * num_active_channels
                                  : max_privatized_dynamic_smem_range_bytes_per_channel * num_active_channels;
-        policy.high_bin_algorithm           = HistogramHighBinAlgorithm::cooperative;
-        policy.high_bin_cache               = HistogramCacheAlgorithm::single_probe;
-        policy.high_bin_spill               = HistogramSpillAlgorithm::global_memory_privatized;
-        policy.high_bin_aggregation         = HistogramAggregationAlgorithm::rle;
+        policy.high_bin_algorithm   = HistogramHighBinAlgorithm::cooperative;
+        policy.high_bin_cache       = HistogramCacheAlgorithm::single_probe;
+        policy.high_bin_spill       = HistogramSpillAlgorithm::global_memory_privatized;
+        policy.high_bin_aggregation = HistogramAggregationAlgorithm::rle;
         policy.high_bin_cache_bytes_per_channel =
           single_channel
             ? 65536
@@ -534,9 +537,9 @@ public:
           (::cuda::std::min) (candidate_smem_bytes, max_privatized_dynamic_smem_bytes);
         policy.high_bin_blocks_per_sm = single_channel || (!is_even && sample_size_bytes == 4) ? 2 : 1;
         policy.high_bin_grid_items_per_block =
-          single_channel && sample_size_bytes == 1
-            ? policy.gmem.threads_per_block * policy.gmem.items_per_thread
-            : single_channel ? 768 * t_scale(12) : 1024 * (is_even ? t_scale(8) : t_scale(16));
+          single_channel && sample_size_bytes == 1 ? policy.gmem.threads_per_block * policy.gmem.items_per_thread
+          : single_channel                         ? 768 * t_scale(12)
+                                                   : 1024 * (is_even ? t_scale(8) : t_scale(16));
       }
       return policy;
     }

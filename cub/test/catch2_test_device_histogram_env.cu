@@ -1594,6 +1594,24 @@ struct wide_counter_cooperative_histogram_tuning
   using local_counter_type = unsigned long long;
 };
 
+struct cooperative_storage_histogram_tuning
+    : high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                                cub::HistogramCacheAlgorithm::single_probe,
+                                cub::HistogramSpillAlgorithm::global_memory_privatized,
+                                cub::HistogramAggregationAlgorithm::rle>
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::HistogramPolicy
+  {
+    auto policy = high_bin_histogram_tuning::operator()(cc);
+    policy.gmem =
+      cub::HistogramPrivatizationPolicy{1024, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, false};
+    policy.high_bin_threads_per_block    = 128;
+    policy.high_bin_blocks_per_sm        = 4;
+    policy.high_bin_grid_items_per_block = 128;
+    return policy;
+  }
+};
+
 template <int BlockThreads, typename LocalCounterT>
 struct histogram_tuning_with_local_counter : histogram_tuning<BlockThreads>
 {
@@ -1817,6 +1835,9 @@ CUB_TEST("DeviceHistogram high-bin cooperative strategies can be tuned", "[histo
                                 cub::HistogramSpillAlgorithm::output,
                                 cub::HistogramAggregationAlgorithm::warp_coalesced,
                                 98304>{});
+  // The cooperative grid can require more privatized slabs than the ordinary
+  // sweep. The environment API queries and allocates exactly the reported size.
+  run(cooperative_storage_histogram_tuning{});
 }
 
 CUB_TEST("DeviceHistogram cooperative warp aggregation handles invalid lanes", "[histogram][device]", CUB_SMALL)
@@ -1912,6 +1933,82 @@ CUB_TEST("DeviceHistogram high-bin cooperative strategy handles strided rows", "
   for (int channel = 0; channel < num_active_channels; ++channel)
   {
     REQUIRE(d_histograms[channel] == h_expected[channel]);
+  }
+}
+
+CUB_TEST("DeviceHistogram high-bin cooperative RANGE uses cached search", "[histogram][device]", CUB_SMALL)
+{
+  constexpr int num_channels        = 4;
+  constexpr int num_active_channels = 3;
+  constexpr int num_levels          = 1026;
+  constexpr int num_bins            = num_levels - 1;
+  constexpr int num_pixels          = 32768;
+
+  c2h::host_vector<int> h_levels(num_levels);
+  for (int level = 0; level < num_levels; ++level)
+  {
+    h_levels[level] = level * level;
+  }
+  const c2h::device_vector<int> d_levels_storage = h_levels;
+  const int* d_levels_ptr                        = thrust::raw_pointer_cast(d_levels_storage.data());
+
+  const auto env = cuda::execution::tune(
+    high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                              cub::HistogramCacheAlgorithm::cuckoo,
+                              cub::HistogramSpillAlgorithm::output,
+                              cub::HistogramAggregationAlgorithm::warp_coalesced>{});
+
+  c2h::host_vector<int> h_single_samples(num_pixels);
+  c2h::host_vector<int> h_single_expected(num_bins, 0);
+  for (int pixel = 0; pixel < num_pixels; ++pixel)
+  {
+    const int bin           = (pixel / 8) % num_bins;
+    h_single_samples[pixel] = h_levels[bin];
+    ++h_single_expected[bin];
+  }
+  const c2h::device_vector<int> d_single_samples = h_single_samples;
+  c2h::device_vector<int> d_single_histogram(num_bins, 0);
+  histogram_range(
+    thrust::raw_pointer_cast(d_single_samples.data()),
+    thrust::raw_pointer_cast(d_single_histogram.data()),
+    num_levels,
+    d_levels_ptr,
+    num_pixels,
+    env);
+  REQUIRE(d_single_histogram == h_single_expected);
+
+  c2h::host_vector<int> h_multi_samples(num_pixels * num_channels, h_levels.back());
+  cuda::std::array<c2h::host_vector<int>, num_active_channels> h_multi_expected{
+    c2h::host_vector<int>(num_bins, 0), c2h::host_vector<int>(num_bins, 0), c2h::host_vector<int>(num_bins, 0)};
+  for (int pixel = 0; pixel < num_pixels; ++pixel)
+  {
+    for (int channel = 0; channel < num_active_channels; ++channel)
+    {
+      const int bin                                   = (pixel + channel * 17) % num_bins;
+      h_multi_samples[pixel * num_channels + channel] = h_levels[bin];
+      ++h_multi_expected[channel][bin];
+    }
+  }
+  const c2h::device_vector<int> d_multi_samples = h_multi_samples;
+  cuda::std::array<c2h::device_vector<int>, num_active_channels> d_multi_histograms{
+    c2h::device_vector<int>(num_bins, 0), c2h::device_vector<int>(num_bins, 0), c2h::device_vector<int>(num_bins, 0)};
+  const cuda::std::array<int*, num_active_channels> d_multi_histogram_ptrs{
+    thrust::raw_pointer_cast(d_multi_histograms[0].data()),
+    thrust::raw_pointer_cast(d_multi_histograms[1].data()),
+    thrust::raw_pointer_cast(d_multi_histograms[2].data())};
+  constexpr cuda::std::array<int, num_active_channels> multi_num_levels{num_levels, num_levels, num_levels};
+  const cuda::std::array<const int*, num_active_channels> d_multi_levels{d_levels_ptr, d_levels_ptr, d_levels_ptr};
+
+  multi_histogram_range<num_channels, num_active_channels>(
+    thrust::raw_pointer_cast(d_multi_samples.data()),
+    d_multi_histogram_ptrs,
+    multi_num_levels,
+    d_multi_levels,
+    num_pixels,
+    env);
+  for (int channel = 0; channel < num_active_channels; ++channel)
+  {
+    REQUIRE(d_multi_histograms[channel] == h_multi_expected[channel]);
   }
 }
 

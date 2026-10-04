@@ -65,6 +65,16 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") AgentHi
 
 namespace detail::histogram
 {
+template <typename DecodeOpT, bool UseCache>
+struct histogram_bracket_cache_storage
+{};
+
+template <typename DecodeOpT>
+struct histogram_bracket_cache_storage<DecodeOpT, true>
+{
+  typename DecodeOpT::BracketCacheT bracket_cache;
+};
+
 struct HistogramPrivatizedStaticSmem
 {};
 
@@ -148,6 +158,8 @@ template <typename PolicySelector,
           typename OffsetT,
           typename OutputCounterT = CounterT>
 struct AgentHistogram
+    : private histogram_bracket_cache_storage<PrivatizedDecodeOpT,
+                                              NumActiveChannels == 1 && PrivatizedDecodeOpT::is_range_transform>
 {
   static_assert(sizeof(CounterT) <= sizeof(OutputCounterT),
                 "The output histogram counter must be at least as wide as the local counter");
@@ -176,6 +188,7 @@ struct AgentHistogram
   static constexpr bool is_rle_compress            = privatization_policy.rle_compress;
   static constexpr bool is_work_stealing           = privatization_policy.work_stealing;
   static constexpr CacheLoadModifier load_modifier = privatization_policy.load_modifier;
+  static constexpr bool use_mru_cache              = NumActiveChannels == 1 && PrivatizedDecodeOpT::is_range_transform;
 
   using SampleT = it_value_t<SampleIteratorT>;
   using PixelT  = typename CubVector<SampleT, NumChannels>::Type;
@@ -225,6 +238,18 @@ struct AgentHistogram
   const OutputDecodeOpT* output_decode_op; // determines output bin-id from privatized counter index, one for each
                                            // channel
   PrivatizedDecodeOpT* privatized_decode_op; // determines privatized counter index from sample, one for each channel
+  _CCCL_DEVICE _CCCL_FORCEINLINE void BinSelect(int channel, SampleT sample, int& bin, bool valid)
+  {
+    if constexpr (use_mru_cache)
+    {
+      privatized_decode_op[channel].template BinSelect<load_modifier>(sample, bin, valid, this->bracket_cache);
+    }
+    else
+    {
+      privatized_decode_op[channel].template BinSelect<load_modifier>(sample, bin, valid);
+    }
+  }
+
   _CCCL_DEVICE _CCCL_FORCEINLINE CounterT* PrivatizedHistogram(int channel)
   {
     if constexpr (uses_dynamic_smem)
@@ -274,7 +299,7 @@ struct AgentHistogram
       for (int pixel = 0; pixel < items_per_thread; ++pixel)
       {
         bins[pixel] = -1;
-        privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bins[pixel], is_valid[pixel]);
+        BinSelect(ch, samples[pixel][ch], bins[pixel], is_valid[pixel]);
       }
 
       CounterT accumulator = 1;
@@ -316,7 +341,7 @@ struct AgentHistogram
       {
         CounterT* privatized_histogram = PrivatizedHistogram(ch);
         int bin                        = -1;
-        privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bin, is_valid[pixel]);
+        BinSelect(ch, samples[pixel][ch], bin, is_valid[pixel]);
         if (bin >= 0)
         {
           atomicAdd_block(privatized_histogram + bin, 1);
