@@ -127,7 +127,7 @@ struct nullval final
 
 /**
  * @brief Customization point that makes `_Status` a status: a value that reports success or
- * failure by itself, so that `errsink(policy) ->* status` handles it on the code channel.
+ * failure by itself, so that `errsink(policy) << status` handles it on the code channel.
  *
  * The primary template is undefined, and a raw integer is never a status: a C API's result is
  * wrapped in a distinct type at the call site. A specialization provides
@@ -245,20 +245,15 @@ private:
     {
       _CCCL_TRY
       {
-        *__os_ << __loc.file_name() << '(' << __loc.line() << ") on_throw violation in " << __loc.function_name()
-               << ": " << __what << '\n';
+        *__os_ << "errsink: " << __loc.file_name() << '(' << __loc.line() << ") in " << __loc.function_name() << ": "
+               << __what << '\n';
         __os_->flush();
       }
       _CCCL_CATCH_ALL {}
     }
     else
     {
-      ::fprintf(__file_,
-                "%s(%u) on_throw violation in %s: %s\n",
-                __loc.file_name(),
-                __loc.line(),
-                __loc.function_name(),
-                __what);
+      ::fprintf(__file_, "errsink: %s(%u) in %s: %s\n", __loc.file_name(), __loc.line(), __loc.function_name(), __what);
       ::fflush(__file_);
     }
   }
@@ -2229,8 +2224,8 @@ _Expr __on_exception(_P& __policy,
 
 // The status side of a `<<` chain, kept type-erased: `<<` hands back the carrier, so a named sink
 // works across statements and the carrier's type is fixed before any status arrives. The first
-// feed fixes the chain's status type and every later feed verifies it; the first failing status
-// is kept.
+// feed fixes the chain's status type and every later feed verifies it; the first status the
+// policy forwarded is kept.
 class __chain_state
 {
   alignas(long long) unsigned char __bytes_[16] = {};
@@ -2299,7 +2294,7 @@ struct __on_throw_policy
 
   //! @brief The first status a `<<` chain forwarded, or the success value if none did.
   //! @tparam _Status The chain's status type, verified with `_CCCL_VERIFY`.
-  //! @return The first passed-through status, or `status_traits<_Status>::success()`.
+  //! @return The first forwarded status, or `status_traits<_Status>::success()`.
   template <class _Status>
   [[nodiscard]] _Status status() const noexcept
   {
@@ -2335,7 +2330,7 @@ decltype(auto) __run_under([[maybe_unused]] __on_throw_policy<_Reaction>& __poli
   // promise nobody keeps.
   static_assert(!noexcept(__f()),
                 "errsink has nothing to do for a noexcept callable, which terminates rather than "
-                "throws; call such a callable directly");
+                "throws; call such a callable directly; under <<, a noexcept action must return a status to be fed");
 
   using _Expr = decltype(__f());
   using _P    = _Reaction;
@@ -2401,23 +2396,33 @@ decltype(auto) __run_under([[maybe_unused]] __on_throw_policy<_Reaction>& __poli
   }
 }
 
-// The status operand: a past result. Its expression type is the status type; a handled status
-// yields `status_traits<_Status>::success()` and a passed-through one yields itself, for the
-// caller to propagate with `return`. Success costs one `failed` test and nothing else: no entry
-// gate and no success hook run, since the action has already happened.
-template <class _Reaction, class _Status, ::cuda::std::enable_if_t<__is_status_v<_Status>, int> = 0>
+// The status operand: a past result, offered to the policy. The answer carries both the yield and
+// whether the policy forwarded, which `<<` records; a success is never offered. Success costs one
+// `failed` test and nothing else: no entry gate and no success hook run, since the action has
+// already happened.
+template <class _Reaction, class _Status>
 // In clang-tidy's device pass _CCCL_TRY/_CCCL_CATCH expand to no handler, so bugprone-exception-escape
 // sees a throw from the exception bridge escape this runner in instantiations whose policy makes it noexcept.
 // NOLINTNEXTLINE(bugprone-exception-escape)
-_Status __run_under(__on_throw_policy<_Reaction>& __policy, const _Status __status) noexcept(
+__status_answer<_Status> __offer_past(__on_throw_policy<_Reaction>& __policy, const _Status __status) noexcept(
   __status_path_nothrow_v<_Reaction, _Status, __past_result<_Status>>)
 {
   if (!__status_failed(__status))
   {
-    return __status;
+    return {__status, false};
   }
   __past_result<_Status> __fn{__status};
-  return __offer_status<_Status>(__policy.__reaction_, __status, __policy.__loc_, __fn).__value_;
+  return __offer_status<_Status>(__policy.__reaction_, __status, __policy.__loc_, __fn);
+}
+
+// The status operand's yield: `status_traits<_Status>::success()` for a handled status, the status
+// itself for a forwarded one, for the caller to propagate with `return`.
+template <class _Reaction, class _Status, ::cuda::std::enable_if_t<__is_status_v<_Status>, int> = 0>
+// NOLINTNEXTLINE(bugprone-exception-escape)
+_Status __run_under(__on_throw_policy<_Reaction>& __policy, const _Status __status) noexcept(
+  __status_path_nothrow_v<_Reaction, _Status, __past_result<_Status>>)
+{
+  return __offer_past(__policy, __status).__value_;
 }
 
 // `errsink(p) ->* x`: evaluate and yield. A callable yields its own value; a status yields what
@@ -2450,8 +2455,9 @@ struct __errsink_unknown_return
 
 // `errsink(p) << x`: feed and chain. A status operand is offered to the policy exactly as `->*`
 // does. An action runs under the policy, and what it returns is an error code: a status is fed in
-// turn, `void` feeds nothing, and any other type is ill-formed. A failing status that comes out is
-// recorded if it is the chain's first. Returns the carrier itself.
+// turn, `void` feeds nothing, and any other type is ill-formed. A status the policy forwards is
+// recorded if it is the chain's first; one it handles is not, whatever it yields. Returns the
+// carrier itself.
 template <class _Reaction, class _X>
 void __feed(__on_throw_policy<_Reaction>& __sink, _X&& __x)
 {
@@ -2459,10 +2465,10 @@ void __feed(__on_throw_policy<_Reaction>& __sink, _X&& __x)
   {
     using _Status = ::cuda::std::remove_cvref_t<_X>;
     __sink.__chain_.template __fix_type<_Status>();
-    const _Status __yield = __run_under(__sink, static_cast<_Status>(__x));
-    if (__status_failed(__yield))
+    const __status_answer<_Status> __answer = __offer_past(__sink, static_cast<_Status>(__x));
+    if (__answer.__passed_)
     {
-      __sink.__chain_.__record(__yield);
+      __sink.__chain_.__record(__answer.__value_);
     }
   }
   else
@@ -3582,9 +3588,10 @@ exception_sink type_erase(_P&& __p)
  *
  * The right operand may also be a status, a value for which @ref status_traits is
  * specialized (`cudaError_t`, `CUresult`, ... once `cuda_safe_call.cuh` is included):
- * `errsink(policy) ->* cudaFree(p)`. A status is a past result handled on the code channel. On
- * success the expression yields the status after one test; a failing status the policy handles
- * yields `status_traits<S>::success()`, one it forwards yields the status itself, and
+ * `errsink(policy) << cudaFree(p)`. A status is a past result handled on the code channel. A
+ * statement that handles a status is spelled `<<`; `->*` is for when the handled status is needed
+ * as a value. On success `->*` yields the status after one test; a failing status the policy
+ * handles yields `status_traits<S>::success()`, one it forwards yields the status itself, and
  * `unwind` turns it into an exception. Policies that only handle exceptions see the status's
  * exception, `status_traits<S>::to_exception(status, loc)`. With exceptions disabled, such a
  * policy that may forward (`catch_only`, a typed `store`, `translate`, a user policy without
@@ -4018,17 +4025,13 @@ UNITTEST("errsink")
   char message[1024]{};
   char expected[1024]{};
   EXPECT(::fgets(message, sizeof(message), log));
-  ::snprintf(expected,
-             sizeof(expected),
-             "%s(%u) on_throw violation in %s: boom\n",
-             site.file_name(),
-             site.line(),
-             site.function_name());
+  ::snprintf(
+    expected, sizeof(expected), "errsink: %s(%u) in %s: boom\n", site.file_name(), site.line(), site.function_name());
   EXPECT(::std::string_view{message} == expected);
   EXPECT(::fgets(message, sizeof(message), log));
   ::snprintf(expected,
              sizeof(expected),
-             "%s(%u) on_throw violation in %s: nonstandard exception\n",
+             "errsink: %s(%u) in %s: nonstandard exception\n",
              site.file_name(),
              site.line(),
              site.function_name());
@@ -4045,7 +4048,7 @@ UNITTEST("errsink")
     char streamed_expected[1024]{};
     ::snprintf(streamed_expected,
                sizeof(streamed_expected),
-               "%s(%u) on_throw violation in %s: streamed\n",
+               "errsink: %s(%u) in %s: streamed\n",
                site.file_name(),
                site.line(),
                site.function_name());
@@ -4718,9 +4721,9 @@ UNITTEST("as_expected and defer")
     bool escaped = false;
     try
     {
-      errsink(as_expected)->*[]() -> _RefResult {
+      static_cast<void>(errsink(as_expected)->*[]() -> _RefResult {
         throw 42;
-      };
+      });
     }
     catch (int)
     {
@@ -6091,6 +6094,11 @@ UNITTEST("error sinks: << chains, each operand after the previous was handled")
   // a temporary carrier comes back by value, so binding it does not dangle
   auto&& c = errsink(fwd) << cudaErrorNotReady;
   EXPECT(c.status<cudaError_t>() == cudaErrorNotReady);
+  // a status the policy handles is not recorded, even when its substitute is a failing code
+  {
+    const auto c = errsink(only(cudaErrorNotReady)(subst(cudaErrorInvalidValue)) | fwd) << cudaErrorNotReady;
+    EXPECT(!c.forwarded());
+  }
 };
 
 UNITTEST("error sinks: ->* yields, << does not convert")
