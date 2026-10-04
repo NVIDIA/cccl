@@ -14,8 +14,8 @@ from typing import Any
 from .._bindings import (
     ArgumentBinding,
     BindingKind,
-    _normalize_i32_binding,
-    _normalize_i64_binding,
+    normalize_i32_binding,
+    normalize_i64_binding,
 )
 from .._symbols import semantic_token
 from .._types import ArgumentKind, ParameterClassification, ParameterRole
@@ -112,12 +112,12 @@ class GroupLoadStoreSemantics:
         object.__setattr__(
             self,
             "valid_items",
-            _normalize_i32_binding(self.valid_items, name="valid_items"),
+            normalize_i32_binding(self.valid_items, name="valid_items"),
         )
         object.__setattr__(
             self,
             "offset",
-            _normalize_i64_binding(self.offset, name="offset"),
+            normalize_i64_binding(self.offset, name="offset"),
         )
         if (
             self.offset.kind is BindingKind.STATIC

@@ -13,10 +13,10 @@ from .._algorithm import Algorithm
 from .._bindings import (
     ArgumentBinding,
     BindingKind,
-    _cxx_scalar_literal,
-    _normalize_i32_binding,
-    _normalize_i64_binding,
+    cxx_scalar_literal,
     i32_parameter,
+    normalize_i32_binding,
+    normalize_i64_binding,
 )
 from .._symbols import semantic_token
 from .._types import (
@@ -430,13 +430,13 @@ def make_block_load_store_semantics(
     )
     algorithm = _normalize_algorithm(kind, algorithm)
     valid_items = _normalize_optional_binding(valid_items, name="valid_items")
-    valid_items = _normalize_i32_binding(valid_items, name="valid_items")
+    valid_items = normalize_i32_binding(valid_items, name="valid_items")
     oob_default = _normalize_optional_binding(oob_default, name="oob_default")
     pointer_offset = _normalize_optional_binding(
         include_pointer_offset,
         name="include_pointer_offset",
     )
-    pointer_offset = _normalize_i64_binding(
+    pointer_offset = normalize_i64_binding(
         pointer_offset, name="pointer offset"
     )
     if (
@@ -474,7 +474,7 @@ def make_block_load_store_semantics(
         elif oob_default.kind is BindingKind.STATIC:
             partial.append(
                 CxxFunction(
-                    _cxx_scalar_literal(oob_default.value, name="oob_default"),
+                    cxx_scalar_literal(oob_default.value, name="oob_default"),
                     dtype,
                     name="oob_default",
                 )
