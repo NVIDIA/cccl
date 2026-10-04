@@ -737,8 +737,9 @@ def _resolve_memory_type(value: Any, *, primitive_name: str) -> type:
 def _validate_static_oob_default(value: Any, value_type: type) -> None:
     """Require a finite static default compatible with the memory dtype.
 
-    Python literals may convert within range; an already typed value must
-    match. This validates the value before its C++ literal is emitted.
+    A Python int may target any numeric dtype within range; a Python float
+    requires a floating dtype. Other values must already have the memory
+    dtype. This validates the value before its C++ literal is emitted.
     """
 
     plain_value = _provider_types.coerce_plain_scalar(
