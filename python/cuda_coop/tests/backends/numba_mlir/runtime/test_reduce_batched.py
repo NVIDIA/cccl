@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check independent per-slot reductions and distributed result ownership.
+
+Host references arrange input as logical groups, lanes, and batch slots,
+then reduce only the lane axis. Store results only where layout maps a slot
+to an existing batch. Other cases cover built-in operators, a qualified
+callback, chained result shapes, and one independently participating group.
+"""
+
 import numpy as np
 import pytest
 
@@ -43,6 +51,14 @@ pytestmark = [
     ],
 )
 def test_batch_reduction_layouts_preserve_input(width, batches, layout, dtype):
+    """Check each output layout against a reduction over the lane axis.
+
+    Map every defined result back to its batch index before comparison. Batch
+    counts above the width require several slots per lane; rounded capacity
+    leaves holes that the kernel must not read. Retain input dtype in the host
+    sum to match the provider's type rules, and check input preservation.
+    """
+
     output_count = (batches + width - 1) // width
 
     @cuda.jit
@@ -113,6 +129,14 @@ def test_batch_builtin_operators(operator, items_per_thread):
 
 
 def test_custom_operator_and_chained_result_extent():
+    """Use callback results as two new batches in a second reduction.
+
+    Reduce 64 batches to two blocked output slots in each physical-warp lane.
+    Every slot is defined, so a second call can safely sum those slots as two
+    independent batches. The host first computes maxima, then regroups them
+    by lane to check the new extent and meaning of the chained result.
+    """
+
     @cuda.jit(device=True)
     def maximum(left, right):
         return max(right, left)
@@ -140,6 +164,13 @@ def test_custom_operator_and_chained_result_extent():
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_only_one_logical_warp_participates(items_per_thread):
+    """Let one complete logical warp reduce while neighboring groups skip it.
+
+    All eight selected lanes enter the call, but other lanes in the physical
+    warp take no part. The result checks that CUB synchronization is limited
+    to the selected group and does not require unrelated logical warps.
+    """
+
     @cuda.jit
     def kernel(source, output, items_per_thread):
         values = coop.ThreadData(items_per_thread)
@@ -160,6 +191,8 @@ def test_only_one_logical_warp_participates(items_per_thread):
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_warp_feature_sums_example(items_per_thread):
+    """Check the feature-sums example independently for two physical warps."""
+
     # example-begin reduce-batched-features
     @cuda.jit
     def feature_sums(samples, totals, items_per_thread):

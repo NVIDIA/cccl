@@ -21,7 +21,9 @@ aggregate; batched reduction retains the separate batch axis.
    .. only:: html
 
       .. figure:: reduce-batched.svg
-         :alt: Four lanes each hold three features. Their per-feature sums are 16, 20, and 24, returned in lanes zero, one, and two. Lane three has no result.
+         :alt: Four lanes each hold three features. Their per-feature sums are
+            16, 20, and 24, returned in lanes zero, one, and two. Lane three
+            has no result.
          :width: 100%
 
          Three batches across a logical warp of four lanes.
