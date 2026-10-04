@@ -234,14 +234,23 @@ class GroupResultSource:
     Attributes
     ----------
     dtype_parameter : str or None
-        Argument whose dtype the result inherits when no fixed dtype is set.
-        ``None`` supplies no argument-based dtype inference.
+        Argument whose dtype the result inherits when neither an explicit
+        dtype keyword nor a fixed dtype supplies it. ``None`` supplies no
+        argument-based dtype inference.
     array_parameter : str or None
-        Argument whose scalar/array form and array extent the result inherits.
-        ``None`` describes a scalar result with one item.
+        Argument whose scalar/array form and array extent the result inherits
+        when no extent resolver is present. ``None`` then describes one
+        scalar item.
     fixed_dtype : object, optional
-        Compiler dtype that overrides ``dtype_parameter``. ``None`` leaves
-        dtype inference to the named argument, if one exists.
+        Compiler dtype used when the dtype keyword supplies no value.
+        ``None`` leaves inference to the named argument, if one exists.
+    dtype_keyword : str or None
+        Argument whose compile-time dtype, when non-None, takes precedence
+        over the fixed dtype and source argument.
+    extent_resolver : callable or None
+        Hook that receives the planning context and bound call and returns a
+        known per-thread extent or ``None``. Its presence declares an array
+        result independently of input shape.
     """
 
     dtype_parameter: str | None
@@ -271,10 +280,12 @@ class GroupPrimitiveRegistration:
     ``None`` omits that check. Both hooks receive the active planning context.
 
     ``results`` describes return values in order so dtype and extent analysis
-    can follow a call before rewriting. One result is returned directly;
-    multiple result policies describe a tuple. An empty tuple supplies no
-    result provenance. These policies aid inference; they do not allocate or
-    validate returned values.
+    can follow a call before rewriting. An optional ``result_resolver`` uses
+    the planning context and bound arguments to replace that fixed tuple.
+    This lets a static selector choose the result layout. One result is
+    returned directly; multiple result policies describe a tuple. An empty
+    tuple supplies no result provenance. These policies aid inference; they
+    do not allocate or validate returned values.
     """
 
     lower: Callable[..., list[Any]]
@@ -671,6 +682,10 @@ def register_group_primitive(
         Optional check for calls through the common ``cuda.coop`` API. It runs
         before ``lower`` with the planning context and bound arguments;
         backend-qualified calls skip it.
+    result_resolver : callable or None
+        Optional hook receiving the planning context and bound arguments and
+        returning a replacement tuple of result policies. This lets a static
+        selector choose the result layout; ``None`` uses ``results``.
 
     Raises
     ------

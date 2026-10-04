@@ -975,8 +975,8 @@ The result contracts preserve the following public behavior:
 * Load and Store return ``None``. Load fills the supplied output in place.
   Store follows CUB: transpose algorithms may rearrange the input payload
   in place. Invalid Load slots are unspecified unless a default is supplied.
-* Exchange, array Shuffle, and array Scan return a fresh payload. Their
-  inputs remain available to subsequent kernel code.
+* Operations such as Exchange, array Shuffle, and array Scan return fresh
+  payloads. Their inputs remain available to subsequent kernel code.
 * Reduce returns a scalar defined only at group rank zero. Every required
   thread must still participate.
 
@@ -1774,13 +1774,12 @@ tests use real NVRTC and nvJitLink with devices hidden; their fixtures
 provide an explicit target. Runtime tests check the resulting kernels.
 
 Result metadata must describe the returned payload independently of the
-input when their shapes differ. Discontinuity may return one flag payload or a pair.
-``GroupResultSource`` supplies dtype and extent
-resolution, while the registration's ``result_resolver`` selects the
-result tuple for a call. Record that information during planning so scalar
-indexing and subsequent primitives can infer the result without a later
-Store call supplying its type.
-
+input when their shapes differ. Discontinuity may return one flag payload
+or a pair. ``GroupResultSource`` supplies dtype and extent resolution, while
+the registration's ``result_resolver`` selects the result tuple for a call.
+Record that information during planning so scalar indexing and subsequent
+primitives can infer the result without a later Store call supplying its
+type.
 
 Use tests that exercise the part you changed. A result-ownership change
 needs a check of the operation's documented mutation behavior. A storage
