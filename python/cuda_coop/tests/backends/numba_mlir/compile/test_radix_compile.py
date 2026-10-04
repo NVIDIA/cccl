@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile radix kernels with real providers and no visible GPU.
+
+Pin only the device-target queries to SM 90. The normal compiler, CUB wrapper
+generation, and device linker still produce a cubin. Cases exercise result
+composition, qualified payload forms, and early rejection of invalid public
+contracts.
+"""
+
 import os
 from types import SimpleNamespace
 
@@ -18,6 +26,12 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 
 @pytest.fixture(autouse=True)
 def _hidden_device(monkeypatch):
+    """Keep device discovery out of compilation while using an SM90 target.
+
+    Require hidden GPUs and replace only architecture queries. Real provider
+    and kernel compilation then run without querying a physical device.
+    """
+
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == ""
     monkeypatch.setattr(
         tools,
@@ -32,6 +46,13 @@ def _hidden_device(monkeypatch):
 
 
 def _compile(kernel, signature):
+    """Compile and link a kernel with an explicit 64-thread block shape.
+
+    Supply launch facts through the compiler entry point without launching the
+    kernel. Require a cubin and return MLIR to check inserted work, such as
+    the storage-reuse barrier.
+    """
+
     result = kernel._compile_launch_config_signature(
         signature,
         (
@@ -53,6 +74,16 @@ def _compile(kernel, signature):
 def test_radix_compiles_and_preserves_result_dtype(
     operation, dtype, items_per_thread
 ):
+    """Compile sort and rank composition across key widths and payload sizes.
+
+    Sort keys with runtime bounds, pairs with an independent float64 payload,
+    and ranks followed by another sort. The last case requires the compiler to
+    propagate fixed int32 rank dtype instead of the original key dtype.
+    One-item payloads still use the array path. Keys and rank use
+    compiler-owned scratch; pairs pass an auto-sync descriptor. Each path
+    must emit a block reuse barrier.
+    """
+
     @cuda.jit(chip="sm_90")
     def kernel(source, destination, associated, begin, end, items_per_thread):
         t = cuda.threadIdx.x
@@ -98,6 +129,14 @@ def test_radix_compiles_and_preserves_result_dtype(
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_qualified_prefix_and_float_striped_sort_compile(items_per_thread):
+    """Compile prefix outputs and floating local-array sort extensions.
+
+    Seven radix bits distribute 128 bins over 64 threads, so the prefix output
+    has two items per thread regardless of the key payload size. A separate
+    fixed local array exercises descending floating-point sort with striped
+    output in the same kernel.
+    """
+
     @cuda.jit(chip="sm_90")
     def kernel(source, ranks_out, prefixes, floating, output, items_per_thread):
         t = cuda.threadIdx.x

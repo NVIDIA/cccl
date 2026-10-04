@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Preserve scalar or array result shape in qualified radix calls.
+
+Sort results retain independent key and value element types. Rank results
+use int32 even when their keys are wider or unsigned. Paired overloads map
+scalar input to a scalar result and array input to a ThreadDataLike result;
+both apply the same dtype rules. The BlockGroup annotation limits every
+operation to a complete physical block.
+"""
+
 from typing import TypeAlias, overload
 
 import numpy

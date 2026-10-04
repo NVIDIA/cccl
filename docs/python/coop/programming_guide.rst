@@ -264,7 +264,8 @@ parts of the API.
      - Logical-warp forms of those operations
    * - ``coop.this_block()``
      - All threads in the block
-     - Load, Store, Exchange, Shuffle, Reduce, Scan, Merge Sort
+     - Load, Store, Exchange, Shuffle, Reduce, Scan, Merge Sort, Radix Sort,
+       and Radix Rank
    * - ``coop.this_block().group_by(2)``
      - Two consecutive physical warps
      - Hierarchy queries
@@ -483,9 +484,10 @@ Conflicting type requirements are errors. See :ref:`element-type inference
 Load writes into the payload supplied by the caller. Transpose Store
 algorithms may rearrange their input payload in place, as in CUB. Copy values
 before Store if they are needed later. Both operations return ``None``.
-Array Scan, Exchange, and array Shuffle return fresh payloads, so their
-input values remain available afterwards. Reduction returns a scalar,
-including when each thread contributes several items.
+Array Scan, Exchange, array Shuffle, Merge Sort, Radix Sort, and Radix Rank
+return fresh payloads, so their input values remain available afterwards.
+Reduction returns a scalar, including when each thread contributes several
+items.
 
 Numba can promote integer arithmetic. Store requires an exact match to the
 destination dtype, so cast computed values when necessary, as in the
@@ -717,7 +719,8 @@ allocation. Its contents are opaque; keep application values in
      - Scratch behavior in the current backend
    * - Direct, striped, or vectorize Load/Store
      - No shared scratch or reuse barrier
-   * - Block transpose-family Load/Store; Block Reduce; Block Scan; Block Merge Sort; Block Radix Sort
+   * - Block transpose-family Load/Store; Block Reduce; Block Scan; Block Merge Sort;
+       Block Radix Sort
      - Automatic scratch, or an explicit ``TempStorage``
    * - Warp transpose Load/Store; Warp Reduce; Warp Scan; Warp Merge Sort
      - Automatic scratch per group; explicit descriptors are rejected
@@ -1039,11 +1042,11 @@ key width. Sort bounds may be runtime integers, but must be uniform across
 the block. Invalid runtime intervals trigger a device trap before narrowing
 to CUB's integer arguments.
 
-For signed and floating-point keys, CUB transforms the bit representation into an
-order-preserving form before selecting those bits. A bit interval is
-therefore not necessarily an interval of the original signed or floating-
-point representation. Full-width ordering uses the usual numeric order;
-floating-point NaNs follow CUB's bit ordering.
+For signed and floating-point keys, CUB transforms the bit representation
+into a form that preserves numeric order before selecting those bits. A bit
+interval therefore does not always refer to the original representation.
+Full-width ordering uses the usual numeric order; floating-point NaNs follow
+CUB's bit ordering.
 
 Radix Sort consumes a full tile and has no ``valid_items`` parameter.
 Initialize every input slot. If an application pads a partial tile, it

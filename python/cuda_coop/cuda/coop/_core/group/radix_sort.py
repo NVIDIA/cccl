@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Plan block radix results and the CUB call that produces them.
+
+The dispatcher admits complete physical blocks for both Rank and Sort. This
+module adds per-member result, participation, scratch, and synchronization
+contracts to the shared CUB descriptions. Frontends use those contracts to
+return new payloads even though CUB Sort writes its working arrays in place.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -36,12 +44,20 @@ from ._model import (
 
 @dataclass(frozen=True)
 class GroupRadixRankSemantics:
-    """Stable digit ranks with an optional caller-provided prefix output."""
+    """Describe returned digit ranks and an optional explicit prefix output.
+
+    Ranks have one int32 item per input key. The primitive record can also
+    name a caller-provided prefix array, which is written separately from the
+    returned ranks. Group ranking requires a static digit interval; a scalar
+    operand must contain exactly one item per thread.
+    """
 
     primitive: BlockRadixRankSemantics
     operand_kind: GroupOperandKind = GroupOperandKind.ARRAY
 
     def __post_init__(self) -> None:
+        """Check the Rank record and scalar operand extent."""
+
         if not isinstance(self.primitive, BlockRadixRankSemantics):
             raise TypeError("primitive must be BlockRadixRankSemantics")
         if not self.primitive.bit_range.is_static:
@@ -74,12 +90,19 @@ class GroupRadixRankSemantics:
 
 @dataclass(frozen=True)
 class GroupRadixSortSemantics:
-    """Nonmutating sort results backed by an in-place CUB specialization."""
+    """Describe new sorted payloads backed by an in-place CUB operation.
+
+    The frontend copies inputs into result storage before it calls CUB, so the
+    public inputs remain unchanged. Scalar operands require one item per
+    thread; array operands retain the primitive's fixed per-thread extent.
+    """
 
     primitive: BlockRadixSortSemantics
     operand_kind: GroupOperandKind = GroupOperandKind.ARRAY
 
     def __post_init__(self) -> None:
+        """Check the Sort record and scalar operand extent."""
+
         if not isinstance(self.primitive, BlockRadixSortSemantics):
             raise TypeError("primitive must be BlockRadixSortSemantics")
         object.__setattr__(
@@ -107,6 +130,14 @@ class GroupRadixSortSemantics:
 def _classifications(
     operation: GroupRadixRankSemantics | GroupRadixSortSemantics,
 ) -> tuple[ParameterClassification, ...]:
+    """Separate runtime payloads and outputs from specialization constants.
+
+    Keys and optional values are inputs to the public group call, despite
+    CUB's in-place signature. The optional rank prefix is an explicit output.
+    Bound classifications follow their bindings: Rank uses static bounds,
+    while Sort can carry runtime bounds through the plan.
+    """
+
     p = operation.primitive
     fields = [
         ParameterClassification(
@@ -157,6 +188,15 @@ def _plan(
     launch: LaunchFacts,
     operation: GroupRadixRankSemantics | GroupRadixSortSemantics,
 ) -> GroupLoweringPlan:
+    """Specialize Rank or Sort for the resolved block and describe its results.
+
+    Use exact launch dimensions and reject a Rank thread count that disagrees
+    with them. Rank returns int32 positions; Sort returns keys and optional
+    associated values. Each member owns its result payload. Shared contracts
+    record block-uniform bounds and implementation-owned scratch for the
+    frontend to honor when it inserts allocation, calls, and synchronization.
+    """
+
     p = operation.primitive
     kwargs = {
         "key_dtype": p.key_dtype,

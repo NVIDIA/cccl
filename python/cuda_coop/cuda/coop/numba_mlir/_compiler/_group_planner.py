@@ -2054,7 +2054,13 @@ class _GroupCallPlanner:
         scope: Any,
         loc: ir.Loc,
     ) -> tuple[ir.Var, bool]:
-        """Represent a scalar as a one-item payload for array-only providers."""
+        """Represent a scalar as a one-item array for an array-only provider.
+
+        Return an existing array unchanged. For a scalar, append a payload
+        allocation marker and a write to element zero. Return the payload and
+        a flag describing the original operand's array form; the family uses
+        that flag to restore a scalar result after the provider call.
+        """
 
         is_array = self._array_operand_state(operation, value)
         if is_array:
@@ -2088,7 +2094,12 @@ class _GroupCallPlanner:
         loc: ir.Loc,
         stem: str,
     ) -> ir.Var:
-        """Return an array payload or unbox its sole scalar item."""
+        """Recover the public result shape from an internal array payload.
+
+        Return an array payload unchanged. For a scalar result, append a read
+        of element zero and return its variable. The caller must supply a
+        one-item payload for that case; this helper does not check its extent.
+        """
 
         if is_array:
             return payload

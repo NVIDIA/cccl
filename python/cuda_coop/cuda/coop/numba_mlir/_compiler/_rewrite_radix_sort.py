@@ -2,12 +2,31 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check radix provider arrays and record their allocation dtypes.
+
+Scalar inputs have already been boxed by group planning. Sort providers
+receive copied keys and optional values; rank providers receive input keys
+and a distinct int32 result array. These roles determine which factory dtype
+each operand must match before specialization.
+"""
+
 import numba_cuda_mlir.numba_cuda.types as numba_types
 
 from ._rewrite_support import CoopSinglePhaseRewriteError
 
 
 def infer_radix_payload(context, inference):
+    """Reconcile radix payload extents and the dtype of each provider operand.
+
+    Require one common fixed extent for keys, associated values, and rank
+    results. Key and value arrays retain independent factory dtypes; the rank
+    result is always int32. Use factory metadata when a payload's dtype is
+    unknown, reject conflicts, and record the resolved type for allocation.
+
+    An optional rank digit-prefix array also receives int32 dtype. Its extent
+    was checked during group planning and need not match the key item count.
+    """
+
     rank = inference.op_name == "radix_rank_keys"
     pairs = inference.op_name == "radix_sort_pairs"
     count = 2 if rank or pairs else 1

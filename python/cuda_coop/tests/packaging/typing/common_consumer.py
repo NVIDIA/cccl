@@ -264,6 +264,8 @@ def check_merge_sort_surface() -> None:
 
 
 def check_radix_surface() -> None:
+    """Check sort key/value dtypes and fixed int32 ranks in the common API."""
+
     block = coop.this_block()
     keys = coop.ThreadData(items_per_thread=3, dtype=np.int32)
     values = coop.ThreadData(items_per_thread=3, dtype=np.float64)
