@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Type batched-reduction payloads without promoting their item dtype.
+
+A qualified callback combines two items into one item of the same type.
+Static annotations retain that type but do not express the computed result
+extent, layout ownership, or unspecified slots beyond the batch count.
+The common API documentation supplies those result and participation rules.
+"""
+
 from collections.abc import Callable
 from typing import Literal
 

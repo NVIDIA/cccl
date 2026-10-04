@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Declare batched reductions for the common kernel API.
+
+The registration lets compiler backends recognize this function by identity.
+The Python body rejects host calls; the backend supplies the device operation.
+"""
+
 from __future__ import annotations
 
 from typing import Any
