@@ -197,9 +197,9 @@ Does TopK return sorted results?
 
 No. It selects the smallest or largest keys and places them in a blocked
 output prefix without promising their order. Only the first
-``min(k, valid_items)`` positions are defined. When keys tie at the
-selection boundary, any subset needed to fill the result may be chosen.
-Pair variants keep each selected key attached to its value. Use a sorting
+``min(k, valid_items)`` positions are defined. When keys tie at the selection
+boundary, any of the tied keys may fill the remaining positions. Pair
+variants keep each selected key attached to its value. Use a sorting
 primitive when you need ordered output.
 See :ref:`the TopK example <coop-topk>`.
 
