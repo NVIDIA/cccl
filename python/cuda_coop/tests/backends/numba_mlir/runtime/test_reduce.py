@@ -60,6 +60,42 @@ _INTEGER_DTYPES = (
 _DTYPES = (*_INTEGER_DTYPES, np.float32, np.float64)
 
 
+@pytest.mark.parametrize("dtype", [np.int32, np.float32])
+@pytest.mark.parametrize("scope", ["warp", "block"])
+@pytest.mark.parametrize("collectives", [1, 2])
+def test_sum_infers_loop_carried_scalar_dtype(dtype, scope, collectives):
+    @cuda.jit
+    def kernel(source, observed, repetitions):
+        thread = cuda.threadIdx.x
+        value = source[thread]
+        if scope == "warp":
+            group = root_coop.this_warp()
+            leader = thread % 32 == 0
+        else:
+            group = root_coop.this_block()
+            leader = thread == 0
+        for _ in range(repetitions):
+            total = root_coop.sum(group, value, broadcast=False)
+            cuda.syncthreads()
+            if leader:
+                value = total
+            if collectives == 2:
+                total = root_coop.sum(group, value, broadcast=False)
+                cuda.syncthreads()
+                if leader:
+                    value = total
+        observed[thread] = value
+
+    width = 32 if scope == "warp" else 64
+    source = np.arange(1, 65, dtype=dtype)
+    observed = cuda.to_device(np.zeros_like(source))
+    repetitions = 5
+    kernel[1, 64](cuda.to_device(source), observed, np.int32(repetitions))
+    expected = source.copy().reshape(-1, width)
+    expected[:, 0] += repetitions * collectives * expected[:, 1:].sum(axis=1)
+    np.testing.assert_array_equal(observed.copy_to_host(), expected.ravel())
+
+
 def _dtype_values(dtype, size: int) -> np.ndarray:
     indices = np.arange(size, dtype=np.int64)
     if np.dtype(dtype).kind == "u":
