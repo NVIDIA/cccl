@@ -89,7 +89,7 @@ class _GroupCallPlanner:
     rewriting phase understands.
 
     Analysis and mutation are separate. Helpers collect descriptor
-    assignments and replacement statements while the original reaching
+    assignments and replacement statements while the original assignment
     definitions remain available. ``run()`` installs the replacements only
     after every operation and remaining descriptor use has passed
     validation. Create a fresh planner for each attempt; its caches and
@@ -208,12 +208,15 @@ class _GroupCallPlanner:
         )
 
     def _definition(self, value: Any) -> Any:
-        """Look up one variable definition, or return ``None``.
+        """Look up the expression that supplies a variable's value.
 
-        Non-variable inputs pass through unchanged. Return ``None`` when
-        Numba's single-definition lookup raises ``KeyError``, including
-        ambiguous or missing definitions. Analyses that merge control-flow
-        paths must use ``_all_definitions`` instead.
+        A definition is the right-hand side of an assignment, such as the
+        ``ThreadData(...)`` call assigned to a payload variable. Call and
+        descriptor recognition use this helper when they need a single source.
+        For an IR variable ``value``, return Numba's recorded definition, or
+        ``None`` if it is missing or ambiguous. Other inputs pass through
+        unchanged. Use ``_all_definitions`` when several assignments may supply
+        the value after a branch or loop.
         """
 
         if not isinstance(value, ir.Var):
@@ -224,12 +227,21 @@ class _GroupCallPlanner:
             return None
 
     def _all_definitions(self, value: ir.Var) -> tuple[Any, ...]:
-        """Find all recorded definitions for a variable.
+        """Find every recorded assignment that may supply a variable's value.
 
-        Payload and provenance analysis must inspect all possible sources
-        rather than accept whichever assignment is encountered first. Prefer
-        Numba's definition table, fall back to single-definition lookup, and
-        return an empty tuple when neither supplies a definition.
+        An assignment is a reaching definition for a use if execution can get
+        from that assignment to the use without replacing the value. For
+        example, two branches can assign different ``ThreadData`` objects to
+        the same payload variable. Array analysis must check both sources
+        before choosing a provider. This helper conservatively collects all
+        recorded sources for the name; it does not prove that each assignment
+        can reach the particular use being analyzed.
+
+        ``value`` is an IR variable; its ``name`` indexes Numba's definition
+        table. Return the recorded right-hand-side expressions as a tuple,
+        falling back to ``_definition`` if the table has no entry. An empty
+        tuple means no definition was found, so callers have no source to
+        classify.
         """
 
         definitions = getattr(self.func_ir, "_definitions", {}).get(
@@ -432,6 +444,12 @@ class _GroupCallPlanner:
         when an operation needs evidence that a scalar was explicitly supplied
         as a compile-time value.
 
+        Parameters
+        ----------
+        value : ir.Var or object
+            Argument to inspect, usually an IR variable or an already-resolved
+            Python default. Unknown runtime values leave this probe unresolved.
+
         Returns
         -------
         resolved : bool
@@ -463,7 +481,7 @@ class _GroupCallPlanner:
     ) -> tuple[bool, Any]:
         """Resolve an explicitly static scalar with its known numeric width.
 
-        Delegate to the shared provenance walker with this function's reaching
+        Delegate to the shared provenance walker with this function's recorded
         definitions and argument types. Constants and literal arguments must
         agree across all paths; runtime expressions are not evaluated to turn
         them into constants. The result is ``(resolved, value)``; an
@@ -823,20 +841,43 @@ class _GroupCallPlanner:
         return resolved
 
     def _is_none(self, value: Any) -> bool:
-        """Return whether a value is known to be ``None``."""
+        """Check whether an optional operation argument is explicitly omitted.
+
+        Operation planners call this through ``GroupPlanningContext.is_none``
+        for arguments such as ``temp_storage``. ``value`` is an IR operand or
+        Python default. Return true only when constant resolution establishes
+        ``None``; an unknown runtime value is not treated as omission. This
+        probe does not request another compiler specialization.
+        """
 
         resolved, constant = self._try_constant(value)
         return resolved and constant is None
 
     @staticmethod
     def _merge_array_states(states: tuple[bool | None, ...]) -> bool | None:
-        """Combine payload-origin evidence across alternative definitions.
+        """Combine the array checks for all possible sources of an operand.
 
-        ``False`` vetoes an unsupported path, ``True`` establishes a
-        recognized payload origin, and ``None`` represents a recursion
-        backedge with no new evidence. A known origin may therefore survive
-        loop backedges, but a cycle alone stays unresolved. An empty set of
-        definitions is rejected.
+        The array walkers call this when a branch or loop gives a variable more
+        than one possible value. An operand can be treated as an array only if
+        no concrete source contradicts that choice. A loop that keeps a payload
+        created before the loop is valid: revisiting the loop variable adds no
+        new evidence, but must not discard the known constructor either.
+
+        Parameters
+        ----------
+        states : tuple of bool or None
+            Results for the alternative sources. ``True`` means a supported
+            array constructor was found; ``False`` means that source is
+            unsupported; ``None`` means traversal revisited a variable on the
+            current recursion path, before finding a constructor there.
+
+        Returns
+        -------
+        bool or None
+            ``False`` if any source is unsupported or there are no definitions.
+            Otherwise ``True`` if a constructor was found, or ``None`` if every
+            source only led back into the same cycle. Thus ``(True, None)`` is
+            accepted, while ``(True, False)`` is rejected.
         """
 
         if not states or any(state is False for state in states):
@@ -853,14 +894,37 @@ class _GroupCallPlanner:
         seen: set[str],
         thread_data_only: bool = False,
     ) -> bool | None:
-        """Classify a tuple element across its possible definitions.
+        """Check whether a selected tuple element holds an array payload.
 
-        Track ``variable[index]`` separately from the container variable so a
-        loop-carried tuple does not hide a concrete payload origin. Inspect
-        each reaching definition with its own recursion path, then merge the
-        same ``True``/``False``/``None`` states used by ``_is_array_value``.
-        The ``thread_data_only`` restriction is carried through to payload
-        leaves.
+        An operation can receive a payload taken from a tuple, for example
+        ``payloads[0]``. ``_is_array_definition`` calls this helper for such
+        indexing expressions. Follow every possible source of the tuple so a
+        branch cannot hide an unsupported value in the selected position.
+        Track the tuple and index together: revisiting ``payloads[0]`` is a
+        cycle, while inspecting another element is a separate question.
+
+        Parameters
+        ----------
+        value : ir.Var or object
+            IR variable containing the tuple. Other values return ``False``.
+        index : int
+            Tuple position to inspect, with Python's zero-based and negative
+            indexing rules. This is an element index, not a byte offset.
+        seen : set of str
+            Variable names and ``"name[index]"`` keys already visited on this
+            recursion path. The selected key is added in place; each possible
+            definition receives a copy so one branch cannot hide another.
+        thread_data_only : bool, optional
+            Accept only ``ThreadData`` constructors when true. Otherwise,
+            recognized CUDA local-array constructors are also accepted.
+
+        Returns
+        -------
+        bool or None
+            ``True`` when at least one supported constructor is found and no
+            source is rejected; ``False`` for a missing or unsupported source;
+            ``None`` if traversal only revisits variables in a cycle. The
+            caller combines this result with the operand's other sources.
         """
 
         if not isinstance(value, ir.Var):
@@ -889,13 +953,35 @@ class _GroupCallPlanner:
         seen: set[str],
         thread_data_only: bool,
     ) -> bool | None:
-        """Trace a tuple-producing definition to one payload item.
+        """Check one tuple source for the selected array payload.
 
-        Aliases, casts, iterator exhaustion, and phi inputs preserve the
-        selected index. A literal tuple selects one element for ordinary
-        payload-origin analysis; an invalid index or unsupported definition
-        returns ``False``. Branch recursion sets remain separate so one path
-        does not hide another.
+        ``_is_array_tuple_item`` calls this once per recorded tuple definition.
+        Follow tuple copies, casts, and the IR used to unpack an iterator; each
+        preserves which position the caller selected. A phi expression chooses
+        between values arriving from different branches or loop iterations, so
+        its inputs must all be checked. When a ``build_tuple`` expression is
+        reached, classify the selected element with ``_is_array_value``.
+
+        Parameters
+        ----------
+        definition : object
+            One right-hand-side IR value or expression that supplies the tuple.
+        index : int
+            Zero-based tuple position; negative indices count from the end.
+        seen : set of str
+            Variable names and tuple-position keys visited on this recursion
+            path. Independent branches receive copies to avoid skipping work.
+        thread_data_only : bool
+            Whether the selected payload must originate from ``ThreadData``.
+            False also permits a recognized CUDA local-array constructor.
+
+        Returns
+        -------
+        bool or None
+            The selected element's array classification. ``False`` means an
+            unsupported source or invalid index. ``None`` means a recursive
+            path supplied no constructor evidence; ``True`` means a supported
+            constructor was found without a conflicting source.
         """
 
         if isinstance(definition, ir.Var):
@@ -1003,13 +1089,35 @@ class _GroupCallPlanner:
     def _is_array_definition(
         self, definition: Any, *, seen: set[str], thread_data_only: bool
     ) -> bool | None:
-        """Classify the payload origin of one reaching definition.
+        """Check whether one assignment supplies a supported array payload.
 
-        Follow aliases, casts, phi inputs, and tuple projections whose index
-        is a known non-boolean integer. Recognized payload constructors
-        establish an array origin; CUDA local arrays are accepted only when
-        ``thread_data_only`` is false. Unsupported sources return ``False``;
-        recursive paths retain the unresolved state from ``_is_array_value``.
+        ``_is_array_value`` calls this for each possible source of an operation
+        operand. Tracing the assignment back to its constructor tells Load/Store
+        planning whether it has a per-thread array or must apply scalar rules.
+        For a value selected from a tuple, resolve the index before examining
+        that tuple element. Branch and loop merges inspect all alternatives;
+        an unsupported source cannot be hidden by another valid source.
+
+        Parameters
+        ----------
+        definition : object
+            A recorded right-hand-side IR value or expression, such as a
+            constructor call, variable alias, cast, phi, or tuple lookup.
+        seen : set of str
+            Variable names and tuple-position keys already visited on the
+            current recursion path. Each branch receives its own copy.
+        thread_data_only : bool
+            Accept common and qualified ``ThreadData`` constructors only when
+            true; false also accepts the recognized CUDA local-array call.
+
+        Returns
+        -------
+        bool or None
+            ``True`` for a supported constructor or alternatives that agree;
+            ``False`` for an unsupported source or unresolved tuple index;
+            ``None`` when following aliases or loop inputs only leads back to
+            a variable already being examined. Operand validation reports that
+            unresolved cycle if no other path supplies a constructor.
         """
 
         if isinstance(definition, ir.Var):
@@ -1059,10 +1167,26 @@ class _GroupCallPlanner:
 
     @staticmethod
     def _new_var(scope: Any, loc: ir.Loc, stem: str) -> ir.Var:
-        """Create a distinct IR temporary in the supplied scope and location.
+        """Name a temporary needed by a generated provider call.
 
-        A shared counter keeps names distinct across rewritten calls. The stem
-        makes the generated IR recognizable when inspecting compiler dumps.
+        ``_rewritten_call`` and operation planners use these variables for the
+        selected callable and its arguments. The shared counter avoids name
+        collisions when several operations are rewritten in the same function.
+
+        Parameters
+        ----------
+        scope : ir.Scope
+            Lexical scope of the original operation's result variable.
+        loc : ir.Loc
+            Source location to retain for compiler diagnostics.
+        stem : str
+            Readable name fragment, such as ``"factory"`` or ``"arg0"``,
+            identifying the temporary's purpose in an IR dump.
+
+        Returns
+        -------
+        ir.Var
+            A fresh variable. Its defining assignment is created by the caller.
         """
 
         return ir.Var(
@@ -1078,13 +1202,39 @@ class _GroupCallPlanner:
         stem: str,
         value: Any,
     ) -> ir.Var:
-        """Make an argument available as an IR variable for a generated call.
+        """Supply an IR variable for one argument of a generated provider call.
 
-        Reuse existing variables. Otherwise append an assignment to
-        ``statements``: simple Python values become ``ir.Const`` and objects
-        such as provider metadata become ``ir.Global``. Return the assigned
-        temporary. This only builds replacement statements; it does not insert
-        them into a block.
+        Numba call expressions refer to variables, but planning also produces
+        Python values such as an item count or a provider's metadata object.
+        ``_rewritten_call`` and operation planners use this helper to bind those
+        values before emitting a call. Existing variables need no assignment.
+        For a Python value, append a constant or global assignment to the
+        caller's pending statement list. ``run()`` installs that list only after
+        all cooperative operations pass validation.
+
+        Parameters
+        ----------
+        statements : list of IR statements
+            Pending replacement statements, in execution order. A new
+            assignment is appended here when ``value`` needs a variable.
+        scope : ir.Scope
+            Scope for a new variable, taken from the original call's result.
+        loc : ir.Loc
+            Original source location for the variable and assignment.
+        stem : str
+            Name fragment describing the argument, such as ``"arg0"`` or a
+            keyword name. A counter makes the complete name distinct.
+        value : object
+            Existing IR variable or Python value to pass. ``None``, booleans,
+            integers, floats, strings, and tuples use ``ir.Const``; other
+            objects use ``ir.Global`` so later compiler phases can recover
+            the object.
+
+        Returns
+        -------
+        ir.Var
+            The unchanged input variable or the newly assigned temporary.
+            No function block is modified by this helper.
         """
 
         if isinstance(value, ir.Var):
@@ -1178,12 +1328,36 @@ class _GroupCallPlanner:
         return statements
 
     def _array_operand_state(self, operation: str, value: Any) -> bool:
-        """Classify an operand or diagnose unresolved payload provenance.
+        """Tell an operation planner whether its operand is a per-thread array.
 
-        A false result still needs scalar validation by the operation planner;
-        only unresolved provenance raises ``CyclicArrayProvenanceError`` here.
-        The operation name identifies the failing public call in that
-        diagnostic.
+        ``GroupPlanningContext.is_array`` calls this to validate an operand.
+        For example, Store needs to choose between a scalar value and an array
+        of values per thread, while Load requires an array destination. Trace
+        the operand to its constructor before making that choice. If traversal
+        only finds a cycle, report that the payload's source could not be
+        established rather than treating it as a scalar.
+
+        Parameters
+        ----------
+        operation : str
+            Public operation name, such as ``"load"`` or ``"store"``, used
+            to identify the call if source tracing fails.
+        value : object
+            Operand's IR variable, or another value to probe. Recognized
+            sources are ``ThreadData`` and CUDA local-array constructors.
+
+        Returns
+        -------
+        bool
+            Whether the operand has a supported array source on all concrete
+            paths. ``False`` leaves scalar or invalid-value checks to the
+            operation planner; it does not establish that the value is scalar.
+
+        Raises
+        ------
+        CyclicArrayProvenanceError
+            All traced sources only revisit variables already being examined,
+            so none establishes how the payload was created.
         """
 
         state = self._is_array_value(value)
@@ -1194,13 +1368,37 @@ class _GroupCallPlanner:
     def _thread_data_operand_state(
         self, operation: str, parameter: str, value: Any
     ) -> bool:
-        """Classify a parameter that requires a ``ThreadData`` payload.
+        """Check the payload constructor required by a common-API parameter.
 
-        Apply the constructor restriction used by the common API. Return
-        whether the operand has a recognized ``ThreadData`` origin; an
-        unresolved cycle raises ``GroupRewriteError`` naming the operation and
-        parameter. A false result lets the caller issue its parameter-specific
-        type diagnostic.
+        ``GroupPlanningContext.is_thread_data`` calls this when an operation
+        needs a ``ThreadData`` payload. For example, common ``load`` requires
+        ``ThreadData`` for its output even though the qualified backend also
+        accepts CUDA local arrays. Follow copies and control-flow alternatives
+        so that the same rule applies when the constructor is elsewhere in the
+        kernel.
+
+        Parameters
+        ----------
+        operation : str
+            Public operation name used in a source-tracing diagnostic.
+        parameter : str
+            Public parameter name, such as ``"output"`` or ``"value"``,
+            identifying which operand could not be traced.
+        value : object
+            IR operand to trace to a common or qualified ``ThreadData`` call.
+
+        Returns
+        -------
+        bool
+            ``True`` for a recognized ``ThreadData`` source on all concrete
+            paths. ``False`` lets the caller report its parameter-specific
+            error for an unsupported source.
+
+        Raises
+        ------
+        GroupRewriteError
+            The search only finds cyclic references and cannot establish the
+            payload's constructor.
         """
 
         state = self._is_array_value(value, thread_data_only=True)
@@ -1214,36 +1412,47 @@ class _GroupCallPlanner:
     def _array_extent(
         self, value: Any, *, seen: set[str] | None = None
     ) -> int | None:
-        """Recover one known per-thread item count from payload definitions.
+        """Recover how many elements one thread holds in an array payload.
 
-        Follow aliases, casts, phi inputs, and constant tuple projections to
-        ``ThreadData`` item counts or scalar local-array shapes. Gather known
-        extents and require them to agree, ignoring unresolved paths and
-        recursion backedges. Payload-kind validation is separate: a returned
-        extent alone is not proof that every reaching definition is a valid
-        payload. Required constructor dimensions may request literal argument
-        specialization.
+        This element count is the payload's *extent*. For example,
+        ``ThreadData(items_per_thread=4)`` has extent four, independent of its
+        element dtype or the number of threads in the block. Operation planners
+        call ``GroupPlanningContext.array_extent`` to obtain this count before
+        specializing a CUB provider whose item count is a template argument.
+
+        Follow the assignments that can supply ``value`` through copies, casts,
+        branch or loop merges, and constant tuple indices. Read the count from
+        ``ThreadData`` or a CUDA local-array constructor with an integer shape.
+        All known counts must agree: one provider cannot use different array
+        sizes on different paths through the kernel. Paths with no known count
+        are ignored here; the separate array-kind check must establish that the
+        operand comes from supported constructors.
 
         Parameters
         ----------
         value : ir.Var or object
-            Payload variable to inspect; non-variables have no known extent.
+            Payload variable whose element count is needed. Non-variables
+            provide no count and return ``None``.
         seen : set of str, optional
-            Recursion-path names and tuple-projection keys. Add the current
-            name in place; give each reaching definition a separate copy.
+            Variable names and tuple-position keys already visited on this
+            recursion path. Add the current name in place and copy the set
+            when following alternative assignments to avoid infinite loops.
 
         Returns
         -------
         int or None
-            The unique known integral extent, excluding booleans, or ``None``
-            if none can be recovered. Positivity is validated elsewhere.
+            The single known number of elements per thread, or ``None`` if no
+            count is found. Counts are integral and exclude booleans; the
+            operation's later shape validation checks positivity.
 
         Raises
         ------
         GroupRewriteError
-            Known extents conflict, or a dimension needs literal unrolling.
+            Known counts disagree, or a constructor's dimension depends on
+            literal unrolling that has not run yet.
         ForceLiteralArg
-            A constructor dimension needs literal argument specialization.
+            A constructor dimension needs a kernel argument specialized to a
+            compile-time value.
         """
 
         if not isinstance(value, ir.Var):
@@ -1265,13 +1474,40 @@ class _GroupCallPlanner:
     def _array_extent_tuple_item(
         self, value: Any, index: int, *, seen: set[str]
     ) -> int | None:
-        """Find a consistent known item count for one element of a tuple.
+        """Find the per-thread element count of a payload selected from a tuple.
 
-        Trace all container definitions using a ``variable[index]`` recursion
-        key. Unknown paths and backedges contribute no extent; conflicting
-        known counts raise ``InconsistentTupleExtentError``. Return ``None``
-        when no count is known. This recovers shape information without
-        proving that every path supplies a supported payload.
+        ``_array_extent_definition`` calls this for indexing such as
+        ``payloads[0]``. The tuple may have been copied or assigned on several
+        branches, so inspect each possible assignment before selecting one
+        count for provider specialization. The tuple length is unrelated to
+        the payload's extent: a tuple of two four-element payloads has length
+        two, while either selected payload has extent four.
+
+        Parameters
+        ----------
+        value : ir.Var or object
+            IR variable containing the tuple. Other values have no known
+            payload count and return ``None``.
+        index : int
+            Payload position within the tuple, using Python's zero-based and
+            negative indexing rules.
+        seen : set of str
+            Variable names and tuple-position keys visited on this recursion
+            path. Add ``"name[index]"`` in place and copy the set for each
+            alternative assignment so loops terminate without hiding branches.
+
+        Returns
+        -------
+        int or None
+            The unique known element count per thread for the selected payload.
+            Unknown sources and repeated visits contribute no count; ``None``
+            means none was found. Array-kind validation is a separate check.
+
+        Raises
+        ------
+        InconsistentTupleExtentError
+            Possible definitions of this tuple give the selected payload
+            different known element counts.
         """
 
         if not isinstance(value, ir.Var):
@@ -1297,13 +1533,44 @@ class _GroupCallPlanner:
     def _array_extent_tuple_item_definition(
         self, definition: Any, index: int, *, seen: set[str]
     ) -> int | None:
-        """Recover a tuple element's extent from one reaching definition.
+        """Read one tuple assignment for the selected payload's element count.
 
-        Follow tuple aliases, casts, iterator exhaustion, and phi inputs.
-        Known counts on phi inputs must agree or
-        ``InconsistentLoopTupleExtentError`` is raised. Unsupported sources
-        and invalid tuple indices produce no known extent; payload-kind
-        validation is performed separately.
+        ``_array_extent_tuple_item`` calls this for each possible tuple source.
+        A *reaching definition* is an assignment whose value can arrive at the
+        operation along a branch or loop path. The caller conservatively checks
+        all recorded sources, without proving each reaches this use. Trace back
+        to the payload constructor because CUB provider specialization needs a
+        fixed number of elements per thread. That number is the payload's
+        *extent*, not the tuple length or its size in bytes.
+
+        Copies, casts, and iterator-unpacking IR preserve the selected position.
+        A phi expression combines values from different control-flow paths,
+        so known counts on its inputs must agree. At a tuple construction,
+        ``_array_extent`` examines the selected payload itself.
+
+        Parameters
+        ----------
+        definition : object
+            One right-hand-side IR value or expression that supplies the tuple.
+        index : int
+            Payload position in the tuple; negative indices count from the end.
+        seen : set of str
+            Variable names and tuple-position keys already visited while
+            tracing this path. Separate phi inputs receive copies of the set.
+
+        Returns
+        -------
+        int or None
+            Known number of elements per thread in the selected payload.
+            ``None`` means the source or index is unsupported, its count is
+            unknown, or following it only revisits an existing recursion path.
+            The caller checks payload kind separately.
+
+        Raises
+        ------
+        InconsistentLoopTupleExtentError
+            A branch or loop merge supplies different known counts for the
+            selected tuple position.
         """
 
         if isinstance(definition, ir.Var):
@@ -1340,15 +1607,45 @@ class _GroupCallPlanner:
     def _array_extent_definition(
         self, definition: Any, *, seen: set[str]
     ) -> int | None:
-        """Extract payload shape from one reaching definition.
+        """Read one payload assignment to recover its per-thread element count.
 
-        Aliases, casts, phi inputs, and constant tuple projections delegate
-        back to extent traversal. At a recognized constructor, resolve the
-        item count or scalar local-array shape as a compile-time integer,
-        excluding booleans. Unsupported or unknown shapes return ``None``;
-        conflicting phi extents raise ``InconsistentLoopPayloadExtentError``.
-        Literal specialization requests and forbidden literal-unroll
-        dependencies propagate.
+        ``_array_extent`` calls this for every assignment that might supply an
+        operand. Provider selection needs the constructor's fixed element
+        count, even when the operation receives a copied value or one selected
+        from a tuple. Follow these intermediate expressions until a recognized
+        ``ThreadData`` or CUDA local-array constructor is reached, then resolve
+        its ``items_per_thread`` or integer ``shape`` argument.
+
+        Parameters
+        ----------
+        definition : object
+            One right-hand-side IR value or expression that supplies a payload:
+            a constructor call, alias, cast, phi, or tuple lookup.
+        seen : set of str
+            Variable names and tuple-position keys already visited on this
+            recursion path. Copies let each phi input be examined independently.
+
+        Returns
+        -------
+        int or None
+            The constructor's number of elements per thread, as an integer
+            excluding booleans. ``None`` means no usable count was found. In
+            particular, an unsupported source, nonconstant tuple index, or
+            noninteger local-array shape supplies no count. This does not
+            establish that every source is an array or that the count is
+            positive.
+
+        Raises
+        ------
+        InconsistentLoopPayloadExtentError
+            A phi's inputs have different known element counts, so one provider
+            specialization cannot describe every path.
+        GroupRewriteError
+            A constructor dimension depends on an unexpanded literal-unroll
+            value. Errors from nested tuple analysis also propagate.
+        ForceLiteralArg
+            Resolving a constructor dimension requires the dispatcher to retry
+            compilation with a literal kernel argument.
         """
 
         if isinstance(definition, ir.Var):
@@ -1586,6 +1883,13 @@ class _GroupCallPlanner:
     def run(self) -> bool:
         """Plan group operations and replace their descriptors in the IR.
 
+        ``_GroupPlanning._resolve_groups`` creates this planner and calls
+        ``run()`` during ``CoopWholeFunctionPlanner.run``. Numba has already
+        inlined device helpers, making their cooperative calls visible in the
+        kernel, and ordinary type inference has not started. The caller has
+        obtained the configured launch dimensions so this phase can resolve
+        thread groups and choose provider specializations.
+
         First reject unsupported literal-unroll dependencies and identify
         assignments that construct ``ThreadHierarchy`` or groups, including
         ``group_by()`` calls and descriptor aliases or casts. These describe
@@ -1696,7 +2000,7 @@ def has_group_markers(func_ir: ir.FunctionIR) -> bool:
     Parameters
     ----------
     func_ir : ir.FunctionIR
-        Current function IR with its reaching-definition lookup available.
+        Current function IR with its recorded-definition lookup available.
         Scanned without modifying its blocks or resolving launch metadata.
 
     Returns
@@ -1777,14 +2081,21 @@ def has_group_markers(func_ir: ir.FunctionIR) -> bool:
 
 
 class _GroupPlanning:
-    """Provide the whole-function planner with group resolution.
+    """Add the group-resolution phase to ``CoopWholeFunctionPlanner``.
 
-    This mixin expects ``CoopWholeFunctionPlanner`` to provide ``state``
-    and ``is_device_function``. It gates launch-metadata requests on
-    marker detection, rejects standalone device functions that still
-    contain group calls, and delegates the actual analysis and rewrite to
-    a fresh ``_GroupCallPlanner``. Its Boolean result tells the caller
-    whether to repair IR before provider rewriting.
+    This is a mixin: the whole-function planner inherits its methods rather
+    than creating a separate ``_GroupPlanning`` object. The owning planner
+    supplies ``state`` and ``is_device_function`` through Numba's
+    ``WholeFunctionPlanner`` base class. Its ``run()`` method calls
+    ``_resolve_groups()`` after device helpers have been inlined and before
+    provider-call rewriting starts.
+
+    The method first checks whether any group calls remain, then requests
+    launch dimensions and delegates to a fresh ``_GroupCallPlanner``. Calls
+    in a standalone device function must instead be inlined into a kernel,
+    whose configured launch supplies those dimensions. The returned boolean
+    tells the owner whether to rebuild IR analysis before rewriting provider
+    calls.
     """
 
     def _resolve_groups(self) -> bool:

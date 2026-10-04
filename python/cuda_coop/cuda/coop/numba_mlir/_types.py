@@ -131,6 +131,14 @@ def numba_type_to_cpp(numba_type):
 
 
 def _validate_logical_warp_threads(threads):
+    """Check the logical warp width before compiling or allocating scratch.
+
+    Warp factories and provider code generation use this to require a Python
+    integer from the supported widths. ``threads`` counts participating lanes
+    per logical warp. Return it unchanged, or raise ``ValueError`` for an
+    unsupported width, boolean, or other type.
+    """
+
     if (
         isinstance(threads, bool)
         or not isinstance(threads, int)
@@ -1272,6 +1280,15 @@ class Algorithm:
         return f"{self.c_name}{namespace}_{self.method_name}"
 
     def _current_provider_compile_identity(self):
+        """Describe compilation for the current device and this provider.
+
+        ``_bind_provider_compile_identity`` calls this when its caller has
+        not supplied an identity. Query the device even when this object has
+        cached artifacts so switching targets cannot silently reuse them.
+        Return the NVRTC identity for relocatable LTO output, including the
+        resolved header/toolkit context and compute capability.
+        """
+
         # The CUDA module reexports this accessor but omits it from its stub.
         device = (
             cuda.get_current_device()  # pyright: ignore[reportAttributeAccessIssue]
@@ -1286,7 +1303,18 @@ class Algorithm:
         )
 
     def _bind_provider_compile_identity(self, compile_identity=None):
-        """Bind the first compile identity and reject conflicting reuse."""
+        """Bind compilation inputs before naming or reusing provider code.
+
+        Symbol qualification, cache-key construction, and ``get_lto_ir`` call
+        this so a specialization cannot reuse code for a different target or
+        compiler setup. ``compile_identity`` is the tuple returned by
+        ``nvrtc.compiler_identity``; ``None`` queries the current device and
+        this provider's resolved context.
+
+        Store and return the first identity. Later calls return the same
+        identity or raise ``RuntimeError`` if the supplied or observed inputs
+        differ. This check does not compile code or validate thread counts.
+        """
         observed = (
             self._current_provider_compile_identity()
             if compile_identity is None
@@ -2260,6 +2288,14 @@ class Algorithm:
 
 
 def _dedupe_ltoirs(lto_irs):
+    """Keep the first occurrence of each supporting link image.
+
+    Provider compilation and bundling collect images from type definitions
+    and parameter descriptors. ``lto_irs`` is their ordered iterable of byte
+    images or text; compare content digests and return a list of the original
+    objects, preserving first-use order.
+    """
+
     seen = set()
     deduped = []
     for lto_ir in lto_irs:
@@ -2295,6 +2331,15 @@ class _SharedTempFile:
 
 
 def _collect_extra_ltoirs(algo):
+    """Retain a bundled algorithm's supporting images as separate inputs.
+
+    ``prepare_ltoir_bundle`` calls this after compiling the shared provider
+    source. ``algo`` supplies type definitions and specialized parameter
+    descriptors whose link images are still needed alongside that bundle.
+    Return their content-deduplicated images in first-use order, or an empty
+    list when none are attached.
+    """
+
     extras = []
     if algo.type_definitions:
         for type_definition in algo.type_definitions:

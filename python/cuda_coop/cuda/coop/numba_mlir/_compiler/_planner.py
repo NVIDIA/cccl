@@ -26,7 +26,15 @@ from ._rewrite import _CallRewriting
 class CoopWholeFunctionPlanner(
     _GroupPlanning, _CallRewriting, WholeFunctionPlanner
 ):
-    """Resolve groups before specializing calls and allocating storage."""
+    """Resolve groups before specializing calls and allocating storage.
+
+    One planner instance owns both phases for a compiler attempt.
+    The mixins keep group resolution and call rewriting in separate modules
+    while giving both access to the same compiler state and launch metadata.
+    They do not register additional passes. Keeping the sequence in ``run``
+    also puts the required IR repair between the phases in one place: call
+    rewriting must see the provider calls that group resolution just created.
+    """
 
     def run(self) -> bool:
         """Lower cooperative calls while their inlined consumers are visible.
