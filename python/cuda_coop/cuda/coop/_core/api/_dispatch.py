@@ -159,4 +159,8 @@ def _validate_common_operation_group(
     )
 
 
-__all__ = []
+__all__ = [
+    "_common_group_operation",
+    "_common_group_operation_name",
+    "_validate_common_operation_group",
+]
