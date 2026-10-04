@@ -7,6 +7,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+#include <cub/device/device_adjacent_difference.cuh>
 #include <cub/device/device_reduce.cuh>
 #include <cub/device/device_transform.cuh>
 
@@ -62,6 +63,15 @@ __global__ void adjdiff_k(const int* in, int* out, int n, const int* prev_last, 
   else if (i < n)
   {
     out[i] = in[i] - in[i - 1];
+  }
+}
+// In-place boundary fix: data[0] -= *prev_last (the saved last input element of
+// the previous shard). The interior is done in place by CUB's SubtractLeft.
+__global__ void fix_boundary_k(int* data, const int* prev_last, int shard)
+{
+  if (blockIdx.x == 0 && threadIdx.x == 0)
+  {
+    data[0] -= *prev_last;
   }
 }
 __global__ void iota_k(int* p, int n)
@@ -375,6 +385,81 @@ template <class... S, size_t N>
 auto adjacent_difference(bundle<S...> b, const sharded_view<N>& in, const sharded_view<N>& out)
 {
   return adjacent_difference_impl(::std::move(b), in, out, cuda::std::make_index_sequence<N>{});
+}
+
+// adjacent_difference_inplace(bundle, data, mr): the same across the global
+// index space, in place. Shard k-1's last *input* element must be saved before
+// shard k-1 overwrites it, so the halo is the verb's own scratch and an
+// implementation detail: shard k-1's split child saves that element into a
+// one-element scoped buffer on its own lane and completes with the buffer's
+// pointer. The ready point is therefore after the save, and shard k receives
+// the pointer as a when_all value: no halo in the view, no raw synchronization.
+// The buffer lives in the split's shared state, i.e. as long as any consumer's
+// operation state. Its free lands on the writer's lane when that state dies:
+// correct eagerly (sync_wait drains every lane first); under capture it would
+// be unordered with the reader, the scope-end rough edge noted elsewhere.
+// Interior differences within a shard are CUB's in-place SubtractLeft; the
+// boundary element is fixed by a one-thread kernel.
+template <class Bundle, size_t N, class Mr, size_t... I>
+auto adjacent_difference_inplace_impl(Bundle b, const sharded_view<N>& data, Mr mr, cuda::std::index_sequence<I...>)
+{
+  // save(k): on shard k's lane, after its input is ready, save data[k].last into
+  // a fresh one-element buffer; complete with a pointer to it.
+  auto save = [=](auto s, auto k) {
+    constexpr size_t K = decltype(k)::value;
+    return ::std::move(s) | ex::let_value([=] {
+             return ex::just(lane::buffer<int>{
+                      ::cuda::device_buffer<int>{::cuda::stream_ref{data.lane[K].stream()}, mr, 1, ::cuda::no_init}})
+                  | ex::let_value([=](lane::buffer<int>& slot) {
+                      REQUIRE(cudaMemcpyAsync(slot.data(),
+                                              data.data[K] + data.shard_n - 1,
+                                              sizeof(int),
+                                              cudaMemcpyDeviceToDevice,
+                                              data.lane[K].stream())
+                              == cudaSuccess);
+                      return ex::just(slot.data());
+                    });
+           });
+  };
+  auto r = cuda::std::make_tuple(
+    ex::lane_split(save(cuda::std::get<I>(::std::move(b.s)), cuda::std::integral_constant<size_t, I>{}))...);
+  auto stage = [&](auto k) {
+    constexpr size_t K = decltype(k)::value;
+    auto interior      = [=] {
+      auto env  = cuda::std::execution::env{cuda::std::execution::prop{::cuda::get_stream, data.lane[K].stream()}};
+      void* tmp = nullptr;
+      size_t tmp_bytes = 0;
+      REQUIRE(cub::DeviceAdjacentDifference::SubtractLeft(
+                tmp, tmp_bytes, data.data[K], data.shard_n, cuda::std::minus<>{}, env)
+              == cudaSuccess);
+      auto m = mr; // used mutably
+      tmp    = m.allocate(::cuda::stream_ref{data.lane[K].stream()}, tmp_bytes, 256);
+      REQUIRE(cub::DeviceAdjacentDifference::SubtractLeft(
+                tmp, tmp_bytes, data.data[K], data.shard_n, cuda::std::minus<>{}, env)
+              == cudaSuccess);
+      m.deallocate(::cuda::stream_ref{data.lane[K].stream()}, tmp, tmp_bytes, 256);
+    };
+    if constexpr (K == 0)
+    {
+      return cuda::std::get<0>(r) | ex::then([=](int*) {
+               interior();
+             });
+    }
+    else
+    {
+      return ex::when_all(cuda::std::get<K>(r), cuda::std::get<K - 1>(r)) | ex::continues_on(data.lane[K])
+           | ex::then([=](int*, int* prev_saved) {
+               interior();
+               fix_boundary_k<<<1, 32, 0, data.lane[K].stream()>>>(data.data[K], prev_saved, static_cast<int>(K));
+             });
+    }
+  };
+  return bundle{cuda::std::make_tuple(stage(cuda::std::integral_constant<size_t, I>{})...)};
+}
+template <class... S, size_t N, class Mr>
+auto adjacent_difference_inplace(bundle<S...> b, const sharded_view<N>& data, Mr mr)
+{
+  return adjacent_difference_inplace_impl(::std::move(b), data, mr, cuda::std::make_index_sequence<N>{});
 }
 
 // reduce(bundle, in, partials, result): per shard, CUB Reduce into partials[k] on
@@ -758,4 +843,41 @@ C2H_TEST("lane_scheduler: sharded adjacent difference: direct neighbor read, one
   }
   cudaGraphDestroy(g);
   cudaFree(z);
+}
+
+C2H_TEST("lane_scheduler: sharded adjacent difference in place: the halo is the verb's own scratch, passed through the "
+         "split",
+         "[lane_scheduler]")
+{
+  using namespace sharded_mock;
+  // Two shards on lanes a and b. y = 2 * iota (elementwise, per shard); then
+  // adjacent difference of y in place. Shard a's last input element is saved
+  // by shard a's split child before shard a overwrites it, and reaches shard b
+  // as a pointer value of the split.
+  fixture f;
+  join_counter jc;
+  constexpr size_t N = 2;
+  const int half     = f.n / 2;
+  sharded_view<N> x{{f.a, f.a + half}, half, {f.la, f.lb}};
+  sharded_view<N> y{{f.b, f.b + half}, half, {f.la, f.lb}};
+  iota_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n);
+  REQUIRE(cudaStreamSynchronize(f.sa.get()) == cudaSuccess);
+  int allocs = 0;
+
+  auto whole = ex::schedule(f.la) | ex::let_value([&] {
+                 auto b = adjacent_difference_inplace(scale2(start(x), x, y), y, counting_mr{&allocs});
+                 return ex::when_all(cuda::std::get<0>(::std::move(b.s)), cuda::std::get<1>(::std::move(b.s)))
+                      | ex::continues_on(f.la);
+               });
+  ex::sync_wait(std::move(whole), jc.env());
+  std::vector<int> h(f.n);
+  REQUIRE(cudaMemcpy(h.data(), f.b, f.n * sizeof(int), cudaMemcpyDeviceToHost) == cudaSuccess);
+  CHECK(h[0] == 0);
+  CHECK(h[half] == 2); // across the boundary, from the saved element
+  CHECK(std::all_of(h.begin() + 1, h.end(), [](int v) {
+    return v == 2;
+  }));
+  CHECK(jc.joins == 3); // fork a -> b, boundary b <- a (the split's ready point, after the save), join b -> a
+  CAPTURE(allocs);
+  CHECK(allocs == 2 * N); // per shard: the one-element halo slot and CUB's SubtractLeft scratch
 }

@@ -92,6 +92,7 @@
 #include <cuda/experimental/__execution/when_all.cuh>
 
 #include <memory>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
@@ -1010,7 +1011,6 @@ struct split_t
   {
     using sender_concept = sender_t;
     static_assert(!dependent_sender<Sndr>, "lane_split: the child must know its completions without an environment");
-    static_assert(completes_on_lane<Sndr>, "lane_split: the child must complete on a lane_scheduler");
     using completions_t = decltype(execution::get_completion_signatures<Sndr>());
     using values_t      = __value_types<completions_t, ::cuda::std::__decayed_tuple, ::cuda::std::__type_self_t>;
 
@@ -1024,9 +1024,28 @@ struct split_t
       cudaEvent_t ready_{nullptr};
       Sndr sndr_;
       scheduler sch_;
+      // The child's lane: its completion scheduler when it reports one; else
+      // (let_value bodies do not) the single lane the sender tree completes on.
+      static scheduler lane_of(const Sndr& s)
+      {
+        if constexpr (completes_on_lane<Sndr>)
+        {
+          return execution::get_completion_scheduler<set_value_t>(execution::get_env(s));
+        }
+        else
+        {
+          stream_set lanes{};
+          collect(s, lanes);
+          if (lanes.n != 1)
+          {
+            throw ::std::logic_error("lane_split: the child must complete on exactly one lane");
+          }
+          return scheduler{lanes.s[0]};
+        }
+      }
       explicit control(Sndr s)
           : sndr_{static_cast<Sndr&&>(s)}
-          , sch_{execution::get_completion_scheduler<set_value_t>(execution::get_env(sndr_))}
+          , sch_{lane_of(sndr_)}
       {}
       ~control()
       {
