@@ -3,6 +3,14 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
+"""Check fresh histogram counts, striped padding, and preserved samples.
+
+Use complete input tiles and independent host bincount references. Counter
+storage can be larger than the useful bin range; check its zero padding as
+well as the counts. Repeated calls and explicit scratch reuse test that each
+result is fresh even when the same shared memory serves both operations.
+"""
+
 import numpy as np
 import pytest
 
@@ -34,6 +42,14 @@ pytestmark = [
 def test_histogram_counts_preservation_and_padding(
     algorithm, sample_dtype, counter_dtype, items_per_thread
 ):
+    """Check independent block counts, zero output padding, and sample copies.
+
+    Put every first-block sample in one bin to create contention, then give
+    the second block a different distribution. Compare each block separately
+    and require all 63 extra counter slots to become zero. Reading samples
+    back also catches the sort provider reordering the public input payload.
+    """
+
     @cuda.jit
     def kernel(source, destination, preserved, items_per_thread):
         block = coop.this_block()
@@ -99,6 +115,15 @@ def test_histogram_counts_preservation_and_padding(
 def test_fresh_calls_reuse_storage(
     threads, bins, algorithm, manual_sync, items_per_thread
 ):
+    """Keep both fresh results while reusing one scratch descriptor.
+
+    Add outputs from two calls over the same samples. Their sum must be twice
+    the host histogram, which detects accidental accumulation in scratch.
+    Cover automatic reuse barriers and, with auto_sync disabled, explicit
+    block synchronization between and after the calls. Striped Store writes
+    only the bins, including for a block whose size is not a warp multiple.
+    """
+
     bins_per_thread = (bins + threads - 1) // threads
     auto_sync = not manual_sync
 
@@ -148,6 +173,14 @@ def test_fresh_calls_reuse_storage(
 def test_qualified_scalar_and_local_array_return_counter_payload(
     scalar, algorithm
 ):
+    """Return two uint64 counters per thread from either sample form.
+
+    Qualified scalar input must be boxed for CUB without making the result a
+    scalar. The local-array case contributes twice as many samples, while the
+    counter extent stays fixed. Check striped bin order and all zero padding
+    against the corresponding host histogram.
+    """
+
     @cuda.jit
     def kernel(source, destination):
         block = numba_coop.this_block()

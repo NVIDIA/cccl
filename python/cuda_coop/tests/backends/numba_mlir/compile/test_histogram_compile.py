@@ -3,6 +3,14 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
+"""Compile histogram providers with independent sample and counter types.
+
+Require a run with no visible GPUs, and pin architecture queries to SM90.
+The normal compiler and linker still build both CUB algorithms. Sample
+extents of 1 and 4 differ from the two counters per thread, so a result typed
+from the input shape would not match.
+"""
+
 import os
 from types import SimpleNamespace
 
@@ -24,6 +32,14 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 def test_histogram_links_with_independent_counter_type(
     monkeypatch, algorithm, counter_name, items_per_thread
 ):
+    """Link both algorithms from uint8 samples to each supported counter type.
+
+    A 64-thread block needs two slots per thread for 65 bins. Striped Store
+    consumes that result with its own dtype and extent, independent of the
+    sample payload. Require cubin and external link artifacts, and confirm
+    that block synchronization appears in PTX without launching a kernel.
+    """
+
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == ""
     monkeypatch.setattr(
         _types.cuda,

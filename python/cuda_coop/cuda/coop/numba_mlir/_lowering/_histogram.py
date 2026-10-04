@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Adapt the shared block histogram wrapper to Numba's provider ABI.
+
+The wrapper copies samples, initializes fresh shared counters, and distributes
+bins to per-thread output arrays after an internal barrier. This factory
+supplies compiler types and the leading scratch pointer. Public result
+allocation and any barrier for later scratch reuse belong to group rewriting.
+"""
+
 from cuda.coop._core import SynchronizationScope
 from cuda.coop._core.block.histogram import (
     make_block_histogram_specialization,
@@ -28,6 +36,18 @@ def histogram(
     bins_per_thread=1,
     algorithm="atomic",
 ):
+    """Build a provider with independent sample and counter array types.
+
+    Validate the two dtype sets separately and normalize the block dimensions.
+    The shared builder checks the one-dimensional shape and bin capacity, then
+    supplies the C++ wrapper. Its private sample copy preserves inputs even
+    when the sort algorithm reorders its working items.
+
+    Materialize that specialization with registered block synchronization and
+    scratch metadata. Return an invocable that writes the supplied counter
+    array; the public rewrite allocates that array with bins_per_thread slots.
+    """
+
     adapter = NumbaMlirCoreAdapter()
     sample_dtype = validate_histogram_dtype(normalize_dtype_param(sample_dtype))
     counter_dtype = validate_histogram_dtype(

@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Expose the Histogram marker for array and scalar sample inputs.
+
+Compiler recognition loads the histogram planning family on demand. The
+marker describes a fresh counter result whose dtype and extent can differ
+from the samples; calling this body does not compute a Python histogram.
+"""
+
 from __future__ import annotations
 
 from typing import Any

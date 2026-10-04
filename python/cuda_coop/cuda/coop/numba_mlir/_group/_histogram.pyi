@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Type Histogram results from counter choice, not sample type.
+
+The overloads return int32 counters for an omitted dtype or Python int.
+An explicit supported counter dtype determines the result item type. Scalar
+samples still return a per-thread payload; static typing does not encode bin
+capacity, striped ownership, or the requirement that every sample is in range.
+"""
+
 from typing import Literal, TypeAlias, overload
 
 import numpy
