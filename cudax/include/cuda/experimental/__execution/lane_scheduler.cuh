@@ -92,6 +92,7 @@
 #include <cuda/experimental/__execution/when_all.cuh>
 
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -921,7 +922,7 @@ struct split_t
     bool started_ = false;
     bool done_    = false;
     int kind_     = 0; // 1 value, 2 error, 3 stopped
-    Values values_{};
+    ::std::optional<Values> values_{}; // the values need not be default-constructible
     exception_ptr error_{};
     waiter* waiters_ = nullptr;
 
@@ -977,7 +978,7 @@ struct split_t
     template <class... Ts>
     void set_value(Ts&&... ts) noexcept
     {
-      base_->values_ = typename Base::values_type{static_cast<Ts&&>(ts)...};
+      base_->values_.emplace(typename Base::values_type{static_cast<Ts&&>(ts)...});
       base_->finish(1);
     }
     void set_error(exception_ptr e) noexcept
@@ -1059,7 +1060,7 @@ struct split_t
             [&](auto&... vs) {
               execution::set_value(static_cast<Rcvr&&>(rcvr_), vs...);
             },
-            state_->values_);
+            *state_->values_);
           break;
         case 2:
           execution::set_error(static_cast<Rcvr&&>(rcvr_), state_->error_);

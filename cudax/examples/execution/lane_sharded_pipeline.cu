@@ -12,10 +12,10 @@
 //
 // A `lane_scheduler` is one CUDA stream. A sharded array is N shards, each a
 // span plus the lane it lives on. This example writes two algorithms over such
-// an array, `transform` and `reduce`, as senders, and runs a transform followed
-// by a reduce:
+// an array, `transform`, `inclusive_scan` and `reduce`, as senders, and runs a
+// transform, a scan and a reduce:
 //
-//     start(x) | transform(x, y, *2) | reduce(y, result)
+//     start(x) | transform(x, y, *2) | inclusive_scan(y) | reduce(y, result)
 //
 // Verbs take only data. The memory resource for scratch comes from the sender
 // environment, read once at the root of the pipeline; `start` puts it and the
@@ -26,28 +26,31 @@
 // The composition rule is the point of the example. A verb takes and returns a
 // *bundle* of per-shard senders, one per lane (`start(x) | transform(...) | ...`).
 // Elementwise verbs map over the bundle shard by shard, so a chain of transforms
-// is one stream-ordered chain per lane and needs no synchronization at all. Only
+// is one stream-ordered chain per lane and needs no synchronization at all.
 // `reduce` brings the lanes together: a `when_all` over the bundle (the fork, one
 // event recorded on the lane the pipeline started on, before any shard starts)
-// and a `continues_on(lane 0)` (the join, one event per other lane). For the
-// whole pipeline, that is N-1 fork waits and N-1 join waits, and nothing else.
+// and a `continues_on(lane 0)` (the join, one event per other lane).
+// `inclusive_scan` has a global dependency (the carries) and therefore collapses
+// the bundle onto lane 0 and re-forks it through a `lane_split`: N-1 events each
+// way, as an all-gather, and the result is a bundle again.
 //
 // The reduce's partials are its own scratch: a scoped allocation, a sender that
 // allocates on the lane the reduce joins on, held by a `let_value` scope inside
 // the verb and freed when the reduce is done. The caller never sees them.
 //
-// Why only one transform: reading the environment at the root makes everything
-// below it environment-dependent, and nvcc's device front end (cicc) re-derives
-// the dependent sender machinery at every nesting level. Measured on this file
-// with 3 shards: 0/1/2/3 transforms -> cicc 8 s / 10 s / 77 s / 785 s. The
-// three-transform version, with a reproducer script and the measurements, is on
-// branch senders/lane-scheduler-slow-compile-repro.
+// Compile time: reading the environment at the root makes everything below it
+// environment-dependent, and nvcc's device front end (cicc) re-derives the
+// dependent sender machinery at every nesting level (measured with 3 shards:
+// 0/1/2/3 transforms -> cicc 8 s / 10 s / 77 s / 785 s; reproducer on branch
+// senders/lane-scheduler-slow-compile-repro). This file accepts the cost for the
+// sake of showing the three verb shapes together.
 //
 // Run with `--graph` to capture the pipeline into a CUDA graph instead and
 // write it as `lane_sharded_pipeline.dot`: N independent chains out of one root,
 // joined once at the sum. (`dot -Tpdf lane_sharded_pipeline.dot -o pipeline.pdf`)
 
 #include <cub/device/device_reduce.cuh>
+#include <cub/device/device_scan.cuh>
 #include <cub/device/device_transform.cuh>
 
 #include <cuda/buffer>
@@ -239,6 +242,123 @@ __global__ void sum_partials(const int* partials, int n, int* result)
   *result = acc;
 }
 
+// Scan helpers. prefix_kernel: carries[k] = sum of *totals[j] for j < k (one
+// thread; N is tiny). The totals live in the shards' own buffers and are read
+// directly, P2P between devices. add_carry adds a shard's carry to its elements.
+template <size_t N>
+struct total_ptrs
+{
+  const int* p[N];
+};
+template <size_t N>
+__global__ void prefix_kernel(total_ptrs<N> totals, int* carries)
+{
+  if (blockIdx.x == 0 && threadIdx.x == 0)
+  {
+    int acc = 0;
+    for (size_t k = 0; k < N; ++k)
+    {
+      carries[k] = acc;
+      acc += *totals.p[k];
+    }
+  }
+}
+__global__ void add_carry(int* data, int n, const int* carry)
+{
+  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i < n)
+  {
+    data[i] += *carry;
+  }
+}
+
+// What a shard's total stage hands to the prefix: where its total is, and its
+// context (so that the stages after the re-fork get their contexts back).
+template <class Ctx>
+struct shard_total
+{
+  const int* total;
+  Ctx ctx;
+};
+// What the prefix hands to every re-forked stage.
+template <class Ctx, size_t N>
+struct scan_carries
+{
+  const int* carries;
+  Ctx ctx[N];
+};
+
+// inclusive_scan(data): in place, across the global index space. The first
+// verb with a global dependency, so it collapses the bundle and re-forks it:
+//  1. per shard, on its lane: the shard's total into a one-element scoped
+//     buffer, through lane_split (the buffer is freed only after its reader,
+//     lane 0, is joined back); the split completes with the total's pointer and
+//     the shard's context;
+//  2. collapse: when_all over the N totals, continues_on(lane 0), the N carries
+//     in a scoped buffer on lane 0, one tiny prefix kernel; completes with the
+//     carries and all the contexts;
+//  3. re-fork: lane_split of that prefix; shard k's stage waits on its ready
+//     point (continues_on(lane k)), runs CUB's in-place InclusiveSum on the
+//     shard, adds carries[k], and completes with its context again.
+// N-1 events to collapse and N-1 to re-fork, the same as an all-gather. The
+// result is a bundle again, so the next verb maps over it.
+template <class Bundle, size_t N, size_t... I>
+auto inclusive_scan_impl(Bundle b, const sharded_view<N>& data, cuda::std::index_sequence<I...>)
+{
+  auto total = [=](auto shard, size_t k) {
+    return std::move(shard) | ex::let_value([=](auto ctx) {
+             return ex::just(scoped_buffer<int>{
+                      cuda::device_buffer<int>{ctx.lane.query(cuda::get_stream), ctx.mr, 1, cuda::no_init}})
+                  | ex::let_value([=](scoped_buffer<int>& t) {
+                      check(cub::DeviceReduce::Reduce(
+                              data.data[k], t.data(), data.shard_size, cuda::std::plus<>{}, 0, ctx.cub_env()),
+                            "DeviceReduce::Reduce");
+                      return ex::just(shard_total<decltype(ctx)>{t.data(), ctx});
+                    });
+           });
+  };
+  auto totals = cuda::std::make_tuple(ex::lane_split(total(cuda::std::get<I>(std::move(b.shards)), I))...);
+  auto prefix = ex::lane_split(
+    ex::when_all(cuda::std::get<I>(totals)...) //
+    | ex::continues_on(data.lane[0]) //
+    | ex::let_value([=](auto... t) {
+        using ctx_t = decltype(cuda::std::get<0>(cuda::std::make_tuple(t...)).ctx);
+        auto first  = cuda::std::get<0>(cuda::std::make_tuple(t...));
+        return ex::just(scoped_buffer<int>{
+                 cuda::device_buffer<int>{first.ctx.lane.query(cuda::get_stream), first.ctx.mr, N, cuda::no_init}})
+             | ex::let_value([=](scoped_buffer<int>& carries) {
+                 prefix_kernel<N><<<1, 32, 0, data.lane[0].stream()>>>(total_ptrs<N>{{t.total...}}, carries.data());
+                 return ex::just(scan_carries<ctx_t, N>{carries.data(), {t.ctx...}});
+               });
+      }));
+  auto stage = [=](auto k) {
+    constexpr size_t K = decltype(k)::value;
+    return prefix | ex::continues_on(data.lane[K]) | ex::then([=](auto sc) {
+             auto ctx         = sc.ctx[K];
+             auto m           = ctx.mr;
+             const auto st    = ctx.lane.stream();
+             void* tmp        = nullptr;
+             size_t tmp_bytes = 0;
+             check(cub::DeviceScan::InclusiveSum(tmp, tmp_bytes, data.data[K], data.data[K], data.shard_size, st),
+                   "DeviceScan::InclusiveSum");
+             tmp = m.allocate(cuda::stream_ref{st}, tmp_bytes, 256);
+             check(cub::DeviceScan::InclusiveSum(tmp, tmp_bytes, data.data[K], data.data[K], data.shard_size, st),
+                   "DeviceScan::InclusiveSum");
+             m.deallocate(cuda::stream_ref{st}, tmp, tmp_bytes, 256);
+             add_carry<<<(data.shard_size + 255) / 256, 256, 0, st>>>(data.data[K], data.shard_size, sc.carries + K);
+             return ctx;
+           });
+  };
+  return bundle{cuda::std::make_tuple(stage(cuda::std::integral_constant<size_t, I>{})...)};
+}
+template <size_t N>
+auto inclusive_scan(const sharded_view<N>& data)
+{
+  return verb{[=](auto b) {
+    return inclusive_scan_impl(std::move(b), data, cuda::std::make_index_sequence<N>{});
+  }};
+}
+
 // reduce(in, result): each shard reduces into its own partial on its own lane;
 // then the lanes meet once, on lane 0, where the partials are added into
 // `result`. The partials are the reduce's own scratch: a scoped allocation on
@@ -295,7 +415,7 @@ int main(int argc, char** argv)
   try
   {
     constexpr size_t N   = 3;
-    const int shard_size = 1 << 18;
+    const int shard_size = 1 << 13; // small: the scan's sum of prefix sums must fit an int
     const int n          = shard_size * N;
     cuda::device_ref dev{0};
     cuda::device_memory_pool_ref mr = cuda::device_default_memory_pool(dev);
@@ -329,6 +449,7 @@ int main(int argc, char** argv)
                       return ex::read_env(cuda::mr::get_memory_resource) | ex::let_value([&](auto mr) {
                                return start(x, mr) //
                                     | transform(x, y, times2{}) //
+                                    | inclusive_scan(y) //
                                     | reduce(y, result.data());
                              });
                     });
@@ -338,7 +459,8 @@ int main(int argc, char** argv)
       cuda::std::execution::prop<cuda::mr::get_memory_resource_t, cuda::device_memory_pool_ref>>;
     const env_t env{{cuda::mr::get_memory_resource, mr}};
 
-    const int expected = 2 * 1 * n; // 2 per element
+    // y = 2 everywhere after the transform, 2 (i + 1) after the scan, so the sum is n (n + 1).
+    const int expected = n * (n + 1);
 
     if (!as_graph)
     {
