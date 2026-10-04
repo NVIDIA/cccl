@@ -166,6 +166,7 @@ def _typed_group_payload_like(
 
 __all__ = [
     "_GROUP_CONSTRUCTORS",
+    "_GROUP_METHODS",
     "_NAME_COUNTER",
     "_PAYLOAD_DTYPE_LIKE",
     "GroupRewriteError",
