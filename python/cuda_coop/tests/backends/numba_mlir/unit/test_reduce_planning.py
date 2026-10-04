@@ -31,8 +31,9 @@ def _plan(
 ):
     """Build untyped Numba IR and a planner with explicit launch facts.
 
-    Return the planner before running it so tests can inspect successful
-    rewrites or assert that invalid inputs fail at the planning boundary.
+    Return the untyped IR and an unrun planner so tests can inspect
+    successful rewrites or assert that invalid inputs fail at the planning
+    boundary.
     """
 
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
