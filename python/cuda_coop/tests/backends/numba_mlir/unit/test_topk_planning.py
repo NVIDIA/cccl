@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Reject unsupported TopK inputs during frontend group planning.
+
+Run the planner on Python IR and explicit argument types without compiling a
+provider or launching a kernel. Cases isolate count types, numeric key types,
+matching pair extents, and rejection of non-block groups.
+"""
+
 from types import SimpleNamespace
 
 import pytest
@@ -10,6 +17,13 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
 
 def _plan(function, arg_types=(), block=(64, 1, 1)):
+    """Run group planning with explicit types and a known block shape.
+
+    The minimal compiler state supplies function IR and argument types. Launch
+    facts resolve the complete block. This reaches public-call validation
+    without provider compilation or a CUDA device.
+    """
+
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
     from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
