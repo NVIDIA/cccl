@@ -278,72 +278,6 @@ class BlockLoadStoreSemantics:
         )
 
 
-@dataclass(frozen=True)
-class BlockLoadStoreSpecialization:
-    """A BlockLoad/BlockStore description bound to a concrete block shape.
-
-    Returned by ``make_block_load_store_specialization`` for later
-    materialization and backend lowering. Construction binds the CUB
-    template arguments; compilation and device-storage allocation happen
-    later.
-
-    Attributes
-    ----------
-    specialization : Algorithm
-        Bound CUB template, wrapper overloads, includes, and operation
-        metadata. Its semantic key includes the block dimensions.
-    semantics : BlockLoadStoreSemantics
-        Normalized options from which the specialization was built.
-    block_dim : tuple[int, int, int]
-        Positive ``(x, y, z)`` dimensions used for CUB specialization.
-        The launched block must have this shape.
-    """
-
-    specialization: Algorithm
-    semantics: BlockLoadStoreSemantics
-    block_dim: tuple[int, int, int]
-
-    @property
-    def kind(self) -> BlockLoadStoreKind:
-        return self.semantics.kind
-
-    @property
-    def algorithm(self) -> BlockLoadStoreAlgorithm:
-        return self.semantics.algorithm
-
-    @property
-    def items_per_thread(self) -> int:
-        return self.semantics.items_per_thread
-
-    @property
-    def has_valid_items(self) -> bool:
-        return self.semantics.has_valid_items
-
-    @property
-    def has_oob_default(self) -> bool:
-        return self.semantics.has_oob_default
-
-    @property
-    def has_full_tile(self) -> bool:
-        return self.semantics.has_full_tile
-
-    @property
-    def has_pointer_offset(self) -> bool:
-        return self.semantics.has_pointer_offset
-
-    @property
-    def method_name(self) -> str:
-        return self.specialization.method_name
-
-    @property
-    def algorithm_cpp(self) -> str:
-        return self.semantics.algorithm_cpp
-
-    @property
-    def semantic_key(self) -> tuple[Any, ...]:
-        return self.specialization.semantic_key
-
-
 def make_block_load_store_semantics(
     *,
     kind: str | BlockLoadStoreKind,
@@ -513,7 +447,7 @@ def make_block_load_store_specialization(
     oob_default: bool | ArgumentBinding = False,
     include_full_tile: bool = False,
     include_pointer_offset: bool | ArgumentBinding = False,
-) -> BlockLoadStoreSpecialization:
+) -> Algorithm:
     """Bind a BlockLoad/BlockStore operation to a concrete block shape.
 
     Normalize the options with ``make_block_load_store_semantics``, then
@@ -554,8 +488,9 @@ def make_block_load_store_specialization(
 
     Returns
     -------
-    BlockLoadStoreSpecialization
-        Bound ``Algorithm``, normalized semantics, and block dimensions.
+    Algorithm
+        Bound CUB template arguments, wrapper parameters, and operation
+        metadata, ready for backend materialization.
 
     Raises
     ------
@@ -609,14 +544,14 @@ def make_block_load_store_specialization(
             "requires a block size that is a multiple of 32"
         )
     title = semantics.kind.value.title()
-    specialization = Algorithm(
+    return Algorithm(
         struct_name=f"Block{title}",
         method_name=title,
         c_name=f"block_{semantics.kind.value}",
         includes=(f"cub/block/block_{semantics.kind.value}.cuh",),
         template_parameters=_TEMPLATE_PARAMETERS,
         parameters=semantics.parameters,
-        specialization={
+        template_arguments={
             "T": dtype,
             "BLOCK_DIM_X": block_dim[0],
             "ITEMS_PER_THREAD": semantics.items_per_thread,
@@ -634,20 +569,13 @@ def make_block_load_store_specialization(
             "pointer_offset": semantics.has_pointer_offset,
         },
     )
-    return BlockLoadStoreSpecialization(
-        specialization=specialization,
-        semantics=semantics,
-        block_dim=block_dim,
-    )
 
 
-def make_block_load_specialization(
-    **kwargs: Any,
-) -> BlockLoadStoreSpecialization:
+def make_block_load_specialization(**kwargs: Any) -> Algorithm:
     """Call ``make_block_load_store_specialization`` with ``kind="load"``.
 
     Accepts the same keyword arguments except ``kind`` and returns the
-    resulting ``BlockLoadStoreSpecialization``.
+    resulting ``Algorithm``.
     """
 
     return make_block_load_store_specialization(
@@ -655,14 +583,11 @@ def make_block_load_specialization(
     )
 
 
-def make_block_store_specialization(
-    **kwargs: Any,
-) -> BlockLoadStoreSpecialization:
+def make_block_store_specialization(**kwargs: Any) -> Algorithm:
     """Call ``make_block_load_store_specialization`` with ``kind="store"``.
 
     Accepts the same keyword arguments except ``kind`` and returns the
-    resulting ``BlockLoadStoreSpecialization``. ``oob_default`` must be
-    omitted for a store.
+    resulting ``Algorithm``. ``oob_default`` must be omitted for a store.
     """
 
     return make_block_load_store_specialization(
