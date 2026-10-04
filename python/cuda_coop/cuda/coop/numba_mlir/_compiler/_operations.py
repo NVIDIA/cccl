@@ -543,11 +543,31 @@ def register_group_primitive(
     lower: Callable[..., list[Any]],
     validate_common_arguments: Callable[..., None] | None = None,
 ) -> None:
-    """Register the post-inlining planner for one public operation.
+    """Register group-call lowering for one public operation.
 
-    ``lower`` emits replacement IR. For calls through the common ``cuda.coop``
-    API, the optional validator runs first. Equal repeated hooks are allowed;
-    different hooks raise ``RuntimeError``.
+    A primitive-family module calls this when it is imported. The group
+    planner later looks up these hooks after resolving the call's thread
+    group and binding its arguments. Registration connects an operation to
+    the existing whole-function planner; it does not schedule another pass
+    or compile a provider.
+
+    Parameters
+    ----------
+    operation : str
+        Public operation name used to find these hooks, such as ``"load"``.
+    lower : callable
+        Hook that receives the planning context, call assignment, resolved
+        group, and bound arguments, and returns replacement IR statements.
+    validate_common_arguments : callable or None
+        Optional check for calls through the common ``cuda.coop`` API. It runs
+        before ``lower`` with the planning context and bound arguments;
+        backend-qualified calls skip it.
+
+    Raises
+    ------
+    RuntimeError
+        Different hooks are already registered under this operation name.
+        Repeating the same registration is allowed.
     """
 
     registration = GroupPrimitiveRegistration(

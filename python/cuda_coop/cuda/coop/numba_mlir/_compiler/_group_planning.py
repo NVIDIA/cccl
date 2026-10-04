@@ -542,6 +542,14 @@ class GroupPlanningContext:
 
     @staticmethod
     def _dtype_from_numba_type(value: object) -> _numba_types.Type | None:
+        """Get an element dtype from a compiler type before IR typing runs.
+
+        ``dtype`` uses this for an already known Numba type;
+        ``_dtype_definition`` uses it for kernel argument types. An array
+        contributes its element dtype, another Numba type is normalized
+        directly, and an object that is not a Numba type returns ``None``.
+        """
+
         if isinstance(value, _numba_types.Array):
             value = value.dtype
         elif not isinstance(value, _numba_types.Type):
@@ -550,6 +558,13 @@ class GroupPlanningContext:
 
     @staticmethod
     def _one_dtype(candidates: set[Any], *, message: str) -> Any | None:
+        """Return the sole known dtype collected by ``_complete_dtype``.
+
+        ``candidates`` contains distinct, resolved dtypes. An empty set
+        returns ``None``; more than one dtype raises ``GroupRewriteError``
+        with the caller's ``message`` so it identifies the failing query.
+        """
+
         if len(candidates) > 1:
             raise GroupRewriteError(message)
         return next(iter(candidates), None)
@@ -562,10 +577,13 @@ class GroupPlanningContext:
     ) -> Any | None:
         """Require agreement among the dtype candidates for one query.
 
+        Variable, tuple, and phi queries call this with an iterable of
+        normalized dtypes or ``None`` entries for unknown sources.
         During loop discovery, omit unknown candidates so a known entry value
         can seed a cycle. The later strict query requires every candidate to
         be known. Return ``None`` if information is incomplete. After that
-        check, raise the given diagnostic when the remaining dtypes disagree.
+        check, raise ``GroupRewriteError`` with ``message`` when the remaining
+        dtypes disagree.
         """
 
         resolved = list(candidates)
@@ -590,7 +608,7 @@ class GroupPlanningContext:
         First propagate candidate dtypes from known definitions until they
         stop changing. During this discovery pass only, a join may omit
         unresolved inputs; a recursive backedge can use its variable's
-        candidate. Then repeat the query with strict joins: every reaching
+        candidate. Then repeat the query with strict joins: every recorded
         definition must resolve and agree, including the computation on the
         backedge. An opaque helper remains unknown, and a conflicting dtype is
         still an error.
@@ -600,6 +618,13 @@ class GroupPlanningContext:
         This solves supported type-preserving cycles; it does not implement
         general type promotion or infer arbitrary device-helper return types.
 
+        Parameters
+        ----------
+        value : ir.Var
+            Variable passed to ``dtype`` without an existing recursion path.
+            Its recorded assignments may include a loop's initial value and
+            values produced on later iterations.
+
         Returns
         -------
         numba_types.Type or None
@@ -608,7 +633,7 @@ class GroupPlanningContext:
         Raises
         ------
         GroupRewriteError
-            Known reaching definitions require different dtypes.
+            Known recorded definitions require different dtypes.
         """
         self.__seed_loop_dtypes = True
         try:
@@ -713,13 +738,26 @@ class GroupPlanningContext:
         *,
         seen: set[str],
     ) -> Any | None:
-        """Infer one tuple element across all definitions of its container.
+        """Infer one tuple element across recorded container definitions.
 
+        ``_dtype_definition`` calls this for a constant tuple index so a
+        payload packed into a tuple retains its element dtype when unpacked.
         Track ``variable[index]`` separately from the container variable. This
         allows one projection to recurse without hiding a different element.
         Return ``None`` for an unresolved projection or cycle. Candidate
         agreement uses ``_complete_dtype``, including its temporary
         loop-discovery rule.
+
+        Parameters
+        ----------
+        value : ir.Var or object
+            Variable holding the tuple; other objects return ``None``.
+        index : int
+            Tuple position, with Python's negative-index convention. This is
+            not an index into the payload array stored at that position.
+        seen : set of str
+            Recursion-path keys. Add the current projection in place, then
+            give each recorded definition its own copy.
         """
 
         if not isinstance(value, ir.Var):
@@ -752,10 +790,26 @@ class GroupPlanningContext:
     ) -> Any | None:
         """Follow one tuple definition to the selected element's dtype.
 
+        ``_tuple_dtype`` calls this for each recorded source of a tuple.
         Aliases, casts, iterator unpacking, and phi inputs retain the index. A
         built tuple delegates its selected element to ``dtype``. Unknown forms
         and out-of-range indices contribute no dtype; known conflicts at a phi
         join raise ``GroupRewriteError``.
+
+        Parameters
+        ----------
+        definition : object
+            Assignment source, usually an IR variable or expression.
+        index : int
+            Position within the tuple, accepting Python negative indices.
+        seen : set of str
+            Variable and tuple-projection keys already on this recursion path.
+            Each phi input receives a separate copy.
+
+        Returns
+        -------
+        numba_types.Type or None
+            Selected element's normalized dtype, or ``None`` if unknown.
         """
 
         if isinstance(definition, ir.Var):
@@ -797,6 +851,11 @@ class GroupPlanningContext:
         helper recognizes it. This limited analysis supplies provider
         selection before ordinary Numba typing; it does not execute kernel
         expressions.
+
+        ``dtype`` calls this for each recorded source of its variable.
+        ``definition`` is that assignment source; ``seen`` contains variable
+        and tuple-projection keys already on the recursion path. Return a
+        normalized dtype or ``None`` when the source supplies no known dtype.
         """
 
         if isinstance(definition, ir.Var):
@@ -905,7 +964,7 @@ class GroupPlanningContext:
         type inference.
 
         Loop backedges can use a candidate established by a known incoming
-        definition, provided every reaching definition then resolves to the
+        definition, provided every recorded definition then resolves to the
         same type. Unknown definitions and unseeded cycles return ``None``;
         fully known but inconsistent paths are rejected.
 
@@ -961,6 +1020,10 @@ class GroupPlanningContext:
     def payload_write_dtype(self, payload: Any) -> Any | None:
         """Infer a payload dtype from values assigned through its aliases.
 
+        The Store planner calls this when an untyped ``ThreadData`` payload
+        has no declared or producer-inferred dtype. ``payload`` is its IR
+        variable, possibly reached through aliases.
+
         Inspect the known types of element writes across the function. All
         known types must agree or ``TypeError`` is raised. Unknown writes
         contribute no evidence; ``None`` means no known write dtype was found.
@@ -987,8 +1050,10 @@ class GroupPlanningContext:
         *,
         seen: set[str] | None = None,
     ) -> tuple[int | None, int | None, bool, str] | None:
-        """Recover one storage contract from reaching descriptor definitions.
+        """Recover one storage contract from recorded descriptor definitions.
 
+        The Load/Store planner uses this to validate an explicit storage
+        operand before choosing and recording its provider's storage plan.
         Parse each recognized constructor with the planning constant resolver,
         then require its normalized contract to agree with the others. A
         concrete non-descriptor path, including a ``None`` initializer,

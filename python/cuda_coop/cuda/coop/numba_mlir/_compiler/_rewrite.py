@@ -59,9 +59,16 @@ class CoopSinglePhaseRewrite(
     """Replace one block's provider calls using a plan for the whole function.
 
     The mixins resolve arguments and descriptors, build provider callables,
-    and emit array and synchronization code. ``match`` gathers a block's work;
-    ``apply`` performs it. Both share function-wide payload and scratch facts
-    so calls in different blocks use compatible allocations.
+    and emit array and synchronization code. They share one rewrite object's
+    payload facts, storage plans, and provider caches. For example, argument
+    inference needs the descriptor facts that storage planning later uses to
+    allocate arrays. Composing these helpers on one object keeps those facts
+    consistent while separating the source files by responsibility.
+
+    ``match`` gathers a block's work; ``apply`` performs it. Both use the
+    function-wide payload and scratch plan so calls in different blocks use
+    compatible allocations. Only the whole-function planner invokes them;
+    the mixins are not independently scheduled compiler passes.
     """
 
     def match(
