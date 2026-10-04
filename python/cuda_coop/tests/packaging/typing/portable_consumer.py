@@ -283,6 +283,8 @@ def check_radix_surface() -> None:
 
 
 def check_topk_surface() -> None:
+    """Check count inputs and separate key/value result dtypes for TopK."""
+
     block = coop.this_block()
     keys = coop.ThreadData(items_per_thread=3, dtype=np.int16)
     values = coop.ThreadData(items_per_thread=3, dtype=np.float64)

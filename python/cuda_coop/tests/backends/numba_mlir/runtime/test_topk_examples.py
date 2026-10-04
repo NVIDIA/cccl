@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Execute the common-API TopK pair example shown in the guides.
+
+The programming guide and TopK visualization page include the marked body.
+Keep it self-contained for Sphinx. Negative input keys and zero-filled
+out-of-bounds slots make an ignored valid count observable: those filler
+zeros would otherwise enter a maximum selection.
+"""
+
 import pytest
 
 cuda = pytest.importorskip("numba_cuda_mlir.cuda")
@@ -19,6 +27,8 @@ pytestmark = [
 
 
 def test_topk_pairs_example():
+    """Check the example's partial-tile selection and original positions."""
+
     # topk-example-begin
     import numpy as np
     from numba_cuda_mlir import cuda, types

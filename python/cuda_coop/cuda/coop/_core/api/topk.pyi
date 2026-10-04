@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Keep TopK key and value dtypes distinct in block-only signatures."""
+
 from typing_extensions import TypeVar
 
 from ..._typing import (

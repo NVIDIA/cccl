@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check TopK selection, input preservation, and defined output prefixes.
+
+Sort only defined output items for host comparisons because TopK does not
+promise output order. Pair checks follow original positions, including tied
+keys whose selected identities can vary. Separate cases exercise count
+boundaries, storage reuse, inferred dtypes, and isolated device traps.
+"""
+
 import os
 import subprocess
 import sys
@@ -54,6 +62,14 @@ pytestmark = [
 def test_topk_preserves_inputs_and_pairs(
     selection, pairs, qualified, value_dtype, items_per_thread
 ):
+    """Check selected keys, paired values, and the untouched input keys.
+
+    Unique keys give a reference order for values after sorting the selected
+    prefix. Small float64 increments and wide integer magnitudes expose value
+    narrowing independently of key dtype. Select from the valid input prefix
+    and store only the selected output prefix.
+    """
+
     api = numba_coop if qualified else coop
     topk = getattr(api, f"topk_{selection}_{'pairs' if pairs else 'keys'}")
 
@@ -143,6 +159,14 @@ def test_topk_preserves_inputs_and_pairs(
 )
 @pytest.mark.parametrize("selection", ["min", "max"])
 def test_numeric_profile_and_partial_counts(dtype, selection, items_per_thread):
+    """Check count boundaries across all supported numeric key types.
+
+    Use high unsigned bits, wide signed values, and fine float64 increments to
+    expose type loss. Sort only the defined output prefix for comparison. Zero
+    counts define no output; when k exceeds the valid count, all valid items
+    must be selected. No assertion reads the undefined result tail.
+    """
+
     topk = getattr(coop, f"topk_{selection}_keys")
 
     @cuda.jit
@@ -192,6 +216,15 @@ def test_numeric_profile_and_partial_counts(dtype, selection, items_per_thread):
 def test_static_controls_and_reused_storage(
     threads, manual_sync, items_per_thread
 ):
+    """Select twice through one scratch descriptor with both sync policies.
+
+    Select the smallest keys, then their maximum. Give the second call the
+    selected count because the rest of the first result is undefined. Run
+    once with compiler-inserted barriers and once with explicit block
+    barriers and auto_sync disabled. Input keys are 1 through N, so the
+    maximum must equal the first selection count.
+    """
+
     keep = min(3, threads * items_per_thread)
     auto_sync = not manual_sync
 
@@ -219,6 +252,14 @@ def test_static_controls_and_reused_storage(
 
 
 def test_ties_preserve_selected_pairs_and_float_zero_bits():
+    """Check pair identity and signed-zero bits without fixing tie order.
+
+    Use qualified local arrays and more zero keys than the requested count.
+    Any distinct subset of those zeros is valid. Carried indices identify each
+    original key, so compare its exact bits and check that input keys survive.
+    Either zero sign is valid; lost association or changed bits must fail.
+    """
+
     @cuda.jit
     def kernel(source, output, indices, preserved):
         keys = cuda.local.array(2, dtype=np.float32)
@@ -258,7 +299,14 @@ def test_ties_preserve_selected_pairs_and_float_zero_bits():
     [(-1, 128), (129, 128), (2**32, 128), (7, -1), (7, 129), (7, 2**32)],
 )
 def test_invalid_runtime_counts_trap_before_narrowing(k, count):
-    # A trap poisons the CUDA context, so each invalid launch needs a child.
+    """Require a device trap for negative, oversized, or wrapping counts.
+
+    A value of 2**32 would appear valid after conversion to a 32-bit count.
+    Each child verifies the same package source and requires a CUDA trap or
+    launch failure. Its success marker excludes compilation errors. Separate
+    processes contain the poisoned CUDA contexts.
+    """
+
     script = f"""
 import numpy as np
 from pathlib import Path
@@ -297,6 +345,14 @@ else:
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_empty_prefix_with_cub_assertions(monkeypatch, items_per_thread):
+    """Check empty selections while CUB's internal assertions are enabled.
+
+    Patch only TopK provider source to enable assertions before compilation.
+    CUB's partial-tile path rejects an empty tile, so the checked wrapper must
+    skip that call when either count is zero. Guarded stores must then leave
+    every destination sentinel untouched.
+    """
+
     from cuda.coop.numba_mlir._compiler import _nvrtc
 
     compile_provider = _nvrtc.compile
@@ -332,6 +388,15 @@ def test_empty_prefix_with_cub_assertions(monkeypatch, items_per_thread):
 def test_chained_results_infer_dtype_from_indexed_writes(
     qualified, pairs, threads, items
 ):
+    """Carry inferred key and value types through two partial selections.
+
+    Populate ThreadData through indexed writes without explicit dtypes. Feed
+    its minimum selection into a maximum selection with the known valid count.
+    Block sizes are not warp multiples. Compare only defined output items.
+    Pair results retain source indices to check association even when keys
+    tie; the original keys must also remain unchanged.
+    """
+
     api = numba_coop if qualified else coop
     keep = threads * items // 2
     selected_count = min(3, keep)

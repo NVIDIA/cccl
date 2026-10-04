@@ -22,7 +22,10 @@ keys tie there, TopK may choose any subset needed to fill the result.
    .. only:: html
 
       .. figure:: topk.svg
-         :alt: A block selects four largest keys from twelve valid inputs. One permitted unordered result is 11, 14, 9, 12, paired with original positions 8, 6, 4, 2. The other twelve output positions are unspecified.
+         :alt: A block selects four largest keys from twelve valid inputs.
+               One permitted unordered result is 11, 14, 9, 12, paired with
+               original positions 8, 6, 4, 2. The other twelve positions
+               are unspecified.
          :width: 100%
 
          Maximum pairs, two items per thread, ``k=4``, ``valid_items=12``.
@@ -90,6 +93,10 @@ association without depending on output order.
    :start-after: # topk-example-begin
    :end-before: # topk-example-end
    :dedent: 4
+
+The input keys are negative, while Load fills invalid slots with zero.
+Those zeros cannot become selected keys because ``valid_items`` excludes
+them from TopK.
 
 The example knows that at least eight inputs are valid. A general kernel
 must store only ``min(k, valid_items)`` results, using that value as

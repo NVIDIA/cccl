@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Plan TopK calls and prepare the arrays and counts used by CUB.
+
+The public operation keeps its inputs, but the CUB-backed provider call
+selects in place. The public rewrite copies each input into a result array,
+checks payload types and extents, and emits a ``topk_keys`` or
+``topk_pairs`` factory call. The factory rewrite registered here then infers
+the dtypes and extent of that call. Shared planning validates the complete
+block and count bindings.
+"""
+
 from __future__ import annotations
 
 from dataclasses import replace
@@ -32,6 +42,14 @@ from ._rewrite_support import CoopSinglePhaseRewriteError
 
 
 def _infer_payload(context, inference):
+    """Infer provider dtypes and extent from fixed per-thread arrays.
+
+    The factory rewrite can recover a dtype from its payload or an explicit
+    factory keyword. Require matching key/value extents, validate each numeric
+    type independently, and record the types for later uses of ThreadData.
+    This keeps specialization and later type inference consistent.
+    """
+
     names = (
         ("key_dtype", "value_dtype")
         if inference.op_name == "topk_pairs"
@@ -65,6 +83,24 @@ def _infer_payload(context, inference):
 
 
 def _lower_topk(context, inst, *, operation, group, bound, is_common_root):
+    """Rewrite public TopK into an in-place call on new result arrays.
+
+    Validate payloads and count bindings before planning the complete block.
+    The common API requires ThreadData; qualified calls can also use fixed
+    local arrays. Pair extents must match, but their dtypes are independent.
+    Copy each input so provider mutation cannot change the public arguments.
+
+    Runtime counts use signed int64 operands after their integer types pass
+    validation. The generated C++ wrapper checks their values before narrowing
+    them to CUB's count type. Static and omitted counts keep their bindings so
+    specialization can validate constants and select full or partial tiles.
+
+    An explicit TempStorage descriptor replaces the plan's default ownership
+    and controls its reuse barrier. Return the IR statements that allocate and
+    copy results, prepare counts, and call CUB. Result arrays keep the full
+    input extent; only the selected prefix has defined output values.
+    """
+
     from .._lowering import _topk
 
     payload_names = (

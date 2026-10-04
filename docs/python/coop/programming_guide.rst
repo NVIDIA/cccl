@@ -265,7 +265,7 @@ parts of the API.
    * - ``coop.this_block()``
      - All threads in the block
      - Load, Store, Exchange, Shuffle, Reduce, Scan, Merge Sort, Radix Sort,
-       and Radix Rank
+       Radix Rank, and TopK
    * - ``coop.this_block().group_by(2)``
      - Two consecutive physical warps
      - Hierarchy queries
@@ -484,10 +484,10 @@ Conflicting type requirements are errors. See :ref:`element-type inference
 Load writes into the payload supplied by the caller. Transpose Store
 algorithms may rearrange their input payload in place, as in CUB. Copy values
 before Store if they are needed later. Both operations return ``None``.
-Array Scan, Exchange, array Shuffle, Merge Sort, array Radix Sort, and array
-Radix Rank return fresh payloads, so their input values remain available
-afterwards. Reduction returns a scalar, including when each thread
-contributes several items.
+Array Scan, Exchange, array Shuffle, Merge Sort, array Radix Sort, array Radix
+Rank, and TopK return fresh payloads, so their input values remain available
+afterwards. Reduction returns a scalar, including when each thread contributes
+several items.
 
 Numba can promote integer arithmetic. Store requires an exact match to the
 destination dtype, so cast computed values when necessary, as in the
@@ -1042,9 +1042,9 @@ key width. Sort bounds may be runtime integers, but must be uniform across
 the block. Invalid runtime intervals trigger a device trap before narrowing
 to CUB's integer arguments.
 
-For signed and floating-point keys, CUB transforms the bit representation
-into a form that preserves numeric order before selecting those bits. A bit
-interval therefore does not always refer to the original representation.
+For signed and floating-point keys, CUB first transforms the bits into a
+form that preserves numeric order. A bit interval selects bits of that
+transformed key, so it can differ from the same bits of the original value.
 Full-width ordering uses the usual numeric order; floating-point NaNs follow
 CUB's bit ordering.
 
@@ -1096,7 +1096,7 @@ When several keys tie at the selection boundary, the operation chooses
 enough to fill the requested result without a tie-order guarantee.
 
 The :doc:`TopK visualization <visualizations/topk>` shows which candidates
-remain and how the defined output prefix changes with ``k`` and ``valid_items``.
+remain and how ``k`` and ``valid_items`` determine the defined output prefix.
 
 Here one block selects the eight largest keys from a partial tile and
 returns their original indices:
@@ -1111,7 +1111,8 @@ The example knows that at least eight keys are valid. A general kernel
 must compute ``min(k, valid_items)`` and use that as Store's valid count.
 Both controls count elements across the block, not elements per thread.
 They may be runtime integers, must be uniform across the block, and must
-lie between zero and the tile's capacity. Zero produces no defined output.
+lie between zero and the tile's capacity. If either count is zero, no
+output positions are defined.
 
 The current backend supports one-dimensional blocks. Warp and logical-warp
 TopK are unsupported. Calls use automatic scratch or an explicit
