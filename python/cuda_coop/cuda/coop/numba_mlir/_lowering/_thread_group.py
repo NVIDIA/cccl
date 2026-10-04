@@ -242,6 +242,11 @@ def make_group_method_invocable(
 ) -> RawCAbiInvocable:
     """Compile one rank, count, membership, or synchronization helper.
 
+    The group planner calls this after validating a method call and
+    reuses the result for equivalent calls in the same compilation
+    attempt. The emitted helper replaces a descriptor method with a
+    device function whose group is fixed in generated C++.
+
     Embed the resolved group and query controls in C++ and qualify its symbol
     with target and compiler context. Rank/count return the selected integer
     dtype; membership returns uint8; synchronization returns void. Incomplete
@@ -251,6 +256,24 @@ def make_group_method_invocable(
     lifetime is not managed here. The planner must resolve supported group and
     launch facts before calling this factory. Construction compiles LTO IR and
     returns a compiler-local ``RawCAbiInvocable`` with no operands.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        Supported descriptor already resolved against the kernel
+        launch and requested hierarchy level.
+    operation : str
+        Native helper operation: rank, count, membership, or
+        supported synchronization.
+    dtype : object or None, optional
+        Rank/count return dtype. ``None`` selects the query default;
+        membership and synchronization use their fixed return forms.
+    level : str, optional
+        Compile-time hierarchy level for rank/count, defaulting to
+        thread level.
+    compile_context : nvrtc.CompileContext or None, optional
+        Resolved toolkit/header inputs shared by the planner.
+        ``None`` resolves them for this construction.
     """
 
     if not isinstance(group, ThreadGroup):
