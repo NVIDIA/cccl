@@ -321,7 +321,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 #if _CCCL_HOSTED()
   NV_IF_TARGET(
     NV_IS_HOST, ({
-      if constexpr (!IsDeviceInit && PRIVATIZED_SMEM_BINS == 0)
+      // Byte-sample dispatch first privatizes by raw byte value, then applies a
+      // separate output transform. The cooperative kernel writes decoded bins
+      // directly, so it is only valid for the ordinary one-stage decode path.
+      if constexpr (!IsDeviceInit && PRIVATIZED_SMEM_BINS == 0 && !IsByteSample)
       {
         const size_t output_histogram_bytes =
           static_cast<size_t>(max_num_output_bins) * NUM_ACTIVE_CHANNELS * sizeof(LocalCounterT);
