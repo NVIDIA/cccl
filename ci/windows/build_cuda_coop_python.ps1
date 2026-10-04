@@ -5,6 +5,11 @@
 .SYNOPSIS
     Build and validate the pure-Python cuda-coop wheel on Windows.
 
+.DESCRIPTION
+    Check the archive, then install it in a temporary environment. Verify
+    that imports use the installed wheel and resolve its bundled headers.
+    These checks do not compile or launch GPU kernels.
+
 .PARAMETER PyVersion
     Python version used to build and install the universal wheel.
 #>

@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check Block Load and Store descriptors before code generation.
+
+The parameter lists describe the CUB call and its runtime arguments. These
+tests inspect those lists and validate static controls without a compiler.
+"""
+
 import numpy as np
 import pytest
 

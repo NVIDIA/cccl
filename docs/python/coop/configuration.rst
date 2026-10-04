@@ -16,4 +16,5 @@ Installation
 
 The base package contains the shared API, Block and Warp Load/Store planning,
 and the CCCL headers needed by compiler integrations. Backend integrations are
-added separately. The base package has no Python package dependencies. Importing the base package does not require a CUDA device.
+added separately. The base package has no Python package dependencies.
+Importing the base package does not require a CUDA device.

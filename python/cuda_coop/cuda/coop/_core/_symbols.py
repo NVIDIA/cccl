@@ -2,7 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Build cache keys from cooperative specialization values."""
+"""Describe specialization values for equality and cache lookup.
+
+Python equality can merge values that must generate different code, such as
+``True`` and ``1`` or positive and negative floating-point zero. These helpers
+preserve those distinctions while turning containers and records into nested
+tokens. They also describe object cycles without using process-local addresses
+as the identity of a back-reference.
+"""
 
 from __future__ import annotations
 
@@ -20,12 +27,23 @@ _ADDRESS_IN_REPR = re.compile(r"(?<= at )0x[0-9a-fA-F]+")
 
 
 def _defined_module_name(value: Any) -> str | None:
+    """Use a module name only when the object supplies it as text."""
+
     module_name = getattr(value, "__module__", None)
     return module_name if isinstance(module_name, str) else None
 
 
 @dataclasses.dataclass
 class _TokenState:
+    """Track recursion and reuse completed work within one token query.
+
+    ``active`` maps object identities to their depth on the current path.
+    ``completed`` retains each reusable token and its source object; retaining
+    the object prevents Python from reusing its identity during this query.
+    ``cycle_hits`` counts back-references so a parent can tell whether its
+    token depends on the current recursion path.
+    """
+
     active: dict[int, int] = dataclasses.field(default_factory=dict)
     completed: dict[tuple[str, int], tuple[Any, Any]] = dataclasses.field(
         default_factory=dict
@@ -37,6 +55,13 @@ def _object_state_token(
     value: Any,
     state: _TokenState,
 ) -> tuple[Any, ...] | None:
+    """Describe stored instance attributes, including inherited private slots.
+
+    Python mangles private slot names using the defining class. Resolve those
+    names before reading values, and skip slots that have not been assigned.
+    Return ``None`` when these attributes expose no stored state.
+    """
+
     object_state: list[tuple[str, Any]] = []
     attributes = getattr(value, "__dict__", None)
     if attributes:
@@ -75,6 +100,8 @@ def _object_state_token(
 def _cycle_token(
     value: Any, back_reference_depth: int
 ) -> tuple[str, str, str, int]:
+    """Identify a cycle by object kind and distance to its active ancestor."""
+
     return (
         "cycle",
         getattr(value, "__module__", type(value).__module__),
@@ -84,6 +111,8 @@ def _cycle_token(
 
 
 def _container_kind(value: Any) -> tuple[str | None, str]:
+    """Keep a container subclass distinct from its built-in counterpart."""
+
     return _defined_module_name(type(value)), type(value).__qualname__
 
 
@@ -91,6 +120,12 @@ def _container_state_token(
     value: Any,
     state: _TokenState,
 ) -> tuple[tuple[str, Any], ...] | None:
+    """Capture container state that equal elements alone cannot describe.
+
+    This includes instance attributes and a ``defaultdict``'s factory, which
+    determines the value supplied for a missing key.
+    """
+
     container_state = list(_object_state_token(value, state) or ())
     if isinstance(value, defaultdict):
         default_factory = value.default_factory
@@ -104,6 +139,14 @@ def _container_state_token(
 
 
 def _semantic_token(value: Any, state: _TokenState) -> Any:
+    """Describe a value while sharing cycle detection and memoized results.
+
+    Scalar cases preserve type-sensitive distinctions before recursion starts.
+    Container tokens include their type, stored state, and elements. Sort
+    mapping and set tokens so insertion order does not affect their identity.
+    Sequences retain their element order.
+    """
+
     if isinstance(value, Enum):
         return type(value).__module__, type(value).__qualname__, value.value
     if isinstance(value, bool):
@@ -198,11 +241,40 @@ def _semantic_token(value: Any, state: _TokenState) -> Any:
         del state.active[value_id]
 
     if state.cycle_hits == cycle_hits_before:
+        # A cycle token contains path-relative depth, so reuse only results
+        # that did not encounter a back-reference while visiting this value.
         state.completed[memo_key] = (value, token)
     return token
 
 
 def semantic_token(value: Any) -> Any:
-    """Return a deterministic, hashable description of a semantic value."""
+    """Describe a specialization value for comparison and hashing.
+
+    Algorithms use this token to compare bound values and planning metadata.
+    A token records container types as well as contents, preserves floating
+    zero signs and NaN bit patterns, and handles cycles in object state.
+    Each call starts a fresh traversal so earlier queries cannot supply stale
+    descriptions of mutable objects.
+
+    Parameters
+    ----------
+    value : object
+        Scalar, container, dataclass, type, module, or state-bearing object
+        used in a specialization. Objects with no stored state use their
+        type and ``repr``, with ordinary memory-address text removed.
+
+    Returns
+    -------
+    object
+        A scalar or nested tuple description. Supported specialization values
+        produce hashable tokens; this function does not compute a hash digest.
+
+    Raises
+    ------
+    TypeError
+        A visited value is a Python function, built-in function, or bound
+        method. Backends must supply their own compiled-callback identity
+        instead of using a function object as a core specialization value.
+    """
 
     return _semantic_token(value, _TokenState())

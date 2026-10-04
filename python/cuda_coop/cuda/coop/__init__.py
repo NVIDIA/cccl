@@ -2,7 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Cooperative operations for CUDA Python kernels."""
+"""Expose cooperative operations through a common CUDA Python interface.
+
+Compiler adapters translate these calls into device code. Importing the common
+interface does not load a compiler; :func:`register` loads a selected adapter
+when explicit registration is needed.
+"""
 
 import importlib
 import importlib.metadata
@@ -21,6 +26,8 @@ globals().update(
 
 
 def _package_version() -> str:
+    """Return the installed version or ``0+unknown`` without metadata."""
+
     try:
         return importlib.metadata.version("cuda-coop")
     except importlib.metadata.PackageNotFoundError:
@@ -34,6 +41,6 @@ __all__.extend(_portable_exports)
 
 
 def __dir__() -> list[str]:
-    """Return only the documented backend-neutral completion surface."""
+    """List public names for interactive completion."""
 
     return sorted(__all__)

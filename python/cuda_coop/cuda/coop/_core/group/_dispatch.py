@@ -2,6 +2,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Select the shared planner for an operation's semantics type.
+
+Each operation family registers how to classify its parameters and how
+to build a lowering plan. Dispatch uses the exact semantics type, so a
+new family can supply its rules without adding operation-specific
+branches here.
+
+Before calling the family planner, check its accepted group kinds,
+required launch capabilities, and resolved group shape. The result is a
+plan or a structured unsupported reason. This stage does not compile
+code or execute a kernel.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -22,6 +35,28 @@ from ._resolution import _resolve_group
 
 @dataclass(frozen=True)
 class _GroupOperationFamily:
+    """Keep the planning rules shared by one operation semantics type.
+
+    The registry uses this record to route a ``GroupPrimitiveCall`` to its
+    family planner. The callback chooses the implementation and its
+    requirements after dispatch has checked the group and launch facts.
+
+    Parameters
+    ----------
+    classifications : callable
+        Map an operation's semantics to its parameter classifications.
+        These classifications separate specialization choices, runtime
+        arguments, and storage requirements in the call description.
+    planner : callable
+        Accept the call, resolved group, launch facts, and operation
+        semantics. Return a supported or unsupported ``GroupLoweringPlan``.
+    group_kinds : frozenset of str
+        Group kinds this family can consider. Membership permits planning;
+        the family can still reject an unsupported algorithm or shape.
+    unsupported_group_message : str
+        Diagnostic to use when a call has a group kind outside that set.
+    """
+
     classifications: Callable[
         [GroupOperationSemantics], tuple[ParameterClassification, ...]
     ]
@@ -33,6 +68,8 @@ class _GroupOperationFamily:
     unsupported_group_message: str
 
     def __post_init__(self) -> None:
+        """Reject incomplete registrations before dispatch uses them."""
+
         if not callable(self.classifications):
             raise TypeError("classifications must be callable")
         if not callable(self.planner):
@@ -77,7 +114,13 @@ def _register_group_operation_family(
     group_kinds: frozenset[str],
     unsupported_group_message: str,
 ) -> None:
-    """Register one semantic family without changing the neutral dispatcher."""
+    """Install the callbacks for one exact operation semantics type.
+
+    A family module calls this when it loads. Repeating the same registration
+    is harmless; replacing it with different rules raises ``RuntimeError``.
+    This prevents import order from changing how an existing call is planned.
+    See ``_GroupOperationFamily`` for callbacks and group-kind checks.
+    """
 
     if not isinstance(semantics_type, type):
         raise TypeError("semantics_type must be a type")
@@ -97,6 +140,8 @@ def _register_group_operation_family(
 
 
 def _group_operation_family(operation: object) -> _GroupOperationFamily | None:
+    """Find the exact semantics type; ignore rules for its base classes."""
+
     return _GROUP_OPERATION_FAMILIES.get(type(operation))
 
 
@@ -107,6 +152,11 @@ def _is_group_operation(operation: object) -> bool:
 def _call_classifications(
     operation: GroupOperationSemantics,
 ) -> tuple[ParameterClassification, ...]:
+    """Ask the registered family which roles its operation parameters have.
+
+    Reject unregistered semantics before constructing a call identity.
+    """
+
     family = _group_operation_family(operation)
     if family is None:
         raise TypeError("unsupported GroupPrimitiveCall operation")
@@ -117,6 +167,12 @@ def make_group_primitive_call(
     group: ThreadGroup,
     operation: GroupOperationSemantics,
 ) -> GroupPrimitiveCall:
+    """Pair a group request with the operation semantics to plan.
+
+    ``GroupPrimitiveCall`` validates the descriptor and registered semantics.
+    Launch-dependent resolution happens later in ``plan_group_primitive``.
+    """
+
     return GroupPrimitiveCall(group=group, operation=operation)
 
 
@@ -124,7 +180,40 @@ def plan_group_primitive(
     call: GroupPrimitiveCall,
     launch: LaunchFacts,
 ) -> GroupLoweringPlan:
-    """Resolve a compile-time group call to a CUB target."""
+    """Resolve a group call and ask its family to choose an implementation.
+
+    Check the family's group-kind limit first. Multi-block cluster operations
+    need verified cluster-launch support, and grid operations need verified
+    cooperative-launch support. These checks protect implementations whose
+    threads must participate together; a shape alone does not establish the
+    required launch capability.
+
+    Then resolve the group dimensions and pass the call to its registered
+    planner. Family-specific checks choose a supported implementation or
+    return a reason that explains why the request cannot be lowered.
+
+    Parameters
+    ----------
+    call : GroupPrimitiveCall
+        Group and operation semantics to plan.
+    launch : LaunchFacts
+        Exact launch dimensions and capability evidence.
+
+    Returns
+    -------
+    GroupLoweringPlan
+        Selected implementation and execution requirements, or an
+        unsupported plan with the failed requirement. The caller decides
+        when to turn an unsupported result into a user-facing error.
+
+    Raises
+    ------
+    TypeError
+        An argument has the wrong type or the semantics type is unregistered.
+    ValueError
+        Group dimensions contradict the launch, or an operation-specific
+        argument is invalid.
+    """
 
     if not isinstance(call, GroupPrimitiveCall):
         raise TypeError("call must be a GroupPrimitiveCall")

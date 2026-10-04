@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Build shared Load and Store requests for planner tests.
+
+Tests can vary one option while keeping the element type, item count, and
+launch dimensions fixed. Planning these requests needs no kernel compiler.
+"""
+
 from cuda.coop._core import (
     GroupLoadStoreSemantics,
     LaunchFacts,

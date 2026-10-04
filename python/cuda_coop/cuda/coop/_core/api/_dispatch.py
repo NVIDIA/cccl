@@ -2,7 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Index cooperative calls by function identity and supported group kinds."""
+"""Let compiler adapters recognize public cooperative calls.
+
+Importing an operation records its function object and supported group kinds.
+Lookup by function identity also recognizes imported aliases. The original
+callable stays in place, so its signature and documentation remain available.
+"""
 
 from __future__ import annotations
 
@@ -15,6 +20,8 @@ _CallableT = TypeVar("_CallableT", bound=Callable[..., object])
 
 @dataclass(frozen=True)
 class _PortableGroupOperation:
+    """Store the operation name and allowed groups for one public callable."""
+
     name: str
     group_kinds: tuple[str, ...]
     function: Callable[..., object]
@@ -45,6 +52,8 @@ def _portable_group_operation(
         )
 
     def decorate(function: _CallableT) -> _CallableT:
+        """Register one function in both tables and reject conflicts."""
+
         registration = _PortableGroupOperation(
             name, tuple(group_kinds), function
         )

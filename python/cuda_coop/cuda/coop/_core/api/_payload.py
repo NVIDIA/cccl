@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Define the payload and scratch interfaces used by common API annotations.
+
+Each compiler backend supplies concrete values with these attributes and
+operations. The backend must also recognize those values during compilation.
+This lets the common API describe inputs without importing compiler types.
+"""
+
 from __future__ import annotations
 
 from typing import Protocol, TypeVar, runtime_checkable
@@ -11,8 +18,11 @@ _ItemT = TypeVar("_ItemT")
 
 @runtime_checkable
 class _ReadableThreadDataLike(Protocol[_ItemT]):
-    """Readable fixed-size per-thread payload understood by supported
-    backends.
+    """Describe a fixed number of readable values owned by one thread.
+
+    ``items_per_thread`` is the fixed extent. ``dtype`` can remain unknown
+    until a supported producer establishes the element type. The compiler
+    backend supplies the storage and indexed access.
     """
 
     items_per_thread: int
@@ -36,7 +46,7 @@ class ThreadDataLike(_ReadableThreadDataLike[_ItemT], Protocol[_ItemT]):
 
 @runtime_checkable
 class TempStorageLike(Protocol):
-    """Explicit cooperative scratch descriptor understood by supported backends.
+    """Explicit scratch descriptor understood by supported backends.
 
     See :ref:`temporary storage <coop-temp-storage>` for construction,
     allocation sharing, and synchronization.

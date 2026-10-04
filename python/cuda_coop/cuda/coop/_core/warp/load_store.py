@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe CUB WarpLoad and WarpStore wrappers for physical or logical warps.
+
+Builders validate each warp's tile and describe the selected call signatures.
+The resulting specialization includes the logical width and pointer-offset
+metadata. Group planning and backend lowering use that metadata to give each
+warp its own consecutive tile within the block's input or output.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -103,6 +111,8 @@ def _normalize_algorithm(
     kind: WarpLoadStoreKind,
     algorithm: str | WarpLoadStoreAlgorithm,
 ) -> WarpLoadStoreAlgorithm:
+    """Accept an enum, a short name, or the matching CUB operation's token."""
+
     mapping = _algorithm_cpp_map(kind)
     if isinstance(algorithm, WarpLoadStoreAlgorithm):
         return algorithm
@@ -126,6 +136,8 @@ def _normalize_items_per_thread(items_per_thread: Any) -> int:
 
 
 def _normalize_logical_warp_threads(threads_in_warp: Any) -> int:
+    """Require a power-of-two width that fits within one physical warp."""
+
     if (
         not isinstance(threads_in_warp, int)
         or isinstance(threads_in_warp, bool)
@@ -142,6 +154,12 @@ def _normalize_logical_warp_threads(threads_in_warp: Any) -> int:
 
 
 def _base_parameters(kind: WarpLoadStoreKind) -> list[Any]:
+    """Describe scratch, the memory pointer, and the per-thread item array.
+
+    Load and store take the pointer first but reverse the input/output roles.
+    Both write through arguments instead of returning an array or pointer.
+    """
+
     if kind is WarpLoadStoreKind.LOAD:
         return [
             TempStorageParameter(),
@@ -173,7 +191,7 @@ def _normalize_optional_binding(
     *,
     name: str,
 ) -> ArgumentBinding:
-    """Interpret a bool as signature selection, preserving explicit bindings."""
+    """Use booleans to select signatures and keep explicit bindings."""
 
     if isinstance(value, ArgumentBinding):
         return value
@@ -285,7 +303,7 @@ class WarpLoadStoreSemantics:
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
-        """Return an identity including bindings and selected call variants."""
+        """Identify the bindings and selected call variants."""
 
         return (
             f"warp_{self.kind.value}",

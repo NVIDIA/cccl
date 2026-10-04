@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check how the wheel build records the source of its bundled headers.
+
+Temporary source trees exercise the real package CMake rules with small
+header fixtures. The tests configure the package without building a wheel
+or modifying the checkout that runs the tests.
+"""
+
 from __future__ import annotations
 
 import json
@@ -28,6 +35,7 @@ def _require_packaging_tools() -> None:
 
 
 def _isolated_git_env() -> dict[str, str]:
+    """Keep external Git settings and repository paths out of the fixture."""
     env = os.environ.copy()
     for name in (
         "GIT_CEILING_DIRECTORIES",
@@ -47,6 +55,11 @@ def _isolated_git_env() -> dict[str, str]:
 
 
 def _prepare_minimal_cccl_source(source_root: Path) -> Path:
+    """Create the source layout needed to configure the real package rules.
+
+    Empty CCCL install rules avoid staging the full header tree. Individual
+    tests add only the header paths needed for their provenance check.
+    """
     package_root = source_root / "python" / "cuda_coop"
     install_rules = source_root / "cmake" / "CCCLInstallRules.cmake"
     package_root.mkdir(parents=True)
@@ -59,6 +72,11 @@ def _prepare_minimal_cccl_source(source_root: Path) -> Path:
 
 
 def _initialize_git_repository(source_root: Path, env: dict[str, str]) -> str:
+    """Commit the fixture's initial state and return its source revision.
+
+    An empty template directory avoids inherited hooks. Explicit identity and
+    signing settings let the temporary repository work without user setup.
+    """
     subprocess.run(
         [
             "git",

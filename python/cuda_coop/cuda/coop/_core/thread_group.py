@@ -2,6 +2,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe which threads participate in a cooperative operation.
+
+``ThreadHierarchy`` holds the launch dimensions known to a planner.
+``ThreadGroup`` selects a physical group or partitions it into smaller groups.
+Public ``this_*`` factories start with the current launch; a backend later
+resolves the dimensions from ``LaunchFacts``.
+
+A descriptor is a Python planning value. Constructing one does not launch
+a kernel, synchronize threads, or establish that a primitive supports
+the requested group. Group resolution and operation planning check those
+requirements before a backend uses the CUDAX declaration helpers here.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -12,8 +25,7 @@ from typing import Any, TypeVar
 
 # Hierarchy levels identify the coordinate spaces used by group descriptors.
 THREAD_LEVELS = frozenset({"thread", "warp", "block", "cluster", "grid"})
-# Physical group kinds identify runtime execution groups rather than mapped
-# groups.
+# Physical groups use CUDA's thread, warp, block, cluster, and grid levels.
 PHYSICAL_GROUP_KINDS = frozenset({"thread", "warp", "block", "cluster", "grid"})
 MAPPED_GROUP_KINDS = frozenset({"threads_within_warp", "warps_within_block"})
 THREAD_GROUP_KINDS = PHYSICAL_GROUP_KINDS | MAPPED_GROUP_KINDS
@@ -29,7 +41,7 @@ _CPP_LEVEL_EXPR = {
 
 
 class CoopCompilerContextRequiredError(RuntimeError):
-    """A compiler-facing cooperative value escaped its compiler context."""
+    """Report a cooperative value used outside the compiler stage it needs."""
 
 
 def normalize_thread_dim(
@@ -38,7 +50,13 @@ def normalize_thread_dim(
     scope: str,
     label: str,
 ) -> tuple[int, int, int]:
-    """Normalize a one-, two-, or three-dimensional CUDA launch shape."""
+    """Convert a positive launch shape to an ``(x, y, z)`` tuple.
+
+    Accept an integer or a tuple/list of one to three integers. Pad missing
+    axes with one so equivalent spellings share the same descriptor and
+    cache identity. Booleans, empty shapes, and nonpositive dimensions are
+    invalid. ``scope`` and ``label`` identify the caller in diagnostics.
+    """
 
     if isinstance(value, bool):
         raise TypeError(f"{scope} {label} shape must be int-like")
@@ -69,7 +87,10 @@ def normalize_thread_dim(
 
 
 def normalize_thread_level(level: str, *, scope: str, feature: str) -> str:
-    """Return the canonical spelling for a CUDA hierarchy level."""
+    """Validate a hierarchy level and accept ``gpu_thread`` as ``thread``.
+
+    Use ``scope`` and ``feature`` to identify an invalid level in the error.
+    """
 
     if level == "gpu_thread":
         level = "thread"
@@ -80,7 +101,12 @@ def normalize_thread_level(level: str, *, scope: str, feature: str) -> str:
 
 
 def normalize_thread_group_kind(kind: str, *, scope: str, feature: str) -> str:
-    """Return a canonical physical or statically mapped group kind."""
+    """Validate a physical or mapped group kind.
+
+    Accept ``gpu_thread`` as ``thread``. Group kinds include static partitions
+    as well as physical levels; ``scope`` and ``feature`` identify invalid
+    input in the diagnostic.
+    """
 
     if kind == "gpu_thread":
         kind = "thread"
@@ -109,11 +135,26 @@ def _dims_token(prefix: str, dims: tuple[int, int, int]) -> str:
 
 @dataclass(frozen=True, init=False)
 class ThreadHierarchy:
-    """CUDA hierarchy descriptor for the current kernel launch.
+    """Describe the launch dimensions known during group planning.
 
-    Public construction always denotes the active launch. Backends resolve
-    exact extents from verified :class:`LaunchFacts`; callers cannot assert
-    launch dimensions independently of the compiler.
+    Public construction describes the current kernel launch with unresolved
+    dimensions. Backends supply exact extents from ``LaunchFacts`` when they
+    resolve a group. Callers cannot pass independent launch dimensions to
+    the public constructor.
+
+    Attributes
+    ----------
+    block_dim : tuple of int or None
+        Threads along each axis of one block, once known.
+    cluster_dim : tuple of int or None
+        Blocks along each axis of one cluster, once needed and known.
+    grid_dim : tuple of int or None
+        Clusters along each axis of the resolved grid. On a non-cluster
+        launch, each cluster contains one block.
+    implicit : bool
+        Whether this descriptor still refers to the current launch without
+        explicit dimensions. A resolved hierarchy can leave higher levels
+        unknown if the selected group does not need them.
     """
 
     block_dim: tuple[int, int, int] | None
@@ -135,7 +176,13 @@ class ThreadHierarchy:
         grid_dim: int | tuple[int, ...] | list[int] | None = None,
         cluster_dim: int | tuple[int, ...] | list[int] | None = None,
     ) -> ThreadHierarchy:
-        """Materialize planner-verified extents from launch facts."""
+        """Construct a hierarchy from dimensions supplied by a planner.
+
+        Normalize each supplied shape and mark the result as explicit. The
+        caller must obtain and check the launch facts; this constructor cannot
+        verify an actual launch. ``grid_dim`` counts clusters, so the resolver
+        must first convert physical grid dimensions when needed.
+        """
 
         hierarchy = object.__new__(cls)
         object.__setattr__(
@@ -174,22 +221,34 @@ class ThreadHierarchy:
 
     @classmethod
     def current(cls) -> ThreadHierarchy:
-        """Describe C++ default ``this_*()`` hierarchy construction."""
+        """Describe the current launch before its dimensions are known."""
 
         return cls()
 
     @property
     def is_static(self) -> bool:
+        """Return whether a planner supplied explicit hierarchy dimensions.
+
+        Higher levels can still be unknown. Use ``has_static_extents_for``
+        when a particular group level needs them.
+        """
+
         return not self.implicit
 
     @property
     def block_thread_count(self) -> int | None:
-        """Return the enclosing CTA size when it is statically known."""
+        """Return the block thread count, or ``None`` if it is unknown."""
 
         return _thread_count(self.block_dim)  # type: ignore[arg-type]
 
     @property
     def symbol_suffix(self) -> str:
+        """Encode known hierarchy dimensions for generated symbol names.
+
+        Use ``current`` for an unresolved launch and include each known outer
+        level before the block shape.
+        """
+
         if self.implicit:
             return "current"
         parts: list[str] = []
@@ -202,9 +261,7 @@ class ThreadHierarchy:
 
     @property
     def block_dim_token(self) -> str:
-        """Return the canonical symbol token for this hierarchy's block
-        shape.
-        """
+        """Encode the block shape, or use ``current`` if it is unknown."""
 
         if self.block_dim is None:
             return "current"
@@ -212,9 +269,19 @@ class ThreadHierarchy:
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
+        """Identify the dimensions and their current-launch status."""
+
         return self.block_dim, self.grid_dim, self.cluster_dim, self.implicit
 
     def has_static_extents_for(self, group_kind: str) -> bool:
+        """Check whether this hierarchy has the extents used by a group level.
+
+        Thread groups have a known size even in an implicit hierarchy. Other
+        physical groups need the block shape and, for cluster or grid groups,
+        the corresponding outer shape. This checks available dimensions;
+        operation support and launch capabilities are separate checks.
+        """
+
         group_kind = normalize_thread_level(
             group_kind,
             scope="ThreadHierarchy",
@@ -236,7 +303,29 @@ Hierarchy = ThreadHierarchy
 
 @dataclass(frozen=True)
 class GroupByMapping:
-    """Static CUDAX ``group_by`` mapping semantics."""
+    """Describe a static partition of a physical warp or block.
+
+    ``ThreadGroup.group_by`` creates this record. A warp partitions into
+    sets of threads; a block partitions into sets of complete physical
+    warps. The record keeps the unit count and synchronization choice so
+    C++ generation and planning agree on each subgroup's membership.
+
+    Parameters
+    ----------
+    unit : str
+        Unit placed in each subgroup: ``thread`` or ``warp``.
+    parent : str
+        Physical parent level: ``warp`` or ``block``. ``ThreadGroup`` checks
+        that it matches the selected unit and mapped group kind.
+    count : int
+        Positive number of units in one subgroup, known during compilation.
+    exhaustive : bool
+        Whether the count must divide the parent's unit count exactly.
+        A non-exhaustive mapping can leave units outside complete groups.
+    synchronizer : str
+        ``lane`` for thread units or ``barrier`` for warp units. This
+        selects the synchronization form when generating a mapped group.
+    """
 
     unit: str
     parent: str
@@ -245,6 +334,8 @@ class GroupByMapping:
     synchronizer: str
 
     def __post_init__(self) -> None:
+        """Check partition controls before attaching them to a group."""
+
         if self.unit not in {"thread", "warp"}:
             raise ValueError("GroupByMapping unit must be thread or warp")
         if self.parent not in {"warp", "block"}:
@@ -264,6 +355,8 @@ class GroupByMapping:
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
+        """Identify partition size, coverage, and synchronization."""
+
         return (
             self.unit,
             self.parent,
@@ -278,6 +371,14 @@ def _validate_mapped_group_extent(
     hierarchy: ThreadHierarchy,
     mapping: GroupByMapping,
 ) -> None:
+    """Check a partition against the parent dimensions already known.
+
+    Mapped groups require complete physical warps. Their count cannot exceed
+    the parent's units, and an exhaustive count must divide those units.
+    For a block with an unknown size, defer these extent checks to launch
+    resolution. A warp's 32-thread extent is already known.
+    """
+
     block_threads = hierarchy.block_thread_count
     if block_threads is not None and block_threads % 32 != 0:
         raise ValueError(
@@ -323,11 +424,18 @@ class ThreadGroup:
     hierarchy: ThreadHierarchy = field(default_factory=ThreadHierarchy.current)
     parent: ThreadGroup | None = None
     mapping: GroupByMapping | None = None
-    # Provenance is excluded from semantic identity and cache keys, but planners
-    # may still use it to preserve policy at public API boundaries.
+    # Source labels do not affect structural identity or cache keys.
+    # Planners can still use them to preserve public API policy.
     source: str = field(default="explicit", compare=False, hash=False)
 
     def __post_init__(self) -> None:
+        """Check that the kind, parent, and partition describe one group.
+
+        Mapped groups must use the expected physical parent and the same
+        hierarchy. Physical groups carry no mapping metadata. Known dimensions
+        also let construction reject impossible partition sizes early.
+        """
+
         kind = normalize_thread_group_kind(
             self.kind,
             scope="ThreadGroup",
@@ -375,17 +483,18 @@ class ThreadGroup:
 
     @property
     def block_dim(self) -> tuple[int, int, int] | None:
-        """Return the planner-resolved enclosing block dimensions, if known."""
+        """Return the resolved block dimensions, or ``None`` if unknown."""
 
         return self.hierarchy.block_dim
 
     @property
     def group_thread_count(self) -> int:
-        """Return the number of threads in this group.
+        """Return the known number of threads, or reject an unresolved size.
 
-        The physical warp extent is always 32. Whether all 32 lanes are valid
-        participants for a particular collective is a lowering-legality
-        question and is deliberately not encoded by this descriptor.
+        A physical warp always has an extent of 32. The operation planner
+        still checks whether all 32 lanes can participate. The descriptor does
+        not observe active lanes. Use ``static_size`` to return ``None``
+        instead of raising ``ValueError`` when the size is unknown.
         """
 
         count = self.static_size
@@ -398,7 +507,13 @@ class ThreadGroup:
 
     @property
     def static_size(self) -> int | None:
-        """Return the static group extent independently of its parent CTA."""
+        """Return the known group thread count, or ``None`` if unresolved.
+
+        Thread, warp, and mapped group sizes follow from their kind and
+        mapping. Block, cluster, and grid sizes need hierarchy dimensions. The
+        count describes membership, but does not prove that all threads in
+        the parent participate.
+        """
 
         if self.kind == "thread":
             return 1
@@ -438,11 +553,17 @@ class ThreadGroup:
 
     @property
     def is_current(self) -> bool:
+        """Return whether the hierarchy still needs launch resolution."""
+
         return self.hierarchy.implicit  # type: ignore[union-attr]
 
     @property
     def is_static(self) -> bool:
-        """Whether all hierarchy extents required by this group are static."""
+        """Return whether the hierarchy has the extents this group needs.
+
+        Mapped groups use their physical parent's result. A known subgroup
+        size alone does not supply an unknown enclosing block shape.
+        """
 
         if self.kind in MAPPED_GROUP_KINDS:
             assert self.parent is not None
@@ -451,7 +572,12 @@ class ThreadGroup:
 
     @property
     def parent_unit_count(self) -> int | None:
-        """Return the static number of mapped units in the parent group."""
+        """Return the parent's known unit count for a mapped group.
+
+        A warp parent has 32 thread units. A block parent has one unit per
+        complete physical warp. Return ``None`` for a physical group or an
+        unknown parent count.
+        """
 
         if self.kind == "threads_within_warp":
             return 32
@@ -466,7 +592,11 @@ class ThreadGroup:
 
     @property
     def groups_per_parent(self) -> int | None:
-        """Return the number of complete mapped groups in one parent."""
+        """Count complete mapped subgroups within one physical parent.
+
+        Exclude any remainder allowed by a non-exhaustive mapping. Return
+        ``None`` when the group is physical or its parent count is unknown.
+        """
 
         if self.mapping is None:
             return None
@@ -477,7 +607,11 @@ class ThreadGroup:
 
     @property
     def remainder_count(self) -> int | None:
-        """Return mapped parent units excluded by a non-exhaustive mapping."""
+        """Count parent units left outside complete mapped subgroups.
+
+        The unit is a thread for a warp parent and a warp for a block parent.
+        Return ``None`` for a physical group or an unknown parent count.
+        """
 
         if self.mapping is None:
             return None
@@ -488,7 +622,12 @@ class ThreadGroup:
 
     @property
     def complete_membership(self) -> bool | None:
-        """Whether the mapping covers every unit in its physical parent."""
+        """Report whether the mapping covers all units of its physical parent.
+
+        Return ``None`` until a mapped parent's unit count is known. Physical
+        groups return true because no mapping excludes members. Execution can
+        still require complete warps and converged participation.
+        """
 
         if self.mapping is None:
             return True
@@ -499,6 +638,8 @@ class ThreadGroup:
 
     @property
     def symbol_suffix(self) -> str:
+        """Encode the group kind, partition, and hierarchy for C++ symbols."""
+
         if self.mapping is None:
             return f"{self.kind}_{self.hierarchy.symbol_suffix}"  # type: ignore[union-attr]
         mode = "all" if self.mapping.exhaustive else "partial"
@@ -513,6 +654,12 @@ class ThreadGroup:
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
+        """Identify group shape and mapping without their source label.
+
+        Include the parent for mapped groups. Planners can use ``source`` for
+        API policy, but that label does not change this structural identity.
+        """
+
         if self.mapping is None:
             return self.kind, self.hierarchy.semantic_key  # type: ignore[union-attr]
         assert self.parent is not None
@@ -530,8 +677,11 @@ class ThreadGroup:
         *,
         source: str = "resolved",
     ) -> _ThreadGroupT:
-        """Return the same backend group type with resolved hierarchy
-        extents.
+        """Copy the descriptor with a resolved hierarchy and source label.
+
+        Keep its concrete backend type. For a mapped group, give its physical
+        parent the same hierarchy so both descriptions remain consistent.
+        Construction rechecks the mapping against the supplied dimensions.
         """
 
         if self.mapping is None:
@@ -639,7 +789,12 @@ def make_thread_group(
     group_type: type[_ThreadGroupT] = ThreadGroup,
     scope: str = "cuda.coop",
 ) -> _ThreadGroupT:
-    """Build a current-launch group using a backend-selected group type."""
+    """Create a physical group descriptor for the current launch.
+
+    Backends can supply a ``group_type`` subclass while using the same kind
+    normalization and unresolved hierarchy. ``scope`` names the API in an
+    invalid-kind diagnostic.
+    """
 
     kind = normalize_thread_level(kind, scope=scope, feature="ThreadGroup")
     return group_type(
@@ -664,7 +819,13 @@ def render_hierarchy_decl(
     var_name: str = "hierarchy",
     indent: str = "  ",
 ) -> list[str]:
-    """Render one static CUDAX hierarchy declaration."""
+    """Generate a CUDAX hierarchy declaration from known dimensions.
+
+    An implicit hierarchy needs no declaration and returns an empty list.
+    For an explicit hierarchy, emit the known grid and cluster levels before
+    the required block level. ``var_name`` and ``indent`` control the
+    surrounding generated source.
+    """
 
     if hierarchy.implicit:
         return []
@@ -692,7 +853,13 @@ def render_group_decl(
     hierarchy_var: str = "hierarchy",
     indent: str = "  ",
 ) -> str:
-    """Render one physical CUDAX group declaration."""
+    """Generate one CUDAX declaration for a physical group.
+
+    Use the supplied ``hierarchy_var`` for an explicit hierarchy, or CUDAX's
+    implicit hierarchy for the current launch. The caller must declare an
+    explicit hierarchy first. Mapped groups need additional declarations;
+    reject them here and use ``render_group_decl_lines``.
+    """
 
     if group.mapping is not None:
         raise ValueError(
@@ -718,7 +885,18 @@ def render_group_decl_lines(
     hierarchy_var: str = "hierarchy",
     indent: str = "  ",
 ) -> list[str]:
-    """Render a physical or statically mapped CUDAX group declaration."""
+    """Generate a CUDAX group and any declarations its mapping needs.
+
+    Physical groups need one declaration. A thread subgroup also needs its
+    physical warp parent and a lane synchronizer. A subgroup of physical
+    warps needs its block parent and shared barrier storage, with one
+    barrier slot per complete subgroup.
+
+    The mapped block's subgroup count must be known to size that storage;
+    otherwise raise ``ValueError``. These lines describe the group and its
+    storage. They do not establish the enclosing launch's capabilities or
+    prove that a primitive supports the group.
+    """
 
     if group.mapping is None:
         return [
@@ -805,7 +983,11 @@ def render_group_decl_lines(
 
 
 def cpp_level_expr(level: str) -> str:
-    """Return the CUDAX hierarchy-level expression for ``level``."""
+    """Translate a hierarchy level to its CUDAX tag expression.
+
+    For example, ``thread`` selects ``::cuda::gpu_thread``. Reuse level
+    normalization so the accepted Python spellings stay consistent.
+    """
 
     return _CPP_LEVEL_EXPR[
         normalize_thread_level(
@@ -815,22 +997,32 @@ def cpp_level_expr(level: str) -> str:
 
 
 def this_thread() -> ThreadGroup:
+    """Describe the calling thread as a one-thread group."""
+
     return make_thread_group("thread")
 
 
 def this_warp() -> ThreadGroup:
+    """Describe the calling thread's physical 32-thread warp."""
+
     return make_thread_group("warp")
 
 
 def this_block() -> ThreadGroup:
+    """Describe the calling thread's block in the current launch."""
+
     return make_thread_group("block")
 
 
 def this_cluster() -> ThreadGroup:
+    """Describe the calling thread's cluster for later launch validation."""
+
     return make_thread_group("cluster")
 
 
 def this_grid() -> ThreadGroup:
+    """Describe the launch grid for later cooperative-launch validation."""
+
     return make_thread_group("grid")
 
 

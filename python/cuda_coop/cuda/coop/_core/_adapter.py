@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Translate shared parameter descriptions into a backend's compiler objects.
+
+Core factories describe C++ calls without depending on a Python GPU compiler.
+An adapter supplies the conversion rules for that compiler. The shared helper
+preserves parameter order and can omit temporary storage for backends that
+supply it another way.
+"""
+
 from __future__ import annotations
 
 from typing import Any, Protocol
@@ -13,19 +21,24 @@ from ._types import (
 
 
 class CoreBackendAdapter(Protocol):
-    """Operations a backend supplies to materialize a core algorithm
-    specialization.
+    """Define how a backend turns an ``Algorithm`` into a callable object.
 
-    The protocol deliberately stops before tracing, linking, caching, launch
-    integration, and compiler hook registration. Those remain backend concerns.
+    Lowering means converting a shared descriptor into the backend's type or
+    parameter representation. Materialization uses those representations to
+    build the backend's callable algorithm. The backend also owns tracing,
+    linking, caches, launch integration, and compiler hook registration.
     """
 
     def normalize_dtype(self, dtype: Any) -> Any:
-        """Return the backend's canonical representation of ``dtype``."""
+        """Convert a core dtype into the representation this backend uses.
+
+        Built-in core tokens let a factory request types such as signed
+        32-bit integers without importing the backend's type system.
+        """
         ...
 
     def cpp_type(self, dtype: Any) -> str:
-        """Render a canonical backend dtype as a C++ type spelling."""
+        """Spell a dtype as C++ source for generated declarations or calls."""
         ...
 
     def lower_parameter(
@@ -34,7 +47,12 @@ class CoreBackendAdapter(Protocol):
         *,
         specialization: Algorithm,
     ) -> Any:
-        """Lower a value, pointer, reference, or array parameter."""
+        """Convert one non-storage descriptor into a backend parameter.
+
+        ``specialization`` supplies the bound values needed to resolve a
+        descriptor's ``Dependency`` entries. The returned object belongs to
+        the backend's signature representation.
+        """
         ...
 
     def lower_temp_storage(
@@ -43,11 +61,19 @@ class CoreBackendAdapter(Protocol):
         *,
         specialization: Algorithm,
     ) -> Any:
-        """Lower a backend-managed or explicitly supplied storage parameter."""
+        """Describe a temporary-storage argument in the backend's signature.
+
+        The separate hook lets the backend apply its storage conventions.
+        ``specialization`` provides the primitive and its bound arguments.
+        """
         ...
 
     def materialize(self, specialization: Algorithm, **kwargs: Any) -> Any:
-        """Materialize ``specialization`` through the backend's call path."""
+        """Build a backend callable from the fully bound core description.
+
+        ``kwargs`` carries options specific to that backend's construction
+        path. The protocol does not prescribe the returned object's type.
+        """
         ...
 
 
@@ -58,8 +84,28 @@ def lower_method_parameters(
     *,
     include_temp_storage: bool,
 ) -> tuple[Any, ...]:
-    """Dispatch one core method signature through an adapter's lowering
-    hooks.
+    """Convert one signature in order, optionally omitting temporary storage.
+
+    Some backends supply storage outside the ordinary argument list. The
+    ``include_temp_storage`` flag lets them skip its descriptor while keeping
+    the remaining arguments in the factory's order.
+
+    Parameters
+    ----------
+    adapter : CoreBackendAdapter
+        Backend that converts each retained descriptor.
+    specialization : Algorithm
+        Bound primitive passed to each conversion hook.
+    method : tuple
+        Parameter descriptors for one method signature.
+    include_temp_storage : bool
+        If true, send storage descriptors to ``lower_temp_storage``. If
+        false, omit them. Send all other descriptors to ``lower_parameter``.
+
+    Returns
+    -------
+    tuple
+        Backend parameter objects in retained call order.
     """
 
     lowered = []

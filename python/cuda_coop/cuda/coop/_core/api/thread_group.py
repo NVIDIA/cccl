@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Expose symbolic thread groups through the common API.
+
+These factories describe which threads will cooperate. A compiler resolves the
+description against the kernel launch before it selects an implementation.
+Constructing a group does not execute an operation or synchronize its threads.
+"""
+
 from __future__ import annotations
 
 from ..thread_group import (
@@ -35,7 +42,7 @@ def this_thread() -> ThreadGroup:
     Returns
     -------
     cuda.coop.ThreadGroup
-        A symbolic descriptor. One-thread groups are not Load or Store targets.
+        A symbolic descriptor. Load and Store do not accept one-thread groups.
         See :ref:`thread groups <coop-thread-groups>`.
     """
 

@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check that cache identities track the selected headers and their contents.
+
+Header order, file contents, and source paths can affect generated code.
+The fixtures isolate those changes without invoking a compiler.
+"""
+
 from __future__ import annotations
 
 import os
@@ -70,6 +76,8 @@ def test_recursive_identity_frames_file_contents_unambiguously(
 ) -> None:
     combined = tmp_path / "combined"
     combined.mkdir()
+    # One file contains bytes that resemble the next file's hash record.
+    # Length framing must distinguish this from two separate files.
     (combined / "a").write_bytes(b"A\0" + b"1:b\0file\0B")
 
     split = tmp_path / "split"

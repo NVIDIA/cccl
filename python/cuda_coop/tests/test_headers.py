@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check header selection for source checkouts and installed packages.
+
+CCCL headers must come from one source. CUDA Toolkit headers are a separate
+requirement when compiling; importing the shared API must remain possible
+without loading CUDA bindings.
+"""
+
 from __future__ import annotations
 
 import subprocess

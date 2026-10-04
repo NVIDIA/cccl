@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe common API types without requiring a compiler package.
+
+Protocols let type checkers recognize the attributes supplied by each backend.
+They describe compatible values; they do not make a new Python class usable in
+a GPU kernel. The compiler must still know how to lower each concrete value.
+"""
+
 from typing import Any, Literal, Protocol, TypeAlias, TypeVar
 
 import numpy
@@ -51,7 +58,7 @@ LoadStoreAlgorithm: TypeAlias = BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm
 TempStorageSharing: TypeAlias = Literal["shared", "exclusive"]
 
 class CompilerScalarLike(Protocol):
-    """Backend-optional structural view of one compiler numeric scalar."""
+    """Describe a compiler scalar without importing its concrete type."""
 
     width: int
 
@@ -95,9 +102,10 @@ class ThreadDataLike(Protocol[_ItemT]):
     """Common mutable, indexable per-thread payload contract.
 
     Concrete compiler backends may attach additional helpers and metadata, but
-    common operations rely only on this payload shape and item access contract.
-    Structural type compatibility does not register arbitrary user classes with
-    a compiler; kernels must use payloads that their active backend recognizes.
+    common operations rely only on this payload shape and item access
+    contract. Structural type compatibility does not register arbitrary user
+    classes with a compiler; kernels must use payloads that their active
+    backend recognizes.
     """
 
     items_per_thread: int
@@ -113,8 +121,10 @@ class ThreadDataLike(Protocol[_ItemT]):
         """Replace one thread-local item."""
 
 class PortableThreadDataLike(Protocol[_ReadableItemT_co]):
-    """Thread payload whose readable items use the common API's numeric
-    types.
+    """Describe readable per-thread items with common numeric types.
+
+    Operations that only read a payload use this protocol. Mutable operations
+    use ``ThreadDataLike``, which also requires item assignment.
     """
 
     items_per_thread: int
@@ -127,7 +137,11 @@ class PortableThreadDataLike(Protocol[_ReadableItemT_co]):
         """Return one numeric register value supported by the common API."""
 
 class TempStorageLike(Protocol):
-    """Common explicit scratch-storage descriptor contract."""
+    """Describe a kernel's scratch-storage requests.
+
+    These attributes describe storage for the compiler to arrange. They do not
+    contain an allocated buffer or establish that its capacity is sufficient.
+    """
 
     size_in_bytes: int | None
     alignment: int | None

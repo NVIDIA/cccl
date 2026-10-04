@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe CUB BlockLoad and BlockStore wrappers for compiler adapters.
+
+The semantics builder selects full-tile, guarded, and pointer-offset
+signatures. The specialization builder then binds the block shape and CUB
+template arguments. These descriptions let each backend generate wrappers for
+the same operation without importing compiler types into the shared model.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -117,6 +125,8 @@ def _normalize_algorithm(
     kind: BlockLoadStoreKind,
     algorithm: str | BlockLoadStoreAlgorithm,
 ) -> BlockLoadStoreAlgorithm:
+    """Accept an enum, a short name, or the matching CUB operation's token."""
+
     mapping = _algorithm_cpp_map(kind)
     if isinstance(algorithm, BlockLoadStoreAlgorithm):
         return algorithm
@@ -168,6 +178,8 @@ def _normalize_optional_binding(
     *,
     name: str,
 ) -> ArgumentBinding:
+    """Use booleans to select signatures and keep explicit value bindings."""
+
     if isinstance(value, ArgumentBinding):
         return value
     if not isinstance(value, bool):

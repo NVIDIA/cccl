@@ -36,7 +36,7 @@ class ThreadHierarchy:
 
     @property
     def block_thread_count(self) -> int | None:
-        """Return the statically known CTA size, if any."""
+        """Return the statically known number of threads per block, if any."""
 
 Hierarchy: TypeAlias = ThreadHierarchy
 
@@ -107,4 +107,4 @@ def this_cluster() -> ThreadGroup[Literal["cluster"]]:
     """Describe the current thread-block cluster."""
 
 def this_grid() -> ThreadGroup[Literal["grid"]]:
-    """Describe the current grid; grid primitives are not in the common API."""
+    """Describe the grid; common operations do not support this group."""

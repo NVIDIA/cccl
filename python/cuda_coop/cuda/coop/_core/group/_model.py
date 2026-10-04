@@ -12,12 +12,11 @@ and scratch-storage requirements needed to preserve the operation's semantics.
 For example, a warp load using a transpose needs a separate scratch instance
 for each participating warp and synchronization before that storage is reused.
 
-Backends consume these records when choosing provider factories, materializing
-specialized code, and arranging storage and barriers. The records describe those
-requirements; constructing them does not emit device code or check runtime
-participation. Unsupported requests retain the original call and a structured
-reason so callers can inspect a planning result before requiring executable
-support.
+Backends use these records to select a provider, compile specialized code, and
+arrange storage and barriers. The records describe those requirements;
+constructing them does not emit device code or check runtime participation.
+Unsupported requests retain the original call and a structured reason so
+callers can inspect a planning result before requiring executable support.
 
 Implementation provenance identifies the native library entry point selected
 by planning. Together with the specialized implementation and execution
@@ -496,6 +495,14 @@ class TempStorageContract:
     auto_sync: bool = True
 
     def __post_init__(self) -> None:
+        """Check that layout and reuse requests agree with storage ownership.
+
+        A storage-free operation cannot carry layout requests. An internally
+        managed allocation needs group-instance information, while
+        caller-owned storage also needs a sharing policy. Concrete capacity is
+        checked later.
+        """
+
         object.__setattr__(self, "ownership", StorageOwnership(self.ownership))
         if self.sharing not in {None, "shared", "exclusive"}:
             raise ValueError(
@@ -579,9 +586,8 @@ class ImplementationProvenance:
     here so a backend can recognize the implementation and route it to a
     supported provider. For example, a CUB block load records ``"CUB"``,
     ``"cub/block/block_load.cuh"``, ``"cub::BlockLoad"``, and ``"Load"``.
-    The Numba-CUDA-MLIR Load/Store planner uses this exact tuple to select
-    its load or store route, then checks the provider against the plan's
-    contracts.
+    A backend can use this tuple to select its load or store route, then check
+    the provider against the plan's contracts.
 
     The same native entry point can serve many element types, tile sizes,
     and algorithm choices. Those details belong to the plan's specialized
@@ -742,6 +748,14 @@ class GroupLoweringPlan:
     unsupported: UnsupportedReason | None = None
 
     def __post_init__(self) -> None:
+        """Require a complete implementation plan or an unsupported reason.
+
+        For a supported plan, compare the execution contracts with the
+        resolved group. This catches inconsistent group sizes, scratch
+        indexing, launch dimensions, and convergence requirements before a
+        backend consumes them.
+        """
+
         is_unsupported = self.target is GroupLoweringTarget.UNSUPPORTED
         if is_unsupported != (self.unsupported is not None):
             raise ValueError("unsupported plans require exactly one reason")
@@ -819,13 +833,12 @@ class GroupLoweringPlan:
             ):
                 raise ValueError(
                     "supported plan participation and synchronization "
-                    "must agree "
-                    "on converged entry"
+                    "must agree on converged entry"
                 )
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
-        """Identify the resolved logical request independently of its provider.
+        """Identify the resolved request without its provider choice.
 
         Physical warp requests can share this key across enclosing block
         shapes. Use ``artifact_key`` when execution and storage details must
@@ -888,7 +901,10 @@ class GroupLoweringPlan:
         return "unsupported", self.semantic_key, self.unsupported.code.value
 
     def require_supported(self) -> GroupLoweringPlan:
-        """Return this plan or raise ``NotImplementedError`` with its reason."""
+        """Return a supported plan or report its reason in an exception.
+
+        Unsupported plans raise ``NotImplementedError`` with their message.
+        """
 
         if self.unsupported is not None:
             raise NotImplementedError(self.unsupported.message)

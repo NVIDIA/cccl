@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Normalize integer dimensions before CUB block templates are specialized.
+
+Template parameters need concrete integers. These helpers accept integral
+scalar types, reject booleans, and produce ordinary Python integers for the
+shared specialization descriptions.
+"""
+
 from __future__ import annotations
 
 from numbers import Integral
@@ -17,7 +24,12 @@ def normalize_positive_int(name: str, value: Any) -> int:
 
 
 def normalize_block_dim(value: Any) -> tuple[int, int, int]:
-    """Normalize an explicit three-dimensional positive block shape."""
+    """Require three positive dimensions and return them as Python integers.
+
+    CUB specialization receives an already resolved ``(x, y, z)`` shape.
+    This check therefore requires all three entries instead of supplying
+    missing dimensions as a kernel launch interface might do.
+    """
 
     try:
         dimensions = tuple(value)

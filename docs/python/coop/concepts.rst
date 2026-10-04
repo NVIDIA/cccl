@@ -101,7 +101,8 @@ of the arrays passed to Load or Store.
 
 The contents are uninitialized. Write every item before reading it. A full
 Load initializes the payload; a partial Load leaves invalid slots unspecified
-unless ``oob_default`` is provided, even if initialized before Load. Construction does not synchronize threads.
+unless ``oob_default`` is provided, even if initialized before Load.
+Construction does not synchronize threads.
 
 :class:`cuda.coop.ThreadDataLike` describes this payload interface for typing.
 Use :func:`cuda.coop.ThreadData` inside a supported kernel to construct one.
