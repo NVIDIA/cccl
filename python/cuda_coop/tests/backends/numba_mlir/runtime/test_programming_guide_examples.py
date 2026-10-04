@@ -351,6 +351,13 @@ def test_custom_scan():
 
 
 def test_prefix_callback():
+    """Check the guide's running prefix across three successive tiles.
+
+    The example uses int64 state with int32 values and reuses synchronized
+    scratch. The full-array reference catches a reset between tiles, while
+    the final state checks the total retained by block thread zero.
+    """
+
     # coop-pg-prefix-callback-begin
     @cuda.jit(device=True)
     def carry_total(state, tile_total):

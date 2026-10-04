@@ -6,8 +6,9 @@
 
 These functions are recognized inside kernels. Their markers let the group
 planner choose a CUB provider from the launch, payload, and selectors. They
-extend the common API with local arrays, device operators, lane-prefix
-counts, and aggregate outputs; they do not execute a host-side scan.
+extend the common API with local arrays, device operators, Warp valid_items
+counts, aggregate outputs, and block prefix callbacks, optionally with
+StatefulFunction state. They do not execute a host-side scan.
 """
 
 from __future__ import annotations

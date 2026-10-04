@@ -1177,8 +1177,8 @@ This computes one block's prefix sum. Processing multiple blocks requires
 the caller to assign separate tiles and, for a device-wide scan, arrange
 the carry between them. Merely increasing the grid size does not do that.
 
-Python scan operators
----------------------
+Python scan operators and prefix callbacks
+------------------------------------------
 
 A built-in sum can use a C++ operator directly. A Python-defined operator
 adds another compilation input. This example uses the qualified namespace,
@@ -1239,8 +1239,8 @@ lane zero's returned prefix is used, and only thread zero's state is
 authoritative after the call. Callers initialize each participating state
 cell equally. This is local state for successive tiles handled by one
 block; it does not provide communication between blocks. Prefix callbacks
-cannot be combined with ``initial_value`` or
-``aggregate_output`` and are not supported for Warp Scan.
+cannot be combined with ``initial_value`` or ``aggregate_output`` and are
+not supported for Warp Scan.
 
 .. _coop-numba-compilation-reuse:
 

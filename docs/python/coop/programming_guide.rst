@@ -67,7 +67,8 @@ Load fills the unused slots with zero, and Store writes only the valid
 prefix. Zero contributes nothing to the sum.
 
 Each block starts its sum at zero. For one prefix sum spanning the entire
-array, you also need to carry the totals between tiles. A scan distributed
+array, you also need to carry the totals between tiles. A later example
+does that while one block processes successive tiles. A scan distributed
 across independently scheduled blocks needs a device-wide algorithm.
 
 The host code copies input to the GPU once and copies the result back for
@@ -859,8 +860,8 @@ compiler-managed scratch.
 
 .. _coop-scans:
 
-Scan operators and initial values
----------------------------------
+Scan operators and carrying a prefix
+------------------------------------
 
 An inclusive scan includes the current element; an exclusive scan starts
 with an initial value and excludes the current element. For sum, the
@@ -869,9 +870,10 @@ default exclusive initial value is zero. ``inclusive_sum`` and
 ``exclusive_scan`` accept ``scan_op``.
 
 For a non-sum exclusive scan, supply ``initial_value`` with the correct
-dtype and meaning for the operator. Inclusive Scan rejects an initial
-value. Block array scans flatten their inputs in blocked order and return
-one result for every input element.
+dtype and meaning for the operator, or use the qualified Block Scan prefix
+callback described below. Inclusive Scan rejects an explicit initial value.
+Block array scans flatten their inputs in blocked order and return one
+result for every input element.
 
 The :doc:`Scan visualization <visualizations/scan>` compares inclusive and
 exclusive results and shows how an initial value or prefix callback changes

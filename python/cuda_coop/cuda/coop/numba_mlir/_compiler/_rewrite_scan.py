@@ -5,9 +5,10 @@
 """Infer Scan payload types and check optional provider operands.
 
 Group planning selects a Scan provider before every payload has a concrete
-Numba type. These callbacks reconcile input, result, seed, and aggregate
-types before provider specialization. Runtime operands follow one order:
-payloads, then an optional seed, lane count, and aggregate output.
+Numba type. These callbacks reconcile input, result, seed, state, and
+aggregate types before provider specialization. Runtime operands follow
+one order: payloads, then an optional seed, callback state, lane count,
+and aggregate output. State has its own dtype and never widens the scan.
 """
 
 from __future__ import annotations
@@ -210,6 +211,19 @@ def _validate_prefix_state(
     *,
     index: int,
 ) -> int:
+    """Check a prefix callback and consume its optional state operand.
+
+    ``index`` points after the payloads and any runtime seed in the device
+    arguments. A stateful callback consumes one array there; stateless or
+    absent callbacks leave the index unchanged. Return the next index so
+    later checks can find the valid-lane count and aggregate output.
+
+    Reject callbacks combined with an initial value or aggregate output.
+    Require state only for ``StatefulFunction`` and validate its one-item
+    extent and exact numeric dtype. Record the descriptor dtype on an
+    untyped state payload so its later allocation uses the same type.
+    """
+
     from .._stateful_function import StatefulFunction
 
     prefix_callback = inference.factory_kwargs.get("prefix_op")
@@ -298,12 +312,17 @@ def infer_scan_payload(
     context: GroupRewriteContext,
     inference: PayloadInference,
 ) -> None:
-    """Reconcile Scan input, result, seed, and aggregate types.
+    """Reconcile Scan payload types and validate optional operands.
 
     Block array inputs and results must have the same fixed extent and
     dtype. Scalar providers reject array operands. Record inferred metadata
     on ThreadData values and factory arguments so allocation and provider
-    specialization agree, then validate any seed and aggregate operands.
+    specialization agree, then validate the seed, callback state, and
+    aggregate output.
+
+    State uses the callback descriptor's dtype, independently of the scan
+    value. Advance through optional runtime operands in registration order
+    so adding state cannot make an aggregate check inspect the wrong array.
     """
 
     is_block_array = inference.op_name == "block_scan_array"

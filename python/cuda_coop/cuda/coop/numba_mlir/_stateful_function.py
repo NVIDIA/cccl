@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe a block Scan prefix callback and its mutable state type.
+
+``StatefulFunction`` holds compile-time callback information. Callers pass a
+separate one-item ThreadData or local array to each Scan call. Its value can
+carry a running prefix across tiles without recompiling the callback. Planning
+checks that the payload matches the descriptor before lowering its pointer.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -25,6 +33,9 @@ class StatefulFunction:
         Device callback ``op(state, aggregate)``. It may update ``state[0]``
         and returns the tile prefix in the scanned value dtype. Accepts a
         decorated Numba device function or supported Python device callable.
+        A functor class may define ``__call__(state, aggregate)`` instead. Its
+        first argument receives the device state pointer; the compiler does
+        not construct a Python instance.
     dtype : dtype-like
         Numeric dtype of the one-item state payload. It must exactly match
         the supplied state array, but may differ from the scanned value dtype.
@@ -58,6 +69,14 @@ class StatefulFunction:
     name: str | None = None
 
     def __post_init__(self) -> None:
+        """Normalize the callable and reject incomplete descriptor metadata.
+
+        Unwrap an outer Numba dispatcher so compiler paths share one callback
+        identity. Check that a dtype is supplied and any diagnostic label is a
+        nonempty string. Numeric dtype and state-array checks run later, when
+        the descriptor is used to plan or build a Scan provider.
+        """
+
         normalized = _normalize_numba_callable(self.op)
         if not callable(normalized):
             raise TypeError("StatefulFunction op must be callable")
