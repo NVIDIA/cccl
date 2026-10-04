@@ -2,7 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Build CUB histograms with fresh counters distributed in striped order."""
+"""Describe fresh CUB histograms with striped per-thread counters.
+
+The adapter copies samples because CUB's sort algorithm can reorder them. It
+computes a fresh histogram in shared storage, then waits for all updates
+before distributing the counters. That internal barrier makes the returned
+counts ready; scratch reuse after the call is a separate frontend concern.
+
+The wrapper uses threadIdx.x for bin ownership, so only one-dimensional blocks
+are supported. All C++ source remains a compilation description here;
+constructing a specialization does not compile or launch the operation.
+"""
 
 from __future__ import annotations
 
@@ -26,6 +36,14 @@ HISTOGRAM_COUNTER_DTYPES = frozenset({"int32", "uint32", "int64", "uint64"})
 
 
 def validate_histogram_dtype(dtype: Any, *, counter: bool = False) -> Any:
+    """Accept a supported sample or counter dtype without importing a compiler.
+
+    Inspect the dtype name and return its original representation, except that
+    Python int maps to the core int32 type. Samples and counters have separate
+    allowed sets: a uint8 sample is a bin index, but counters need at least 32
+    bits to hold the bounded number of samples in a block tile.
+    """
+
     if dtype is int:
         dtype = INT32
     name = getattr(dtype, "name", getattr(dtype, "__name__", dtype))
@@ -39,6 +57,8 @@ def validate_histogram_dtype(dtype: Any, *, counter: bool = False) -> Any:
 
 
 def normalize_histogram_algorithm(algorithm: Any) -> str:
+    """Accept the CUB counting strategy by its exact public name."""
+
     if not isinstance(algorithm, str) or algorithm not in {"atomic", "sort"}:
         raise ValueError("histogram algorithm must be 'atomic' or 'sort'")
     return algorithm
@@ -97,6 +117,13 @@ public:
 
 @dataclass(frozen=True)
 class BlockHistogramSpecialization:
+    """Pair a CUB compilation description with input and output geometry.
+
+    Input items_per_thread and output bins_per_thread are independent.
+    Retaining both extents and the bin count lets a frontend allocate counters
+    without assuming the result has the samples' shape.
+    """
+
     specialization: Algorithm
     block_dim: tuple[int, int, int]
     items_per_thread: int
@@ -114,6 +141,21 @@ def make_block_histogram_specialization(
     counter_dtype: Any = INT32,
     algorithm: str = "atomic",
 ) -> BlockHistogramSpecialization:
+    """Validate histogram geometry and describe the specialized CUB adapter.
+
+    Require a one-dimensional block and enough output slots to cover every
+    bin. The samples per block (block size times items_per_thread) and output
+    slots per block (block size times bins_per_thread) must fit a signed
+    32-bit integer. Also validate both dtypes and the algorithm name. The
+    input size bounds fresh bin counts, so the wrapper can safely convert
+    its unsigned internal counters to any exposed counter dtype.
+
+    The Algorithm takes sample and counter arrays with independent dtypes and
+    extents. Its shared storage contains both CUB scratch and intermediate bin
+    counters. The wrapper copies bins into striped per-thread output and
+    writes zero into output slots beyond the bin count.
+    """
+
     block_dim = normalize_block_dim(block_dim)
     if block_dim[1:] != (1, 1):
         raise ValueError("histogram supports only one-dimensional blocks")

@@ -21,7 +21,10 @@ output slots. All input samples are valid bin indices.
    .. only:: html
 
       .. figure:: histogram.svg
-         :alt: Eight threads each contribute two samples to thirteen bins. Counts in bin order are 2, 1, 1, 2, 1, 1, 2, 0, 1, 2, 1, 1, 1. Each thread receives two striped counters; projected bins thirteen through fifteen are padding with defined zero counts.
+         :alt: Eight threads each contribute two samples to thirteen bins.
+               Counts in bin order are 2, 1, 1, 2, 1, 1, 2, 0, 1, 2, 1, 1, 1.
+               Each thread receives two striped counters; projected bins
+               thirteen through fifteen are padding with defined zero counts.
          :width: 100%
 
          Thirteen bins, two samples and two counters per thread.
@@ -79,7 +82,9 @@ Choose a counter dtype wide enough for the total across all tiles.
 This tested example counts three complete tiles into 65 bins.
 The kernel launches 64 threads. Each thread loads ``items_per_thread``
 samples and owns two striped bin counters, using int64 for the accumulated
-result. The sample count and the number of counters per thread are independent.
+result. The number of samples and the number of counters per thread are
+independent: changing ``items_per_thread`` does not change which bins each
+thread owns.
 
 .. literalinclude:: ../../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_histogram_examples.py
    :language: python

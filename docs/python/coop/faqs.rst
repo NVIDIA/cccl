@@ -159,13 +159,12 @@ barriers automatically. See :ref:`exclusive scratch slices
 <coop-faq-exclusive-storage>` for the tradeoff between memory and reuse
 synchronization.
 
-Explicit descriptors provide scratch for block transpose-family Load/Store,
+Explicit descriptors control scratch for block transpose-family Load/Store,
 Block Scan, Block Merge Sort, Block Radix Sort, TopK, Adjacent Difference,
 Discontinuity, and Histogram. Storage-free block Load/Store accept and
-validate a descriptor but do not use it.
-Warp operations reject explicit descriptors. The compiler allocates any
-scratch required by CUB operations. See
-:ref:`temporary storage <coop-temp-storage>` for the complete contract and
+validate a descriptor but do not use it. Warp operations reject explicit
+descriptors. The compiler allocates any scratch required by CUB operations.
+See :ref:`temporary storage <coop-temp-storage>` for the complete contract and
 shared-memory restrictions.
 
 .. _coop-faq-installed-extra:
@@ -246,7 +245,8 @@ separately with a kernel that counts only valid samples.
 
 Output padding is different: returned counter slots whose bin index is
 at least ``bins`` contain zero. Store the first ``bins`` counters using
-the striped layout. See the :doc:`Histogram explorer <visualizations/histogram>`.
+the striped layout. See the
+:doc:`Histogram explorer <visualizations/histogram>`.
 
 .. _coop-faq-histogram-accumulation:
 

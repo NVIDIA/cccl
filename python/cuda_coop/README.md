@@ -309,7 +309,7 @@ group or parent-group participant must still reach the collective.
 ## Temporary storage
 
 Block Load, Store, Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent
-Difference, and Discontinuity accept an optional caller descriptor:
+Difference, Discontinuity, and Histogram accept an optional caller descriptor:
 
 ```python
 storage = coop.TempStorage(

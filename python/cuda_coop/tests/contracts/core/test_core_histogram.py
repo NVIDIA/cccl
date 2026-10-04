@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check histogram geometry and independent counter-result contracts.
+
+The core specialization builder, which shared planning calls, must reject
+invalid dtypes, bin capacity, 32-bit size limits, algorithm names, and
+multidimensional blocks. Planning must also reject warp groups. A supported
+plan keeps the counter dtype and bins_per_thread even when both differ from
+the sample payload.
+"""
+
 import numpy as np
 import pytest
 
