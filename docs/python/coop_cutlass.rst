@@ -297,8 +297,8 @@ alignment permit them, with direct accesses as a fallback.
 
 Direct, striped, and vectorized Load/Store use no shared scratch and need no
 scratch-reuse barrier, even when passed a ``TempStorage`` descriptor.
-``ThreadData(items_per_thread, alignment=...)`` requests a minimum payload alignment; it does
-not change the logical item layout.
+``ThreadData(items_per_thread, alignment=...)`` requests a minimum payload
+alignment; it does not change the logical item layout.
 
 .. _coop-cutlass-storage:
 
@@ -321,18 +321,18 @@ the compiler path. The Numba-specific ``cuda.shared.array`` coexistence rules
 in the Numba guide describe that compiler's allocation model.
 
 ``sharing="shared"`` reuses one slice across call sites. With
-``sharing="exclusive"``, distinct call sites receive separate slices.
-This uses more shared memory to avoid barriers needed solely for cross-call
-scratch reuse when automatic synchronization is disabled. Both policies
-default to ``auto_sync=False``. The kernel must call
-``storage.sync()`` before reusing that storage, including on the next loop
-iteration. Set ``auto_sync=True`` to insert trailing reuse synchronization
-after each storage-using call. Without an explicit descriptor, the compiler
-manages scratch and its reuse synchronization automatically.
+``sharing="exclusive"``, distinct call sites receive separate slices. This
+uses more shared memory to avoid barriers needed solely for cross-call scratch
+reuse when automatic synchronization is disabled. Both policies default to
+``auto_sync=False``. The kernel must call ``storage.sync()`` before reusing
+that storage, including on the next loop iteration. Set ``auto_sync=True`` to
+insert trailing reuse synchronization after each storage-using call. Without
+an explicit descriptor, the compiler manages scratch and its reuse
+synchronization automatically.
 
-The following example transforms eight independent tiles. It explicitly enables
-automatic synchronization for a shared descriptor by default; the executable
-example also supports exclusive slices and manual synchronization.
+The following example transforms eight independent tiles. It uses a shared
+descriptor with ``auto_sync=True`` by default. Its options select exclusive
+slices or manual ``storage.sync()`` calls.
 :download:`Download the storage example
 <../../python/cuda_coop/examples/cutlass/block_storage.py>`:
 

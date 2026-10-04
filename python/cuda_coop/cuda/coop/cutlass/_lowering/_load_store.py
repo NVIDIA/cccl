@@ -8,9 +8,12 @@ A request gives both sides the same symbol, template arguments, and runtime
 parameter order. Tracing emits an extern call and queues its immutable
 request; finalization renders and compiles the wrapper as LTO-IR.
 
-DIRECT uses no shared scratch. Load writes a temporary register tensor and
-then replaces the output payload's scalar expressions. Store passes its
-initialized items as scalar arguments without changing the payload.
+DIRECT, STRIPED, and VECTORIZE use no shared scratch. Transpose algorithms add
+a shared-memory address, byte capacity, and barrier flag. Finalization
+supplies the address and capacity after C++ layout probes resolve. Load writes
+a temporary register tensor and then replaces the output payload's scalar
+expressions. Store passes its initialized items as scalar arguments without
+changing the payload.
 """
 
 from __future__ import annotations
@@ -55,12 +58,12 @@ _provider_types = _types
 
 @dataclasses.dataclass(frozen=True, eq=False)
 class _CubLoadStoreRequest:
-    """Bind one supported shared plan to a C++ wrapper request.
+    """Bind a supported shared-core plan to its CUB wrapper and scalar ABI.
 
-    Require a storage-free block DIRECT implementation with no
-    returned-result contract or reuse barrier. The plan's artifact key drives
-    equality and the generated symbol, so requests with equivalent
-    specialization contracts share one definition.
+    The plan supplies participation, algorithm arguments, and synchronization
+    policy. Wrapper identity includes that complete contract. Scratch-layout
+    identity depends only on the CUB specialization, so different wrapper
+    policies can reuse a query for the same C++ ``TempStorage`` type.
     """
 
     plan: GroupLoweringPlan
@@ -165,15 +168,17 @@ class _CubLoadStoreRequest:
 
 
 def _render_cub_load_store(request):
-    """Render the C++ side of the Load/Store extern ABI.
+    """Emit the CUB call and the checks required by its provider ABI.
 
     Place the base pointer first, then Store item scalars, then runtime
-    count/default/offset controls in that order. Load adds a final result
-    pointer. Static controls appear in the body and have no ABI argument.
+    count/default/offset controls. Scratch-using wrappers next receive a
+    shared-memory address, byte capacity, and automatic-barrier flag. Load
+    adds a final result pointer. Static controls have no ABI argument.
 
-    Guard runtime counts and negative offsets before the CUB call. Load copies
-    every item slot to its result buffer. Slots beyond ``valid_items`` stay
-    unspecified unless ``oob_default`` is supplied.
+    Check scratch size and alignment, then convert its address for CUB. Guard
+    runtime counts and negative offsets before the call, then synchronize
+    after it when requested. Load copies every item slot to its result buffer;
+    slots beyond ``valid_items`` stay unspecified unless a default is supplied.
     """
 
     request.__post_init__()
@@ -331,51 +336,17 @@ def provider_load(
     offset_binding,
     temp_storage=None,
 ):
-    """Emit a Load extern call and replace the output payload values.
-
-    The qualified ``load`` entry point calls this during CuTe tracing,
-    after classifying the optional controls. Each live control has a
-    matching ArgumentBinding: the binding says whether to omit it, embed
-    a constant in C++, or pass the live value to the generated function.
+    """Trace a Load call and copy its per-thread result into ``output``.
 
     Check source dtype, pointer eligibility, and any provable static capacity
     before registering the request. A temporary register tensor receives the
-    C++ output; its scalar expressions replace the ThreadData items.
+    C++ output; its scalar expressions replace the ThreadData items. Runtime
+    binding values supply only the dynamic operands. Scratch registration
+    defers the address and capacity until finalization.
 
-    If lowering fails, restore the queued request snapshot. This rollback does
-    not remove emitted IR or undo assignments already made to the payload.
-
-    Parameters
-    ----------
-    group : ThreadGroup
-        Cooperative group descriptor selected by the public call.
-    launch : LaunchFacts
-        Compiler-provided launch dimensions used for shared planning.
-    source : CuTe memory operand
-        Contiguous source memory whose element type sets the Load dtype.
-    output : ThreadData
-        Writable per-thread payload. Its items become the generated Load
-        results, and its dtype is set to the source dtype.
-    algorithm : str or enum
-        Normalized Load algorithm selector for the chosen group.
-    valid_items : object
-        Live valid-prefix count, used as an operand only for a runtime
-        binding.
-    valid_items_binding : ArgumentBinding
-        Omitted, static, or runtime classification of the valid-prefix count.
-    oob_default : object
-        Live invalid-item fill value, used only for a runtime binding.
-    oob_default_binding : ArgumentBinding
-        Classification and any embedded fill value.
-    offset : object
-        Live source element offset, used only for a runtime binding.
-    offset_binding : ArgumentBinding
-        Classification and any embedded source offset.
-
-    Returns
-    -------
-    None
-        The call is emitted into the trace and output is updated in place.
+    A failure restores the session's wrapper and scratch records. This
+    rollback does not undo emitted IR or assignments already made to the
+    payload.
     """
 
     value_type = _resolve_memory_type(source, primitive_name="load")
@@ -448,44 +419,14 @@ def provider_store(
     offset_binding,
     temp_storage=None,
 ):
-    """Emit a Store extern call from scalar or ThreadData values.
-
-    The qualified ``store`` entry point calls this during CuTe tracing.
-    The binding records choose which controls are embedded in C++ and
-    which live values become operands; the call itself executes later on
-    the GPU.
+    """Trace a Store call with per-thread values and deferred scratch.
 
     Resolve one dtype for all items and require the destination to match it.
     Check pointer and static-capacity constraints before registration. The
-    extern call receives item values directly, preserving the input payload. A
-    failure restores queued request state.
-
-    Parameters
-    ----------
-    group : ThreadGroup
-        Cooperative group descriptor selected by the public call.
-    launch : LaunchFacts
-        Compiler-provided launch dimensions used for shared planning.
-    destination : CuTe memory operand
-        Contiguous destination whose dtype must match the stored values.
-    value : ThreadData or scalar
-        Initialized per-thread values, or one typed scalar per thread.
-    algorithm : str or enum
-        Normalized Store algorithm selector for the chosen group.
-    valid_items : object
-        Live valid-prefix count, used only for a runtime binding.
-    valid_items_binding : ArgumentBinding
-        Omitted, static, or runtime classification of that count.
-    offset : object
-        Live destination element offset, used only for a runtime binding.
-    offset_binding : ArgumentBinding
-        Classification and any embedded destination offset.
-
-    Returns
-    -------
-    None
-        A device call is added to the trace; destination writes occur when
-        the compiled kernel runs.
+    wrapper receives input items as scalars and collects them in its C++
+    array, preserving the caller's payload values. Registration records
+    scratch use for finalization; a failure restores session bookkeeping
+    without undoing emitted IR.
     """
 
     if isinstance(value, ThreadData):
@@ -592,11 +533,12 @@ def _make_group_load_store_plan(
     offset: ArgumentBinding,
     temp_storage=None,
 ) -> GroupLoweringPlan:
-    """Plan Load/Store from launch facts and scalar binding records.
+    """Build the shared-core plan with the caller's scratch policy.
 
-    The core selects specialization contracts and static argument
-    checks. The provider request then restricts that plan to its
-    supported block DIRECT ABI.
+    ``temp_storage=None`` requests implementation-owned storage and automatic
+    reuse synchronization. An explicit descriptor supplies caller-owned
+    capacity, alignment, sharing, and synchronization settings. The shared
+    planner then determines whether the selected algorithm needs scratch.
     """
 
     operation = GroupLoadStoreSemantics(
@@ -1019,6 +961,14 @@ def _required_static_elements(request: _CubLoadStoreRequest) -> int | None:
 
 
 def _scratch_arguments(request, temp_storage):
+    """Supply scratch operands only when the shared plan requires them.
+
+    An omitted descriptor gets a fresh allocation identity with automatic
+    reuse barriers. An explicit CUTLASS descriptor keeps its identity and
+    policy. The returned ABI types match the provider wrapper's address, byte
+    capacity, and barrier flag; finalization replaces the first two values.
+    """
+
     if not request.uses_scratch:
         return (), ()
     from .._compiler._storage import register_deferred_temp_storage_event
@@ -1039,6 +989,8 @@ def _scratch_arguments(request, temp_storage):
 
 
 def _scratch_layout_probe(request):
+    """Query the CUB TempStorage type when the request needs scratch."""
+
     if not request.uses_scratch:
         return None
     return _rendering.make_scratch_layout_probe(

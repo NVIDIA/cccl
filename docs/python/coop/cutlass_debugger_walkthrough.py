@@ -21,12 +21,22 @@ from cuda.bindings import driver
 
 
 def _check(result):
+    """Raise on Driver errors and unwrap a single returned handle or value."""
+
     if int(result[0]):
         raise RuntimeError(f"CUDA Driver call failed: {result[0]}")
     return result[1] if len(result) == 2 else result[1:]
 
 
 def main(*, algorithm="direct", items_per_thread=2):
+    """Compile one copy kernel, then verify two launches of the same callable.
+
+    Reset the destination before each launch so an earlier result cannot hide
+    a missing write. The algorithm selects whether compilation must also plan
+    shared scratch. Driver allocations are freed even if compilation or a
+    comparison fails.
+    """
+
     # docs: start cutlass-debug-kernel
     @cute.kernel
     def copy_tile(

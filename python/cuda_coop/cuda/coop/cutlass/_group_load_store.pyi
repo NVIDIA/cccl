@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Declare qualified Load/Store calls with compiler-valued arguments.
+"""Declare block Load/Store calls for static type checkers.
 
-Keep annotations broad enough for compiler scalar values. Tracing checks block
-groups, DIRECT, memory layout, and dtype.
+Keep annotations broad enough for compiler scalar values. Tracing checks the
+block group, algorithm support, memory layout, and dtype.
 """
 
 from typing import Any

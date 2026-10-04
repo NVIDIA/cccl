@@ -2,24 +2,48 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe scratch reuse while CuTe traces a kernel.
+
+The descriptor holds compile-time policy and identity, not a device pointer.
+Finalization allocates storage after C++ layout probes establish its size.
+The MLIR hooks expose no values and rebuild to the same object, so traced
+loops keep the descriptor identity used to group storage requests.
+"""
+
 from enum import Enum
 
 from .._core.api._payload import _normalize_alignment
 
 
 class TempStorage:
-    """Shared-memory requirements for cooperative operations in one kernel.
+    """Describe shared-memory requirements for operations in one kernel.
 
     Parameters, defaults, synchronization rules, and the executable reuse
-    example follow :func:`cuda.coop.TempStorage`. This qualified descriptor
-    exposes ``size_in_bytes``, ``alignment``, ``auto_sync``, and ``sharing``
-    for the CUTLASS planner. ``auto_sync=None`` becomes ``False``.
-    Set ``auto_sync=True`` to request automatic reuse barriers.
+    example follow :func:`cuda.coop.TempStorage`. Only supported block
+    algorithms accept an explicit descriptor. Its contents are opaque to user
+    code. See :ref:`temporary storage <coop-common-storage>` for allocation
+    lifetime and :ref:`the CUTLASS example <coop-cutlass-storage>` for reuse.
 
-    Only supported block algorithms accept an explicit descriptor. The
-    planner determines capacity and alignment from its uses; its contents
-    are opaque to user code. See :ref:`temporary storage <coop-temp-storage>`
-    for shared versus exclusive slices and manual reuse synchronization.
+    Attributes
+    ----------
+    size_in_bytes : int or None
+        Explicit positive capacity, or ``None`` to infer it from all uses.
+        An explicit capacity must cover the resolved allocation.
+    alignment : int or None
+        Optional minimum byte alignment, expressed as a power of two. The
+        planner also satisfies the C++ primitive's alignment requirement.
+    auto_sync : bool
+        Whether each scratch-using call emits a trailing block barrier.
+        Defaults to ``False``; ``None`` is normalized to ``False``. Without
+        automatic barriers, the caller must synchronize before scratch reuse.
+    sharing : {"shared", "exclusive"}
+        Shared calls use one slice sized for the largest requirement.
+        Exclusive calls get separate slices in trace order. Repeated
+        execution of one call site reuses its slice, including in a loop.
+
+    Equal settings do not combine separate descriptors. Reuse the same object
+    to share an allocation across calls in a kernel. The descriptor carries
+    no runtime MLIR values. Finalization supplies the storage operands.
     """
 
     def __init__(
@@ -76,16 +100,12 @@ class TempStorage:
 
     @property
     def capacity_size_in_bytes(self):
-        """Return the optional explicit capacity; inferred sizes resolve at
-        compile time.
-        """
+        """Return explicit capacity without resolving an inferred size."""
         return self.size_in_bytes
 
     @property
     def is_deferred(self):
-        """All allocation plans resolve after the exact C++ scratch probes
-        compile.
-        """
+        """Indicate that layout resolution waits for trace finalization."""
         return True
 
     def sync(self):

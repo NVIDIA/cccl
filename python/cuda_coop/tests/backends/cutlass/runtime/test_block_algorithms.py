@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check block data layouts, tile bounds, and shared-memory use on the GPU.
+
+Layout tests observe Load with plain CuTe writes and fill Store with plain
+CuTe reads. This checks each direction independently, so matching mistakes
+in Load and Store cannot make a round trip pass. Storage cases cover
+repeated calls, caller allocations, and the linked kernel's instructions
+and resource metadata.
+"""
+
 import importlib.util
 import re
 import shutil
@@ -39,6 +48,13 @@ _TILE = _THREADS * _ITEMS
 
 
 def _tile_index(algorithm, thread, item):
+    """Map one thread's item to its expected position in the tile.
+
+    Striped operations interleave threads for each item. The other algorithms
+    present blocked items to the caller, even when they redistribute data
+    internally through shared memory.
+    """
+
     return (
         thread + item * _THREADS
         if algorithm == "striped"
@@ -54,6 +70,13 @@ def _tile_index(algorithm, thread, item):
     "valid", (0, _TILE - 19, _TILE), ids=("zero", "partial", "full")
 )
 def test_load_layout_and_runtime_bounds(api, algorithm, valid):
+    """Observe each loaded item without passing it through Store.
+
+    The kernel writes each thread's payload to a plain CuTe output. The host
+    then applies the expected layout and runtime bound, including the default
+    value for items beyond that bound.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,
@@ -109,6 +132,13 @@ def test_load_layout_and_runtime_bounds(api, algorithm, valid):
     "valid", (0, _TILE - 19, _TILE), ids=("zero", "partial", "full")
 )
 def test_store_layout_and_bounds(api, algorithm, valid):
+    """Check Store against payloads filled independently of Load.
+
+    Plain CuTe reads assign distinct values to each thread's payload. The host
+    maps them to the expected tile positions. Sentinels reveal writes outside
+    the requested interval, including the empty-tile case.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,
@@ -160,6 +190,13 @@ def test_store_layout_and_bounds(api, algorithm, valid):
 def test_partial_transpose_loads_valid_items_without_default(
     algorithm, static_count
 ):
+    """Read only the defined payload entries from a partial transpose load.
+
+    Without a default value, entries beyond ``valid_items`` are undefined.
+    The kernel therefore skips those entries when it writes the output. Their
+    host-side sentinels must survive for both static and runtime bounds.
+    """
+
     valid = _TILE - 19
 
     @cute.kernel
@@ -223,6 +260,14 @@ def test_partial_transpose_loads_valid_items_without_default(
 def test_unguarded_full_tiles_use_the_correct_layout(
     algorithm, offset, items_per_thread
 ):
+    """Check full-tile Load and Store at aligned and shifted addresses.
+
+    Neither call passes ``valid_items``. Plain CuTe stores observe Load, while
+    plain CuTe reads fill the Store payload. These checks are independent.
+    With ``vectorize`` and four items per thread, a one-item offset misaligns
+    both source and destination, forcing the per-item fallback.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,
@@ -297,6 +342,16 @@ def test_unguarded_full_tiles_use_the_correct_layout(
 def test_storage_reuse_in_runtime_loop(
     algorithm, capacity, sharing, manual_sync
 ):
+    """Reuse the same storage descriptor across eight runtime loop iterations.
+
+    Shared storage gives Load and Store one slot, so Store reuses Load's
+    scratch in the same iteration. Exclusive storage gives them separate
+    slices, but each call site reuses its slice on the next iteration. Manual
+    mode calls ``storage.sync()`` after each collective to cover both cases.
+    In automatic mode the compiler adds these barriers. A different increment
+    in each tile exposes stale data left by another iteration.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,
@@ -364,6 +419,13 @@ def test_storage_reuse_in_runtime_loop(
 @pytest.mark.parametrize("alignment", (1, 32, 64))
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
 def test_requested_storage_alignment_is_a_minimum(api, alignment, sharing):
+    """Use scratch even when the caller requests less alignment than it needs.
+
+    Transpose operations on float64 data require aligned storage. Requests of
+    one byte must still work because the provider's requirement raises the
+    allocation alignment. Larger requests exercise the same copy path.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,
@@ -428,6 +490,14 @@ def test_storage_example(sharing, manual_sync, items_per_thread):
 )
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
 def test_deferred_storage_preserves_user_shared_memory(api, sharing):
+    """Keep deferred scratch separate from the caller's shared allocation.
+
+    Each thread writes a canary in the caller's shared allocation before the
+    collective calls. It reads another thread's canary only after Load, Store,
+    and a final barrier. Incorrect output or canaries expose an overlap
+    between deferred scratch and the caller's memory.
+    """
+
     @cute.kernel
     def kernel(
         source: cute.Pointer,
@@ -497,6 +567,15 @@ def test_deferred_storage_preserves_user_shared_memory(api, sharing):
 
 @pytest.mark.parametrize("algorithm", ("striped", "vectorize", "transpose"))
 def test_final_cubin_storage_contract(tmp_path, algorithm):
+    """Inspect storage and synchronization in the final linked kernel.
+
+    First verify the copy result. Then check that provider calls have been
+    inlined and that only transpose has shared-memory allocation and barriers.
+    Generic load and store instructions can address shared memory, so resource
+    metadata determines whether an allocation exists. This check does not
+    require a particular shared-memory instruction or exact allocation size.
+    """
+
     cuobjdump = shutil.which("cuobjdump")
     if cuobjdump is None:
         pytest.skip(

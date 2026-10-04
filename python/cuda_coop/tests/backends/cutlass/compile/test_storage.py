@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check storage and block-shape errors during kernel compilation.
+
+Typed null pointers supply the input type without allocating device data.
+Each case compiles for an explicit architecture and stops before launch, so
+invalid capacity or an incomplete physical warp must fail at compilation.
+"""
+
 import pytest
 
 cutlass = pytest.importorskip("cutlass")

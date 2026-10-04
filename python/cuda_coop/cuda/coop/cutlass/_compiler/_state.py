@@ -41,11 +41,14 @@ _UNSPECIFIED_MODULE = object()
 
 
 class BundleSession:
-    """Collect deduplicated provider requests for one trace module.
+    """Collect wrapper definitions and scratch uses for one CuTe trace.
 
-    The lock protects request and module changes. Snapshots copy the request
-    set so rollback can restore it without aliasing later additions; request
-    objects themselves remain shared immutable descriptions.
+    Wrapper requests form a set because identical calls share generated code.
+    Scratch events retain every traced use in order: two calls to the same
+    wrapper can require distinct exclusive slices. Snapshots capture both
+    collections so a failed lowering cannot leave a stray scratch event. The
+    lock protects collection and module changes; snapshots keep their own
+    containers while sharing the immutable request descriptions.
     """
 
     def __init__(self, trace_module_op=None):
@@ -59,6 +62,8 @@ class BundleSession:
             self.requests.add(request)
 
     def snapshot(self):
+        """Copy trace bookkeeping before a lowering step that can fail."""
+
         with self._lock:
             return (
                 self.trace_module_op,
@@ -67,6 +72,8 @@ class BundleSession:
             )
 
     def restore(self, snapshot):
+        """Restore trace bookkeeping without changing emitted MLIR."""
+
         with self._lock:
             self.trace_module_op, requests, events = snapshot
             self.requests = set(requests)
@@ -81,6 +88,8 @@ class BundleSession:
     def add_deferred_temp_storage_event(
         self, event: DeferredTempStorageEvent
     ) -> None:
+        """Keep repeated calls even when they share one provider."""
+
         with self._lock:
             self._deferred_temp_storage_events.append(event)
 
@@ -218,9 +227,9 @@ def _ensure_trace_hook_registered() -> None:
 def _sessions_for_options(compile_options: Any) -> list[BundleSession] | None:
     """Find sessions without retaining their compile-options owner.
 
-    Unhashable options still need weak references. Check identity
-    before reusing the fallback so a recycled Python object ID
-    cannot inherit old requests.
+    Unhashable options still need weak references. Check identity before
+    reusing the fallback so a recycled Python object ID cannot inherit old
+    requests.
     """
 
     try:
@@ -381,28 +390,7 @@ def get_or_create_bundle_session(
 ) -> BundleSession:
     """Reuse this module's session, or bind an existing unbound session.
 
-    Provider registration calls this while tracing; rollback can also use
-    it to recreate a removed session. Compile options alone cannot identify
-    a trace because CuTe can reuse them for nested or later compilations.
-
-    Use a session for these compile options. Create a new session only when
-    neither a bound nor an unbound one is available.
-
-    Parameters
-    ----------
-    compile_options : object
-        CuTe compile-options owner used to keep sessions alive only while
-        that owner exists.
-    trace_module_op : object or None
-        MLIR module that owns the generated calls. None requests an unbound
-        session; a later call with a module can bind that session to its
-        trace.
-
-    Returns
-    -------
-    BundleSession
-        Existing or newly registered session for the requested owner and
-        module.
+    Create and store a new session only when neither is available.
     """
 
     with _STATE_LOCK:
@@ -439,25 +427,10 @@ def active_bundle_session() -> BundleSession:
 
 
 def snapshot_active_session_state_for(*, get_cute_dsl: Callable[[], Any]):
-    """Save the active options, module, and requests before lowering.
-
-    Lowerings take this snapshot before recording a wrapper request.
-    If emission fails, ``restore_active_session_state_for`` removes those
-    records so finalization does not compile providers for an abandoned call.
+    """Save active options, the module, requests, and scratch events.
 
     A missing session is recorded explicitly so restoration can remove a
     session created by the failed operation.
-
-    Parameters
-    ----------
-    get_cute_dsl : callable
-        Getter for the DSL whose active module and compile options are saved.
-
-    Returns
-    -------
-    tuple
-        Compile-options owner, active module, and a copied session snapshot.
-        The last entry is None when no session existed before the call.
     """
 
     compile_options = get_cute_dsl().compile_options

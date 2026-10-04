@@ -6,8 +6,9 @@
 
 Importing this namespace validates the optional runtime and registers its
 active compiler environment with the common API. Calls inside that environment
-use these implementations. The namespace provides block DIRECT Load and Store
-plus per-thread register payloads.
+use these implementations. The namespace provides block Load and Store with
+all six CUB block algorithms, TempStorage descriptors for transpose scratch,
+block thread groups, and per-thread register payloads.
 """
 
 from .._core.api import TempStorageLike, ThreadDataLike
