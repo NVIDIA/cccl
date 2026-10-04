@@ -325,6 +325,8 @@ def check_neighbor_results() -> None:
 
 
 def check_histogram_surface() -> None:
+    """Check that counter selection determines the histogram result type."""
+
     block = coop.this_block()
     samples = coop.ThreadData(items_per_thread=3, dtype=np.uint8)
     assert_type(

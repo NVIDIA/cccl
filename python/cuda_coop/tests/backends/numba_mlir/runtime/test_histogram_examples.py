@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Execute the documented accumulation of fresh per-tile histograms.
+
+Keep the marked example self-contained for Sphinx. Each call counts one full
+tile; explicit per-thread addition retains totals across calls. Striped Store
+maps each accumulated counter back to its bin, with no padded bins written.
+"""
+
 import pytest
 
 cuda = pytest.importorskip("numba_cuda_mlir.cuda")
@@ -19,6 +26,8 @@ pytestmark = [
 
 
 def test_histogram_accumulation_example():
+    """Check explicit counter accumulation across three complete tiles."""
+
     # histogram-accumulation-example-begin
     import numpy as np
     from numba_cuda_mlir import cuda

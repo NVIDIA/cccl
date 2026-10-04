@@ -2,8 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// Teaching stages for CUB BlockHistogram: atomic updates or sort/run counts.
-// The sequence explains values and ownership, not GPU scheduling or timing.
+// Build the fresh-counter Histogram model for the CoopExplorer renderer.
+// Atomic rounds and sort/run counts explain how sample indices become bin
+// counts. The stages show values and ownership, not GPU scheduling or timing.
 (() => {
   "use strict";
 
@@ -15,6 +16,10 @@
   const token = (id, value, row, index, color, detail, muted = false, from = undefined) =>
     ({ id, label: String(value), value, row, index, color, detail, muted, from });
 
+  // Build one display phase per teaching step. Every phase repeats the input
+  // sample tokens, so the preserved input row stays visible. Input size and
+  // counters per thread are separate controls; the counter choices always
+  // give enough output slots for every requested bin.
   function build_histogram(state) {
     const items = Number(state.items);
     const bins = Number(state.bins);
@@ -38,6 +43,8 @@
       { id: "output", label: "Returned counts · striped bin ownership · padding is zero", count: threads * bins_per_thread, groups: groups(bins_per_thread) },
     );
     const histogram = Array(bins).fill(0);
+    // Create new counter tokens at each stage. Later updates to histogram
+    // must not change the counts already displayed in an earlier phase.
     const bin_tokens = () => histogram.map((count, bin) => token(`bin-${bin}`, count, "bins", bin, bin % threads,
       `Bin ${bin} currently contains ${count} sample${count === 1 ? "" : "s"}.`));
     const phases = [
@@ -72,6 +79,9 @@
       }
       phases.push({ label: "Count runs", description: "A consecutive run's length gives the count for its bin. Bins with no samples remain zero. CUB uses run-boundary information to compute these counts.", tokens: [...source, ...working, ...run_tokens, ...bin_tokens()] });
     }
+    // The renderer groups local slots by thread. Map each striped bin index
+    // to its display position. Output slots beyond `bins` are defined zeros;
+    // unlike padded input samples, they add no counts.
     const owners = [];
     const output = [];
     for (let thread = 0; thread < threads; thread += 1) {

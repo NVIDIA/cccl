@@ -726,6 +726,8 @@ def check_neighbor_results() -> None:
 
 
 def check_histogram_surface() -> None:
+    """Check independent counter types and qualified scalar samples."""
+
     block = coop.this_block()
     samples = coop.ThreadData(items_per_thread=3, dtype=np.uint8)
     assert_type(
