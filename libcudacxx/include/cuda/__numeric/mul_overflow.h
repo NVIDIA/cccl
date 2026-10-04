@@ -62,7 +62,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Result, class _Lhs, class _Rhs>
-[[nodiscard]] _CCCL_API constexpr overflow_result<_Result> __mul_overflow_generic(_Lhs __lhs, _Rhs __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr overflow_result<_Result> __mul_overflow_generic_impl(_Lhs __lhs, _Rhs __rhs) noexcept
 {
   using ::cuda::std::__cccl_uintmax_t;
   using ::cuda::std::__num_bits_v;
@@ -99,7 +99,24 @@ template <class _Result, class _Lhs, class _Rhs>
   }
 }
 
-#if !_CCCL_COMPILER(NVRTC)
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr overflow_result<_Tp> __mul_overflow_generic(_Tp __lhs, _Tp __rhs) noexcept
+{
+  return ::cuda::__mul_overflow_generic_impl<_Tp>(__lhs, __rhs);
+}
+
+#if _CCCL_DEVICE_COMPILATION()
+
+template <class _Tp>
+[[nodiscard]] _CCCL_DEVICE_API overflow_result<_Tp> __mul_overflow_device(_Tp __lhs, _Tp __rhs) noexcept
+{
+  return ::cuda::__mul_overflow_generic_impl<_Tp>(__lhs, __rhs);
+}
+
+#endif // _CCCL_DEVICE_COMPILATION()
+
+#if _CCCL_HOST_COMPILATION()
+
 template <class _Tp>
 [[nodiscard]] _CCCL_HOST_API overflow_result<_Tp> __mul_overflow_host(_Tp __lhs, _Tp __rhs) noexcept
 {
@@ -135,7 +152,7 @@ template <class _Tp>
     else
 #  endif // _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_HOST_ARCH(X86_64)
     {
-      return ::cuda::__mul_overflow_generic<_Tp>(__lhs, __rhs);
+      return ::cuda::__mul_overflow_generic_impl<_Tp>(__lhs, __rhs);
     }
   }
   else // ^^^ signed types ^^^ / vvv unsigned types vvv
@@ -171,18 +188,36 @@ template <class _Tp>
     else
 #  endif // _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_HOST_ARCH(X86_64)
     {
-      return ::cuda::__mul_overflow_generic<_Tp>(__lhs, __rhs);
+      return ::cuda::__mul_overflow_generic_impl<_Tp>(__lhs, __rhs);
     }
   } // ^^^ unsigned types ^^^
   // NOLINTEND(bugprone-branch-clone)
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOST_COMPILATION()
 
-_CCCL_TEMPLATE(class _Result = void,
-               class _Lhs,
-               class _Rhs,
-               class _Common    = ::cuda::std::common_type_t<_Lhs, _Rhs>,
-               class _ActResult = ::cuda::std::conditional_t<::cuda::std::is_void_v<_Result>, _Common, _Result>)
+template <typename _Tp>
+[[nodiscard]] _CCCL_API constexpr overflow_result<_Tp> __mul_overflow_uniform_type(_Tp __lhs, _Tp __rhs) noexcept
+{
+#if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    NV_IF_TARGET(NV_IS_DEVICE,
+                 (return ::cuda::__mul_overflow_device(__lhs, __rhs);),
+                 (return ::cuda::__mul_overflow_host(__lhs, __rhs);))
+  }
+#endif // !_CCCL_TILE_COMPILATION()
+  return ::cuda::__mul_overflow_generic(__lhs, __rhs);
+}
+
+/***********************************************************************************************************************
+ * Public interface
+ **********************************************************************************************************************/
+
+_CCCL_TEMPLATE(typename _Result = void,
+               typename _Lhs,
+               typename _Rhs,
+               typename _Common    = ::cuda::std::common_type_t<_Lhs, _Rhs>,
+               typename _ActResult = ::cuda::std::conditional_t<::cuda::std::is_void_v<_Result>, _Common, _Result>)
 _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_integer_v<_Result>)
                  _CCCL_AND ::cuda::std::__cccl_is_integer_v<_Lhs> _CCCL_AND ::cuda::std::__cccl_is_integer_v<_Rhs>)
 [[nodiscard]] _CCCL_API constexpr overflow_result<_ActResult> mul_overflow(_Lhs __lhs, _Rhs __rhs) noexcept
@@ -211,7 +246,12 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
 
   // Host fallback + device implementation.
 #if _CCCL_CUDA_COMPILATION() || !defined(_CCCL_BUILTIN_MUL_OVERFLOW) || (_CCCL_HAS_INT128() && _CCCL_COMPILER(NVHPC))
+  using ::cuda::std::__make_nbit_int_t;
+  using ::cuda::std::__make_nbit_uint_t;
+  using ::cuda::std::__num_bits_v;
   using ::cuda::std::is_signed_v;
+  using ::cuda::std::is_unsigned_v;
+  using _CommonAll = ::cuda::std::common_type_t<_Common, _ActResult>;
 
   // If we would check for is_same_v, we would get slow path for e. g. long and long long, even though they represent
   // the same range.
@@ -227,11 +267,11 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
         (return ::cuda::__mul_overflow_host(static_cast<_ActResult>(__lhs), static_cast<_ActResult>(__rhs));))
     }
   }
-  return ::cuda::__mul_overflow_generic<_ActResult>(__lhs, __rhs);
+  return ::cuda::__mul_overflow_generic_impl<_ActResult>(__lhs, __rhs);
 #endif // needs fallback
 }
 
-_CCCL_TEMPLATE(class _Result, class _Lhs, class _Rhs)
+_CCCL_TEMPLATE(typename _Result, typename _Lhs, typename _Rhs)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Result> _CCCL_AND ::cuda::std::__cccl_is_integer_v<_Lhs>
                  _CCCL_AND ::cuda::std::__cccl_is_integer_v<_Rhs>)
 [[nodiscard]] _CCCL_API constexpr bool mul_overflow(_Result& __result, _Lhs __lhs, _Rhs __rhs) noexcept
