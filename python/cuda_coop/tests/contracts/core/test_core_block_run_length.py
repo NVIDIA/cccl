@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check decode tile limits and the shared provider's offset and output ABI.
+
+Static offsets use unsigned 64-bit literals; runtime offsets retain their
+control dtype. Bulk calls pass explicit output pointers and capacities and
+return the total by reference. These host checks inspect specialization
+records without compiling the C++ driver or decoding data.
+"""
+
 import pytest
 
 from cuda.coop._core import INT32, UINT64, ArgumentBinding, CxxFunction, Value
