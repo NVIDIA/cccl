@@ -6,7 +6,6 @@
 #include <cub/device/device_select.cuh>
 
 #include <cuda/cmath>
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/execution>
 #include <cuda/stream>
@@ -14,9 +13,10 @@
 #include <algorithm>
 
 #include "catch2_large_problem_helper.cuh"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 struct fake_equal_to
 {
@@ -92,7 +92,7 @@ using all_types =
 
 using types = c2h::type_list<std::uint8_t, std::uint32_t>;
 
-C2H_TEST("DeviceSelect::Unique can run with empty input", "[device][select_unique]", types)
+CUB_TEST("DeviceSelect::Unique can run with empty input", "[device][select_unique]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -113,7 +113,7 @@ C2H_TEST("DeviceSelect::Unique can run with empty input", "[device][select_uniqu
   REQUIRE(num_selected_out[0] == 0);
 }
 
-C2H_TEST("DeviceSelect::Unique handles none equal", "[device][select_unique]", types)
+CUB_TEST("DeviceSelect::Unique handles none equal", "[device][select_unique]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -141,7 +141,7 @@ C2H_TEST("DeviceSelect::Unique handles none equal", "[device][select_unique]", t
   REQUIRE(num_selected_out[0] == 1);
 }
 
-C2H_TEST("DeviceSelect::Unique handles all equal", "[device][select_unique]", types)
+CUB_TEST("DeviceSelect::Unique handles all equal", "[device][select_unique]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -168,7 +168,7 @@ C2H_TEST("DeviceSelect::Unique handles all equal", "[device][select_unique]", ty
   REQUIRE(out[0] == in[0]);
 }
 
-C2H_TEST("DeviceSelect::Unique does not change input", "[device][select_unique]", types)
+CUB_TEST("DeviceSelect::Unique does not change input", "[device][select_unique]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -182,7 +182,7 @@ C2H_TEST("DeviceSelect::Unique does not change input", "[device][select_unique]"
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // copy input first
-  c2h::device_vector<type> reference = in;
+  const c2h::device_vector<type> reference = in;
 
   // test overload without predicate
   select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items);
@@ -194,7 +194,8 @@ C2H_TEST("DeviceSelect::Unique does not change input", "[device][select_unique]"
 }
 
 #if TEST_LAUNCH == 0
-C2H_TEST("DeviceSelect::Unique works with user provided memory and environments", "[device][select_unique]", types)
+CUB_TEST(
+  "DeviceSelect::Unique works with user provided memory and environments", "[device][select_unique]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -273,51 +274,11 @@ C2H_TEST("DeviceSelect::Unique works with user provided memory and environments"
     }
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("DeviceSelect::Unique works with cudaStream_t")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_unique(stream.get());
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_unique(stream);
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::stream_ref")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
-    test_unique(stream_ref);
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::std::execution::env")
-  {
-    cuda::std::execution::env env{};
-    test_unique(env);
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_unique(policy);
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::execution::gpu with stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_unique(policy);
-  }
+  test_with_custom_streams(test_unique);
 }
 #endif // TEST_LAUNCH == 0
 
-C2H_TEST("DeviceSelect::Unique works with iterators", "[device][select_unique]", all_types)
+CUB_TEST("DeviceSelect::Unique works with iterators", "[device][select_unique]", CUB_SMALL, all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -348,7 +309,7 @@ C2H_TEST("DeviceSelect::Unique works with iterators", "[device][select_unique]",
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DeviceSelect::Unique works with pointers", "[device][select_unique]", types)
+CUB_TEST("DeviceSelect::Unique works with pointers", "[device][select_unique]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -404,7 +365,7 @@ struct convertible_from_T
   }
 };
 
-C2H_TEST("DeviceSelect::Unique works with a different output type", "[device][select_unique]", types)
+CUB_TEST("DeviceSelect::Unique works with a different output type", "[device][select_unique]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -435,7 +396,7 @@ C2H_TEST("DeviceSelect::Unique works with a different output type", "[device][se
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DeviceSelect::Unique in-place empty and uniform data", "[device][select_unique]", types)
+CUB_TEST("DeviceSelect::Unique in-place empty and uniform data", "[device][select_unique]", CUB_SMALL, types)
 {
   using type         = typename c2h::get<0, TestType>;
   constexpr auto val = static_cast<type>(1);
@@ -476,7 +437,7 @@ C2H_TEST("DeviceSelect::Unique in-place empty and uniform data", "[device][selec
   }
 }
 
-C2H_TEST("DeviceSelect::Unique in-place random data", "[device][select_unique]", all_types)
+CUB_TEST("DeviceSelect::Unique in-place random data", "[device][select_unique]", CUB_SMALL, all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -509,8 +470,9 @@ C2H_TEST("DeviceSelect::Unique in-place random data", "[device][select_unique]",
   }
 }
 
-C2H_TEST("DeviceSelect::Unique works for very large number of items",
-         "[device][select_unique][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
+CUB_TEST("DeviceSelect::Unique works for very large number of items",
+         "[device][select_unique][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_SMALL)
 try
 {
   using type     = std::int64_t;
@@ -519,7 +481,7 @@ try
   // The partition size (the maximum number of items processed by a single kernel invocation) is an important boundary
   constexpr auto max_partition_size = static_cast<offset_t>(cuda::std::numeric_limits<std::int32_t>::max());
 
-  offset_t num_items = GENERATE_COPY(
+  const offset_t num_items = GENERATE_COPY(
     values({
       offset_t{2} * max_partition_size + offset_t{20000000}, // 3 partitions
       offset_t{2} * max_partition_size, // 2 partitions

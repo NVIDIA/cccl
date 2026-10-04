@@ -14,7 +14,7 @@
 
 #include <algorithm>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace cub;
 
@@ -22,7 +22,7 @@ template <typename KeyT>
 struct my_policy_hub
 {
   // from Policy500 of the CUB segmented sort tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int RADIX_BITS             = 6;
@@ -53,14 +53,14 @@ struct my_policy_hub
   };
 };
 
-C2H_TEST("DispatchSegmentedSort::Dispatch: custom policy hub", "[segmented][sort][device]")
+CUB_TEST("DispatchSegmentedSort::Dispatch: custom policy hub", "[segmented][sort][device]", CUB_SMALL)
 {
   using key_t                    = int;
   using value_t                  = NullType;
   using offset_t                 = int;
   constexpr bool is_overwrite_ok = false;
 
-  c2h::host_vector<key_t> h_keys_in{7, 2, 5, 1, 4, 3, 9, 8, 6, 0};
+  const c2h::host_vector<key_t> h_keys_in{7, 2, 5, 1, 4, 3, 9, 8, 6, 0};
   c2h::host_vector<offset_t> h_offsets{0, 4, 7, 10};
 
   c2h::device_vector<key_t> d_keys_in = h_keys_in;

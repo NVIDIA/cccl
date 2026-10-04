@@ -57,14 +57,14 @@ template <class... _ValueTuples, class... _Errors, class... _Stopped>
 struct __partitioned_completions<__type_list<_ValueTuples...>, __type_list<_Errors...>, __type_list<_Stopped...>>
 {
   template <template <class...> class _Tuple, template <class...> class _Variant>
-  using __value_types _CCCL_NODEBUG_ALIAS =
+  using __value_types _CCCL_NODEBUG =
     _Variant<::cuda::std::__type_call1<_ValueTuples, ::cuda::std::__type_quote<_Tuple>>...>;
 
   template <template <class...> class _Variant, template <class...> class _Transform = ::cuda::std::__type_self_t>
-  using __error_types _CCCL_NODEBUG_ALIAS = _Variant<_Transform<_Errors>...>;
+  using __error_types _CCCL_NODEBUG = _Variant<_Transform<_Errors>...>;
 
   template <template <class...> class _Variant, class _Type = set_stopped_t()>
-  using __stopped_types _CCCL_NODEBUG_ALIAS = _Variant<__type_second<_Stopped, _Type>...>;
+  using __stopped_types _CCCL_NODEBUG = _Variant<__type_second<_Stopped, _Type>...>;
 
   using __count_values  = ::cuda::std::integral_constant<size_t, sizeof...(_ValueTuples)>;
   using __count_errors  = ::cuda::std::integral_constant<size_t, sizeof...(_Errors)>;
@@ -124,21 +124,21 @@ template <class _Partitioned>
 _CCCL_HOST_DEVICE_API auto __unpack_partitioned_completions(::cuda::std::__undefined<_Partitioned>&) -> _Partitioned;
 
 template <class... _Sigs>
-using __partition_completion_signatures_t _CCCL_NODEBUG_ALIAS = //
+using __partition_completion_signatures_t _CCCL_NODEBUG = //
   decltype(execution::__unpack_partitioned_completions(
     (declval<::cuda::std::__undefined<__partitioned_completions<>>&>() * ... * static_cast<_Sigs*>(nullptr))));
 
 template <class _Completions>
-using __partitioned_completions_of_t _CCCL_NODEBUG_ALIAS = typename _Completions::__partitioned::type;
+using __partitioned_completions_of_t _CCCL_NODEBUG = typename _Completions::__partitioned::type;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // completion signatures type traits
 template <class _Sigs, template <class...> class _Tuple, template <class...> class _Variant>
-using __value_types _CCCL_NODEBUG_ALIAS =
+using __value_types _CCCL_NODEBUG =
   typename __partitioned_completions_of_t<_Sigs>::template __value_types<_Tuple, _Variant>;
 
 template <class _Sndr, class _Env, template <class...> class _Tuple, template <class...> class _Variant>
-using value_types_of_t _CCCL_NODEBUG_ALIAS =
+using value_types_of_t _CCCL_NODEBUG =
   __value_types<completion_signatures_of_t<_Sndr, _Env>,
                 ::cuda::std::__type_indirect_quote<_Tuple>::template __call,
                 ::cuda::std::__type_indirect_quote<_Variant>::template __call>;
@@ -146,15 +146,15 @@ using value_types_of_t _CCCL_NODEBUG_ALIAS =
 template <class _Sigs,
           template <class...> class _Variant,
           template <class...> class _Transform = ::cuda::std::__type_self_t>
-using __error_types _CCCL_NODEBUG_ALIAS =
+using __error_types _CCCL_NODEBUG =
   typename __partitioned_completions_of_t<_Sigs>::template __error_types<_Variant, _Transform>;
 
 template <class _Sndr, class _Env, template <class...> class _Variant>
-using error_types_of_t _CCCL_NODEBUG_ALIAS =
+using error_types_of_t _CCCL_NODEBUG =
   __error_types<completion_signatures_of_t<_Sndr, _Env>, ::cuda::std::__type_indirect_quote<_Variant>::template __call>;
 
 template <class _Sigs, template <class...> class _Variant, class _Type = set_stopped_t()>
-using __stopped_types _CCCL_NODEBUG_ALIAS =
+using __stopped_types _CCCL_NODEBUG =
   typename __partitioned_completions_of_t<_Sigs>::template __stopped_types<_Variant, _Type>;
 
 template <class _Sigs>
@@ -187,7 +187,7 @@ _CCCL_HOST_DEVICE_API auto __make_unique(_Sigs*...)
   -> ::cuda::std::__type_apply<::cuda::std::__type_quote<completion_signatures>, ::cuda::std::__make_type_set<_Sigs...>>;
 
 template <class... _Sigs>
-using __make_completion_signatures_t _CCCL_NODEBUG_ALIAS =
+using __make_completion_signatures_t _CCCL_NODEBUG =
   decltype(execution::__make_unique(execution::__normalize(static_cast<_Sigs*>(nullptr))...));
 
 template <class... _ExplicitSigs, class... _DeducedSigs>
@@ -202,7 +202,7 @@ template <class... _ExplicitSigs, class... _DeducedSigs>
 struct __concat_completion_signatures_impl;
 
 template <class... _Sigs>
-using __concat_completion_signatures_t _CCCL_NODEBUG_ALIAS =
+using __concat_completion_signatures_t _CCCL_NODEBUG =
   __call_result_t<__call_result_t<__concat_completion_signatures_impl, const _Sigs&...>>;
 
 struct __concat_completion_signatures_fn
@@ -244,8 +244,8 @@ struct __concat_completion_signatures_impl
     const completion_signatures<_Ds...>& = __empty_completion_signatures,
     const _Rest&...) const noexcept
   {
-    using _Tmp                           = completion_signatures<_As..., _Bs..., _Cs..., _Ds...>;
-    using _SigsFnPtr _CCCL_NODEBUG_ALIAS = __call_result_t<_Self, const _Tmp&, const _Rest&...>;
+    using _Tmp                     = completion_signatures<_As..., _Bs..., _Cs..., _Ds...>;
+    using _SigsFnPtr _CCCL_NODEBUG = __call_result_t<_Self, const _Tmp&, const _Rest&...>;
     return static_cast<_SigsFnPtr>(nullptr);
   }
 
@@ -337,7 +337,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   {
     // This is defined in a nested struct to avoid computing these types if they are not
     // needed.
-    using type _CCCL_NODEBUG_ALIAS = __partition_completion_signatures_t<_Sigs...>;
+    using type _CCCL_NODEBUG = __partition_completion_signatures_t<_Sigs...>;
   };
 
   //! @brief Type set view of the completion signatures for set operations.
@@ -345,27 +345,26 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   {
     // This is defined in a nested struct to avoid computing this type if it is not
     // needed.
-    using type _CCCL_NODEBUG_ALIAS = ::cuda::std::__make_type_set<_Sigs...>;
+    using type _CCCL_NODEBUG = ::cuda::std::__make_type_set<_Sigs...>;
   };
 
   //! @brief Applies a metafunction to each signature and collects the results.
   //! @tparam _Fn The metafunction to apply.
   //! @tparam _Continuation The template to collect results into.
   template <template <class...> class _Fn, template <class...> class _Continuation = __completion_signatures>
-  using __transform_q _CCCL_NODEBUG_ALIAS = _Continuation<::cuda::std::__type_apply_q<_Fn, _Sigs>...>;
+  using __transform_q _CCCL_NODEBUG = _Continuation<::cuda::std::__type_apply_q<_Fn, _Sigs>...>;
 
   //! @brief Applies a callable metafunction to each signature and collects the results.
   //! @tparam _Fn The callable metafunction to apply.
   //! @tparam _Continuation The template to collect results into.
   template <class _Fn, class _Continuation = ::cuda::std::__type_quote<__completion_signatures>>
-  using __transform _CCCL_NODEBUG_ALIAS =
-    ::cuda::std::__type_call<_Continuation, ::cuda::std::__type_apply<_Fn, _Sigs>...>;
+  using __transform _CCCL_NODEBUG = ::cuda::std::__type_call<_Continuation, ::cuda::std::__type_apply<_Fn, _Sigs>...>;
 
   //! @brief Calls a metafunction with the signatures as arguments.
   //! @tparam _Fn The metafunction to call.
   //! @tparam _More Additional arguments to pass.
   template <class _Fn, class... _More>
-  using __call _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_call<_Fn, _More..., _Sigs...>;
+  using __call _CCCL_NODEBUG = ::cuda::std::__type_call<_Fn, _More..., _Sigs...>;
 
   //! @brief Default constructor.
   _CCCL_HIDE_FROM_ABI constexpr completion_signatures() = default;
@@ -574,25 +573,25 @@ template <>
 struct __gather_sigs_fn<set_value_t>
 {
   template <class _Sigs, template <class...> class _Tuple, template <class...> class _Variant>
-  using __call _CCCL_NODEBUG_ALIAS = __value_types<_Sigs, _Tuple, _Variant>;
+  using __call _CCCL_NODEBUG = __value_types<_Sigs, _Tuple, _Variant>;
 };
 
 template <>
 struct __gather_sigs_fn<set_error_t>
 {
   template <class _Sigs, template <class...> class _Tuple, template <class...> class _Variant>
-  using __call _CCCL_NODEBUG_ALIAS = __error_types<_Sigs, _Variant, _Tuple>;
+  using __call _CCCL_NODEBUG = __error_types<_Sigs, _Variant, _Tuple>;
 };
 
 template <>
 struct __gather_sigs_fn<set_stopped_t>
 {
   template <class _Sigs, template <class...> class _Tuple, template <class...> class _Variant>
-  using __call _CCCL_NODEBUG_ALIAS = __stopped_types<_Sigs, _Variant, _Tuple<>>;
+  using __call _CCCL_NODEBUG = __stopped_types<_Sigs, _Variant, _Tuple<>>;
 };
 
 template <class _Sigs, class _WantedTag, template <class...> class _Tuple, template <class...> class _Variant>
-using __gather_completion_signatures _CCCL_NODEBUG_ALIAS =
+using __gather_completion_signatures _CCCL_NODEBUG =
   typename __gather_sigs_fn<_WantedTag>::template __call<_Sigs, _Tuple, _Variant>;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -622,10 +621,10 @@ template <bool _PotentiallyThrowing>
   }
 }
 
-using __eptr_completion_t _CCCL_NODEBUG_ALIAS = decltype(execution::__eptr_completion());
+using __eptr_completion_t _CCCL_NODEBUG = decltype(execution::__eptr_completion());
 
 template <bool _PotentiallyThrowing>
-using __eptr_completion_if_t _CCCL_NODEBUG_ALIAS = decltype(execution::__eptr_completion_if<_PotentiallyThrowing>());
+using __eptr_completion_if_t _CCCL_NODEBUG = decltype(execution::__eptr_completion_if<_PotentiallyThrowing>());
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // invalid_completion_signature

@@ -26,7 +26,7 @@ int main()
   /* Create a piece of data that can be use many times without further synchronizations */
   auto buffer = ctx.logical_data(shape_of<slice<double, 2>>(128, 64)).set_symbol("buffer");
   ctx.parallel_for(buffer.shape(), buffer.write())->*[] __device__(size_t i, size_t j, auto b) {
-    b(i, j) = sin(-1.0 * i) + cos(2.0 * j);
+    b(i, j) = sin(-1.0 * static_cast<double>(i)) + cos(2.0 * static_cast<double>(j));
   };
 
   auto frozen_buffer = ctx.freeze(buffer);
@@ -41,10 +41,15 @@ int main()
     x(i, j) = d_buf(i, j);
   };
 
+#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVHPC)
   ctx.parallel_for(exec_place::host(), lX.shape(), lX.read()).set_symbol("check buf")
       ->*[h_buf](size_t i, size_t j, auto x) {
             EXPECT(fabs(x(i, j) - h_buf(i, j)) < 0.0001);
           };
+#else
+  _CCCL_UNSUPPORTED(parallel_for_on_the_host_requires_nvcc_or_nvcpp,
+                    "parallel_for on exec_place::host() requires nvcc or nvc++");
+#endif
 
   // Make sure all tasks are done before unfreezing
   frozen_buffer.unfreeze(ctx.fence());

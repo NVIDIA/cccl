@@ -70,7 +70,7 @@ struct SyncHandler
     _WS_CONSTANT_ASSERT(mNextResourceHandle < mMaxNumResources, "Cannot register more than 10 resources.");
 
     // Get a handle
-    int handle = mNextResourceHandle;
+    const int handle = mNextResourceHandle;
     mNextResourceHandle++;
     // Set the number of stages
     mNumStages[handle] = numStages;
@@ -84,7 +84,7 @@ struct SyncHandler
     _WS_CONSTANT_ASSERT(resourceHandle < mNextResourceHandle, "Invalid resource handle.");
 
     // Get phase index:
-    int curPhase = mNumPhases[resourceHandle];
+    const int curPhase = mNumPhases[resourceHandle];
     _WS_CONSTANT_ASSERT(curPhase < mMaxNumPhases, "Cannot register more phases than maximum.");
 
     mNumOwningThreads[resourceHandle][curPhase] = numOwningThreads;
@@ -118,8 +118,8 @@ struct SyncHandler
           break;
         }
 
-        uint64_t* ptrBar     = mPtrBar[ri][pi];
-        int numOwningThreads = mNumOwningThreads[ri][pi];
+        uint64_t* ptrBar           = mPtrBar[ri][pi];
+        const int numOwningThreads = mNumOwningThreads[ri][pi];
         // use block strided iteration to vectorize setup of barriers
         for (int si = static_cast<int>(sr.threadIdxX); si < numStages; si += NumThreads)
         {

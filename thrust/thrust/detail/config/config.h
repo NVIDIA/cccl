@@ -10,6 +10,21 @@
 // For _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <cuda/__cccl_config> // IWYU pragma: export
 
+// Note: Checks must happen before marking this header and its includes as system
+// headers, otherwise GCC and Clang silently drop diagnostics, including
+// explicit `#pragma GCC warning` originating from system headers.
+
+#ifndef CCCL_IGNORE_DEPRECATED_COMPILER
+#  if _CCCL_COMPILER(GCC, <, 7)
+_CCCL_WARNING("Thrust requires at least GCC 7.0. Define CCCL_IGNORE_DEPRECATED_COMPILER to suppress this message.")
+#  elif _CCCL_COMPILER(CLANG, <, 7)
+_CCCL_WARNING("Thrust requires at least Clang 7.0. Define CCCL_IGNORE_DEPRECATED_COMPILER to suppress this message.")
+#  elif _CCCL_COMPILER(MSVC, <, 19, 10)
+_CCCL_WARNING("Thrust requires at least MSVC 2019(19.20 / 16.0 / 14.20). Define CCCL_IGNORE_DEPRECATED_COMPILER to "
+              "suppress this message.")
+#  endif
+#endif // CCCL_IGNORE_DEPRECATED_COMPILER
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)

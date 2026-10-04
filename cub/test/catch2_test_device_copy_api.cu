@@ -7,14 +7,14 @@
 
 #include <cuda/std/cstdint>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // Guard: the legacy memory-size query call with all defaults (no explicit stream)
 // must resolve unambiguously to the legacy temp-storage overload when the env
 // passthrough overload is also visible. If the env overload's SFINAE is too loose,
 // this becomes "ambiguous overload" or silently dispatches to env.
 
-C2H_TEST("DeviceCopy::Batched legacy size-query is unambiguous", "[copy][device]")
+CUB_TEST("DeviceCopy::Batched legacy size-query is unambiguous", "[copy][device]", CUB_SMALL)
 {
   // DeviceCopy::Batched takes iterator-of-iterators for input/output ranges.
   int** in                        = nullptr;

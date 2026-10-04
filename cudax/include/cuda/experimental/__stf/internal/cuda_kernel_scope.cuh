@@ -18,6 +18,10 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/optional>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
+#include <cuda/std/variant>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -39,7 +43,8 @@ class stream_ctx;
 namespace reserved
 {
 template <typename T>
-inline constexpr bool is_cufunction_or_cukernel_v = ::std::is_same_v<T, CUfunction> || ::std::is_same_v<T, CUkernel>;
+inline constexpr bool is_cufunction_or_cukernel_v =
+  ::cuda::std::is_same_v<T, CUfunction> || ::cuda::std::is_same_v<T, CUkernel>;
 } // end namespace reserved
 
 /**
@@ -63,9 +68,9 @@ struct cuda_kernel_desc
   {
     // Ensure we are packing arguments of the proper types to call func (only
     // valid with the runtime API)
-    static_assert(reserved::is_cufunction_or_cukernel_v<Fun> || ::std::is_invocable_v<Fun, Args...>);
+    static_assert(reserved::is_cufunction_or_cukernel_v<Fun> || ::cuda::std::is_invocable_v<Fun, Args...>);
 
-    using TupleType = ::std::tuple<::std::decay_t<Args>...>;
+    using TupleType = ::std::tuple<::cuda::std::decay_t<Args>...>;
 
     _CCCL_ASSERT(!configured, "cuda_kernel_desc was already configured");
 
@@ -116,7 +121,7 @@ struct cuda_kernel_desc
   }
 
   /* CUfunction/CUkernel (CUDA driver API) or __global__ function (CUDA runtime API) */
-  using func_variant_t = ::std::variant<CUfunction, CUkernel, const void*>;
+  using func_variant_t = ::cuda::std::variant<CUfunction, CUkernel, const void*>;
   func_variant_t func_variant;
   dim3 gridDim;
   dim3 blockDim;
@@ -129,9 +134,9 @@ struct cuda_kernel_desc
   // Helper to launch the kernel using CUDA stream based API
   void launch(cudaStream_t stream) const
   {
-    _CCCL_ASSERT(func_variant.index() != ::std::variant_npos, "uninitialized variant");
+    _CCCL_ASSERT(func_variant.index() != ::cuda::std::variant_npos, "uninitialized variant");
 
-    if (auto* f = ::std::get_if<const void*>(&func_variant))
+    if (auto* f = ::cuda::std::get_if<const void*>(&func_variant))
     {
       // cudaLaunchKernel is an overload set (cuda_runtime.h templated wrapper), so it
       // keeps the runtime-status cuda_try form.
@@ -139,11 +144,11 @@ struct cuda_kernel_desc
     }
     else
     {
-      auto* ker_ptr = ::std::get_if<CUfunction>(&func_variant);
+      auto* ker_ptr = ::cuda::std::get_if<CUfunction>(&func_variant);
       if (!ker_ptr)
       {
         // If this is a CUkernel, the cast to a CUfunction is sufficient
-        ker_ptr = reinterpret_cast<const CUfunction*>(::std::get_if<CUkernel>(&func_variant));
+        ker_ptr = reinterpret_cast<const CUfunction*>(::cuda::std::get_if<CUkernel>(&func_variant));
       }
 
       cuda_try<cuLaunchKernel>(
@@ -163,9 +168,9 @@ struct cuda_kernel_desc
 
   void launch_in_graph(cudaGraphNode_t& node, cudaGraph_t& graph) const
   {
-    _CCCL_ASSERT(func_variant.index() != ::std::variant_npos, "uninitialized variant");
+    _CCCL_ASSERT(func_variant.index() != ::cuda::std::variant_npos, "uninitialized variant");
 
-    if (auto* f = ::std::get_if<const void*>(&func_variant))
+    if (auto* f = ::cuda::std::get_if<const void*>(&func_variant))
     {
       cudaKernelNodeParams params{
         .func           = const_cast<void*>(*f),
@@ -178,7 +183,7 @@ struct cuda_kernel_desc
       return;
     }
 
-    if (auto* func_ptr = ::std::get_if<CUfunction>(&func_variant))
+    if (auto* func_ptr = ::cuda::std::get_if<CUfunction>(&func_variant))
     {
       CUDA_KERNEL_NODE_PARAMS params{
         .func           = *func_ptr,
@@ -197,7 +202,7 @@ struct cuda_kernel_desc
       return;
     }
 
-    auto* ker_ptr = ::std::get_if<CUkernel>(&func_variant);
+    auto* ker_ptr = ::cuda::std::get_if<CUkernel>(&func_variant);
     _CCCL_ASSERT(ker_ptr, "invalid function");
 
     CUDA_KERNEL_NODE_PARAMS params{
@@ -220,9 +225,9 @@ struct cuda_kernel_desc
   // Utility to query the number of registers used by this kernel
   int get_num_registers() const
   {
-    _CCCL_ASSERT(func_variant.index() != ::std::variant_npos, "uninitialized variant");
+    _CCCL_ASSERT(func_variant.index() != ::cuda::std::variant_npos, "uninitialized variant");
 
-    if (auto* f = ::std::get_if<const void*>(&func_variant))
+    if (auto* f = ::cuda::std::get_if<const void*>(&func_variant))
     {
       // cudaFuncGetAttributes is an overload set (cuda_runtime.h templated wrapper),
       // so it keeps the runtime-status cuda_try form.
@@ -231,13 +236,13 @@ struct cuda_kernel_desc
       return func_attr.numRegs;
     }
 
-    auto* fun_ptr = ::std::get_if<CUfunction>(&func_variant);
+    auto* fun_ptr = ::cuda::std::get_if<CUfunction>(&func_variant);
     if (fun_ptr)
     {
       return cuda_try<cuFuncGetAttribute>(CU_FUNC_ATTRIBUTE_NUM_REGS, *fun_ptr);
     }
 
-    auto* ker_ptr = ::std::get_if<CUkernel>(&func_variant);
+    auto* ker_ptr = ::cuda::std::get_if<CUkernel>(&func_variant);
     _CCCL_ASSERT(ker_ptr, "invalid kernel");
 
     auto current_dev = cuda_try<cuCtxGetDevice>();
@@ -310,7 +315,7 @@ public:
     dynamic_deps.push_back(mv(first));
     if constexpr (sizeof...(Pack) > 0)
     {
-      add_deps(::std::forward<Pack>(pack)...);
+      add_deps(::cuda::std::forward<Pack>(pack)...);
     }
   }
 
@@ -364,7 +369,7 @@ public:
 
     t.start();
 
-    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
     {
       if (record_time)
       {
@@ -398,7 +403,7 @@ public:
       support_task.reset();
     };
 
-    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
     {
       if (record_time)
       {
@@ -509,7 +514,7 @@ private:
 
     auto& t = *support_task;
 
-    if constexpr (::std::is_same_v<Ctx, graph_ctx>)
+    if constexpr (::cuda::std::is_same_v<Ctx, graph_ctx>)
     {
       auto lock = t.lock_ctx_graph();
       auto& g   = t.get_ctx_graph();
@@ -558,13 +563,13 @@ private:
   // To store a task that implements cuda_kernel(_chain). Note that we do not
   // store the task with Deps... but a "dynamic" task where all dependencies
   // are added using add_deps.
-  using underlying_task_type = decltype(::std::declval<Ctx>().task());
-  ::std::optional<underlying_task_type> support_task;
+  using underlying_task_type = decltype(::cuda::std::declval<Ctx>().task());
+  ::cuda::std::optional<underlying_task_type> support_task;
 
   // Dependencies added with add_deps
   ::std::vector<task_dep_untyped> dynamic_deps;
 
-  ::std::optional<exec_place> e_place;
+  ::cuda::std::optional<exec_place> e_place;
 
   // What kernel(s) must be done ? We also store this in a vector if there is a
   // single kernel (with the cuda_kernel construct)

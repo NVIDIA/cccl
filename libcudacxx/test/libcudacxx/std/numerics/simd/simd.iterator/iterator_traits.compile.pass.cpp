@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -30,7 +30,7 @@
 namespace simd = cuda::std::simd;
 
 template <typename Iter, typename ValueType>
-TEST_FUNC void check_iter_traits()
+TEST_HOST_DEVICE_FUNC void check_iter_traits()
 {
   using Traits = cuda::std::iterator_traits<Iter>;
 
@@ -49,7 +49,7 @@ TEST_FUNC void check_iter_traits()
 }
 
 template <typename T, int N>
-TEST_FUNC void test_type()
+TEST_HOST_DEVICE_FUNC void test_type()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -62,7 +62,7 @@ TEST_FUNC void test_type()
 
 // The iterator nested typedefs do not depend on N, so a couple of representative
 // element types are enough.
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test_type<int8_t, 4>();
   test_type<uint64_t, 4>();

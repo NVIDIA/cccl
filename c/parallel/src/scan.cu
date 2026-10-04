@@ -64,6 +64,22 @@ enum class InitKind
   NoInit,
 };
 
+// Whether the NVRTC in use compiles the packed `__nv_bfloat162` intrinsics (`__hadd2`, `__hmul2`, `__hmin2`, `__hmax2`)
+// to a `trap` instruction. Since CUDA 12.3, cuda_bf16.h compiled by NVRTC only declares its functions and NVRTC takes
+// the definitions from its precompiled builtins library; the aarch64 builds of NVRTC 12.3 through 12.9 emit a trap
+// instead of those definitions for every target below sm_100 (NVIDIA/cccl#11448). NVRTC 13 is not affected, and below
+// 12.3 the header includes the definitions itself.
+static bool nvrtc_miscompiles_bf16_simd_intrinsics()
+{
+#if _CCCL_HOST_ARCH(ARM64)
+  int major = 0;
+  int minor = 0;
+  return nvrtcVersion(&major, &minor) == NVRTC_SUCCESS && major == 12;
+#else
+  return false;
+#endif // _CCCL_HOST_ARCH(ARM64)
+}
+
 static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_type_info init)
 {
   // TODO Should be decltype(op(init, *input_it)) but haven't implemented type arithmetic yet
@@ -236,11 +252,13 @@ struct scan_kernel_source
     return arg;
   }
 
-  static auto lookahead_make_tile_state_kernel_arg(void* ts)
+  static auto lookahead_make_tile_state_kernel_arg(void* ts, ::cuda::std::uint32_t* atomic_counter = nullptr)
   {
     // we can ignore passing a wrong AccumT, since we only store a pointer, and the kernel will have the right type
     cub::detail::scan::tile_state_kernel_arg_t<scan_tile_state, char> arg;
-    ::cuda::std::__construct_at(&arg.lookahead, static_cast<cub::detail::warpspeed::tile_state_t<char>*>(ts));
+    ::cuda::std::__construct_at(&arg.lookahead,
+                                cub::detail::scan::lookahead_tile_state_arg_t<char>{
+                                  static_cast<cub::detail::warpspeed::tile_state_t<char>*>(ts), atomic_counter});
     return arg;
   }
 };
@@ -260,7 +278,7 @@ CUresult cccl_device_scan_compile(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 try
 {
   const char* name = "test";
@@ -376,6 +394,18 @@ static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host ge
     policy_selector_expr, // 5
     policy_sel_str.view()); // 6
 
+  // Scan hands CUB the bare well-known operator (e.g. `cuda::std::plus<__nv_bfloat16>`), so `cub::ThreadReduce` inside
+  // `BlockScan` takes its SIMD path for bfloat16 and calls the packed intrinsics NVRTC miscompiles (see above). Making
+  // cuda_bf16.h include its own definitions sidesteps the NVRTC builtins. Under NVRTC those definitions have external
+  // linkage, so exactly one translation unit per link may carry this define. It is therefore placed in the kernel
+  // source rather than in the NVRTC arguments: the arguments are reused for the tile state probe and for operators
+  // and iterators supplied as C++ source (e.g. zip iterators), which are compiled into separate TUs and linked with
+  // this one. The other algorithms wrap the operator in a JIT template type and never reach CUB's bfloat16 SIMD path.
+  if (scan::nvrtc_miscompiles_bf16_simd_intrinsics())
+  {
+    final_src.insert(0, "#define __FORCE_INCLUDE_CUDA_BF16_HPP_FROM_BF16_H__\n");
+  }
+
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
     printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", final_src.c_str());
@@ -400,6 +430,21 @@ static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host ge
     "-default-device",
     "-DCUB_DISABLE_CDP",
     "-std=c++20"};
+
+  // The scan tuning policy depends on the version of the CUDA compiler evaluating it, so this library and NVRTC can
+  // select different algorithms when their versions differ, tripping the policy-mismatch static_assert in the
+  // generated source (NVBug 6235538). Force the JIT to agree with the host: when the host selected lookback, disable
+  // the warpspeed/lookahead scan for the JIT as well. The other direction cannot diverge as long as this library is
+  // built with a CUDA compiler below 13.4: every NVRTC version able to target the architectures for which the host
+  // then selects lookahead also selects lookahead.
+  static_assert(_CCCL_CUDACC_BELOW(13, 4),
+                "Building cccl.c with CUDA >= 13.4 lets the host select the lookahead scan on sm_120, which an NVRTC "
+                "below 13.4 rejects, and this one-directional forcing cannot fix that. Revisit NVBug 6235538 "
+                "before lifting this assert.");
+  if (active_policy.algorithm == cub::ScanAlgorithm::lookback)
+  {
+    args.push_back("-DCCCL_DISABLE_WARPSPEED_SCAN");
+  }
 
   cccl::detail::extend_args_with_build_config(args, config);
 
@@ -677,7 +722,7 @@ CUresult cccl_device_scan_build_ex(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 {
   CUresult r = cccl_device_scan_compile(
     build_ptr,

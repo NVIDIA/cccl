@@ -41,7 +41,7 @@ The sum of each block is then reduced to a single value using an atomic add via 
 
 It then shows how the same reduction can be done using Thrust's `reduce` algorithm and compares the results.
 
-[Try it live on Godbolt!](https://godbolt.org/z/3KaWz3Msf)
+[Try it live on Godbolt!](https://godbolt.org/z/hraxq8rdn)
 
 ```cpp
 #include <thrust/execution_policy.h>
@@ -51,6 +51,7 @@ It then shows how the same reduction can be done using Thrust's `reduce` algorit
 #include <cuda/cmath>
 #include <cuda/std/span>
 #include <cstdio>
+#include <iostream>
 
 template <int block_size>
 __global__ void reduce(cuda::std::span<int const> data, cuda::std::span<int> result) {
@@ -282,7 +283,7 @@ but at least the most recent host compiler of any supported older CUDA Toolkit.
 We may retain support of additional compilers and will accept corresponding patches from the community with reasonable fixes.
 But we will not invest significant time in triaging or fixing issues for older compilers.
 
-In the spirit of "You only support what you test", see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/ci-overview.md) for more information on exactly what we test.
+In the spirit of "You only support what you test", see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/docs/infrastructure/ci/references/ci_overview.rst) for more information on exactly what we test.
 
 ### GPU Architectures
 
@@ -314,7 +315,7 @@ For each CUDA version, builds are completed against all supported host compilers
 
 The testing strategy and matrix are constantly evolving.
 The matrix defined in the [`ci/matrix.yaml`](ci/matrix.yaml) file is the definitive source of truth.
-For more information about our CI pipeline, see [here](ci-overview.md).
+For more information about our CI pipeline, see [here](docs/infrastructure/ci/references/ci_overview.rst).
 
 ## Versioning
 
@@ -476,7 +477,7 @@ CTKs before 12.4 shipped Thrust, CUB and libcudacxx as individual libraries.
 
 ## CI Pipeline Overview
 
-For a detailed overview of the CI pipeline, see [ci-overview.md](ci-overview.md).
+For a detailed overview of the CI pipeline, see [CI overview](docs/infrastructure/ci/references/ci_overview.rst).
 
 ## Related Projects
 

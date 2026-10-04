@@ -4,10 +4,9 @@
 
 from typing import Tuple
 
-import cupy as cp
-import numba
 import numpy as np
 import pytest
+from _utils.device_array import DeviceArray
 
 import cuda.compute
 from cuda.compute import SortOrder, deserialize, make_segmented_sort, serialize
@@ -106,22 +105,20 @@ def host_segmented_sort(
 
 
 @pytest.mark.parametrize("dtype, num_segments, segment_size", DTYPE_SEGMENT_PARAMS)
-def test_segmented_sort_keys(dtype, num_segments, segment_size, monkeypatch):
-    # Disable SASS verification only for this test when dtype is int64
-    if np.dtype(dtype) == np.dtype(np.int64):
-        monkeypatch.setattr(
-            cuda.compute._cccl_interop,
-            "_check_sass",
-            False,
-        )
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_segmented_sort_keys(dtype, num_segments, segment_size):
     order = cuda.compute.SortOrder.ASCENDING
     num_items = num_segments * segment_size
 
     h_in_keys = random_array(num_items, dtype, max_value=50)
     start_offsets, end_offsets = make_uniform_segments(num_segments, segment_size)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_out_keys = numba.cuda.to_device(np.empty_like(h_in_keys))
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_out_keys = DeviceArray.empty(h_in_keys.shape, h_in_keys.dtype)
+    d_start_offsets = DeviceArray.from_numpy(start_offsets)
+    d_end_offsets = DeviceArray.from_numpy(end_offsets)
 
     cuda.compute.segmented_sort(
         d_in_keys=d_in_keys,
@@ -130,8 +127,8 @@ def test_segmented_sort_keys(dtype, num_segments, segment_size, monkeypatch):
         d_out_values=None,
         num_items=num_items,
         num_segments=num_segments,
-        start_offsets_in=cp.asarray(start_offsets),
-        end_offsets_in=cp.asarray(end_offsets),
+        start_offsets_in=d_start_offsets,
+        end_offsets_in=d_end_offsets,
         order=order,
     )
 
@@ -155,10 +152,12 @@ def test_segmented_sort_pairs(dtype, num_segments, segment_size):
 
     start_offsets, end_offsets = make_uniform_segments(num_segments, segment_size)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_vals = numba.cuda.to_device(h_in_vals)
-    d_out_keys = numba.cuda.to_device(np.empty_like(h_in_keys))
-    d_out_vals = numba.cuda.to_device(np.empty_like(h_in_vals))
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_in_vals = DeviceArray.from_numpy(h_in_vals)
+    d_out_keys = DeviceArray.empty(h_in_keys.shape, h_in_keys.dtype)
+    d_out_vals = DeviceArray.empty(h_in_vals.shape, h_in_vals.dtype)
+    d_start_offsets = DeviceArray.from_numpy(start_offsets)
+    d_end_offsets = DeviceArray.from_numpy(end_offsets)
 
     cuda.compute.segmented_sort(
         d_in_keys=d_in_keys,
@@ -167,8 +166,8 @@ def test_segmented_sort_pairs(dtype, num_segments, segment_size):
         d_out_values=d_out_vals,
         num_items=num_items,
         num_segments=num_segments,
-        start_offsets_in=cp.asarray(start_offsets),
-        end_offsets_in=cp.asarray(end_offsets),
+        start_offsets_in=d_start_offsets,
+        end_offsets_in=d_end_offsets,
         order=order,
     )
 
@@ -191,8 +190,10 @@ def test_segmented_sort_keys_double_buffer(dtype, num_segments, segment_size):
     h_in_keys = random_array(num_items, dtype, max_value=20)
     start_offsets, end_offsets = make_uniform_segments(num_segments, segment_size)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_tmp_keys = numba.cuda.to_device(np.empty_like(h_in_keys))
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_tmp_keys = DeviceArray.empty(h_in_keys.shape, h_in_keys.dtype)
+    d_start_offsets = DeviceArray.from_numpy(start_offsets)
+    d_end_offsets = DeviceArray.from_numpy(end_offsets)
     keys_db = cuda.compute.DoubleBuffer(d_in_keys, d_tmp_keys)
 
     cuda.compute.segmented_sort(
@@ -202,8 +203,8 @@ def test_segmented_sort_keys_double_buffer(dtype, num_segments, segment_size):
         d_out_values=None,
         num_items=num_items,
         num_segments=num_segments,
-        start_offsets_in=cp.asarray(start_offsets),
-        end_offsets_in=cp.asarray(end_offsets),
+        start_offsets_in=d_start_offsets,
+        end_offsets_in=d_end_offsets,
         order=order,
     )
 
@@ -226,10 +227,12 @@ def test_segmented_sort_pairs_double_buffer(dtype, num_segments, segment_size):
 
     start_offsets, end_offsets = make_uniform_segments(num_segments, segment_size)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_vals = numba.cuda.to_device(h_in_vals)
-    d_tmp_keys = numba.cuda.to_device(np.empty_like(h_in_keys))
-    d_tmp_vals = numba.cuda.to_device(np.empty_like(h_in_vals))
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_in_vals = DeviceArray.from_numpy(h_in_vals)
+    d_tmp_keys = DeviceArray.empty(h_in_keys.shape, h_in_keys.dtype)
+    d_tmp_vals = DeviceArray.empty(h_in_vals.shape, h_in_vals.dtype)
+    d_start_offsets = DeviceArray.from_numpy(start_offsets)
+    d_end_offsets = DeviceArray.from_numpy(end_offsets)
 
     keys_db = cuda.compute.DoubleBuffer(d_in_keys, d_tmp_keys)
     vals_db = cuda.compute.DoubleBuffer(d_in_vals, d_tmp_vals)
@@ -241,8 +244,8 @@ def test_segmented_sort_pairs_double_buffer(dtype, num_segments, segment_size):
         d_out_values=None,
         num_items=num_items,
         num_segments=num_segments,
-        start_offsets_in=cp.asarray(start_offsets),
-        end_offsets_in=cp.asarray(end_offsets),
+        start_offsets_in=d_start_offsets,
+        end_offsets_in=d_end_offsets,
         order=order,
     )
 
@@ -299,10 +302,12 @@ def test_segmented_sort_variable_segment_sizes(num_segments):
     h_in_keys = random_array(num_items, np.int32, max_value=100)
     h_in_vals = random_array(num_items, np.float32)
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_vals = numba.cuda.to_device(h_in_vals)
-    d_out_keys = numba.cuda.to_device(np.empty_like(h_in_keys))
-    d_out_vals = numba.cuda.to_device(np.empty_like(h_in_vals))
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_in_vals = DeviceArray.from_numpy(h_in_vals)
+    d_out_keys = DeviceArray.empty(h_in_keys.shape, h_in_keys.dtype)
+    d_out_vals = DeviceArray.empty(h_in_vals.shape, h_in_vals.dtype)
+    d_start_offsets = DeviceArray.from_numpy(start_offsets)
+    d_end_offsets = DeviceArray.from_numpy(end_offsets)
 
     cuda.compute.segmented_sort(
         d_in_keys=d_in_keys,
@@ -311,8 +316,8 @@ def test_segmented_sort_variable_segment_sizes(num_segments):
         d_out_values=d_out_vals,
         num_items=num_items,
         num_segments=num_segments,
-        start_offsets_in=cp.asarray(start_offsets),
-        end_offsets_in=cp.asarray(end_offsets),
+        start_offsets_in=d_start_offsets,
+        end_offsets_in=d_end_offsets,
         order=order,
     )
 
@@ -370,12 +375,12 @@ def test_serialize_deserialize_segmented_sort_round_trip():
     start_offsets = np.array([0, 3, 5], dtype=np.int64)
     end_offsets = np.array([3, 5, 9], dtype=np.int64)
 
-    d_in_keys = cp.asarray(h_in_keys)
-    d_in_vals = cp.asarray(h_in_vals)
-    d_out_keys = cp.empty_like(d_in_keys)
-    d_out_vals = cp.empty_like(d_in_vals)
-    start = cp.asarray(start_offsets)
-    end = cp.asarray(end_offsets)
+    d_in_keys = DeviceArray.from_numpy(h_in_keys)
+    d_in_vals = DeviceArray.from_numpy(h_in_vals)
+    d_out_keys = DeviceArray.empty(h_in_keys.shape, h_in_keys.dtype)
+    d_out_vals = DeviceArray.empty(h_in_vals.shape, h_in_vals.dtype)
+    start = DeviceArray.from_numpy(start_offsets)
+    end = DeviceArray.from_numpy(end_offsets)
 
     builder = make_segmented_sort(
         d_in_keys=d_in_keys,
@@ -396,7 +401,7 @@ def test_serialize_deserialize_segmented_sort_round_trip():
         d_out_keys=d_out_keys,
         d_in_values=d_in_vals,
         d_out_values=d_out_vals,
-        num_items=d_in_keys.size,
+        num_items=h_in_keys.size,
         num_segments=start_offsets.size,
         start=start,
         end=end,
@@ -409,5 +414,5 @@ def test_serialize_deserialize_segmented_sort_round_trip():
         )
     expected_keys = np.array([k for k, _ in expected_pairs], dtype=h_in_keys.dtype)
     expected_vals = np.array([v for _, v in expected_pairs], dtype=h_in_vals.dtype)
-    np.testing.assert_array_equal(d_out_keys.get(), expected_keys)
-    np.testing.assert_array_equal(d_out_vals.get(), expected_vals)
+    np.testing.assert_array_equal(d_out_keys.copy_to_host(), expected_keys)
+    np.testing.assert_array_equal(d_out_vals.copy_to_host(), expected_vals)

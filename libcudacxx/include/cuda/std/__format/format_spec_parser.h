@@ -102,7 +102,7 @@ template <size_t _IdSize>
 struct __fmt_substitute_arg_id_visitor
 {
   template <class _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr uint32_t operator()([[maybe_unused]] _Tp __arg)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr uint32_t _CCCL_STATIC_CALL_OPERATOR([[maybe_unused]] _Tp __arg)
   {
     if constexpr (is_same_v<_Tp, monostate>)
     {

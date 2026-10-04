@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/optional>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -129,7 +130,7 @@ void dep_allocate(
   Data& d,
   access_mode mode,
   const data_place& dplace,
-  const ::std::optional<exec_place> eplace,
+  const ::cuda::std::optional<exec_place> eplace,
   instance_id_t instance_id,
   event_list& prereqs);
 } // end namespace reserved
@@ -218,9 +219,9 @@ public:
     return false;
   }
 
-  virtual ::std::optional<cudaMemoryType> get_memory_type(instance_id_t)
+  virtual ::cuda::std::optional<cudaMemoryType> get_memory_type(instance_id_t)
   {
-    return ::std::nullopt;
+    return ::cuda::std::nullopt;
   }
 
   /// @brief Unpin host memory.
@@ -257,7 +258,7 @@ public:
   {
     using R            = rw_type_of<T>;
     const auto& result = *static_cast<const R*>(get_common_impl(typeid(R), type_name<R>));
-    if constexpr (::std::is_same_v<T, R>)
+    if constexpr (::cuda::std::is_same_v<T, R>)
     {
       return result; // lvalue straight into the store
     }
@@ -279,7 +280,7 @@ public:
   {
     using R      = rw_type_of<T>;
     auto& result = *static_cast<R*>(get_instance_impl(instance_id, typeid(R), type_name<R>));
-    if constexpr (::std::is_same_v<T, R>)
+    if constexpr (::cuda::std::is_same_v<T, R>)
     {
       return result; // lvalue straight into the store
     }

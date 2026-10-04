@@ -25,17 +25,27 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(remove_cv) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX(14)
+#  define _CCCL_BUILTIN_REMOVE_CV(...) __remove_cv(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(remove_cv) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX( 14)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_REMOVE_CV) && !defined(_LIBCUDACXX_USE_REMOVE_CV_FALLBACK)
+
 template <class _Tp>
 struct remove_cv
 {
-  using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_CV(_Tp);
+  using type _CCCL_NODEBUG = _CCCL_BUILTIN_REMOVE_CV(_Tp);
 };
 
+#  if _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS()
 template <class _Tp>
-using remove_cv_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_CV(_Tp);
+using remove_cv_t _CCCL_NODEBUG = typename remove_cv<_Tp>::type;
+#  else // ^^^ _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() ^^^ / vvv !_CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() vvv
+template <class _Tp>
+using remove_cv_t _CCCL_NODEBUG = _CCCL_BUILTIN_REMOVE_CV(_Tp);
+#  endif // !_CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS()
 
 #else
 
@@ -46,7 +56,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_cv
 };
 
 template <class _Tp>
-using remove_cv_t _CCCL_NODEBUG_ALIAS = remove_volatile_t<remove_const_t<_Tp>>;
+using remove_cv_t _CCCL_NODEBUG = remove_volatile_t<remove_const_t<_Tp>>;
 
 #endif // defined(_CCCL_BUILTIN_REMOVE_CV) && !defined(_LIBCUDACXX_USE_REMOVE_CV_FALLBACK)
 

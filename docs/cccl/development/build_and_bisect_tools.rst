@@ -85,6 +85,29 @@ Execute one or more libcudacxx lit tests::
     --lit-tests \
       "std/algorithms/alg.nonmodifying/alg.any_of/any_of.pass.cpp"
 
+Documentation builds
+--------------------
+
+Use :file:`docs/gen_docs.bash` for local documentation builds. It generates
+Doxygen XML, regenerates API reference pages, builds Sphinx HTML, and writes
+directly to the versioned output directory under :file:`docs/_build/html/`. The
+version defaults to ``unstable`` and can be overridden with ``SPHINX_CCCL_VER``.
+The script runs Doxygen builds in parallel and builds Sphinx with ``-j auto``::
+
+  ./docs/gen_docs.bash
+
+For repeated edits to hand-written RST files, set
+``CCCL_DOCS_SKIP_AUTO_API_GENERATOR=1`` to reuse existing Doxygen XML and API
+reference pages::
+
+  CCCL_DOCS_SKIP_AUTO_API_GENERATOR=1 ./docs/gen_docs.bash
+
+Use this shortcut only for local iteration on handwritten docs. Cached HTML
+for a deleted or renamed source page may remain until the next full build. Run
+:file:`docs/gen_docs.bash` before final validation; full builds discard the
+Sphinx caches and versioned HTML output before regenerating and checking the
+Doxygen-backed API pages.
+
 ``git_bisect.sh``
 -----------------
 

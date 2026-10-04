@@ -5,6 +5,13 @@
 
 #include <cub/config.cuh>
 
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/device/device_merge_sort.cuh> is not supported when compiling with NVRTC. Include block-, warp-, or thread-level primitives instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -91,8 +98,8 @@ CUB_NAMESPACE_BEGIN
  * Tuning
  * +++++++++++++++++++++++++++++++++++++++++++++
  *
- * All algorithms in DeviceMergeSort that accept an environment can be tuned by passing a custom :ref:`policy selector
- * <cub-policy-selectors>` that returns a @ref MergeSortPolicy, as shown in the example below:
+ * All algorithms in DeviceMergeSort can be tuned by passing a custom :ref:`policy selector
+ * <cub-policy-selectors>` that returns a :cpp:struct:`cub::MergeSortPolicy`, as shown in the example below:
  *
  *  .. literalinclude:: ../../../cub/test/catch2_test_device_merge_sort_env_api.cu
  *      :language: c++
@@ -119,7 +126,7 @@ private:
   }
 
   // Internal version without NVTX range
-  template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
+  template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT, typename EnvT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsNoNVTX(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -127,20 +134,25 @@ private:
     ValueIteratorT d_values,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = nullptr)
+    const EnvT& env)
   {
-    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
+    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
+    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::merge_sort::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      d_keys,
-      d_values,
-      static_cast<ChooseOffsetT>(num_items),
-      compare_op,
-      stream);
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::merge_sort::dispatch(
+          storage,
+          bytes,
+          d_keys,
+          d_values,
+          d_keys,
+          d_values,
+          static_cast<ChooseOffsetT>(num_items),
+          compare_op,
+          stream,
+          policy_selector);
+      });
   }
 
 public:
@@ -207,6 +219,11 @@ public:
    *   `bool operator()(KeyT lhs, KeyT rhs)` that models
    *   the [Strict Weak Ordering] concept.
    *
+   * @tparam EnvT
+   *   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+   *   Supports customization of the stream via `cuda::get_stream` and of the tuning via
+   *   `cuda::execution::tune`.
+   *
    * @param[in] d_temp_storage
    *   @devicestorage
    *
@@ -226,9 +243,8 @@ public:
    *   Comparison function object which returns true if the first argument is
    *   ordered before the second
    *
-   * @param[in] stream
-   *   **[optional]** CUDA stream to launch kernels within. Default is
-   *   stream<sub>0</sub>.
+   * @param[in] env
+   *   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
    *
    * [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
@@ -239,7 +255,11 @@ public:
    *    First appears in CUDA Toolkit 12.3.
    * @endrst
    */
-  template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
+  template <typename KeyIteratorT,
+            typename ValueIteratorT,
+            typename OffsetT,
+            typename CompareOpT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -247,10 +267,10 @@ public:
     ValueIteratorT d_values,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortPairsNoNVTX(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, compare_op, stream);
+    return SortPairsNoNVTX(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, compare_op, env);
   }
 
   //! @rst
@@ -313,8 +333,8 @@ public:
             typename OffsetT,
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  SortPairs(KeyIteratorT d_keys, ValueIteratorT d_values, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairs(
+    KeyIteratorT d_keys, ValueIteratorT d_values, OffsetT num_items, CompareOpT compare_op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -413,6 +433,11 @@ public:
    *   `bool operator()(KeyT lhs, KeyT rhs)` that models
    *   the [Strict Weak Ordering] concept.
    *
+   * @tparam EnvT
+   *   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+   *   Supports customization of the stream via `cuda::get_stream` and of the tuning via
+   *   `cuda::execution::tune`.
+   *
    * @param[in] d_temp_storage
    *   @devicestorage
    *
@@ -438,9 +463,8 @@ public:
    *   Comparison function object which returns `true` if the first argument is
    *   ordered before the second
    *
-   * @param[in] stream
-   *   **[optional]** CUDA stream to launch kernels within. Default is
-   *   stream<sub>0</sub>.
+   * @param[in] env
+   *   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
    *
    * [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
@@ -456,7 +480,8 @@ public:
             typename KeyIteratorT,
             typename ValueIteratorT,
             typename OffsetT,
-            typename CompareOpT>
+            typename CompareOpT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsCopy(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -466,21 +491,27 @@ public:
     ValueIteratorT d_output_values,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
-    return detail::merge_sort::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_input_keys,
-      d_input_values,
-      d_output_keys,
-      d_output_values,
-      static_cast<ChooseOffsetT>(num_items),
-      compare_op,
-      stream);
+    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
+    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::merge_sort::dispatch(
+          storage,
+          bytes,
+          d_input_keys,
+          d_input_values,
+          d_output_keys,
+          d_output_values,
+          static_cast<ChooseOffsetT>(num_items),
+          compare_op,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -566,7 +597,7 @@ public:
     ValueIteratorT d_output_values,
     OffsetT num_items,
     CompareOpT compare_op,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -591,27 +622,32 @@ public:
 
 private:
   // Internal version without NVTX range
-  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
+  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename EnvT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysNoNVTX(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorT d_keys,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = nullptr)
+    const EnvT& env)
   {
-    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
+    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
+    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::merge_sort::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      static_cast<NullType*>(nullptr),
-      d_keys,
-      static_cast<NullType*>(nullptr),
-      static_cast<ChooseOffsetT>(num_items),
-      compare_op,
-      stream);
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::merge_sort::dispatch(
+          storage,
+          bytes,
+          d_keys,
+          static_cast<NullType*>(nullptr),
+          d_keys,
+          static_cast<NullType*>(nullptr),
+          static_cast<ChooseOffsetT>(num_items),
+          compare_op,
+          stream,
+          policy_selector);
+      });
   }
 
 public:
@@ -672,6 +708,11 @@ public:
    *   `bool operator()(KeyT lhs, KeyT rhs)` that models
    *   the [Strict Weak Ordering] concept.
    *
+   * @tparam EnvT
+   *   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+   *   Supports customization of the stream via `cuda::get_stream` and of the tuning via
+   *   `cuda::execution::tune`.
+   *
    * @param[in] d_temp_storage
    *   @devicestorage
    *
@@ -688,9 +729,8 @@ public:
    *   Comparison function object which returns true if the first argument is
    *   ordered before the second
    *
-   * @param[in] stream
-   *   **[optional]** CUDA stream to launch kernels within. Default is
-   *   stream<sub>0</sub>.
+   * @param[in] env
+   *   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
    *
    * [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
@@ -701,17 +741,17 @@ public:
    *    First appears in CUDA Toolkit 12.3.
    * @endrst
    */
-  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
+  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorT d_keys,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysNoNVTX(d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
+    return SortKeysNoNVTX(d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, env);
   }
 
   //! @rst
@@ -765,7 +805,7 @@ public:
   //!   @endrst
   template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  SortKeys(KeyIteratorT d_keys, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  SortKeys(KeyIteratorT d_keys, OffsetT num_items, CompareOpT compare_op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -790,7 +830,7 @@ public:
 
 private:
   // Internal version without NVTX range
-  template <typename KeyInputIteratorT, typename KeyIteratorT, typename OffsetT, typename CompareOpT>
+  template <typename KeyInputIteratorT, typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename EnvT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysCopyNoNVTX(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -798,20 +838,25 @@ private:
     KeyIteratorT d_output_keys,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = nullptr)
+    const EnvT& env)
   {
-    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
+    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
+    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::merge_sort::dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_input_keys,
-      static_cast<NullType*>(nullptr),
-      d_output_keys,
-      static_cast<NullType*>(nullptr),
-      static_cast<ChooseOffsetT>(num_items),
-      compare_op,
-      stream);
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::merge_sort::dispatch(
+          storage,
+          bytes,
+          d_input_keys,
+          static_cast<NullType*>(nullptr),
+          d_output_keys,
+          static_cast<NullType*>(nullptr),
+          static_cast<ChooseOffsetT>(num_items),
+          compare_op,
+          stream,
+          policy_selector);
+      });
   }
 
 public:
@@ -883,6 +928,11 @@ public:
    *   `bool operator()(KeyT lhs, KeyT rhs)` that models
    *   the [Strict Weak Ordering] concept.
    *
+   * @tparam EnvT
+   *   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+   *   Supports customization of the stream via `cuda::get_stream` and of the tuning via
+   *   `cuda::execution::tune`.
+   *
    * @param[in] d_temp_storage
    *   @devicestorage
    *
@@ -902,9 +952,8 @@ public:
    *   Comparison function object which returns true if the first argument is
    *   ordered before the second
    *
-   * @param[in] stream
-   *   **[optional]** CUDA stream to launch kernels within. Default is
-   *   stream<sub>0</sub>.
+   * @param[in] env
+   *   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
    *
    * [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
@@ -915,7 +964,11 @@ public:
    *    First appears in CUDA Toolkit 12.3.
    * @endrst
    */
-  template <typename KeyInputIteratorT, typename KeyIteratorT, typename OffsetT, typename CompareOpT>
+  template <typename KeyInputIteratorT,
+            typename KeyIteratorT,
+            typename OffsetT,
+            typename CompareOpT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysCopy(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -923,11 +976,11 @@ public:
     KeyIteratorT d_output_keys,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysCopyNoNVTX(
-      d_temp_storage, temp_storage_bytes, d_input_keys, d_output_keys, num_items, compare_op, stream);
+      d_temp_storage, temp_storage_bytes, d_input_keys, d_output_keys, num_items, compare_op, env);
   }
 
   //! @rst
@@ -993,7 +1046,11 @@ public:
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeysCopy(
-    KeyInputIteratorT d_input_keys, KeyIteratorT d_output_keys, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+    KeyInputIteratorT d_input_keys,
+    KeyIteratorT d_output_keys,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1079,6 +1136,11 @@ public:
    *   `bool operator()(KeyT lhs, KeyT rhs)` that models
    *   the [Strict Weak Ordering] concept.
    *
+   * @tparam EnvT
+   *   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+   *   Supports customization of the stream via `cuda::get_stream` and of the tuning via
+   *   `cuda::execution::tune`.
+   *
    * @param[in] d_temp_storage
    *   @devicestorage
    *
@@ -1098,9 +1160,8 @@ public:
    *   Comparison function object which returns true if the first argument is
    *   ordered before the second
    *
-   * @param[in] stream
-   *   **[optional]** CUDA stream to launch kernels within. Default is
-   *   stream<sub>0</sub>.
+   * @param[in] env
+   *   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
    *
    * [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
@@ -1111,7 +1172,11 @@ public:
    *    First appears in CUDA Toolkit 12.3.
    * @endrst
    */
-  template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
+  template <typename KeyIteratorT,
+            typename ValueIteratorT,
+            typename OffsetT,
+            typename CompareOpT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1119,12 +1184,12 @@ public:
     ValueIteratorT d_values,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     return SortPairsNoNVTX<KeyIteratorT, ValueIteratorT, OffsetT, CompareOpT>(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, compare_op, stream);
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, compare_op, env);
   }
 
   //! @rst
@@ -1187,8 +1252,8 @@ public:
             typename OffsetT,
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  StableSortPairs(KeyIteratorT d_keys, ValueIteratorT d_values, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t StableSortPairs(
+    KeyIteratorT d_keys, ValueIteratorT d_values, OffsetT num_items, CompareOpT compare_op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1269,6 +1334,11 @@ public:
    *   `bool operator()(KeyT lhs, KeyT rhs)` that models
    *   the [Strict Weak Ordering] concept.
    *
+   * @tparam EnvT
+   *   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+   *   Supports customization of the stream via `cuda::get_stream` and of the tuning via
+   *   `cuda::execution::tune`.
+   *
    * @param[in] d_temp_storage
    *   @devicestorage
    *
@@ -1285,9 +1355,8 @@ public:
    *   Comparison function object which returns true if the first argument is
    *   ordered before the second
    *
-   * @param[in] stream
-   *   **[optional]** CUDA stream to launch kernels within. Default is
-   *   stream<sub>0</sub>.
+   * @param[in] env
+   *   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
    *
    * [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
@@ -1298,19 +1367,19 @@ public:
    *    First appears in CUDA Toolkit 12.3.
    * @endrst
    */
-  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
+  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyIteratorT d_keys,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     return SortKeysNoNVTX<KeyIteratorT, OffsetT, CompareOpT>(
-      d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
+      d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, env);
   }
 
   //! @rst
@@ -1364,7 +1433,7 @@ public:
   //!   @endrst
   template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  StableSortKeys(KeyIteratorT d_keys, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  StableSortKeys(KeyIteratorT d_keys, OffsetT num_items, CompareOpT compare_op, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
@@ -1455,6 +1524,11 @@ public:
    *   `bool operator()(KeyT lhs, KeyT rhs)` that models
    *   the [Strict Weak Ordering] concept.
    *
+   * @tparam EnvT
+   *   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+   *   Supports customization of the stream via `cuda::get_stream` and of the tuning via
+   *   `cuda::execution::tune`.
+   *
    * @param[in] d_temp_storage
    *   @devicestorage
    *
@@ -1474,9 +1548,8 @@ public:
    *   Comparison function object which returns true if the first argument is
    *   ordered before the second
    *
-   * @param[in] stream
-   *   **[optional]** CUDA stream to launch kernels within. Default is
-   *   stream<sub>0</sub>.
+   * @param[in] env
+   *   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
    *
    * [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
@@ -1487,7 +1560,11 @@ public:
    *    First appears in CUDA Toolkit 12.3.
    * @endrst
    */
-  template <typename KeyInputIteratorT, typename KeyIteratorT, typename OffsetT, typename CompareOpT>
+  template <typename KeyInputIteratorT,
+            typename KeyIteratorT,
+            typename OffsetT,
+            typename CompareOpT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysCopy(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1495,11 +1572,11 @@ public:
     KeyIteratorT d_output_keys,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysCopyNoNVTX<KeyInputIteratorT, KeyIteratorT, OffsetT, CompareOpT>(
-      d_temp_storage, temp_storage_bytes, d_input_keys, d_output_keys, num_items, compare_op, stream);
+      d_temp_storage, temp_storage_bytes, d_input_keys, d_output_keys, num_items, compare_op, env);
   }
 
   //! @rst
@@ -1565,7 +1642,11 @@ public:
             typename CompareOpT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t StableSortKeysCopy(
-    KeyInputIteratorT d_input_keys, KeyIteratorT d_output_keys, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+    KeyInputIteratorT d_input_keys,
+    KeyIteratorT d_output_keys,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 

@@ -7,10 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// REQUIRES: enable-tile
+// REQUIRES: enable-tile || force-tile
 
 // We cannot suppress execution checks in cuda::std::construct_at
-// UNSUPPORTED: clang-14
+// UNSUPPORTED: clang-14 && !c++17
+// UNSUPPORTED: force-tile && !c++17
 
 #include <cuda/std/cassert>
 #include <cuda/std/expected>
@@ -19,8 +20,9 @@
 #include "host_device_types.h"
 #include "test_macros.h"
 
-TEST_TILE_FUNC void test()
+__tile__ void test()
 {
+#if _CCCL_TILE_COMPILATION()
   using expected = cuda::std::expected<tile_only_type, tile_only_type>;
   { // default construction
     expected default_constructed{};
@@ -193,6 +195,7 @@ TEST_TILE_FUNC void test()
     assert(*lhs == 42);
     assert(rhs.error() == 1337);
   }
+#endif // _CCCL_TILE_COMPILATION()
 }
 
 __tile_global__ void test_kernel()

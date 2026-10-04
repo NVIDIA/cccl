@@ -33,25 +33,23 @@ void TestPartitionPointDevice(ExecutionPolicy exec)
   thrust::device_vector<iterator> result(1);
   partition_point_kernel<<<1, 1>>>(exec, v.begin(), v.end(), is_even<int>(), result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(ref - v.begin(), (iterator) result[0] - v.begin());
+  REQUIRE(ref - v.begin() == (iterator) result[0] - v.begin());
 }
 
-void TestPartitionPointDeviceSeq()
+TEST_CASE("TestPartitionPointDeviceSeq", "[partition_point]")
 {
   TestPartitionPointDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestPartitionPointDeviceSeq);
 
-void TestPartitionPointDeviceDevice()
+TEST_CASE("TestPartitionPointDeviceDevice", "[partition_point]")
 {
   TestPartitionPointDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestPartitionPointDeviceDevice);
 #endif
 
-void TestPartitionPointCudaStreams()
+TEST_CASE("TestPartitionPointCudaStreams", "[partition_point]")
 {
   using Vector   = thrust::device_vector<int>;
   using T        = Vector::value_type;
@@ -63,7 +61,7 @@ void TestPartitionPointCudaStreams()
   v[2] = 1;
   v[3] = 0;
 
-  Iterator first = v.begin();
+  const Iterator first = v.begin();
 
   Iterator last = v.begin() + 4;
   Iterator ref  = first + 3;
@@ -71,12 +69,11 @@ void TestPartitionPointCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  ASSERT_EQUAL_QUIET(ref, thrust::partition_point(thrust::cuda::par.on(s), first, last, ::cuda::std::identity{}));
+  REQUIRE(ref == thrust::partition_point(thrust::cuda::par.on(s), first, last, ::cuda::std::identity{}));
 
   last = v.begin() + 3;
   ref  = last;
-  ASSERT_EQUAL_QUIET(ref, thrust::partition_point(thrust::cuda::par.on(s), first, last, ::cuda::std::identity{}));
+  REQUIRE(ref == thrust::partition_point(thrust::cuda::par.on(s), first, last, ::cuda::std::identity{}));
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestPartitionPointCudaStreams);

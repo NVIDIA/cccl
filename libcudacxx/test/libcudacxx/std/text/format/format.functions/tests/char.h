@@ -14,11 +14,11 @@
 #include "test_macros.h"
 
 // Provided by the selected checker.
-TEST_FUNC bool check(...);
-TEST_FUNC bool check_exception(...);
+TEST_HOST_DEVICE_FUNC bool check(...);
+TEST_HOST_DEVICE_FUNC bool check_exception(...);
 
 template <class CharT>
-TEST_FUNC void test_char()
+TEST_HOST_DEVICE_FUNC void test_char()
 {
   // ***** Char type *****
   // *** align-fill & width ***
@@ -92,7 +92,7 @@ TEST_FUNC void test_char()
 }
 
 template <class CharT>
-TEST_FUNC void test_char_as_int()
+TEST_HOST_DEVICE_FUNC void test_char_as_int()
 {
   // *** align-fill & width ***
   assert(check(SV("answer is '42'"), SV("answer is '{:<1d}'"), CharT('*')));
@@ -165,7 +165,7 @@ TEST_FUNC void test_char_as_int()
   // }
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test_char<char>();
   test_char_as_int<char>();

@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_three_way_partition.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_three_way_partition.cuh>
 #include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
@@ -45,8 +46,8 @@ template <typename PolicySelector,
           typename ScanTileStateT,
           typename SelectFirstPartOp,
           typename SelectSecondPartOp,
-          typename per_partition_offset_t,
-          typename streaming_context_t,
+          typename PerPartitionOffsetT,
+          typename StreamingContextT,
           typename OffsetT>
 struct DeviceThreeWayPartitionKernelSource
 {
@@ -65,8 +66,8 @@ struct DeviceThreeWayPartitionKernelSource
       ScanTileStateT,
       SelectFirstPartOp,
       SelectSecondPartOp,
-      per_partition_offset_t,
-      streaming_context_t>);
+      PerPartitionOffsetT,
+      StreamingContextT>);
 };
 
 // TODO(bgruber): remove in CCCL 4.0
@@ -78,12 +79,13 @@ struct policy_selector_from_hub
   {
     using active_policy = typename PolicyHub::MaxPolicy::ActivePolicy::ThreeWayPartitionPolicy;
     return ThreeWayPartitionPolicy{
-      active_policy::BLOCK_THREADS,
-      active_policy::ITEMS_PER_THREAD,
-      active_policy::LOAD_ALGORITHM,
-      active_policy::LOAD_MODIFIER,
-      active_policy::SCAN_ALGORITHM,
-      lookback_delay_policy_from_type<typename active_policy::detail::delay_constructor_t>};
+      ThreeWayPartitionAlgorithm::lookback,
+      {active_policy::BLOCK_THREADS,
+       active_policy::ITEMS_PER_THREAD,
+       active_policy::LOAD_ALGORITHM,
+       active_policy::LOAD_MODIFIER,
+       active_policy::SCAN_ALGORITHM,
+       lookback_delay_policy_from_type<typename active_policy::detail::delay_constructor_t>}};
   }
 };
 
@@ -226,12 +228,8 @@ struct dispatch_three_way_partition_if
       // Log three_way_partition_init_kernel configuration
       const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
 
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking three_way_partition_init_kernel<<<%d, %d, 0, %lld>>>()\n",
-              init_grid_size,
-              INIT_KERNEL_THREADS,
-              reinterpret_cast<long long>(stream));
-#endif // CUB_DEBUG_LOG
+      _CUB_LOG_KERNEL_LAUNCH(
+        "three_way_partition_init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
       // Invoke three_way_partition_init_kernel to initialize tile descriptors
       if (const auto error = CubDebug(
@@ -260,8 +258,13 @@ struct dispatch_three_way_partition_if
         return cudaSuccess;
       }
 
-// Log select_if_kernel configuration
+      // Log select_if_kernel configuration
 #ifdef CUB_DEBUG_LOG
+      constexpr bool cub_debug_log_three_way_partition_kernel = true;
+#else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
+      const bool cub_debug_log_three_way_partition_kernel = detail::logging_enabled();
+#endif // !CUB_DEBUG_LOG
+      if (cub_debug_log_three_way_partition_kernel)
       {
         // Get SM occupancy for select_if_kernel
         int range_select_sm_occupancy;
@@ -273,15 +276,17 @@ struct dispatch_three_way_partition_if
           return error;
         }
 
-        _CubLog("Invoking three_way_partition_kernel<<<%d, %d, 0, %lld>>>(), %d "
-                "items per thread, %d SM occupancy\n",
-                current_num_tiles,
-                threads_per_block,
-                reinterpret_cast<long long>(stream),
-                items_per_thread,
-                range_select_sm_occupancy);
+        _CUB_LOG_KERNEL_LAUNCH(
+          "three_way_partition_kernel",
+          current_num_tiles,
+          1,
+          1,
+          threads_per_block,
+          0,
+          stream,
+          ", SM occupancy: %d",
+          range_select_sm_occupancy);
       }
-#endif // CUB_DEBUG_LOG
 
       // Invoke select_if_kernel
       if (const auto error = CubDebug(
@@ -361,7 +366,7 @@ struct dispatch_three_way_partition_if
   {
     // Get PTX version
     int ptx_version = 0;
-    if (cudaError error = CubDebug(launcher_factory.PtxVersion(ptx_version)); cudaSuccess != error)
+    if (const cudaError error = CubDebug(launcher_factory.PtxVersion(ptx_version)); cudaSuccess != error)
     {
       return error;
     }
@@ -417,8 +422,8 @@ template <
     detail::three_way_partition::streaming_context_t<OffsetT>,
     OffsetT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-using DispatchThreeWayPartitionIf
-  CCCL_DEPRECATED_BECAUSE("Please use DevicePartition") = detail::three_way_partition::dispatch_three_way_partition_if<
+using DispatchThreeWayPartitionIf CCCL_DEPRECATED_BECAUSE("Use the tuning API for DevicePartition") =
+  detail::three_way_partition::dispatch_three_way_partition_if<
     InputIteratorT,
     FirstOutputIteratorT,
     SecondOutputIteratorT,
@@ -443,18 +448,18 @@ template <typename InputIteratorT,
           typename OffsetT,
           typename PolicySelector = policy_selector_from_types<it_value_t<InputIteratorT>, per_partition_offset_t>,
           typename KernelSource   = DeviceThreeWayPartitionKernelSource<
-              PolicySelector,
-              InputIteratorT,
-              FirstOutputIteratorT,
-              SecondOutputIteratorT,
-              UnselectedOutputIteratorT,
-              NumSelectedIteratorT,
-              ScanTileStateT,
-              SelectFirstPartOp,
-              SelectSecondPartOp,
-              per_partition_offset_t,
-              streaming_context_t<OffsetT>,
-              OffsetT>,
+            PolicySelector,
+            InputIteratorT,
+            FirstOutputIteratorT,
+            SecondOutputIteratorT,
+            UnselectedOutputIteratorT,
+            NumSelectedIteratorT,
+            ScanTileStateT,
+            SelectFirstPartOp,
+            SelectSecondPartOp,
+            per_partition_offset_t,
+            streaming_context_t<OffsetT>,
+            OffsetT>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires three_way_partition_policy_selector<PolicySelector>
@@ -483,22 +488,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   const ThreeWayPartitionPolicy active_policy = policy_selector(cc);
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 ::std::stringstream ss;
-                 ss << active_policy;
-                 _CubLog("Dispatching DeviceThreeWayPartition to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  detail::log_dispatch("DevicePartition (three way)", cc, active_policy);
 
   static constexpr per_partition_offset_t partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
   static constexpr int init_kernel_threads               = 256;
 
-  const int threads_per_block = active_policy.threads_per_block;
-  const int items_per_thread  = active_policy.items_per_thread;
+  const int threads_per_block = active_policy.lookback.threads_per_block;
+  const int items_per_thread  = active_policy.lookback.items_per_thread;
   const int tile_size         = threads_per_block * items_per_thread;
 
   auto three_way_partition_init_kernel = kernel_source.ThreeWayPartitionInitKernel();
@@ -570,12 +566,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     // Log three_way_partition_init_kernel configuration
     const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, init_kernel_threads));
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking three_way_partition_init_kernel<<<%d, %d, 0, %lld>>>()\n",
-            init_grid_size,
-            init_kernel_threads,
-            reinterpret_cast<long long>(stream));
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("three_way_partition_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
 
     // Invoke three_way_partition_init_kernel to initialize tile descriptors
     if (const auto error = CubDebug(
@@ -606,6 +597,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
     // Log select_if_kernel configuration
 #ifdef CUB_DEBUG_LOG
+    constexpr bool cub_debug_log_three_way_partition_kernel = true;
+#else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
+    const bool cub_debug_log_three_way_partition_kernel = logging_enabled();
+#endif // !CUB_DEBUG_LOG
+    if (cub_debug_log_three_way_partition_kernel)
     {
       // Get SM occupancy for three_way_partition_kernel
       int range_select_sm_occupancy;
@@ -617,15 +613,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         return error;
       }
 
-      _CubLog("Invoking three_way_partition_kernel<<<%d, %d, 0, %lld>>>(), %d "
-              "items per thread, %d SM occupancy\n",
-              current_num_tiles,
-              threads_per_block,
-              reinterpret_cast<long long>(stream),
-              items_per_thread,
-              range_select_sm_occupancy);
+      _CUB_LOG_KERNEL_LAUNCH(
+        "three_way_partition_kernel",
+        current_num_tiles,
+        1,
+        1,
+        threads_per_block,
+        0,
+        stream,
+        ", SM occupancy: %d",
+        range_select_sm_occupancy);
     }
-#endif // CUB_DEBUG_LOG
 
     // Invoke three_way_partition_kernel
     if (const auto error = CubDebug(

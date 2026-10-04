@@ -64,7 +64,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<variant<_Types...
     _CCCL_UNREACHABLE();
   }
 
-  [[nodiscard]] _CCCL_API constexpr result_type operator()(const argument_type& __v) const
+  [[nodiscard]] _CCCL_API constexpr result_type _CCCL_STATIC_CALL_OPERATOR(const argument_type& __v)
   {
     size_t __res = __v.valueless_by_exception()
                    ? 299792458 // Random value chosen by the universe upon creation

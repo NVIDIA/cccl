@@ -25,9 +25,21 @@
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
+
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_copysignf128) || _CCCL_COMPILER(GCC)
+#    define _CCCL_BUILTIN_COPYSIGNF128(...) __builtin_copysignf128(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_copysignf128) || _CCCL_COMPILER(GCC)
+#endif // _CCCL_HAS_FLOAT128()
+
+// nvcc doesn't implement __builtin_copysignf128 on device
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_COPYSIGNF128
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -62,6 +74,25 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
     }
     else
     {
+#if _CCCL_HAS_FLOAT128()
+      if constexpr (is_same_v<_Tp, __float128>)
+      {
+#  if defined(_CCCL_BUILTIN_COPYSIGNF128)
+        // nvcc doesn't support _CCCL_BUILTIN_COPYSIGNF128 in constexpr context
+#    if _CCCL_CUDA_COMPILER(NVCC)
+        _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+#    endif // _CCCL_CUDA_COMPILER(NVCC)
+        {
+          return static_cast<__float128>(_CCCL_BUILTIN_COPYSIGNF128(__x, __y));
+        }
+#  else // ^^^ _CCCL_BUILTIN_COPYSIGNF128 ^^^ / vvv !_CCCL_BUILTIN_COPYSIGNF128 vvv
+        _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+        {
+          NV_IF_TARGET(NV_IS_DEVICE, (return ::__nv_fp128_copysign(__x, __y);))
+        }
+#  endif // ^^^ !_CCCL_BUILTIN_COPYSIGNF128 ^^^
+      }
+#endif // _CCCL_HAS_FLOAT128()
       const auto __val = (::cuda::std::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<_Tp>)
                        | (::cuda::std::__fp_get_storage(__y) & __fp_sign_mask_of_v<_Tp>);
       return ::cuda::std::__fp_from_storage<_Tp>(static_cast<__fp_storage_of_t<_Tp>>(__val));

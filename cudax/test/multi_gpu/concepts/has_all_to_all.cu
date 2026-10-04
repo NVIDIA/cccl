@@ -35,9 +35,9 @@ _CCCL_END_NV_DIAG_SUPPRESS()
 
 C2H_TEST("__has_all_to_all concept", "[multi_gpu][concepts]")
 {
-  STATIC_REQUIRE(cudax::__has_all_to_all<types::collective_communicator_model>);
-  STATIC_REQUIRE(cudax::__has_all_to_all<types::collective_communicator_model, long*>);
-  STATIC_REQUIRE(!cudax::__has_all_to_all<types::communicator_model>);
+  STATIC_REQUIRE(cudax::mgmn::__has_all_to_all<types::collective_communicator_model>);
+  STATIC_REQUIRE(cudax::mgmn::__has_all_to_all<types::collective_communicator_model, long*>);
+  STATIC_REQUIRE(!cudax::mgmn::__has_all_to_all<types::communicator_model>);
 
-  STATIC_REQUIRE(!cudax::__has_all_to_all<all_to_all_returns_int>);
+  STATIC_REQUIRE(!cudax::mgmn::__has_all_to_all<all_to_all_returns_int>);
 }

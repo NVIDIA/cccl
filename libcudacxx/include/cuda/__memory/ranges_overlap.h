@@ -35,7 +35,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 #if _CCCL_CUDA_COMPILATION()
-[[nodiscard]] _CCCL_DEVICE_API inline bool __ptr_ranges_overlap_device(
+[[nodiscard]] _CCCL_DEVICE_TILE_API inline bool __ptr_ranges_overlap_device(
   const void* __lhs_begin, const void* __lhs_end, const void* __rhs_begin, const void* __rhs_end) noexcept
 {
   using uintptr_t            = ::cuda::std::uintptr_t;
@@ -103,6 +103,7 @@ ranges_overlap(_Tp __lhs_begin, _Tp __lhs_end, _Tp __rhs_begin, _Tp __rhs_end) n
         return true;
       }
     }
+
     for (auto __rhs_it = __rhs_begin; __rhs_it != __rhs_end; ++__rhs_it)
     {
       if (__rhs_it == __lhs_begin)

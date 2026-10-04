@@ -3,20 +3,22 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
+#include <cub/detail/prefetch.cuh>
 #include <cub/device/device_select.cuh>
+#include <cub/device/dispatch/tuning/tuning_select_if.cuh>
 
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/logical.h>
 
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/execution>
 
 #include <algorithm>
 
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <typename PredOpT>
 struct predicate_op_wrapper_t
@@ -34,8 +36,8 @@ template <class T, class FlagT, class Pred>
 static c2h::host_vector<T>
 get_reference(c2h::device_vector<T> const& in, c2h::device_vector<FlagT> const& flags, Pred if_predicate)
 {
-  c2h::host_vector<T> reference   = in;
-  c2h::host_vector<FlagT> h_flags = flags;
+  c2h::host_vector<T> reference         = in;
+  const c2h::host_vector<FlagT> h_flags = flags;
   // Zips flags and items
   auto zipped_in_it = thrust::make_zip_iterator(h_flags.cbegin(), reference.cbegin());
 
@@ -105,7 +107,7 @@ using types =
 
 using flag_types = c2h::type_list<std::uint8_t, std::uint64_t, custom_t>;
 
-C2H_TEST("DeviceSelect::FlaggedIf can run with empty input", "[device][select_flagged_if]", types)
+CUB_TEST("DeviceSelect::FlaggedIf can run with empty input", "[device][select_flagged_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -123,7 +125,7 @@ C2H_TEST("DeviceSelect::FlaggedIf can run with empty input", "[device][select_fl
   REQUIRE(num_selected_out[0] == 0);
 }
 
-C2H_TEST("DeviceSelect::FlaggedIf handles all matched", "[device][select_flagged_if]", types)
+CUB_TEST("DeviceSelect::FlaggedIf handles all matched", "[device][select_flagged_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -143,7 +145,7 @@ C2H_TEST("DeviceSelect::FlaggedIf handles all matched", "[device][select_flagged
   REQUIRE(out == in);
 }
 
-C2H_TEST("DeviceSelect::FlaggedIf handles no matched", "[device][select_flagged_if]", types)
+CUB_TEST("DeviceSelect::FlaggedIf handles no matched", "[device][select_flagged_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -163,8 +165,9 @@ C2H_TEST("DeviceSelect::FlaggedIf handles no matched", "[device][select_flagged_
   REQUIRE(num_selected_out[0] == 0);
 }
 
-C2H_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
+CUB_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
          "[device][select_flagged_if]",
+         CUB_SMALL,
          c2h::type_list<std::uint8_t, std::uint64_t>,
          flag_types)
 {
@@ -176,7 +179,7 @@ C2H_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
   c2h::device_vector<input_type> out(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  is_even_t<flag_type> is_even{};
+  const is_even_t<flag_type> is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);
@@ -188,7 +191,7 @@ C2H_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
   int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // copy input first
-  c2h::device_vector<input_type> reference_in = in;
+  const c2h::device_vector<input_type> reference_in = in;
 
   select_flagged_if(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items, is_even);
 
@@ -204,8 +207,9 @@ C2H_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
 }
 
 #if TEST_LAUNCH == 0
-C2H_TEST("DeviceSelect::FlaggedIf works with user provided memory and environment",
+CUB_TEST("DeviceSelect::FlaggedIf works with user provided memory and environment",
          "[device][select_if]",
+         CUB_SMALL,
          all_types,
          flag_types)
 {
@@ -273,51 +277,12 @@ C2H_TEST("DeviceSelect::FlaggedIf works with user provided memory and environmen
     REQUIRE(reference == out);
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("DeviceSelect::FlaggedIf works with cudaStream_t")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_flagged_if(stream.get());
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_flagged_if(stream);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::stream_ref")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
-    test_flagged_if(stream_ref);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::std::execution::env")
-  {
-    cuda::std::execution::env env{};
-    test_flagged_if(env);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_flagged_if(policy);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::execution::gpu with stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_flagged_if(policy);
-  }
+  test_with_custom_streams(test_flagged_if);
 }
 
-C2H_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and environment",
+CUB_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and environment",
          "[device][select_if]",
+         CUB_SMALL,
          all_types,
          flag_types)
 {
@@ -382,51 +347,81 @@ C2H_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and e
     REQUIRE(reference == in);
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
+  test_with_custom_streams(test_flagged_if);
+}
 
-  SECTION("DeviceSelect::FlaggedIf works with cudaStream_t")
+template <cub::detail::LoadPrefetch Prefetch, cub::SelectImpl SelectionOpt>
+struct flagged_if_prefetch_policy_selector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::SelectPolicy
   {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_flagged_if(stream.get());
+    auto policy = cub::detail::select::policy_selector_from_types<int*, int*, int*, int, SelectionOpt>{}(cc);
+    policy.lookback._load_prefetch = Prefetch;
+    return policy;
   }
+};
 
-  SECTION("DeviceSelect::FlaggedIf works with cuda::stream")
+using prefetch_policies =
+  c2h::enum_type_list<cub::detail::LoadPrefetch, cub::detail::LoadPrefetch::l2, cub::detail::LoadPrefetch::bulk_l2>;
+
+using selection_policies =
+  c2h::enum_type_list<cub::SelectImpl, cub::SelectImpl::Select, cub::SelectImpl::SelectPotentiallyInPlace>;
+
+CUB_TEST("DeviceSelect::FlaggedIf works with explicit prefetch policies",
+         "[device][select_flagged_if][prefetch]",
+         CUB_SMALL,
+         prefetch_policies,
+         selection_policies)
+{
+  constexpr auto prefetch     = c2h::get<0, TestType>::value;
+  constexpr auto selection_op = c2h::get<1, TestType>::value;
+  constexpr int num_items     = 100003;
+
+  c2h::device_vector<int> in(num_items);
+  c2h::gen(C2H_SEED(2), in);
+
+  c2h::device_vector<int> flags(num_items);
+  c2h::gen(C2H_SEED(1), flags);
+
+  const is_even_t<int> is_even{};
+  const c2h::host_vector<int> reference = get_reference(in, flags, is_even);
+  const int num_selected                = static_cast<int>(reference.size());
+
+  c2h::device_vector<int> num_selected_out(1, 0);
+
+  int* const d_in               = thrust::raw_pointer_cast(in.data());
+  int* const d_flags            = thrust::raw_pointer_cast(flags.data());
+  int* const d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  const auto tuned_execution    = cuda::execution::tune(flagged_if_prefetch_policy_selector<prefetch, selection_op>{});
+
+  if constexpr (selection_op == cub::SelectImpl::SelectPotentiallyInPlace)
   {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_flagged_if(stream);
+    REQUIRE(cudaSuccess
+            == cub::DeviceSelect::FlaggedIf(d_in, d_flags, d_num_selected_out, num_items, is_even, tuned_execution));
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    in.resize(num_selected_out[0]);
+    REQUIRE(num_selected == num_selected_out[0]);
+    REQUIRE(reference == in);
   }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::stream_ref")
+  else
   {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
-    test_flagged_if(stream_ref);
-  }
+    c2h::device_vector<int> out(num_items);
+    int* const d_out = thrust::raw_pointer_cast(out.data());
 
-  SECTION("DeviceSelect::FlaggedIf works with cuda::std::execution::env")
-  {
-    cuda::std::execution::env env{};
-    test_flagged_if(env);
-  }
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceSelect::FlaggedIf(d_in, d_flags, d_out, d_num_selected_out, num_items, is_even, tuned_execution));
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-  SECTION("DeviceSelect::FlaggedIf works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_flagged_if(policy);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::execution::gpu with stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_flagged_if(policy);
+    out.resize(num_selected_out[0]);
+    REQUIRE(num_selected == num_selected_out[0]);
+    REQUIRE(reference == out);
   }
 }
 #endif // TEST_LAUNCH == 0
 
-C2H_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", all_types, flag_types)
+CUB_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", CUB_SMALL, all_types, flag_types)
 {
   using input_type = typename c2h::get<0, TestType>;
   using flag_type  = typename c2h::get<1, TestType>;
@@ -436,7 +431,7 @@ C2H_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", 
   c2h::device_vector<input_type> out(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  is_even_t<flag_type> is_even{};
+  const is_even_t<flag_type> is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);
@@ -454,7 +449,7 @@ C2H_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", 
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged]", types, flag_types)
+CUB_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged]", CUB_SMALL, types, flag_types)
 {
   using input_type = typename c2h::get<0, TestType>;
   using flag_type  = typename c2h::get<1, TestType>;
@@ -464,7 +459,7 @@ C2H_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged
   c2h::device_vector<input_type> out(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  is_even_t<flag_type> is_even{};
+  const is_even_t<flag_type> is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);

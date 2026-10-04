@@ -54,7 +54,7 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
       cuda::execution::tune(bench_policy_selector<key_t, 1, 1>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceHistogram::HistogramRange,
       "HistogramRange failed",
       d_input,

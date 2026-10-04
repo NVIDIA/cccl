@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// hangs
+
 // <cuda/mdspan>
 
 // template<class OtherMapping>

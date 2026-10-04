@@ -66,7 +66,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sincos_result
 //! @return The \c cuda::sincos_result with the results of sin and cos operations.
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__is_extended_arithmetic_v<_Tp>)
-[[nodiscard]] _CCCL_API auto sincos(_Tp __v) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API auto sincos(_Tp __v) noexcept
   -> sincos_result<::cuda::std::conditional_t<::cuda::std::is_integral_v<_Tp>, double, _Tp>>
 {
   if constexpr (::cuda::std::is_integral_v<_Tp>)

@@ -49,6 +49,8 @@ template <class _Tp>
     return ::isnan(__x);
   }
 #endif // !_CCCL_TILE_COMPILATION()
+  // x != x is the canonical NaN test: it is true only when x is NaN.
+  // NOLINTNEXTLINE(misc-redundant-expression)
   return __x != __x;
 }
 

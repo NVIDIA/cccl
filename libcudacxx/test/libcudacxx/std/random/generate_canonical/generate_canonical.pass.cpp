@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/numeric>
@@ -15,7 +18,7 @@
 #include "test_macros.h"
 
 template <class T>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   cuda::std::array<T, 100> data;
   cuda::std::philox4x64 g{};

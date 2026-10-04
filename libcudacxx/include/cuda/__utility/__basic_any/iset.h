@@ -50,14 +50,14 @@ struct __iset_ : __iset__<_Interfaces...>::template __interface_<>
 
 // flatten any nested sets
 template <class _Interface>
-using __iset_flatten _CCCL_NODEBUG_ALIAS = ::cuda::std::__as_type_list<
+using __iset_flatten _CCCL_NODEBUG = ::cuda::std::__as_type_list<
   ::cuda::std::
     conditional_t<__is_specialization_of_v<_Interface, __iset_>, _Interface, ::cuda::std::__type_list<_Interface>>>;
 
 // flatten all sets into one, remove duplicates, and sort the elements.
 // TODO: sort!
 // template <class... _Interfaces>
-// using __iset _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_call<
+// using __iset _CCCL_NODEBUG = ::cuda::std::__type_call<
 //   ::cuda::std::__type_unique<::cuda::std::__type_sort<::cuda::std::__type_concat<__iset_flatten<_Interfaces>...>>>,
 //   ::cuda::std::__type_quote<__iset_>>;
 // GCC 7 had a problem with the original implementation, so we use a workaround.
@@ -110,7 +110,7 @@ using __iset =
 template <class... _Interfaces>
 struct __iset_vptr : __base_vptr
 {
-  using __iset_vtable _CCCL_NODEBUG_ALIAS = __vtable_for<__iset_<_Interfaces...>>;
+  using __iset_vtable _CCCL_NODEBUG = __vtable_for<__iset_<_Interfaces...>>;
 
   __iset_vptr() = default;
 
@@ -134,13 +134,14 @@ struct __iset_vptr : __base_vptr
                  "query_interface returned a bad pointer to the __iunknown vtable");
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator->() const noexcept -> __iset_vptr const*
+  [[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API constexpr auto operator->() const noexcept -> __iset_vptr const*
   {
     return this;
   }
 
   template <class _Interface>
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto __query_interface(_Interface) const noexcept -> __vptr_for<_Interface>
+  [[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API constexpr auto __query_interface(_Interface) const noexcept
+    -> __vptr_for<_Interface>
   {
     if (__vptr_->__kind_ == __vtable_kind::__normal)
     {
@@ -156,18 +157,18 @@ struct __iset_vptr : __base_vptr
 template <class... _Interfaces>
 struct __tagged_ptr<__iset_vptr<_Interfaces...>>
 {
-  _CCCL_NODEBUG_API auto __set(__iset_vptr<_Interfaces...> __vptr, bool __flag) noexcept -> void
+  _CCCL_NODEBUG_HOST_DEVICE_API auto __set(__iset_vptr<_Interfaces...> __vptr, bool __flag) noexcept -> void
   {
     __ptr_ = reinterpret_cast<uintptr_t>(__vptr.__vptr_) | uintptr_t(__flag);
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API auto __get() const noexcept -> __iset_vptr<_Interfaces...>
+  [[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API auto __get() const noexcept -> __iset_vptr<_Interfaces...>
   {
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     return __iset_vptr<_Interfaces...>{reinterpret_cast<__rtti_base const*>(__ptr_ & ~uintptr_t(1))};
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API auto __flag() const noexcept -> bool
+  [[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API auto __flag() const noexcept -> bool
   {
     return static_cast<bool>(__ptr_ & uintptr_t(1));
   }

@@ -21,11 +21,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import math
 
+import cuda.bench as bench
 import cupy as cp
 import numpy as np
 from utils import as_cupy_stream, generate_data_with_entropy
 
-import cuda.bench as bench
 from cuda.compute import make_binary_transform
 
 _COMPLEX_EPS = np.finfo(np.float32).eps

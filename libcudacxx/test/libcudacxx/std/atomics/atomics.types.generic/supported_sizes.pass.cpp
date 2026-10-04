@@ -6,11 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/std/atomic>
 
@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <typename T>
-TEST_FUNC void check_supported_type(T v)
+TEST_HOST_DEVICE_FUNC void check_supported_type(T v)
 {
   cuda::std::atomic<T> atom(v);
   cuda::std::atomic_ref<T> ref(v);

@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
+// UNSUPPORTED: force-tile
 // error: bit field read/write is unsupported in tile code
 
 // <cuda/std/format>
@@ -31,7 +31,7 @@ struct TestSpecStdValues
   cuda::std::__fmt_spec_type type;
 };
 
-TEST_FUNC TestSpecStdValues make_test_spec_std_values() noexcept
+TEST_HOST_DEVICE_FUNC TestSpecStdValues make_test_spec_std_values() noexcept
 {
   TestSpecStdValues value{};
   value.alignment            = cuda::std::__fmt_spec_alignment::__center;
@@ -43,7 +43,7 @@ TEST_FUNC TestSpecStdValues make_test_spec_std_values() noexcept
   return value;
 }
 
-TEST_FUNC void verify_spec_std(const cuda::std::__fmt_spec_std& value) noexcept
+TEST_HOST_DEVICE_FUNC void verify_spec_std(const cuda::std::__fmt_spec_std& value) noexcept
 {
   const auto ref = make_test_spec_std_values();
   assert(value.__alignment_ == cuda::std::to_underlying(ref.alignment));
@@ -54,7 +54,7 @@ TEST_FUNC void verify_spec_std(const cuda::std::__fmt_spec_std& value) noexcept
   assert(value.__type_ == ref.type);
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   static_assert(sizeof(cuda::std::__fmt_spec_std) == 2);
   assert(offsetof(cuda::std::__fmt_spec_std, __type_) == 1);

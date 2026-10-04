@@ -58,6 +58,17 @@ done
 suffix=""
 if [[ "$project" == "python_v2" ]]; then
   suffix="-v2"
+elif [[ "$project" == "python_tsan" ]]; then
+  # ThreadSanitizer-instrumented wheel (free-threaded TSan nightly lane). Must
+  # be distinct so its build doesn't clobber the normal wheel and the TSan test
+  # job doesn't grab an uninstrumented one.
+  suffix="-tsan"
 fi
 
-echo "wheel-cccl${suffix}-$os-$arch-py$py_version"
+# The cuda-stf wheel is built by a separate job that also runs in project
+# 'python', so it must use a distinct artifact name. Callers set
+# CCCL_WHEEL_KIND=stf (default is the historical 'cccl' name) when they mean
+# the cuda-stf wheel.
+kind="${CCCL_WHEEL_KIND:-cccl}"
+
+echo "wheel-${kind}${suffix}-$os-$arch-py$py_version"

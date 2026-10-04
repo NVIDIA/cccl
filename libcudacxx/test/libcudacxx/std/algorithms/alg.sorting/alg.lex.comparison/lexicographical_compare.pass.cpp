@@ -20,6 +20,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter1, class Iter2>
 TEST_FUNC constexpr void test()
 {
@@ -34,6 +35,7 @@ TEST_FUNC constexpr void test()
   assert(!cuda::std::lexicographical_compare(Iter1(ib + 1), Iter1(ib + 3), Iter2(ia), Iter2(ia + sa)));
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 TEST_FUNC constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>>();
@@ -69,9 +71,9 @@ TEST_FUNC constexpr bool test()
 #if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>, host_only_iterator<const int*>>();))
 #endif // !TEST_COMPILER(NVRTC)
-#if TEST_CUDA_COMPILATION()
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
   NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>, device_only_iterator<const int*>>();))
-#endif // TEST_CUDA_COMPILATION()
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 
   return true;
 }

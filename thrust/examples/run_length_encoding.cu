@@ -31,7 +31,7 @@ int main()
   std::cout << '\n' << '\n';
 
   // compute run lengths
-  size_t num_runs =
+  const size_t num_runs =
     thrust::reduce_by_key(
       input.begin(),
       input.end(), // input key sequence

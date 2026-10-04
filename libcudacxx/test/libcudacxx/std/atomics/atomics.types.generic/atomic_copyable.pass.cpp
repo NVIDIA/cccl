@@ -6,11 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/std/atomic>
 
@@ -25,7 +25,7 @@
 #include "test_macros.h"
 
 template <class T>
-TEST_FUNC void test_not_copy_constructible()
+TEST_HOST_DEVICE_FUNC void test_not_copy_constructible()
 {
   static_assert(!cuda::std::is_constructible<T, T&&>());
   static_assert(!cuda::std::is_constructible<T, const T&>());
@@ -34,7 +34,7 @@ TEST_FUNC void test_not_copy_constructible()
 }
 
 template <class T>
-TEST_FUNC void test_copy_constructible()
+TEST_HOST_DEVICE_FUNC void test_copy_constructible()
 {
   static_assert(cuda::std::is_constructible<T, T&&>());
   static_assert(cuda::std::is_constructible<T, const T&>());
@@ -43,7 +43,7 @@ TEST_FUNC void test_copy_constructible()
 }
 
 template <class T, class A>
-TEST_FUNC void test_atomic_ref_copy_ctor()
+TEST_HOST_DEVICE_FUNC void test_atomic_ref_copy_ctor()
 {
   SHARED A val;
   val = 0;
@@ -58,7 +58,7 @@ TEST_FUNC void test_atomic_ref_copy_ctor()
 }
 
 template <class T, class A>
-TEST_FUNC void test_atomic_ref_move_ctor()
+TEST_HOST_DEVICE_FUNC void test_atomic_ref_move_ctor()
 {
   SHARED A val;
   val = 0;

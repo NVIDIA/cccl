@@ -95,7 +95,7 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate, __execution_backend::__cuda>
 
     // Determine temporary device storage requirements for cub::DevicePartition::Flagged
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DevicePartition::Flagged,
       "__pstl_cuda_rotate: determination of device storage for cub::DevicePartition::Flagged failed",
       static_cast<void*>(nullptr),
@@ -105,14 +105,14 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate, __execution_backend::__cuda>
       __output_wrapper,
       static_cast<_OffsetType*>(nullptr),
       __count,
-      nullptr);
+      __policy);
 
     {
       // Allocate memory for result
       __temporary_storage<_OffsetType, value_type> __storage{__policy, __num_bytes, 1, __count};
 
       // Partition cannot run inplace, so we need to first copy the input into temporary storage
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceTransform::TransformIf,
         "__pstl_cuda_rotate: kernel launch of cub::DeviceTransform::TransformIf failed",
         tuple<_InputIterator>{::cuda::std::move(__first)},
@@ -123,7 +123,7 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate, __execution_backend::__cuda>
         __policy);
 
       // Run the kernel, we use the flagged kernel because we know the exact ordering we want
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DevicePartition::Flagged,
         "__pstl_cuda_rotate: kernel launch of cub::DevicePartition::Flagged failed",
         __storage.__get_temp_storage(),
@@ -131,9 +131,9 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate, __execution_backend::__cuda>
         __storage.template __get_raw_ptr<1>(),
         ::cuda::transform_iterator{::cuda::counting_iterator<size_t>{0}, __rotate_fn{__count1}},
         ::cuda::std::move(__output_wrapper),
-        __storage.template __get_ptr<0>(),
+        __storage.template __get_raw_ptr<0>(),
         __count,
-        __stream.get());
+        __policy);
     }
 
     __stream.sync();
@@ -142,11 +142,8 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate, __execution_backend::__cuda>
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _InputIterator operator()(
-    [[maybe_unused]] const _Policy& __policy,
-    _InputIterator __first,
-    _InputIterator __middle,
-    _InputIterator __last) const
+  [[nodiscard]] _CCCL_HOST_API _InputIterator _CCCL_STATIC_CALL_OPERATOR(
+    [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __middle, _InputIterator __last)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
     {

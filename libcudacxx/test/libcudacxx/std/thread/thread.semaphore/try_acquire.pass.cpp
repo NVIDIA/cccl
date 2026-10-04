@@ -6,12 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement is not supported
 
 // <cuda/std/semaphore>
 
@@ -22,7 +21,7 @@
 #include "test_macros.h"
 
 template <typename Semaphore, template <typename, typename> class Selector, typename Initializer = constructor_initializer>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   Selector<Semaphore, Initializer> sel;
   SHARED Semaphore* s;
@@ -57,15 +56,18 @@ int main(int, char**)
      test<cuda::std::counting_semaphore<>, local_memory_selector>();
      test<cuda::counting_semaphore<cuda::thread_scope_block>, local_memory_selector>();
      test<cuda::counting_semaphore<cuda::thread_scope_device>, local_memory_selector>();
+     test<cuda::counting_semaphore<cuda::thread_scope_cluster>, local_memory_selector>();
      test<cuda::counting_semaphore<cuda::thread_scope_system>, local_memory_selector>();),
     (test<cuda::std::counting_semaphore<>, shared_memory_selector>();
      test<cuda::counting_semaphore<cuda::thread_scope_block>, shared_memory_selector>();
      test<cuda::counting_semaphore<cuda::thread_scope_device>, shared_memory_selector>();
+     test<cuda::counting_semaphore<cuda::thread_scope_cluster>, shared_memory_selector>();
      test<cuda::counting_semaphore<cuda::thread_scope_system>, shared_memory_selector>();
 
      test<cuda::std::counting_semaphore<>, global_memory_selector>();
      test<cuda::counting_semaphore<cuda::thread_scope_block>, global_memory_selector>();
      test<cuda::counting_semaphore<cuda::thread_scope_device>, global_memory_selector>();
+     test<cuda::counting_semaphore<cuda::thread_scope_cluster>, global_memory_selector>();
      test<cuda::counting_semaphore<cuda::thread_scope_system>, global_memory_selector>();))
 
   return 0;

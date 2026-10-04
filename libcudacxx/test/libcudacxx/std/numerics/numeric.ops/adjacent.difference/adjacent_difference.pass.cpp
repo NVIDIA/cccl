@@ -25,6 +25,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class InIter, class OutIter>
 TEST_FUNC constexpr void test()
 {
@@ -89,6 +90,7 @@ public:
   }
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 TEST_FUNC constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
@@ -124,9 +126,9 @@ TEST_FUNC constexpr bool test()
 #if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_HOST, (test<const int*, host_only_iterator<int*>>();))
 #endif // !TEST_COMPILER(NVRTC)
-#if TEST_CUDA_COMPILATION()
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
   NV_IF_TARGET(NV_IS_DEVICE, (test<const int*, device_only_iterator<int*>>();))
-#endif // TEST_CUDA_COMPILATION()
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 
   X x[3] = {X(1), X(2), X(3)};
   Y y[3] = {Y(1), Y(2), Y(3)};

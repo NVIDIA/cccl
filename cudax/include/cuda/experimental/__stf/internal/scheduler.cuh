@@ -20,6 +20,9 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/limits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -36,7 +39,7 @@
 #include <filesystem> // ::std::filesystem::exists
 #include <fstream> // ::std::ifstream
 #include <iostream>
-#include <limits> // ::std::numeric_limits<double>::max()
+#include <limits> // ::cuda::std::numeric_limits<double>::max()
 #include <random> // random_scheduler uses rng
 #include <sstream> // ::std::stringstream
 #include <string>
@@ -183,7 +186,7 @@ public:
       task_cost = default_cost;
     }
 
-    double best_end = ::std::numeric_limits<double>::max();
+    double best_end = ::cuda::std::numeric_limits<double>::max();
     int best_device = -1;
 
     for (int i = 0; i < num_devices; i++)
@@ -351,7 +354,7 @@ private:
     {
       const ::std::string& symbol = dep.get_symbol();
       const auto& info            = cache.at(symbol); // need to use at() to keep method const
-      double earliest             = ::std::numeric_limits<double>::max();
+      double earliest             = ::cuda::std::numeric_limits<double>::max();
 
       bool found_one = false;
 
@@ -363,7 +366,7 @@ private:
         if (device_info.first != msi_state::invalid)
         {
           found_one = true;
-          earliest  = ::std::min(earliest, device_info.second + comm_cost);
+          earliest  = ::cuda::std::min(earliest, device_info.second + comm_cost);
         }
       }
 
@@ -389,14 +392,14 @@ private:
       {
         case access_mode::read:
         case access_mode::rw:
-          data_available = ::std::max(data_available, msi.when_available(device_id, dep));
+          data_available = ::cuda::std::max(data_available, msi.when_available(device_id, dep));
           break;
         default:
           break;
       }
     }
 
-    double possible_start = ::std::max(when_can_start, data_available);
+    double possible_start = ::cuda::std::max(when_can_start, data_available);
     double end            = possible_start + task_cost;
 
     return end;

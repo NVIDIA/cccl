@@ -1,0 +1,49 @@
+=============== hierarchy.static begin ===============
+(cuda::hierarchy) <address> bottom_unit=thread: {
+  grid = dims=(x=2, y=3, z=4)
+  cluster = dims=(x=5, y=6, z=7)
+  block = dims=(x=8, y=9, z=10)
+}
+=============== hierarchy.static end ===============
+=============== hierarchy.dynamic begin ===============
+(cuda::hierarchy) <address> bottom_unit=thread: {
+  grid = dims=(x=11, y=12, z=13)
+  cluster = dims=(x=21, y=22, z=23)
+  block = dims=(x=31, y=32, z=33)
+}
+=============== hierarchy.dynamic end ===============
+=============== hierarchy.partial begin ===============
+(cuda::hierarchy) <address> bottom_unit=block: {
+  grid = dims=(x=14, y=15, z=16)
+}
+=============== hierarchy.partial end ===============
+=============== hierarchy.derived begin ===============
+(cuda::hierarchy) <address> bottom_unit=thread: {
+  grid = dims=(x=81, y=82, z=83)
+  block = dims=(x=91, y=92, z=93)
+}
+=============== hierarchy.derived end ===============
+=============== hierarchy.vector.0 begin ===============
+(cuda::hierarchy) bottom_unit=thread {
+  grid = dims=(x=41, y=1, z=1)
+  block = dims=(x=42, y=1, z=1)
+}
+=============== hierarchy.vector.0 end ===============
+=============== hierarchy.vector.1 begin ===============
+(cuda::hierarchy) bottom_unit=thread {
+  grid = dims=(x=51, y=1, z=1)
+  block = dims=(x=52, y=1, z=1)
+}
+=============== hierarchy.vector.1 end ===============
+=============== hierarchy.update.before begin ===============
+(cuda::hierarchy) <address> bottom_unit=thread: {
+  grid = dims=(x=61, y=1, z=1)
+  block = dims=(x=62, y=1, z=1)
+}
+=============== hierarchy.update.before end ===============
+=============== hierarchy.update.after begin ===============
+(cuda::hierarchy) <address> bottom_unit=thread: {
+  grid = dims=(x=71, y=1, z=1)
+  block = dims=(x=72, y=1, z=1)
+}
+=============== hierarchy.update.after end ===============

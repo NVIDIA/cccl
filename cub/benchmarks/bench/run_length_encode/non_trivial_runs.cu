@@ -22,13 +22,16 @@ struct bench_rle_policy_selector
     -> cub::RleNonTrivialRunsPolicy
   {
     return {
-      TUNE_THREADS,
-      TUNE_ITEMS,
-      TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
-      TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
-      static_cast<bool>(TUNE_TIME_SLICING),
-      cub::BLOCK_SCAN_WARP_SCANS,
-      lookback_delay_policy,
+      cub::RleNonTrivialRunsAlgorithm::lookback,
+      {
+        TUNE_THREADS,
+        TUNE_ITEMS,
+        TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
+        TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
+        static_cast<bool>(TUNE_TIME_SLICING),
+        cub::BLOCK_SCAN_WARP_SCANS,
+        lookback_delay_policy,
+      },
     };
   }
 };
@@ -60,7 +63,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
       cuda::execution::tune(bench_rle_policy_selector{})
 #endif // !TUNE_BASE
     };
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceRunLengthEncode::NonTrivialRuns,
       "NonTrivialRuns failed",
       d_in_keys,
@@ -89,7 +92,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
       cuda::execution::tune(bench_rle_policy_selector{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceRunLengthEncode::NonTrivialRuns,
       "NonTrivialRuns failed",
       d_in_keys,

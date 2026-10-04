@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 // <cuda/std/format>
 
 // template<class T, class charT>
@@ -29,7 +32,7 @@
 #include "test_macros.h"
 
 template <class T, class CharT>
-TEST_FUNC void assert_is_not_formattable()
+TEST_HOST_DEVICE_FUNC void assert_is_not_formattable()
 {
   static_assert(!cuda::std::formattable<T, CharT>);
   static_assert(!cuda::std::formattable<T&, CharT>);
@@ -40,7 +43,7 @@ TEST_FUNC void assert_is_not_formattable()
 }
 
 template <class T, class CharT>
-TEST_FUNC void assert_is_formattable()
+TEST_HOST_DEVICE_FUNC void assert_is_formattable()
 {
   // Only formatters for CharT == char || CharT == wchar_t are enabled for the
   // standard formatters. When CharT is a different type the formatter should
@@ -66,7 +69,7 @@ TEST_FUNC void assert_is_formattable()
 
 // Tests for P0645 Text Formatting
 template <class CharT>
-TEST_FUNC void test_P0645()
+TEST_HOST_DEVICE_FUNC void test_P0645()
 {
 #if _CCCL_HAS_WCHAR_T()
   // Tests the special formatter that converts a char to a wchar_t.
@@ -115,7 +118,7 @@ TEST_FUNC void test_P0645()
 // Note the paper has been abandoned, the types are kept since other papers may
 // introduce these formatters.
 template <class CharT>
-TEST_FUNC void test_P1636()
+TEST_HOST_DEVICE_FUNC void test_P1636()
 {
   assert_is_not_formattable<cuda::std::complex<double>, CharT>();
   assert_is_not_formattable<cuda::std::unique_ptr<int>, CharT>();
@@ -124,7 +127,7 @@ TEST_FUNC void test_P1636()
 // todo(dabayer): Enable once formatters for ranges are implemented.
 // Tests for P2286 Formatting ranges
 // template <class CharT>
-// TEST_FUNC void test_P2286() {
+// TEST_HOST_DEVICE_FUNC void test_P2286() {
 //   assert_is_formattable<cuda::std::array<int, 42>, CharT>();
 //   assert_is_formattable<cuda::std::vector<int>, CharT>();
 //   assert_is_formattable<cuda::std::deque<int>, CharT>();
@@ -159,7 +162,7 @@ TEST_FUNC void test_P1636()
 
 // Tests volatile qualified objects are no longer formattable.
 template <class CharT>
-TEST_FUNC void test_LWG3631()
+TEST_HOST_DEVICE_FUNC void test_LWG3631()
 {
   assert_is_not_formattable<volatile CharT, CharT>();
 
@@ -179,7 +182,7 @@ TEST_FUNC void test_LWG3631()
   assert_is_not_formattable<cuda::std::pair<volatile int, volatile int>, CharT>();
 }
 
-TEST_FUNC void test_LWG3944()
+TEST_HOST_DEVICE_FUNC void test_LWG3944()
 {
 #if _CCCL_HAS_WCHAR_T()
   assert_is_not_formattable<char*, wchar_t>();
@@ -197,9 +200,9 @@ TEST_FUNC void test_LWG3944()
 
 class c
 {
-  TEST_FUNC void f();
-  TEST_FUNC void fc() const;
-  TEST_FUNC static void sf();
+  TEST_HOST_DEVICE_FUNC void f();
+  TEST_HOST_DEVICE_FUNC void fc() const;
+  TEST_HOST_DEVICE_FUNC static void sf();
 };
 enum e
 {
@@ -210,7 +213,7 @@ enum class ec
   a
 };
 template <class CharT>
-TEST_FUNC void test_disabled()
+TEST_HOST_DEVICE_FUNC void test_disabled()
 {
 #if _CCCL_HAS_WCHAR_T()
   assert_is_not_formattable<const char*, wchar_t>();
@@ -278,20 +281,20 @@ TEST_FUNC void test_disabled()
 
 struct abstract
 {
-  TEST_FUNC virtual ~abstract() = 0;
+  TEST_HOST_DEVICE_FUNC virtual ~abstract() = 0;
 };
 
 template <>
 struct cuda::std::formatter<abstract, char>
 {
   template <class ParseContext>
-  TEST_FUNC constexpr typename ParseContext::iterator parse(ParseContext& parse_ctx)
+  TEST_HOST_DEVICE_FUNC constexpr typename ParseContext::iterator parse(ParseContext& parse_ctx)
   {
     return parse_ctx.begin();
   }
 
   template <class FormatContext>
-  TEST_FUNC typename FormatContext::iterator format(const abstract&, FormatContext& ctx) const
+  TEST_HOST_DEVICE_FUNC typename FormatContext::iterator format(const abstract&, FormatContext& ctx) const
   {
     return ctx.out();
   }
@@ -302,13 +305,13 @@ template <>
 struct cuda::std::formatter<abstract, wchar_t>
 {
   template <class ParseContext>
-  TEST_FUNC constexpr typename ParseContext::iterator parse(ParseContext& parse_ctx)
+  TEST_HOST_DEVICE_FUNC constexpr typename ParseContext::iterator parse(ParseContext& parse_ctx)
   {
     return parse_ctx.begin();
   }
 
   template <class FormatContext>
-  TEST_FUNC typename FormatContext::iterator format(const abstract&, FormatContext& ctx) const
+  TEST_HOST_DEVICE_FUNC typename FormatContext::iterator format(const abstract&, FormatContext& ctx) const
   {
     return ctx.out();
   }
@@ -316,7 +319,7 @@ struct cuda::std::formatter<abstract, wchar_t>
 #endif // _CCCL_HAS_WCHAR_T()
 
 template <class CharT>
-TEST_FUNC void test_abstract_class()
+TEST_HOST_DEVICE_FUNC void test_abstract_class()
 {
   assert_is_formattable<abstract, CharT>();
 }
@@ -331,25 +334,26 @@ struct cuda::std::formatter<TypeWithNonSemiregularFormatter, char>
   formatter(const formatter&) = delete;
 
   template <class ParseContext>
-  TEST_FUNC constexpr typename ParseContext::iterator parse(ParseContext& parse_ctx)
+  TEST_HOST_DEVICE_FUNC constexpr typename ParseContext::iterator parse(ParseContext& parse_ctx)
   {
     return parse_ctx.begin();
   }
 
   template <class FormatContext>
-  TEST_FUNC typename FormatContext::iterator format(const TypeWithNonSemiregularFormatter&, FormatContext& ctx) const
+  TEST_HOST_DEVICE_FUNC typename FormatContext::iterator
+  format(const TypeWithNonSemiregularFormatter&, FormatContext& ctx) const
   {
     return ctx.out();
   }
 };
 
-TEST_FUNC void test_non_semiregular()
+TEST_HOST_DEVICE_FUNC void test_non_semiregular()
 {
   assert_is_not_formattable<TypeWithNonSemiregularFormatter, char>();
 }
 
 template <class CharT>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test_P0645<CharT>();
   test_P1636<CharT>();
@@ -360,7 +364,7 @@ TEST_FUNC void test()
   test_non_semiregular();
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test<char>();
 #if _CCCL_HAS_WCHAR_T()

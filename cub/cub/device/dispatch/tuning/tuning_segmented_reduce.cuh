@@ -38,7 +38,7 @@ struct SegmentedReduceWarpReducePolicy
     return threads_per_block / threads_per_warp;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const SegmentedReduceWarpReducePolicy& lhs, const SegmentedReduceWarpReducePolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.threads_per_warp == rhs.threads_per_warp
@@ -46,7 +46,7 @@ struct SegmentedReduceWarpReducePolicy
         && lhs.load_modifier == rhs.load_modifier;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const SegmentedReduceWarpReducePolicy& lhs, const SegmentedReduceWarpReducePolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -69,14 +69,14 @@ struct SegmentedReducePolicy
   SegmentedReduceWarpReducePolicy medium_reduce; //!< Policy used for medium segments (one warp per segment)
   SegmentedReduceWarpReducePolicy small_reduce; //!< Policy used for small segments (one thread per segment)
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const SegmentedReducePolicy& lhs, const SegmentedReducePolicy& rhs) noexcept
   {
     return lhs.large_reduce == rhs.large_reduce && lhs.medium_reduce == rhs.medium_reduce
         && lhs.small_reduce == rhs.small_reduce;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const SegmentedReducePolicy& lhs, const SegmentedReducePolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -142,7 +142,7 @@ struct policy_selector_from_types
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_hub
 {
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
   private:
     static constexpr int items_per_vec_load = 4;

@@ -38,7 +38,7 @@ _CCCL_END_NV_DIAG_SUPPRESS()
 
 C2H_TEST("communicator concept", "[multi_gpu][concepts]")
 {
-  STATIC_REQUIRE(cudax::__communicator<types::communicator_model>);
-  STATIC_REQUIRE(!cudax::__communicator<no_send>);
-  STATIC_REQUIRE(!cudax::__communicator<no_recv>);
+  STATIC_REQUIRE(cudax::mgmn::__communicator<types::communicator_model>);
+  STATIC_REQUIRE(!cudax::mgmn::__communicator<no_send>);
+  STATIC_REQUIRE(!cudax::mgmn::__communicator<no_recv>);
 }

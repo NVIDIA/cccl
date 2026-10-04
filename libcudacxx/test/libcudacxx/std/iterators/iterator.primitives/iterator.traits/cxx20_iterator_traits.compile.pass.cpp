@@ -194,7 +194,7 @@ struct LegacyInputArrow
 #if TEST_STD_VER < 2020
   TEST_FUNC friend bool operator!=(LegacyInputArrow, LegacyInputArrow);
 #endif
-  // Otherwise, if decltype(​declval<I&>().operator->()) is well-formed, then pointer names that type.
+  // Otherwise, if decltype(declval<I&>().operator->()) is well-formed, then pointer names that type.
   TEST_FUNC int* operator->();
   TEST_FUNC reference operator*() const;
   TEST_FUNC LegacyInputArrow& operator++();
@@ -223,7 +223,7 @@ struct LegacyInputPointer
   {
     TEST_FUNC operator value_type() const;
   };
-  // If the qualified-id I​::​pointer is valid and denotes a type, then pointer names that type.
+  // If the qualified-id I::pointer is valid and denotes a type, then pointer names that type.
   struct pointer
   {};
 
@@ -231,7 +231,7 @@ struct LegacyInputPointer
 #if TEST_STD_VER < 2020
   TEST_FUNC friend bool operator!=(LegacyInputPointer, LegacyInputPointer);
 #endif
-  // Otherwise, if decltype(​declval<I&>().operator->()) is well-formed, then pointer names that type.
+  // Otherwise, if decltype(declval<I&>().operator->()) is well-formed, then pointer names that type.
   TEST_FUNC int* operator->();
   TEST_FUNC reference operator*() const;
   TEST_FUNC LegacyInputPointer& operator++();

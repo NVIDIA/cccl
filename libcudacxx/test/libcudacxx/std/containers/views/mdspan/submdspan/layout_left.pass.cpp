@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: a return statement inside a loop is not currently supported in a tile function
-
 // <mdspan>
 
 // constexpr mdspan& operator=(const mdspan& rhs) = default;
@@ -395,7 +392,7 @@ TEST_FUNC constexpr bool test()
       static_assert(sub.rank_dynamic() == 1);
 
       using submdspan_t = decltype(sub);
-      static_assert(cuda::std::is_same_v<typename submdspan_t::layout_type, cuda::std::layout_stride>);
+      static_assert(cuda::std::is_same_v<typename submdspan_t::layout_type, cuda::std::layout_left>);
 
       assert(sub.stride(0) == md.stride(0));
       assert(sub.extent(0) == 1);
@@ -409,8 +406,6 @@ TEST_FUNC constexpr bool test()
 int main(int, char**)
 {
   test();
-#if !_CCCL_COMPILER(GCC, <, 11) // gcc-10 complains about __submdspan_offset not being constexpr...
   static_assert(test());
-#endif // !_CCCL_COMPILER(GCC, <, 11)
   return 0;
 }

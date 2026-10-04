@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -32,7 +32,7 @@
 // pre-increment
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_pre_increment()
+TEST_HOST_DEVICE_FUNC constexpr void test_pre_increment()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Iter = typename Vec::iterator;
@@ -57,7 +57,7 @@ TEST_FUNC constexpr void test_pre_increment()
 // post-increment
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_post_increment()
+TEST_HOST_DEVICE_FUNC constexpr void test_post_increment()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Iter = typename Vec::iterator;
@@ -83,7 +83,7 @@ TEST_FUNC constexpr void test_post_increment()
 // pre-decrement
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_pre_decrement()
+TEST_HOST_DEVICE_FUNC constexpr void test_pre_decrement()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Iter = typename Vec::iterator;
@@ -101,7 +101,7 @@ TEST_FUNC constexpr void test_pre_decrement()
 // post-decrement
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_post_decrement()
+TEST_HOST_DEVICE_FUNC constexpr void test_post_decrement()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Iter = typename Vec::iterator;
@@ -119,7 +119,7 @@ TEST_FUNC constexpr void test_post_decrement()
 // compound assignment
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_compound_assignment()
+TEST_HOST_DEVICE_FUNC constexpr void test_compound_assignment()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Iter = typename Vec::iterator;
@@ -143,7 +143,7 @@ TEST_FUNC constexpr void test_compound_assignment()
 // binary arithmetic
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_arithmetic()
+TEST_HOST_DEVICE_FUNC constexpr void test_arithmetic()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Iter = typename Vec::iterator;
@@ -193,7 +193,7 @@ TEST_FUNC constexpr void test_arithmetic()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   test_pre_increment<T, N>();
   test_post_increment<T, N>();

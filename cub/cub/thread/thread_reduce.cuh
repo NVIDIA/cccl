@@ -26,6 +26,7 @@
 
 #include <cuda/__cmath/round_down.h>
 #include <cuda/__functional/maximum.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/iterator_traits.h>
@@ -160,7 +161,8 @@ namespace detail
  **********************************************************************************************************************/
 
 /// DPX instructions compute min, max, and sum for up to three 16 and 32-bit signed or unsigned integer parameters
-/// see DPX documentation https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#dpx
+/// see DPX documentation
+/// https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#dynamic-programming-extension-dpx-instructions
 /// NOTE: The compiler is able to automatically vectorize all cases with 3 operands
 ///       However, all other cases with per-halfword comparison need to be explicitly vectorized
 ///
@@ -265,7 +267,7 @@ inline constexpr bool enable_ternary_reduction_sm90_v<__nv_bfloat162, ReductionO
 template <typename T, typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm50_v =
   ::cuda::std::is_integral_v<T> && sizeof(T) <= 4
-  && (is_cuda_std_plus_v<ReductionOp, T> || is_cuda_std_bitwise_v<ReductionOp, T>);
+  && (::cuda::__is_cuda_std_plus_v<ReductionOp, T> || is_cuda_std_bitwise_v<ReductionOp, T>);
 
 /***********************************************************************************************************************
  * Internal Reduction Algorithms: Sequential, Binary, Ternary
@@ -358,13 +360,13 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, Reducti
   auto unpacked_values = unsafe_bitcast<UnpackedType>(simd_reduction);
   // Create a reversed copy of the SIMD reduction result and apply the SIMD operator.
   // This avoids redundant instructions for converting to and from 32-bit registers
-  T unpacked_values_rev[] = {unpacked_values[1], unpacked_values[0]};
-  auto simd_reduction_rev = unsafe_bitcast<SimdType>(unpacked_values_rev);
-  SimdType result         = SimdReduceOp{}(simd_reduction, simd_reduction_rev);
+  const T unpacked_values_rev[] = {unpacked_values[1], unpacked_values[0]};
+  auto simd_reduction_rev       = unsafe_bitcast<SimdType>(unpacked_values_rev);
+  SimdType result               = SimdReduceOp{}(simd_reduction, simd_reduction_rev); // NOLINT(misc-const-correctness)
   // repeat the same optimization for the last element
   if constexpr (length % simd_ratio == 1)
   {
-    T tail[]       = {input[length - 1], T{}};
+    const T tail[] = {input[length - 1], T{}};
     auto tail_simd = unsafe_bitcast<SimdType>(tail);
     result         = SimdReduceOp{}(result, tail_simd);
   }
@@ -451,8 +453,7 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
     if constexpr (enable_ternary_reduction_sm90_v<ValueT, ReductionOp>)
     {
       // with the current tuning policies, SM90/int32/+ uses too many registers (TODO: fix tuning policy)
-      if constexpr ((is_one_of_v<ReductionOp, ::cuda::std::plus<>, ::cuda::std::plus<PromT>>
-                     && is_one_of_v<PromT, int32_t, uint32_t>)
+      if constexpr ((::cuda::__is_cuda_std_plus_v<ReductionOp, PromT> && is_one_of_v<PromT, int32_t, uint32_t>)
                     // the compiler generates bad code for int8/uint8 and min/max for SM90
                     || (is_cuda_minimum_maximum_v<ReductionOp, ValueT> && is_one_of_v<PromT, int8_t, uint8_t>) )
       {

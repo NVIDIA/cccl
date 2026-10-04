@@ -35,9 +35,9 @@ _CCCL_END_NV_DIAG_SUPPRESS()
 
 C2H_TEST("__has_all_gather concept", "[multi_gpu][concepts]")
 {
-  STATIC_REQUIRE(cudax::__has_all_gather<types::collective_communicator_model>);
-  STATIC_REQUIRE(cudax::__has_all_gather<types::collective_communicator_model, long*>);
-  STATIC_REQUIRE(!cudax::__has_all_gather<types::communicator_model>);
+  STATIC_REQUIRE(cudax::mgmn::__has_all_gather<types::collective_communicator_model>);
+  STATIC_REQUIRE(cudax::mgmn::__has_all_gather<types::collective_communicator_model, long*>);
+  STATIC_REQUIRE(!cudax::mgmn::__has_all_gather<types::communicator_model>);
 
-  STATIC_REQUIRE(!cudax::__has_all_gather<all_gather_returns_int>);
+  STATIC_REQUIRE(!cudax::mgmn::__has_all_gather<all_gather_returns_int>);
 }

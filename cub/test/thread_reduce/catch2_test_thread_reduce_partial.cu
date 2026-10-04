@@ -13,8 +13,8 @@
 #include <cuda/std/type_traits>
 
 #include "catch2_test_device_reduce.cuh"
+#include "cub_test_macros.h"
 #include "thread_reduce/catch2_test_thread_reduce_helper.cuh"
-#include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
 #include <c2h/generators.h>
 #include <c2h/operator.cuh>
@@ -44,7 +44,8 @@ template <int NumItems, typename T, typename ReduceOperator>
 __global__ void
 thread_reduce_partial_kernel_array(const T* d_in, T* d_out, ReduceOperator reduce_operator, int valid_items)
 {
-  cuda::std::array<T, NumItems> thread_data;
+  // The input loop fills every entry before reduction.
+  cuda::std::array<T, NumItems> thread_data; // NOLINT(cppcoreguidelines-pro-type-member-init)
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < NumItems; ++i)
@@ -65,7 +66,7 @@ thread_reduce_partial_kernel_span(const T* d_in, T* d_out, ReduceOperator reduce
   {
     thread_data[i] = d_in[i];
   }
-  cuda::std::span<T, NumItems> span(thread_data);
+  const cuda::std::span<T, NumItems> span(thread_data);
   *d_out = cub::detail::ThreadReducePartial(span, reduce_operator, valid_items);
 }
 
@@ -81,7 +82,7 @@ thread_reduce_partial_kernel_mdspan(const T* d_in, T* d_out, ReduceOperator redu
     thread_data[i] = d_in[i];
   }
   using Extent = cuda::std::extents<int, NumItems>;
-  cuda::std::mdspan<T, Extent> mdspan(thread_data, cuda::std::extents<int, NumItems>{});
+  const cuda::std::mdspan<T, Extent> mdspan(thread_data, cuda::std::extents<int, NumItems>{});
   *d_out = cub::detail::ThreadReducePartial(mdspan, reduce_operator, valid_items);
 }
 
@@ -115,8 +116,9 @@ using items_per_thread_list = c2h::enum_type_list<int, 1, 3, max_size - 1, max_s
  * Test cases
  **********************************************************************************************************************/
 
-C2H_TEST("ThreadReduce Integral Type Tests",
+CUB_TEST("ThreadReduce Integral Type Tests",
          "[reduce][thread]",
+         CUB_SMALL,
          integral_type_list,
          cub_operator_integral_list,
          items_per_thread_list)
@@ -136,8 +138,8 @@ C2H_TEST("ThreadReduce Integral Type Tests",
   c2h::device_vector<value_t> d_in(num_items);
   c2h::device_vector<accum_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<value_t> h_in = d_in;
-  const int bounded_valid_items  = cuda::std::min(valid_items, num_items);
+  const c2h::host_vector<value_t> h_in = d_in;
+  const int bounded_valid_items        = cuda::std::min(valid_items, num_items);
   auto reference_result =
     compute_single_problem_reference(h_in.cbegin(), h_in.cbegin() + bounded_valid_items, reduce_op, operator_identity);
   thread_reduce_partial_kernel<num_items>
@@ -147,8 +149,9 @@ C2H_TEST("ThreadReduce Integral Type Tests",
   REQUIRE(reference_result == c2h::host_vector<accum_t>(d_out)[0]);
 }
 
-C2H_TEST("ThreadReduce Floating-Point Type Tests",
+CUB_TEST("ThreadReduce Floating-Point Type Tests",
          "[reduce][thread]",
+         CUB_SMALL,
          fp_type_list,
          cub_operator_fp_list,
          items_per_thread_list)
@@ -168,8 +171,8 @@ C2H_TEST("ThreadReduce Floating-Point Type Tests",
   c2h::device_vector<value_t> d_in(num_items);
   c2h::device_vector<accum_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<value_t> h_in = d_in;
-  const int bounded_valid_items  = cuda::std::min(valid_items, num_items);
+  const c2h::host_vector<value_t> h_in = d_in;
+  const int bounded_valid_items        = cuda::std::min(valid_items, num_items);
   auto reference_result =
     compute_single_problem_reference(h_in.cbegin(), h_in.cbegin() + bounded_valid_items, reduce_op, operator_identity);
   thread_reduce_partial_kernel<num_items>
@@ -181,8 +184,9 @@ C2H_TEST("ThreadReduce Floating-Point Type Tests",
 
 #if TEST_HALF_T() || TEST_BF_T()
 
-C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
+CUB_TEST("ThreadReduce Narrow PrecisionType Tests",
          "[reduce][thread][narrow]",
+         CUB_SMALL,
          narrow_precision_type_list,
          cub_operator_fp_list,
          items_per_thread_list)
@@ -201,7 +205,7 @@ C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
   c2h::device_vector<value_t> d_in(num_items);
   c2h::device_vector<accum_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<value_t> h_in = d_in;
+  const c2h::host_vector<value_t> h_in = d_in;
   CAPTURE(h_in, dist_param::min(), dist_param::max());
   CAPTURE(c2h::type_name<value_t>(), c2h::type_name<decltype(reduce_op)>(), valid_items, num_items, operator_identity);
   const int bounded_valid_items = cuda::std::min(valid_items, num_items);
@@ -220,15 +224,15 @@ C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
 
 #endif // TEST_HALF_T() || TEST_BF_T()
 
-C2H_TEST("ThreadReduce Container Tests", "[reduce][thread]")
+CUB_TEST("ThreadReduce Container Tests", "[reduce][thread]", CUB_SMALL)
 {
   using op_t       = cuda::std::plus<>;
   using dist_param = dist_interval<int, op_t, max_size>;
   c2h::device_vector<int> d_in(max_size);
   c2h::device_vector<int> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<int> h_in = d_in;
-  const int valid_items      = GENERATE_COPY(
+  const c2h::host_vector<int> h_in = d_in;
+  const int valid_items            = GENERATE_COPY(
     take(1, random(2, max_size - 2)),
     take(1, random(max_size + 2, cuda::std::numeric_limits<int>::max())),
     values({1, max_size - 1, max_size, max_size + 1}));
@@ -255,7 +259,7 @@ C2H_TEST("ThreadReduce Container Tests", "[reduce][thread]")
   REQUIRE(reference_result == c2h::host_vector<int>(d_out)[0]);
 }
 
-C2H_TEST("ThreadReducePartial does not invoke the reduction operator on invalid elements", "[reduce][thread]")
+CUB_TEST("ThreadReducePartial does not invoke the reduction operator on invalid elements", "[reduce][thread]", CUB_SMALL)
 {
   const auto in_it = cuda::make_transform_iterator(
     thrust::make_zip_iterator(cuda::counting_iterator<segment::offset_t>{1},

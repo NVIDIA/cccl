@@ -4,8 +4,6 @@
 
 #include <unittest/unittest.h>
 
-using namespace unittest;
-
 struct MakeTupleFunctor
 {
   template <typename T1, typename T2>
@@ -30,8 +28,8 @@ struct TestTupleTransform
 {
   void operator()(const size_t n)
   {
-    thrust::host_vector<T> h_t1 = random_integers<T>(n);
-    thrust::host_vector<T> h_t2 = random_integers<T>(n);
+    thrust::host_vector<T> h_t1 = unittest::random_integers<T>(n);
+    thrust::host_vector<T> h_t2 = unittest::random_integers<T>(n);
 
     // zip up the data
     thrust::host_vector<cuda::std::tuple<T, T>> h_tuples(n);
@@ -51,7 +49,7 @@ struct TestTupleTransform
     ASSERT_ALMOST_EQUAL(h_t1, d_t1);
     ASSERT_ALMOST_EQUAL(h_t2, d_t2);
 
-    ASSERT_EQUAL_QUIET(h_tuples, d_tuples);
+    REQUIRE((h_tuples == d_tuples));
   }
 };
-VariableUnitTest<TestTupleTransform, SignedIntegralTypes> TestTupleTransformInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTupleTransform, SignedIntegralTypes);

@@ -35,7 +35,7 @@
 namespace cuda::experimental::execution
 {
 #if _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
-using __thread_id _CCCL_NODEBUG_ALIAS = int;
+using __thread_id _CCCL_NODEBUG = int;
 #elif _CCCL_CUDA_COMPILER(NVHPC)
 struct __thread_id
 {
@@ -67,7 +67,7 @@ struct __thread_id
   }
 };
 #else // ^^^ cuda device compilation ^^^ / vvv host compilation vvv
-using __thread_id _CCCL_NODEBUG_ALIAS = ::std::thread::id;
+using __thread_id _CCCL_NODEBUG = ::std::thread::id;
 #endif // ^^^ host compilation ^^^
 
 inline _CCCL_HOST_DEVICE_API auto __this_thread_id() noexcept -> __thread_id

@@ -16,6 +16,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__memory/unique_ptr.h>
+#include <cuda/std/optional>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -39,6 +41,7 @@
 #include <cuda/experimental/__stf/stream/interfaces/slice.cuh> // For implicit logical_data_untyped constructors
 #include <cuda/experimental/__stf/stream/interfaces/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/stream_task.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh> // for reserved::counter
 
 namespace cuda::experimental::stf
@@ -89,7 +92,7 @@ public:
     if (!memory_node.allocation_is_stream_ordered())
     {
       // Blocking deallocation - synchronize stream first, then free
-      cuda_safe_call(cudaStreamSynchronize(dstream.stream));
+      cuda_try<cudaStreamSynchronize>(dstream.stream);
       memory_node.deallocate(ptr, sz, dstream.stream);
       return;
     }
@@ -222,7 +225,7 @@ public:
   stream_task<Deps...> task(exec_place e_place, task_dep<Deps>... deps)
   {
     EXPECT(state().deferred_tasks.empty(), "Mixing deferred and immediate tasks is not supported yet.");
-    return stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
+    return stream_task<Deps...>(*this, mv(e_place), mv(deps)...); // NOLINT(cppcoreguidelines-slicing)
   }
 
   template <typename... Deps>
@@ -502,12 +505,25 @@ public:
     // Make sure we release resources attached to this context
     state.release_ctx_resources(state.submitted_stream);
 
+    // Finalization has to complete even when the synchronize below reports a failure, which is
+    // the likely case rather than the exotic one: cudaStreamSynchronize is where asynchronous
+    // errors from earlier work surface. Leaving the context in `submitted` with its resources
+    // already released makes it unusable AND unretryable -- a second finalize() re-enters
+    // release_ctx_resources and trips its "already released" assertion. The guard is armed
+    // after that release so that a failure there still leaves the context retryable, which it
+    // is today: release() only sets its released flag once it has finished.
+    //
+    // The error still propagates; the caller simply gets a consistent context along with it.
+    SCOPE(exit)
+    {
+      state.cleanup();
+      set_phase(backend_ctx_untyped::phase::finalized);
+    };
+
     if (state.blocking_finalize)
     {
-      cuda_safe_call(cudaStreamSynchronize(state.submitted_stream));
+      cuda_try<cudaStreamSynchronize>(state.submitted_stream);
     }
-    state.cleanup();
-    set_phase(backend_ctx_untyped::phase::finalized);
   }
 
   float get_submission_time_ms() const
@@ -525,11 +541,43 @@ public:
     cudaEvent_t startEvent = nullptr;
     cudaEvent_t stopEvent  = nullptr;
 
+    // Submission timing forces the current device to 0; remember the caller's
+    // device so we can restore it on exit (0 means we never switched).
+    int prev_device = 0;
+
+    // The events are releases: a failing destroy leaks that event and is reported, one policy per
+    // release. Restoring the caller's device is not: if it fails, the caller continues on the wrong
+    // device and fails somewhere unrelated, so that one reports and aborts.
+    SCOPE(exit)
+    {
+      if (startEvent)
+      {
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(startEvent);
+        };
+      }
+      if (stopEvent)
+      {
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(stopEvent);
+        };
+      }
+      if (prev_device != 0)
+      {
+        ON_THROW(abort)
+        {
+          cuda_try<cudaSetDevice>(prev_device);
+        };
+      }
+    };
+
     ::std::unordered_map<int, reserved::reorderer_payload> payloads;
     if (reordering_tasks())
     {
       build_task_graph();
-      for (int id : state.deferred_tasks)
+      for (const int id : state.deferred_tasks)
       {
         const auto& t = state.task_map.at(id);
         payloads.emplace(id, t.get_reorderer_payload());
@@ -544,14 +592,16 @@ public:
         }
       }
 
-      cuda_safe_call(cudaSetDevice(0));
-      cuda_safe_call(cudaStreamSynchronize(fence()));
-      cuda_safe_call(cudaEventCreate(&startEvent));
-      cuda_safe_call(cudaEventCreate(&stopEvent));
-      cuda_safe_call(cudaEventRecord(startEvent, fence()));
+      prev_device = cuda_try<cudaGetDevice>();
+      cuda_try<cudaSetDevice>(0);
+      cuda_try<cudaStreamSynchronize>(fence());
+      // cudaEventCreate is an overload set; use cudaEventCreateWithFlags instead.
+      startEvent = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+      stopEvent  = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+      cuda_try<cudaEventRecord>(startEvent, fence());
     }
 
-    for (int id : state.deferred_tasks)
+    for (const int id : state.deferred_tasks)
     {
       auto& task = state.task_map.at(id);
       task.run();
@@ -559,10 +609,10 @@ public:
 
     if (reordering_tasks())
     {
-      cuda_safe_call(cudaSetDevice(0));
-      cuda_safe_call(cudaEventRecord(stopEvent, fence()));
-      cuda_safe_call(cudaEventSynchronize(stopEvent));
-      cuda_safe_call(cudaEventElapsedTime(&state.submission_time, startEvent, stopEvent));
+      cuda_try<cudaSetDevice>(0);
+      cuda_try<cudaEventRecord>(stopEvent, fence());
+      cuda_try<cudaEventSynchronize>(stopEvent);
+      state.submission_time = cuda_try<cudaEventElapsedTime>(startEvent, stopEvent);
     }
 
     // Write-back data and erase automatically created data instances
@@ -603,7 +653,7 @@ public:
       // A token has no content to materialize: only synchronize the host with
       // the work the token depends on, and return void.
       task(exec_place::host(), ldata.read()).set_symbol("wait")->*[](cudaStream_t stream) {
-        cuda_safe_call(cudaStreamSynchronize(stream));
+        cuda_try<cudaStreamSynchronize>(stream);
       };
     }
     else
@@ -611,7 +661,7 @@ public:
       typename owning_container_of<T>::type out;
 
       task(exec_place::host(), ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
-        cuda_safe_call(cudaStreamSynchronize(stream));
+        cuda_try<cudaStreamSynchronize>(stream);
         out = owning_container_of<T>::get_value(data);
       };
 
@@ -673,7 +723,7 @@ private:
 
     // If the context is attached to a user stream, we should use it for
     // finalize() or fence()
-    ::std::optional<augmented_stream> user_dstream;
+    ::cuda::std::optional<augmented_stream> user_dstream;
 
     /* By default, the finalize operation is blocking, unless user provided
      * a stream when creating the context */
@@ -700,7 +750,7 @@ private:
     ::std::unordered_map<::std::string, ::std::deque<int>> current_readers;
     ::std::unordered_map<::std::string, int> current_writer, previous_writer;
 
-    for (int id : state.deferred_tasks)
+    for (const int id : state.deferred_tasks)
     {
       auto& t = state.task_map.at(id);
       assert(id == t.get_mapping_id());
@@ -779,8 +829,8 @@ private:
 UNITTEST("movable stream_task")
 {
   stream_ctx ctx;
-  stream_task<> t     = ctx.task();
-  stream_task<> t_cpy = mv(t);
+  stream_task<> t           = ctx.task();
+  const stream_task<> t_cpy = mv(t);
   ctx.finalize();
 };
 
@@ -796,13 +846,23 @@ UNITTEST("logical_data_untyped moveable")
   public:
     scalar(stream_ctx& ctx)
     {
-      size_t s       = sizeof(double);
-      double* h_addr = (double*) malloc(s);
-      cuda_safe_call(cudaHostRegister(h_addr, s, cudaHostRegisterPortable));
+      const size_t s = sizeof(double);
+      auto owner     = ::cuda::std::make_unique<double>();
+      double* h_addr = owner.get();
+      cuda_try<cudaHostRegister>(h_addr, s, cudaHostRegisterPortable);
+      // Unregister memory before owner deletes it on failure.
+      SCOPE(fail)
+      {
+        ON_THROW(notify)
+        {
+          cuda_try<cudaHostUnregister>(h_addr);
+        };
+      };
       handle = ctx.logical_data(h_addr, 1);
+      owner.release();
     }
 
-    scalar& operator=(scalar&& rhs)
+    scalar& operator=(scalar&& rhs) noexcept
     {
       handle = mv(rhs.handle);
       return *this;
@@ -933,11 +993,11 @@ UNITTEST("non contiguous slice")
   int X[32 * 32];
 
   // Pinning non contiguous memory is extremely expensive, so we do it now
-  cuda_safe_call(cudaHostRegister(&X[0], 32 * 32 * sizeof(int), cudaHostRegisterPortable));
+  cuda_try<cudaHostRegister>(&X[0], 32 * 32 * sizeof(int), cudaHostRegisterPortable);
 
-  for (size_t i = 0; i < 32 * 32; i++)
+  for (auto& x : X)
   {
-    X[i] = 1;
+    x = 1;
   }
 
   // Create a non-contiguous slice
@@ -959,13 +1019,13 @@ UNITTEST("non contiguous slice")
   {
     for (size_t i = 0; i < 32; i++)
     {
-      size_t ind   = i + 32 * j;
-      int expected = ((i < 24) ? 2 : 1);
+      const size_t ind   = i + 32 * j;
+      const int expected = ((i < 24) ? 2 : 1);
       EXPECT(X[ind] == expected);
     }
   }
 
-  cuda_safe_call(cudaHostUnregister(&X[0]));
+  cuda_try<cudaHostUnregister>(&X[0]);
 };
 
 UNITTEST("logical data from a shape of 2D slice")
@@ -1085,10 +1145,10 @@ UNITTEST("get logical_data from a task_dep")
   // Create a task dependency using that logical data
   auto d = lA.read();
 
-  logical_data_untyped ul = d.get_data();
+  const logical_data_untyped ul = d.get_data();
   EXPECT(ul == lA);
 
-  logical_data<T> lB = d.get_data();
+  const logical_data<T> lB = d.get_data();
   EXPECT(lB == lA);
 
   auto lC = logical_data<T>(d.get_data());
@@ -1106,7 +1166,10 @@ namespace reserved
 inline void unit_test_pfor()
 {
   stream_ctx ctx;
-  SCOPE(exit)
+  // finalize() submits pending work and synchronizes, so it belongs on the normal path only:
+  // finalizing a context that is being torn down by an exception is neither meaningful nor
+  // safe, and SCOPE(success) is the flavor whose body may throw.
+  SCOPE(success)
   {
     ctx.finalize();
   };
@@ -1284,7 +1347,10 @@ UNITTEST("basic parallel_for test on grid")
 inline void unit_test_launch()
 {
   stream_ctx ctx;
-  SCOPE(exit)
+  // finalize() submits pending work and synchronizes, so it belongs on the normal path only:
+  // finalizing a context that is being torn down by an exception is neither meaningful nor
+  // safe, and SCOPE(success) is the flavor whose body may throw.
+  SCOPE(success)
   {
     ctx.finalize();
   };

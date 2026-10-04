@@ -9,18 +9,26 @@ struct stream_registry_factory_t;
 
 #include <cub/device/device_merge.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 
-#include "catch2_test_env_launch_helper.h"
+#include <cuda/std/cstdint>
+#include <cuda/stream>
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceMerge::MergeKeys, merge_keys);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceMerge::MergePairs, merge_pairs);
+#include <sstream>
+
+#include "block_size_extracting_helpers.h"
+#include "catch2_test_custom_streams.cuh"
+#include "catch2_test_launch_helper.h"
+
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceMerge::MergeKeys, merge_keys);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceMerge::MergePairs, merge_pairs);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 #include <cuda/__execution/require.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 namespace stdexec = cuda::std::execution;
 
@@ -40,30 +48,30 @@ using block_sizes =
 
 #if TEST_LAUNCH == 0
 
-TEST_CASE("DeviceMerge::MergeKeys works with default environment", "[merge][device]")
+CUB_TEST_CASE("DeviceMerge::MergeKeys works with default environment", "[merge][device]", CUB_SMALL)
 {
   auto keys1  = c2h::device_vector<int>{0, 2, 5};
   auto keys2  = c2h::device_vector<int>{0, 3, 3, 4};
-  auto result = c2h::device_vector<int>(7);
+  auto result = c2h::device_vector<int>(7, thrust::no_init);
 
   REQUIRE(
     cudaSuccess
     == cub::DeviceMerge::MergeKeys(
       keys1.begin(), static_cast<int>(keys1.size()), keys2.begin(), static_cast<int>(keys2.size()), result.begin()));
 
-  c2h::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
+  const c2h::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
   REQUIRE(result == expected);
 }
 
-TEST_CASE("DeviceMerge::MergePairs works with default environment", "[merge][device]")
+CUB_TEST_CASE("DeviceMerge::MergePairs works with default environment", "[merge][device]", CUB_SMALL)
 {
   auto keys1   = c2h::device_vector<int>{0, 2, 5};
   auto values1 = c2h::device_vector<char>{'a', 'b', 'c'};
   auto keys2   = c2h::device_vector<int>{0, 3, 3, 4};
   auto values2 = c2h::device_vector<char>{'A', 'B', 'C', 'D'};
 
-  auto result_keys   = c2h::device_vector<int>(7);
-  auto result_values = c2h::device_vector<char>(7);
+  auto result_keys   = c2h::device_vector<int>(7, thrust::no_init);
+  auto result_values = c2h::device_vector<char>(7, thrust::no_init);
 
   REQUIRE(
     cudaSuccess
@@ -77,23 +85,23 @@ TEST_CASE("DeviceMerge::MergePairs works with default environment", "[merge][dev
       result_keys.begin(),
       result_values.begin()));
 
-  c2h::device_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
-  c2h::device_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
+  const c2h::device_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
+  const c2h::device_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
   REQUIRE(result_keys == expected_keys);
   REQUIRE(result_values == expected_values);
 }
 
 #endif
 
-C2H_TEST("DeviceMerge::MergeKeys can be tuned", "[merge][device]", block_sizes)
+CUB_TEST("DeviceMerge::MergeKeys can be tuned", "[merge][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   auto keys1                               = c2h::device_vector<int>{0, 2, 5};
   auto keys2                               = c2h::device_vector<int>{0, 3, 3, 4};
-  auto result                              = c2h::device_vector<int>(7);
+  auto result                              = c2h::device_vector<int>(7, thrust::no_init);
   auto d_block_size                        = c2h::device_vector<unsigned int>(1);
 
-  block_size_extracting_less_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_extracting_less_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto env = cuda::execution::tune(merge_tuning<target_block_size>{});
 
@@ -108,23 +116,23 @@ C2H_TEST("DeviceMerge::MergeKeys can be tuned", "[merge][device]", block_sizes)
       block_size_check,
       env));
 
-  c2h::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
+  const c2h::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
   REQUIRE(result == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceMerge::MergePairs can be tuned", "[merge][device]", block_sizes)
+CUB_TEST("DeviceMerge::MergePairs can be tuned", "[merge][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   auto keys1                               = c2h::device_vector<int>{0, 2, 5};
   auto values1                             = c2h::device_vector<char>{'a', 'b', 'c'};
   auto keys2                               = c2h::device_vector<int>{0, 3, 3, 4};
   auto values2                             = c2h::device_vector<char>{'A', 'B', 'C', 'D'};
-  auto result_keys                         = c2h::device_vector<int>(7);
-  auto result_values                       = c2h::device_vector<char>(7);
+  auto result_keys                         = c2h::device_vector<int>(7, thrust::no_init);
+  auto result_values                       = c2h::device_vector<char>(7, thrust::no_init);
   auto d_block_size                        = c2h::device_vector<unsigned int>(1);
 
-  block_size_extracting_less_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_extracting_less_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto env = cuda::execution::tune(merge_tuning<target_block_size>{});
 
@@ -142,18 +150,18 @@ C2H_TEST("DeviceMerge::MergePairs can be tuned", "[merge][device]", block_sizes)
       block_size_check,
       env));
 
-  c2h::device_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
-  c2h::device_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
+  const c2h::device_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
+  const c2h::device_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
   REQUIRE(result_keys == expected_keys);
   REQUIRE(result_values == expected_values);
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceMerge::MergeKeys uses environment", "[merge][device]")
+CUB_TEST("DeviceMerge::MergeKeys uses environment", "[merge][device]", CUB_SMALL)
 {
   auto keys1  = c2h::device_vector<int>{0, 2, 5};
   auto keys2  = c2h::device_vector<int>{0, 3, 3, 4};
-  auto result = c2h::device_vector<int>(7);
+  auto result = c2h::device_vector<int>(7, thrust::no_init);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -177,15 +185,15 @@ C2H_TEST("DeviceMerge::MergeKeys uses environment", "[merge][device]")
              cuda::std::less<>{},
              env);
 
-  c2h::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
+  const c2h::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
   REQUIRE(result == expected);
 }
 
-TEST_CASE("DeviceMerge::MergeKeys uses custom stream", "[merge][device]")
+CUB_TEST_CASE("DeviceMerge::MergeKeys uses custom stream", "[merge][device]", CUB_SMALL)
 {
   auto keys1  = c2h::device_vector<int>{0, 2, 5};
   auto keys2  = c2h::device_vector<int>{0, 3, 3, 4};
-  auto result = c2h::device_vector<int>(7);
+  auto result = c2h::device_vector<int>(7, thrust::no_init);
 
   cudaStream_t custom_stream;
   REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
@@ -215,21 +223,21 @@ TEST_CASE("DeviceMerge::MergeKeys uses custom stream", "[merge][device]")
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
 
-  c2h::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
+  const c2h::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
   REQUIRE(result == expected);
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
-C2H_TEST("DeviceMerge::MergePairs uses environment", "[merge][device]")
+CUB_TEST("DeviceMerge::MergePairs uses environment", "[merge][device]", CUB_SMALL)
 {
   auto keys1   = c2h::device_vector<int>{0, 2, 5};
   auto values1 = c2h::device_vector<char>{'a', 'b', 'c'};
   auto keys2   = c2h::device_vector<int>{0, 3, 3, 4};
   auto values2 = c2h::device_vector<char>{'A', 'B', 'C', 'D'};
 
-  auto result_keys   = c2h::device_vector<int>(7);
-  auto result_values = c2h::device_vector<char>(7);
+  auto result_keys   = c2h::device_vector<int>(7, thrust::no_init);
+  auto result_values = c2h::device_vector<char>(7, thrust::no_init);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -260,21 +268,21 @@ C2H_TEST("DeviceMerge::MergePairs uses environment", "[merge][device]")
     cuda::std::less<>{},
     env);
 
-  c2h::device_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
-  c2h::device_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
+  const c2h::device_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
+  const c2h::device_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
   REQUIRE(result_keys == expected_keys);
   REQUIRE(result_values == expected_values);
 }
 
-TEST_CASE("DeviceMerge::MergePairs uses custom stream", "[merge][device]")
+CUB_TEST_CASE("DeviceMerge::MergePairs uses custom stream", "[merge][device]", CUB_SMALL)
 {
   auto keys1   = c2h::device_vector<int>{0, 2, 5};
   auto values1 = c2h::device_vector<char>{'a', 'b', 'c'};
   auto keys2   = c2h::device_vector<int>{0, 3, 3, 4};
   auto values2 = c2h::device_vector<char>{'A', 'B', 'C', 'D'};
 
-  auto result_keys   = c2h::device_vector<int>(7);
-  auto result_values = c2h::device_vector<char>(7);
+  auto result_keys   = c2h::device_vector<int>(7, thrust::no_init);
+  auto result_values = c2h::device_vector<char>(7, thrust::no_init);
 
   cudaStream_t custom_stream;
   REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
@@ -311,8 +319,8 @@ TEST_CASE("DeviceMerge::MergePairs uses custom stream", "[merge][device]")
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
 
-  c2h::device_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
-  c2h::device_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
+  const c2h::device_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
+  const c2h::device_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
   REQUIRE(result_keys == expected_keys);
   REQUIRE(result_values == expected_values);
 
@@ -327,11 +335,11 @@ struct no_unroll_tuning
   }
 };
 
-TEST_CASE("DeviceMerge::MergeKeys works with unroll disabled", "[merge][device]")
+CUB_TEST_CASE("DeviceMerge::MergeKeys works with unroll disabled", "[merge][device]", CUB_SMALL)
 {
   auto keys1  = c2h::device_vector<int>{0, 2, 5};
   auto keys2  = c2h::device_vector<int>{0, 3, 3, 4};
-  auto result = c2h::device_vector<int>(7);
+  auto result = c2h::device_vector<int>(7, thrust::no_init);
   auto env    = cuda::execution::tune(no_unroll_tuning{});
 
   REQUIRE(
@@ -345,19 +353,19 @@ TEST_CASE("DeviceMerge::MergeKeys works with unroll disabled", "[merge][device]"
       cuda::std::less<>{},
       env));
 
-  c2h::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
+  const c2h::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
   REQUIRE(result == expected);
 }
 
-TEST_CASE("DeviceMerge::MergePairs works with unroll disabled", "[merge][device]")
+CUB_TEST_CASE("DeviceMerge::MergePairs works with unroll disabled", "[merge][device]", CUB_SMALL)
 {
   auto keys1   = c2h::device_vector<int>{0, 2, 5};
   auto values1 = c2h::device_vector<char>{'a', 'b', 'c'};
   auto keys2   = c2h::device_vector<int>{0, 3, 3, 4};
   auto values2 = c2h::device_vector<char>{'A', 'B', 'C', 'D'};
 
-  auto result_keys   = c2h::device_vector<int>(7);
-  auto result_values = c2h::device_vector<char>(7);
+  auto result_keys   = c2h::device_vector<int>(7, thrust::no_init);
+  auto result_values = c2h::device_vector<char>(7, thrust::no_init);
   auto env           = cuda::execution::tune(no_unroll_tuning{});
 
   REQUIRE(
@@ -374,14 +382,289 @@ TEST_CASE("DeviceMerge::MergePairs works with unroll disabled", "[merge][device]
       cuda::std::less<>{},
       env));
 
-  c2h::device_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
-  c2h::device_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
+  const c2h::device_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
+  const c2h::device_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
   REQUIRE(result_keys == expected_keys);
   REQUIRE(result_values == expected_values);
 }
 
+#if TEST_LAUNCH == 0
+
+// The two-phase overloads take the same environment as the single-phase ones but never allocate, so they do not go
+// through the launch wrappers and would run identically in every TEST_LAUNCH variant. Test them with host launch only.
+
+CUB_TEST_CASE("DeviceMerge::MergeKeys works with user provided memory and environment", "[merge][device]", CUB_SMALL)
+{
+  auto keys1  = c2h::device_vector<int>{0, 2, 5};
+  auto keys2  = c2h::device_vector<int>{0, 3, 3, 4};
+  auto result = c2h::device_vector<int>(7, thrust::no_init);
+
+  size_t expected_bytes{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceMerge::MergeKeys(
+      nullptr,
+      expected_bytes,
+      keys1.begin(),
+      static_cast<int>(keys1.size()),
+      keys2.begin(),
+      static_cast<int>(keys2.size()),
+      result.begin()));
+  auto temp          = c2h::device_vector<cuda::std::uint8_t>(expected_bytes, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(temp.data());
+
+  auto test_merge_keys = [&](const auto& env) {
+    size_t num_bytes = 0;
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceMerge::MergeKeys(
+        nullptr,
+        num_bytes,
+        keys1.begin(),
+        static_cast<int>(keys1.size()),
+        keys2.begin(),
+        static_cast<int>(keys2.size()),
+        result.begin(),
+        cuda::std::less<>{},
+        env));
+    REQUIRE(num_bytes == expected_bytes);
+
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceMerge::MergeKeys(
+        temp_storage,
+        num_bytes,
+        keys1.begin(),
+        static_cast<int>(keys1.size()),
+        keys2.begin(),
+        static_cast<int>(keys2.size()),
+        result.begin(),
+        cuda::std::less<>{},
+        env));
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    const c2h::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
+    REQUIRE(result == expected);
+  };
+
+  test_with_custom_streams(test_merge_keys);
+}
+
+CUB_TEST_CASE("DeviceMerge::MergePairs works with user provided memory and environment", "[merge][device]", CUB_SMALL)
+{
+  auto keys1   = c2h::device_vector<int>{0, 2, 5};
+  auto values1 = c2h::device_vector<char>{'a', 'b', 'c'};
+  auto keys2   = c2h::device_vector<int>{0, 3, 3, 4};
+  auto values2 = c2h::device_vector<char>{'A', 'B', 'C', 'D'};
+
+  auto result_keys   = c2h::device_vector<int>(7, thrust::no_init);
+  auto result_values = c2h::device_vector<char>(7, thrust::no_init);
+
+  size_t expected_bytes{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceMerge::MergePairs(
+      nullptr,
+      expected_bytes,
+      keys1.begin(),
+      values1.begin(),
+      static_cast<int>(keys1.size()),
+      keys2.begin(),
+      values2.begin(),
+      static_cast<int>(keys2.size()),
+      result_keys.begin(),
+      result_values.begin()));
+  auto temp          = c2h::device_vector<cuda::std::uint8_t>(expected_bytes, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(temp.data());
+
+  auto test_merge_pairs = [&](const auto& env) {
+    size_t num_bytes = 0;
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceMerge::MergePairs(
+        nullptr,
+        num_bytes,
+        keys1.begin(),
+        values1.begin(),
+        static_cast<int>(keys1.size()),
+        keys2.begin(),
+        values2.begin(),
+        static_cast<int>(keys2.size()),
+        result_keys.begin(),
+        result_values.begin(),
+        cuda::std::less<>{},
+        env));
+    REQUIRE(num_bytes == expected_bytes);
+
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceMerge::MergePairs(
+        temp_storage,
+        num_bytes,
+        keys1.begin(),
+        values1.begin(),
+        static_cast<int>(keys1.size()),
+        keys2.begin(),
+        values2.begin(),
+        static_cast<int>(keys2.size()),
+        result_keys.begin(),
+        result_values.begin(),
+        cuda::std::less<>{},
+        env));
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    const c2h::device_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
+    const c2h::device_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
+    REQUIRE(result_keys == expected_keys);
+    REQUIRE(result_values == expected_values);
+  };
+
+  test_with_custom_streams(test_merge_pairs);
+}
+
+// Before the environment parameter, the two-phase overloads took `cudaStream_t stream = nullptr`, so callers passing
+// nullptr or a literal 0 for the stream exist. Both must keep compiling and keep running on the default stream.
+CUB_TEST_CASE("DeviceMerge two-phase overloads accept legacy null stream arguments", "[merge][device]", CUB_SMALL)
+{
+  auto keys1  = c2h::device_vector<int>{0, 2, 5};
+  auto keys2  = c2h::device_vector<int>{0, 3, 3, 4};
+  auto result = c2h::device_vector<int>(7, thrust::no_init);
+
+  auto merge_keys_on = [&](const auto& stream) {
+    size_t temp_storage_bytes = 0;
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceMerge::MergeKeys(
+        nullptr,
+        temp_storage_bytes,
+        keys1.begin(),
+        static_cast<int>(keys1.size()),
+        keys2.begin(),
+        static_cast<int>(keys2.size()),
+        result.begin(),
+        cuda::std::less<>{},
+        stream));
+
+    c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+    const stream_scope scope{cudaStream_t{}};
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceMerge::MergeKeys(
+        thrust::raw_pointer_cast(temp_storage.data()),
+        temp_storage_bytes,
+        keys1.begin(),
+        static_cast<int>(keys1.size()),
+        keys2.begin(),
+        static_cast<int>(keys2.size()),
+        result.begin(),
+        cuda::std::less<>{},
+        stream));
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  };
+
+  SECTION("nullptr")
+  {
+    merge_keys_on(nullptr);
+  }
+
+  SECTION("literal 0")
+  {
+    merge_keys_on(0);
+  }
+
+  const c2h::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
+  REQUIRE(result == expected);
+}
+
+// Runs the two-phase overload wrapped by two_phase with the given environment: queries the temporary storage size
+// and executes with user provided storage.
+template <class TwoPhaseFn, class EnvT>
+void run_two_phase(TwoPhaseFn two_phase, const EnvT& env)
+{
+  size_t temp_storage_bytes = 0;
+  REQUIRE(cudaSuccess == two_phase(nullptr, temp_storage_bytes, env));
+
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  REQUIRE(cudaSuccess == two_phase(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, env));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+}
+
+CUB_TEST("DeviceMerge::MergeKeys can be tuned with user provided memory", "[merge][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto keys1                               = c2h::device_vector<int>{0, 2, 5};
+  auto keys2                               = c2h::device_vector<int>{0, 3, 3, 4};
+  auto result                              = c2h::device_vector<int>(7, thrust::no_init);
+  auto d_block_size                        = c2h::device_vector<unsigned int>(1);
+
+  const block_size_extracting_less_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+
+  run_two_phase(
+    [&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceMerge::MergeKeys(
+        d_temp_storage,
+        temp_storage_bytes,
+        keys1.begin(),
+        static_cast<int>(keys1.size()),
+        keys2.begin(),
+        static_cast<int>(keys2.size()),
+        result.begin(),
+        block_size_check,
+        env);
+    },
+    cuda::execution::tune(merge_tuning<target_block_size>{}));
+
+  const c2h::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
+  REQUIRE(result == expected);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceMerge::MergePairs can be tuned with user provided memory", "[merge][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto keys1                               = c2h::device_vector<int>{0, 2, 5};
+  auto values1                             = c2h::device_vector<char>{'a', 'b', 'c'};
+  auto keys2                               = c2h::device_vector<int>{0, 3, 3, 4};
+  auto values2                             = c2h::device_vector<char>{'A', 'B', 'C', 'D'};
+  auto result_keys                         = c2h::device_vector<int>(7, thrust::no_init);
+  auto result_values                       = c2h::device_vector<char>(7, thrust::no_init);
+  auto d_block_size                        = c2h::device_vector<unsigned int>(1);
+
+  const block_size_extracting_less_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+
+  run_two_phase(
+    [&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceMerge::MergePairs(
+        d_temp_storage,
+        temp_storage_bytes,
+        keys1.begin(),
+        values1.begin(),
+        static_cast<int>(keys1.size()),
+        keys2.begin(),
+        values2.begin(),
+        static_cast<int>(keys2.size()),
+        result_keys.begin(),
+        result_values.begin(),
+        block_size_check,
+        env);
+    },
+    cuda::execution::tune(merge_tuning<target_block_size>{}));
+
+  const c2h::device_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
+  const c2h::device_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
+  REQUIRE(result_keys == expected_keys);
+  REQUIRE(result_values == expected_values);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#endif // TEST_LAUNCH == 0
+
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("MergePolicy", "[merge][device]")
+CUB_TEST("Test MergePolicy properties", "[merge][device]", CUB_SMALL)
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::MergePolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::MergePolicy>);
@@ -407,5 +690,15 @@ C2H_TEST("MergePolicy", "[merge][device]")
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1)
+          == "MergePolicy { .threads_per_block = 128, .items_per_thread = 7, .load_modifier = LOAD_LDG"
+             ", .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE, .use_bulk_copy_for_keys = 1"
+             ", .use_bulk_copy_for_values = 0, .unroll = 0 }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 // <cuda/std/format>
 
 // template<class charT> struct dynamic-format-string {  // exposition-only
@@ -34,7 +37,7 @@
 #include "test_macros.h"
 
 template <class T, class CharT>
-TEST_FUNC void test_properties()
+TEST_HOST_DEVICE_FUNC void test_properties()
 {
   static_assert(cuda::std::is_nothrow_convertible_v<cuda::std::basic_string_view<CharT>, T>);
   static_assert(cuda::std::is_nothrow_constructible_v<T, cuda::std::basic_string_view<CharT>>);
@@ -46,7 +49,7 @@ TEST_FUNC void test_properties()
   static_assert(!cuda::std::is_move_assignable_v<T>);
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   {
     static_assert(noexcept(cuda::std::dynamic_format(cuda::std::string_view{})));

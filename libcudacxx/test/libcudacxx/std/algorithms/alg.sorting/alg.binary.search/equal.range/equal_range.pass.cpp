@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: a return statement inside a loop is not currently supported in a tile function
-
 // CONSTEXPR_STEPS: 15000000
 
 // <algorithm>
@@ -29,6 +26,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter, class T>
 TEST_FUNC constexpr void test(Iter first, Iter last, const T& value)
 {
@@ -51,6 +49,7 @@ TEST_FUNC constexpr void test(Iter first, Iter last, const T& value)
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter>
 TEST_FUNC constexpr void test()
 {
@@ -62,6 +61,7 @@ TEST_FUNC constexpr void test()
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 TEST_FUNC constexpr bool test()
 {
   int d[] = {0, 1, 2, 3};
@@ -81,9 +81,9 @@ TEST_FUNC constexpr bool test()
 #if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>();))
 #endif // !TEST_COMPILER(NVRTC)
-#if TEST_CUDA_COMPILATION()
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
   NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>();))
-#endif // TEST_CUDA_COMPILATION()
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 
   return true;
 }

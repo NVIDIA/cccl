@@ -16,8 +16,6 @@
 
 #include "testing.cuh" // IWYU pragma: keep
 
-namespace
-{
 struct _stopped_scheduler_attrs_t
 {
   template <class _Env>
@@ -117,4 +115,3 @@ public:
     return false;
   }
 };
-} // namespace

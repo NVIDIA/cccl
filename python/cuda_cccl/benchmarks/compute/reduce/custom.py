@@ -18,12 +18,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import cuda.bench as bench
 import cupy as cp
 import numpy as np
 from utils import SIGNED_TYPES as TYPE_MAP
 from utils import as_cupy_stream, generate_data_with_entropy
 
-import cuda.bench as bench
 from cuda.compute import make_reduce_into
 
 

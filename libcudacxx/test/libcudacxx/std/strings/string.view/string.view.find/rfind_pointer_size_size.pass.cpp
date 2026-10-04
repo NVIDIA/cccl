@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: indirect call is unsupported in tile code
-
 // <cuda/std/string_view>
 
 // constexpr size_type rfind(const charT* s, size_type pos, size_type n) const;
@@ -86,6 +83,7 @@ TEST_FUNC constexpr void test_rfind()
     test_rfind(sv, str4, 1, 19, SV::npos);
     test_rfind(sv, str4, 1, 20, SV::npos);
   }
+#if !_CCCL_TILE_COMPILATION() // blows up
   {
     SV sv{str2};
     test_rfind(sv, str1, 0, 0, 0);
@@ -383,6 +381,7 @@ TEST_FUNC constexpr void test_rfind()
     test_rfind(sv, str4, 21, 19, 0);
     test_rfind(sv, str4, 21, 20, 0);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 }
 
 TEST_FUNC constexpr bool test()

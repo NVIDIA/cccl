@@ -5,7 +5,6 @@ Memory Resources
 ================
 
 .. toctree::
-   :hidden:
    :maxdepth: 1
 
    memory_resource/properties
@@ -41,12 +40,22 @@ At a high level, the header provides:
        :ref:`cuda::mr::any_synchronous_resource <libcudacxx-extended-api-memory-resources-any-synchronous-resource>`
      - Owning type-erased wrappers for stream-ordered and synchronous resources.
      - stable CCCL 3.2.0 / CUDA 13.2, experimental CCCL 2.2.0 / CUDA 12.3
+   * - :ref:`try_get_property <libcudacxx-extended-api-memory-resources-try-get-property>`
+     - Property query helper for type-erased resource wrappers.
+     - stable CCCL 3.2.0 / CUDA 13.2
+   * - :ref:`cuda::mr::resource_cast <libcudacxx-extended-api-memory-resources-resource-cast>` and
+       :ref:`cuda::mr::dynamic_resource_cast <libcudacxx-extended-api-memory-resources-dynamic-resource-cast>`
+     - Cast helpers for type-erased resource wrappers.
+     - stable CCCL 3.3.0 / CUDA 13.3
    * - :ref:`cuda::mr::shared_resource <libcudacxx-extended-api-memory-resources-shared-resource>`
      - Reference-counted wrapper to share a resource instance across objects.
      - stable CCCL 3.2.0 / CUDA 13.2, experimental CCCL 2.2.0 / CUDA 12.3
    * - :ref:`cuda::mr::synchronous_resource_adapter <libcudacxx-extended-api-memory-resources-synchronous-adapter>`
      - Adapter that enables synchronous resources to work with streams.
      - stable CCCL 3.2.0 / CUDA 13.2, experimental CCCL 2.2.0 / CUDA 12.3
+   * - :ref:`cuda::mr::get_memory_resource <libcudacxx-extended-api-memory-resources-get-memory-resource>`
+     - Customization point for retrieving a memory resource from an object or execution environment.
+     - stable CCCL 3.2.0 / CUDA 13.2
 
 These features are an evolution of `std::pmr::memory_resource <https://en.cppreference.com/w/cpp/header/memory_resource>`__
 that was introduced in C++17. While ``std::pmr::memory_resource`` provides a polymorphic memory resource that can be
@@ -55,6 +64,6 @@ adopted through inheritance, it is not properly suited for heterogeneous systems
 With the current design it ranges from cumbersome to impossible to verify whether a memory resource provides allocations
 that are e.g. accessible on device, or whether it can utilize other allocation mechanisms.
 
-To better support asynchronous CUDA `stream-ordered allocations <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#stream-ordered-memory-allocator>`__
+To better support asynchronous CUDA `stream-ordered allocations <https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/stream-ordered-memory-allocation.html#stream-ordered-memory-allocator>`__
 libcu++ provides :cpp:class:`cuda::stream_ref <cuda::stream_ref>` as a wrapper around
 ``cudaStream_t``. The definition of ``cuda::stream_ref`` can be found in the ``<cuda/stream>`` header.

@@ -31,7 +31,6 @@
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/auto_cast.h>
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -44,10 +43,13 @@ inline constexpr bool disable_sized_range = false;
 // [range.prim.size]
 
 _CCCL_BEGIN_NAMESPACE_CPO(__size)
-template <class _Tp>
-void size(_Tp&) = delete;
-template <class _Tp>
-void size(const _Tp&) = delete;
+
+#if _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
+// A deleted declaration suppresses ADL on these compilers.
+_CCCL_HOST_DEVICE void size();
+#else // ^^^ _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51) ^^^ / vvv deleted declaration vvv
+_CCCL_HOST_DEVICE void size() = delete;
+#endif // _CCCL_COMPILER(GCC, <, 12) || _CCCL_COMPILER(MSVC, <, 19, 51)
 
 template <class _Tp>
 _CCCL_CONCEPT __size_enabled = !disable_sized_range<remove_cvref_t<_Tp>>;
@@ -67,10 +69,8 @@ concept __unqualified_size =
 template <class _Tp>
 concept __difference =
   !__member_size<_Tp> && !__unqualified_size<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
-    { ::cuda::std::ranges::__begin_cpo{}(__t) } -> forward_iterator;
-    {
-      ::cuda::std::ranges::__end_cpo{}(__t)
-    } -> sized_sentinel_for<decltype(::cuda::std::ranges::__begin_cpo{}(::cuda::std::declval<_Tp>()))>;
+    { ::cuda::std::ranges::begin(__t) } -> forward_iterator;
+    { ::cuda::std::ranges::end(__t) } -> sized_sentinel_for<decltype(::cuda::std::ranges::begin(__t))>;
   };
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp>
@@ -100,9 +100,8 @@ _CCCL_CONCEPT_FRAGMENT(
     requires(!__member_size<_Tp>),
     requires(!__unqualified_size<_Tp>),
     requires(__class_or_enum<remove_cvref_t<_Tp>>),
-    requires(forward_iterator<decltype(::cuda::std::ranges::__begin_cpo{}(__t))>),
-    requires(sized_sentinel_for<decltype(::cuda::std::ranges::__end_cpo{}(__t)),
-                                decltype(::cuda::std::ranges::__begin_cpo{}(::cuda::std::declval<_Tp>()))>)));
+    requires(forward_iterator<decltype(::cuda::std::ranges::begin(__t))>),
+    requires(sized_sentinel_for<decltype(::cuda::std::ranges::end(__t)), decltype(::cuda::std::ranges::begin(__t))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __difference = _CCCL_FRAGMENT(__difference_, _Tp);
@@ -112,14 +111,15 @@ struct __fn
 {
   // `[range.prim.size]`: the array case (for rvalues).
   template <class _Tp, size_t _Sz>
-  [[nodiscard]] _CCCL_API constexpr size_t operator()(_Tp (&&)[_Sz]) const noexcept
+  [[nodiscard]] _CCCL_API constexpr size_t
+  _CCCL_STATIC_CALL_OPERATOR(_Tp (&&)[_Sz]) noexcept // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
   {
     return _Sz;
   }
 
   // `[range.prim.size]`: the array case (for lvalues).
   template <class _Tp, size_t _Sz>
-  [[nodiscard]] _CCCL_API constexpr size_t operator()(_Tp (&)[_Sz]) const noexcept
+  [[nodiscard]] _CCCL_API constexpr size_t _CCCL_STATIC_CALL_OPERATOR(_Tp (&)[_Sz]) noexcept
   {
     return _Sz;
   }
@@ -128,8 +128,8 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_size<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.size())))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.size())))
   {
     return _LIBCUDACXX_AUTO_CAST(__t.size());
   }
@@ -138,8 +138,8 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_size<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(size(__t))))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(size(__t))))
   {
     return _LIBCUDACXX_AUTO_CAST(size(__t));
   }
@@ -148,13 +148,11 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__difference<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(
-    ::cuda::std::__to_unsigned_like(::cuda::std::ranges::__end_cpo{}(__t) - ::cuda::std::ranges::__begin_cpo{}(__t))))
-    -> decltype(::cuda::std::__to_unsigned_like(::cuda::std::ranges::__end_cpo{}(__t)
-                                                - ::cuda::std::ranges::__begin_cpo{}(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(
+    noexcept(::cuda::std::__to_unsigned_like(::cuda::std::ranges::end(__t) - ::cuda::std::ranges::begin(__t))))
+    -> decltype(::cuda::std::__to_unsigned_like(::cuda::std::ranges::end(__t) - ::cuda::std::ranges::begin(__t)))
   {
-    return ::cuda::std::__to_unsigned_like(
-      ::cuda::std::ranges::__end_cpo{}(__t) - ::cuda::std::ranges::__begin_cpo{}(__t));
+    return ::cuda::std::__to_unsigned_like(::cuda::std::ranges::end(__t) - ::cuda::std::ranges::begin(__t));
   }
 };
 _CCCL_END_NAMESPACE_CPO
@@ -162,9 +160,6 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto size = __size::__fn{};
-
-// We want to avoid using the CPO internally because of __tile__ access
-using __size_cpo = __size::__fn;
 } // namespace __cpo
 
 // [range.prim.ssize]
@@ -172,12 +167,11 @@ using __size_cpo = __size::__fn;
 _CCCL_BEGIN_NAMESPACE_CPO(__ssize)
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
-concept __can_ssize = requires(_Tp&& __t) { ::cuda::std::ranges::__size_cpo{}(__t); };
+concept __can_ssize = requires(_Tp&& __t) { ::cuda::std::ranges::size(__t); };
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(
-  __can_ssize_,
-  requires(_Tp&& __t)(requires(!is_unbounded_array_v<_Tp>), ((void) ::cuda::std::ranges::__size_cpo{}(__t))));
+  __can_ssize_, requires(_Tp&& __t)(requires(!is_unbounded_array_v<_Tp>), ((void) ::cuda::std::ranges::size(__t))));
 
 template <class _Tp>
 _CCCL_CONCEPT __can_ssize = _CCCL_FRAGMENT(__can_ssize_, _Tp);
@@ -187,12 +181,12 @@ struct __fn
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_ssize<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(::cuda::std::ranges::__size_cpo{}(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(::cuda::std::ranges::size(__t)))
   {
-    using _Signed = make_signed_t<decltype(::cuda::std::ranges::__size_cpo{}(__t))>;
+    using _Signed = make_signed_t<decltype(::cuda::std::ranges::size(__t))>;
     using _Result = conditional_t<(sizeof(ptrdiff_t) > sizeof(_Signed)), ptrdiff_t, _Signed>;
-    return static_cast<_Result>(::cuda::std::ranges::__size_cpo{}(__t));
+    return static_cast<_Result>(::cuda::std::ranges::size(__t));
   }
 };
 _CCCL_END_NAMESPACE_CPO
@@ -200,9 +194,6 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto ssize = __ssize::__fn{};
-
-// We want to avoid using the CPO internally because of __tile__ access
-using __ssize_cpo = __ssize::__fn;
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES

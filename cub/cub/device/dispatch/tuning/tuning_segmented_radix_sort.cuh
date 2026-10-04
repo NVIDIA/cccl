@@ -26,13 +26,13 @@ struct SegmentedRadixSortPolicy
   RadixSortDownsweepPolicy regular_pass; //!< Policy for the regular radix sort pass on each segment
   RadixSortDownsweepPolicy alternate_pass; //!< Policy for the alternate radix sort pass on each segment
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const SegmentedRadixSortPolicy& lhs, const SegmentedRadixSortPolicy& rhs) noexcept
   {
     return lhs.regular_pass == rhs.regular_pass && lhs.alternate_pass == rhs.alternate_pass;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const SegmentedRadixSortPolicy& lhs, const SegmentedRadixSortPolicy& rhs) noexcept
   {
     return !(lhs == rhs);

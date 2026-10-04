@@ -19,6 +19,7 @@
 
 #include <cub/agent/agent_batch_memcpy.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_batch_memcpy.cuh>
@@ -58,7 +59,7 @@ template <typename BufferOffsetScanTileStateT, typename BlockOffsetScanTileState
 _CCCL_KERNEL_ATTRIBUTES void InitTileStateKernel(
   BufferOffsetScanTileStateT buffer_offset_scan_tile_state,
   BlockOffsetScanTileStateT block_offset_scan_tile_state,
-  _CCCL_GRID_CONSTANT const TileOffsetT num_tiles)
+  const TileOffsetT num_tiles)
 {
   // Initialize tile status
   buffer_offset_scan_tile_state.InitializeStatus(num_tiles);
@@ -81,16 +82,16 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires batch_memcpy_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().large_buffer.threads_per_block))
+__launch_bounds__(int(current_policy<PolicySelector>().lookback.large_buffer.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void MultiBlockBatchMemcpyKernel(
-    _CCCL_GRID_CONSTANT const InputBufferIt input_buffer_it,
-    _CCCL_GRID_CONSTANT const OutputBufferIt output_buffer_it,
-    _CCCL_GRID_CONSTANT const BufferSizeIteratorT buffer_sizes,
-    _CCCL_GRID_CONSTANT const BufferTileOffsetItT buffer_tile_offsets,
+    const InputBufferIt input_buffer_it,
+    const OutputBufferIt output_buffer_it,
+    const BufferSizeIteratorT buffer_sizes,
+    const BufferTileOffsetItT buffer_tile_offsets,
     TileT buffer_offset_tile,
-    _CCCL_GRID_CONSTANT const TileOffsetT last_tile_offset)
+    const TileOffsetT last_tile_offset)
 {
-  static constexpr BatchedCopyLargeBufferPolicy policy = current_policy<PolicySelector>().large_buffer;
+  static constexpr BatchedCopyLargeBufferPolicy policy = current_policy<PolicySelector>().lookback.large_buffer;
   using BufferSizeT                                    = it_value_t<BufferSizeIteratorT>;
   /// Internal load/store type. For byte-wise memcpy, a single-byte type
   using AliasT = typename ::cuda::std::conditional_t<MemcpyOpt == CopyAlg::Memcpy,
@@ -135,7 +136,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().large_buffer.threads_per_
     const BufferOffsetT buffer_id = block_buffer_id;
 
     // The relative offset of this tile within the buffer it's assigned to
-    BufferSizeT tile_offset_within_buffer =
+    const BufferSizeT tile_offset_within_buffer =
       static_cast<BufferSizeT>(tile_id - buffer_tile_offsets[buffer_id]) * TILE_SIZE;
 
     // If the tile has already reached beyond the work of the end of the last buffer
@@ -152,8 +153,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().large_buffer.threads_per_
       {
         if (thread_offset < buffer_sizes[buffer_id])
         {
-          const auto value = read_item < MemcpyOpt == CopyAlg::Memcpy, AliasT,
-                     InputBufferT > (input_buffer_it[buffer_id], thread_offset);
+          const auto value =
+            read_item<MemcpyOpt == CopyAlg::Memcpy, AliasT, InputBufferT>(input_buffer_it[buffer_id], thread_offset);
           write_item<MemcpyOpt == CopyAlg::Memcpy, AliasT, OutputBufferT>(
             output_buffer_it[buffer_id], thread_offset, value);
         }
@@ -210,23 +211,23 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires batch_memcpy_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().small_buffer.threads_per_block))
+__launch_bounds__(int(current_policy<PolicySelector>().lookback.small_buffer.threads_per_block))
   _CCCL_KERNEL_ATTRIBUTES void BatchMemcpyKernel(
-    _CCCL_GRID_CONSTANT const InputBufferIt input_buffer_it,
-    _CCCL_GRID_CONSTANT const OutputBufferIt output_buffer_it,
-    _CCCL_GRID_CONSTANT const BufferSizeIteratorT buffer_sizes,
-    _CCCL_GRID_CONSTANT const BufferOffsetT num_buffers,
-    _CCCL_GRID_CONSTANT const BlevBufferSrcsOutItT blev_buffer_srcs,
-    _CCCL_GRID_CONSTANT const BlevBufferDstsOutItT blev_buffer_dsts,
-    _CCCL_GRID_CONSTANT const BlevBufferSizesOutItT blev_buffer_sizes,
-    _CCCL_GRID_CONSTANT const BlevBufferTileOffsetsOutItT blev_buffer_tile_offsets,
-    _CCCL_GRID_CONSTANT const BLevBufferOffsetTileState blev_buffer_scan_state,
-    _CCCL_GRID_CONSTANT const BLevBlockOffsetTileState blev_block_scan_state)
+    const InputBufferIt input_buffer_it,
+    const OutputBufferIt output_buffer_it,
+    const BufferSizeIteratorT buffer_sizes,
+    const BufferOffsetT num_buffers,
+    const BlevBufferSrcsOutItT blev_buffer_srcs,
+    const BlevBufferDstsOutItT blev_buffer_dsts,
+    const BlevBufferSizesOutItT blev_buffer_sizes,
+    const BlevBufferTileOffsetsOutItT blev_buffer_tile_offsets,
+    const BLevBufferOffsetTileState blev_buffer_scan_state,
+    const BLevBlockOffsetTileState blev_block_scan_state)
 {
-  static constexpr BatchedCopySmallBufferPolicy policy = current_policy<PolicySelector>().small_buffer;
+  static constexpr BatchedCopySmallBufferPolicy policy = current_policy<PolicySelector>().lookback.small_buffer;
 
   // TODO(bgruber): refactor this in C++20, when we can pass policy as NTTP
-  using AgentBatchMemcpyPolicyT = agent_batch_memcpy_policy<
+  using agent_policy_t = agent_batch_memcpy_policy<
     policy.threads_per_block,
     policy.buffers_per_thread,
     policy.bytes_per_thread,
@@ -243,7 +244,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().small_buffer.threads_per_
 
   // Block-level specialization
   using AgentBatchMemcpyT = AgentBatchMemcpy<
-    AgentBatchMemcpyPolicyT,
+    agent_policy_t,
     InputBufferIt,
     OutputBufferIt,
     BufferSizeIteratorT,
@@ -314,18 +315,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
   const BatchedCopyPolicy active_policy = policy_selector(cc);
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 ::std::stringstream ss;
-                 ss << active_policy;
-                 _CubLog("Dispatching DeviceBatchMemcpy to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  detail::log_dispatch("DeviceBatchMemcpy", cc, active_policy);
 
-  enum : uint32_t
+  enum class allocation : uint32_t
   {
     // Memory for the source pointers of the buffers that require block-level collaboration
     MEM_BLEV_BUFFER_SRCS = 0,
@@ -345,8 +337,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   };
 
   constexpr BlockOffsetT init_kernel_threads = 128U;
-  const auto tile_size                       = static_cast<uint32_t>(active_policy.small_buffer.threads_per_block)
-                       * static_cast<uint32_t>(active_policy.small_buffer.buffers_per_thread);
+  const auto tile_size = static_cast<uint32_t>(active_policy.lookback.small_buffer.threads_per_block)
+                       * static_cast<uint32_t>(active_policy.lookback.small_buffer.buffers_per_thread);
 
   constexpr auto max_num_buffers_per_invocation = ::cuda::std::int64_t{512 * 1024 * 1024};
   static_assert(max_num_buffers_per_invocation <= ::cuda::std::numeric_limits<per_invocation_buffer_offset_t>::max());
@@ -362,14 +354,20 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   using BlevBufferSizesOutItT       = BufferSizeT*;
   using BlevBufferTileOffsetsOutItT = BlockOffsetT*;
 
-  temporary_storage::layout<MEM_NUM_ALLOCATIONS> temporary_storage_layout;
+  temporary_storage::layout<static_cast<uint32_t>(allocation::MEM_NUM_ALLOCATIONS)> temporary_storage_layout;
 
-  auto blev_buffer_srcs_slot       = temporary_storage_layout.get_slot(MEM_BLEV_BUFFER_SRCS);
-  auto blev_buffer_dsts_slot       = temporary_storage_layout.get_slot(MEM_BLEV_BUFFER_DSTS);
-  auto blev_buffer_sizes_slot      = temporary_storage_layout.get_slot(MEM_BLEV_BUFFER_SIZES);
-  auto blev_buffer_block_slot      = temporary_storage_layout.get_slot(MEM_BLEV_BUFFER_TBLOCK);
-  auto blev_buffer_scan_slot       = temporary_storage_layout.get_slot(MEM_BLEV_BUFFER_SCAN_STATE);
-  auto blev_buffer_block_scan_slot = temporary_storage_layout.get_slot(MEM_BLEV_BLOCK_SCAN_STATE);
+  auto blev_buffer_srcs_slot =
+    temporary_storage_layout.get_slot(static_cast<uint32_t>(allocation::MEM_BLEV_BUFFER_SRCS));
+  auto blev_buffer_dsts_slot =
+    temporary_storage_layout.get_slot(static_cast<uint32_t>(allocation::MEM_BLEV_BUFFER_DSTS));
+  auto blev_buffer_sizes_slot =
+    temporary_storage_layout.get_slot(static_cast<uint32_t>(allocation::MEM_BLEV_BUFFER_SIZES));
+  auto blev_buffer_block_slot =
+    temporary_storage_layout.get_slot(static_cast<uint32_t>(allocation::MEM_BLEV_BUFFER_TBLOCK));
+  auto blev_buffer_scan_slot =
+    temporary_storage_layout.get_slot(static_cast<uint32_t>(allocation::MEM_BLEV_BUFFER_SCAN_STATE));
+  auto blev_buffer_block_scan_slot =
+    temporary_storage_layout.get_slot(static_cast<uint32_t>(allocation::MEM_BLEV_BLOCK_SCAN_STATE));
 
   auto blev_buffer_srcs_alloc  = blev_buffer_srcs_slot->template create_alias<BlevBufferSrcsOutT>();
   auto blev_buffer_dsts_alloc  = blev_buffer_dsts_slot->template create_alias<BlevBufferDstOutT>();
@@ -445,7 +443,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     BlockOffsetT,
     MemcpyOpt>;
 
-  const auto blev_threads_per_block = static_cast<uint32_t>(active_policy.large_buffer.threads_per_block);
+  const auto blev_threads_per_block = static_cast<uint32_t>(active_policy.lookback.large_buffer.threads_per_block);
 
   int device_ordinal;
   if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
@@ -505,7 +503,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-            batch_memcpy_grid_size, active_policy.small_buffer.threads_per_block, 0, stream)
+            batch_memcpy_grid_size, active_policy.lookback.small_buffer.threads_per_block, 0, stream)
             .doit(batch_memcpy_non_blev_kernel,
                   input_buffer_it + current_buffer_offset,
                   output_buffer_it + current_buffer_offset,

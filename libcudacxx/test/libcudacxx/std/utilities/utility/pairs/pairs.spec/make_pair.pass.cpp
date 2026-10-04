@@ -26,6 +26,7 @@ int main(int, char**)
     assert(p1.second == 4);
   }
 
+#ifndef CCCL_FORCE_TILE_TESTS
   {
     using P1 = cuda::std::pair<cuda::std::unique_ptr<int>, short>;
     P1 p1    = cuda::std::make_pair(cuda::std::unique_ptr<int>(new int(3)), static_cast<short>(4));
@@ -38,6 +39,8 @@ int main(int, char**)
     assert(p1.first == nullptr);
     assert(p1.second == 4);
   }
+#endif // CCCL_FORCE_TILE_TESTS
+
   {
     using P1        = cuda::std::pair<int, short>;
     constexpr P1 p1 = cuda::std::make_pair(3, static_cast<short>(4));

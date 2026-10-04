@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.bit], byteswap
@@ -22,7 +25,7 @@
 template <typename T, int N>
 struct test_byteswap
 {
-  TEST_FUNC constexpr void operator()() const
+  TEST_HOST_DEVICE_FUNC constexpr void operator()() const
   {
     using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
     Vec vec(bit_values<T>{});
@@ -46,7 +49,7 @@ template <typename V>
 struct has_simd_byteswap<V, cuda::std::void_t<decltype(simd::byteswap(cuda::std::declval<V>()))>> : cuda::std::true_type
 {};
 
-TEST_FUNC constexpr void test_constraints()
+TEST_HOST_DEVICE_FUNC constexpr void test_constraints()
 {
   using IntVec   = simd::basic_vec<int, simd::fixed_size<4>>;
   using FloatVec = simd::basic_vec<float, simd::fixed_size<4>>;

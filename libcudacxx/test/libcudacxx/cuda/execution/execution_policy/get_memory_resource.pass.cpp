@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: function-to-pointer decay is unsupported in tile code
 // error: taking address of a function is unsupported in tile code
 
@@ -27,33 +27,33 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
 
 struct test_resource
 {
-  TEST_FUNC void* allocate_sync(std::size_t, std::size_t)
+  TEST_HOST_DEVICE_FUNC void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
 
-  TEST_FUNC void deallocate_sync(void* ptr, std::size_t, std::size_t) noexcept
+  TEST_HOST_DEVICE_FUNC void deallocate_sync(void* ptr, std::size_t, std::size_t) noexcept
   {
     // ensure that we did get the right inputs forwarded
     _val = *static_cast<int*>(ptr);
   }
 
-  TEST_FUNC void* allocate(cuda::stream_ref, std::size_t, std::size_t)
+  TEST_HOST_DEVICE_FUNC void* allocate(cuda::stream_ref, std::size_t, std::size_t)
   {
     return &_val;
   }
 
-  TEST_FUNC void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t)
+  TEST_HOST_DEVICE_FUNC void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t)
   {
     // ensure that we did get the right inputs forwarded
     _val = *static_cast<int*>(ptr);
   }
 
-  TEST_FUNC bool operator==(const test_resource& other) const
+  TEST_HOST_DEVICE_FUNC bool operator==(const test_resource& other) const
   {
     return _val == other._val;
   }
-  TEST_FUNC bool operator!=(const test_resource& other) const
+  TEST_HOST_DEVICE_FUNC bool operator!=(const test_resource& other) const
   {
     return _val != other._val;
   }

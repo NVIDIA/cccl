@@ -5,7 +5,7 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/__nvtx/nvtx.h>
+#include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
 #include <cuda/buffer>
 #include <cuda/std/bit>
 #include <cuda/std/cmath>
@@ -14,14 +14,19 @@
 #include <cuda/std/utility>
 
 #include <cstdint>
-#include <cstdlib>
 #include <iomanip>
+#include <optional>
+#include <sstream>
+#include <string>
 #include <tuple>
 #include <type_traits>
+#include <vector>
 
 #include <c2h/catch2_main.h>
 #include <c2h/catch2_test_macros.h>
 #include <c2h/checked_allocator.cuh>
+#include <c2h/detail/catch2_nvtx.h>
+#include <c2h/detail/catch2_seed.h>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
@@ -31,6 +36,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators_all.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
 #include <catch2/matchers/catch_matchers_templated.hpp>
 #include <catch2/matchers/catch_matchers_vector.hpp>
 
@@ -185,6 +191,15 @@ std::vector<T> to_vec(std::vector<T> const& vec)
 {
   return vec;
 }
+
+template <class T, class... Props>
+std::vector<T> to_vec(cuda::buffer<T, Props...> const& buf)
+{
+  const auto host = cuda::make_buffer(buf.stream(), cuda::mr::legacy_pinned_memory_resource{}, buf);
+
+  buf.stream().sync();
+  return std::vector<T>{host.begin(), host.end()};
+}
 } // namespace detail
 
 #define REQUIRE_APPROX_EQ(ref, out)                          \
@@ -218,11 +233,15 @@ class QuietMatchExpr : public Catch::ITransientExpression
   MatcherT const& m_matcher;
 
 public:
-  constexpr QuietMatchExpr(ArgT&& arg, MatcherT const& matcher)
+  // ArgT can be a reference type, so the stored reference must use forward.
+  constexpr QuietMatchExpr(ArgT&& arg, // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+                           MatcherT const& matcher)
       : ITransientExpression{true, matcher.match(arg)}
-      , m_arg(CATCH_FORWARD(arg))
+      , m_arg(cuda::std::forward<ArgT>(arg))
       , m_matcher(matcher)
   {}
+
+  virtual ~QuietMatchExpr() = default;
 
   void streamReconstructedExpression(std::ostream& os) const override
   {
@@ -296,6 +315,9 @@ struct CustomEqualsRangeMatcher : Catch::Matchers::MatcherBase<Range>
     return std::equal(begin(range), end(range), begin(other), Pred{});
   }
 
+  // Catch2 matchers must expose describe() publicly so that composing matchers
+  // (AllMatch, Contains, SizeIs, ...) can call it on a member matcher.
+  // NOLINTNEXTLINE(misc-override-with-different-visibility)
   std::string describe() const override
   {
     return "Equals: " + Catch::rangeToString(range);
@@ -352,16 +374,16 @@ struct element_compare_result_t
 template <typename T>
 struct vector_compare_result_t
 {
-  size_t actual_size;
-  size_t expected_size;
-  size_t total_mismatches;
+  size_t actual_size{};
+  size_t expected_size{};
+  size_t total_mismatches{};
   std::vector<indexed_value_t<T>> good_values;
   std::vector<element_compare_result_t<T>> first_mismatches;
   std::optional<std::vector<element_compare_result_t<T>>> last_mismatches;
 };
 
-template <typename T>
-auto compare_vectors(const host_vector<T>& actual, const host_vector<T>& expected) -> vector_compare_result_t<T>
+template <typename LhsRange, typename RhsRange, typename T = typename LhsRange::value_type>
+auto compare_host_ranges(const LhsRange& actual, const RhsRange& expected) -> vector_compare_result_t<T>
 {
   constexpr size_t good_values_before_mismatch = 3;
   constexpr size_t first_mismatches_count      = 5;
@@ -397,7 +419,7 @@ auto compare_vectors(const host_vector<T>& actual, const host_vector<T>& expecte
   result.total_mismatches = mismatches.size();
 
   // Handle first mismatches
-  size_t first_count = cuda::std::min<size_t>(mismatches.size(), first_mismatches_count);
+  const size_t first_count = cuda::std::min<size_t>(mismatches.size(), first_mismatches_count);
   result.first_mismatches.assign(mismatches.begin(), mismatches.begin() + first_count);
 
   // Handle last mismatches
@@ -412,6 +434,12 @@ auto compare_vectors(const host_vector<T>& actual, const host_vector<T>& expecte
 }
 
 template <typename T>
+auto compare_vectors(const host_vector<T>& actual, const host_vector<T>& expected) -> vector_compare_result_t<T>
+{
+  return compare_host_ranges(actual, expected);
+}
+
+template <typename T>
 auto compare_vectors(const device_vector<T>& actual, const device_vector<T>& expected) -> vector_compare_result_t<T>
 {
   return compare_vectors<T>(host_vector<T>(actual), host_vector<T>(expected));
@@ -421,10 +449,12 @@ template <typename T, typename... LhsProps, typename... RhsProps>
 auto compare_vectors(const cuda::buffer<T, LhsProps...>& actual, const cuda::buffer<T, RhsProps...>& expected)
   -> vector_compare_result_t<T>
 {
+  const auto actual_host   = cuda::make_buffer(actual.stream(), cuda::mr::legacy_pinned_memory_resource{}, actual);
+  const auto expected_host = cuda::make_buffer(expected.stream(), cuda::mr::legacy_pinned_memory_resource{}, expected);
+
   actual.stream().sync();
   expected.stream().sync();
-  return compare_vectors<T>(host_vector<T>(actual.begin(), actual.end()),
-                            host_vector<T>(expected.begin(), expected.end()));
+  return compare_host_ranges(actual_host, expected_host);
 }
 
 template <typename LhsVec, typename RhsVec, typename T = typename LhsVec::value_type>
@@ -494,6 +524,8 @@ struct vector_matcher : Catch::Matchers::MatcherGenericBase
     return comparison_result.total_mismatches == 0;
   }
 
+  // See the note on CustomEqualsRangeMatcher::describe above.
+  // NOLINTNEXTLINE(misc-override-with-different-visibility)
   std::string describe() const override
   {
     std::stringstream ss;
@@ -559,6 +591,18 @@ template <typename... T>
 }
 _CCCL_END_NAMESPACE_CUDA_STD
 
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <typename T, typename... Props>
+::std::ostream& operator<<(::std::ostream& os, const cuda::buffer<T, Props...>& buffer)
+{
+  const auto host_buf = cuda::make_buffer(buffer.stream(), cuda::mr::legacy_pinned_memory_resource{}, buffer);
+
+  buffer.stream().sync();
+  os << ::Catch::Detail::stringify(::std::vector<T>{host_buf.begin(), host_buf.end()});
+  return os;
+}
+_CCCL_END_NAMESPACE_CUDA
+
 template <>
 struct Catch::StringMaker<cudaError>
 {
@@ -571,22 +615,6 @@ struct Catch::StringMaker<cudaError>
 #include <c2h/custom_type.h>
 #include <c2h/generators.h>
 
-namespace detail
-{
-struct nvtx_c2h_domain
-{
-  static constexpr const char* name = "C2H";
-};
-
-template <typename T>
-class nvtx_fixture
-{
-#if _CCCL_HAS_NVTX3()
-  ::nvtx3::v1::scoped_range_in<nvtx_c2h_domain> nvtx_range{Catch::getResultCapture().getCurrentTestName()};
-#endif // _CCCL_HAS_NVTX3()
-};
-} // namespace detail
-
 #define C2H_TEST_NAME_IMPL(NAME, PARAM) C2H_TEST_STR(NAME) "(" C2H_TEST_STR(PARAM) ")"
 
 #define C2H_TEST_NAME(NAME) C2H_TEST_NAME_IMPL(NAME, VAR_IDX)
@@ -596,7 +624,8 @@ class nvtx_fixture
 
 #define C2H_TEST_IMPL(ID, NAME, TAG, ...)                                  \
   using C2H_TEST_CONCAT(types_, ID) = c2h::cartesian_product<__VA_ARGS__>; \
-  CATCH_TEMPLATE_LIST_TEST_CASE_METHOD(::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+  CATCH_TEMPLATE_LIST_TEST_CASE_METHOD(                                    \
+    ::c2h::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
 
 #define C2H_TEST(NAME, TAG, ...) C2H_TEST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
 
@@ -609,7 +638,8 @@ class nvtx_fixture
 
 #define C2H_TEST_LIST_IMPL(ID, NAME, TAG, ...)                     \
   using C2H_TEST_CONCAT(types_, ID) = c2h::type_list<__VA_ARGS__>; \
-  CATCH_TEMPLATE_LIST_TEST_CASE_METHOD(::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+  CATCH_TEMPLATE_LIST_TEST_CASE_METHOD(                            \
+    ::c2h::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
 
 #define C2H_TEST_LIST(NAME, TAG, ...) C2H_TEST_LIST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
 
@@ -621,29 +651,3 @@ class nvtx_fixture
   C2H_TEST_LIST_WITH_FIXTURE_IMPL(__LINE__, FIXTURE, NAME, TAG, __VA_ARGS__)
 
 #define C2H_TEST_STR(a) #a
-
-namespace c2h
-{
-inline std::size_t get_override_seed_count()
-{
-  // Setting this environment variable forces a fixed number of seeds to be generated, regardless of the requested
-  // count. Set to 1 to reduce redundant, expensive testing when using sanitizers, etc.
-  static std::optional<std::string> override_str = c2h::detail::get_env("C2H_SEED_COUNT_OVERRIDE");
-  static const int override_seeds                = override_str ? std::atoi(override_str->c_str()) : 0;
-  return override_seeds;
-}
-
-inline std::size_t adjust_seed_count(std::size_t requested)
-{
-  static std::size_t override_seeds = get_override_seed_count();
-  return override_seeds != 0 ? override_seeds : requested;
-}
-} // namespace c2h
-
-#define C2H_SEED(N)                                                                         \
-  c2h::seed_t                                                                               \
-  {                                                                                         \
-    GENERATE_COPY(take(c2h::adjust_seed_count(N),                                           \
-                       random(::cuda::std::numeric_limits<unsigned long long int>::min(),   \
-                              ::cuda::std::numeric_limits<unsigned long long int>::max()))) \
-  }

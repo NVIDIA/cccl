@@ -694,7 +694,7 @@ public:
    *  \p x The first \p host_vector of interest.
    *  \p y The second \p host_vector of interest.
    */
-  friend void swap(host_vector& a, host_vector& b) noexcept(noexcept(a.swap(b)))
+  friend void swap(host_vector& a, host_vector& b) noexcept(noexcept(a.swap(b))) // NOLINT(bugprone-exception-escape)
   {
     a.swap(b);
   }

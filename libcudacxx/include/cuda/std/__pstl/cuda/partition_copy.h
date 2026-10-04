@@ -83,7 +83,7 @@ struct __pstl_dispatch<__pstl_algorithm::__partition_copy, __execution_backend::
 
     // Determine temporary device storage requirements for device_partition
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DevicePartition::If,
       "__pstl_cuda_partition_copy: determination of device storage for cub::DevicePartition::If failed",
       static_cast<void*>(nullptr),
@@ -93,13 +93,13 @@ struct __pstl_dispatch<__pstl_algorithm::__partition_copy, __execution_backend::
       static_cast<_OffsetType*>(nullptr),
       __count,
       __pred,
-      nullptr);
+      __policy);
 
     {
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
       // Run the kernel, the standard requires that the input and output range do not overlap
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DevicePartition::If,
         "__pstl_cuda_partition_copy: kernel launch of cub::DevicePartition::If failed",
         __storage.__get_temp_storage(),
@@ -109,10 +109,10 @@ struct __pstl_dispatch<__pstl_algorithm::__partition_copy, __execution_backend::
         __storage.template __get_ptr<0>(),
         __count,
         ::cuda::std::move(__pred),
-        __stream.get());
+        __policy);
 
       // Copy the result back from storage
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_partition_copy: copy of result from device to host failed",
         ::cuda::std::addressof(__num_selected),
@@ -131,13 +131,13 @@ struct __pstl_dispatch<__pstl_algorithm::__partition_copy, __execution_backend::
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _OutputIterator1, class _OutputIterator2, class _UnaryPred)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_traversal<_OutputIterator1> _CCCL_AND
                    __has_forward_traversal<_OutputIterator2>)
-  [[nodiscard]] _CCCL_HOST_API pair<_OutputIterator1, _OutputIterator2> operator()(
+  [[nodiscard]] _CCCL_HOST_API pair<_OutputIterator1, _OutputIterator2> _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator __first,
     _InputIterator __last,
     _OutputIterator1 __result_true,
     _OutputIterator2 __result_false,
-    _UnaryPred __pred) const
+    _UnaryPred __pred)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator1>

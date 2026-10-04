@@ -50,8 +50,8 @@ using namespace cuda::experimental::stf;
 
 __global__ void initA(double* d_ptrA, size_t N)
 {
-  size_t tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  size_t nthreads = blockDim.x * gridDim.x;
+  const size_t tid      = blockIdx.x * blockDim.x + threadIdx.x;
+  const size_t nthreads = blockDim.x * gridDim.x;
   for (size_t i = tid; i < N; i += nthreads)
   {
     d_ptrA[i] = sin(i);
@@ -60,8 +60,8 @@ __global__ void initA(double* d_ptrA, size_t N)
 
 __global__ void initB(double* d_ptrB, size_t N)
 {
-  size_t tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  size_t nthreads = blockDim.x * gridDim.x;
+  const size_t tid      = blockIdx.x * blockDim.x + threadIdx.x;
+  const size_t nthreads = blockDim.x * gridDim.x;
   for (size_t i = tid; i < N; i += nthreads)
   {
     d_ptrB[i] = cos(i);
@@ -71,8 +71,8 @@ __global__ void initB(double* d_ptrB, size_t N)
 // B += alpha * A
 __global__ void axpy(double alpha, const double* d_ptrA, double* d_ptrB, size_t N)
 {
-  size_t tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  size_t nthreads = blockDim.x * gridDim.x;
+  const size_t tid      = blockIdx.x * blockDim.x + threadIdx.x;
+  const size_t nthreads = blockDim.x * gridDim.x;
   for (size_t i = tid; i < N; i += nthreads)
   {
     d_ptrB[i] += alpha * d_ptrA[i];
@@ -365,10 +365,10 @@ void run_fork_join_under_capture(const char* label, Submit&& submit)
   double max_err_B = 0.0;
   for (size_t i = 0; i < N; ++i)
   {
-    double ref_A = sin((double) i);
-    double ref_B = cos((double) i) + 3.0 * sin((double) i);
-    max_err_A    = std::fmax(max_err_A, std::fabs(h_A[i] - ref_A));
-    max_err_B    = std::fmax(max_err_B, std::fabs(h_B[i] - ref_B));
+    const double ref_A = sin((double) i);
+    const double ref_B = cos((double) i) + 3.0 * sin((double) i);
+    max_err_A          = std::fmax(max_err_A, std::fabs(h_A[i] - ref_A));
+    max_err_B          = std::fmax(max_err_B, std::fabs(h_B[i] - ref_B));
   }
   EXPECT(max_err_A < 1e-10, "[", label, "] A mismatch: max|A - sin(i)| = ", max_err_A);
   EXPECT(max_err_B < 1e-10, "[", label, "] B mismatch: max|B - (cos(i) + 3 sin(i))| = ", max_err_B);
@@ -404,7 +404,7 @@ int main()
     try
     {
       async_resources_handle h; // user-provided handle (non-null)
-      stream_ctx ctx(capture_stream, mv(h));
+      const stream_ctx ctx(capture_stream, mv(h));
     }
     catch (const ::std::exception&)
     {

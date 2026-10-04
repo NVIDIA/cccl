@@ -19,8 +19,11 @@
 
 #include <nvbench_helper.cuh>
 
-namespace
-{
+// Segment sizes are stored as signed 32-bit integers: the library caps supported segment sizes at 2^21 (about 2
+// million), so a wider type buys nothing here. The benchmarks always pass an explicit `cuda::args::bounds` (a bare
+// int32 would be rejected, as its type maximum exceeds the cap).
+using segment_size_t = cuda::std::int32_t;
+
 enum class pattern_kind : int
 {
   random = 0,
@@ -30,7 +33,7 @@ enum class pattern_kind : int
   pivot_tie
 };
 
-[[nodiscard]] pattern_kind string_to_pattern(const std::string& pattern)
+[[nodiscard]] inline pattern_kind string_to_pattern(const std::string& pattern)
 {
   if (pattern == "random")
   {
@@ -57,7 +60,7 @@ enum class pattern_kind : int
 
 template <int MaxSegmentSize, int K>
 [[nodiscard]] thrust::device_vector<float>
-gen_data(int num_segments, pattern_kind pattern, const cuda::std::int64_t* d_seg_sizes)
+gen_data(int num_segments, pattern_kind pattern, const segment_size_t* d_seg_sizes)
 {
   const auto num_keys = static_cast<std::size_t>(num_segments) * static_cast<std::size_t>(MaxSegmentSize);
   auto d_keys         = thrust::device_vector<float>{num_keys, thrust::no_init};
@@ -147,7 +150,6 @@ gen_data(int num_segments, pattern_kind pattern, const cuda::std::int64_t* d_seg
 
   return d_keys;
 }
-} // namespace
 
 const std::vector<std::string> valid_patterns = {
   "random", "quantized_random", "relu_quantized", "tie_heavy", "pivot_tie"};

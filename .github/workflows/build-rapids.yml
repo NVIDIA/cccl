@@ -63,10 +63,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { cuda: '13.2', libs: 'rmm ucxx kvikio cudf cudf_kafka' }
-          # TODO: remove the PYTHON_VERSION override when all of cuml's dependencies have Python 3.14 support
-          - { cuda: '13.2', libs: 'rmm ucxx raft cuvs nvforest cuml cuopt', python_version: '3.13' }
-          - { cuda: '13.2', libs: 'rmm ucxx raft cuvs cugraph wholegraph' }
+          - { cuda: '13.3', libs: 'rmm ucxx kvikio rapidsmpf cudf cudf_kafka' }
+          - { cuda: '13.3', libs: 'rmm ucxx raft cuvs nvforest cuml' }
+          - { cuda: '13.3', libs: 'rmm ucxx raft cuvs cugraph wholegraph' }
+          # cuopt branches change at a different time, so it must be tested on its own to avoid environment conflicts.
+          - { cuda: '13.3', libs: 'cuopt' }
     permissions:
       id-token: write
       contents: read
@@ -138,7 +139,7 @@ jobs:
               echo ""
               echo "For additional information, see:"
               echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
-              echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
+              echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/docs/infrastructure/ci/references/ci_overview.rst"
             fi
             exit $code
           }
@@ -199,6 +200,7 @@ jobs:
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
             --env "SCCACHE_DIST_URL=https://$(uname -m | sed -e 's/x86_/amd/' -e 's/aarch/arm/').linux.sccache.rapids.nvidia.com" \
+            --env "SCCACHE_DIST_AUTH_TYPE=token" \
             --env "SCCACHE_DIST_AUTH_TOKEN=$(
               curl -fsSL -H "Authorization: Bearer $(
                 curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \

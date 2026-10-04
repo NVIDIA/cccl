@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6077640: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
-
 #include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>

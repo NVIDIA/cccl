@@ -11,6 +11,8 @@
 #ifndef _CUDA_STD_CASSERT
 #define _CUDA_STD_CASSERT
 
+// IWYU pragma: always_keep
+
 #include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)

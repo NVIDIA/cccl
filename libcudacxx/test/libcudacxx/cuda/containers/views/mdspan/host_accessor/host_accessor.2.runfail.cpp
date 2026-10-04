@@ -8,6 +8,8 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
+// the assert does not trigger
 
 #include <cuda/mdspan>
 

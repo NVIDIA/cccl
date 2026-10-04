@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6077402: error: "call to non-tile function not supported!"
+// UNSUPPORTED: force-tile
+// error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
 
 // <cuda/std/complex>
 
@@ -23,7 +23,7 @@
 #include "test_macros.h"
 
 template <class T, class U = T>
-TEST_FUNC void test(const cuda::std::complex<T>& a, const cuda::std::complex<U>& b, cuda::std::complex<T> x)
+TEST_HOST_DEVICE_FUNC void test(const cuda::std::complex<T>& a, const cuda::std::complex<U>& b, cuda::std::complex<T> x)
 {
   static_assert(cuda::std::is_same<decltype(pow(a, b)), cuda::std::complex<T>>::value);
   cuda::std::complex<T> c = pow(a, b);
@@ -32,13 +32,13 @@ TEST_FUNC void test(const cuda::std::complex<T>& a, const cuda::std::complex<U>&
 }
 
 template <class T, class U = T>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test(cuda::std::complex<T>(2, 3), cuda::std::complex<U>(2, 0), cuda::std::complex<T>(-5, 12));
 }
 
 template <class T>
-TEST_FUNC void test_edges()
+TEST_HOST_DEVICE_FUNC void test_edges()
 {
   auto testcases   = get_testcases<T>();
   const unsigned N = sizeof(testcases) / sizeof(testcases[0]);
@@ -51,21 +51,21 @@ TEST_FUNC void test_edges()
 
       // The __half or __nv_float16 functions use fp32, we need to account for this
       // as we are checking for floating-point equality:
-#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
+#if _LIBCUDACXX_HAS_NVFP16()
       if constexpr (cuda::std::is_same_v<T, __half>)
       {
         z = cuda::std::exp<float>(
           cuda::std::complex<float>(testcases[j]) * cuda::std::log<float>(cuda::std::complex<float>(testcases[i])));
       }
-#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
+#if _LIBCUDACXX_HAS_NVBF16()
       if constexpr (cuda::std::is_same_v<T, __nv_bfloat16>)
       {
         z = cuda::std::exp<float>(
           cuda::std::complex<float>(testcases[j]) * cuda::std::log<float>(cuda::std::complex<float>(testcases[i])));
       }
-#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
       if (cuda::std::isnan(real(r)))
       {
@@ -109,14 +109,14 @@ int main(int, char**)
 
   test_edges<double>();
 
-#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();
   test_edges<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
-#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
   test_edges<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   return 0;
 }

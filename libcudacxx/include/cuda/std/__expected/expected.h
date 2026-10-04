@@ -497,6 +497,11 @@ public:
     return this->__has_val_;
   }
 
+  _CCCL_API constexpr bool has_error() const noexcept
+  {
+    return !this->__has_val_;
+  }
+
   _CCCL_API constexpr const _Tp& value() const&
   {
     static_assert(is_copy_constructible_v<_Err>, "expected::value() const& requires is_copy_constructible_v<E>");
@@ -565,7 +570,8 @@ public:
     return ::cuda::std::move(this->__union_.__unex_);
   }
 
-  template <class _Up>
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Up = remove_cv_t<_Tp>>
   _CCCL_API constexpr _Tp value_or(_Up&& __v) const&
   {
     static_assert(is_copy_constructible_v<_Tp>, "value_type has to be copy constructible");
@@ -573,7 +579,8 @@ public:
     return this->__has_val_ ? this->__union_.__val_ : static_cast<_Tp>(::cuda::std::forward<_Up>(__v));
   }
 
-  template <class _Up>
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Up = remove_cv_t<_Tp>>
   _CCCL_API constexpr _Tp value_or(_Up&& __v) &&
   {
     static_assert(is_move_constructible_v<_Tp>, "value_type has to be move constructible");
@@ -582,7 +589,28 @@ public:
                             : static_cast<_Tp>(::cuda::std::forward<_Up>(__v));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Up = _Err>
+  [[nodiscard]] _CCCL_API constexpr _Err error_or(_Up&& __error) const&
+  {
+    static_assert(is_copy_constructible_v<_Err>, "error_type has to be copy constructible");
+    static_assert(is_convertible_v<_Up, _Err>, "argument has to be convertible to error_type");
+
+    return (this->__has_val_) ? ::cuda::std::forward<_Up>(__error) : this->__union_.__unex_;
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Up = _Err>
+  [[nodiscard]] _CCCL_API constexpr _Err error_or(_Up&& __error) &&
+  {
+    static_assert(is_move_constructible_v<_Err>, "error_type has to be move constructible");
+    static_assert(is_convertible_v<_Up, _Err>, "argument has to be convertible to error_type");
+
+    return (this->__has_val_) ? ::cuda::std::forward<_Up>(__error) : ::cuda::std::move(this->__union_.__unex_);
+  }
+
   // [expected.object.monadic]
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
   _CCCL_REQUIRES(is_constructible_v<_Err2, _Err2&>)
   _CCCL_API constexpr auto and_then(_Fun&& __fun) &
@@ -603,6 +631,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
   _CCCL_REQUIRES(is_copy_constructible_v<_Err2>)
   _CCCL_API constexpr auto and_then(_Fun&& __fun) const&
@@ -623,6 +652,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
   _CCCL_REQUIRES(is_move_constructible_v<_Err2>)
   _CCCL_API constexpr auto and_then(_Fun&& __fun) &&
@@ -643,6 +673,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
   _CCCL_REQUIRES(is_constructible_v<_Err2, const _Err2>)
   _CCCL_API constexpr auto and_then(_Fun&& __fun) const&&
@@ -663,6 +694,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp)
   _CCCL_REQUIRES(is_constructible_v<_Tp2, _Tp2&>)
   _CCCL_API constexpr auto or_else(_Fun&& __fun) &
@@ -684,6 +716,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp)
   _CCCL_REQUIRES(is_copy_constructible_v<_Tp2>)
   _CCCL_API constexpr auto or_else(_Fun&& __fun) const&
@@ -705,6 +738,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp)
   _CCCL_REQUIRES(is_move_constructible_v<_Tp2>)
   _CCCL_API constexpr auto or_else(_Fun&& __fun) &&
@@ -726,6 +760,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp)
   _CCCL_REQUIRES(is_constructible_v<_Tp2, const _Tp2>)
   _CCCL_API constexpr auto or_else(_Fun&& __fun) const&&
@@ -747,6 +782,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
   _CCCL_REQUIRES(is_constructible_v<_Err2, _Err2&> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun, _Tp2&>>, void>)
   _CCCL_API constexpr auto transform(_Fun&& __fun) &
@@ -765,6 +801,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
   _CCCL_REQUIRES(
     is_constructible_v<_Err2, _Err2&> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun, _Tp2&>>, void>))
@@ -791,6 +828,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
   _CCCL_REQUIRES(
     is_copy_constructible_v<_Err2> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun, const _Tp2&>>, void>)
@@ -810,6 +848,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
   _CCCL_REQUIRES(
     is_copy_constructible_v<_Err2> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun, const _Tp2&>>, void>))
@@ -836,6 +875,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
   _CCCL_REQUIRES(is_move_constructible_v<_Err2> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun, _Tp2>>, void>)
   _CCCL_API constexpr auto transform(_Fun&& __fun) &&
@@ -853,6 +893,8 @@ public:
       return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
+
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
   _CCCL_REQUIRES(is_move_constructible_v<_Err2> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun, _Tp2>>, void>))
   _CCCL_API constexpr auto transform(_Fun&& __fun) &&
@@ -881,6 +923,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
   _CCCL_REQUIRES(
     is_constructible_v<_Err2, const _Err2> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun, const _Tp2>>, void>)
@@ -900,6 +943,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
   _CCCL_REQUIRES(
     is_constructible_v<_Err2, const _Err2> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun, const _Tp2>>, void>))
@@ -929,6 +973,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp)
   _CCCL_REQUIRES(is_constructible_v<_Tp2, _Tp2&>)
   _CCCL_API constexpr auto transform_error(_Fun&& __fun) &
@@ -954,6 +999,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp)
   _CCCL_REQUIRES(is_copy_constructible_v<_Tp2>)
   _CCCL_API constexpr auto transform_error(_Fun&& __fun) const&
@@ -980,6 +1026,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp)
   _CCCL_REQUIRES(is_move_constructible_v<_Tp2>)
   _CCCL_API constexpr auto transform_error(_Fun&& __fun) &&
@@ -1008,6 +1055,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp)
   _CCCL_REQUIRES(is_constructible_v<_Tp2, const _Tp2>)
   _CCCL_API constexpr auto transform_error(_Fun&& __fun) const&&
@@ -1395,6 +1443,11 @@ public:
     return this->__has_val_;
   }
 
+  _CCCL_API constexpr bool has_error() const noexcept
+  {
+    return !this->__has_val_;
+  }
+
   _CCCL_API constexpr void operator*() const noexcept
   {
     _CCCL_ASSERT(this->__has_val_, "expected::operator* requires the expected to contain a value");
@@ -1443,7 +1496,28 @@ public:
     return ::cuda::std::move(this->__union_.__unex_);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Up = _Err>
+  [[nodiscard]] _CCCL_API constexpr _Err error_or(_Up&& __error) const&
+  {
+    static_assert(is_copy_constructible_v<_Err>, "error_type has to be copy constructible");
+    static_assert(is_convertible_v<_Up, _Err>, "argument has to be convertible to error_type");
+
+    return (this->__has_val_) ? ::cuda::std::forward<_Up>(__error) : this->__union_.__unex_;
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Up = _Err>
+  [[nodiscard]] _CCCL_API constexpr _Err error_or(_Up&& __error) &&
+  {
+    static_assert(is_move_constructible_v<_Err>, "error_type has to be move constructible");
+    static_assert(is_convertible_v<_Up, _Err>, "argument has to be convertible to error_type");
+
+    return (this->__has_val_) ? ::cuda::std::forward<_Up>(__error) : ::cuda::std::move(this->__union_.__unex_);
+  }
+
   // [expected.void.monadic]
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
   _CCCL_REQUIRES(is_constructible_v<_Err2, _Err2&>)
   _CCCL_API constexpr auto and_then(_Fun&& __fun) &
@@ -1464,6 +1538,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
   _CCCL_REQUIRES(is_copy_constructible_v<_Err2>)
   _CCCL_API constexpr auto and_then(_Fun&& __fun) const&
@@ -1484,6 +1559,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
   _CCCL_REQUIRES(is_move_constructible_v<_Err2>)
   _CCCL_API constexpr auto and_then(_Fun&& __fun) &&
@@ -1504,6 +1580,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
   _CCCL_REQUIRES(is_constructible_v<_Err2, const _Err2>)
   _CCCL_API constexpr auto and_then(_Fun&& __fun) const&&
@@ -1524,6 +1601,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fun>
   _CCCL_API constexpr auto or_else(_Fun&& __fun) &
   {
@@ -1544,6 +1622,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fun>
   _CCCL_API constexpr auto or_else(_Fun&& __fun) const&
   {
@@ -1564,6 +1643,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fun>
   _CCCL_API constexpr auto or_else(_Fun&& __fun) &&
   {
@@ -1584,6 +1664,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fun>
   _CCCL_API constexpr auto or_else(_Fun&& __fun) const&&
   {
@@ -1604,6 +1685,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
   _CCCL_REQUIRES(is_constructible_v<_Err2, _Err2&> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>)
   _CCCL_API constexpr auto transform(_Fun&& __fun) &
@@ -1620,6 +1702,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
   _CCCL_REQUIRES(is_constructible_v<_Err2, _Err2&> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>))
   _CCCL_API constexpr auto transform(_Fun&& __fun) &
@@ -1645,6 +1728,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
   _CCCL_REQUIRES(is_copy_constructible_v<_Err2> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>)
   _CCCL_API constexpr auto transform(_Fun&& __fun) const&
@@ -1661,6 +1745,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
   _CCCL_REQUIRES(is_copy_constructible_v<_Err2> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>))
   _CCCL_API constexpr auto transform(_Fun&& __fun) const&
@@ -1686,6 +1771,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
   _CCCL_REQUIRES(is_move_constructible_v<_Err2> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>)
   _CCCL_API constexpr auto transform(_Fun&& __fun) &&
@@ -1701,6 +1787,8 @@ public:
       return expected<void, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
+
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
   _CCCL_REQUIRES(is_move_constructible_v<_Err2> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>))
   _CCCL_API constexpr auto transform(_Fun&& __fun) &&
@@ -1726,6 +1814,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
   _CCCL_REQUIRES(is_constructible_v<_Err2, const _Err2> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>)
   _CCCL_API constexpr auto transform(_Fun&& __fun) const&&
@@ -1742,6 +1831,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
   _CCCL_REQUIRES(is_constructible_v<_Err2, const _Err2> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>))
   _CCCL_API constexpr auto transform(_Fun&& __fun) const&&
@@ -1767,6 +1857,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fun>
   _CCCL_API constexpr auto transform_error(_Fun&& __fun) &
   {
@@ -1791,6 +1882,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fun>
   _CCCL_API constexpr auto transform_error(_Fun&& __fun) const&
   {
@@ -1816,6 +1908,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fun>
   _CCCL_API constexpr auto transform_error(_Fun&& __fun) &&
   {
@@ -1843,6 +1936,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fun>
   _CCCL_API constexpr auto transform_error(_Fun&& __fun) const&&
   {

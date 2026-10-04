@@ -23,7 +23,6 @@
 
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
@@ -43,6 +42,7 @@ public:
   __return_type_wrapper() = delete;
 
   // NOLINTBEGIN(bugprone-forwarding-reference-overload)
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fn)
   _CCCL_REQUIRES(::cuda::std::is_same_v<::cuda::std::decay_t<_Fn>, _DecayFn>)
   _CCCL_API constexpr explicit __return_type_wrapper(_Fn&& __fn) noexcept
@@ -50,6 +50,7 @@ public:
   {}
   // NOLINTEND(bugprone-forwarding-reference-overload)
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _As>
   _CCCL_API constexpr _Ret operator()(_As&&... __as) & noexcept
   {
@@ -61,6 +62,7 @@ public:
     return ::cuda::std::__invoke(__fn_, ::cuda::std::forward<_As>(__as)...);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _As>
   _CCCL_API constexpr _Ret operator()(_As&&... __as) && noexcept
   {
@@ -72,6 +74,7 @@ public:
     return ::cuda::std::__invoke(::cuda::std::move(__fn_), ::cuda::std::forward<_As>(__as)...);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _As>
   _CCCL_API constexpr _Ret operator()(_As&&... __as) const& noexcept
   {
@@ -83,6 +86,7 @@ public:
     return ::cuda::std::__invoke(__fn_, ::cuda::std::forward<_As>(__as)...);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _As>
   _CCCL_API constexpr _Ret operator()(_As&&... __as) const&& noexcept
   {

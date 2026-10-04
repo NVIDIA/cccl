@@ -80,7 +80,7 @@ struct __pstl_dispatch<__pstl_algorithm::__unique_copy, __execution_backend::__c
     _OffsetType __num_selected = 0;
 
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceSelect::Unique,
       "__pstl_cuda_unique: determination of device storage for cub::DeviceSelect::Unique failed",
       static_cast<void*>(nullptr),
@@ -95,7 +95,7 @@ struct __pstl_dispatch<__pstl_algorithm::__unique_copy, __execution_backend::__c
     { // Create temporary storage for the return value (num_selected) and CUB internal scratch space
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceSelect::Unique,
         "__pstl_cuda_unique: kernel launch of cub::DeviceSelect::Unique failed",
         __storage.__get_temp_storage(),
@@ -107,7 +107,7 @@ struct __pstl_dispatch<__pstl_algorithm::__unique_copy, __execution_backend::__c
         ::cuda::std::move(__pred),
         __policy);
 
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_unique: copy of num_selected from device to host failed",
         ::cuda::std::addressof(__num_selected),
@@ -123,12 +123,12 @@ struct __pstl_dispatch<__pstl_algorithm::__unique_copy, __execution_backend::__c
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _OutputIterator, class _BinaryPredicate)
   _CCCL_REQUIRES(__has_forward_traversal<_OutputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _OutputIterator operator()(
+  [[nodiscard]] _CCCL_HOST_API _OutputIterator _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator __first,
     _InputIterator __last,
     _OutputIterator __result,
-    _BinaryPredicate __pred) const
+    _BinaryPredicate __pred)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator>)

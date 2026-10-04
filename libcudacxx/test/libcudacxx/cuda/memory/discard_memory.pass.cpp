@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: asm statement is unsupported in tile code
 
 #include <cuda/memory>
@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <class T>
-TEST_FUNC volatile T* make_array(cuda::std::size_t n)
+TEST_HOST_DEVICE_FUNC volatile T* make_array(cuda::std::size_t n)
 {
   auto ptr = static_cast<T*>(cuda::std::malloc(n * sizeof(T)));
   assert(ptr != nullptr);
@@ -32,12 +32,12 @@ TEST_FUNC volatile T* make_array(cuda::std::size_t n)
   return const_cast<volatile T*>(ptr);
 }
 
-TEST_FUNC void destroy_array(volatile void* ptr)
+TEST_HOST_DEVICE_FUNC void destroy_array(volatile void* ptr)
 {
   cuda::std::free(const_cast<void*>(ptr));
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   using T = int;
 

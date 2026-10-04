@@ -25,6 +25,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter1, class T, class Op>
 TEST_FUNC constexpr void test(Iter1 first, Iter1 last, T init, Op op, const T* rFirst, const T* rLast)
 {
@@ -45,6 +46,7 @@ TEST_FUNC constexpr void test(Iter1 first, Iter1 last, T init, Op op, const T* r
   assert(cuda::std::equal(out, end, rFirst, rLast));
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter>
 TEST_FUNC constexpr void test()
 {
@@ -62,6 +64,7 @@ TEST_FUNC constexpr void test()
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 TEST_FUNC constexpr bool test()
 {
   //  All the iterator categories
@@ -75,9 +78,9 @@ TEST_FUNC constexpr bool test()
 #if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>();))
 #endif // !TEST_COMPILER(NVRTC)
-#if TEST_CUDA_COMPILATION()
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
   NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>();))
-#endif // TEST_CUDA_COMPILATION()
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 
   //  Make sure that the calculations are done using the init typedef
   {

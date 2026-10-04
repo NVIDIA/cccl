@@ -11,7 +11,7 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
@@ -24,7 +24,11 @@ using custom_t           = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_
 using iterator_type_list = c2h::type_list<type_pair<custom_t>, type_pair<std::int64_t>>;
 using offsets            = c2h::type_list<std::int32_t, std::uint32_t>;
 
-C2H_TEST("Device segmented reduce works with fancy input iterators", "[reduce][device]", iterator_type_list, offsets)
+CUB_TEST("Device segmented reduce works with fancy input iterators",
+         "[reduce][device]",
+         CUB_SMALL,
+         iterator_type_list,
+         offsets)
 {
   using type_pair_t = typename c2h::get<0, TestType>;
   using item_t      = typename type_pair_t::input_t;

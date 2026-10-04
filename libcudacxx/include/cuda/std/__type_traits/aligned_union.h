@@ -53,7 +53,7 @@ struct aligned_union
 };
 
 template <size_t _Len, class... _Types>
-using aligned_union_t _CCCL_NODEBUG_ALIAS = typename aligned_union<_Len, _Types...>::type;
+using aligned_union_t _CCCL_NODEBUG = typename aligned_union<_Len, _Types...>::type;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

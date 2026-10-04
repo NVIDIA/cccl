@@ -23,7 +23,7 @@
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__fwd/devices.h>
-#include <cuda/std/__fwd/format.h>
+#include <cuda/std/__fwd/format.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/array>
@@ -51,8 +51,8 @@ enum class arch_id : int
     _OP) " is deprecated and will be deleted in the next major release. Compare cuda::compute_capabilities of the " \
          "given "                                                                                                   \
          "cuda::arch_id instead.")
-[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(<) _CCCL_HOST_DEVICE_API constexpr bool
-operator<(arch_id __lhs, arch_id __rhs) noexcept
+[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(<) _CCCL_HOST_DEVICE_API
+  constexpr bool operator<(arch_id __lhs, arch_id __rhs) noexcept
 {
   return ::cuda::std::to_underlying(__lhs) < ::cuda::std::to_underlying(__rhs);
 }

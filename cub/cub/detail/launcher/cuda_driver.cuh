@@ -171,14 +171,6 @@ struct CudaDriverLauncherFactory
       return status;
     }
 
-    int reserved_smem_size = 0;
-    status                 = static_cast<::cudaError_t>(
-      ::cuDeviceGetAttribute(&reserved_smem_size, CU_DEVICE_ATTRIBUTE_RESERVED_SHARED_MEMORY_PER_BLOCK, device_));
-    if (status != cudaSuccess)
-    {
-      return status;
-    }
-
     int max_smem_size_optin = 0;
     status                  = static_cast<::cudaError_t>(
       ::cuDeviceGetAttribute(&max_smem_size_optin, CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN, device_));
@@ -187,7 +179,7 @@ struct CudaDriverLauncherFactory
       return status;
     }
 
-    max_dynamic_smem_size = max_smem_size_optin - reserved_smem_size - static_smem_size;
+    max_dynamic_smem_size = max_smem_size_optin - static_smem_size;
     return cudaSuccess;
   }
 

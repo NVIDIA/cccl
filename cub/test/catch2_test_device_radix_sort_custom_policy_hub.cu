@@ -11,6 +11,7 @@
 #include <cub/device/device_radix_sort.cuh>
 
 #include "catch2_radix_sort_helper.cuh"
+#include "cub_test_macros.h"
 
 using namespace cub;
 
@@ -20,7 +21,7 @@ struct my_policy_hub
   using DominantT = KeyT;
 
   // from Policy500 of the CUB radix sort tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5;
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -31,14 +32,14 @@ struct my_policy_hub
     using HistogramPolicy    = AgentRadixSortHistogramPolicy<256, 8, 1, KeyT, ONESWEEP_RADIX_BITS>;
     using ExclusiveSumPolicy = AgentRadixSortExclusiveSumPolicy<256, ONESWEEP_RADIX_BITS>;
     using OnesweepPolicy     = AgentRadixSortOnesweepPolicy<
-          256,
-          21,
-          DominantT,
-          1,
-          RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-          BLOCK_SCAN_WARP_SCANS,
-          RADIX_SORT_STORE_DIRECT,
-          ONESWEEP_RADIX_BITS>;
+      256,
+      21,
+      DominantT,
+      1,
+      RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
+      BLOCK_SCAN_WARP_SCANS,
+      RADIX_SORT_STORE_DIRECT,
+      ONESWEEP_RADIX_BITS>;
     using ScanPolicy =
       AgentScanPolicy<512,
                       23,
@@ -97,7 +98,7 @@ struct my_policy_hub
   };
 };
 
-C2H_TEST("DispatchRadixSort::Dispatch: custom policy hub", "[keys][radix][sort][device]")
+CUB_TEST("DispatchRadixSort::Dispatch: custom policy hub", "[keys][radix][sort][device]", CUB_SMALL)
 {
   using key_t              = int;
   using offset_t           = unsigned;

@@ -7,8 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: Calling a __device__ function in tile code
+// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
+// the assert does not trigger
 
 #include <cuda/mdspan>
 

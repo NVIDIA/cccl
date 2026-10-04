@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -28,7 +28,7 @@
 #include "test_macros.h"
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_reduce_count()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_count()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
 
@@ -45,7 +45,7 @@ TEST_FUNC constexpr void test_reduce_count()
   }
 }
 
-TEST_FUNC constexpr void test_reduce_count_scalar_bool()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_count_scalar_bool()
 {
   static_assert(noexcept(simd::reduce_count(true)));
 
@@ -54,13 +54,13 @@ TEST_FUNC constexpr void test_reduce_count_scalar_bool()
 }
 
 template <int Bytes>
-TEST_FUNC constexpr void test_bytes()
+TEST_HOST_DEVICE_FUNC constexpr void test_bytes()
 {
   test_reduce_count<Bytes, 1>();
   test_reduce_count<Bytes, 4>();
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test_bytes<1>();
   test_bytes<2>();

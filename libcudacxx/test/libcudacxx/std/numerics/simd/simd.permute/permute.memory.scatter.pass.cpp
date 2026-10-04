@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.permute.memory] scatter
@@ -40,7 +43,7 @@
 // partial_scatter_to — unmasked
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_partial_scatter_unmasked()
+TEST_HOST_DEVICE_FUNC constexpr void test_partial_scatter_unmasked()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   using Ind = simd::basic_vec<int, simd::fixed_size<N>>;
@@ -91,7 +94,7 @@ TEST_FUNC constexpr void test_partial_scatter_unmasked()
 // partial_scatter_to — masked
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_partial_scatter_masked()
+TEST_HOST_DEVICE_FUNC constexpr void test_partial_scatter_masked()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Ind  = simd::basic_vec<int, simd::fixed_size<N>>;
@@ -157,7 +160,7 @@ TEST_FUNC constexpr void test_partial_scatter_masked()
 // unchecked_scatter_to
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_unchecked_scatter()
+TEST_HOST_DEVICE_FUNC constexpr void test_unchecked_scatter()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Ind  = simd::basic_vec<int, simd::fixed_size<N>>;
@@ -211,7 +214,7 @@ TEST_FUNC constexpr void test_unchecked_scatter()
 //----------------------------------------------------------------------------------------------------------------------
 // noexcept
 
-TEST_FUNC constexpr void test_noexcept()
+TEST_HOST_DEVICE_FUNC constexpr void test_noexcept()
 {
   using Vec  = simd::basic_vec<int, simd::fixed_size<4>>;
   using Ind  = simd::basic_vec<int, simd::fixed_size<4>>;
@@ -232,7 +235,7 @@ TEST_FUNC constexpr void test_noexcept()
 //----------------------------------------------------------------------------------------------------------------------
 // return-type
 
-TEST_FUNC constexpr void test_return_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_return_type()
 {
   using Vec  = simd::basic_vec<int, simd::fixed_size<4>>;
   using Ind  = simd::basic_vec<int, simd::fixed_size<4>>;
@@ -253,7 +256,7 @@ TEST_FUNC constexpr void test_return_type()
 //----------------------------------------------------------------------------------------------------------------------
 
 // do not depend on element types
-TEST_FUNC constexpr bool test_fixed_type()
+TEST_HOST_DEVICE_FUNC constexpr bool test_fixed_type()
 {
   test_noexcept();
   test_return_type();
@@ -261,7 +264,7 @@ TEST_FUNC constexpr bool test_fixed_type()
 }
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   test_partial_scatter_unmasked<T, N>();
   test_partial_scatter_masked<T, N>();

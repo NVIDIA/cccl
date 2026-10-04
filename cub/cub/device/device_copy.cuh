@@ -8,6 +8,13 @@
 
 #include <cub/config.cuh>
 
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/device/device_copy.cuh> is not supported when compiling with NVRTC. Include block-, warp-, or thread-level primitives instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -37,7 +44,7 @@ CUB_NAMESPACE_BEGIN
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! The Batched algorithms in DeviceCopy that accept an environment can be tuned by passing a custom :ref:`policy
-//! selector <cub-policy-selectors>` that returns a @ref BatchedCopyPolicy, as shown in the example below:
+//! selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::BatchedCopyPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_copy_env_api.cu
 //!      :language: c++
@@ -299,28 +306,28 @@ struct DeviceCopy
   //!
   //! @endrst
   //!
-  //! @tparam T_In
+  //! @tparam TIn
   //!   **[inferred]** The element type of the source mdspan
   //!
-  //! @tparam Extents_In
+  //! @tparam ExtentsIn
   //!   **[inferred]** The extents type of the source mdspan
   //!
-  //! @tparam Layout_In
+  //! @tparam LayoutIn
   //!   **[inferred]** The layout type of the source mdspan
   //!
-  //! @tparam Accessor_In
+  //! @tparam AccessorIn
   //!   **[inferred]** The accessor type of the source mdspan
   //!
-  //! @tparam T_Out
+  //! @tparam TOut
   //!   **[inferred]** The element type of the destination mdspan
   //!
-  //! @tparam Extents_Out
+  //! @tparam ExtentsOut
   //!   **[inferred]** The extents type of the destination mdspan
   //!
-  //! @tparam Layout_Out
+  //! @tparam LayoutOut
   //!   **[inferred]** The layout type of the destination mdspan
   //!
-  //! @tparam Accessor_Out
+  //! @tparam AccessorOut
   //!   **[inferred]** The accessor type of the destination mdspan
   //!
   //! @tparam EnvT
@@ -345,20 +352,20 @@ struct DeviceCopy
   //!   @rst
   //!   **cudaSuccess** on success, **cudaErrorInvalidValue** if mdspan extents don't match, or error code on failure
   //!   @endrst
-  template <typename T_In,
-            typename Extents_In,
-            typename Layout_In,
-            typename Accessor_In,
-            typename T_Out,
-            typename Extents_Out,
-            typename Layout_Out,
-            typename Accessor_Out,
+  template <typename TIn,
+            typename ExtentsIn,
+            typename LayoutIn,
+            typename AccessorIn,
+            typename TOut,
+            typename ExtentsOut,
+            typename LayoutOut,
+            typename AccessorOut,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   Copy(void* d_temp_storage,
        size_t& temp_storage_bytes,
-       ::cuda::std::mdspan<T_In, Extents_In, Layout_In, Accessor_In> mdspan_in,
-       ::cuda::std::mdspan<T_Out, Extents_Out, Layout_Out, Accessor_Out> mdspan_out,
+       ::cuda::std::mdspan<TIn, ExtentsIn, LayoutIn, AccessorIn> mdspan_in,
+       ::cuda::std::mdspan<TOut, ExtentsOut, LayoutOut, AccessorOut> mdspan_out,
        const EnvT& env = {})
   {
     if (d_temp_storage == nullptr)
@@ -368,21 +375,6 @@ struct DeviceCopy
     }
 
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceCopy::Copy");
-    _CCCL_ASSERT(mdspan_in.extents() == mdspan_out.extents(), "mdspan extents must be equal");
-    _CCCL_ASSERT((mdspan_in.data_handle() != nullptr && mdspan_out.data_handle() != nullptr) || mdspan_in.size() == 0,
-                 "mdspan data handle must not be nullptr if the size is not 0");
-
-    // Check for memory overlap between input and output mdspans
-    if (mdspan_in.size() != 0)
-    {
-      auto in_start  = mdspan_in.data_handle();
-      auto in_end    = in_start + mdspan_in.mapping().required_span_size();
-      auto out_start = mdspan_out.data_handle();
-      auto out_end   = out_start + mdspan_out.mapping().required_span_size();
-      // TODO(fbusato): replace with __are_ptrs_overlapping
-      _CCCL_ASSERT(!(in_end >= out_start && out_end >= in_start), "mdspan memory ranges must not overlap");
-    }
-
     return detail::copy_mdspan::copy(mdspan_in, mdspan_out, env);
   }
 
@@ -422,28 +414,28 @@ struct DeviceCopy
   //!
   //! @endrst
   //!
-  //! @tparam T_In
+  //! @tparam TIn
   //!   **[inferred]** The element type of the source mdspan
   //!
-  //! @tparam Extents_In
+  //! @tparam ExtentsIn
   //!   **[inferred]** The extents type of the source mdspan
   //!
-  //! @tparam Layout_In
+  //! @tparam LayoutIn
   //!   **[inferred]** The layout type of the source mdspan
   //!
-  //! @tparam Accessor_In
+  //! @tparam AccessorIn
   //!   **[inferred]** The accessor type of the source mdspan
   //!
-  //! @tparam T_Out
+  //! @tparam TOut
   //!   **[inferred]** The element type of the destination mdspan
   //!
-  //! @tparam Extents_Out
+  //! @tparam ExtentsOut
   //!   **[inferred]** The extents type of the destination mdspan
   //!
-  //! @tparam Layout_Out
+  //! @tparam LayoutOut
   //!   **[inferred]** The layout type of the destination mdspan
   //!
-  //! @tparam Accessor_Out
+  //! @tparam AccessorOut
   //!   **[inferred]** The accessor type of the destination mdspan
   //!
   //! @tparam EnvT
@@ -457,36 +449,21 @@ struct DeviceCopy
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <typename T_In,
-            typename Extents_In,
-            typename Layout_In,
-            typename Accessor_In,
-            typename T_Out,
-            typename Extents_Out,
-            typename Layout_Out,
-            typename Accessor_Out,
+  template <typename TIn,
+            typename ExtentsIn,
+            typename LayoutIn,
+            typename AccessorIn,
+            typename TOut,
+            typename ExtentsOut,
+            typename LayoutOut,
+            typename AccessorOut,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  Copy(::cuda::std::mdspan<T_In, Extents_In, Layout_In, Accessor_In> mdspan_in,
-       ::cuda::std::mdspan<T_Out, Extents_Out, Layout_Out, Accessor_Out> mdspan_out,
+  Copy(::cuda::std::mdspan<TIn, ExtentsIn, LayoutIn, AccessorIn> mdspan_in,
+       ::cuda::std::mdspan<TOut, ExtentsOut, LayoutOut, AccessorOut> mdspan_out,
        const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceCopy::Copy");
-    _CCCL_ASSERT(mdspan_in.extents() == mdspan_out.extents(), "mdspan extents must be equal");
-    _CCCL_ASSERT((mdspan_in.data_handle() != nullptr && mdspan_out.data_handle() != nullptr) || mdspan_in.size() == 0,
-                 "mdspan data handle must not be nullptr if the size is not 0");
-
-    // Check for memory overlap between input and output mdspans
-    if (mdspan_in.size() != 0)
-    {
-      auto in_start  = mdspan_in.data_handle();
-      auto in_end    = in_start + mdspan_in.mapping().required_span_size();
-      auto out_start = mdspan_out.data_handle();
-      auto out_end   = out_start + mdspan_out.mapping().required_span_size();
-      // TODO(fbusato): replace with __are_ptrs_overlapping
-      _CCCL_ASSERT(!(in_end >= out_start && out_end >= in_start), "mdspan memory ranges must not overlap");
-    }
-
     return detail::copy_mdspan::copy(mdspan_in, mdspan_out, env);
   }
 };

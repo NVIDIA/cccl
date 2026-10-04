@@ -78,7 +78,7 @@ struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend
 
     // Determine temporary device storage requirements for device_stable_partition
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DevicePartition::If,
       "__pstl_cuda_stable_partition: determination of device storage for cub::DevicePartition::If failed",
       static_cast<void*>(nullptr),
@@ -88,13 +88,13 @@ struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend
       static_cast<_OffsetType*>(nullptr),
       __count,
       __pred,
-      __stream.get());
+      __policy);
 
     {
       __temporary_storage<_OffsetType, value_type> __storage{__policy, __num_bytes, 1, __count};
 
       // Partition cannot run inplace, so we need to first copy the input into temporary storage
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceTransform::TransformIf,
         "__pstl_cuda_stable_partition: kernel launch of cub::DeviceTransform::TransformIf failed",
         tuple<_InputIterator>{__first},
@@ -102,10 +102,10 @@ struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend
         __count,
         ::cuda::always_true{},
         identity{},
-        __stream.get());
+        __policy);
 
       // Run the kernel, the standard requires that the input and output range do not overlap
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DevicePartition::If,
         "__pstl_cuda_stable_partition: kernel launch of cub::DevicePartition::If failed",
         __storage.__get_temp_storage(),
@@ -115,10 +115,10 @@ struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend
         __storage.template __get_ptr<0>(),
         __count,
         ::cuda::std::move(__pred),
-        __stream.get());
+        __policy);
 
       // Copy the result back from storage
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_stable_partition: copy of result from device to host failed",
         ::cuda::std::addressof(__num_selected),
@@ -138,8 +138,8 @@ struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _UnaryPred)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _InputIterator operator()(
-    [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _UnaryPred __pred) const
+  [[nodiscard]] _CCCL_HOST_API _InputIterator _CCCL_STATIC_CALL_OPERATOR(
+    [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _UnaryPred __pred)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
     {

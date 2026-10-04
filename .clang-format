@@ -40,6 +40,7 @@ AttributeMacros: [
                   '_CCCL_TYPE_VISIBILITY_HIDDEN',
                   '_CCCL_VISIBILITY_HIDDEN',
                   '_CCCL_LAUNCH_BOUNDS',
+                  '_CCCL_LAUNCH_BOUNDS_CLUSTER',
                   '_CCCL_BLOCK_SIZE',
                   'CUB_RUNTIME_FUNCTION',
                   'THRUST_RUNTIME_FUNCTION',

@@ -74,7 +74,7 @@ namespace detail::sub_warp_merge_sort
  * `PolicyT::LOAD_ALGORITHM`, sort it using `WarpMergeSort`, and store it back
  * using `PolicyT::STORE_ALGORITHM`.
  *
- * @tparam IS_DESCENDING
+ * @tparam IsDescending
  *   Whether or not the sorted-order is high-to-low
  *
  * @tparam PolicyT
@@ -89,7 +89,7 @@ namespace detail::sub_warp_merge_sort
  * @tparam OffsetT
  *   Signed integer type for global offsets
  */
-template <bool IS_DESCENDING, typename PolicyT, typename KeyT, typename ValueT, typename OffsetT>
+template <bool IsDescending, typename PolicyT, typename KeyT, typename ValueT, typename OffsetT>
 class AgentSubWarpSort
 {
   using traits           = detail::radix::traits_t<KeyT>;
@@ -100,7 +100,7 @@ class AgentSubWarpSort
     template <typename T>
     _CCCL_DEVICE bool operator()(T lhs, T rhs) const noexcept
     {
-      if constexpr (IS_DESCENDING)
+      if constexpr (IsDescending)
       {
         return lhs > rhs;
       }
@@ -115,7 +115,7 @@ class AgentSubWarpSort
     _CCCL_DEVICE bool operator()(__half lhs, __half rhs) const noexcept
     {
       // Need to explicitly cast to float for SM <= 52.
-      if constexpr (IS_DESCENDING)
+      if constexpr (IsDescending)
       {
         NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return __hgt(lhs, rhs);), (return __half2float(lhs) > __half2float(rhs);));
       }
@@ -131,7 +131,7 @@ class AgentSubWarpSort
     _CCCL_DEVICE bool operator()(__nv_bfloat16 lhs, __nv_bfloat16 rhs) const noexcept
     {
       // Need to explicitly cast to float for SM < 80.
-      if constexpr (IS_DESCENDING)
+      if constexpr (IsDescending)
       {
         NV_IF_ELSE_TARGET(
           NV_PROVIDES_SM_80, (return __hgt(lhs, rhs);), (return __bfloat162float(lhs) > __bfloat162float(rhs);));
@@ -169,25 +169,6 @@ class AgentSubWarpSort
     return lhs == rhs;
   }
 
-  _CCCL_DEVICE static bool get_oob_default(::cuda::std::true_type /* is bool */)
-  {
-    // Traits<KeyT>::MAX_KEY for `bool` is 0xFF which is different from `true` and makes
-    // comparison with oob unreliable.
-    return !IS_DESCENDING;
-  }
-
-  _CCCL_DEVICE static KeyT get_oob_default(::cuda::std::false_type /* is bool */)
-  {
-    // For FP64 the difference is:
-    // Lowest() -> -1.79769e+308 = 00...00b -> TwiddleIn -> -0 = 10...00b
-    // LOWEST   -> -nan          = 11...11b -> TwiddleIn ->  0 = 00...00b
-
-    // Segmented sort doesn't support custom types at the moment.
-    bit_ordered_type default_key_bits = IS_DESCENDING ? traits::min_raw_binary_key(identity_decomposer_t{})
-                                                      : traits::max_raw_binary_key(identity_decomposer_t{});
-    return reinterpret_cast<KeyT&>(default_key_bits);
-  }
-
 public:
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, cub::NullType>;
 
@@ -215,8 +196,7 @@ public:
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   _TempStorage& storage;
 
@@ -245,7 +225,25 @@ public:
       KeyT keys[PolicyT::ITEMS_PER_THREAD];
       ValueT values[PolicyT::ITEMS_PER_THREAD];
 
-      KeyT oob_default = AgentSubWarpSort::get_oob_default(bool_constant_v<::cuda::std::is_same_v<bool, KeyT>>);
+      KeyT oob_default = [&] {
+        if constexpr (::cuda::std::is_same_v<bool, KeyT>)
+        {
+          // Traits<KeyT>::MAX_KEY for `bool` is 0xFF which is different from `true` and makes
+          // comparison with oob unreliable.
+          return !IsDescending;
+        }
+        else
+        {
+          // For FP64 the difference is:
+          // Lowest() -> -1.79769e+308 = 00...00b -> TwiddleIn -> -0 = 10...00b
+          // LOWEST   -> -nan          = 11...11b -> TwiddleIn ->  0 = 00...00b
+
+          // Segmented sort doesn't support custom types at the moment.
+          bit_ordered_type default_key_bits = IsDescending ? traits::min_raw_binary_key(identity_decomposer_t{})
+                                                           : traits::max_raw_binary_key(identity_decomposer_t{});
+          return reinterpret_cast<KeyT&>(default_key_bits);
+        }
+      }();
 
       WarpLoadKeysT(storage.load_keys).Load(keys_input, keys, segment_size, oob_default);
       __syncwarp(warp_merge_sort.get_member_mask());

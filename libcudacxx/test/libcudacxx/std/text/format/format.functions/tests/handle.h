@@ -14,11 +14,11 @@
 #include "test_macros.h"
 
 // Provided by the selected checker.
-TEST_FUNC bool check(...);
-TEST_FUNC bool check_exception(...);
+TEST_HOST_DEVICE_FUNC bool check(...);
+TEST_HOST_DEVICE_FUNC bool check_exception(...);
 
 template <class CharT>
-TEST_FUNC void test_handle()
+TEST_HOST_DEVICE_FUNC void test_handle()
 {
   // *** Valid permutations ***
   assert(check(SV("answer is '0xaaaa'"), SV("answer is '{}'"), status::foo));
@@ -49,7 +49,7 @@ TEST_FUNC void test_handle()
   // }
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test_handle<char>();
 #if _CCCL_HAS_WCHAR_T()

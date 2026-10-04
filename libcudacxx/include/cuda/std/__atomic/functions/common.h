@@ -22,10 +22,14 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_volatile.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+template <typename _Tp>
+using __unv = remove_volatile_t<_Tp>;
 
 template <typename _Tp>
 struct __atomic_ptr_skip
@@ -44,8 +48,8 @@ struct __atomic_ptr_skip<_Tp*>
 template <typename _Tp>
 struct __atomic_ptr_skip<_Tp[]>
 {};
-template <typename _Tp, int n>
-struct __atomic_ptr_skip<_Tp[n]>
+template <typename _Tp, int _Np>
+struct __atomic_ptr_skip<_Tp[_Np]>
 {};
 
 template <typename _Tp>

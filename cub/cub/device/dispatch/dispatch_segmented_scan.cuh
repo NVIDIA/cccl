@@ -18,6 +18,7 @@
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_scan.cuh>
@@ -96,17 +97,17 @@ template <
     common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>,
   typename PolicySelector = policy_selector_from_types<AccumT>,
   typename KernelSource   = device_segmented_scan_kernel_source<
-      PolicySelector,
-      InputIteratorT,
-      OutputIteratorT,
-      BeginOffsetIteratorInputT,
-      EndOffsetIteratorInputT,
-      BeginOffsetIteratorOutputT,
-      OffsetT,
-      ScanOpT,
-      InitValueT,
-      AccumT,
-      EnforceInclusive>,
+    PolicySelector,
+    InputIteratorT,
+    OutputIteratorT,
+    BeginOffsetIteratorInputT,
+    EndOffsetIteratorInputT,
+    BeginOffsetIteratorOutputT,
+    OffsetT,
+    ScanOpT,
+    InitValueT,
+    AccumT,
+    EnforceInclusive>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_scan_policy_selector<PolicySelector>
@@ -145,15 +146,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   const SegmentedScanPolicy active_policy = policy_selector(cc);
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (::std::stringstream ss; ss << active_policy;
-     _CubLog("Dispatching DeviceSegmentedScan to compute capability %d.%d with tuning: %s\n",
-             cc.major_cap(),
-             cc.minor_cap(),
-             ss.str().c_str());))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+  detail::log_dispatch("DeviceSegmentedScan", cc, active_policy);
 
   if (d_temp_storage == nullptr)
   {

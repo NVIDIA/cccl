@@ -90,7 +90,7 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_left, __execution_backend::__cu
 
     // Determine temporary device storage requirements for DeviceSelect::Flagged
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceSelect::Flagged,
       "__pstl_cuda_shift_left: determination of device storage for cub::DeviceSelect::Flagged failed",
       static_cast<void*>(nullptr),
@@ -105,7 +105,7 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_left, __execution_backend::__cu
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
       // Run the kernel
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceSelect::Flagged,
         "__pstl_cuda_shift_left: kernel launch of cub::DeviceSelect::Flagged failed",
         __storage.__get_temp_storage(),
@@ -123,11 +123,11 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_left, __execution_backend::__cu
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _InputIterator operator()(
+  [[nodiscard]] _CCCL_HOST_API _InputIterator _CCCL_STATIC_CALL_OPERATOR(
     [[maybe_unused]] const _Policy& __policy,
     _InputIterator __first,
     _InputIterator __last,
-    iter_difference_t<_InputIterator> __num_shifted) const
+    iter_difference_t<_InputIterator> __num_shifted)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
     {

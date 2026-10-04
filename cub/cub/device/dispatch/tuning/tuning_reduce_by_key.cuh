@@ -31,8 +31,8 @@
 
 CUB_NAMESPACE_BEGIN
 
-//! The tuning policy for `DeviceReduce::ReduceByKey`
-struct ReduceByKeyPolicy
+//! The lookback tuning policy for `DeviceReduce::ReduceByKey`
+struct ReduceByKeyLookbackPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
   int items_per_thread; //!< Number of items processed per thread
@@ -41,15 +41,71 @@ struct ReduceByKeyPolicy
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for the prefix scan
   LookbackDelayPolicy lookback_delay; //!< The @ref LookbackDelayPolicy used for the lookback delay
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const ReduceByKeyPolicy& lhs, const ReduceByKeyPolicy& rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const ReduceByKeyLookbackPolicy& lhs, const ReduceByKeyLookbackPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.scan_algorithm == rhs.scan_algorithm && lhs.lookback_delay == rhs.lookback_delay;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const ReduceByKeyLookbackPolicy& lhs, const ReduceByKeyLookbackPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const ReduceByKeyLookbackPolicy& p)
+  {
+    return os
+        << "ReduceByKeyLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
+        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+//! The algorithm used by the reduce-by-key policy.
+enum class ReduceByKeyAlgorithm
+{
+  lookback
+};
+
+#if _CCCL_HOSTED()
+namespace detail
+{
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(ReduceByKeyAlgorithm algo) noexcept
+{
+  switch (algo)
+  {
+    case ReduceByKeyAlgorithm::lookback:
+      return "ReduceByKeyAlgorithm::lookback";
+  }
+  return "<unknown ReduceByKeyAlgorithm>";
+}
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, ReduceByKeyAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED()
+
+//! The tuning policy for `DeviceReduce::ReduceByKey`
+struct ReduceByKeyPolicy
+{
+  ReduceByKeyAlgorithm algorithm; //!< The reduce-by-key algorithm to use
+  ReduceByKeyLookbackPolicy lookback; //!< The policy for the reduce-by-key algorithm based on decoupled-lookback. Only
+                                      //!< used when @p algorithm is @lookback.
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const ReduceByKeyPolicy& lhs, const ReduceByKeyPolicy& rhs) noexcept
+  {
+    return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const ReduceByKeyPolicy& lhs, const ReduceByKeyPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -58,10 +114,7 @@ struct ReduceByKeyPolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const ReduceByKeyPolicy& p)
   {
-    return os
-        << "ReduceByKeyPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
-        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
+    return os << "ReduceByKeyPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -129,7 +182,7 @@ _CCCL_HOST_DEVICE_API constexpr primitive_accum is_primitive_accum()
 template <class ReductionOpT>
 _CCCL_HOST_DEVICE_API constexpr primitive_op is_primitive_op()
 {
-  return basic_binary_op_t<ReductionOpT>::value ? primitive_op::yes : primitive_op::no;
+  return basic_binary_op_v<ReductionOpT> ? primitive_op::yes : primitive_op::no;
 }
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
@@ -920,7 +973,7 @@ struct policy_hub
 
   struct Policy500
       : DefaultPolicy500
-      , ChainedPolicy<500, Policy500, Policy500>
+      , detail::chained_policy<500, Policy500, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick DefaultPolicy
@@ -936,7 +989,7 @@ struct policy_hub
   template <typename Tuning>
   static auto select_agent_policy(long) -> typename DefaultPolicy<LOAD_DEFAULT>::ReduceByKeyPolicyT;
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy500>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy500>
   {
     using ReduceByKeyPolicyT =
       decltype(select_agent_policy<sm80_tuning<KeyT, AccumT, is_primitive_op<ReductionOpT>()>>(0));
@@ -947,16 +1000,16 @@ struct policy_hub
 
   struct Policy860
       : DefaultPolicy860
-      , ChainedPolicy<860, Policy860, Policy800>
+      , detail::chained_policy<860, Policy860, Policy800>
   {};
 
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
+  struct Policy900 : detail::chained_policy<900, Policy900, Policy860>
   {
     using ReduceByKeyPolicyT =
       decltype(select_agent_policy<sm90_tuning<KeyT, AccumT, is_primitive_op<ReductionOpT>()>>(0));
   };
 
-  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
+  struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
   {
     // Use values from tuning if a specialization exists, otherwise fall back to SM90
     template <typename Tuning>
@@ -996,7 +1049,9 @@ struct policy_selector
   bool accum_is_primitive;
   bool op_is_primitive;
 
-  _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const -> ReduceByKeyPolicy
+private:
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const
+    -> ReduceByKeyLookbackPolicy
   {
     constexpr int nominal_4B_items_per_thread = 6;
     const int combined_input_bytes            = key_size + accum_size;
@@ -1006,7 +1061,7 @@ struct policy_selector
         ? 6
         : ::cuda::std::clamp(
             ::cuda::ceil_div(nominal_4B_items_per_thread * 8, combined_input_bytes), 1, nominal_4B_items_per_thread);
-    return ReduceByKeyPolicy{
+    return ReduceByKeyLookbackPolicy{
       128,
       items_per_thread,
       BLOCK_LOAD_DIRECT,
@@ -1016,8 +1071,8 @@ struct policy_selector
         accum_size, sizeof(int), key_is_primitive || key_is_trivially_copyable, true)};
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> ReduceByKeyPolicy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const
+    -> ReduceByKeyLookbackPolicy
   {
     // bail out if we don't know the operation. TODO(bgruber): drop this check when we make the tuning API public
     if (!op_is_primitive)
@@ -1026,6 +1081,87 @@ struct policy_selector
     }
 
     const bool use_tuning = (key_is_primitive || key_size == 16) && (accum_is_primitive || accum_size == 16);
+
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0} && use_tuning)
+    {
+      if (key_size == 1 && accum_size == 4 && (accum_t == type_t::int32 || accum_t == type_t::uint32))
+      {
+        // ipt_13.tpb_256.trp_0.ld_1.ns_824.dcid_7.l2w_380 1.203  1.206  1.190  1.190
+        return {256,
+                13,
+                BLOCK_LOAD_DIRECT,
+                LOAD_CA,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::exponential_backon, 824, 380}};
+      }
+      if (key_size == 2 && accum_size == 4 && (accum_t == type_t::int32 || accum_t == type_t::uint32))
+      {
+        // ipt_14.tpb_224.trp_0.ld_1.ns_336.dcid_0.l2w_515 1.121  1.112  1.153  1.155
+        return {224, 14, BLOCK_LOAD_DIRECT, LOAD_CA, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 515}};
+      }
+      if (key_size == 4 && accum_size == 4 && accum_t == type_t::float32)
+      {
+        // ipt_23.tpb_192.trp_1.ld_0.ns_1176.dcid_0.l2w_740 1.015  1.051  1.143  1.141
+        return {192,
+                23,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::no_delay, 0, 740}};
+      }
+      if (key_size == 4 && accum_size == 4 && (accum_t == type_t::int32 || accum_t == type_t::uint32))
+      {
+        // ipt_22.tpb_128.trp_1.ld_0.ns_24.dcid_0.l2w_875 1.034  1.005  1.080  1.100
+        // ipt_22.tpb_128.trp_1.ld_0.ns_952.dcid_0.l2w_955 0.984  0.986  1.251  1.330
+        return {128,
+                22,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::no_delay, 0, 875}};
+      }
+      if (key_size == 4 && accum_size == 8 && (accum_t == type_t::int64 || accum_t == type_t::uint64))
+      {
+        // ipt_22.tpb_128.trp_1.ld_1.ns_144.dcid_5.l2w_795 0.982  1.004  1.212  1.259
+        return {128,
+                22,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_CA,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::exponential_backon_jitter_window, 144, 795}};
+      }
+      if (key_size == 8 && accum_size == 4 && (accum_t == type_t::int32 || accum_t == type_t::uint32))
+      {
+        // ipt_23.tpb_128.trp_1.ld_0.ns_132.dcid_0.l2w_960 0.970  1.040  1.245  1.316
+        return {128,
+                23,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::no_delay, 0, 960}};
+      }
+      if (key_size == 8 && accum_size == 8 && accum_t == type_t::float64)
+      {
+        // ipt_15.tpb_192.trp_1.ld_1.ns_1996.dcid_0.l2w_645 0.994  1.068  1.083  1.118
+        return {192,
+                15,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_CA,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::no_delay, 0, 645}};
+      }
+      if (key_size == 8 && accum_size == 8 && (accum_t == type_t::int64 || accum_t == type_t::uint64))
+      {
+        // ipt_21.tpb_128.trp_1.ld_0.ns_528.dcid_0.l2w_895 0.964  1.053  1.199  1.255
+        return {128,
+                21,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {LookbackDelayAlgorithm::no_delay, 0, 895}};
+      }
+      // no tuning found (e.g. 16-byte keys), fall through to the SM100 tunings
+    }
 
     if (cc >= ::cuda::compute_capability{10, 0} && use_tuning) // if we don't have a tuning, fall back to SM90
     {
@@ -1625,6 +1761,13 @@ struct policy_selector
     // for SM50
     return __make_default_policy(LOAD_LDG);
   }
+
+public:
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> ReduceByKeyPolicy
+  {
+    return ReduceByKeyPolicy{ReduceByKeyAlgorithm::lookback, get_lookback_policy(cc)};
+  }
 };
 
 #if _CCCL_HAS_CONCEPTS()
@@ -1639,12 +1782,15 @@ struct policy_selector_from_hub
   {
     using ReduceByKeyPolicyT = typename PolicyHub::MaxPolicy::ReduceByKeyPolicyT;
     return ReduceByKeyPolicy{
-      ReduceByKeyPolicyT::BLOCK_THREADS,
-      ReduceByKeyPolicyT::ITEMS_PER_THREAD,
-      ReduceByKeyPolicyT::LOAD_ALGORITHM,
-      ReduceByKeyPolicyT::LOAD_MODIFIER,
-      ReduceByKeyPolicyT::SCAN_ALGORITHM,
-      lookback_delay_policy_from_type<typename ReduceByKeyPolicyT::detail::delay_constructor_t>,
+      ReduceByKeyAlgorithm::lookback,
+      {
+        ReduceByKeyPolicyT::BLOCK_THREADS,
+        ReduceByKeyPolicyT::ITEMS_PER_THREAD,
+        ReduceByKeyPolicyT::LOAD_ALGORITHM,
+        ReduceByKeyPolicyT::LOAD_MODIFIER,
+        ReduceByKeyPolicyT::SCAN_ALGORITHM,
+        lookback_delay_policy_from_type<typename ReduceByKeyPolicyT::detail::delay_constructor_t>,
+      },
     };
   }
 };
@@ -1662,7 +1808,7 @@ struct policy_selector_from_types
       is_primitive_v<KeyT>,
       ::cuda::is_trivially_copyable_v<KeyT>,
       is_primitive_v<AccumT>,
-      basic_binary_op_t<ReductionOpT>::value}(cc);
+      basic_binary_op_v<ReductionOpT>}(cc);
   }
 };
 } // namespace detail::reduce_by_key

@@ -19,9 +19,9 @@ inputs:
     required: false
 
 outputs:
-  success:
-    description: "Whether any jobs failed."
-    value: ${{ steps.check-success.outputs.success }}
+  failure_message:
+    description: "Prepared workflow failure notification text."
+    value: ${{ steps.failure-message.outputs.text }}
 
 runs:
   using: "composite"
@@ -200,11 +200,12 @@ runs:
 
     - name: Send Slack log notification
       if: ${{ always() && inputs.slack_token != '' && inputs.slack_log != '' }}
-      uses: slackapi/slack-github-action@v1.26.0
+      continue-on-error: true
+      uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
       env:
         SLACK_BOT_TOKEN: ${{ inputs.slack_token }}
         WORKFLOW_TYPE: ${{ github.workflow }} # nightly, weekly, pr, etc.
-        STATUS: ${{ steps.check-success.outcome }}
+        STATUS: ${{ steps.check-workflow.outcome }}
         EXEC_SUMMARY: ${{ steps.final-summary.outputs.EXEC_SUMMARY }}
         SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
       with:
@@ -216,19 +217,28 @@ runs:
 
           Details: ${{ env.SUMMARY_URL }}
 
-    - name: Send Slack alert notification
-      if: ${{ failure() && inputs.slack_token != '' && inputs.slack_alert != '' }}
-      uses: slackapi/slack-github-action@v1.26.0
+    - name: Prepare failure notification
+      id: failure-message
+      if: ${{ failure() }}
       env:
-        SLACK_BOT_TOKEN: ${{ inputs.slack_token }}
         WORKFLOW_TYPE: ${{ github.workflow }} # nightly, weekly, pr, etc.
         EXEC_SUMMARY: ${{ steps.final-summary.outputs.EXEC_SUMMARY }}
         SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        delimiter="EOF_$(openssl rand -hex 16)"
+        {
+          echo "text<<${delimiter}"
+          printf "Workflow '%s' has failed:\n\n%s\n\nDetails: %s\n" \
+            "${WORKFLOW_TYPE}" "${EXEC_SUMMARY}" "${SUMMARY_URL}"
+          echo "${delimiter}"
+        } >> "${GITHUB_OUTPUT}"
+
+    - name: Send Slack alert notification
+      if: ${{ failure() && inputs.slack_token != '' && inputs.slack_alert != '' }}
+      uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
+      env:
+        SLACK_BOT_TOKEN: ${{ inputs.slack_token }}
       with:
         channel-id: ${{ inputs.slack_alert }}
-        slack-message: |
-          Workflow '${{ env.WORKFLOW_TYPE }}' has failed:
-
-          ${{ env.EXEC_SUMMARY }}
-
-          Details: ${{ env.SUMMARY_URL }}
+        slack-message: ${{ steps.failure-message.outputs.text }}

@@ -24,7 +24,7 @@
 #if _CCCL_COMPILER(NVRTC)
 #  define LAMBDA [=]
 #else
-#  define LAMBDA [=] TEST_FUNC
+#  define LAMBDA [=] TEST_HOST_DEVICE_FUNC
 #endif
 
 #ifdef __CUDA_ARCH__
@@ -41,7 +41,7 @@ struct malloc_memory_provider
   static const constexpr cuda::std::size_t shared_offset = prefix_size + sizeof(T*);
 
 private:
-  TEST_FUNC T*& get_pointer()
+  TEST_HOST_DEVICE_FUNC T*& get_pointer()
   {
     alignas(T*)
 #ifdef __CUDA_ARCH__
@@ -55,7 +55,7 @@ private:
   }
 
 public:
-  TEST_FUNC T* get()
+  TEST_HOST_DEVICE_FUNC T* get()
   {
     execute_on_main_thread([&] {
       get_pointer() = reinterpret_cast<T*>(malloc(sizeof(T) + alignof(T)));
@@ -66,7 +66,7 @@ public:
     return reinterpret_cast<T*>(ptr);
   }
 
-  TEST_FUNC ~malloc_memory_provider()
+  TEST_HOST_DEVICE_FUNC ~malloc_memory_provider()
   {
     execute_on_main_thread([&] {
       free((void*) get_pointer());
@@ -82,7 +82,7 @@ struct local_memory_provider
 
   alignas(T) char buffer[sizeof(T)];
 
-  TEST_FUNC T* get()
+  TEST_HOST_DEVICE_FUNC T* get()
   {
     return reinterpret_cast<T*>(&buffer);
   }
@@ -105,7 +105,7 @@ struct device_shared_memory_provider
 struct init_initializer
 {
   template <typename T, typename... Ts>
-  TEST_FUNC static void construct(T& t, Ts&&... ts)
+  TEST_HOST_DEVICE_FUNC static void construct(T& t, Ts&&... ts)
   {
     t.init(std::forward<Ts>(ts)...);
   }
@@ -114,7 +114,7 @@ struct init_initializer
 struct constructor_initializer
 {
   template <typename T, typename... Ts>
-  TEST_FUNC static void construct(T& t, Ts&&... ts)
+  TEST_HOST_DEVICE_FUNC static void construct(T& t, Ts&&... ts)
   {
     new ((void*) &t) T(std::forward<Ts>(ts)...);
   }
@@ -123,7 +123,7 @@ struct constructor_initializer
 struct default_initializer
 {
   template <typename T>
-  TEST_FUNC static void construct(T& t)
+  TEST_HOST_DEVICE_FUNC static void construct(T& t)
   {
     new ((void*) &t) T;
   }
@@ -147,7 +147,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename... Ts>
-  TEST_FUNC T* construct(Ts&&... ts)
+  TEST_HOST_DEVICE_FUNC T* construct(Ts&&... ts)
   {
     ptr = provider.get();
     assert(ptr);
@@ -159,7 +159,7 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  TEST_FUNC ~memory_selector()
+  TEST_HOST_DEVICE_FUNC ~memory_selector()
   {
     execute_on_main_thread([&] {
       ptr->~T();

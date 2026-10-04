@@ -46,11 +46,11 @@ struct which_row
 __host__ void scan_matrix_by_rows1(thrust::device_vector<int>& u, int n, int m)
 {
   // This `thrust::counting_iterator` represents the index of the element.
-  thrust::counting_iterator<int> c_first(0);
+  const thrust::counting_iterator<int> c_first(0);
 
   // We construct a `thrust::transform_iterator` which applies the `which_row`
   // function object to the index of each element.
-  thrust::transform_iterator<which_row, thrust::counting_iterator<int>> t_first(c_first, which_row(m));
+  const thrust::transform_iterator<which_row, thrust::counting_iterator<int>> t_first(c_first, which_row(m));
 
   // Finally, we use our `thrust::transform_iterator` as the key sequence to
   // `thrust::inclusive_scan_by_key`.

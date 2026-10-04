@@ -41,7 +41,7 @@ enum class RadixSortAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(RadixSortAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(RadixSortAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -49,9 +49,8 @@ namespace detail
       return "RadixSortAlgorithm::multi_pass";
     case RadixSortAlgorithm::onesweep:
       return "RadixSortAlgorithm::onesweep";
-    default:
-      return "<unknown RadixSortAlgorithm>";
   }
+  return "<unknown RadixSortAlgorithm>";
 }
 } // namespace detail
 #endif // _CCCL_HOSTED()
@@ -90,14 +89,14 @@ struct RadixSortHistogramPolicy
   int private_partitions;
   int radix_bits; //!< Number of bits per radix digit
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RadixSortHistogramPolicy& lhs, const RadixSortHistogramPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.private_partitions == rhs.private_partitions && lhs.radix_bits == rhs.radix_bits;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const RadixSortHistogramPolicy& lhs, const RadixSortHistogramPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -119,13 +118,13 @@ struct RadixSortExclusiveSumPolicy
   int threads_per_block; //!< Number of threads in a CUDA block
   int radix_bits; //!< Number of bits per radix digit
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RadixSortExclusiveSumPolicy& lhs, const RadixSortExclusiveSumPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.radix_bits == rhs.radix_bits;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const RadixSortExclusiveSumPolicy& lhs, const RadixSortExclusiveSumPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -156,7 +155,7 @@ struct RadixSortOnesweepPolicy
 
   int radix_bits; //!< Number of bits per radix digit
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RadixSortOnesweepPolicy& lhs, const RadixSortOnesweepPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -165,7 +164,7 @@ struct RadixSortOnesweepPolicy
         && lhs.radix_bits == rhs.radix_bits;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const RadixSortOnesweepPolicy& lhs, const RadixSortOnesweepPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -194,7 +193,7 @@ struct RadixSortDownsweepPolicy
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning within a thread block
   int radix_bits; //!< Number of bits per radix digit
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RadixSortDownsweepPolicy& lhs, const RadixSortDownsweepPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -203,7 +202,7 @@ struct RadixSortDownsweepPolicy
         && lhs.radix_bits == rhs.radix_bits;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const RadixSortDownsweepPolicy& lhs, const RadixSortDownsweepPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -229,14 +228,14 @@ struct RadixSortUpsweepPolicy
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   int radix_bits; //!< Number of bits per radix digit
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RadixSortUpsweepPolicy& lhs, const RadixSortUpsweepPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_modifier == rhs.load_modifier && lhs.radix_bits == rhs.radix_bits;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const RadixSortUpsweepPolicy& lhs, const RadixSortUpsweepPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -253,6 +252,7 @@ struct RadixSortUpsweepPolicy
 };
 
 //! The tuning policy for all algorithms in @ref DeviceRadixSort.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct RadixSortPolicy
 {
   RadixSortAlgorithm algorithm; //!< The radix sort algorithm to use
@@ -266,7 +266,7 @@ struct RadixSortPolicy
   RadixSortUpsweepPolicy alt_upsweep; //!< Alternate upsweep pass policy with fewer radix bits
   RadixSortDownsweepPolicy single_tile; //!< Single-tile sort policy for small inputs
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const RadixSortPolicy& lhs, const RadixSortPolicy& rhs) noexcept
   {
     return lhs.algorithm == rhs.algorithm && lhs.histogram == rhs.histogram && lhs.exclusive_sum == rhs.exclusive_sum
@@ -275,7 +275,7 @@ struct RadixSortPolicy
         && lhs.single_tile == rhs.single_tile;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const RadixSortPolicy& lhs, const RadixSortPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -846,6 +846,110 @@ _CCCL_HOST_DEVICE_API constexpr auto get_sm100_tuning(int key_size, int value_si
   return get_sm90_tuning(key_size, value_size, offset_size);
 }
 
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+get_sm107_tuning(int key_size, int value_size, int offset_size, type_t key_type) noexcept
+  -> ::cuda::std::optional<small_key_tuning_values>
+{
+  // pairs 1-byte key
+  if (value_size != 0 && key_size == 1)
+  {
+    // clang-format off
+
+    // ipt_20.tpb_448 1.133  1.236
+    if (value_size == 4 && offset_size == 4) return small_key_tuning_values{448, 20};
+
+    // ipt_24.tpb_384 1.089  1.141
+    if (value_size == 8 && offset_size == 4) return small_key_tuning_values{384, 24};
+
+    // ipt_24.tpb_480 1.228  1.312
+    if (value_size == 8 && offset_size == 8) return small_key_tuning_values{480, 24};
+
+    // clang-format on
+    return {};
+  }
+
+  // pairs 2-byte key
+  if (value_size != 0 && key_size == 2)
+  {
+    // clang-format off
+
+    // ipt_16.tpb_512 1.111  1.156
+    if (value_size == 1 && offset_size == 8) return small_key_tuning_values{512, 16};
+
+    // ipt_22.tpb_384 1.217  1.299
+    if (value_size == 2 && offset_size == 8) return small_key_tuning_values{384, 22};
+
+    // ipt_23.tpb_512 1.189  1.224
+    if (value_size == 4 && offset_size == 8) return small_key_tuning_values{512, 23};
+
+    // ipt_20.tpb_512 1.056  1.060
+    if (value_size == 8 && offset_size == 4) return small_key_tuning_values{512, 20};
+
+    // ipt_22.tpb_512 1.182  1.213
+    if (value_size == 16 && offset_size == 8) return small_key_tuning_values{512, 22};
+
+    // clang-format on
+    return {};
+  }
+
+  // pairs 8-byte key
+  if (value_size != 0 && key_size == 8)
+  {
+    // clang-format off
+
+    // ipt_23.tpb_384 1.173  1.193
+    if (value_size == 8 && offset_size == 4) return small_key_tuning_values{384, 23};
+
+    // ipt_24.tpb_448 1.081  1.070
+    if (value_size == 8 && offset_size == 8) return small_key_tuning_values{448, 24};
+
+    // ipt_24.tpb_480 1.109  1.116
+    if (value_size == 16 && offset_size == 8) return small_key_tuning_values{480, 24};
+
+    // clang-format on
+    return {};
+  }
+
+  if (value_size != 0)
+  {
+    return {};
+  }
+
+  // keys
+  if (offset_size == 4)
+  {
+    // clang-format off
+
+    // ipt_21.tpb_448 0.930  0.959  1.123  1.148
+    if (key_size == 4 && key_type == type_t::float32) return small_key_tuning_values{448, 21};
+
+    // ipt_18.tpb_512 0.943  0.947  1.051  1.056
+    if (key_size == 4) return small_key_tuning_values{512, 18};
+
+    // ipt_24.tpb_480 0.968  0.995  1.020  1.059
+    if (key_size == 16) return small_key_tuning_values{480, 24};
+
+    // clang-format on
+  }
+  else if (offset_size == 8)
+  {
+    // clang-format off
+
+    // ipt_22.tpb_512 0.926  0.934  1.096  1.162
+    if (key_size == 2) return small_key_tuning_values{512, 22};
+
+    // ipt_17.tpb_512 0.962  0.979  1.091  1.115
+    if (key_size == 4 && key_type == type_t::float32) return small_key_tuning_values{512, 17};
+
+    // ipt_20.tpb_512 0.962  0.961  1.087  1.149
+    if (key_size == 4) return small_key_tuning_values{512, 20};
+
+    // clang-format on
+  }
+
+  return {};
+}
+
 // TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
 template <typename PolicyT, typename = void>
 struct RadixSortPolicyWrapper : PolicyT
@@ -1037,7 +1141,7 @@ struct policy_hub
   //------------------------------------------------------------------------------
 
   /// SM50
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     static constexpr int PRIMARY_RADIX_BITS = (sizeof(KeyT) > 1) ? 7 : 5; // 3.5B 32b keys/s, 1.92B 32b pairs/s (TitanX)
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1129,7 +1233,7 @@ struct policy_hub
   };
 
   /// SM60 (GP100)
-  struct Policy600 : ChainedPolicy<600, Policy600, Policy500>
+  struct Policy600 : detail::chained_policy<600, Policy600, Policy500>
   {
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5; // 6.9B 32b keys/s (Quadro P100)
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1222,7 +1326,7 @@ struct policy_hub
   };
 
   /// SM61 (GP104)
-  struct Policy610 : ChainedPolicy<610, Policy610, Policy600>
+  struct Policy610 : detail::chained_policy<610, Policy610, Policy600>
   {
     static constexpr int PRIMARY_RADIX_BITS = (sizeof(KeyT) > 1) ? 7 : 5; // 3.4B 32b keys/s, 1.83B 32b pairs/s (1080)
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1315,7 +1419,7 @@ struct policy_hub
   };
 
   /// SM62 (Tegra, less RF)
-  struct Policy620 : ChainedPolicy<620, Policy620, Policy610>
+  struct Policy620 : detail::chained_policy<620, Policy620, Policy610>
   {
     static constexpr int PRIMARY_RADIX_BITS  = 5;
     static constexpr int ALT_RADIX_BITS      = PRIMARY_RADIX_BITS - 1;
@@ -1390,7 +1494,7 @@ struct policy_hub
   };
 
   /// SM70 (GV100)
-  struct Policy700 : ChainedPolicy<700, Policy700, Policy620>
+  struct Policy700 : detail::chained_policy<700, Policy700, Policy620>
   {
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5; // 7.62B 32b keys/s (GV100)
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1484,7 +1588,7 @@ struct policy_hub
   };
 
   /// SM80
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy700>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy700>
   {
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5;
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -1699,12 +1803,12 @@ struct policy_hub
   };
 
   struct Policy900
-      : ChainedPolicy<900, Policy900, Policy800>
+      : detail::chained_policy<900, Policy900, Policy800>
       , OnesweepSmallKeyTunedPolicy<sm90_small_key_tuning<sizeof(KeyT), KEYS_ONLY ? 0 : sizeof(ValueT), sizeof(OffsetT)>>
   {};
 
   struct Policy1000
-      : ChainedPolicy<1000, Policy1000, Policy900>
+      : detail::chained_policy<1000, Policy1000, Policy900>
       , OnesweepSmallKeyTunedPolicy<
           sm100_small_key_tuning<ValueT, sizeof(KeyT), KEYS_ONLY ? 0 : sizeof(ValueT), sizeof(OffsetT)>>
   {};
@@ -1742,7 +1846,8 @@ struct policy_selector
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
-  make_onesweep_small_key_policy(const small_key_tuning_values& tuning) const -> RadixSortPolicy
+  make_onesweep_small_key_policy(const small_key_tuning_values& tuning, bool use_tuning_for_large_keys = false) const
+    -> RadixSortPolicy
   {
     const int primary_radix_bits     = (key_size > 1) ? 7 : 5;
     const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
@@ -1788,7 +1893,8 @@ struct policy_selector
       1,
       8);
 
-    const auto onesweep = key_size < 4 ? onesweep_small_key_policy : onesweep_large_key_policy;
+    const auto onesweep =
+      (key_size < 4 || use_tuning_for_large_keys) ? onesweep_small_key_policy : onesweep_large_key_policy;
 
     // The scan, downsweep and upsweep policies are never run on SM90+, but we have to include them to prevent a
     // compilation error: When we compile e.g. for SM70 **and** SM90, the host compiler will reach calls to those
@@ -1856,6 +1962,14 @@ struct policy_selector
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> RadixSortPolicy
   {
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
+    {
+      if (const auto sm107_tuning = get_sm107_tuning(key_size, value_size, offset_size, key_type))
+      {
+        return make_onesweep_small_key_policy(*sm107_tuning, /*use_tuning_for_large_keys=*/true);
+      }
+    }
+
     if (cc >= ::cuda::compute_capability{10, 0})
     {
       return make_onesweep_small_key_policy(get_sm100_tuning(key_size, value_size, offset_size, key_type));

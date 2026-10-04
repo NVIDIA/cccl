@@ -14,18 +14,18 @@
 #include <iostream>
 
 #include "catch2_test_device_select_common.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceSelect::If accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::If accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-if-env
   auto input        = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
   auto output       = thrust::device_vector<int>(4);
   auto num_selected = thrust::device_vector<int>(1);
-  less_than_t<int> le{5};
+  const less_than_t<int> le{5};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSelect::If(
     input.begin(),
@@ -39,8 +39,8 @@ C2H_TEST("cub::DeviceSelect::If accepts env with stream", "[select][env]")
     std::cerr << "cub::DeviceSelect::If failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_output{1, 2, 3, 4};
-  thrust::device_vector<int> expected_num_selected{4};
+  const thrust::device_vector<int> expected_output{1, 2, 3, 4};
+  const thrust::device_vector<int> expected_num_selected{4};
   // example-end select-if-env
 
   stream.sync();
@@ -49,7 +49,7 @@ C2H_TEST("cub::DeviceSelect::If accepts env with stream", "[select][env]")
   REQUIRE(num_selected == expected_num_selected);
 }
 
-C2H_TEST("cub::DeviceSelect::Flagged accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::Flagged accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-flagged-env
   auto input        = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -57,8 +57,8 @@ C2H_TEST("cub::DeviceSelect::Flagged accepts env with stream", "[select][env]")
   auto output       = thrust::device_vector<int>(4);
   auto num_selected = thrust::device_vector<int>(1);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSelect::Flagged(
     input.begin(),
@@ -72,8 +72,8 @@ C2H_TEST("cub::DeviceSelect::Flagged accepts env with stream", "[select][env]")
     std::cerr << "cub::DeviceSelect::Flagged failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_output{1, 4, 6, 7};
-  thrust::device_vector<int> expected_num_selected{4};
+  const thrust::device_vector<int> expected_output{1, 4, 6, 7};
+  const thrust::device_vector<int> expected_num_selected{4};
   // example-end select-flagged-env
 
   stream.sync();
@@ -82,17 +82,17 @@ C2H_TEST("cub::DeviceSelect::Flagged accepts env with stream", "[select][env]")
   REQUIRE(num_selected == expected_num_selected);
 }
 
-C2H_TEST("cub::DeviceSelect::FlaggedIf accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::FlaggedIf accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-flaggedif-env
   auto input        = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
   auto flags        = thrust::device_vector<int>{2, 1, 1, 4, 1, 6, 6, 1};
   auto output       = thrust::device_vector<int>(4);
   auto num_selected = thrust::device_vector<int>(1);
-  mod_n<int> select_op{2};
+  const mod_n<int> select_op{2};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSelect::FlaggedIf(
     input.begin(),
@@ -107,8 +107,8 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf accepts env with stream", "[select][env]"
     std::cerr << "cub::DeviceSelect::FlaggedIf failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_output{1, 4, 6, 7};
-  thrust::device_vector<int> expected_num_selected{4};
+  const thrust::device_vector<int> expected_output{1, 4, 6, 7};
+  const thrust::device_vector<int> expected_num_selected{4};
   // example-end select-flaggedif-env
 
   stream.sync();
@@ -117,15 +117,15 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf accepts env with stream", "[select][env]"
   REQUIRE(num_selected == expected_num_selected);
 }
 
-C2H_TEST("cub::DeviceSelect::Flagged in-place accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::Flagged in-place accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-flagged-inplace-env
   auto data         = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
   auto flags        = thrust::device_vector<char>{1, 0, 0, 1, 0, 1, 1, 0};
   auto num_selected = thrust::device_vector<int>(1);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSelect::Flagged(
     data.begin(), flags.begin(), num_selected.begin(), static_cast<::cuda::std::int64_t>(data.size()), stream_ref);
@@ -134,8 +134,8 @@ C2H_TEST("cub::DeviceSelect::Flagged in-place accepts env with stream", "[select
     std::cerr << "cub::DeviceSelect::Flagged in-place failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_output{1, 4, 6, 7};
-  thrust::device_vector<int> expected_num_selected{4};
+  const thrust::device_vector<int> expected_output{1, 4, 6, 7};
+  const thrust::device_vector<int> expected_num_selected{4};
   // example-end select-flagged-inplace-env
 
   stream.sync();
@@ -145,15 +145,15 @@ C2H_TEST("cub::DeviceSelect::Flagged in-place accepts env with stream", "[select
   REQUIRE(data == expected_output);
 }
 
-C2H_TEST("cub::DeviceSelect::If in-place accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::If in-place accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-if-inplace-env
   auto data         = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
   auto num_selected = thrust::device_vector<int>(1);
-  less_than_t<int> le{5};
+  const less_than_t<int> le{5};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSelect::If(
     data.begin(), num_selected.begin(), static_cast<::cuda::std::int64_t>(data.size()), le, stream_ref);
@@ -162,8 +162,8 @@ C2H_TEST("cub::DeviceSelect::If in-place accepts env with stream", "[select][env
     std::cerr << "cub::DeviceSelect::If in-place failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_output{1, 2, 3, 4};
-  thrust::device_vector<int> expected_num_selected{4};
+  const thrust::device_vector<int> expected_output{1, 2, 3, 4};
+  const thrust::device_vector<int> expected_num_selected{4};
   // example-end select-if-inplace-env
 
   stream.sync();
@@ -173,16 +173,16 @@ C2H_TEST("cub::DeviceSelect::If in-place accepts env with stream", "[select][env
   REQUIRE(data == expected_output);
 }
 
-C2H_TEST("cub::DeviceSelect::FlaggedIf in-place accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::FlaggedIf in-place accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-flaggedif-inplace-env
   auto data         = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
   auto flags        = thrust::device_vector<int>{2, 1, 1, 4, 1, 6, 6, 1};
   auto num_selected = thrust::device_vector<int>(1);
-  mod_n<int> select_op{2};
+  const mod_n<int> select_op{2};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSelect::FlaggedIf(
     data.begin(),
@@ -196,8 +196,8 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf in-place accepts env with stream", "[sele
     std::cerr << "cub::DeviceSelect::FlaggedIf in-place failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_output{1, 4, 6, 7};
-  thrust::device_vector<int> expected_num_selected{4};
+  const thrust::device_vector<int> expected_output{1, 4, 6, 7};
+  const thrust::device_vector<int> expected_num_selected{4};
   // example-end select-flaggedif-inplace-env
 
   stream.sync();
@@ -207,15 +207,15 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf in-place accepts env with stream", "[sele
   REQUIRE(data == expected_output);
 }
 
-C2H_TEST("cub::DeviceSelect::Unique accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::Unique accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-unique-env
   auto input        = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
   auto output       = thrust::device_vector<int>(5);
   auto num_selected = thrust::device_vector<int>(1);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSelect::Unique(
     input.begin(), output.begin(), num_selected.begin(), static_cast<::cuda::std::int64_t>(input.size()), stream_ref);
@@ -224,8 +224,8 @@ C2H_TEST("cub::DeviceSelect::Unique accepts env with stream", "[select][env]")
     std::cerr << "cub::DeviceSelect::Unique failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_output{0, 2, 9, 5, 8};
-  thrust::device_vector<int> expected_num_selected{5};
+  const thrust::device_vector<int> expected_output{0, 2, 9, 5, 8};
+  const thrust::device_vector<int> expected_num_selected{5};
   // example-end select-unique-env
 
   stream.sync();
@@ -234,7 +234,7 @@ C2H_TEST("cub::DeviceSelect::Unique accepts env with stream", "[select][env]")
   REQUIRE(num_selected == expected_num_selected);
 }
 
-C2H_TEST("cub::DeviceSelect::Unique with custom equality_op accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::Unique with custom equality_op accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-unique-eqop-env
   // Unique modulo 3 — consecutive elements are "equal" if they have the same remainder mod 3
@@ -242,10 +242,10 @@ C2H_TEST("cub::DeviceSelect::Unique with custom equality_op accepts env with str
   auto output       = thrust::device_vector<int>(8);
   auto num_selected = thrust::device_vector<int>(1);
 
-  eq_mod3_t<int> eq_mod3{};
+  const eq_mod3_t<int> eq_mod3{};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSelect::Unique(
     input.begin(),
@@ -261,8 +261,8 @@ C2H_TEST("cub::DeviceSelect::Unique with custom equality_op accepts env with str
 
   // 0,3,6 all == mod 3 (consecutive), keep first (0); 1,4,7 all == mod 3 (consecutive), keep first (1);
   // 2,5 == mod 3 (consecutive), keep first (2)
-  thrust::device_vector<int> expected_output{0, 1, 2};
-  thrust::device_vector<int> expected_num_selected{3};
+  const thrust::device_vector<int> expected_output{0, 1, 2};
+  const thrust::device_vector<int> expected_num_selected{3};
   // example-end select-unique-eqop-env
   stream.sync();
 
@@ -272,14 +272,14 @@ C2H_TEST("cub::DeviceSelect::Unique with custom equality_op accepts env with str
   REQUIRE(output == expected_output);
 }
 
-C2H_TEST("cub::DeviceSelect::Unique in-place accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::Unique in-place accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-unique-inplace-env
   auto data         = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
   auto num_selected = thrust::device_vector<int>(1);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSelect::Unique(
     data.begin(), num_selected.begin(), static_cast<::cuda::std::int64_t>(data.size()), stream_ref);
@@ -288,8 +288,8 @@ C2H_TEST("cub::DeviceSelect::Unique in-place accepts env with stream", "[select]
     std::cerr << "cub::DeviceSelect::Unique in-place failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_output{0, 2, 9, 5, 8};
-  thrust::device_vector<int> expected_num_selected{5};
+  const thrust::device_vector<int> expected_output{0, 2, 9, 5, 8};
+  const thrust::device_vector<int> expected_num_selected{5};
   // example-end select-unique-inplace-env
   stream.sync();
 
@@ -299,17 +299,19 @@ C2H_TEST("cub::DeviceSelect::Unique in-place accepts env with stream", "[select]
   REQUIRE(data == expected_output);
 }
 
-C2H_TEST("cub::DeviceSelect::Unique in-place with custom equality_op accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::Unique in-place with custom equality_op accepts env with stream",
+         "[select][env]",
+         CUB_SMALL)
 {
   // example-begin select-unique-inplace-eqop-env
   // Unique modulo 3 — consecutive elements are "equal" if they have the same remainder mod 3
   auto data         = thrust::device_vector<int>{0, 3, 6, 1, 4, 7, 2, 5};
   auto num_selected = thrust::device_vector<int>(1);
 
-  eq_mod3_t<int> eq_mod3{};
+  const eq_mod3_t<int> eq_mod3{};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSelect::Unique(
     data.begin(), num_selected.begin(), static_cast<::cuda::std::int64_t>(data.size()), eq_mod3, stream_ref);
@@ -320,8 +322,8 @@ C2H_TEST("cub::DeviceSelect::Unique in-place with custom equality_op accepts env
 
   // 0,3,6 all == mod 3 (consecutive), keep first (0); 1,4,7 all == mod 3 (consecutive), keep first (1);
   // 2,5 == mod 3 (consecutive), keep first (2)
-  thrust::device_vector<int> expected_output{0, 1, 2};
-  thrust::device_vector<int> expected_num_selected{3};
+  const thrust::device_vector<int> expected_output{0, 1, 2};
+  const thrust::device_vector<int> expected_num_selected{3};
   // example-end select-unique-inplace-eqop-env
   stream.sync();
 
@@ -331,7 +333,7 @@ C2H_TEST("cub::DeviceSelect::Unique in-place with custom equality_op accepts env
   REQUIRE(data == expected_output);
 }
 
-C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream", "[select][env]")
+CUB_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream", "[select][env]", CUB_SMALL)
 {
   // example-begin select-uniquebykey-env
   auto keys_in      = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
@@ -340,8 +342,8 @@ C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream", "[select][env
   auto values_out   = thrust::device_vector<int>(5);
   auto num_selected = thrust::device_vector<int>(1);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSelect::UniqueByKey(
     keys_in.begin(),
@@ -357,9 +359,9 @@ C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream", "[select][env
     std::cerr << "cub::DeviceSelect::UniqueByKey failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_keys{0, 2, 9, 5, 8};
-  thrust::device_vector<int> expected_values{1, 2, 4, 5, 8};
-  thrust::device_vector<int> expected_num_selected{5};
+  const thrust::device_vector<int> expected_keys{0, 2, 9, 5, 8};
+  const thrust::device_vector<int> expected_values{1, 2, 4, 5, 8};
+  const thrust::device_vector<int> expected_num_selected{5};
   // example-end select-uniquebykey-env
 
   stream.sync();
@@ -369,7 +371,7 @@ C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream", "[select][env
   REQUIRE(num_selected == expected_num_selected);
 }
 
-C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream without equality_op", "[select][env]")
+CUB_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream without equality_op", "[select][env]", CUB_SMALL)
 {
   // example-begin select-uniquebykey-default-eq-env
   // Same setup/expectations as the explicit equality_op test above, but relying on default equality.
@@ -379,8 +381,8 @@ C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream without equalit
   auto values_out   = thrust::device_vector<int>(5);
   auto num_selected = thrust::device_vector<int>(1);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSelect::UniqueByKey(
     keys_in.begin(),
@@ -396,9 +398,9 @@ C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream without equalit
     std::cerr << "cub::DeviceSelect::UniqueByKey without equality_op failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_keys{0, 2, 9, 5, 8};
-  thrust::device_vector<int> expected_values{1, 2, 4, 5, 8};
-  thrust::device_vector<int> expected_num_selected{5};
+  const thrust::device_vector<int> expected_keys{0, 2, 9, 5, 8};
+  const thrust::device_vector<int> expected_values{1, 2, 4, 5, 8};
+  const thrust::device_vector<int> expected_num_selected{5};
   // example-end select-uniquebykey-default-eq-env
 
   stream.sync();
@@ -408,7 +410,7 @@ C2H_TEST("cub::DeviceSelect::UniqueByKey accepts env with stream without equalit
   REQUIRE(num_selected == expected_num_selected);
 }
 
-C2H_TEST("cub::DeviceSelect::UniqueByKey accepts default env without equality_op", "[select][env]")
+CUB_TEST("cub::DeviceSelect::UniqueByKey accepts default env without equality_op", "[select][env]", CUB_SMALL)
 {
   // Same expectations as other UniqueByKey tests, but call the 6-arg overload.
   auto keys_in      = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
@@ -425,9 +427,9 @@ C2H_TEST("cub::DeviceSelect::UniqueByKey accepts default env without equality_op
     std::cerr << "cub::DeviceSelect::UniqueByKey with default env failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_keys{0, 2, 9, 5, 8};
-  thrust::device_vector<int> expected_values{1, 2, 4, 5, 8};
-  thrust::device_vector<int> expected_num_selected{5};
+  const thrust::device_vector<int> expected_keys{0, 2, 9, 5, 8};
+  const thrust::device_vector<int> expected_values{1, 2, 4, 5, 8};
+  const thrust::device_vector<int> expected_num_selected{5};
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(keys_out == expected_keys);
@@ -442,17 +444,18 @@ struct SelectPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::SelectPolicy
   {
-    return {.threads_per_block = 128,
-            .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 16 : 10,
-            .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
-            .load_modifier     = cub::LOAD_DEFAULT,
-            .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-            .lookback_delay    = {cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+    return {.algorithm = cub::SelectAlgorithm::lookback,
+            .lookback  = {.threads_per_block = 128,
+                          .items_per_thread  = cc > cuda::compute_capability{9, 0} ? 16 : 10,
+                          .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+                          .load_modifier     = cub::LOAD_DEFAULT,
+                          .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
+                          .lookback_delay    = {cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}}};
   }
 };
 // example-end select-if-policy-selector
 
-C2H_TEST("cub::DeviceSelect::If accepts a custom policy selector", "[select][env]")
+CUB_TEST("cub::DeviceSelect::If accepts a custom policy selector", "[select][env]", CUB_SMALL)
 {
   // example-begin select-if-tuning
   auto d_in           = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
@@ -492,12 +495,13 @@ struct UniqueByKeyPolicySelector
             .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
             .load_modifier     = cub::LOAD_DEFAULT,
             .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
-            .lookback_delay    = cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+            .lookback_delay    = cub::LookbackDelayPolicy{
+              .kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450}};
   }
 };
 // example-end unique-by-key-policy-selector
 
-C2H_TEST("cub::DeviceSelect::UniqueByKey accepts a custom policy selector", "[select_unique_by_key][env]")
+CUB_TEST("cub::DeviceSelect::UniqueByKey accepts a custom policy selector", "[select_unique_by_key][env]", CUB_SMALL)
 {
   // example-begin unique-by-key-tuning
   auto keys_in          = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};

@@ -28,6 +28,7 @@
 #include <cuda/experimental/__stf/allocators/uncached_allocator.cuh>
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 // #include <cuda/experimental/__stf/internal/algorithm.cuh>
+#include <cuda/experimental/__places/exec/cuda_context.cuh>
 #include <cuda/experimental/__places/exec/cuda_stream.cuh>
 #include <cuda/experimental/__places/exec/green_context.cuh>
 #include <cuda/experimental/__stf/internal/context.cuh>

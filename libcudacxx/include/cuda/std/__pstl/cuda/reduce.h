@@ -85,7 +85,7 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
     // Determine temporary device storage requirements for reduce
     void* __temp_storage = nullptr;
     size_t __num_bytes   = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceReduce::Reduce,
       "__pstl_cuda_reduce: determination of device storage for cub::DeviceReduce::Reduce failed",
       __temp_storage,
@@ -100,7 +100,7 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
       __temporary_storage<_Tp> __storage{__policy, __num_bytes, 1};
 
       // Run the reduction
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceReduce::Reduce,
         "__pstl_cuda_reduce: kernel launch of cub::DeviceReduce::Reduce failed",
         __storage.__get_temp_storage(),
@@ -113,7 +113,7 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
         __stream.get());
 
       // Copy the result back from storage
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_reduce: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),
@@ -128,8 +128,8 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
   }
 
   template <class _Policy, class _Iter, class _Size, class _Tp, class _BinaryOp>
-  [[nodiscard]] _CCCL_HOST_API _Tp
-  operator()([[maybe_unused]] const _Policy& __policy, _Iter __first, _Size __count, _Tp __init, _BinaryOp __func) const
+  [[nodiscard]] _CCCL_HOST_API _Tp _CCCL_STATIC_CALL_OPERATOR(
+    [[maybe_unused]] const _Policy& __policy, _Iter __first, _Size __count, _Tp __init, _BinaryOp __func)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_Iter>)
     {
@@ -161,11 +161,12 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
   }
 
   template <class _Policy, class _Iter, class _Tp, class _BinaryOp>
-  [[nodiscard]] _CCCL_HOST_API _Tp
-  operator()([[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, _Tp __init, _BinaryOp __func) const
+  [[nodiscard]] _CCCL_HOST_API _Tp _CCCL_STATIC_CALL_OPERATOR(
+    [[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, _Tp __init, _BinaryOp __func)
   {
     const auto __count = ::cuda::std::distance(__first, __last);
-    return (*this)(__policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__init), ::cuda::std::move(__func));
+    return __pstl_dispatch{}(
+      __policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__init), ::cuda::std::move(__func));
   }
 };
 

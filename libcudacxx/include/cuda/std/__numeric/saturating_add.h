@@ -116,6 +116,8 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API _Tp __saturating_add_impl_device(_Tp __x, _Tp __y) noexcept
 {
+  // Narrow branches differ only when target-specific inline PTX is available.
+  // NOLINTBEGIN(bugprone-branch-clone)
   if constexpr (is_signed_v<_Tp>)
   {
     if constexpr (sizeof(_Tp) == sizeof(int8_t))
@@ -197,6 +199,7 @@ template <class _Tp>
       return ::cuda::saturating_add_overflow(__x, __y).value;
     }
   }
+  // NOLINTEND(bugprone-branch-clone)
 }
 #endif // _CCCL_CUDA_COMPILATION()
 

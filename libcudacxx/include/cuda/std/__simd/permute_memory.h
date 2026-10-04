@@ -114,14 +114,14 @@ _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL void __check_gather_mandates() noexcept
   static_assert(__is_basic_vec_v<_Result>,
                 "cuda::std::simd::partial_gather_from / unchecked_gather_from: V must be a specialization of "
                 "basic_vec");
-  // ranges​::​range_value_t<R> is a vectorizable type
+  // ranges::range_value_t<R> is a vectorizable type
   static_assert(__is_vectorizable_v<ranges::range_value_t<_Range>>,
                 "cuda::std::simd::partial_gather_from / unchecked_gather_from: range_value_t<R> must be vectorizable");
-  // V​::​size() == I​::​size() is true
+  // V::size() == I::size() is true
   static_assert(_Result::__size == __simd_size_v<_Ip, _IAbi>,
                 "cuda::std::simd::partial_gather_from / unchecked_gather_from: V::size() must equal indices.size()");
   // if the template parameter pack Flags does not contain convert-flag, then the conversion from
-  // ranges​::​range_value_t<R> to T is value-preserving
+  // ranges::range_value_t<R> to T is value-preserving
   static_assert(__has_convert_flag_v<_Flags...>
                   || __is_value_preserving_v<ranges::range_value_t<_Range>, typename _Result::value_type>,
                 "cuda::std::simd::partial_gather_from / unchecked_gather_from: conversion from range_value_t<R> to "

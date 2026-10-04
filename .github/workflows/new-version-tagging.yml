@@ -1,0 +1,64 @@
+name: New Version Tagging
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'cccl-version.json'
+
+jobs:
+  tag-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from cccl-version.json
+        id: get_version
+        run: |
+          if [ ! -f "cccl-version.json" ]; then
+            echo "Error: cccl-version.json file not found"
+            exit 1
+          fi
+
+          # Read the full version from JSON file
+          VERSION_FULL=$(jq -r '.full' cccl-version.json)
+
+          # Validate that version is not empty
+          if [ -z "$VERSION_FULL" ] || [ "$VERSION_FULL" = "null" ]; then
+            echo "Error: Version not found in cccl-version.json"
+            exit 1
+          fi
+
+          # Validate version format (X.Y.Z)
+          if ! echo "$VERSION_FULL" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Error: Version format is invalid. Expected format X.Y.Z"
+            exit 1
+          fi
+
+          # Construct tag name
+          TAG_NAME="v${VERSION_FULL}.dev"
+
+          echo "version_full=$VERSION_FULL" >> $GITHUB_ENV
+          echo "tag_name=$TAG_NAME" >> $GITHUB_ENV
+
+      - name: Check if tag already exists
+        id: check_tag
+        run: |
+          TAG_NAME=${{ env.tag_name }}
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists"
+            exit 1
+          fi
+
+      - name: Create tag
+        run: |
+          TAG_NAME=${{ env.tag_name }}
+          echo "Creating tag $TAG_NAME"
+          git tag "$TAG_NAME"
+          git push origin "$TAG_NAME"

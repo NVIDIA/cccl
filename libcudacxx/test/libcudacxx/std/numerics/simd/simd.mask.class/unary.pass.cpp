@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -31,7 +31,7 @@
 // operator!
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_logical_not()
+TEST_HOST_DEVICE_FUNC constexpr void test_logical_not()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   Mask mask(true);
@@ -55,7 +55,7 @@ TEST_FUNC constexpr void test_logical_not()
 // operator+
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_unary_plus()
+TEST_HOST_DEVICE_FUNC constexpr void test_unary_plus()
 {
   using Mask    = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   using Integer = integer_from_t<Bytes>;
@@ -82,7 +82,7 @@ TEST_FUNC constexpr void test_unary_plus()
 // operator-
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_unary_minus()
+TEST_HOST_DEVICE_FUNC constexpr void test_unary_minus()
 {
   using Mask    = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   using Integer = integer_from_t<Bytes>;
@@ -109,7 +109,7 @@ TEST_FUNC constexpr void test_unary_minus()
 // operator~
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_bitwise_not()
+TEST_HOST_DEVICE_FUNC constexpr void test_bitwise_not()
 {
   using Mask    = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   using Integer = integer_from_t<Bytes>;
@@ -135,7 +135,7 @@ TEST_FUNC constexpr void test_bitwise_not()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_size()
+TEST_HOST_DEVICE_FUNC constexpr void test_size()
 {
   test_logical_not<Bytes, N>();
   test_unary_plus<Bytes, N>();
@@ -144,13 +144,13 @@ TEST_FUNC constexpr void test_size()
 }
 
 template <int Bytes>
-TEST_FUNC constexpr void test_bytes()
+TEST_HOST_DEVICE_FUNC constexpr void test_bytes()
 {
   test_size<Bytes, 1>();
   test_size<Bytes, 4>();
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test_bytes<1>();
   test_bytes<2>();

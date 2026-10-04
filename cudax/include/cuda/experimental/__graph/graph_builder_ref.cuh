@@ -235,7 +235,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
   _CCCL_HOST_API constexpr auto add(_Node __node, ::cuda::std::span<cudaGraphNode_t, _Extent> __deps) -> graph_node_ref
   {
     // assert that the node descriptor returns a graph_node_ref object:
-    static_assert(::cuda::std::_IsSame<decltype(__node.__add_to_graph(__graph_, __deps)), graph_node_ref>::value,
+    static_assert(::cuda::std::is_same_v<decltype(__node.__add_to_graph(__graph_, __deps)), graph_node_ref>,
                   "node descriptors must return a graph_node_ref");
     return __node.__add_to_graph(__graph_, __deps);
   }
@@ -267,8 +267,9 @@ private:
   //! \throws cuda::std::cuda_error if `cudaGraphAddChildGraphNode` fails.
 #if _CCCL_CTK_AT_LEAST(12, 2)
   template <size_t _Extent>
-  [[nodiscard]] _CCCL_HOST_API auto
-  __add_to_graph(cudaGraph_t __parent, ::cuda::std::span<cudaGraphNode_t, _Extent> __deps) -> graph_node_ref
+  [[nodiscard]]
+  _CCCL_HOST_API auto __add_to_graph(cudaGraph_t __parent, ::cuda::std::span<cudaGraphNode_t, _Extent> __deps)
+    -> graph_node_ref
   {
     ::CUgraphNodeParams __params{};
     __params.type        = ::CU_GRAPH_NODE_TYPE_GRAPH;

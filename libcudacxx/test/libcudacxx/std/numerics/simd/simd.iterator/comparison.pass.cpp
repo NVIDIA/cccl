@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -30,7 +30,7 @@
 // iterator-to-iterator comparisons
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_comparisons()
+TEST_HOST_DEVICE_FUNC constexpr void test_comparisons()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
 
@@ -77,7 +77,7 @@ TEST_FUNC constexpr void test_comparisons()
 // sentinel comparisons and noexcept
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_sentinel()
+TEST_HOST_DEVICE_FUNC constexpr void test_sentinel()
 {
   using Vec      = simd::basic_vec<T, simd::fixed_size<N>>;
   using Sentinel = cuda::std::default_sentinel_t;
@@ -113,7 +113,7 @@ TEST_FUNC constexpr void test_sentinel()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   test_comparisons<T, N>();
   test_sentinel<T, N>();

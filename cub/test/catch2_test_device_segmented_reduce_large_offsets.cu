@@ -6,13 +6,15 @@
 #include <cub/device/device_segmented_reduce.cuh>
 #include <cub/thread/thread_operators.cuh>
 
+#include <thrust/zip_function.h>
+
 #include <cuda/iterator>
 #include <cuda/std/tuple>
 
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <catch2/generators/catch_generators.hpp>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
@@ -79,7 +81,7 @@ struct custom_sum_op
   }
 };
 
-C2H_TEST("Device reduce works with a very large number of segments", "[reduce][device]")
+CUB_TEST("Device reduce works with a very large number of segments", "[reduce][device]", CUB_SMALL)
 {
   using offset_t        = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
@@ -97,7 +99,7 @@ C2H_TEST("Device reduce works with a very large number of segments", "[reduce][d
   const auto segment_index_it = cuda::counting_iterator(segment_index_t{});
 
   // Segment offsets
-  segment_index_to_offset_op<offset_t, segment_index_t> index_to_offset_op{
+  const segment_index_to_offset_op<offset_t, segment_index_t> index_to_offset_op{
     num_empty_segments, num_segments, segment_size, num_items};
   auto offsets_it = cuda::make_transform_iterator(segment_index_it, index_to_offset_op);
 
@@ -250,7 +252,7 @@ void test_fixed_size_segmented_reduce(
   const auto segment_index_it = cuda::counting_iterator(SegmentIdxT{});
 
   // Segment offsets
-  segment_index_to_offset_op<offset_t, SegmentIdxT> index_to_offset_op{0, num_segments, segment_size, num_items};
+  const segment_index_to_offset_op<offset_t, SegmentIdxT> index_to_offset_op{0, num_segments, segment_size, num_items};
   auto offsets_it = cuda::transform_iterator(segment_index_it, index_to_offset_op);
 
   CAPTURE(c2h::type_name<offset_t>(), c2h::type_name<SegmentIdxT>(), num_segments, segment_size, num_items);
@@ -284,7 +286,7 @@ void test_fixed_size_segmented_reduce(
   }
 }
 
-C2H_TEST("Device fixed size segmented reduce works with a very large number of segments", "[reduce][device]")
+CUB_TEST("Device fixed size segmented reduce works with a very large number of segments", "[reduce][device]", CUB_SMALL)
 {
   using segment_index_t = cuda::std::int64_t;
   using offset_t        = segment_index_t;

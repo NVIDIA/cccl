@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -36,7 +36,7 @@
 #include "test_macros.h"
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_arithmetic()
+TEST_HOST_DEVICE_FUNC constexpr void test_arithmetic()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec a(T{6});
@@ -65,7 +65,7 @@ TEST_FUNC constexpr void test_arithmetic()
 }
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_integral_ops()
+TEST_HOST_DEVICE_FUNC constexpr void test_integral_ops()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec a(T{7});
@@ -94,7 +94,7 @@ TEST_FUNC constexpr void test_integral_ops()
 }
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_shifts()
+TEST_HOST_DEVICE_FUNC constexpr void test_shifts()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec a(T{4});
@@ -130,7 +130,7 @@ TEST_FUNC constexpr void test_shifts()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   test_arithmetic<T, N>();
   if constexpr (cuda::std::is_integral_v<T>)

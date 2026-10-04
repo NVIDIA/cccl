@@ -24,6 +24,7 @@
 
 int main(int, char**)
 {
+#ifndef CCCL_FORCE_TILE_TESTS
   {
     using P = cuda::std::pair<cuda::std::unique_ptr<int>, short>;
     const P p(cuda::std::unique_ptr<int>(new int(3)), static_cast<short>(4));
@@ -33,6 +34,8 @@ int main(int, char**)
     const cuda::std::unique_ptr<int>&& ptr = cuda::std::get<0>(cuda::std::move(p));
     assert(*ptr == 3);
   }
+#endif // !CCCL_FORCE_TILE_TESTS
+
   {
     int x       = 42;
     int const y = 43;

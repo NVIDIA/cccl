@@ -3,7 +3,7 @@
 
 #include <cub/util_arch.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <auto V>
 struct show;
@@ -30,7 +30,7 @@ void check_mem_bound_scaling()
   STATIC_REQUIRE(mbs::BLOCK_THREADS == ExpectedThreadsPerBlock);
 }
 
-C2H_TEST("MemBoundScaling", "[util][arch]")
+CUB_TEST("MemBoundScaling", "[util][arch]", CUB_SMALL)
 {
   check_mem_bound_scaling<256, 1, char, 256, 2>();
   check_mem_bound_scaling<256, 16, char, 256, 32>();
@@ -84,7 +84,7 @@ void check_reg_bound_scaling()
   STATIC_REQUIRE(mbs::BLOCK_THREADS == ExpectedThreadsPerBlock);
 }
 
-C2H_TEST("RegBoundScaling", "[util][arch]")
+CUB_TEST("RegBoundScaling", "[util][arch]", CUB_SMALL)
 {
   check_reg_bound_scaling<256, 1, char, 256, 1>();
   check_reg_bound_scaling<256, 16, char, 256, 16>();

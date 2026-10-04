@@ -90,7 +90,7 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
 template <typename T>
 void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
 {
-  c2h::host_vector<T> test_results_host = test_results;
+  const c2h::host_vector<T> test_results_host = test_results;
   verify_results(expected_data, test_results_host);
 }
 
@@ -108,7 +108,7 @@ void verify_results_exact(const c2h::host_vector<T>& expected_data, const c2h::h
   CubDebugExit(cudaGetDevice(&device_id));
   CubDebugExit(cudaDeviceGetAttribute(&compute_capability_major, cudaDevAttrComputeCapabilityMajor, device_id));
   CubDebugExit(cudaDeviceGetAttribute(&compute_capability_minor, cudaDevAttrComputeCapabilityMinor, device_id));
-  int compute_capability = 10 * compute_capability_major + compute_capability_minor;
+  const int compute_capability = 10 * compute_capability_major + compute_capability_minor;
   if (compute_capability < 80 && is_any_bfloat16_v<T>)
   {
     return;
@@ -142,7 +142,7 @@ void verify_results_exact(const c2h::host_vector<T>& expected_data, const c2h::h
 template <typename T>
 void verify_results_exact(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
 {
-  c2h::host_vector<T> test_results_host = test_results;
+  const c2h::host_vector<T> test_results_host = test_results;
   if constexpr (is_vector2_type_v<T> || cuda::is_floating_point_v<T>)
   {
     verify_results_exact(expected_data, test_results_host);

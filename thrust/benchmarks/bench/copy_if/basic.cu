@@ -5,7 +5,6 @@
 #include <thrust/device_vector.h>
 
 #include <cuda/memory_pool>
-#include <cuda/std/complex>
 #include <cuda/stream>
 
 #include "nvbench_helper.cuh"
@@ -16,16 +15,6 @@ struct is_even
   __device__ constexpr bool operator()(const T& val) const noexcept
   {
     return static_cast<int>(val) % 2 == 0;
-  }
-
-  __device__ constexpr bool operator()(const complex32& val) const noexcept
-  {
-    return static_cast<int>(val.real()) % 2 == 0;
-  }
-
-  __device__ constexpr bool operator()(const complex64& val) const noexcept
-  {
-    return static_cast<int>(val.real()) % 2 == 0;
   }
 };
 

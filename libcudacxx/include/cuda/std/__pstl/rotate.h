@@ -23,6 +23,7 @@
 
 #if _CCCL_HOSTED()
 
+#  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/rotate.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__execution/policy.h>

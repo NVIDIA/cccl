@@ -14,11 +14,12 @@ INPUT                  = ../../cub/cub \
                          ../../cub/cub/warp \
                          ../../cub/cub/block \
                          ../../cub/cub/device \
+                         ../../cub/cub/device/dispatch/tuning \
                          ../../cub/cub/grid \
                          ../../cub/cub/iterator
 
 RECURSIVE              = YES
-EXCLUDE_PATTERNS       = */detail/* */dispatch/* */kernels/* */test/* */examples/*
+EXCLUDE_PATTERNS       = */detail/* */dispatch/dispatch_* */dispatch/kernels/* */kernels/* */test/* */examples/*
 EXCLUDE_SYMBOLS        = *detail* CUB_DETAIL*
 
 FILE_PATTERNS          = *.cuh *.h
@@ -169,6 +170,7 @@ PREDEFINED             = __device__= \
                         "THRUST_NAMESPACE_BEGIN=namespace thrust {" \
                         "THRUST_NAMESPACE_END=}" \
                         "THRUST_PREVENT_MACRO_SUBSTITUTION" \
+                        "_CCCL_HOSTED()=1" \
                         _CCCL_DOXYGEN_INVOKED
 
 # Quiet mode

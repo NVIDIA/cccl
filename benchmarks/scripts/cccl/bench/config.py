@@ -8,7 +8,7 @@ def randomized_cartesian_product(list_of_lists):
     for lst in list_of_lists:
         length *= len(lst)
 
-    visited = set()
+    visited: set[tuple] = set()
     while len(visited) < length:
         variant = tuple(map(random.choice, list_of_lists))
         if variant not in visited:
@@ -107,6 +107,9 @@ def parse_meta():
 
 class Config:
     _instance = None
+    ctk: str
+    cccl: str
+    benchmarks: dict[str, list[Range]]
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
@@ -132,7 +135,7 @@ class Config:
         return VariantPoint(points)
 
     def variant_space(self, algname):
-        variants = []
+        variants: list[list[RangePoint]] = []
         for param_space in self.benchmarks[algname]:
             variants.append([])
             for value in range(param_space.low, param_space.high, param_space.step):

@@ -16,9 +16,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceCopy::Batched accepts env with stream", "[copy][env]")
+CUB_TEST("cub::DeviceCopy::Batched accepts env with stream", "[copy][env]", CUB_SMALL)
 {
   // example-begin copy-batched-env
   // 3 contiguous ranges copied via Batched API
@@ -38,8 +38,8 @@ C2H_TEST("cub::DeviceCopy::Batched accepts env with stream", "[copy][env]")
   thrust::device_vector<int*> d_output_ptrs{dst_base, dst_base + range_size, dst_base + 2 * range_size};
   thrust::device_vector<int> d_sizes{range_size, range_size, range_size};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceCopy::Batched(
     thrust::raw_pointer_cast(d_input_ptrs.data()),
@@ -71,23 +71,26 @@ struct BatchedCopyPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::BatchedCopyPolicy
   {
-    return {.small_buffer = {.threads_per_block     = 128,
-                             .buffers_per_thread    = 4,
-                             .bytes_per_thread      = 8,
-                             .prefer_pow2_bits      = false,
-                             .block_level_tile_size = 256 * 32,
-                             .warp_level_threshold  = 128,
-                             .block_level_threshold = 8 * 1024,
-                             .buffer_lookback_delay = {},
-                             .block_lookback_delay  = {}},
-            .large_buffer = {.threads_per_block = 256, .bytes_per_thread = 32}};
+    return {
+      .algorithm = cub::BatchedCopyAlgorithm::lookback,
+      .lookback  = {
+        .small_buffer = {.threads_per_block     = 128,
+                         .buffers_per_thread    = 4,
+                         .bytes_per_thread      = 8,
+                         .prefer_pow2_bits      = false,
+                         .block_level_tile_size = 256 * 32,
+                         .warp_level_threshold  = 128,
+                         .block_level_threshold = 8 * 1024,
+                         .buffer_lookback_delay = {},
+                         .block_lookback_delay  = {}},
+        .large_buffer = {.threads_per_block = 256, .bytes_per_thread = 32}}};
   }
 };
 // example-end copy-batched-policy-selector
 
 _CCCL_DIAG_POP
 
-C2H_TEST("cub::DeviceCopy::Batched accepts a custom policy selector", "[copy][env]")
+CUB_TEST("cub::DeviceCopy::Batched accepts a custom policy selector", "[copy][env]", CUB_SMALL)
 {
   // example-begin copy-batched-tuning
   // 3 contiguous ranges copied via Batched API with custom tuning
@@ -124,7 +127,7 @@ C2H_TEST("cub::DeviceCopy::Batched accepts a custom policy selector", "[copy][en
 
 #endif // _CCCL_STD_VER >= 2020
 
-C2H_TEST("cub::DeviceCopy::Copy mdspan accepts env with stream", "[copy][env]")
+CUB_TEST("cub::DeviceCopy::Copy mdspan accepts env with stream", "[copy][env]", CUB_SMALL)
 {
   // example-begin copy-mdspan-env
   // Copy a 2D array using mdspan
@@ -140,11 +143,11 @@ C2H_TEST("cub::DeviceCopy::Copy mdspan accepts env with stream", "[copy][env]")
   using extents_t = cuda::std::extents<int, N, M>;
   using mdspan_t  = cuda::std::mdspan<float, extents_t, cuda::std::layout_right>; // row-major
 
-  mdspan_t mdspan_in(thrust::raw_pointer_cast(d_input.data()), extents_t{});
-  mdspan_t mdspan_out(thrust::raw_pointer_cast(d_output.data()), extents_t{});
+  const mdspan_t mdspan_in(thrust::raw_pointer_cast(d_input.data()), extents_t{});
+  const mdspan_t mdspan_out(thrust::raw_pointer_cast(d_output.data()), extents_t{});
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceCopy::Copy(mdspan_in, mdspan_out, stream_ref);
   if (error != cudaSuccess)

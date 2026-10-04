@@ -14,9 +14,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceMemcpy::Batched accepts env with stream", "[memcpy][env]")
+CUB_TEST("cub::DeviceMemcpy::Batched accepts env with stream", "[memcpy][env]", CUB_SMALL)
 {
   // example-begin memcpy-batched-env
   // Source data: 3 buffers of different sizes laid out contiguously
@@ -43,10 +43,10 @@ C2H_TEST("cub::DeviceMemcpy::Batched accepts env with stream", "[memcpy][env]")
   auto d_sizes = thrust::device_vector<int>{
     2 * static_cast<int>(sizeof(int)), 3 * static_cast<int>(sizeof(int)), 1 * static_cast<int>(sizeof(int))};
 
-  int num_buffers = 3;
+  const int num_buffers = 3;
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceMemcpy::Batched(
     thrust::raw_pointer_cast(d_src_ptrs.data()),
@@ -59,8 +59,8 @@ C2H_TEST("cub::DeviceMemcpy::Batched accepts env with stream", "[memcpy][env]")
     std::cerr << "cub::DeviceMemcpy::Batched failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_a{10, 20, 30, 40, 50};
-  thrust::device_vector<int> expected_b{60};
+  const thrust::device_vector<int> expected_a{10, 20, 30, 40, 50};
+  const thrust::device_vector<int> expected_b{60};
   // example-end memcpy-batched-env
 
   stream.sync();
@@ -82,23 +82,26 @@ struct BatchedMemcpyPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::BatchedCopyPolicy
   {
-    return {.small_buffer = {.threads_per_block     = 128,
-                             .buffers_per_thread    = 4,
-                             .bytes_per_thread      = 8,
-                             .prefer_pow2_bits      = false,
-                             .block_level_tile_size = 256 * 32,
-                             .warp_level_threshold  = 128,
-                             .block_level_threshold = 8 * 1024,
-                             .buffer_lookback_delay = {},
-                             .block_lookback_delay  = {}},
-            .large_buffer = {.threads_per_block = 256, .bytes_per_thread = 32}};
+    return {
+      .algorithm = cub::BatchedCopyAlgorithm::lookback,
+      .lookback  = {
+        .small_buffer = {.threads_per_block     = 128,
+                         .buffers_per_thread    = 4,
+                         .bytes_per_thread      = 8,
+                         .prefer_pow2_bits      = false,
+                         .block_level_tile_size = 256 * 32,
+                         .warp_level_threshold  = 128,
+                         .block_level_threshold = 8 * 1024,
+                         .buffer_lookback_delay = {},
+                         .block_lookback_delay  = {}},
+        .large_buffer = {.threads_per_block = 256, .bytes_per_thread = 32}}};
   }
 };
 // example-end memcpy-batched-policy-selector
 
 _CCCL_DIAG_POP
 
-C2H_TEST("cub::DeviceMemcpy::Batched accepts a custom policy selector", "[memcpy][env]")
+CUB_TEST("cub::DeviceMemcpy::Batched accepts a custom policy selector", "[memcpy][env]", CUB_SMALL)
 {
   // example-begin memcpy-batched-tuning
   // Source data: 3 buffers laid out contiguously

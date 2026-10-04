@@ -22,6 +22,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/min.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -73,7 +74,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     {
       grid_size = kernel_limits.min_grid_size;
       // Maximum occupancy without exceeding limits
-      block_size = ::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
+      block_size = ::cuda::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
       l0_size    = ndevs * grid_size * block_size;
     }
     else
@@ -121,7 +122,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     if (l1_size == 0)
     {
       // Maximum occupancy without exceeding limits
-      l1_size = ::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
+      l1_size = ::cuda::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
     }
     else
     {
@@ -170,7 +171,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     if (l2_size == 0)
     {
       // Maximum occupancy without exceeding limits
-      l2_size = ::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
+      l2_size = ::cuda::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
     }
     else
     {

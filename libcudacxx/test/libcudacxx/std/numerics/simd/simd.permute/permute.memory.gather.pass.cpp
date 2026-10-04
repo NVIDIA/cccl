@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.permute.memory] gather
@@ -36,7 +39,7 @@
 // partial_gather_from — unmasked
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_partial_gather_unmasked()
+TEST_HOST_DEVICE_FUNC constexpr void test_partial_gather_unmasked()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   using Ind = simd::basic_vec<int, simd::fixed_size<N>>;
@@ -86,7 +89,7 @@ TEST_FUNC constexpr void test_partial_gather_unmasked()
 // partial_gather_from — masked
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_partial_gather_masked()
+TEST_HOST_DEVICE_FUNC constexpr void test_partial_gather_masked()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Ind  = simd::basic_vec<int, simd::fixed_size<N>>;
@@ -152,7 +155,7 @@ TEST_FUNC constexpr void test_partial_gather_masked()
 // unchecked_gather_from
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_unchecked_gather()
+TEST_HOST_DEVICE_FUNC constexpr void test_unchecked_gather()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Ind  = simd::basic_vec<int, simd::fixed_size<N>>;
@@ -204,7 +207,7 @@ TEST_FUNC constexpr void test_unchecked_gather()
 //----------------------------------------------------------------------------------------------------------------------
 // Default result deduction
 
-TEST_FUNC constexpr void test_default_result_deduction()
+TEST_HOST_DEVICE_FUNC constexpr void test_default_result_deduction()
 {
   using Expected = simd::basic_vec<int, simd::fixed_size<4>>;
   using Ind      = simd::basic_vec<int, simd::fixed_size<4>>;
@@ -234,7 +237,7 @@ TEST_FUNC constexpr void test_default_result_deduction()
 //----------------------------------------------------------------------------------------------------------------------
 // Explicit result with flag_convert (float to int)
 
-TEST_FUNC constexpr void test_explicit_result_conversion()
+TEST_HOST_DEVICE_FUNC constexpr void test_explicit_result_conversion()
 {
   using Result = simd::basic_vec<int, simd::fixed_size<4>>;
   using Ind    = simd::basic_vec<int, simd::fixed_size<4>>;
@@ -254,7 +257,7 @@ TEST_FUNC constexpr void test_explicit_result_conversion()
 //----------------------------------------------------------------------------------------------------------------------
 // noexcept
 
-TEST_FUNC constexpr void test_noexcept()
+TEST_HOST_DEVICE_FUNC constexpr void test_noexcept()
 {
   using Ind  = simd::basic_vec<int, simd::fixed_size<4>>;
   using Mask = typename Ind::mask_type;
@@ -273,7 +276,7 @@ TEST_FUNC constexpr void test_noexcept()
 //----------------------------------------------------------------------------------------------------------------------
 
 // do not depend on element types
-TEST_FUNC constexpr bool test_fixed_type()
+TEST_HOST_DEVICE_FUNC constexpr bool test_fixed_type()
 {
   test_noexcept();
   test_default_result_deduction();
@@ -282,7 +285,7 @@ TEST_FUNC constexpr bool test_fixed_type()
 }
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   test_partial_gather_unmasked<T, N>();
   test_partial_gather_masked<T, N>();

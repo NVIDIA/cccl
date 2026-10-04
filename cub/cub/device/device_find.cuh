@@ -33,7 +33,7 @@ CUB_NAMESPACE_BEGIN
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! The FindIf algorithms that accept an environment can be tuned by passing a custom
-//! :ref:`policy selector <cub-policy-selectors>` that returns a @ref FindIfPolicy, as shown in the
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::FindIfPolicy`, as shown in the
 //! example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_find_env_api.cu
@@ -50,7 +50,7 @@ CUB_NAMESPACE_BEGIN
 //!
 //! The ``LowerBoundSortedValues`` and ``UpperBoundSortedValues`` algorithms that accept an environment can be tuned by
 //! passing a custom :ref:`policy selector <cub-policy-selectors>` that returns a
-//! @ref FindBoundSortedValuesPolicy, as shown in the example below:
+//! :cpp:struct:`cub::FindBoundSortedValuesPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_find_bound_sorted_values_env_api.cu
 //!      :language: c++
@@ -152,15 +152,10 @@ struct DeviceFind
 
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    using default_policy_selector = detail::find::policy_selector_from_types<detail::it_value_t<InputIteratorT>>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage,
-      temp_storage_bytes,
-      env,
-      [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
         return detail::find::dispatch(
-          storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream, policy_selector);
+          storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream, tuning_env);
       });
   }
 
@@ -499,13 +494,10 @@ struct DeviceFind
 
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    using default_policy_selector = detail::find::policy_selector_from_types<detail::it_value_t<InputIteratorT>>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::find::dispatch(
-          storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream, policy_selector);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+      return detail::find::dispatch(
+        storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream, tuning_env);
+    });
   }
 
   //! @rst
@@ -960,7 +952,7 @@ struct DeviceFind
     ValuesNumItemsT values_num_items,
     OutputIteratorT d_output,
     CompareOpT comp,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFind::LowerBoundSortedValues");
 
@@ -1200,7 +1192,7 @@ struct DeviceFind
     ValuesNumItemsT values_num_items,
     OutputIteratorT d_output,
     CompareOpT comp,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFind::UpperBoundSortedValues");
 

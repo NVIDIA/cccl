@@ -5,7 +5,7 @@
 
 #include <thrust/fill.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <std::uint32_t NumItems,
           std::uint32_t MaxItemValue,
@@ -50,7 +50,8 @@ using test_combinations =
                  test_spec<32, 1>,
                  test_spec<32, 256>>;
 
-C2H_TEST("The bit_packed_counter used by DeviceMemcpy works", "[memcpy]", test_combinations, use_power_of_two_bits)
+CUB_TEST(
+  "The bit_packed_counter used by DeviceMemcpy works", "[memcpy]", CUB_SMALL, test_combinations, use_power_of_two_bits)
 {
   constexpr std::uint32_t num_items       = c2h::get<0, TestType>::num_items;
   constexpr std::uint32_t max_item_value  = c2h::get<0, TestType>::max_item_value;

@@ -14,7 +14,7 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // example-begin bulk-square-env-t
 struct square_t
@@ -53,14 +53,14 @@ struct odd_count_t
 };
 // example-end odd-count-env-t
 
-C2H_TEST("cub::DeviceFor::Bulk env-based API", "[for][env]")
+CUB_TEST("cub::DeviceFor::Bulk env-based API", "[for][env]", CUB_SMALL)
 {
   // example-begin bulk-env
   auto vec = thrust::device_vector<int>{1, 2, 3, 4};
-  square_t op{thrust::raw_pointer_cast(vec.data())};
+  const square_t op{thrust::raw_pointer_cast(vec.data())};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceFor::Bulk(static_cast<int>(vec.size()), op, stream_ref);
   if (error != cudaSuccess)
@@ -68,7 +68,7 @@ C2H_TEST("cub::DeviceFor::Bulk env-based API", "[for][env]")
     std::cerr << "cub::DeviceFor::Bulk failed: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{1, 4, 9, 16};
+  const thrust::device_vector<int> expected{1, 4, 9, 16};
   // example-end bulk-env
 
   stream.sync();
@@ -76,14 +76,14 @@ C2H_TEST("cub::DeviceFor::Bulk env-based API", "[for][env]")
   REQUIRE(vec == expected);
 }
 
-C2H_TEST("cub::DeviceFor::ForEachN env-based API", "[for][env]")
+CUB_TEST("cub::DeviceFor::ForEachN env-based API", "[for][env]", CUB_SMALL)
 {
   // example-begin for-each-n-env
   auto vec = thrust::device_vector<int>{1, 2, 3, 4};
-  square_ref_t op{};
+  const square_ref_t op{};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceFor::ForEachN(vec.begin(), static_cast<int>(vec.size()), op, stream_ref);
   if (error != cudaSuccess)
@@ -91,7 +91,7 @@ C2H_TEST("cub::DeviceFor::ForEachN env-based API", "[for][env]")
     std::cerr << "cub::DeviceFor::ForEachN failed: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{1, 4, 9, 16};
+  const thrust::device_vector<int> expected{1, 4, 9, 16};
   // example-end for-each-n-env
 
   stream.sync();
@@ -99,14 +99,14 @@ C2H_TEST("cub::DeviceFor::ForEachN env-based API", "[for][env]")
   REQUIRE(vec == expected);
 }
 
-C2H_TEST("cub::DeviceFor::ForEach env-based API", "[for][env]")
+CUB_TEST("cub::DeviceFor::ForEach env-based API", "[for][env]", CUB_SMALL)
 {
   // example-begin for-each-env
   auto vec = thrust::device_vector<int>{1, 2, 3, 4};
-  square_ref_t op{};
+  const square_ref_t op{};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceFor::ForEach(vec.begin(), vec.end(), op, stream_ref);
   if (error != cudaSuccess)
@@ -114,7 +114,7 @@ C2H_TEST("cub::DeviceFor::ForEach env-based API", "[for][env]")
     std::cerr << "cub::DeviceFor::ForEach failed: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{1, 4, 9, 16};
+  const thrust::device_vector<int> expected{1, 4, 9, 16};
   // example-end for-each-env
 
   stream.sync();
@@ -122,15 +122,15 @@ C2H_TEST("cub::DeviceFor::ForEach env-based API", "[for][env]")
   REQUIRE(vec == expected);
 }
 
-C2H_TEST("cub::DeviceFor::ForEachCopyN env-based API", "[for][env]")
+CUB_TEST("cub::DeviceFor::ForEachCopyN env-based API", "[for][env]", CUB_SMALL)
 {
   // example-begin for-each-copy-n-env
   auto vec   = thrust::device_vector<int>{1, 2, 3, 4};
   auto count = thrust::device_vector<int>(1);
-  odd_count_t op{thrust::raw_pointer_cast(count.data())};
+  const odd_count_t op{thrust::raw_pointer_cast(count.data())};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceFor::ForEachCopyN(vec.begin(), static_cast<int>(vec.size()), op, stream_ref);
   if (error != cudaSuccess)
@@ -138,7 +138,7 @@ C2H_TEST("cub::DeviceFor::ForEachCopyN env-based API", "[for][env]")
     std::cerr << "cub::DeviceFor::ForEachCopyN failed: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_count{2};
+  const thrust::device_vector<int> expected_count{2};
   // example-end for-each-copy-n-env
 
   stream.sync();
@@ -146,15 +146,15 @@ C2H_TEST("cub::DeviceFor::ForEachCopyN env-based API", "[for][env]")
   REQUIRE(count == expected_count);
 }
 
-C2H_TEST("cub::DeviceFor::ForEachCopy env-based API", "[for][env]")
+CUB_TEST("cub::DeviceFor::ForEachCopy env-based API", "[for][env]", CUB_SMALL)
 {
   // example-begin for-each-copy-env
   auto vec   = thrust::device_vector<int>{1, 2, 3, 4};
   auto count = thrust::device_vector<int>(1);
-  odd_count_t op{thrust::raw_pointer_cast(count.data())};
+  const odd_count_t op{thrust::raw_pointer_cast(count.data())};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceFor::ForEachCopy(vec.begin(), vec.end(), op, stream_ref);
   if (error != cudaSuccess)
@@ -162,7 +162,7 @@ C2H_TEST("cub::DeviceFor::ForEachCopy env-based API", "[for][env]")
     std::cerr << "cub::DeviceFor::ForEachCopy failed: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_count{2};
+  const thrust::device_vector<int> expected_count{2};
   // example-end for-each-copy-env
 
   stream.sync();
@@ -182,7 +182,7 @@ struct ForPolicySelector
 };
 // example-end bulk-policy-selector
 
-C2H_TEST("cub::DeviceFor::Bulk accepts a custom policy selector", "[for][env]")
+CUB_TEST("cub::DeviceFor::Bulk accepts a custom policy selector", "[for][env]", CUB_SMALL)
 {
   // example-begin bulk-tuning
   auto vec = thrust::device_vector<int>{1, 2, 3, 4};

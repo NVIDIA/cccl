@@ -72,7 +72,7 @@ struct __pstl_dispatch<__pstl_algorithm::__generate_n, __execution_backend::__cu
     const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
 
     // We pass the policy as an environment to DeviceTransform
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceTransform::Generate,
       "__pstl_cuda_generate: call to cub device_transform::Generate failed",
       __result,
@@ -87,8 +87,8 @@ struct __pstl_dispatch<__pstl_algorithm::__generate_n, __execution_backend::__cu
 
   _CCCL_TEMPLATE(class _Policy, class _OutputIterator, class _Size, class _UnaryOp)
   _CCCL_REQUIRES(__has_forward_traversal<_OutputIterator>)
-  [[nodiscard]] _CCCL_HOST_API _OutputIterator
-  operator()([[maybe_unused]] const _Policy& __policy, _OutputIterator __result, _Size __count, _UnaryOp __func) const
+  [[nodiscard]] _CCCL_HOST_API _OutputIterator _CCCL_STATIC_CALL_OPERATOR(
+    [[maybe_unused]] const _Policy& __policy, _OutputIterator __result, _Size __count, _UnaryOp __func)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_OutputIterator>)
     {

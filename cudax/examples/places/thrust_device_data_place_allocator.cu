@@ -48,7 +48,10 @@ public:
 
   pointer do_allocate(std::size_t bytes, std::size_t /*alignment*/) override
   {
-    void* raw = place_.allocate(static_cast<std::ptrdiff_t>(bytes));
+    // A memory resource hands out untyped bytes, so declare the geometry
+    // explicitly as a flat byte array: composite places distribute it with
+    // byte granularity (equivalent for every other place type).
+    void* raw = place_.allocate_nd(dim4(bytes), 1);
     return thrust::device_ptr<void>(raw);
   }
 
@@ -80,7 +83,7 @@ bool run_with_place(const data_place& place, const char* label)
   const size_t n = 1024 * 1024;
 
   data_place_memory_resource memres(place);
-  data_place_allocator<double> alloc(&memres);
+  const data_place_allocator<double> alloc(&memres);
   thrust::device_vector<double, data_place_allocator<double>> d_vec(n, 0.0, alloc);
 
   thrust::transform(
@@ -95,7 +98,7 @@ bool run_with_place(const data_place& place, const char* label)
   thrust::host_vector<double> h_sample(4);
   thrust::copy(d_vec.begin(), d_vec.begin() + 4, h_sample.begin());
 
-  bool ok = (h_sample[0] == 0.0 && h_sample[1] == 2.0 && h_sample[2] == 4.0 && h_sample[3] == 6.0);
+  const bool ok = (h_sample[0] == 0.0 && h_sample[1] == 2.0 && h_sample[2] == 4.0 && h_sample[3] == 6.0);
   printf(
     "thrust_device_data_place_allocator: %s (%s): %s\n", label, place.to_string().c_str(), ok ? "PASSED" : "FAILED");
   return ok;

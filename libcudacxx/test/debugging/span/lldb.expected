@@ -1,0 +1,30 @@
+=============== span.static begin ===============
+(cuda::std::span<int, 3>) <address> ([0] = -7, [1] = 0, [2] = 42)
+=============== span.static end ===============
+=============== span.dynamic begin ===============
+(cuda::std::span<int, dynamic_extent>) <address> ([0] = -31, [1] = 17, [2] = 8, [3] = -64)
+=============== span.dynamic end ===============
+=============== span.static_empty begin ===============
+(cuda::std::span<int, 0>) <address>
+=============== span.static_empty end ===============
+=============== span.default begin ===============
+(cuda::std::span<int, dynamic_extent>) <address>
+=============== span.default end ===============
+=============== span.const begin ===============
+(cuda::std::span<const int, dynamic_extent>) <address> ([0] = 5, [1] = -9)
+=============== span.const end ===============
+=============== span.nested begin ===============
+(cuda::std::span<cuda::std::array<int, 2>, dynamic_extent>) <address>: {
+  [0] = ([0] = 13, [1] = -5)
+  [1] = ([0] = 0, [1] = 88)
+}
+=============== span.nested end ===============
+=============== span.alias begin ===============
+(cuda::std::span<int, 4>) <address> ([0] = -31, [1] = 17, [2] = 8, [3] = -64)
+=============== span.alias end ===============
+=============== span.update.before begin ===============
+(cuda::std::span<int, dynamic_extent>) <address> ([0] = 6, [1] = -91, [2] = 52)
+=============== span.update.before end ===============
+=============== span.update.after begin ===============
+(cuda::std::span<int, dynamic_extent>) <address> ([0] = 3, [1] = 85, [2] = -12)
+=============== span.update.after end ===============

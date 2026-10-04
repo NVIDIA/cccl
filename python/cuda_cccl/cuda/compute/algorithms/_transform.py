@@ -9,7 +9,7 @@ from typing import Callable
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_registered_key_functions
+from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import set_cccl_iterator_state
 from .._serialization import BUILD_RESULTS, ITER, OP, Serializable
 from .._utils import protocols
@@ -19,6 +19,7 @@ from ..typing import DeviceArrayLike, IteratorT, Operator
 
 class _UnaryTransform(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "d_in_cccl",
         "d_out_cccl",
         "op_cccl",
@@ -48,13 +49,19 @@ class _UnaryTransform(Serializable):
         out_type = cccl.get_value_type(d_out)
         self.op_cccl = op.compile((in_type,), out_type)
 
-        # Active build result, bound at __call__ from build_results (see resolve_build_result).
-        self.build_results = cccl.build_for_ccs(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceUnaryTransform,
-            self.d_in_cccl,
-            self.d_out_cccl,
-            self.op_cccl,
+            d_in,
+            d_out,
+            op,
             compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
+                _bindings.DeviceUnaryTransform,
+                self.d_in_cccl,
+                self.d_out_cccl,
+                self.op_cccl,
+                compute_capability=compute_capability,
+            ),
         )
 
     def __call__(
@@ -67,7 +74,9 @@ class _UnaryTransform(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
 
         op_adapter = make_op_adapter(op)
 
@@ -88,6 +97,7 @@ class _UnaryTransform(Serializable):
 
 class _BinaryTransform(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "d_in1_cccl",
         "d_in2_cccl",
         "d_out_cccl",
@@ -122,14 +132,21 @@ class _BinaryTransform(Serializable):
         out_type = cccl.get_value_type(d_out)
         self.op_cccl = op.compile((in1_type, in2_type), out_type)
 
-        # Active build result, bound at __call__ from build_results (see resolve_build_result).
-        self.build_results = cccl.build_for_ccs(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceBinaryTransform,
-            self.d_in1_cccl,
-            self.d_in2_cccl,
-            self.d_out_cccl,
-            self.op_cccl,
+            d_in1,
+            d_in2,
+            d_out,
+            op,
             compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
+                _bindings.DeviceBinaryTransform,
+                self.d_in1_cccl,
+                self.d_in2_cccl,
+                self.d_out_cccl,
+                self.op_cccl,
+                compute_capability=compute_capability,
+            ),
         )
 
     def __call__(
@@ -143,7 +160,9 @@ class _BinaryTransform(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
 
         set_cccl_iterator_state(self.d_in1_cccl, d_in1)
         set_cccl_iterator_state(self.d_in2_cccl, d_in2)

@@ -51,12 +51,14 @@ struct ImplicitT
 
 int main(int, char**)
 {
+#ifndef CCCL_FORCE_TILE_TESTS
   {
     using P = cuda::std::pair<cuda::std::unique_ptr<int>, short*>;
     P p(cuda::std::unique_ptr<int>(new int(3)), nullptr);
     assert(*p.first == 3);
     assert(p.second == nullptr);
   }
+#endif // !CCCL_FORCE_TILE_TESTS
   {
     // Test non-const lvalue and rvalue types
     test_sfinae<AllCtors, AllCtors&>();

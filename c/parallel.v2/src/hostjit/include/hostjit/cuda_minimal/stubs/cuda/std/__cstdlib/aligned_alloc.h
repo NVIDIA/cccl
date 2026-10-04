@@ -43,7 +43,7 @@ namespace cuda
 {
 namespace std
 {
-inline __device__ void* aligned_alloc(__SIZE_TYPE__ __nbytes, __SIZE_TYPE__ __align) noexcept
+inline __device__ void* aligned_alloc(__SIZE_TYPE__ __align, __SIZE_TYPE__ __nbytes) noexcept
 {
   return ::__cuda_syscall_aligned_malloc(__nbytes, __align);
 }
@@ -59,13 +59,13 @@ namespace cuda
 {
 namespace std
 {
-inline void* __aligned_alloc_host(__SIZE_TYPE__ __nbytes, __SIZE_TYPE__) noexcept
+inline void* __aligned_alloc_host(__SIZE_TYPE__, __SIZE_TYPE__ __nbytes) noexcept
 {
   return __builtin_malloc(__nbytes);
 }
-inline void* aligned_alloc(__SIZE_TYPE__ __nbytes, __SIZE_TYPE__ __align) noexcept
+inline void* aligned_alloc(__SIZE_TYPE__ __align, __SIZE_TYPE__ __nbytes) noexcept
 {
-  return ::cuda::std::__aligned_alloc_host(__nbytes, __align);
+  return ::cuda::std::__aligned_alloc_host(__align, __nbytes);
 }
 } // namespace std
 } // namespace cuda

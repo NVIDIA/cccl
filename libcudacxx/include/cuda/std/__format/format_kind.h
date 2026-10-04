@@ -40,7 +40,7 @@ template <class _Rp>
 _CCCL_CONCEPT __has_mapped_type = _CCCL_REQUIRES_EXPR((_Rp))(typename(typename _Rp::mapped_type));
 
 template <class _Rp>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL range_format __fmt_format_kind_fail() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL range_format __fmt_format_kind_fail() noexcept
 {
   // [format.range.fmtkind]/1
   // A program that instantiates the primary template of format_kind is ill-formed.
@@ -52,7 +52,7 @@ template <class _Rp, class = void>
 inline constexpr range_format format_kind = ::cuda::std::__fmt_format_kind_fail<_Rp>();
 
 template <class _Rp>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL range_format __fmt_format_kind_default() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL range_format __fmt_format_kind_default() noexcept
 {
   if constexpr (same_as<remove_cvref_t<ranges::range_reference_t<_Rp>>, _Rp>)
   {

@@ -18,6 +18,7 @@ Options:
   --py                  Only run Python benchmarks
   --cpp                 Only run C++ benchmarks
   --quick, -q           Run with reduced parameter set for fast testing
+  --profile             Run each config once (nvbench profile mode), no sampling
   -h, --help            Show this help message
 
 Benchmark names follow CUB structure:
@@ -38,8 +39,6 @@ import shlex
 import subprocess
 import sys
 from pathlib import Path
-
-import yaml
 
 # ============================================================================
 # Configuration
@@ -156,6 +155,8 @@ def print_section(msg: str) -> None:
 
 def load_quick_configs() -> dict:
     """Load quick mode configurations from YAML file."""
+    import yaml  # only needed for --quick
+
     with open(QUICK_CONFIG_FILE) as f:
         return yaml.safe_load(f)
 
@@ -263,6 +264,7 @@ def run_benchmark(
     run_cpp: bool,
     quick_mode: bool,
     quick_configs: dict,
+    profile: bool,
 ) -> dict:
     """Run a single benchmark.
 
@@ -324,6 +326,8 @@ def run_benchmark(
 
         cmd = [str(cpp_bin), "--json", str(cpp_result), "--devices", device]
         cmd.extend(cpp_axis_args)
+        if profile:
+            cmd.append("--profile")
         # Ensure the CUB build lib dir (containing libnvbench.so) is on the
         # dynamic linker search path for the child process.
         cpp_lib_dir = str(CUB_BENCH_DIR.parent / "lib")
@@ -357,6 +361,8 @@ def run_benchmark(
             device,
         ]
         cmd.extend(py_axis_args)
+        if profile:
+            cmd.append("--profile")
         py_status = run_and_log(cmd, py_log)
         print(f"  Results: {py_result}")
         print(f"  Log: {py_log}")
@@ -398,6 +404,13 @@ Supported benchmarks:
         action="store_true",
         help="Run with reduced parameter set for fast testing",
     )
+    parser.add_argument(
+        "--profile",
+        action="store_true",
+        help="Run each benchmark configuration once (nvbench profile mode) with "
+        "no sampling -- for smoke-testing that benchmarks execute without error, "
+        "not for measuring performance.",
+    )
     args = parser.parse_args()
 
     # Determine what to run
@@ -438,6 +451,7 @@ Supported benchmarks:
     print(f"  Run C++:        {run_cpp}")
     print(f"  Run Python:     {run_py}")
     print(f"  Quick Mode:     {args.quick}")
+    print(f"  Profile Mode:   {args.profile}")
     print()
 
     # Check C++ binaries directory exists (if running C++)
@@ -454,7 +468,7 @@ Supported benchmarks:
     for bench in benchmarks_to_run:
         print_section(f"Benchmark: {bench}")
         results = run_benchmark(
-            bench, args.device, run_py, run_cpp, args.quick, quick_configs
+            bench, args.device, run_py, run_cpp, args.quick, quick_configs, args.profile
         )
         all_results[bench] = results
         print()
@@ -495,6 +509,19 @@ Supported benchmarks:
             )
 
     print()
+
+    # Exit non-zero if any benchmark failed so CI (e.g. the --profile smoke gate)
+    # catches benchmark rot instead of silently passing on printed warnings.
+    failed = []
+    for bench in benchmarks_to_run:
+        results = all_results.get(bench, {})
+        for key in ("cpp_status", "py_status"):
+            if results.get(key, {}).get("status") not in (None, "ok"):
+                failed.append(bench)
+                break
+    if failed:
+        print(f"ERROR: {len(failed)} benchmark(s) failed: {failed}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

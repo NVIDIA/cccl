@@ -41,6 +41,8 @@ _CCCL_API constexpr auto __fp_native_type_impl()
   {
     return double{};
   }
+  // Unsupported native formats intentionally produce void in the fallback branches.
+  // NOLINTBEGIN(bugprone-branch-clone)
   else if constexpr (_Fmt == __fp_format::__binary128)
   {
 #if _CCCL_HAS_FLOAT128()
@@ -63,6 +65,7 @@ _CCCL_API constexpr auto __fp_native_type_impl()
   {
     return;
   }
+  // NOLINTEND(bugprone-branch-clone)
 }
 
 template <__fp_format _Fmt>

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -28,7 +28,7 @@
 #include "test_macros.h"
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_none_of()
+TEST_HOST_DEVICE_FUNC constexpr void test_none_of()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
 
@@ -50,7 +50,7 @@ TEST_FUNC constexpr void test_none_of()
   }
 }
 
-TEST_FUNC constexpr void test_none_of_scalar_bool()
+TEST_HOST_DEVICE_FUNC constexpr void test_none_of_scalar_bool()
 {
   static_assert(cuda::std::is_same_v<decltype(simd::none_of(true)), bool>);
   static_assert(noexcept(simd::none_of(true)));
@@ -60,13 +60,13 @@ TEST_FUNC constexpr void test_none_of_scalar_bool()
 }
 
 template <int Bytes>
-TEST_FUNC constexpr void test_bytes()
+TEST_HOST_DEVICE_FUNC constexpr void test_bytes()
 {
   test_none_of<Bytes, 1>();
   test_none_of<Bytes, 4>();
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test_bytes<1>();
   test_bytes<2>();

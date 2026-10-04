@@ -6,14 +6,14 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: clocks are not supported in tile mode
+
 // <cuda/std/chrono>
 
 // system_clock
 
 // static time_point from_time_t(time_t t);
-
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
 
 #include <cuda/std/chrono>
 #include <cuda/std/ctime>

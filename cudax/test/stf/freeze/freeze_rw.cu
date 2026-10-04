@@ -27,8 +27,8 @@ int X0(int i)
 
 __global__ void mult(slice<int> s, int val)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int i = tid; i < s.size(); i += nthreads)
   {

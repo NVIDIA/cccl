@@ -38,23 +38,21 @@ void TestPairStableSortDevice(ExecutionPolicy exec)
 
   stable_sort_kernel<<<1, 1>>>(exec, d_pairs.begin(), d_pairs.end());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   // sort on the host
   thrust::stable_sort(h_pairs.begin(), h_pairs.end());
 
-  ASSERT_EQUAL_QUIET(h_pairs, d_pairs);
+  REQUIRE((h_pairs == d_pairs));
 };
 
-void TestPairStableSortDeviceSeq()
+TEST_CASE("TestPairStableSortDeviceSeq", "[pair_sort]")
 {
   TestPairStableSortDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestPairStableSortDeviceSeq);
 
-void TestPairStableSortDeviceDevice()
+TEST_CASE("TestPairStableSortDeviceDevice", "[pair_sort]")
 {
   TestPairStableSortDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestPairStableSortDeviceDevice);
 #endif

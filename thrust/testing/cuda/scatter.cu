@@ -38,22 +38,20 @@ void TestScatterDevice(ExecutionPolicy exec)
 
   scatter_kernel<<<1, 1>>>(exec, d_input.begin(), d_input.end(), d_map.begin(), d_output.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 
-void TestScatterDeviceSeq()
+TEST_CASE("TestScatterDeviceSeq", "[scatter]")
 {
   TestScatterDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestScatterDeviceSeq);
 
-void TestScatterDeviceDevice()
+TEST_CASE("TestScatterDeviceDevice", "[scatter]")
 {
   TestScatterDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestScatterDeviceDevice);
 
 template <typename ExecutionPolicy,
           typename Iterator1,
@@ -115,25 +113,23 @@ void TestScatterIfDevice(ExecutionPolicy exec)
     d_output.begin(),
     is_even_scatter_if<unsigned int>());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(h_output, d_output);
+  REQUIRE(h_output == d_output);
 }
 
-void TestScatterIfDeviceSeq()
+TEST_CASE("TestScatterIfDeviceSeq", "[scatter]")
 {
   TestScatterIfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestScatterIfDeviceSeq);
 
-void TestScatterIfDeviceDevice()
+TEST_CASE("TestScatterIfDeviceDevice", "[scatter]")
 {
   TestScatterIfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestScatterIfDeviceDevice);
 #endif
 
-void TestScatterCudaStreams()
+TEST_CASE("TestScatterCudaStreams", "[scatter]")
 {
   using Vector = thrust::device_vector<int>;
 
@@ -148,14 +144,13 @@ void TestScatterCudaStreams()
 
   cudaStreamSynchronize(s);
 
-  Vector ref{0, 2, 4, 1, 0, 0, 0, 3};
-  ASSERT_EQUAL(dst, ref);
+  const Vector ref{0, 2, 4, 1, 0, 0, 0, 3};
+  REQUIRE(dst == ref);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestScatterCudaStreams);
 
-void TestScatterIfCudaStreams()
+TEST_CASE("TestScatterIfCudaStreams", "[scatter]")
 {
   using Vector = thrust::device_vector<int>;
 
@@ -170,9 +165,8 @@ void TestScatterIfCudaStreams()
   thrust::scatter_if(thrust::cuda::par.on(s), src.begin(), src.end(), map.begin(), flg.begin(), dst.begin());
   cudaStreamSynchronize(s);
 
-  Vector ref{0, 0, 0, 1, 0, 0, 0, 3};
-  ASSERT_EQUAL(dst, ref);
+  const Vector ref{0, 0, 0, 1, 0, 0, 0, 3};
+  REQUIRE(dst == ref);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestScatterIfCudaStreams);

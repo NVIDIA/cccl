@@ -13,16 +13,16 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceAdjacentDifference::SubtractLeftCopy accepts stream", "[adjacent_difference][env]")
+CUB_TEST("cub::DeviceAdjacentDifference::SubtractLeftCopy accepts stream", "[adjacent_difference][env]", CUB_SMALL)
 {
   // example-begin subtract-left-copy-env-stream
   auto input  = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
   auto output = thrust::device_vector<int>(8);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceAdjacentDifference::SubtractLeftCopy(
     input.begin(), output.begin(), input.size(), cuda::std::minus{}, stream_ref);
@@ -31,20 +31,20 @@ C2H_TEST("cub::DeviceAdjacentDifference::SubtractLeftCopy accepts stream", "[adj
     std::cerr << "cub::DeviceAdjacentDifference::SubtractLeftCopy failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
+  const thrust::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
   // example-end subtract-left-copy-env-stream
   stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceAdjacentDifference::SubtractLeft accepts stream", "[adjacent_difference][env]")
+CUB_TEST("cub::DeviceAdjacentDifference::SubtractLeft accepts stream", "[adjacent_difference][env]", CUB_SMALL)
 {
   // example-begin subtract-left-env-stream
   auto data = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceAdjacentDifference::SubtractLeft(data.begin(), data.size(), cuda::std::minus{}, stream_ref);
   if (error != cudaSuccess)
@@ -52,7 +52,7 @@ C2H_TEST("cub::DeviceAdjacentDifference::SubtractLeft accepts stream", "[adjacen
     std::cerr << "cub::DeviceAdjacentDifference::SubtractLeft failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
+  const thrust::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
   // example-end subtract-left-env-stream
   stream.sync();
 
@@ -60,14 +60,14 @@ C2H_TEST("cub::DeviceAdjacentDifference::SubtractLeft accepts stream", "[adjacen
   REQUIRE(data == expected);
 }
 
-C2H_TEST("cub::DeviceAdjacentDifference::SubtractRightCopy accepts stream", "[adjacent_difference][env]")
+CUB_TEST("cub::DeviceAdjacentDifference::SubtractRightCopy accepts stream", "[adjacent_difference][env]", CUB_SMALL)
 {
   // example-begin subtract-right-copy-env-stream
   auto input  = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
   auto output = thrust::device_vector<int>(8);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceAdjacentDifference::SubtractRightCopy(
     input.begin(), output.begin(), input.size(), cuda::std::minus{}, stream_ref);
@@ -76,7 +76,7 @@ C2H_TEST("cub::DeviceAdjacentDifference::SubtractRightCopy accepts stream", "[ad
     std::cerr << "cub::DeviceAdjacentDifference::SubtractRightCopy failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
+  const thrust::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
   // example-end subtract-right-copy-env-stream
   stream.sync();
 
@@ -84,13 +84,13 @@ C2H_TEST("cub::DeviceAdjacentDifference::SubtractRightCopy accepts stream", "[ad
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceAdjacentDifference::SubtractRight accepts stream", "[adjacent_difference][env]")
+CUB_TEST("cub::DeviceAdjacentDifference::SubtractRight accepts stream", "[adjacent_difference][env]", CUB_SMALL)
 {
   // example-begin subtract-right-env-stream
   auto data = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceAdjacentDifference::SubtractRight(data.begin(), data.size(), cuda::std::minus{}, stream_ref);
   if (error != cudaSuccess)
@@ -98,7 +98,7 @@ C2H_TEST("cub::DeviceAdjacentDifference::SubtractRight accepts stream", "[adjace
     std::cerr << "cub::DeviceAdjacentDifference::SubtractRight failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
+  const thrust::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
   // example-end subtract-right-env-stream
   stream.sync();
 
@@ -122,8 +122,9 @@ struct AdjacentDifferencePolicySelector
 };
 // example-end subtract-left-copy-policy-selector
 
-C2H_TEST("cub::DeviceAdjacentDifference::SubtractLeftCopy accepts a custom policy selector",
-         "[adjacent_difference][env]")
+CUB_TEST("cub::DeviceAdjacentDifference::SubtractLeftCopy accepts a custom policy selector",
+         "[adjacent_difference][env]",
+         CUB_SMALL)
 {
   // example-begin subtract-left-copy-tuning
   auto input  = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};

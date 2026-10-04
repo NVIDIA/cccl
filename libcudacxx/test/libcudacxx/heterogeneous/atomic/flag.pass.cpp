@@ -6,11 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: nvrtc, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement unsupported in tile mode
 
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
@@ -20,7 +20,7 @@
 struct clear
 {
   template <typename AF>
-  TEST_FUNC static void initialize(AF& af)
+  TEST_HOST_DEVICE_FUNC static void initialize(AF& af)
   {
     af.clear();
   }
@@ -29,7 +29,7 @@ struct clear
 struct clear_tester : clear
 {
   template <typename AF>
-  TEST_FUNC static void validate(AF& af)
+  TEST_HOST_DEVICE_FUNC static void validate(AF& af)
   {
     assert(af.test_and_set() == false);
   }
@@ -39,13 +39,13 @@ template <bool Previous>
 struct test_and_set_tester
 {
   template <typename AF>
-  TEST_FUNC static void initialize(AF& af)
+  TEST_HOST_DEVICE_FUNC static void initialize(AF& af)
   {
     assert(af.test_and_set() == Previous);
   }
 
   template <typename AF>
-  TEST_FUNC static void validate(AF& af)
+  TEST_HOST_DEVICE_FUNC static void validate(AF& af)
   {
     assert(af.test_and_set() == true);
   }

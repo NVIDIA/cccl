@@ -25,7 +25,6 @@
 
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__hierarchy/hierarchy_levels.h>
-#  include <cuda/__hierarchy/traits.h>
 #  include <cuda/__launch/configuration.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__runtime/ensure_current_context.h>
@@ -35,9 +34,7 @@
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__type_traits/is_function.h>
 #  include <cuda/std/__type_traits/is_pointer.h>
-#  include <cuda/std/__type_traits/type_identity.h>
 #  include <cuda/std/__utility/forward.h>
-#  include <cuda/std/__utility/pod_tuple.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -345,7 +342,7 @@ __global__ static void __kernel_launcher(const _CCCL_GRID_CONSTANT _Config __con
 
 // Return void pointer to work around NVCC bug with __restrict__
 template <class _Kernel, class _Config, class... _Args>
-[[nodiscard]] _CCCL_API constexpr const void* __get_kernel_launcher() noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr const void* __get_kernel_launcher() noexcept
 {
   using _Hierarchy = typename _Config::hierarchy_type;
   using _BlockDesc = typename _Hierarchy::template level_desc_type<block_level>;
@@ -353,27 +350,9 @@ template <class _Kernel, class _Config, class... _Args>
 
   if constexpr (_BlockExts::rank_dynamic() == 0)
   {
-    if constexpr (_Hierarchy::has_level(cluster))
-    {
-      // todo(dabayer): Re-enable this once cuda::launch with kernels that were compiled with .blocksareclusters
-      // directive is fixed.
-      //
-      // using _ClusterDesc = typename _Hierarchy::template level_desc_type<cluster_level>;
-      // using _ClusterExts = typename _ClusterDesc::extents_type;
-      //
-      // if constexpr (_ClusterExts::rank_dynamic() == 0)
-      // {
-      //   return reinterpret_cast<const void*>(::cuda::__kernel_launcher_with_block_size<_Config, _Kernel, _Args...>);
-      // }
-      // else
-      {
-        return reinterpret_cast<const void*>(::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>);
-      }
-    }
-    else
-    {
-      return reinterpret_cast<const void*>(::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>);
-    }
+    // todo(dabayer): Re-enable the cluster-specific block-size launcher once cuda::launch with kernels compiled with
+    // .blocksareclusters directive is fixed.
+    return reinterpret_cast<const void*>(::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>);
   }
   else
   {
@@ -386,7 +365,7 @@ template <class _Kernel, class _Config, class... _Args>
 [[nodiscard]] _CCCL_HOST_API inline ::CUfunction __get_cufunction_of(const void* __kernel)
 {
   ::cudaFunction_t __kernel_cufunction{};
-  _CCCL_TRY_CUDA_API(::cudaGetFuncBySymbol, "Failed to get function from symbol", &__kernel_cufunction, __kernel);
+  _CCCL_TRY_RUNTIME_API(::cudaGetFuncBySymbol, "Failed to get function from symbol", &__kernel_cufunction, __kernel);
   return (::CUfunction) __kernel_cufunction;
 }
 
@@ -416,7 +395,7 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __k
   __config.attrs    = &__attrs[0];
   __config.numAttrs = 0;
 
-  ::cudaError_t __status = __detail::apply_kernel_config(__conf, __config, __kernel);
+  const ::cudaError_t __status = __detail::apply_kernel_config(__conf, __config, __kernel);
   if (__status != ::cudaSuccess)
   {
     _CCCL_THROW(::cuda::cuda_error, __status, "Failed to prepare a launch configuration");
@@ -510,7 +489,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            const _Kernel& __kernel,
                            _Args&&... __args)
 {
-  __ensure_current_context __dev_setter{__submitter};
+  const __ensure_current_context __dev_setter{__submitter};
   auto __combined = __conf.combine_with_default(__kernel);
   auto __launcher = ::cuda::__get_kernel_launcher<_Kernel,
                                                   decltype(__combined),
@@ -573,7 +552,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            void (*__kernel)(kernel_config<_Dimensions, _Config...>, _ExpArgs...),
                            _ActArgs&&... __args)
 {
-  __ensure_current_context __dev_setter{__submitter};
+  const __ensure_current_context __dev_setter{__submitter};
   return ::cuda::__launch_impl<kernel_config<_Dimensions, _Config...>,
                                _ExpArgs...>(
     cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
@@ -629,7 +608,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            void (*__kernel)(_ExpArgs...),
                            _ActArgs&&... __args)
 {
-  __ensure_current_context __dev_setter{__submitter};
+  const __ensure_current_context __dev_setter{__submitter};
   return ::cuda::__launch_impl<_ExpArgs...>(
     cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
     __conf,

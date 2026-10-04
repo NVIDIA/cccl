@@ -22,6 +22,6 @@
 
 #define _CCCL_CTAD_SUPPORTED_FOR_TYPE(_ClassName) \
   template <class... _Tag>                        \
-  _ClassName(typename _Tag::__allow_ctad...)->_ClassName<_Tag...>
+  _CCCL_DEDUCTION_GUIDE_ATTRIBUTES _ClassName(typename _Tag::__allow_ctad...) -> _ClassName<_Tag...>
 
 #endif // _CUDA_STD___UTILITY_CTAD_SUPPORT_H

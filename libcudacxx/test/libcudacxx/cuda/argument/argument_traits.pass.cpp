@@ -162,10 +162,14 @@ TEST_FUNC void test()
 
   // --- Free function bounds on plain values ---
 
-  static_assert(cuda::args::__lowest_(42) == cuda::std::numeric_limits<int>::lowest());
-  static_assert(cuda::args::__highest_(42) == (cuda::std::numeric_limits<int>::max)());
-  static_assert(cuda::args::__lowest_(1.0f) == cuda::std::numeric_limits<float>::lowest());
-  static_assert(cuda::args::__highest_(1.0f) == (cuda::std::numeric_limits<float>::max)());
+  static_assert(cuda::args::__lowest_(42) == 42);
+  static_assert(cuda::args::__lowest_(42) == cuda::args::__lowest_(cuda::args::immediate{42}));
+  static_assert(cuda::args::__highest_(42) == 42);
+  static_assert(cuda::args::__highest_(42) == cuda::args::__highest_(cuda::args::immediate{42}));
+  static_assert(cuda::args::__lowest_(1.0f) == 1.0f);
+  static_assert(cuda::args::__lowest_(1.0f) == cuda::args::__lowest_(cuda::args::immediate{1.0f}));
+  static_assert(cuda::args::__highest_(1.0f) == 1.0f);
+  static_assert(cuda::args::__highest_(1.0f) == cuda::args::__highest_(cuda::args::immediate{1.0f}));
 
   // --- Scalar and sequence wrappers expose distinct single-value traits ---
 

@@ -34,14 +34,15 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
-_CCCL_BEGIN_NAMESPACE_CPO(__min)
 
+_CCCL_BEGIN_NAMESPACE_CPO(__min)
 struct __fn
 {
   _CCCL_TEMPLATE(class _Tp, class _Proj = identity, class _Comp = ::cuda::std::ranges::less)
   _CCCL_REQUIRES(indirect_strict_weak_order<_Comp, projected<const _Tp*, _Proj>>)
-  [[nodiscard]] _CCCL_API constexpr const _Tp& operator()(
-    const _Tp& __a _CCCL_LIFETIMEBOUND, const _Tp& __b _CCCL_LIFETIMEBOUND, _Comp __comp = {}, _Proj __proj = {}) const
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(
+    const _Tp& __a _CCCL_LIFETIMEBOUND, const _Tp& __b _CCCL_LIFETIMEBOUND, _Comp __comp = {}, _Proj __proj = {})
+    -> const _Tp&
   {
     return ::cuda::std::invoke(__comp, ::cuda::std::invoke(__proj, __b), ::cuda::std::invoke(__proj, __a)) ? __b : __a;
   }
@@ -49,7 +50,7 @@ struct __fn
   _CCCL_TEMPLATE(class _Tp, class _Proj = identity, class _Comp = ::cuda::std::ranges::less)
   _CCCL_REQUIRES(indirect_strict_weak_order<_Comp, projected<const _Tp*, _Proj>>)
   [[nodiscard]] _CCCL_API constexpr _Tp
-  operator()(initializer_list<_Tp> __il, _Comp __comp = {}, _Proj __proj = {}) const
+  _CCCL_STATIC_CALL_OPERATOR(initializer_list<_Tp> __il, _Comp __comp = {}, _Proj __proj = {})
   {
     _CCCL_ASSERT(__il.begin() != __il.end(), "initializer_list must contain at least one element");
     return *::cuda::std::__min_element(__il.begin(), __il.end(), __comp, __proj);
@@ -58,10 +59,11 @@ struct __fn
   _CCCL_TEMPLATE(class _Rp, class _Proj = identity, class _Comp = ::cuda::std::ranges::less)
   _CCCL_REQUIRES(input_range<_Rp> _CCCL_AND indirect_strict_weak_order<_Comp, projected<iterator_t<_Rp>, _Proj>>
                    _CCCL_AND indirectly_copyable_storable<iterator_t<_Rp>, range_value_t<_Rp>*>)
-  [[nodiscard]] _CCCL_API constexpr range_value_t<_Rp> operator()(_Rp&& __r, _Comp __comp = {}, _Proj __proj = {}) const
+  [[nodiscard]] _CCCL_API constexpr range_value_t<_Rp>
+  _CCCL_STATIC_CALL_OPERATOR(_Rp&& __r, _Comp __comp = {}, _Proj __proj = {})
   {
-    auto __first = ::cuda::std::ranges::__begin_cpo{}(__r);
-    auto __last  = ::cuda::std::ranges::__end_cpo{}(__r);
+    auto __first = ::cuda::std::ranges::begin(__r);
+    auto __last  = ::cuda::std::ranges::end(__r);
 
     _CCCL_ASSERT(__first != __last, "range must contain at least one element");
 
@@ -88,9 +90,6 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto min = __min::__fn{};
-
-// We want to avoid using the CPO internally because of __tile__ access
-using __min_cpo = __min::__fn;
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES

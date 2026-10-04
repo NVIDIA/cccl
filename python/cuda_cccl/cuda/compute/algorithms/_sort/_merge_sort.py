@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from ... import _bindings, types
 from ... import _cccl_interop as cccl
-from ..._caching import cache_with_registered_key_functions
+from ..._caching import cache_build_results, cache_with_registered_key_functions
 from ..._cccl_interop import set_cccl_iterator_state
 from ..._serialization import BUILD_RESULTS, ITER, OP, Serializable
 from ..._utils.protocols import (
@@ -22,6 +22,7 @@ from ...typing import DeviceArrayLike, IteratorT, Operator
 
 class _MergeSort(Serializable):
     __slots__ = [
+        "_bound_build_result",
         "d_in_keys_cccl",
         "d_in_values_cccl",
         "d_out_keys_cccl",
@@ -64,15 +65,23 @@ class _MergeSort(Serializable):
         value_type = cccl.get_value_type(d_in_keys)
         self.op_cccl = op.compile((value_type, value_type), types.int8)
 
-        # Active build result, bound at __call__ from build_results (see resolve_build_result).
-        self.build_results = cccl.build_for_ccs(
+        self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceMergeSortBuildResult,
-            self.d_in_keys_cccl,
-            self.d_in_values_cccl,
-            self.d_out_keys_cccl,
-            self.d_out_values_cccl,
-            self.op_cccl,
+            d_in_keys,
+            d_in_values,
+            d_out_keys,
+            d_out_values,
+            op,
             compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
+                _bindings.DeviceMergeSortBuildResult,
+                self.d_in_keys_cccl,
+                self.d_in_values_cccl,
+                self.d_out_keys_cccl,
+                self.d_out_values_cccl,
+                self.op_cccl,
+                compute_capability=compute_capability,
+            ),
         )
 
     def __call__(
@@ -88,7 +97,9 @@ class _MergeSort(Serializable):
         stream=None,
     ):
         # Select (and lazily load) the build result for the current device.
-        self.loaded_build_result = cccl.resolve_build_result(self.build_results)
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
 
         present_in_values = d_in_values is not None
         present_out_values = d_out_values is not None

@@ -1,7 +1,6 @@
+import cuda.bench as bench
 import cupy as cp
 import numpy as np
-
-import cuda.bench as bench
 
 ALL_TYPES = {
     "I8": np.int8,

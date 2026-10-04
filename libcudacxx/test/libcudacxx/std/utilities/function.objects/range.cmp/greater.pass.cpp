@@ -43,7 +43,7 @@ static_assert(is_transparent<cuda::std::ranges::greater>);
 
 TEST_FUNC constexpr bool test()
 {
-  auto fn = cuda::std::ranges::greater();
+  [[maybe_unused]] auto fn = cuda::std::ranges::greater();
 
   assert(fn(MoveOnly(42), MoveOnly(41)));
 

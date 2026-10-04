@@ -40,7 +40,7 @@ template <class _Operator>
 struct __convert_to_bool
 {
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr bool operator()(_T1&& __t1, _T2&& __t2) const
+  [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(_T1&& __t1, _T2&& __t2)
   {
     static_assert(
       is_convertible_v<decltype(_Operator{}(::cuda::std::forward<_T1>(__t1), ::cuda::std::forward<_T2>(__t2))), bool>,

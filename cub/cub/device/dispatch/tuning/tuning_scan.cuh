@@ -55,7 +55,7 @@ enum class ScanAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] constexpr const char* to_string(ScanAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(ScanAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -63,9 +63,8 @@ namespace detail
       return "ScanAlgorithm::lookback";
     case ScanAlgorithm::lookahead:
       return "ScanAlgorithm::lookahead";
-    default:
-      return "<unknown ScanAlgorithm>";
   }
+  return "<unknown ScanAlgorithm>";
 }
 } // namespace detail
 #endif // _CCCL_HOSTED()
@@ -105,7 +104,7 @@ struct ScanLookbackPolicy
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning within a thread block
   LookbackDelayPolicy lookback_delay; //!< The policy configuring the delay used in decoupled lookback
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const ScanLookbackPolicy& lhs, const ScanLookbackPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
@@ -114,7 +113,7 @@ struct ScanLookbackPolicy
         && lhs.lookback_delay == rhs.lookback_delay;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const ScanLookbackPolicy& lhs, const ScanLookbackPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -133,6 +132,10 @@ struct ScanLookbackPolicy
 };
 
 //! The tuning policy for the lookahead scan algorithm in @ref DeviceScan.
+// block_idx_stages is [[deprecated]] below, which also makes the compiler-generated copy/move constructors of this
+// struct (used wherever a ScanLookaheadPolicy is copied or returned by value) trigger -Wdeprecated-declarations, so
+// we suppress it for the whole struct rather than only at the explicit uses of block_idx_stages further down.
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 struct ScanLookaheadPolicy
 {
   int reduce_and_scan_warps; //!< Number of warps used for reduction and scanning
@@ -147,16 +150,16 @@ struct ScanLookaheadPolicy
   // new value, it will be consumed by the scanStore squad, releasing the stage. So just always use 2 stages.
   int lookahead_stages = 2; //!< Number of pipeline stages for the lookahead squad
 
-  // If one less than the number of stages, we find a small speedup compared to setting it equal to num_stages. Not sure
-  // why.
-  int block_idx_stages = -1; //!< Number of pipeline stages for stealing block indices
+  //! Deprecated [Since CCCL 3.6]
+  CCCL_DEPRECATED_BECAUSE("block_idx_stages no longer has any effect and will be removed in CCCL 4.0") //
+  int block_idx_stages = -1;
 
   _CCCL_HOST_DEVICE_API constexpr int tile_size() const noexcept
   {
     return items_per_thread * reduce_and_scan_warps * cub::detail::warp_threads;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const ScanLookaheadPolicy& lhs, const ScanLookaheadPolicy& rhs) noexcept
   {
     return lhs.reduce_and_scan_warps == rhs.reduce_and_scan_warps && lhs.items_per_thread == rhs.items_per_thread
@@ -164,7 +167,7 @@ struct ScanLookaheadPolicy
         && lhs.lookahead_stages == rhs.lookahead_stages && lhs.block_idx_stages == rhs.block_idx_stages;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const ScanLookaheadPolicy& lhs, const ScanLookaheadPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -180,20 +183,24 @@ struct ScanLookaheadPolicy
   }
 #endif // _CCCL_HOSTED()
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 //! The tuning policy for all algorithms in @ref DeviceScan.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct ScanPolicy
 {
   ScanAlgorithm algorithm; //!< The scan algorithm to use
   ScanLookbackPolicy lookback; //!< The look-back scan policy (used when algorithm is @p lookback, otherwise ignored)
   ScanLookaheadPolicy lookahead; //!< The lookahead scan policy (used when algorithm is @p lookahead, otherwise ignored)
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const ScanPolicy& lhs, const ScanPolicy& rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const ScanPolicy& lhs, const ScanPolicy& rhs) noexcept
   {
     return lhs.lookback == rhs.lookback && lhs.lookahead == rhs.lookahead && lhs.algorithm == rhs.algorithm;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const ScanPolicy& lhs, const ScanPolicy& rhs) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const ScanPolicy& lhs, const ScanPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
@@ -266,7 +273,7 @@ constexpr _CCCL_HOST_DEVICE primitive_accum is_primitive_accum()
 template <class ScanOpT>
 constexpr _CCCL_HOST_DEVICE primitive_op is_primitive_op()
 {
-  return basic_binary_op_t<ScanOpT>::value ? primitive_op::yes : primitive_op::no;
+  return basic_binary_op_v<ScanOpT> ? primitive_op::yes : primitive_op::no;
 }
 
 // TODO(bgruber): remove this in CCCL 4.0 when we remove the public scan dispatcher
@@ -590,13 +597,13 @@ struct policy_hub
   static constexpr BlockStoreAlgorithm scan_transposed_store =
     large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
 
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     // GTX Titan: 29.5B items/s (232.4 GB/s) @ 48M 32-bit T
     using ScanPolicyT =
       agent_scan_policy<128, 12, AccumT, BLOCK_LOAD_DIRECT, LOAD_CA, BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED, BLOCK_SCAN_RAKING>;
   };
-  struct Policy520 : ChainedPolicy<520, Policy520, Policy500>
+  struct Policy520 : detail::chained_policy<520, Policy520, Policy500>
   {
     // Titan X: 32.47B items/s @ 48M 32-bit T
     using ScanPolicyT =
@@ -611,7 +618,7 @@ struct policy_hub
 
   struct Policy600
       : DefaultPolicy
-      , ChainedPolicy<600, Policy600, Policy520>
+      , detail::chained_policy<600, Policy600, Policy520>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick DefaultPolicy
@@ -629,7 +636,7 @@ struct policy_hub
   template <typename Tuning>
   _CCCL_HOST_DEVICE static auto select_agent_policy(long) -> typename DefaultPolicy::ScanPolicyT;
 
-  struct Policy750 : ChainedPolicy<750, Policy750, Policy600>
+  struct Policy750 : detail::chained_policy<750, Policy750, Policy600>
   {
     // Use values from tuning if a specialization exists that matches a benchmark, otherwise pick Policy600
     template <typename Tuning,
@@ -659,7 +666,7 @@ struct policy_hub
       decltype(select_agent_policy750<sm75_tuning<InputValueT, AccumT, OffsetT, classify_op<ScanOpT>>, InputValueT>(0));
   };
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy750>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy750>
   {
     using ScanPolicyT =
       decltype(select_agent_policy<sm80_tuning<classify_type<AccumT>,
@@ -670,15 +677,15 @@ struct policy_hub
 
   struct Policy860
       : DefaultPolicy
-      , ChainedPolicy<860, Policy860, Policy800>
+      , detail::chained_policy<860, Policy860, Policy800>
   {};
 
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
+  struct Policy900 : detail::chained_policy<900, Policy900, Policy860>
   {
     using ScanPolicyT = decltype(select_agent_policy<sm90_tuning<AccumT, is_primitive_op<ScanOpT>()>>(0));
   };
 
-  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
+  struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
   {
     // Use values from tuning if a specialization exists that matches a benchmark, otherwise pick Policy900
     template <typename Tuning,
@@ -750,19 +757,14 @@ _CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_scan_store(const Scan
   return warpspeed::SquadDesc{1, policy.reduce_and_scan_warps};
 }
 
-_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_load(const ScanLookaheadPolicy&)
+_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_load_and_next_idx(const ScanLookaheadPolicy&)
 {
   return warpspeed::SquadDesc{2, 1}; // no point in being more than 1 warp
 }
 
-_CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_sched(const ScanLookaheadPolicy&)
-{
-  return warpspeed::SquadDesc{3, 1}; // no point in being more than 1 warp
-}
-
 _CCCL_HOST_DEVICE_API constexpr warpspeed::SquadDesc squad_lookahead(const ScanLookaheadPolicy&)
 {
-  return warpspeed::SquadDesc{4, 1}; // must have 1 warp
+  return warpspeed::SquadDesc{3, 1}; // must have 1 warp
 }
 
 // TODO(bgruber): put this somewhere else
@@ -812,15 +814,14 @@ _CCCL_HOST_DEVICE_API constexpr void setup_scan_resources(
   const warpspeed::SquadDesc scanSquads[] = {
     squad_reduce(policy),
     squad_scan_store(policy),
-    squad_load(policy),
-    squad_sched(policy),
+    squad_load_and_next_idx(policy),
     squad_lookahead(policy),
   };
 
-  smemInOut.addPhase(syncHandler, smemAllocator, squad_load(policy));
+  smemInOut.addPhase(syncHandler, smemAllocator, squad_load_and_next_idx(policy));
   smemInOut.addPhase(syncHandler, smemAllocator, {squad_reduce(policy), squad_scan_store(policy)});
 
-  smemNextBlockIdx.addPhase(syncHandler, smemAllocator, squad_sched(policy));
+  smemNextBlockIdx.addPhase(syncHandler, smemAllocator, squad_load_and_next_idx(policy));
   smemNextBlockIdx.addPhase(syncHandler, smemAllocator, scanSquads);
 
   smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_lookahead(policy));
@@ -849,14 +850,12 @@ _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
   const auto reduce_squad   = squad_reduce(policy);
   const int sum_thread_warp = (reduce_squad.threadCount() + reduce_squad.warpCount()) * accum_size;
 
-  const int num_block_idx_stages =
-    policy.block_idx_stages > 0 ? policy.block_idx_stages : ::cuda::std::max(1, num_stages + policy.block_idx_stages);
   const int num_sum_exclusive_cta_stages =
     policy.lookahead_stages > 0 ? policy.lookahead_stages : ::cuda::std::max(1, num_stages + policy.lookahead_stages);
 
   void* inout_base = smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(inout_stride * num_stages), align_inout);
   void* next_block_idx_base =
-    smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(sizeof(uint4) * num_block_idx_stages), alignof(uint4));
+    smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(sizeof(uint4) * num_stages), alignof(uint4));
   void* sum_exclusive_base =
     smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(accum_size * num_sum_exclusive_cta_stages), accum_align);
   void* sum_thread_warp_base =
@@ -865,11 +864,7 @@ _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
   ScanResourcesRaw res = {
     warpspeed::SmemResourceRaw{syncHandler, inout_base, inout_stride, inout_stride, num_stages},
     warpspeed::SmemResourceRaw{
-      syncHandler,
-      next_block_idx_base,
-      static_cast<int>(sizeof(uint4)),
-      static_cast<int>(sizeof(uint4)),
-      num_block_idx_stages},
+      syncHandler, next_block_idx_base, static_cast<int>(sizeof(uint4)), static_cast<int>(sizeof(uint4)), num_stages},
     warpspeed::SmemResourceRaw{syncHandler, sum_exclusive_base, accum_size, accum_size, num_sum_exclusive_cta_stages},
     warpspeed::SmemResourceRaw{syncHandler, sum_thread_warp_base, sum_thread_warp, sum_thread_warp, num_stages},
   };
@@ -886,6 +881,7 @@ _CCCL_HOST_DEVICE_API constexpr auto smem_for_stages(
   return static_cast<int>(smemAllocator.sizeBytes());
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct policy_selector
 {
   int input_value_size;
@@ -959,10 +955,44 @@ struct policy_selector
     {
       return get_sm120_fallback_lookahead_policy();
     }
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
+    {
+      // tunings from cub/benchmarks/bench/scan/exclusive/sum.lookahead.cu
+      if (accum_is_primitive_or_trivially_copy_constructible)
+      {
+        switch (input_value_size)
+        {
+          case 2:
+            if (input_type == type_t::other)
+            {
+              // wrps_6.lbi_8.ipt_104.lbs_2.bis_2 ()  1.249803  1.041534  1.270719  1.566667
+              return ScanLookaheadPolicy{6, 104 - 1, 8, 2};
+            }
+            break;
+          case 4:
+            if (input_type == type_t::float32)
+            {
+              // wrps_3.lbi_8.ipt_120.lbs_2.bis_-2 ()  1.127914  1.060261  1.129389  1.169118
+              return ScanLookaheadPolicy{3, 120 - 1, 8, 2};
+            }
+            // wrps_4.lbi_5.ipt_88.lbs_-2.bis_-2 ()  1.079626  1.013468  1.090259  1.206897
+            return ScanLookaheadPolicy{4, 88 - 1, 5, -2};
+          case 8:
+            if (input_type == type_t::float64)
+            {
+              break;
+            }
+            // wrps_2.lbi_7.ipt_88.lbs_-2.bis_-2 ()  1.032518  0.993770  1.029765  1.046025
+            return ScanLookaheadPolicy{2, 88 - 1, 7, -2};
+          default:
+            break;
+        }
+      }
+    }
     if (cc >= ::cuda::compute_capability{10, 0})
     {
       // tunings from cub/benchmarks/bench/scan/exclusive/sum.lookahead.cu
-      if (operation_t == op_kind_t::plus && accum_is_primitive_or_trivially_copy_constructible)
+      if (accum_is_primitive_or_trivially_copy_constructible)
       {
         switch (input_value_size)
         {
@@ -992,10 +1022,13 @@ struct policy_selector
               return ScanLookaheadPolicy{4, 88 - 1, 3};
             }
             // wrps_4.lbi_3.ipt_80 ()  1.019078  0.999708  1.017346  1.052592
-            return ScanLookaheadPolicy{4, 80 - 1, 3};
+            // wrps_8.lbi_5.ipt_32.lbs_1 ()  1.014739  0.976501  1.013290  1.062500 (score relative to the tuning above)
+            return ScanLookaheadPolicy{8, 32 - 1, 5, 1};
           case 8:
             // wrps_2.lbi_5.ipt_88 ()  1.085781   1.0  1.079245  1.103545
-            return ScanLookaheadPolicy{2, 88 - 1, 5};
+            // wrps_2.lbi_7.ipt_88.lbs_-2 ()  1.011922  0.997768  1.010818  1.039350 (score relative to the tuning
+            // above)
+            return ScanLookaheadPolicy{2, 88 - 1, 7, -2};
           case 16:
             // wrps_5.lbi_8.ipt_16 ()  1.159883  1.000000  1.143709  1.275821
             return ScanLookaheadPolicy{5, 16 - 1, 8};
@@ -1005,6 +1038,11 @@ struct policy_selector
         }
       }
 
+      return get_sm100_fallback_lookahead_policy();
+    }
+    if (cc >= ::cuda::compute_capability{9, 0} && require_stable_reduction_order)
+    {
+      // TODO(srinivasyadav18): tune for Hopper, using Blackwell default tunings for now.
       return get_sm100_fallback_lookahead_policy();
     }
     return {};
@@ -1056,9 +1094,9 @@ struct policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanPolicy
   {
     // we first try to get the valid lookahead implementation. if we can't run it, fall back to the old scan impl.
-    // For stable reduction order (fp + plus), lookahead can only be used on sm_100+, Older arches fall back to classic
+    // For stable reduction order (fp + plus), lookahead can only be used on sm_90+, Older arches fall back to classic
     // lookback stable reduction order implementation below.
-    if (!require_stable_reduction_order || cc >= ::cuda::compute_capability{10, 0})
+    if (!require_stable_reduction_order || cc >= ::cuda::compute_capability{9, 0})
     {
       auto lookahead_policy_opt = get_lookahead_policy(cc);
       if (lookahead_policy_opt && can_use_lookahead(cc, *lookahead_policy_opt))

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6077402: error: "call to non-tile function not supported!"
+// UNSUPPORTED: force-tile
+// error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
 
 // <cuda/std/complex>
 
@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <class T>
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   T lhs(-8.5);
   cuda::std::complex<T> rhs(1.5, 2.5);
@@ -39,12 +39,12 @@ int main(int, char**)
 #if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
-#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
-#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
+#endif // _LIBCUDACXX_HAS_NVBF16()
 #if _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
   static_assert(test<float>());
   static_assert(test<double>());

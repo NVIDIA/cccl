@@ -106,6 +106,7 @@ struct NonTrivialDestructor
   }
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class InIter, class OutIter>
 TEST_FUNC constexpr void test()
 {
@@ -178,6 +179,7 @@ TEST_FUNC constexpr void test1()
 }
 #endif // _LIBCUDACXX_HAS_MEMORY
 
+_CCCL_EXEC_CHECK_DISABLE
 TEST_FUNC constexpr bool test()
 {
   test<bidirectional_iterator<int*>, bidirectional_iterator<int*>>();
@@ -198,9 +200,9 @@ TEST_FUNC constexpr bool test()
 #if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_HOST, (test<int*, host_only_iterator<int*>>();))
 #endif // !TEST_COMPILER(NVRTC)
-#if TEST_CUDA_COMPILATION()
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
   NV_IF_TARGET(NV_IS_DEVICE, (test<int*, device_only_iterator<int*>>();))
-#endif // TEST_CUDA_COMPILATION()
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 
 #if defined(_LIBCUDACXX_HAS_MEMORY)
   test1<bidirectional_iterator<cuda::std::unique_ptr<int>*>, bidirectional_iterator<cuda::std::unique_ptr<int>*>>();

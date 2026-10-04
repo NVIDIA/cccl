@@ -22,6 +22,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -73,7 +74,7 @@ public:
    */
   void push(::std::shared_ptr<exec_place> p)
   {
-    s.push(::std::vector<::std::shared_ptr<exec_place>>{::std::move(p)});
+    s.push(::std::vector<::std::shared_ptr<exec_place>>{::cuda::std::move(p)});
   }
 
   /**

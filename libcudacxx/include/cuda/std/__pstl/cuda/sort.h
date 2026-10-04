@@ -98,7 +98,7 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
 
     // Determine temporary device storage requirements for device_sort
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       __device_radix_sort,
       "__pstl_cuda_sort: determination of device storage for cub::DeviceRadixSort::SortKeys failed",
       static_cast<void*>(nullptr),
@@ -114,7 +114,7 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
       __buffer.d_buffers[1] = __storage.template __get_raw_ptr<0>();
 
       // Run the kernel
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         __device_radix_sort,
         "__pstl_cuda_sort: kernel launch of cub::DeviceRadixSort::SortKeys failed",
         __storage.__get_temp_storage(),
@@ -128,7 +128,7 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
       // Need to copy the memory back
       if (__buffer.selector != 0)
       {
-        _CCCL_TRY_CUDA_API(
+        _CCCL_TRY_RUNTIME_API(
           CUB_NS_QUALIFIER::DeviceTransform::TransformIf,
           "__pstl_cuda_sort: kernel launch of cub::DeviceTransform::TransformIf failed",
           tuple{__storage.template __get_raw_ptr<0>()},
@@ -151,7 +151,7 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
     auto __stream      = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{::cudaStream_t{}}, __policy);
 
     // Run the kernel
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceMergeSort::SortKeys,
       "__pstl_cuda_sort: kernel launch of cub::DeviceMergeSort::SortKeys failed",
       ::cuda::std::move(__first),
@@ -164,11 +164,8 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _BinaryPredicate)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator>)
-  _CCCL_HOST_API void operator()(
-    [[maybe_unused]] const _Policy& __policy,
-    _InputIterator __first,
-    _InputIterator __last,
-    _BinaryPredicate __pred) const
+  _CCCL_HOST_API void _CCCL_STATIC_CALL_OPERATOR(
+    [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _BinaryPredicate __pred)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
     {

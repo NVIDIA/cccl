@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // <chrono>
 
 // duration
@@ -16,9 +19,6 @@
 
 // overflow should SFINAE instead of error out, LWG 2094
 
-// XFAIL: enable-tile
-// error: a non-__tile__ variable cannot be used in tile code
-
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/ratio>
@@ -27,8 +27,8 @@
 
 TEST_GLOBAL_VARIABLE bool called = false;
 
-TEST_FUNC void f(cuda::std::chrono::milliseconds);
-TEST_FUNC void f(cuda::std::chrono::seconds)
+TEST_HOST_DEVICE_FUNC void f(cuda::std::chrono::milliseconds);
+TEST_HOST_DEVICE_FUNC void f(cuda::std::chrono::seconds)
 {
   called = true;
 }

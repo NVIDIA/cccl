@@ -151,11 +151,19 @@ class _BuildResults(_Kind):
         self.cls = cls
 
     def write(self, w: codec.Writer, value: Any, obj: Any) -> None:
-        items = sorted(value.items())
-        w.u32(len(items))
-        for cc, build_result in items:
+        from .._caching import _PerCCBuildResults
+
+        # Wrappers always hold a _PerCCBuildResults (build_for_ccs and
+        # read() below both produce one). serialize_build_result takes the
+        # per-cc source lock, so serialization cannot observe a source whose
+        # first device load is still in progress; a plain dict here would
+        # silently bypass that lock.
+        assert isinstance(value, _PerCCBuildResults)
+        ccs = sorted(value)
+        w.u32(len(ccs))
+        for cc in ccs:
             w.u32(int(cc))
-            w.blob(build_result.serialize())
+            w.blob(value.serialize_build_result(cc))
 
     def read(self, r: codec.Reader, obj: Any) -> Any:
         count = r.u32()
@@ -172,7 +180,10 @@ class _BuildResults(_Kind):
                     f"duplicate compute-capability key {cc} in build_results blob"
                 )
             result[cc] = self.cls.deserialize(blob, load=False, check_cc=check_cc)
-        return result
+
+        from .._caching import _PerCCBuildResults
+
+        return _PerCCBuildResults(result)
 
 
 def BUILD_RESULTS(cls: type) -> _BuildResults:
@@ -231,6 +242,11 @@ class Serializable:
     # Subclasses declare their serialized members here.
     __serialization_schema__: tuple = ()
 
+    # Construction-time binding of a default-build wrapper's loaded result
+    # (see cache_build_results). Annotation only: storage comes from each
+    # subclass's __slots__; __init__ or deserialize() below assigns it.
+    _bound_build_result: Any
+
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         Serializable._registry[cls.__qualname__] = cls
@@ -259,6 +275,10 @@ class Serializable:
         """
         r = codec.open(blob, cls.__qualname__)
         obj = cls.__new__(cls)
+        # deserialize() bypasses __init__, which is where default-build
+        # wrappers bind their loaded result (see cache_build_results); an
+        # unbound wrapper resolves per call instead.
+        obj._bound_build_result = None
         for attr, kind in cls.__serialization_schema__:
             setattr(obj, attr, kind.read(r, obj))
         obj._after_deserialize()

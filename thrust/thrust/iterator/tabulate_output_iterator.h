@@ -36,6 +36,9 @@ public:
       , index(index)
   {}
 
+  // Write-only proxy: assignment invokes fun with the index and the assigned value.
+  // Returning by value keeps the proxy usable in a chained `*it = a = b` expression.
+  // NOLINTBEGIN(misc-unconventional-assign-operator)
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T>
   _CCCL_HOST_DEVICE tabulate_output_iterator_proxy operator=(const T& x)
@@ -43,6 +46,7 @@ public:
     fun(index, x);
     return *this;
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
 private:
   BinaryFunction fun;
@@ -104,8 +108,8 @@ inline constexpr bool is_proxy_reference_v<tabulate_output_iterator_proxy<Binary
 //!
 //! \see make_tabulate_output_iterator
 template <typename BinaryFunction, typename System = use_default, typename DifferenceT = ptrdiff_t>
-class CCCL_DEPRECATED_BECAUSE("Use cuda::tabulate_output_iterator instead") tabulate_output_iterator
-    : public detail::make_tabulate_output_iterator_base<BinaryFunction, System, DifferenceT>
+class CCCL_DEPRECATED_BECAUSE("Use cuda::tabulate_output_iterator instead")
+tabulate_output_iterator : public detail::make_tabulate_output_iterator_base<BinaryFunction, System, DifferenceT>
 {
 public:
   //! \cond

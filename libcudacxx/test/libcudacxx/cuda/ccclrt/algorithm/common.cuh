@@ -51,7 +51,7 @@ inline int get_expected_value(uint8_t pattern_byte)
 template <typename Result>
 void check_result_and_erase(cuda::stream_ref stream, Result&& result, uint8_t pattern_byte = fill_byte)
 {
-  int expected = get_expected_value(pattern_byte);
+  const int expected = get_expected_value(pattern_byte);
 
   stream.sync();
   for (int& i : result)
@@ -64,7 +64,7 @@ void check_result_and_erase(cuda::stream_ref stream, Result&& result, uint8_t pa
 template <typename Layout = cuda::std::layout_right, typename Extents>
 auto make_buffer_for_mdspan(cuda::stream_ref stream, Extents extents, char value = 0)
 {
-  auto mapping = typename Layout::template mapping<decltype(extents)>{extents};
+  auto mapping = typename Layout::template mapping<Extents>{extents};
 
   auto buffer = make_pinned_memory_buffer<int>(stream, mapping.required_span_size());
 
@@ -76,14 +76,14 @@ auto make_buffer_for_mdspan(cuda::stream_ref stream, Extents extents, char value
 
 inline auto create_fake_strided_mdspan()
 {
-  cuda::std::dextents<size_t, 3> dynamic_extents{1, 2, 3};
-  cuda::std::array<size_t, 3> strides{12, 4, 1};
+  const cuda::std::dextents<size_t, 3> dynamic_extents{1, 2, 3};
+  const cuda::std::array<size_t, 3> strides{12, 4, 1};
 #if _CCCL_CUDACC_BELOW(12, 6)
   auto map = cuda::std::layout_stride::mapping{dynamic_extents, strides};
 #else
-  cuda::std::layout_stride::mapping map{dynamic_extents, strides};
+  const cuda::std::layout_stride::mapping map{dynamic_extents, strides};
 #endif
-  return cuda::std::mdspan<int, decltype(dynamic_extents), cuda::std::layout_stride>(nullptr, map);
+  return cuda::std::mdspan<int, cuda::std::dextents<size_t, 3>, cuda::std::layout_stride>(nullptr, map);
 };
 
 #endif // TEST_LIBCUDACXX_CCCLRT_ALGORITHM_COMMON_CUH

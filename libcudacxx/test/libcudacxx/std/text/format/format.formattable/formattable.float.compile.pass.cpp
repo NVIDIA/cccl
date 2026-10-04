@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 // <cuda/std/format>
 
 // template<class T, class charT>
@@ -18,13 +21,13 @@
 #include "test_macros.h"
 
 template <class T, class CharT>
-TEST_FUNC void assert_is_not_formattable()
+TEST_HOST_DEVICE_FUNC void assert_is_not_formattable()
 {
   static_assert(!cuda::std::formattable<T, CharT>);
 }
 
 template <class T, class CharT>
-TEST_FUNC void assert_is_formattable()
+TEST_HOST_DEVICE_FUNC void assert_is_formattable()
 {
   // Only formatters for CharT == char || CharT == wchar_t are enabled for the
   // standard formatters. When CharT is a different type the formatter should
@@ -42,7 +45,7 @@ TEST_FUNC void assert_is_formattable()
 }
 
 template <class CharT>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   assert_is_formattable<float, CharT>();
   assert_is_formattable<double, CharT>();
@@ -51,7 +54,7 @@ TEST_FUNC void test()
 #endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test<char>();
 #if _CCCL_HAS_WCHAR_T()

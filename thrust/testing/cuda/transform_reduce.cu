@@ -25,41 +25,38 @@ void TestTransformReduceDevice(ExecutionPolicy exec)
   transform_reduce_kernel<<<1, 1>>>(
     exec, data.begin(), data.end(), ::cuda::std::negate<T>(), init, ::cuda::std::plus<T>(), result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(8, (T) result[0]);
+  REQUIRE(8 == (T) result[0]);
 }
 
-void TestTransformReduceDeviceSeq()
+TEST_CASE("TestTransformReduceDeviceSeq", "[transform_reduce]")
 {
   TestTransformReduceDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestTransformReduceDeviceSeq);
 
-void TestTransformReduceDeviceDevice()
+TEST_CASE("TestTransformReduceDeviceDevice", "[transform_reduce]")
 {
   TestTransformReduceDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestTransformReduceDeviceDevice);
 #endif
 
-void TestTransformReduceCudaStreams()
+TEST_CASE("TestTransformReduceCudaStreams", "[transform_reduce]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
 
   Vector data{1, -2, 3};
-  T init = 10;
+  const T init = 10;
 
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  T result = thrust::transform_reduce(
+  const T result = thrust::transform_reduce(
     thrust::cuda::par.on(s), data.begin(), data.end(), ::cuda::std::negate<T>(), init, ::cuda::std::plus<T>());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(8, result);
+  REQUIRE(8 == result);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestTransformReduceCudaStreams);

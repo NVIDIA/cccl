@@ -51,6 +51,7 @@
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/signbit.h>
 #include <cuda/std/limits>
+#include <cuda/std/numbers>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
@@ -180,9 +181,8 @@ _CCCL_HOST_DEVICE inline complex<float> casinhf(complex<float> z)
 {
   float x, y, ax, ay, rx, ry, B, sqrt_A2my2, new_y;
   int B_is_usable;
-  complex<float> w;
+  complex<float> w{};
   const float RECIP_EPSILON = 1.0f / FLT_EPSILON;
-  const float m_ln2         = 6.9314718055994531e-1f; /*  0x162e42fefa39ef.0p-53 */
   x                         = z.real();
   y                         = z.imag();
   ax                        = ::cuda::std::fabsf(x);
@@ -209,11 +209,11 @@ _CCCL_HOST_DEVICE inline complex<float> casinhf(complex<float> z)
   {
     if (::cuda::std::signbit(x) == 0)
     {
-      w = clog_for_large_values(z) + m_ln2;
+      w = clog_for_large_values(z) + ::cuda::std::__numbers<float>::__ln2();
     }
     else
     {
-      w = clog_for_large_values(-z) + m_ln2;
+      w = clog_for_large_values(-z) + ::cuda::std::__numbers<float>::__ln2();
     }
     return (complex<float>(::cuda::std::copysignf(w.real(), x), ::cuda::std::copysignf(w.imag(), y)));
   }
@@ -245,7 +245,7 @@ _CCCL_HOST_DEVICE inline complex<float> casinhf(complex<float> z)
 
 _CCCL_HOST_DEVICE inline complex<float> casinf(complex<float> z)
 {
-  complex<float> w = casinhf(complex<float>(z.imag(), z.real()));
+  const complex<float> w = casinhf(complex<float>(z.imag(), z.real()));
 
   return (complex<float>(w.imag(), w.real()));
 }
@@ -255,10 +255,9 @@ _CCCL_HOST_DEVICE inline complex<float> cacosf(complex<float> z)
   float x, y, ax, ay, rx, ry, B, sqrt_A2mx2, new_x;
   int sx, sy;
   int B_is_usable;
-  complex<float> w;
+  complex<float> w{};
   const float pio2_hi          = 1.5707963267948966e0f; /*  0x1921fb54442d18.0p-52 */
   const volatile float pio2_lo = 6.1232339957367659e-17f; /*  0x11a62633145c07.0p-106 */
-  const float m_ln2            = 6.9314718055994531e-1f; /*  0x162e42fefa39ef.0p-53 */
 
   x  = z.real();
   y  = z.imag();
@@ -289,7 +288,7 @@ _CCCL_HOST_DEVICE inline complex<float> cacosf(complex<float> z)
   {
     w  = clog_for_large_values(z);
     rx = ::cuda::std::fabsf(w.imag());
-    ry = w.real() + m_ln2;
+    ry = w.real() + ::cuda::std::__numbers<float>::__ln2();
     if (sy == 0)
     {
       ry = -ry;
@@ -342,10 +341,8 @@ _CCCL_HOST_DEVICE inline complex<float> cacosf(complex<float> z)
 
 _CCCL_HOST_DEVICE inline complex<float> cacoshf(complex<float> z)
 {
-  complex<float> w;
+  const complex<float> w = cacosf(z);
   float rx, ry;
-
-  w  = cacosf(z);
   rx = w.real();
   ry = w.imag();
   /* cacosh(NaN + I*NaN) = NaN + I*NaN */
@@ -374,7 +371,7 @@ _CCCL_HOST_DEVICE inline complex<float> clog_for_large_values(complex<float> z)
 {
   float x, y;
   float ax, ay, t;
-  const float m_e = 2.7182818284590452e0f; /*  0x15bf0a8b145769.0p-51 */
+  constexpr auto m_e = ::cuda::std::__numbers<float>::__e();
 
   x  = z.real();
   y  = z.imag();
@@ -506,10 +503,9 @@ _CCCL_HOST_DEVICE inline complex<float> catanhf(complex<float> z)
     return (z);
   }
 
-  const float m_ln2 = 6.9314718056e-1f; /*  0xb17218.0p-24 */
   if (ax == 1 && ay < FLT_EPSILON)
   {
-    rx = (m_ln2 - ::cuda::std::logf(ay)) / 2;
+    rx = (::cuda::std::__numbers<float>::__ln2() - ::cuda::std::logf(ay)) / 2;
   }
   else
   {
@@ -534,7 +530,7 @@ _CCCL_HOST_DEVICE inline complex<float> catanhf(complex<float> z)
 
 _CCCL_HOST_DEVICE inline complex<float> catanf(complex<float> z)
 {
-  complex<float> w = catanhf(complex<float>(z.imag(), z.real()));
+  const complex<float> w = catanhf(complex<float>(z.imag(), z.real()));
   return (complex<float>(w.imag(), w.real()));
 }
 } // namespace detail::complex

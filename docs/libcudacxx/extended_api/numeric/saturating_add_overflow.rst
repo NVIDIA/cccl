@@ -75,4 +75,4 @@ Example
         cudaDeviceSynchronize();
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/evj813118>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/f4jrMb5cW>`_

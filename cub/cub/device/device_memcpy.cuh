@@ -8,6 +8,13 @@
 
 #include <cub/config.cuh>
 
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/device/device_memcpy.cuh> is not supported when compiling with NVRTC. Include block-, warp-, or thread-level primitives instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -32,8 +39,8 @@ CUB_NAMESPACE_BEGIN
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! All algorithms in DeviceMemcpy that accept an environment can be tuned by passing a custom :ref:`policy selector
-//! <cub-policy-selectors>` that returns a @ref BatchedCopyPolicy, as shown in the example below:
+//! All algorithms in DeviceMemcpy can be tuned by passing a custom :ref:`policy selector
+//! <cub-policy-selectors>` that returns a :cpp:struct:`cub::BatchedCopyPolicy`, as shown in the example below:
 //!
 //!  .. literalinclude:: ../../../cub/test/catch2_test_device_memcpy_env_api.cu
 //!      :language: c++
@@ -142,6 +149,11 @@ struct DeviceMemcpy
   //!   **[inferred]** Device-accessible random-access input iterator type providing the number of bytes
   //!   to be copied for each pair of buffers
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -160,11 +172,14 @@ struct DeviceMemcpy
   //! @param[in] num_buffers
   //!   The total number of buffer pairs
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputBufferIt, typename OutputBufferIt, typename BufferSizeIteratorT>
+  template <typename InputBufferIt,
+            typename OutputBufferIt,
+            typename BufferSizeIteratorT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t Batched(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -172,7 +187,7 @@ struct DeviceMemcpy
     OutputBufferIt output_buffer_it,
     BufferSizeIteratorT buffer_sizes,
     ::cuda::std::int64_t num_buffers,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMemcpy::Batched");
     static_assert(::cuda::std::is_pointer_v<cub::detail::it_value_t<InputBufferIt>>,
@@ -185,10 +200,14 @@ struct DeviceMemcpy
     // Integer type large enough to hold any offset in [0, num_thread_blocks_launched), where a safe
     // upper bound on num_thread_blocks_launched can be assumed to be given by
     // IDIV_CEIL(num_buffers, 64)
-    using BlockOffsetT = uint32_t;
+    using BlockOffsetT            = uint32_t;
+    using default_policy_selector = detail::batch_memcpy::policy_selector;
 
-    return detail::batch_memcpy::dispatch<CopyAlg::Memcpy, BlockOffsetT>(
-      d_temp_storage, temp_storage_bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream);
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::batch_memcpy::dispatch<CopyAlg::Memcpy, BlockOffsetT>(
+          storage, bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream, policy_selector);
+      });
   }
 
   //! @rst
@@ -262,7 +281,7 @@ struct DeviceMemcpy
           OutputBufferIt output_buffer_it,
           BufferSizeIteratorT buffer_sizes,
           ::cuda::std::int64_t num_buffers,
-          EnvT env = {})
+          const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMemcpy::Batched");
     static_assert(::cuda::std::is_pointer_v<cub::detail::it_value_t<InputBufferIt>>,

@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 // <algorithm>
 
 // template<class RandomAccessIterator, class UniformRandomNumberGenerator>

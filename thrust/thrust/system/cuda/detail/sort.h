@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2016-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
 #pragma once
@@ -35,6 +35,7 @@
 #  include <cuda/__cmath/round_up.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__memory/pointer_traits.h>
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_arithmetic.h>
@@ -90,7 +91,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
   return status;
 }
 
-template <class SORT_ITEMS, class /* STABLE */, class KeysIt, class ItemsIt, class Size, class CompareOp>
+template <class SortItems, class /* STABLE */, class KeysIt, class ItemsIt, class Size, class CompareOp>
 THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -105,32 +106,32 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
     return cudaSuccess;
   }
 
-  thrust::detail::integral_constant<bool, SORT_ITEMS::value> sort_items{};
+  const thrust::detail::integral_constant<bool, SortItems::value> sort_items{};
 
   return doit_step(d_temp_storage, temp_storage_bytes, keys, items, keys_count, compare_op, stream, sort_items);
 }
 
-template <typename SORT_ITEMS, typename STABLE, typename Derived, typename KeysIt, typename ItemsIt, typename CompareOp>
+template <typename SortItems, typename STABLE, typename Derived, typename KeysIt, typename ItemsIt, typename CompareOp>
 THRUST_RUNTIME_FUNCTION void merge_sort(
   execution_policy<Derived>& policy, KeysIt keys_first, KeysIt keys_last, ItemsIt items_first, CompareOp compare_op)
 
 {
   using size_type = thrust::detail::it_difference_t<KeysIt>;
 
-  size_type count = static_cast<size_type>(::cuda::std::distance(keys_first, keys_last));
+  const size_type count = static_cast<size_type>(::cuda::std::distance(keys_first, keys_last));
 
   size_t storage_size = 0;
   cudaStream_t stream = cuda_cub::stream(policy);
 
   cudaError_t status;
-  status = doit_step<SORT_ITEMS, STABLE>(nullptr, storage_size, keys_first, items_first, count, compare_op, stream);
+  status = doit_step<SortItems, STABLE>(nullptr, storage_size, keys_first, items_first, count, compare_op, stream);
   cuda_cub::throw_on_error(status, "merge_sort: failed on 1st step");
 
   // Allocate temporary storage.
   thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
   void* ptr = static_cast<void*>(tmp.data().get());
 
-  status = doit_step<SORT_ITEMS, STABLE>(ptr, storage_size, keys_first, items_first, count, compare_op, stream);
+  status = doit_step<SortItems, STABLE>(ptr, storage_size, keys_first, items_first, count, compare_op, stream);
   cuda_cub::throw_on_error(status, "merge_sort: failed on 2nd step");
 
   status = cuda_cub::synchronize_optional(policy);
@@ -140,7 +141,7 @@ THRUST_RUNTIME_FUNCTION void merge_sort(
 
 namespace __radix_sort
 {
-template <class SORT_ITEMS, class Comparator>
+template <class SortItems, class Comparator>
 struct dispatch;
 
 // sort keys in ascending order
@@ -215,7 +216,7 @@ struct dispatch<thrust::detail::true_type, ::cuda::std::greater<KeyOrVoid>>
   }
 }; // struct dispatch -- sort pairs in descending order;
 
-template <typename SORT_ITEMS, typename Derived, typename Key, typename Item, typename Size, typename CompareOp>
+template <typename SortItems, typename Derived, typename Key, typename Item, typename Size, typename CompareOp>
 THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* keys, Item* items, Size count, CompareOp)
 {
   size_t temp_storage_bytes = 0;
@@ -225,18 +226,18 @@ THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* 
   cub::DoubleBuffer<Item> items_buffer(items, nullptr);
 
   Size keys_count  = count;
-  Size items_count = SORT_ITEMS::value ? count : 0;
+  Size items_count = SortItems::value ? count : 0;
 
   cudaError_t status;
 
   status =
-    dispatch<SORT_ITEMS, CompareOp>::doit(nullptr, temp_storage_bytes, keys_buffer, items_buffer, keys_count, stream);
+    dispatch<SortItems, CompareOp>::doit(nullptr, temp_storage_bytes, keys_buffer, items_buffer, keys_count, stream);
   cuda_cub::throw_on_error(status, "radix_sort: failed on 1st step");
 
-  size_t keys_temp_storage  = ::cuda::round_up(sizeof(Key) * keys_count, 128);
-  size_t items_temp_storage = ::cuda::round_up(sizeof(Item) * items_count, 128);
+  const size_t keys_temp_storage  = ::cuda::round_up(sizeof(Key) * keys_count, 128);
+  const size_t items_temp_storage = ::cuda::round_up(sizeof(Item) * items_count, 128);
 
-  size_t storage_size = keys_temp_storage + items_temp_storage + temp_storage_bytes;
+  const size_t storage_size = keys_temp_storage + items_temp_storage + temp_storage_bytes;
 
   // Allocate temporary storage.
   thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
@@ -245,8 +246,7 @@ THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* 
   items_buffer.d_buffers[1] = thrust::detail::aligned_reinterpret_cast<Item*>(tmp.data().get() + keys_temp_storage);
   void* ptr                 = static_cast<void*>(tmp.data().get() + keys_temp_storage + items_temp_storage);
 
-  status =
-    dispatch<SORT_ITEMS, CompareOp>::doit(ptr, temp_storage_bytes, keys_buffer, items_buffer, keys_count, stream);
+  status = dispatch<SortItems, CompareOp>::doit(ptr, temp_storage_bytes, keys_buffer, items_buffer, keys_count, stream);
   cuda_cub::throw_on_error(status, "radix_sort: failed on 2nd step");
 
   if (keys_buffer.selector != 0)
@@ -254,7 +254,7 @@ THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* 
     Key* temp_ptr = reinterpret_cast<Key*>(keys_buffer.d_buffers[1]);
     cuda_cub::copy_n(policy, temp_ptr, keys_count, keys);
   }
-  if constexpr (SORT_ITEMS::value)
+  if constexpr (SortItems::value)
   {
     if (items_buffer.selector != 0)
     {
@@ -271,7 +271,7 @@ THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* 
 
 namespace __smart_sort
 {
-template <class SORT_ITEMS,
+template <class SortItems,
           class STABLE,
           class Policy,
           class KeysIt,
@@ -281,10 +281,10 @@ template <class SORT_ITEMS,
 THRUST_RUNTIME_FUNCTION void
 smart_sort(Policy& policy, KeysIt keys_first, KeysIt keys_last, ItemsIt items_first, CompareOp compare_op)
 {
-  __merge_sort::merge_sort<SORT_ITEMS, STABLE>(policy, keys_first, keys_last, items_first, compare_op);
+  __merge_sort::merge_sort<SortItems, STABLE>(policy, keys_first, keys_last, items_first, compare_op);
 }
 
-template <class SORT_ITEMS,
+template <class SortItems,
           class /*STABLE*/,
           class Policy,
           class KeysIt,
@@ -301,15 +301,15 @@ THRUST_RUNTIME_FUNCTION void smart_sort(
   // ensure sequences have trivial iterators
   thrust::detail::trivial_sequence<KeysIt, Policy> keys(policy, keys_first, keys_last);
 
-  if constexpr (SORT_ITEMS::value)
+  if constexpr (SortItems::value)
   {
     thrust::detail::trivial_sequence<ItemsIt, Policy> values(
       policy, items_first, items_first + (keys_last - keys_first));
 
-    __radix_sort::radix_sort<SORT_ITEMS>(
+    __radix_sort::radix_sort<SortItems>(
       policy,
-      thrust::raw_pointer_cast(&*keys.begin()),
-      thrust::raw_pointer_cast(&*values.begin()),
+      ::cuda::std::to_address(keys.begin()),
+      ::cuda::std::to_address(values.begin()),
       keys_last - keys_first,
       compare_op);
 
@@ -320,10 +320,10 @@ THRUST_RUNTIME_FUNCTION void smart_sort(
   }
   else
   {
-    __radix_sort::radix_sort<SORT_ITEMS>(
+    __radix_sort::radix_sort<SortItems>(
       policy,
-      thrust::raw_pointer_cast(&*keys.begin()),
-      thrust::raw_pointer_cast(&*keys.begin()),
+      ::cuda::std::to_address(keys.begin()),
+      ::cuda::std::to_address(keys.begin()),
       keys_last - keys_first,
       compare_op);
   }

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -27,7 +27,7 @@
 #include "test_macros.h"
 
 template <int Bytes>
-TEST_FUNC constexpr void test_and()
+TEST_HOST_DEVICE_FUNC constexpr void test_and()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<4>>;
   Mask a(is_even{});
@@ -44,7 +44,7 @@ TEST_FUNC constexpr void test_and()
 }
 
 template <int Bytes>
-TEST_FUNC constexpr void test_or()
+TEST_HOST_DEVICE_FUNC constexpr void test_or()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<4>>;
   Mask a(is_even{});
@@ -61,7 +61,7 @@ TEST_FUNC constexpr void test_or()
 }
 
 template <int Bytes>
-TEST_FUNC constexpr void test_xor()
+TEST_HOST_DEVICE_FUNC constexpr void test_xor()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<4>>;
   Mask a(is_even{});
@@ -79,7 +79,7 @@ TEST_FUNC constexpr void test_xor()
 
 //----------------------------------------------------------------------------------------------------------------------
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test_and<1>();
   test_and<2>();

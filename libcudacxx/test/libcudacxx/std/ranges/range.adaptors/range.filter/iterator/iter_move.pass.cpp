@@ -6,8 +6,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-
-// UNSUPPORTED: enable-tile
 // error: a non-__tile__ variable cannot be used in tile code
 
 // friend constexpr range_rvalue_reference_t<V> iter_move(iterator const& i)

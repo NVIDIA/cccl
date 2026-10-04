@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -35,7 +35,7 @@
 // reduce_max without mask
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_reduce_max_basic()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_max_basic()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec   = make_iota_vec<T, N>();
@@ -51,7 +51,7 @@ TEST_FUNC constexpr void test_reduce_max_basic()
 // reduce_max with all-equal elements
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_reduce_max_uniform()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_max_uniform()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec(T{7});
@@ -63,7 +63,7 @@ TEST_FUNC constexpr void test_reduce_max_uniform()
 // reduce_max with maximum at first position
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_reduce_max_first()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_max_first()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   cuda::std::array<T, N> arr{};
@@ -79,7 +79,7 @@ TEST_FUNC constexpr void test_reduce_max_first()
 // reduce_max with mask: all true
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_reduce_max_masked_all()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_max_masked_all()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -96,7 +96,7 @@ TEST_FUNC constexpr void test_reduce_max_masked_all()
 // reduce_max with mask: none true returns numeric_limits<T>::lowest()
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_reduce_max_masked_none()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_max_masked_none()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -110,7 +110,7 @@ TEST_FUNC constexpr void test_reduce_max_masked_none()
 // reduce_max with mask: even-index elements of iota
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_reduce_max_masked_even()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_max_masked_even()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -137,7 +137,7 @@ TEST_FUNC constexpr void test_reduce_max_masked_even()
 // reduce_max with mask: single element selected
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_reduce_max_masked_single()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_max_masked_single()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -151,7 +151,7 @@ TEST_FUNC constexpr void test_reduce_max_masked_single()
 // reduce_max with size 1
 
 template <typename T>
-TEST_FUNC constexpr void test_reduce_max_size_one()
+TEST_HOST_DEVICE_FUNC constexpr void test_reduce_max_size_one()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<1>>;
   Vec vec(T{42});
@@ -161,7 +161,7 @@ TEST_FUNC constexpr void test_reduce_max_size_one()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   test_reduce_max_basic<T, N>();
   test_reduce_max_uniform<T, N>();

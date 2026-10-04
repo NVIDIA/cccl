@@ -25,14 +25,11 @@
 #include <cuda/__utility/__basic_any/interfaces.h>
 #include <cuda/__utility/__basic_any/virtual_ptrs.h>
 #include <cuda/__utility/immovable.h>
-#include <cuda/std/__cccl/unreachable.h>
-#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__exception/terminate.h> // IWYU pragma: keep
 #include <cuda/std/__utility/typeid.h>
 
-#include <nv/target>
-
 #if _CCCL_HOSTED()
-#  include <typeinfo> // IWYU pragma: keep (for std::bad_cast)
+#  include <typeinfo>
 #endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
@@ -92,11 +89,13 @@ struct __rtti_base : __immovable
 static_assert(sizeof(__rtti_base) == sizeof(uint64_t) + sizeof(void*));
 
 // Used to map an interface typeid to a pointer to the vtable for that interface.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct __base_info
 {
   using __cast_fn_t = auto(__rtti const*) noexcept -> __base_vptr;
 
   ::cuda::std::__type_info_ptr __typeid_;
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   union
   {
     __cast_fn_t* __cast_fn_; // used when __basic_any_version >= 1,
@@ -120,9 +119,10 @@ inline constexpr size_t __half_size_t_bits = sizeof(size_t) * CHAR_BIT / 2;
 
 // The metadata for the type-erased object. All vtables have an rtti sub-object,
 // which contains a sub-object of this type.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct __object_metadata
 {
-  size_t __size_ : __half_size_t_bits;
+  size_t __size_  : __half_size_t_bits;
   size_t __align_ : __half_size_t_bits;
   ::cuda::std::__type_info_ptr __object_typeid_;
   ::cuda::std::__type_info_ptr __pointer_typeid_;
@@ -148,7 +148,7 @@ _CCCL_HOST_DEVICE_API void __dtor_fn(void* __pv, bool __small) noexcept
 struct __rtti : __rtti_base
 {
   template <class _Tp, class _Super, class... _Interfaces>
-  _CCCL_NODEBUG_API constexpr __rtti(
+  _CCCL_NODEBUG_HOST_DEVICE_API constexpr __rtti(
     __tag<_Tp, _Super>, __tag<_Interfaces...>, __base_info const* __base_vptr_map) noexcept
       : __rtti_base{__vtable_kind::__rtti, sizeof...(_Interfaces), _CCCL_TYPEID(__rtti)}
       , __dtor_(&__dtor_fn<_Tp>)

@@ -14,11 +14,11 @@
 #include "test_macros.h"
 
 // Provided by the selected checker.
-TEST_FUNC bool check(...);
-TEST_FUNC bool check_exception(...);
+TEST_HOST_DEVICE_FUNC bool check(...);
+TEST_HOST_DEVICE_FUNC bool check_exception(...);
 
 template <class CharT>
-TEST_FUNC void smoke_test()
+TEST_HOST_DEVICE_FUNC void smoke_test()
 {
   // *** Test escaping  ***
   assert(check(SV("{"), SV("{{")));
@@ -181,7 +181,7 @@ TEST_FUNC void smoke_test()
   assert(check(SV("answer is 'foobar'"), SV("answer is '{:s}'"), status::foobar));
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   smoke_test<char>();
 #if _CCCL_HAS_WCHAR_T()

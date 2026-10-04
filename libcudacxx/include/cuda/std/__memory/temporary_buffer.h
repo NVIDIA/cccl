@@ -36,7 +36,8 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-[[nodiscard]] _CCCL_NO_CFI _CCCL_API inline pair<_Tp*, ptrdiff_t> get_temporary_buffer(ptrdiff_t __n) noexcept
+[[nodiscard]] _CCCL_NO_CFI _CCCL_HOST_DEVICE_API inline pair<_Tp*, ptrdiff_t>
+get_temporary_buffer(ptrdiff_t __n) noexcept
 {
   pair<_Tp*, ptrdiff_t> __r(0, 0);
   const ptrdiff_t __m = (~ptrdiff_t(0) ^ ptrdiff_t(ptrdiff_t(1) << (sizeof(ptrdiff_t) * CHAR_BIT - 1))) / sizeof(_Tp);
@@ -46,26 +47,14 @@ template <class _Tp>
   }
   while (__n > 0)
   {
-#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-    if (__is_overaligned_for_new(alignof(_Tp)))
+    if constexpr (alignof(_Tp) > __STDCPP_DEFAULT_NEW_ALIGNMENT__)
     {
-      ::cuda::std::align_val_t __al = ::cuda::std::align_val_t(::cuda::std::alignment_of<_Tp>::value);
-      __r.first                     = static_cast<_Tp*>(::operator new(__n * sizeof(_Tp), __al));
+      __r.first = static_cast<_Tp*>(::cuda::std::__cccl_operator_new(__n * sizeof(_Tp), align_val_t{alignof(_Tp)}));
     }
     else
     {
-      __r.first = static_cast<_Tp*>(::operator new(__n * sizeof(_Tp)));
+      __r.first = static_cast<_Tp*>(::cuda::std::__cccl_operator_new(__n * sizeof(_Tp)));
     }
-#else // ^^^ _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() ^^^ / vvv !_LIBCUDACXX_HAS_ALIGNED_ALLOCATION() vvv
-    if (__is_overaligned_for_new(alignof(_Tp)))
-    {
-      // Since aligned operator new is unavailable, return an empty
-      // buffer rather than one with invalid alignment.
-      return __r;
-    }
-
-    __r.first = static_cast<_Tp*>(::operator new(__n * sizeof(_Tp)));
-#endif // !_LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 
     if (__r.first)
     {
@@ -78,7 +67,7 @@ template <class _Tp>
 }
 
 template <class _Tp>
-_CCCL_API inline void return_temporary_buffer(_Tp* __p) noexcept
+_CCCL_HOST_DEVICE_API inline void return_temporary_buffer(_Tp* __p) noexcept
 {
   ::cuda::std::__cccl_deallocate_unsized((void*) __p, alignof(_Tp));
 }
@@ -86,7 +75,7 @@ _CCCL_API inline void return_temporary_buffer(_Tp* __p) noexcept
 struct __return_temporary_buffer
 {
   template <class _Tp>
-  _CCCL_API void operator()(_Tp* __p) const noexcept
+  _CCCL_HOST_DEVICE_API void _CCCL_STATIC_CALL_OPERATOR(_Tp* __p) noexcept
   {
     ::cuda::std::return_temporary_buffer(__p);
   }

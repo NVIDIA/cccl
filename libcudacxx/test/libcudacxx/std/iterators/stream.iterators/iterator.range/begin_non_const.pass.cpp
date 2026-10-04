@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: a non-__tile__ variable cannot be used in tile code
-
 // <cuda/std/iterator>
 
 // template <class C> auto begin(C& c) -> decltype(c.begin());

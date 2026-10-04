@@ -52,7 +52,7 @@ void radix_sort_values(nvbench::state& state, nvbench::type_list<KeyT, ValueT, O
       cuda::execution::tune(policy_selector<KeyT, ValueT, OffsetT>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceRadixSort::SortPairs,
       "SortPairs failed",
       d_keys_in,

@@ -11,7 +11,7 @@
 
 #include <cuda/std/__format_>
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   // [format.parse.ctx]/8
   // Let cur-arg-id be the value of next_arg_id_ prior to this call. Call
@@ -23,7 +23,7 @@ TEST_FUNC constexpr bool test()
   return true;
 }
 
-TEST_FUNC void f()
+TEST_HOST_DEVICE_FUNC void f()
 {
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   static_assert(test());

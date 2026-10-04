@@ -116,6 +116,8 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API _Tp __saturating_sub_impl_device(_Tp __x, _Tp __y) noexcept
 {
+  // Narrow branches differ only when target-specific inline PTX is available.
+  // NOLINTBEGIN(bugprone-branch-clone)
   if constexpr (is_signed_v<_Tp>)
   {
     if constexpr (sizeof(_Tp) == sizeof(int8_t))
@@ -137,13 +139,15 @@ template <class _Tp>
       // sub.sat.s16x2 doesn't exist for now
       return ::cuda::std::saturating_cast<_Tp>(int32_t{__x} - int32_t{__y});
     }
-    // Disabled due to nvbug 5033045
-    // else if constexpr (sizeof(_Tp) == sizeof(int32_t))
-    // {
-    //   int32_t __result;
-    //   asm volatile("sub.sat.s32 %0, %1, %2;" : "=r"(__result) : "r"(__x), "r"(__y));
-    //   return __result;
-    // }
+    // Disabled in CUDA < 13.0 due to nvbug 5033045. Use CUDACC for the check, because we care about the ptxas version.
+#  if _CCCL_CUDACC_AT_LEAST(13, 0)
+    else if constexpr (sizeof(_Tp) == sizeof(int32_t))
+    {
+      int32_t __result;
+      asm volatile("sub.sat.s32 %0, %1, %2;" : "=r"(__result) : "r"(__x), "r"(__y));
+      return __result;
+    }
+#  endif // _CCCL_CUDACC_AT_LEAST(13, 0)
     else
     {
       return ::cuda::saturating_sub_overflow(__x, __y).value;
@@ -168,6 +172,7 @@ template <class _Tp>
       return ::cuda::saturating_sub_overflow(__x, __y).value;
     }
   }
+  // NOLINTEND(bugprone-branch-clone)
 }
 #endif // _CCCL_CUDA_COMPILATION()
 

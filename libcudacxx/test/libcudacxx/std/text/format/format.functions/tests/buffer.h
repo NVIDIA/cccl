@@ -16,11 +16,11 @@
 #include "test_macros.h"
 
 // Provided by the selected checker.
-TEST_FUNC bool check(...);
-TEST_FUNC bool check_exception(...);
+TEST_HOST_DEVICE_FUNC bool check(...);
+TEST_HOST_DEVICE_FUNC bool check_exception(...);
 
 template <class CharT>
-TEST_FUNC void test_buffer_copy()
+TEST_HOST_DEVICE_FUNC void test_buffer_copy()
 {
   // *** copy ***
   assert(check(SV("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"),
@@ -264,7 +264,7 @@ TEST_FUNC void test_buffer_copy()
 }
 
 template <class CharT>
-TEST_FUNC void test_buffer_fill()
+TEST_HOST_DEVICE_FUNC void test_buffer_fill()
 {
   // *** fill ***
   assert(check(SV("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"), SV("{:|<64}"), SV("")));
@@ -435,7 +435,7 @@ TEST_FUNC void test_buffer_fill()
 /// test validates whether the functions behave properly when the output size
 /// doesn't fit in its internal buffer.
 template <class CharT>
-TEST_FUNC void test_buffer_optimizations()
+TEST_HOST_DEVICE_FUNC void test_buffer_optimizations()
 {
   // Used to validate our test sets are the proper size.
   // To test the chunked operations it needs to be larger than the internal
@@ -485,7 +485,7 @@ TEST_FUNC void test_buffer_optimizations()
   // check(cuda::std::basic_string_view<CharT>{fill + str}, SV("{:*>{}}"), str, minimum + str.size());
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test_buffer_copy<char>();
   test_buffer_fill<char>();

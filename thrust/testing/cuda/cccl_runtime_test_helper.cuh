@@ -5,8 +5,10 @@
 
 #include <cuda/__cccl_config>
 #include <cuda/algorithm>
+#include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/launch>
+#include <cuda/memory_resource>
 #include <cuda/std/cstddef>
 #include <cuda/std/initializer_list>
 #include <cuda/std/span>
@@ -24,7 +26,7 @@ namespace test_runtime
 [[nodiscard]] _CCCL_HOST_API inline cuda::device_ref current_test_device()
 {
   int device = 0;
-  ASSERT_EQUAL(cudaSuccess, cudaGetDevice(&device));
+  REQUIRE(cudaSuccess == cudaGetDevice(&device));
   return cuda::device_ref{device};
 }
 
@@ -42,6 +44,46 @@ _CCCL_DEVICE_API inline void assert_device(bool condition, const char* expressio
   }
 }
 
+template <typename T>
+[[nodiscard]] _CCCL_HOST_API inline auto make_host_buffer(cuda::stream_ref stream, cuda::std::size_t size)
+{
+  using resource_t = cuda::mr::synchronous_resource_adapter<cuda::mr::legacy_pinned_memory_resource>;
+  resource_t resource{cuda::mr::legacy_pinned_memory_resource{cuda::device_ref{0}}};
+  return cuda::make_buffer<T>(stream, resource, size, cuda::no_init);
+}
+
+template <typename T, typename RandomT = T>
+[[nodiscard]] _CCCL_HOST_API inline auto
+random_integers_buffer(cuda::stream_ref stream, cuda::std::size_t size, cuda::std::size_t first = 0)
+{
+  auto result = make_host_buffer<T>(stream, size);
+  stream.sync();
+
+  const auto generator = unittest::generate_random_integer<RandomT>{};
+  for (cuda::std::size_t i = 0; i < size; ++i)
+  {
+    result[i] = static_cast<T>(generator(static_cast<unsigned int>(first + i)));
+  }
+
+  return result;
+}
+
+template <typename T, typename RandomT = T>
+[[nodiscard]] _CCCL_HOST_API inline auto
+random_samples_buffer(cuda::stream_ref stream, cuda::std::size_t size, cuda::std::size_t first = 0)
+{
+  auto result = make_host_buffer<T>(stream, size);
+  stream.sync();
+
+  const auto generator = unittest::generate_random_sample<RandomT>{};
+  for (cuda::std::size_t i = 0; i < size; ++i)
+  {
+    result[i] = static_cast<T>(generator(static_cast<unsigned int>(first + i)));
+  }
+
+  return result;
+}
+
 template <typename Buffer>
 _CCCL_HOST_API inline void
 assert_equal(cuda::stream_ref stream, Buffer& buffer, cuda::std::initializer_list<int> expected)
@@ -50,11 +92,26 @@ assert_equal(cuda::stream_ref stream, Buffer& buffer, cuda::std::initializer_lis
   cuda::copy_bytes(stream, buffer, actual);
   stream.sync();
 
-  ASSERT_EQUAL(actual.size(), expected.size());
+  REQUIRE(actual.size() == expected.size());
 
   for (cuda::std::size_t i = 0; i < expected.size(); ++i)
   {
-    ASSERT_EQUAL(expected.begin()[i], actual[i]);
+    REQUIRE(expected.begin()[i] == actual[i]);
+  }
+}
+
+template <typename Buffer, typename Expected>
+_CCCL_HOST_API inline void assert_equal(cuda::stream_ref stream, Buffer& buffer, const Expected& expected)
+{
+  std::vector<int> actual(buffer.size());
+  cuda::copy_bytes(stream, buffer, actual);
+  stream.sync();
+
+  REQUIRE(actual.size() == expected.size());
+
+  for (cuda::std::size_t i = 0; i < expected.size(); ++i)
+  {
+    REQUIRE(expected[i] == actual[i]);
   }
 }
 } // namespace test_runtime

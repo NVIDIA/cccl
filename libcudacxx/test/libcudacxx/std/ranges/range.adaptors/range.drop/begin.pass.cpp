@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
+// UNSUPPORTED: force-tile
 // error: a non-__tile__ variable cannot be used in tile code
 
 // constexpr auto begin()
@@ -18,10 +18,77 @@
 //   requires random_access_range<const V> && sized_range<const V>;
 
 #include <cuda/std/ranges>
+#include <cuda/std/type_traits>
 
 #include "test_iterators.h"
 #include "test_macros.h"
 #include "types.h"
+
+struct NontrivialDtorIter
+{
+  using iterator_category = cuda::std::forward_iterator_tag;
+  using value_type        = int;
+  using difference_type   = cuda::std::ptrdiff_t;
+  using pointer           = int*;
+  using reference         = int&;
+
+  int* ptr_ = nullptr;
+
+  NontrivialDtorIter() = default;
+  TEST_HOST_DEVICE_FUNC explicit NontrivialDtorIter(int* ptr)
+      : ptr_(ptr)
+  {}
+  TEST_HOST_DEVICE_FUNC ~NontrivialDtorIter() {}
+
+  TEST_HOST_DEVICE_FUNC reference operator*() const
+  {
+    return *ptr_;
+  }
+  TEST_HOST_DEVICE_FUNC NontrivialDtorIter& operator++()
+  {
+    ++ptr_;
+    return *this;
+  }
+  TEST_HOST_DEVICE_FUNC NontrivialDtorIter operator++(int)
+  {
+    NontrivialDtorIter prev = *this;
+    ++ptr_;
+    return prev;
+  }
+
+  TEST_HOST_DEVICE_FUNC friend bool operator==(NontrivialDtorIter lhs, NontrivialDtorIter rhs)
+  {
+    return lhs.ptr_ == rhs.ptr_;
+  }
+  TEST_HOST_DEVICE_FUNC friend bool operator!=(NontrivialDtorIter lhs, NontrivialDtorIter rhs)
+  {
+    return lhs.ptr_ != rhs.ptr_;
+  }
+};
+static_assert(!cuda::std::is_trivially_destructible_v<NontrivialDtorIter>);
+
+struct NontrivialDtorView : cuda::std::ranges::view_base
+{
+  int* begin_ = nullptr;
+  int* end_   = nullptr;
+
+  TEST_HOST_DEVICE_FUNC NontrivialDtorView(int* begin, int* end)
+      : begin_(begin)
+      , end_(end)
+  {}
+
+  TEST_HOST_DEVICE_FUNC NontrivialDtorIter begin() const
+  {
+    return NontrivialDtorIter{begin_};
+  }
+  TEST_HOST_DEVICE_FUNC NontrivialDtorIter end() const
+  {
+    return NontrivialDtorIter{end_};
+  }
+};
+static_assert(cuda::std::ranges::forward_range<NontrivialDtorView>);
+static_assert(!cuda::std::ranges::random_access_range<NontrivialDtorView>);
+static_assert(!cuda::std::ranges::sized_range<NontrivialDtorView>);
 
 template <class T>
 _CCCL_CONCEPT BeginInvocable = _CCCL_REQUIRES_EXPR((T), cuda::std::ranges::drop_view<T> v)((v.begin()));
@@ -32,21 +99,21 @@ struct MaybeSimpleView : cuda::std::ranges::view_base
   int* num_of_non_const_begin_calls;
   int* num_of_const_begin_calls;
 
-  TEST_FUNC constexpr int* begin()
+  TEST_HOST_DEVICE_FUNC constexpr int* begin()
   {
     ++(*num_of_non_const_begin_calls);
     return nullptr;
   }
-  TEST_FUNC constexpr cuda::std::conditional_t<IsSimple, int*, const int*> begin() const
+  TEST_HOST_DEVICE_FUNC constexpr cuda::std::conditional_t<IsSimple, int*, const int*> begin() const
   {
     ++(*num_of_const_begin_calls);
     return nullptr;
   }
-  TEST_FUNC constexpr int* end() const
+  TEST_HOST_DEVICE_FUNC constexpr int* end() const
   {
     return nullptr;
   }
-  TEST_FUNC constexpr size_t size() const
+  TEST_HOST_DEVICE_FUNC constexpr size_t size() const
   {
     return 0;
   }
@@ -55,7 +122,7 @@ struct MaybeSimpleView : cuda::std::ranges::view_base
 using SimpleView    = MaybeSimpleView<true>;
 using NonSimpleView = MaybeSimpleView<false>;
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   // random_access_range<const V> && sized_range<const V>
   cuda::std::ranges::drop_view dropView1(MoveOnlyView(), 4);
@@ -164,9 +231,20 @@ TEST_FUNC constexpr bool test()
   return true;
 }
 
+TEST_HOST_DEVICE_FUNC bool test_nontrivial_iterator_cache()
+{
+  int buf[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+  NontrivialDtorView view(buf, buf + 8);
+  cuda::std::ranges::drop_view dropped(view, 3);
+  assert(*dropped.begin() == 4);
+  assert(*dropped.begin() == 4);
+  return true;
+}
+
 int main(int, char**)
 {
   test();
+  test_nontrivial_iterator_cache();
 #if TEST_STD_VER >= 2020 && defined(_CCCL_BUILTIN_ADDRESSOF)
   static_assert(test());
 #endif // TEST_STD_VER >= 2020 && defined(_CCCL_BUILTIN_ADDRESSOF)

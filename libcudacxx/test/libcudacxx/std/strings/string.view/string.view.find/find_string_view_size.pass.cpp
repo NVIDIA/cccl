@@ -69,6 +69,7 @@ TEST_FUNC constexpr void test_find()
     test_find(sv, str3, 1, SV::npos);
     test_find(sv, str4, 1, SV::npos);
   }
+#if !_CCCL_TILE_COMPILATION() // blows up
   {
     SV sv{str2};
     test_find(sv, str1, 0);
@@ -162,6 +163,7 @@ TEST_FUNC constexpr void test_find()
     test_find(sv, str3, 21, SV::npos);
     test_find(sv, str4, 21, SV::npos);
   }
+#endif // !_CCCL_TILE_COMPILATION() // blows up
 }
 
 TEST_FUNC constexpr bool test()

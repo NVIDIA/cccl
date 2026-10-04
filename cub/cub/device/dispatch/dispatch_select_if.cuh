@@ -22,6 +22,7 @@
 
 #include <cub/agent/agent_select_if.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_select_if.cuh>
@@ -216,14 +217,15 @@ struct make_vsmem_helper
 {
   static constexpr SelectPolicy active_policy = DefaultPolicyGetter{}();
   using agent_policy_t                        = detail::agent_select_if_policy<
-                           active_policy.threads_per_block,
-                           active_policy.items_per_thread,
-                           active_policy.load_algorithm,
-                           active_policy.load_modifier,
-                           active_policy.scan_algorithm,
-                           delay_constructor_t<active_policy.lookback_delay.kind,
-                                               active_policy.lookback_delay.delay,
-                                               active_policy.lookback_delay.l2_write_latency>>;
+    active_policy.lookback.threads_per_block,
+    active_policy.lookback.items_per_thread,
+    active_policy.lookback.load_algorithm,
+    active_policy.lookback.load_modifier,
+    active_policy.lookback.scan_algorithm,
+    delay_constructor_t<active_policy.lookback.lookback_delay.kind,
+                        active_policy.lookback.lookback_delay.delay,
+                        active_policy.lookback.lookback_delay.l2_write_latency>,
+    active_policy.lookback._load_prefetch>;
   using type = vsmem_helper_default_fallback_policy_t<
     agent_policy_t,
     bind_selection_opt<SelectionOpt>::template agent_t,
@@ -346,15 +348,15 @@ __launch_bounds__(int(
                     OffsetT,
                     StreamingContextT>::type::agent_policy_t::BLOCK_THREADS))
   _CCCL_KERNEL_ATTRIBUTES void DeviceSelectSweepKernel(
-    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-    _CCCL_GRID_CONSTANT const FlagsInputIteratorT d_flags,
-    _CCCL_GRID_CONSTANT const SelectedOutputIteratorT d_selected_out,
-    _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out,
+    const InputIteratorT d_in,
+    const FlagsInputIteratorT d_flags,
+    const SelectedOutputIteratorT d_selected_out,
+    const NumSelectedIteratorT d_num_selected_out,
     ScanTileStateT tile_status,
     SelectOpT select_op,
     EqualityOpT equality_op,
-    _CCCL_GRID_CONSTANT const OffsetT num_items,
-    _CCCL_GRID_CONSTANT const int num_tiles,
+    const OffsetT num_items,
+    const int num_tiles,
     _CCCL_GRID_CONSTANT const StreamingContextT streaming_context,
     vsmem_t vsmem)
 {
@@ -395,12 +397,13 @@ struct policy_selector_from_hub
   {
     using active_policy = typename PolicyHub::MaxPolicy::ActivePolicy::SelectIfPolicyT;
     return SelectPolicy{
-      active_policy::BLOCK_THREADS,
-      active_policy::ITEMS_PER_THREAD,
-      active_policy::LOAD_ALGORITHM,
-      active_policy::LOAD_MODIFIER,
-      active_policy::SCAN_ALGORITHM,
-      lookback_delay_policy_from_type<typename active_policy::detail::delay_constructor_t>};
+      SelectAlgorithm::lookback,
+      {active_policy::BLOCK_THREADS,
+       active_policy::ITEMS_PER_THREAD,
+       active_policy::LOAD_ALGORITHM,
+       active_policy::LOAD_MODIFIER,
+       active_policy::SCAN_ALGORITHM,
+       lookback_delay_policy_from_type<typename active_policy::detail::delay_constructor_t>}};
   }
 };
 } // namespace detail::select
@@ -411,6 +414,8 @@ struct policy_selector_from_hub
 
 /**
  * Utility class for dispatching the appropriately-tuned kernels for DeviceSelect and DevicePartition
+ *
+ * Deprecated [Since 3.5]
  *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items
@@ -454,7 +459,7 @@ template <
     ::cuda::std::conditional_t<SelectionOpt == SelectImpl::Partition, OffsetT, detail::select::per_partition_offset_t>,
     detail::select::is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
     SelectionOpt>>
-struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSelect or DevicePartition") DispatchSelectIf
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartition") DispatchSelectIf
 {
   /******************************************************************************
    * Types and constants
@@ -687,14 +692,9 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSelect or DevicePartition") Dis
         }
 
         // Log scan_init_kernel configuration
-        int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
+        const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
 
-#ifdef CUB_DEBUG_LOG
-        _CubLog("Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",
-                init_grid_size,
-                INIT_KERNEL_THREADS,
-                (long long) stream);
-#endif
+        _CUB_LOG_KERNEL_LAUNCH("scan_init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
         // Invoke scan_init_kernel to initialize tile descriptors
         error = CubDebug(
@@ -719,8 +719,13 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSelect or DevicePartition") Dis
           return cudaSuccess;
         }
 
-// Log select_if_kernel configuration
+        // Log select_if_kernel configuration
 #ifdef CUB_DEBUG_LOG
+        constexpr bool cub_debug_log_select_if_kernel = true;
+#else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
+        const bool cub_debug_log_select_if_kernel = detail::logging_enabled();
+#endif // !CUB_DEBUG_LOG
+        if (cub_debug_log_select_if_kernel)
         {
           // Get SM occupancy for select_if_kernel
           int range_select_sm_occupancy;
@@ -732,15 +737,17 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSelect or DevicePartition") Dis
             return error;
           }
 
-          _CubLog("Invoking select_if_kernel<<<%d, %d, 0, "
-                  "%lld>>>(), %d items per thread, %d SM occupancy\n",
-                  current_num_tiles,
-                  threads_per_block,
-                  (long long) stream,
-                  items_per_thread,
-                  range_select_sm_occupancy);
+          _CUB_LOG_KERNEL_LAUNCH(
+            "select_if_kernel",
+            current_num_tiles,
+            1,
+            1,
+            threads_per_block,
+            0,
+            stream,
+            ", SM occupancy: %d",
+            range_select_sm_occupancy);
         }
-#endif
 
         // Invoke select_if_kernel
         error = CubDebug(
@@ -844,7 +851,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceSelect or DevicePartition") Dis
     cudaStream_t stream)
   {
     int ptx_version = 0;
-    if (cudaError_t error = CubDebug(PtxVersion(ptx_version)))
+    if (const cudaError_t error = CubDebug(PtxVersion(ptx_version)))
     {
       return error;
     }
@@ -976,10 +983,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
 
     const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, init_kernel_threads));
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog(
-      "Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#endif
+    _CUB_LOG_KERNEL_LAUNCH("scan_init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
 
     if (const auto error = CubDebug(
           launcher_factory(init_grid_size, init_kernel_threads, 0, stream)
@@ -1002,6 +1006,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
     }
 
 #ifdef CUB_DEBUG_LOG
+    constexpr bool cub_debug_log_select_sweep_kernel = true;
+#else // ^^^ CUB_DEBUG_LOG ^^^ / vvv !CUB_DEBUG_LOG vvv
+    const bool cub_debug_log_select_sweep_kernel = logging_enabled();
+#endif // !CUB_DEBUG_LOG
+    if (cub_debug_log_select_sweep_kernel)
     {
       int range_select_sm_occupancy;
       if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
@@ -1022,15 +1031,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
         return error;
       }
 
-      _CubLog("Invoking DeviceSelectSweepKernel<<<%d, %d, 0, "
-              "%lld>>>(), %d items per thread, %d SM occupancy\n",
-              current_num_tiles,
-              threads_per_block,
-              (long long) stream,
-              items_per_thread,
-              range_select_sm_occupancy);
+      _CUB_LOG_KERNEL_LAUNCH(
+        "DeviceSelectSweepKernel",
+        current_num_tiles,
+        1,
+        1,
+        threads_per_block,
+        0,
+        stream,
+        ", SM occupancy: %d",
+        range_select_sm_occupancy);
     }
-#endif
 
     if (const auto error = CubDebug(
           launcher_factory(current_num_tiles, threads_per_block, 0, stream)
@@ -1107,18 +1118,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 ::std::stringstream ss;
-                 ss << PolicySelector{}(cc);
-                 _CubLog("Dispatching DeviceSelectIf to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+    detail::log_dispatch("DeviceSelectIf", cc, policy_getter());
+
     return dispatch_policy<SelectionOpt, decltype(policy_getter)>(
       policy_getter,
       d_temp_storage,

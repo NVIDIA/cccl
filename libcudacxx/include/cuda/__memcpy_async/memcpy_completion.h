@@ -23,18 +23,12 @@
 
 #include <cuda/__barrier/async_contract_fulfillment.h>
 #include <cuda/__barrier/barrier_block_scope.h>
-#include <cuda/__barrier/barrier_expect_tx.h>
 #include <cuda/__fwd/pipeline.h>
 #include <cuda/__memcpy_async/completion_mechanism.h>
 #include <cuda/__memcpy_async/is_local_smem_barrier.h>
 #include <cuda/__memcpy_async/try_get_barrier_handle.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/cstdint>
-
-#if _CCCL_CUDA_COMPILATION()
-#  include <cuda/__ptx/ptx_dot_variants.h>
-#  include <cuda/__ptx/ptx_helper_functions.h>
-#endif // _CCCL_CUDA_COMPILATION()
 
 #include <nv/target>
 
@@ -121,11 +115,11 @@ struct __memcpy_completion_impl
                        // completed writing to shared memory.
                        asm volatile("cp.async.wait_all;" :: : "memory");));
         return async_contract_fulfillment::async;
-      case __completion_mechanism::__mbarrier_complete_tx:
-        // Non-smem barriers do not have an mbarrier_complete_tx mechanism..
-        _CCCL_UNREACHABLE();
       case __completion_mechanism::__async_bulk_group:
+        [[fallthrough]];
         // This completion mechanism is currently not expected to be used with barriers.
+      case __completion_mechanism::__mbarrier_complete_tx:
+        // Non-smem barriers do not have an mbarrier_complete_tx mechanism.
         _CCCL_UNREACHABLE();
       case __completion_mechanism::__sync:
         // sync: In this case, we do not need to do anything.
@@ -143,9 +137,9 @@ struct __memcpy_completion_impl
     switch (__cm)
     {
       case __completion_mechanism::__async_group:
-        return async_contract_fulfillment::async;
+        [[fallthrough]];
       case __completion_mechanism::__async_bulk_group:
-        return async_contract_fulfillment::async;
+        [[fallthrough]];
       case __completion_mechanism::__mbarrier_complete_tx:
         return async_contract_fulfillment::async;
       case __completion_mechanism::__sync:

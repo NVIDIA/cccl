@@ -137,7 +137,7 @@ set_kth_key_bits(key_prefix_storage_t<KeyT>& prefix, const int pass, const int b
   {
     using bits_t        = typename Traits<KeyT>::UnsignedBits;
     const int start_bit = calc_start_bit<KeyT, BitsPerPass>(pass);
-    bits_t bucket       = bin_index;
+    const bits_t bucket = bin_index;
     prefix.bits |= static_cast<bits_t>(bucket) << start_bit;
   }
   else
@@ -277,8 +277,7 @@ struct AgentTopK
     OffsetT histogram[num_buckets];
   };
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per-thread fields
@@ -647,16 +646,18 @@ struct AgentTopK
     bool is_last_pass,
     CounterUpdateFn counter_update_fn)
   {
-    // Ensure all writes to the global memory-histogram are visible to all threads before
-    // proceeding to compute the prefix sum over the histogram.
+    // Make this block's histogram contributions visible device-wide before publishing retirement
     __threadfence();
+
+    // Wait for all threads in this block to finish merge_histograms() before thread 0 signals completion
+    __syncthreads();
 
     // Identify the last block in the grid to perform the prefix sum over the histogram
     bool is_last_block = false;
     if (threadIdx.x == 0)
     {
-      unsigned int finished = atomicInc(&counter->finished_block_cnt, gridDim.x - 1);
-      is_last_block         = (finished == (gridDim.x - 1));
+      const unsigned int finished = atomicInc(&counter->finished_block_cnt, gridDim.x - 1);
+      is_last_block               = (finished == (gridDim.x - 1));
     }
 
     // syncthreads ensures that the BlockLoad for loading the global histogram can reuse the temporary storage

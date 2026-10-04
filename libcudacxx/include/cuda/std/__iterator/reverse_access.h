@@ -34,25 +34,27 @@ namespace __rbegin
 struct __fn
 {
   template <class _Tp, size_t _Np>
-  _CCCL_API constexpr reverse_iterator<_Tp*> operator()(_Tp (&__array)[_Np]) const noexcept
+  _CCCL_API constexpr reverse_iterator<_Tp*> _CCCL_STATIC_CALL_OPERATOR(_Tp (&__array)[_Np]) noexcept
   {
     return reverse_iterator<_Tp*>(__array + _Np);
   }
 
   template <class _Ep>
-  _CCCL_API constexpr reverse_iterator<const _Ep*> operator()(initializer_list<_Ep> __il) const noexcept
+  _CCCL_API constexpr reverse_iterator<const _Ep*> _CCCL_STATIC_CALL_OPERATOR(initializer_list<_Ep> __il) noexcept
   {
     return reverse_iterator<const _Ep*>(__il.end());
   }
 
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(_Cp& __c) const noexcept(noexcept(__c.rbegin())) -> decltype(__c.rbegin())
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Cp& __c) noexcept(noexcept(__c.rbegin()))
+    -> decltype(__c.rbegin())
   {
     return __c.rbegin();
   }
 
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(__c.rbegin())) -> decltype(__c.rbegin())
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Cp& __c) noexcept(noexcept(__c.rbegin()))
+    -> decltype(__c.rbegin())
   {
     return __c.rbegin();
   }
@@ -62,9 +64,6 @@ struct __fn
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto rbegin = __rbegin::__fn{};
-
-// We want to avoid using the CPO internally because of __tile__ access
-using __rbegin_cpo = __rbegin::__fn;
 } // namespace __cpo
 
 namespace __rend
@@ -72,25 +71,26 @@ namespace __rend
 struct __fn
 {
   template <class _Tp, size_t _Np>
-  _CCCL_API constexpr reverse_iterator<_Tp*> operator()(_Tp (&__array)[_Np]) const noexcept
+  _CCCL_API constexpr reverse_iterator<_Tp*> _CCCL_STATIC_CALL_OPERATOR(_Tp (&__array)[_Np]) noexcept
   {
     return reverse_iterator<_Tp*>(__array);
   }
 
   template <class _Ep>
-  _CCCL_API constexpr reverse_iterator<const _Ep*> operator()(initializer_list<_Ep> __il) const noexcept
+  _CCCL_API constexpr reverse_iterator<const _Ep*> _CCCL_STATIC_CALL_OPERATOR(initializer_list<_Ep> __il) noexcept
   {
     return reverse_iterator<const _Ep*>(__il.begin());
   }
 
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(_Cp& __c) const noexcept(noexcept(__c.rend())) -> decltype(__c.rend())
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Cp& __c) noexcept(noexcept(__c.rend())) -> decltype(__c.rend())
   {
     return __c.rend();
   }
 
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(__c.rend())) -> decltype(__c.rend())
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Cp& __c) noexcept(noexcept(__c.rend()))
+    -> decltype(__c.rend())
   {
     return __c.rend();
   }
@@ -100,9 +100,6 @@ struct __fn
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto rend = __rend::__fn{};
-
-// We want to avoid using the CPO internally because of __tile__ access
-using __rend_cpo = __rend::__fn;
 } // namespace __cpo
 
 namespace __crbegin
@@ -110,10 +107,10 @@ namespace __crbegin
 struct __fn
 {
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::__rbegin_cpo{}(__c)))
-    -> decltype(::cuda::std::__rbegin_cpo{}(__c))
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Cp& __c) noexcept(noexcept(::cuda::std::rbegin(__c)))
+    -> decltype(::cuda::std::rbegin(__c))
   {
-    return ::cuda::std::__rbegin_cpo{}(__c);
+    return ::cuda::std::rbegin(__c);
   }
 };
 } // namespace __crbegin
@@ -121,9 +118,6 @@ struct __fn
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto crbegin = __crbegin::__fn{};
-
-// We want to avoid using the CPO internally because of __tile__ access
-using __crbegin_cpo = __crbegin::__fn;
 } // namespace __cpo
 
 namespace __crend
@@ -131,10 +125,10 @@ namespace __crend
 struct __fn
 {
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::__rend_cpo{}(__c)))
-    -> decltype(::cuda::std::__rend_cpo{}(__c))
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(const _Cp& __c) noexcept(noexcept(::cuda::std::rend(__c)))
+    -> decltype(::cuda::std::rend(__c))
   {
-    return ::cuda::std::__rend_cpo{}(__c);
+    return ::cuda::std::rend(__c);
   }
 };
 } // namespace __crend
@@ -142,9 +136,6 @@ struct __fn
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto crend = __crend::__fn{};
-
-// We want to avoid using the CPO internally because of __tile__ access
-using __crend_cpo = __crend::__fn;
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD

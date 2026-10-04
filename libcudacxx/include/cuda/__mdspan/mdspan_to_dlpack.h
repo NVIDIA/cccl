@@ -226,11 +226,12 @@ to_dlpack_tensor(const ::cuda::device_mdspan<_ElementType, _Extents, _Layout, _A
   ::CUpointer_attribute __attrs[1] = {::CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL};
   int __ptr_dev_id                 = 0;
   void* __results[1]               = {&__ptr_dev_id};
-  const auto __status = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __mdspan.data_handle());
-  if (__status != ::cudaSuccess)
-  {
-    _CCCL_THROW(::cuda::cuda_error, __status, "Failed to get device ordinal of a pointer");
-  }
+  _CCCL_TRY_DRIVER_API(
+    ::cuda::__driver::__pointerGetAttributesNoThrow,
+    "Failed to get device ordinal of a pointer",
+    __attrs,
+    __results,
+    __mdspan.data_handle());
   return ::cuda::__to_dlpack(__mdspan_type{__mdspan}, ::kDLCUDA, __ptr_dev_id);
 }
 

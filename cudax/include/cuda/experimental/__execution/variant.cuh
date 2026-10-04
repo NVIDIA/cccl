@@ -137,7 +137,7 @@ class __variant
 {
 public:
   template <size_t _Ny>
-  using __at _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_index_c<_Ny, _Ts...>;
+  using __at _CCCL_NODEBUG = ::cuda::std::__type_index_c<_Ny, _Ts...>;
 
   _CCCL_HOST_DEVICE_API __variant() noexcept {}
 
@@ -206,8 +206,8 @@ public:
   _CCCL_HOST_DEVICE_API auto __emplace_from(_Fn&& __fn, _As&&... __as) //
     noexcept(__nothrow_callable<_Fn, _As...>) -> __call_result_t<_Fn, _As...>&
   {
-    using __result_t _CCCL_NODEBUG_ALIAS = __call_result_t<_Fn, _As...>;
-    constexpr size_t __new_index         = __index_of<__result_t, _Ts...>();
+    using __result_t _CCCL_NODEBUG = __call_result_t<_Fn, _As...>;
+    constexpr size_t __new_index   = __index_of<__result_t, _Ts...>();
     static_assert(__new_index != __npos, "_Type not in variant");
 
     __reset();
@@ -264,13 +264,13 @@ private:
 };
 
 template <class... _Ts>
-using __nullable_variant _CCCL_NODEBUG_ALIAS = __variant<__monostate, _Ts...>;
+using __nullable_variant _CCCL_NODEBUG = __variant<__monostate, _Ts...>;
 
 template <class... _Ts>
-using __decayed_variant _CCCL_NODEBUG_ALIAS = __variant<decay_t<_Ts>...>;
+using __decayed_variant _CCCL_NODEBUG = __variant<decay_t<_Ts>...>;
 
 template <class... _Ts>
-using __nullable_decayed_variant _CCCL_NODEBUG_ALIAS = __variant<__monostate, decay_t<_Ts>...>;
+using __nullable_decayed_variant _CCCL_NODEBUG = __variant<__monostate, decay_t<_Ts>...>;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

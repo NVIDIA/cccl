@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: return in loop statement is not supported
-
 #include <cuda/devices>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -39,12 +36,14 @@ TEST_FUNC constexpr bool test()
   assert(!cuda::__is_specific_arch(cuda::arch_id::sm_90));
   assert(!cuda::__is_specific_arch(cuda::arch_id::sm_100));
   assert(!cuda::__is_specific_arch(cuda::arch_id::sm_103));
+  assert(!cuda::__is_specific_arch(cuda::arch_id::sm_107));
   assert(!cuda::__is_specific_arch(cuda::arch_id::sm_110));
   assert(!cuda::__is_specific_arch(cuda::arch_id::sm_120));
   assert(!cuda::__is_specific_arch(cuda::arch_id::sm_121));
   assert(cuda::__is_specific_arch(cuda::arch_id::sm_90a));
   assert(cuda::__is_specific_arch(cuda::arch_id::sm_100a));
   assert(cuda::__is_specific_arch(cuda::arch_id::sm_103a));
+  assert(cuda::__is_specific_arch(cuda::arch_id::sm_107a));
   assert(cuda::__is_specific_arch(cuda::arch_id::sm_110a));
   assert(cuda::__is_specific_arch(cuda::arch_id::sm_120a));
   assert(cuda::__is_specific_arch(cuda::arch_id::sm_121a));

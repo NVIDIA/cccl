@@ -43,7 +43,7 @@ enum class __dot_shfl_mode
 };
 
 [[maybe_unused]]
-_CCCL_DEVICE static inline uint32_t
+_CCCL_DEVICE_API inline uint32_t
 __shfl_sync_dst_lane(__dot_shfl_mode __shfl_mode, uint32_t __lane_idx_offset, uint32_t __clamp_segmask)
 {
   auto __lane     = ::cuda::ptx::get_sreg_laneid();
@@ -75,7 +75,7 @@ __shfl_sync_dst_lane(__dot_shfl_mode __shfl_mode, uint32_t __lane_idx_offset, ui
 }
 
 template <typename _Tp>
-_CCCL_DEVICE static inline void __shfl_sync_checks(
+_CCCL_DEVICE_API void __shfl_sync_checks(
   __dot_shfl_mode __shfl_mode,
   _Tp,
   [[maybe_unused]] uint32_t __lane_idx_offset,
@@ -95,7 +95,7 @@ _CCCL_DEVICE static inline void __shfl_sync_checks(
 }
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_DEVICE static inline _Tp shfl_sync_idx(
+[[nodiscard]] _CCCL_DEVICE_API _Tp shfl_sync_idx(
   _Tp __data, bool& __pred, uint32_t __lane_idx_offset, uint32_t __clamp_segmask, uint32_t __lane_mask) noexcept
 {
   ::cuda::ptx::__shfl_sync_checks(__dot_shfl_mode::__idx, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
@@ -115,7 +115,7 @@ template <typename _Tp>
 }
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_DEVICE static inline _Tp
+[[nodiscard]] _CCCL_DEVICE_API _Tp
 shfl_sync_idx(_Tp __data, uint32_t __lane_idx_offset, uint32_t __clamp_segmask, uint32_t __lane_mask) noexcept
 {
   ::cuda::ptx::__shfl_sync_checks(__dot_shfl_mode::__idx, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
@@ -130,7 +130,7 @@ shfl_sync_idx(_Tp __data, uint32_t __lane_idx_offset, uint32_t __clamp_segmask, 
 }
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_DEVICE static inline _Tp shfl_sync_up(
+[[nodiscard]] _CCCL_DEVICE_API _Tp shfl_sync_up(
   _Tp __data, bool& __pred, uint32_t __lane_idx_offset, uint32_t __clamp_segmask, uint32_t __lane_mask) noexcept
 {
   ::cuda::ptx::__shfl_sync_checks(__dot_shfl_mode::__up, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
@@ -150,7 +150,7 @@ template <typename _Tp>
 }
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_DEVICE static inline _Tp
+[[nodiscard]] _CCCL_DEVICE_API _Tp
 shfl_sync_up(_Tp __data, uint32_t __lane_idx_offset, uint32_t __clamp_segmask, uint32_t __lane_mask) noexcept
 {
   ::cuda::ptx::__shfl_sync_checks(__dot_shfl_mode::__up, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
@@ -165,7 +165,7 @@ shfl_sync_up(_Tp __data, uint32_t __lane_idx_offset, uint32_t __clamp_segmask, u
 }
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_DEVICE static inline _Tp shfl_sync_down(
+[[nodiscard]] _CCCL_DEVICE_API _Tp shfl_sync_down(
   _Tp __data, bool& __pred, uint32_t __lane_idx_offset, uint32_t __clamp_segmask, uint32_t __lane_mask) noexcept
 {
   ::cuda::ptx::__shfl_sync_checks(__dot_shfl_mode::__down, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
@@ -185,7 +185,7 @@ template <typename _Tp>
 }
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_DEVICE static inline _Tp
+[[nodiscard]] _CCCL_DEVICE_API _Tp
 shfl_sync_down(_Tp __data, uint32_t __lane_idx_offset, uint32_t __clamp_segmask, uint32_t __lane_mask) noexcept
 {
   ::cuda::ptx::__shfl_sync_checks(__dot_shfl_mode::__down, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
@@ -200,7 +200,7 @@ shfl_sync_down(_Tp __data, uint32_t __lane_idx_offset, uint32_t __clamp_segmask,
 }
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_DEVICE static inline _Tp shfl_sync_bfly(
+[[nodiscard]] _CCCL_DEVICE_API _Tp shfl_sync_bfly(
   _Tp __data, bool& __pred, uint32_t __lane_idx_offset, uint32_t __clamp_segmask, uint32_t __lane_mask) noexcept
 {
   ::cuda::ptx::__shfl_sync_checks(__dot_shfl_mode::__bfly, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);
@@ -220,7 +220,7 @@ template <typename _Tp>
 }
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_DEVICE static inline _Tp
+[[nodiscard]] _CCCL_DEVICE_API _Tp
 shfl_sync_bfly(_Tp __data, uint32_t __lane_idx_offset, uint32_t __clamp_segmask, uint32_t __lane_mask) noexcept
 {
   ::cuda::ptx::__shfl_sync_checks(__dot_shfl_mode::__bfly, __data, __lane_idx_offset, __clamp_segmask, __lane_mask);

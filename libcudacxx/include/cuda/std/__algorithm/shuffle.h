@@ -30,7 +30,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _AlgPolicy, class _RandomAccessIterator, class _Sentinel, class _UniformRandomNumberGenerator>
-_CCCL_API inline _RandomAccessIterator
+_CCCL_HOST_DEVICE_API inline _RandomAccessIterator
 __shuffle(_RandomAccessIterator __first, _Sentinel __last_sentinel, _UniformRandomNumberGenerator&& __g)
 {
   using difference_type = typename iterator_traits<_RandomAccessIterator>::difference_type;
@@ -42,7 +42,7 @@ __shuffle(_RandomAccessIterator __first, _Sentinel __last_sentinel, _UniformRand
   difference_type __d  = __last - __first;
   if (__d > 1)
   {
-    _Dp __uid;
+    _Dp __uid; // NOLINT(misc-const-correctness)
     for (--__last, (void) --__d; __first < __last; ++__first, (void) --__d)
     {
       difference_type __i = __uid(__g, _Pp(0, __d));
@@ -57,7 +57,7 @@ __shuffle(_RandomAccessIterator __first, _Sentinel __last_sentinel, _UniformRand
 }
 
 template <class _RandomAccessIterator, class _UniformRandomNumberGenerator>
-_CCCL_API inline void
+_CCCL_HOST_DEVICE_API inline void
 shuffle(_RandomAccessIterator __first, _RandomAccessIterator __last, _UniformRandomNumberGenerator&& __g)
 {
   (void) ::cuda::std::__shuffle<_ClassicAlgPolicy>(
