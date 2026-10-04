@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile Merge Sort providers and inferred payloads without a visible GPU.
+
+The tests use real compiler and linker paths. Only device capability queries
+are replaced, so failures still expose generated-source or binding problems.
+"""
+
 import os
 from types import SimpleNamespace
 
@@ -21,6 +27,8 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 
 @pytest.fixture(autouse=True)
 def _fixed_device(monkeypatch):
+    """Select SM90 for compilation while requiring every GPU to be hidden."""
+
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == ""
     monkeypatch.setattr(
         cuda,
@@ -37,6 +45,8 @@ def _fixed_device(monkeypatch):
 @pytest.mark.parametrize("namespace", ["block", "warp"])
 @pytest.mark.parametrize("partial", [False, True])
 def test_numeric_keys_and_pairs_provider_bundle(namespace, partial):
+    """Compile all numeric providers together to expose symbol collisions."""
+
     collected = []
     context = _nvrtc.resolve_compile_context()
     for dtype in (
@@ -78,6 +88,8 @@ def test_numeric_keys_and_pairs_provider_bundle(namespace, partial):
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 def test_production_partial_pairs_with_dtype_inference(items_per_thread):
+    """Compile inferred pair types with count guards and warp barriers."""
+
     @cuda.jit(chip="sm_90")
     def kernel(source, values, output, associations, count, items_per_thread):
         keys = coop.ThreadData(items_per_thread)

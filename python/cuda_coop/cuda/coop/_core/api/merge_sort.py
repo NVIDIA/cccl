@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Expose common Merge Sort calls with separate result payloads.
+
+These functions define the common key and key/value contracts. A compiler
+backend replaces each call with a CUB block or warp Merge Sort that runs on
+copies of the inputs. A host Python call raises a context error.
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -53,16 +60,18 @@ def merge_sort_keys(
         ``True`` sorts in descending order.
     valid_items : integer, optional
         Number of valid items in the entire group tile, from zero through
-        ``group_size * items_per_thread``. Valid items form the initial blocked
-        prefix. Supply this together with ``oob_default`` for a partial tile.
+        ``group_size * items_per_thread``. Valid items occupy the first
+        ``valid_items`` positions in blocked order. Supply this together with
+        ``oob_default`` for a partial tile.
         Runtime counts must have a signed integer dtype up to 64 bits or an
         unsigned integer dtype up to 32 bits. Invalid static counts fail
         compilation; invalid runtime counts trap before CUB narrows them.
     oob_default : scalar, optional
         Key sentinel for a partial tile. Choose a value that sorts after the
         valid keys: an upper bound for ascending order or a lower bound for
-        descending order. Runtime scalars must match the key dtype exactly;
-        representable ordinary Python numeric literals are converted to it.
+        descending order. Typed runtime values and NumPy scalar constants
+        must match the key dtype exactly. Representable ordinary Python
+        numeric literals are converted to it.
         ``valid_items`` and ``oob_default`` must be uniform within the group.
     temp_storage : TempStorageLike, optional
         Caller-provided scratch for a block group. Omit it to let the compiler
@@ -82,8 +91,8 @@ def merge_sort_keys(
     Notes
     -----
     The Numba backend uses ``cub::BlockMergeSort::Sort`` or
-    ``cub::WarpMergeSort::Sort`` on copies of the input payloads. Floating-point
-    keys must obey the comparison's ordering requirements.
+    ``cub::WarpMergeSort::Sort`` on copies of the input payloads.
+    Floating-point keys must obey the comparison's ordering requirements.
     Use ``cuda.coop.numba_mlir`` for fixed-size Numba local-array inputs or
     a custom comparison predicate.
 
@@ -137,16 +146,18 @@ def merge_sort_pairs(
         ``True`` sorts in descending order.
     valid_items : integer, optional
         Number of valid items in the entire group tile, from zero through
-        ``group_size * items_per_thread``. Valid items form the initial blocked
-        prefix. Supply this together with ``oob_default`` for a partial tile.
+        ``group_size * items_per_thread``. Valid items occupy the first
+        ``valid_items`` positions in blocked order. Supply this together with
+        ``oob_default`` for a partial tile.
         Runtime counts must have a signed integer dtype up to 64 bits or an
         unsigned integer dtype up to 32 bits. Invalid static counts fail
         compilation; invalid runtime counts trap before CUB narrows them.
     oob_default : scalar, optional
         Key sentinel for a partial tile. Choose a value that sorts after the
         valid keys: an upper bound for ascending order or a lower bound for
-        descending order. Runtime scalars must match the key dtype exactly;
-        representable ordinary Python numeric literals are converted to it.
+        descending order. Typed runtime values and NumPy scalar constants
+        must match the key dtype exactly. Representable ordinary Python
+        numeric literals are converted to it.
         ``valid_items`` and ``oob_default`` must be uniform within the group.
     temp_storage : TempStorageLike, optional
         Caller-provided scratch for a block group. Omit it to let the compiler
@@ -167,8 +178,8 @@ def merge_sort_pairs(
     Notes
     -----
     The Numba backend uses ``cub::BlockMergeSort::Sort`` or
-    ``cub::WarpMergeSort::Sort`` on copies of the input payloads. Floating-point
-    keys must obey the comparison's ordering requirements.
+    ``cub::WarpMergeSort::Sort`` on copies of the input payloads.
+    Floating-point keys must obey the comparison's ordering requirements.
     Use ``cuda.coop.numba_mlir`` for fixed-size Numba local-array inputs or
     a custom comparison predicate.
 

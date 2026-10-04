@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check Merge Sort result, topology, and count contracts without a backend.
+
+The plans describe each group's result types and scratch ownership. Partial
+counts also affect request identity and generated range checks.
+"""
+
 import pytest
 
 from cuda.coop._core import (
@@ -29,6 +35,8 @@ _COMPARE = CxxOperator(
 
 
 def _operation(*, pairs=False, valid=None):
+    """Build a numeric request with an optional partial-count binding."""
+
     return GroupMergeSortSemantics(
         make_block_merge_sort_semantics(
             key_dtype=INT32,
@@ -43,6 +51,8 @@ def _operation(*, pairs=False, valid=None):
 
 
 def _plan(group, **kwargs):
+    """Resolve the request for a 64-thread multidimensional block."""
+
     return plan_group_primitive(
         make_group_primitive_call(group, _operation(**kwargs)),
         LaunchFacts((8, 4, 2)),
@@ -79,6 +89,8 @@ def test_invalid_static_count_is_rejected(count):
 
 
 def test_runtime_count_has_range_contract_and_guard():
+    """Check the original count before narrowing it to the CUB count type."""
+
     plan = _plan(
         this_warp().group_by(8), valid=ArgumentBinding.runtime()
     ).require_supported()
