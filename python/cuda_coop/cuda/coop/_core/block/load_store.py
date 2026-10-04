@@ -34,11 +34,31 @@ from ._common import normalize_block_dim, normalize_positive_int
 
 
 class BlockLoadStoreKind(str, Enum):
+    """Select CUB's ``BlockLoad.Load`` or ``BlockStore.Store`` operation."""
+
     LOAD = "load"
     STORE = "store"
 
 
 class BlockLoadStoreAlgorithm(str, Enum):
+    """CUB memory-access strategies and per-thread item arrangements.
+
+    ``DIRECT`` and ``VECTORIZE`` use blocked items: thread ``t`` owns tile
+    positions ``t * items_per_thread + i``. ``STRIPED`` uses positions
+    ``t + i * block_threads`` instead. ``VECTORIZE`` requests vectorized
+    accesses where CUB's type, alignment, and item-count requirements allow.
+
+    The transpose variants also present blocked items to the caller, using
+    shared memory to reorder coalesced accesses. ``TRANSPOSE`` exchanges a
+    block-striped arrangement; ``WARP_TRANSPOSE`` exchanges a warp-striped
+    arrangement. ``WARP_TRANSPOSE_TIMESLICED`` reuses one warp's exchange
+    storage across warps to reduce shared memory use. Both warp-transpose
+    variants require the block's thread count to be a multiple of 32.
+
+    ``BlockLoadAlgorithm`` and ``BlockStoreAlgorithm`` alias this enum; the
+    operation kind selects the corresponding CUB load or store constant.
+    """
+
     DIRECT = "direct"
     STRIPED = "striped"
     VECTORIZE = "vectorize"
@@ -110,6 +130,13 @@ def _normalize_algorithm(
 
 
 def _base_parameters(kind: BlockLoadStoreKind) -> list[Any]:
+    """Describe scratch, the global pointer, and the per-thread item array.
+
+    CUB takes the global pointer first for both operations: ``src`` for a
+    load and ``dst`` for a store. Outputs are written through arguments;
+    neither operation returns the item array or pointer.
+    """
+
     if kind is BlockLoadStoreKind.LOAD:
         return [
             TempStorageParameter(),
@@ -152,6 +179,13 @@ def _with_pointer_offset(
     parameters: list[Any],
     offset: ArgumentBinding,
 ) -> tuple[Any, ...]:
+    """Append an element offset targeting the first non-scratch argument.
+
+    The offset adjusts the global pointer during wrapper generation; it is
+    not an extra argument to CUB's ``Load`` or ``Store`` method. A static
+    binding embeds the offset, while a runtime binding adds an i64 input.
+    """
+
     static_value = offset.value if offset.kind is BindingKind.STATIC else None
     return (
         *parameters,
@@ -166,7 +200,36 @@ def _with_pointer_offset(
 
 @dataclass(frozen=True)
 class BlockLoadStoreSemantics:
-    """Dimension-independent BlockLoad or BlockStore call contract."""
+    """Normalized BlockLoad/BlockStore options and wrapper overloads.
+
+    Built by ``make_block_load_store_semantics`` before block dimensions
+    are known. ``make_block_load_store_specialization`` adds those
+    dimensions and validates constraints that depend on the tile size.
+
+    Attributes
+    ----------
+    kind : BlockLoadStoreKind
+        Operation to perform and CUB method to invoke.
+    dtype : Any
+        Element type to bind to CUB's ``T`` template parameter.
+    algorithm : BlockLoadStoreAlgorithm
+        Memory-access strategy and per-thread item arrangement.
+    items_per_thread : int
+        Positive number of elements in each thread's item array.
+    valid_items, oob_default, pointer_offset : ArgumentBinding
+        Omitted, static, or runtime scalar arguments. A static value is
+        embedded in the wrapper; a runtime binding describes an input
+        without retaining its eventual value.
+    has_full_tile : bool
+        Whether an overload without a valid-item count is included. This
+        describes available signatures, not the size of a particular call.
+    parameters : tuple[tuple[Any, ...], ...]
+        Ordered wrapper parameter descriptors, one tuple per overload.
+        Each starts with scratch storage, the global pointer, and the
+        per-thread array, followed by any count, default, and offset.
+        Static descriptors do not consume runtime arguments; ``T`` and
+        ``ITEMS_PER_THREAD`` dependencies are bound during specialization.
+    """
 
     kind: BlockLoadStoreKind
     dtype: Any
@@ -200,6 +263,8 @@ class BlockLoadStoreSemantics:
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
+        """Identify the normalized options and overloads before dimensions."""
+
         return (
             f"block_{self.kind.value}",
             semantic_token(self.dtype),
@@ -215,7 +280,24 @@ class BlockLoadStoreSemantics:
 
 @dataclass(frozen=True)
 class BlockLoadStoreSpecialization:
-    """Fully specialized CUB BlockLoad or BlockStore semantics."""
+    """A BlockLoad/BlockStore description bound to a concrete block shape.
+
+    Returned by ``make_block_load_store_specialization`` for later
+    materialization and backend lowering. Construction binds the CUB
+    template arguments; compilation and device-storage allocation happen
+    later.
+
+    Attributes
+    ----------
+    specialization : Algorithm
+        Bound CUB template, wrapper overloads, includes, and operation
+        metadata. Its semantic key includes the block dimensions.
+    semantics : BlockLoadStoreSemantics
+        Normalized options from which the specialization was built.
+    block_dim : tuple[int, int, int]
+        Positive ``(x, y, z)`` dimensions used for CUB specialization.
+        The launched block must have this shape.
+    """
 
     specialization: Algorithm
     semantics: BlockLoadStoreSemantics
@@ -273,7 +355,73 @@ def make_block_load_store_semantics(
     include_full_tile: bool = False,
     include_pointer_offset: bool | ArgumentBinding = False,
 ) -> BlockLoadStoreSemantics:
-    """Build canonical dimension-independent BlockLoad/BlockStore semantics."""
+    """Normalize BlockLoad/BlockStore options and describe its overloads.
+
+    Assemble parameter descriptors for CUB wrappers before a block shape
+    is available. For scalar options, ``False`` omits the argument and
+    ``True`` requests a runtime argument. Use ``ArgumentBinding.static``
+    to embed a value, including a literal boolean ``oob_default``.
+
+    Parameters
+    ----------
+    kind : str or BlockLoadStoreKind
+        ``"load"`` or ``"store"``; selects the CUB class and method.
+    dtype : Any
+        Element type for the global pointer, per-thread array, and optional
+        load default. Retained for later binding to CUB's ``T``.
+    items_per_thread : int
+        Positive integral number of elements per thread; booleans are
+        rejected.
+    algorithm : str or BlockLoadStoreAlgorithm
+        Enum member, its lowercase value, or the corresponding fully
+        qualified CUB token, such as ``"::cub::BLOCK_LOAD_TRANSPOSE"``.
+        A CUB token must match ``kind``.
+    valid_items : bool or ArgumentBinding, optional
+        Number of valid elements in the whole block tile, measured from
+        the possibly offset global pointer. A present binding selects a
+        guarded overload. Static counts must fit signed i32; validation
+        against the block tile size happens during specialization.
+    oob_default : bool or ArgumentBinding, optional
+        Value assigned to invalid load positions. Requires a load with
+        ``valid_items`` present. Static defaults must be representable as
+        finite C++ scalar literals. Without a default, invalid load values
+        are unspecified; guarded stores leave out-of-range memory alone.
+    include_full_tile : bool, optional
+        Add an unguarded overload alongside the guarded overload. Requires
+        ``valid_items`` to be present. When ``valid_items`` is omitted,
+        the unguarded overload is already included with the default
+        ``include_full_tile=False``.
+    include_pointer_offset : bool or ArgumentBinding, optional
+        Offset in elements applied to the global pointer. ``False`` omits
+        it; ``True`` includes both unoffset and runtime-offset overloads.
+        An explicit static or runtime binding includes only offset
+        overloads; an omitted binding includes only unoffset overloads.
+        Static offsets must be nonnegative and fit signed i64.
+
+    Returns
+    -------
+    BlockLoadStoreSemantics
+        Canonical options and ordered parameter descriptors. Runtime
+        values, pointer validity, and memory extents are checked or
+        established by the caller and later planning/lowering stages.
+
+    Raises
+    ------
+    TypeError
+        A scalar option is neither a boolean nor an ``ArgumentBinding``,
+        a static count or offset is not an integer or is a boolean, or a
+        static default is not a numeric scalar.
+    ValueError
+        The kind, algorithm, or item count is invalid; a static scalar is
+        out of range or nonfinite; a static offset is negative; or the
+        requested default/full-tile overload lacks a guarded load/store
+        signature. A default is also rejected for stores.
+
+    See Also
+    --------
+    make_block_load_store_specialization
+        Bind block dimensions and validate the tile-dependent constraints.
+    """
 
     pointer_offset_overload_cohort = isinstance(include_pointer_offset, bool)
     kind = BlockLoadStoreKind(kind)
@@ -366,7 +514,58 @@ def make_block_load_store_specialization(
     include_full_tile: bool = False,
     include_pointer_offset: bool | ArgumentBinding = False,
 ) -> BlockLoadStoreSpecialization:
-    """Build a fully specialized CUB BlockLoad or BlockStore description."""
+    """Bind a BlockLoad/BlockStore operation to a concrete block shape.
+
+    Normalize the options with ``make_block_load_store_semantics``, then
+    construct ``Algorithm`` with all CUB template arguments bound. The
+    returned description is ready for materialization; it does not compile
+    device code, allocate scratch storage, or insert synchronization.
+
+    Parameters
+    ----------
+    block_dim : tuple[int, int, int]
+        Exact ``(x, y, z)`` launch dimensions, each a positive integer.
+        Booleans are rejected. The block tile contains
+        ``x * y * z * items_per_thread`` elements. ``warp_transpose`` and
+        ``warp_transpose_timesliced`` require ``x * y * z`` divisible by 32.
+
+    Other Parameters
+    ----------------
+    kind : str or BlockLoadStoreKind
+        ``"load"`` or ``"store"``.
+    dtype : Any
+        Element type bound to CUB's ``T``.
+    items_per_thread : int
+        Positive integral number of elements per thread, excluding booleans.
+    algorithm : str or BlockLoadStoreAlgorithm
+        CUB strategy, accepted in the forms documented by
+        ``make_block_load_store_semantics``.
+    valid_items : bool or ArgumentBinding, optional
+        Guarded-call count binding. Static counts must additionally lie
+        between zero and the block tile size, inclusive. Runtime counts
+        must satisfy the same bounds at execution time.
+    oob_default : bool or ArgumentBinding, optional
+        Optional invalid-item default for guarded loads.
+    include_full_tile : bool, optional
+        Include an unguarded overload alongside guarded overloads.
+    include_pointer_offset : bool or ArgumentBinding, optional
+        Select global-pointer offset overloads. Boolean and explicit-binding
+        selection follow ``make_block_load_store_semantics``.
+
+    Returns
+    -------
+    BlockLoadStoreSpecialization
+        Bound ``Algorithm``, normalized semantics, and block dimensions.
+
+    Raises
+    ------
+    TypeError
+        An argument binding fails the semantics builder's type checks.
+    ValueError
+        An option fails the semantics builder's validation, the block
+        shape is invalid, a static count exceeds the tile bounds, or a
+        warp-transpose algorithm is selected for an incomplete warp.
+    """
 
     block_dim = normalize_block_dim(block_dim)
     semantics = make_block_load_store_semantics(
@@ -445,6 +644,12 @@ def make_block_load_store_specialization(
 def make_block_load_specialization(
     **kwargs: Any,
 ) -> BlockLoadStoreSpecialization:
+    """Call ``make_block_load_store_specialization`` with ``kind="load"``.
+
+    Accepts the same keyword arguments except ``kind`` and returns the
+    resulting ``BlockLoadStoreSpecialization``.
+    """
+
     return make_block_load_store_specialization(
         kind=BlockLoadStoreKind.LOAD, **kwargs
     )
@@ -453,6 +658,13 @@ def make_block_load_specialization(
 def make_block_store_specialization(
     **kwargs: Any,
 ) -> BlockLoadStoreSpecialization:
+    """Call ``make_block_load_store_specialization`` with ``kind="store"``.
+
+    Accepts the same keyword arguments except ``kind`` and returns the
+    resulting ``BlockLoadStoreSpecialization``. ``oob_default`` must be
+    omitted for a store.
+    """
+
     return make_block_load_store_specialization(
         kind=BlockLoadStoreKind.STORE, **kwargs
     )
