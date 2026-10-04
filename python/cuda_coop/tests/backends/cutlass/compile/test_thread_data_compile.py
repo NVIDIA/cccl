@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile payload reconstruction across dynamic loops and nested CuTe calls.
+
+A typed null pointer and explicit SM80 target permit compilation without a
+launch. Each provider dtype must survive repeated extraction and rebuilding of
+ThreadData values while retaining its declared alignment and item type.
+"""
+
 import pytest
 
 cutlass = pytest.importorskip("cutlass")
@@ -22,6 +29,14 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
     "api", (coop, cutlass_coop), ids=("common", "qualified")
 )
 def test_dynamic_payload(dtype, api):
+    """Carry a payload through a runtime loop, branch, and nested JIT helper.
+
+    Rebind the helper result so tracing must reconstruct the payload from
+    MLIR values. Check dtype and alignment during tracing after the loop.
+    Successful compilation confirms the representation. The kernel is not
+    launched, so no output values are checked.
+    """
+
     @cute.jit
     def increment(payload):
         payload[0] = dtype(payload[0] + dtype(1))

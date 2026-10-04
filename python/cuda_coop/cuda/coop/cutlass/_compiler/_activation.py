@@ -33,6 +33,8 @@ def register_trace_context() -> None:
     current_environment = runtime.common.get_current_env_manager
 
     def is_current_cutlass_environment() -> bool:
+        """Match the active environment to this CuTe DSL by identity."""
+
         return current_environment() is environment
 
     _register_compiler_context_probe(

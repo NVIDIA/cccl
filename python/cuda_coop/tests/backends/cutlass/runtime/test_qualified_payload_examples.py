@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Run the qualified register-conversion example and check copy ownership.
+
+The host compares the original register values, the immutable vector from
+``to_tensor_ssa``, and a separately modified register copy. Each pair differs
+from the previous pair in one column. A write that leaks into an earlier copy
+therefore changes a checked value.
+"""
+
 import numpy as np
 import pytest
 
@@ -13,6 +21,8 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 
 
 def test_register_conversion_example():
+    """Check that payload and register-copy edits preserve prior values."""
+
     # example-begin
     import cutlass
     from cutlass import cute

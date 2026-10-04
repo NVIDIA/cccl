@@ -14,6 +14,8 @@ from cutlass.base_dsl.compiler import GPUArch
 
 
 def configured_gpu_arch(get_cute_dsl: Callable[[], Any]) -> str:
+    """Prefer the compile-option target over the DSL environment target."""
+
     dsl = get_cute_dsl()
     compile_options = getattr(dsl, "compile_options", None)
     options = getattr(compile_options, "options", None)
@@ -42,6 +44,12 @@ def _is_numeric_arch(arch: str) -> bool:
 
 
 def _configured_arch_suffix(scope: str, arch: str) -> str:
+    """Normalize target prefixes and retain architecture features.
+
+    The optional a/f suffix changes the target contract and must survive
+    conversion to NVRTC's compute_* spelling.
+    """
+
     original = arch
     for prefix in ("compute_", "compute", "sm_", "sm"):
         if arch.startswith(prefix):
@@ -60,7 +68,11 @@ def resolve_nvrtc_arch(
     scope: str,
     configured_arch: Callable[[], str],
 ) -> str:
-    """Return the ``compute_*`` target for NVRTC LTO-IR compilation."""
+    """Select an NVRTC target from CuTe settings or the current GPU.
+
+    An explicit architecture avoids a device query and preserves a/f feature
+    suffixes. Query compute capability only when CuTe supplies no target.
+    """
 
     arch = configured_arch()
     if arch:

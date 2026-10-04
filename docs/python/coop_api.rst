@@ -33,11 +33,10 @@ See :ref:`registering a backend <coop-backend-registration>`.
 Thread groups
 ^^^^^^^^^^^^^
 
-See :ref:`thread groups <coop-common-groups>` and
-:ref:`participation and synchronization <coop-common-participation>` for the shared
-execution model. ``ThreadGroup`` and ``ThreadHierarchy`` describe which
-threads cooperate. A descriptor's availability does not imply that every
-primitive supports that group.
+See :ref:`thread groups <coop-common-groups>` and :ref:`participation and
+synchronization <coop-common-participation>` for the shared execution model. ``ThreadGroup`` and ``ThreadHierarchy`` describe which
+threads cooperate. A descriptor's availability does not imply that every primitive supports that
+group.
 
 .. autofunction:: this_thread
 .. autofunction:: this_warp
@@ -289,18 +288,17 @@ conversions, and the extensions documented below:
 
    import cuda.coop.cutlass as cutlass_coop
 
-Block construction and Load/Store follow the :ref:`Common API <coop-common-api>`. Qualified operations also accept CuTe
-register payloads where specified. Scalar results are CuTe values; multi-item
-results are ``ThreadData`` objects unless stated otherwise. A NumPy dtype
-selector does not change the compiler that owns a result.
+Block construction and Load/Store follow the :ref:`Common API
+<coop-common-api>`. Use the qualified ``ThreadData`` conversion methods below
+to move values between CuTe register tensors or vectors and payloads, for
+example before Store or after Load. Payload items are CuTe values. A NumPy
+dtype selector does not change the compiler that owns them.
 
 The :doc:`CUTLASS Programming Guide <coop_cutlass>` explains how to choose
-between common and qualified calls. Custom operators and Scan prefix
-callbacks are not supported; recognized ``operator`` and NumPy aliases select
-built-in operators. See :ref:`CUTLASS-specific behavior and limits
-<coop-cutlass-differences>` for participation and launch requirements, and the
-:doc:`CUTLASS Developer Guide <coop/cutlass_developer_guide>` for compilation,
-linking, and debugging.
+between common and qualified calls. See :ref:`CUTLASS-specific behavior and
+limits <coop-cutlass-differences>` for supported operations, participation and
+launch requirements, and the :doc:`CUTLASS Developer Guide
+<coop/cutlass_developer_guide>` for compilation, linking and debugging.
 
 .. currentmodule:: cuda.coop.cutlass
 

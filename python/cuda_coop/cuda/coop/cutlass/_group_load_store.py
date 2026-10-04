@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Validate block Load/Store calls before emitting CuTe extern calls.
+
+Use exact compiler launch facts and shared group planning. This implementation
+supports DIRECT access to contiguous memory, with no shared scratch. Binding
+records separate embedded constants from device-time arguments.
+"""
+
 from __future__ import annotations
 
 import math
@@ -20,6 +27,13 @@ _MAX_STATIC_OFFSET = (1 << 63) - 1
 
 
 def _resolve_group(group, algorithm, temp_storage, operation):
+    """Require block DIRECT and resolve the exact launch dimensions.
+
+    Validate an explicit scratch descriptor if present. DIRECT
+    does not consume it; launch resolution supplies the block
+    shape for shared planning.
+    """
+
     if not isinstance(group, CommonThreadGroup):
         raise TypeError(f"{_SCOPE}.{operation} group must be a ThreadGroup")
     if group.kind != "block":
@@ -54,10 +68,26 @@ def load(
 ) -> None:
     """Load a contiguous block tile into a writable per-thread payload.
 
-    The payload is populated in place. Beyond ``valid_items``, slots have
-    unspecified values unless ``oob_default`` is supplied, even if initialized
-    before Load. DIRECT requires no shared scratch or synchronization.
-    ``offset`` is measured in elements.
+    Shared parameters and participation follow :func:`cuda.coop.load`. This
+    implementation accepts block groups and the DIRECT algorithm. The output
+    must be CUTLASS ThreadData; its dtype is inferred from the source, or must
+    agree with it when already declared.
+
+    Load populates the payload in place in blocked order. Beyond
+    ``valid_items``, slots have unspecified values unless ``oob_default`` is
+    supplied, even if initialized before Load. Supplying ``oob_default`` also
+    requires ``valid_items``. A runtime default must have the memory dtype.
+
+    The count ranges from zero through the full tile size. ``offset`` is a
+    nonnegative element offset. Counts, offsets, and supplied defaults must
+    agree across the block. The caller must provide enough accessible memory
+    for the selected prefix at that offset.
+
+    The source must expose a raw pointer and a provably compact layout, or a
+    bare pointer conversion without layout metadata. Register or local-memory
+    tensors are rejected. Load reads addressable memory, such as global or
+    shared memory. DIRECT requires no shared scratch or reuse barrier; an
+    accepted explicit scratch descriptor does not change that.
     """
 
     if not isinstance(output, ThreadData):
@@ -99,8 +129,19 @@ def store(
 ) -> None:
     """Store per-thread values into a contiguous block tile.
 
-    ``valid_items`` limits the written prefix; ``offset`` is in elements.
-    The value dtype must match the destination. DIRECT needs no shared scratch.
+    Shared parameters and participation follow :func:`cuda.coop.store`. This
+    implementation accepts block groups and DIRECT. Each thread supplies a
+    scalar or an initialized CUTLASS ThreadData payload whose dtype matches
+    the destination. The source payload is preserved.
+
+    ``valid_items`` selects a prefix from zero through the full tile size.
+    ``offset`` is a nonnegative element offset. Both must agree across the
+    block, and the caller must provide enough accessible destination memory
+    for that prefix. Items outside it are not written.
+
+    The destination has the same raw-pointer and compact-layout requirements
+    as :func:`load`. DIRECT needs no shared scratch or reuse barrier; an
+    accepted explicit scratch descriptor does not change that.
     """
 
     group, launch, algorithm = _resolve_group(
@@ -124,6 +165,8 @@ def store(
 
 
 def _normalize_algorithm(algorithm: Any) -> GroupLoadStoreAlgorithm:
+    """Normalize enum values and strings before variant validation."""
+
     token = getattr(algorithm, "value", algorithm)
     if isinstance(token, str):
         token = token.lower().replace("-", "_")
@@ -137,6 +180,8 @@ def _normalize_algorithm(algorithm: Any) -> GroupLoadStoreAlgorithm:
 
 
 def _is_boolean(value: Any) -> bool:
+    """Recognize Python, NumPy, and DSL booleans before integer checks."""
+
     if isinstance(value, bool):
         return True
     try:
@@ -152,6 +197,13 @@ def _is_boolean(value: Any) -> bool:
 
 
 def _classify_integer_binding(value: Any, *, name: str) -> ArgumentBinding:
+    """Separate omitted, embedded, and runtime integer controls.
+
+    Reject booleans. Validate static offset bounds here; shared planning
+    checks static valid counts against the tile size. DSL integer values
+    remain runtime bindings for the provider ABI.
+    """
+
     if value is None:
         return ArgumentBinding.omitted()
     if _is_boolean(value):
@@ -176,6 +228,12 @@ def _classify_integer_binding(value: Any, *, name: str) -> ArgumentBinding:
 
 
 def _classify_oob_default(value: Any) -> ArgumentBinding:
+    """Embed host numeric defaults and retain DSL inputs for runtime.
+
+    This selects the binding form. The provider later checks compatibility
+    with the memory dtype.
+    """
+
     if value is None:
         return ArgumentBinding.omitted()
     if _is_boolean(value):

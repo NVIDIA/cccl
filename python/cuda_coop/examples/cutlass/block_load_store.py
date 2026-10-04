@@ -21,14 +21,25 @@ _SENTINEL = -101
 
 
 def _check(result):
+    """Raise on a CUDA Driver error and return the remaining result values.
+
+    A single value is unwrapped; otherwise the remaining values are returned
+    as a tuple.
+    """
+
     if int(result[0]):
         raise RuntimeError(f"CUDA Driver call failed: {result[0]}")
     return result[1] if len(result) == 2 else result[1:]
 
 
 def run_example(api="common", items_per_thread=2):
-    """Run the partial copy and compare its complete output with a CPU
-    oracle.
+    """Copy a partial tile and check every destination element on the host.
+
+    Store writes more items than Load reads, so the check covers both copied
+    source values and the Load fill value. Sentinels before and after the
+    stored interval reveal writes outside it. Device allocations are released
+    even if compilation, launch, or the copy back fails; the host comparison
+    runs after release.
     """
 
     tile_size = 32 * items_per_thread

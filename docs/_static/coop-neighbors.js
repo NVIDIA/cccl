@@ -26,8 +26,8 @@
 
   // Separate valid positions, missing neighbors, and the copied suffix.
   // A null neighbor means copy the current value; zero is a supplied value
-  // and must still take part in subtraction. UI choices reject a successor
-  // for every right partial call, including a full-capacity explicit count.
+  // and must still take part in subtraction. The boundary control below
+  // offers no successor for right partial calls, even at full capacity.
   function build_difference(state) {
     const items = Number(state.items);
     const values = inputs(items);

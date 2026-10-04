@@ -2,7 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Keep C++ requests separate for each active CuTe trace."""
+"""Keep generated C++ requests separate for each active CuTe trace.
+
+A DSL can reuse its compile-options object across nested or later traces, so
+sessions are also identified by their MLIR module. Providers register requests
+while emitting extern calls; finalization consumes only the matching session.
+Snapshots support rollback of queued requests after a failed lowering.
+"""
 
 from __future__ import annotations
 
@@ -34,6 +40,13 @@ _UNSPECIFIED_MODULE = object()
 
 
 class BundleSession:
+    """Collect deduplicated provider requests for one trace module.
+
+    The lock protects request and module changes. Snapshots copy the request
+    set so rollback can restore it without aliasing later additions; request
+    objects themselves remain shared immutable descriptions.
+    """
+
     def __init__(self, trace_module_op=None):
         self.trace_module_op = trace_module_op
         self.requests = set()
@@ -53,6 +66,8 @@ class BundleSession:
             self.requests = set(requests)
 
     def request_list(self):
+        """Order requests by symbol and reject conflicting definitions."""
+
         with self._lock:
             return list(canonical_bundle_requests(self.requests))
 
@@ -65,6 +80,8 @@ class BundleSession:
             return _same_mlir_operation(self.trace_module_op, module)
 
     def bind_trace_module(self, module):
+        """Bind an unassigned session or check its existing module owner."""
+
         with self._lock:
             if self.trace_module_op is None:
                 self.trace_module_op = module
@@ -76,6 +93,8 @@ def register_bundle_finalizer(
     *,
     scope: str = _SESSION_SCOPE,
 ) -> None:
+    """Set the callback that compiles a completed trace session."""
+
     if not callable(finalizer):
         raise TypeError("finalizer must be callable")
     global _BUNDLE_FINALIZER, _SESSION_SCOPE
@@ -85,6 +104,8 @@ def register_bundle_finalizer(
 
 
 def _ensure_bundle_finalizer() -> Callable[[Any, Any, str], None]:
+    """Load the finalizer lazily and require its registration side effect."""
+
     if _BUNDLE_FINALIZER is None:
         importlib.import_module(f"{__package__}._finalize")
     if _BUNDLE_FINALIZER is None:
@@ -101,6 +122,8 @@ def _get_cute_dsl():
 
 
 def _trace_finalize_dispatcher(dsl, module, function_name) -> None:
+    """Call the current finalizer through one persistent DSL hook."""
+
     hook = getattr(dsl, _TRACE_HOOK_TARGET_ATTR, None)
     if hook is not None:
         hook(dsl, module, function_name)
@@ -112,6 +135,13 @@ def ensure_trace_hook_registered(
     scope: str | None = None,
     get_cute_dsl: Callable[[], Any] | None = None,
 ) -> None:
+    """Install one DSL dispatcher and select its finalizer.
+
+    Separate the stable registered hook from its replaceable target so
+    repeated activation does not accumulate callbacks. Reject a runtime
+    without the hook needed to attach generated device code before linking.
+    """
+
     if finalizer is None:
         finalizer = _ensure_bundle_finalizer()
         scope = _SESSION_SCOPE if scope is None else scope
@@ -151,6 +181,13 @@ def _ensure_trace_hook_registered() -> None:
 
 
 def _sessions_for_options(compile_options: Any) -> list[BundleSession] | None:
+    """Find sessions without retaining their compile-options owner.
+
+    Unhashable options still need weak references. Check identity
+    before reusing the fallback so a recycled Python object ID
+    cannot inherit old requests.
+    """
+
     try:
         return _SESSIONS.get(compile_options)
     except TypeError:
@@ -169,6 +206,11 @@ def _sessions_for_options(compile_options: Any) -> list[BundleSession] | None:
 def _select_session(
     sessions: list[BundleSession], trace_module_op: Any
 ) -> BundleSession | None:
+    """Select a matching module session or an unambiguous sole session.
+
+    An unspecified module must not choose arbitrarily among nested traces.
+    """
+
     if trace_module_op is _UNSPECIFIED_MODULE:
         return sessions[0] if len(sessions) == 1 else None
     return next(
@@ -184,9 +226,7 @@ def _select_session(
 def lookup_bundle_session(
     compile_options: Any, *, trace_module_op: Any = _UNSPECIFIED_MODULE
 ) -> BundleSession | None:
-    """Find a trace's session without disturbing other modules on the same
-    DSL.
-    """
+    """Find a trace session without removing other modules on the same DSL."""
 
     with _STATE_LOCK:
         return _select_session(
@@ -202,6 +242,12 @@ def _drop_id_session(key: int) -> None:
 def _store_bundle_sessions(
     compile_options: Any, sessions: list[BundleSession]
 ) -> None:
+    """Store sessions without keeping their compile-options owner alive.
+
+    Use an identity-keyed weak reference when options cannot be dictionary
+    keys, and remove that entry when its owner is collected.
+    """
+
     try:
         _SESSIONS[compile_options] = sessions
     except TypeError:
@@ -218,6 +264,8 @@ def _store_bundle_sessions(
 
 
 def set_bundle_session(compile_options: Any, session: BundleSession) -> None:
+    """Replace one module session while retaining other trace sessions."""
+
     with _STATE_LOCK:
         sessions = _sessions_for_options(compile_options)
         if sessions is None:
@@ -253,6 +301,8 @@ def pop_bundle_session(
 
 
 def _same_mlir_operation(lhs: Any, rhs: Any) -> bool:
+    """Compare operation wrappers while handling failed equality checks."""
+
     lhs = getattr(lhs, "operation", lhs)
     rhs = getattr(rhs, "operation", rhs)
     if lhs is rhs:
@@ -266,6 +316,12 @@ def _same_mlir_operation(lhs: Any, rhs: Any) -> bool:
 
 
 def _active_trace_module_op() -> Any | None:
+    """Walk the current insertion point to its enclosing builtin module.
+
+    Unavailable insertion state means no active trace; no DSL or module is
+    created as a fallback.
+    """
+
     try:
         from cutlass._mlir import ir
 
@@ -288,6 +344,12 @@ def get_or_create_bundle_session(
     *,
     trace_module_op: Any | None = None,
 ) -> BundleSession:
+    """Reuse this module's session, or bind an existing unbound session.
+
+    Use a session for these compile options. Create a new session only when
+    neither a bound nor an unbound one is available.
+    """
+
     with _STATE_LOCK:
         session = lookup_bundle_session(
             compile_options, trace_module_op=trace_module_op
@@ -306,6 +368,8 @@ def get_or_create_bundle_session(
 
 
 def active_bundle_session() -> BundleSession:
+    """Require an active module and prepare its session and finalize hook."""
+
     module = _active_trace_module_op()
     if module is None:
         raise DSLRuntimeError(
@@ -320,6 +384,12 @@ def active_bundle_session() -> BundleSession:
 
 
 def snapshot_active_session_state_for(*, get_cute_dsl: Callable[[], Any]):
+    """Save the active options, module, and requests before lowering.
+
+    A missing session is recorded explicitly so restoration can remove a
+    session created by the failed operation.
+    """
+
     compile_options = get_cute_dsl().compile_options
     module = _active_trace_module_op()
     with _STATE_LOCK:
@@ -340,6 +410,14 @@ def restore_active_session_state_for(
     *,
     get_cute_dsl: Callable[[], Any],
 ) -> None:
+    """Restore queued bundle state after a failed provider lowering.
+
+    Remove a newly created session when the snapshot had none. If the active
+    options changed, clear the current session before restoring the
+    original. This restores request bookkeeping; it does not undo emitted
+    MLIR or payload assignments.
+    """
+
     current_options = get_cute_dsl().compile_options
     current_module = _active_trace_module_op()
     with _STATE_LOCK:
@@ -363,4 +441,6 @@ def restore_active_session_state(snapshot) -> None:
 
 
 def register_request(request: Any) -> None:
+    """Add an immutable provider request to the active trace's bundle."""
+
     active_bundle_session().add(request)

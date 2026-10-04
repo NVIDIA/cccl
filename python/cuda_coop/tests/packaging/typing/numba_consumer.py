@@ -55,7 +55,7 @@ class _ReadonlyUInt16Payload(Protocol):
 
 
 def _select_left_int32(left: np.int32, right: np.int32) -> np.int32:
-    """Supply an associative, noncommutative callback with an int32 result."""
+    """Supply a typed int32 binary callback for Reduce and Scan overloads."""
 
     del right
     return left

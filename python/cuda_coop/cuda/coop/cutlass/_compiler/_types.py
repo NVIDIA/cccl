@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Reconcile payload values, common API dtypes, and the provider's C++ ABI.
+
+Ordinary Python and NumPy types map to CUTLASS scalar types. A bare signless
+integer IR value needs dtype metadata to recover signedness. A common-root
+call is a ``cuda.coop.*`` call that the common API delegated to this backend.
+Such calls must also pass the common API's dtype checks.
+"""
+
 from __future__ import annotations
 
 import math
@@ -34,6 +42,8 @@ ROOT_SCOPE = "cuda.coop.cutlass"
 
 @dataclass(frozen=True)
 class TypeSpecification:
+    """Describe a scalar type for the C++ wrapper and its symbol."""
+
     cpp_type: str
     token: str
     width_bits: int
@@ -42,6 +52,8 @@ class TypeSpecification:
 
 @dataclass(frozen=True)
 class BundleRenderer:
+    """Describe source rendering and required headers for a request kind."""
+
     include_lines: tuple[str, ...]
     cccl_headers: tuple[tuple[str, str], ...]
     render: Callable[[Any], list[str]]
@@ -103,7 +115,12 @@ def coerce_plain_scalar(
     allow_nonfinite: bool,
     convert: bool = True,
 ) -> Any:
-    """Validate and optionally convert an exact Python numeric literal."""
+    """Validate and optionally cast an exact Python int or float.
+
+    Check the destination range and the requested nonfinite policy. Normal
+    floating-point rounding can still occur. Return a sentinel for other
+    scalar objects so their declared dtype can be checked separately.
+    """
 
     token = TYPE_SPECIFICATIONS[value_type].token
     if type(value) is int:
@@ -150,6 +167,15 @@ def coerce_plain_scalar(
 
 
 def as_valid_items_arg(value: Any, *, scope: str) -> Any:
+    """Convert a runtime count to the provider's signed 32-bit ABI.
+
+    Check wide DSL values before narrowing. An out-of-range value becomes -1
+    so the generated provider trap rejects it instead of accepting a wrapped
+    count. Reject invalid host integers directly. An omitted count has no
+    extern argument, so callers should not pass None. If None does arrive,
+    return -1 so the provider trap rejects it.
+    """
+
     if value is None:
         return Int32(-1)
     if isinstance(value, (bool, np.bool_)):
@@ -193,6 +219,14 @@ def resolve_thread_data_value_type(
     resolve_type: Callable[..., type],
     supported_types: frozenset[type] = ALL_PROVIDER_TYPES,
 ) -> tuple[type, tuple[Any, ...]]:
+    """Resolve initialized payload items to one supported provider dtype.
+
+    With declared metadata, convert Python literals and require typed items
+    to agree. The declared dtype can supply signedness for a raw integer IR
+    value of matching width. Without metadata, infer from all items and
+    require a homogeneous type.
+    """
+
     values = value.values(feature)
     if value.dtype is not None:
         value_type = resolve_type(value.dtype, allowed=allowed, feature=feature)
@@ -246,6 +280,8 @@ def resolve_thread_data_value_type(
 
 
 def _signless_integer_item_matches_dtype(item: Any, value_type: type) -> bool:
+    """Match raw IR width when dtype metadata supplies signedness."""
+
     if value_type not in INTEGER_VALUE_TYPES:
         return False
     if getattr(item, "signed", None) is not None:
@@ -266,6 +302,13 @@ def canonical_dsl_type(
     scope: str = ROOT_SCOPE,
     root_scope: str = ROOT_SCOPE,
 ) -> type:
+    """Resolve values, dtype tokens, and typed IR to a CUTLASS type.
+
+    Do not guess the signedness of raw i8/i16/i32/i64 values.
+    Unsupported values retain their Python type so the caller can
+    issue its operation-specific diagnostic.
+    """
+
     if isinstance(value, type) and value in TYPE_SPECIFICATIONS:
         return value
 
@@ -348,6 +391,12 @@ def resolve_provider_type(
     namespace: str,
     canonical_type: Callable[[Any], type],
 ) -> type:
+    """Apply common API restrictions and check the provider dtype set.
+
+    A qualified call can use its provider contract directly. A delegated
+    common call must also pass the common API's dtype check.
+    """
+
     value_type = canonical_type(value)
     operation = _common_root_operation_name()
     if operation is not None:
@@ -367,6 +416,8 @@ def make_provider_type_resolver(
     root_scope: str,
     namespace: str,
 ) -> Callable[..., type]:
+    """Bind operation names for consistent type diagnostics."""
+
     def resolve_type(
         value: Any,
         *,

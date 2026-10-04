@@ -5,8 +5,8 @@
 """Check public stubs through isolated valid and invalid consumer programs.
 
 Copy only the imported package's ``.pyi`` stubs and ``py.typed`` marker to a
-temporary root. Then implementation modules and an unrelated installed wheel
-cannot satisfy missing public declarations.
+temporary root. Implementation modules and a separately installed cuda-coop
+then cannot supply missing public declarations.
 """
 
 from __future__ import annotations

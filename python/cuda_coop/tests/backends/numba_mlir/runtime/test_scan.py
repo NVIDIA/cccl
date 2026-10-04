@@ -767,15 +767,14 @@ def test_reused_caller_storage_keeps_calls_ordered_and_input_unchanged():
 def _run_invalid_runtime_prefix_probe(
     valid_items: int,
 ) -> subprocess.CompletedProcess[str]:
-    """Test an invalid valid_items count in a child with its own CUDA context.
+    """Run an invalid valid_items count in a child with its own CUDA context.
 
-    Require the child to import the same package origin as the parent. Return
-    its status and diagnostics so the test can distinguish a device trap from
-    an unrelated failure, then verify that the parent's context still works.
+    Device traps poison their CUDA context. Run this launch outside the
+    pytest worker, and require the child to import the parent's package origin.
+    Return its status and output so the test can tell a device trap from an
+    unrelated failure.
     """
 
-    # A device trap poisons its CUDA context, so invalid launches must run in a
-    # disposable child process rather than the pytest worker.
     script = f"""\
 import numpy as np
 import numba_cuda_mlir.cuda as cuda

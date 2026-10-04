@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check payload ownership, explicit conversions and MLIR reconstruction.
+
+Host-side cases cover initialization, copying and common-API dtype limits.
+Small MLIR modules exercise register storage, SSA exports and control-flow
+reconstruction without launching kernels. Those protocols must retain item
+type, extent, alignment and common-API origin across newly built payloads.
+"""
+
 from copy import copy, deepcopy
 from importlib import import_module
 from types import SimpleNamespace
@@ -93,6 +101,14 @@ def test_payload_indices():
 
 
 def test_common_root_restrictions_survive_copy():
+    """Keep common-API dtype checks after the dispatch scope has ended.
+
+    Construct the payload inside the common scope, then assign through the
+    original and both copies outside it. A Boolean write must still fail,
+    showing that common origin belongs to the payload rather than the current
+    context alone.
+    """
+
     with _common_root_operation_scope("ThreadData"):
         data = ThreadData(items_per_thread=1, dtype=np.int16, alignment=64)
         with pytest.raises(TypeError, match="dtypes"):
@@ -104,6 +120,8 @@ def test_common_root_restrictions_survive_copy():
 
 
 class _Vector:
+    """Supply a shaped per-thread value without a memory address space."""
+
     dtype = np.int16
     shape = (3,)
 
@@ -212,6 +230,14 @@ def test_export_rejects_incomplete_or_inconsistent_payload():
 )
 @pytest.mark.parametrize("inferred", (False, True))
 def test_control_flow_roundtrip(dtype, inferred):
+    """Rebuild a payload from MLIR values without changing its prototype.
+
+    Exercise declared and inferred dtypes for every provider type. The rebuilt
+    payload must retain shape, alignment and common origin, while extraction
+    leaves the original value objects untouched. A Boolean write checks that
+    the retained origin still enforces the common numeric profile.
+    """
+
     with ir.Context(), ir.Location.unknown():
         module = ir.Module.create()
         with ir.InsertionPoint(module.body):

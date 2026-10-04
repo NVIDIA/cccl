@@ -2,7 +2,23 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Route cooperative calls through the backend active in the compiler trace."""
+"""Connect common API markers to the compiler processing a kernel.
+
+Importing an operation records its function object and supported group
+kinds. Registration does not wrap the callable, so imported aliases are
+the same object and keep its signature and documentation.
+
+Numba recognizes registered function objects in its intermediate code. A
+tracing compiler such as CuTe executes common API functions in Python, so
+those functions ask registered probes which compiler environment is
+active. Importing a backend makes its probe available; it does not select
+that backend for every later call.
+
+A separate context variable records which common operation is being
+delegated. Qualified backend code uses this information to enforce common
+API restrictions while retaining its own extensions for direct qualified
+calls.
+"""
 
 from __future__ import annotations
 
@@ -110,11 +126,12 @@ class UnsupportedCoopBackendOperationError(NotImplementedError):
 def _register_compiler_context_probe(
     backend_module: str, probe: Callable[[], bool]
 ) -> None:
-    """Register an initialized backend's compiler-environment ownership probe.
+    """Register a check for an initialized compiler environment.
 
-    Tracing compilers without a trace-entry hook can expose their active
-    environment instead. Probes must inspect that environment without importing
-    runtimes or selecting a backend merely because it is installed.
+    The backend supplies a callable that reports whether its environment is
+    active now. A probe must inspect already initialized runtime objects
+    without importing a compiler or creating a new environment. Registration
+    replaces any earlier probe for the same backend module.
     """
 
     if not isinstance(backend_module, str) or not backend_module.strip():
@@ -125,7 +142,12 @@ def _register_compiler_context_probe(
 
 
 def _backend_module_name() -> str | None:
-    """Return the compiler-owned backend active in the current trace."""
+    """Find the single backend that owns the active compiler environment.
+
+    Return None when no registered probe claims this trace. A failed probe or
+    two positive probes raise a context error: choosing a fallback could send
+    the same common call to the wrong compiler.
+    """
 
     active = None
     for module_name, probe in tuple(_COMPILER_CONTEXT_PROBES.items()):
@@ -147,7 +169,12 @@ def _backend_module_name() -> str | None:
 
 @contextmanager
 def _common_root_operation_scope(operation: str) -> Iterator[None]:
-    """Identify one root dispatch without changing backend selection."""
+    """Mark a delegated common call while preserving nested call state.
+
+    Backend code reads the operation name to apply common payload and dtype
+    restrictions. The context variable is separate from backend selection and
+    is restored even if validation or lowering raises an error.
+    """
 
     token = _ACTIVE_COMMON_ROOT_OPERATION.set(operation)
     try:
@@ -163,6 +190,13 @@ def _common_root_operation_name() -> str | None:
 
 
 def _active_backend(feature: str) -> tuple[str, ModuleType]:
+    """Import the backend named by the active environment probe.
+
+    The probe identifies an initialized integration. Without an active
+    compiler environment, report the requested feature in the context error
+    instead of choosing a backend from installed packages.
+    """
+
     module_name = _backend_module_name()
     if module_name is None:
         raise CoopCompilerContextRequiredError(
@@ -173,6 +207,13 @@ def _active_backend(feature: str) -> tuple[str, ModuleType]:
 
 
 def _backend_member(name: str) -> Any:
+    """Find an operation in the active backend or report it as unavailable.
+
+    Translate a missing attribute into the common unsupported-operation
+    error so callers get the backend and operation names instead of an
+    AttributeError.
+    """
+
     module_name, backend = _active_backend(name)
     try:
         return getattr(backend, name)
@@ -188,7 +229,13 @@ def _common_selector(
     *,
     allow_none: bool = False,
 ) -> Any:
-    """Normalize one common selector while a tracing backend is active."""
+    """Normalize a common selector during Python tracing.
+
+    An active tracing backend receives a normalized string from the common
+    allowlist. Reject Enum values and backend-only choices before delegation.
+    Without an active probe, leave the value unchanged; a compiler that
+    recognizes the original function marker performs its own planning checks.
+    """
 
     if _backend_module_name() is None:
         return value
@@ -272,6 +319,15 @@ def _group_primitive_marker(
     *args: Any,
     **kwargs: Any,
 ) -> Any:
+    """Dispatch a registered common operation in an active Python trace.
+
+    Check the common group contract before calling the backend. Keep the
+    operation name in context for the duration of that call so qualified
+    code can distinguish common restrictions from its direct-call
+    extensions. Compilers that replace registered markers never run this
+    path.
+    """
+
     if operation not in _COMMON_GROUP_OPERATIONS_BY_NAME:
         raise UnsupportedCoopBackendOperationError("cuda.coop", operation)
     if _backend_module_name() is None:

@@ -111,11 +111,11 @@ or a runtime value. The lowering then reads the CuTe memory operand's
 element type and checks that its layout exposes the contiguous pointer
 required by CUB.
 
-The shared planner uses those arguments and the kernel's launch dimensions
-to choose a CUB specialization. It also determines which threads must
-participate and what scratch storage and barriers the call needs. Both
-backends use this planner. The CUTLASS lowering puts the plan and CuTe scalar type
-into a provider request, which the renderer uses to generate the wrapper.
+The shared planner uses those arguments and the kernel's launch dimensions to
+choose a CUB specialization. It also determines which threads must participate
+and what scratch storage and barriers the call needs. Both backends use this
+planner. The CUTLASS lowering puts the plan and CuTe scalar type into a
+provider request, which the renderer uses to generate the wrapper.
 
 In the example, the default ``direct`` algorithm selects CUB Block Load and
 Store for a 32-thread block with two integers per thread. Thread rank
@@ -153,8 +153,9 @@ One provider bundle per trace
 ------------------------------
 
 Each trace has a provider session keyed by its compile options and MLIR
-module. The session deduplicates equivalent requests. Load and Store in the example contribute to the same bundle;
-finalization compiles the two providers together.
+module. The session deduplicates equivalent requests. Load and Store in the
+example contribute to the same bundle; finalization compiles the two providers
+together.
 
 CuTe's scoped trace-finalization hook finds the session belonging to the
 module being finalized. It leaves an unrelated or nested module's session
@@ -178,10 +179,12 @@ the final linker has read it. Finalization removes stale managed library
 paths from persistent compiler options so the next trace cannot link an
 earlier bundle by mistake.
 
-Failed emission restores the provider-session snapshot. Finalization removes only its own session. Lifecycle
-tests exercise failed compilation or linking followed by a successful retry,
-as well as repeated and nested compilation. These checks matter because a
-single Python process can compile many kernels through the same CuTe DSL.
+Failed emission restores the queued requests and bundle state saved in the
+provider-session snapshot. It does not undo emitted IR or payload assignments.
+Finalization removes only its own session. Lifecycle tests exercise
+failed compilation or linking followed by a successful retry, as well as
+repeated and nested compilation. These checks matter because one Python
+process can compile many kernels through the same CuTe DSL.
 
 Finding the implementation
 ---------------------------
@@ -221,13 +224,12 @@ and storage requirements. Add a shared declaration under ``_core/api``
 only when the common API needs it; keep CUTLASS-specific controls in the
 qualified entry point and its ``.pyi`` file.
 
-Adapt the shared plan in ``cutlass/_lowering``. The lowering must agree
-with its provider wrapper about argument types, result buffers, and
-scratch operands. Register the typed request with the current session
-and preserve rollback if emission fails. Load/Store illustrates in-place
-payloads and typed memory controls.
-Reuse the existing renderer registration, bundle finalizer, and storage
-planner when their contracts express the operation.
+Adapt the shared plan in ``cutlass/_lowering``. The lowering must agree with
+its provider wrapper about argument types, result buffers, and scratch
+operands. Register the typed request with the current session and preserve
+rollback if emission fails. Load/Store illustrates in-place payloads and typed
+memory controls. Reuse the existing renderer registration, bundle finalizer,
+and storage planner when their contracts express the operation.
 
 Checking a change
 -----------------
@@ -244,7 +246,7 @@ from the repository root with the package and compatible compiler installed:
 
 .. code-block:: bash
 
-   python -m pytest -q python/cuda_coop/tests/backends/cutlass/unit/test_load_store_plans.py
+   python -m pytest -q python/cuda_coop/tests/backends/cutlass/unit/test_compiler.py
    python -m pytest -q python/cuda_coop/tests/backends/cutlass/compile/test_compiler_lifecycle.py
    python -m pytest -q python/cuda_coop/tests/backends/cutlass/runtime/test_block_load_store.py
 
@@ -261,9 +263,10 @@ compiling a kernel. The dump includes the source on provider-cache hits too.
 when a test needs an isolated cache directory. See :doc:`configuration`
 for these settings and header-selection controls.
 
-For generated-code claims, inspect the final linked cubin. The block
-algorithm tests include provider-call elimination and scratch/barrier checks
-using ``cuobjdump``; provider source or intermediate PTX alone cannot prove
-the final result. Run focused Compute Sanitizer race checks for changes to
-scratch allocation or synchronization. Keep numerical correctness,
-generated-code evidence, and public-package qualification as separate checks.
+For generated-code claims, inspect the final linked cubin with ``cuobjdump``.
+``runtime/test_block_load_store.py`` shows this check for direct Load/Store.
+Check whether provider calls remain and whether the generated storage and
+barriers match the operation. Provider source or intermediate PTX alone cannot
+prove the final result. Use Compute Sanitizer race checks for changes to
+scratch allocation or synchronization. Numerical correctness, generated-code
+evidence, and public-package qualification require separate checks.

@@ -14,8 +14,10 @@ from ._runtime import validate_cutlass_runtime
 
 
 def normalize_block_dim(value: Any) -> tuple[int, int, int] | None:
-    """Normalize a static shape without coercing floats or Boolean
-    dimensions.
+    """Normalize positive static dimensions and pad to three with ones.
+
+    Return None for unsupported shapes, floats, or Boolean dimensions. Dynamic
+    DSL values cannot establish an exact launch dimension.
     """
 
     dimensions = value if isinstance(value, (tuple, list)) else (value,)

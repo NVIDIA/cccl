@@ -37,8 +37,8 @@ integrations. The extra only adds the dependency requirements declared in
 `pyproject.toml` so pip installs the supported Numba-CUDA-MLIR stack for the
 selected CUDA major version.
 
-Python 3.10 through 3.14 is supported. The Numba-CUDA-MLIR integration
-requires `numba-cuda-mlir>=0.5.0,<0.6`.
+Python 3.10 through 3.14 is supported. The Numba-CUDA-MLIR integration requires
+`numba-cuda-mlir>=0.5.0,<0.6`.
 
 Backend compiler and runtime CI is configured for Linux x86-64 with Python
 3.14: CUDA 13 in pull requests and CUDA 12 in the nightly matrix. The nightly
@@ -57,10 +57,11 @@ architecture or launch state can belong to the original context. The upstream
 [context-isolation fix](https://github.com/NVIDIA/numba-cuda-mlir/pull/314)
 must be released and qualified before relying on that reuse.
 
-The CUTLASS integration targets Linux with CUDA 13. No public CUTLASS
-package version has passed consumer qualification, so there is no CUTLASS
-installation extra or supported minimum version. A compatible CuTe compiler must provide the external LTO-IR linking
-and compilation hooks described in its developer guide.
+The CUTLASS integration targets Linux with CUDA 13. No public CUTLASS package
+version has passed consumer qualification, so there is no CUTLASS installation
+extra or supported minimum version. A compatible CuTe compiler must provide
+the external LTO-IR linking and compilation hooks described in its developer
+guide.
 
 - Numba-CUDA-MLIR: [Programming Guide](https://nvidia.github.io/cccl/unstable/python/coop/programming_guide.html)
   and [Developer Guide](https://nvidia.github.io/cccl/unstable/python/coop/developer_overview.html).
@@ -103,10 +104,10 @@ already imported `cuda.coop`. Both integrations can be registered in one
 process; common calls select the backend from the active compiler context.
 
 The common API in `cuda.coop` is the contract shared by Numba-CUDA-MLIR and
-CUTLASS. Each implemented operation follows the documented groups, dtypes,
-and result rules; consult backend coverage for availability. Its public entry points live in
-`cuda/coop/_core/api/`; the private `_core` package also contains shared
-implementation.
+CUTLASS. Each implemented operation follows the documented groups, dtypes, and
+result rules; consult backend coverage for availability. Its public entry
+points live in `cuda/coop/_core/api/`; the private `_core` package also
+contains shared implementation.
 
 For CUTLASS-only code, use the qualified namespace directly:
 
@@ -126,8 +127,8 @@ import cuda.coop.cutlass as cutlass_coop
 
 Each import registers its backend. Call `numba_coop` from Numba kernels and
 `cutlass_coop` from CuTe kernels. Examples comparing the APIs use `coop` for
-common calls and the longer aliases for qualified calls; application code need
-not import both namespaces for one backend. Aliasing dotted imports also
+common calls and the longer aliases for qualified calls; application code
+need not import both namespaces for one backend. Aliasing dotted imports also
 avoids rebinding `cuda`, which Numba examples use for `cuda.jit`.
 
 Each qualified API includes its supported common operations, preserving their
@@ -169,9 +170,10 @@ explains terms and concepts, including blocked and striped layouts.
 | Run Length Decode | `run_length_decode`, `run_length_decode_into` |
 
 Numba-CUDA-MLIR implements every family in this table. CUTLASS coverage
-expands with its implemented families; the
-[coverage table](https://nvidia.github.io/cccl/unstable/python/coop.html#coop-backends)
-lists current support. Qualified APIs add the extensions documented in each guide.
+expands with its implemented families; the [coverage
+table](https://nvidia.github.io/cccl/unstable/python/coop.html#coop-backends)
+lists current support. Qualified APIs add the extensions documented in each
+guide.
 
 Each operation documents its supported groups and result ownership in the
 [API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).
@@ -216,10 +218,11 @@ For the two Boolean runtime switches, values are case-insensitive; `0`,
 
 ## Block and Warp Load and Store
 
-The common and qualified Load/Store APIs share tile controls and in-place
-Load behavior. The following complete Load/Store vocabulary describes Numba;
-check the CUTLASS guide for its currently supported groups and algorithms. The following Numba kernel body clamps a grid tile tail, where
-`source`, `destination`, `count`, and `items_per_thread` are kernel arguments:
+The common and qualified Load/Store APIs share tile controls and in-place Load
+behavior. The following complete Load/Store vocabulary describes Numba; check
+the CUTLASS guide for its currently supported groups and algorithms. The
+following Numba kernel body clamps a grid tile tail, where `source`,
+`destination`, `count`, and `items_per_thread` are kernel arguments:
 
 ```python
 from numba_cuda_mlir import cuda, types
@@ -264,9 +267,9 @@ element offset. Runtime offsets are caller-validated. Numba source and
 destination arrays must be one-dimensional and contiguous. CuTe operands may
 be global-memory pointers or supported contiguous one-dimensional tensors.
 Without `oob_default`, invalid Load slots have unspecified values, even if
-initialized before Load. Every supplied runtime control (`valid_items`,
-`oob_default`, and `offset`) must be uniform within its selected group;
-different groups may use different values.
+initialized before Load. Every supplied runtime control
+(`valid_items`, `oob_default`, and `offset`) must be uniform within its selected
+group; different groups may use different values.
 
 Runtime `valid_items` and `offset` accept signed integer types through 64 bits
 and unsigned integer types through 32 bits. Boolean, floating-point, and
