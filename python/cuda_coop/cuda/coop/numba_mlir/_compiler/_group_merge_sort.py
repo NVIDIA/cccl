@@ -46,10 +46,32 @@ from ._rewrite_merge_sort import infer_merge_sort_payload
 def _payload(context, operation, name, value, is_common_root):
     """Recover a fixed array extent and numeric dtype for keys or values.
 
+    Merge-sort planning calls this separately for keys and associated
+    values before selecting an overload. Extent here is the number of
+    elements held by one thread, not the total tile size.
+
     Common calls require ThreadData; qualified calls also accept local
     arrays. Use an existing dtype or infer it from writes, then record it on
     the payload so the result allocation inherits the same type. Return the
     extent and dtype; pairwise extent matching is checked by the caller.
+
+    Parameters
+    ----------
+    context : GroupPlanningContext
+        Access to launch dimensions, constant controls, payload
+        facts, and IR builders for this group-planning attempt.
+    operation : str
+        Canonical public operation name, used in diagnostics and
+        generated temporary names.
+    name : str
+        Public payload argument name, such as keys or values, for
+        diagnostics.
+    value : ir.Var
+        Per-thread array whose item count and element dtype are
+        required.
+    is_common_root : bool
+        Whether the call came through the common ``cuda.coop`` API
+        and must satisfy its narrower operand and selector rules.
     """
 
     if not context.is_array(operation, value):
@@ -82,6 +104,27 @@ def _cast(context, statements, inst, value, dtype, name):
     Counts must reach the checked C++ wrapper as int64; sentinels must have
     the key dtype. Materialize a constant or existing IR value, append its
     conversion call, and return the new variable for the provider arguments.
+
+    Parameters
+    ----------
+    context : GroupPlanningContext
+        Access to launch dimensions, constant controls, payload
+        facts, and IR builders for this group-planning attempt.
+    statements : list of IR statements
+        Pending replacement statements, appended to in execution
+        order. The function's blocks are unchanged until the owning
+        planner installs this list.
+    inst : ir.Assign
+        Original public call assignment. Its target, scope, and
+        source location identify the replacement result and
+        generated temporaries.
+    value : object
+        Constant scalar or existing IR variable to convert in the
+        generated kernel.
+    dtype : numba type
+        Target scalar type required by the provider ABI.
+    name : str
+        Operand label used to distinguish generated temporary names.
     """
 
     kwargs = {"scope": inst.target.scope, "loc": inst.loc}
