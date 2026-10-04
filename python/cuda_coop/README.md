@@ -325,8 +325,10 @@ counts as a reuse on every iteration. Compiler-owned storage always
 synchronizes.
 
 All descriptors and compiler-owned requirements of a kernel share one
-shared-memory backing. Above the 48 KiB static limit that backing moves to
-dynamic shared memory and the launch reserves the exact byte count.
+shared-memory backing. Up to 48 KiB, the compiler uses static shared memory
+without querying the device. Larger requests trigger a query of the device's
+default and opt-in limits. Backing above the default limit uses dynamic shared
+memory, and the launch reserves its exact byte count within the opt-in limit.
 Supported Numba-CUDA-MLIR releases do not separate static and dynamic shared
 allocations reliably. A kernel using cooperative temporary storage must not
 also declare a zero-sized or runtime-sized `cuda.shared.array`. When
