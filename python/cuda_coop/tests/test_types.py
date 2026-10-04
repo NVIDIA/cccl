@@ -17,9 +17,9 @@ from cuda.coop._core import (
 )
 
 
-def _algorithm(*, specialization, metadata=None):
+def _algorithm(*, template_arguments, metadata=None):
     return Algorithm(
-        specialization=specialization,
+        template_arguments=template_arguments,
         metadata={} if metadata is None else metadata,
         struct_name="BlockExample",
         method_name="Run",
@@ -31,16 +31,18 @@ def _algorithm(*, specialization, metadata=None):
 
 
 def test_algorithm_identity_distinguishes_specializations():
-    base = _algorithm(specialization={"T": "int"}, metadata={"mode": "base"})
+    base = _algorithm(
+        template_arguments={"T": "int"}, metadata={"mode": "base"}
+    )
     variants = (
-        replace(base, specialization={"T": "float"}),
+        replace(base, template_arguments={"T": "float"}),
         replace(base, metadata={"mode": "alternate"}),
         replace(base, method_name="Other"),
     )
 
     cache = {base: "compiled"}
     equivalent = _algorithm(
-        specialization={"T": "int"}, metadata={"mode": "base"}
+        template_arguments={"T": "int"}, metadata={"mode": "base"}
     )
     assert cache[equivalent] == "compiled"
     for variant in variants:
@@ -50,19 +52,21 @@ def test_algorithm_identity_distinguishes_specializations():
 @pytest.mark.parametrize("value", (False, True))
 def test_algorithm_identity_distinguishes_boolean_and_integer_settings(value):
     boolean = _algorithm(
-        specialization={"T": "int", "settings": {"flag": (value,)}}
+        template_arguments={"T": "int", "settings": {"flag": (value,)}}
     )
     integer = _algorithm(
-        specialization={"T": "int", "settings": {"flag": (int(value),)}}
+        template_arguments={"T": "int", "settings": {"flag": (int(value),)}}
     )
 
     assert len({boolean: "boolean", integer: "integer"}) == 2
 
 
-def test_algorithm_specialization_freezes_nested_semantic_containers():
+def test_algorithm_template_arguments_freeze_nested_semantic_containers():
     nested = {"values": [1], "modes": {"direct"}}
-    specialization = _algorithm(specialization={"T": "int", "settings": nested})
-    equivalent = _algorithm(specialization={"T": "int", "settings": nested})
+    specialization = _algorithm(
+        template_arguments={"T": "int", "settings": nested}
+    )
+    equivalent = _algorithm(template_arguments={"T": "int", "settings": nested})
     cache = {specialization: "compiled"}
 
     nested["values"].append(2)
@@ -75,19 +79,19 @@ def test_algorithm_specialization_freezes_nested_semantic_containers():
     }
 
 
-def test_algorithm_specialization_rejects_container_cycles():
+def test_algorithm_template_arguments_reject_container_cycles():
     cyclic = []
     cyclic.append(cyclic)
 
     with pytest.raises(ValueError, match="container cycles"):
-        _algorithm(specialization={"T": "int", "settings": cyclic})
+        _algorithm(template_arguments={"T": "int", "settings": cyclic})
 
 
 def test_algorithm_requires_all_template_arguments():
     with pytest.raises(
         ValueError, match="Template argument\\(s\\) not provided: T"
     ):
-        _algorithm(specialization={})
+        _algorithm(template_arguments={})
 
 
 @pytest.mark.parametrize(

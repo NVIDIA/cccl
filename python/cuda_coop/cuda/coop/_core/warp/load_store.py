@@ -301,79 +301,6 @@ class WarpLoadStoreSemantics:
         )
 
 
-@dataclass(frozen=True)
-class WarpLoadStoreSpecialization:
-    """A CUB Warp Load/Store specialization and its normalized call semantics.
-
-    The algorithm binds the element type, items per thread, CUB algorithm,
-    and logical warp width. A backend can then materialize the selected
-    wrappers and arrange temporary storage for each participating warp.
-
-    Attributes
-    ----------
-    specialization : Algorithm
-        Specialized ``cub::WarpLoad`` or ``cub::WarpStore`` description,
-        including its header, parameter descriptors, and group-offset
-        metadata. Compilation and storage allocation happen during later
-        lowering.
-    call : WarpLoadStoreSemantics
-        Normalized options and call variants retained for provider queries.
-        Convenience properties expose these options; ``semantic_key`` is
-        the underlying algorithm's identity.
-    """
-
-    specialization: Algorithm
-    call: WarpLoadStoreSemantics
-
-    @property
-    def kind(self) -> WarpLoadStoreKind:
-        return self.call.kind
-
-    @property
-    def algorithm(self) -> WarpLoadStoreAlgorithm:
-        return self.call.algorithm
-
-    @property
-    def items_per_thread(self) -> int:
-        return self.call.items_per_thread
-
-    @property
-    def threads_in_warp(self) -> int:
-        return self.call.threads_in_warp
-
-    @property
-    def has_valid_items(self) -> bool:
-        return self.call.has_valid_items
-
-    @property
-    def has_oob_default(self) -> bool:
-        return self.call.has_oob_default
-
-    @property
-    def has_full_tile(self) -> bool:
-        return self.call.has_full_tile
-
-    @property
-    def has_pointer_offset(self) -> bool:
-        return self.call.has_pointer_offset
-
-    @property
-    def requires_runtime_effective_offset(self) -> bool:
-        return self.call.requires_runtime_effective_offset
-
-    @property
-    def method_name(self) -> str:
-        return self.specialization.method_name
-
-    @property
-    def algorithm_cpp(self) -> str:
-        return self.call.algorithm_cpp
-
-    @property
-    def semantic_key(self) -> tuple[Any, ...]:
-        return self.specialization.semantic_key
-
-
 def make_warp_load_store_semantics(
     *,
     kind: str | WarpLoadStoreKind,
@@ -568,7 +495,7 @@ def make_warp_load_store_specialization(
     oob_default: bool | ArgumentBinding = False,
     include_full_tile: bool = False,
     include_pointer_offset: bool | ArgumentBinding = False,
-) -> WarpLoadStoreSpecialization:
+) -> Algorithm:
     """Bind CUB template arguments for physical or logical Warp Load/Store.
 
     Normalize and validate the options with
@@ -602,9 +529,8 @@ def make_warp_load_store_specialization(
 
     Returns
     -------
-    WarpLoadStoreSpecialization
-        The specialized algorithm and its normalized call semantics. The
-        algorithm records the CUB header and method, selected parameter
+    Algorithm
+        Bound CUB template arguments, header and method, selected parameter
         variants, and effective-offset metadata for group lowering.
         Its tile stride is ``threads_in_warp * items_per_thread`` elements.
 
@@ -629,14 +555,14 @@ def make_warp_load_store_specialization(
         include_pointer_offset=include_pointer_offset,
     )
     title = call.kind.value.title()
-    specialization = Algorithm(
+    return Algorithm(
         struct_name=f"Warp{title}",
         method_name=title,
         c_name=f"warp_{call.kind.value}",
         includes=(f"cub/warp/warp_{call.kind.value}.cuh",),
         template_parameters=_TEMPLATE_PARAMETERS,
         parameters=call.parameters,
-        specialization={
+        template_arguments={
             "T": dtype,
             "ITEMS_PER_THREAD": call.items_per_thread,
             "ALGORITHM": call.algorithm_cpp,
@@ -659,10 +585,9 @@ def make_warp_load_store_specialization(
             ),
         },
     )
-    return WarpLoadStoreSpecialization(specialization=specialization, call=call)
 
 
-def make_warp_load_specialization(**kwargs: Any) -> WarpLoadStoreSpecialization:
+def make_warp_load_specialization(**kwargs: Any) -> Algorithm:
     """Build a WarpLoad specialization with the shared builder's options.
 
     See :func:`make_warp_load_store_specialization`; ``kind`` is fixed to
@@ -674,9 +599,7 @@ def make_warp_load_specialization(**kwargs: Any) -> WarpLoadStoreSpecialization:
     )
 
 
-def make_warp_store_specialization(
-    **kwargs: Any,
-) -> WarpLoadStoreSpecialization:
+def make_warp_store_specialization(**kwargs: Any) -> Algorithm:
     """Build a WarpStore specialization with the shared builder's options.
 
     See :func:`make_warp_load_store_specialization`; ``kind`` is fixed to
@@ -693,7 +616,6 @@ __all__ = [
     "WarpLoadStoreAlgorithm",
     "WarpLoadStoreKind",
     "WarpLoadStoreSemantics",
-    "WarpLoadStoreSpecialization",
     "WarpStoreAlgorithm",
     "make_warp_load_specialization",
     "make_warp_load_store_semantics",

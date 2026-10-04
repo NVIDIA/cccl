@@ -28,7 +28,7 @@ def test_block_load_partial_default_and_pointer_offset_overloads():
     # Each optional overload must preserve CUB's argument order.
     assert [
         [parameter.name for parameter in method[3:]]
-        for method in specialization.specialization.parameters
+        for method in specialization.parameters
     ] == [
         [],
         ["num_valid_items", "oob_default"],
@@ -48,8 +48,8 @@ def test_block_load_static_controls_stay_out_of_the_runtime_abi():
         include_pointer_offset=ArgumentBinding.static(4),
     )
 
-    assert len(specialization.specialization.parameters) == 1
-    controls = specialization.specialization.parameters[0][-3:]
+    assert len(specialization.parameters) == 1
+    controls = specialization.parameters[0][-3:]
     assert all(p.argument_kind is ArgumentKind.STATIC for p in controls)
     assert controls[-1].static_value == 4
 
@@ -171,7 +171,7 @@ def test_block_load_renders_static_oob_default_as_cpp_scalar(value, literal):
         oob_default=ArgumentBinding.static(value),
     )
 
-    assert specialization.specialization.parameters[0][-1].cpp == literal
+    assert specialization.parameters[0][-1].cpp == literal
 
 
 @pytest.mark.parametrize(
