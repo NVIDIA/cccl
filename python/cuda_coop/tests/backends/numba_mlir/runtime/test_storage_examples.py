@@ -47,6 +47,13 @@ def test_thread_data_example():
 
 
 def test_temp_storage_example():
+    """Reuse one scratch area across load, scan, and store for two tiles.
+
+    Automatic synchronization protects consecutive users of the same storage.
+    The reference restarts the exclusive prefix for each tile, even though one
+    block processes both tiles in a loop.
+    """
+
     # temp-storage-example-begin
     import numpy as np
     from numba_cuda_mlir import cuda

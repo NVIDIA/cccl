@@ -2,7 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Load a block tile, compute its exclusive prefix sum, and store the result."""
+"""Load one full block tile and store its exclusive prefix sum.
+
+Each thread contributes consecutive items in blocked order. The scan returns
+a separate payload; the loaded values remain available to the kernel.
+"""
 
 from __future__ import annotations
 

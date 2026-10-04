@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Build shared Load and Store requests for planner tests.
+"""Build Load, Store, and Scan requests shared by planner tests.
 
 Tests can vary one option while keeping the element type, item count, and
 launch dimensions fixed. Planning these requests needs no kernel compiler.
@@ -34,6 +34,14 @@ def _plan(group, operation, launch=(64, 1, 1)):
 
 
 def _scan(**overrides):
+    """Build a scan request with separate algorithm and group controls.
+
+    Start with a scalar exclusive sum, then apply each test's overrides.
+    The primitive describes input shape and scan behavior. The group wrapper
+    adds the CUB algorithm and valid-prefix binding. Reject unused overrides
+    so a misspelled option cannot silently leave the default in place.
+    """
+
     cub_algorithm = overrides.pop("cub_algorithm", None)
     valid_items = overrides.pop("valid_items", ArgumentBinding.omitted())
     operand_kind = GroupOperandKind(overrides.pop("operand_kind", "scalar"))
