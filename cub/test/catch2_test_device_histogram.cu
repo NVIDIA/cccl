@@ -697,6 +697,23 @@ CUB_TEST("DeviceHistogram::Histogram* down-conversion size_t to int", "[histogra
   }
 }
 
+CUB_TEST("DeviceHistogram::HistogramEven accepts an empty integral range", "[histogram_even][device]", CUB_SMALL)
+{
+  constexpr int num_levels = 258;
+  c2h::device_vector<int> samples{0, 1, 2, 3};
+  c2h::device_vector<int> histogram(num_levels - 1);
+
+  histogram_even(
+    thrust::raw_pointer_cast(samples.data()),
+    thrust::raw_pointer_cast(histogram.data()),
+    num_levels,
+    1,
+    1,
+    static_cast<int>(samples.size()));
+
+  CHECK(histogram == c2h::host_vector<int>(num_levels - 1, 0));
+}
+
 CUB_TEST("DeviceHistogram::HistogramRange levels/samples aliasing", "[histogram_range][device]", CUB_SMALL)
 {
   constexpr int num_levels = 7;

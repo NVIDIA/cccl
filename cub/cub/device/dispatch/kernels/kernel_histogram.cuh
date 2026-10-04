@@ -114,7 +114,7 @@ struct Transforms
 #endif // !_CCCL_HAS_INT128()
       >;
 
-  private:
+  protected:
     // Alias template that excludes __[u]int128 from the integral types
     template <typename T>
     using is_integral_excl_int128 =
@@ -337,6 +337,57 @@ struct Transforms
       if (valid && this->SampleIsValid(common_sample, m_max, m_min))
       {
         bin = this->ComputeBin(common_sample, m_min, m_scale);
+      }
+    }
+  };
+
+  //! @brief Scales integral samples to evenly-spaced bins using a precomputed divisor.
+  //!
+  //! The divisor is initialized on the host and replaces the runtime integer division in the
+  //! privatized histogram kernels with the multiply-high sequence provided by `cuda::fast_mod_div`.
+  //! Floating-point, extended-integer, and custom types retain `ScaleTransform`'s implementation.
+  struct FastScaleTransform : ScaleTransform
+  {
+    using BaseT = ScaleTransform;
+    using FastDivisorValueT =
+      ::cuda::std::_If<BaseT::template is_integral_excl_int128<typename BaseT::CommonT>::value,
+                       typename BaseT::IntArithmeticT,
+                       uint32_t>;
+    using FastDivisorT = ::cuda::fast_mod_div<FastDivisorValueT>;
+
+    FastDivisorT m_range_divisor{FastDivisorValueT{1}};
+
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(int num_levels, LevelT max_level, LevelT min_level)
+    {
+      BaseT::Init(num_levels, max_level, min_level);
+
+      if constexpr (BaseT::template is_integral_excl_int128<typename BaseT::CommonT>::value)
+      {
+        const auto range = static_cast<FastDivisorValueT>(BaseT::m_scale.fraction.range);
+        // A zero-width range admits no valid samples, so the divisor is never used for bin selection.
+        m_range_divisor = FastDivisorT{range == 0 ? FastDivisorValueT{1} : range};
+      }
+    }
+
+    template <CacheLoadModifier LoadModifier, typename InputT>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(InputT sample, int& bin, bool valid) const
+    {
+      using CommonT = typename BaseT::CommonT;
+
+      const CommonT common_sample = static_cast<CommonT>(sample);
+      if (valid && BaseT::SampleIsValid(common_sample, BaseT::m_max, BaseT::m_min))
+      {
+        if constexpr (BaseT::template is_integral_excl_int128<CommonT>::value)
+        {
+          const auto offset = BaseT::subtract_as_unsigned(common_sample, BaseT::m_min);
+          const typename BaseT::IntArithmeticT numerator =
+            typename BaseT::IntArithmeticT{offset} * typename BaseT::IntArithmeticT{BaseT::m_scale.fraction.bins};
+          bin = static_cast<int>(numerator / m_range_divisor);
+        }
+        else
+        {
+          bin = BaseT::ComputeBin(common_sample, BaseT::m_min, BaseT::m_scale);
+        }
       }
     }
   };
