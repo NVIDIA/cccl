@@ -3,6 +3,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+# Test the installed cuda-coop wheel's host-side API and header resolution.
+# These checks do not compile or launch GPU kernels.
+
 set -euo pipefail
 
 ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -81,6 +84,7 @@ fi
 python -m pip install "${wheels[0]}[test]"
 
 python -m pip check
+# Isolated mode prevents the checkout or PYTHONPATH from hiding wheel defects.
 python -I - <<'PY'
 import importlib.metadata
 import sys

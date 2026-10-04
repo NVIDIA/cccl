@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Load a compiler adapter when the host requests registration.
+
+The adapter installs its compiler hooks during import. Python's import cache
+makes repeated registration calls safe and keeps compiler imports out of the
+common API's normal import path.
+"""
+
 from __future__ import annotations
 
 import importlib
@@ -12,9 +19,9 @@ def register(backend: Literal["numba-cuda-mlir", "numba_cuda_mlir"]) -> None:
     """Register cooperative primitives with the selected compiler backend.
 
     Call this on the host before compiling a kernel, including when
-    :mod:`cuda.coop` was imported before the compiler. Repeated calls are safe.
-    Explicit registration also works when automatic registration is disabled
-    with ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION=1``.
+    :mod:`cuda.coop` was imported before the compiler. Repeated calls are
+    safe. Explicit registration also works when automatic registration is
+    disabled with ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION=1``.
 
     Parameters
     ----------

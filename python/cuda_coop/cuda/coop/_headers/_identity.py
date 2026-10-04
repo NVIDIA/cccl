@@ -2,7 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Hash ordered include directories and their contents for compiler caches."""
+"""Identify the headers that a compiler cache entry depends on.
+
+The include search order and file contents both affect compilation. Clean Git
+trees provide a fast content identifier. Other directories need a recursive
+content hash, including the targets of symbolic links. File timestamps alone
+cannot detect every header change.
+"""
 
 from __future__ import annotations
 
@@ -22,7 +28,12 @@ class HeaderIdentityError(RuntimeError):
 
 @dataclass(frozen=True)
 class IncludeRootIdentity:
-    """Identity and provenance for one resolved include root."""
+    """Record one include root's path, content digest, and hashing method.
+
+    ``method`` distinguishes a clean Git tree from a recursive file walk.
+    ``duration_ns`` measures discovery and hashing work for performance
+    reports; it is not part of the cache identity.
+    """
 
     path: str
     method: str
@@ -32,7 +43,13 @@ class IncludeRootIdentity:
 
 @dataclass(frozen=True)
 class IncludeDirsIdentity:
-    """Ordered identity of every CCCL and CUDA include root."""
+    """Combine include roots in the order the compiler searches them.
+
+    ``digest`` includes each root's path, method, and content digest.
+    Reordering roots can select a different header with the same name, so
+    order matters. The walk count and elapsed time help diagnose the cost of
+    cache lookups.
+    """
 
     roots: tuple[IncludeRootIdentity, ...]
     digest: str
@@ -41,6 +58,8 @@ class IncludeDirsIdentity:
 
 
 def _find_git_root(root: Path) -> Path | None:
+    """Find the nearest enclosing Git checkout or worktree."""
+
     for candidate in (root, *root.parents):
         if (candidate / ".git").exists():
             return candidate
@@ -48,6 +67,8 @@ def _find_git_root(root: Path) -> Path | None:
 
 
 def _run_git(repo: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
+    """Run a Git query with literal paths and return its status."""
+
     return subprocess.run(
         ["git", "--literal-pathspecs", "-C", str(repo), *args],
         check=False,
@@ -60,6 +81,14 @@ def _git_include_root_identities(
     repo: Path,
     roots: tuple[Path, ...],
 ) -> dict[Path, str]:
+    """Use Git tree IDs only where the working files match tracked content.
+
+    Check the requested roots together for edits, extra files, and index flags
+    that can hide changes. If those checks fail, return no identities so the
+    caller hashes files instead. Exclude roots with tracked symbolic links:
+    Git records the link text but does not identify its target's contents.
+    """
+
     relatives = tuple(root.relative_to(repo) for root in roots)
     pathspecs = tuple(
         "." if not relative.parts else relative.as_posix()
@@ -169,10 +198,19 @@ def _git_include_root_identities(
 
 
 def _recursive_include_root_identity(root: Path) -> str:
+    """Hash names and contents in a stable order, following symbolic links.
+
+    Include link text and reachable target contents because either can change
+    what the compiler reads. Mark broken links and directory cycles, and
+    reject special files whose contents cannot be hashed as ordinary headers.
+    """
+
     digest = hashlib.sha256()
     digest.update(b"recursive-content-v3\0")
 
     def update_path(relative: Path) -> None:
+        """Prefix each path with its length to keep names distinct."""
+
         encoded = relative.as_posix().encode("utf-8", errors="surrogateescape")
         digest.update(str(len(encoded)).encode("ascii"))
         digest.update(b":")
@@ -180,6 +218,8 @@ def _recursive_include_root_identity(root: Path) -> str:
         digest.update(b"\0")
 
     def hash_file(path: Path) -> None:
+        """Hash the file in chunks and record its size and digest."""
+
         content_digest = hashlib.sha256()
         content_length = 0
         with path.open("rb") as header:
@@ -195,6 +235,8 @@ def _recursive_include_root_identity(root: Path) -> str:
         relative: Path,
         ancestors: frozenset[Path],
     ) -> None:
+        """Visit entries by name and stop cycles through directory links."""
+
         resolved_directory = directory.resolve()
         if resolved_directory in ancestors:
             digest.update(b"directory-cycle\0")
@@ -248,6 +290,16 @@ def _recursive_include_root_identity(root: Path) -> str:
 
 
 def include_dirs_identity(include_dirs: Iterable[str]) -> IncludeDirsIdentity:
+    """Build a cache identity for the compiler's ordered include directories.
+
+    Resolve every directory before hashing it. Use Git tree IDs where possible
+    and walk the remaining directories, then combine the results in input
+    order. Raise :class:`HeaderIdentityError` for missing directories or
+    unreadable files so the cache key cannot omit those headers.
+
+    Timing fields report this call's work and do not affect the digest.
+    """
+
     started_ns = time.perf_counter_ns()
     resolved_roots = tuple(
         Path(include_dir).expanduser().resolve() for include_dir in include_dirs

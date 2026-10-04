@@ -2,7 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Check the files and metadata in a ``cuda-coop`` wheel archive."""
+"""Check a ``cuda-coop`` wheel archive at the end of a build.
+
+Linux and Windows build jobs use these checks to enforce the package layout,
+bundled headers, licenses, and universal wheel metadata. The checks read the
+archive without installing it or importing its contents. Installed-package
+checks run separately in the CI scripts.
+"""
 
 from __future__ import annotations
 
@@ -79,6 +85,11 @@ def _one_member(names: set[str], suffix: str) -> str:
 
 
 def _validate_metadata(archive: zipfile.ZipFile, names: set[str]) -> None:
+    """Check the distribution name, supported Python versions, and wheel tag.
+
+    These declarations control how installers select the wheel. Keep them
+    consistent with a pure-Python package shared by all supported platforms.
+    """
     metadata_name = _one_member(names, ".dist-info/METADATA")
     wheel_name = _one_member(names, ".dist-info/WHEEL")
 
@@ -123,6 +134,11 @@ def _validate_metadata(archive: zipfile.ZipFile, names: set[str]) -> None:
 
 
 def _validate_provenance(archive: zipfile.ZipFile) -> None:
+    """Check the recorded header revision's schema and token syntax.
+
+    The build can record ``unknown`` when it cannot identify the source.
+    This check validates the record; it does not verify a source checkout.
+    """
     member = "cuda/coop/_headers/cccl-bundle-provenance.json"
     try:
         provenance = json.loads(archive.read(member))
@@ -141,6 +157,13 @@ def _validate_provenance(archive: zipfile.ZipFile) -> None:
 
 
 def validate(wheel: str | Path) -> None:
+    """Check a wheel and stop on a packaging contract violation.
+
+    Require the shared API and its header bundle, reject native binaries and
+    excluded implementations, and preserve the shared ``cuda`` namespace.
+    A failed check raises ``SystemExit`` with a packaging diagnostic.
+    File and ZIP errors propagate to the caller.
+    """
     wheel_path = Path(wheel)
     if not wheel_path.name.endswith("-py3-none-any.whl"):
         raise SystemExit(

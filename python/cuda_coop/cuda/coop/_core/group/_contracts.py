@@ -2,7 +2,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Derive scratch and synchronization requirements for resolved groups."""
+"""Describe how a resolved group must participate and use scratch storage.
+
+Operation planners call these helpers after choosing a group shape. The
+result tells a backend how many group instances need storage, which
+threads belong to each instance, and where storage reuse needs a barrier.
+For example, several logical warps in one block need separate storage
+instances even when they use the same primitive.
+
+These records state execution requirements. They do not prove that a
+kernel reaches a call uniformly or insert synchronization themselves.
+Backend lowering must honor the plan when it creates the device call.
+"""
 
 from __future__ import annotations
 
@@ -30,6 +41,12 @@ def _unsupported(
     code: UnsupportedReasonCode,
     message: str,
 ) -> GroupLoweringPlan:
+    """Return a plan containing the call and the failed requirement.
+
+    Leave implementation and execution contracts unset. Callers can inspect
+    or report the failure without mistaking it for a usable device plan.
+    """
+
     return GroupLoweringPlan(
         target=GroupLoweringTarget.UNSUPPORTED,
         call=call,
@@ -49,7 +66,32 @@ def _group_topology(
     resolved_group: ThreadGroup,
     launch: LaunchFacts,
 ) -> GroupTopologyContract:
-    """Describe group instances without depending on a primitive family."""
+    """Describe group instances and each thread's rank within an instance.
+
+    This calculation is shared by primitive families. For a warp-based group,
+    linear thread rank selects the instance by division and the rank within
+    it by remainder. Whole blocks, clusters, and grids use their enclosing
+    execution scope.
+
+    Parameters
+    ----------
+    resolved_group : ThreadGroup
+        Group with a known thread count. Mapped groups must fit the block.
+    launch : LaunchFacts
+        Exact block size needed to count thread or warp-based instances.
+
+    Returns
+    -------
+    GroupTopologyContract
+        Group width, instance count, rank expressions, and execution scope.
+        Expressions describe the rank calculation for backend lowering.
+
+    Raises
+    ------
+    ValueError
+        The group size is unknown, required block dimensions are missing,
+        or a warp-based group does not divide the block.
+    """
 
     group_size = resolved_group.static_size
     if group_size is None:
@@ -138,6 +180,54 @@ def _contracts(
     SynchronizationContract,
     TempStorageContract,
 ]:
+    """Build participation, synchronization, and storage requirements.
+
+    A resolved group's topology determines both the storage instance index
+    and the scope of a reuse barrier. Storage-free implementations need no
+    reuse barrier. For implementations with storage, ``auto_sync`` defaults
+    to true; a false value leaves storage reuse synchronization to the caller.
+
+    The participation record requires contiguous, aligned members to enter
+    together. Operation planners add argument-specific requirements, such as
+    which counts must be uniform. These are requirements for later lowering
+    and execution, not runtime checks performed by this helper.
+
+    Parameters
+    ----------
+    resolved_group : ThreadGroup
+        Group with a known size, already accepted by the operation planner.
+    launch : LaunchFacts
+        Exact launch dimensions used to describe participation and instances.
+    storage_ownership : StorageOwnership
+        Whether the primitive uses no storage, storage supplied by its
+        implementation, or storage supplied by the caller.
+    cpp_type : str or None
+        C++ storage type selected by the implementation, when applicable.
+    storage_sharing : str, optional
+        Sharing policy to carry into the storage contract.
+    requested_size_in_bytes : int, optional
+        Caller-requested storage capacity to check against the actual layout.
+    requested_alignment : int, optional
+        Caller-requested storage alignment to check against the actual layout.
+    auto_sync : bool, optional
+        Whether lowering should arrange a barrier before storage reuse.
+        Omission enables it for implementations that use storage.
+    uniform_arguments : tuple of str, optional
+        Argument names whose values must agree across participating threads.
+    valid_member_selection : str, optional
+        Description of which data elements the operation uses. For example,
+        a guarded load can use only the first ``valid_items`` tile elements.
+    argument_preconditions : tuple of ArgumentPrecondition, optional
+        Additional bounds or other requirements on operation arguments.
+
+    Returns
+    -------
+    tuple
+        Topology, participation, synchronization, and temporary-storage
+        contracts, in that order. Caller-owned storage requires an exact
+        layout check; this helper does not calculate the compiled layout.
+    """
+
     group_size = resolved_group.static_size
     assert group_size is not None
     topology = _group_topology(resolved_group, launch)
@@ -196,7 +286,13 @@ def _contracts(
 
 
 def _cub_warp_width(group: ThreadGroup) -> int:
-    """Return a CUB-legal physical or logical warp width."""
+    """Select a width that CUB's warp primitives can represent.
+
+    Physical warps use 32 threads. A logical warp must have a power-of-two
+    width from 1 through 32 and divide its physical warp. Raise ``ValueError``
+    for a different group kind or width. Block participation is checked by
+    group resolution before a primitive uses this width.
+    """
 
     if group.kind == "warp":
         return 32
@@ -223,6 +319,12 @@ def _unsupported_cub_warp_width(
     call: GroupPrimitiveCall,
     resolved: ThreadGroup,
 ) -> tuple[int | None, GroupLoweringPlan | None]:
+    """Return the CUB width or an unsupported plan for an invalid group.
+
+    Translate the width check's ``ValueError`` into the same structured
+    failure that other primitive-planning checks return.
+    """
+
     try:
         return _cub_warp_width(resolved), None
     except ValueError as exc:

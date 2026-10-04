@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check the installed type-stub interface from a consumer's point of view.
+
+The consumer covers accepted calls and expected typing errors. It runs
+against copied stubs so implementation annotations cannot fill gaps.
+"""
+
 import importlib.util
 import os
 import shutil

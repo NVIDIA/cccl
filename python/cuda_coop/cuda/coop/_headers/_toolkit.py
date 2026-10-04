@@ -4,9 +4,15 @@
 
 """Load CUDA compiler libraries from the toolkit selected by the headers.
 
-NVRTC must match the headers' major and minor versions. nvJitLink may use
-a
-newer minor version of the same major release.
+NVRTC compiles the generated CUDA source, and nvJitLink links the result.
+Their libraries must come from the toolkit selected by the CUDA headers. NVRTC
+must match the headers' major and minor versions. nvJitLink may use a newer
+minor version of the same major release.
+
+Loaded libraries remain in the process. A lock serializes selection and
+loading, and the first successful load fixes the toolkit root for later
+requests. This also prevents a retry after a partial failure from mixing
+toolkit installations.
 """
 
 from __future__ import annotations
@@ -29,7 +35,12 @@ _PROCESS_TOOLKIT_SELECTION: tuple[str, tuple[int, int]] | None = None
 
 @dataclass(frozen=True)
 class ToolkitCompilerLibraries:
-    """Actual compiler libraries and versions for one CUDA Toolkit root."""
+    """Report loaded library paths and their checked versions.
+
+    ``toolkit_version`` comes from the CUDA runtime header. The NVRTC and
+    nvJitLink versions come from the loaded library handles. Keep both so
+    callers can check later compiler use against the same selection.
+    """
 
     toolkit_root: str
     nvrtc_path: str
@@ -42,7 +53,11 @@ class ToolkitCompilerLibraries:
 
 @dataclass(frozen=True)
 class _ToolkitRootCandidates:
-    """Exact compiler-library candidates belonging to one Toolkit root."""
+    """List complete library candidates within one toolkit installation.
+
+    Each NVRTC candidate is paired with its adjacent builtins library. These
+    paths have been found on disk but have not yet been loaded or validated.
+    """
 
     toolkit_root: Path
     nvrtc_pairs: tuple[tuple[Path, Path], ...]
@@ -51,7 +66,11 @@ class _ToolkitRootCandidates:
 
 @dataclass(frozen=True)
 class _ToolkitLibraryLayout:
-    """Compiler-library directories sharing one logical Toolkit root."""
+    """Map a header directory to the matching compiler-library directories.
+
+    A toolkit can be one directory tree or several sibling Python packages.
+    ``toolkit_root`` identifies the selected installation in either layout.
+    """
 
     toolkit_root: Path
     nvrtc_dirs: tuple[Path, ...]
@@ -61,6 +80,8 @@ class _ToolkitLibraryLayout:
 def _cuda_include_dirs(
     include_dirs: Iterable[str | os.PathLike[str]],
 ) -> tuple[Path, ...]:
+    """Keep distinct CUDA include directories in compiler search order."""
+
     result: list[Path] = []
     for raw_path in include_dirs:
         path = Path(raw_path).expanduser().resolve()
@@ -72,6 +93,12 @@ def _cuda_include_dirs(
 def _toolkit_version(
     cuda_include_dirs: tuple[Path, ...],
 ) -> tuple[int, int] | None:
+    """Read the header versions and require all selected roots to agree.
+
+    Return ``None`` when there are no CUDA include roots. Raise an error for
+    a malformed version macro or conflicting versions.
+    """
+
     versions: set[tuple[int, int]] = set()
     for include_dir in cuda_include_dirs:
         header = include_dir / "cuda_runtime_api.h"
@@ -84,9 +111,8 @@ def _toolkit_version(
         match = _CUDART_VERSION.search(contents)
         if match is None:
             raise RuntimeError(
-                "failed parsing CUDART_VERSION "
-                "from CUDA Toolkit version header: "
-                f"{header}"
+                "failed parsing CUDART_VERSION from CUDA Toolkit "
+                f"version header: {header}"
             )
         encoded = int(match.group(1))
         versions.add((encoded // 1000, (encoded % 1000) // 10))
@@ -102,6 +128,8 @@ def _toolkit_version(
 
 
 def _library_dirs(root: Path) -> tuple[Path, ...]:
+    """List existing library directories for supported toolkit layouts."""
+
     result: list[Path] = []
     names = ("lib", "lib64", "bin")
     if os.name == "nt":
@@ -114,7 +142,12 @@ def _library_dirs(root: Path) -> tuple[Path, ...]:
 
 
 def _toolkit_library_layout(include_dir: Path) -> _ToolkitLibraryLayout:
-    """Map CUDA headers to a monolithic or split-wheel Toolkit layout."""
+    """Locate compiler libraries beside the selected CUDA headers.
+
+    CUDA 12 wheels split runtime, compiler, and linker files into sibling
+    packages. Treat their shared ``nvidia`` directory as the installation
+    root; do not search other Python environments for missing components.
+    """
 
     toolkit_root = include_dir.parent.resolve()
     if (
@@ -141,6 +174,8 @@ def _toolkit_library_layout(include_dir: Path) -> _ToolkitLibraryLayout:
 
 
 def _library_names(kind: str, major: int) -> tuple[str, ...]:
+    """Name platform libraries for the requested major release."""
+
     if os.name == "nt":
         version = major * 10
         if kind == "nvrtc":
@@ -152,6 +187,8 @@ def _library_names(kind: str, major: int) -> tuple[str, ...]:
 
 
 def _nvrtc_builtins_names(major: int, minor: int) -> tuple[str, ...]:
+    """Name the NVRTC builtins library for the exact header version."""
+
     if os.name == "nt":
         return (f"nvrtc-builtins64_{major}{minor}.dll",)
     return (f"libnvrtc-builtins.so.{major}.{minor}",)
@@ -163,7 +200,13 @@ def _toolkit_root_candidates(
     major: int,
     minor: int,
 ) -> tuple[_ToolkitRootCandidates | None, str]:
-    """Find a complete compiler-library set below one CUDA Toolkit root."""
+    """Find a complete compiler-library set below one CUDA toolkit root.
+
+    Pair NVRTC with builtins in the same directory, then look for nvJitLink in
+    that installation. Return either the candidates or a missing-file
+    diagnostic. This stage checks paths only; loading and version checks
+    happen later.
+    """
 
     layout = _toolkit_library_layout(include_dir)
     nvrtc_pairs: list[tuple[Path, Path]] = []
@@ -224,7 +267,11 @@ def _toolkit_root_candidates(
 
 
 def _claim_process_toolkit(root: Path, version: tuple[int, int]) -> None:
-    """Bind process-global compiler libraries to one Toolkit root."""
+    """Fix the toolkit selection after the first successful library load.
+
+    Call while holding ``_PRELOAD_LOCK``. Later claims must match this root
+    and version because loaded libraries remain in the process.
+    """
 
     global _PROCESS_TOOLKIT_SELECTION
 
@@ -238,12 +285,13 @@ def _claim_process_toolkit(root: Path, version: tuple[int, int]) -> None:
     raise RuntimeError(
         "CUDA compiler libraries are already process-global from Toolkit "
         f"{selected_root} ({selected_version[0]}.{selected_version[1]}); "
-        "refusing "
-        f"to mix Toolkit {selection[0]} ({version[0]}.{version[1]})"
+        f"refusing to mix Toolkit {selection[0]} ({version[0]}.{version[1]})"
     )
 
 
 def _exact_candidate_path(candidate: Path, toolkit_root: Path) -> str:
+    """Require the resolved library path to stay inside the toolkit root."""
+
     exact_path = Path(os.path.realpath(candidate))
     try:
         exact_path.relative_to(toolkit_root.resolve())
@@ -256,7 +304,11 @@ def _exact_candidate_path(candidate: Path, toolkit_root: Path) -> str:
 
 
 def _load_exact_candidate(candidate: Path, *, toolkit_root: Path) -> str:
-    """Load one exact same-root library while ``_PRELOAD_LOCK`` is held."""
+    """Load a library from the selected root and retain its exact handle.
+
+    Call while holding ``_PRELOAD_LOCK``. Retained handles let version checks
+    query these exact libraries, not another copy found by name.
+    """
 
     exact_path = _exact_candidate_path(candidate, toolkit_root)
     if exact_path not in _EXACT_LIBRARY_HANDLES:
@@ -274,7 +326,13 @@ def _preload_toolkit_root(
     version: tuple[int, int],
     builtins_failures: list[tuple[Path, OSError]],
 ) -> tuple[str, str, str] | None:
-    """Load one complete compiler-library set without crossing Toolkit roots."""
+    """Load builtins, NVRTC, and nvJitLink from the selected installation.
+
+    Call while holding ``_PRELOAD_LOCK``. A builtins load failure permits the
+    next candidate. Once builtins load, claim the toolkit before loading NVRTC
+    so a later failure cannot lead to a retry with another installation.
+    Return the loaded paths, or ``None`` if every builtins candidate failed.
+    """
 
     selected_nvrtc: tuple[str, str] | None = None
     for nvrtc, builtins in candidates.nvrtc_pairs:
@@ -329,6 +387,8 @@ def _preload_toolkit_root(
 
 
 def _exact_library_handle(path: str, *, kind: str) -> object:
+    """Get the retained library handle without another loader search."""
+
     exact_path = os.path.realpath(path)
     try:
         return _EXACT_LIBRARY_HANDLES[exact_path]
@@ -390,7 +450,19 @@ def _nvjitlink_version(path: str) -> tuple[int, int]:
 def preload_toolkit_compiler_libraries(
     include_dirs: Iterable[str | os.PathLike[str]],
 ) -> ToolkitCompilerLibraries:
-    """Preload and validate one same-root NVRTC/builtins/nvJitLink set."""
+    """Load compiler libraries from the toolkit selected by the CUDA headers.
+
+    ``include_dirs`` is the compiler's ordered include path. Its first CUDA
+    runtime header directory selects the installation. Require NVRTC, its
+    builtins library, and nvJitLink there; a later include root cannot replace
+    an incomplete first installation.
+
+    Loading is serialized and can fix the process's toolkit selection even if
+    a later library fails. Successful calls return exact library paths and
+    versions after checking the headers and the libraries selected by
+    Pathfinder. Incompatible paths, versions, or later toolkit selections
+    raise an error.
+    """
 
     # Keep CUDA bindings out of root import. Pathfinder is loaded only once a
     # provider actually needs compiler libraries.
@@ -430,9 +502,8 @@ def preload_toolkit_compiler_libraries(
             else ""
         )
         raise RuntimeError(
-            "resolved CUDA headers require NVRTC, nvrtc-builtins, "
-            "and nvJitLink "
-            f"from one CUDA Toolkit root: {diagnostic}{ignored}"
+            "resolved CUDA headers require NVRTC, nvrtc-builtins, and "
+            f"nvJitLink from one CUDA Toolkit root: {diagnostic}{ignored}"
         )
     candidates = [candidate]
 
@@ -455,8 +526,7 @@ def preload_toolkit_compiler_libraries(
                 raise RuntimeError(
                     "CUDA compiler libraries are already process-global from "
                     f"Toolkit {selected_root}; "
-                    "resolved headers select different "
-                    "Toolkit roots"
+                    "resolved headers select different Toolkit roots"
                 )
 
         builtins_failures: list[tuple[Path, OSError]] = []
@@ -499,8 +569,7 @@ def preload_toolkit_compiler_libraries(
             if actual_paths[kind] != exact_path:
                 raise RuntimeError(
                     f"resolved CUDA headers expect {exact_path}, "
-                    "but the process uses "
-                    f"{actual_paths[kind]} for {kind}"
+                    f"but the process uses {actual_paths[kind]} for {kind}"
                 )
 
         nvrtc_version = _nvrtc_version(nvrtc_path)

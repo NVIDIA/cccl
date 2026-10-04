@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe explicit scratch storage for compiler-supported block operations.
+
+The constructor marks a request inside a GPU kernel. A compiler that supports
+explicit scratch collects the descriptor's uses to choose shared-memory space
+and any requested reuse barriers. The Python body raises an error outside a
+supported kernel; it never allocates storage.
+"""
+
 from __future__ import annotations
 
 from ..thread_group import CoopCompilerContextRequiredError

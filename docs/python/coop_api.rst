@@ -14,8 +14,8 @@ Common API
 ----------
 
 The primitive functions below are compiler markers; ``register`` is a
-host-side configuration function. The installed ``.pyi``
-files are authoritative for overload and result typing.
+host-side configuration function. The installed ``.pyi`` files are
+authoritative for overload and result typing.
 
 .. currentmodule:: cuda.coop
 
