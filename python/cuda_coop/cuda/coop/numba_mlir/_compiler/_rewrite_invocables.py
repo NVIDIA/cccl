@@ -269,7 +269,8 @@ class _InvocableRewrite:
             A callback reaches unsupported cooperative group planning while
             its provider is materialized. The original diagnostic propagates.
         CoopSinglePhaseRewriteError
-            Construction fails, or the result breaks the registered contract.
+            Other construction failures occur or the result violates the
+            registered contract.
         """
 
         rewrite = cast("CoopSinglePhaseRewrite", self)
