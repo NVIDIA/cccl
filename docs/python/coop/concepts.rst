@@ -406,11 +406,11 @@ have no algorithm or explicit-storage selector.
 Sum is the default operation. The three general Scan spellings accept the same
 built-in string aliases as Reduce. The qualified spelling also recognizes the
 corresponding Python ``operator`` functions and NumPy ufuncs, and accepts a
-stateless device callback. Callbacks must be associative and return the
-input dtype. Non-sum exclusive Scan requires an ``initial_value`` with the
-payload dtype, unless a block-prefix callback supplies the prefix. Ordinary
-Python literals are checked and converted in that context. Inclusive Scan
-rejects an initial value.
+stateless binary device callback. Binary callbacks must be associative and
+return the input dtype. Non-sum exclusive Scan requires an
+``initial_value`` with the payload dtype. Ordinary Python literals are
+checked and converted in that context. A block-prefix callback can supply
+that prefix instead. Inclusive Scan rejects an initial value.
 
 The qualified spelling adds ``aggregate_output``, an exact-dtype one-item
 ``ThreadData`` or local array populated with the group aggregate on every
@@ -495,10 +495,10 @@ dynamic shared memory. Compiler-owned scratch and explicit descriptors with
 ``auto_sync=True`` append ``syncthreads``. Explicit descriptors default to
 ``auto_sync=False``, so the caller must synchronize before reuse. Physical and
 logical Warp calls use one compiler-owned slice per Warp and append
-``syncwarp`` with the participating mask. Prefix callbacks do not change these
-rules: when repeated calls reuse an explicit Block Scan descriptor, set
-``auto_sync=True`` or issue ``syncthreads`` before reuse. The
-prefix state is persistent per-thread data, not CUB temporary storage.
+``syncwarp`` with the participating mask. Prefix callbacks keep these rules.
+When repeated calls reuse an explicit Block Scan descriptor, set
+``auto_sync=True`` or issue ``syncthreads`` before reuse. Keep the prefix
+state in its per-thread payload, separate from CUB temporary storage.
 
 .. literalinclude:: ../../../python/cuda_coop/examples/numba_mlir/block_scan.py
    :language: python

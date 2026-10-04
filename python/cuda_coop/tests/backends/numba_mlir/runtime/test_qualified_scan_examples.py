@@ -4,8 +4,9 @@
 
 """Run the qualified Scan documentation examples against NumPy results.
 
-The examples exercise a compiled callback on local arrays and a runtime
-valid_items count with a separate aggregate output. Begin/end markers select
+The examples exercise a compiled binary callback on local arrays, a runtime
+valid_items count with a separate aggregate output, and a stateful prefix
+callback that carries an exclusive sum across tiles. Begin/end markers select
 the code shown in the public reference.
 """
 
@@ -105,6 +106,13 @@ def test_qualified_exclusive_scan_example():
 
 
 def test_qualified_exclusive_sum_example():
+    """Run the API example that carries an exclusive sum across tiles.
+
+    Compare device results with a single scan over the whole input. The
+    final-total check reads the int64 running state from block thread zero,
+    so a reset or lost update between tiles fails.
+    """
+
     # qualified-exclusive-sum-example-begin
     import numpy as np
     from numba_cuda_mlir import cuda, types

@@ -76,11 +76,12 @@ _PLAN_ROUTES = {
 
 
 class _ScanPlanning:
-    """Translate one Scan call using the kernel's shared planning context.
+    """Translate a Scan call using the kernel's shared planning context.
 
     The context supplies launch geometry and facts about Numba values. This
-    class adds Scan-specific constraints, such as scalar-only Warp inputs
-    and the initial value required by a non-sum exclusive scan.
+    class adds Scan-specific constraints, such as scalar-only Warp inputs.
+    A non-sum exclusive scan needs an initial value or a block prefix
+    callback; a stateful callback also needs a separate state array.
     """
 
     def __init__(self, context: GroupPlanningContext) -> None:
@@ -204,8 +205,8 @@ class _ScanPlanning:
 
         Runtime seeds must already have the payload dtype. Static seeds are
         converted under the scalar-literal rules and embedded in typed C++
-        expressions. Inclusive scans reject any seed because their first
-        output starts with the first input value.
+        expressions. Inclusive scans in this API take no initial_value; use
+        exclusive mode for a seed, or a block prefix_op for a computed prefix.
 
         Parameters
         ----------
@@ -274,6 +275,19 @@ class _ScanPlanning:
         PythonOperator | StatefulOperator | None,
         Any | None,
     ]:
+        """Validate a block prefix callback and separate its runtime state.
+
+        The callback must be constant. A plain callable becomes a stateless
+        unary operator. A ``StatefulFunction`` also requires a one-item
+        array with the descriptor's exact numeric dtype. Its dtype may differ
+        from the scanned value dtype. Reject state for a stateless callback.
+
+        Return the callback IR reference, shared operator descriptor, and
+        state IR reference. The descriptor specializes the provider; the state
+        remains a runtime operand. Return three ``None`` values when
+        no callback is present.
+        """
+
         prefix_ref = bound.arguments.get("prefix_op")
         has_prefix = not self._context.is_none(prefix_ref)
 
@@ -481,8 +495,13 @@ class _ScanPlanning:
 
         Infer the value dtype and item count, validate the operator and
         optional operands, and select the primitive for the group and launch.
-        Return the plan plus operator, seed-binding, payload, and prefix-state
-        facts needed to assemble the call without repeating inference.
+        A block prefix callback supplies the prefix in place of an explicit
+        initial value and cannot be combined with an aggregate output. Keep
+        its state separate from the scanned payload and the seed binding.
+
+        Return the plan, operator token and callable, initial-value binding,
+        array-form flag, and callback and state IR references. These facts let
+        provider-call construction proceed without repeating inference.
         """
 
         mode, raw_scan_op = self._operation_options(operation, bound)
@@ -725,10 +744,14 @@ class _ScanPlanning:
 
         Array scans allocate a fresh result payload and return that payload
         through an alias; scalar scans use the provider's return value. Pass
-        seeds and lane counts (static bindings or runtime IR values),
-        aggregate outputs, prefix callbacks and state, and storage descriptors
-        to the shared rewrite,
-        which orders runtime operands and accounts for storage.
+        seeds and lane counts (static bindings or runtime IR values), callback
+        state, aggregate outputs, and storage descriptors to the shared
+        rewrite, which orders runtime operands and accounts for storage.
+
+        The callback reference is a factory specialization input. Its state
+        reference is a runtime operand, although both initially travel through
+        factory keywords. Registration tells the rewrite which keywords to
+        remove from factory arguments and append to the device call.
         """
 
         (
