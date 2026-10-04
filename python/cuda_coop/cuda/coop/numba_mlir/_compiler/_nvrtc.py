@@ -16,6 +16,12 @@ and private provider symbol identities. Context resolution preloads the chosen
 toolkit's libraries before importing the CUDA bindings. ``compile`` dumps
 source before cache lookup, so developers can inspect generated code even
 when compilation is reused.
+
+``compile_with_layouts`` reads C++ scratch sizes and alignments from the same
+NVRTC program that emits the provider image. An appended probe encodes each
+value in a compiler-generated name. The image and its ordered layouts are
+cached as one result, so a cache hit supplies both without another compile
+or a separate PTX link.
 """
 
 from __future__ import annotations
@@ -25,7 +31,7 @@ import hashlib
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeAlias, cast
 
 from cuda.coop._core._source_dump import dump_source
 from cuda.coop._headers import resolve_include_paths
@@ -37,6 +43,9 @@ from cuda.coop._headers._toolkit import (
 
 from ._artifacts import check_in, version
 from ._caching import disk_cache
+from ._layout import decode_layout_name, prepare_layout_queries
+
+_LayoutResult: TypeAlias = tuple[bytes, tuple[tuple[int, int], ...]]
 
 _REQUIRED_HEADERS = (
     "cub/block/block_load.cuh",
@@ -214,7 +223,9 @@ def compile_impl(
     include_dirs: tuple[str, ...],
     header_identity: str,
     compiler_options: tuple[bytes, ...],
-) -> bytes | str:
+    layout_queries: tuple[str, ...] = (),
+    layout_symbol: str = "",
+) -> bytes | str | _LayoutResult:
     """Compile one source unit using a complete, explicit cache identity.
 
     The memory and disk cache decorators key all arguments, including toolkit
@@ -228,6 +239,11 @@ def compile_impl(
     source, retrieve the requested image, and destroy the NVRTC program on
     both success and failure. A cleanup error does not replace an earlier
     compilation error. Cache hits bypass these body-level checks.
+
+    Register distinct layout expressions before compilation and decode their
+    names while the program is still alive. Restore duplicate entries in the
+    caller's order when returning layouts with an LTO image. The image and
+    layouts form one cache value, tying metadata to the same compilation.
 
     Parameters
     ----------
@@ -255,11 +271,18 @@ def compile_impl(
         Header-content identity supplied by context resolution.
     compiler_options : tuple of bytes
         Exact ordered options from ``_compiler_options`` for this request.
+    layout_queries : tuple of str, optional
+        Ordered NVRTC name expressions whose lowered names encode storage
+        layouts. Duplicate expressions are evaluated once and retain their
+        positions in the returned layouts.
+    layout_symbol : str, optional
+        Expected symbol used to validate and decode lowered layout names.
 
     Returns
     -------
-    bytes or str
+    bytes, str, or tuple
         LTO image bytes for ``"lto"`` or ASCII-decoded source for ``"ptx"``.
+        With LTO layout queries, return ``(image, layouts)`` in query order.
 
     Raises
     ------
@@ -267,7 +290,8 @@ def compile_impl(
         Options or loaded compiler version disagree with the request, or NVRTC
         compilation, image retrieval, or program cleanup fails.
     ValueError
-        The requested output format or relocatable-code option is invalid.
+        The output format or relocatable-code option is invalid, or a lowered
+        layout name does not match the expected encoding.
     """
 
     # These arguments are only used by the cache decorators to distinguish
@@ -306,17 +330,36 @@ def compile_impl(
         raise RuntimeError(f"nvrtcCreateProgram error: {err}")
     had_error = False
     try:
+        for expression in dict.fromkeys(layout_queries):
+            (err,) = nvrtc.nvrtcAddNameExpression(
+                prog, expression.encode("utf-8")
+            )
+            CHECK_NVRTC(err, prog, nvrtc=nvrtc)
         (err,) = nvrtc.nvrtcCompileProgram(
             prog, len(compiler_options), list(compiler_options)
         )
         CHECK_NVRTC(err, prog, nvrtc=nvrtc)
+        layouts = {}
+        for expression in dict.fromkeys(layout_queries):
+            err, lowered_name = nvrtc.nvrtcGetLoweredName(
+                prog, expression.encode("utf-8")
+            )
+            CHECK_NVRTC(err, prog, nvrtc=nvrtc)
+            layouts[expression] = decode_layout_name(
+                lowered_name, symbol=layout_symbol, expression=expression
+            )
         if code == "lto":
             err, size = nvrtc.nvrtcGetLTOIRSize(prog)
             CHECK_NVRTC(err, prog, nvrtc=nvrtc)
             image = bytearray(size)
             (err,) = nvrtc.nvrtcGetLTOIR(prog, image)
             CHECK_NVRTC(err, prog, nvrtc=nvrtc)
-            return bytes(image)
+            result = bytes(image)
+            if layout_queries:
+                return result, tuple(
+                    layouts[expression] for expression in layout_queries
+                )
+            return result
         err, size = nvrtc.nvrtcGetPTXSize(prog)
         CHECK_NVRTC(err, prog, nvrtc=nvrtc)
         image = bytearray(size)
@@ -388,7 +431,7 @@ def resolve_compile_context() -> CompileContext:
 
 def compile(
     *, context: CompileContext | None = None, **kwargs: Any
-) -> tuple[version, bytes | str]:
+) -> tuple[version, bytes | str | _LayoutResult]:
     """Compile provider source with a resolved header and toolkit context.
 
     Build the ordered options from the selected context, optionally dump the
@@ -406,12 +449,16 @@ def compile(
         Required ``cpp`` source string, integer ``cc`` target, boolean
         ``rdc``, and ``code`` equal to ``"lto"`` or ``"ptx"``. These are
         forwarded to ``compile_impl`` with the context and generated options.
+        Internal callers can also supply ``layout_queries`` and
+        ``layout_symbol``; use ``compile_with_layouts`` to prepare these from
+        C++ type names.
 
     Returns
     -------
     tuple
-        ``(nvrtc_version, image)`` with LTO bytes or PTX text according to
-        ``code``. The version is taken from the selected context.
+        ``(nvrtc_version, result)`` with LTO bytes or PTX text according to
+        ``code``. With LTO layout queries, ``result`` is ``(image, layouts)``
+        in query order. The version is taken from the selected context.
 
     Raises
     ------
@@ -441,4 +488,61 @@ def compile(
         include_dirs=context.include_dirs,
         header_identity=context.header_identity,
         compiler_options=compiler_options,
+    )
+
+
+def compile_with_layouts(
+    *, layout_types: tuple[str, ...], code: str = "lto", **kwargs: Any
+) -> tuple[version, _LayoutResult]:
+    """Cache provider LTO IR and its ordered storage layouts together.
+
+    The same NVRTC program evaluates ``sizeof`` and ``alignof`` and emits
+    the provider image. Query expressions are part of the cache identity, and
+    their ordered layouts are stored with the image. A later cache hit can
+    therefore recover both without compiling or linking a metadata program.
+
+    Parameters
+    ----------
+    layout_types : tuple of str
+        C++ type names or type expressions visible at the end of the supplied
+        source. The result has one layout per entry in the same order, with
+        duplicates preserved. An empty tuple uses ordinary compilation
+        without adding a probe to the source.
+    code : {"lto"}, optional
+        Output format. Only LTO supports the combined image/layout result.
+    **kwargs : dict
+        Arguments for ``compile``: ``cpp`` source, integer ``cc`` target,
+        boolean ``rdc``, and optional resolved ``context``. The source must
+        make every requested type visible to an appended layout probe.
+
+    Returns
+    -------
+    tuple
+        ``(nvrtc_version, (image, layouts))``. The image is LTO bytes; each
+        layout is a ``(size, alignment)`` pair in bytes. For an empty type
+        tuple, ``layouts`` is also empty.
+
+    Raises
+    ------
+    ValueError
+        The output format is not LTO, a type expression is empty, or NVRTC
+        returns an unexpected layout name or invalid size/alignment pair.
+    RuntimeError
+        Compiler identity checks or NVRTC compilation fail.
+    """
+
+    if code != "lto":
+        raise ValueError("storage layout queries require LTO compilation")
+    source, symbol, queries = prepare_layout_queries(
+        kwargs["cpp"], layout_types
+    )
+    if not queries:
+        compiler_version, image = compile(code=code, **kwargs)
+        return compiler_version, (cast(bytes, image), ())
+    kwargs["cpp"] = source
+    return cast(
+        tuple[version, _LayoutResult],
+        compile(
+            code=code, layout_queries=queries, layout_symbol=symbol, **kwargs
+        ),
     )

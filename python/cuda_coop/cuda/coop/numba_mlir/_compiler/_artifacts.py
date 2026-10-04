@@ -2,16 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Prepare compiled provider files and read their storage metadata.
+"""Prepare compiled provider files for linking.
 
 The linker consumes binary inputs by filename after provider construction.
 Temporary-file helpers therefore keep those paths alive for the owner to clean
-up later. PTX inspection reads emitted size and alignment constants without
-launching a kernel.
+up later.
 """
 
 import os
-import re
 import tempfile
 from collections import namedtuple
 from typing import IO
@@ -65,48 +63,4 @@ def check_in(name, arg, values):
         raise ValueError(f"{name} must be in {values} ; got {name} = {arg}")
 
 
-def find_unsigned(name: str, txt: str) -> int:
-    """Read an emitted unsigned storage-metadata global from PTX text.
-
-    Provider compilation emits C++ ``sizeof`` and ``alignof`` constants, then
-    links to PTX to inspect their values without executing a GPU kernel. Match
-    the compiler's aligned 32-bit unsigned global declaration for the
-    requested symbol. A declaration without an initializer denotes zero. This
-    is a narrow metadata extractor, not a general PTX parser.
-
-    Parameters
-    ----------
-    name : str
-        Exact global symbol name, escaped before constructing the search
-        pattern.
-    txt : str
-        PTX containing the provider's metadata globals.
-
-    Returns
-    -------
-    int
-        Decimal initializer value, or zero for an uninitialized declaration.
-
-    Raises
-    ------
-    ValueError
-        No recognized declaration for ``name`` is present.
-    """
-
-    escaped_name = re.escape(name)
-    regex = re.compile(
-        f".global .align 4 .u32 {escaped_name} = ([0-9]*);", re.MULTILINE
-    )
-    found = regex.search(txt)
-    if found is not None:
-        return int(found.group(1))
-
-    declaration = re.compile(
-        f".global .align 4 .u32 {escaped_name};", re.MULTILINE
-    )
-    if declaration.search(txt) is not None:
-        return 0
-    raise ValueError(f"{name} not found in text")
-
-
-__all__ = ["check_in", "find_unsigned", "make_binary_tempfile", "version"]
+__all__ = ["check_in", "make_binary_tempfile", "version"]
