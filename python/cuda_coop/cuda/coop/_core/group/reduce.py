@@ -2,8 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Select CUDAX for full built-in reductions and CUB for prefixes,
-explicit block algorithms, or custom operators.
+"""Choose a reduction implementation and describe its execution contract.
+
+Full reductions with recognized built-in operators use CUDAX. Valid prefixes,
+explicit block algorithms, and other operators select CUB. That choice also
+determines whether a result can be broadcast, which group shapes are valid,
+and which arguments remain the caller's responsibility at runtime.
 """
 
 from __future__ import annotations
@@ -68,10 +72,18 @@ _CUDAX_BUILTIN_REDUCE_OPERATORS = frozenset(
 
 
 def _canonical_operator_cpp(operator: CxxOperator) -> str:
+    """Normalize supported type and construction spellings for recognition."""
+
     return operator.cpp.strip().replace("<T>", "<>").removesuffix("{}")
 
 
 def _has_cudax_builtin_operator(operation: GroupReduceSemantics) -> bool:
+    """Check whether the shared planner recognizes a CUDAX built-in operator.
+
+    Sum is built in. Other reductions must name an allowed C++ operator;
+    Python and stateful operator descriptions take the CUB path instead.
+    """
+
     if operation.operation is ReduceOperation.SUM:
         return True
     operator = operation.reduce_operator
@@ -82,7 +94,14 @@ def _has_cudax_builtin_operator(operation: GroupReduceSemantics) -> bool:
 
 @dataclass(frozen=True, eq=False)
 class GroupReduceSemantics:
-    """Group-wide scalar-result reduction semantics."""
+    """Add group result visibility and algorithm selection to a reduction.
+
+    ``primitive`` describes each thread's inputs and the reduction operator.
+    ``broadcast`` requests the result for all members; false defines it only
+    for rank zero. ``cub_algorithm`` selects a CUB BlockReduce algorithm.
+    The planner checks whether the chosen implementation can meet these
+    requests after resolving the group's shape.
+    """
 
     primitive: ReduceSemantics
     broadcast: bool = True
@@ -131,6 +150,8 @@ class GroupReduceSemantics:
 
     @property
     def requests_cub(self) -> bool:
+        """Select CUB for controls or operators outside the CUDAX path."""
+
         return (
             self.cub_algorithm is not None
             or self.primitive.has_valid_items
@@ -169,6 +190,13 @@ class GroupReduceSemantics:
 def _call_classifications(
     operation: GroupReduceSemantics,
 ) -> tuple[ParameterClassification, ...]:
+    """Separate input values from controls used to build the implementation.
+
+    The payload is always a runtime input. Operator and count descriptions
+    determine their own binding kinds. Broadcast and algorithm selection
+    remain static controls even when their default values are used.
+    """
+
     classifications = [
         ParameterClassification(
             "value", ArgumentKind.RUNTIME, ParameterRole.INPUT
@@ -207,6 +235,12 @@ def _call_classifications(
 
 
 def _result_contract(operation: GroupReduceSemantics) -> ResultContract:
+    """Describe who owns the single reduced value and where it is defined.
+
+    A broadcast gives each member one scalar result. Otherwise only group
+    rank zero owns a defined result; other members cannot use that value.
+    """
+
     is_root_only = operation.result_visibility is ResultVisibility.GROUP_ROOT
     return ResultContract(
         (
@@ -230,6 +264,12 @@ def _result_contract(operation: GroupReduceSemantics) -> ResultContract:
 def _has_proven_commutative_reduce_operator(
     operation: GroupReduceSemantics,
 ) -> bool:
+    """Recognize operators safe for CUB's commutative-only algorithm.
+
+    Use the known built-in set. A custom callback is not treated as
+    commutative merely because it could implement the same operation.
+    """
+
     if operation.operation is ReduceOperation.SUM:
         return True
     operator = operation.reduce_operator
@@ -244,6 +284,14 @@ def _plan_cudax_reduce(
     launch: LaunchFacts,
     operation: GroupReduceSemantics,
 ) -> GroupLoweringPlan:
+    """Describe a full-group CUDAX reduction with its result visibility.
+
+    Exact block dimensions are needed to construct the hierarchy. Each
+    per-thread payload item becomes a scalar C++ argument. Root-only calls
+    return an optional result; broadcast calls return a value for every
+    member. No caller-provided scratch operand is part of this call contract.
+    """
+
     if launch.exact_block_dim is None:
         return _unsupported(
             call,
@@ -303,6 +351,23 @@ def _plan_cub_reduce(
     launch: LaunchFacts,
     operation: GroupReduceSemantics,
 ) -> GroupLoweringPlan:
+    """Plan a direct CUB reduction and record its limits for the backend.
+
+    CUB defines the result at the group root, so reject broadcast requests.
+    Blocks support scalar or array inputs; physical and logical warps use
+    scalar inputs. Reject group shapes, algorithms, and operator combinations
+    that this path cannot implement.
+
+    A block request without an algorithm records ``WARP_REDUCTIONS`` in both
+    the operation and the plan's call, making it part of the semantic key.
+
+    Validate static prefix counts here. Runtime counts remain a caller
+    precondition recorded in the core plan. The backend owns CUB scratch.
+    Counts must be uniform across the group. Where a backend supports
+    stateful callbacks, their runtime state must also be uniform; the core
+    descriptor alone does not establish that support.
+    """
+
     if resolved.kind not in {"block", "warp", "threads_within_warp"}:
         return _unsupported(
             call,
@@ -478,6 +543,8 @@ def _plan_reduce(
     launch: LaunchFacts,
     operation: GroupReduceSemantics,
 ) -> GroupLoweringPlan:
+    """Route a resolved reduction to the implementation its controls select."""
+
     if operation.requests_cub:
         return _plan_cub_reduce(call, resolved, launch, operation)
     return _plan_cudax_reduce(call, resolved, launch, operation)

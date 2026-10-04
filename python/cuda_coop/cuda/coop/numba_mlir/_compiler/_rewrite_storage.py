@@ -220,8 +220,8 @@ class _StorageRewrite:
                 )
                 if (size, alignment, auto_sync, sharing) != planned:
                     raise CoopSinglePhaseRewriteError(
-                        f"cooperative provider TempStorage contract "
-                        f"disagrees between the group lowering plan "
+                        "cooperative provider TempStorage contract "
+                        "disagrees between the group lowering plan "
                         f"{planned!r} and the descriptor "
                         f"{(size, alignment, auto_sync, sharing)!r}."
                     )
@@ -575,9 +575,9 @@ class _StorageRewrite:
                 f"TempStorage requires {max_alignment}-byte alignment, but "
                 f"the {total_size}-byte backing exceeds the "
                 f"{max_default}-byte static shared-memory limit and dynamic "
-                f"shared memory guarantees only "
+                "shared memory guarantees only "
                 f"{_DYNAMIC_SHARED_MEMORY_ALIGNMENT}-byte alignment; reduce "
-                f"the requested alignment or the storage size."
+                "the requested alignment or the storage size."
             )
         dynamic_shared_bytes = total_size if uses_dynamic_smem else 0
         if dynamic_shared_bytes > max_optin:
@@ -668,11 +668,16 @@ class _StorageRewrite:
         the function after device-helper inlining, regardless of barriers or
         apparent lifetimes. Restore the block lookup state even on failure.
 
+        A dynamic cooperative backing also cannot coexist with a CUDAX
+        reduction's internal static shared memory. With no plan, the caller
+        has found that internal storage and still needs to check user arrays.
+
         Parameters
         ----------
-        plan : _TempStorageGlobalPlan
+        plan : _TempStorageGlobalPlan or None, optional
             Combined cooperative allocation, including its static or dynamic
-            placement and total byte count.
+            placement and total byte count. None checks user arrays against
+            internal CUDAX static storage without a cooperative backing.
 
         Raises
         ------
@@ -1141,7 +1146,7 @@ class _StorageRewrite:
             )
             if slice_info is None:
                 raise CoopSinglePhaseRewriteError(
-                    f"Could not resolve TempStorage slice for call at "
+                    "Could not resolve TempStorage slice for call at "
                     f"{call_assign.loc}."
                 )
             if (
@@ -1204,7 +1209,7 @@ class _StorageRewrite:
         slice_info = plan.slices_by_call_id.get(id(call_assign))
         if slice_info is None:
             raise CoopSinglePhaseRewriteError(
-                f"Could not resolve implicit TempStorage slice for call at "
+                "Could not resolve implicit TempStorage slice for call at "
                 f"{call_assign.loc}."
             )
         sliced_var = ir.Var(
@@ -1285,9 +1290,9 @@ class _StorageRewrite:
         }.get(synchronization_scope)
         if sync_attr is None:
             raise CoopSinglePhaseRewriteError(
-                f"cuda.coop.numba_mlir provider synchronization scope "
+                "cuda.coop.numba_mlir provider synchronization scope "
                 f"{SynchronizationScope(synchronization_scope).value!r} has "
-                f"no emitter"
+                "no emitter"
             )
         sync_args = []
         if (
@@ -1587,15 +1592,15 @@ class _StorageRewrite:
                     helper_name = helper.py_func.__qualname__
                     raise CoopSinglePhaseRewriteError(
                         f"TempStorage descriptor {names!r} is passed to a "
-                        f"device function that was not inlined into this "
+                        "device function that was not inlined into this "
                         f"kernel ({helper_name!r}); let Numba-CUDA-MLIR "
-                        f"inline the collective helper (inline='always') or "
-                        f"move its cooperative calls into the kernel."
+                        "inline the primitive helper (inline='always') or "
+                        "move its cooperative calls into the kernel."
                     )
                 raise CoopSinglePhaseRewriteError(
-                    f"TempStorage values are opaque compile-time descriptors "
-                    f"and may only be passed as temp_storage= to a "
-                    f"registered cooperative primitive; a use involving "
+                    "TempStorage values are opaque compile-time descriptors "
+                    "and may only be passed as temp_storage= to a "
+                    "registered cooperative primitive; a use involving "
                     f"{names!r} would escape to runtime."
                 )
 
@@ -1611,10 +1616,10 @@ class _StorageRewrite:
         if unconsumed:
             names = ", ".join(sorted(unconsumed))
             raise CoopSinglePhaseRewriteError(
-                f"TempStorage values are opaque compile-time descriptors and "
-                f"must be passed as temp_storage= to a registered "
+                "TempStorage values are opaque compile-time descriptors and "
+                "must be passed as temp_storage= to a registered "
                 f"cooperative primitive; constructor(s) {names!r} have no "
-                f"primitive consumer."
+                "primitive consumer."
             )
 
     def _compute_func_temp_storage_requirements(
@@ -1640,8 +1645,12 @@ class _StorageRewrite:
         Constructor tables and implicit requirements are rebuilt, payload
         facts and invocable caches may be updated, and the prior block lookup
         state is restored even if collection fails. Source order is sorted
-        block labels followed by statement order, not a claim about runtime
-        execution order.
+        block labels followed by statement order, not runtime execution order.
+
+        Record CUDAX block, cluster, and mapped-warp reductions that use
+        internal static shared memory without a TempStorage pointer. Later
+        checks compare this memory with dynamic cooperative backing and user
+        shared arrays.
 
         Parameters
         ----------

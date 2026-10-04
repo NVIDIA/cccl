@@ -98,9 +98,10 @@ def resolve_thread_group(
     Returns
     -------
     ThreadGroupLaunchResolution
-        The resolved group, or the original group with an unsupported
-        reason. Missing launch facts and unsupported partitions use this
-        result instead of raising an exception.
+        The resolved group, or the original group with an unsupported reason.
+        Missing launch facts and unsupported partitions use this result
+        instead of raising an exception. A request that needs only the thread
+        level returns the group unchanged; it needs no launch dimensions.
 
     Raises
     ------
@@ -253,6 +254,9 @@ def resolve_thread_group(
         through_level == "warp"
         and _THREAD_LEVEL_ORDER[group_level] > _THREAD_LEVEL_ORDER["warp"]
     )
+    # A containing group's query can count a partial final warp, but needs
+    # at least one complete warp. A physical-warp operation itself still
+    # requires every warp in the block to be complete, as checked above.
     if queries_warps_as_constituents and block_threads < 32:
         return _resolution_failure(
             group,

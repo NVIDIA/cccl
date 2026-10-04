@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Bind a block reduction to its CUB template and method signature.
+
+The factory combines shared reduction inputs with a three-axis block shape
+and a CUB algorithm. Parameter descriptions tell a backend where to supply
+scratch, input values, an optional operator/count, and the returned result.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -69,7 +76,13 @@ def normalize_block_reduce_algorithm(
 
 @dataclass(frozen=True)
 class BlockReduceSpecialization:
-    """Fully specialized CUB BlockReduce semantics."""
+    """Keep a bound CUB algorithm together with its normalized call inputs.
+
+    ``specialization`` is the ``Algorithm`` consumed by a backend adapter.
+    ``call``, ``block_dim``, and ``algorithm`` retain the planning inputs so
+    callers can inspect the selection without decoding template arguments.
+    The forwarding properties expose those inputs and the algorithm's key.
+    """
 
     specialization: Algorithm
     call: BlockReduceSemantics
@@ -106,6 +119,14 @@ class BlockReduceSpecialization:
 
 
 def _block_reduce_parameters(call: ReduceSemantics) -> tuple[Any, ...]:
+    """Describe the selected CUB method's arguments in call order.
+
+    The input is a scalar reference or fixed array. A static valid count is
+    embedded as a C++ expression; a runtime count is an integer argument.
+    The final reference receives the method's return value and marks it as
+    a result that the backend exposes to its caller.
+    """
+
     parameters: list[Any] = [TempStorageParameter()]
     if call.value_kind is BlockReduceValueKind.ARRAY:
         parameters.append(
@@ -150,7 +171,17 @@ def make_block_reduce_specialization(
     | None = None,
     valid_items: bool | ArgumentBinding = False,
 ) -> BlockReduceSpecialization:
-    """Build a fully specialized CUB BlockReduce description."""
+    """Bind the block shape, payload type, and reduction algorithm for CUB.
+
+    Normalize the block dimensions and algorithm spelling, then validate the
+    shared reduction inputs. A static valid count cannot exceed the block's
+    thread count. Runtime counts remain arguments of the generated wrapper.
+
+    ``ITEMS_PER_THREAD`` describes an array method parameter, rather than a
+    CUB class-template argument. Include it only for array inputs. The result
+    retains both the bound ``Algorithm`` and the normalized planning inputs;
+    a backend supplies scratch and emits the callable wrapper later.
+    """
 
     block_dim = normalize_block_dim(block_dim)
     algorithm = normalize_block_reduce_algorithm(algorithm)

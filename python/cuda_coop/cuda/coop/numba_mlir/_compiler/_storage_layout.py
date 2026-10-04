@@ -327,7 +327,7 @@ def validate_emittable_topology(
             )
     else:
         raise CoopSinglePhaseRewriteError(
-            f"cuda.coop.numba_mlir provider execution scope "
+            "cuda.coop.numba_mlir provider execution scope "
             f"{scope.value!r} has no storage emitter"
         )
     return topology

@@ -40,6 +40,11 @@ class _ReadOnlyThreadData(Generic[_ItemT]):
 
 
 class _ReadonlyUInt16Payload(Protocol):
+    """Check that reduction infers its scalar dtype from readable items.
+
+    This protocol tests static declarations, not runtime payload support.
+    """
+
     items_per_thread: int
     dtype: object | None
 
@@ -49,11 +54,15 @@ class _ReadonlyUInt16Payload(Protocol):
 
 
 def _select_left_int32(left: np.int32, right: np.int32) -> np.int32:
+    """Supply an associative, noncommutative callback with an int32 result."""
+
     del right
     return left
 
 
 def _select_left_uint16(left: np.uint16, right: np.uint16) -> np.uint16:
+    """Keep the unsigned payload dtype through a custom reduction callback."""
+
     del right
     return left
 
