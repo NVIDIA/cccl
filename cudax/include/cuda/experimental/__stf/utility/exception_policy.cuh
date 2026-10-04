@@ -2438,9 +2438,20 @@ _Status operator->*(__on_throw_policy<_Reaction> __policy, const _Status __statu
   return __run_under(__policy, __status);
 }
 
-// `errsink(p) << x`: feed and chain. The operand is offered to the policy exactly as `->*` does;
-// a failing status that comes out (a status operand, or the status a callable returned, fed in
-// turn) is recorded if it is the chain's first. Returns the carrier itself.
+// Fails, inside `<<`, for an action whose return type is not a status; the diagnostic's
+// instantiation context names that type.
+template <class _Returned>
+struct __errsink_unknown_return
+{
+  static_assert(!::cuda::std::is_same_v<_Returned, _Returned>,
+                "errsink << action: I don't know how to handle 'S' as an error code; register status_traits<S> "
+                "or use ->* to yield the value");
+};
+
+// `errsink(p) << x`: feed and chain. A status operand is offered to the policy exactly as `->*`
+// does. An action runs under the policy, and what it returns is an error code: a status is fed in
+// turn, `void` feeds nothing, and any other type is ill-formed. A failing status that comes out is
+// recorded if it is the chain's first. Returns the carrier itself.
 template <class _Reaction, class _X>
 void __feed(__on_throw_policy<_Reaction>& __sink, _X&& __x)
 {
@@ -2456,16 +2467,28 @@ void __feed(__on_throw_policy<_Reaction>& __sink, _X&& __x)
   }
   else
   {
-    using _Expr = decltype(__run_under(__sink, ::cuda::std::forward<_X>(__x)));
-    if constexpr (__is_status_v<::cuda::std::remove_cvref_t<_Expr>>)
+    using _Expr     = decltype(::cuda::std::declval<_X&>()());
+    using _Returned = ::cuda::std::remove_cvref_t<_Expr>;
+    if constexpr (::cuda::std::is_void_v<_Expr>)
     {
-      // A callable that returns a status: the status it returned is fed.
-      const ::cuda::std::remove_cvref_t<_Expr> __returned = __run_under(__sink, ::cuda::std::forward<_X>(__x));
-      __feed(__sink, __returned);
+      __run_under(__sink, ::cuda::std::forward<_X>(__x));
+    }
+    else if constexpr (__is_status_v<_Returned>)
+    {
+      if constexpr (noexcept(::cuda::std::declval<_X&>()()))
+      {
+        // Nothing can be thrown, so there is nothing for the exception channel: the status alone is fed.
+        __feed(__sink, static_cast<_Returned>(__x()));
+      }
+      else
+      {
+        const _Returned __returned = __run_under(__sink, ::cuda::std::forward<_X>(__x));
+        __feed(__sink, __returned);
+      }
     }
     else
     {
-      static_cast<void>(__run_under(__sink, ::cuda::std::forward<_X>(__x)));
+      static_cast<void>(sizeof(__errsink_unknown_return<_Returned>));
     }
   }
 }
@@ -3479,20 +3502,23 @@ exception_sink type_erase(_P&& __p)
  * @brief Creates a policy saying how to react if a callable throws or a status reports failure.
  *
  * Two operators apply the policy:
- * - `errsink(policy) ->* x` evaluates and yields, for when you want the value. For a callable
- *   the expression type is always `decltype(callable())`; no policy changes it. For a status
- *   (see below) it is the status the policy made of it.
+ * - `errsink(policy) ->* x` evaluates and yields, for when you want the value. An action runs
+ *   under the policy, so its throws are handled, and its return comes back verbatim, whatever its
+ *   type: it is never checked and no trait is consulted, even for a registered status type. For
+ *   a status value (see below) it yields the status the policy made of it. `->*` never chains.
  * - `errsink(policy) << x` feeds, possibly several operands: `errsink(store(&err)) << a() << b()`.
- *   Each operand is offered to the policy exactly as with `->*`, and the expression is the policy
- *   carrier itself (an lvalue for a named sink, so `auto s = errsink(p); s << a; s << b;` works
- *   across statements). C++17 sequences the left side of `<<`, its handling included, before the
- *   right, so each operand runs after the previous one was handled. The carrier records the first
- *   status that forwarded, read with `status<S>()` (the success value if none did), and
- *   `forwarded()` says whether one did. The first `<<` fixes the chain's status type, and a
- *   later operand of another status type, or `status<S>()` with another `S`, is a programming error
- *   checked with `_CCCL_VERIFY`. A callable operand runs under the policy, and a status it returns
- *   is fed in turn. The carrier converts to nothing implicitly, and a `<<` statement whose
- *   `status<S>()` nobody reads drops a passed-through status: write `->*` to keep it.
+ *   A status value is offered to the policy as with `->*`. An action runs under the policy, and
+ *   what it returns is an error code: a status is fed in turn (a successful one only fixes the
+ *   chain's status type), `void` feeds nothing, and a type without `status_traits` is a compile
+ *   error. The expression is the policy carrier itself: an lvalue for a named sink, so
+ *   `auto s = errsink(p); s << a; s << b;` works across statements, and a value for a temporary.
+ *   C++17 sequences the left side of `<<`, its handling included, before the right, so each
+ *   operand runs after the previous one was handled. The carrier records the first status that
+ *   was forwarded, read with `status<S>()` (the success value if none was), and `forwarded()`
+ *   says whether one was. The first `<<` fixes the chain's status type, and a later operand of
+ *   another status type, or `status<S>()` with another `S`, is a programming error checked with
+ *   `_CCCL_VERIFY`. The carrier converts to nothing implicitly, and a `<<` statement whose
+ *   `status<S>()` nobody reads drops a forwarded status: write `->*` to keep it.
  *
  * `->*` binds tighter than `<<`, so `s << a ->* b` parses as `s << (a ->* b)` and does not compile;
  * write `(s << a).status<S>()`, or split the statement.
@@ -6107,6 +6133,60 @@ UNITTEST("error sinks: unwind inside a chain stops it")
   }
   EXPECT(threw);
   EXPECT((a == 1 && b == 0));
+};
+
+UNITTEST("error sinks: ->* yields an action's return verbatim")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::eh;
+  ::std::ostringstream log;
+  // a status is returned as data: nothing is logged, the raw status comes back
+  const auto st = errsink(notify(log))->*[&] {
+    return cudaErrorNotReady;
+  };
+  EXPECT(st == cudaErrorNotReady);
+  EXPECT(log.str().empty());
+  // an arbitrary type comes back as is, trait or no trait
+  struct payload
+  {
+    int v;
+  };
+  const auto p = errsink(notify(log))->*[&] {
+    return payload{7};
+  };
+  EXPECT(p.v == 7);
+  // a throw is still handled
+  int n       = 0;
+  const int r = errsink(subst(-1))->*[&]() -> int {
+    if (++n)
+    {
+      throw ::std::runtime_error("x");
+    }
+    return 0;
+  };
+  EXPECT(r == -1);
+};
+
+UNITTEST("error sinks: << treats an action's return as an error code")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::eh;
+  ::std::ostringstream log;
+  auto chain = errsink(notify(log) & fwd) << [&] {
+    return cudaErrorNotReady;
+  } << [&] {
+    return cudaSuccess;
+  };
+  EXPECT(chain.forwarded());
+  EXPECT(chain.status<cudaError_t>() == cudaErrorNotReady);
+  EXPECT(log.str().find("cudaErrorNotReady") != ::std::string::npos);
+  // a void action feeds nothing
+  int ran    = 0;
+  auto quiet = errsink(notify(log)) << [&] {
+    ++ran;
+  };
+  EXPECT(ran == 1);
+  EXPECT(!quiet.forwarded());
 };
 
 UNITTEST("error sinks: polling idiom under section 1's |")
