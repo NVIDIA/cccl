@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Infer Scan payload types and check optional provider operands.
+
+Group planning selects a Scan provider before every payload has a concrete
+Numba type. These callbacks reconcile input, result, seed, and aggregate
+types before provider specialization. Runtime operands follow one order:
+payloads, then an optional seed, lane count, and aggregate output.
+"""
+
 from __future__ import annotations
 
 from numbers import Integral
@@ -35,6 +43,12 @@ def _payload_dtype(
     value: ir.Var | None,
     specification: Any,
 ) -> Any | None:
+    """Use a declared payload dtype, then inference or recorded writes.
+
+    A newly allocated ThreadData may have an extent but no dtype yet. Writes
+    can establish that dtype before Numba's ordinary type inference runs.
+    """
+
     dtype = specification.dtype if specification is not None else None
     if dtype is None and value is not None:
         dtype = context.dtype(value)
@@ -50,6 +64,12 @@ def _validate_aggregate(
     index: int,
     dtype: Any,
 ) -> None:
+    """Require one output item of the payload dtype and record that dtype.
+
+    The aggregate is an output, so an unspecialized ThreadData need not have
+    prior writes. Record the known Scan dtype for its later allocation.
+    """
+
     aggregate, specification = inference.array_candidate(index)
     if (
         aggregate is None
@@ -57,8 +77,8 @@ def _validate_aggregate(
         or specification.items_per_thread != 1
     ):
         raise CoopSinglePhaseRewriteError(
-            "coop scan aggregate_output must be "
-            "a one-item ThreadData or local array"
+            "coop scan aggregate_output must be a one-item ThreadData "
+            "or local array"
         )
     aggregate_dtype = _payload_dtype(context, aggregate, specification)
     if aggregate_dtype is not None and not _dtype_values_match(
@@ -66,8 +86,8 @@ def _validate_aggregate(
         dtype,
     ):
         raise CoopSinglePhaseRewriteError(
-            "coop scan aggregate_output dtype "
-            "must exactly match the value dtype"
+            "coop scan aggregate_output dtype must exactly match the "
+            "value dtype"
         )
     context.record_thread_data_dtype(aggregate, dtype)
 
@@ -77,6 +97,8 @@ def _runtime_initial_index(
     base_count: int,
     factory_kwargs: dict[str, object],
 ) -> int | None:
+    """Locate a runtime seed immediately after the provider's payloads."""
+
     if _runtime_binding(factory_kwargs.get("initial_value")):
         return base_count
     return None
@@ -90,6 +112,13 @@ def _validate_initial_value(
     dtype: Any,
     base_count: int,
 ) -> None:
+    """Convert a static seed or check the dtype of its runtime operand.
+
+    Literal conversion may use a known source dtype to preserve the scalar
+    rules. A runtime value must match exactly; leave unresolved types for
+    subsequent typing instead of inserting an implicit cast.
+    """
+
     initial = factory_kwargs.get("initial_value")
     if not isinstance(initial, ArgumentBinding):
         return
@@ -147,7 +176,13 @@ def infer_scan_payload(
     context: GroupRewriteContext,
     inference: PayloadInference,
 ) -> None:
-    """Infer Scan payload and side-output dtype metadata."""
+    """Reconcile Scan input, result, seed, and aggregate types.
+
+    Block array inputs and results must have the same fixed extent and
+    dtype. Scalar providers reject array operands. Record inferred metadata
+    on ThreadData values and factory arguments so allocation and provider
+    specialization agree, then validate any seed and aggregate operands.
+    """
 
     is_block_array = inference.op_name == "block_scan_array"
     if is_block_array:
@@ -155,8 +190,8 @@ def infer_scan_payload(
         output_value, output_specification = inference.array_candidate(1)
         if input_specification is None or output_specification is None:
             raise CoopSinglePhaseRewriteError(
-                "coop block scan array providers "
-                "require input and output arrays"
+                "coop block scan array providers require input and "
+                "output arrays"
             )
         if (
             input_specification.items_per_thread is None
@@ -238,6 +273,8 @@ def infer_scan_payload(
         base_count=base_count,
     )
 
+    # Optional runtime controls precede the aggregate output. Static controls
+    # are embedded in the provider and do not consume argument positions.
     cursor = base_count
     if _runtime_binding(inference.factory_kwargs.get("initial_value")):
         cursor += 1
@@ -264,7 +301,13 @@ def validate_scan_runtime_controls(
     runtime_args: list[ir.Var],
     factory_kwargs: dict[str, object],
 ) -> None:
-    """Validate runtime and static WarpScan prefix-width controls."""
+    """Check static WarpScan prefix bounds and runtime count dtypes.
+
+    Static counts must lie between one and the known group width. Runtime
+    counts must have a supported integer dtype; their value bounds are
+    enforced by the generated wrapper. A runtime seed shifts the count's
+    position in the provider argument list.
+    """
 
     del op_name
     valid_items = factory_kwargs.get("valid_items")

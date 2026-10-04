@@ -395,9 +395,9 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
             if isinstance(dtype, Dependency):
                 dependency = dtype
                 dtype = dependency.resolve(specialization.template_arguments)
-                # CxxFunction supports a dedicated type-expression placeholder
-                # in addition to the bracketed operator-template convention.
-                # Bare tokens are deliberately not replaced.
+                # Replace {T} in type expressions and <T> in templates. Leave
+                # bare names intact so replacing a dtype cannot alter an
+                # unrelated C++ identifier in the supplied expression.
                 cpp = cpp.replace(
                     f"{{{dependency.name}}}",
                     self.cpp_type(dtype),
@@ -422,11 +422,10 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
     ) -> Any:
         """Translate a shared C++ functor into a backend operator descriptor.
 
-        A concrete dtype creates a value-initialized ``CxxFunction``.
-        A dtype dependency creates ``DependentCxxOperator``
-        so its bracketed placeholder is replaced only after
-        template arguments are known. Neither path adds a
-        runtime callable argument or compiles a Python function.
+        A concrete dtype creates a value-initialized ``CxxFunction``. A dtype
+        dependency creates ``DependentCxxOperator`` so its bracketed
+        placeholder is replaced only after template arguments are known.
+        Neither path compiles a Python function or adds a runtime argument.
         """
 
         del specialization
@@ -536,8 +535,7 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         specialization : Algorithm
             Core specialization with ordered template arguments and overloads.
         storage_abi : StorageABI
-            Whether the backend receives a
-            leading scratch pointer or no scratch.
+            Select a leading scratch pointer or an ABI without scratch.
         execution_scope : SynchronizationScope
             Participating scope for scratch allocation by the source emitter.
         synchronization_scope : SynchronizationScope
@@ -561,9 +559,8 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
             Options or scalar ABI declarations are unsupported, or parameter
             lowering encounters an unsupported descriptor.
         ValueError
-            Named overrides/transforms do not match eligible
-            core parameters, their dtypes or output roles
-            conflict, or scope/ABI values are invalid.
+            Named overrides/transforms do not match eligible core parameters
+            or conflict in dtype or output role. Scope/ABI values are invalid.
         """
 
         if kwargs:
