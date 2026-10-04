@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check reduction values, input preservation, and group participation.
+
+Host references keep the payload dtype and group boundaries explicit.
+Root-only results are observed only at the group root. Callback tests also
+check that captured values affect compiled-code reuse, and invalid-prefix
+probes isolate device traps in child processes.
+"""
+
 from __future__ import annotations
 
 import math
@@ -97,6 +105,13 @@ def test_sum_infers_loop_carried_scalar_dtype(dtype, scope, collectives):
 
 
 def _dtype_values(dtype, size: int) -> np.ndarray:
+    """Choose patterns that reveal lost payload bits during reduction.
+
+    Float64 values include a fraction lost in float32. Wider integer patterns
+    use bits beyond the next smaller width. Host references explicitly reduce
+    in the payload dtype, including its integer wraparound behavior.
+    """
+
     indices = np.arange(size, dtype=np.int64)
     if np.dtype(dtype).kind == "u":
         values = (indices % 3 == 0).astype(dtype)
@@ -114,6 +129,8 @@ def _dtype_values(dtype, size: int) -> np.ndarray:
 
 
 def _broadcast_grouped_sum(values: np.ndarray, width: int) -> np.ndarray:
+    """Repeat each group's dtype-preserving sum at every member position."""
+
     totals = values.reshape(-1, width).sum(axis=1, dtype=values.dtype)
     return np.repeat(totals, width)
 
@@ -234,6 +251,12 @@ def test_both_namespaces_cover_mapped_warp_scalar_reductions(warps_per_group):
 
 @cuda.jit
 def _nonexhaustive_mapped_sum(source, observed, continued):
+    """Observe a partial partition and execution after the collective.
+
+    The fourth physical warp is outside the three-warp group. The second
+    output checks that nonmembers continue executing the rest of the kernel.
+    """
+
     thread = cuda.threadIdx.x
     mapped_warps = root_coop.this_block().group_by(3, exhaustive=False)
     observed[thread] = root_coop.sum(mapped_warps, source[thread])
@@ -716,8 +739,15 @@ def _run_invalid_runtime_prefix_probe(
     group: str,
     valid_items: int,
 ) -> subprocess.CompletedProcess[str]:
-    # A device trap poisons its CUDA context, so invalid launches must run in
-    # disposable child processes rather than the pytest worker.
+    """Run an invalid prefix in a child with its own CUDA context.
+
+    A device trap poisons its context, so the invalid call must run outside
+    the pytest worker. The child checks its package origin against the
+    parent's imported source.
+    The caller inspects the failure text to require a device trap, then runs a
+    valid reduction in the parent to check that its context remains usable.
+    """
+
     group_expression = {
         "block": "root_coop.this_block()",
         "logical_warp": (

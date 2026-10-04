@@ -2,7 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Sum a block's inputs and write the result from thread zero."""
+"""Sum one full input tile and write the result from thread zero.
+
+Each thread contributes several consecutive values through ``ThreadData``.
+All threads reduce their values; only thread zero uses the returned sum.
+"""
 
 import numpy as np
 from numba_cuda_mlir import cuda
@@ -26,6 +30,8 @@ def block_sum(source, output, items_per_thread):
 
 
 def main(items_per_thread: int = 4) -> None:
+    """Launch one block with a full tile and check its sum against NumPy."""
+
     tile_items = _THREADS * items_per_thread
     source = np.arange(tile_items, dtype=np.int32)
     output = np.zeros(1, dtype=np.int32)

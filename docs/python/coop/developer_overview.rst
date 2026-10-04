@@ -83,9 +83,9 @@ operands. These arguments are positional-only. Options such as
    leader_total = coop.sum(block, value, broadcast=False)
    coop.load(block, source, items, algorithm="direct", valid_items=n)
 
-Reduction usually needs just a group and a value. Load and Store
-add a source or destination. This short operand list keeps primitive
-calls compact inside a kernel, while named options make choices such as
+Reduction usually needs just a group and a value. Load and Store add a
+source or destination. This short operand list keeps primitive calls
+compact inside a kernel, while named options make choices such as
 partial-tile handling and result broadcasting explicit. New optional
 keyword parameters can be added without changing existing calls.
 
@@ -103,8 +103,8 @@ allows callers to omit optional arguments, such as unused value buffers in
 a key-only sort.
 
 For ``cuda.coop``, the group already describes the participating threads,
-and Reduction returns its result directly.
-The positional operands and named controls fit that smaller call shape.
+and Reduce returns its result directly. The positional operands and named
+controls fit that smaller call shape.
 When extending an API, keep the operand order consistent and use
 keyword-only parameters for additional options.
 
@@ -1095,7 +1095,7 @@ kernels. Passing coexistence tests against a development compiler alone does
 not remove the compatibility guard.
 
 These controls are operation-specific. Warp Load/Store uses
-compiler-owned storage and rejects an explicit ``TempStorage``. Exchange
+compiler-owned storage and reject an explicit ``TempStorage``. Exchange
 and Shuffle also manage their own scratch in the current API. CUDAX
 Reduce manages scratch inside its generated C++ implementation, so an
 absence of a leading scratch pointer does not mean the reduction uses no
@@ -1693,10 +1693,9 @@ The Windows checks do not compile or launch Numba-CUDA-MLIR kernels. Other
 Python versions and platform combinations need separate backend runtime
 qualification. Dependency bounds allow releases in the supported series;
 they do not mean that every patch release in that series has been tested.
-These checks cover Block and Warp Load/Store and Exchange, plus Block
-Shuffle. Thread, cluster, and grid groups are not operation targets in this
-release. Synchronization race checking requires Compute Sanitizer; a job
-that skips those checks does not qualify scratch reuse under the sanitizer.
+Thread-block clusters require a CC 9.0+ GPU, and synchronization race
+checking requires Compute Sanitizer. A runtime job that skips those tests
+does not qualify those features.
 
 Source map
 ----------

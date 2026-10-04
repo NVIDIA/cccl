@@ -225,7 +225,12 @@ def _hash_symbol_value(hasher, value, depth=0):
 
 
 def _callable_symbol_component(fn: Callable) -> str:
-    """Return a readable symbol component with exact callable semantics."""
+    """Combine a readable callable name with its semantic digest.
+
+    Use the underlying Python function for a dispatcher. Module and qualified
+    name aid inspection; the digest distinguishes functions with different
+    code or captured values even when their names match.
+    """
 
     py_func = getattr(fn, "py_func", fn)
     module = getattr(py_func, "__module__", "unknown")
@@ -245,7 +250,12 @@ def _python_operator_symbol_name(
     ret_dtype: numba_types.Type,
     arg_dtypes: Sequence[numba_types.Type],
 ) -> str:
-    """Name a compiled stateless operator without relying on object identity."""
+    """Name a Python operator by callable semantics and concrete signature.
+
+    Include return and argument dtypes so one function specialized at two
+    signatures gets distinct device symbols. Avoid host object identity, which
+    cannot identify equivalent callbacks across compilation attempts.
+    """
 
     callable_component = _callable_symbol_component(binary_op)
     signature_component = f"{_symbol_component(ret_dtype)}__" + "_".join(
@@ -255,6 +265,13 @@ def _python_operator_symbol_name(
 
 
 def _normalize_compute_capability(compute_capability) -> tuple[int, int]:
+    """Validate a target as a positive major and single-digit minor pair.
+
+    Reject booleans, malformed pairs, and invalid components before a target
+    is used in callback cache keys or encoded as a numeric architecture
+    identifier. Return plain integers for consistent identity.
+    """
+
     if (
         not isinstance(compute_capability, (tuple, list))
         or len(compute_capability) != 2
@@ -500,7 +517,17 @@ def _compile_device_ltoir(
     compute_capability: tuple[int, int],
     semantic_identity=None,
 ) -> bytes:
-    """Compile one device callable and cache it by semantic source identity."""
+    """Compile and cache a callable for one device signature and target.
+
+    Cache identity includes callable semantics, compute capability, concrete
+    signature, and ABI options. ``semantic_identity`` can describe an adapter
+    in terms of the original callback and its pointer/value choices.
+
+    Compile the underlying Python function rather than an existing dispatcher:
+    the compiler can mutate dispatcher options during compilation. Return
+    LTO-IR bytes and cache only a successful result, allowing the same
+    callback to participate in multiple cooperative specializations.
+    """
 
     compute_capability = _normalize_compute_capability(compute_capability)
     # numba-cuda-mlir's compile() mutates dispatcher target options when passed
@@ -545,7 +572,16 @@ def _adapt_python_operator_abi(
     return_by_pointer: bool,
     arguments_by_pointer: tuple[bool, ...],
 ) -> Callable:
-    """Adapt a value-level callable to the aggregate C device ABI."""
+    """Adapt value-level callback code to pointer-based aggregate operands.
+
+    Primitive arguments and returns stay by value. An aggregate argument is
+    read through its pointer; an aggregate result is written through a final
+    output pointer. Return the original function when no adaptation is needed.
+
+    The wrapper calls an inline device version of the original function and
+    supports one or two input values. It changes the native calling convention
+    without changing the value-level callback signature seen by its author.
+    """
 
     if not return_by_pointer and not any(arguments_by_pointer):
         return py_func
@@ -1212,7 +1248,17 @@ class Constant:
 
 
 class StatelessOperator(Parameter):
-    """A compiled Python callable embedded as a static C++ operator."""
+    """Hold a compiled Python callback for use as a C++ function object.
+
+    ``name`` identifies its C device symbol and ``ltoir`` supplies the link
+    image. The concrete C++ return and argument types determine the forward
+    declaration and generated lambda. ``storage_t`` uses a pointer ABI for
+    aggregate inputs and a final output pointer for an aggregate result.
+
+    ``compute_capability`` records the callback's exact target so provider
+    source generation can reject a mismatched link image. The operator is
+    embedded in generated source and is not a kernel runtime argument.
+    """
 
     def __init__(
         self,
@@ -1239,6 +1285,12 @@ class StatelessOperator(Parameter):
         return self.name
 
     def forward_decl(self):
+        """Declare the compiled callback with its concrete C device ABI.
+
+        Map aggregate storage to opaque pointers and append an output pointer
+        when the aggregate return cannot be passed by value.
+        """
+
         return_type = (
             "void" if self.ret_cpp_type == "storage_t" else self.ret_cpp_type
         )
@@ -1254,6 +1306,14 @@ class StatelessOperator(Parameter):
         )
 
     def wrap_decl(self, name):
+        """Render a C++ lambda that calls the callback through its device ABI.
+
+        CUB receives values through const references. The lambda passes
+        aggregate addresses, supplies temporary storage for an aggregate
+        result, and returns the resulting value to CUB. Scalar arguments and
+        results pass by value.
+        """
+
         param_decls = []
         param_refs = []
         for index, arg_type in enumerate(self.arg_cpp_types):
@@ -1283,7 +1343,13 @@ class StatelessOperator(Parameter):
 
 
 class DependentPythonOperator:
-    """A stateless Python operator resolved after dtype specialization."""
+    """Describe a callback whose concrete types are not known yet.
+
+    Return type, argument types, and callable are backend resolvables. During
+    ``specialize``, template arguments resolve them into a concrete signature
+    and a compiled ``StatelessOperator``. This separates shared-core operator
+    selection from target-specific device compilation.
+    """
 
     def __init__(self, ret_dtype, arg_dtypes, op):
         self.ret_dtype = ret_dtype
@@ -1291,6 +1357,19 @@ class DependentPythonOperator:
         self.op = op
 
     def specialize(self, template_arguments):
+        """Resolve callback types and compile the matching device ABI.
+
+        Resolve the callable and dtype dependencies from
+        ``template_arguments``. Build pointer transforms for aggregate values,
+        derive the stable symbol, and compile for the current device's compute
+        capability. Aggregate returns use void plus a final output pointer;
+        scalar returns remain by value.
+
+        Return a ``StatelessOperator`` carrying declarations, LTO IR, and
+        target identity for later provider linkage. A non-callable resolution
+        is an error.
+        """
+
         op = self.op.resolve(template_arguments)
         if not callable(op):
             raise TypeError("Python operator must be a stateless callable")
@@ -1380,11 +1459,25 @@ class CxxFunction(Parameter):
 
 
 class DependentCxxOperator:
+    """Hold a C++ functor template with one unresolved dtype placeholder.
+
+    ``dep`` identifies a template argument and ``cpp`` names a functor using
+    that bracketed type, such as ``<T>``. Specialization produces a
+    value-initialized ``CxxFunction`` without compiling a Python callback.
+    """
+
     def __init__(self, dep: Dependency, cpp: str):
         self.dep = dep
         self.cpp = cpp
 
     def specialize(self, template_arguments):
+        """Resolve the bracketed dtype placeholder and build the functor.
+
+        Require exactly one occurrence so malformed source cannot silently
+        leave an unresolved type or replace an unrelated token. Append value
+        construction after resolving the dtype to its C++ spelling.
+        """
+
         dtype = self.dep.resolve(template_arguments)
         dtype_cpp = numba_type_to_cpp(dtype)
         source = f"<{self.dep.dep}>"
@@ -1989,6 +2082,15 @@ class Algorithm:
         w("}\n\n")
 
     def _collect_support_ltoirs_and_udf_declarations(self, *, provider_cc):
+        """Collect link images and declarations needed by provider source.
+
+        Include type support and stateless Python operators. Each
+        callback must target ``provider_cc`` and repeated device
+        symbols must declare the same signature. Deduplicate
+        link images and preserve declaration order for a shared
+        preamble. A mismatch raises before provider compilation.
+        """
+
         lto_irs = []
         udf_declarations = OrderedDict()
 
@@ -2031,17 +2133,19 @@ class Algorithm:
     ) -> tuple[str, list[bytes], tuple[str, ...], OrderedDict[str, str]]:
         """Generate C++ wrappers and compile-time storage metadata.
 
-        Emit a typed wrapper plus an ``__abi`` shim for each specialized method.
-        The typed wrapper adapts array pointers to CUB array references, applies
-        input transforms, folds pointer offsets into earlier pointer arguments,
-        and traps on out-of-range ``BoundedInteger`` values before narrowing
-        them. C++ functors and static offsets are embedded in source instead of
-        passed as runtime arguments.
+        Emit a typed wrapper plus an ``__abi`` shim for each specialized
+        method. The typed wrapper adapts array pointers to CUB array
+        references, applies input transforms, folds pointer offsets into
+        earlier pointer arguments, and traps on out-of-range
+        ``BoundedInteger`` values before narrowing them. C++ functors,
+        Python-operator lambdas, and static offsets are embedded in source
+        instead of passed as runtime arguments. Python operators add their
+        device declarations and supporting LTO images for later linkage.
 
         For ``LEADING_POINTER`` storage, emit both explicit-scratch and
-        ``_alloc`` entry points. Only ``_alloc`` allocates scratch and emits the
-        declared post-call synchronization. It allocates one shared object per
-        block or logical warp, or one local object for scope ``NONE``.
+        ``_alloc`` entry points. Only ``_alloc`` allocates scratch and emits
+        the declared post-call synchronization. It allocates one shared object
+        per block or logical warp, or one local object for scope ``NONE``.
         Warp scratch uses the linear thread rank in the exact enclosing block;
         its width must divide the block size. Explicit-scratch wrappers leave
         allocation and reuse synchronization to their caller. Storage-free
@@ -2070,27 +2174,28 @@ class Algorithm:
         src : str
             Complete CUDA C++ translation unit for this specialization.
         support_lto_irs : list of bytes
-            Deduplicated supporting link images from type definitions and Python
-            operators.
+            Deduplicated supporting link images from type definitions
+            and Python operators.
         temp_storage_types : tuple of str
             C++ scratch type names to query, or an empty tuple without scratch.
         udf_declarations : collections.OrderedDict
-            Device declarations for stateless Python operators, keyed by symbol
-            name for constructing a shared source preamble.
+            Device declarations for stateless Python operators, keyed by
+            symbol name for constructing a shared source preamble.
 
         Raises
         ------
         ValueError
-            A pointer offset has no earlier pointer target, multiple outputs are
-            requested, or allocating warp storage has an invalid width/block
-            size.
+            A pointer offset has no earlier pointer target,
+            multiple outputs are requested, or allocating
+            warp storage has an invalid width/block size.
         RuntimeError
-            The provider was already qualified for incompatible compiler inputs,
-            a Python operator targets a different compute capability, or two
-            operators declare the same device symbol with different signatures.
+            The provider was already qualified for incompatible
+            compiler inputs, a Python operator targets a different
+            compute capability, or two operators declare the
+            same device symbol with different signatures.
         NotImplementedError
-            The requested allocating execution or synchronization scope has no
-            source emitter.
+            The requested allocating execution or synchronization scope has
+            no source emitter.
         """
 
         compile_identity = self._bind_private_symbol_namespace(
@@ -2621,7 +2726,7 @@ class Algorithm:
             raise ValueError("Cannot generate codegen for a template")
 
         def ignore_param(param):
-            # C++ functions do not require additional argument handling.
+            # Static C++ and Python operators need no runtime argument handling.
             ignore = isinstance(param, (CxxFunction, StatelessOperator)) or (
                 isinstance(param, PointerOffset)
                 and param.static_value is not None
@@ -2765,7 +2870,12 @@ def _param_coalesce_key(param):
 
     Parameter display names are omitted. Types, transforms, bounds, and
     embedded expressions remain part of the key because they affect code.
+
+    Stateless Python operators also include their device symbol, concrete C++
+    signature, target compute capability, and LTO digest. A matching name
+    alone cannot establish that two callback implementations can be reused.
     """
+
     if isinstance(param, TransformedArray):
         return (
             "TransformedArray",
@@ -3274,7 +3384,40 @@ class Invocable:
 
 
 class RawCAbiInvocable:
-    """One compiler-local callable backed by a raw C-ABI device function."""
+    """Expose generated C-ABI device code as a compiler-local callable.
+
+    Group queries and CUDAX reductions already have a concrete
+    C signature; they do not need the CUB ``Algorithm`` wrapper
+    machinery. Construction validates that signature, compiles
+    the source to LTO IR, and owns a temporary link file until
+    this object is finalized. Numba obtains a callable type lazily
+    from ``_numba_type_`` without global overload registration.
+
+    Parameters
+    ----------
+    source : str
+        Complete non-empty CUDA C++ translation unit.
+    symbol : str
+        Valid C identifier naming its device entry point.
+    return_type : numba_types.Type
+        Exact scalar return type, or void for synchronization helpers.
+    parameters : sequence of Parameter or numba_types.Type
+        Runtime input descriptors or exact scalar types, in call order.
+    abi_transforms : sequence of {"ptr", "value"}
+        One transform per parameter. Arrays become opaque pointers; scalar
+        operands retain their value type.
+    cc : int
+        Positive target compute capability encoded as major * 10 + minor.
+    compile_context : nvrtc.CompileContext
+        Compiler options and header context used for this translation unit.
+    storage_abi : StorageABI
+        Must be ``NONE``: this callable accepts no TempStorage operand.
+    execution_scope : SynchronizationScope
+        Participating thread scope recorded for provider validation.
+    synchronization_scope : SynchronizationScope
+        Must be ``NONE``: no wrapper reuse barrier is added. The generated
+        function may still synchronize or use internal shared memory.
+    """
 
     def __init__(
         self,
@@ -3389,7 +3532,14 @@ class RawCAbiInvocable:
 
     @property
     def _numba_type_(self):
-        """Return a compiler-local callable type without global registration."""
+        """Build and cache this device entry point's callable type.
+
+        Require matching runtime operand types, apply each pointer/value
+        transform, and attach the owned LTO file to the implementation and
+        overload wrapper. The strict template belongs to this invocable, so
+        unrelated functions do not acquire a global overload. Void helpers
+        omit a returned value.
+        """
 
         if self._numba_type is None:
             link_files = self.files

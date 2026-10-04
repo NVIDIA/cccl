@@ -190,6 +190,8 @@ coop.exchange(  # expected-error: [call-overload]
 
 
 def select_left(left: np.int32, right: np.int32) -> np.int32:
+    """Provide a callback for unsupported namespace and overload checks."""
+
     del right
     return left
 

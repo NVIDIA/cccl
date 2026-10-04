@@ -213,13 +213,14 @@ parts of the API.
      - Load, Store, Exchange, Shuffle, Reduce
    * - ``coop.this_block().group_by(2)``
      - Two consecutive physical warps
-     - Mapped-group queries; limited Reduce support
+     - Hierarchy queries and full built-in Reduce
    * - ``coop.this_cluster()``
      - Blocks in the launch's cluster
      - Full built-in Reduce with supported hardware and cluster launch facts
    * - ``coop.this_grid()``
      - The kernel grid
-     - Hierarchy queries; grid primitives and grid synchronization are unavailable
+     - Hierarchy queries; grid primitives and grid synchronization
+       are unavailable
 
 ``group_by`` counts units in the next inner hierarchy level: threads for a
 warp parent, physical warps for a block parent. Thus
@@ -236,9 +237,10 @@ pairs of warps leaves the last warp outside a complete group.
 membership for excluded threads, and check the primitive's participation
 requirements before using that guard around an operation.
 
-*Mapped groups of physical warps have narrower support than blocks and
-logical warps. Their explicit synchronization methods are unavailable.*
-*Use the block and logical-warp forms for the examples in this guide.*
+Mapped groups of physical warps support full built-in reductions.
+``valid_items``, explicit ``algorithm`` selection, custom callbacks, and
+explicit group barriers are unavailable.
+Use the block and logical-warp forms for the examples in this guide.
 
 .. _coop-group-queries:
 
@@ -409,9 +411,9 @@ Conflicting type requirements are errors. See :ref:`element-type inference
 Load writes into the payload supplied by the caller. Transpose Store
 algorithms may rearrange their input payload in place, as in CUB. Copy values
 before Store if they are needed later. Both operations return ``None``.
-Exchange and array Shuffle return fresh payloads, so their input values remain
-available afterwards. Reduction returns a scalar, including when each thread
-contributes several items.
+Exchange and array Shuffle return fresh payloads, so their input values
+remain available afterwards. Reduction returns a scalar, including when
+each thread contributes several items.
 
 Numba can promote integer arithmetic. Store requires an exact match to the
 destination dtype, so cast computed values when necessary, as in the
@@ -742,7 +744,7 @@ This kernel writes one sum per block, including a partial final tile:
    :dedent: 4
 
 The group-rank test surrounds only the result write. Moving the reduction
-into that branch would leave the other threads out of a primitive.
+into that branch would leave required participants out of the call.
 
 For another built-in operator, use ``coop.reduce`` with ``binary_op`` set
 to ``"min"``, ``"max"``, ``"multiplies"``, ``"bit_and"``,

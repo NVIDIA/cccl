@@ -30,7 +30,12 @@ def _thread_group_method_marker(
     operation: str,
     *args: Any,
 ) -> Any:
-    """Mark a group operation that the whole-function planner must erase."""
+    """Reject a group method that has not been consumed by the planner.
+
+    Device compilation replaces recognized method calls with native helpers.
+    This host marker has no runtime group implementation and must not reach
+    ordinary device typing or execution.
+    """
 
     del group, operation, args
     raise RuntimeError(
@@ -40,24 +45,56 @@ def _thread_group_method_marker(
 
 
 class ThreadGroup(PortableThreadGroup):
-    """Describe a CUDA thread group for the Numba-CUDA-MLIR planner.
+    """Describe a CUDA group that the Numba compiler resolves before typing.
 
-    Membership and launch resolution follow :class:`cuda.coop.ThreadGroup`.
-    A descriptor can exist even when a particular operation does not support
-    that group; operation planning checks support separately.
+    The descriptor identifies participating threads and their hierarchy.
+    Queries and synchronization methods become generated device helpers; the
+    descriptor itself is erased from kernel IR. Use these methods inside
+    ``numba_cuda_mlir.cuda.jit`` code. Direct host calls to the method markers
+    raise because no device thread or launch is available there.
     """
 
     def rank(self, level: str = "thread") -> Any:
-        """Return this group's rank relative to another hierarchy level."""
+        """Return the zero-based rank relative to a hierarchy level.
+
+        An inner level selects the caller's constituent rank within this
+        group; an outer level selects this group's rank in the outer group.
+        For example, ``this_block().rank()`` gives thread rank within the
+        block. The level must be constant. Return uint32, or uint64 if the
+        group or queried level is grid.
+
+        Mapped-group rank is meaningful only for members. See :ref:`ranks and
+        sizes <coop-group-queries>` for supported levels and use ``rank_as``
+        to request another integer dtype.
+        """
 
         return self.rank_as(None, level)
 
     def count(self, level: str = "thread") -> Any:
-        """Return this group's count relative to another hierarchy level."""
+        """Count units between this group and a hierarchy level.
+
+        An inner level counts constituents in this group; an outer level
+        counts groups of this kind in the outer group. Default ``count()``
+        counts threads. The level must be constant. Return uint32, or uint64
+        when the group or queried level is grid. Use ``count_as`` for
+        another integer dtype.
+
+        See :ref:`ranks and sizes <coop-group-queries>` for mapped-group
+        limits and the treatment of partial physical warps.
+        """
 
         return self.count_as(None, level)
 
     def rank_as(self, dtype: Any = None, level: str = "thread") -> Any:
+        """Return the hierarchy rank in a selected integer dtype.
+
+        ``dtype`` and ``level`` must be compile-time choices.
+        ``None`` uses the same default dtype as ``rank``. Signed
+        and unsigned 8-, 16-, 32-, and 64-bit integer types are
+        supported; choose enough width for the possible ranks. Level
+        and membership rules are the same as for ``rank(level)``.
+        """
+
         level = normalize_thread_level(
             level,
             scope=_ROOT_SCOPE,
@@ -66,6 +103,15 @@ class ThreadGroup(PortableThreadGroup):
         return _thread_group_method_marker(self, "rank", dtype, level)
 
     def count_as(self, dtype: Any = None, level: str = "thread") -> Any:
+        """Return the hierarchy count in a selected integer dtype.
+
+        ``dtype`` and ``level`` must be compile-time choices.
+        ``None`` uses the same default dtype as ``count``. Signed
+        and unsigned 8-, 16-, 32-, and 64-bit integer types are
+        supported; choose enough width for the possible counts.
+        Level restrictions are the same as for ``count(level)``.
+        """
+
         level = normalize_thread_level(
             level,
             scope=_ROOT_SCOPE,
@@ -74,9 +120,28 @@ class ThreadGroup(PortableThreadGroup):
         return _thread_group_method_marker(self, "count", dtype, level)
 
     def sync(self) -> None:
+        """Synchronize the participating members of this group.
+
+        All participants must execute the call in converged
+        control flow. The Numba backend supports thread, warp,
+        logical-warp, block, and supported cluster scopes. Grid
+        synchronization and mapped physical-warp group synchronization
+        are unavailable. See :ref:`participation requirements
+        <coop-participation>` for the collective-call contract.
+        """
+
         _thread_group_method_marker(self, "sync")
 
     def sync_aligned(self) -> None:
+        """Synchronize an aligned group in converged control flow.
+
+        This has the same supported scopes as ``sync``. For block and cluster
+        groups, all threads in each participating block must execute the same
+        synchronization instruction in converged control flow. Warp groups use
+        their participating lane mask. See
+        :ref:`participation requirements <coop-participation>`.
+        """
+
         _thread_group_method_marker(self, "sync_aligned")
 
     def group_by(
@@ -94,7 +159,14 @@ class ThreadGroup(PortableThreadGroup):
         return super().group_by(count, exhaustive=exhaustive)
 
     def is_member(self) -> Any:
-        """Return whether the current thread belongs to this group."""
+        """Return whether the calling thread belongs to this group.
+
+        The device helper returns uint8, suitable for an ``if``
+        condition. It is zero for trailing threads excluded
+        by a non-exhaustive mapped partition. Use it to guard
+        rank-dependent work; membership alone does not satisfy a
+        primitive's convergence or complete-participation requirements.
+        """
 
         return _thread_group_method_marker(self, "is_member")
 

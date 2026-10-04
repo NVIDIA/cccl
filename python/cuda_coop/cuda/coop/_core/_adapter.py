@@ -50,7 +50,9 @@ class CoreBackendAdapter(Protocol):
         *,
         specialization: Algorithm,
     ) -> Any:
-        """Convert one non-storage descriptor into a backend parameter.
+        """Convert a descriptor other than storage or an operator.
+
+        Storage and operator descriptors use their dedicated hooks.
 
         ``specialization`` supplies the bound values needed to resolve a
         descriptor's ``Dependency`` entries. The returned object belongs to
@@ -64,7 +66,23 @@ class CoreBackendAdapter(Protocol):
         *,
         specialization: Algorithm,
     ) -> Any:
-        """Lower a statically described C++ operator."""
+        """Describe a C++ functor in the backend's generated call.
+
+        The backend resolves the dtype and functor construction expression.
+        It does not need a runtime Python operator object.
+
+        Parameters
+        ----------
+        operator : CxxOperator
+            Functor type spelling and operand dtype from the core signature.
+        specialization : Algorithm
+            Bound primitive that supplies values for dependent dtypes.
+
+        Returns
+        -------
+        object
+            Backend descriptor for the operator's place in the call.
+        """
         ...
 
     def lower_python_operator(
@@ -73,7 +91,24 @@ class CoreBackendAdapter(Protocol):
         *,
         specialization: Algorithm,
     ) -> Any:
-        """Lower a stateless Python callable through backend compilation."""
+        """Prepare a Python callback for compilation by the backend.
+
+        The descriptor supplies the callback and its type signature. The
+        backend chooses when to compile and link it; this hook can defer
+        compilation until dependent dtypes are resolved.
+
+        Parameters
+        ----------
+        operator : PythonOperator
+            Callback without runtime state, plus its input and result dtypes.
+        specialization : Algorithm
+            Bound primitive that supplies values for dependent dtypes.
+
+        Returns
+        -------
+        object
+            Backend descriptor for compiling and calling the callback.
+        """
         ...
 
     def lower_stateful_operator(
@@ -82,7 +117,23 @@ class CoreBackendAdapter(Protocol):
         *,
         specialization: Algorithm,
     ) -> Any:
-        """Lower a Python callable whose captured state is runtime data."""
+        """Prepare a callback whose state arrives through a runtime operand.
+
+        The backend defines how to pass state with the callback arguments. A
+        backend without stateful callback support must reject the request.
+
+        Parameters
+        ----------
+        operator : StatefulOperator
+            Callback description, state dtype, and callback type signature.
+        specialization : Algorithm
+            Bound primitive that supplies the specialization context.
+
+        Returns
+        -------
+        object
+            Backend descriptor for the callback and its runtime state operand.
+        """
         ...
 
     def lower_temp_storage(
@@ -116,9 +167,11 @@ def lower_method_parameters(
 ) -> tuple[Any, ...]:
     """Convert one signature in order, optionally omitting temporary storage.
 
-    Some backends supply storage outside the ordinary argument list. The
-    ``include_temp_storage`` flag lets them skip its descriptor while keeping
-    the remaining arguments in the factory's order.
+    Use separate hooks for C++ operators, Python callbacks, and callbacks
+    with runtime state. Their compilation and calling requirements differ
+    from ordinary values. Some backends supply scratch outside the argument
+    list. ``include_temp_storage`` lets them omit that descriptor while
+    keeping the remaining arguments in factory order.
 
     Parameters
     ----------
@@ -129,8 +182,9 @@ def lower_method_parameters(
     method : tuple
         Parameter descriptors for one method signature.
     include_temp_storage : bool
-        If true, send storage descriptors to ``lower_temp_storage``. If
-        false, omit them. Send all other descriptors to ``lower_parameter``.
+        If true, send storage descriptors to ``lower_temp_storage``. If false,
+        omit them. Operator descriptors use their dedicated hooks; remaining
+        descriptors use ``lower_parameter``.
 
     Returns
     -------

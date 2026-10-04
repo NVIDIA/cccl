@@ -2,7 +2,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Generate CUB reduction wrappers and CUDAX group-reduction helpers."""
+"""Build CUB reduction wrappers and CUDAX group-reduction helpers.
+
+Direct CUB providers use shared-core algorithm descriptions and can supply
+built-in operators, compiled Python callbacks, or valid-prefix controls. CUDAX
+providers emit a C-ABI helper for a resolved group and a built-in operator.
+Their ABI has no TempStorage pointer or wrapper reuse barrier; CUDAX may still
+use internal shared memory and synchronization.
+
+All factories run on the host to create device callables. They do not perform
+the reduction on host data. Group planning determines which provider can
+preserve the public operation's participation and result contract.
+"""
 
 from __future__ import annotations
 
@@ -122,7 +133,13 @@ _CUDAX_INCLUDE_LINES = (
 
 
 def normalize_reduce_operation(binary_op: Any) -> str:
-    """Return the canonical built-in reduction token."""
+    """Return the canonical token for a recognized built-in operator.
+
+    Accept named aliases and the known operator/NumPy callable aliases;
+    ``None`` means sum. Raise ``NotImplementedError`` for another callable so
+    the qualified planner can consider the custom CUB callback path. Invalid
+    strings or non-callable values are argument errors.
+    """
 
     if binary_op is None:
         return "sum"
@@ -158,7 +175,12 @@ def normalize_reduce_operation(binary_op: Any) -> str:
 
 
 def validate_reduce_operator_dtype(operation: str, dtype: Any) -> Any:
-    """Validate the payload dtype required by one built-in operator."""
+    """Require the numeric dtype supported by a built-in reduction.
+
+    Normalize through the common numeric policy. Bitwise
+    operators further require an integer type. Return the
+    normalized compiler dtype for the provider builder.
+    """
 
     dtype = _validate_common_numeric_dtype(
         dtype,
@@ -187,6 +209,13 @@ def _positive_int(value: Any, *, name: str) -> int:
 
 
 def _provider_metadata(factory: Any, *, namespace: str) -> dict[str, Any]:
+    """Require a factory registration in the expected block or warp namespace.
+
+    Return its scratch ABI and execution/synchronization scopes for the core
+    adapter. A missing or mismatched registration cannot define a valid
+    provider call contract.
+    """
+
     registered = factory_operation(factory)
     if registered is None:
         raise RuntimeError(f"unregistered cuda.coop provider {factory!r}")
@@ -213,6 +242,19 @@ def _block_reduce(
     *,
     callback: bool = False,
 ) -> Any:
+    """Build a CUB block reduction for the requested input and operator.
+
+    Normalize exact block dimensions, dtype, item count, and
+    scalar or array form. Valid-prefix controls apply only to
+    scalar inputs. Select sum, a built-in C++ operator, or a
+    dtype-dependent Python callback from the factory variant.
+
+    Runtime prefix counts use a bounded int32 conversion between one and the
+    block size. Adapt the shared-core algorithm with that scalar ABI,
+    registered scratch metadata, and dtype support, then return an invocable.
+    The callable returns the native scalar result with CUB's root visibility.
+    """
+
     if threads_per_block is None:
         raise ValueError("threads_per_block must be provided")
     block_dim = normalize_dim_param(threads_per_block)
@@ -359,6 +401,18 @@ def _warp_reduce(
     *,
     callback: bool = False,
 ) -> Any:
+    """Build a scalar CUB reduction for a physical or logical warp.
+
+    Select sum, a built-in C++ operator, or a Python callback. Retain the
+    valid-prefix binding and use a bounded int32 ABI for runtime counts.
+    Specialize the core algorithm at the logical width, then materialize it
+    with the registered warp scratch and synchronization contract.
+
+    Supply both logical width and enclosing block shape to invocable
+    construction so each warp instance gets its own scratch. The native result
+    is meaningful at the group's root.
+    """
+
     if threads_per_block is None:
         raise ValueError("threads_per_block must be provided")
     block_dim = normalize_dim_param(threads_per_block)
@@ -482,6 +536,12 @@ def _symbol_component(value: Any) -> str:
 
 
 def _group_symbol_component(group: ThreadGroup) -> str:
+    """Hash the full group semantics into a readable native symbol component.
+
+    Group kind alone does not identify hierarchy dimensions or mappings.
+    Including their semantic key separates helpers for distinct groups.
+    """
+
     digest = hashlib.sha1(repr(group.semantic_key).encode()).hexdigest()[:16]
     return f"{_symbol_component(group.kind)}_{digest}"
 
@@ -517,7 +577,20 @@ def render_group_reduce_source(
     broadcast: bool,
     symbol: str,
 ) -> str:
-    """Render one storage-free CUDAX reduction helper."""
+    """Render a CUDAX reduction helper with no TempStorage argument.
+
+    Embed the resolved group declaration and view a scalar as a one-item
+    array, or reinterpret the supplied array pointer at its fixed extent. Emit
+    the built-in reduction with broadcast or root-only visibility. A
+    non-exhaustive mapped group returns zero for excluded threads before
+    calling the collective; a root-only result uses zero for non-root lanes.
+    These fallback values do not extend the public result-validity contract.
+
+    The helper has no caller scratch operand. Its CUDAX implementation may use
+    internal static shared memory, including block, cluster, and mapped warp
+    reductions. Provider rewriting checks that this memory can coexist with
+    other shared allocations in the kernel.
+    """
 
     cpp_type = _cpp_type(dtype)
     if value_kind == "scalar":
@@ -567,6 +640,13 @@ def render_group_reduce_source(
 
 
 def _expected_cudax_scope(group: ThreadGroup) -> SynchronizationScope:
+    """Select the execution scope declared by a CUDAX group provider.
+
+    A mapped group containing one physical warp uses warp scope. Larger mapped
+    warp groups and clusters use group scope; this selects the factory
+    contract without adding a wrapper synchronization barrier.
+    """
+
     return {
         "thread": SynchronizationScope.NONE,
         "warp": SynchronizationScope.WARP,
@@ -591,6 +671,18 @@ def _group_reduce(
     broadcast: bool = True,
     _compile_context: _nvrtc.CompileContext | None = None,
 ) -> RawCAbiInvocable:
+    """Build and compile one resolved CUDAX reduction helper.
+
+    Require a supported group, fixed payload form, built-in operator, and
+    matching factory scopes. Grid reduction is unavailable because it needs a
+    per-launch workspace. Resolve the compiler context and target, then
+    qualify the symbol with group, operation, dtype, extent, and return mode.
+
+    Compile a ``RawCAbiInvocable`` that passes scalars by value or arrays by
+    pointer. Its ABI requests no TempStorage operand or added reuse barrier;
+    internal CUDAX memory and synchronization remain part of the helper.
+    """
+
     if not isinstance(group, ThreadGroup):
         raise TypeError(
             "cuda.coop.numba_mlir.reduce group must be a ThreadGroup"

@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check reduction routing, result ownership, and group requirements.
+
+Full builtin reductions use CUDAX. Prefixes, custom operators, and explicit
+CUB algorithms require different result and storage contracts. These tests
+check the core plans before a backend renders or compiles their calls.
+"""
+
 from importlib import import_module
 
 import numpy as np
@@ -89,6 +96,12 @@ def _plan(group, operation, launch=64):
 
 
 def _cluster_facts():
+    """Supply verified cluster facts so tests reach reduction planning.
+
+    The planner requires evidence of a cluster launch as well as its shape;
+    shape values alone would fail before the reduction contract is checked.
+    """
+
     return LaunchFacts(
         exact_block_dim=64,
         exact_cluster_dim=2,

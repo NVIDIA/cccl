@@ -30,6 +30,13 @@ _NumpyReduceUfuncName: TypeAlias = Literal[
 ]
 
 class _NumpyReduceUfunc(Protocol):
+    """Match supported NumPy ufunc aliases by name and arity.
+
+    The literal name set and two-input, one-output arity identify built-in
+    reduction aliases without relying on NumPy's ufunc stub types. Custom
+    callbacks use separate callable overloads with CUB-only constraints.
+    """
+
     @property
     def __name__(self) -> _NumpyReduceUfuncName: ...
     @property

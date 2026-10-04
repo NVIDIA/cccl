@@ -2,14 +2,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Describe specialization values for equality and cache lookup.
+"""Describe specialization values and callback dependencies for cache keys.
 
-Python equality can merge values that must generate different code, such as
-``True`` and ``1`` or positive and negative floating-point zero. These helpers
-preserve those distinctions while turning containers and records into nested
-tokens. They also describe object cycles without using process-local addresses
-as the identity of a back-reference. Callable tokens also describe the
-code and dependencies inspected for callback identity.
+An operator's name alone does not identify the code to compile. Its defaults,
+captured values, and referenced helpers can change the result. Describe those
+dependencies as nested tokens so algorithm comparison and callback symbols
+can distinguish them. Backend normalization supplies identities for compiler
+objects without making the shared core depend on a compiler's internals.
+
+The value encoder also preserves distinctions that Python equality can lose,
+such as ``True`` versus ``1`` and the sign of floating-point zero.
+Cycle markers use distances within the traversal instead of object addresses.
+These tokens describe supported Python inputs; they are not a serialization
+format or a proof that arbitrary Python programs behave identically.
 """
 
 from __future__ import annotations
@@ -52,6 +57,13 @@ _TYPE_METADATA_NAMES = frozenset(
 
 @cache
 def _python_library_paths() -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Locate standard-library roots separately from installed-package roots.
+
+    Some Python layouts put site-packages inside a standard-library directory.
+    Callers must exclude those package roots before using a module's location
+    to justify a compact name-based token.
+    """
+
     paths = sysconfig.get_paths()
 
     def normalized(*names: str) -> tuple[str, ...]:
@@ -74,6 +86,13 @@ def _path_is_within(path: str, directory: str) -> bool:
 
 
 def _is_verified_standard_library_module(module_name: Any) -> bool:
+    """Check a loaded module's origin before using a standard-library name.
+
+    A familiar name alone is insufficient: a user module can shadow it. Accept
+    recognized built-in or frozen modules, or source under the interpreter's
+    standard-library roots and outside its installed-package roots.
+    """
+
     if not isinstance(module_name, str) or not module_name:
         return False
 
@@ -108,6 +127,13 @@ def _is_verified_standard_library_module(module_name: Any) -> bool:
 
 
 def _is_verified_standard_library_definition(value: Any) -> bool:
+    """Check that a qualified name resolves to this library object.
+
+    The module's origin check alone does not identify an object that claims
+    its name. Resolve the path without invoking descriptors and require the
+    resolved object to be ``value``.
+    """
+
     module_name = _defined_module_name(value)
     if not _is_verified_standard_library_module(module_name):
         return False
@@ -140,12 +166,15 @@ def _defined_module_name(value: Any) -> str | None:
 class _TokenState:
     """Track recursion and reuse completed work within one token query.
 
-    ``active`` maps object identities to their depth on the current path.
-    ``completed`` retains each reusable token and its source object; retaining
-    the object prevents Python from reusing its identity during this query.
-    ``cycle_hits`` counts back-references so a parent can tell whether its
-    token depends on the current recursion path. The optional
-    ``normalize`` adapter converts backend values during traversal.
+    ``normalize`` lets a backend replace compiler objects with supported data.
+    ``active`` maps object identities to their depth on the current path. This
+    lets recursive helpers and self-referencing objects end in a cycle marker.
+    ``completed`` keeps reusable tokens by traversal mode and object identity.
+    Each entry retains its source object so Python cannot reuse that identity
+    during this query. The modes keep ordinary values separate from callable
+    dependencies, whose class definitions receive more detailed inspection.
+    ``cycle_hits`` counts back-references. Store a result for reuse only if
+    its own traversal found none, because cycle depths depend on the path.
     """
 
     normalize: Callable[[Any], Any] | None = None
@@ -157,6 +186,14 @@ class _TokenState:
 
 
 def _code_token(code: CodeType, state: _TokenState) -> tuple[Any, ...]:
+    """Describe bytecode and nested constants without source-location data.
+
+    Names, argument counts, and flags contribute to callback identity. Source
+    filenames and line numbers do not, so moving otherwise identical code does
+    not change this component. Nested code objects are described by contents
+    rather than by a representation that includes an address.
+    """
+
     constants = tuple(
         _code_token(value, state)
         if isinstance(value, CodeType)
@@ -188,6 +225,10 @@ def _object_state_token(
     Python mangles private slot names using the defining class. Resolve those
     names before reading values, and skip slots that have not been assigned.
     Return ``None`` when these attributes expose no stored state.
+
+    With ``dependency_values=True``, inspect stored classes and descriptors as
+    callable dependencies. Their definitions can affect a callback even when
+    their names stay the same.
     """
 
     tokenize = _dependency_token if dependency_values else _semantic_token
@@ -234,6 +275,20 @@ def _referenced_paths_token(
     load_opnames: frozenset[str],
     include_nested: bool,
 ) -> tuple[tuple[tuple[str, ...], Any], ...]:
+    """Describe names and immediate attribute paths loaded by the bytecode.
+
+    ``load_opnames`` selects global-name or closure-cell loads. For each load,
+    record the root name and each following attribute or method prefix. Read
+    those paths from ``namespace`` with static attribute lookup so descriptors
+    are inspected without calling their accessors. Missing roots are skipped;
+    missing attributes receive an explicit unresolved marker.
+
+    ``include_nested`` also visits code objects in the code's constants.
+    This scan follows explicit bytecode paths, not computed lookups. It avoids
+    including unrelated namespace entries while retaining the loaded root
+    objects as well as their attributes.
+    """
+
     paths: set[tuple[str, ...]] = set()
 
     def collect_paths(current: CodeType) -> None:
@@ -284,6 +339,12 @@ def _referenced_globals_token(
     namespace: Mapping[str, Any] | None,
     state: _TokenState,
 ) -> tuple[tuple[tuple[str, ...], Any], ...]:
+    """Inspect global dependencies loaded by this code and its nested code.
+
+    An unavailable globals mapping contributes no paths. Otherwise, inspect
+    names loaded by the bytecode instead of every namespace entry.
+    """
+
     if namespace is None:
         return ()
     return _referenced_paths_token(
@@ -302,6 +363,13 @@ def _referenced_closure_token(
     closure_values: Mapping[str, Any],
     state: _TokenState,
 ) -> tuple[tuple[tuple[str, ...], Any], ...]:
+    """Inspect attribute paths reached through named closure cells.
+
+    The caller already records each cell's value. These paths also expose
+    dependencies behind values such as a captured module, whose ordinary token
+    contains only its name.
+    """
+
     return _referenced_paths_token(
         code,
         closure_values,
@@ -312,6 +380,14 @@ def _referenced_closure_token(
 
 
 def _type_reference_token(value: type, state: _TokenState) -> Any:
+    """Use library type names or inspect a user-defined class dependency.
+
+    Verified standard-library definitions use a compact name token. Static
+    extension types from verified standard-library modules use the same path.
+    Other classes include their definitions so changed methods or class state
+    can distinguish callbacks that refer to the same class name.
+    """
+
     module_name = _defined_module_name(value)
     type_flags = getattr(value, "__flags__", None)
     is_static_type = (
@@ -329,6 +405,13 @@ def _type_reference_token(value: type, state: _TokenState) -> Any:
 
 
 def _descriptor_token(value: Any, state: _TokenState) -> Any:
+    """Describe attribute access code without invoking the descriptor.
+
+    Static methods, class methods, and properties contribute their underlying
+    functions. A custom descriptor contributes its type definition and stored
+    state, since either can change what a callback obtains from an attribute.
+    """
+
     if isinstance(value, staticmethod):
         return "staticmethod", _semantic_token(value.__func__, state)
     if isinstance(value, classmethod):
@@ -355,6 +438,14 @@ def _descriptor_token(value: Any, state: _TokenState) -> Any:
 
 
 def _type_dependency_token(value: type, state: _TokenState) -> Any:
+    """Describe a class's members, bases, and metaclass for a callback.
+
+    Definitions can refer back to their class or to other active dependencies.
+    Use path-relative cycle markers for those references. Reuse completed work
+    only when it contains no cycle marker; its depth would have a different
+    meaning if reused from another traversal path.
+    """
+
     value_id = id(value)
     if value_id in state.active:
         state.cycle_hits += 1
@@ -395,6 +486,15 @@ def _type_dependency_token(value: type, state: _TokenState) -> Any:
 
 
 def _dataclass_fields_token(value, state, tokenize):
+    """Describe record fields while honoring an operator's identity policy.
+
+    ``op_tokenizer`` supplies the operator's ``op`` token. Exclude the policy
+    function itself: it describes the callback but is not a dependency. All
+    other fields use the caller's encoder. Evaluate the policy during each
+    new traversal so captured changes remain visible when core planning
+    compares an operator again.
+    """
+
     operator = isinstance(value, (PythonOperator, StatefulOperator))
     fields = []
     for field in dataclasses.fields(value):
@@ -403,7 +503,7 @@ def _dataclass_fields_token(value, state, tokenize):
         item = getattr(value, field.name)
         if operator and field.name == "op" and value.op_tokenizer is not None:
             # Backend policy travels with the operator through core planning.
-            # Evaluate it here so changed callback dependencies remain visible.
+            # Evaluate it here to observe changed callback dependencies.
             token = value.op_tokenizer(item)
         else:
             token = tokenize(item, state)
@@ -412,6 +512,17 @@ def _dataclass_fields_token(value, state, tokenize):
 
 
 def _dependency_token(value: Any, state: _TokenState) -> Any:
+    """Describe a callable dependency, including nested class definitions.
+
+    The ordinary value encoder names a type without inspecting its definition.
+    Callbacks need more detail: methods, class attributes, and descriptors can
+    change their behavior. Keep this dependency mode through containers and
+    dataclass fields, with a separate memo from ordinary value tokens.
+
+    Apply backend normalization first. It runs before cycle tracking, so
+    replacements must stop changing or the recursion will not end.
+    """
+
     if state.normalize is not None:
         normalized = state.normalize(value)
         if normalized is not value:
@@ -495,6 +606,21 @@ def _dependency_token(value: Any, state: _TokenState) -> Any:
 
 
 def _callable_token(value: Any, state: _TokenState) -> tuple[Any, ...]:
+    """Identify a callable from its implementation and captured dependencies.
+
+    Functions contribute bytecode, defaults, closure contents, and referenced
+    globals. Bound methods also include the instance's stored state. Callable
+    objects use their exposed function metadata or their ``__call__`` method;
+    when they expose code directly, also include their actual call descriptor.
+    This keeps wrapper metadata from hiding a different call implementation.
+
+    Partial applications include their bound arguments. Verified Python
+    standard-library functions use a qualified reference instead of traversing
+    library internals. Other callable tokens include a digest of the inspected
+    dependencies. Unexpected metadata is included as data rather than silently
+    discarded, so it can still distinguish callable objects.
+    """
+
     if isinstance(value, partial):
         return (
             "partial",
@@ -621,8 +747,8 @@ def _callable_token(value: Any, state: _TokenState) -> tuple[Any, ...]:
         )
     closure_values: dict[str, Any] = {}
     freevar_names = getattr(code, "co_freevars", ())
-    # Wrappers can expose mismatched code and closure metadata. Hash every cell
-    # and resolve attribute paths only for name/value pairs that are available.
+    # Wrappers can expose mismatched code and closure metadata. Hash all cells
+    # and resolve attribute paths for the name/value pairs that are available.
     for index, cell in enumerate(closure):
         name = freevar_names[index] if index < len(freevar_names) else None
         try:
@@ -716,7 +842,8 @@ def _container_state_token(
     """Capture container state that equal elements alone cannot describe.
 
     This includes instance attributes and a ``defaultdict``'s factory, which
-    determines the value supplied for a missing key.
+    determines the value supplied for a missing key. ``dependency_values``
+    keeps class and descriptor inspection active in callback dependencies.
     """
 
     tokenize = _dependency_token if dependency_values else _semantic_token
@@ -742,12 +869,12 @@ def _container_state_token(
 def _semantic_token(value: Any, state: _TokenState) -> Any:
     """Describe a value while sharing cycle detection and memoized results.
 
-    Apply the optional backend adapter before describing each value.
-    Scalar cases preserve type-sensitive distinctions before recursion
-    through containers and object state.
+    Scalar cases preserve type-sensitive distinctions before recursion starts.
     Container tokens include their type, stored state, and elements. Sort
-    mapping and set tokens so insertion order does not affect their identity.
-    Sequences retain their element order.
+    mapping entries by encoded key and set elements by encoded value, using
+    their ``repr`` strings as sort keys. Sequences retain element order.
+    Callables use the dependency-aware encoder; ordinary type or module
+    values contribute only their qualified name or module name.
     """
 
     if state.normalize is not None:
@@ -852,32 +979,36 @@ def semantic_token(
     """Describe a specialization value for comparison and hashing.
 
     Algorithms use this token to compare bound values and planning metadata.
-    A token records container types as well as contents, preserves floating
-    zero signs and NaN bit patterns, and handles cycles in object state.
-    Each call starts a fresh traversal so earlier queries cannot supply stale
-    descriptions of mutable objects.
-
-    Python callback tokens include inspected code, defaults, and referenced
-    dependencies. Verified standard-library functions use their module and
-    qualified name instead of an implementation digest.
+    Callback identities also include code and captured dependencies. Each call
+    starts a fresh traversal so previous queries cannot supply stale tokens.
+    Floating-point tokens preserve zero signs and NaN bits.
 
     Parameters
     ----------
     value : object
         Scalar, container, dataclass, type, module, callable, or state-bearing
         object used in a specialization. Other objects with no stored state
-        use their type and ``repr``, with ordinary memory-address text removed.
+        use their type and ``repr``, with usual memory-address text removed.
     normalize : callable, optional
-        Adapter for backend values, applied to the root and its dependencies.
-        Return the original object when no adaptation is needed. Replacements
-        must converge to values that need no further adaptation.
+        Backend conversion applied to visited values, including referenced
+        dependencies. Return the original object when no conversion is needed.
+        A replacement is visited again and must eventually stop changing by
+        identity. Describe compiler objects by their compilation inputs,
+        without including compiler bookkeeping.
 
     Returns
     -------
     object
         A scalar or nested tuple description. Supported specialization values
-        produce hashable tokens. Callable descriptions can contain a digest of
-        their inspected implementation and dependencies.
+        produce hashable tokens. Callable descriptions contain digests; the
+        result as a whole is a token rather than a single hash digest.
+
+    Notes
+    -----
+    Callable inspection follows stored state and explicit bytecode references.
+    It cannot establish the behavior of arbitrary computed lookups or external
+    state. A backend must normalize values whose relevant contents the shared
+    encoder cannot describe, such as compiler-specific callback wrappers.
     """
 
     return _semantic_token(value, _TokenState(normalize=normalize))

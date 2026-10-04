@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Execute group-query examples included in the API documentation.
+
+Host arrays state the expected rank, extent, and membership of each group.
+The cluster example also supplies the launch configuration it requires.
+"""
+
 import pytest
 
 cuda = pytest.importorskip("numba_cuda_mlir.cuda")

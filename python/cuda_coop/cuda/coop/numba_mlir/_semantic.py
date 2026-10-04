@@ -24,14 +24,27 @@ from cuda.coop._core import semantic_token
 
 
 def _normalize_numba_callable(value):
+    """Unwrap an outer device dispatcher before recompiling its function.
+
+    The cooperative callback supplies its own concrete signature and compile
+    options. Other values pass through. Nested dispatchers are handled by the
+    semantic normalizer and retain the settings of those called helpers.
+    """
+
     if isinstance(value, MLIRDispatcher):
         return value.py_func
     return value
 
 
 def _numpy_dtype_identity(dtype):
-    # dtype.str alone loses record fields and subarray element types. Avoid
-    # dtype.descr, which cannot describe overlapping or out-of-order fields.
+    """Describe all NumPy dtype structure that can affect callback constants.
+
+    Keep field types, offsets, optional titles, alignment, and subarray shape.
+    The short dtype string loses record structure, while ``dtype.descr``
+    cannot represent overlapping or out-of-order fields. Recurse through
+    fields and subarrays so distinct layouts cannot share the same identity.
+    """
+
     fields = None
     if dtype.fields is not None:
         fields = tuple(
@@ -51,6 +64,19 @@ def _numpy_dtype_identity(dtype):
 
 
 def _normalize_numba_semantic_value(value):
+    """Expose compiler-relevant state to the shared semantic encoder.
+
+    NumPy scalars contribute exact bytes and dtype structure. Arrays also
+    retain shape, strides, writeability, and a digest of logical elements,
+    including noncontiguous views. Object-containing dtypes are rejected
+    because their bytes would encode object references rather than values.
+
+    Nested device dispatchers retain their function, compile options, locals,
+    and fixed signatures, while Numba types retain concrete class and equality
+    key. Leave other values to the shared encoder. These records exclude
+    compiler caches and preserve inputs that affect code.
+    """
+
     if isinstance(value, np.generic):
         if value.dtype.hasobject:
             raise TypeError(

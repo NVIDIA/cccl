@@ -128,6 +128,8 @@ def _group_topology(
             index = f"linear_thread_rank / {group_size}"
             thread_rank = f"linear_thread_rank % {group_size}"
         else:
+            # Restart the mapping inside each physical warp. Its trailing
+            # lanes do not form another complete logical group.
             index = (
                 f"(linear_thread_rank / 32) * {groups_per_warp} + "
                 f"((linear_thread_rank % 32) / {group_size})"
@@ -148,6 +150,8 @@ def _group_topology(
             index = f"linear_thread_rank / {group_size}"
             thread_rank = f"linear_thread_rank % {group_size}"
         else:
+            # Count whole warps before locating a group. The membership
+            # contract excludes remainder warps outside complete groups.
             index = f"(linear_thread_rank / 32) / {mapping.count}"
             thread_rank = (
                 f"((linear_thread_rank / 32) % {mapping.count}) * 32 + "
@@ -238,8 +242,9 @@ def _build_execution_requirements(
     uniform_arguments : tuple of str, optional
         Argument names whose values must agree across participating threads.
     valid_member_selection : str, optional
-        Description of which data elements the operation uses. For example,
-        a guarded load can use only the first ``valid_items`` tile elements.
+        Description of which members or data elements the operation uses.
+        Reduce uses the first ``valid_items`` members; a guarded load uses
+        the first ``valid_items`` tile elements.
     argument_preconditions : tuple of ArgumentPrecondition, optional
         Additional bounds or other requirements on operation arguments.
 
@@ -313,8 +318,8 @@ def _cub_warp_width(group: ThreadGroup) -> int:
 
     Physical warps use 32 threads. A logical warp must have a power-of-two
     width from 1 through 32 and divide its physical warp. Raise ``ValueError``
-    for a different group kind or width. Block participation is checked by
-    group resolution before a primitive uses this width.
+    for a different group kind or width. Group resolution has already checked
+    that the block contains only complete 32-thread warps.
     """
 
     if group.kind == "warp":

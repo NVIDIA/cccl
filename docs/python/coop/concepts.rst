@@ -125,10 +125,11 @@ The common group vocabulary also includes thread, cluster, grid, and mapped
 groups of physical warps, although those are not Load, Store, Exchange, or
 Shuffle targets. ``ThreadGroup`` exposes the C++ hierarchy query surface.
 ``rank(level="thread")`` and ``count(level="thread")`` accept ``thread`` (or
-``gpu_thread``), ``warp``, ``block``, ``cluster``, and ``grid``. Their default
-result is the unsigned product type used by the corresponding C++ hierarchy
-operation: normally ``uint32``, and ``uint64`` when the group or queried outer
-level is the grid. ``rank_as(dtype, level="thread")`` and
+``gpu_thread``), ``warp``, ``block``, ``cluster``, and ``grid``; mapped groups
+have narrower limits, described below. Results use the unsigned type of the
+matching C++ hierarchy query: normally ``uint32``, and ``uint64`` when the
+group or queried outer level is the grid.
+``rank_as(dtype, level="thread")`` and
 ``count_as(dtype, level="thread")`` select an explicit signed or unsigned 8-,
 16-, 32-, or 64-bit integer dtype. ``is_member()`` returns an integer
 membership flag.
@@ -138,17 +139,18 @@ participating member must reach ``sync()``. ``sync_aligned()`` additionally
 requires an aligned and converged group. Grid synchronization is unavailable
 because the backend cannot request a cooperative grid launch.
 
-``group_by`` remains static compiler vocabulary: ``count`` and ``exhaustive``
-must be compile-time constants. A mapped threads-within-warp group can query
-its threads and immediate parent Warp. A mapped warps-within-block group can
-query its threads, physical Warps, and immediate parent block. Queries above
-the immediate physical parent are rejected. Mapped warps-within-block groups
-support queries and ``is_member()`` but not ``sync()`` or ``sync_aligned()``;
-the planner does not manage the lifetime of their block barriers. For a
-non-exhaustive partition, use ``is_member()`` to guard rank-dependent work for
-excluded threads. Do not use that branch to skip a collective unless the
-collective's participation contract explicitly permits it; every required
-group or parent-group participant must still reach the collective.
+For ``group_by``, ``count`` and ``exhaustive`` must be compile-time
+constants. A mapped threads-within-warp group can query its threads and
+immediate parent Warp. A mapped warps-within-block group can query its
+threads, physical Warps, and immediate parent block. Queries above the
+immediate physical parent are rejected. Mapped warps-within-block groups
+support queries and ``is_member()`` but not ``sync()`` or
+``sync_aligned()``; the planner does not manage the lifetime of their block
+barriers. For a non-exhaustive partition, use ``is_member()`` to guard
+rank-dependent work for excluded threads. Do not use that branch to skip a
+collective unless the collective's participation contract explicitly permits
+it; every required group or parent-group participant must still reach the
+collective.
 
 
 Participation and synchronization
@@ -413,7 +415,7 @@ in bytes. The planner may strengthen it to satisfy every primitive using the
 storage. Integer-like values implementing ``__index__`` are accepted. An
 explicit ``size_in_bytes`` must still be large enough for the planned storage.
 
-For block, physical Warp, and logical Warp operations, ``direct``,
+For block, physical Warp, and logical Warp Load/Store, ``direct``,
 ``striped``, and ``vectorize`` are storage-free. They default-construct the
 CUB primitive, report zero temporary bytes, and emit no shared-memory
 allocation, storage pointer, or synchronization barrier. For a block call,
@@ -452,12 +454,12 @@ caller issues ``cuda.syncthreads()`` between consecutive uses of the
 descriptor, and a call site inside a loop counts as a reuse on every
 iteration. Compiler-owned storage always synchronizes.
 
-The compiler stages every descriptor and every compiler-owned requirement of
-a kernel into one shared-memory backing. Up to 48 KiB, it uses static shared
-memory without querying the device. Larger requests, from explicit
-``size_in_bytes`` or implicit requirements, trigger a query of the device's
-default and opt-in limits. Backing above the default limit uses dynamic shared
-memory, and the launch reserves its exact byte count within the opt-in limit.
+The compiler stages descriptors and compiler-managed CUB scratch into one
+shared-memory backing. Up to 48 KiB, it uses a conservative static limit
+without querying the device. Larger requests, from explicit ``size_in_bytes``
+or implicit requirements, trigger a query of the device's default and opt-in
+limits. Backing above the default limit uses dynamic shared memory, and the
+launch reserves its exact byte count within the opt-in limit.
 Supported Numba-CUDA-MLIR releases do not separate static and dynamic shared
 allocations reliably. A kernel using cooperative temporary storage must not
 also declare a zero-sized or runtime-sized ``cuda.shared.array``. When
@@ -466,7 +468,8 @@ unsupported. Keep both user arrays and cooperative backing static, or move the
 user data out of shared memory. CUDAX Block, Cluster, and mapped-Warp
 reductions also allocate internal static shared memory, even without a
 ``TempStorage`` operand. They cannot coexist with user dynamic shared arrays
-or dynamic cooperative backing in these compiler releases.
+or dynamic cooperative backing in these compiler releases. Storage-free
+Load/Store algorithms do not add this restriction.
 
 With ``auto_sync=False``, a descriptor must originate from exactly one
 constructor site. Selecting between multiple manual-sync constructors is

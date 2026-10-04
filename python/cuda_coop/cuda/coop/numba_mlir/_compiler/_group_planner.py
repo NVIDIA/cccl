@@ -154,6 +154,13 @@ class _GroupCallPlanner:
         self.context = GroupPlanningContext(self)
 
     def _provider_compile_context(self):
+        """Resolve and reuse one provider compile context for this planner.
+
+        All generated group-method helpers in the attempt share the same
+        header and option context. Cache it lazily so plans with no such
+        helper do not need to resolve compiler inputs here.
+        """
+
         if self._compile_context is None:
             from ._nvrtc import resolve_compile_context
 
@@ -2116,6 +2123,13 @@ class _GroupCallPlanner:
         self.replacements[inst] = replacement
 
     def _group_method(self, call: ir.Expr) -> tuple[str, ThreadGroup] | None:
+        """Recognize a supported method on a resolvable group descriptor.
+
+        Return the method name and group, or ``None`` for unrelated calls.
+        ``group_by`` is excluded because it constructs another descriptor;
+        this path handles methods that must become executable device helpers.
+        """
+
         definition = self._definition(call.func)
         if (
             not isinstance(definition, ir.Expr)
@@ -2132,6 +2146,20 @@ class _GroupCallPlanner:
     def _lower_group_method(
         self, inst: ir.Assign, call: ir.Expr, *, method: str, group: ThreadGroup
     ) -> None:
+        """Plan a group method and stage its no-argument device helper call.
+
+        Validate argument shape and resolve dtype/level controls as constants.
+        Resolve the group through the requested hierarchy level and reject
+        unsupported mapped-parent queries, mapped-warp synchronization, or
+        grid synchronization without a supported cooperative launch contract.
+
+        Reuse an invocable keyed by group semantics, operation, dtype, and
+        level within this planner attempt. Its C++ helper embeds the
+        descriptor, so the replacement passes no runtime group object. Record
+        the old callee as dead and stage the replacement; the normal planner
+        run installs it later.
+        """
+
         if call.vararg is not None or call.varkwarg is not None:
             raise GroupRewriteError(
                 f"ThreadGroup.{method} does not support splats"
@@ -2385,6 +2413,10 @@ class _GroupCallPlanner:
         instance's caches, dtype facts, and replacement bookkeeping; block
         bodies change only after all calls and descriptor uses pass.
 
+        Recognized rank, count, membership, and synchronization methods also
+        become provider calls. Their helpers embed the resolved group and
+        compile-time query controls before the descriptor is erased.
+
         Returns
         -------
         bool
@@ -2463,11 +2495,13 @@ def has_group_markers(func_ir: ir.FunctionIR) -> bool:
 
     One recognized call anywhere in the function is enough: a group
     constructor such as ``this_block()``, ``ThreadHierarchy()``, a registered
-    public group operation such as ``load()`` or ``store()``, or
-    ``group_by()`` on a recognized group descriptor. For ``group_by()``, trace
-    the receiver through aliases, casts, control-flow merges, and earlier
-    subgroup calls to distinguish group descriptors from unrelated objects
-    with that method.
+    public group operation such as ``load()`` or ``store()``, or a supported
+    method on a recognized group descriptor. Partitioning, hierarchy queries,
+    and synchronization need planning even when no collective remains.
+
+    Trace method receivers through aliases, casts, control-flow merges, and
+    earlier subgroup calls to distinguish group descriptors from unrelated
+    objects with the same method name.
 
     Inspect only the supplied IR. Calls inside device helpers become visible
     here after inlining; this scan does not visit their bodies. ``ThreadData``

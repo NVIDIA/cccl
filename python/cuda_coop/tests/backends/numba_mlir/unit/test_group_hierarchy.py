@@ -48,6 +48,12 @@ def _launch(block=(64, 1, 1), grid=(1, 1, 1), cluster=None):
 
 
 def _compile_context(header_identity="headers-a"):
+    """Build a synthetic toolchain identity with a selectable header digest.
+
+    Provider-capture tests need reproducible symbol inputs without resolving
+    or loading a real CUDA installation.
+    """
+
     return _nvrtc.CompileContext(
         toolkit_root="/toolkit",
         toolkit_version=(13, 2),
@@ -70,6 +76,12 @@ def _thread_group_lowering_module():
 
 
 def _capture_group_method_provider(monkeypatch):
+    """Capture generated provider inputs without compiling their source.
+
+    The real renderer selects symbols, types, and group expressions. Replacing
+    the invocable constructor exposes those decisions for direct assertions.
+    """
+
     lowering = _thread_group_lowering_module()
     created = []
     monkeypatch.setattr(lowering, "_current_cc", lambda: 90)
@@ -84,6 +96,12 @@ def _capture_group_method_provider(monkeypatch):
 def _resolved_provider_group(
     group, *, through_level="thread", block=(64, 1, 1)
 ):
+    """Resolve a group with exact dimensions and verified launch facts.
+
+    The explicit non-cluster launch fact lets queries resolve enclosing levels
+    without inventing a cluster configuration.
+    """
+
     launch = LaunchFacts(
         exact_block_dim=block,
         exact_grid_dim=(2, 1, 1),

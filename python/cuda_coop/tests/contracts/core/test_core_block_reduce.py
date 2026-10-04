@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check CUB BlockReduce call shapes without a compiler backend.
+
+Scalar prefixes become integer parameters or static C++ expressions.
+Array reductions retain their item count and operator parameters. Result
+visibility for a public group call is checked by the group-plan tests.
+"""
+
 import numpy as np
 import pytest
 

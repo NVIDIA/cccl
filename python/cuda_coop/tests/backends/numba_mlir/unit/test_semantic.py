@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check which callback dependencies affect symbols and compiled-code reuse.
+
+Captured arrays and scalar bit patterns must retain behaviorally relevant
+differences. Nested device helpers contribute their callable semantics and
+compile options; incidental dispatcher state must not change identity.
+"""
+
 import math
 from types import SimpleNamespace
 
@@ -18,6 +25,12 @@ def _global_callback(left, right):
 
 
 def _helper(offset=0, **options):
+    """Create a device helper with controlled closure and compile options.
+
+    Tests compare its identity directly and when another callback captures it;
+    those two contexts apply different policies to dispatcher options.
+    """
+
     from numba_cuda_mlir import cuda
 
     @cuda.jit(device=True, **options)
@@ -35,6 +48,12 @@ def _callback(helper):
 
 
 def _array_callback(table):
+    """Capture an array element hidden by NumPy's default abbreviated repr.
+
+    Two arrays can print identically while this callback computes different
+    values, so display text cannot serve as their semantic identity.
+    """
+
     def apply(left, right):
         return left + right + table[1000]
 

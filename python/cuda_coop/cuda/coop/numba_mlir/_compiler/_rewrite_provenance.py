@@ -893,7 +893,7 @@ class _ProvenanceRewrite(Rewrite):
             != self._temp_storage_contract(specification)
         ):
             raise CoopSinglePhaseRewriteError(
-                f"TempStorage aliases have inconsistent contracts across "
+                "TempStorage aliases have inconsistent contracts across "
                 f"constructor instances ({name})."
             )
         self._temp_storage_ctor_specifications.setdefault(name, specification)
@@ -904,11 +904,11 @@ class _ProvenanceRewrite(Rewrite):
         names: str, sites: int
     ) -> CoopSinglePhaseRewriteError:
         return CoopSinglePhaseRewriteError(
-            f"TempStorage with auto_sync=False must be constructed at "
+            "TempStorage with auto_sync=False must be constructed at "
             f"exactly one site; {names} reaches {sites} constructor sites. "
-            f"The compiler cannot verify caller synchronization when it "
-            f"merges these regions. Construct the descriptor once or set "
-            f"auto_sync=True."
+            "The compiler cannot verify caller synchronization when it "
+            "merges these regions. Construct the descriptor once or set "
+            "auto_sync=True."
         )
 
     def _validate_temp_storage_ctor_sites(self) -> None:
@@ -1023,10 +1023,10 @@ class _ProvenanceRewrite(Rewrite):
         name: str,
     ) -> CoopSinglePhaseRewriteError:
         return CoopSinglePhaseRewriteError(
-            f"TempStorage variables must be bound to a TempStorage "
+            "TempStorage variables must be bound to a TempStorage "
             f"descriptor on every path; {name!r} is also bound to a "
-            f"non-descriptor value such as None. Remove the None initializer "
-            f"or construct the descriptor unconditionally."
+            "non-descriptor value such as None. Remove the None initializer "
+            "or construct the descriptor unconditionally."
         )
 
     def _collect_temp_storage_ctor_keys(
@@ -1199,7 +1199,7 @@ class _ProvenanceRewrite(Rewrite):
             )
             names = ", ".join(ordered_keys)
             raise CoopSinglePhaseRewriteError(
-                f"TempStorage aliases have inconsistent contracts across "
+                "TempStorage aliases have inconsistent contracts across "
                 f"constructor instances ({names})."
             )
         if len(roots) > 1 and not next(iter(contracts))[2]:
@@ -1475,7 +1475,7 @@ class _ProvenanceRewrite(Rewrite):
         )
         if ctor_specification is None:
             raise CoopSinglePhaseRewriteError(
-                f"Missing TempStorage constructor metadata for "
+                "Missing TempStorage constructor metadata for "
                 f"variable '{var_name}'."
             )
         requirements = self._func_temp_storage_requirements.get(var_name)
@@ -1512,7 +1512,7 @@ class _ProvenanceRewrite(Rewrite):
             )
         if required_size > 0 and size_in_bytes < required_size:
             raise CoopSinglePhaseRewriteError(
-                f"TempStorage size_in_bytes is smaller than required by "
+                "TempStorage size_in_bytes is smaller than required by "
                 f"primitive uses ({size_in_bytes} < {required_size})."
             )
         if ctor_specification.alignment is None:
@@ -2294,9 +2294,9 @@ class _ProvenanceRewrite(Rewrite):
             getitem_temp_storage = getattr(func_def, "index_var", None)
         if not isinstance(getitem_temp_storage, ir.Var):
             raise CoopSinglePhaseRewriteError(
-                f"coop single-phase getitem syntax expects a runtime "
+                "coop single-phase getitem syntax expects a runtime "
                 f"temp-storage variable: '{factory.__name__}"
-                f"[temp_storage](...)'."
+                "[temp_storage](...)'."
             )
         return _ResolvedCallTarget(
             factory=factory,

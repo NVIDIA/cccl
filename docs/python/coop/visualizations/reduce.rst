@@ -21,7 +21,9 @@ cluster containing two illustrative blocks.
    .. only:: html
 
       .. figure:: reduce.svg
-         :alt: Eight threads fold pairs of input values into partial sums, then reduce to 136 at thread zero; other return values are undefined.
+         :alt: Eight threads fold pairs of input values into partial sums,
+               then reduce to 136 at thread zero; other return values
+               are undefined.
          :width: 100%
 
          Block sum with two items per thread and ``broadcast=False``.
@@ -50,16 +52,16 @@ thread hierarchy. With ``broadcast=False``, a block can instead select
 requires a commutative operator; the explorer's sum and maximum satisfy that
 requirement. Custom callbacks cannot select ``raking_commutative_only``
 because the planner cannot establish their commutativity. Raking combines
-contributions through shared-memory segments.
-Warp reductions combine warp partials before producing the block result.
-These rows illustrate legal combinations, rather than exact instruction
-schedules. Floating-point rounding can change when the combination order
-changes.
+contributions through shared-memory segments. Warp reductions combine warp
+partials before producing the block result. These rows illustrate legal
+combinations; they do not show exact instruction schedules. Floating-point
+rounding can change when the combination order changes.
 
 ``valid_items`` counts contributing group members, starting at rank zero.
 It is available for scalar block, physical-warp, and logical-warp reductions
-with ``broadcast=False``. Every group member still participates. The
-explorer offers this choice only for one item per thread.
+with ``broadcast=False``. The count must be uniform within the group and
+between one and the group size, inclusive. Every group member still
+participates. The explorer offers this choice only for one item per thread.
 
 A custom operator uses the qualified ``cuda.coop.numba_mlir`` namespace.
 It must be associative and is supported through the CUB block or warp path,
@@ -74,7 +76,8 @@ Using Reduce in a kernel
 This fragment runs inside a Numba-CUDA-MLIR kernel that accepts
 ``items_per_thread``. Import ``cuda`` from
 ``numba_cuda_mlir``, ``numpy as np``, and ``cuda.coop as coop``. Launch with
-128 threads and supply at least ``128 * items_per_thread`` input elements for each block.
+128 threads and supply at least ``128 * items_per_thread`` input elements
+for each block.
 
 .. code-block:: python
 
@@ -86,8 +89,9 @@ This fragment runs inside a Numba-CUDA-MLIR kernel that accepts
        output[cuda.blockIdx.x] = total
 
 The input ``values`` is unchanged. Omit ``algorithm`` and use the default
-``broadcast=True`` when every group member needs the aggregate. For one 128-thread block,
-this fragment gives every member of each two-warp group the same sum:
+``broadcast=True`` when every group member needs the aggregate. For one
+128-thread block, this fragment gives every member of each two-warp group
+the same sum:
 
 .. code-block:: python
 
@@ -100,7 +104,8 @@ With 128 threads, this creates two groups of 64 threads. A logical warp uses
 inside each physical warp. All these groups have separate aggregates.
 
 For the explorer's custom-maximum choice, use a device callback and the
-qualified API. Launch this kernel with one block whose size matches the input:
+qualified API. Launch this kernel with one block whose size matches the
+input:
 
 .. code-block:: python
 
