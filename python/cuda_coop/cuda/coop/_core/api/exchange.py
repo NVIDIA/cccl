@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Expose the common API marker for returning a rearranged group payload."""
+
 from __future__ import annotations
 
 from typing import Any

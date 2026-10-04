@@ -114,12 +114,12 @@ Groups and thread data
 :func:`cuda.coop.this_warp` describes the current 32-thread physical warp. A
 physical warp can be partitioned with ``this_warp().group_by(width)`` into
 consecutive logical warps of 1, 2, 4, 8, 16, or 32 threads. Load, Store, and
-Exchange support all three forms; Shuffle is block-only. The enclosing block
-must contain a multiple of 32
-threads, with no incomplete final physical warp. For a multidimensional block,
-threads are linearized in x-major order. Every member of a participating group
-must reach its collective; complete sibling logical groups may take different
-control-flow paths.
+Exchange support all three forms; Shuffle is block-only. Warp operations
+require an enclosing block with a multiple of 32 threads and no incomplete
+final physical warp. For a multidimensional block, threads are linearized
+in x-major order. Every member of a participating group must reach its
+collective; complete sibling logical groups may take different control-flow
+paths.
 
 The common group vocabulary also includes thread, cluster, grid, and mapped
 groups of physical warps, but those are not targets for these operations.
@@ -136,8 +136,7 @@ Participation and synchronization
 Every member of a participating group must reach the same cooperative call.
 A branch around a block operation must be uniform across the block; a branch
 around a logical-warp operation must be uniform within that logical warp.
-Complete sibling logical groups may follow different paths. Warp operations
-require a block size divisible by 32, with no incomplete final physical warp.
+Complete sibling logical groups may follow different paths.
 
 Do not put a block Load or Store inside a per-element ``if index < count``
 condition. Use ``valid_items`` to describe the valid prefix while all block

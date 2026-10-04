@@ -513,6 +513,13 @@ class _ProvenanceRewrite(Rewrite):
         return self._resolve_python_value(call.func) is ThreadData
 
     def _is_typed_group_payload_ctor_call(self, call: ir.Expr) -> bool:
+        """Recognize the planner's exact result-marker callable.
+
+        Resolve aliases to the callable object and reject attribute chains.
+        Matching by identity prevents an unrelated similarly named function
+        from being treated as a compiler-generated allocation marker.
+        """
+
         chain = self._resolve_attribute_chain(call.func)
         if chain is None:
             return False
@@ -524,6 +531,13 @@ class _ProvenanceRewrite(Rewrite):
         return root is _typed_group_payload_like
 
     def _is_typed_group_payload_var(self, value: ir.Var) -> bool:
+        """Look for a result-marker call among reaching definitions.
+
+        This probe distinguishes generated payloads that need complete extent
+        facts from ordinary candidates during provider inference. General
+        alias and shape traversal is handled by the specification resolvers.
+        """
+
         return any(
             isinstance(definition, ir.Expr)
             and definition.op == "call"
@@ -534,6 +548,22 @@ class _ProvenanceRewrite(Rewrite):
     def _extract_typed_group_payload_specification(
         self, call: ir.Expr, *, seen: set[str] | None = None
     ) -> _ThreadDataSpecification:
+        """Recover result dtype and extent from a planner-created marker.
+
+        Validate the marker's positional arguments and constant shape/type
+        policy. Inherit dtype from the prototype's array facts or known scalar
+        type. An explicit positive extent takes precedence. Otherwise use
+        the prototype's array extent when the marker's array flag is true,
+        or one item when it is false. Retain any common API provenance
+        supplied by the prototype.
+
+        Return a possibly partial ``_ThreadDataSpecification``. Missing
+        inferred facts can be resolved by later provider inference, but
+        malformed marker arguments or an unknown policy raise
+        ``CoopSinglePhaseRewriteError``. The supplied ``seen`` path guards
+        recursive prototype traversal.
+        """
+
         if seen is None:
             seen = set()
         if len(call.args) not in {3, 4} or call.kws:
@@ -1567,11 +1597,17 @@ class _ProvenanceRewrite(Rewrite):
     def _resolve_array_specification_from_var(
         self, value: ir.Var, seen: set[str]
     ) -> _ThreadDataSpecification | None:
-        """Merge array facts across constructors, aliases, and branches.
+        """Merge array facts from constructors and generated result markers.
 
-        Recognize public payloads and native local or shared arrays. ``seen``
-        stops recursive paths; unknown paths contribute no facts. The result
-        is partial inference, not proof that every path supplies an array.
+        Follow aliases, casts, static tuple items, and phi inputs to
+        ThreadData, local/shared arrays, or result markers. A marker inherits
+        its dtype from its prototype; its extent can be explicit. Unknown or
+        cyclic paths contribute no facts. Conflicting payload facts raise
+        ``CoopSinglePhaseRewriteError``.
+
+        Extend ``seen`` in place and copy it for independent branches. Return
+        merged facts or ``None``; this is partial shape/type inference, not
+        proof that every origin is a public ThreadData payload.
         """
 
         if not isinstance(value, ir.Var):
@@ -1866,28 +1902,27 @@ class _ProvenanceRewrite(Rewrite):
 
         Unlike shape inference, this check rejects an incoming non-payload
         origin, including a native local array, even when another branch is
-        ``ThreadData`` or a planner-created result payload. Trace aliases,
-        casts, iterator exhaustion, tuple items, and phi inputs; cycle-only
-        paths remain unknown rather than proving or disproving origin. At
-        least one positive origin and no negative origin are needed to cache a
-        positive result. This prevents rewriting ``items_per_thread`` on a
-        mixed or unrelated object just because some shape information is
-        available.
+        ``ThreadData`` or a generated result payload. Trace aliases, casts,
+        iterator exhaustion, tuple items, and phi inputs. Cycle-only paths
+        remain unknown. A positive origin and no negative origin are needed
+        to cache a positive result. This prevents rewriting
+        ``items_per_thread`` on a mixed or unrelated object merely because
+        some shape information is available.
 
         Parameters
         ----------
         value : ir.Var
             Candidate receiver of the public payload attribute.
         seen : set of str or None, optional
-            Initial traversal guard. A copy is used, leaving the supplied
-            set intact.
+            Initial traversal guard. Copy it before traversal so the supplied
+            set remains unchanged.
 
         Returns
         -------
         bool
-            Whether public payload provenance is established. Positive
-            results are cached in ``_thread_data_like_vars``; unknown
-            results return False.
+            Whether public payload provenance is established. Cache
+            positive results in ``_thread_data_like_vars``. Return ``False``
+            when provenance is unknown.
         """
 
         def resolve(candidate: ir.Var, active: set[str]) -> bool | None:

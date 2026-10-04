@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Infer Exchange provider types and extents from runtime operands.
+
+The group planner has already selected a provider and created its result
+marker. These hooks check input/output compatibility and any scatter arrays,
+then supply factory keywords for specialization. Recording the resolved dtype
+on both payloads lets the rewrite allocate an initially untyped result.
+"""
+
 from enum import Enum
 
 import numba_cuda_mlir.numba_cuda.types as numba_types
@@ -34,6 +42,13 @@ def _require_array(
     index: int,
     name: str,
 ):
+    """Require fixed payload facts for one provider operand.
+
+    The inference context can inspect ThreadData, generated result payloads,
+    and native arrays. An absent operand or unknown extent is an error here
+    because the Exchange provider needs a fixed CUB array overload.
+    """
+
     value, specification = inference.array_candidate(index)
     if (
         value is None
@@ -100,7 +115,18 @@ def infer_exchange_payload(
     context: GroupRewriteContext,
     inference: PayloadInference,
 ) -> None:
-    """Infer one out-of-place Exchange provider specialization."""
+    """Infer and reconcile one separate-input/output Exchange call.
+
+    Require input and result arrays with equal extents and compatible numeric
+    dtypes. Infer an unknown dtype from the other array or the explicit
+    factory keyword. Scatter modes additionally require matching rank and flag
+    extents with their signed-rank and integer-flag types.
+
+    Update factory keywords through ``inference`` so explicit values cannot
+    silently conflict with inferred facts. Record the input and result dtype
+    in ``context`` for subsequent payload allocation. Invalid operands,
+    counts, or conflicting types raise ``CoopSinglePhaseRewriteError``.
+    """
 
     input_var, input_specification = _require_array(inference, 0, "value")
     output_var, output_specification = _require_array(inference, 1, "result")

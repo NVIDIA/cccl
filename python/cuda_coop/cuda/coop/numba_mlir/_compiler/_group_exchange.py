@@ -2,6 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Lower public Exchange calls to private Numba-CUDA-MLIR providers.
+
+Recover static mode and per-thread payload facts before ordinary typing. Ask
+the shared group planner for a supported CUB implementation, select its
+registered provider, and build replacement IR with a fresh result payload.
+Provider rewriting later allocates that payload and supplies shared scratch.
+Common-API validation retains the portable layout subset. Qualified block
+calls also accept scatter and warp-striped modes. Their contracts are
+documented by ``cuda.coop.numba_mlir.exchange``.
+"""
+
 from __future__ import annotations
 
 import inspect
@@ -69,6 +80,13 @@ def _array_extent(
     *,
     parameter: str,
 ) -> int:
+    """Require a recognized array with a known per-thread item count.
+
+    Exchange must select a fixed-size CUB overload before normal typing.
+    Report the operand name when its origin or extent cannot establish that
+    shape; scalar operands are not accepted as one-item arrays.
+    """
+
     if not context.is_array("exchange", value):
         raise TypeError(
             "cuda.coop.numba_mlir.exchange requires "
@@ -89,6 +107,12 @@ def _array_dtype(
     *,
     parameter: str,
 ) -> Any:
+    """Infer an array element type from provenance or known payload writes.
+
+    The write fallback supports a payload whose constructor omitted dtype.
+    Raise a planning error if neither source supplies the element type.
+    """
+
     dtype = context.dtype(value)
     if dtype is None:
         dtype = context.payload_write_dtype(value)
@@ -141,7 +165,13 @@ def _flag_dtype(dtype: Any) -> Any:
 
 
 class _ExchangePlanning:
-    """Family-local Exchange semantics over the declared planning context."""
+    """Validate one Exchange call and construct its provider replacement.
+
+    The shared context supplies launch facts, argument provenance, and IR
+    builders. Planning selects a core contract first; lowering then chooses a
+    matching registered factory and creates the public result payload. The
+    class returns statements for the owning planner to install.
+    """
 
     def __init__(self, context: GroupPlanningContext) -> None:
         self._context = context
@@ -151,6 +181,12 @@ class _ExchangePlanning:
         operation: str,
         bound: inspect.BoundArguments,
     ) -> None:
+        """Normalize the mode and enforce the common API's two layout choices.
+
+        Update the bound mode in place. Backend-only scatter and warp-striped
+        modes must be requested through the qualified Numba-CUDA-MLIR API.
+        """
+
         bound.arguments["mode"] = self._context.validate_common_selector(
             operation,
             "mode",
@@ -160,6 +196,14 @@ class _ExchangePlanning:
 
     @staticmethod
     def _provider(plan: GroupLoweringPlan, primitive: Any):
+        """Match the core plan to a registered Exchange provider factory.
+
+        Check the target, native header, and C++ class together. Then select
+        the plain, ranked, or flagged ABI from the semantic operands. Raise a
+        planning error if the provenance has no supported provider; a matching
+        operation name alone is not enough to choose an implementation.
+        """
+
         if plan.provenance is None:
             raise GroupRewriteError(
                 "cuda.coop.numba_mlir.exchange requires CUB provider provenance"
@@ -201,6 +245,19 @@ class _ExchangePlanning:
         bound: inspect.BoundArguments,
         is_common_root: bool,
     ) -> GroupLoweringPlan:
+        """Validate Exchange arguments and request a supported core plan.
+
+        Resolve mode and time slicing as constants. Require a fixed numeric
+        array value, plus same-extent rank or validity arrays when the mode
+        requires them. Ranks use signed integers; flags use non-boolean
+        integer types. Common API operands must originate from ThreadData.
+
+        Build separate-input/output semantics and resolve them against the
+        group and launch. Return the supported plan. The caller must supply
+        valid ranks and unique destinations where the mode requires them,
+        and must initialize unwritten output positions before reading them.
+        """
+
         mode = _mode_token(
             self._context.constant(bound.arguments["mode"]),
             group_kind=group.kind,
@@ -354,6 +411,21 @@ class _ExchangePlanning:
         bound: inspect.BoundArguments,
         is_common_root: bool,
     ) -> list[Any]:
+        """Build an Exchange provider call that returns a fresh payload.
+
+        Validate the call, choose the provider, and bind its specialization
+        keywords from the plan. Emit a result marker with the input dtype and
+        extent; pass it as the provider's output and alias it to the original
+        public result after the provider runs.
+
+        CUB warp scatter can modify its rank array, so a warp scatter
+        plan copies ranks first. Current mode validation admits only layout
+        conversions for warp groups; this rank copy is defensive.
+
+        Return ordered replacement statements. The owning planner installs
+        them after whole-function validation.
+        """
+
         if operation != "exchange":
             raise GroupRewriteError(
                 f"Exchange planner received unexpected operation {operation!r}"

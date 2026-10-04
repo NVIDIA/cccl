@@ -1645,11 +1645,12 @@ class _StorageRewrite:
         """Collect function-wide scratch requirements before rewriting.
 
         Scan the entire function in two passes: record payload and storage
-        constructors first, then resolve provider arguments, family metadata,
-        and storage ownership. Knowing every constructor before resolving
-        aliases allows branch and loop origins to be checked together.
-        Validate descriptor uses and storage contracts before requesting
-        specialization bundles or materializing storage-bearing providers.
+        constructors, including planner-created result markers, first. Then
+        resolve provider arguments, family metadata, and storage ownership.
+        Knowing every constructor before resolving aliases allows branch and
+        loop origins to be checked together. Validate descriptor uses and
+        storage contracts before requesting specialization bundles or
+        materializing storage-bearing providers.
 
         Use each invocable's byte and alignment requirements, with a minimum
         of one for the leading-pointer ABI, and retain original assignment
@@ -1680,14 +1681,13 @@ class _StorageRewrite:
         Raises
         ------
         CoopSinglePhaseRewriteError
-            Calls, descriptor uses, provider contracts, or materialization
-            are invalid.
+            A call, descriptor use, provider contract, or materialization
+            is invalid.
         _DeferredCoopRewrite
             Internal signal that required launch metadata is unavailable.
             ``CoopSinglePhaseRewrite.match`` catches it and leaves the IR
             intact while ``_CallRewriting._rewrite_calls`` requests the
-            kernel launch shape and retries within
-            ``CoopWholeFunctionPlanner``.
+            launch shape and retries within ``CoopWholeFunctionPlanner``.
         """
 
         rewrite = cast("CoopSinglePhaseRewrite", self)

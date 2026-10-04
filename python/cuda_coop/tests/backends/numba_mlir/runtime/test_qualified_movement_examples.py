@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Execute the examples included in the qualified movement API docs.
+
+The marked regions are Sphinx inputs. Their host comparisons make the
+scatter rank direction and scalar rotation direction explicit.
+"""
+
 import pytest
 
 cuda = pytest.importorskip("numba_cuda_mlir.cuda")

@@ -58,8 +58,9 @@
       note: "One warp of exchange scratch is reused in serialized rounds. The real block must contain complete physical warps."},
   ];
 
-  // Describe each value's owners before and after the Store exchange.
-  // Stable token IDs let the shared renderer follow values across phases.
+  // Place each value in every Store stage: input, optional exchange
+  // scratch, writer registers, and memory. Stable token IDs let the shared
+  // renderer follow values across phases.
   function build_store(state) {
     const option = stores.find((entry) => entry.id === state.algorithm);
     const items = Number(state.items);
@@ -117,6 +118,8 @@
     {id: "scatter_to_striped_flagged", label: "Flagged scatter", tag: "Flags suppress writes", input: "blocked", output: "striped", scatter: true, flagged: true},
   ];
 
+  // Map each logical input to a result slot while retaining its token ID.
+  // Suppressed scatter writes leave visible holes in the result.
   function build_exchange(state) {
     const option = exchanges.find((entry) => entry.id === state.algorithm);
     const items = Number(state.items);

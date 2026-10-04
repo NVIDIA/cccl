@@ -6,13 +6,13 @@
 
 Import this qualified API on the host before compiling kernels. Importing it
 loads the supported compiler runtime and registers the whole-function
-planner. Load, Store, and ThreadData are kernel constructs. Group
-descriptors can also be created on the host and used as kernel globals.
-Construct TempStorage inside each kernel. During compilation, the compiler
-rebuilds the descriptor from its compile-time constant arguments and
-validates them. The compiler rejects a descriptor that comes from a module
-global. The ``local`` and ``shared`` array namespaces are resolved and
-cached on first access.
+planner. Load, Store, Exchange, Shuffle, and ThreadData are kernel
+constructs. Group descriptors can also be created on the host and used as
+kernel globals. Construct TempStorage inside each kernel. During
+compilation, the compiler rebuilds the descriptor from its compile-time
+constant arguments and validates them. The compiler rejects a descriptor
+that comes from a module global. The ``local`` and ``shared`` namespaces and
+the Exchange and Shuffle markers load on first access.
 """
 
 import importlib
@@ -62,7 +62,12 @@ __all__ = [
 
 
 def __getattr__(name):
-    """Resolve and cache operation exports or array namespaces on first use."""
+    """Load optional operation markers and allocation helpers on first use.
+
+    Cache the resolved export in this module so later access reuses the same
+    callable. This keeps their imports out of basic namespace initialization.
+    Unknown names raise ``AttributeError`` as normal module lookup requires.
+    """
 
     if name in {"exchange", "shuffle"}:
         module_name = {

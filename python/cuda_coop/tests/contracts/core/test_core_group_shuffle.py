@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check Shuffle results and distance constraints in core group plans.
+
+The planner checks static distances. A runtime distance can differ between
+threads, so the plan does not list it as a uniform argument. Its Rotate range
+check remains a caller precondition.
+"""
+
 import pytest
 
 from cuda.coop._core import (

@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Plan block Shuffle calls and describe their returned values.
+
+Scalar Offset and Rotate return one value per member. Array Up and Down return
+a fixed-size payload per member. The planner checks that the resolved group
+and operand form match a CUB BlockShuffle overload, then records its result,
+scratch, synchronization, and any distance precondition for lowering.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -38,8 +46,12 @@ from ._model import (
 
 @dataclass(frozen=True, eq=False)
 class GroupShuffleSemantics:
-    """Scalar or array BlockShuffle operation selected after group
-    resolution.
+    """Describe the per-member result of a scalar or array Shuffle.
+
+    ``primitive`` retains the mode, dtype, extent, and distance binding before
+    block dimensions are known. The group planner checks the mode against its
+    operand form. Scalar calls return one item; array calls return a new
+    payload with the input extent, leaving the input array unchanged.
     """
 
     primitive: BlockShuffleSemantics
@@ -84,6 +96,13 @@ class GroupShuffleSemantics:
 def _call_classifications(
     operation: GroupShuffleSemantics,
 ) -> tuple[ParameterClassification, ...]:
+    """Classify Shuffle data, mode, and any explicit distance binding.
+
+    Value is a runtime operand and mode is a static selector. An omitted
+    distance adds no classification; an explicit distance retains its static
+    or runtime binding so lowering can choose the correct provider ABI.
+    """
+
     classifications = [
         ParameterClassification(
             "value",
@@ -121,6 +140,19 @@ def _plan_shuffle(
     launch: LaunchFacts,
     operation: GroupShuffleSemantics,
 ) -> GroupLoweringPlan:
+    """Choose CUB BlockShuffle and record its result and distance rules.
+
+    The dispatcher rejects non-block groups before this planner runs.
+    Return an unsupported plan for Rotate on a one-thread block, for array
+    calls other than Up/Down or with a distance, and for scalar calls other
+    than Offset/Rotate. Planning uses the exact block dimensions.
+
+    A supported plan has implementation-owned scratch and a scalar or array
+    result owned by each member. Rotate also records the allowed distance
+    range. A static bound is checked during specialization; a runtime bound is
+    recorded as a caller precondition, not an inserted guard at this stage.
+    """
+
     assert resolved.kind == "block"
     assert launch.exact_block_dim is not None
     block_threads = launch.exact_block_threads

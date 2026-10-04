@@ -15,6 +15,9 @@
     { id: "rotate", label: "Rotate", tag: "Qualified scalar wraparound" },
   ];
 
+  // Build ownership phases for a small eight-thread teaching block.
+  // Up/Down share boundary items; scalar modes share one item per thread.
+  // Mark out-of-range source positions with question marks.
   function build_shuffle(state) {
     const items = Number(state.items);
     const count = 8 * items;

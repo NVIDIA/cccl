@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Infer Shuffle payloads and validate provider distance controls.
+
+Scalar calls infer one value dtype and retain a static or runtime distance.
+Array calls require matching fixed input/output payloads and CUB's unit Up or
+Down ABI. These hooks run during provider rewriting, before the factory
+materializes the native specialization.
+"""
+
 from enum import Enum
 from numbers import Integral
 
@@ -59,7 +67,12 @@ def infer_shuffle_scalar_payload(
     context: GroupRewriteContext,
     inference: PayloadInference,
 ) -> None:
-    """Infer the scalar Shuffle provider dtype."""
+    """Infer the scalar value dtype and reconcile the factory keyword.
+
+    Use the runtime value's known dtype first, then an explicit factory value.
+    Require a supported numeric type and reject conflicts through
+    ``inference.infer_kwarg`` before the provider is built.
+    """
 
     if not inference.runtime_args or not isinstance(
         inference.runtime_args[0], ir.Var
@@ -81,7 +94,13 @@ def infer_shuffle_array_payload(
     context: GroupRewriteContext,
     inference: PayloadInference,
 ) -> None:
-    """Infer matching array payload metadata for Up or Down."""
+    """Infer one dtype and extent for matching input and result arrays.
+
+    Both operands must have a known, equal item count. An unknown dtype may
+    come from the other array or the factory keyword, but two known dtypes
+    must agree. Require a supported numeric type, merge factory inputs, and
+    record the dtype on both payloads for later local-array allocation.
+    """
 
     input_var, input_specification = inference.array_candidate(0)
     output_var, output_specification = inference.array_candidate(1)
@@ -144,7 +163,16 @@ def validate_shuffle_scalar_runtime_controls(
     runtime_args: list[ir.Var],
     factory_kwargs: dict[str, object],
 ) -> None:
-    """Validate scalar Offset or Rotate distance before specialization."""
+    """Check the scalar provider's mode and distance representation.
+
+    Static distances must be signed 32-bit integers; Rotate additionally
+    checks its bound when block size is known. A runtime binding requires a
+    second operand and, when its type is available, a supported integer dtype.
+    Unknown runtime type defers that check to later typing.
+
+    This hook checks call structure and known facts. The provider adapter
+    handles bounded conversion of the runtime distance to the CUB type.
+    """
 
     del op_name
     mode = _mode_token(factory_kwargs.get("mode", "offset"))
@@ -209,7 +237,11 @@ def validate_shuffle_array_runtime_controls(
     runtime_args: list[ir.Var],
     factory_kwargs: dict[str, object],
 ) -> None:
-    """Keep array Shuffle on CUB's unit-distance Up or Down ABI."""
+    """Require CUB's unit-distance array Up or Down call form.
+
+    Reject any distance factory keyword. Array shifts encode their unit
+    distance in the selected overload and have no runtime distance operand.
+    """
 
     del context, op_name, runtime_args
     mode = _mode_token(factory_kwargs.get("mode", "down"))

@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check scalar and array Shuffle call contracts before backend lowering.
+
+A static distance becomes a C++ expression; a runtime distance remains a
+call parameter. The assertions also keep returned scalar values distinct
+from arrays written through output parameters.
+"""
+
 from inspect import signature
 
 import pytest

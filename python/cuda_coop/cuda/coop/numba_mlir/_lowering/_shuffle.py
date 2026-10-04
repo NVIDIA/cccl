@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Materialize scalar and array CUB BlockShuffle providers.
+
+These host factories translate shared-core descriptions into Numba-CUDA-MLIR
+invocables. Scalar Offset and Rotate return a value and may consume a runtime
+distance. Array Up and Down write a caller-supplied output payload with no
+distance operand. Both providers declare block scratch and synchronization.
+"""
+
 from __future__ import annotations
 
 import operator
@@ -72,6 +80,12 @@ def _block_threads(block_dim) -> int:
 
 
 def _provider_metadata(factory, *, operation: str):
+    """Require the block factory's operation and return its ABI metadata.
+
+    Materialization uses the registered scratch and synchronization contract;
+    a missing or mismatched registration is an internal provider error.
+    """
+
     registered = factory_operation(factory)
     if registered is None:
         raise RuntimeError(f"unregistered cuda.coop provider {factory!r}")
@@ -89,6 +103,13 @@ def _provider_metadata(factory, *, operation: str):
 def _static_rotate_distance(
     distance: ArgumentBinding, block_threads: int
 ) -> None:
+    """Check a known Rotate distance against the exact block size.
+
+    An omitted control means one. Runtime controls defer to the bounded
+    integer adapter. Static controls must be integral, non-boolean, and
+    between 1 and ``block_threads - 1``.
+    """
+
     if distance.kind is BindingKind.RUNTIME:
         return
     value = 1 if distance.kind is BindingKind.OMITTED else distance.value
@@ -110,7 +131,17 @@ def shuffle_scalar(
     mode="offset",
     distance=None,
 ):
-    """Build a scalar Offset or Rotate BlockShuffle invocable."""
+    """Build a scalar Offset or Rotate provider for an exact block shape.
+
+    Normalize the numeric dtype and preserve omitted, static, or runtime
+    distance binding. Check known Rotate bounds against the block size. For a
+    runtime distance, use a bounded integer adapter: signed 32 bits for
+    Offset, or unsigned 32 bits in ``[1, block_threads - 1]`` for Rotate.
+
+    Materialize the core algorithm with the registered block scratch ABI and
+    return its invocable. The adapter supplies the distance conversion; the
+    group planner supplies any preceding runtime-value preparation.
+    """
 
     if threads_per_block is None:
         raise ValueError("threads_per_block must be provided")
@@ -157,7 +188,13 @@ def shuffle_array(
     items_per_thread=1,
     mode="down",
 ):
-    """Build a unit Up or Down array BlockShuffle invocable."""
+    """Build an array Up or Down provider with a fixed per-thread extent.
+
+    Normalize block shape, numeric dtype, and item count, then adapt the
+    shared-core unit-shift overload to the registered block scratch ABI.
+    Return an invocable that writes the supplied output array; allocation and
+    the public return alias are arranged by group planning and rewriting.
+    """
 
     if threads_per_block is None:
         raise ValueError("threads_per_block must be provided")
