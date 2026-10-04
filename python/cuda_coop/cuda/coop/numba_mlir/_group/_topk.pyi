@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe block TopK payload types for static type checkers.
+
+Key results retain their input item type; pair results retain each type
+independently. The compiler also checks fixed extents, supported numeric
+types, and count constraints. These signatures do not express which output
+positions lie in the defined selected prefix.
+"""
+
 from typing_extensions import TypeVar
 
 from ..._typing import (

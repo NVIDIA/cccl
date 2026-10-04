@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Expose block TopK markers for ThreadData and fixed local arrays.
+
+The compiler recognizes these callables and loads the TopK planning family
+on demand. Each operation returns separate payloads with a defined selected
+prefix; the function bodies are markers, not Python selection algorithms.
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -33,7 +40,7 @@ def topk_min_keys(
     keys : ThreadData or local array
         Fixed-size per-thread keys in blocked order. Supported dtypes
         are signed and unsigned 8-, 16-, 32-, and 64-bit integers,
-        float32, and float64.
+        ``float32``, and ``float64``.
     k : int
         Requested number of selected items. May be static or runtime,
         must be uniform across the block, and must lie in ``[0, N]``,
@@ -107,11 +114,11 @@ def topk_min_pairs(
     keys : ThreadData or local array
         Fixed-size per-thread keys in blocked order. Supported dtypes
         are signed and unsigned 8-, 16-, 32-, and 64-bit integers,
-        float32, and float64.
+        ``float32``, and ``float64``.
     values : ThreadData or local array
         Values paired with ``keys``, with the same per-thread extent.
-        The value dtype may differ from the key dtype and must be in
-        the same supported numeric profile.
+        The value dtype may differ from the key dtype. It must be one
+        of the numeric dtypes supported for keys.
     k : int
         Requested number of selected items. May be static or runtime,
         must be uniform across the block, and must lie in ``[0, N]``,
@@ -186,7 +193,7 @@ def topk_max_keys(
     keys : ThreadData or local array
         Fixed-size per-thread keys in blocked order. Supported dtypes
         are signed and unsigned 8-, 16-, 32-, and 64-bit integers,
-        float32, and float64.
+        ``float32``, and ``float64``.
     k : int
         Requested number of selected items. May be static or runtime,
         must be uniform across the block, and must lie in ``[0, N]``,
@@ -260,11 +267,11 @@ def topk_max_pairs(
     keys : ThreadData or local array
         Fixed-size per-thread keys in blocked order. Supported dtypes
         are signed and unsigned 8-, 16-, 32-, and 64-bit integers,
-        float32, and float64.
+        ``float32``, and ``float64``.
     values : ThreadData or local array
         Values paired with ``keys``, with the same per-thread extent.
-        The value dtype may differ from the key dtype and must be in
-        the same supported numeric profile.
+        The value dtype may differ from the key dtype. It must be one
+        of the numeric dtypes supported for keys.
     k : int
         Requested number of selected items. May be static or runtime,
         must be uniform across the block, and must lie in ``[0, N]``,

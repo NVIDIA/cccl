@@ -2,7 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Wrap CUB's private ``cub::detail::block_topk`` implementation."""
+"""Build compiler-neutral specializations of CUB's private block TopK.
+
+A compatibility shim gives the method-template calls fixed entry points.
+It checks wide count arguments before narrowing them to CUB's integer type.
+Zero counts skip the native call. This avoids CUB's nonempty partial-tile
+requirement even when no items are requested.
+The native call modifies its payloads; public APIs must provide working copies
+to preserve their inputs. Constructing a specialization does not run a kernel.
+"""
 
 from __future__ import annotations
 
@@ -124,6 +132,12 @@ public:
 
 
 def _count_parameter(binding: ArgumentBinding, *, name: str, tile_size: int):
+    """Represent a count as an int64 runtime input or an inline constant.
+
+    Omission means the full tile size. Validate known values here; the shim
+    checks runtime values before narrowing them to CUB's int count type.
+    """
+
     if binding.kind is BindingKind.RUNTIME:
         return Value(INT64, name=name)
     value = tile_size if binding.kind is BindingKind.OMITTED else binding.value
@@ -136,6 +150,18 @@ def _count_parameter(binding: ArgumentBinding, *, name: str, tile_size: int):
 
 @dataclass(frozen=True)
 class BlockTopKSpecialization:
+    """Keep a specialized TopK algorithm with its normalized payload shape.
+
+    Attributes
+    ----------
+    specialization : Algorithm
+        In-place CUB key or pair operation and its scratch/count parameters.
+    block_dim : tuple of int
+        One-dimensional block shape ``(threads, 1, 1)``.
+    items_per_thread : int
+        Fixed number of keys, and optional values, contributed by each thread.
+    """
+
     specialization: Algorithm
     block_dim: tuple[int, int, int]
     items_per_thread: int
@@ -151,9 +177,41 @@ def make_block_topk_specialization(
     num_valid: ArgumentBinding | None = None,
     value_dtype: Any | None = None,
 ) -> BlockTopKSpecialization:
-    """Select an unsorted blocked prefix while preserving key/value
-    association.
+    """Build a TopK specialization for a fixed one-dimensional block.
+
+    Bind dtypes, per-thread extent, selection direction, and count policies.
+    The resulting native call modifies the supplied arrays in place. Compiler
+    adapters preserve public inputs by using separate working copies.
+
+    Parameters
+    ----------
+    key_dtype : object
+        Compiler-neutral key type used for the CUB template argument.
+    block_dim : tuple of int
+        Positive launch dimensions; the second and third dimensions must be 1.
+    items_per_thread : int
+        Positive, fixed key count per thread. The full tile size must fit
+        a signed 32-bit integer.
+    selection : {"min", "max"}
+        Whether to select the smallest or largest keys.
+    k : ArgumentBinding
+        Required static or runtime count. Known counts must be between zero
+        and the tile size; the shim checks runtime counts before narrowing.
+    num_valid : ArgumentBinding or None, optional
+        Valid input count. None or an omitted binding selects the full-tile
+        method. A static or runtime binding selects the partial-tile method,
+        even when its value equals the tile size.
+    value_dtype : object or None, optional
+        Associated value type. Omit it for a keys-only specialization.
+
+    Returns
+    -------
+    BlockTopKSpecialization
+        Specialized Algorithm and normalized block/payload shape. Only the
+        first ``min(k, num_valid)`` blocked positions are defined by the call.
+        Selection does not order that prefix; pairs retain their association.
     """
+
     block_dim = normalize_block_dim(block_dim)
     if block_dim[1:] != (1, 1):
         raise ValueError("TopK supports only one-dimensional blocks")

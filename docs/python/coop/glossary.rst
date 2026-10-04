@@ -115,7 +115,7 @@ Terms
       sequence. It counts tile elements, not elements per thread.
 
    top-k
-      Selection of the smallest or largest ``k`` keys, optionally with
+      Selection of up to ``k`` smallest or largest keys, optionally with
       associated values. ``cuda.coop`` TopK returns an unordered selection;
       only its selected prefix is defined. See :ref:`TopK <coop-topk>`.
 

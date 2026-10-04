@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Plan block TopK results, participation, and scratch ownership.
+
+Count bindings distinguish compile-time values from runtime inputs. The plan
+retains each payload's full extent while the public TopK contract limits reads
+to the selected prefix. Compiler adapters preserve inputs with working
+copies. By default, lowering arranges scratch; an explicit TempStorage makes
+it caller-owned. Importing this module registers TopK for block groups.
+Planning does not allocate memory or run the call.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -28,6 +38,18 @@ from ._model import (
 
 @dataclass(frozen=True, eq=False)
 class GroupTopKSemantics:
+    """Describe a TopK request independently of its block launch shape.
+
+    ``key_dtype`` and optional ``value_dtype`` identify keys-only or paired
+    selection. ``items_per_thread`` fixes the payload extent; ``selection``
+    chooses minimum or maximum keys. ``k`` is a count binding, and omission of
+    ``valid_items`` means the full tile. Count bindings are part of semantic
+    identity so different static counts do not share the same request key.
+
+    Construction checks the binding objects. The block specialization later
+    validates dimensions, extent, direction, and known count values.
+    """
+
     key_dtype: Any
     items_per_thread: int
     selection: str
@@ -38,6 +60,8 @@ class GroupTopKSemantics:
     )
 
     def __post_init__(self) -> None:
+        """Keep static and runtime counts in explicit binding objects."""
+
         if not isinstance(self.k, ArgumentBinding):
             raise TypeError("topk k must be an ArgumentBinding")
         if not isinstance(self.valid_items, ArgumentBinding):
@@ -45,6 +69,8 @@ class GroupTopKSemantics:
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
+        """Key the request by dtypes, shape, direction, and count bindings."""
+
         return (
             "topk",
             semantic_token(self.key_dtype),
@@ -65,14 +91,24 @@ class GroupTopKSemantics:
 
     @property
     def result_visibility(self) -> ResultVisibility:
+        """Report per-thread results; only the selected prefix is defined."""
+
         return ResultVisibility.PER_MEMBER
 
     @property
     def returns_value(self) -> bool:
+        """Report that every TopK request produces result payloads."""
+
         return True
 
 
 def _classifications(operation):
+    """Classify payloads as inputs and counts by their binding policy.
+
+    Omitted counts need no call operand. Static counts are constants; runtime
+    counts remain inputs that the backend passes to the specialized operation.
+    """
+
     result = [
         ParameterClassification(
             "keys", ArgumentKind.RUNTIME, ParameterRole.INPUT
@@ -102,6 +138,19 @@ def _classifications(operation):
 
 
 def _plan_topk(call, resolved, launch, operation):
+    """Select CUB TopK and describe each thread's result and shared scratch.
+
+    The dispatcher admits only complete block groups. Specialization uses the
+    exact launch dimensions and rejects unsupported shapes or invalid static
+    counts. Record one key result and an optional value result, each
+    retaining its input dtype and per-thread extent. These extents do not
+    make the tail outside ``min(k, valid_items)`` readable.
+
+    Require every member to use the same counts. Omitted ``valid_items`` is
+    already fixed by the tile shape, so only ``k`` needs that precondition.
+    By default, lowering arranges scratch; this planner records its contract.
+    """
+
     specialization = make_block_topk_specialization(
         key_dtype=operation.key_dtype,
         value_dtype=operation.value_dtype,
