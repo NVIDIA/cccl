@@ -168,9 +168,11 @@ compatible compiler:
 Block Load and Store support one-, two-, and three-dimensional blocks.
 ``offset`` selects the beginning of the block's tile and ``valid_items``
 specifies the number of valid items in that tile. Load may fill its
-out-of-bounds items with ``oob_default``. Without that default, initialize
-any items that the valid prefix will not overwrite before reading them.
-All threads in the block must call the primitive with uniform controls.
+out-of-bounds items with ``oob_default``. Without that default, items beyond
+``valid_items`` have unspecified values after Load, even if you initialized
+them before the call. Supply ``oob_default`` or write those items after Load
+before you read them. All threads in the block must call the primitive with
+uniform controls.
 
 .. _coop-cutlass-payload-types:
 
@@ -323,6 +325,7 @@ More items per thread can increase register use. Check the compiled
 kernel's resource usage as well as its execution time.
 
 
-Block Load/Store currently supports the storage-free ``direct``,
-``striped``, and ``vectorize`` algorithms. Explicit temporary storage and
+Load and Store currently support only block groups and the storage-free
+``direct`` algorithm. An explicit ``TempStorage`` descriptor is validated but
+does not change code generation. Warp groups and the striped, vectorize, and
 transpose algorithms are not implemented by this integration.

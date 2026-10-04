@@ -912,9 +912,10 @@ class ThreadData:
     def __new_from_mlir_values__(self, values: list[Any]) -> ThreadData:
         """Rebuild a payload from CuTe control-flow results.
 
-        Require one result per item and restore dtype, alignment, and the
-        payload's common API origin. Later assignments still apply the common
-        API's dtype checks when the payload came from a common call.
+        Require one result per item. Keep the alignment and the common API
+        origin, so later assignments still apply common dtype checks. Keep a
+        declared dtype; without one, record the item type inferred for the
+        control-flow operands.
         """
         if len(values) != self.items_per_thread:
             raise ValueError(
