@@ -194,4 +194,8 @@ def sum(group, value, /, *, broadcast=True, valid_items=None, algorithm=None):
     )
 
 
-__all__ = ["reduce", "sum"]
+__all__ = [
+    "_classify_valid_items",
+    "reduce",
+    "sum",
+]
