@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Declare static types for adjacent differences and discontinuity flags.
+
+Differences keep the input element type. Heads and tails use Int32, and only
+``heads_and_tails`` returns a tuple. The ``adjacent_difference`` overload for
+CuTe register payloads returns ``ThreadData[Any]`` because the element type is
+known only during kernel tracing. Runtime checks validate boundary options.
+"""
+
 from typing import Any, Literal, TypeAlias, overload
 
 from cutlass import Int32

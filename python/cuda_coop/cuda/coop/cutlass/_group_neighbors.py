@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Adapt inputs for block adjacent differences and head/tail flags.
+
+Copy common payloads or convert CuTe register inputs before shared planning.
+Adjacent differences retain the value dtype; discontinuity returns Int32
+flags. Both preserve the input and use separate output storage.
+"""
+
 from cuda.coop._core.block.neighbors import validate_neighbor_options
 from cuda.coop._core.thread_group import ThreadGroup
 
@@ -20,6 +27,13 @@ def _neighbors(
     tile_successor_item=None,
     temp_storage=None,
 ):
+    """Check group, mode, tile-neighbor options, and scratch type.
+
+    The shared validator rejects valid_items for discontinuity and neighbor
+    values that the mode cannot use. Snapshot the input before the provider
+    resolves dtype, count bindings, scratch, and result arrays.
+    """
+
     if not isinstance(group, ThreadGroup):
         raise TypeError(
             f"cuda.coop.cutlass.{operation} group must be a ThreadGroup"
@@ -83,6 +97,19 @@ def adjacent_difference(
         Fresh values with the input dtype, extent, and minimum alignment.
         Invalid suffix items and a boundary without an external neighbor
         retain their input values. Only built-in subtraction is supported.
+
+    Notes
+    -----
+    NumPy and runtime boundary scalars must match the input dtype. Plain
+    Python integers convert within the target dtype's range. Python floats
+    require a floating-point input dtype; finite values must fit its range,
+    and infinite values and NaNs are accepted.
+
+    ``valid_items`` may be a Python integer, a runtime signed integer up to
+    64 bits, or a runtime unsigned integer up to 32 bits. An out-of-range
+    static count raises ValueError when the kernel compiles. An out-of-range
+    runtime count stops the kernel with a trap before conversion to CUB's
+    int count.
     """
     return _neighbors(
         group,
@@ -118,6 +145,13 @@ def discontinuity(
     cuda.coop.cutlass.ThreadData or tuple of ThreadData
         Fresh int32 heads or tails, or ``(heads, tails)``. Each result has the
         input extent and minimum alignment. The input remains unchanged.
+
+    Notes
+    -----
+    NumPy and runtime boundary scalars must match the input dtype. Plain
+    Python integers convert within the target dtype's range. Python floats
+    require a floating-point input dtype; finite values must fit its range,
+    and infinite values and NaNs are accepted.
     """
     return _neighbors(
         group,

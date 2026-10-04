@@ -167,7 +167,7 @@ def check_cutlass_dynamic_memory_controls(
 def check_cutlass_warp_surface(source: object, destination: object) -> None:
     """Check Warp Load/Store types across both API namespaces.
 
-    With each of the four physical Warp algorithms, Load accepts
+    With a physical warp and each of the four Warp algorithms, Load accepts
     ``valid_items``, ``oob_default``, and ``offset``, and Store accepts
     ``valid_items``. Groups from either namespace must work with common and
     qualified calls.
@@ -1050,6 +1050,13 @@ def check_cutlass_topk_surface() -> None:
 
 
 def check_cutlass_neighbors() -> None:
+    """Separate value-typed differences from signed Int32 boundary flags.
+
+    Discontinuity's literal mode selects one payload or a heads/tails pair.
+    Its flag dtype stays known even when a register input has no static
+    element type, unlike the value-preserving Adjacent Difference result.
+    """
+
     block = cutlass_coop.this_block()
     values = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.int32)
     storage = cutlass_coop.TempStorage(alignment=16)
