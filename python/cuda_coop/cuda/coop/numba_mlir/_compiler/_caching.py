@@ -14,8 +14,8 @@ compiler objects or discover dependencies itself.
 ``CUDA_COOP_ENABLE_CACHE`` enables persistent caching when set to ``"1"`` or
 any value other than empty, ``"0"``, ``"false"``, ``"no"``, or ``"off"``.
 Comparison ignores surrounding whitespace and letter case. Unset disables the
-disk cache. This flag does not control the separate in-memory LRU cache on
-NVRTC compilation.
+disk cache. This flag does not control the separate in-memory
+LRU cache on NVRTC compilation.
 
 ``XDG_CACHE_HOME`` selects the cache parent directory on non-Windows systems;
 the default is ``~/.cache``. ``LOCALAPPDATA`` selects it on Windows; the
@@ -56,6 +56,8 @@ _CACHE_MISS = object()
 
 
 def _cache_location() -> str:
+    """Select the platform cache parent, accepting only absolute overrides."""
+
     if os.name == "nt":
         cache_home = os.environ.get("LOCALAPPDATA", "")
         fallback = ("AppData", "Local")
@@ -84,8 +86,8 @@ def _json_cache_key(value: object) -> object:
     value : object
         A scalar (``None``, bool, int, float, or str), bytes, or a recursively
         supported tuple, list, or dictionary. Dictionary entries are ordered
-        by ``repr`` of their keys. Nested containers are supported; cycles are
-        not.
+        by ``repr`` of their keys. Nested containers
+        are supported; cycles are not.
 
     Returns
     -------
@@ -98,11 +100,11 @@ def _json_cache_key(value: object) -> object:
     TypeError
         A value has no supported key representation. The disk-cache wrapper
         treats this as a request to compute without caching. Examples include
-        a ``set``, a ``pathlib.Path``, or a custom object, including one nested
-        inside an otherwise supported container.
+        a ``set``, a ``pathlib.Path``, or a custom object, including one
+        nested inside an otherwise supported container.
     RecursionError
-        A container contains a cycle. The disk-cache wrapper does not catch
-        this error.
+        A container contains a cycle. The disk-cache wrapper
+        does not catch this error.
     """
 
     if value is None or isinstance(value, (bool, int, float, str)):
@@ -174,6 +176,8 @@ def json_hash(*args: object, **kwargs: object) -> str:
 
 
 def _cache_identity_path(cache_identity: str) -> str:
+    """Create a separate cache directory for this callable's identity."""
+
     identity_hash = hashlib.sha256(cache_identity.encode("utf-8")).hexdigest()
     path = os.path.join(_CACHE_LOCATION, identity_hash)
     os.makedirs(path, exist_ok=True)
@@ -220,9 +224,9 @@ def _read_cache(path: str | os.PathLike[str]) -> object:
     Returns
     -------
     object
-        Decoded value on success, otherwise the unique ``_CACHE_MISS`` sentinel
-        for an unreadable, malformed, stale, or type-inconsistent entry.
-        ``None`` is a valid cached result and is distinct from a miss.
+        Decoded value on success, otherwise the unique ``_CACHE_MISS``
+        sentinel for an unreadable, malformed, stale, or type-inconsistent
+        entry. ``None`` is a valid cached result and is distinct from a miss.
     """
 
     try:
@@ -332,6 +336,8 @@ def disk_cache(func: Callable[_P, _R]) -> Callable[_P, _R]:
 
     @wraps(func)
     def cacher(*args: _P.args, **kwargs: _P.kwargs) -> _R:
+        """Read a usable entry or compute and try to save the result."""
+
         global _CACHE_USABLE
 
         if not _CACHE_USABLE:

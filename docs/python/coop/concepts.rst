@@ -124,9 +124,9 @@ The common group vocabulary also includes thread, cluster, grid, and mapped
 groups of physical warps, but those are not Load or Store targets.
 ``ThreadGroup`` objects are descriptor-only in this release. ``group_by`` is
 compile-time vocabulary for describing a static partition. Runtime query,
-membership, and synchronization methods such as
-``rank``, ``count``, ``rank_as``, ``count_as``, ``sync``, ``sync_aligned``, and
-``is_member`` are not exposed.
+membership, and synchronization methods such as ``rank``, ``count``,
+``rank_as``, ``count_as``, ``sync``, ``sync_aligned``, and ``is_member`` are
+not exposed.
 
 
 Participation and synchronization
@@ -140,8 +140,8 @@ require a block size divisible by 32, with no incomplete final physical warp.
 
 Do not put a block Load or Store inside a per-element ``if index < count``
 condition. Use ``valid_items`` to describe the valid prefix while all block
-threads participate. An early return by some threads also violates participation
-if the remaining threads later execute a block operation.
+threads participate. An early return by some threads also violates
+participation if the remaining threads later execute a block operation.
 
 A scratch-reuse barrier protects temporary storage. Its presence depends on
 the algorithm and storage policy; arrange explicit synchronization wherever
@@ -154,10 +154,11 @@ Per-thread payloads
 
 ``coop.ThreadData(items_per_thread)`` gives each participating thread a
 fixed-size payload with that many items. Pass ``items_per_thread`` as a
-kernel argument; Numba-CUDA-MLIR specializes the kernel for its value. Common and
-qualified calls use the same inference rules: an untyped Load output infers
-its dtype from the source, and Store combines the destination dtype with
-payload writes. Load fills the supplied output in place and returns ``None``.
+kernel argument; Numba-CUDA-MLIR specializes the kernel for its value.
+Common and qualified calls use the same inference rules: an untyped Load
+output infers its dtype from the source, and Store combines the destination
+dtype with payload writes. Load fills the supplied output in place and
+returns ``None``.
 
 Both namespaces accept ``alignment`` as a compile-time positive power of two
 in bytes. It specifies minimum alignment when the compiler materializes
@@ -167,14 +168,16 @@ payload storage; ``None`` lets the compiler choose. For example,
 requests smaller than its minimum allocation alignment. This option does not
 assert alignment of source or destination arrays passed to Load or Store.
 
-Payload slots start uninitialized. Write every slot before reading it; a
-partial Load needs ``oob_default`` or previously initialized values for its
-invalid slots. :class:`cuda.coop.ThreadDataLike` names the shared payload
-interface in type signatures. Protocol compatibility alone does not make an
-arbitrary Python object a supported kernel value.
+Payload slots start uninitialized. Write every slot before reading it. A
+partial Load leaves invalid slots unspecified unless you pass
+``oob_default``. Initialize those slots after the Load or supply a default
+before reading them. :class:`cuda.coop.ThreadDataLike` names the shared
+payload interface in type signatures. Protocol compatibility alone does not
+make an arbitrary Python object a supported kernel value.
 
 The payload's ``items_per_thread`` attribute is a compile-time integer and
-can be used as a loop bound inside a kernel, including through payload aliases.
+can be used as a loop bound inside a kernel, including through payload
+aliases.
 
 Supported payload types are signed and unsigned 8-, 16-, 32-, and 64-bit
 integers plus 32- and 64-bit floating-point values. Boolean, 16-bit floating
@@ -208,12 +211,13 @@ The signatures are:
 
 ``valid_items`` counts the valid prefix of the selected group tile, not the
 number of valid items per thread. A Warp-group tile contains
-``group_size * items_per_thread`` elements, where ``group_size`` is 32 for
+``group_size * items_per_thread`` elements. Here ``group_size`` is 32 for
 ``this_warp()`` or the width passed to ``group_by``. The count must be uniform
 within that group. With Load, invalid output slots are unspecified unless
 ``oob_default`` is supplied, even if initialized before Load. A runtime
-default must also be uniform within the group. A default is valid only when ``valid_items`` is present. With Store,
-elements outside the valid prefix are not written.
+default must also be uniform within the group. A default is valid only when
+``valid_items`` is present. With Store, elements outside the valid prefix
+are not written.
 
 .. warning::
 
@@ -229,11 +233,11 @@ elements outside the valid prefix are not written.
    the result to ``[0, group_size * items_per_thread]``.
 
 ``offset`` is an element offset into the source or destination. It is
-independent of ``valid_items`` and is not measured in bytes. The value must be
-uniform within each participating group; different groups may use different
-offsets. Static offsets must be nonnegative; a runtime offset is a
-caller-enforced nonnegative precondition. Source and destination arrays must be
-one-dimensional and contiguous. Store accepts both scalar values and
+independent of ``valid_items`` and is not measured in bytes. The value must
+be uniform within each participating group; different groups may use
+different offsets. Static offsets must be nonnegative; a runtime offset is a
+caller-enforced nonnegative precondition. Source and destination arrays must
+be one-dimensional and contiguous. Store accepts both scalar values and
 multi-item ``ThreadData`` payloads.
 
 Runtime ``valid_items`` and ``offset`` accept signed integer types through 64
@@ -244,14 +248,14 @@ Python integer and floating-point literals are converted contextually and
 range-checked against that dtype before provider generation.
 
 For a Warp group of width ``group_size``, the compiler first advances the
-memory base by
-``group_index * (group_size * items_per_thread)`` and then applies the caller's
-``offset``. The group index is the x-major linear thread rank divided by the
-group size, so every physical or logical Warp group in a block addresses a
-distinct tile. In a multi-block traversal, the caller offset must also include
-the block's global tile origin. Do not add the compiler-provided group origin
-again. Runtime offsets must leave enough signed 64-bit range for the last group
-origin in the block; static offsets are checked during planning.
+memory base by ``group_index * (group_size * items_per_thread)`` and then
+applies the caller's ``offset``. The group index is the x-major linear
+thread rank divided by the group size, so every physical or logical Warp
+group in a block addresses a distinct tile. In a multi-block traversal, the
+caller offset must also include the block's global tile origin. Do not add
+the compiler-provided group origin again. Runtime offsets must leave enough
+signed 64-bit range for the last group origin in the block; static offsets
+are checked during planning.
 
 Store payloads must have exactly the destination dtype. Numba-CUDA-MLIR may
 promote integer arithmetic even when its operands are 32-bit. Cast a computed
@@ -267,9 +271,8 @@ Data layouts and algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Both common and qualified entry points use the same string algorithm
-vocabulary: ``direct``, ``striped``,
-``vectorize``, ``transpose``, ``warp_transpose``, and
-``warp_transpose_timesliced``. All six algorithms are executable with the
+vocabulary: ``direct``, ``striped``, ``vectorize``, ``transpose``,
+``warp_transpose``, and ``warp_transpose_timesliced``. All six work with the
 Numba-CUDA-MLIR backend. ``direct`` and ``vectorize`` use blocked ordering, so
 each thread owns a contiguous segment of the tile. ``striped`` exposes striped
 ordering, where item ``i`` for a thread is separated from its next item by the
@@ -287,10 +290,10 @@ use the same lowercase string selectors. Selectors are normalized to lowercase
 underscore-delimited strings. Enum and integer selectors, including ``0``, are
 rejected.
 
-For group size ``G``, items per thread ``K``, thread rank ``t``, and item index
-``i``, blocked order uses tile position ``t * K + i``; striped order uses
-``t + i * G``. The payload has no runtime layout tag that corrects a mismatched
-Load/Store pair.
+For group size ``G``, items per thread ``K``, thread rank ``t``, and item
+index ``i``, blocked order uses tile position ``t * K + i``; striped order
+uses ``t + i * G``. The payload has no runtime layout tag that corrects a
+mismatched Load/Store pair.
 
 Store consumes the arrangement associated with its selected algorithm.
 Transpose Store algorithms may rearrange the input payload in place, following
@@ -324,70 +327,70 @@ in bytes. The planner may strengthen it to satisfy every primitive using the
 storage. Integer-like values implementing ``__index__`` are accepted. An
 explicit ``size_in_bytes`` must still be large enough for the planned storage.
 
-For block, physical Warp, and logical Warp operations, ``direct``, ``striped``,
-and ``vectorize`` are storage-free. They default-construct the CUB primitive,
-report zero temporary bytes, and emit no shared-memory allocation, storage
-pointer, or synchronization barrier. For a block call, an explicit descriptor,
-including an unsized descriptor, is validated as compile-time vocabulary but
-does not change code generation for those algorithms.
-Construct ``TempStorage`` inside the kernel; the current Numba-CUDA-MLIR
-frontend does not resolve module-global storage descriptors. A descriptor may
-be passed to a device function that Numba-CUDA-MLIR inlines into the kernel,
-which is the default, but it cannot cross into a separately compiled device
-function.
+For block, physical Warp, and logical Warp operations, ``direct``,
+``striped``, and ``vectorize`` are storage-free. They default-construct the
+CUB primitive, report zero temporary bytes, and emit no shared-memory
+allocation, storage pointer, or synchronization barrier. For a block call,
+an explicit descriptor, including an unsized descriptor, is validated as
+compile-time vocabulary but does not change code generation for those
+algorithms. Construct ``TempStorage`` inside the kernel; the current
+Numba-CUDA-MLIR frontend does not resolve module-global storage descriptors.
+A descriptor may be passed to a device function that Numba-CUDA-MLIR inlines
+into the kernel, which is the default, but it cannot cross into a separately
+compiled device function.
 
-The block ``transpose``, ``warp_transpose``, and ``warp_transpose_timesliced`` use CUB
-temporary storage. Without a descriptor, the compiler allocates the
-specialization's exact storage and inserts a block reuse barrier. An explicit
-descriptor selects shared or exclusive ownership, requests capacity and
-alignment, or opts into dynamic shared memory. The provider remains
-authoritative for the required byte count and alignment, and the backend
-validates the descriptor against the concrete lowering plan.
+The block ``transpose``, ``warp_transpose``, and
+``warp_transpose_timesliced`` use CUB temporary storage. Without a
+descriptor, the compiler allocates the specialization's exact storage and
+inserts a block reuse barrier. An explicit descriptor selects shared or
+exclusive ownership, requests capacity and alignment, or opts into dynamic
+shared memory. The provider remains authoritative for the required byte
+count and alignment, and the backend validates the descriptor against the
+concrete lowering plan.
 
-Sharing selects only the slice layout: ``sharing="shared"`` overlaps every call
-that passes the same descriptor on one region, while ``sharing="exclusive"``
-gives each call site its own slice. A call site inside a loop reuses its slice
-under either layout, so ``auto_sync`` is independent of ``sharing`` and
-defaults to ``False`` for both.
+Sharing selects only the slice layout: ``sharing="shared"`` overlaps every
+call that passes the same descriptor on one region, while
+``sharing="exclusive"`` gives each call site its own slice. A call site
+inside a loop reuses its slice under either layout, so ``auto_sync`` is
+independent of ``sharing`` and defaults to ``False`` for both.
 
-The synchronization model is deliberately simple. A descriptor names one
-region; distinct descriptors and compiler-owned storage never alias each
-other. With ``auto_sync=True``, the compiler appends
-``cuda.syncthreads()`` for block groups or ``cuda.syncwarp(mask)`` for Warp
-groups immediately after every call that consumes the storage, including the
-last one, and never inserts a barrier before a call. That trailing barrier
-orders reuse of the temporary storage. Its insertion depends on scratch use,
-so arrange explicit barriers for application-owned shared memory. It disappears when
-``auto_sync=False`` (the default). The caller issues
-``cuda.syncthreads()`` between consecutive uses of the descriptor, and a call
-site inside a loop counts as a reuse on every iteration. Compiler-owned storage
-always synchronizes.
+A descriptor names one region. Distinct descriptors and compiler-owned storage
+never alias each other. With ``auto_sync=True``, the compiler appends
+``cuda.syncthreads()`` immediately after every block call that consumes the
+storage, including the last one. Warp calls do not accept a descriptor. The
+compiler never inserts a barrier before a call. The trailing barrier orders
+only reuse of the temporary storage, and storage-free calls get none. Arrange
+explicit barriers for the kernel's own shared-memory traffic. With
+``auto_sync=False`` (the default), the compiler adds no reuse barrier. The
+caller issues ``cuda.syncthreads()`` between consecutive uses of the
+descriptor, and a call site inside a loop counts as a reuse on every
+iteration. Compiler-owned storage always synchronizes.
 
-The compiler stages every descriptor and every compiler-owned requirement of a
-kernel into one shared-memory backing. When that backing exceeds the 48 KiB
-static limit, through an explicit ``size_in_bytes`` or through large implicit
-requirements, it moves to dynamic shared memory and the launch reserves the
-exact byte count. Supported Numba-CUDA-MLIR releases do not separate static and dynamic shared
-allocations reliably. A kernel using cooperative temporary storage must not
-also declare a zero-sized or runtime-sized ``cuda.shared.array``. When
-cooperative backing becomes dynamic, user static shared arrays are also
-unsupported. Keep both user arrays and cooperative backing static, or move the
-user data out of shared memory. Storage-free operations do not add this
-restriction.
+The compiler stages every descriptor and every compiler-owned requirement of
+a kernel into one shared-memory backing. When that backing exceeds the
+48 KiB static limit, through an explicit ``size_in_bytes`` or through large
+implicit requirements, it moves to dynamic shared memory and the launch
+reserves the exact byte count. Supported Numba-CUDA-MLIR releases do not
+separate static and dynamic shared allocations reliably. A kernel using
+cooperative temporary storage must not also declare a zero-sized or
+runtime-sized ``cuda.shared.array``. When cooperative backing becomes
+dynamic, user static shared arrays are also unsupported. Keep both user
+arrays and cooperative backing static, or move the user data out of shared
+memory. Storage-free operations do not add this restriction.
 
 With ``auto_sync=False``, a descriptor must originate from exactly one
-constructor site. Selecting between multiple manual-sync constructors is unsupported:
-the compiler cannot prove that caller barriers protect the merged region,
-even when a particular program supplies sufficient barriers.
+constructor site. Selecting between multiple manual-sync constructors is
+unsupported: the compiler cannot prove that caller barriers protect the
+merged region, even when a particular program supplies sufficient barriers.
 
 Cooperative calls in device helpers must be inlined into the kernel; use
 ``@cuda.jit(device=True, inline="always")`` when selecting the helper's
 policy explicitly. Standalone collective helpers and collectives inside
-standalone callbacks are unsupported. ``literal_unroll`` values cannot
-determine cooperative payload extents, group dimensions,
-selectors, or descriptor constructor arguments. Write separate calls with
-explicit constants, or use an ordinary loop with one fixed cooperative shape.
-An unrelated ``literal_unroll`` loop does not add this restriction.
+standalone callbacks are unsupported. Values from ``literal_unroll`` cannot
+determine cooperative payload extents, group dimensions, selectors, or
+descriptor constructor arguments. Use separate calls with explicit constants,
+or an ordinary loop with one fixed cooperative shape. The restriction does
+not apply to an unrelated ``literal_unroll`` loop.
 
 Warp ``transpose`` uses compiler-owned storage with one disjoint slice per
 physical or logical group. The compiler inserts ``syncwarp`` with the exact

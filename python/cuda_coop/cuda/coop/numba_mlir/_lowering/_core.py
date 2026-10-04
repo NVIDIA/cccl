@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Translate compiler-neutral operation specializations into Numba descriptors.
+"""Translate shared algorithm descriptions to Numba descriptors.
 
 The common core describes C++ algorithms, parameters, and template arguments
 without depending on a Python compiler. This adapter supplies the Numba types
@@ -60,7 +60,23 @@ from .._compiler._operations import StorageABI
 
 @dataclass(frozen=True)
 class NumbaMlirArrayInputTransform:
-    """Describe one elementwise input conversion in a generated CUB wrapper."""
+    """Describe the element conversion a provider wrapper must generate.
+
+    An input array can have a different element type from the CUB parameter.
+    The adapter resolves the parameter's target type and fixed extent.
+    Source generation then emits a local array of converted elements and
+    passes it to the CUB call. Only input-only arrays support this conversion.
+
+    Parameters
+    ----------
+    source_dtype : object
+        Element type of the array supplied by the kernel.
+    cpp_expression : str
+        C++ expression for one converted element. It must contain ``{value}``,
+        which source generation replaces with the input element expression.
+        This record checks the placeholder; the C++ compiler checks the
+        generated expression.
+    """
 
     source_dtype: Any
     cpp_expression: str
@@ -75,9 +91,10 @@ def _optional_binding(value: object) -> ArgumentBinding:
 
     Lowering factories accept both explicit binding descriptors and older
     arguments whose mere presence requested a runtime overload. Preserve an
-    ``ArgumentBinding`` as supplied; otherwise ``None`` means omitted and every
-    other object means runtime. In particular, a plain integer here is not a
-    compile-time value. Callers must use ``ArgumentBinding.static`` to embed it.
+    ``ArgumentBinding`` as supplied; otherwise ``None`` means omitted and
+    every other object means runtime. In particular, a plain integer here is
+    not a compile-time value. Callers must use ``ArgumentBinding.static`` to
+    embed it.
 
     Parameters
     ----------
@@ -98,11 +115,29 @@ def _optional_binding(value: object) -> ArgumentBinding:
 
 
 class NumbaMlirCoreAdapter(CoreBackendAdapter):
-    """Build Numba calling-convention descriptors from common core parameters.
+    """Translate shared algorithm parameters to the Numba calling convention.
 
-    Optional named overrides control scalar argument checks and elementwise
-    array conversions. The resulting ``Algorithm`` uses the backend's normal
-    source generation, compilation cache, and linking path.
+    The core describes the C++ operation without Numba types. This adapter
+    maps its types and parameters to the descriptors used by Numba source
+    generation. ``materialize`` produces a specialized backend ``Algorithm``;
+    compilation and linking happen later.
+
+    Named overrides cover cases the C++ signature alone cannot express.
+    For example, a runtime item count needs a checked integer ABI, and an
+    input conversion needs a local array with the target element type.
+    The adapter checks overrides against every matching core parameter when
+    it materializes an algorithm.
+
+    Parameters
+    ----------
+    input_transforms : Mapping[str, NumbaMlirArrayInputTransform], optional
+        Conversions keyed by core parameter name. Each target must be an
+        input-only array with a positive specialized extent.
+    value_abis : mapping of str to backend.Value, optional
+        Scalar ABI descriptors keyed by core parameter name. An override must
+        preserve the provider dtype and output role of each matching scalar.
+        Construction copies the mappings; materialization copies parameter
+        descriptors before attaching their names.
     """
 
     _BUILTIN_DTYPES: ClassVar[dict[BuiltinDType, numba_types.Type]] = {
@@ -132,6 +167,12 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         self._value_abis = dict(value_abis or {})
 
     def normalize_dtype(self, dtype: Any) -> Any:
+        """Map a shared builtin dtype to its matching Numba numeric type.
+
+        Keep already backend-specific values unchanged. Reject a shared
+        builtin that the backend mapping does not support.
+        """
+
         if isinstance(dtype, BuiltinDType):
             try:
                 return self._BUILTIN_DTYPES[dtype]
@@ -150,6 +191,12 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         return backend.numba_type_to_cpp(self.normalize_dtype(dtype))
 
     def _resolvable(self, value: Any) -> Any:
+        """Preserve a parameter dependency until template arguments are known.
+
+        Translate shared dependencies and constants to backend descriptors.
+        Normalize dtype before wrapping a value as a backend constant.
+        """
+
         if isinstance(value, Dependency):
             return backend.Dependency(value.name)
         if isinstance(value, Constant):
@@ -158,6 +205,11 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
 
     @staticmethod
     def _is_backend_output(parameter: Any) -> bool:
+        """Choose whether a C++ output becomes a backend return value.
+
+        An explicit ``is_return`` overrides ``is_output``.
+        """
+
         if parameter.is_return is None:
             return parameter.is_output
         return parameter.is_return
@@ -168,20 +220,20 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         *,
         specialization: Algorithm,
     ) -> backend.Parameter:
-        """Translate one core parameter into the Numba provider ABI description.
+        """Describe one core parameter in the Numba provider ABI.
 
         Preserve template dependencies for arrays, pointers, and references
         until provider construction resolves them. Scalar values require a
-        concrete dtype; a named scalar ABI override can impose stricter runtime
-        typing or checked narrowing. Output ownership follows ``is_return`` when
-        explicitly set, otherwise ``is_output`` determines the backend return
-        value.
+        concrete dtype; a named scalar ABI override can impose stricter
+        runtime typing or checked narrowing. Output ownership follows
+        ``is_return`` when explicitly set, otherwise ``is_output`` determines
+        the backend return value.
 
-        Named input transforms are different from ordinary arrays: resolve their
-        extent and target dtype now so source generation can emit a fixed local
-        array and per-element C++ conversions. Only input-only arrays may use
-        this path. Dependent C++ functors substitute bracketed type placeholders
-        only, leaving unrelated bare tokens unchanged.
+        Named input transforms are different from ordinary arrays: resolve
+        their extent and target dtype now so source generation can emit a
+        fixed local array and per-element C++ conversions. Only input-only
+        arrays may use this path. Dependent C++ functors substitute bracketed
+        type placeholders only, leaving unrelated bare tokens unchanged.
 
         Parameters
         ----------
@@ -191,24 +243,23 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
             ``lower_temp_storage``.
         specialization : Algorithm
             Core specialization providing template arguments for eager
-            dependency
-            resolution in transforms and C++ functors.
+            dependency resolution in transforms and C++ functors.
 
         Returns
         -------
         Parameter
-            Backend descriptor; a scalar override may be the adapter's existing
-            descriptor. ``materialize`` copies descriptors before attaching
-            names.
+            Backend descriptor; a scalar override may be the adapter's
+            existing descriptor. ``materialize`` copies descriptors before
+            attaching names.
 
         Raises
         ------
         TypeError
-            The parameter kind is unsupported or a scalar value has a dependent
-            dtype.
+            The parameter kind is unsupported or a scalar value has a
+            dependent dtype.
         ValueError
-            An input transform targets an output/inout array or lacks a positive
-            specialized integer extent.
+            An input transform targets an output/inout array or lacks a
+            positive specialized integer extent.
         """
 
         if isinstance(parameter, PointerOffset):
@@ -345,6 +396,12 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         *,
         specialization: Algorithm,
     ) -> backend.Pointer:
+        """Describe scratch as a pointer in the provider's calling convention.
+
+        The storage ABI decides whether this parameter is included. Later
+        stages handle allocation, layout checks, and reuse barriers.
+        """
+
         del specialization
         return backend.Pointer(self.normalize_dtype(parameter.dtype))
 
@@ -358,7 +415,7 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         extra_type_definitions: tuple[Any, ...] = (),
         **kwargs: Any,
     ) -> backend.Algorithm:
-        """Build a backend algorithm from a specialized core specialization.
+        """Build a backend algorithm from a core specialization.
 
         Validate named scalar ABI overrides and array input transforms against
         all matching core parameters before lowering. Scalar overrides must
@@ -367,13 +424,13 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         parameter name because an override may be reused by several parameters
         or specializations.
 
-        Keep checked scalar overloads ahead of runtime pointer-offset overloads.
-        Numba-CUDA-MLIR selects the first convertible signature, and the offset
-        integer domain is intentionally broader than an exact scalar ABI. The
-        stable ordering otherwise preserves the core's method order. Include the
-        leading scratch parameter only for ``LEADING_POINTER`` storage,
-        translate type declarations, and finish template substitution without
-        compiling LTO.
+        Keep checked scalar overloads ahead of runtime pointer-offset
+        overloads. Numba-CUDA-MLIR selects the first convertible signature,
+        and the offset integer domain is intentionally broader than an exact
+        scalar ABI. The stable ordering otherwise preserves the core's method
+        order. Include the leading scratch parameter only for
+        ``LEADING_POINTER`` storage, translate type declarations, and finish
+        template substitution without compiling LTO.
 
         Parameters
         ----------
@@ -383,15 +440,15 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
             Whether the backend receives a leading scratch pointer or no
             scratch.
         execution_scope : SynchronizationScope
-            Participating scope used by the source emitter to allocate scratch.
+            Participating scope for scratch allocation by the source emitter.
         synchronization_scope : SynchronizationScope
-            Post-call synchronization for allocating wrappers; must be ``NONE``
-            or match ``execution_scope``.
+            Post-call synchronization for allocating wrappers; must be
+            ``NONE`` or match ``execution_scope``.
         extra_type_definitions : tuple, optional
             Backend type definitions prepended to the core's declarations,
             including any supporting link images.
         **kwargs : dict
-            Reserved for the adapter interface; additional options are rejected.
+            Reserved for the adapter interface; extra options are rejected.
 
         Returns
         -------
@@ -539,8 +596,8 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
 
         # Pointer-offset overloads deliberately accept a broadly convertible
         # integer in the same position where ABI-checked scalar overloads
-        # require an exact dtype. Numba-CUDA-MLIR selects the first convertible
-        # overload, so keep the checked forms ahead of pointer-offset forms.
+        # require an exact dtype. Numba-CUDA-MLIR selects the first
+        # convertible overload, so keep checked forms ahead of offset forms.
         # The stable sort otherwise preserves the canonical core ordering.
         ordered_parameters = sorted(
             specialization.parameters,

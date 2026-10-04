@@ -4,11 +4,10 @@
 
 """Dispatch operation-specific analysis and operand preparation.
 
-The shared rewrite recognizes providers and manages storage, while
-registered primitive families handle details such as scalar Store boxing.
-Match analysis records family metadata before provider compilation; runtime-
-argument preparation uses that metadata to emit any needed IR while
-replacing the call.
+The shared rewrite recognizes providers and manages storage, while registered
+primitive families handle details such as scalar Store boxing. Match analysis
+records family metadata before provider compilation. Operand preparation uses
+that metadata to emit any needed IR while replacing the call.
 """
 
 from typing import TYPE_CHECKING, cast
@@ -22,6 +21,8 @@ if TYPE_CHECKING:
 
 
 class _GroupMetadataRewrite:
+    """Connect call rewriting to each operation's analysis and emission."""
+
     def _analyze_family_match(
         self,
         *,
@@ -29,6 +30,13 @@ class _GroupMetadataRewrite:
         runtime_args: tuple[ir.Var, ...],
         factory_kwargs: dict[str, object],
     ) -> object:
+        """Analyze a split call before its provider is compiled.
+
+        Pass the operation name, operands, and mutable factory inputs to its
+        family hook. Return the hook's metadata, or ``None`` when absent. The
+        metadata is kept on the match for later operand preparation.
+        """
+
         rewrite = cast("CoopSinglePhaseRewrite", self)
         specification = rewrite_operation(op_name)
         if specification is None:
@@ -53,6 +61,12 @@ class _GroupMetadataRewrite:
         scope: ir.Scope | None,
         loc: ir.Loc,
     ) -> list[ir.Var]:
+        """Prepare a matched call's operands through its family hook.
+
+        The hook may append IR to ``block`` using ``scope`` and ``loc`` and
+        return adjusted operands. Without a hook, return the supplied list.
+        """
+
         rewrite = cast("CoopSinglePhaseRewrite", self)
         specification = rewrite_operation(match.op_name)
         if specification is None:

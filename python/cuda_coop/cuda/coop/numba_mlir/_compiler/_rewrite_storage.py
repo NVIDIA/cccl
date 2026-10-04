@@ -6,11 +6,10 @@
 
 The call rewrite scans every block before replacing descriptors so all
 provider scratch requirements contribute to one function-wide allocation.
-Explicit ``TempStorage`` descriptors and implementation-owned scratch
-receive aligned regions and per-call views, partitioned where separate group
-instances require independent storage. Emission places the backing
-allocation before its consumers and adds the synchronization required by
-each plan's reuse contract.
+Explicit ``TempStorage`` descriptors and implementation-owned scratch receive
+aligned regions and per-call views, partitioned where separate group instances
+require independent storage. Emission places the backing allocation before its
+consumers and adds the synchronization required by each plan's reuse contract.
 """
 
 from __future__ import annotations
@@ -57,6 +56,13 @@ if TYPE_CHECKING:
 
 
 class _StorageRewrite:
+    """Plan scratch across the function and emit each call's storage view.
+
+    The provenance mixin supplies descriptor owners and region layouts. This
+    mixin joins those regions, checks placement limits, and writes allocation,
+    slice, and synchronization statements into the IR.
+    """
+
     def _validate_storage_match_plan(
         self, match: _RewriteMatch, *, ctor_key: str | None = None
     ) -> None:
@@ -65,26 +71,25 @@ class _StorageRewrite:
         Validate the provider registry contract against the group planner's
         execution topology, storage ownership, shared address space, and reuse
         barrier. Explicit caller-owned storage is supported only for a single
-        block instance. With manual synchronization, that caller-owned case may
-        retain the provider's execution-scope synchronization declaration even
-        though this rewrite emits no automatic reuse barrier.
+        block instance. With manual synchronization, that caller-owned case
+        may retain the provider's execution-scope synchronization declaration
+        even though this rewrite emits no automatic reuse barrier.
 
-        The group planner and this rewrite parse descriptors independently. When
-        a constructor key is available, compare their effective contracts so a
-        parser disagreement cannot silently suppress synchronization. Calls
-        without a lowering plan retain only the legacy block execution and block
-        synchronization contract. Requirement collection runs these checks
-        before materializing storage-bearing invocables.
+        The group planner and this rewrite parse descriptors independently.
+        When a constructor key is available, compare their effective contracts
+        so a parser disagreement cannot silently suppress synchronization.
+        Calls without a lowering plan retain only the legacy block execution
+        and block synchronization contract. Requirement collection runs these
+        checks before materializing storage-bearing invocables.
 
         Parameters
         ----------
         match : _RewriteMatch
-            Validated call whose provider ABI requires a leading storage
-            pointer.
+            Validated call with a leading storage pointer in its provider ABI.
         ctor_key : str or None, optional
             Explicit descriptor owner used to cross-check constructor
-            metadata. None applies to implicit storage or when no owner was
-            resolved.
+            metadata. None applies to implicit storage or when no owner
+            was resolved.
 
         Returns
         -------
@@ -115,8 +120,8 @@ class _StorageRewrite:
             return
         if lowering_plan.unsupported is not None:
             raise CoopSinglePhaseRewriteError(
-                "cooperative provider storage received an unsupported "
-                "group lowering plan."
+                "cooperative provider storage received an unsupported group "
+                "lowering plan."
             )
         topology = cls._validate_emittable_topology(lowering_plan)
         synchronization = lowering_plan.synchronization
@@ -148,8 +153,8 @@ class _StorageRewrite:
             storage.instance_index != topology.instance_index
         ):
             raise CoopSinglePhaseRewriteError(
-                "cooperative provider storage layout "
-                "disagrees with its group topology."
+                "cooperative provider storage layout disagrees with its "
+                "group topology."
             )
         caller_owned = storage.ownership is StorageOwnership.CALLER
         if caller_owned != (match.runtime_temp_storage_var is not None):
@@ -218,8 +223,8 @@ class _StorageRewrite:
                 )
                 if (size, alignment, auto_sync, sharing) != planned:
                     raise CoopSinglePhaseRewriteError(
-                        "cooperative provider TempStorage contract disagrees "
-                        "between the group lowering plan "
+                        f"cooperative provider TempStorage contract "
+                        f"disagrees between the group lowering plan "
                         f"{planned!r} and the descriptor "
                         f"{(size, alignment, auto_sync, sharing)!r}."
                     )
@@ -270,25 +275,24 @@ class _StorageRewrite:
         """Append IR for the CUDA thread's linear rank within its block.
 
         Compute ``threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y *
-        threadIdx.z)`` from runtime CUDA indices. Storage instance selection and
-        logical-warp barrier masks need this rank rather than ``threadIdx.x`` so
-        the same topology works for multidimensional launches.
+        threadIdx.z)`` from runtime CUDA indices. Storage instance selection
+        and logical-warp barrier masks need this rank rather than
+        ``threadIdx.x`` for blocks launched with more than one dimension.
 
         Parameters
         ----------
         block : ir.Block
-            Destination receiving index reads and integer arithmetic in
-            place.
+            IR block receiving index reads and integer arithmetic.
         scope : ir.Scope or None
             Scope assigned to generated variables.
         loc : ir.Loc
-            Source location assigned to generated statements and variables.
+            Source location for generated statements and variables.
 
         Returns
         -------
         ir.Var
-            Variable containing the linear block rank, with the x dimension
-            varying fastest.
+            Variable containing the linear block rank, with the x
+            dimension varying fastest.
         """
 
         module_var = ir.Var(
@@ -390,20 +394,20 @@ class _StorageRewrite:
     def _validate_emittable_topology(
         lowering_plan: GroupLoweringPlan | None,
     ) -> GroupTopologyRequirements | None:
-        """Require the canonical group ranks understood by storage IR emitters.
+        """Require group rank formulas that the storage emitters support.
 
-        A plan must cover the exact block dimensions with its logical width and
-        instance count. Accept a single block, contiguous power-of-two logical
-        warps dividing 32, or individual threads. Check the symbolic instance
-        and rank expressions against those forms; emitters implement these
-        specific formulas rather than evaluating arbitrary topology expression
-        strings.
+        A plan must cover the exact block dimensions with its logical width
+        and instance count. Accept a single block, contiguous power-of-two
+        logical warps dividing 32, or individual threads. Check the symbolic
+        instance and rank expressions against those forms; emitters implement
+        these specific formulas rather than evaluating arbitrary topology
+        expression strings.
 
         Parameters
         ----------
         lowering_plan : GroupLoweringPlan or None
-            Plan whose topology and participation contracts govern storage.
-            None preserves the legacy block-provider path.
+            Plan whose topology and participation contracts govern
+            storage. None preserves the legacy block-provider path.
 
         Returns
         -------
@@ -413,8 +417,8 @@ class _StorageRewrite:
         Raises
         ------
         CoopSinglePhaseRewriteError
-            Exact dimensions or required contracts are missing, coverage is
-            inconsistent, or the scope and rank formulas lack an emitter.
+            Required dimensions or contracts are missing, coverage is
+            inconsistent, or no emitter supports the scope and rank formulas.
         """
 
         if lowering_plan is None:
@@ -436,8 +440,8 @@ class _StorageRewrite:
         )
         if topology.logical_width * topology.instances != block_threads:
             raise CoopSinglePhaseRewriteError(
-                "cooperative provider topology does not cover the exact block "
-                "dimensions."
+                "cooperative provider topology does not cover the exact "
+                "block dimensions."
             )
         scope = topology.execution_scope
         if scope is SynchronizationScope.BLOCK:
@@ -463,7 +467,8 @@ class _StorageRewrite:
             ):
                 raise CoopSinglePhaseRewriteError(
                     "warp-scoped cooperative storage requires a power-of-two "
-                    "logical width dividing 32 and canonical contiguous ranks."
+                    "logical width dividing 32 "
+                    "and canonical contiguous ranks."
                 )
         elif scope is SynchronizationScope.NONE:
             if (
@@ -477,7 +482,7 @@ class _StorageRewrite:
                 )
         else:
             raise CoopSinglePhaseRewriteError(
-                "cuda.coop.numba_mlir provider execution scope "
+                f"cuda.coop.numba_mlir provider execution scope "
                 f"{scope.value!r} has no storage emitter"
             )
         return topology
@@ -490,6 +495,13 @@ class _StorageRewrite:
         scope: ir.Scope | None,
         loc: ir.Loc,
     ) -> ir.Var:
+        """Append the index that selects the executing group's scratch region.
+
+        Use zero for a block, linear thread rank for a thread, or rank divided
+        by logical width for a warp. Validate the plan before choosing the
+        formula. ``block``, ``scope``, and ``loc`` locate the generated IR.
+        """
+
         topology = self._validate_emittable_topology(lowering_plan)
         if (
             topology is None
@@ -532,6 +544,13 @@ class _StorageRewrite:
     def _get_device_shared_memory_limits(
         self, required_bytes: int
     ) -> tuple[int, int]:
+        """Get the default and opt-in byte limits needed for this allocation.
+
+        Requests up to the conservative static limit need no device query.
+        Larger ``required_bytes`` values require valid limits from the active
+        CUDA device; a failed query becomes a rewrite error.
+        """
+
         conservative_default = _DEFAULT_STATIC_SHARED_MEMORY_BYTES
         if required_bytes <= conservative_default:
             return (conservative_default, conservative_default)
@@ -554,7 +573,7 @@ class _StorageRewrite:
             ) from exc
         if max_default <= 0 or max_optin <= 0 or max_optin < max_default:
             raise CoopSinglePhaseRewriteError(
-                "The current device reported invalid shared-memory limits: "
+                f"The current device reported invalid shared-memory limits: "
                 f"default={max_default}, opt-in={max_optin}."
             )
         return (max_default, max_optin)
@@ -562,18 +581,18 @@ class _StorageRewrite:
     def _ensure_temp_storage_global_plan(self) -> _TempStorageGlobalPlan:
         """Plan one shared backing for explicit and implicit scratch.
 
-        Finalize canonical explicit descriptors in constructor order and assign
-        aligned base offsets, then append the implementation-owned region. Calls
-        within each region have already been assigned reusable or exclusive
-        slices. Round the total size to the greatest alignment so the backing
-        can satisfy every region with one allocation.
+        Finalize canonical explicit descriptors in constructor order and
+        assign aligned base offsets, then append the implementation-owned
+        region. Calls within each region have already been assigned reusable
+        or exclusive slices. Round the total size to the greatest alignment so
+        the backing can satisfy every region with one allocation.
 
         Use static shared memory when the total fits the default device limit;
         otherwise request the exact dynamic byte count in compiler metadata.
-        Small allocations use the conservative limit without querying a device.
-        Dynamic placement must fit the opt-in limit and the compiler's dynamic
-        window alignment guarantee. Cache the plan and updated region offsets;
-        this method does not emit the allocation or check user shared arrays.
+        Small allocations use the conservative limit without querying a
+        device. Dynamic placement must fit the opt-in limit and the compiler's
+        dynamic window alignment guarantee. Cache the plan and updated region
+        offsets. Allocation and checks for user shared arrays happen later.
 
         Returns
         -------
@@ -585,8 +604,8 @@ class _StorageRewrite:
         ------
         CoopSinglePhaseRewriteError
             A descriptor cannot be finalized, exact device limits are
-            required but unavailable, or size/alignment requirements exceed
-            supported limits.
+            required but unavailable, or size/alignment requirements
+            exceed supported limits.
         """
 
         rewrite = cast("CoopSinglePhaseRewrite", self)
@@ -654,11 +673,12 @@ class _StorageRewrite:
             # its declared alignment, and telling the optimizer otherwise
             # would be a false assumption.
             raise CoopSinglePhaseRewriteError(
-                f"TempStorage requires {max_alignment}-byte alignment, but the "
-                f"{total_size}-byte backing exceeds the {max_default}-byte "
-                "static shared-memory limit and dynamic shared memory "
-                f"guarantees only {_DYNAMIC_SHARED_MEMORY_ALIGNMENT}-byte "
-                "alignment; reduce the requested alignment or the storage size."
+                f"TempStorage requires {max_alignment}-byte alignment, but "
+                f"the {total_size}-byte backing exceeds the "
+                f"{max_default}-byte static shared-memory limit and dynamic "
+                f"shared memory guarantees only "
+                f"{_DYNAMIC_SHARED_MEMORY_ALIGNMENT}-byte alignment; reduce "
+                f"the requested alignment or the storage size."
             )
         dynamic_shared_bytes = total_size if uses_dynamic_smem else 0
         if dynamic_shared_bytes > max_optin:
@@ -685,32 +705,32 @@ class _StorageRewrite:
         Place generated allocation statements in the entry block immediately
         after argument assignments. Block rewrite visitation need not follow
         control flow; emitting next to the first visited consumer could leave
-        other consumers without a dominating definition. Reject conflicting user
-        shared-memory declarations before inserting the unified backing.
+        other consumers without a dominating definition. Reject conflicting
+        user shared-memory declarations before inserting the unified backing.
 
-        Repeated calls return the existing backing variable without inserting a
-        second allocation. The function's entry block is mutated directly, even
-        when ``apply`` is currently rewriting a different block.
+        Repeated calls return the existing backing variable without inserting
+        a second allocation. The function's entry block is mutated directly,
+        even when ``apply`` is currently rewriting a different block.
 
         Returns
         -------
         ir.Var
-            Unified shared byte array available to every rewritten consumer.
+            Shared byte array available to every rewritten consumer.
 
         Raises
         ------
         CoopSinglePhaseRewriteError
-            Allocation planning fails, user shared arrays would overlap, or
-            the emission state claims a backing exists without recording its
-            variable.
+            Allocation planning fails, user shared arrays would overlap,
+            or the emission state claims a backing exists without
+            recording its variable.
         """
         rewrite = cast("CoopSinglePhaseRewrite", self)
 
         if self._temp_storage_backing_emitted:
             if self._temp_storage_backing_var is None:
                 raise CoopSinglePhaseRewriteError(
-                    "TempStorage backing was marked "
-                    "emitted without an IR value."
+                    "TempStorage backing was marked emitted "
+                    "without an IR value."
                 )
             return self._temp_storage_backing_var
         plan = self._ensure_temp_storage_global_plan()
@@ -792,23 +812,32 @@ class _StorageRewrite:
             for kind, loc in conflicts[:3]
         )
         raise CoopSinglePhaseRewriteError(
-            "cuda.coop temporary storage requires a "
-            f"{plan.total_size}-byte {placement} shared-memory backing, but "
-            f"this kernel also declares {where}. The supported numba-cuda-mlir "
-            "compiler does not separate these allocations; they would alias. "
-            "Use statically sized user shared arrays and keep the combined "
-            "cooperative backing within the static shared-memory limit, or "
-            "move the user data out of shared memory."
+            f"cuda.coop temporary storage requires a {plan.total_size}-byte "
+            f"{placement} shared-memory backing, but this kernel also "
+            f"declares {where}. The supported numba-cuda-mlir compiler does "
+            f"not separate these allocations; they would alias. Use "
+            f"statically sized user shared arrays and keep the combined "
+            f"cooperative backing within the static shared-memory limit, or "
+            f"move the user data out of shared memory."
         )
 
     def _emit_temp_storage_backing(
         self, block: ir.Block, *, plan: _TempStorageGlobalPlan
     ) -> ir.Var:
+        """Append one shared byte-array allocation and remember its variable.
+
+        ``plan`` supplies capacity, alignment, and static or dynamic
+        placement. Dynamic placement declares a zero-length shared array,
+        which the compiler maps to the launch's dynamic shared memory.
+        Planning has already recorded the required byte count. Repeated
+        calls return the existing variable without appending IR.
+        """
+
         if self._temp_storage_backing_emitted:
             if self._temp_storage_backing_var is None:
                 raise CoopSinglePhaseRewriteError(
-                    "TempStorage backing was marked "
-                    "emitted without an IR value."
+                    "TempStorage backing was marked emitted "
+                    "without an IR value."
                 )
             return self._temp_storage_backing_var
         loc = block.loc
@@ -911,6 +940,13 @@ class _StorageRewrite:
         stop: int | ir.Var,
         loc: ir.Loc,
     ) -> None:
+        """Append a unit-stride view of ``source_var`` as ``target_var``.
+
+        Bounds may be integers or existing IR variables. Create any needed
+        constants and the slice object in ``block``, using the target's scope
+        and the supplied source location. This creates a view, not a copy.
+        """
+
         slice_ctor_global_name = _next_global_name("temp_storage_slice_ctor")
         slice_ctor_var = ir.Var(
             target_var.scope,
@@ -970,27 +1006,23 @@ class _StorageRewrite:
         base_offset: int,
         loc: ir.Loc,
     ) -> None:
-        """Append IR selecting one call's scratch view for the executing group.
+        """Emit a call's scratch view for the executing group.
 
         A single-instance view has constant bounds. Multiple instances add the
         emitted group index times the aligned instance stride to the region's
-        static offset. The view length remains the call's byte requirement, even
-        when its stride includes padding or space required by another consumer.
+        static offset. The view length remains the call's byte requirement,
+        even if the stride includes padding or room for another consumer.
 
         Parameters
         ----------
         block : ir.Block
-            Destination receiving bound calculations and the slice
-            assignment.
+            IR block receiving bound calculations and the slice assignment.
         source_var : ir.Var
-            Shared byte array or descriptor view from which to take the
-            slice.
+            Shared byte array or descriptor view to slice.
         target_var : ir.Var
-            Variable assigned the generated view; also supplies the IR
-            scope.
+            Variable to receive the view and supply its IR scope.
         slice_info : _TempStorageSlice
-            Region-relative offset, per-call size, instance layout, and
-            topology.
+            Offset in the region, call size, instance layout, and topology.
         base_offset : int
             Region origin relative to ``source_var``. Use zero for an
             already sliced explicit descriptor and the region base for the
@@ -1006,8 +1038,8 @@ class _StorageRewrite:
         Raises
         ------
         CoopSinglePhaseRewriteError
-            A multi-instance slice lacks a lowering plan or has unsupported
-            topology.
+            A multi-instance slice lacks a lowering plan or has
+            unsupported topology.
         """
 
         static_start = int(base_offset) + int(slice_info.offset)
@@ -1017,8 +1049,8 @@ class _StorageRewrite:
         else:
             if slice_info.lowering_plan is None:
                 raise CoopSinglePhaseRewriteError(
-                    "multi-instance cooperative storage "
-                    "requires a group lowering plan."
+                    "multi-instance cooperative storage requires a group "
+                    "lowering plan."
                 )
             instance_index = self._emit_storage_instance_index(
                 block,
@@ -1090,6 +1122,13 @@ class _StorageRewrite:
     def _runtime_temp_storage_arg_for_call(
         self, block: ir.Block, *, source_var: ir.Var, call_assign: ir.Assign
     ) -> tuple[ir.Var, _TempStoragePlan | None]:
+        """Select a call's slice within an explicit storage descriptor.
+
+        Return the operand and its plan. Reuse the descriptor view for shared
+        storage at offset zero; emit a narrower view for exclusive storage or
+        a nonzero offset. A missing descriptor plan leaves the source intact.
+        """
+
         rewrite = cast("CoopSinglePhaseRewrite", self)
         temp_storage_arg = source_var
         temp_storage_plan = rewrite._resolve_temp_storage_plan(source_var)
@@ -1099,8 +1138,8 @@ class _StorageRewrite:
             )
             if slice_info is None:
                 raise CoopSinglePhaseRewriteError(
-                    f"Could not resolve TempStorage "
-                    f"slice for call at {call_assign.loc}."
+                    f"Could not resolve TempStorage slice for call at "
+                    f"{call_assign.loc}."
                 )
             if (
                 temp_storage_plan.sharing == "exclusive"
@@ -1125,18 +1164,25 @@ class _StorageRewrite:
     def _implicit_temp_storage_arg_for_call(
         self, block: ir.Block, *, call_assign: ir.Assign
     ) -> tuple[ir.Var, _TempStoragePlan]:
+        """Emit a call's view into the implementation-owned scratch region.
+
+        The global backing and region plan must already exist. Use the
+        original call assignment's identity to find its size and offset, then
+        return the generated operand and plan for subsequent barrier emission.
+        """
+
         plan = self._implicit_temp_storage_plan
         backing = self._temp_storage_backing_var
         if plan is None or backing is None:
             raise CoopSinglePhaseRewriteError(
-                "Missing implementation-owned "
-                "TempStorage plan for an implicit call."
+                "Missing implementation-owned TempStorage plan for an "
+                "implicit call."
             )
         slice_info = plan.slices_by_call_id.get(id(call_assign))
         if slice_info is None:
             raise CoopSinglePhaseRewriteError(
-                f"Could not resolve implicit TempStorage "
-                f"slice for call at {call_assign.loc}."
+                f"Could not resolve implicit TempStorage slice for call at "
+                f"{call_assign.loc}."
             )
         sliced_var = ir.Var(
             call_assign.target.scope,
@@ -1171,9 +1217,8 @@ class _StorageRewrite:
 
         This is the post-call storage-reuse barrier selected by the lowering
         contract. It neither establishes uniform participation nor decides
-        whether a call needs synchronization; the caller has already checked the
-        storage policy and invokes this emitter when automatic sync is
-        requested.
+        whether a call needs synchronization; the caller has already checked
+        the storage policy and calls this emitter for automatic sync.
 
         Parameters
         ----------
@@ -1192,14 +1237,12 @@ class _StorageRewrite:
         Returns
         -------
         None
-            Barrier IR is appended in place, unless the requested scope is
-            NONE.
+            Append barrier IR in place unless the requested scope is ``NONE``.
 
         Raises
         ------
         CoopSinglePhaseRewriteError
-            The topology is unsupported or disagrees with the requested
-            scope.
+            The topology is unsupported or conflicts with the requested scope.
         """
 
         synchronization_scope = SynchronizationScope(synchronization_scope)
@@ -1219,9 +1262,9 @@ class _StorageRewrite:
         }.get(synchronization_scope)
         if sync_attr is None:
             raise CoopSinglePhaseRewriteError(
-                "cuda.coop.numba_mlir provider synchronization scope "
-                f"{SynchronizationScope(synchronization_scope).value!r} "
-                "has no emitter"
+                f"cuda.coop.numba_mlir provider synchronization scope "
+                f"{SynchronizationScope(synchronization_scope).value!r} has "
+                f"no emitter"
             )
         sync_args = []
         if (
@@ -1326,6 +1369,13 @@ class _StorageRewrite:
         )
 
     def _temp_storage_alias_ctor_key(self, inst: ir.Assign) -> str | None:
+        """Recognize an assignment that only forwards a storage descriptor.
+
+        Accept copies, casts, and merged variables only when every source has
+        known constructor provenance. Return the target's canonical owner so
+        descriptor-use validation can allow the alias.
+        """
+
         rewrite = cast("CoopSinglePhaseRewrite", self)
         value = inst.value
         if isinstance(value, ir.Var):
@@ -1353,39 +1403,38 @@ class _StorageRewrite:
     ) -> None:
         """Reject storage descriptors that escape their compile-time role.
 
-        After recording all constructors and matches, inspect every use through
-        its alias provenance. Allow simple alias, cast, and phi assignments and
-        one ``temp_storage=`` keyword on a recognized primitive; descriptor
-        values cannot be ordinary runtime operands, returned objects, or
-        arbitrary call arguments. Subscripted-provider syntax is not an accepted
-        descriptor use. Every canonical constructor must have a primitive
-        consumer.
+        After recording all constructors and matches, inspect every use
+        through its alias provenance. Allow simple alias, cast, and phi
+        assignments and one ``temp_storage=`` keyword on a recognized
+        primitive; descriptor values cannot be ordinary runtime operands,
+        returned objects, or arbitrary call arguments. Subscripted-provider
+        syntax is not an accepted descriptor use. Every canonical constructor
+        must have a primitive consumer.
 
         Validation runs after device-helper inlining. If a call that passes a
-        descriptor to a helper remains, report that the helper was not inlined.
-        Perform these checks before compiling providers so invalid descriptor
-        escapes fail without materialization.
-        The scan updates the current block lookup state; its caller restores it.
+        descriptor to a helper remains, report that the helper was not
+        inlined. Perform these checks before compiling providers so invalid
+        descriptor escapes fail without materialization. The scan updates the
+        current block lookup state; its caller restores it.
 
         Parameters
         ----------
         func_ir : FunctionIR
             Entire function whose constructors have been recorded.
         matches : dict of ir.Assign to _RewriteMatch
-            Recognized primitive calls keyed by their original assignments.
+            Recognized calls keyed by their original IR assignments.
 
         Returns
         -------
         None
-            All descriptor uses and constructor consumers satisfy the
-            contract.
+            All descriptor uses and constructor consumers are valid.
 
         Raises
         ------
         CoopSinglePhaseRewriteError
             A storage argument lacks local constructor provenance, a
-            descriptor escapes to runtime, or a constructor has no primitive
-            consumer.
+            descriptor escapes to runtime, or a constructor has no
+            primitive consumer.
         """
         rewrite = cast("CoopSinglePhaseRewrite", self)
 
@@ -1393,8 +1442,8 @@ class _StorageRewrite:
             for match in matches.values():
                 if match.runtime_temp_storage_var is not None:
                     raise CoopSinglePhaseRewriteError(
-                        "cooperative group temp_storage= must originate from a "
-                        "TempStorage constructor in the compiled function."
+                        "cooperative group temp_storage= must originate from "
+                        "a TempStorage constructor in the compiled function."
                     )
             return
 
@@ -1427,9 +1476,9 @@ class _StorageRewrite:
                         and match.runtime_temp_storage_var is not None
                     ):
                         raise CoopSinglePhaseRewriteError(
-                            "cooperative group temp_storage= "
-                            "must originate from a "
-                            "TempStorage constructor in the compiled function."
+                            "cooperative group temp_storage= must originate "
+                            "from a TempStorage constructor "
+                            "in the compiled function."
                         )
                     continue
                 if isinstance(inst, ir.Assign) and (
@@ -1484,18 +1533,16 @@ class _StorageRewrite:
                 ):
                     helper_name = helper.py_func.__qualname__
                     raise CoopSinglePhaseRewriteError(
-                        f"TempStorage descriptor "
-                        f"{names!r} is passed to a device "
-                        "function that was not inlined into this kernel "
-                        f"({helper_name!r}); let Numba-CUDA-MLIR inline the "
-                        "collective helper (inline='always') or move its "
-                        "cooperative calls into the kernel."
+                        f"TempStorage descriptor {names!r} is passed to a "
+                        f"device function that was not inlined into this "
+                        f"kernel ({helper_name!r}); let Numba-CUDA-MLIR "
+                        f"inline the collective helper (inline='always') or "
+                        f"move its cooperative calls into the kernel."
                     )
                 raise CoopSinglePhaseRewriteError(
-                    "TempStorage values are opaque "
-                    "compile-time descriptors and "
-                    "may only be passed as temp_storage= to a registered "
-                    "cooperative primitive; a use involving "
+                    f"TempStorage values are opaque compile-time descriptors "
+                    f"and may only be passed as temp_storage= to a "
+                    f"registered cooperative primitive; a use involving "
                     f"{names!r} would escape to runtime."
                 )
 
@@ -1511,10 +1558,10 @@ class _StorageRewrite:
         if unconsumed:
             names = ", ".join(sorted(unconsumed))
             raise CoopSinglePhaseRewriteError(
-                "TempStorage values are opaque compile-time descriptors and "
-                "must be passed as temp_storage= to a registered cooperative "
-                "primitive; constructor(s) "
-                f"{names!r} have no primitive consumer."
+                f"TempStorage values are opaque compile-time descriptors and "
+                f"must be passed as temp_storage= to a registered "
+                f"cooperative primitive; constructor(s) {names!r} have no "
+                f"primitive consumer."
             )
 
     def _compute_func_temp_storage_requirements(
@@ -1525,20 +1572,22 @@ class _StorageRewrite:
         Scan the entire function in two passes: record payload and storage
         constructors first, then resolve provider arguments, family metadata,
         and storage ownership. Knowing every constructor before resolving
-        aliases allows branch and loop origins to be checked together. Validate
-        descriptor uses and storage contracts before requesting specialization
-        bundles or materializing storage-bearing providers.
+        aliases allows branch and loop origins to be checked together.
+        Validate descriptor uses and storage contracts before requesting
+        specialization bundles or materializing storage-bearing providers.
 
-        Use each invocable's byte and alignment requirements, with a minimum of
-        one for the leading-pointer ABI, and retain original assignment identity
-        for later slice lookup. Explicit descriptors accumulate under canonical
-        owner names; calls with implementation-owned storage accumulate in a
-        separate summary. This collects requirements, not allocation offsets.
+        Use each invocable's byte and alignment requirements, with a minimum
+        of one for the leading-pointer ABI, and retain original assignment
+        identity for later slice lookup. Explicit descriptors accumulate under
+        canonical owner names; calls with implementation-owned storage
+        accumulate in a separate summary. This collects requirements, not
+        allocation offsets.
 
-        Constructor tables and implicit requirements are rebuilt, payload facts
-        and invocable caches may be updated, and the prior block lookup state is
-        restored even if collection fails. Source order is sorted block labels
-        followed by statement order, not a claim about runtime execution order.
+        Constructor tables and implicit requirements are rebuilt, payload
+        facts and invocable caches may be updated, and the prior block lookup
+        state is restored even if collection fails. Source order is sorted
+        block labels followed by statement order, not a claim about runtime
+        execution order.
 
         Parameters
         ----------
@@ -1549,9 +1598,9 @@ class _StorageRewrite:
         Returns
         -------
         dict of str to _TempStorageRequirementSummary
-            Explicit-descriptor requirements keyed by canonical constructor
-            owner. Implicit requirements are stored on the rewrite object
-            separately.
+            Explicit-descriptor requirements keyed by canonical
+            constructor owner. Implicit requirements are stored on the
+            rewrite object separately.
 
         Raises
         ------
@@ -1561,8 +1610,9 @@ class _StorageRewrite:
         _DeferredCoopRewrite
             Internal signal that required launch metadata is unavailable.
             ``CoopSinglePhaseRewrite.match`` catches it and leaves the IR
-            intact while ``_CallRewriting._rewrite_calls`` requests the kernel
-            launch shape and retries within ``CoopWholeFunctionPlanner``.
+            intact while ``_CallRewriting._rewrite_calls`` requests the
+            kernel launch shape and retries within
+            ``CoopWholeFunctionPlanner``.
         """
 
         rewrite = cast("CoopSinglePhaseRewrite", self)

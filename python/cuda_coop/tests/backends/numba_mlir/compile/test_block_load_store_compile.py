@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Compile Block Load/Store providers with real NVRTC and device linking.
+
+The compile stage hides all GPUs, so tests replace device discovery with a
+fixed sm_90 target. Source and PTX checks cover storage, synchronization,
+symbols, and reuse; runtime suites check values from launched kernels.
+"""
+
 from __future__ import annotations
 
 import gc
@@ -37,9 +44,7 @@ _FIXED_COMPUTE_CAPABILITY = (9, 0)
 def _fixed_current_device(
     monkeypatch: pytest.MonkeyPatch,
 ) -> list[tuple[int, int]]:
-    """Hide runtime discovery while leaving NVRTC and nvJitLink entirely
-    real.
-    """
+    """Fix device discovery while retaining real NVRTC and nvJitLink calls."""
 
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == "", (
         "the Numba-CUDA-MLIR compile stage must hide all CUDA devices"
@@ -69,6 +74,11 @@ def _algorithm(
     items_per_thread: int = 2,
     valid_items: ArgumentBinding | None = None,
 ) -> _types.Algorithm:
+    """Materialize a Load or Store provider for one CUB algorithm and shape.
+
+    Storage-free algorithms get no scratch pointer or barrier. Others take a
+    leading scratch pointer and block synchronization.
+    """
     if valid_items is None:
         valid_items = ArgumentBinding.runtime()
     adapter = NumbaMlirCoreAdapter(

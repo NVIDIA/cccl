@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Keep the common API's numeric type choices consistent across backends.
+
+A backend first converts its dtype object to a standard name such as
+``int32``. These checks then enforce the common operation's supported set.
+Names keep this policy independent of each compiler's type objects.
+"""
+
 from __future__ import annotations
 
 _COMMON_NUMERIC_DTYPE_NAMES = (
@@ -25,7 +32,24 @@ def _validate_common_dtype_name(
     parameter: str | None,
     supported_dtype_names: tuple[str, ...],
 ) -> str:
-    """Validate one normalized dtype name and report the common contract."""
+    """Check that a dtype name is allowed; name the operation in any error.
+
+    ``parameter`` adds argument-specific context when supplied. Return the
+    accepted name unchanged so callers can use it after validation.
+
+    Parameters
+    ----------
+    dtype_name : str
+        Canonical type name already normalized by the backend.
+    operation : str
+        Common operation name used to identify the failing call.
+    parameter : str or None
+        Public argument name for a parameter-specific diagnostic;
+        ``None`` describes the operation's dtype support generally.
+    supported_dtype_names : tuple of str
+        Canonical names accepted by this particular common operation
+        or operand.
+    """
 
     if dtype_name not in supported_dtype_names:
         supported = ", ".join(supported_dtype_names)
@@ -44,7 +68,27 @@ def validate_common_numeric_dtype_name(
     operation: str,
     parameter: str | None = None,
 ) -> str:
-    """Validate one backend-normalized dtype name for a common operation."""
+    """Require one of the common API's integer or floating-point type names.
+
+    Backend adapters call this after translating compiler-specific type
+    objects to names. Checking the same names in one place keeps the
+    common API's numeric contract consistent even when backends have
+    different type representations.
+
+    The backend must normalize aliases before calling this function. Its
+    qualified API may support additional types outside this common set.
+
+    Parameters
+    ----------
+    dtype_name : str
+        Canonical numeric type name, such as ``int32`` or
+        ``float64``; aliases must already be resolved.
+    operation : str
+        Common operation name included in any rejection.
+    parameter : str or None, optional
+        Operand name included in the diagnostic when only one
+        argument's type is being checked.
+    """
 
     return _validate_common_dtype_name(
         dtype_name,

@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check activation and compilation from the installed wheel in isolation.
+
+Each probe uses a fresh isolated interpreter with ``PYTHONPATH`` deliberately
+set to the checkout. It checks module and header origins before compiling,
+so checkout files cannot hide missing wheel contents.
+"""
+
 from __future__ import annotations
 
 import importlib.metadata

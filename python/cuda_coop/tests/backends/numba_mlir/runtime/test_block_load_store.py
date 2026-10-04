@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Exercise Block Load/Store layouts, dtype handling, and storage on GPUs.
+
+Independent host references check each direction. They expose layout errors
+that matching Load and Store mistakes could hide in a round trip. Cases cover
+common and qualified APIs, scalar controls, payload aliases, and
+multidimensional block shapes. Trap probes run in child processes so a device
+fault leaves the pytest worker's context usable.
+"""
+
 from __future__ import annotations
 
 import subprocess
@@ -73,6 +82,13 @@ _DTYPES = (
 
 
 def _values(dtype: np.dtype, size: int, *, shift: int = 0) -> np.ndarray:
+    """Build varied inputs that also expose accidental dtype narrowing.
+
+    Signed values include both signs. Float64 values carry low bits that
+    float32 would lose; 64-bit integers exceed the 32-bit range. ``shift``
+    supplies different patterns for independent Load and Store inputs.
+    """
+
     values = (np.arange(size, dtype=np.int64) * 3 + shift) % 97
     if dtype.kind in {"i", "f"}:
         values = values - 48
@@ -153,6 +169,12 @@ def test_load_mutates_original_payload_and_returns_none(
 
 @cache
 def _full_load_kernel(numba_dtype, algorithm="direct"):
+    """Observe each thread's Load results through ordinary indexed stores.
+
+    Keeping Store out of this helper lets the host check Load independently.
+    The cached dispatcher captures the requested dtype and algorithm.
+    """
+
     @cuda.jit
     def kernel(source, observed, items_per_thread):
         thread = cuda.threadIdx.x + cuda.blockDim.x * (
@@ -176,6 +198,12 @@ def _full_load_kernel(numba_dtype, algorithm="direct"):
 
 @cache
 def _full_store_kernel(numba_dtype, algorithm="direct"):
+    """Fill each thread's payload with ordinary reads before testing Store.
+
+    Load cannot mask a Store layout error in this path. The cached dispatcher
+    captures the requested dtype and algorithm.
+    """
+
     @cuda.jit
     def kernel(source, destination, items_per_thread):
         thread = cuda.threadIdx.x + cuda.blockDim.x * (
@@ -292,6 +320,13 @@ def test_transpose_load_store_use_x_major_order_for_multidimensional_block(
 def _load_valid_prefix(
     source, observed, valid_items, source_offset, items_per_thread
 ):
+    """Observe only valid slots when Load has no out-of-bounds default.
+
+    The kernel writes only valid slots, so other observation entries keep
+    their host sentinel. Invalid payload slots are unspecified and are not
+    checked.
+    """
+
     thread = cuda.threadIdx.x
     payload = root_coop.ThreadData(items_per_thread, dtype=types.int32)
     root_coop.load(
@@ -574,6 +609,13 @@ def _expected_loaded_payload(
     oob_default: int,
     items_per_thread,
 ) -> np.ndarray:
+    """Compute a block's expected Load payload in thread-major slot order.
+
+    Striped loads map successive items to successive thread-width stripes; the
+    other selectors expose blocked payload order. Read only valid tile
+    positions at ``offset`` and fill the remaining slots with ``oob_default``.
+    """
+
     expected = np.full(
         (_THREADS * items_per_thread), oob_default, dtype=source.dtype
     )
@@ -599,6 +641,13 @@ def _expected_stored_tile(
     offset: int,
     items_per_thread,
 ) -> np.ndarray:
+    """Apply the Store layout to a copy of the initial destination.
+
+    ``source`` contains thread-major payload slots. Map them to blocked or
+    striped tile positions, then add ``offset``. Leave the invalid suffix and
+    surrounding guard entries unchanged.
+    """
+
     expected = destination.copy()
     for thread in range(_THREADS):
         for item in range(items_per_thread):
@@ -615,7 +664,7 @@ def _expected_stored_tile(
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
+    "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize(
@@ -656,7 +705,7 @@ def test_each_block_load_algorithm_matches_its_layout_oracle(
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "qualified", (False, True), ids=("portable", "qualified")
+    "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
 @pytest.mark.parametrize(
@@ -754,6 +803,12 @@ def test_non_direct_partial_load_store_matches_dtype_oracles(
 
 @cache
 def _partial_transpose_load_kernel(algorithm: str, qualified: bool):
+    """Check valid transpose results without observing unspecified slots.
+
+    These calls omit a default value. Only the valid prefix reaches the
+    observation array; its untouched host sentinel checks that boundary.
+    """
+
     if qualified:
 
         @cuda.jit
@@ -918,6 +973,13 @@ def test_unguarded_wide_load_store_executes_full_tile_path(
 
 @cache
 def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
+    """Reuse one caller storage descriptor for Load and Store.
+
+    Both variants request automatic synchronization. The dynamic case requests
+    64 KiB of backing storage; the other infers capacity from the transpose
+    primitives. The test also checks each loaded payload directly.
+    """
+
     if dynamic:
 
         @cuda.jit
@@ -1134,8 +1196,15 @@ def test_multi_block_grid_stride_load_store_handles_a_partial_tail(
 def _run_invalid_runtime_valid_items_probe(
     operation: str, valid_items: int, *, items_per_thread
 ) -> subprocess.CompletedProcess[str]:
-    # A device trap poisons its CUDA context, so invalid launches must run in
-    # disposable child processes rather than the pytest worker.
+    """Launch an invalid count in a disposable process.
+
+    The child checks that it imports the same ``cuda.coop`` package as the
+    test process, then compiles the requested operation and payload extent.
+    A device trap poisons its CUDA context, so the child contains that failure.
+    Return its status and output for the test's device-trap assertion. The
+    timeout bounds a stalled child; no kernel runs in the pytest worker here.
+    """
+
     operation_body = textwrap.indent(
         textwrap.dedent(
             {

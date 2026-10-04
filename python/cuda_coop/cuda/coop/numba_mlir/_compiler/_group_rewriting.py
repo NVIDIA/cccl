@@ -4,16 +4,16 @@
 
 """Expose payload and scalar facts to operation-specific call rewriting.
 
-After group resolution has selected implementations, ``CoopSinglePhaseRewrite``
-uses primitive-specific hooks to infer factory arguments and prepare runtime
-operands. ``GroupRewriteContext`` gives those hooks access to the active
-rewrite's array descriptions, compiler types, and recorded ``ThreadData``
-element types. It forwards queries and updates to the rewrite so all operations
-use the same analysis and caches.
+After group resolution has selected implementations,
+``CoopSinglePhaseRewrite`` uses primitive-specific hooks to infer factory
+arguments and prepare runtime operands. ``GroupRewriteContext`` gives those
+hooks access to the active rewrite's array descriptions, compiler types, and
+recorded ``ThreadData`` element types. It forwards queries and updates to the
+rewrite so all operations use the same analysis and caches.
 
 This context is used during the second phase of ``CoopWholeFunctionPlanner``.
-It does not register a separate Numba rewrite or own the IR; its returned facts
-are limited to what the active helper has established before type inference.
+It does not register a separate Numba rewrite or own the IR; its returned
+facts include only what the active helper knows before type inference.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ class GroupRewriteContext:
     Parameters
     ----------
     rewrite : CoopSinglePhaseRewrite
-        Active rewrite supplying the IR facts used by primitive-family hooks.
+        Active rewrite supplying IR facts to primitive-family hooks.
     """
 
     __slots__ = ("__rewrite",)
@@ -41,12 +41,17 @@ class GroupRewriteContext:
         self.__rewrite = rewrite
 
     def thread_data(self, value: ir.Var) -> _ThreadDataSpecification | None:
-        """Return the statically known ``ThreadData`` description."""
+        """Return known payload facts, or ``None`` when none can be recovered.
+
+        A description can have an unknown dtype or extent. It can also
+        describe a native local array; it does not prove that the value came
+        from public ``ThreadData``.
+        """
 
         return self.__rewrite._resolve_thread_data_specification(value)
 
     def array(self, value: ir.Var) -> _ThreadDataSpecification | None:
-        """Return statically known local/shared array dtype and extent facts."""
+        """Return known dtype and extent facts for local or shared arrays."""
 
         return self.__rewrite._resolve_array_specification_from_var(
             value, seen=set()
@@ -73,7 +78,11 @@ class GroupRewriteContext:
         self.__rewrite._record_inferred_thread_data_dtype(value, dtype)
 
     def static_scalar_provenance(self, value: Any) -> Any:
-        """Resolve a scalar only when it has explicitly static provenance."""
+        """Resolve a static scalar with its known source dtype.
+
+        Return ``_UNRESOLVED`` when the analysis cannot establish static
+        origin. A provenance record with value ``None`` remains valid.
+        """
 
         return self.__rewrite._resolve_static_scalar_provenance(value)
 

@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Check when rewriting can obtain an exact block shape.
+
+Configured launches can supply the dimensions; launch bounds cannot. Device
+helpers defer until inlining supplies their caller's launch context.
+"""
+
 from types import SimpleNamespace
 
 import pytest
@@ -41,6 +47,7 @@ class _TypingContext:
 
 
 def _state(function, *, targetoptions):
+    """Build frontend IR with the launch metadata needed by each test."""
     array_type = types.Array(types.int32, 1, "C")
     return SimpleNamespace(
         func_ir=run_frontend(function),
@@ -57,6 +64,7 @@ def _first_block(state):
 
 
 def _match(state):
+    """Match a provider call without compiling its source bundle."""
     rewrite = CoopSinglePhaseRewrite(state)
     rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: None
     matched = rewrite.match(

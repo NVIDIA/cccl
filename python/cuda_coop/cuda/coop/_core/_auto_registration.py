@@ -57,6 +57,13 @@ class _BackendUnavailable(ImportError):
 
 @dataclass(frozen=True)
 class _Candidate:
+    """Describe one runtime that the root import is allowed to activate.
+
+    The runtime module name controls detection. Distribution names and the
+    installation hint supply diagnostics without importing another compiler.
+    The activation callable performs the backend's own compatibility checks.
+    """
+
     display_name: str
     runtime_module: str
     distributions: tuple[str, ...]
@@ -75,7 +82,7 @@ def _auto_registration_disabled(value: str | None = None) -> bool:
 
 
 def _import_optional(module_name: str, *, top_level: str) -> ModuleType:
-    """Import a backend dependency while preserving evidence of broken installs.
+    """Import an optional runtime without hiding dependency failures.
 
     Automatic registration may silently skip an absent optional runtime, but
     a dependency failure inside an installed runtime should be reported. Use
@@ -96,7 +103,7 @@ def _import_optional(module_name: str, *, top_level: str) -> ModuleType:
         Fully qualified module to import.
     top_level : str
         Runtime module name whose absence is an expected optional dependency.
-        Only an exact match with the exception's ``name`` is treated as absent.
+        Only an exact match with the exception's ``name`` counts as absent.
 
     Returns
     -------
@@ -121,9 +128,7 @@ def _import_optional(module_name: str, *, top_level: str) -> ModuleType:
 
 
 def _activate_numba_mlir() -> ModuleType:
-    """Load the runtime, then let the qualified backend validate and
-    activate.
-    """
+    """Load the runtime, then let the Numba backend validate and activate."""
 
     _import_optional("numba_cuda_mlir", top_level="numba_cuda_mlir")
     return importlib.import_module("cuda.coop.numba_mlir")
@@ -144,6 +149,12 @@ _CANDIDATES = {
 
 
 def _detected_version(candidate: _Candidate) -> str | None:
+    """Find a version for diagnostics without importing the runtime again.
+
+    Prefer the loaded module's version, then installed distribution metadata.
+    An unknown version does not prevent the probe from reporting its error.
+    """
+
     runtime = sys.modules.get(candidate.runtime_module)
     version = getattr(runtime, "__version__", None)
     if isinstance(version, str) and version:
@@ -157,6 +168,12 @@ def _detected_version(candidate: _Candidate) -> str | None:
 
 
 def _remove_failed_backend_modules(prefix: str, before: frozenset[str]) -> None:
+    """Remove only backend modules added by the failed activation attempt.
+
+    Keep modules that were present before probing so cleanup does not remove
+    imports owned by the application or an earlier successful activation.
+    """
+
     for module_name in tuple(sys.modules):
         if (
             module_name == prefix or module_name.startswith(f"{prefix}.")
@@ -165,6 +182,12 @@ def _remove_failed_backend_modules(prefix: str, before: frozenset[str]) -> None:
 
 
 def _warn_incompatible(candidate: _Candidate, error: Exception) -> None:
+    """Explain an activation failure and how to select a compatible install.
+
+    The warning normally lets the common API import finish. Application
+    warning filters can still turn it into an exception.
+    """
+
     version = _detected_version(candidate)
     detected = f" (detected version {version})" if version is not None else ""
     reason = str(error).strip() or type(error).__name__
@@ -175,8 +198,7 @@ def _warn_incompatible(candidate: _Candidate, error: Exception) -> None:
         f"{_WARNING_PREFIX} {candidate.display_name}{detected} was detected "
         f"but was not enabled because {reason}. The cuda.coop root import "
         "continued and other DSL backends were unaffected. "
-        "Install a compatible "
-        f"{candidate.install_hint}. "
+        f"Install a compatible {candidate.install_hint}. "
         f"Set {_DISABLE_ENV}=1 to disable automatic DSL probing.",
         CudaCoopAutoRegistrationWarning,
         stacklevel=2,
@@ -189,15 +211,14 @@ def _auto_register_known_dsls() -> tuple[str, ...]:
     The root package import must remain usable without loading an optional
     compiler or CUDA bindings. Inspect ``sys.modules`` first: installing a
     runtime is insufficient to activate it. Compiler-first imports get this
-    automatic activation; root-first callers can use
-    ``cuda.coop.register("numba-cuda-mlir")`` explicitly.
+    automatic activation. Root-first callers can activate the backend with
+    ``cuda.coop.register("numba-cuda-mlir")``.
 
     Respect ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION`` and reuse qualified
     backends already in ``sys.modules``. For a new attempt, snapshot loaded
     modules so failure cleanup removes only newly imported backend modules.
-    An absent optional runtime is skipped silently; other activation
-    exceptions produce ``CudaCoopAutoRegistrationWarning`` and allow probing
-    to continue.
+    An absent optional runtime is skipped silently. Other activation failures
+    produce ``CudaCoopAutoRegistrationWarning``, and probing continues.
 
     Returns
     -------

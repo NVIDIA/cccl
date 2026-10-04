@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Report cooperative markers that reach ordinary Python execution.
+
+Kernel compilation replaces these calls with planned device operations.
+Reaching this function means that replacement has not occurred.
+"""
+
 from __future__ import annotations
 
 from typing import Any

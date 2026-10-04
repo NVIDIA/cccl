@@ -10,13 +10,13 @@ Python descriptions cannot execute on the device. This module recovers them
 from the kernel's IR, resolves their sizes against the configured launch, and
 asks the operation's registered planning code to choose an implementation.
 
-``CoopWholeFunctionPlanner`` invokes this work after device-helper inlining and
-before type inference. ``has_group_markers`` first determines whether group
-resolution is needed; ``_GroupPlanning`` then requests launch facts and runs
-``_GroupCallPlanner``. The latter builds replacements, checks that descriptors
-have no remaining runtime uses, and substitutes calls to private provider
-factories. A provider factory is a host callable that specializes the selected
-implementation for types, item counts, and launch dimensions.
+``CoopWholeFunctionPlanner`` invokes this work after device-helper inlining
+and before type inference. ``has_group_markers`` first determines whether
+group resolution is needed; ``_GroupPlanning`` then requests launch facts and
+runs ``_GroupCallPlanner``. The latter builds replacements, checks that
+descriptors have no remaining runtime uses, and substitutes calls to private
+provider factories. A provider factory is a host callable that specializes the
+selected implementation for types, item counts, and launch dimensions.
 
 The same whole-function planner repairs the changed IR before its next phase
 materializes those provider calls and allocates payloads and scratch storage.
@@ -208,8 +208,7 @@ class _GroupCallPlanner:
         )
 
     def _definition(self, value: Any) -> Any:
-        """Look up one variable definition, returning ``None`` if
-        unavailable.
+        """Look up one variable definition, or return ``None``.
 
         Non-variable inputs pass through unchanged. Return ``None`` when
         Numba's single-definition lookup raises ``KeyError``, including
@@ -271,20 +270,20 @@ class _GroupCallPlanner:
         return obj
 
     def _reject_literal_unroll_value(self, value: Any, parameter: str) -> None:
-        """Reject compile-time controls that depend on a pending literal unroll.
+        """Reject constant controls that depend on literal unrolling.
 
-        Group planning needs shapes and selectors before the literal-unroll pass
-        has expanded its iterations. Trace all reaching definitions and
-        expression operands for a recognized ``literal_unroll`` call instead of
-        trying to resolve an iteration value prematurely. Unrelated
+        Group planning needs shapes and selectors before the literal-unroll
+        pass has expanded its iterations. Trace all reaching definitions and
+        expression operands for a recognized ``literal_unroll`` call instead
+        of trying to resolve an iteration value prematurely. Unrelated
         literal-unroll loops are allowed. Cycles terminate the search without
         establishing a dependency.
 
         Parameters
         ----------
         value : ir.Var or object
-            Argument whose IR dependencies are inspected. Non-variables have no
-            dependencies to inspect.
+            Argument whose IR dependencies are inspected. Non-variables have
+            no dependencies to inspect.
         parameter : str
             Description of the shape, selector, or other compile-time control
             used in the diagnostic.
@@ -375,9 +374,9 @@ class _GroupCallPlanner:
         hierarchy or group descriptors, and finally use Numba constant
         inference. A non-literal kernel argument requests dispatcher
         specialization rather than being treated as an unsupported value.
-        Descriptor reconstruction may populate the planner's caches. This is the
-        required-constant path; callers classifying optional runtime controls
-        use ``_try_static_scalar`` instead.
+        Descriptor reconstruction may populate the planner's caches. This is
+        the required-constant path; callers classifying optional runtime
+        controls use ``_try_static_scalar`` instead.
 
         Parameters
         ----------
@@ -656,9 +655,9 @@ class _GroupCallPlanner:
         contract.
 
         Cache newly constructed descriptors by variable name for this planner.
-        This describes the requested group; launch-dependent resolution belongs
-        to ``_resolve_group``. Unlike marker detection, this routine requires a
-        single resolvable definition and does not merge phi inputs.
+        This describes the requested group; launch-dependent resolution
+        belongs to ``_resolve_group``. Unlike marker detection, this routine
+        requires a single resolvable definition and does not merge phi inputs.
 
         Parameters
         ----------
@@ -670,8 +669,8 @@ class _GroupCallPlanner:
         Returns
         -------
         ThreadGroup or None
-            Reconstructed or cached descriptor, or ``None`` if the definition is
-            not a recognized group expression.
+            Reconstructed or cached descriptor, or ``None`` if the definition
+            is not a recognized group expression.
 
         Raises
         ------
@@ -680,8 +679,8 @@ class _GroupCallPlanner:
         TypeError
             A recognized constructor call does not match its Python signature.
         GroupRewriteError
-            A recognized constructor or subgroup call uses unsupported syntax or
-            its arguments cannot be resolved as required compile-time values.
+            A group constructor or subgroup call uses unsupported syntax,
+            or its arguments cannot be resolved as compile-time values.
         """
 
         if isinstance(value, ThreadGroup):
@@ -963,15 +962,15 @@ class _GroupCallPlanner:
         Parameters
         ----------
         value : object
-            IR variable to classify, or any other value to probe. Non-variables
-            return ``False``.
+            IR variable to classify, or any other value to probe.
+            Non-variables return ``False``.
         seen : set of str, optional
-            Recursion-path variable names and tuple-projection keys. The current
-            name is added in place; branches receive separate copies.
+            Recursion-path variable names and tuple-projection keys. The
+            current name is added in place; branches receive separate copies.
         thread_data_only : bool, optional
             If true, accept only common or qualified ``ThreadData``
-            constructors. Otherwise, also accept the recognized CUDA local-array
-            constructor.
+            constructors. Otherwise, also accept the recognized CUDA
+            local-array constructor.
 
         Returns
         -------
@@ -979,8 +978,8 @@ class _GroupCallPlanner:
             ``True`` if at least one constructor is found and no path is
             rejected; ``False`` for an unsupported definition, missing
             definitions, or a non-variable; ``None`` when only cyclic paths
-            remain. The operand validation wrappers turn that last state into a
-            provenance diagnostic.
+            remain. The operand validation wrappers turn that last state into
+            a provenance diagnostic.
         """
 
         if not isinstance(value, ir.Var):
@@ -1060,8 +1059,7 @@ class _GroupCallPlanner:
 
     @staticmethod
     def _new_var(scope: Any, loc: ir.Loc, stem: str) -> ir.Var:
-        """Create a fresh temporary with the original call's scope and
-        location.
+        """Create a distinct IR temporary in the supplied scope and location.
 
         A shared counter keeps names distinct across rewritten calls. The stem
         makes the generated IR recognizable when inspecting compiler dumps.
@@ -1229,21 +1227,21 @@ class _GroupCallPlanner:
         Parameters
         ----------
         value : ir.Var or object
-            Payload variable to inspect. Non-variables have no inferred extent.
+            Payload variable to inspect; non-variables have no known extent.
         seen : set of str, optional
-            Recursion-path names and tuple-projection keys. The current name is
-            added in place; each reaching definition receives a separate copy.
+            Recursion-path names and tuple-projection keys. Add the current
+            name in place; give each reaching definition a separate copy.
 
         Returns
         -------
         int or None
-            The unique known integral extent, excluding booleans, or ``None`` if
-            none can be recovered. Positivity is validated elsewhere.
+            The unique known integral extent, excluding booleans, or ``None``
+            if none can be recovered. Positivity is validated elsewhere.
 
         Raises
         ------
         GroupRewriteError
-            Known extents disagree, or a dimension depends on literal unrolling.
+            Known extents conflict, or a dimension needs literal unrolling.
         ForceLiteralArg
             A constructor dimension needs literal argument specialization.
         """
@@ -1586,36 +1584,37 @@ class _GroupCallPlanner:
                 raise EscapingGroupDescriptorError(names)
 
     def run(self) -> bool:
-        """Plan public group operations and replace their descriptors in the IR.
+        """Plan group operations and replace their descriptors in the IR.
 
         First reject unsupported literal-unroll dependencies and identify
         assignments that construct ``ThreadHierarchy`` or groups, including
         ``group_by()`` calls and descriptor aliases or casts. These describe
         compile-time choices and are marked for removal once their uses have
-        been consumed. Ask each registered operation family to build replacement
-        statements, then check the remaining descriptor uses before replacing
-        any block bodies. Returning a descriptor or passing it to an unrelated
-        runtime call, for example, prevents its removal and raises an error.
+        been consumed. Ask each registered operation family to build
+        replacement statements, then check the remaining descriptor uses
+        before replacing any block bodies. Returning a descriptor or passing
+        it to an unrelated runtime call, for example, prevents its removal and
+        raises an error.
 
-        Accepted descriptor assignments and obsolete callable assignments become
-        ``None`` assignments, preserving their targets; public operations become
-        private provider calls carrying their lowering plans. This removes the
-        group markers so the same whole-function planner can proceed to
-        provider rewriting. Planning updates this instance's caches, dtype
-        facts, and replacement bookkeeping; block bodies change only after all
-        calls and descriptor uses pass.
+        Accepted descriptor assignments and obsolete callable assignments
+        become ``None`` assignments, preserving their targets; public
+        operations become private provider calls carrying their lowering
+        plans. This removes the group markers so the same whole-function
+        planner can proceed to provider rewriting. Planning updates this
+        instance's caches, dtype facts, and replacement bookkeeping; block
+        bodies change only after all calls and descriptor uses pass.
 
         Returns
         -------
         bool
-            ``True`` when block bodies were rewritten, including descriptor-only
-            cleanup. ``False`` when no descriptor, call, or callable needs
-            replacing. ``_resolve_groups`` forwards this result to
-            ``CoopWholeFunctionPlanner.run``: a true result triggers IR repair
-            before provider rewriting, which runs in either case. The outer
-            planner reports changes from either phase to Numba, which repairs
-            the final IR and proceeds to the next registered planner. This
-            boolean does not request another run of group planning.
+            ``True`` when block bodies were rewritten, including
+            descriptor-only cleanup. ``False`` when no descriptor, call, or
+            callable needs replacing. ``_resolve_groups`` forwards this result
+            to ``CoopWholeFunctionPlanner.run``: a true result triggers IR
+            repair before provider rewriting, which runs in either case. The
+            outer planner reports changes from either phase to Numba, which
+            repairs the final IR and proceeds to the next registered planner.
+            This boolean does not request another run of group planning.
 
         Raises
         ------
@@ -1674,10 +1673,11 @@ def has_group_markers(func_ir: ir.FunctionIR) -> bool:
 
     One recognized call anywhere in the function is enough: a group
     constructor such as ``this_block()``, ``ThreadHierarchy()``, a registered
-    public group operation such as ``load()`` or ``store()``, or ``group_by()``
-    on a recognized group descriptor. For ``group_by()``, trace the receiver
-    through aliases, casts, control-flow merges, and earlier subgroup calls
-    to distinguish group descriptors from unrelated objects with that method.
+    public group operation such as ``load()`` or ``store()``, or
+    ``group_by()`` on a recognized group descriptor. For ``group_by()``, trace
+    the receiver through aliases, casts, control-flow merges, and earlier
+    subgroup calls to distinguish group descriptors from unrelated objects
+    with that method.
 
     Inspect only the supplied IR. Calls inside device helpers become visible
     here after inlining; this scan does not visit their bodies. ``ThreadData``
@@ -1854,11 +1854,11 @@ class _GroupPlanning:
             function_name = planner.state.func_ir.func_id.func_qualname
             raise GroupRewriteError(
                 "cuda.coop.numba_mlir cooperative calls in device function "
-                f"{function_name!r} must be inlined into a kernel. Standalone "
-                "collective helpers and collectives inside standalone "
-                "callbacks "
-                "are unsupported; use inline='always' for a kernel helper or "
-                "move the cooperative calls into the kernel."
+                f"{function_name!r} must be inlined into a kernel. "
+                "Standalone primitive helpers and primitives inside "
+                "standalone callbacks are unsupported; use inline='always' "
+                "for a kernel helper or move the cooperative calls "
+                "into the kernel."
             )
         launch_config = require_launch_config(planner.state)
         return _GroupCallPlanner(planner.state, launch_config).run()
