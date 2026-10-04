@@ -162,6 +162,10 @@ std::string node_name(cudaGraphNode_t node)
   {
     return "adj_" + std::to_string(*static_cast<const int*>(p.kernelParams[4]));
   }
+  if (p.func == reinterpret_cast<const void*>(&fix_boundary_k))
+  {
+    return "fix_" + std::to_string(*static_cast<const int*>(p.kernelParams[2]));
+  }
   return "other";
 }
 
@@ -880,4 +884,31 @@ C2H_TEST("lane_scheduler: sharded adjacent difference in place: the halo is the 
   CHECK(jc.joins == 3); // fork a -> b, boundary b <- a (the split's ready point, after the save), join b -> a
   CAPTURE(allocs);
   CHECK(allocs == 2 * N); // per shard: the one-element halo slot and CUB's SubtractLeft scratch
+
+  // Captured: the halo slot's free (on the writer's lane a, when the split's
+  // state dies) must depend on the reader's kernel on lane b. The split joins
+  // its consumer lanes back into its lane before its values die, so the free
+  // node has the reader's fix kernel among its ancestors.
+  iota_k<<<f.grid, 256, 0, f.sa.get()>>>(f.a, f.n);
+  REQUIRE(cudaStreamSynchronize(f.sa.get()) == cudaSuccess);
+  cudaGraph_t g{};
+  REQUIRE(cudaStreamBeginCapture(f.sa.get(), cudaStreamCaptureModeThreadLocal) == cudaSuccess);
+  {
+    auto op = ex::connect(
+      ex::schedule(f.la) | ex::let_value([&] {
+        auto b = adjacent_difference_inplace(scale2(start(x), x, y), y, counting_mr{&allocs});
+        return ex::when_all(cuda::std::get<0>(::std::move(b.s)), cuda::std::get<1>(::std::move(b.s)))
+             | ex::continues_on(f.la);
+      }),
+      null_rcvr{});
+    ex::start(op);
+  } // the operation states die here: the splits join their consumers, then free
+  // Lane b's own tail (its slot's free, no consumer) is still unjoined: the
+  // pipeline-level "join every lane back to the origin" is not a primitive yet.
+  ::cuda::stream_ref{f.sa.get()}.wait(::cuda::stream_ref{f.sb.get()});
+  REQUIRE(cudaStreamEndCapture(f.sa.get(), &g) == cudaSuccess);
+  const auto edges = graph_edges(g);
+  CAPTURE(edges);
+  CHECK(edges.count("fix_1->other") >= 1); // a free depends on the reader's kernel
+  cudaGraphDestroy(g);
 }

@@ -155,9 +155,38 @@ struct get_lane_fork_t
 };
 _CCCL_GLOBAL_CONSTANT get_lane_fork_t get_lane_fork{};
 
-//! @brief Attribute of a `lane_split` sender: where the event recorded at the
-//! split's completion point lives. A `continues_on` whose upstream is a split
-//! consumer waits on that event instead of on the lane's tail.
+//! @brief What a `lane_split` shares with the join machinery: the event recorded
+//! at its completion point (the ready point), its lane, and the lanes that
+//! waited on the ready point (its consumers). Before the split's state -- and
+//! the values it holds -- dies, those lanes are joined back into the split's
+//! lane, so anything the values release (a scoped buffer's free) is ordered
+//! after every consumer, in eager runs and under capture alike.
+struct lane_split_handle
+{
+  cudaEvent_t ready{nullptr};
+  cudaStream_t lane{nullptr};
+  static constexpr int cap = 16;
+  cudaStream_t consumers[cap]{};
+  int n_consumers = 0;
+  void add_consumer(cudaStream_t s) noexcept
+  {
+    for (int i = 0; i < n_consumers; ++i)
+    {
+      if (consumers[i] == s)
+      {
+        return;
+      }
+    }
+    if (n_consumers < cap)
+    {
+      consumers[n_consumers++] = s;
+    }
+  }
+};
+
+//! @brief Attribute of a `lane_split` sender: its handle (ready point, lane,
+//! consumers). A `continues_on` whose upstream is a split consumer waits on the
+//! ready point instead of on the lane's tail, and registers as a consumer.
 struct get_lane_ready_t
 {
   _CCCL_TEMPLATE(class _Env)
@@ -180,17 +209,17 @@ struct stream_set
 {
   static constexpr int cap = 16;
   cudaStream_t s[cap]{};
-  cudaEvent_t* ready[cap]{};
+  lane_split_handle* split[cap]{};
   int n = 0;
-  void add(cudaStream_t x, cudaEvent_t* ev = nullptr)
+  void add(cudaStream_t x, lane_split_handle* h = nullptr)
   {
     for (int i = 0; i < n; ++i)
     {
       if (s[i] == x)
       {
-        if (ready[i] == nullptr)
+        if (split[i] == nullptr)
         {
-          ready[i] = ev;
+          split[i] = h;
         }
         return;
       }
@@ -198,7 +227,7 @@ struct stream_set
     if (n < cap)
     {
       s[n]     = x;
-      ready[n] = ev;
+      split[n] = h;
       ++n;
     }
   }
@@ -226,14 +255,17 @@ void join_into(const stream_set& from, cudaStream_t to, [[maybe_unused]] const E
     {
       continue;
     }
-    if (from.ready[i] != nullptr && *from.ready[i] != nullptr)
+    if (from.split[i] != nullptr && from.split[i]->ready != nullptr)
     {
       // The upstream recorded its completion point (a lane_split): depend on
-      // that, not on whatever the lane enqueued since.
-      if (auto st = cudaStreamWaitEvent(to, *from.ready[i], 0); st != cudaSuccess)
+      // that, not on whatever the lane enqueued since; and let the split know
+      // this lane consumed it, so that it is joined back before the split's
+      // values die.
+      if (auto st = cudaStreamWaitEvent(to, from.split[i]->ready, 0); st != cudaSuccess)
       {
         throw ::cuda::cuda_error(st, "lane_scheduler: cudaStreamWaitEvent on a split's ready point failed");
       }
+      from.split[i]->add_consumer(to);
     }
     else
     {
@@ -424,13 +456,13 @@ void collect(const Sndr& s, stream_set& out)
 {
   if constexpr (completes_on_lane<Sndr>)
   {
-    const auto attrs = execution::get_env(s);
-    cudaEvent_t* ev  = nullptr;
+    const auto attrs     = execution::get_env(s);
+    lane_split_handle* h = nullptr;
     if constexpr (__queryable_with<decltype(attrs), get_lane_ready_t>)
     {
-      ev = get_lane_ready(attrs);
+      h = get_lane_ready(attrs);
     }
-    out.add(execution::get_completion_scheduler<set_value_t>(attrs).stream(), ev);
+    out.add(execution::get_completion_scheduler<set_value_t>(attrs).stream(), h);
   }
   else if constexpr (structured_binding_size<Sndr> >= 2)
   {
@@ -822,8 +854,7 @@ struct split_t
   template <class Values>
   struct shared_base
   {
-    cudaEvent_t* ready_{nullptr}; // the slot lives in the control block
-    cudaStream_t lane_{nullptr};
+    lane_split_handle* handle_{nullptr}; // owned by the control block
     bool started_ = false;
     bool done_    = false;
     int kind_     = 0; // 1 value, 2 error, 3 stopped
@@ -845,11 +876,11 @@ struct split_t
       done_ = true;
       if (kind == 1)
       {
-        if (auto st = cudaEventCreateWithFlags(ready_, cudaEventDisableTiming); st != cudaSuccess)
+        if (auto st = cudaEventCreateWithFlags(&handle_->ready, cudaEventDisableTiming); st != cudaSuccess)
         {
           throw ::cuda::cuda_error(st, "lane_split: cudaEventCreateWithFlags failed");
         }
-        if (auto st = cudaEventRecord(*ready_, lane_); st != cudaSuccess)
+        if (auto st = cudaEventRecord(handle_->ready, handle_->lane); st != cudaSuccess)
         {
           throw ::cuda::cuda_error(st, "lane_split: cudaEventRecord failed");
         }
@@ -980,7 +1011,7 @@ struct split_t
   struct attrs_t
   {
     scheduler sch_;
-    cudaEvent_t* ready_;
+    lane_split_handle* handle_;
     [[nodiscard]] constexpr auto query(get_completion_behavior_t) const noexcept
     {
       return completion_behavior::synchronous;
@@ -997,9 +1028,9 @@ struct split_t
     {
       return ::cuda::stream_ref{sch_.stream()};
     }
-    [[nodiscard]] auto query(get_lane_ready_t) const noexcept -> cudaEvent_t*
+    [[nodiscard]] auto query(get_lane_ready_t) const noexcept -> lane_split_handle*
     {
-      return ready_;
+      return handle_;
     }
   };
 
@@ -1020,8 +1051,8 @@ struct split_t
     // `get_lane_ready` can hand out its address before anything is connected.
     struct control
     {
-      ::std::shared_ptr<shared_base<values_t>> impl_;
-      cudaEvent_t ready_{nullptr};
+      lane_split_handle handle_{};
+      ::std::shared_ptr<shared_base<values_t>> impl_; // declared after the handle: destroyed before it
       Sndr sndr_;
       scheduler sch_;
       // The child's lane: its completion scheduler when it reports one; else
@@ -1046,12 +1077,25 @@ struct split_t
       explicit control(Sndr s)
           : sndr_{static_cast<Sndr&&>(s)}
           , sch_{lane_of(sndr_)}
-      {}
+      {
+        handle_.lane = sch_.stream();
+      }
+      // Scope end. Every lane that consumed the ready point is joined back into
+      // the split's lane first; only then is the child's operation state (and
+      // whatever its values own) destroyed, by the members' destruction below.
       ~control()
       {
-        if (ready_)
+        for (int i = 0; i < handle_.n_consumers; ++i)
         {
-          cudaEventDestroy(ready_);
+          if (handle_.consumers[i] != handle_.lane)
+          {
+            ::cuda::stream_ref{handle_.lane}.wait(::cuda::stream_ref{handle_.consumers[i]});
+          }
+        }
+        impl_.reset(); // the child's operation state dies here, after the joins
+        if (handle_.ready)
+        {
+          cudaEventDestroy(handle_.ready);
         }
       }
     };
@@ -1088,16 +1132,15 @@ struct split_t
         using env_t = __fwd_env_t<env_of_t<Rcvr>>;
         auto impl   = ::std::make_shared<shared_impl<Sndr, values_t, env_t>>(
           static_cast<Sndr&&>(ctl_->sndr_), execution::__fwd_env(execution::get_env(r)));
-        impl->lane_  = ctl_->sch_.stream();
-        impl->ready_ = &ctl_->ready_;
-        ctl_->impl_  = impl;
+        impl->handle_ = &ctl_->handle_;
+        ctl_->impl_   = impl;
       }
       return {static_cast<Rcvr&&>(r), ctl_->impl_};
     }
     _CCCL_EXEC_CHECK_DISABLE
     [[nodiscard]] _CCCL_HOST_DEVICE auto get_env() const noexcept -> attrs_t<Sndr>
     {
-      return {ctl_->sch_, &ctl_->ready_};
+      return {ctl_->sch_, &ctl_->handle_};
     }
   };
 
