@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Plan independent reductions with results distributed across warp lanes.
+
+The operation records batch count and layout independently of group width.
+Planning binds that width and selects a CUB method. It tells the backend how
+many output slots and temporary-storage instances each group needs.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -35,6 +42,20 @@ from ._model import (
 
 @dataclass(frozen=True)
 class GroupReduceBatchedSemantics:
+    """Expose batched reduction semantics to the common group dispatcher.
+
+    Every member receives an array of result slots. The selected layout
+    assigns each batch aggregate to one slot in one member. A slot is invalid
+    if its assigned batch index is at least the batch count, even though
+    result visibility is per member.
+
+    Attributes
+    ----------
+    primitive : WarpReduceBatchedSemantics
+        Dtype, batch count, reduction operator, and output layout. The group
+        descriptor supplies the warp width separately during planning.
+    """
+
     primitive: WarpReduceBatchedSemantics
 
     def __post_init__(self) -> None:
@@ -59,6 +80,12 @@ class GroupReduceBatchedSemantics:
 
 
 def _call_classifications(operation):
+    """Keep payload data at runtime and choose operator and layout statically.
+
+    The dispatcher passes an operation record to every family. These argument
+    roles are the same for every batched reduction, so its value is unused.
+    """
+
     del operation
     return (
         ParameterClassification(
@@ -79,6 +106,35 @@ def _plan_reduce_batched(
     launch: LaunchFacts,
     operation: GroupReduceBatchedSemantics,
 ) -> GroupLoweringPlan:
+    """Bind a warp width and describe the output arrays a backend must create.
+
+    The shared dispatcher checks the group kind and resolves launch dimensions
+    before calling this planner. The CUB width check then restricts logical
+    warps to powers of two. Each member needs ``ceil(batches / width)`` result
+    slots, including any slots that have no corresponding batch.
+
+    Parameters
+    ----------
+    call : GroupPrimitiveCall
+        Original group and operation record, retained for diagnostics.
+    resolved : ThreadGroup
+        Physical or logical warp with dimensions resolved from the launch.
+    launch : LaunchFacts
+        Exact block dimensions used to count group instances and describe
+        participation and temporary-storage ownership.
+    operation : GroupReduceBatchedSemantics
+        Batch count, dtype, operator, and output layout to specialize.
+
+    Returns
+    -------
+    GroupLoweringPlan
+        CUB warp plan with one array result per member. Temporary storage is
+        implementation-owned, with one instance per group and a barrier over
+        that group's lanes before storage reuse. Its C++ layout is left to
+        backend materialization. An unsupported plan is returned if CUB
+        cannot use the group width.
+    """
+
     warp_width, error = _unsupported_cub_warp_width(call, resolved)
     if error is not None:
         return error

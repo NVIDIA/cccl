@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Build CUB batched-reduction providers and their operator descriptors.
+
+Built-in selectors become C++ functors. Qualified stateless callbacks become
+PythonOperator descriptors with matching input and result types. The adapter
+materializes these choices with warp scratch and retains the logical width
+and enclosing block shape needed by provider compilation.
+"""
+
 from __future__ import annotations
 
 from enum import Enum
@@ -38,6 +46,19 @@ _BUILTINS = {
 
 
 def reduction_operator(binary_op, dtype, *, is_common_root=False):
+    """Describe the built-in or qualified callback that combines lane values.
+
+    The common API accepts only string selectors or the default addition.
+    Normalize aliases and reject incompatible dtypes, such as floating
+    bitwise operations. A qualified custom callable becomes a PythonOperator
+    whose two inputs and result all depend on the same template type T.
+
+    Unwrap an outer device dispatcher to its function. Numba semantic tokens
+    retain captured dependencies, including nested device helpers, so distinct
+    operators receive distinct specializations. Associativity and
+    commutativity remain the caller's requirements.
+    """
+
     if (
         is_common_root
         and binary_op is not None
@@ -66,7 +87,21 @@ def reduce_batched(
     binary_op=None,
     output_layout="striped",
 ):
-    """Build one independent-batch reduction for each participating warp."""
+    """Build a native batched reduction for each participating warp.
+
+    Normalize the block shape, payload dtype, and operator, then request the
+    shared specialization for the selected width, batch count, and layout.
+    Materialization requests a C++ entry point that takes scratch as its first
+    pointer argument. Later provider emission also produces a variant that
+    declares one shared scratch instance per logical warp and ends with a
+    barrier over that warp's lanes. Add a C++ declaration for the dtype when
+    it has no built-in spelling. Input and output use the same dtype.
+
+    Keep the logical width and enclosing block shape on the invocable so
+    provider compilation can size and assign per-warp scratch correctly. The
+    shared specialization synchronizes the participating logical warp; other
+    logical groups need not enter the call.
+    """
 
     block_dim = normalize_dim_param(threads_per_block)
     dtype = _validate_common_numeric_dtype(dtype, operation="reduce_batched")
