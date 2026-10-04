@@ -1284,12 +1284,11 @@ struct cuckoo_cache_probe
           int bin,
           CounterT contribution)
   {
-    if (bin < 0)
-    {
-      return;
-    }
-
     const auto consume_one = [&](int selected_bin, CounterT selected_contribution) {
+      if (selected_bin < 0)
+      {
+        return;
+      }
       const bool should_spill = try_cache<CounterT, SpillOp, SpillCounterT>(
         probe_state, spill_state, spill_target, selected_bin, selected_contribution);
       if constexpr (SpillOp::defer_until_reconverged)
@@ -1307,7 +1306,7 @@ struct cuckoo_cache_probe
         NV_PROVIDES_SM_70,
         (const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
          const int leader         = __ffs(static_cast<int>(peers)) - 1;
-         if (static_cast<int>(lane_id) == leader) {
+         if (bin >= 0 && static_cast<int>(lane_id) == leader) {
            const CounterT coalesced_count = static_cast<CounterT>(__popc(peers));
            const bool should_spill =
              try_cache<CounterT, SpillOp, SpillCounterT>(probe_state, spill_state, spill_target, bin, coalesced_count);
