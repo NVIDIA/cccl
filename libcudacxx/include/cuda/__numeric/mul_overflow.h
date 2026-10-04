@@ -209,6 +209,11 @@ template <typename _Tp>
   return ::cuda::__mul_overflow_generic(__lhs, __rhs);
 }
 
+template <typename _Result, typename _Lhs, typename _Rhs>
+inline constexpr bool __is_mul_representable_v =
+  sizeof(_Result) > sizeof(_Lhs) && sizeof(_Result) > sizeof(_Rhs)
+  && (::cuda::std::is_unsigned_v<_Lhs> && ::cuda::std::is_unsigned_v<_Rhs> && ::cuda::std::is_unsigned_v<_Result>);
+
 /***********************************************************************************************************************
  * Public interface
  **********************************************************************************************************************/
@@ -253,21 +258,20 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
   using ::cuda::std::is_unsigned_v;
   using _CommonAll = ::cuda::std::common_type_t<_Common, _ActResult>;
 
-  // If we would check for is_same_v, we would get slow path for e. g. long and long long, even though they represent
-  // the same range.
-  constexpr auto __all_same_size = sizeof(_ActResult) == sizeof(_Lhs) && sizeof(_ActResult) == sizeof(_Rhs);
-  constexpr auto __all_same_sign =
-    is_signed_v<_ActResult> == is_signed_v<_Lhs> && is_signed_v<_ActResult> == is_signed_v<_Rhs>;
-  if constexpr (__all_same_size && __all_same_sign)
+  // shortcut for the case where inputs are representable with the max type
+  // perf:
+  //   - No change in SASS (https://godbolt.org/z/vGMYMYMzq)
+  if constexpr (__is_mul_representable_v<_ActResult, _Lhs, _Rhs>)
   {
-    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
-    {
-      NV_IF_TARGET(
-        NV_IS_HOST,
-        (return ::cuda::__mul_overflow_host(static_cast<_ActResult>(__lhs), static_cast<_ActResult>(__rhs));))
-    }
+    const auto __lhs1    = static_cast<_CommonAll>(__lhs);
+    const auto __rhs1    = static_cast<_CommonAll>(__rhs);
+    const auto __product = static_cast<_CommonAll>(__lhs1 * __rhs1);
+    return ::cuda::overflow_cast<_ActResult>(__product);
   }
-  return ::cuda::__mul_overflow_generic_impl<_ActResult>(__lhs, __rhs);
+  else
+  {
+    return ::cuda::__mul_overflow_generic_impl<_ActResult>(__lhs, __rhs);
+  }
 #endif // needs fallback
 }
 
