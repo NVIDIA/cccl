@@ -160,9 +160,9 @@ barriers automatically. See :ref:`exclusive scratch slices
 synchronization.
 
 Explicit descriptors control scratch for block transpose-family Load/Store.
-Warp operations use compiler-owned scratch. See
-:ref:`temporary storage <coop-temp-storage>` for the complete contract and
-shared-memory restrictions.
+Warp operations reject explicit descriptors. The compiler allocates any
+scratch required by CUB operations. See :ref:`temporary storage
+<coop-temp-storage>` for the complete contract and shared-memory restrictions.
 
 .. _coop-faq-installed-extra:
 
