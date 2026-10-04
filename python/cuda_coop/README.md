@@ -48,7 +48,7 @@ checking under CUDA 13. Linux host contracts cover Python 3.10 and 3.14.
 Windows checks build and import the universal wheel and verify its headers;
 they do not execute the compiler backend. Other combinations need separate
 runtime qualification. See the
-[validation scope](https://nvidia.github.io/cccl/unstable/python/coop.html#coop-numba-validation)
+[validation scope](https://nvidia.github.io/cccl/unstable/python/coop/developer_overview.html#coop-numba-validation)
 for tested platforms, coverage, and hardware requirements.
 
 With Numba-CUDA-MLIR 0.5.0 through 0.5.3, keep a compiled kernel's dispatcher
@@ -301,7 +301,7 @@ participant must still reach the collective.
 
 ## Temporary storage
 
-Block Load, Store, and Reduce accept an optional caller descriptor:
+Block Load, Store, Reduce, and Scan accept an optional caller descriptor:
 
 ```python
 storage = coop.TempStorage(
@@ -480,29 +480,29 @@ no algorithm selector.
 Sum is the default operation. `scan`, `exclusive_scan`, and `inclusive_scan`
 accept the same built-in string aliases as Reduce. The qualified API also
 recognizes the corresponding Python `operator` functions and NumPy ufuncs, and
-accepts stateless device callbacks. A non-sum exclusive scan requires an
-`initial_value` matching the payload dtype; ordinary Python literals are
-checked and converted in that context. Inclusive scans reject an initial
-value. The aggregate reports only the input reduction and does not include the
-exclusive initial value.
+accepts stateless device callbacks. Callbacks must be associative and return
+the input dtype. A non-sum exclusive scan requires an `initial_value` with
+the payload dtype. Ordinary Python literals are checked and converted in
+that context. Inclusive scans reject an initial value.
 
-The common root API intentionally exposes only the common surface above. The
-qualified API additionally accepts `aggregate_output`, an exact-dtype one-item
-`ThreadData` or local array populated with the group aggregate. Warp forms also
-accept `valid_items`, which selects the first N lanes by group rank and requires
-`1 <= N <= warp_width`; only those N result lanes are defined. The initial
-value and `valid_items` must be uniform across participating members. An
-out-of-range runtime `valid_items` value triggers a deterministic device trap
-before CUB's 32-bit parameter is formed, invalidating the current CUDA context.
+The qualified API also accepts `aggregate_output`, an exact-dtype one-item
+`ThreadData` or local array populated with the group aggregate on every
+member. Warp forms accept `valid_items`, which selects the first N lanes by
+group rank and requires `1 <= N <= warp_width`; only those N result lanes are
+defined. The aggregate excludes the exclusive initial value and any input
+lanes beyond `valid_items`. The initial value and `valid_items` must be
+uniform within the group. At runtime, an invalid `valid_items` count triggers
+a deterministic device trap before CUB's 32-bit parameter is formed. The trap
+invalidates the current CUDA context.
 
-All Scan providers use CUB temporary storage. Block calls may use implicit,
-caller-owned, or dynamic `TempStorage`. Compiler-owned storage and explicit
-descriptors with `auto_sync=True` append a block reuse barrier. Explicit
-descriptors default to `auto_sync=False`, so the caller must synchronize before
-reuse. Physical and
+All Scan providers use CUB temporary storage. Block calls use compiler-owned
+scratch or an explicit `TempStorage` descriptor. Backing may use static or
+dynamic shared memory. Compiler-owned scratch and explicit descriptors with
+`auto_sync=True` append a block reuse barrier. Explicit descriptors default to
+`auto_sync=False`, so the caller must synchronize before reuse. Physical and
 logical Warp calls use compiler-owned per-Warp storage and append `syncwarp`
-for the exact participating mask. Prefix callback and running-prefix state APIs
-are not part of this release.
+for the exact participating mask. Prefix callbacks and running-prefix state
+are unsupported.
 
 This common example loads a block tile, computes its exclusive sum, and
 stores the out-of-place result:

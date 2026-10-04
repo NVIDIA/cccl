@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Describe scalar CUB WarpScan calls for physical or logical warps.
+
+A valid-prefix binding chooses a partial-scan overload. The factory supplies
+an explicit plus operator and typed zero when that overload must implement
+an exclusive sum. Group planning supplies membership and scratch contracts.
+Runtime checks and code generation belong to the backend.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -52,12 +60,38 @@ def _plus_operator() -> CxxOperator:
 
 
 def _typed_zero() -> CxxFunction:
+    """Spell zero in the payload type for CUB's initial-value parameter.
+
+    The core requires a seed whose dtype is the payload type ``T``. Lowering
+    replaces ``{T}`` with the bound C++ type, so the generated call passes
+    ``T{0}`` instead of relying on implicit literal conversion.
+    """
+
     return CxxFunction("{T}{0}", Dependency("T"), name="initial_value")
 
 
 @dataclass(frozen=True)
 class WarpScanSpecialization:
-    """Fully specialized scalar CUB WarpScan call semantics."""
+    """Keep a bound scalar WarpScan call and its logical-width controls.
+
+    The provider describes one scalar per lane. Prefix bounds limit which
+    inputs contribute; they do not change the number of lanes in the
+    participating group.
+
+    Attributes
+    ----------
+    specialization : Algorithm
+        Bound CUB method, template arguments, parameters, and metadata.
+    call : ScanSemantics
+        Canonical operation, including any plus operator or zero inserted for
+        a seeded or partial sum.
+    threads_in_warp : int
+        Logical width: one of 1, 2, 4, 8, 16, or 32.
+    valid_items : ArgumentBinding
+        Omitted for a full scan, static for an embedded count, or runtime for
+        a count operand. Static counts are normalized and checked against the
+        logical width. Runtime counts must satisfy those bounds when used.
+    """
 
     specialization: Algorithm
     call: ScanSemantics
@@ -70,6 +104,11 @@ class WarpScanSpecialization:
 
     @property
     def has_valid_items(self) -> bool:
+        """Report whether the call uses a valid-prefix parameter.
+
+        A count equal to the logical width still selects the partial method.
+        """
+
         return self.valid_items.kind is not BindingKind.OMITTED
 
     @property
@@ -91,7 +130,59 @@ def make_warp_scan_specialization(
     valid_items: bool | ArgumentBinding = False,
     warp_aggregate: bool = False,
 ) -> WarpScanSpecialization:
-    """Build canonical scalar WarpScan semantics."""
+    """Bind a scalar scan and optional prefix count to a CUB WarpScan call.
+
+    Unseeded full-group sums use CUB's sum methods. A seed or valid-prefix
+    binding selects a general Scan method and inserts a plus operator when
+    none was supplied. A partial exclusive sum also receives a zero in the
+    payload dtype so its first valid output is defined.
+
+    Parameters
+    ----------
+    dtype : object
+        Input and output dtype, forwarded to ``make_scan_semantics``.
+    threads_in_warp : int
+        Logical width: one of 1, 2, 4, 8, 16, or 32. Booleans are rejected.
+    mode : str or WarpScanMode
+        ``"exclusive"`` or ``"inclusive"``.
+    scan_operator : CxxOperator or PythonOperator, optional
+        Static operator descriptor. ``None`` requests addition.
+    initial_value : CxxFunction or Reference, optional
+        Static expression or runtime scalar for an exclusive scan. Its dtype
+        must match the payload or refer to ``Dependency("T")``.
+    valid_items : bool or ArgumentBinding, optional
+        ``False`` omits the count; ``True`` requests a runtime count operand.
+        These booleans select an overload, not a numeric count. A static
+        binding embeds an integer in ``[1, threads_in_warp]``. A runtime
+        binding supplies the count at the call, uniformly across the group.
+        This builder rejects ``None`` and plain integer counts.
+    warp_aggregate : bool, optional
+        Request a scalar aggregate of the valid inputs for every lane.
+        The aggregate excludes the initial value.
+
+    Returns
+    -------
+    WarpScanSpecialization
+        Bound call with scratch first, then input and output references.
+        Any seed, operator, count, and aggregate follow in CUB order.
+        A runtime count uses a signed-i32 descriptor in the core signature.
+
+    Raises
+    ------
+    TypeError
+        A binding, static count type, operator, seed descriptor, or aggregate
+        flag is invalid. Boolean static count payloads are rejected.
+    ValueError
+        The width, mode, dtype, seed use, or static count range is invalid.
+
+    Notes
+    -----
+    The enclosing group must call the scan together, including lanes outside
+    the valid prefix. Only prefixes in the valid range have defined results.
+    This factory records runtime counts; it does not execute bounds checks.
+    An explicitly supplied custom exclusive operator without a seed retains
+    CUB's undefined first output. Group planning rejects that form.
+    """
 
     threads_in_warp = _validate_logical_warp_threads(threads_in_warp)
     mode = WarpScanMode(mode)

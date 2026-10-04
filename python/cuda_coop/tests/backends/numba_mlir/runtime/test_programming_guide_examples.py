@@ -23,6 +23,13 @@ pytestmark = [
 
 
 def test_first_kernel():
+    """Check independent block scans, including the final partial tile.
+
+    Loads fill the missing tail with zero so each block scans a full tile.
+    The store writes only valid elements. The host prefix restarts per tile
+    because the example does not propagate totals between blocks.
+    """
+
     # coop-pg-first-kernel-begin
     import numpy as np
     from numba_cuda_mlir import cuda
@@ -132,6 +139,13 @@ def test_row_scan():
 
 
 def test_exchange():
+    """Check that layout conversion restores the intended scan order.
+
+    Striped loads distribute adjacent elements across threads. Convert to
+    blocked ownership before scanning so each thread's consecutive items fit
+    the source array's prefix order.
+    """
+
     # coop-pg-exchange-begin
     @cuda.jit
     def scan_striped_input(source, destination, items_per_thread):
@@ -190,6 +204,12 @@ def test_warp_copy():
 
 
 def test_shared_scratch():
+    """Check automatic synchronization across three users of one scratch area.
+
+    The transpose load, scan, and transpose store reuse the descriptor. Their
+    storage-reuse barriers must protect each call's temporary data.
+    """
+
     # coop-pg-shared-scratch-begin
     @cuda.jit
     def scan_with_shared_scratch(source, destination, items_per_thread):

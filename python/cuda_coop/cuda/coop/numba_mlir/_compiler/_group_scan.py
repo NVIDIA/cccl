@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Plan group Scan calls and replace them with registered provider calls.
+
+The public Scan names share one planner. It resolves the mode, operator,
+payload shape, and optional outputs before asking the shared core to select
+a CUB implementation. The rewrite keeps runtime operands separate from the
+constants used to specialize that implementation. Family registration also
+connects these calls to Scan's payload and runtime-control checks.
+"""
+
 from __future__ import annotations
 
 import inspect
@@ -65,7 +74,12 @@ _PLAN_ROUTES = {
 
 
 class _ScanPlanning:
-    """Family-local Scan semantics over the declared planning context."""
+    """Translate one Scan call using the kernel's shared planning context.
+
+    The context supplies launch geometry and facts about Numba values. This
+    class adds Scan-specific constraints, such as scalar-only Warp inputs
+    and the initial value required by a non-sum exclusive scan.
+    """
 
     def __init__(self, context: GroupPlanningContext) -> None:
         self._context = context
@@ -75,6 +89,13 @@ class _ScanPlanning:
         operation: str,
         bound: inspect.BoundArguments,
     ) -> None:
+        """Check common mode and algorithm names before backend planning.
+
+        The common API accepts a smaller vocabulary than backend internals.
+        Replace the bound arguments with validated compile-time selectors so
+        both entry points can use the same subsequent planning code.
+        """
+
         if "mode" in bound.arguments:
             bound.arguments["mode"] = self._context.validate_common_selector(
                 operation,
@@ -98,6 +119,8 @@ class _ScanPlanning:
         operation: str,
         bound: inspect.BoundArguments,
     ) -> tuple[str, Any]:
+        """Resolve Scan and its fixed-mode aliases to a mode and operator."""
+
         if operation == "scan":
             return bound.arguments["mode"], bound.arguments["scan_op"]
         if operation == "exclusive_scan":
@@ -120,6 +143,14 @@ class _ScanPlanning:
         dtype: Any,
         is_common_root: bool,
     ) -> tuple[str, CxxOperator | PythonOperator | None]:
+        """Describe a built-in operator or a typed device callback.
+
+        A missing operator selects CUB's sum overload. Other built-ins use a
+        C++ functor; a callback records its identity and two-argument type
+        contract for later backend specialization. Common API calls accept
+        only string selectors, while qualified calls also accept callables.
+        """
+
         from .._lowering._scan import (
             normalize_scan_operation,
             validate_scan_operator_dtype,
@@ -162,11 +193,19 @@ class _ScanPlanning:
         dtype: Any,
         mode: str,
     ) -> tuple[ArgumentBinding, CxxFunction | Reference | None]:
+        """Separate an omitted, static, or runtime exclusive-scan seed.
+
+        Runtime seeds must already have the payload dtype. Static seeds are
+        converted under the scalar-literal rules and embedded in typed C++
+        expressions. Inclusive scans reject any seed because their first
+        output starts with the first input value.
+        """
+
         binding = self._context.planning_binding(value)
         if mode == "inclusive" and binding.kind is not BindingKind.OMITTED:
             raise ValueError(
-                "cuda.coop.numba_mlir inclusive "
-                "scans do not accept initial_value"
+                "cuda.coop.numba_mlir inclusive scans do not accept "
+                "initial_value"
             )
         if binding.kind is BindingKind.OMITTED:
             return binding, None
@@ -208,6 +247,13 @@ class _ScanPlanning:
         )
 
     def _aggregate_output(self, operation: str, value: Any, dtype: Any) -> bool:
+        """Check the optional one-item output for the input aggregate.
+
+        Infer its dtype from recorded writes when needed. If the dtype is
+        still unknown, leave that check to the later payload rewrite. The
+        returned flag selects an overload with a separate aggregate output.
+        """
+
         if self._context.is_none(value):
             return False
         if not self._context.is_array(operation, value):
@@ -241,10 +287,17 @@ class _ScanPlanning:
         plan: GroupLoweringPlan,
         descriptor: tuple[int | None, int | None, bool, str],
     ) -> GroupLoweringPlan:
+        """Apply an explicit block storage descriptor to a supported plan.
+
+        Preserve the primitive's storage requirement, but record the caller's
+        capacity, alignment, sharing, and reuse-barrier policy. Warp Scan
+        uses compiler-owned storage and rejects this descriptor.
+        """
+
         if plan.target is not GroupLoweringTarget.CUB_BLOCK:
             raise ValueError(
-                "cuda.coop.numba_mlir scan temp_storage "
-                "applies only to block groups"
+                "cuda.coop.numba_mlir scan temp_storage applies only to "
+                "block groups"
             )
         storage = plan.temp_storage
         synchronization = plan.synchronization
@@ -279,6 +332,14 @@ class _ScanPlanning:
         bound: inspect.BoundArguments,
         is_common_root: bool,
     ) -> tuple[GroupLoweringPlan, str, Any, ArgumentBinding, bool]:
+        """Resolve arguments into a supported shared-core Scan plan.
+
+        Infer the value dtype and item count, validate the operator and
+        optional operands, and select the primitive for the group and launch.
+        Return the plan plus operator, seed-binding, and payload facts needed
+        to assemble the provider call without repeating inference.
+        """
+
         mode, raw_scan_op = self._operation_options(operation, bound)
         from .._lowering._scan import _block_scan_algorithm, _scan_mode
 
@@ -305,8 +366,8 @@ class _ScanPlanning:
             )
         if group.kind in {"warp", "threads_within_warp"} and is_array:
             raise TypeError(
-                "cuda.coop.numba_mlir WarpScan "
-                "supports one scalar value per lane"
+                "cuda.coop.numba_mlir WarpScan supports one scalar value "
+                "per lane"
             )
         items_per_thread = 1
         if is_array:
@@ -348,8 +409,8 @@ class _ScanPlanning:
             and initial_binding.kind is BindingKind.OMITTED
         ):
             raise ValueError(
-                "cuda.coop.numba_mlir non-sum "
-                "exclusive scans require initial_value"
+                "cuda.coop.numba_mlir non-sum exclusive scans require "
+                "initial_value"
             )
         aggregate_raw = bound.arguments.get("aggregate_output")
         aggregate = self._aggregate_output(operation, aggregate_raw, dtype)
@@ -410,6 +471,13 @@ class _ScanPlanning:
 
     @staticmethod
     def _provider(plan: GroupLoweringPlan, *, is_array: bool) -> Any:
+        """Select the registered provider named by the plan's CUB provenance.
+
+        Block scalar and array inputs use different calling conventions.
+        Warp scans use the scalar ``warp_scan`` provider. Reject unknown
+        provenance instead of guessing from the public operation name.
+        """
+
         provenance = plan.provenance
         if provenance is None:
             raise GroupRewriteError(
@@ -436,6 +504,13 @@ class _ScanPlanning:
         binding: ArgumentBinding,
         value: Any,
     ) -> Any:
+        """Widen a runtime lane count to the provider's signed 64-bit input.
+
+        Earlier planning has restricted the integer dtype. The generated
+        wrapper checks the count against the group width before narrowing it
+        to CUB's integer parameter. Static and omitted bindings stay intact.
+        """
+
         if binding.kind is not BindingKind.RUNTIME:
             return binding
         scope = inst.target.scope
@@ -459,6 +534,8 @@ class _ScanPlanning:
 
     @staticmethod
     def _planned_argument(binding: ArgumentBinding, runtime_value: Any) -> Any:
+        """Keep static binding metadata or select the runtime IR value."""
+
         return runtime_value if binding.kind is BindingKind.RUNTIME else binding
 
     def _lower_scan(
@@ -470,6 +547,15 @@ class _ScanPlanning:
         bound: inspect.BoundArguments,
         is_common_root: bool,
     ) -> list[Any]:
+        """Build a provider call from the plan and optional operands.
+
+        Array scans allocate a fresh result payload and return that payload
+        through an alias; scalar scans use the provider's return value. Pass
+        seeds and lane counts (static bindings or runtime IR values),
+        aggregate outputs, and storage descriptors to the shared rewrite,
+        which orders runtime operands and accounts for storage.
+        """
+
         plan, operator_kind, scan_op, initial_binding, is_array = self._plan(
             operation=operation,
             group=group,
@@ -584,6 +670,8 @@ def _lower_registered_scan(
     *args: Any,
     **kwargs: Any,
 ) -> list[Any]:
+    """Adapt the family registry callback to this call's planning context."""
+
     return _ScanPlanning(context)._lower_scan(*args, **kwargs)
 
 
@@ -592,6 +680,8 @@ def _validate_registered_common_arguments(
     operation: str,
     bound: inspect.BoundArguments,
 ) -> None:
+    """Apply Scan's common-selector checks through the family registry."""
+
     _ScanPlanning(context)._validate_common_arguments(operation, bound)
 
 
