@@ -186,10 +186,10 @@ class ThreadHierarchy:
 
     Notes
     -----
-    Descriptors created in Python leave ``block_dim``, ``grid_dim``, and
-    ``cluster_dim`` as ``None``. Creating one does not resolve runtime ranks
-    or allocate device storage. Use group methods inside a kernel to query
-    the actual launch.
+    ``ThreadHierarchy()`` and ``current()`` leave ``block_dim``, ``grid_dim``,
+    and ``cluster_dim`` as ``None``. Creating one does not resolve runtime
+    ranks or allocate device storage. Use group methods inside a kernel to
+    query the actual launch.
     """
 
     # Planner fields: ``block_dim`` counts threads per block, ``cluster_dim``
@@ -1281,9 +1281,10 @@ def this_cluster() -> ThreadGroup:
 
 
 def this_grid() -> ThreadGroup:
-    """Describe the launch grid for hierarchy queries and primitive planning.
+    """Describe the launch grid for hierarchy queries.
 
-    Grid primitive lowering requires a cooperative launch; queries do not.
+    No primitive accepts a grid group, so operation planning rejects it.
+    Queries need exact grid dimensions but not a cooperative launch.
     """
 
     return make_thread_group("grid")
