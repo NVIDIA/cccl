@@ -4,8 +4,10 @@
 
 """Compile group queries and synchronization with fixed launch facts.
 
-These checks reach linked device code without launching a kernel. Separate
-runtime tests compare ranks, counts, and membership with host references.
+These checks reach linked device code without launching a kernel. Other cases
+check the launch bound inferred from the exact block size and its interaction
+with explicit launch_bounds and max_registers. Separate runtime tests compare
+ranks, counts, and membership with host references.
 """
 
 from types import SimpleNamespace
@@ -227,9 +229,17 @@ def test_thread_parent_warp_queries_compile_with_a_subwarp_block(
 def test_exact_launch_infers_bounds_without_overriding_user_options(
     monkeypatch, block, options, maximum
 ):
+    """Check generated bounds while preserving the user's resource options.
+
+    Equal-size blocks with different shapes must use the same thread count.
+    Explicit launch_bounds keep their value, and max_registers turns inference
+    off. PTX proves the bound reaches code generation. The dispatcher check
+    guards against carrying an inferred bound into later specializations.
+    """
     cuda = _production_compile_environment(monkeypatch)
     import cuda.coop.numba_mlir as coop
 
+    # Put the query in a helper so planning must find it after inlining.
     @cuda.jit(device=True)
     def rank():
         return coop.this_block().rank()
@@ -266,6 +276,11 @@ def test_exact_launch_infers_bounds_without_overriding_user_options(
 
 
 def test_launch_bounds_follow_each_exact_specialization(monkeypatch):
+    """Keep inferred bounds separate from exact launch specialization.
+
+    Two shapes contain 64 threads but still need different compiled results.
+    Neither may inherit the first 32-thread bound through dispatcher options.
+    """
     cuda = _production_compile_environment(monkeypatch)
     import cuda.coop.numba_mlir as coop
 
@@ -294,6 +309,7 @@ def test_launch_bounds_follow_each_exact_specialization(monkeypatch):
 
 
 def test_exact_launch_exceeding_explicit_bounds_is_attributable(monkeypatch):
+    """Report the block size when an explicit thread limit is too small."""
     cuda = _production_compile_environment(monkeypatch)
     import cuda.coop.numba_mlir as coop
     from cuda.coop.numba_mlir._compiler._group_planner import GroupRewriteError

@@ -6,9 +6,9 @@
 
 Cases cover scalar and per-thread array inputs, independent physical and
 logical warps, callbacks, and scratch-storage reuse. Separate outputs check
-that scans preserve their input. Invalid runtime bounds run in child
-processes so their deliberate device traps cannot damage the test worker's
-CUDA context.
+that scans preserve their input. Invalid runtime ``valid_items`` counts run
+in child processes so their deliberate device traps cannot damage the test
+worker's CUDA context.
 """
 
 from __future__ import annotations
@@ -245,8 +245,8 @@ def _local_array_numpy_scan(array_items_per_thread):
     """Capture a fixed local-array extent for the qualified NumPy operator.
 
     Local allocation needs a compile-time extent. The returned kernel records
-    prefixes, the unchanged input, and one aggregate per thread to check all
-    three results of the call.
+    prefixes, one aggregate per thread, and the input after the call, so the
+    test can check both outputs and that the input is preserved.
     """
 
     @cuda.jit
@@ -853,6 +853,14 @@ def test_invalid_runtime_valid_items_traps_in_an_isolated_process(
 
 @pytest.mark.parametrize("block", (1024, (32, 32), (16, 8, 8)))
 def test_large_int64_raking_scan_uses_exact_launch_bound(block):
+    """Launch a 1,024-thread int64 raking scan with an inferred launch bound.
+
+    Without the inferred bound, the kernel can use more registers per thread
+    than a 1,024-thread block permits, so the launch fails. All three shapes
+    have 1,024 threads and must compute the same flattened prefix sums.
+    Inferred bounds must stay out of the options saved on the dispatcher.
+    """
+
     @cuda.jit
     def kernel(source, output):
         thread = cuda.threadIdx.x + cuda.blockDim.x * (
