@@ -241,6 +241,11 @@ _rendering.register_bundle_renderer(
 def provider_reduce_batched(*, group, launch, value, op, output_layout):
     """Emit independent batch reductions into a fresh aligned payload.
 
+    The qualified ``reduce_batched`` entry point calls this during tracing.
+    Input slot i in every participating lane belongs to batch i. Reducing
+    those values yields one total per batch, distributed across lanes
+    according to output_layout.
+
     Resolve and convert initialized input items, register the planned wrapper,
     and allocate only the distributed output extent. The call passes scalar
     items and a result pointer. Preserve the input dtype and minimum alignment
@@ -248,6 +253,25 @@ def provider_reduce_batched(*, group, launch, value, op, output_layout):
 
     Restore queued session state if allocation or emission fails. Emitted IR
     and register allocations are outside that rollback.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        Complete physical or logical warp participating in every batch.
+    launch : LaunchFacts
+        Exact enclosing block dimensions used to check complete warps.
+    value : ThreadData
+        Initialized per-thread payload with one item for each batch.
+    op : str
+        Normalized built-in reduction operator.
+    output_layout : str
+        Blocked or striped placement of batch totals across lanes.
+
+    Returns
+    -------
+    ThreadData
+        Fresh payload with ceil(batch_count / warp_width) slots per lane.
+        Only slots assigned to an existing batch contain a defined result.
     """
 
     dtype, items = _types.resolve_thread_data_value_type(
