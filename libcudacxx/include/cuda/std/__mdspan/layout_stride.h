@@ -406,7 +406,7 @@ public:
   [[nodiscard]] _CCCL_API static constexpr auto
   __check_mapped_strides(const _StridedLayoutMapping& __other, index_sequence<_Pos...>) noexcept
   {
-    return ((static_cast<index_type>(__other.stride(_Pos)) > index_type{0}) && ... && true);
+    return ((__other.stride(_Pos) > 0) && ... && true);
   }
   template <class _StridedLayoutMapping>
   [[nodiscard]] _CCCL_API static constexpr auto
