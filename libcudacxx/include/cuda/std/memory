@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-// IWYU pragma: begin_keep
+// IWYU pragma: begin_exports
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/align.h>
 #include <cuda/std/__memory/assume_aligned.h>
@@ -37,6 +37,6 @@
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/compare>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-// IWYU pragma: end_keep
+// IWYU pragma: end_exports
 
 #endif // _CUDA_STD_MEMORY

@@ -24,7 +24,9 @@
 
 // clang-cuda only provides device flavors of operator new if we included <new>
 #if _CCCL_CUDA_COMPILER(CLANG)
-#  include <cuda/std/__host_stdlib/new> // IWYU pragma: keep
+// IWYU pragma: begin_exports
+#  include <cuda/std/__host_stdlib/new>
+// IWYU pragma: end_exports
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #endif // _CUDA_STD___NEW_DEVICE_NEW_H

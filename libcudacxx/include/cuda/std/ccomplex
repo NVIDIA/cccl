@@ -10,6 +10,8 @@
 #ifndef _CUDA_STD_CCOMPLEX
 #define _CUDA_STD_CCOMPLEX
 
-#include <cuda/std/complex> // IWYU pragma: keep
+// IWYU pragma: begin_exports
+#include <cuda/std/complex>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_STD_CCOMPLEX

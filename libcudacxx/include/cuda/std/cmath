@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-// IWYU pragma: begin_keep
+// IWYU pragma: begin_exports
 #include <cuda/std/__host_stdlib/math.h>
 
 #if _CCCL_COMPILER(NVHPC)
@@ -56,7 +56,7 @@
 #include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/__cstdlib/abs.h>
 #include <cuda/std/version>
-// IWYU pragma: end_keep
+// IWYU pragma: end_exports
 
 #if _CCCL_FREESTANDING()
 #  define INFINITY _CCCL_BUILTIN_HUGE_VALF()

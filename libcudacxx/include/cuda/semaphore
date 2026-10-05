@@ -25,9 +25,9 @@
 #  error "CUDA synchronization primitives are only supported for sm_70 and up."
 #endif // _CCCL_DEVICE_COMPILATION() && _CCCL_PTX_ARCH() < 700 && !_CCCL_CUDA_COMPILER(NVHPC)
 
-// IWYU pragma: begin_keep
+// IWYU pragma: begin_exports
 #include <cuda/__semaphore/counting_semaphore.h>
 #include <cuda/std/semaphore>
-// IWYU pragma: end_keep
+// IWYU pragma: end_exports
 
 #endif // _CUDA_SEMAPHORE

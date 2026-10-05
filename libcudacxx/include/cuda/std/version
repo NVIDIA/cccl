@@ -23,13 +23,13 @@
 
 // We need to define our own macros to not conflict with the host stl.
 // At the same time we want bring in all feature test macros from host
-// IWYU pragma: begin_keep
+// IWYU pragma: begin_exports
 #if __has_include(<version>) // <version> should be the smallest include possible
 #  include <version>
 #elif _CCCL_HOSTED()
 #  include <ciso646> // otherwise go for the smallest possible header
 #endif // _CCCL_HOSTED()
-// IWYU pragma: end_keep
+// IWYU pragma: end_exports
 
 #define __cccl_lib_bitops                       202607L
 #define __cccl_lib_bool_constant                201505L

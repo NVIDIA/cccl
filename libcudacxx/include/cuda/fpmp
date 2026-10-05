@@ -23,7 +23,7 @@
 
 // The whole fpmp interface arrives through this one header, math functions included.
 
-// IWYU pragma: begin_keep
+// IWYU pragma: begin_exports
 // Core types and operations: constructors, conversions, arithmetic and
 // comparison operators, sqrt, rsqrt, fma.
 #include <cuda/__fp/fpmp.h>
@@ -32,6 +32,6 @@
 // The math surface: exp, log, pow, the trigonometric and hyperbolic families,
 // the rounding and min/max families, and the classification predicates.
 #include <cuda/__fp/fpmp_math.h>
-// IWYU pragma: end_keep
+// IWYU pragma: end_exports
 
 #endif // _CUDA_FPMP

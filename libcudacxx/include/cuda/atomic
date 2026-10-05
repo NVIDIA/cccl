@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-// IWYU pragma: begin_keep
+// IWYU pragma: begin_exports
 #include <cuda/__atomic/atomic.h>
 #include <cuda/std/atomic>
-// IWYU pragma: end_keep
+// IWYU pragma: end_exports
 
 #endif // _CUDA_ATOMIC

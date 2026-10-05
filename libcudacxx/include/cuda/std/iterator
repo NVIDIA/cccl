@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-// IWYU pragma: begin_keep
+// IWYU pragma: begin_exports
 #include <cuda/std/__fwd/string.h>
 #include <cuda/std/__iterator/access.h>
 #include <cuda/std/__iterator/advance.h>
@@ -68,6 +68,6 @@
 #  include <cuda/std/detail/libcxx/include/compare>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #include <cuda/std/concepts>
-// IWYU pragma: end_keep
+// IWYU pragma: end_exports
 
 #endif // _CUDA_STD_ITERATOR

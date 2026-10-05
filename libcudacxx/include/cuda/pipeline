@@ -21,18 +21,31 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memcpy_async/check_preconditions.h> // IWYU pragma: keep
+#include <cuda/__barrier/async_contract_fulfillment.h>
 #include <cuda/__memcpy_async/completion_mechanism.h>
 #include <cuda/__memcpy_async/memcpy_async_barrier.h>
+#include <cuda/__memcpy_async/memcpy_completion.h>
 #include <cuda/__memory/aligned_size.h>
-#include <cuda/__ptx/instructions/get_sreg.h> // IWYU pragma: keep
-#include <cuda/atomic> // IWYU pragma: keep
-#include <cuda/barrier> // IWYU pragma: keep
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__bit/popcount.h> // IWYU pragma: keep
+#include <cuda/std/__atomic/order.h>
+#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__chrono/time_point.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/cstdint>
+
+#include <nv/target>
+
+// IWYU pragma: begin_keep
+#include <cuda/__memcpy_async/check_preconditions.h>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__bit/popcount.h>
+// IWYU pragma: end_keep
+
+// IWYU pragma: begin_exports
+#include <cuda/atomic>
+#include <cuda/barrier>
+// IWYU pragma: end_exports
 
 #include <cuda/std/__cccl/prologue.h>
 

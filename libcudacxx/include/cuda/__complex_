@@ -21,10 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-// IWYU pragma: begin_keep
+// IWYU pragma: begin_exports
 #include <cuda/__complex/complex.h>
 #include <cuda/std/complex>
 #include <cuda/version>
-// IWYU pragma: end_keep
+// IWYU pragma: end_exports
 
 #endif // _CUDA_COMPLEX

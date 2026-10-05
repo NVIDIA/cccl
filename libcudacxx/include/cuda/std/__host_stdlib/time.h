@@ -22,7 +22,9 @@
 #endif // no system header
 
 #if _CCCL_HOSTED()
-#  include <time.h> // IWYU pragma: export
+// IWYU pragma: begin_exports
+#  include <time.h>
+// IWYU pragma: end_exports
 
 // Standard C++ library comes with it's own <time.h> C++ compatible header. However, if the include paths are jumbled,
 // it might happen that the original C <time.h> is found first. This is a problem because C headers define many of the

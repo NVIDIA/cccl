@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/copy_n.h> // IWYU pragma: keep
+// IWYU pragma: begin_exports
+#include <cuda/std/__algorithm/copy_n.h>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_STD_ALGORITHM_ALGORITHM_COPY_N_H

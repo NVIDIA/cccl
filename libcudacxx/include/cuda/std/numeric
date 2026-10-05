@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-// IWYU pragma: begin_keep
+// IWYU pragma: begin_exports
 #include <cuda/std/__numeric/accumulate.h>
 #include <cuda/std/__numeric/adjacent_difference.h>
 #include <cuda/std/__numeric/exclusive_scan.h>
@@ -43,6 +43,6 @@
 
 // standard mandated include
 #include <cuda/std/version>
-// IWYU pragma: end_keep
+// IWYU pragma: end_exports
 
 #endif // _CUDA_STD_NUMERIC

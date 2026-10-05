@@ -21,10 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-// IWYU pragma: begin_keep
+// IWYU pragma: begin_exports
 #include <cuda/__container/buffer.h>
 #include <cuda/__container/heterogeneous_iterator.h>
 #include <cuda/__container/make_buffer_with_pool.h>
-// IWYU pragma: end_keep
+// IWYU pragma: end_exports
 
 #endif // _CUDA_BUFFER

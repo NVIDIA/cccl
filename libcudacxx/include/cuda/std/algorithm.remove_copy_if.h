@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/remove_copy_if.h> // IWYU pragma: keep
+// IWYU pragma: begin_exports
+#include <cuda/std/__algorithm/remove_copy_if.h>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_STD_ALGORITHM_ALGORITHM_REMOVE_COPY_IF_H

@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/unique_copy.h> // IWYU pragma: keep
+// IWYU pragma: begin_exports
+#include <cuda/std/__algorithm/unique_copy.h>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_STD_ALGORITHM_ALGORITHM_UNIQUE_COPY_H

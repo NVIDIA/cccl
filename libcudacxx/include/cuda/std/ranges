@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-// IWYU pragma: begin_keep
+// IWYU pragma: begin_exports
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/all.h>
 #include <cuda/std/__ranges/common_view.h>
@@ -66,6 +66,6 @@
 // [tuple.helper]
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
-// IWYU pragma: end_keep
+// IWYU pragma: end_exports
 
 #endif //_CUDA_STD_RANGES

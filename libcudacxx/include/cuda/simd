@@ -21,13 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-// IWYU pragma: begin_keep
+// IWYU pragma: begin_exports
 #include <cuda/__simd/abs_diff.h>
 #include <cuda/__simd/add_min_max.h>
 #include <cuda/__simd/dot.h>
 #include <cuda/__simd/min_max_relu.h>
 #include <cuda/__simd/saturating_add.h>
 #include <cuda/std/__simd_>
-// IWYU pragma: end_keep
+// IWYU pragma: end_exports
 
 #endif // _CUDA_SIMD

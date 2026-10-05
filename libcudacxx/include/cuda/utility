@@ -21,10 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-// IWYU pragma: begin_keep
+// IWYU pragma: begin_exports
 #include <cuda/__utility/in_range.h>
 #include <cuda/__utility/static_for.h>
 #include <cuda/std/utility>
-// IWYU pragma: end_keep
+// IWYU pragma: end_exports
 
 #endif // _CUDA_UTILITY

@@ -25,9 +25,12 @@
 
 // IWYU pragma: begin_keep
 #include <cuda/std/version>
+// IWYU pragma: end_keep
 
 #if _CCCL_HOSTED()
-#  include <cstdint> // IWYU pragma: export
+// IWYU pragma: begin_exports
+#  include <cstdint>
+// IWYU pragma: end_exports
 #elif _CCCL_COMPILER(NVRTC) || (_CCCL_HOSTJIT() && _CCCL_OS(WINDOWS))
 #  include <cuda/std/climits>
 
@@ -154,7 +157,6 @@ using uintmax_t = uint64_t;
 #  define INTMAX_C(X)  ((::intmax_t) (X))
 #  define UINTMAX_C(X) ((::uintmax_t) (X))
 #endif // _CCCL_COMPILER(NVRTC) || (_CCCL_HOSTJIT() && _CCCL_OS(WINDOWS))
-// IWYU pragma: end_keep
 
 #include <cuda/std/__cccl/prologue.h>
 

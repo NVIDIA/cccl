@@ -24,6 +24,8 @@
 #endif // no system header
 
 #if _CCCL_HOSTED()
-#  include <cassert> // IWYU pragma: keep
+// IWYU pragma: begin_exports
+#  include <cassert>
+// IWYU pragma: end_exports
 #endif // _CCCL_HOSTED()
 #endif // _CUDA_STD_CASSERT

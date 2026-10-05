@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-// IWYU pragma: begin_keep
+// IWYU pragma: begin_exports
 #include <cuda/__execution/policy.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__execution/policy.h>
@@ -89,6 +89,6 @@
 #endif // _CCCL_HAS_PSTL_BACKEND
 
 #include <cuda/std/version>
-// IWYU pragma: end_keep
+// IWYU pragma: end_exports
 
 #endif //_CUDA_STD_EXECUTION

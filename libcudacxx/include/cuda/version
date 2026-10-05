@@ -11,6 +11,8 @@
 #ifndef _CUDA_VERSION
 #define _CUDA_VERSION
 
-#include <cuda/std/version> // IWYU pragma: keep
+// IWYU pragma: begin_exports
+#include <cuda/std/version>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_VERSION

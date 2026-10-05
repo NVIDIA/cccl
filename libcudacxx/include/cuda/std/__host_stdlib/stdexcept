@@ -22,7 +22,9 @@
 #endif // no system header
 
 #if _CCCL_HOSTED()
-#  include <stdexcept> // IWYU pragma: export
+// IWYU pragma: begin_exports
+#  include <stdexcept>
+// IWYU pragma: end_exports
 #endif // _CCCL_HOSTED()
 
 #endif // _CUDA_STD___HOST_STDLIB_STDEXCEPT

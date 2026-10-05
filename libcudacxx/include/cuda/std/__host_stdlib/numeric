@@ -29,7 +29,9 @@
 
 #if _CCCL_HOSTED()
 #  define THRUST_INCLUDING_ALGORITHMS_HEADER
-#  include <numeric> // IWYU pragma: export
+// IWYU pragma: begin_exports
+#  include <numeric>
+// IWYU pragma: end_exports
 #  undef THRUST_INCLUDING_ALGORITHMS_HEADER
 #endif // _CCCL_HOSTED()
 

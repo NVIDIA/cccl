@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-// IWYU pragma: begin_keep
+// IWYU pragma: begin_exports
 #include <cuda/__device/all_devices.h>
 #include <cuda/__device/arch_id.h>
 #include <cuda/__device/arch_traits.h>
@@ -30,6 +30,6 @@
 #include <cuda/__device/device_ref.h>
 #include <cuda/__device/physical_device.h>
 #include <cuda/version>
-// IWYU pragma: end_keep
+// IWYU pragma: end_exports
 
 #endif // _CUDA_DEVICES
