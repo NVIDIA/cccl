@@ -199,44 +199,19 @@ inline void store_checked_host_offset(char* ptr, std::size_t bytes, const std::s
 }
 #endif // __cpp_aligned_new < 201606L
 
-enum class integrated_device_cache_state : unsigned char
-{
-  unknown,
-  discrete,
-  integrated,
-};
-
 [[nodiscard]] inline bool is_integrated_device(int device)
 {
-  constexpr int max_cached_devices                                            = 64;
-  static thread_local integrated_device_cache_state cache[max_cached_devices] = {};
+  assert_current_device(device);
 
-  const bool cacheable   = device >= 0 && device < max_cached_devices;
-  const auto cache_index = cacheable ? static_cast<std::size_t>(device) : std::size_t{};
-
-  if (cacheable)
-  {
-    const auto cached = cache[cache_index];
-    if (cached != integrated_device_cache_state::unknown)
+  static const bool result = [device] {
+    cudaDeviceProp prop{};
+    if (cudaGetDeviceProperties(&prop, device) != cudaSuccess)
     {
-      return cached == integrated_device_cache_state::integrated;
+      throw std::bad_alloc{};
     }
-  }
-
-  cudaDeviceProp prop{};
-  if (cudaGetDeviceProperties(&prop, device) != cudaSuccess)
-  {
-    throw std::bad_alloc{};
-  }
-
-  const bool integrated = prop.integrated != 0;
-  if (cacheable)
-  {
-    cache[cache_index] =
-      integrated ? integrated_device_cache_state::integrated : integrated_device_cache_state::discrete;
-  }
-
-  return integrated;
+    return prop.integrated != 0;
+  }();
+  return result;
 }
 
 [[nodiscard]] inline void* checked_host_allocate(int device, std::size_t bytes, std::size_t alignment)
@@ -250,7 +225,6 @@ enum class integrated_device_cache_state : unsigned char
 
   if (is_integrated_device(device))
   {
-    assert_current_device(device);
     const auto status = check_free_device_memory(allocation_size);
     if (status != cudaSuccess)
     {
