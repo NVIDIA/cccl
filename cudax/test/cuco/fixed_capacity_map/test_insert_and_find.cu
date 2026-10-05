@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/__cccl_config>
+#include <cuda/atomic>
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/functional>
@@ -27,8 +28,11 @@
 #include <cuda/std/utility>
 #include <cuda/stream>
 
+#include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
 #include <cuda/experimental/__cuco/fixed_capacity_map.cuh>
+#include <cuda/experimental/__cuco/fixed_capacity_map_ref.cuh>
+#include <cuda/experimental/__cuco/probing_scheme.cuh>
 
 #include <cooperative_groups.h>
 #include <testing.cuh>
@@ -100,7 +104,7 @@ struct matches_device_results
 };
 
 template <class Ref>
-__global__ void
+_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(Ref::cg_size) void
 device_insert_and_find_kernel(Ref ref, typename Ref::mapped_type* const found, ::cuda::std::int32_t* const inserted)
 {
   using value_type  = typename Ref::value_type;
@@ -115,12 +119,12 @@ device_insert_and_find_kernel(Ref ref, typename Ref::mapped_type* const found, :
     if (threadIdx.x == 0)
     {
       const auto [initial_found, initial_inserted] = ref.insert_and_find(initial_value);
-      found[0]                                     = initial_found->second;
-      inserted[0]                                  = initial_inserted;
+      found[0]    = initial_found == ref.end() ? ref.empty_value_sentinel() : initial_found->second;
+      inserted[0] = initial_inserted;
 
       const auto [duplicate_found, duplicate_inserted] = ref.insert_and_find(duplicate_value);
-      found[1]                                         = duplicate_found->second;
-      inserted[1]                                      = duplicate_inserted;
+      found[1]    = duplicate_found == ref.end() ? ref.empty_value_sentinel() : duplicate_found->second;
+      inserted[1] = duplicate_inserted;
     }
   }
   else
@@ -131,7 +135,7 @@ device_insert_and_find_kernel(Ref ref, typename Ref::mapped_type* const found, :
     const auto [initial_found, initial_inserted] = ref.insert_and_find(tile, initial_value);
     if (tile.thread_rank() == 0)
     {
-      found[0]    = initial_found->second;
+      found[0]    = initial_found == ref.end() ? ref.empty_value_sentinel() : initial_found->second;
       inserted[0] = initial_inserted;
     }
     tile.sync();
@@ -139,10 +143,77 @@ device_insert_and_find_kernel(Ref ref, typename Ref::mapped_type* const found, :
     const auto [duplicate_found, duplicate_inserted] = ref.insert_and_find(tile, duplicate_value);
     if (tile.thread_rank() == 0)
     {
-      found[1]    = duplicate_found->second;
+      found[1]    = duplicate_found == ref.end() ? ref.empty_value_sentinel() : duplicate_found->second;
       inserted[1] = duplicate_inserted;
     }
   }
+}
+
+struct constant_hash
+{
+  template <class Key>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API cuda::std::uint32_t operator()(Key) const noexcept
+  {
+    return 0;
+  }
+};
+
+C2H_TEST(
+  "fixed_capacity_map insert_and_find with a distinct erased sentinel", "[container][erased]", key_types, cg_sizes)
+{
+  using key_type            = c2h::get<0, TestType>;
+  using mapped_type         = cuda::std::int32_t;
+  constexpr int cg_size     = c2h::get<1, TestType>::value;
+  constexpr int bucket_size = 2;
+  using probing_type        = cudax::cuco::linear_probing<cg_size, constant_hash>;
+  constexpr auto capacity   = cudax::cuco::make_valid_capacity<probing_type, bucket_size>(8);
+  using ref_type            = cudax::cuco::fixed_capacity_map_ref<
+    key_type,
+    mapped_type,
+    cuda::thread_scope_device,
+    cuda::std::equal_to<key_type>,
+    probing_type,
+    bucket_size>;
+  using value_type = typename ref_type::value_type;
+
+  CAPTURE(sizeof(key_type), cg_size);
+  const cuda::stream stream{cuda::device_ref{0}};
+  auto mr           = cuda::device_default_memory_pool(stream.device());
+  const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream).with(cuda::mr::get_memory_resource, mr);
+  auto slots        = cuda::make_buffer<value_type>(stream, mr, capacity, value_type{-1, -1});
+  auto found        = cuda::make_buffer<mapped_type>(stream, mr, 2, 0);
+  auto inserted     = cuda::make_buffer<cuda::std::int32_t>(stream, mr, 2, 0);
+  const ref_type ref{
+    cudax::cuco::empty_key{key_type{-1}},
+    cudax::cuco::empty_value{mapped_type{-1}},
+    cudax::cuco::erased_key{key_type{-2}},
+    {},
+    {},
+    typename ref_type::storage_span_type{slots.data(), capacity}};
+  REQUIRE(ref.empty_key_sentinel() == key_type{-1});
+  REQUIRE(ref.erased_key_sentinel() == key_type{-2});
+
+  // Reusing slot zero distinguishes erased-slot handling from the no-erase path,
+  // which would skip the tombstone and insert into a later empty bucket.
+  constexpr value_type tombstone{key_type{-2}, mapped_type{-1}};
+  constexpr value_type collision{key_type{42}, mapped_type{23}};
+  cuda::std::fill(policy, slots.data(), slots.data() + 1, tombstone);
+  cuda::std::fill(policy, slots.data() + 1, slots.data() + 2, collision);
+  cuda::launch(
+    stream,
+    cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<cg_size>()),
+    device_insert_and_find_kernel<ref_type>,
+    ref,
+    found.data(),
+    inserted.data());
+  REQUIRE(cuda::std::all_of(
+    policy,
+    cuda::counting_iterator<cuda::std::int32_t>{0},
+    cuda::counting_iterator<cuda::std::int32_t>{2},
+    matches_device_results<mapped_type>{found.data(), inserted.data()}));
+  constexpr value_type inserted_value{key_type{0}, mapped_type{initial_payload_offset}};
+  REQUIRE(cuda::std::equal(policy, slots.data(), slots.data() + 1, cuda::constant_iterator{inserted_value}));
+  REQUIRE(cuda::std::equal(policy, slots.data() + 1, slots.data() + 2, cuda::constant_iterator{collision}));
 }
 
 C2H_TEST(

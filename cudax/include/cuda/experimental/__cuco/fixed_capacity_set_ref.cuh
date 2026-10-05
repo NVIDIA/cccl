@@ -208,7 +208,7 @@ public:
   template <class _Value>
   _CCCL_DEVICE_API bool insert(_Value __value) noexcept
   {
-    return __impl_.insert(__value);
+    return __impl_.template insert<false>(__value);
   }
 
   //! @brief Cooperatively inserts a key.
@@ -223,7 +223,7 @@ public:
   _CCCL_DEVICE_API bool
   insert(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _Value __value) noexcept
   {
-    return __impl_.insert(__group, __value);
+    return __impl_.template insert<false>(__group, __value);
   }
 
   //! @brief Checks whether a key is present using one thread.
