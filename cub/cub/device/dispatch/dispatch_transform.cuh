@@ -282,10 +282,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
   async_config config_value{};
   for (int i = 0; i < table->count; ++i)
   {
-    const int items_per_thread   = table->min_items_per_thread + i;
-    const int max_occupancy      = table->occupancy[i];
-    const int bytes_in_flight_SM = max_occupancy * threads_per_block * items_per_thread
-                                 * kernel_source.LoadedBytesPerIteration();
+    const int items_per_thread = table->min_items_per_thread + i;
+    const int max_occupancy    = table->occupancy[i];
+    const int bytes_in_flight_SM =
+      max_occupancy * threads_per_block * items_per_thread * kernel_source.LoadedBytesPerIteration();
     config_value = async_config{items_per_thread, max_occupancy, table->sm_count};
     if (min_bytes_in_flight <= bytes_in_flight_SM)
     {

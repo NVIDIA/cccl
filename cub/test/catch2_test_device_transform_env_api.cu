@@ -64,9 +64,7 @@ CUB_TEST("cub::DeviceTransform::Transform accepts a custom policy selector", "[t
   REQUIRE(d_output == expected);
 }
 
-CUB_TEST("cub::DeviceTransform::Transform accepts a runtime min_bytes_in_flight override",
-         "[transform][env]",
-         CUB_SMALL)
+CUB_TEST("cub::DeviceTransform::Transform accepts a runtime min_bytes_in_flight override", "[transform][env]", CUB_SMALL)
 {
   // example-begin transform-min-bytes-in-flight
   auto d_input  = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7};
@@ -107,8 +105,7 @@ struct recording_launcher_factory_t : cub::detail::TripleChevronFactory
     dim3 cluster_dim      = dim3{0, 0, 0}) const
   {
     NV_IF_TARGET(NV_IS_HOST, (last_grid_dim_x() = grid.x;));
-    return cub::detail::TripleChevronFactory::operator()(
-      grid, block, shared_mem, stream, dependent_launch, cluster_dim);
+    return cub::detail::TripleChevronFactory::operator()(grid, block, shared_mem, stream, dependent_launch, cluster_dim);
   }
 };
 
@@ -139,9 +136,7 @@ inline unsigned int grid_for_min_bytes_in_flight(int min_bytes_in_flight, cuda::
   return recording_launcher_factory_t::last_grid_dim_x();
 }
 
-CUB_TEST("cub::DeviceTransform min_bytes_in_flight override changes the tile size",
-         "[transform][env]",
-         CUB_SMALL)
+CUB_TEST("cub::DeviceTransform min_bytes_in_flight override changes the tile size", "[transform][env]", CUB_SMALL)
 {
   const cuda::std::int64_t n = cuda::std::int64_t{1} << 22;
 

@@ -74,7 +74,6 @@ template <class... _PolicySelectors>
   return ::cuda::std::execution::prop{__get_tuning_t{}, tuning_env{}};
 }
 
-
 //! Runtime override of the "minimum bytes in flight per SM" target that bandwidth-bound algorithms (currently
 //! cub::DeviceTransform) use to size their tiles. Unlike a policy selector passed to tune(), this is a plain
 //! runtime value: it does not instantiate a kernel per value, it only changes the host-side grid configuration.

@@ -179,8 +179,7 @@ struct DeviceTransform
       }
 
       const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get();
-      const int min_bytes_in_flight_override =
-        ::cuda::__call_or(::cuda::execution::__get_min_bytes_in_flight, 0, env);
+      const int min_bytes_in_flight_override = ::cuda::__call_or(::cuda::execution::__get_min_bytes_in_flight, 0, env);
 
       using tuning_env = ::cuda::std::execution::
         __query_result_or_t<Env, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
