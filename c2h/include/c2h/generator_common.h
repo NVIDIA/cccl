@@ -59,8 +59,8 @@ void gen_custom_type_state(
   ::cuda::stream_ref stream,
   seed_t seed,
   char* data,
-  custom_type_state_t min,
-  custom_type_state_t max,
+  const custom_type_state_t& min,
+  const custom_type_state_t& max,
   std::size_t elements,
   std::size_t element_size);
 
