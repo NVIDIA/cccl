@@ -657,6 +657,9 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(current_policy<PolicySelector>().t
   using vecT       = typename ::cuda::vector_type<T, V>::type;
   const T identity = ::cuda::identity_element<ReductionOpT, T>();
 
+  // Element phase of d_in within a 16-byte vector; d_in[j] is 16B-aligned iff (in_phase + j) % V == 0.
+  const int in_phase = static_cast<int>((reinterpret_cast<uintptr_t>(d_in) / sizeof(T)) & (V - 1));
+
   const int lane       = threadIdx.x & 31;
   const int warp_id    = (blockIdx.x * policy.threads_per_block + threadIdx.x) / 32;
   const int num_warps  = gridDim.x * (policy.threads_per_block / 32);
@@ -714,8 +717,8 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(current_policy<PolicySelector>().t
     // One thread fully processes each small or medium segment.
     if (owned_len > 0 && owned_len < policy.medium_segment_size)
     {
-      // Prologue: peel up to (V - 1) elements to reach 16B alignment.
-      const int prologue = ::cuda::std::min((-owned_begin) & (V - 1), owned_len);
+      // Prologue: peel up to (V - 1) elements until d_in + element is 16B-aligned.
+      const int prologue = ::cuda::std::min((-(in_phase + owned_begin)) & (V - 1), owned_len);
 #pragma unroll
       for (int k = 0; k < V - 1; k++)
       {
@@ -781,7 +784,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(current_policy<PolicySelector>().t
       T lane_partial       = identity;
 
       // Peel for alignment, now cooperatively.
-      const int prologue = ::cuda::std::min((-coop_begin) & (V - 1), coop_end - coop_begin);
+      const int prologue = ::cuda::std::min((-(in_phase + coop_begin)) & (V - 1), coop_end - coop_begin);
       if (lane < prologue)
       {
         lane_partial = reduction_op(lane_partial, d_in[coop_begin + lane]);
