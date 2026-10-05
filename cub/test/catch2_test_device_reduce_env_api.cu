@@ -702,6 +702,23 @@ CUB_TEST("cub::DeviceReduce::Sum queries both stream and resource from composed 
   REQUIRE(bytes_deallocated == bytes_allocated);
 }
 
+CUB_TEST("cub::DeviceReduce::Sum accepts a memory resource", "[reduce][env]", CUB_SMALL)
+{
+  auto input  = thrust::device_vector<int>{1, 2, 3, 4, 5};
+  auto output = thrust::device_vector<int>(1);
+
+  size_t bytes_allocated{};
+  size_t bytes_deallocated{};
+  auto mr = device_memory_resource{nullptr, &bytes_allocated, &bytes_deallocated};
+
+  const auto error = cub::DeviceReduce::Sum(input.begin(), output.begin(), static_cast<int>(input.size()), mr);
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output[0] == 15);
+  REQUIRE(bytes_allocated > 0);
+  REQUIRE(bytes_deallocated == bytes_allocated);
+}
+
 CUB_TEST("cub::DeviceReduce::Sum accepts a memory resource reference", "[reduce][env]", CUB_SMALL)
 {
   auto input  = thrust::device_vector<int>{1, 2, 3, 4, 5};

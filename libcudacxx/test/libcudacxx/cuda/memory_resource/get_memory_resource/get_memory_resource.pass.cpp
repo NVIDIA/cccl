@@ -88,7 +88,11 @@ static_assert(
   cuda::std::is_same_v<decltype(cuda::mr::get_memory_resource(cuda::std::declval<resource_ref&>())), resource_ref&>);
 static_assert(cuda::std::is_same_v<decltype(cuda::mr::get_memory_resource(cuda::std::declval<const resource_ref&>())),
                                    resource_ref>);
-static_assert(!cuda::std::is_invocable_v<cuda::mr::get_memory_resource_t, const derived_resource&>);
+static_assert(cuda::std::is_same_v<decltype(cuda::mr::get_memory_resource(cuda::std::declval<derived_resource&>())),
+                                   derived_resource&>);
+static_assert(
+  cuda::std::is_same_v<decltype(cuda::mr::get_memory_resource(cuda::std::declval<const derived_resource&>())),
+                       const derived_resource&>);
 
 TEST_HOST_DEVICE_FUNC void test()
 {

@@ -31,7 +31,6 @@
 #  include <cuda/std/__execution/env.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__type_traits/remove_cvref.h>
-#  include <cuda/std/__type_traits/remove_reference.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -53,8 +52,7 @@ _CCCL_CONCEPT __has_usable_advertised_resource_query = _CCCL_REQUIRES_EXPR((_Env
   requires(::cuda::std::execution::__detail::__advertises_query_v<_Env, get_memory_resource_t>),
   requires(::cuda::std::execution::__queryable_with<const _Env&, get_memory_resource_t>),
   requires(
-    resource<
-      ::cuda::std::remove_reference_t<::cuda::std::execution::__query_result_t<const _Env&, get_memory_resource_t>>>));
+    resource<::cuda::std::remove_cvref_t<::cuda::std::execution::__query_result_t<const _Env&, get_memory_resource_t>>>));
 
 template <class _Env>
 _CCCL_CONCEPT __has_query_get_memory_resource = _CCCL_REQUIRES_EXPR((_Env))(
