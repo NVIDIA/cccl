@@ -6,7 +6,8 @@
 from __future__ import annotations
 
 import weakref
-from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
@@ -28,67 +29,34 @@ def is_device_array(obj: object) -> bool:
 _DATA_POINTER_ACCESSOR_CACHE: dict[type, Callable[[DeviceArrayLike], int]] = {}
 
 # Stream handles are immutable for the lifetime of an object implementing the
-# __cuda_stream__ protocol. Keep a weak identity cache, plus a direct
-# most-recently-used entry so repeated calls on one stream avoid id() and dict
-# lookup overhead.
-_STREAM_HANDLE_CACHE: dict[int, tuple[weakref.ReferenceType[object], int, bool]] = {}
-_LAST_STREAM_HANDLE_CACHE: Optional[tuple[weakref.ReferenceType[object], int, bool]] = None
-
-
-def _get_cached_stream_handle(stream: object) -> Optional[int]:
-    global _LAST_STREAM_HANDLE_CACHE
-
-    # Repeated calls overwhelmingly reuse the same stream. Check the direct
-    # MRU entry before paying for id() and a dictionary lookup.
-    entry = _LAST_STREAM_HANDLE_CACHE
-    if entry is not None and entry[0]() is stream:
-        if entry[2] and stream.is_closed:
-            _STREAM_HANDLE_CACHE.pop(id(stream), None)
-            _LAST_STREAM_HANDLE_CACHE = None
-            return None
-        return entry[1]
-
-    stream_id = id(stream)
-    entry = _STREAM_HANDLE_CACHE.get(stream_id)
-    if entry is None or entry[0]() is not stream:
-        return None
-
-    if entry[2] and stream.is_closed:
-        _STREAM_HANDLE_CACHE.pop(stream_id, None)
-        return None
-
-    _LAST_STREAM_HANDLE_CACHE = entry
-    return entry[1]
+# __cuda_stream__ protocol. Keep only the most recently used stream by weak
+# identity: the common path repeatedly passes the same stream, and a one-entry
+# cache avoids the dict/id/weakref-callback overhead of a general cache.
+_LAST_STREAM_HANDLE_CACHE: tuple[weakref.ReferenceType[object], int, bool] | None = None
 
 
 def _cache_stream_handle(stream: object, handle: int) -> None:
     global _LAST_STREAM_HANDLE_CACHE
 
-    stream_id = id(stream)
-
-    def remove(dead_ref: weakref.ReferenceType[object]) -> None:
-        global _LAST_STREAM_HANDLE_CACHE
-        current = _STREAM_HANDLE_CACHE.get(stream_id)
-        if current is not None and current[0] is dead_ref:
-            _STREAM_HANDLE_CACHE.pop(stream_id, None)
-            if _LAST_STREAM_HANDLE_CACHE is current:
-                _LAST_STREAM_HANDLE_CACHE = None
-
     try:
-        stream_ref = weakref.ref(stream, remove)
+        stream_ref = weakref.ref(stream)
     except TypeError:
         # Some third-party protocol implementations cannot be weak-referenced.
         # Keep supporting them without caching rather than retaining them.
         return
 
-    # Determine this once when caching instead of paying for getattr() on every
-    # cache hit. This also preserves support for protocol objects that expose
-    # is_closed dynamically rather than as a type descriptor.
-    needs_closed_check = hasattr(stream, "is_closed")
+    try:
+        _ = cast(Any, stream).is_closed
+    except AttributeError:
+        needs_closed_check = False
+    except Exception:  # noqa: BLE001
+        # A third-party descriptor may raise while being probed. Do not let the
+        # optimization change successful __cuda_stream__ validation semantics.
+        return
+    else:
+        needs_closed_check = True
 
-    entry = (stream_ref, handle, needs_closed_check)
-    _STREAM_HANDLE_CACHE[stream_id] = entry
-    _LAST_STREAM_HANDLE_CACHE = entry
+    _LAST_STREAM_HANDLE_CACHE = (stream_ref, handle, needs_closed_check)
 
 
 def get_data_pointer(arr: DeviceArrayLike) -> int:
@@ -166,7 +134,7 @@ def get_dtype(arr: DeviceArrayLike | GpuStruct | np.ndarray) -> np.dtype:
         return np.dtype(typestr)
 
 
-def get_shape(arr: DeviceArrayLike) -> Tuple[int]:
+def get_shape(arr: DeviceArrayLike) -> tuple[int]:
     try:
         # TODO: this is a fast path for CuPy until
         # we have a more general solution.
@@ -265,11 +233,11 @@ def is_c_contiguous(arr: DeviceArrayLike) -> bool:
 
 
 def compute_c_contiguous_strides_in_bytes(
-    shape: Tuple[int], itemsize: int
-) -> Tuple[int, ...]:
+    shape: tuple[int], itemsize: int
+) -> tuple[int, ...]:
     """Return C-contiguous strides in bytes for a given shape and itemsize (compatible with NumPy .strides)."""
 
-    strides: List[int] = []
+    strides: list[int] = []
     acc = itemsize
 
     for dim in reversed(shape):
@@ -279,28 +247,30 @@ def compute_c_contiguous_strides_in_bytes(
     return tuple(strides)
 
 
-def validate_and_get_stream(stream) -> Optional[int]:
+def validate_and_get_stream(stream) -> int | None:
     global _LAST_STREAM_HANDLE_CACHE
 
     # null stream is allowed
     if stream is None:
         return None
 
-    # Hot path: repeated calls usually reuse the same stream. Keep this inline
-    # to avoid the cost of an extra Python function call before returning the
-    # already validated handle.
+    # Hot path: repeated calls overwhelmingly reuse the same stream object.
+    # If closed-state probing fails, drop the cache entry and preserve the
+    # original behavior by re-entering __cuda_stream__ validation.
     entry = _LAST_STREAM_HANDLE_CACHE
     if entry is not None and entry[0]() is stream:
-        if entry[2] and stream.is_closed:
-            stream_id = id(stream)
-            _STREAM_HANDLE_CACHE.pop(stream_id, None)
-            _LAST_STREAM_HANDLE_CACHE = None
+        if entry[2]:
+            try:
+                is_closed = cast(Any, stream).is_closed
+            except Exception:  # noqa: BLE001
+                _LAST_STREAM_HANDLE_CACHE = None
+            else:
+                if is_closed:
+                    _LAST_STREAM_HANDLE_CACHE = None
+                else:
+                    return entry[1]
         else:
             return entry[1]
-
-    cached_handle = _get_cached_stream_handle(stream)
-    if cached_handle is not None:
-        return cached_handle
 
     try:
         stream_property = stream.__cuda_stream__()

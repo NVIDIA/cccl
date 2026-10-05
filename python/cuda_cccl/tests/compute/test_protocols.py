@@ -54,7 +54,6 @@ def test_validate_and_get_stream_revalidates_closed_stream():
         protocols.validate_and_get_stream(stream)
 
     assert stream.calls == 2
-    assert id(stream) not in protocols._STREAM_HANDLE_CACHE
     assert protocols._LAST_STREAM_HANDLE_CACHE is None
 
 
@@ -73,24 +72,24 @@ def test_validate_and_get_stream_does_not_confuse_equal_objects():
     assert protocols.validate_and_get_stream(first) == 123
     assert protocols.validate_and_get_stream(second) == 456
     assert protocols.validate_and_get_stream(first) == 123
-    assert first.calls == 1
+    # The one-entry MRU is replaced by the intervening stream, so the first
+    # stream is revalidated rather than confused with the equal second object.
+    assert first.calls == 2
     assert second.calls == 1
 
 
 def test_stream_handle_cache_does_not_extend_stream_lifetime():
     stream = _CountingStream(123)
-    stream_id = id(stream)
     stream_ref = weakref.ref(stream)
 
     assert protocols.validate_and_get_stream(stream) == 123
-    assert stream_id in protocols._STREAM_HANDLE_CACHE
+    assert protocols._LAST_STREAM_HANDLE_CACHE is not None
 
     del stream
     gc.collect()
 
     assert stream_ref() is None
-    assert stream_id not in protocols._STREAM_HANDLE_CACHE
-    assert protocols._LAST_STREAM_HANDLE_CACHE is None
+    assert protocols._LAST_STREAM_HANDLE_CACHE[0]() is None
 
 
 def test_non_weakrefable_stream_remains_supported_without_caching():
@@ -105,6 +104,19 @@ def test_non_weakrefable_stream_remains_supported_without_caching():
             return (0, 123)
 
     stream = NonWeakrefableStream()
+
+    assert protocols.validate_and_get_stream(stream) == 123
+    assert protocols.validate_and_get_stream(stream) == 123
+    assert stream.calls == 2
+
+
+def test_is_closed_probe_error_falls_back_to_protocol_validation():
+    class ProbeErrorStream(_CountingStream):
+        @property
+        def is_closed(self):
+            raise RuntimeError("probe failed")
+
+    stream = ProbeErrorStream(123)
 
     assert protocols.validate_and_get_stream(stream) == 123
     assert protocols.validate_and_get_stream(stream) == 123
