@@ -202,6 +202,8 @@ int main(int, char**)
 
   // A copy-only function, and a function whose move may throw, can form a partial `views::transform`.
   {
+    int buff[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+
     CopyOnlyFn copy_only{10};
     static_assert(noexcept(cuda::std::views::transform(copy_only)));
     [[maybe_unused]] auto copy_only_partial = cuda::std::views::transform(copy_only);
