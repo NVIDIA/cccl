@@ -350,12 +350,13 @@ public:
   //!
   //! @brief Inserts an element.
   //!
+  //! @tparam _SupportsErase Whether insertion must recognize a distinct erased sentinel
   //! @tparam Value Input type which is convertible to '__value_type'
   //!
   //! @param __value The element to insert
   //!
   //! @return True if the given element is successfully inserted
-  template <class _Value>
+  template <bool _SupportsErase, class _Value>
   _CCCL_DEVICE_API bool insert(_Value __value) noexcept
   {
     static_assert(__cg_size == 1, "Non-CG operation is incompatible with the current probing scheme");
@@ -373,8 +374,8 @@ public:
 
       for (auto& __slot_content : __bucket_slots)
       {
-        const auto __eq_res =
-          __predicate.template operator()<detail::__is_insert::__yes>(__key, __extract_key(__slot_content));
+        const auto __eq_res = __predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(
+          __key, __extract_key(__slot_content));
 
         if constexpr (!__allows_duplicates)
         {
@@ -414,6 +415,7 @@ public:
   //!
   //! @brief Inserts an element.
   //!
+  //! @tparam _SupportsErase Whether insertion must recognize a distinct erased sentinel
   //! @tparam Value Input type which is convertible to '__value_type'
   //! @tparam ParentCG Type of parent Cooperative Group
   //!
@@ -421,7 +423,7 @@ public:
   //! @param __value The element to insert
   //!
   //! @return True if the given element is successfully inserted
-  template <class _Value, class _ParentCG>
+  template <bool _SupportsErase, class _Value, class _ParentCG>
   _CCCL_DEVICE_API bool
   insert(::cooperative_groups::thread_block_tile<__cg_size, _ParentCG> __group, _Value __value) noexcept
   {
@@ -435,7 +437,7 @@ public:
     {
       const auto __bucket_slots = __storage_ref[*__probing_iter];
 
-      const auto [__state, __intra_bucket_index] = __find_insert_slot(__key, __bucket_slots);
+      const auto [__state, __intra_bucket_index] = __find_insert_slot<_SupportsErase>(__key, __bucket_slots);
 
       if constexpr (!__allows_duplicates)
       {
@@ -491,12 +493,13 @@ public:
   //! If an equivalent key is already present, returns an iterator to the existing element and
   //! `false`. Otherwise, returns an iterator to the inserted element and `true`.
   //!
+  //! @tparam _SupportsErase Whether insertion must recognize a distinct erased sentinel
   //! @tparam _Value Input type convertible to `__value_type`
   //!
   //! @param[in] __value The element to insert
   //!
   //! @return The element's iterator and whether insertion succeeded
-  template <class _Value>
+  template <bool _SupportsErase, class _Value>
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::pair<__iterator, bool> insert_and_find(_Value __value) noexcept
   {
     static_assert(__cg_size == 1, "Non-CG operation is incompatible with the current probing scheme");
@@ -513,8 +516,9 @@ public:
 
       for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
       {
-        const auto __slot  = __bucket_slots[__i];
-        const auto __state = __predicate.template operator()<detail::__is_insert::__yes>(__key, __extract_key(__slot));
+        const auto __slot = __bucket_slots[__i];
+        const auto __state =
+          __predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(__key, __extract_key(__slot));
         auto* const __slot_ptr = __get_slot_ptr(*__probing_iter, __i);
 
         if (__state == detail::__equal_result::__equal)
@@ -548,6 +552,7 @@ public:
 
   //! @brief Cooperative-group variant of `insert_and_find`.
   //!
+  //! @tparam _SupportsErase Whether insertion must recognize a distinct erased sentinel
   //! @tparam _Value Input type convertible to `__value_type`
   //! @tparam _ParentCG Parent cooperative group type
   //!
@@ -555,7 +560,7 @@ public:
   //! @param[in] __value The element to insert
   //!
   //! @return The element's iterator and whether insertion succeeded
-  template <class _Value, class _ParentCG>
+  template <bool _SupportsErase, class _Value, class _ParentCG>
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::pair<__iterator, bool>
   insert_and_find(::cooperative_groups::thread_block_tile<__cg_size, _ParentCG> __group, _Value __value) noexcept
   {
@@ -573,8 +578,9 @@ public:
 
       for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
       {
-        const auto __slot  = __bucket_slots[__i];
-        const auto __state = __predicate.template operator()<detail::__is_insert::__yes>(__key, __extract_key(__slot));
+        const auto __slot = __bucket_slots[__i];
+        const auto __state =
+          __predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(__key, __extract_key(__slot));
 
         if (__state == detail::__equal_result::__available)
         {
@@ -941,22 +947,24 @@ public:
   //!
   //! @brief Scans a bucket for the first slot available for inserting @p __key.
   //!
-  //! Returns the intra-bucket index of the first empty slot, or of a slot already holding an equal
-  //! key when duplicates are disallowed; otherwise reports that the bucket must be skipped.
+  //! Returns the intra-bucket index of the first empty or supported erased slot, or of a slot
+  //! already holding an equal key when duplicates are disallowed; otherwise skips the bucket.
   //!
+  //! @tparam _SupportsErase Whether insertion must recognize a distinct erased sentinel
   //! @tparam _ProbeKey Type of the probe key
   //!
   //! @param __key The key being inserted
   //! @param __bucket_slots The bucket to scan
   //!
   //! @return The probing result for @p __bucket_slots
-  template <class _ProbeKey>
+  template <bool _SupportsErase, class _ProbeKey>
   [[nodiscard]] _CCCL_DEVICE_API __bucket_probing_results
   __find_insert_slot(const _ProbeKey& __key, __bucket_type __bucket_slots) const noexcept
   {
     for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
     {
-      switch (__predicate.template operator()<detail::__is_insert::__yes>(__key, __extract_key(__bucket_slots[__i])))
+      switch (__predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(
+        __key, __extract_key(__bucket_slots[__i])))
       {
         case detail::__equal_result::__available:
           return __bucket_probing_results{detail::__equal_result::__available, __i};
