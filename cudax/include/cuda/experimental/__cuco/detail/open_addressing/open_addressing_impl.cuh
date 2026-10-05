@@ -35,6 +35,7 @@
 #include <cuda/__iterator/transform_iterator.h>
 #include <cuda/__launch/configuration.h>
 #include <cuda/__launch/launch.h>
+#include <cuda/__memory_resource/allocation_alignment.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/__exception/exception_macros.h>
@@ -173,13 +174,18 @@ public:
     __size_type __capacity,
     __value_type __empty_slot_sentinel,
     const _KeyEqual& __pred,
-    const _ProbingScheme& __probing_scheme)
+    const _ProbingScheme& __probing_scheme,
+    __size_type __storage_alignment = alignof(__value_type))
       : __empty_slot_sentinel{__empty_slot_sentinel}
       , __erased_key_sentinel{__extract_key(__empty_slot_sentinel)}
       , __predicate{__pred}
       , __probing_scheme{__probing_scheme}
       , __memory_resource{__mr}
-      , __slots{__stream, __mr, __compute_num_buckets(__capacity) * _BucketSize, ::cuda::no_init}
+      , __slots{__stream,
+                __mr,
+                __compute_num_buckets(__capacity) * _BucketSize,
+                ::cuda::no_init,
+                ::cuda::std::execution::prop{::cuda::allocation_alignment, __storage_alignment}}
   {
     clear_async(__stream);
   }
@@ -193,13 +199,18 @@ public:
     double __desired_load_factor,
     __value_type __empty_slot_sentinel,
     const _KeyEqual& __pred,
-    const _ProbingScheme& __probing_scheme)
+    const _ProbingScheme& __probing_scheme,
+    __size_type __storage_alignment = alignof(__value_type))
       : __empty_slot_sentinel{__empty_slot_sentinel}
       , __erased_key_sentinel{__extract_key(__empty_slot_sentinel)}
       , __predicate{__pred}
       , __probing_scheme{__probing_scheme}
       , __memory_resource{__mr}
-      , __slots{__stream, __mr, __compute_num_buckets(__n, __desired_load_factor) * _BucketSize, ::cuda::no_init}
+      , __slots{__stream,
+                __mr,
+                __compute_num_buckets(__n, __desired_load_factor) * _BucketSize,
+                ::cuda::no_init,
+                ::cuda::std::execution::prop{::cuda::allocation_alignment, __storage_alignment}}
   {
     clear_async(__stream);
   }
