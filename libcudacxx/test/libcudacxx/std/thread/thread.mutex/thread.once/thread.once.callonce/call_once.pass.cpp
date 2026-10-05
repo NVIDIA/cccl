@@ -164,60 +164,63 @@ __global__ void call_once_kernel()
 }
 #endif // _CCCL_CUDA_COMPILATION()
 
-int main(int, char**)
+void test_host()
 {
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 {
-                   std::thread t0(f0);
-                   std::thread t1(f0);
-                   t0.join();
-                   t1.join();
-                   assert(init0_called == 1);
-}
+  {
+    std::thread t0(f0);
+    std::thread t1(f0);
+    t0.join();
+    t1.join();
+    assert(init0_called == 1);
+  }
 
-{
-  std::thread t0(f_args);
-  std::thread t1(f_args);
-  t0.join();
-  t1.join();
-  assert(InitArgs::called == 5);
-}
+  {
+    std::thread t0(f_args);
+    std::thread t1(f_args);
+    t0.join();
+    t1.join();
+    assert(InitArgs::called == 5);
+  }
 
 #if TEST_HAS_EXCEPTIONS()
-{
-  std::thread t0(f_exception);
-  std::thread t1(f_exception);
-  t0.join();
-  t1.join();
-  assert(exception_called == 2);
-  assert(exception_completed == 1);
-}
+  {
+    std::thread t0(f_exception);
+    std::thread t1(f_exception);
+    t0.join();
+    t1.join();
+    assert(exception_called == 2);
+    assert(exception_completed == 1);
+  }
 #endif // TEST_HAS_EXCEPTIONS()
 
-{
-  std::thread t0(f41);
-  std::thread t1(f42);
-  t0.join();
-  t1.join();
-  assert(init41_called == 1);
-  assert(init42_called == 1);
-}
+  {
+    std::thread t0(f41);
+    std::thread t1(f42);
+    t0.join();
+    t1.join();
+    assert(init41_called == 1);
+    assert(init42_called == 1);
+  }
 
 #if _CCCL_CUDA_COMPILATION()
-{
-  int zero = 0;
-  assert(cudaMemcpyToSymbol(device_calls, &zero, sizeof(zero)) == cudaSuccess);
-  call_once_kernel<<<1, 128>>>();
-  assert(cudaDeviceSynchronize() == cudaSuccess);
-  int calls = 0;
-  assert(cudaMemcpyFromSymbol(&calls, device_calls, sizeof(calls)) == cudaSuccess);
-  assert(calls == 1);
-  call_once_kernel<<<1, 128>>>();
-  assert(cudaDeviceSynchronize() == cudaSuccess);
-  assert(cudaMemcpyFromSymbol(&calls, device_calls, sizeof(calls)) == cudaSuccess);
-  assert(calls == 1);
-}
+  {
+    int zero = 0;
+    assert(cudaMemcpyToSymbol(device_calls, &zero, sizeof(zero)) == cudaSuccess);
+    call_once_kernel<<<1, 128>>>();
+    assert(cudaDeviceSynchronize() == cudaSuccess);
+    int calls = 0;
+    assert(cudaMemcpyFromSymbol(&calls, device_calls, sizeof(calls)) == cudaSuccess);
+    assert(calls == 1);
+    call_once_kernel<<<1, 128>>>();
+    assert(cudaDeviceSynchronize() == cudaSuccess);
+    assert(cudaMemcpyFromSymbol(&calls, device_calls, sizeof(calls)) == cudaSuccess);
+    assert(calls == 1);
+  }
 #endif // _CCCL_CUDA_COMPILATION()
-}))
+}
+
+int main(int, char**)
+{
+  NV_IF_TARGET(NV_IS_HOST, (test_host();))
   return 0;
 }

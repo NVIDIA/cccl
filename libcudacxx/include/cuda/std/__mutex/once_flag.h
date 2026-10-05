@@ -33,12 +33,15 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 // Unscoped so the enumerators convert to the unsigned state word the atomics load and store.
-enum __once_flag_state : unsigned int // NOLINT(cppcoreguidelines-use-enum-class)
+namespace __once_flag_state
+{
+enum : unsigned int // NOLINT(cppcoreguidelines-use-enum-class)
 {
   __unset    = 0,
   __pending  = 1,
   __complete = ~0u,
 };
+} // namespace __once_flag_state
 
 template <thread_scope _Sco = thread_scope::thread_scope_system>
 struct once_flag
@@ -51,7 +54,7 @@ struct once_flag
   static constexpr thread_scope _Scope = _Sco;
 
 private:
-  __once_flag_state __state_ = __once_flag_state::__unset;
+  unsigned int __state_ = __once_flag_state::__unset;
 
   // No exception specification here: nvcc's front end crashes in gen_exception_specification
   // when a friend function template inside this class carries a dependent noexcept.
@@ -60,15 +63,16 @@ private:
 };
 
 // Rolls the flag back to unset when the callable throws, so another thread can attempt the call.
+// The release store synchronizes with the next claim's acquire.
 template <thread_scope _Sco, class _Backend>
 struct __once_flag_clear
 {
-  __once_flag_state* __flag;
+  unsigned int* __flag;
 
   _CCCL_HOST_DEVICE_API void operator()() const noexcept
   {
     ::cuda::std::__cuda_atomic_store_dispatch(
-      _Backend{}, __flag, __once_flag_state::__unset, memory_order_relaxed, ::cuda::std::__scope_to_tag<_Sco>{});
+      _Backend{}, __flag, __once_flag_state::__unset, memory_order_release, ::cuda::std::__scope_to_tag<_Sco>{});
   }
 };
 
@@ -76,7 +80,7 @@ struct __once_flag_clear
 template <thread_scope _Sco, class _Backend, class _Fn, class... _Args>
 _CCCL_HOST_DEVICE_API void __call_once(once_flag<_Sco>& __flag, _Fn&& __fn, _Args&&... __args)
 {
-  __once_flag_state* __state = &__flag.__state_;
+  unsigned int* __state = &__flag.__state_;
   constexpr _Backend __backend{};
   constexpr ::cuda::std::__scope_to_tag<_Sco> __scope{};
   for (;;)
@@ -91,12 +95,12 @@ _CCCL_HOST_DEVICE_API void __call_once(once_flag<_Sco>& __flag, _Fn&& __fn, _Arg
       return;
     }
 
-    __once_flag_state __expected = __once_flag_state::__unset;
+    unsigned int __expected = __once_flag_state::__unset;
     if (::cuda::std::__cuda_atomic_compare_exchange_dispatch(
           __backend,
           __state,
           &__expected,
-          __pending,
+          __once_flag_state::__pending,
           ::cuda::std::__cuda_atomic_cas_strong{},
           memory_order_acq_rel,
           memory_order_acquire,
@@ -104,7 +108,8 @@ _CCCL_HOST_DEVICE_API void __call_once(once_flag<_Sco>& __flag, _Fn&& __fn, _Arg
     {
       auto __guard = ::cuda::std::__make_exception_guard(__once_flag_clear<_Sco, _Backend>{__state});
       ::cuda::std::__invoke(::cuda::std::forward<_Fn>(__fn), ::cuda::std::forward<_Args>(__args)...);
-      ::cuda::std::__cuda_atomic_store_dispatch(__backend, __state, __complete, memory_order_release, __scope);
+      ::cuda::std::__cuda_atomic_store_dispatch(
+        __backend, __state, __once_flag_state::__complete, memory_order_release, __scope);
       __guard.__complete();
       return;
     }
