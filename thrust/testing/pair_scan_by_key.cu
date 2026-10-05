@@ -57,7 +57,7 @@ struct TestPairScanByKey
     thrust::exclusive_scan_by_key(
       d_keys.begin(), d_keys.end(), d_pairs.begin(), d_pairs.begin(), init, ::cuda::std::equal_to<T>(), add_pairs());
 
-    ASSERT_EQUAL_QUIET(h_pairs, d_pairs);
+    REQUIRE((h_pairs == d_pairs));
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPairScanByKey,

@@ -178,9 +178,11 @@ template <cub::RadixRankAlgorithm RankAlgorithm,
           typename Key>
 void TestValid(cuda::std::true_type /*fits_smem_capacity*/)
 {
-  TestDriver<RankAlgorithm, ThreadsPerBlock, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(UNIFORM);
+  TestDriver<RankAlgorithm, ThreadsPerBlock, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(
+    GenMode::UNIFORM);
 
-  TestDriver<RankAlgorithm, ThreadsPerBlock, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(INTEGER_SEED);
+  TestDriver<RankAlgorithm, ThreadsPerBlock, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(
+    GenMode::INTEGER_SEED);
 }
 
 template <cub::RadixRankAlgorithm RankAlgorithm,

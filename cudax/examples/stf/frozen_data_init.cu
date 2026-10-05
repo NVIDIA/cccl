@@ -26,7 +26,7 @@ int main()
   /* Create a piece of data that can be use many times without further synchronizations */
   auto buffer = ctx.logical_data(shape_of<slice<double, 2>>(128, 64)).set_symbol("buffer");
   ctx.parallel_for(buffer.shape(), buffer.write())->*[] __device__(size_t i, size_t j, auto b) {
-    b(i, j) = sin(-1.0 * i) + cos(2.0 * j);
+    b(i, j) = sin(-1.0 * static_cast<double>(i)) + cos(2.0 * static_cast<double>(j));
   };
 
   auto frozen_buffer = ctx.freeze(buffer);

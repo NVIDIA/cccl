@@ -185,7 +185,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
     }
     const size_t size  = argument_pack_size(0, args...);
     void* param_buffer = cudaGetParameterBuffer(64, size);
-    fill_arguments((char*) param_buffer, 0, args...);
+    fill_arguments(static_cast<char*>(param_buffer), 0, args...);
     return launch_device(k, param_buffer);
   }
 

@@ -11,7 +11,7 @@
 // the host compiler.
 // UNSUPPORTED: nvcc && (nvhpc || clang || msvc)
 
-// nvrtc is unsupported.
+// This test requires kernel launch from host.
 // UNSUPPORTED: nvrtc
 
 // constant_wrapper

@@ -23,6 +23,7 @@ static constexpr int N = 48;
 // dst: (48):(1)
 TEST_CASE("copy d2d vectorize 48:1", "[copy][d2d][vectorize][1d]")
 {
+  using cuda::std::layout_right;
   test_copy<layout_right>(make_iota<int>(N), N);
 }
 
@@ -34,6 +35,7 @@ TEST_CASE("copy d2d vectorize 48:1", "[copy][d2d][vectorize][1d]")
 // dst: (6,8):(8,1)
 TEST_CASE("copy d2d vectorize (6,8):(8,1)", "[copy][d2d][vectorize][2d]")
 {
+  using cuda::std::layout_right;
   test_copy<layout_right>(make_iota<int>(N), 6, 8);
 }
 
@@ -41,6 +43,7 @@ TEST_CASE("copy d2d vectorize (6,8):(8,1)", "[copy][d2d][vectorize][2d]")
 // dst: (8,6):(1,8)
 TEST_CASE("copy d2d vectorize (8,6):(1,8)", "[copy][d2d][vectorize][2d]")
 {
+  using cuda::std::layout_left;
   test_copy<layout_left>(make_iota<int>(N), 8, 6);
 }
 
@@ -48,6 +51,7 @@ TEST_CASE("copy d2d vectorize (8,6):(1,8)", "[copy][d2d][vectorize][2d]")
 // dst: (6,8):(1,6)
 TEST_CASE("copy d2d vectorize (6,8):(1,6)", "[copy][d2d][vectorize][2d]")
 {
+  using cuda::std::layout_left;
   test_copy<layout_left>(make_iota<int>(N), 6, 8);
 }
 
@@ -55,6 +59,7 @@ TEST_CASE("copy d2d vectorize (6,8):(1,6)", "[copy][d2d][vectorize][2d]")
 // dst: (8,6):(6,1)
 TEST_CASE("copy d2d vectorize (8,6):(6,1)", "[copy][d2d][vectorize][2d]")
 {
+  using cuda::std::layout_right;
   test_copy<layout_right>(make_iota<int>(N), 8, 6);
 }
 
@@ -66,6 +71,7 @@ TEST_CASE("copy d2d vectorize (8,6):(6,1)", "[copy][d2d][vectorize][2d]")
 // dst: (3,16):(1,3)
 TEST_CASE("copy d2d vectorize (3,16):(1,3)", "[copy][d2d][vectorize][2d]")
 {
+  using cuda::std::layout_left;
   test_copy<layout_left>(make_iota<int>(N), 3, 16);
 }
 
@@ -73,6 +79,7 @@ TEST_CASE("copy d2d vectorize (3,16):(1,3)", "[copy][d2d][vectorize][2d]")
 // dst: (3,16):(16,1)
 TEST_CASE("copy d2d vectorize (3,16):(16,1)", "[copy][d2d][vectorize][2d]")
 {
+  using cuda::std::layout_right;
   test_copy<layout_right>(make_iota<int>(N), 3, 16);
 }
 
@@ -80,6 +87,7 @@ TEST_CASE("copy d2d vectorize (3,16):(16,1)", "[copy][d2d][vectorize][2d]")
 // dst: (16,3):(1,16)
 TEST_CASE("copy d2d vectorize (16,3):(1,16)", "[copy][d2d][vectorize][2d]")
 {
+  using cuda::std::layout_left;
   test_copy<layout_left>(make_iota<int>(N), 16, 3);
 }
 
@@ -87,5 +95,6 @@ TEST_CASE("copy d2d vectorize (16,3):(1,16)", "[copy][d2d][vectorize][2d]")
 // dst: (16,3):(3,1)
 TEST_CASE("copy d2d vectorize (16,3):(3,1)", "[copy][d2d][vectorize][2d]")
 {
+  using cuda::std::layout_right;
   test_copy<layout_right>(make_iota<int>(N), 16, 3);
 }

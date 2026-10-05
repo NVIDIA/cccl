@@ -7,11 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Find a way to make this work for nvrtc.
-// nvrtc doesn't allow accessing the static constexpr const auto& value member.
-// UNSUPPORTED: nvrtc
-
-// todo(dabayer): It seems that msvc has problems picking up the consteval invoke path. Investigate.
+// todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
+//   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
+//   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
 
 // constant_wrapper
 
@@ -92,6 +90,11 @@ struct S
 
 [[maybe_unused]] constexpr S s_value{};
 
+TEST_FUNC constexpr int read_member(const S* obj)
+{
+  return obj->member;
+}
+
 // Let call-expr be constant_wrapper<INVOKE (value, remove_cvref_t<Args>::value...)>{} if all types
 // in remove_cvref_t<Args>... satisfy constexpr-param and constant_wrapper<INVOKE (value, remove_-
 // cvref_t<Args>::value...)> is a valid type, otherwise let call-expr be INVOKE (value,
@@ -101,27 +104,24 @@ struct S
 // Remarks: The exception specification is equivalent to noexcept(call-expr).
 
 // clang-format off
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 constexpr auto get_42_lambda = []() { return 42; };
 static_assert(cuda::std::is_invocable_v<cuda::std::__constant_wrapper<get_42_lambda>>);
 static_assert(!cuda::std::is_invocable_v<cuda::std::__constant_wrapper<get_42_lambda>, int>);
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 static_assert(!cuda::std::is_invocable_v<cuda::std::__constant_wrapper<5>>);
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 static_assert(!cuda::std::is_invocable_v<cuda::std::__constant_wrapper<cuda::std::plus<>{}>, int>);
 static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<cuda::std::plus<>{}>, int, int>);
 
 // nvcc < 13.1 and gcc < 14 think this is not a constant expression.
-#if !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_COMPILER(GCC, <, 14)
+// msvc call probe works with nvcc 12.9+.
+#if (!TEST_CUDA_COMPILER(NVCC, <, 13, 1) || (TEST_COMPILER(MSVC) && TEST_CUDA_COMPILER(NVCC, >=, 12, 9))) && !TEST_COMPILER(GCC, <, 14)
 static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<cuda::std::plus<>{}>, cuda::std::__constant_wrapper<42>, int>);
-#endif // !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_COMPILER(GCC, <, 14)
-// todo(dabayer): This is failing when compiling with msvc with:
-//   'cuda::std::__4::operator +': call to immediate function is not a constant expression
-#if !_CCCL_COMPILER(MSVC)
+#endif // supported mixed runtime and constexpr arguments
 static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<cuda::std::plus<>{}>, cuda::std::__constant_wrapper<42>, cuda::std::__constant_wrapper<42>>);
-#endif // !_CCCL_COMPILER(MSVC)
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 // gcc < 13 fails this test with error:
 //   'nothrow_call'/'throwing_call' is not a valid template argument of type 'int (*)(int) noexcept' because it is not
@@ -149,7 +149,7 @@ struct MustBeInt
 struct Poison
 {
   template <class T>
-  constexpr auto operator()(T) const noexcept -> MustBeInt<T>
+  TEST_FUNC constexpr auto operator()(T) const noexcept -> MustBeInt<T>
   {
     return {};
   }
@@ -163,7 +163,7 @@ struct Poison
 
 TEST_FUNC constexpr bool test()
 {
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   {
     // with runtime param
@@ -172,30 +172,26 @@ TEST_FUNC constexpr bool test()
     assert(result == 3);
   }
 
-  // nvcc < 13.1 and gcc < 14 think the call doesn't produce a constant expression.
-#  if !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_COMPILER(GCC, <, 14)
+  // The MSVC call probe supports this with NVCC 12.9 and later.
+#  if (!TEST_CUDA_COMPILER(NVCC, <, 13, 1) || (TEST_COMPILER(MSVC) && TEST_CUDA_COMPILER(NVCC, >=, 12, 9))) \
+    && !TEST_COMPILER(GCC, <, 14)
   {
     // with runtime param and constexpr param
     using T                                       = cuda::std::__constant_wrapper<cuda::std::plus<>{}>;
     cuda::std::same_as<int> decltype(auto) result = TEST_CALL(T, cuda::std::__cw<1>, 2);
     assert(result == 3);
   }
-#  endif // !_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && !_CCCL_COMPILER(GCC, <, 14)
+#  endif // supported mixed runtime and constexpr arguments
 
   {
-    // msvc believes this is not a constant expression.
-#  if !_CCCL_COMPILER(MSVC)
     // with only constexpr param
     using T = cuda::std::__constant_wrapper<cuda::std::plus<>{}>;
     cuda::std::same_as<cuda::std::__constant_wrapper<3>> decltype(auto) result =
       TEST_CALL(T, cuda::std::__cw<1>, cuda::std::__cw<2>);
     static_assert(result == 3);
-#  endif // !_CCCL_COMPILER(MSVC)
   }
 
   {
-    // todo(dabayer): This is failing with msvc.
-#  if !_CCCL_COMPILER(MSVC)
     // nullary
     constexpr auto lambda = [] {
       return 42;
@@ -203,7 +199,6 @@ TEST_FUNC constexpr bool test()
     using T                                                                     = cuda::std::__constant_wrapper<lambda>;
     cuda::std::same_as<cuda::std::__constant_wrapper<42>> decltype(auto) result = TEST_CALL(T, );
     static_assert(result == 42);
-#  endif // !_CCCL_COMPILER(MSVC)
   }
 
   {
@@ -241,7 +236,7 @@ TEST_FUNC constexpr bool test()
     assert(result.get() == 6);
   }
 
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 #if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   {
@@ -252,8 +247,6 @@ TEST_FUNC constexpr bool test()
     assert(result);
   }
 
-  // This fails with old msvc.
-#  if !TEST_COMPILER(MSVC, <, 19, 30)
   {
     // function pointer with constexpr param
     using T                                = cuda::std::__constant_wrapper<fun_ptr>;
@@ -261,7 +254,6 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<true>, decltype(result)>);
     static_assert(result);
   }
-#  endif // !TEST_COMPILER(MSVC, <, 19, 30)
 
   {
     // member ptr with runtime param
@@ -273,8 +265,8 @@ TEST_FUNC constexpr bool test()
     assert(&result == &s1.member);
   }
 
-  // todo: Try to make this work with nvcc
-#  if !_CCCL_CUDA_COMPILER(NVCC)
+  // NVCC cannot select the constexpr data-member pointer path in C++17 device code.
+#  if TEST_STD_VER >= 2020 || !TEST_CUDA_COMPILER(NVCC)
   {
     // member ptr with constexpr param
     using T               = cuda::std::__constant_wrapper<&S::member>;
@@ -282,7 +274,7 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<42>, decltype(result)>);
     static_assert(result == 42);
   }
-#  endif // !_CCCL_CUDA_COMPILER(NVCC)
+#  endif // TEST_STD_VER >= 2020 || !TEST_CUDA_COMPILER(NVCC)
 
   {
     // member function ptr with runtime param
@@ -294,20 +286,25 @@ TEST_FUNC constexpr bool test()
   }
 
   {
-    // todo(dabayer): This is failing with msvc.
-#  if !_CCCL_COMPILER(MSVC)
     // member function ptr with constexpr param
     using T               = cuda::std::__constant_wrapper<&S::mem_fun>;
     decltype(auto) result = TEST_CALL(T, cuda::std::__cw<&s_value>, cuda::std::__cw<8>);
     static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<50>, decltype(result)>);
     static_assert(result == 50);
-#  endif // !_CCCL_COMPILER(MSVC)
   }
 
-#  if TEST_STD_VER >= 2020
   {
-    // nvcc < 13.2 fails to compile this test
-#    if !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
+    // A pointer constexpr param also selects the constant path for a free function.
+    using T               = cuda::std::__constant_wrapper<read_member>;
+    decltype(auto) result = TEST_CALL(T, cuda::std::__cw<&s_value>);
+    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<42>, decltype(result)>);
+    static_assert(result == 42);
+  }
+
+#  if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
+  {
+    // The MSVC call probe supports this with NVCC 12.9 and later.
+#    if !TEST_CUDA_COMPILER(NVCC, <, 13, 2) || (TEST_COMPILER(MSVC) && TEST_CUDA_COMPILER(NVCC, >=, 12, 9))
     // overload set
     // will always unwrap the constexpr params and call the non-constexpr overload
     using T                                        = cuda::std::__constant_wrapper<OverloadSet{}>;
@@ -315,12 +312,12 @@ TEST_FUNC constexpr bool test()
     assert(result1 == 1);
     cuda::std::same_as<cuda::std::__constant_wrapper<1>> decltype(auto) result2 = TEST_CALL(T, cuda::std::__cw<42>);
     static_assert(result2 == 1);
-#    endif // !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
+#    endif // supported constexpr overload-set invocation
   }
-#  endif // TEST_STD_VER >= 2020
+#  endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 #endif // !_CCCL_TILE_COMPILATION()
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   {
     // return non-structural type
@@ -357,27 +354,21 @@ TEST_FUNC constexpr bool test()
   }
 
   {
-// todo(dabayer): This is failing with msvc.
-#  if !_CCCL_COMPILER(MSVC)
     // with integral_constant, will still call the constexpr path
     using T = cuda::std::__constant_wrapper<cuda::std::plus<>{}>;
     cuda::std::integral_constant<int, 1> ic1;
     cuda::std::integral_constant<int, 2> ic2;
     cuda::std::same_as<cuda::std::__constant_wrapper<3>> decltype(auto) result = TEST_CALL(T, ic1, ic2);
     static_assert(result == 3);
-#  endif // !_CCCL_COMPILER(MSVC)
   }
 
   {
-// todo(dabayer): This is failing with msvc.
-#  if !_CCCL_COMPILER(MSVC)
     using T = cuda::std::__constant_wrapper<Poison{}>;
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<MustBeInt<int>{}>> decltype(auto) result =
       TEST_CALL(T, cuda::std::__cw<5>);
-#  endif // !_CCCL_COMPILER(MSVC)
   }
 
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   return true;
 }

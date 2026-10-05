@@ -71,7 +71,7 @@ static bool cuda_malloc_host_reports_memory_type(cudaMemoryType type)
     return false;
   }
 
-  cudaPointerAttributes attributes;
+  cudaPointerAttributes attributes{};
   status                        = cudaPointerGetAttributes(&attributes, cuda_malloc_host_ptr);
   const cudaError_t free_status = cudaFreeHost(cuda_malloc_host_ptr);
   CHECK(free_status == cudaSuccess);
@@ -82,7 +82,7 @@ static bool cuda_malloc_host_reports_memory_type(cudaMemoryType type)
 static void ensure_pinned_ptr(void* ptr)
 {
   CHECK(ptr != nullptr);
-  cudaPointerAttributes attributes;
+  cudaPointerAttributes attributes{};
   const cudaError_t status = cudaPointerGetAttributes(&attributes, ptr);
   CHECK(status == cudaSuccess);
   if (attributes.type != cudaMemoryTypeHost)

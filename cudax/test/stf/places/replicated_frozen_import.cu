@@ -117,7 +117,9 @@ int main()
       gc_opt.emplace(8, 0);
     }
     catch (...)
-    {}
+    {
+      gc_opt.reset(); // green contexts unavailable: the guarded test below is skipped
+    }
     if (gc_opt && gc_opt->get_count() >= 2)
     {
       auto& gc = *gc_opt;

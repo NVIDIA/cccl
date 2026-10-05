@@ -53,7 +53,7 @@ int main()
   auto handle_X = ctx.logical_data(make_slice(&X[0], n));
   auto handle_Y = ctx.logical_data(make_slice(&Y[0], n));
 
-  auto where = make_locality_domain_grid(dev);
+  auto where = exec_place::locality_domains(dev);
   EXPECT(where.size() == ndomains);
 
   for (int iter = 0; iter < NITER; iter++)

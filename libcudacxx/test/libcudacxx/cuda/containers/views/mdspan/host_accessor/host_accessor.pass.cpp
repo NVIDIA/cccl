@@ -22,8 +22,12 @@ bool host_accessor_test()
   assert(cudaMallocHost(&h_ptr, 4) == cudaSuccess);
   cuda::host_mdspan<int, ext_t> h_md{array, ext_t{}};
   cuda::host_mdspan<int, ext_t> h_md2{h_ptr, ext_t{}};
+  using empty_ext_t = cuda::std::dextents<int, 2>;
+  cuda::host_mdspan<int, empty_ext_t> empty_md{nullptr, empty_ext_t{0, 3}};
   unused(h_md);
   unused(h_md2);
+  assert(empty_md.size() == 0);
+  assert(empty_md.data_handle() == nullptr);
   return true;
 }
 

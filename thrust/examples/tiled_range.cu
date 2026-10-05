@@ -59,7 +59,7 @@ public:
     return begin() + tiles * (last - first);
   }
 
-protected:
+private:
   Iterator first;
   Iterator last;
   difference_type tiles;

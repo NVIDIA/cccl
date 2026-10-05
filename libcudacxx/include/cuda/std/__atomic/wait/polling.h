@@ -47,7 +47,7 @@ struct __atomic_poll_tester
 
   _CCCL_HOST_DEVICE_API bool operator()() const
   {
-    return !(__atomic_load_dispatch(__atom, __order, _Sco{}) == __val);
+    return !(::cuda::std::__atomic_load_dispatch(__atom, __order, _Sco{}) == __val);
   }
 };
 

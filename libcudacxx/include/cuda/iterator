@@ -21,19 +21,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__iterator/constant_iterator.h>
-#include <cuda/__iterator/counting_iterator.h>
-#include <cuda/__iterator/discard_iterator.h>
-#include <cuda/__iterator/permutation_iterator.h>
-#include <cuda/__iterator/shuffle_iterator.h>
-#include <cuda/__iterator/strided_iterator.h>
-#include <cuda/__iterator/tabulate_output_iterator.h>
-#include <cuda/__iterator/transform_input_output_iterator.h>
-#include <cuda/__iterator/transform_iterator.h>
-#include <cuda/__iterator/transform_output_iterator.h>
-#include <cuda/__iterator/zip_function.h>
-#include <cuda/__iterator/zip_iterator.h>
-#include <cuda/__iterator/zip_transform_iterator.h>
-#include <cuda/std/iterator>
+#include <cuda/__iterator/constant_iterator.h> // IWYU pragma: export
+#include <cuda/__iterator/counting_iterator.h> // IWYU pragma: export
+#include <cuda/__iterator/discard_iterator.h> // IWYU pragma: export
+#include <cuda/__iterator/permutation_iterator.h> // IWYU pragma: export
+#include <cuda/__iterator/shuffle_iterator.h> // IWYU pragma: export
+#include <cuda/__iterator/strided_iterator.h> // IWYU pragma: export
+#include <cuda/__iterator/tabulate_output_iterator.h> // IWYU pragma: export
+#include <cuda/__iterator/transform_input_output_iterator.h> // IWYU pragma: export
+#include <cuda/__iterator/transform_iterator.h> // IWYU pragma: export
+#include <cuda/__iterator/transform_output_iterator.h> // IWYU pragma: export
+#include <cuda/__iterator/zip_function.h> // IWYU pragma: export
+#include <cuda/__iterator/zip_iterator.h> // IWYU pragma: export
+#include <cuda/__iterator/zip_transform_iterator.h> // IWYU pragma: export
+#include <cuda/std/iterator> // IWYU pragma: export
 
 #endif // _CUDA_ITERATOR

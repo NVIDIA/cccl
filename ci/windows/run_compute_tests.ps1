@@ -26,8 +26,6 @@ Import-Module "$PSScriptRoot/build_common_python.psm1"
 
 Assert-MinimalEnvironment
 
-Install-MsvcRuntime
-
 $python = Get-Python -Version $PyVersion
 $cudaMajor = Get-CudaMajor
 $ctkFlavor = Get-CtkExtraFlavor $CtkMode

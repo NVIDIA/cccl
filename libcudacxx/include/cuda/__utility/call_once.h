@@ -23,7 +23,6 @@
 
 #include <cuda/std/__host_stdlib/mutex>
 #include <cuda/std/__utility/forward.h>
-#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 

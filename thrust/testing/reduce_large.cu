@@ -3,7 +3,7 @@
 #include <unittest/unittest.h>
 
 template <typename T, unsigned int N>
-void _TestReduceWithLargeTypes()
+void test_reduce_with_large_types()
 {
   const size_t n = (64 * 1024) / sizeof(FixedVector<T, N>);
 
@@ -19,20 +19,19 @@ void _TestReduceWithLargeTypes()
   const FixedVector<T, N> h_result = thrust::reduce(h_data.begin(), h_data.end(), FixedVector<T, N>(T{0}));
   const FixedVector<T, N> d_result = thrust::reduce(d_data.begin(), d_data.end(), FixedVector<T, N>(T{0}));
 
-  ASSERT_EQUAL_QUIET(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 
-void TestReduceWithLargeTypes()
+TEST_CASE("TestReduceWithLargeTypes", "[reduce_large]")
 {
-  _TestReduceWithLargeTypes<int, 4>();
-  _TestReduceWithLargeTypes<int, 8>();
-  _TestReduceWithLargeTypes<int, 16>();
+  test_reduce_with_large_types<int, 4>();
+  test_reduce_with_large_types<int, 8>();
+  test_reduce_with_large_types<int, 16>();
 
   // XXX these take too long to compile
-  //  _TestReduceWithLargeTypes<int,   32>();
-  //  _TestReduceWithLargeTypes<int,   64>();
-  //  _TestReduceWithLargeTypes<int,  128>();
-  //  _TestReduceWithLargeTypes<int,  256>();
-  //  _TestReduceWithLargeTypes<int,  512>();
+  //  test_reduce_with_large_types<int,   32>();
+  //  test_reduce_with_large_types<int,   64>();
+  //  test_reduce_with_large_types<int,  128>();
+  //  test_reduce_with_large_types<int,  256>();
+  //  test_reduce_with_large_types<int,  512>();
 }
-DECLARE_UNITTEST(TestReduceWithLargeTypes);

@@ -150,6 +150,7 @@ int main(int, char**)
   test_volatile<float, cuda::std::atomic_ref<volatile float>>();
   test_volatile<int, cuda::atomic_ref<volatile int, cuda::thread_scope_system>>();
   test_volatile<int, cuda::atomic_ref<volatile int, cuda::thread_scope_device>>();
+  test_volatile<int, cuda::atomic_ref<volatile int, cuda::thread_scope_cluster>>();
   test_volatile<int, cuda::atomic_ref<volatile int, cuda::thread_scope_block>>();
 
 #if _CCCL_HAS_INT128()

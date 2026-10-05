@@ -17,43 +17,49 @@
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
 
-#include "../alloc_first.h"
-#include "../alloc_last.h"
+#include "../alloc_constexpr_types.h"
 #include "allocators.h"
 #include "test_macros.h"
 
+TEST_FUNC constexpr bool test()
+{
+  A1<int> alloc{5};
+  {
+    cuda::std::pair<long, int> p{2, 3};
+    cuda::std::tuple<long long, double> t(cuda::std::allocator_arg, alloc, p);
+    assert(cuda::std::get<0>(t) == 2);
+    assert(cuda::std::get<1>(t) == 3);
+  }
+  {
+    cuda::std::pair<int, int> p{3, 4};
+    cuda::std::tuple<constexpr_alloc_arg, constexpr_alloc_arg> t(cuda::std::allocator_arg, alloc, p);
+    assert(cuda::std::get<0>(t).value == 3);
+    assert(cuda::std::get<1>(t).value == 4);
+  }
+  {
+    const cuda::std::pair<int, int> p{5, 6};
+    cuda::std::tuple<constexpr_alloc_last, constexpr_alloc_last> t(cuda::std::allocator_arg, alloc, p);
+    assert(cuda::std::get<0>(t).value == 5);
+    assert(cuda::std::get<1>(t).value == 6);
+  }
+  {
+    cuda::std::pair<int, int> p{2, 3};
+    cuda::std::tuple<constexpr_alloc_arg, double> t(cuda::std::allocator_arg, alloc, p);
+    assert(cuda::std::get<0>(t).value == 2);
+    assert(cuda::std::get<1>(t) == 3);
+  }
+  {
+    cuda::std::pair<int, int> p{2, 3};
+    cuda::std::tuple<constexpr_alloc_arg, constexpr_alloc_last> t(cuda::std::allocator_arg, alloc, p);
+    assert(cuda::std::get<0>(t).value == 2);
+    assert(cuda::std::get<1>(t).value == 3);
+  }
+  return true;
+}
+
 int main(int, char**)
 {
-  {
-    using T0 = cuda::std::pair<long, int>;
-    using T1 = cuda::std::tuple<long long, double>;
-    T0 t0(2, 3);
-    T1 t1(cuda::std::allocator_arg, A1<int>(5), t0);
-    assert(cuda::std::get<0>(t1) == 2);
-    assert(cuda::std::get<1>(t1) == 3);
-  }
-  {
-    using T0 = cuda::std::pair<int, int>;
-    using T1 = cuda::std::tuple<alloc_first, double>;
-    T0 t0(2, 3);
-    alloc_first::allocator_constructed() = false;
-    T1 t1(cuda::std::allocator_arg, A1<int>(5), t0);
-    assert(alloc_first::allocator_constructed());
-    assert(cuda::std::get<0>(t1) == 2);
-    assert(cuda::std::get<1>(t1) == 3);
-  }
-  {
-    using T0 = cuda::std::pair<int, int>;
-    using T1 = cuda::std::tuple<alloc_first, alloc_last>;
-    T0 t0(2, 3);
-    alloc_first::allocator_constructed() = false;
-    alloc_last::allocator_constructed()  = false;
-    T1 t1(cuda::std::allocator_arg, A1<int>(5), t0);
-    assert(alloc_first::allocator_constructed());
-    assert(alloc_last::allocator_constructed());
-    assert(cuda::std::get<0>(t1) == 2);
-    assert(cuda::std::get<1>(t1) == 3);
-  }
-
+  test();
+  static_assert(test());
   return 0;
 }

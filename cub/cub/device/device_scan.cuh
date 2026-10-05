@@ -37,6 +37,7 @@
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tune.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
@@ -212,7 +213,7 @@ struct DeviceScan
     constexpr bool is_safe_integral_op =
       ::cuda::std::is_integral_v<accum_t> && detail::is_cuda_binary_operator<ScanOpT>;
     constexpr bool is_fp_plus_op =
-      ::cuda::std::is_floating_point_v<accum_t> && detail::is_cuda_std_plus_v<ScanOpT, accum_t>;
+      ::cuda::std::is_floating_point_v<accum_t> && ::cuda::__is_cuda_std_plus_v<ScanOpT, accum_t>;
 
     // run_to_run determinism is supported only with integral types with known operators, or floating-point types with
     // plus operator

@@ -15,7 +15,10 @@ code does not change. The normalizer removes it:
 
 Branch targets become a signed delta from the branch address, thus code that
 only moved is equal. Opcodes, modifiers, predicates, registers, immediates,
-constant-bank offsets and the control flow are all compared.
+constant-bank numbers, relative constant offsets and the control flow are all
+compared. Constant offsets become relative to the lowest referenced offset in
+each kernel and bank. This performance comparison ignores uniform data shifts;
+it does not check whether the referenced data stays the same.
 
 `cuobjdump -sass` prints every architecture into one stream. Each architecture
 is split out and compared on its own. A fatbin names it in an `arch =` line, and
@@ -97,6 +100,10 @@ _BRANCH_RE = re.compile(
 )
 
 _NOP_RE = re.compile(r"^NOP\s*;?\s*$")
+
+_CONSTANT_RE = re.compile(
+    r"\bc\[(?P<bank>0x[0-9a-fA-F]+)\]\[(?P<offset>0x[0-9a-fA-F]+)\]"
+)
 
 _WHITESPACE_RE = re.compile(r"\s+")
 
@@ -192,6 +199,27 @@ def _kernels(lines: list[str]) -> list[Kernel]:
         while end > 0 and _NOP_RE.match(entry.instructions[end - 1]):
             end -= 1
         del entry.instructions[end:]
+
+        # A bank can move independently in each kernel. Keep the spacing between
+        # references, so only a uniform shift disappears from the comparison.
+        offsets: dict[str, int] = {}
+        for instruction in entry.instructions:
+            for match in _CONSTANT_RE.finditer(instruction):
+                bank = match.group("bank")
+                offset = int(match.group("offset"), 16)
+                offsets[bank] = min(offsets.get(bank, offset), offset)
+
+        if offsets:
+            entry.instructions = [
+                _CONSTANT_RE.sub(
+                    lambda m: (
+                        f"c[{m.group('bank')}]"
+                        f"[{int(m.group('offset'), 16) - offsets[m.group('bank')]:#x}]"
+                    ),
+                    instruction,
+                )
+                for instruction in entry.instructions
+            ]
 
     return kernels
 
@@ -514,7 +542,8 @@ def main() -> int:
             "Compare every `<target>.sass` file that both directories hold, per "
             "target and per architecture. Ignores instruction addresses, "
             "encoded instruction words, absolute branch targets, kernel "
-            "emission order and trailing NOP padding, because those change "
+            "emission order, uniform constant-bank offset shifts and trailing "
+            "NOP padding, because those change "
             f"between builds when the code does not. Writes {REPORT_NAME}, the "
             "normalized text of both sides under base/ and test/, and the diff "
             "of each changed architecture under diff/. Exits 0 when the SASS is "

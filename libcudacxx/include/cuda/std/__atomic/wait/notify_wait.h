@@ -36,8 +36,8 @@ template <typename _Tp, typename _Sco>
 _CCCL_HOST_DEVICE_API inline void
 __atomic_try_wait_slow(_Tp const volatile* __a, __atomic_underlying_remove_cv_t<_Tp> __val, memory_order __order, _Sco)
 {
-  NV_DISPATCH_TARGET(NV_PROVIDES_SM_70, __atomic_try_wait_slow_fallback(__a, __val, __order, _Sco{});
-                     , NV_IS_HOST, __atomic_try_wait_slow_fallback(__a, __val, __order, _Sco{});
+  NV_DISPATCH_TARGET(NV_PROVIDES_SM_70, ::cuda::std::__atomic_try_wait_slow_fallback(__a, __val, __order, _Sco{});
+                     , NV_IS_HOST, ::cuda::std::__atomic_try_wait_slow_fallback(__a, __val, __order, _Sco{});
                      , NV_ANY_TARGET, __atomic_try_wait_unsupported_before_SM_70__(););
 }
 
@@ -69,7 +69,7 @@ _CCCL_HOST_DEVICE_API inline void __atomic_wait(
 {
   for (int __i = 0; __i < _LIBCUDACXX_POLLING_COUNT; ++__i)
   {
-    if (!__nonatomic_compare_equal(__atomic_load_dispatch(__a, __order, _Sco{}), __val))
+    if (!::cuda::std::__nonatomic_compare_equal(::cuda::std::__atomic_load_dispatch(__a, __order, _Sco{}), __val))
     {
       return;
     }
@@ -82,9 +82,9 @@ _CCCL_HOST_DEVICE_API inline void __atomic_wait(
       ::cuda::std::__cccl_thread_yield();
     }
   }
-  while (__nonatomic_compare_equal(__atomic_load_dispatch(__a, __order, _Sco{}), __val))
+  while (::cuda::std::__nonatomic_compare_equal(::cuda::std::__atomic_load_dispatch(__a, __order, _Sco{}), __val))
   {
-    __atomic_try_wait_slow(__a, __val, __order, _Sco{});
+    ::cuda::std::__atomic_try_wait_slow(__a, __val, __order, _Sco{});
   }
 }
 

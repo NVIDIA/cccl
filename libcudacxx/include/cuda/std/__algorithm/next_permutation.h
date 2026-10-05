@@ -53,7 +53,8 @@ __next_permutation(_BidirectionalIterator __first, _Sentinel __last, _Compare&& 
     {
       _BidirectionalIterator __j = __last_iter;
       while (!__comp(*__i, *--__j))
-        ;
+      {
+      }
       _IterOps<_AlgPolicy>::iter_swap(__i, __j);
       ::cuda::std::__reverse<_AlgPolicy>(__ip1, __last_iter);
       return _Result(::cuda::std::move(__last_iter), true);

@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // clang-format off
-// %PARAM% TEMPLATE,SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE api cab=ca,tsb,CTA,block:cad=ca,tsd,GPU,non_block:cas=ca,tss,SYS,non_block:carb=car,tsb,CTA,block:card=car,tsd,GPU,non_block:cars=car,tss,SYS,non_block:csa=csa,tss,SYS,non_block:csar=csar,tss,SYS,non_block
+// %PARAM% TEMPLATE,SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE api cab=ca,tsb,CTA,block:cad=ca,tsd,GPU,non_block:cac=ca,tsc,GPU,non_block:cas=ca,tss,SYS,non_block:carb=car,tsb,CTA,block:card=car,tsd,GPU,non_block:carc=car,tsc,GPU,non_block:cars=car,tss,SYS,non_block:csa=csa,tss,SYS,non_block:csar=csar,tss,SYS,non_block
 // %PARAM% CAS cas compare_exchange_weak:compare_exchange_strong
 // %PARAM% SUCCESS_ORDER,FAILURE_ORDER,SASS_MEMBAR,FILECHECK_PREFIX_SEQ_CST,FILECHECK_PREFIX_ACQUIRE,FILECHECK_PREFIX_ORDER order rr=mor,mor,,non_seq_cst,no_acquire,no_membar:ar=moa,mor,,non_seq_cst,acquire,no_membar:aa=moa,moa,,non_seq_cst,acquire,no_membar:er=more,mor,ALL,non_seq_cst,no_acquire,membar:br=moar,mor,ALL,non_seq_cst,acquire,membar:ba=moar,moa,ALL,non_seq_cst,acquire,membar:sr=mosc,mor,SC,seq_cst,acquire,membar:sa=mosc,moa,SC,seq_cst,acquire,membar:ss=mosc,mosc,SC,seq_cst,acquire,membar
 // %FILECHECK% PREFIX_COMBINE non_block,seq_cst

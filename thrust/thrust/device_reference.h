@@ -1007,8 +1007,8 @@ _CCCL_HOST_DEVICE void swap(device_reference<T> x, device_reference<T> y) noexce
  *     .. versionadded:: 2.2.0
  *  \endverbatim
  */
-template <typename T, typename charT, typename traits>
-std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& os, const device_reference<T>& y);
+template <typename T, typename CharT, typename Traits>
+std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const device_reference<T>& y);
 #endif
 
 /*! \} // memory_management

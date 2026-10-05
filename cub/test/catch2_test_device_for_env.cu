@@ -28,6 +28,7 @@ struct stream_registry_factory_t;
 #include <block_size_extracting_helpers.h>
 
 #include "cub_test_macros.h"
+#include <c2h/device_and_stream.h>
 #include <catch2_test_launch_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -102,15 +103,6 @@ using block_size_check_t = block_size_extracting_op<cuda::always_false>;
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
-// c2h selects the device via -d/--device, so the stream must be created on the current device;
-// c2h::device_vector allocates there, and a device 0 stream would cross devices.
-[[nodiscard]] cuda::stream make_current_device_stream()
-{
-  int device_id{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&device_id));
-  return cuda::stream{cuda::devices[device_id]};
-}
-
 // Regression guard for stream wrappers (PR #7798): non-copyable types implicitly convertible to
 // cudaStream_t must bind to the env APIs by const& without being copied. The conversion operator
 // must be const-qualified, since the env is queried through a const reference.
@@ -169,7 +161,7 @@ static_assert(cuda::std::__is_callable_v<cuda::get_stream_t, const non_copyable_
 template <class TestFn>
 void test_env_kinds(TestFn test_fn)
 {
-  const cuda::stream stream = make_current_device_stream();
+  const cuda::stream stream = c2h::make_current_device_stream();
   const auto default_stream = cuda::stream_ref{cudaStream_t{}};
 
   SECTION("default environment")
@@ -288,7 +280,7 @@ struct stream_capture_guard
 template <class LaunchFn>
 void test_env_stream_routing(LaunchFn launch)
 {
-  const cuda::stream stream = make_current_device_stream();
+  const cuda::stream stream = c2h::make_current_device_stream();
 
   // allocation is not capturable, so everything the launches touch is set up before capture begins
   c2h::device_vector<int> vec(coords_extents{}.extent(0) * coords_extents{}.extent(1), 1);
@@ -367,7 +359,7 @@ CUB_TEST("DeviceFor::Bulk env uses custom stream", "[for][env]", CUB_SMALL)
   auto vec = c2h::device_vector<int>{1, 2, 3, 4};
   const square_idx_op op{thrust::raw_pointer_cast(vec.data())};
 
-  const cuda::stream stream = make_current_device_stream();
+  const cuda::stream stream = c2h::make_current_device_stream();
   const auto env            = cuda::std::execution::env{cuda::stream_ref{stream}};
 
   const auto error = cub::DeviceFor::Bulk(4, op, env);
@@ -387,7 +379,7 @@ CUB_TEST("DeviceFor::ForEachN env uses custom stream", "[for][env]", CUB_SMALL)
   auto vec = c2h::device_vector<int>{1, 2, 3, 4};
   const square_ref_op op{};
 
-  const cuda::stream stream = make_current_device_stream();
+  const cuda::stream stream = c2h::make_current_device_stream();
   const auto env            = cuda::std::execution::env{cuda::stream_ref{stream}};
 
   const auto error = cub::DeviceFor::ForEachN(vec.begin(), static_cast<int>(vec.size()), op, env);
@@ -405,7 +397,7 @@ CUB_TEST("DeviceFor::__for_each_n two-phase overload takes an environment", "[fo
   const square_ref_op op{};
   const auto num_items = static_cast<int>(vec.size());
 
-  const cuda::stream stream = make_current_device_stream();
+  const cuda::stream stream = c2h::make_current_device_stream();
   const auto env            = cuda::std::execution::env{cuda::stream_ref{stream}};
 
   size_t temp_storage_bytes = 0;
@@ -431,7 +423,7 @@ CUB_TEST("DeviceFor::ForEach env uses custom stream", "[for][env]", CUB_SMALL)
   auto vec = c2h::device_vector<int>{1, 2, 3, 4};
   const square_ref_op op{};
 
-  const cuda::stream stream = make_current_device_stream();
+  const cuda::stream stream = c2h::make_current_device_stream();
   const auto env            = cuda::std::execution::env{cuda::stream_ref{stream}};
 
   const auto error = cub::DeviceFor::ForEach(vec.begin(), vec.end(), op, env);
@@ -452,7 +444,7 @@ CUB_TEST("DeviceFor::ForEachCopyN env uses custom stream", "[for][env]", CUB_SMA
   auto count = c2h::device_vector<int>(1);
   const odd_count_op op{thrust::raw_pointer_cast(count.data())};
 
-  const cuda::stream stream = make_current_device_stream();
+  const cuda::stream stream = c2h::make_current_device_stream();
   const auto env            = cuda::std::execution::env{cuda::stream_ref{stream}};
 
   const auto error = cub::DeviceFor::ForEachCopyN(vec.begin(), static_cast<int>(vec.size()), op, env);
@@ -473,7 +465,7 @@ CUB_TEST("DeviceFor::ForEachCopy env uses custom stream", "[for][env]", CUB_SMAL
   auto count = c2h::device_vector<int>(1);
   const odd_count_op op{thrust::raw_pointer_cast(count.data())};
 
-  const cuda::stream stream = make_current_device_stream();
+  const cuda::stream stream = c2h::make_current_device_stream();
   const auto env            = cuda::std::execution::env{cuda::stream_ref{stream}};
 
   const auto error = cub::DeviceFor::ForEachCopy(vec.begin(), vec.end(), op, env);

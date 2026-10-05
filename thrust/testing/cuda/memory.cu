@@ -18,7 +18,7 @@ bool are_same_type(const T&, const T&)
   return true;
 }
 
-void TestSelectSystemCudaToCpp()
+TEST_CASE("TestSelectSystemCudaToCpp", "[memory]")
 {
   using thrust::system::detail::generic::select_system;
 
@@ -29,9 +29,8 @@ void TestSelectSystemCudaToCpp()
 
   // select_system(cuda::tag, thrust::host_system_tag) should return cuda_to_cpp
   const bool is_cuda_to_cpp = are_same_type(cuda_to_cpp, select_system(cuda_tag, cpp_tag));
-  ASSERT_EQUAL(true, is_cuda_to_cpp);
+  REQUIRE(is_cuda_to_cpp);
 }
-DECLARE_UNITTEST(TestSelectSystemCudaToCpp);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename Iterator>
@@ -46,7 +45,7 @@ __global__ void return_temporary_buffer_kernel(Pointer ptr, std::ptrdiff_t n)
   thrust::return_temporary_buffer(thrust::seq, ptr, n);
 }
 
-void TestGetTemporaryBufferDeviceSeq()
+TEST_CASE("TestGetTemporaryBufferDeviceSeq", "[memory]")
 {
   const std::ptrdiff_t n = 9001;
 
@@ -57,32 +56,30 @@ void TestGetTemporaryBufferDeviceSeq()
   get_temporary_buffer_kernel<<<1, 1>>>(n, d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   ptr_and_sz_type ptr_and_sz = d_result[0];
 
   if (ptr_and_sz.second > 0)
   {
-    ASSERT_EQUAL(ptr_and_sz.second, n);
+    REQUIRE(ptr_and_sz.second == n);
 
     const int ref_val = 13;
     thrust::device_vector<int> ref(n, ref_val);
 
     thrust::fill_n(thrust::device, ptr_and_sz.first, n, ref_val);
 
-    ASSERT_EQUAL(
-      true,
+    REQUIRE(
       thrust::all_of(thrust::device, ptr_and_sz.first, ptr_and_sz.first + n, thrust::placeholders::_1 == ref_val));
 
     return_temporary_buffer_kernel<<<1, 1>>>(ptr_and_sz.first, ptr_and_sz.second);
     {
       cudaError_t const err = cudaDeviceSynchronize();
-      ASSERT_EQUAL(cudaSuccess, err);
+      REQUIRE(cudaSuccess == err);
     }
   }
 }
-DECLARE_UNITTEST(TestGetTemporaryBufferDeviceSeq);
 
 template <typename Iterator>
 __global__ void malloc_kernel(size_t n, Iterator result)
@@ -96,7 +93,7 @@ __global__ void free_kernel(Pointer ptr)
   thrust::free(thrust::seq, ptr);
 }
 
-void TestMallocDeviceSeq()
+TEST_CASE("TestMallocDeviceSeq", "[memory]")
 {
   const std::ptrdiff_t n = 9001;
 
@@ -106,7 +103,7 @@ void TestMallocDeviceSeq()
   malloc_kernel<<<1, 1>>>(n, d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   pointer ptr = d_result[0];
@@ -118,14 +115,13 @@ void TestMallocDeviceSeq()
 
     thrust::fill_n(thrust::device, ptr, n, ref_val);
 
-    ASSERT_EQUAL(true, thrust::all_of(thrust::device, ptr, ptr + n, thrust::placeholders::_1 == ref_val));
+    REQUIRE(thrust::all_of(thrust::device, ptr, ptr + n, thrust::placeholders::_1 == ref_val));
 
     free_kernel<<<1, 1>>>(ptr);
     {
       cudaError_t const err = cudaDeviceSynchronize();
-      ASSERT_EQUAL(cudaSuccess, err);
+      REQUIRE(cudaSuccess == err);
     }
   }
 }
-DECLARE_UNITTEST(TestMallocDeviceSeq);
 #endif

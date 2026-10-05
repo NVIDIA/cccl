@@ -21,6 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/determinism.h> // IWYU pragma: export
 
 #endif // _CUDA_EXECUTION_EXECUTION_DETERMINISM_H

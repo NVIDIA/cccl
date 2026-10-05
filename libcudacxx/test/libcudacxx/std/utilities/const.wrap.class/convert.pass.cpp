@@ -7,9 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Find a way to make this work for nvrtc.
-// nvrtc doesn't allow accessing the static constexpr const auto& value member.
-// UNSUPPORTED: nvrtc
+// todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
+//   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
+//   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
 
 // constant_wrapper
 
@@ -19,8 +19,6 @@
 #include <cuda/std/utility>
 
 #include "test_macros.h"
-
-TEST_NV_DIAG_SUPPRESS(20094) // a host member cannot be directly read in a __device__/__global__ function
 
 struct S
 {
@@ -44,18 +42,18 @@ TEST_FUNC constexpr bool test()
     static_assert(noexcept(static_cast<int>(cw6)));
   }
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
   {
     // struct conversion
     constexpr S s{42};
     cuda::std::__constant_wrapper<s> cws;
     const S& result = cws;
     assert(result.value == 42);
-    assert(&result == &cws.value);
+    assert(&result == &cws.__get());
 
     static_assert(noexcept(static_cast<const S&>(cws)));
   }
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 #if !_CCCL_TILE_COMPILATION() // error: indirect call is unsupported in tile code
   {
@@ -81,7 +79,7 @@ TEST_FUNC constexpr bool test()
   }
 #endif // !_CCCL_TILE_COMPILATION()
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 // nvcc < 13.3 fails to generate correct input file for host compiler.
 #  if !(TEST_CUDA_COMPILER(NVCC, <, 13, 3) && _CCCL_HOST_COMPILATION())
   {
@@ -90,7 +88,7 @@ TEST_FUNC constexpr bool test()
     f1(cws);
   }
 #  endif // !(TEST_CUDA_COMPILER(NVCC, <, 13, 3) && _CCCL_HOST_COMPILATION())
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   return true;
 }

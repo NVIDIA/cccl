@@ -15,12 +15,13 @@ import lldb
 _ATOMIC_PATTERN = re.compile(r"^cuda::(?:std::)?atomic(?:_ref)?<.+>$")
 _ATOMIC_REF_PATTERN = re.compile(r"^cuda::(?:std::)?atomic_ref<.+>$")
 _THREAD_SCOPE_VALUE_PATTERN = re.compile(
-    r"\((?:enum )?cuda(?:::std)?::thread_scope\)\s*(10|[012])(?=\s*>)"
+    r"\((?:enum )?cuda(?:::std)?::thread_scope\)\s*(10|[0-3])(?=\s*>)"
 )
 _THREAD_SCOPE_NAMES = {
     0: "system",
     1: "device",
     2: "block",
+    3: "cluster",
     10: "thread",
 }
 InternalDict = dict[str, object]

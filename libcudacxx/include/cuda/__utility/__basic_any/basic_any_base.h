@@ -26,8 +26,6 @@
 #include <cuda/__utility/__basic_any/storage.h>
 #include <cuda/__utility/__basic_any/tagged_ptr.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/cstddef> // for byte
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -65,8 +63,10 @@ template <class _Interface, int = __extension_of<_Interface, __imovable<>> + __e
 struct __basic_any_base;
 
 template <class _Interface>
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct __basic_any_base<_Interface, 2> : __interface_of<_Interface> // copyable interfaces
 {
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   __basic_any_base() = default;
 
   _CCCL_HOST_DEVICE_API __basic_any_base(__basic_any_base&& __other) noexcept

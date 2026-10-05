@@ -3,7 +3,7 @@
 # Compare the SASS of the CUB benchmarks between two git refs.
 #
 # The script adds a worktree for each ref, builds the selected benchmark targets
-# in both, dumps the disassembly of every built binary with `cuobjdump -sass`,
+# in both, dumps their CUDA object files with `cuobjdump -sass`,
 # and compares the result.
 #
 # The exit status tells you only if the comparison ran. It is 0 when the script
@@ -197,6 +197,9 @@ for side in base test; do
   # this file, and a symlink would point it at the current checkout instead of the
   # worktree.
   cp "${repo_root}/CMakePresets.json" "${side_path[${side}]}/CMakePresets.json"
+  # Older refs also need to generate the object lists consumed by this script.
+  cp "${repo_root}/cub/benchmarks/CMakeLists.txt" \
+    "${side_path[${side}]}/cub/benchmarks/CMakeLists.txt"
 done
 
 # ============================================================================
@@ -272,9 +275,23 @@ done
 # shellcheck disable=SC2329 # Invoked indirectly by `run_command`.
 dump_side() {
   local side="$1"
+  # Linked binaries include nvbench_helper kernels unrelated to the benchmark.
+  # Restrict each dump to CUDA objects compiled for that benchmark target.
   # `pipefail` again, because `bash -c` starts a fresh shell. Without it a failed
   # `cuobjdump` writes an empty dump and still reports success.
-  local dump_cmd="set -eou pipefail; cuobjdump -sass -sort '${preset_dir[${side}]}/bin/{}' | cu++filt > '${artifact_dir}/${side}/{}.sass'"
+  local dump_cmd
+  # shellcheck disable=SC2016  # Variables expand in the child shell.
+  printf -v dump_cmd '
+    set -euo pipefail
+    mapfile -t objects < %q/{}.objects
+    if [[ "${#objects[@]}" -eq 0 ]]; then
+      echo "No object files listed for benchmark target: {}" >&2
+      exit 1
+    fi
+    for object in "${objects[@]}"; do
+      cuobjdump -sass -sort "$object"
+    done | cu++filt > %q/{}.sass
+  ' "${preset_dir[${side}]}/cub/benchmarks/objects" "${artifact_dir}/${side}"
 
   printf '%s\n' "${targets[@]}" | xargs --verbose -P "$(nproc)" -I{} bash -c "${dump_cmd}"
 }

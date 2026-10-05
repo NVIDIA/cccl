@@ -22,8 +22,8 @@ struct TestZipIteratorStableSort
     thrust::stable_sort(thrust::make_zip_iterator(d1.begin(), d2.begin()),
                         thrust::make_zip_iterator(d1.end(), d2.end()));
 
-    ASSERT_EQUAL_QUIET(h1, d1);
-    ASSERT_EQUAL_QUIET(h2, d2);
+    REQUIRE(h1 == d1);
+    REQUIRE(h2 == d2);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipIteratorStableSort,

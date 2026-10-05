@@ -29,7 +29,7 @@ struct trivial_aggregate
 struct non_trivial
 {
   non_trivial(const non_trivial&) {} // NOLINT(modernize-use-equals-default)
-  int a;
+  int a{};
 };
 } // namespace
 

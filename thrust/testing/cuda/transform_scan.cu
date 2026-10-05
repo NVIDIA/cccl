@@ -89,13 +89,13 @@ void TestTransformScanDevice(ExecutionPolicy exec)
     iter_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   iter = iter_vec[0];
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(ref, output);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(ref == output);
 
   // inclusive scan with nonzero init
   transform_inclusive_scan_init_kernel<<<1, 1>>>(
@@ -109,14 +109,14 @@ void TestTransformScanDevice(ExecutionPolicy exec)
     iter_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   iter = iter_vec[0];
   ref  = {2, -1, 1, -3, 2};
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(ref, output);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(ref == output);
 
   // exclusive scan with 0 init
   transform_exclusive_scan_kernel<<<1, 1>>>(
@@ -130,13 +130,13 @@ void TestTransformScanDevice(ExecutionPolicy exec)
     iter_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   ref = {0, -1, -4, -2, -6};
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(ref, output);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(ref == output);
 
   // exclusive scan with nonzero init
   transform_exclusive_scan_kernel<<<1, 1>>>(
@@ -150,14 +150,14 @@ void TestTransformScanDevice(ExecutionPolicy exec)
     iter_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   iter = iter_vec[0];
   ref  = {3, 2, -1, 1, -3};
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(ref, output);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(ref == output);
 
   // inplace inclusive scan
   input = input_copy;
@@ -165,13 +165,13 @@ void TestTransformScanDevice(ExecutionPolicy exec)
     exec, input.begin(), input.end(), input.begin(), ::cuda::std::negate<T>(), ::cuda::std::plus<T>(), iter_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   iter = iter_vec[0];
   ref  = {-1, -4, -2, -6, -1};
-  ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
-  ASSERT_EQUAL(ref, input);
+  REQUIRE(std::size_t(iter - input.begin()) == input.size());
+  REQUIRE(ref == input);
 
   // inplace inclusive scan with init
   input = input_copy;
@@ -186,13 +186,13 @@ void TestTransformScanDevice(ExecutionPolicy exec)
     iter_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   iter = iter_vec[0];
   ref  = {2, -1, 1, -3, 2};
-  ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
-  ASSERT_EQUAL(ref, input);
+  REQUIRE(std::size_t(iter - input.begin()) == input.size());
+  REQUIRE(ref == input);
 
   // inplace exclusive scan with init
   input = input_copy;
@@ -207,29 +207,27 @@ void TestTransformScanDevice(ExecutionPolicy exec)
     iter_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   iter = iter_vec[0];
   ref  = {3, 2, -1, 1, -3};
-  ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
-  ASSERT_EQUAL(ref, input);
+  REQUIRE(std::size_t(iter - input.begin()) == input.size());
+  REQUIRE(ref == input);
 }
 
-void TestTransformScanDeviceSeq()
+TEST_CASE("TestTransformScanDeviceSeq", "[transform_scan]")
 {
   TestTransformScanDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestTransformScanDeviceSeq);
 
-void TestTransformScanDeviceDevice()
+TEST_CASE("TestTransformScanDeviceDevice", "[transform_scan]")
 {
   TestTransformScanDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestTransformScanDeviceDevice);
 #endif
 
-void TestTransformScanCudaStreams()
+TEST_CASE("TestTransformScanCudaStreams", "[transform_scan]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -255,9 +253,9 @@ void TestTransformScanCudaStreams()
     ::cuda::std::plus<T>());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(output == result);
 
   // inclusive scan with nonzero init
   iter = thrust::transform_inclusive_scan(
@@ -271,9 +269,9 @@ void TestTransformScanCudaStreams()
   cudaStreamSynchronize(s);
 
   result = {2, -1, 1, -3, 2};
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(output == result);
 
   // exclusive scan with 0 init
   iter = thrust::transform_exclusive_scan(
@@ -287,9 +285,9 @@ void TestTransformScanCudaStreams()
   cudaStreamSynchronize(s);
 
   result = {0, -1, -4, -2, -6};
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(output == result);
 
   // exclusive scan with nonzero init
   iter = thrust::transform_exclusive_scan(
@@ -303,9 +301,9 @@ void TestTransformScanCudaStreams()
   cudaStreamSynchronize(s);
 
   result = {3, 2, -1, 1, -3};
-  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-  ASSERT_EQUAL(input, input_copy);
-  ASSERT_EQUAL(output, result);
+  REQUIRE(std::size_t(iter - output.begin()) == input.size());
+  REQUIRE(input == input_copy);
+  REQUIRE(output == result);
 
   // inplace inclusive scan
   input = input_copy;
@@ -319,8 +317,8 @@ void TestTransformScanCudaStreams()
   cudaStreamSynchronize(s);
 
   result = {-1, -4, -2, -6, -1};
-  ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
-  ASSERT_EQUAL(input, result);
+  REQUIRE(std::size_t(iter - input.begin()) == input.size());
+  REQUIRE(input == result);
 
   // inplace inclusive scan with init
   input = input_copy;
@@ -335,8 +333,8 @@ void TestTransformScanCudaStreams()
   cudaStreamSynchronize(s);
 
   result = {2, -1, 1, -3, 2};
-  ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
-  ASSERT_EQUAL(input, result);
+  REQUIRE(std::size_t(iter - input.begin()) == input.size());
+  REQUIRE(input == result);
 
   // inplace exclusive scan with init
   input = input_copy;
@@ -351,14 +349,13 @@ void TestTransformScanCudaStreams()
   cudaStreamSynchronize(s);
 
   result = {3, 2, -1, 1, -3};
-  ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
-  ASSERT_EQUAL(input, result);
+  REQUIRE(std::size_t(iter - input.begin()) == input.size());
+  REQUIRE(input == result);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestTransformScanCudaStreams);
 
-void TestTransformScanConstAccumulator()
+TEST_CASE("TestTransformScanConstAccumulator", "[transform_scan]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -371,6 +368,5 @@ void TestTransformScanConstAccumulator()
     input.begin(), input.end(), output.begin(), ::cuda::std::identity{}, ::cuda::std::plus<T>());
   thrust::inclusive_scan(input.begin(), input.end(), reference.begin(), ::cuda::std::plus<T>());
 
-  ASSERT_EQUAL(output, reference);
+  REQUIRE(output == reference);
 }
-DECLARE_UNITTEST(TestTransformScanConstAccumulator);

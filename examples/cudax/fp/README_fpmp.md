@@ -145,12 +145,10 @@ Using the types
 ---------------
 
 ```c++
-#include <cuda/fpmp>       // types, operators, sqrt, rsqrt, fma, mad
-#include <cuda/fpmp_math>  // adds exp, log, trig, pow, ...; also pulls in <cuda/fpmp>
+#include <cuda/fpmp>   // types, operators, sqrt, rsqrt, fma, mad, and the math functions
 ```
 
-Include only `<cuda/fpmp>` where the transcendentals are not needed — the math header
-costs compile time.
+One header carries the whole interface, the transcendental math functions included.
 
 The CCCL FP component lives in `cuda::experimental` (to be promoted to `cuda::` later). The
 examples abbreviate it rather than using a using-directive:
@@ -207,6 +205,17 @@ So `fp64mp2 acc = 0;` and `fp32mp2 t = some_float;` compile as expected, while
 implicit. The cast is `constexpr`, so full-precision coefficient tables can be built at
 compile time.
 
+Quad interchange is a separate path. `fp64mp2` converts both ways with the
+library's 128-bit type `__fpmp_fp128` (`__float128` on x86, IEEE `long double`
+on aarch64). Both directions are explicit, and both are deleted on `fp32mp2`,
+which cannot hold a 128-bit significand.
+
+On GCC, `_Float128` is often a second binary128 type, distinct from
+`__fpmp_fp128`, with no implicit conversion between the two spellings. The
+same explicit conversions exist for `_Float128` when it is not already
+`__fpmp_fp128`, so `static_cast<_Float128>(fp64mp2_value)` compiles on
+aarch64 as well as on x86.
+
 The same rule reaches the scalar accumulate path: `+=` and `-=` have an optimized overload
 taking a single component, worth about six operations over a full pair addition, and it is
 constrained the same way. `acc += 1.5f` on an `fp32mp2` is fine; `acc += 1.5` is not, because
@@ -218,6 +227,25 @@ edit churn matters more than the diagnostics. The conversion still takes the acc
 two-limb path when it is allowed through — the macro decides whether the conversion is
 written out, not how precisely it is done.
 
+Changing the accuracy tag is a separate matter, and always explicit in both directions:
+
+```c++
+cudax::fp32mp2_low fast = ...;
+cudax::fp32mp2      safe(fast);    // explicit; renormalizes on the way
+```
+
+Converting **out of** `low` renormalizes. The `low` algorithms skip the closing
+normalization step, so their results may have overlapping limbs, while the `mid` and `high`
+algorithms assume they do not — feeding them an overlapping pair compiles fine and quietly
+returns a worse answer. Doing it in the conversion means the mixed-accuracy pattern, `low`
+for the bulk of the work and `mid` for the critical stretch, is correct as written rather
+than depending on a `renormalize` call the caller has to remember.
+
+The step costs one `fast_two_sum` and is exact, so it changes the representation and never
+the number. Conversions in the other direction, into `low`, are a plain limb copy: the pair
+is already normalized, and moving into `low` is a deliberate step into the fast regime. For
+a pure retag with no arithmetic at all, construct from the limbs: `fp32mp2{x.hi(), x.lo()}`.
+
 ### Operations
 
 Arithmetic `+ - * /` and unary negation, compound assignment, and all six comparisons.
@@ -226,9 +254,11 @@ directly, so an `fpmp2` combines with a built-in scalar without a cast on the sc
 
 `renormalize(x)` restores the invariant that the limbs do not overlap (`|lo| < ulp(hi)`).
 Arithmetic at `low` accuracy skips that step, so a run of low-accuracy operations can leave
-a value whose limbs have drifted into overlap; `renormalize` is how it gets repaired.
+a value whose limbs have drifted into overlap; `renormalize` is how it gets repaired. It is
+applied automatically when converting out of `low`, so the call is only needed to repair a
+value that stays at `low` accuracy.
 
-`<cuda/fpmp_math>` adds the transcendentals: `exp`, `log`, `log2`, `log10`, `log1p`, `pow`,
+The same header carries the transcendentals: `exp`, `log`, `log2`, `log10`, `log1p`, `pow`,
 `cbrt`, `rcbrt`, `sin`, `cos`, `tan`, `sincos`, `asin`, `acos`, `atan`, `atan2`, `sinh`,
 `cosh`, `tanh`, `erf`, `erfc`, `normcdfinv`, the rounding family, the min/max family, and
 `icdf` for `fp32mp2` only.
@@ -281,7 +311,7 @@ Demonstrated:
 - mixed-type arithmetic — an `fpmp2` combined directly with a `double` literal, with an
   `int`, with the scalar on the left, and the `+=` scalar accumulate path
 - `sqrt`, `rsqrt` and `fma`
-- math functions, here `exp` and `sin`, from `<cuda/fpmp_math>`
+- math functions, here `exp` and `sin`
 - comparison operators
 - the `hi`/`lo` components the value is stored as
 - the accuracy levels: the same sum on the default and the `high` type, then that same

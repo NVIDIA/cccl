@@ -1,7 +1,7 @@
 // This file was automatically generated. Do not edit.
 
 // clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
-// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone, readability-identifier-naming)
 
 #ifndef _CUDA_PTX_GENERATED_BARRIER_CLUSTER_H_
 #define _CUDA_PTX_GENERATED_BARRIER_CLUSTER_H_
@@ -85,6 +85,6 @@ _CCCL_DEVICE_API void barrier_cluster_wait(::cuda::ptx::sem_acquire_t)
 }
 #endif // __cccl_ptx_isa >= 800
 
-// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone, readability-identifier-naming)
 
 #endif // _CUDA_PTX_GENERATED_BARRIER_CLUSTER_H_
