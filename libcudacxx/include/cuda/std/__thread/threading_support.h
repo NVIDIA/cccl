@@ -23,17 +23,19 @@
 #include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__chrono/high_resolution_clock.h>
 
-#if defined(_CCCL_HAS_THREAD_API_EXTERNAL)
+// Yield and sleep come from one implementation. The `_CCCL_HAS_THREAD_API` queries stay
+// independent, so a CUDA translation unit can still report that pthread is available.
+#if _CCCL_HAS_THREAD_API(EXTERNAL)
 #  include <cuda/std/__thread/threading_support_external.h>
-#endif // _CCCL_HAS_THREAD_API_EXTERNAL
+#endif // _CCCL_HAS_THREAD_API(EXTERNAL)
 
-#if defined(_CCCL_HAS_THREAD_API_CUDA)
+#if _CCCL_HAS_THREAD_API(CUDA)
 #  include <cuda/std/__thread/threading_support_cuda.h>
-#elif defined(_CCCL_HAS_THREAD_API_PTHREAD)
+#elif _CCCL_HAS_THREAD_API(PTHREAD)
 #  include <cuda/std/__thread/threading_support_pthread.h>
-#elif defined(_CCCL_HAS_THREAD_API_WIN32)
+#elif _CCCL_HAS_THREAD_API(WIN32)
 #  include <cuda/std/__thread/threading_support_win32.h>
-#else // ^^^ _CCCL_HAS_THREAD_API_WIN32 ^^^ / vvv Unknown Thread API vvv
+#else // ^^^ _CCCL_HAS_THREAD_API(WIN32) ^^^ / vvv Unknown Thread API vvv
 #  error "Unknown Thread API"
 #endif // Unknown Thread API
 

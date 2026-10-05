@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_HAS_THREAD_API_CUDA)
+#if _CCCL_HAS_THREAD_API(CUDA)
 
 #  include <cuda/std/__chrono/duration.h>
 #  include <cuda/std/climits>
@@ -42,6 +42,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_THREAD_API_CUDA
+#endif // _CCCL_HAS_THREAD_API(CUDA)
 
 #endif // _CUDA_STD___THREAD_THREADING_SUPPORT_CUDA_H
