@@ -23,8 +23,13 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/fold.h>
+#include <cuda/std/__type_traits/is_class.h>
 #include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/is_object.h>
+#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -36,12 +41,6 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-// operator may not be a static member function
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342)
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
 
 // clang-tidy warns about for example _LIBCUDACXX_AUTO_CAST(++_Tp::value) being repeated multiple times in the macro
 // expansion.
@@ -55,10 +54,20 @@ inline constexpr bool __is_cuda_std_constant_wrapper_v = false;
 template <auto _Xp, class _Tp>
 inline constexpr bool __is_cuda_std_constant_wrapper_v<__constant_wrapper<_Xp, _Tp>> = true;
 
+// MSVC 2019 rejects constant pointer arguments in the partial-specialization probe.
+#if _CCCL_COMPILER(MSVC, <, 19, 30)
+template <class _Tp, auto = _Tp::value>
+_CCCL_HOST_DEVICE_API true_type __cw_is_constexpr_param(int);
+template <class>
+_CCCL_HOST_DEVICE_API false_type __cw_is_constexpr_param(...);
+template <class _Tp, class = void>
+inline constexpr bool __is_constexpr_param_v = decltype(__cw_is_constexpr_param<_Tp>(0))::value;
+#else // ^^^ _CCCL_COMPILER(MSVC, <, 19, 30) ^^^ / vvv !_CCCL_COMPILER(MSVC, <, 19, 30) vvv
 template <class _Tp, class = void>
 inline constexpr bool __is_constexpr_param_v = false;
 template <class _Tp>
 inline constexpr bool __is_constexpr_param_v<_Tp, void_t<__constant_wrapper<_Tp::value>>> = true;
+#endif // ^^^ !_CCCL_COMPILER(MSVC, <, 19, 30) ^^^
 
 template <auto _Xp>
 inline constexpr __constant_wrapper<_Xp> __cw;
@@ -337,8 +346,30 @@ struct __cw_operators
   {
     return {};
   }
+
+#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC)
+  // EDG loses the pointee's cv-qualifiers when built-in operator->* uses a user-defined conversion. Apply the operator
+  // to the stored pointer directly for runtime data-member pointers.
+  _CCCL_TEMPLATE(class _Lp, class _Mp, class _Cp)
+  _CCCL_REQUIRES(
+    __is_cuda_std_constant_wrapper_v<_Lp> _CCCL_AND is_pointer_v<decltype(_Lp::value)> _CCCL_AND is_object_v<_Mp>)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr auto operator->*(_Lp, _Mp _Cp::* __pm) noexcept
+    -> decltype(_Lp::value->*__pm)
+  {
+    return _Lp::value->*__pm;
+  }
+#endif // _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC)
 };
 
+// MSVC rejects some constant invocations in partial specializations. Probe a default template argument instead.
+#if _CCCL_COMPILER(MSVC)
+template <class _Fn, class... _Args, auto = _LIBCUDACXX_AUTO_CAST(::cuda::std::invoke(_Fn::value, _Args::value...))>
+_CCCL_HOST_DEVICE_API true_type __cw_is_constexpr_callable(int);
+template <class, class...>
+_CCCL_HOST_DEVICE_API false_type __cw_is_constexpr_callable(...);
+template <class _Fn, class _Void, class... _Args>
+inline constexpr bool __cw_is_constexpr_callable_v = decltype(__cw_is_constexpr_callable<_Fn, _Args...>(0))::value;
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <class _Fn, class _Void, class... _Args>
 inline constexpr bool __cw_is_constexpr_callable_v = false;
 template <class _Fn, class... _Args>
@@ -346,6 +377,7 @@ inline constexpr bool __cw_is_constexpr_callable_v<
   _Fn,
   void_t<__constant_wrapper<_LIBCUDACXX_AUTO_CAST(::cuda::std::invoke(_Fn::value, _Args::value...))>>,
   _Args...> = true;
+#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
 template <class _Vp, class _Void, class... _Args>
 inline constexpr bool __cw_is_constexpr_indexable_v = false;
@@ -379,7 +411,12 @@ struct __constant_wrapper : __cw_operators
   using type       = __constant_wrapper;
   using value_type = _Tp;
 
+  // msvc doesn't evaluate correctly decltype(auto) nor decltype((_Xp)), so we need to set the type by hand.
+#if _CCCL_COMPILER(MSVC)
+  static constexpr conditional_t<is_class_v<_Tp>, const _Tp&, const _Tp> value = (_Xp);
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
   static constexpr decltype((_Xp)) value = (_Xp);
+#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
   // [const.wrap.class] mandates this signature: operator= is a constant-expression
   // operation that yields a new constant_wrapper, so it must not return *this.
@@ -393,12 +430,12 @@ struct __constant_wrapper : __cw_operators
   }
   // NOLINTEND(misc-unconventional-assign-operator)
 
-  _CCCL_HOST_DEVICE_API constexpr operator decltype((_Xp))() const noexcept
+  _CCCL_HOST_DEVICE_API constexpr operator decltype(value)() const noexcept
   {
     return (_Xp);
   }
 
-  _CCCL_HOST_DEVICE_API static constexpr decltype((_Xp)) __get() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr decltype(value) __get() noexcept
   {
     return (_Xp);
   }
@@ -534,10 +571,6 @@ struct __constant_wrapper : __cw_operators
 };
 
 // NOLINTEND(bugprone-macro-repeated-side-effects)
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

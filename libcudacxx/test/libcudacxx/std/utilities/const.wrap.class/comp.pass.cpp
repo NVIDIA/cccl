@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Enable constant_wrapper for msvc.
-// UNSUPPORTED: msvc
-
 // todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
 //   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
 //   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
@@ -179,53 +176,43 @@ inline constexpr bool
   HasSpaceship<L, R, cuda::std::void_t<decltype(cuda::std::declval<L&>() <=> cuda::std::declval<R&>())>> = true;
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasEqual<L, R>>
 inline constexpr bool HasNoexceptEqual = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptEqual<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() == cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptEqual<L, R, true> = noexcept(cuda::std::declval<L&>() == cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasNotEqual<L, R>>
 inline constexpr bool HasNoexceptNotEqual = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptNotEqual<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() != cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptNotEqual<L, R, true> = noexcept(cuda::std::declval<L&>() != cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasLess<L, R>>
 inline constexpr bool HasNoexceptLess = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptLess<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() < cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptLess<L, R, true> = noexcept(cuda::std::declval<L&>() < cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasLessEqual<L, R>>
 inline constexpr bool HasNoexceptLessEqual = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptLessEqual<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() <= cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptLessEqual<L, R, true> = noexcept(cuda::std::declval<L&>() <= cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasGreater<L, R>>
 inline constexpr bool HasNoexceptGreater = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptGreater<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() > cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptGreater<L, R, true> = noexcept(cuda::std::declval<L&>() > cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasGreaterEqual<L, R>>
 inline constexpr bool HasNoexceptGreaterEqual = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptGreaterEqual<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() >= cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptGreaterEqual<L, R, true> =
+  noexcept(cuda::std::declval<L&>() >= cuda::std::declval<R&>());
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-template <class L, class R, class = void>
+template <class L, class R, bool = HasSpaceship<L, R>>
 inline constexpr bool HasNoexceptSpaceship = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptSpaceship<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() <=> cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptSpaceship<L, R, true> =
+  noexcept(cuda::std::declval<L&>() <=> cuda::std::declval<R&>());
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 // Concept checks for int comparisons
@@ -239,18 +226,15 @@ static_assert(HasGreaterEqual<cuda::std::__constant_wrapper<6>, cuda::std::__con
 static_assert(HasSpaceship<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-// Old msvc doesn't evaluate noexcept properly.
-#if !TEST_COMPILER(MSVC, <, 19, 30)
 static_assert(HasNoexceptEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptNotEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptLess<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptLessEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptGreater<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptGreaterEqual<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 static_assert(HasNoexceptSpaceship<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-#  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-#endif // !TEST_COMPILER(MSVC, <, 19, 30)
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 #if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
