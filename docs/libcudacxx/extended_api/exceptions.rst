@@ -42,7 +42,7 @@ way), and ``cudaErrorUnknown`` for any other type. ``status<Status>()`` recovers
         template <class Status> bool holds() const noexcept;      // did the status come from a Status?
         template <class Status> Status status() const noexcept;   // the status object itself; precondition: holds<Status>()
         long long raw_code() const noexcept;                      // the code as reported
-        cuda::std::string_view status_type() const noexcept;      // e.g. "CUresult"
+        cuda::std::string_view status_type_name() const noexcept; // e.g. "CUresult"
         const cuda::std::source_location& location() const noexcept;
     };
 
@@ -51,21 +51,30 @@ the code when one is known.
 
 ``cuda::cuda_status_traits<Status>`` is the customization point. Its defaults, ``cuda::cuda_status_defaults``, are
 the rules every CUDA status enumeration follows (zero is success, the value is the code, no text), so an
-enumeration needs no registration. Specialize it to contribute text, or to carry a struct status:
+enumeration needs no registration. Specializations for the status types of NVIDIA libraries are reserved to
+CCCL, which ships them in opt-in headers as it gains them; a program specializes the trait only for its own
+status types. A composite status decides which field is the code; cuFile's carries a driver status alongside
+its own when the operation status says so:
 
 .. code-block:: cpp
 
-    template <> struct cuda::cuda_status_traits<cufftResult> : cuda::cuda_status_defaults<cufftResult>
+    template <> struct cuda::cuda_status_traits<my_status> : cuda::cuda_status_defaults<my_status>
     {
-        static const char* text(cufftResult r) noexcept { return my_cufft_text(r); }
+        static const char* text(my_status s) noexcept { return my_status_text(s); }
     };
 
-    template <> struct cuda::cuda_status_traits<CUfileError_t>
+    template <> struct cuda::cuda_status_traits<CUfileError_t>   // shipped by CCCL, shown for its shape
     {
         static bool failed(CUfileError_t s) noexcept { return s.err != CU_FILE_SUCCESS; }
-        static long long raw_code(CUfileError_t s) noexcept { return s.err; }
-        static const char* text(CUfileError_t s) noexcept { return cufileop_status_error(s.err); }
+        static long long raw_code(CUfileError_t s) noexcept
+        { return s.err == CU_FILE_CUDA_DRIVER_ERROR ? static_cast<long long>(s.cu_err) : s.err; }
+        static const char* text(CUfileError_t s) noexcept
+        { return s.err == CU_FILE_CUDA_DRIVER_ERROR ? cuda::cuda_status_traits<CUresult>::text(s.cu_err)
+                                                    : cufileop_status_error(s.err); }
     };
 
-    throw cuda::cuda_error(status, "cufftPlan1d failed");
-    catch (const cuda::cuda_error& e) { if (e.holds<cufftResult>()) retry_with(e.status<cufftResult>()); }
+    throw cuda::cuda_error(status, "cuFileRead failed");
+    catch (const cuda::cuda_error& e)
+    {
+        if (e.holds<CUfileError_t>()) { auto s = e.status<CUfileError_t>(); /* both fields available */ }
+    }

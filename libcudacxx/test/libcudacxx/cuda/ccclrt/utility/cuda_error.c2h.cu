@@ -70,71 +70,71 @@ C2H_TEST("cuda_error: a runtime status keeps its historical interface", "[cuda_e
   const auto loc = cuda::std::source_location::current();
   const cuda::cuda_error error(cudaErrorInvalidValue, "the message", "someApi", loc);
 
-  CCCLRT_REQUIRE(error.status() == cudaErrorInvalidValue);
-  CCCLRT_REQUIRE(error.holds<cudaError_t>());
-  CCCLRT_REQUIRE(!error.holds<CUresult>());
-  CCCLRT_REQUIRE(error.status<cudaError_t>() == cudaErrorInvalidValue);
-  CCCLRT_REQUIRE(error.raw_code() == 1);
-  CCCLRT_REQUIRE(error.status_type().find("cudaError") != cuda::std::string_view::npos);
-  CCCLRT_REQUIRE(error.location().line() == loc.line());
-  CCCLRT_REQUIRE(std::string(error.location().file_name()) == loc.file_name());
+  REQUIRE(error.status() == cudaErrorInvalidValue);
+  REQUIRE(error.holds<cudaError_t>());
+  REQUIRE(!error.holds<CUresult>());
+  REQUIRE(error.status<cudaError_t>() == cudaErrorInvalidValue);
+  REQUIRE(error.raw_code() == 1);
+  REQUIRE(error.status_type_name() == "cudaError_t");
+  REQUIRE(error.location().line() == loc.line());
+  REQUIRE(std::string(error.location().file_name()) == loc.file_name());
 
   const std::string what = error.what();
-  CCCLRT_REQUIRE(what.find("someApi") != std::string::npos);
-  CCCLRT_REQUIRE(what.find("(1)") != std::string::npos);
-  CCCLRT_REQUIRE(what.find("the message") != std::string::npos);
+  REQUIRE(what.find("someApi") != std::string::npos);
+  REQUIRE(what.find("(1)") != std::string::npos);
+  REQUIRE(what.find("the message") != std::string::npos);
 }
 
 C2H_TEST("cuda_error: a driver status is kept exactly and still reads as a runtime code", "[cuda_error]")
 {
   const cuda::cuda_error error(CUDA_ERROR_NOT_READY, "still running");
 
-  CCCLRT_REQUIRE(error.holds<CUresult>());
-  CCCLRT_REQUIRE(!error.holds<cudaError_t>());
-  CCCLRT_REQUIRE(error.status<CUresult>() == CUDA_ERROR_NOT_READY);
+  REQUIRE(error.holds<CUresult>());
+  REQUIRE(!error.holds<cudaError_t>());
+  REQUIRE(error.status<CUresult>() == CUDA_ERROR_NOT_READY);
   // The numeric view the runtime wrappers have always produced for driver failures.
-  CCCLRT_REQUIRE(error.status() == cudaErrorNotReady);
-  CCCLRT_REQUIRE(error.status_type().find("cudaError_enum") != cuda::std::string_view::npos); // CUresult is a typedef
-                                                                                              // of enum cudaError_enum
-  CCCLRT_REQUIRE(std::string(error.what()).find("still running") != std::string::npos);
+  REQUIRE(error.status() == cudaErrorNotReady);
+  REQUIRE(error.status_type_name().find("cudaError_enum") != cuda::std::string_view::npos); // CUresult is a typedef
+                                                                                            // of enum cudaError_enum
+  REQUIRE(std::string(error.what()).find("still running") != std::string::npos);
 }
 
 C2H_TEST("cuda_error: any status enumeration works without registration", "[cuda_error]")
 {
   const cuda::cuda_error error(plain_status::bad, "boom");
 
-  CCCLRT_REQUIRE(error.holds<plain_status>());
-  CCCLRT_REQUIRE(error.status<plain_status>() == plain_status::bad);
-  CCCLRT_REQUIRE(error.status() == cudaErrorUnknown);
-  CCCLRT_REQUIRE(error.raw_code() == 7);
-  CCCLRT_REQUIRE(error.status_type().find("plain_status") != cuda::std::string_view::npos);
-  CCCLRT_REQUIRE(std::string(error.what()).find("(7): boom") != std::string::npos);
+  REQUIRE(error.holds<plain_status>());
+  REQUIRE(error.status<plain_status>() == plain_status::bad);
+  REQUIRE(error.status() == cudaErrorUnknown);
+  REQUIRE(error.raw_code() == 7);
+  REQUIRE(error.status_type_name().find("plain_status") != cuda::std::string_view::npos);
+  REQUIRE(std::string(error.what()).find("(7): boom") != std::string::npos);
 }
 
 C2H_TEST("cuda_error: a registered enumeration contributes its text", "[cuda_error]")
 {
   const cuda::cuda_error error(described_status::bad, "boom");
 
-  CCCLRT_REQUIRE(error.holds<described_status>());
-  CCCLRT_REQUIRE(error.status<described_status>() == described_status::bad);
-  CCCLRT_REQUIRE(error.raw_code() == 11);
-  CCCLRT_REQUIRE(std::string(error.what()).find("(11): described badly: boom") != std::string::npos);
+  REQUIRE(error.holds<described_status>());
+  REQUIRE(error.status<described_status>() == described_status::bad);
+  REQUIRE(error.raw_code() == 11);
+  REQUIRE(std::string(error.what()).find("(11): described badly: boom") != std::string::npos);
 }
 
 C2H_TEST("cuda_error: a registered struct status is carried whole", "[cuda_error]")
 {
   const cuda::cuda_error error(struct_status{5, 99}, "disk");
 
-  CCCLRT_REQUIRE(error.holds<struct_status>());
-  CCCLRT_REQUIRE(!error.holds<plain_status>());
-  CCCLRT_REQUIRE(error.raw_code() == 5);
+  REQUIRE(error.holds<struct_status>());
+  REQUIRE(!error.holds<plain_status>());
+  REQUIRE(error.raw_code() == 5);
   const struct_status back = error.status<struct_status>(); // the whole object, not just its code
-  CCCLRT_REQUIRE(back.err == 5);
-  CCCLRT_REQUIRE(back.extra == 99);
-  CCCLRT_REQUIRE(error.status() == cudaErrorUnknown);
-  CCCLRT_REQUIRE(std::string(error.what()).find("(5): struct failure: disk") != std::string::npos);
-  CCCLRT_REQUIRE(cuda::cuda_status_traits<struct_status>::failed(struct_status{5, 0}));
-  CCCLRT_REQUIRE(!cuda::cuda_status_traits<struct_status>::failed(struct_status{0, 3}));
+  REQUIRE(back.err == 5);
+  REQUIRE(back.extra == 99);
+  REQUIRE(error.status() == cudaErrorUnknown);
+  REQUIRE(std::string(error.what()).find("(5): struct failure: disk") != std::string::npos);
+  REQUIRE(cuda::cuda_status_traits<struct_status>::failed(struct_status{5, 0}));
+  REQUIRE(!cuda::cuda_status_traits<struct_status>::failed(struct_status{0, 3}));
 }
 
 #if TEST_HAS_EXCEPTIONS()
@@ -149,6 +149,6 @@ C2H_TEST("cuda_error: a thrown error is caught by its base classes", "[cuda_erro
   {
     caught = std::string(error.what()).find("driver call") != std::string::npos;
   }
-  CCCLRT_REQUIRE(caught);
+  REQUIRE(caught);
 }
 #endif // TEST_HAS_EXCEPTIONS()
