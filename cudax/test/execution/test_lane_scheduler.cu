@@ -630,13 +630,16 @@ __global__ void sum_k(const int* partials, int n, int* result)
   }
   *result = acc;
 }
-template <class... S, size_t N, size_t... I>
-auto reduce(bundle<S...> b, const sharded_view<N>& in, int* partials, int* result, cuda::std::index_sequence<I...>)
+template <class... S, size_t N, class Mr, size_t... I>
+auto reduce(
+  bundle<S...> b, const sharded_view<N>& in, int* partials, int* result, Mr mr, cuda::std::index_sequence<I...>)
 {
   static_assert(sizeof...(S) == N);
   auto stage = [=](auto s, auto k) {
     return ::std::move(s) | ex::then([=] {
-             auto env = cuda::std::execution::env{cuda::std::execution::prop{::cuda::get_stream, in.lane[k].stream()}};
+             // CUB's scratch comes from the env's memory resource, on the shard's lane.
+             auto env = cuda::std::execution::env{cuda::std::execution::prop{::cuda::get_stream, in.lane[k].stream()},
+                                                  cuda::std::execution::prop{::cuda::mr::get_memory_resource, mr}};
              REQUIRE(cub::DeviceReduce::Reduce(in.data[k], partials + k, in.shard_n, cuda::std::plus<>{}, 0, env)
                      == cudaSuccess);
            });
@@ -647,10 +650,10 @@ auto reduce(bundle<S...> b, const sharded_view<N>& in, int* partials, int* resul
            sum_k<<<1, 1, 0, in.lane[0].stream()>>>(partials, static_cast<int>(N), result);
          });
 }
-template <class... S, size_t N>
-auto reduce(bundle<S...> b, const sharded_view<N>& in, int* partials, int* result)
+template <class... S, size_t N, class Mr>
+auto reduce(bundle<S...> b, const sharded_view<N>& in, int* partials, int* result, Mr mr)
 {
-  return reduce(::std::move(b), in, partials, result, cuda::std::make_index_sequence<N>{});
+  return reduce(::std::move(b), in, partials, result, mr, cuda::std::make_index_sequence<N>{});
 }
 } // namespace sharded_mock
 
@@ -660,7 +663,11 @@ bool graph_has_path(cudaGraph_t g, const std::string& from, const std::string& t
   size_t n = 0;
   REQUIRE(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &n) == cudaSuccess);
   std::vector<cudaGraphNode_t> a(n), b(n);
-  REQUIRE(cudaGraphGetEdges(g, a.data(), b.data(), nullptr, &n) == cudaSuccess);
+  // CUB launches its kernels with programmatic dependent launch where the device supports it
+  // (SM 9.0+), and a capture turns that into an edge with non-default edge data. Asking for the
+  // edges without their data is then a lossy query (cudaErrorLossyQuery): always ask for the data.
+  std::vector<cudaGraphEdgeData> data(n);
+  REQUIRE(cudaGraphGetEdges(g, a.data(), b.data(), data.data(), &n) == cudaSuccess);
   size_t nn = 0;
   REQUIRE(cudaGraphGetNodes(g, nullptr, &nn) == cudaSuccess);
   std::vector<cudaGraphNode_t> nodes(nn);
@@ -953,7 +960,7 @@ C2H_TEST("lane_scheduler: sharded mock-up, three transforms then a reduce: one f
       return lane::allocate<int>(N) | ex::let_value([&](lane::buffer<int>& partials) {
                auto b = start(x);
                auto t = transform(transform(transform(::std::move(b), x, y, times2{}), y, x, plus1{}), x, y, times3{});
-               return reduce(::std::move(t), y, partials.data(), f.out);
+               return reduce(::std::move(t), y, partials.data(), f.out, counting_mr{&allocs});
              });
     });
   ex::sync_wait(std::move(whole),
