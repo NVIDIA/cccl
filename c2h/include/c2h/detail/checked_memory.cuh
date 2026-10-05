@@ -203,6 +203,7 @@ inline void store_checked_host_offset(char* ptr, std::size_t bytes, const std::s
 {
   assert_current_device(device);
 
+  // C2H test sessions target a single device, so the first queried device is the only device this function will see.
   static const bool result = [device] {
     cudaDeviceProp prop{};
     if (cudaGetDeviceProperties(&prop, device) != cudaSuccess)
