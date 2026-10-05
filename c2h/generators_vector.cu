@@ -1,11 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-// Include CURAND before CUDA stream/runtime headers to avoid a CUDA 13.0/MSVC pragma bug.
-#if C2H_HAS_CURAND
-#  include <curand_kernel.h>
-#endif
-
 #include <thrust/tabulate.h>
 
 #include <cuda/std/cstddef>
