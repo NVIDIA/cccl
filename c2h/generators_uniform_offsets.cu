@@ -11,7 +11,6 @@
 
 #include <stdexcept>
 
-#include <c2h/detail/scoped_current_device.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/generator_common.h>
 #include <c2h/generators.h>
@@ -72,7 +71,6 @@ std::size_t gen_uniform_offsets(
     throw std::invalid_argument{"segment_offsets is too small for total_elements"};
   }
 
-  const scoped_current_device device_scope{stream.device().get()};
   const auto policy = device_policy.on(stream.get());
 
   gen_values_between(stream, seed, segment_offsets, min_segment_size, max_segment_size);

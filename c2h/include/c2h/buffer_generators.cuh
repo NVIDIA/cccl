@@ -148,7 +148,6 @@ template <typename T>
   const auto offsets_size = ::c2h::detail::checked_uniform_offsets_size(total_elements);
 
   const auto device = stream.device();
-  const ::c2h::detail::scoped_current_device device_scope{device.get()};
 
   auto d_segment_offsets = ::c2h::make_device_buffer<T>(stream, device, offsets_size, cuda::no_init);
   const auto num_offsets = ::c2h::detail::gen_uniform_offsets(
