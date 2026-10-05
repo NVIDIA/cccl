@@ -214,6 +214,8 @@ using wide_integer_type_list = c2h::type_list<
 
 using bitwise_op_list = c2h::type_list<cuda::std::bit_and<>, cuda::std::bit_or<>, cuda::std::bit_xor<>>;
 
+using bool_op_list = c2h::type_list<cuda::std::logical_or<>, cuda::std::logical_and<>>;
+
 using logical_warp_threads = c2h::enum_type_list<unsigned, 32, 16, 9, 7, 1>;
 
 /***********************************************************************************************************************
@@ -387,6 +389,54 @@ CUB_TEST("WarpReduce::Reduce, bitwise types",
 }
 
 #endif // _CCCL_COMPILER(GCC, >=, 8)
+
+CUB_TEST(
+  "WarpReduce::Reduce, bool", "[reduce][warp][predefined_op][vote]", CUB_SMALL, bool_op_list, logical_warp_threads)
+{
+  using predefined_op                           = c2h::get<0, TestType>;
+  constexpr auto logical_warp_threads           = c2h::get<1, TestType>::value;
+  auto [input_size, output_size, logical_warps] = get_test_config(logical_warp_threads);
+  const unsigned valid_items = GENERATE_COPY(logical_warp_threads, take(2, random(1u, logical_warp_threads)));
+  // sparse inputs exercise any-like operators, dense inputs exercise all-like operators
+  const bool sparse = GENERATE(false, true);
+  CAPTURE(c2h::type_name<predefined_op>(), logical_warp_threads, valid_items, sparse);
+
+  c2h::device_vector<uint8_t> d_rand(input_size);
+  c2h::gen(C2H_SEED(5), d_rand, uint8_t{0}, static_cast<uint8_t>(2 * logical_warp_threads - 1));
+  const c2h::host_vector<uint8_t> h_rand = d_rand;
+  c2h::host_vector<bool> h_in(input_size);
+  for (unsigned i = 0; i < input_size; ++i)
+  {
+    h_in[i] = (h_rand[i] == 0) == sparse;
+  }
+  c2h::device_vector<bool> d_in = h_in;
+  c2h::device_vector<bool> d_out(output_size);
+  if (valid_items == logical_warp_threads)
+  {
+    warp_reduce_launch<logical_warp_threads>(d_in, d_out, warp_reduce_t<predefined_op, bool>{});
+  }
+  else
+  {
+    warp_reduce_launch<logical_warp_threads, true>(
+      d_in, d_out, warp_reduce_t<predefined_op, bool>{}, static_cast<int>(valid_items));
+  }
+
+  c2h::host_vector<bool> h_out(output_size);
+  for (unsigned i = 0; i < total_warps; ++i)
+  {
+    for (unsigned j = 0; j < logical_warps; ++j)
+    {
+      const auto first = (i * warp_size) + (j * logical_warp_threads);
+      bool expected    = h_in[first];
+      for (unsigned k = 1; k < valid_items; ++k)
+      {
+        expected = static_cast<bool>(predefined_op{}(expected, h_in[first + k]));
+      }
+      h_out[i * logical_warps + j] = expected;
+    }
+  }
+  verify_results(h_out, d_out);
+}
 
 CUB_TEST("WarpReduce::CustomSum", "[reduce][warp][generic][full]", CUB_SMALL, full_type_list, logical_warp_threads)
 {
