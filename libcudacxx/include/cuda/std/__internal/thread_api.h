@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===---------------------------------------------------------------------===//
 
@@ -44,7 +44,7 @@
 #  if defined(__GNU__) || _CCCL_OS(LINUX) || _CCCL_OS(APPLE) || _CCCL_OS(QNX) \
     || (defined(__MINGW32__) && __has_include(<pthread.h>))
 #    define _CCCL_HAS_THREAD_API_PTHREAD
-#  elif defined(_WIN32)
+#  elif _CCCL_OS(WINDOWS)
 #    define _CCCL_HAS_THREAD_API_WIN32
 #  else
 #    define _CCCL_UNSUPPORTED_THREAD_API
@@ -54,5 +54,25 @@
 #ifndef __STDCPP_THREADS__
 #  define __STDCPP_THREADS__ 1
 #endif // __STDCPP_THREADS__
+
+// Native mutex follows the thread API selected above, and only when that platform's header can be included.
+// A blocking host lock wins over the CUDA ticket lock. nvc++ sets _CCCL_DEVICE_COMPILATION() while it still
+// compiles host code, so it keeps the platform lock.
+#if defined(_CCCL_HAS_THREAD_API_PTHREAD) && __has_include(<pthread.h>) && !_CCCL_COMPILER(NVRTC) \
+  && !(_CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC))
+#  define _CCCL_NATIVE_MUTEX_PTHREAD() 1
+#else // ^^^ pthread host lock ^^^ / vvv no pthread host lock vvv
+#  define _CCCL_NATIVE_MUTEX_PTHREAD() 0
+#endif // no pthread host lock
+
+#if defined(_CCCL_HAS_THREAD_API_WIN32) && __has_include(<windows.h>) && !_CCCL_NATIVE_MUTEX_PTHREAD() \
+  && !_CCCL_COMPILER(NVRTC) && !(_CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC))
+#  define _CCCL_NATIVE_MUTEX_SRWLOCK() 1
+#else // ^^^ Win32 host lock ^^^ / vvv no Win32 host lock vvv
+#  define _CCCL_NATIVE_MUTEX_SRWLOCK() 0
+#endif // no Win32 host lock
+
+#define _CCCL_NATIVE_MUTEX(_BACKEND) _CCCL_NATIVE_MUTEX_##_BACKEND()
+#define _CCCL_HAS_NATIVE_MUTEX() (_CCCL_NATIVE_MUTEX(PTHREAD) || _CCCL_NATIVE_MUTEX(SRWLOCK))
 
 #endif // _CUDA_STD___INTERNAL_THREAD_API_H

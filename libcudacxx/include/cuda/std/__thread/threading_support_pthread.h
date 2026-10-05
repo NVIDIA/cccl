@@ -20,7 +20,65 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_HAS_THREAD_API_PTHREAD)
+#if _CCCL_NATIVE_MUTEX(PTHREAD)
+
+#  include <nv/target>
+
+#  include <pthread.h>
+
+#  include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+static_assert(sizeof(__cccl_mutex_t) == sizeof(::pthread_mutex_t), "mutex storage must match pthread_mutex_t");
+static_assert(alignof(__cccl_mutex_t) == alignof(::pthread_mutex_t), "mutex storage must match pthread_mutex_t");
+
+_CCCL_HOST_API inline void __cccl_mutex_lock_host(__cccl_mutex_t* __mutex)
+{
+  ::pthread_mutex_lock(reinterpret_cast<::pthread_mutex_t*>(__mutex));
+}
+
+[[nodiscard]] _CCCL_HOST_API inline bool __cccl_mutex_trylock_host(__cccl_mutex_t* __mutex) noexcept
+{
+  return ::pthread_mutex_trylock(reinterpret_cast<::pthread_mutex_t*>(__mutex)) == 0;
+}
+
+_CCCL_HOST_API inline void __cccl_mutex_unlock_host(__cccl_mutex_t* __mutex) noexcept
+{
+  ::pthread_mutex_unlock(reinterpret_cast<::pthread_mutex_t*>(__mutex));
+}
+
+template <thread_scope _Sco>
+_CCCL_HOST_DEVICE_API inline void __cccl_mutex_lock(__cccl_mutex_t* __mutex)
+{
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (__cccl_mutex_lock_host(__mutex);),
+                    (__cccl_mutex_lock_atomic<_Sco, __cuda_atomic_device_backend>(__mutex);))
+}
+
+template <thread_scope _Sco>
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline bool __cccl_mutex_trylock(__cccl_mutex_t* __mutex) noexcept
+{
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (return __cccl_mutex_trylock_host(__mutex);),
+                    (return __cccl_mutex_trylock_atomic<_Sco, __cuda_atomic_device_backend>(__mutex);))
+}
+
+template <thread_scope _Sco>
+_CCCL_HOST_DEVICE_API inline void __cccl_mutex_unlock(__cccl_mutex_t* __mutex) noexcept
+{
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (__cccl_mutex_unlock_host(__mutex);),
+                    (__cccl_mutex_unlock_atomic<_Sco, __cuda_atomic_device_backend>(__mutex);))
+}
+
+_CCCL_END_NAMESPACE_CUDA_STD
+
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_NATIVE_MUTEX(PTHREAD)
+
+#if defined(_CCCL_HAS_THREAD_API_PTHREAD) && _CCCL_HOSTED()
 
 #  include <cuda/std/__chrono/duration.h>
 #  include <cuda/std/__utility/cmp.h>
@@ -41,10 +99,6 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-// Mutex
-using __cccl_mutex_t = pthread_mutex_t;
-#  define _LIBCUDACXX_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
 
 using __cccl_recursive_mutex_t = pthread_mutex_t;
 

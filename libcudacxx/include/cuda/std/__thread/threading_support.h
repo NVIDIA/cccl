@@ -23,6 +23,10 @@
 #include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__chrono/high_resolution_clock.h>
 
+// Ticket lock first. With no native mutex this header aliases `__cccl_mutex_lock` to it. Otherwise the platform
+// header included below defines `__cccl_mutex_lock` and calls the ticket lock on device.
+#include <cuda/std/__thread/threading_support_fallback.h>
+
 #if defined(_CCCL_HAS_THREAD_API_EXTERNAL)
 #  include <cuda/std/__thread/threading_support_external.h>
 #endif // _CCCL_HAS_THREAD_API_EXTERNAL
@@ -36,6 +40,13 @@
 #else // ^^^ _CCCL_HAS_THREAD_API_WIN32 ^^^ / vvv Unknown Thread API vvv
 #  error "Unknown Thread API"
 #endif // Unknown Thread API
+
+// The CUDA thread API supplies yield and sleep. A host mutex, when there is one, still comes from the platform header.
+#if _CCCL_NATIVE_MUTEX(PTHREAD)
+#  include <cuda/std/__thread/threading_support_pthread.h>
+#elif _CCCL_NATIVE_MUTEX(SRWLOCK)
+#  include <cuda/std/__thread/threading_support_win32.h>
+#endif // host mutex alongside the CUDA thread API
 
 #include <cuda/std/__cccl/prologue.h>
 
