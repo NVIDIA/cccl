@@ -24,9 +24,9 @@
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
@@ -68,7 +68,7 @@ class fixed_capacity_set_ref
 {
   static_assert(sizeof(_Key) <= 8, "Container does not support key types larger than 8 bytes.");
   static_assert(::cuda::is_power_of_two(sizeof(_Key)), "key_type size must be a power of two");
-  static_assert(::cuda::std::is_trivially_copyable_v<_Key>, "Key type must be trivially copyable.");
+  static_assert(::cuda::is_trivially_copyable_v<_Key>, "Key type must be trivially copyable.");
   static_assert(::cuda::is_bitwise_comparable_v<_Key>,
                 "Key type must have unique object representations or be explicitly declared safe for bitwise "
                 "comparison.");

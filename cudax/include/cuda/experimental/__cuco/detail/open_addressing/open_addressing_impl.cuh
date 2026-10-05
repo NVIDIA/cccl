@@ -109,6 +109,11 @@ public:
                 "ProbingScheme must inherit from cuda::experimental::cuco::detail::__probing_scheme_base");
 
 private:
+  // Key-only slots use packed CAS; subword CAS accesses complete 32-bit words. Buffer alignment
+  // also pads the allocation, while payload-bearing slots retain their natural alignment.
+  static constexpr __size_type __storage_alignment =
+    __has_payload ? alignof(__value_type) : (sizeof(__value_type) < 4 ? 4 : sizeof(__value_type));
+
   __value_type __empty_slot_sentinel;
   __key_type __erased_key_sentinel;
   __key_equal __predicate;
@@ -174,8 +179,7 @@ public:
     __size_type __capacity,
     __value_type __empty_slot_sentinel,
     const _KeyEqual& __pred,
-    const _ProbingScheme& __probing_scheme,
-    __size_type __storage_alignment = alignof(__value_type))
+    const _ProbingScheme& __probing_scheme)
       : __empty_slot_sentinel{__empty_slot_sentinel}
       , __erased_key_sentinel{__extract_key(__empty_slot_sentinel)}
       , __predicate{__pred}
@@ -199,8 +203,7 @@ public:
     double __desired_load_factor,
     __value_type __empty_slot_sentinel,
     const _KeyEqual& __pred,
-    const _ProbingScheme& __probing_scheme,
-    __size_type __storage_alignment = alignof(__value_type))
+    const _ProbingScheme& __probing_scheme)
       : __empty_slot_sentinel{__empty_slot_sentinel}
       , __erased_key_sentinel{__extract_key(__empty_slot_sentinel)}
       , __predicate{__pred}
@@ -229,7 +232,11 @@ public:
       , __predicate{__pred}
       , __probing_scheme{__probing_scheme}
       , __memory_resource{__mr}
-      , __slots{__stream, __mr, __compute_num_buckets(__capacity) * _BucketSize, ::cuda::no_init}
+      , __slots{__stream,
+                __mr,
+                __compute_num_buckets(__capacity) * _BucketSize,
+                ::cuda::no_init,
+                ::cuda::std::execution::prop{::cuda::allocation_alignment, __storage_alignment}}
   {
     if (empty_key_sentinel() == erased_key_sentinel())
     {
@@ -592,7 +599,12 @@ public:
   _CCCL_HOST_API void rehash_async(::cuda::stream_ref __stream, __size_type __capacity, const _Container& __container)
   {
     const auto __new_capacity = __compute_num_buckets(__capacity) * _BucketSize;
-    ::cuda::device_buffer<__value_type> __new_slots{__stream, __memory_resource, __new_capacity, ::cuda::no_init};
+    ::cuda::device_buffer<__value_type> __new_slots{
+      __stream,
+      __memory_resource,
+      __new_capacity,
+      ::cuda::no_init,
+      ::cuda::std::execution::prop{::cuda::allocation_alignment, __storage_alignment}};
 
     _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceTransform::Fill,

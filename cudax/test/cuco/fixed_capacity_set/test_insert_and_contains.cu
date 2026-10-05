@@ -5,11 +5,14 @@
 #include <cuda/buffer>
 #include <cuda/functional>
 #include <cuda/iterator>
+#include <cuda/std/algorithm>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
+#include <cuda/std/limits>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
+#include <cuda/stream>
 
 #include <cuda/experimental/__cuco/fixed_capacity_set.cuh>
 #include <cuda/experimental/__cuco/probing_scheme.cuh>
@@ -117,9 +120,11 @@ struct query_key
 
 struct heterogeneous_hash
 {
+  cuda::std::uint32_t seed = 0;
+
   [[nodiscard]] _CCCL_HOST_DEVICE_API cuda::std::uint32_t operator()(int value) const noexcept
   {
-    return static_cast<cuda::std::uint32_t>(value / 2);
+    return static_cast<cuda::std::uint32_t>(value / 2) ^ seed;
   }
 
   template <class Key>
@@ -154,11 +159,16 @@ struct make_heterogeneous_key
   }
 };
 
-C2H_TEST("fixed_capacity_set heterogeneous keys and custom equivalence", "[container][heterogeneous]", cg_sizes)
+C2H_TEST(
+  "fixed_capacity_set heterogeneous keys and custom equivalence", "[container][heterogeneous]", cg_sizes, probing_kinds)
 {
-  [[maybe_unused]] constexpr int cg_size = c2h::get<0, TestType>::value;
-  using probing_type                     = cudax::cuco::linear_probing<cg_size, heterogeneous_hash>;
-  using set_type                         = cudax::cuco::
+  [[maybe_unused]] constexpr int cg_size      = c2h::get<0, TestType>::value;
+  [[maybe_unused]] constexpr int probing_kind = c2h::get<1, TestType>::value;
+  using probing_type =
+    cuda::std::conditional_t<probing_kind == 0,
+                             cudax::cuco::linear_probing<cg_size, heterogeneous_hash>,
+                             cudax::cuco::double_hashing<cg_size, heterogeneous_hash>>;
+  using set_type = cudax::cuco::
     fixed_capacity_set<int, cuda::std::dynamic_extent, cuda::thread_scope_device, heterogeneous_equal, probing_type>;
   constexpr int num_keys = 37;
   test_context context;
@@ -175,4 +185,100 @@ C2H_TEST("fixed_capacity_set heterogeneous keys and custom equivalence", "[conta
   REQUIRE(set.insert(context.stream, equivalent, equivalent + num_keys) == 0);
   set.contains_async(context.stream, queries, queries + 2 * num_keys, found.begin());
   REQUIRE(context.matches(found.data(), 2 * num_keys, num_keys));
+}
+
+C2H_TEST("fixed_capacity_set operations on another stream", "[container][stream]", key_types)
+{
+  using key_type         = c2h::get<0, TestType>;
+  constexpr int num_keys = 100;
+  const auto first       = cuda::counting_iterator<key_type>{0};
+  test_context context;
+  const cuda::stream other{context.stream.device()};
+  cudax::cuco::fixed_capacity_set<key_type> set{
+    context.stream, context.mr, num_keys * 2, cudax::cuco::empty_key{static_cast<key_type>(-1)}};
+  auto found = cuda::make_buffer<int>(other, context.mr, num_keys, 0);
+  // CCCL construction is asynchronous: establish the dependency before switching streams.
+  context.stream.sync();
+  REQUIRE(set.insert(other, first, first + num_keys) == num_keys);
+  set.contains(other, first, first + num_keys, found.begin());
+  REQUIRE(context.all_equal(found.data(), num_keys, 1));
+
+  set.clear(context.stream);
+  REQUIRE(set.insert(context.stream, first, first + num_keys) == num_keys);
+  set.contains(other, first, first + num_keys, found.begin());
+  REQUIRE(context.all_equal(found.data(), num_keys, 1));
+}
+
+struct hashed_key
+{
+  cuda::std::uint32_t hash;
+  cuda::std::int32_t value;
+};
+
+struct stored_hash
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API cuda::std::uint32_t operator()(hashed_key key) const noexcept
+  {
+    return key.hash;
+  }
+};
+
+struct distinct_keys
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()(hashed_key, hashed_key) const noexcept
+  {
+    return false;
+  }
+};
+
+struct make_hashed_key
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API hashed_key operator()(cuda::std::int32_t value) const noexcept
+  {
+    return {static_cast<cuda::std::uint32_t>(cuda::hash<cuda::std::int32_t>{}(value)), value};
+  }
+};
+
+C2H_TEST("fixed_capacity_set custom key atomic storage regression", "[container][atomic]")
+{
+  // cuCollections regression for spark-rapids#12586 / cudf#18587: a key storing its
+  // hash must remain valid when copied through the packed atomic representation.
+  using set_type =
+    cudax::cuco::fixed_capacity_set<hashed_key,
+                                    cuda::std::dynamic_extent,
+                                    cuda::thread_scope_device,
+                                    distinct_keys,
+                                    cudax::cuco::linear_probing<1, stored_hash>>;
+  constexpr int num_keys = 100'000;
+  const test_context context{};
+  set_type set{context.stream,
+               context.mr,
+               num_keys,
+               0.5,
+               cudax::cuco::empty_key{hashed_key{cuda::std::numeric_limits<cuda::std::uint32_t>::max(), -1}}};
+  const auto first = cuda::transform_iterator{cuda::counting_iterator<cuda::std::int32_t>{0}, make_hashed_key{}};
+  REQUIRE(set.insert(context.stream, first, first + num_keys) == num_keys);
+}
+
+C2H_TEST("fixed_capacity_set large input regression", "[container][.large]", cg_sizes)
+{
+  // The upstream 1.2B-key regression needs over 20 GiB. Opt in with '[.large]'.
+  using key_type        = cuda::std::int64_t;
+  constexpr int cg_size = c2h::get<0, TestType>::value;
+  using set_type =
+    cudax::cuco::fixed_capacity_set<key_type,
+                                    cuda::std::dynamic_extent,
+                                    cuda::thread_scope_device,
+                                    cuda::std::equal_to<key_type>,
+                                    cudax::cuco::double_hashing<cg_size, cuda::hash<key_type>>>;
+  constexpr cuda::std::size_t num_keys = 1'200'000'000;
+  test_context context;
+  set_type set{context.stream, context.mr, num_keys * 2, cudax::cuco::empty_key<key_type>{-1}};
+  const auto first = cuda::counting_iterator<key_type>{0};
+  auto found       = cuda::make_buffer<bool>(context.stream, context.mr, num_keys, cuda::no_init);
+  set.contains(context.stream, first, first + num_keys, found.begin());
+  REQUIRE(cuda::std::none_of(context.policy(), found.begin(), found.end(), cuda::std::identity{}));
+  REQUIRE(set.insert(context.stream, first, first + num_keys) == num_keys);
+  set.contains(context.stream, first, first + num_keys, found.begin());
+  REQUIRE(cuda::std::all_of(context.policy(), found.begin(), found.end(), cuda::std::identity{}));
 }

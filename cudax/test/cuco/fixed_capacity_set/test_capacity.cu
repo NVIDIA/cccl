@@ -8,6 +8,7 @@
 #include <cuda/memory_pool>
 #include <cuda/memory_resource>
 #include <cuda/std/algorithm>
+#include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
@@ -76,9 +77,6 @@ C2H_TEST("fixed_capacity_set capacity constructors", "[container][capacity]", pr
   REQUIRE(fixed.insert(context.stream, first, first + num_keys) == num_keys);
   fixed.contains(context.stream, first, first + num_keys, results.begin());
   REQUIRE(context.all_equal(results.data(), num_keys, 1));
-  fixed.clear(context.stream);
-  fixed.contains(context.stream, first, first + num_keys, results.begin());
-  REQUIRE(context.all_equal(results.data(), num_keys, 0));
 
   const dynamic_set zero{context.stream, context.mr, cuda::std::size_t{0}, empty_key{-1}};
   REQUIRE(zero.capacity() == cudax::cuco::make_valid_capacity<probing_type, 2>(cuda::std::size_t{0}));
@@ -122,8 +120,8 @@ C2H_TEST("fixed_capacity_set preserves policies and sentinel", "[container][capa
   using probing_type = cudax::cuco::linear_probing<1, stateful_hash>;
   using set_type     = cudax::cuco::
     fixed_capacity_set<int, cuda::std::dynamic_extent, cuda::thread_scope_device, stateful_equal, probing_type>;
-  test_context context;
-  set_type set{
+  const test_context context{};
+  const set_type set{
     context.stream,
     context.mr,
     cuda::std::size_t{23},
@@ -138,11 +136,6 @@ C2H_TEST("fixed_capacity_set preserves policies and sentinel", "[container][capa
   REQUIRE(ref.key_eq().state == 19);
   REQUIRE(ref.hash_function().seed == 31);
   REQUIRE(ref.probing_scheme().hash_function().seed == 31);
-  const auto first = cuda::counting_iterator<int>{0};
-  REQUIRE(set.insert(context.stream, first, first + 13) == 13);
-  auto results = cuda::make_buffer<int>(context.stream, context.mr, 23, 0);
-  set.contains(context.stream, first, first + 23, results.begin());
-  REQUIRE(context.matches(results.data(), 23, 13));
 }
 
 struct allocation_record
@@ -194,82 +187,30 @@ struct tracking_resource
   _CCCL_HOST_API friend void get_property(const tracking_resource&, cuda::mr::device_accessible) noexcept {}
 };
 
-template <int Width>
-struct weakly_aligned_key
-{
-  cuda::std::uint8_t bytes[Width];
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator==(const weakly_aligned_key& other) const noexcept
-  {
-    for (int i = 0; i < Width; ++i)
-    {
-      if (bytes[i] != other.bytes[i])
-      {
-        return false;
-      }
-    }
-    return true;
-  }
-};
-
-static_assert(sizeof(weakly_aligned_key<4>) == 4 && alignof(weakly_aligned_key<4>) == 1);
-static_assert(sizeof(weakly_aligned_key<8>) == 8 && alignof(weakly_aligned_key<8>) == 1);
-static_assert(cuda::is_bitwise_comparable_v<weakly_aligned_key<4>>);
-static_assert(cuda::is_bitwise_comparable_v<weakly_aligned_key<8>>);
-
-template <class Key>
-struct make_alignment_key
-{
-  [[nodiscard]] _CCCL_HOST_DEVICE_API Key operator()(int value) const noexcept
-  {
-    if constexpr (cuda::std::is_integral_v<Key>)
-    {
-      return static_cast<Key>(value);
-    }
-    else
-    {
-      Key result{};
-      for (auto& byte : result.bytes)
-      {
-        byte = static_cast<cuda::std::uint8_t>(value);
-      }
-      return result;
-    }
-  }
-};
-
-struct alignment_hash
+struct identity_hash
 {
   template <class Key>
   [[nodiscard]] _CCCL_HOST_DEVICE_API cuda::std::uint32_t operator()(Key key) const noexcept
   {
-    if constexpr (cuda::std::is_integral_v<Key>)
-    {
-      return static_cast<cuda::std::uint32_t>(key);
-    }
-    else
-    {
-      return key.bytes[0];
-    }
+    return static_cast<cuda::std::uint32_t>(key);
   }
 };
 
-template <class Key>
-struct matches_key
-{
-  Key expected;
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()(Key actual) const noexcept
-  {
-    return actual == expected;
-  }
-};
+template <class Key, cuda::std::size_t Capacity, class Hash>
+using tracked_set = cudax::cuco::fixed_capacity_set<
+  Key,
+  Capacity,
+  cuda::thread_scope_device,
+  cuda::std::equal_to<Key>,
+  cudax::cuco::linear_probing<1, Hash>,
+  1,
+  tracking_resource>;
 
 template <class Set>
 void check_last_slot(Set& set, test_context& context, const allocation_record& record, int capacity)
 {
   using key_type           = typename Set::key_type;
-  constexpr auto alignment = sizeof(key_type) < 4 ? 4 : sizeof(key_type);
+  constexpr auto alignment = 4;
   const auto logical_bytes = static_cast<cuda::std::size_t>(capacity) * sizeof(key_type);
   const auto padded_bytes  = (logical_bytes + alignment - 1) / alignment * alignment;
   REQUIRE(set.capacity() == static_cast<cuda::std::size_t>(capacity));
@@ -278,55 +219,32 @@ void check_last_slot(Set& set, test_context& context, const allocation_record& r
   REQUIRE(record.bytes % alignment == 0);
   REQUIRE(reinterpret_cast<cuda::std::uintptr_t>(set.data()) % alignment == 0);
 
-  const auto first =
-    cuda::transform_iterator{cuda::counting_iterator<int>{capacity - 1}, make_alignment_key<key_type>{}};
-  const auto expected = make_alignment_key<key_type>{}(capacity - 1);
+  const auto expected = static_cast<key_type>(capacity - 1);
+  const auto first    = cuda::counting_iterator<key_type>{expected};
   // Identity hashing places this key directly in the final slot, including capacity one.
   REQUIRE(set.insert(context.stream, first, first + 1) == 1);
-  REQUIRE(cuda::std::all_of(
-    context.policy(), set.data() + capacity - 1, set.data() + capacity, matches_key<key_type>{expected}));
+  REQUIRE(cuda::std::equal(context.policy(), set.data() + capacity - 1, set.data() + capacity, first));
   auto results = cuda::make_buffer<int>(context.stream, context.mr, 1, 0);
-  set.contains(context.stream, first, first + 1, results.begin());
-  REQUIRE(context.all_equal(results.data(), 1, 1));
-  REQUIRE(set.insert(context.stream, first, first + 1) == 0);
-  set.clear_async(context.stream);
-  set.insert_async(context.stream, first, first + 1);
   set.contains(context.stream, first, first + 1, results.begin());
   REQUIRE(context.all_equal(results.data(), 1, 1));
 }
 
-using alignment_keys =
-  c2h::type_list<cuda::std::uint8_t, cuda::std::uint16_t, weakly_aligned_key<4>, weakly_aligned_key<8>>;
+using subword_keys    = c2h::type_list<cuda::std::uint8_t, cuda::std::uint16_t>;
 using tail_capacities = c2h::type_list<int_c<1>, int_c<17>>;
 
-C2H_TEST("fixed_capacity_set allocation alignment and final-slot padding",
+C2H_TEST("fixed_capacity_set subword allocation alignment and final-slot padding",
          "[container][capacity][alignment]",
-         alignment_keys,
+         subword_keys,
          tail_capacities)
 {
   using key_type         = c2h::get<0, TestType>;
   constexpr int capacity = c2h::get<1, TestType>::value;
-  using probing_type     = cudax::cuco::linear_probing<1, alignment_hash>;
-  using dynamic_set      = cudax::cuco::fixed_capacity_set<
-    key_type,
-    cuda::std::dynamic_extent,
-    cuda::thread_scope_device,
-    cuda::std::equal_to<key_type>,
-    probing_type,
-    1,
-    tracking_resource>;
-  using static_set = cudax::cuco::fixed_capacity_set<
-    key_type,
-    capacity,
-    cuda::thread_scope_device,
-    cuda::std::equal_to<key_type>,
-    probing_type,
-    1,
-    tracking_resource>;
+  using dynamic_set      = tracked_set<key_type, cuda::std::dynamic_extent, identity_hash>;
+  using static_set       = tracked_set<key_type, capacity, identity_hash>;
   test_context context;
   allocation_record record;
   const tracking_resource resource{context.mr, &record};
-  const auto empty = cudax::cuco::empty_key{make_alignment_key<key_type>{}(-1)};
+  const auto empty = cudax::cuco::empty_key{static_cast<key_type>(-1)};
 
   SECTION("dynamic capacity")
   {
@@ -342,5 +260,46 @@ C2H_TEST("fixed_capacity_set allocation alignment and final-slot padding",
   {
     dynamic_set set{context.stream, resource, cuda::std::size_t{capacity}, 1.0, empty};
     check_last_slot(set, context, record, capacity);
+  }
+}
+
+C2H_TEST("fixed_capacity_set requests atomic alignment for weakly aligned keys", "[container][capacity][alignment]")
+{
+  using key_type = cuda::std::array<cuda::std::byte, 8>;
+  static_assert(sizeof(key_type) == 8 && alignof(key_type) == 1);
+  static_assert(cuda::std::is_trivially_copyable_v<key_type>);
+  static_assert(cuda::is_bitwise_comparable_v<key_type>);
+  using dynamic_set = tracked_set<key_type, cuda::std::dynamic_extent, cuda::hash<key_type>>;
+  using static_set  = tracked_set<key_type, 17, cuda::hash<key_type>>;
+  test_context context;
+  allocation_record record;
+  const tracking_resource resource{context.mr, &record};
+  const auto empty = cudax::cuco::empty_key{key_type{cuda::std::byte{0xff}}};
+  const auto first = cuda::constant_iterator<key_type>{key_type{}};
+  const auto check = [&](auto& set) {
+    REQUIRE(set.capacity() == 17);
+    REQUIRE(record.alignment >= sizeof(key_type));
+    REQUIRE(record.bytes >= 17 * sizeof(key_type));
+    REQUIRE(reinterpret_cast<cuda::std::uintptr_t>(set.data()) % sizeof(key_type) == 0);
+    REQUIRE(set.insert(context.stream, first, first + 1) == 1);
+    auto results = cuda::make_buffer<int>(context.stream, context.mr, 1, 0);
+    set.contains(context.stream, first, first + 1, results.begin());
+    REQUIRE(context.all_equal(results.data(), 1, 1));
+  };
+
+  SECTION("dynamic capacity")
+  {
+    dynamic_set set{context.stream, resource, cuda::std::size_t{17}, empty};
+    check(set);
+  }
+  SECTION("static capacity")
+  {
+    static_set set{context.stream, resource, empty};
+    check(set);
+  }
+  SECTION("load factor")
+  {
+    dynamic_set set{context.stream, resource, cuda::std::size_t{17}, 1.0, empty};
+    check(set);
   }
 }

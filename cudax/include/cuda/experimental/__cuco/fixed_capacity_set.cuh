@@ -91,9 +91,6 @@ public:
   using ref_type = fixed_capacity_set_ref<_Key, _Scope, _KeyEqual, _ProbingScheme, _BucketSize, _Capacity>;
 
 private:
-  // Subword CAS accesses complete 32-bit words; buffer alignment also pads the allocation.
-  static constexpr size_type __storage_alignment = sizeof(key_type) < 4 ? 4 : sizeof(key_type);
-
   using __impl_type = __open_addressing::
     __open_addressing_impl<_Key, value_type, _Scope, _KeyEqual, _ProbingScheme, _BucketSize, _MemoryResource>;
 
@@ -117,7 +114,7 @@ public:
     const _KeyEqual& __pred                = {},
     const _ProbingScheme& __probing_scheme = {})
       : __impl_{::cuda::std::make_unique<__impl_type>(
-          __stream, __mr, _Capacity, key_type(__empty_key_sentinel), __pred, __probing_scheme, __storage_alignment)}
+          __stream, __mr, _Capacity, key_type(__empty_key_sentinel), __pred, __probing_scheme)}
   {}
 
   //! @brief Constructs a dynamically sized set and enqueues empty-slot initialization.
@@ -140,7 +137,7 @@ public:
     const _KeyEqual& __pred                = {},
     const _ProbingScheme& __probing_scheme = {})
       : __impl_{::cuda::std::make_unique<__impl_type>(
-          __stream, __mr, __capacity, key_type(__empty_key_sentinel), __pred, __probing_scheme, __storage_alignment)}
+          __stream, __mr, __capacity, key_type(__empty_key_sentinel), __pred, __probing_scheme)}
   {}
 
   //! @brief Constructs a dynamic set sized for the expected key count and load factor.
@@ -166,14 +163,7 @@ public:
     const _KeyEqual& __pred                = {},
     const _ProbingScheme& __probing_scheme = {})
       : __impl_{::cuda::std::make_unique<__impl_type>(
-          __stream,
-          __mr,
-          __n,
-          __desired_load_factor,
-          key_type(__empty_key_sentinel),
-          __pred,
-          __probing_scheme,
-          __storage_alignment)}
+          __stream, __mr, __n, __desired_load_factor, key_type(__empty_key_sentinel), __pred, __probing_scheme)}
   {}
 
   _CCCL_HIDE_FROM_ABI fixed_capacity_set()                                     = delete;
