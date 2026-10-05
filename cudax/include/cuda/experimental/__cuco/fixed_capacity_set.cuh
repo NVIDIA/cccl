@@ -60,14 +60,14 @@ namespace cuda::experimental::cuco
 //! @tparam _Capacity Valid slot count, or `cuda::std::dynamic_extent` for runtime capacity
 //! @tparam _Scope Thread scope for atomic operations
 //! @tparam _KeyEqual Key equality predicate
-//! @tparam _ProbingScheme Probing scheme
+//! @tparam _ProbingScheme Probing scheme, defaults to double hashing with CG size 4 and xxHash32
 //! @tparam _BucketSize Number of slots per bucket
 //! @tparam _MemoryResource Memory resource for device storage
 template <class _Key,
           ::cuda::std::size_t _Capacity = ::cuda::std::dynamic_extent,
           ::cuda::thread_scope _Scope   = ::cuda::thread_scope_device,
           class _KeyEqual               = ::cuda::std::equal_to<_Key>,
-          class _ProbingScheme          = linear_probing<4, ::cuda::hash<_Key>>,
+          class _ProbingScheme          = double_hashing<4, ::cuda::hash<_Key, ::cuda::hash_algorithm::xxhash_32>>,
           int _BucketSize               = 1,
           class _MemoryResource         = ::cuda::device_memory_pool_ref>
 class fixed_capacity_set

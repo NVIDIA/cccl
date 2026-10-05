@@ -31,6 +31,20 @@
 using probing_types =
   c2h::type_list<cudax::cuco::linear_probing<4, cuda::hash<int>>, cudax::cuco::double_hashing<2, cuda::hash<int>>>;
 
+C2H_TEST("fixed_capacity_set preserves cuCollections default policies", "[container][capacity]")
+{
+  using set_type     = cudax::cuco::fixed_capacity_set<int>;
+  using probing_type = cudax::cuco::double_hashing<4, cuda::hash<int, cuda::hash_algorithm::xxhash_32>>;
+  static_assert(cuda::std::is_same_v<typename set_type::probing_scheme_type, probing_type>);
+  static_assert(cuda::std::is_same_v<typename set_type::ref_type::probing_scheme_type, probing_type>);
+  static_assert(set_type::bucket_size == 1);
+
+  const test_context context{};
+  const set_type set{context.stream, context.mr, cuda::std::size_t{101}, cudax::cuco::empty_key{-1}};
+  // Double hashing rounds the probe-group count to a prime: 4 * next_prime(ceil(101 / 4)).
+  REQUIRE(set.capacity() == 116);
+}
+
 C2H_TEST("fixed_capacity_set capacity constructors", "[container][capacity]", probing_types)
 {
   using probing_type                    = c2h::get<0, TestType>;
