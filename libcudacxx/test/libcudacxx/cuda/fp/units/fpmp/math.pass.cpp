@@ -30,7 +30,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/fpmp_math>
+#include <cuda/fpmp>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 

@@ -27,6 +27,7 @@
 #  include <cuda/std/__algorithm/remove_if.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__functional/not_fn.h>
 #  include <cuda/std/__iterator/concepts.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>

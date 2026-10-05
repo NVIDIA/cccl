@@ -80,6 +80,65 @@ static bool nvrtc_miscompiles_bf16_simd_intrinsics()
 #endif // _CCCL_HOST_ARCH(ARM64)
 }
 
+// Whether the NVRTC in use correctly compiles the lookahead (warpspeed) scan kernel for the given architecture. The
+// kernel needs PTX ISA 8.6 (CUDA 12.8), and NVRTC below 13.4 miscompiles it when targeting sm_120 (NVIDIA/cccl#8528,
+// NVBug 6235538).
+static bool jit_can_compile_lookahead(cuda::compute_capability cc)
+{
+  int major = 0;
+  int minor = 0;
+  if (nvrtcVersion(&major, &minor) != NVRTC_SUCCESS)
+  {
+    return false;
+  }
+  const int version = major * 100 + minor;
+  return version >= 1208 && (cc != cuda::compute_capability{12, 0} || version >= 1304);
+}
+
+// Selects the tuning policy for the kernel NVRTC compiles below. cub::detail::scan::policy_selector gates the
+// lookahead scan on the version of the CUDA compiler evaluating it, which in this library is the compiler it was
+// built with, not the NVRTC that compiles the kernel. Mirror the selection in policy_selector::operator()
+// (tuning_scan.cuh) with that gate replaced by jit_can_compile_lookahead.
+static cub::ScanPolicy select_policy_for_jit(const cub::detail::scan::policy_selector& sel, cuda::compute_capability cc)
+{
+  if ((!sel.require_stable_reduction_order || cc >= cuda::compute_capability{9, 0}) && jit_can_compile_lookahead(cc))
+  {
+    // These are the compiler-independent checks of policy_selector::can_use_lookahead.
+    const auto lookahead_policy = sel.get_lookahead_policy(cc);
+    if (lookahead_policy && sel.input_contiguous && sel.output_contiguous && sel.input_trivially_copyable
+        && sel.output_trivially_copyable && sel.output_default_constructible
+        && cub::detail::scan::smem_for_stages(
+             *lookahead_policy,
+             /* num_stages */ 1,
+             sel.input_value_size,
+             sel.input_value_alignment,
+             sel.output_value_alignment,
+             sel.accum_size,
+             sel.accum_alignment)
+             <= static_cast<int>(cub::detail::max_smem_per_block))
+    {
+      return {cub::ScanAlgorithm::lookahead, cub::ScanLookbackPolicy{}, *lookahead_policy};
+    }
+  }
+  // input_contiguous is consulted only by can_use_lookahead, so clearing it yields the lookback policy the selector
+  // would pick if the lookahead scan were unavailable, without affecting which lookback tuning is chosen.
+  auto lookback_sel             = sel;
+  lookback_sel.input_contiguous = false;
+  return lookback_sel(cc);
+}
+
+// Returns the build-time policy for every compute capability: the kernels were compiled for exactly this policy (see
+// select_policy_for_jit), so it must not be re-derived at launch time.
+struct fixed_policy_selector
+{
+  cub::ScanPolicy policy;
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ScanPolicy
+  {
+    return policy;
+  }
+};
+
 static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_type_info init)
 {
   // TODO Should be decltype(op(init, *input_it)) but haven't implemented type arithmetic yet
@@ -289,15 +348,6 @@ try
   const auto input_it_value_t  = cccl_type_enum_to_name(input_it.value_type.type);
   const auto offset_t          = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
-  const std::string input_iterator_t =
-    (input_it.type == cccl_iterator_kind_t::CCCL_POINTER //
-       ? cccl_type_enum_to_name(input_it.value_type.type, true) //
-       : scan::get_input_iterator_name());
-  const std::string output_iterator_t =
-    output_it.type == cccl_iterator_kind_t::CCCL_POINTER //
-      ? cccl_type_enum_to_name(output_it.value_type.type, true) //
-      : scan::get_output_iterator_name();
-
   const std::string input_iterator_src =
     make_kernel_input_iterator(offset_t, "input_iterator_state_t", input_it_value_t, input_it);
   const std::string output_iterator_src =
@@ -353,19 +403,11 @@ try
       benchmark_match};
   }();
 
-  const auto active_policy = policy_sel(cc);
+  const auto active_policy = scan::select_policy_for_jit(policy_sel, cc);
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
   policy_sel_str << active_policy;
-
-  std::string policy_selector_expr = std::format(
-    "cub::detail::scan::policy_selector_from_types<{}, {}, {}, {}, {}>",
-    input_iterator_t,
-    output_iterator_t,
-    accum_cpp,
-    offset_t,
-    "op_wrapper");
 
   std::string final_src = std::format(
     R"XXX(
@@ -379,20 +421,26 @@ struct __align__({1}) storage_t {{
 {2}
 {3}
 {4}
-using device_scan_policy = {5};
 using namespace cub;
 using namespace cub::detail::scan;
 using cub::LookbackDelayPolicy;
 using cub::LookbackDelayAlgorithm;
-static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host generated and JIT compiled policy mismatch");
+// The policy below was selected by the host library (see select_policy_for_jit in scan.cu). It is baked into this
+// translation unit rather than re-derived here because policy selection depends on the version of the compiler
+// evaluating it, and this translation unit is compiled by NVRTC while the host library is not (NVBug 6235538).
+struct device_scan_policy {{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> ScanPolicy
+  {{
+    return {5};
+  }}
+}};
 )XXX",
     input_it.value_type.size, // 0
     input_it.value_type.alignment, // 1
     input_iterator_src, // 2
     output_iterator_src, // 3
     op_src, // 4
-    policy_selector_expr, // 5
-    policy_sel_str.view()); // 6
+    policy_sel_str.view()); // 5
 
   // Scan hands CUB the bare well-known operator (e.g. `cuda::std::plus<__nv_bfloat16>`), so `cub::ThreadReduce` inside
   // `BlockScan` takes its SIMD path for bfloat16 and calls the packed intrinsics NVRTC miscompiles (see above). Making
@@ -431,21 +479,6 @@ static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host ge
     "-DCUB_DISABLE_CDP",
     "-std=c++20"};
 
-  // The scan tuning policy depends on the version of the CUDA compiler evaluating it, so this library and NVRTC can
-  // select different algorithms when their versions differ, tripping the policy-mismatch static_assert in the
-  // generated source (NVBug 6235538). Force the JIT to agree with the host: when the host selected lookback, disable
-  // the warpspeed/lookahead scan for the JIT as well. The other direction cannot diverge as long as this library is
-  // built with a CUDA compiler below 13.4: every NVRTC version able to target the architectures for which the host
-  // then selects lookahead also selects lookahead.
-  static_assert(_CCCL_CUDACC_BELOW(13, 4),
-                "Building cccl.c with CUDA >= 13.4 lets the host select the lookahead scan on sm_120, which an NVRTC "
-                "below 13.4 rejects, and this one-directional forcing cannot fix that. Revisit NVBug 6235538 "
-                "before lifting this assert.");
-  if (active_policy.algorithm == cub::ScanAlgorithm::lookback)
-  {
-    args.push_back("-DCCCL_DISABLE_WARPSPEED_SCAN");
-  }
-
   cccl::detail::extend_args_with_build_config(args, config);
 
   constexpr size_t num_lto_args   = 2;
@@ -480,14 +513,14 @@ static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host ge
       std::free(p);
     }
   };
-  static_assert(::cuda::is_trivially_copyable_v<cub::detail::scan::policy_selector>);
-  const size_t policy_size = sizeof(policy_sel);
+  static_assert(::cuda::is_trivially_copyable_v<cub::ScanPolicy>);
+  const size_t policy_size = sizeof(active_policy);
   std::unique_ptr<void, free_deleter> policy_ptr(std::malloc(policy_size));
   if (!policy_ptr)
   {
     return CUDA_ERROR_OUT_OF_MEMORY;
   }
-  std::memcpy(policy_ptr.get(), &policy_sel, sizeof(policy_sel));
+  std::memcpy(policy_ptr.get(), &active_policy, sizeof(active_policy));
   auto init_name = std::unique_ptr<char[]>(duplicate_c_string(init_kernel_lowered_name));
   auto scan_name = std::unique_ptr<char[]>(duplicate_c_string(scan_kernel_lowered_name));
 
@@ -604,7 +637,7 @@ CUresult cccl_device_scan(
       std::conditional_t<std::is_same_v<InitValueT, cub::NullType>, cub::NullType, indirect_arg_t>{init},
       static_cast<OffsetT>(num_items),
       stream,
-      *static_cast<cub::detail::scan::policy_selector*>(build.runtime_policy),
+      scan::fixed_policy_selector{*static_cast<cub::ScanPolicy*>(build.runtime_policy)},
       scan::scan_kernel_source{build},
       cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
     error = static_cast<CUresult>(exec_status);
@@ -931,14 +964,13 @@ try
     throw std::runtime_error("serialization blob: empty payload");
   }
 
-  std::unique_ptr<cub::detail::scan::policy_selector, decltype(&std::free)> policy(
-    static_cast<cub::detail::scan::policy_selector*>(std::malloc(sizeof(cub::detail::scan::policy_selector))),
-    std::free);
+  std::unique_ptr<cub::ScanPolicy, decltype(&std::free)> policy(
+    static_cast<cub::ScanPolicy*>(std::malloc(sizeof(cub::ScanPolicy))), std::free);
   if (!policy)
   {
     return CUDA_ERROR_OUT_OF_MEMORY;
   }
-  r.read_into(policy.get(), sizeof(cub::detail::scan::policy_selector));
+  r.read_into(policy.get(), sizeof(cub::ScanPolicy));
 
   std::unique_ptr<char[]> n_init{r.read_cstring_dup()};
   std::unique_ptr<char[]> n_scan{r.read_cstring_dup()};
@@ -956,7 +988,7 @@ try
   result.payload                    = payload_owner.release();
   result.payload_size               = payload_size;
   result.runtime_policy             = policy.release();
-  result.runtime_policy_size        = sizeof(cub::detail::scan::policy_selector);
+  result.runtime_policy_size        = sizeof(cub::ScanPolicy);
   result.init_kernel_lowered_name   = n_init.release();
   result.scan_kernel_lowered_name   = n_scan.release();
   *build_ptr                        = result;

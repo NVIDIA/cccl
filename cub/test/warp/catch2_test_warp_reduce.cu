@@ -284,26 +284,28 @@ CUB_TEST("WarpReduce::Sum, full_type_list",
   verify_results(h_out, d_out);
 }
 
-CUB_TEST("WarpReduce::Reduce, wide integer plus carries",
+CUB_TEST("WarpReduce::Reduce, wide integers",
          "[reduce][warp][predefined_op][redux]",
          CUB_SMALL,
-         wide_integer_type_list)
+         wide_integer_type_list,
+         predefined_op_list)
 {
   using T                            = c2h::get<0, TestType>;
+  using predefined_op                = c2h::get<1, TestType>;
   constexpr int logical_warp_threads = 32;
   const int valid_items              = GENERATE(1, 17, 31, 32);
   constexpr auto input_size          = total_warps * warp_size;
   constexpr auto output_size         = total_warps;
-  CAPTURE(c2h::type_name<T>(), valid_items);
+  CAPTURE(c2h::type_name<T>(), c2h::type_name<predefined_op>(), valid_items);
 
   c2h::device_vector<T> d_in(input_size);
   c2h::device_vector<T> d_out(output_size);
   c2h::gen(C2H_SEED(10), d_in);
-  warp_reduce_launch<logical_warp_threads, true>(d_in, d_out, warp_reduce_t<cuda::std::plus<T>, T>{}, valid_items);
+  warp_reduce_launch<logical_warp_threads, true>(d_in, d_out, warp_reduce_t<predefined_op, T>{}, valid_items);
 
   const c2h::host_vector<T> h_in = d_in;
   c2h::host_vector<T> h_out(output_size);
-  compute_host_reference<cuda::std::plus<>>(h_in, h_out, 1, logical_warp_threads, valid_items);
+  compute_host_reference<predefined_op>(h_in, h_out, 1, logical_warp_threads, valid_items);
   verify_results(h_out, d_out);
 }
 

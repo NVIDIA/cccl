@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Enable constant_wrapper for msvc.
-// UNSUPPORTED: msvc
-
 // todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
 //   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
 //   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
@@ -65,12 +62,11 @@ template <class T, class R>
 inline constexpr bool
   HasAssign<T, R, cuda::std::void_t<decltype(cuda::std::declval<const T&>() = cuda::std::declval<R&>())>> = true;
 
-template <class T, class R, class = void>
+template <class T, class R, bool = HasAssign<T, R>>
 inline constexpr bool HasNoexceptAssign = false;
 template <class T, class R>
-inline constexpr bool
-  HasNoexceptAssign<T, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<const T&>() = cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptAssign<T, R, true> =
+  noexcept(cuda::std::declval<const T&>() = cuda::std::declval<R&>());
 
 static_assert(!HasAssign<cuda::std::__constant_wrapper<5>, cuda::std::__constant_wrapper<3>>);
 static_assert(!HasNoexceptAssign<cuda::std::__constant_wrapper<5>, cuda::std::__constant_wrapper<3>>);
