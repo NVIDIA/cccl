@@ -45,7 +45,7 @@ CUB_TEST("Device radix sort keys with runs_on sorts correctly", "[radix_sort][de
 
   c2h::device_vector<std::int32_t> keys_in(num_items, thrust::no_init);
   c2h::device_vector<std::int32_t> keys_out(num_items, thrust::no_init);
-  c2h::gen(c2h::seed_t{42}, keys_in);
+  c2h::gen(C2H_SEED(1), keys_in);
 
   SECTION("Ascending")
   {
@@ -76,7 +76,7 @@ CUB_TEST("Device radix sort keys with runs_on handles an SM limit", "[radix_sort
 
   c2h::device_vector<std::int32_t> keys_in(num_items, thrust::no_init);
   c2h::device_vector<std::int32_t> keys_out(num_items, thrust::no_init);
-  c2h::gen(c2h::seed_t{42}, keys_in);
+  c2h::gen(C2H_SEED(1), keys_in);
 
   SECTION("Ascending")
   {
@@ -109,8 +109,8 @@ CUB_TEST("Device radix sort pairs with runs_on sorts correctly", "[radix_sort][d
   c2h::device_vector<std::int32_t> keys_out(num_items, thrust::no_init);
   c2h::device_vector<std::int32_t> values_in(num_items, thrust::no_init);
   c2h::device_vector<std::int32_t> values_out(num_items, thrust::no_init);
-  c2h::gen(c2h::seed_t{42}, keys_in, std::int32_t{-10}, std::int32_t{10});
-  c2h::gen(c2h::seed_t{123}, values_in);
+  c2h::gen(C2H_SEED(1), keys_in, std::int32_t{-10}, std::int32_t{10});
+  c2h::gen(C2H_SEED(1), values_in);
 
   SECTION("Ascending")
   {
@@ -161,8 +161,8 @@ CUB_TEST("Device radix sort pairs with runs_on handles an SM limit", "[radix_sor
   c2h::device_vector<std::int32_t> keys_out(num_items, thrust::no_init);
   c2h::device_vector<std::int32_t> values_in(num_items, thrust::no_init);
   c2h::device_vector<std::int32_t> values_out(num_items, thrust::no_init);
-  c2h::gen(c2h::seed_t{42}, keys_in, std::int32_t{-10}, std::int32_t{10});
-  c2h::gen(c2h::seed_t{123}, values_in);
+  c2h::gen(C2H_SEED(1), keys_in, std::int32_t{-10}, std::int32_t{10});
+  c2h::gen(C2H_SEED(1), values_in);
 
   SECTION("Ascending")
   {
