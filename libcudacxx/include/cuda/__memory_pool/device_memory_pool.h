@@ -28,9 +28,9 @@
 #  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
-#  include <cuda/__utility/call_once.h>
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__memory/construct_at.h>
+#  include <cuda/std/__mutex/once_flag.h>
 #  include <cuda/std/__type_traits/is_trivially_destructible.h>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -95,7 +95,7 @@ struct __default_device_memory_pool
       , __storage_{}
   {}
 
-  __once_flag __once_{};
+  ::cuda::std::once_flag __once_{};
 
   union __storage_t
   {
@@ -117,7 +117,7 @@ struct __default_device_memory_pool
 
   [[nodiscard]] _CCCL_HOST_API device_memory_pool_ref& __get(::cuda::device_ref __device)
   {
-    ::cuda::__call_once(__once_, [this, __device]() {
+    ::cuda::std::call_once(__once_, [this, __device]() {
       this->__init(__device);
     });
 

@@ -26,5 +26,6 @@
 
 #include <cuda/std/__mutex/lock_guard.h>
 #include <cuda/std/__mutex/mutex.h>
+#include <cuda/std/__mutex/once_flag.h>
 
 #endif // _CUDA_STD_MUTEX
