@@ -357,9 +357,6 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
   [[maybe_unused]] const bool __is_rhs_ge_zero = is_unsigned_v<_Rhs> || __rhs >= 0;
 
   // shortcut for the case where inputs are representable with the max type
-  // perf:
-  //   - all widths
-  //     > No change (https://godbolt.org/z/vGMYMYMzq)
   if constexpr (__is_mul_representable_v<_ActResult, _Lhs, _Rhs>)
   {
     const auto __lhs1    = static_cast<_CommonAll>(__lhs);
@@ -369,13 +366,6 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
   }
 
   // * int x int -> int
-  // perf:
-  //   - int8/int16
-  //     > No change (https://godbolt.org/z/o4ecTz1rY)
-  //   - int32/int64
-  //     > No change (uses mul_overflow_generic_impl)
-  //   - int128
-  //     > 107 to 99 SASS instructions (https://godbolt.org/z/Mj8Me48W1)
   else if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs> && is_signed_v<_ActResult>) // all signed
   {
     using _Sp            = __make_nbit_int_t<__num_bits_v<_CommonAll>>;
@@ -387,15 +377,6 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
   }
   // Positive inputs
   // * unsigned x unsigned (compile-time)
-  // perf:
-  //   - uint8
-  //     > 27 to 19 SASS instructions (https://godbolt.org/z/Ma1sMW17G)
-  //   - uint16
-  //     > No change (replaced 4 SASS instructions with noop) (https://godbolt.org/z/8h4n6fr3E)
-  //   - uint32/uint64
-  //     > No change (https://godbolt.org/z/hW9K6K7j8)
-  //   - uint128
-  //     > 67 to 59 SASS instructions (https://godbolt.org/z/ndbvWocWz)
   // * unsigned x int >= 0 (compile-time + run-time check)
   // * int >= 0 x unsigned (compile-time + run-time check)
   // * int >= 0 x int >= 0 -> _ActResult=unsigned (_ActResult=signed already handled above) (run-time check)
@@ -410,6 +391,8 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
   }
   else
   {
+    // For inputs comprising at least one negative value, this seems to be the
+    // more efficient path
     return ::cuda::__mul_overflow_generic_impl<_ActResult>(__lhs, __rhs);
   }
 #endif // needs fallback
