@@ -35,11 +35,13 @@
 #include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__mdspan/empty_base.h>
 #include <cuda/std/__mdspan/extents.h>
+#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/as_const.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/swap.h>
@@ -102,6 +104,84 @@ _CCCL_API constexpr void __fill_layout_right_strides(const _Extents& __ext, _Str
       const auto __prod = ::cuda::std::__mdspan_detail::__extents_product<_IndexType>(__ext, __r + 1, _Extents::rank());
       __strides[__r]    = __prod.overflow ? _IndexType{0} : __prod.value;
     }
+  }
+}
+
+template <class _Extents, class _StrideArray>
+_CCCL_API constexpr void __sort_ranks_by_stride(
+  const _Extents& __ext,
+  const _StrideArray& __strides,
+  array<typename _Extents::rank_type, _Extents::rank()>& __permute) noexcept
+{
+  using _IndexType  = typename _Extents::index_type;
+  using _RankType   = typename _Extents::rank_type;
+  using _StrideType = remove_cvref_t<decltype(__strides[0])>;
+  using _CommonType = common_type_t<_IndexType, _StrideType>;
+
+  constexpr _RankType __rank = _Extents::rank();
+  static_assert(__rank >= 1, "Invalid rank passed to __sort_ranks_by_stride");
+
+  for (_RankType __i = __rank - 1; __i > 0; --__i)
+  {
+    for (_RankType __r = 0; __r < __i; ++__r)
+    {
+      const auto __left  = static_cast<_CommonType>(__strides[__permute[__r]]);
+      const auto __right = static_cast<_CommonType>(__strides[__permute[__r + 1]]);
+      if (__left > __right)
+      {
+        ::cuda::std::swap(__permute[__r], __permute[__r + 1]);
+      }
+      else if ((__left == __right) && (__ext.extent(__permute[__r]) > _IndexType{1}))
+      {
+        ::cuda::std::swap(__permute[__r], __permute[__r + 1]);
+      }
+    }
+  }
+}
+
+// True when some permutation P of ranks satisfies
+// stride(P(i)) >= stride(P(i-1)) * extent(P(i-1)). Empty mappings are unique.
+template <class _Extents, class _StrideArray>
+[[nodiscard]] _CCCL_API constexpr bool
+__is_unique_strided_mapping(const _Extents& __ext, const _StrideArray& __strides) noexcept
+{
+  using _IndexType           = typename _Extents::index_type;
+  using _RankType            = typename _Extents::rank_type;
+  constexpr _RankType __rank = _Extents::rank();
+  if constexpr (__rank <= 1)
+  {
+    return true;
+  }
+  else if (::cuda::std::__mdspan_detail::__is_empty_extents(__ext))
+  {
+    return true;
+  }
+  else
+  {
+    using _StrideType = remove_cvref_t<decltype(__strides[0])>;
+    using _TermType   = common_type_t<_IndexType, _StrideType>;
+
+    array<_RankType, __rank> __permute{};
+    for (_RankType __i = 0; __i != __rank; ++__i)
+    {
+      __permute[__i] = __i;
+    }
+    ::cuda::std::__mdspan_detail::__sort_ranks_by_stride(__ext, __strides, __permute);
+
+    for (_RankType __i = 1; __i != __rank; ++__i)
+    {
+      _TermType __prod{};
+      if (::cuda::mul_overflow(
+            __prod, static_cast<_TermType>(__strides[__permute[__i - 1]]), __ext.extent(__permute[__i - 1])))
+      {
+        return false;
+      }
+      if (static_cast<_TermType>(__strides[__permute[__i]]) < __prod)
+      {
+        return false;
+      }
+    }
+    return true;
   }
 }
 } // namespace __mdspan_detail
@@ -280,49 +360,10 @@ public:
     }
   }
 
-  // compute the permutation for sorting the stride array
-  // we never actually sort the stride array
-  _CCCL_API constexpr void __bubble_sort_by_strides(array<rank_type, extents_type::rank()>& __permute) const noexcept
-  {
-    for (rank_type __i = __rank_ - 1; __i > 0; __i--)
-    {
-      for (rank_type __r = 0; __r < __i; __r++)
-      {
-        if (__strides()[__permute[__r]] > __strides()[__permute[__r + 1]])
-        {
-          swap(__permute[__r], __permute[__r + 1]);
-        }
-        else
-        {
-          // if two strides are the same then one of the associated extents must be 1 or 0
-          // both could be, but you can't have one larger than 1 come first
-          if ((__strides()[__permute[__r]] == __strides()[__permute[__r + 1]])
-              && (extents().extent(__permute[__r]) > index_type{1}))
-          {
-            swap(__permute[__r], __permute[__r + 1]);
-          }
-        }
-      }
-    }
-  }
-
   template <size_t... _Pos>
-  [[nodiscard]] _CCCL_API constexpr bool __check_unique_mapping(index_sequence<_Pos...>) const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool __check_unique_mapping([[maybe_unused]] index_sequence<_Pos...>) const noexcept
   {
-    // basically sort the dimensions based on strides and extents, sorting is represented in permute array
-    array<rank_type, extents_type::rank()> __permute{_Pos...};
-    __bubble_sort_by_strides(__permute);
-
-    // check that this permutations represents a growing set
-    for (rank_type __i = 1; __i < __rank_; __i++)
-    {
-      if (static_cast<index_type>(__strides()[__permute[__i]])
-          < static_cast<index_type>(__strides()[__permute[__i - 1]]) * extents().extent(__permute[__i - 1]))
-      {
-        return false;
-      }
-    }
-    return true;
+    return ::cuda::std::__mdspan_detail::__is_unique_strided_mapping(extents(), __strides());
   }
   [[nodiscard]] _CCCL_API constexpr bool __check_unique_mapping(index_sequence<>) const noexcept
   {

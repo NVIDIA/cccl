@@ -47,14 +47,25 @@ TEST_FUNC constexpr void test_construction(E e, S s)
 
   // check required_span_size()
   typename E::index_type expected_size = 1;
+  bool is_empty                        = false;
   for (typename E::rank_type r = 0; r < E::rank(); r++)
   {
     if (e.extent(r) == 0)
     {
-      expected_size = 0;
+      is_empty = true;
       break;
     }
-    expected_size += (e.extent(r) - 1) * static_cast<typename E::index_type>(s[r]);
+  }
+  if (is_empty)
+  {
+    expected_size = 0;
+  }
+  else
+  {
+    for (typename E::rank_type r = 0; r < E::rank(); r++)
+    {
+      expected_size += (e.extent(r) - 1) * static_cast<typename E::index_type>(s[r]);
+    }
   }
   assert(m.required_span_size() == expected_size);
 
