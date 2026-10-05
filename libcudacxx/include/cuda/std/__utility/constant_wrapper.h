@@ -23,8 +23,10 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/fold.h>
+#include <cuda/std/__type_traits/is_class.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__type_traits/is_pointer.h>
@@ -52,10 +54,20 @@ inline constexpr bool __is_cuda_std_constant_wrapper_v = false;
 template <auto _Xp, class _Tp>
 inline constexpr bool __is_cuda_std_constant_wrapper_v<__constant_wrapper<_Xp, _Tp>> = true;
 
+// MSVC 2019 rejects constant pointer arguments in the partial-specialization probe.
+#if _CCCL_COMPILER(MSVC, <, 19, 30)
+template <class _Tp, auto = _Tp::value>
+_CCCL_HOST_DEVICE_API true_type __cw_is_constexpr_param(int);
+template <class>
+_CCCL_HOST_DEVICE_API false_type __cw_is_constexpr_param(...);
+template <class _Tp, class = void>
+inline constexpr bool __is_constexpr_param_v = decltype(__cw_is_constexpr_param<_Tp>(0))::value;
+#else // ^^^ _CCCL_COMPILER(MSVC, <, 19, 30) ^^^ / vvv !_CCCL_COMPILER(MSVC, <, 19, 30) vvv
 template <class _Tp, class = void>
 inline constexpr bool __is_constexpr_param_v = false;
 template <class _Tp>
 inline constexpr bool __is_constexpr_param_v<_Tp, void_t<__constant_wrapper<_Tp::value>>> = true;
+#endif // ^^^ !_CCCL_COMPILER(MSVC, <, 19, 30) ^^^
 
 template <auto _Xp>
 inline constexpr __constant_wrapper<_Xp> __cw;
@@ -349,6 +361,15 @@ struct __cw_operators
 #endif // _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC)
 };
 
+// MSVC rejects some constant invocations in partial specializations. Probe a default template argument instead.
+#if _CCCL_COMPILER(MSVC)
+template <class _Fn, class... _Args, auto = _LIBCUDACXX_AUTO_CAST(::cuda::std::invoke(_Fn::value, _Args::value...))>
+_CCCL_HOST_DEVICE_API true_type __cw_is_constexpr_callable(int);
+template <class, class...>
+_CCCL_HOST_DEVICE_API false_type __cw_is_constexpr_callable(...);
+template <class _Fn, class _Void, class... _Args>
+inline constexpr bool __cw_is_constexpr_callable_v = decltype(__cw_is_constexpr_callable<_Fn, _Args...>(0))::value;
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <class _Fn, class _Void, class... _Args>
 inline constexpr bool __cw_is_constexpr_callable_v = false;
 template <class _Fn, class... _Args>
@@ -356,6 +377,7 @@ inline constexpr bool __cw_is_constexpr_callable_v<
   _Fn,
   void_t<__constant_wrapper<_LIBCUDACXX_AUTO_CAST(::cuda::std::invoke(_Fn::value, _Args::value...))>>,
   _Args...> = true;
+#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
 template <class _Vp, class _Void, class... _Args>
 inline constexpr bool __cw_is_constexpr_indexable_v = false;
@@ -383,31 +405,15 @@ template <class _Vp, class _Arg>
 inline constexpr bool __cw_is_indexable_v<_Vp, void_t<decltype(_Vp::value[::cuda::std::declval<_Arg>()])>, _Arg> = true;
 #endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
 
-#if _CCCL_COMPILER(MSVC)
-template <auto _Xp, class = void>
-struct __constant_wrapper_msvc_value_type_select
-{
-  static constexpr decltype(auto) __dummy = (_Xp);
-  using type _CCCL_NODEBUG                = decltype(__dummy);
-};
-template <auto _Xp>
-struct __constant_wrapper_msvc_value_type_select<_Xp, enable_if_t<is_pointer_v<decltype(_Xp)>>>
-{
-  static constexpr auto __dummy = (_Xp);
-  using type _CCCL_NODEBUG      = decltype(__dummy);
-};
-#endif // _CCCL_COMPILER(MSVC)
-
 template <auto _Xp, class _Tp>
 struct __constant_wrapper : __cw_operators
 {
   using type       = __constant_wrapper;
   using value_type = _Tp;
 
-  // When _Xp is a pointer, msvc tries to convert (_Xp) to const _Up*&, which fail to compile, so we need to fix the
-  // type of `value` to be a value, not a reference.
+  // msvc doesn't evaluate correctly decltype(auto) nor decltype((_Xp)), so we need to set the type by hand.
 #if _CCCL_COMPILER(MSVC)
-  static constexpr typename __constant_wrapper_msvc_value_type_select<_Xp>::type value = (_Xp);
+  static constexpr conditional_t<is_class_v<_Tp>, const _Tp&, const _Tp> value = (_Xp);
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
   static constexpr decltype((_Xp)) value = (_Xp);
 #endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^

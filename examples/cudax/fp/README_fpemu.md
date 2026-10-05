@@ -154,9 +154,9 @@ All six comparisons follow IEEE-754 semantics, for both representations. Mixed-t
 arithmetic works directly, so an `fpemu` value combines with a built-in scalar without a cast
 on the scalar side.
 
-There is **no transcendental math header** for `fpemu` — no `exp`, `log` or trigonometry.
-Arithmetic, `fma` and `sqrt` are the surface. This is the main functional difference from the
-`fpmp` types, which have `<cuda/fpmp_math>`.
+There are **no transcendental math functions** for `fpemu` — no `exp`, `log` or
+trigonometry. Arithmetic, `fma` and `sqrt` are the surface. This is the main functional
+difference from the `fpmp` types, whose header carries a full math API.
 
 `fpemu` objects may be declared `volatile`, for the legacy CUDA pattern of holding
 shared-memory scalars in volatile variables. As for `fpmp2`, support is limited to storage —
