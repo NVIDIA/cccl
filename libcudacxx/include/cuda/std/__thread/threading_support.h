@@ -39,24 +39,13 @@
 #  error "Unknown Thread API"
 #endif // Unknown Thread API
 
+#include <cuda/std/__thread/yield.h>
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #define _LIBCUDACXX_POLLING_COUNT 16
-
-#if _CCCL_HOST_ARCH(ARM64) && _CCCL_OS(LINUX)
-#  define __LIBCUDACXX_ASM_THREAD_YIELD (asm volatile("yield" :: :);)
-#elif _CCCL_HOST_ARCH(X86_64) && _CCCL_OS(LINUX)
-#  define __LIBCUDACXX_ASM_THREAD_YIELD (asm volatile("pause" :: :);)
-#else // ^^^  _CCCL_HOST_ARCH(X86_64) ^^^ / vvv ! _CCCL_HOST_ARCH(X86_64) vvv
-#  define __LIBCUDACXX_ASM_THREAD_YIELD (;)
-#endif // ! _CCCL_HOST_ARCH(X86_64)
-
-_CCCL_HOST_DEVICE_API inline void __cccl_thread_yield_processor()
-{
-  NV_IF_TARGET(NV_IS_HOST, __LIBCUDACXX_ASM_THREAD_YIELD)
-}
 
 template <class _Fn>
 _CCCL_HOST_DEVICE_API inline bool __cccl_thread_poll_with_backoff(

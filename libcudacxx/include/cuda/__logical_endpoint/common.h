@@ -34,6 +34,7 @@
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__thread/threading_support.h>
+#  include <cuda/std/__thread/yield.h>
 #  include <cuda/std/__type_traits/underlying_type.h>
 #  include <cuda/std/__utility/exchange.h>
 #  include <cuda/std/__utility/move.h>

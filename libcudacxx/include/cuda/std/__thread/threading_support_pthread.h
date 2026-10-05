@@ -29,7 +29,6 @@
 
 #  include <errno.h>
 #  include <pthread.h>
-#  include <sched.h>
 #  include <semaphore.h>
 #  if defined(__linux__)
 #    include <unistd.h>
@@ -120,11 +119,6 @@ __cccl_semaphore_wait_timed(__cccl_semaphore_t* __sem, ::cuda::std::chrono::nano
 {
   const auto __ts = __cccl_to_timespec(__ns);
   return sem_timedwait(__sem, &__ts) == 0;
-}
-
-_CCCL_HOST_DEVICE_API inline void __cccl_thread_yield()
-{
-  sched_yield();
 }
 
 _CCCL_HOST_DEVICE_API inline void __cccl_thread_sleep_for(::cuda::std::chrono::nanoseconds __ns)
